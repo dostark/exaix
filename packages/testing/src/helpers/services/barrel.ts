@@ -126,7 +126,12 @@ export function createMockEventLogger(): IMockEventLogger {
       return Promise.resolve();
     }
 
-    info(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> {
+    info(
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.TestStub>,
+      traceId?: Opt<string, Reason.TraceAbsent>,
+    ): Promise<void> {
       return this.log({
         level: LogLevel.INFO,
         action,
@@ -136,7 +141,12 @@ export function createMockEventLogger(): IMockEventLogger {
       });
     }
 
-    warn(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> {
+    warn(
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.TestStub>,
+      traceId?: Opt<string, Reason.TraceAbsent>,
+    ): Promise<void> {
       return this.log({
         level: LogLevel.WARN,
         action,
@@ -146,7 +156,12 @@ export function createMockEventLogger(): IMockEventLogger {
       });
     }
 
-    error(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> {
+    error(
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.TestStub>,
+      traceId?: Opt<string, Reason.TraceAbsent>,
+    ): Promise<void> {
       return this.log({
         level: LogLevel.ERROR,
         action,
@@ -160,7 +175,7 @@ export function createMockEventLogger(): IMockEventLogger {
       action: string,
       target: string | null,
       payload?: Opt<LogMetadata, Reason.OptionalContext>,
-      traceId?: string,
+      traceId?: Opt<string, Reason.TraceAbsent>,
     ): Promise<void> {
       return this.log({
         level: LogLevel.FATAL,
@@ -171,7 +186,12 @@ export function createMockEventLogger(): IMockEventLogger {
       });
     }
 
-    debug(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> {
+    debug(
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.TestStub>,
+      traceId?: Opt<string, Reason.TraceAbsent>,
+    ): Promise<void> {
       return this.log({
         level: LogLevel.DEBUG,
         action,
@@ -258,10 +278,7 @@ export function sampleRouterRequest(overrides: {
   };
 }
 
-/**
- * Creates a complete test context for RequestRouter tests with all mocks wired up.
- * Reduces boilerplate in tests that repeat the same setup pattern.
- */
+/** Creates a complete test context for RequestRouter tests with mocks wired up. */
 export function createRouterTestContext(overrides: {
   defaultAgent?: string;
   blueprintsPath?: string;

@@ -17,9 +17,6 @@ export interface IJournalService {
    */
   query(filters: IJournalFilterOptions): Promise<IActivityRecord[]>;
 
-  /**
-   * Get distinct values for a specific field in the database.
-   * Useful for population filter dropdowns.
-   */
+  /** Get distinct values for a field (for populating filter dropdowns). */
   getDistinctValues(field: string): Promise<string[]>;
 }

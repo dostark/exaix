@@ -299,9 +299,6 @@ Deno.test("RequestManagerTuiSession - get selected request", () => {
   assert(selected2);
   assertEquals(selected2.trace_id, "req-2");
 });
-// ==========================================
-// Phase 13.6: New Tests for Enhanced Session
-// ==========================================
 
 Deno.test("Phase 13.6: RequestViewState interface", () => {
   const mockService = new MinimalRequestServiceMock();

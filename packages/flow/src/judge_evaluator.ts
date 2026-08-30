@@ -9,6 +9,7 @@
 import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "@exaix/core/evaluation";
 import type { IJudgeInvoker } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Context object for agent requests
@@ -55,13 +56,8 @@ export interface IAgentRunner {
 }
 
 /**
- * JudgeEvaluator - Wraps agent runner to implement JudgeInvoker
- *
- * Handles:
- * - Building evaluation prompts
- * - Invoking judge agents
- * - Parsing and validating JSON responses
- * - Recovering from malformed JSON
+ * Wraps an agent runner to implement JudgeInvoker: builds evaluation prompts, invokes judge
+ * agents, and parses/validates the JSON response (recovering from malformed JSON).
  */
 export class JudgeEvaluator implements IJudgeInvoker {
   constructor(private agentRunner: IAgentRunner) {}
@@ -73,7 +69,7 @@ export class JudgeEvaluator implements IJudgeInvoker {
     identityId: string,
     content: string,
     criteria: EvaluationCriterion[],
-    context?: string,
+    context?: Opt<string, Reason.OptionalContext>,
   ): Promise<EvaluationResult> {
     // Build evaluation prompt
     const prompt = buildEvaluationPrompt(content, criteria, context);

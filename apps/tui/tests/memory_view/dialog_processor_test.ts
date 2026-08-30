@@ -58,10 +58,7 @@ testDialogProcess(
     };
   },
   (ctx) => {
-    // We can't easily assert 'calls' here without exposing it differently,
-    // but we can rely on statuses and counters which are the main side effects.
-    // If strict call order verification is needed, we'd adjust the helper.
-    // For now, let's verify side effects.
+    // Side effects (statuses/counters) stand in for asserting `calls` directly.
     assertEquals(ctx.statuses, [TUI_STATUS_MSG_PROPOSAL_APPROVED]);
     assertEquals(ctx.counters.treeReloads, 1);
     assertEquals(ctx.counters.pendingReloads, 1);

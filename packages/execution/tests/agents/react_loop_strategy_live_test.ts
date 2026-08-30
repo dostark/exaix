@@ -48,17 +48,13 @@ type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 type TestToolParams = Record<string, JSONValue>;
 
 const LIVE_TEST_TIMEOUT_MS = 60000;
-// A paraphrase-tolerant comprehension check must still distinguish "read and understood"
-// from "read and ignored". Calibrated offline (no API cost) against representative
-// response shapes: exact quote scores 1.00, a reasonable paraphrase ("is guarding" /
-// "in the north") scores 0.55-0.80, while a vague/generic answer, the wrong (first)
-// sentence, and "I read the file" with no actual content all cluster at ~0.35 —
+// Calibrated offline against representative responses: exact quotes score 1.00, reasonable
+// paraphrases score 0.55-0.80, and vague/generic/wrong-sentence answers cluster at ~0.35 —
 // 0.55 cleanly separates the two groups.
 const COMPREHENSION_SIMILARITY_THRESHOLD = 0.55;
-// Multi-statement so "the second statement" is a concrete, checkable fact the model can
-// only produce by actually reading the tool result — not by guessing or paraphrasing
-// generically. The marker phrase is distinctive enough that it would not appear in a
-// plausible-sounding hallucinated answer.
+// Multi-statement so "the second statement" is a concrete fact only obtainable by actually
+// reading the tool result, not by guessing; the marker phrase is distinctive enough to avoid
+// appearing in a plausible hallucinated answer.
 const FILE_STATEMENT_ONE = "The warehouse ships orders every Tuesday.";
 const FILE_STATEMENT_TWO = "The quokka guards the northern vault.";
 const READ_ONLY_FILE_CONTENT = `${FILE_STATEMENT_ONE} ${FILE_STATEMENT_TWO}`;
@@ -122,10 +118,9 @@ function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }
       await Promise.resolve();
     },
     validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
-    // Untruncated: createFinalResult passes only the model's single final-turn text here
-    // (not accumulated loop history), and truncating it risks cutting off the very
-    // sentence the comprehension assertion checks for — a false negative unrelated to
-    // what this test verifies.
+    // Untruncated: createFinalResult passes only the model's single final-turn text (not
+    // accumulated loop history); truncating risks cutting off the sentence the comprehension
+    // assertion checks for.
     parseAgentResponse: (response: string, context: IExecutionContext, startTime: number): IChangesetResult => ({
       branch: `feat/${context.portal || "test"}`,
       commit_sha: "0000000000000000000000000000000000000000",
@@ -193,14 +188,9 @@ Deno.test({
       `expected >=2 provider.generate() calls (tool-use turn + completion turn), got ${generateCallCount}`,
     );
 
-    // 3. Comprehension contract: the model's final answer must closely match the SECOND
-    // statement from the tool result, not the first — proving it actually parsed the
-    // multi-statement content rather than calling the tool and then answering from a
-    // generic guess. Fuzzy (not exact) match tolerates a reasonable paraphrase of an
-    // explicitly-requested verbatim quote without accepting an unrelated or generic
-    // answer; checking for the whole file content (or just the first statement, which a
-    // lazy skim could latch onto) would not catch a model that saw the tool result but
-    // didn't read past the first sentence.
+    // Comprehension contract: the final answer must closely match the SECOND statement, not the
+    // first — proving it parsed the multi-statement content rather than guessing generically.
+    // Fuzzy match tolerates paraphrase but not an unrelated/generic answer.
     const similarity = bestSubstringSimilarity(result.description, FILE_STATEMENT_TWO);
     assert(
       similarity >= COMPREHENSION_SIMILARITY_THRESHOLD,
@@ -208,11 +198,9 @@ Deno.test({
         `similarity ${similarity.toFixed(2)} < ${COMPREHENSION_SIMILARITY_THRESHOLD} — got: "${result.description}"`,
     );
 
-    // 4. Termination contract: the loop must end because the model emitted
-    // REACT_STATUS_COMPLETE and ReActLoopStrategy's own isComplete branch returned —
-    // not because it silently exhausted DEFAULT_AGENT_MAX_ITERATIONS. If termination
-    // were only reached via the iteration cap, execute() would have thrown instead of
-    // returning a IChangesetResult.
+    // Termination contract: the loop must end because the model emitted REACT_STATUS_COMPLETE,
+    // not because it exhausted DEFAULT_AGENT_MAX_ITERATIONS — if only the iteration cap were
+    // reached, execute() would have thrown instead of returning a result.
     assert(
       generateCallCount < 10,
       `loop should terminate well before DEFAULT_AGENT_MAX_ITERATIONS (10), used ${generateCallCount} — ` +

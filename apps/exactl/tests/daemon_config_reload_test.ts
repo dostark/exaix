@@ -17,10 +17,7 @@ import { createConfigReloadHandler } from "@exaix/core/config";
 import { LogLevel } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types";
 
-/**
- * Test for "Investigate why exactl portal add not showing in daemon logs"
- * Verifies that modifying  triggers a config reload and log event.
- */
+/** Verifies that modifying the config file triggers a reload and log event. */
 Deno.test("Daemon: Config Reloading on File Change", async () => {
   // 1. Setup Temp Environment
   const tempDir = await Deno.makeTempDir({ prefix: "daemon-config-reload-" });

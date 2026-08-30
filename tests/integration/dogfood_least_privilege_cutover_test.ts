@@ -43,19 +43,10 @@ function writeConfig(configPath: string, root: string): void {
 
 /** Poll cadence while waiting for the daemon status to report running. */
 const STATUS_POLL_INTERVAL_MS = 500;
-/**
- * Upper bound on the wait for `status` to report running. The poll returns the
- * moment the daemon is healthy, so this ceiling only matters on a cold/slow CI
- * runner — a fixed 2s sleep raced daemon boot there (status still reported not
- * running → code 1).
- */
+/** Upper bound on the wait for `status` to report running; returns as soon as healthy, so this only matters on a cold/slow CI runner (a fixed 2s sleep previously raced daemon boot there). */
 const STATUS_READY_CEILING_MS = 30_000;
 
-/**
- * Poll `dogfood_daemon.ts status` until it exits 0 with "running" in stdout, or
- * the ceiling elapses. Returns the last status result either way so the caller
- * asserts on real output.
- */
+/** Polls `dogfood_daemon.ts status` until it exits 0 with "running" in stdout or the ceiling elapses; always returns the last result so the caller can assert on real output. */
 async function waitForStatusRunning(
   env: Record<string, string>,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
@@ -114,10 +105,9 @@ Deno.test({
           assertEquals(await exists(root), false, "dogfood:clean must remove the configured root");
         });
       } finally {
-        // Guarantee the daemon is stopped even if an assertion above throws between
-        // start and the scripted stop — otherwise a failing assertion leaks the
-        // daemon process past the temp root removal below. Idempotent: a no-op if
-        // `stop` already succeeded in the try block, or if start never ran/succeeded.
+        // Guarantee the daemon is stopped even if an assertion above throws — otherwise a
+        // failing assertion leaks the daemon process past the temp root removal below.
+        // Idempotent: a no-op if `stop` already succeeded, or if `start` never ran.
         await runScript("scripts/dogfood_daemon.ts", ["stop"], env).catch(() => {});
       }
     } finally {

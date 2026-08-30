@@ -9,18 +9,12 @@
 
 import type { IKeyBinding, KeyHandler } from "@exaix/tui/helpers/keyboard.ts";
 
-/**
- * Base class for key binding collections.
- * Provides strict typing and structure for KEY_BINDINGS arrays.
- */
+/** Base class for key binding collections with typed KEY_BINDINGS arrays. */
 export abstract class KeyBindingsBase<
   TAction extends string | KeyHandler = string | KeyHandler,
   TCategory extends string = string,
 > {
-  /**
-   * The key bindings collection for this component.
-   * Must be implemented by subclasses with specific action types.
-   */
+  /** The key bindings collection for this component. */
   abstract readonly KEY_BINDINGS: readonly IKeyBinding<TAction>[];
 
   /**

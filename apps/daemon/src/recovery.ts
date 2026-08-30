@@ -52,10 +52,7 @@ const TERMINAL_EVENTS = new Set([
   "session.delegate.expired",
 ]);
 
-/**
- * Scan the activity journal for orphaned session delegations and re-queue them.
- * Returns the number of recovered delegations.
- */
+/** Scans the journal for orphaned session delegations and re-queues them. */
 export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<number> {
   try {
     const launched = await deps.db.getActivitiesByActionTypeSafe("session.delegate.launched");
@@ -75,9 +72,9 @@ export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<n
 
       const traceId = record.trace_id;
 
-      // Phase 174 Step 4: a cycle-owned launch is never re-queued as a human-review
-      // request — its durable claim is the authority, and the next resume of that
-      // session_delegate_cycle step reclaims (pre-launch) or awaits (post-launch) it.
+      // A cycle-owned launch is never re-queued as a human-review request — its durable
+      // claim is the authority; the next resume of that session_delegate_cycle step
+      // reclaims (pre-launch) or awaits (post-launch) it.
       let cycleOwned = false;
       try {
         cycleOwned = JSON.parse(record.payload).cycle_owned === true;

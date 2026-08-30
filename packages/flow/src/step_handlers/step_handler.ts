@@ -12,10 +12,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Context passed to a flow step handler's execute() method.
- * Carries the step, request, flow state, and runtime services the handler needs.
- */
+/** Context passed to a flow step handler's execute() — carries the step, request, flow state, and runtime services it needs. */
 export interface IStepExecutionContext {
   /** The step type string that was dispatched */
   readonly stepType: string;
@@ -32,9 +29,9 @@ export interface IStepExecutionContext {
     readonly traceId?: string;
     readonly requestId?: string;
     readonly requestAnalysis?: IRequestAnalysis;
-    /** Portal-configured worktree root (Phase 174 Step 2); required by a session_delegate_cycle step. */
+    /** Portal-configured worktree root; required by a session_delegate_cycle step. */
     readonly executionRoot?: string;
-    /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer (Phase 174 Step 2); required by a session_delegate_cycle step. */
+    /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */
     readonly planContextRef?: string;
   };
 
@@ -62,7 +59,7 @@ export interface IStepExecutionContext {
         }
       >
     >;
-    /** The flow's portal alias (Phase 159); required for a strategy-routed step. */
+    /** The flow's portal alias; required for a strategy-routed step. */
     readonly portal?: string;
   };
 
@@ -80,33 +77,21 @@ export interface IStepExecutionContext {
   };
 }
 
-/**
- * A pluggable handler for one or more flow-step types.
- * Registered into IFlowStepHandlerRegistry keyed by stepType string.
- */
+/** A pluggable handler for one or more flow-step types, registered into IFlowStepHandlerRegistry keyed by stepType string. */
 export interface IFlowStepHandler {
   /** The step type this handler claims (e.g. "agent", "gate", "voting_group"). */
   readonly stepType: string;
 
-  /**
-   * Execute the step.
-   * Returns an IAgentExecutionResult with thought, content, and raw fields.
-   */
+  /** Execute the step; returns an IAgentExecutionResult (thought, content, raw). */
   execute(ctx: IStepExecutionContext): Promise<IAgentExecutionResult>;
 }
 
-/**
- * Registry for IFlowStepHandler instances, keyed by step type string.
- * Paid step types register here instead of modifying core's if-chain.
- */
+/** Registry for IFlowStepHandler instances, keyed by step type string — paid step types register here instead of modifying core's if-chain. */
 export interface IFlowStepHandlerRegistry {
   /** Register a handler for its declared stepType. Overwrites any existing handler for that key. */
   register(handler: IFlowStepHandler): void;
 
-  /**
-   * Register a handler under a specific key, overriding its stepType.
-   * Useful for aliasing (e.g. AgentStepHandler for BRANCH and CONSENSUS).
-   */
+  /** Register a handler under a specific key, overriding its stepType — useful for aliasing (e.g. AgentStepHandler for BRANCH and CONSENSUS). */
   registerWithKey(key: string, handler: IFlowStepHandler): void;
 
   /** Retrieve a handler by step type string. Returns undefined if not registered. */

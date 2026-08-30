@@ -15,11 +15,9 @@ export interface ISubprocessOptions {
   abortSignal?: AbortSignal;
   cwd?: string;
   env?: Record<string, string>;
-  /** When true, the subprocess starts with a clean environment (no inherited vars).
-   *  Deno 2.x merges `env` with the parent process env by default, so sensitive
-   *  vars like ANTHROPIC_API_KEY leak to subprocesses unless clearEnv is set.
-   *  When clearEnv is true, the subprocess only receives the vars in `env`.
-   *  Phase 141 GAP-3 follow-up. */
+  /** When true, subprocess starts with a clean environment. Deno 2.x merges `env`
+   *  with the parent env by default, leaking vars like ANTHROPIC_API_KEY unless
+   *  clearEnv is set — then only the vars in `env` are passed. */
   clearEnv?: boolean;
 }
 
@@ -88,9 +86,8 @@ export class SafeSubprocess {
       }
       if (error instanceof Deno.errors.NotFound) {
         // Deno.errors.NotFound covers both "binary not on PATH" and "cwd does not
-        // exist" — collapsing both into a generic "Command not found" message hides
-        // which one actually happened. Deno's own error.message already
-        // distinguishes them (e.g. "No such cwd '<path>'" vs "entity not found").
+        // exist"; Deno's own error.message already distinguishes them (e.g. "No such
+        // cwd '<path>'" vs "entity not found"), so it's included verbatim below.
         throw new SubprocessError(`Command not found: ${command}: ${error.message}`, error);
       }
       if (combinedSignal.aborted) {

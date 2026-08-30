@@ -205,11 +205,7 @@ Deno.test("[regression] Plan list handles empty directories gracefully", async (
 // Regression Test for Plan Rejection Directory Scanning
 // ============================================================================
 
-/**
- * Regression test for: "Plan not found" error when rejecting plans after review rejection
- * Root cause: reject() method only searched Workspace/Plans directory, but plans could be in other directories after review operations
- * Fix: Updated reject() to search all directories like show() and list() methods
- */
+/** Regression: reject() must search all plan directories (Active, Rejected, etc.), not only Workspace/Plans. */
 Deno.test("[regression] Plan reject finds plans in any directory", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa_plan_reject_regression_" });
 
@@ -251,11 +247,7 @@ Deno.test("[regression] Plan reject finds plans in any directory", async () => {
 // Regression Test for Plan Request Context
 // ============================================================================
 
-/**
- * Regression test for: "exactl plan show/list Missing Request and Agent Context"
- * Root cause: Plan commands only showed basic plan metadata, missing request information
- * Fix: Enhanced PlanCommands to load and display request context (agent, portal, priority, etc.)
- */
+/** Regression: plan list/show must include request context (agent, portal, priority), not just plan metadata. */
 Deno.test("[regression] Plan list and show include request context information", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa_plan_request_context_" });
 

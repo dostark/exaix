@@ -21,16 +21,6 @@ import type { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
 import { createMockConfig } from "@exaix/testing";
 
-/**
- * Tests for Step 55.3: AgentOrchestrator journal field separation
- *
- * Success Criteria:
- * - Test 1: logExecutionStart writes agentId='agent-executor' and identityId=blueprintSlug
- * - Test 2: logExecutionComplete writes agentId='agent-executor' and identityId=blueprintSlug
- * - Test 3: logExecutionError writes agentId='agent-executor' and identityId=blueprintSlug
- * - Test 4: REGRESSION: agentId must never be set to an identity blueprint slug
- */
-
 function createMockLogger(eventCapture: ILogEvent[]): IEventLogger {
   const log = (e: ILogEvent): Promise<void> => {
     eventCapture.push(e);

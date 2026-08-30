@@ -118,12 +118,7 @@ export interface ICliDelegateModelProviderOptions {
   probeVersion?: typeof probeDelegateVersion;
 }
 
-/**
- * Top-level `permission` block (not the agent-scoped shape
- * packages/session/src/opencode_permission_generator.ts uses for CliDelegateStrategy's
- * real file-editing delegate calls) — applies via OPENCODE_CONFIG with no --agent flag
- * needed, confirmed by a live probe.
- */
+/** Top-level `permission` block (distinct from the agent-scoped shape used by CliDelegateStrategy) — applies via OPENCODE_CONFIG with no --agent flag needed. */
 export interface IOpencodeReadOnlyPermissionConfig {
   permission: {
     read?: OpencodePermissionValue;
@@ -135,20 +130,7 @@ export interface IOpencodeReadOnlyPermissionConfig {
   };
 }
 
-/**
- * Build the env for a CLI-delegate subprocess via the SHARED child-env policy
- * (`@exaix/core/helpers/child_env.ts`), allowlist mode. GAP-14 (Phase 167
- * post-gap-analysis): the prior implementation was a 7-pattern denylist starting from
- * the daemon's FULL ambient environment, which forwarded any secret-shaped var the
- * denylist didn't happen to name (AWS/GitHub/Google/NPM/DB credentials, the SSH agent
- * socket, and this same daemon's own OPENROUTER_API_KEY). An allowlist is the only
- * model that stays safe as new secrets are added to the daemon's own environment over
- * time — consistent with packages/session/src/supervised_launch.ts:sanitizeChildEnv,
- * the Mode-3 session-delegate path's env builder for the identical threat (spawning
- * an untrusted headless CLI delegate). The shared policy additionally strips
- * dynamic-linker, interpreter-overlay and git env-config injection vars, and excludes
- * proxy vars, from every foreign-agent child.
- */
+/** Builds the CLI-delegate subprocess env via the shared allowlist-mode child-env policy — an allowlist, not a denylist, since a denylist can't be proven to never forward a newly-added secret-shaped var. */
 function buildDelegateEnv(): Record<string, string> {
   return buildAllowlistChildEnv({}, Deno.env.toObject());
 }
@@ -164,17 +146,7 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 
 const OPENCODE_PERMISSION_DENY = OpencodePermissionValueSchema.enum.deny;
 
-/**
- * Read-only config for plan-generation calls. edit/bash/task are denied and no
- * tools are explicitly allowed — opencode falls back to plain text mode (not
- * ReAct tool loop), so the model outputs a clean plan string instead of getting
- * confused by read-only tool permissions.
- *
- * Phase 155 Step 2 originally added read/grep/glob here to keep opencode in
- * ReAct mode, but that caused the model to see tools it could use, triggering
- * prose output instead of structured plans. Reverted: plan generation needs
- * text output, not tool interaction.
- */
+/** Read-only config for plan-generation calls: edit/bash/task denied, no tools allowed. Do not add read/grep/glob — that switches opencode into ReAct tool mode, producing prose instead of a plan string. */
 function buildOpencodeReadOnlyConfig(): IOpencodeReadOnlyPermissionConfig {
   return {
     permission: {
@@ -185,13 +157,7 @@ function buildOpencodeReadOnlyConfig(): IOpencodeReadOnlyPermissionConfig {
   };
 }
 
-/**
- * Written once per provider instance (not per call) — the config never changes. Written
- * under cwd (the daemon's own writable scope), not the OS tempdir: Deno.makeTempFile()
- * defaults there, and a daemon process only holds --allow-write for its sandbox/portal
- * tree — verified live: "Requires write access to <TMP>, run again with the --allow-write
- * flag" when this wrote outside cwd.
- */
+/** Written once per provider instance (not per call), under cwd not the OS tempdir — the daemon process only holds --allow-write for its sandbox/portal tree. */
 async function writeOpencodeReadOnlyConfig(cwd: string): Promise<string> {
   const dir = join(cwd, DEFAULT_RUNTIME_PATH, "tmp");
   await Deno.mkdir(dir, { recursive: true });
@@ -200,11 +166,8 @@ async function writeOpencodeReadOnlyConfig(cwd: string): Promise<string> {
   return path;
 }
 
-/**
- * Extract claude's top-level `session_id` field from a plain `--output-format json`
- * response (a single JSON object, not the stream-json event sequence
- * CliDelegateStrategy parses via cli_delegate_stream_parser.ts).
- */
+/** Extracts claude's top-level `session_id` from a plain `--output-format json` response
+ * (a single JSON object, not the stream-json event sequence cli_delegate_stream_parser.ts parses). */
 function extractClaudeSessionId(stdout: string): string | undefined {
   const trimmed = stdout.trim();
   if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return undefined;
@@ -216,14 +179,7 @@ function extractClaudeSessionId(stdout: string): string | undefined {
   }
 }
 
-/**
- * Extract opencode's top-level `sessionID` field from the first parseable JSONL
- * event line — every event carries it (verified via a live CLI probe, 2026-07-20).
- * Mirrors CliDelegateStrategy's extractOpencodeSessionId (packages/execution/src/
- * strategies/cli_delegate_strategy.ts) — kept as a local copy rather than shared,
- * matching that module's own precedent of extracting session ids outside
- * parseDelegateStdout's shared parsing contract.
- */
+/** Extracts opencode's top-level `sessionID` from the first parseable JSONL event line — every event carries it. Kept as a local copy rather than importing CliDelegateStrategy's identical helper. */
 function extractOpencodeSessionId(stdout: string): string | undefined {
   for (const line of stdout.trim().split("\n")) {
     if (!line.trim()) continue;
@@ -239,11 +195,8 @@ function extractOpencodeSessionId(stdout: string): string | undefined {
   return undefined;
 }
 
-/**
- * Extract codex's `thread_id` from its `thread.started` JSONL event line — documented as
- * the first line of `codex exec --json` output, but scanned like extractOpencodeSessionId
- * above rather than assumed, for the same defensive-parsing reason.
- */
+/** Extracts codex's `thread_id` from the `thread.started` JSONL event line — documented as
+ * line 1 of `codex exec --json` output but scanned defensively rather than assumed. */
 function extractCodexSessionId(stdout: string): string | undefined {
   for (const line of stdout.trim().split("\n")) {
     if (!line.trim()) continue;
@@ -262,11 +215,8 @@ function extractCodexSessionId(stdout: string): string | undefined {
   return undefined;
 }
 
-/**
- * Drives a headless claude/opencode CLI subprocess to satisfy IModelProvider.generate().
- * Not CliDelegateStrategy — this is the AI-layer provider consumed by RequestAnalyzer/
- * PlanWriter/any IModelProvider caller, not the per-plan-step execution strategy.
- */
+/** Drives a headless claude/opencode CLI subprocess to satisfy IModelProvider.generate().
+ * Distinct from CliDelegateStrategy: consumed by RequestAnalyzer/PlanWriter, not a per-plan-step execution strategy. */
 export class CliDelegateModelProvider implements IModelProvider {
   public readonly id: string;
   private readonly run: IRunCliDelegateProcess;
@@ -348,11 +298,9 @@ export class CliDelegateModelProvider implements IModelProvider {
     console.log(
       `[CliDelegateModelProvider] lastText preview: ${JSON.stringify((parsed.lastText ?? "").slice(0, 300))}`,
     );
-    // opencode's read-only planning calls (edit/bash/task denied above) have no real
-    // tool-calling to anchor their output, so a freehand plan JSON can use tool names
-    // outside McpToolName (see opencode_plan_schema_adapter.ts) — normalize before this
-    // reaches PlanAdapter/plan_schema.ts validation. No-op for claude/codex (not affected)
-    // and for any response that isn't a plan JSON object (adapter leaves it unchanged).
+    // opencode's read-only planning calls have no real tool-calling to anchor output, so a
+    // freehand plan JSON can use tool names outside McpToolName — normalize before PlanAdapter
+    // validation. No-op for claude/codex and for non-plan-JSON responses.
     const content = this.isTextPassthroughTool() ? parsed.lastText : adaptOpencodePlanJson(parsed.lastText).json;
     return {
       content,
@@ -437,31 +385,18 @@ export class CliDelegateModelProvider implements IModelProvider {
     ];
   }
 
-  /**
-   * Builds `codex exec --json --model <m> --sandbox read-only --skip-git-repo-check
-   * [resume <id>] [--output-schema <path>] <prompt>`. `--sandbox read-only` is always passed
-   * explicitly (Design Decisions — no confirmed CLI default to rely on instead).
-   * `--skip-git-repo-check` is always passed too: this provider spawns codex from
-   * `config.system.root` (the daemon's own data root), which is never a Git repository, and
-   * codex refuses to run outside a trusted/Git directory without this flag (live-verified,
-   * Phase 167 Step 3) — it only bypasses that precondition, not the sandbox permission model.
-   * `resume` and `--output-schema` cannot combine on one codex invocation (OpenAI docs) —
-   * resume continuity wins; the schema flag is dropped with a warning.
-   */
+  /** Builds `codex exec --json --sandbox read-only --skip-git-repo-check [resume] [--output-schema] <prompt>`.
+   * `--skip-git-repo-check` is required since this spawns codex from `config.system.root`, never a Git repo.
+   * `resume` and `--output-schema` cannot combine (OpenAI docs); resume wins, schema flag drops with a warning. */
   private buildCodexArgs(
     prompt: string,
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): string[] {
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
-    // codex 0.147.0's --output-schema requires OpenAI strict-mode output schemas
-    // (`additionalProperties: false` on every object, every property listed in `required`,
-    // and no anyOf/oneOf) — the zod-to-json-schema output Exaix passes does not satisfy
-    // that, so every such codex call exits 1 with `invalid_json_schema` (400), breaking
-    // plan/analysis generation (Phase 167 Step 4 live finding). Schema conformance is still
-    // enforced by the prompt's plan-instructions and by PlanAdapter validating the JSON
-    // extracted from <content> afterwards, so the flag is dropped for codex; claude-code's
-    // distinct --json-schema path is unaffected.
+    // codex 0.147.0's --output-schema requires OpenAI strict-mode schemas (no anyOf/oneOf, every
+    // property required) that Exaix's zod-to-json-schema output doesn't satisfy, causing
+    // `invalid_json_schema` (400). Dropped for codex; PlanAdapter enforces the shape instead.
     if (jsonSchema) {
       console.warn(
         `[CliDelegateModelProvider] codex --output-schema is dropped (codex requires strict-mode ` +

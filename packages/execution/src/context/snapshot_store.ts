@@ -39,9 +39,8 @@ const VALID_TRACE_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
 const VALID_STEP_ID_RE = /^[a-zA-Z0-9_-]{1,256}$/;
 
 /**
- * Writes snapshots to Memory/Execution/{traceId}/{stepId}_snapshot.json.
- * Uses atomic write (write to .tmp then rename) to prevent partial reads.
- * PathResolver enforces workspace root confinement for the full resolved path.
+ * Writes snapshots to Memory/Execution/{traceId}/{stepId}_snapshot.json via atomic
+ * write (temp file + rename); PathResolver confines the resolved path to the workspace root.
  */
 export class FileSnapshotStore implements ISnapshotStore {
   constructor(private readonly pathResolver: ISnapshotPathResolver) {}

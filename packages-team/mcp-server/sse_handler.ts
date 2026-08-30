@@ -21,10 +21,10 @@ const HEARTBEAT_INTERVAL_MS = 15_000;
 /** Default cap on concurrent SSE subscriptions, guarding against local DoS (Finding 13). */
 const DEFAULT_MAX_CONCURRENT_STREAMS = 64;
 
-/** Default per-client cap on concurrent SSE subscriptions (keyed by request Host), guarding against local DoS (Phase 170 sub-phase 2). */
+/** Default per-client cap on concurrent SSE subscriptions, keyed by request Host, guarding against local DoS. */
 const DEFAULT_MAX_STREAMS_PER_CLIENT = 8;
 
-/** Default idle-disconnect timeout: a stream that has received no non-heartbeat event for this long is closed to release its subscription and slot (Phase 170 sub-phase 2). */
+/** Default idle-disconnect timeout: a stream that has received no non-heartbeat event for this long is closed to release its subscription and slot. */
 const DEFAULT_IDLE_TIMEOUT_MS = 5 * 60_000;
 
 export class SseHandler {
@@ -38,10 +38,7 @@ export class SseHandler {
     private readonly idleTimeoutMs: number = DEFAULT_IDLE_TIMEOUT_MS,
   ) {}
 
-  /**
-   * Format an IStreamingEvent as a well-formed SSE text block.
-   * Output: id: <eventId>\nevent: <type>\ndata: <json>\n\n
-   */
+  /** Formats an IStreamingEvent as an SSE text block: `id: <eventId>\nevent: <type>\ndata: <json>\n\n`. */
   static formatSseEvent(event: IStreamingEvent): string {
     return `id: ${event.eventId}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
   }
@@ -53,30 +50,21 @@ export class SseHandler {
     return TRACE_STREAM_PATTERN.test(pathname);
   }
 
-  /**
-   * Extract the traceId segment from a matching path.
-   * Returns null if the path doesn't match the pattern.
-   */
+  /** Extracts the traceId segment from a matching path, or null if the path doesn't match. */
   static extractTraceId(pathname: string): string | null {
     const match = TRACE_STREAM_PATTERN.exec(pathname);
     return match ? match[1] : null;
   }
 
-  /**
-   * Validate a traceId string against the UUID schema.
-   * Returns false for any non-UUID value (security: OWASP A03).
-   */
+  /** Validates traceId against the UUID schema; false for any non-UUID value (OWASP A03). */
   static validateTraceId(raw: string): boolean {
     const result = ZStreamingEvent.shape.eventId.safeParse(raw);
     return result.success;
   }
 
   /**
-   * Handle an incoming HTTP request.
-   * - POST to stream endpoint → 405
-   * - Non-matching route → 404
-   * - Invalid traceId → 400
-   * - Valid GET → 200 text/event-stream with live subscription
+   * Handles an incoming HTTP request: 405 for POST to the stream endpoint, 404 for a
+   * non-matching route, 400 for an invalid traceId, 200 text/event-stream on success.
    */
   handleRequest(req: Request): Response {
     const url = new URL(req.url);
@@ -102,12 +90,7 @@ export class SseHandler {
     return this.streamEvents(rawTraceId, req);
   }
 
-  /**
-   * Bridge HTTP SSE to EventBusService.subscribe.
-   * Enforces a concurrent-stream cap plus a per-client (Host-keyed) cap and an
-   * idle-disconnect timeout (Phase 170 sub-phase 2), and unsubscribes on client
-   * disconnect (req.signal abort) or stream cancellation.
-   */
+  /** Bridges HTTP SSE to EventBusService.subscribe with per-client + global concurrency caps and an idle-disconnect timeout; unsubscribes on client disconnect or stream cancellation. */
   private streamEvents(traceId: string, req: Request): Response {
     // Cap concurrent subscriptions to guard against local DoS.
     if (this.activeStreams >= this.maxConcurrentStreams) {

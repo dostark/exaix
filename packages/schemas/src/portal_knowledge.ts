@@ -187,10 +187,7 @@ export const PortalKnowledgeSchema = z.object({
     buildTool: z.string().optional(),
   }),
 
-  /**
-   * Top-N exported symbols ranked by connectivity.
-   * Populated in `standard`/`deep` modes; empty array in `quick` mode.
-   */
+  /** Top-N exported symbols ranked by connectivity; empty in "quick" mode, populated in "standard"/"deep". */
   symbolMap: z.array(SymbolEntrySchema).default([]),
 
   /** Project statistics */

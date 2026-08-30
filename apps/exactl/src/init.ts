@@ -40,10 +40,9 @@ import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstr
 import { SoloComposer } from "@exaix/core/composer";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import type { IProviderHealthChecker } from "@exaix/ai";
-// Team modules are loaded dynamically ONLY inside the editionType !== "solo" branches
-// below, so a Solo build/binary never references @exaix-team/* at all (a static top-level
-// dependency would be bundled by `deno compile` even in Solo — defeating edition
-// separation). Type-only imports are erased at compile time and are safe to keep static.
+// Type-only imports are erased at compile time, so referencing @exaix-team/* types here is
+// safe even though a Solo build must never reference team modules at runtime — those load
+// dynamically only inside editionType !== "solo" branches below.
 import type { TeamComposer } from "@exaix-team/team-composer";
 import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
@@ -97,14 +96,7 @@ export function isTestMode(): boolean {
   return Deno.env.get("EXA_TEST_MODE") === "1" || Deno.args.includes("--test");
 }
 
-/**
- * Phase 135 Step 8 (§5.8.5): `models list --benchmark` advisory reader. The CLI process
- * otherwise holds only the Solo floor (no DB-backed live registry) — for Team editions
- * with the live registry enabled, construct a ModelRegistryService scoped to reads only
- * (this CLI process never refreshes/writes the catalog; that is the daemon's
- * RegistryRefreshScheduler). Dynamic import keeps @exaix-team/model-registry-live out of
- * the Solo build (edition separation).
- */
+/** `models list --benchmark` reader: Team-only, read-only registry access — refresh/write is the daemon's RegistryRefreshScheduler job; dynamic import keeps @exaix-team/model-registry-live out of the Solo build. */
 async function createBenchmarkReader(
   editionType: string,
   cfg: Config,
@@ -134,10 +126,9 @@ export async function initializeServices(
     const cfgService = new ConfigService(configPath);
     const cfg = cfgService.get();
 
-    // Dynamically import DatabaseService as the runtime code does
-    // Only import and instantiate DatabaseService if explicitly requested by caller.
-    // Importing the DB module may load native dynamic libraries during module initialization,
-    // which unit tests need to avoid unless they're prepared to close them.
+    // Only import/instantiate DatabaseService when explicitly requested: it may load native
+    // dynamic libraries during module initialization, which tests must avoid unless they're
+    // prepared to close them.
     let dbLocal: IDatabaseService;
     if (opts?.instantiateDb) {
       dbLocal = new DatabaseService(cfg);
@@ -235,8 +226,8 @@ export async function initializeServices(
       },
     });
 
-    // Phase 118: Create HITL policy evaluator if Team/Enterprise edition.
-    // Dynamic import keeps @exaix-team/hitl out of the Solo build (edition separation).
+    // Create HITL policy evaluator if Team/Enterprise edition. Dynamic import keeps
+    // @exaix-team/hitl out of the Solo build (edition separation).
     let hitlPolicyEvaluator: HitlPolicyEvaluator | undefined;
     if (editionType !== EDITION_SOLO && cfg.hitl?.enabled) {
       const { HitlPolicyEvaluator } = await import("@exaix-team/hitl");
@@ -248,10 +239,9 @@ export async function initializeServices(
       hitlPolicyEvaluator,
     });
 
-    // Phase 134 Step 6: Solo model registry floor for the model CLI (models
-    // list/pricing display + config-model curation validation). Created after
-    // bootstrapProviderRegistry() so ProviderRegistry is populated. The health
-    // checker mirrors the daemon pre-wiring stub (all providers reported healthy).
+    // Solo model registry floor for the model CLI (list/pricing display + config-model
+    // curation validation). Must be created after bootstrapProviderRegistry() so
+    // ProviderRegistry is populated; the health checker mirrors the daemon's stub.
     const modelRegistryHealthChecker: IProviderHealthChecker = {
       checkProvider: (_providerName: string) => Promise.resolve(true),
     };

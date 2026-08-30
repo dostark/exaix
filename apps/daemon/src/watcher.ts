@@ -65,20 +65,13 @@ export class FileWatcher {
     });
   }
 
-  /**
-   * Get the number of files currently being processed
-   * @returns Count of processing files
-   */
   public getProcessingFilesCount(): number {
     return this.processingFiles.size;
   }
 
   /**
-   * Establish the file-system watch and signal readiness. Returns once the watch is open and
-   * `watcher.started` has been journalled — NOT when watching ends. The consume-loop runs detached
-   * via `run()`, so callers awaiting `start()` know the watcher is genuinely listening (this lets
-   * the daemon emit `daemon.ready` only after every watcher is ready — no race window). To block
-   * until the watcher stops (e.g. to keep a process alive), await `run()` after `start()`.
+   * Resolves once the watch is open and `watcher.started` is journalled — NOT when watching
+   * ends. The consume-loop runs detached via `run()`; await `run()` after `start()` to block.
    */
   async start(): Promise<void> {
     this.abortController = new AbortController();
@@ -118,10 +111,7 @@ export class FileWatcher {
     this.runPromise = this.consume(watcher);
   }
 
-  /**
-   * Resolves when the watcher's consume-loop ends (on stop / abort). Await this to keep a
-   * long-lived process alive after start(). Safe to call before start() (resolves immediately).
-   */
+  /** Resolves when the consume-loop ends (on stop/abort). Safe to call before start(). */
   async run(): Promise<void> {
     await this.runPromise;
   }

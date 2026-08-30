@@ -20,17 +20,6 @@ import {
   REPRESENTATIVE_TOOL_CALLS,
 } from "./fixtures/golden_fixture_capture.ts";
 
-/**
- * Tests for  MCP Server Implementation
- *
- * Success Criteria (Phase 1 - Foundation):
- * - MCP server starts with stdio transport
- * - Server exposes metadata (name, version)
- * - Server handles initialize handshake
- * - Server gracefully stops
- * - All operations logged to IActivity Journal
- */
-
 Deno.test("MCP Server: initializes with stdio transport", async () => {
   const ctx = await initMCPTestWithoutPortal();
   try {
@@ -296,21 +285,15 @@ Deno.test("MCP Server: classifyError handles non-Error objects", async () => {
 });
 
 // ============================================================================
-// Step 2 (Phase 163): serveStdio + McpServer — official-SDK dispatch parity
+// serveStdio + McpServer — official-SDK dispatch parity
 // ============================================================================
 
 Deno.test(
   "[MCPServer SDK] serveStdio-served tools/list, resources/list, prompts/list, and representative tools/call responses match Step 1's golden fixture exactly",
   async () => {
-    // Uses the low-level `client.request(..., z.unknown())` escape hatch, not the typed
-    // `listTools()`/`callTool()` convenience methods: the official Client validates those
-    // against the STRICT spec content-block union (text/image/audio/resource/resource_link)
-    // and rejects Exaix's proprietary `exaix_structured_data` content type client-side —
-    // even though the server emits it correctly on the wire. This test verifies the
-    // server's real wire output (what Step 1's golden fixture also captured, via
-    // `server.handleRequest()` directly with no client-side validation at all), matching
-    // "byte-identical, not shape-only" without a strict client rejecting Exaix's own
-    // established, tested content extension. See buildSdkServer's Architecture Notes.
+    // Uses the low-level `client.request(..., z.unknown())` escape hatch, not
+    // `listTools()`/`callTool()`: those validate against the SDK's strict content-block union
+    // and would reject Exaix's proprietary `exaix_structured_data` type even though the server emits it correctly.
     const checkedIn = JSON.parse(await Deno.readTextFile(GOLDEN_FIXTURE_PATH)) as IGoldenFixtureCapture;
     const ctx = await initMCPTest({ initGit: true, fileContent: GOLDEN_FIXTURE_SEED_FILES });
     try {
@@ -347,15 +330,9 @@ Deno.test(
           { method: "tools/call", params: { name: spec.toolName, arguments: spec.args } },
           z.unknown(),
         );
-        // The checked-in fixture froze the pre-migration wire shape, where Exaix's
-        // proprietary `exaix_structured_data` content blocks (READ/list_directory,
-        // DOMAIN/exaix_list_plans) sat inline in `content`. The official SDK's
-        // `registerTool` rejects that content type server-side (no member in the spec's
-        // ContentBlock union) — `buildSdkServer` adapts it into the spec's own
-        // `structuredContent` field instead (see `toSdkCallToolResult`'s doc comment).
-        // Apply the identical adapter to the fixture's expected value so the comparison
-        // targets the same, now-necessarily-different-for-these-two-categories,
-        // spec-compliant shape rather than the frozen pre-adapter one.
+        // The checked-in fixture froze the pre-migration shape (proprietary `exaix_structured_data`
+        // blocks inline in `content`); the SDK rejects that server-side, so `buildSdkServer` adapts it
+        // into `structuredContent` instead — apply the same adapter to the fixture's expected value.
         const expected = toSdkCallToolResult(checkedIn.representativeToolCalls[category].result);
         assertEquals(
           JSON.parse(JSON.stringify(callResult)),
@@ -414,7 +391,7 @@ Deno.test("[MCPServer] exaix/tools/result_schema round-trips through the officia
 });
 
 // ============================================================================
-// Step 3 (Phase 163): Streamable HTTP transport — real-wire golden-fixture parity
+// Streamable HTTP transport — real-wire golden-fixture parity
 // ============================================================================
 
 Deno.test(

@@ -16,7 +16,7 @@
 
 import { MessageType } from "@exaix/core";
 import type { SplitDirection } from "@exaix/tui";
-import type { INotificationService, IPortalService } from "@exaix/core/types";
+import type { INotificationService, IPortalService, Opt, Reason } from "@exaix/core/types";
 import {
   TUI_DASHBOARD_ICONS,
   TUI_DASHBOARD_VIEW_PICKER_WIDTH,
@@ -54,8 +54,6 @@ import {
   splitPane as helperSplitPane,
   switchPane as helperSwitchPane,
 } from "@exaix/tui/layout/pane_manager.ts";
-import type { Opt, Reason } from "@exaix/core/types";
-
 // Type alias for convenience
 type Theme = ITuiTheme;
 
@@ -192,6 +190,7 @@ export interface ITuiDashboard {
 // Runtime-loaded TUI helpers are imported at module initialization so the dynamic
 // dependency is still tracked by the module graph while avoiding imports inside
 // nested statements.
+
 // style-exclude:PLUGINS - runtime TUI helper loaded on demand
 const handleKeyModulePromise = import("@exaix/tui/helpers/handle_key.ts");
 // style-exclude:PLUGINS - runtime TUI helper loaded on demand
@@ -664,10 +663,7 @@ function createTestDashboard(options: {
     config: options.config,
   });
   const portalView = views[0];
-  // If needed, check type at runtime:
-  // if (!(portalView instanceof PortalManagerView)) {
-  //   throw new Error("views[0] is not a PortalManagerView");
-  // }
+  // If needed, check at runtime that portalView is a PortalManagerView instance.
   const portalService = services.portalService;
 
   // Initialize with single pane
@@ -857,11 +853,7 @@ function createTestDashboard(options: {
   } as ITuiDashboard;
 }
 
-/**
- * Creates a production-mode dashboard with full TUI functionality.
- * This reduces the complexity of the main launchTuiDashboard function by extracting
- * all production-specific initialization and interactive loop logic.
- */
+/** Production-mode dashboard; extracted from launchTuiDashboard to keep that function's complexity down. */
 async function createProductionDashboard(options: {
   nonInteractive?: boolean;
   notificationService?: INotificationService;
@@ -944,7 +936,7 @@ async function createProductionDashboard(options: {
   const prodState: IDashboardViewState = createDefaultDashboardState();
 
   // Helper to add notification (accepts generic string to match helper signature)
-  const addNotification = async (message: string, type?: string) => {
+  const addNotification = async (message: string, type?: Opt<string, Reason.OptionalInput>) => {
     const t = type ?? MessageType.INFO;
     console.log(`[${t}] ${message}`);
     await Promise.resolve();
@@ -1007,10 +999,7 @@ async function createProductionDashboard(options: {
   return undefined;
 }
 
-/**
- * Runs the production interactive loop with raw mode or line-based input.
- * This extracts the complex interactive loop logic from the main function.
- */
+/** Interactive loop (raw-mode or line-based input); extracted from the main function to reduce its complexity. */
 async function runProductionInteractiveLoop(context: {
   panes: IPane[];
   activePaneId: { value: string };

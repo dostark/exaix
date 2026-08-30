@@ -7,9 +7,8 @@
  */
 
 import { KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
-// --- Imports for Phase 13.6 ---
 import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
-import type { AnalysisMode } from "@exaix/core/types";
+import type { AnalysisMode, Opt, Reason } from "@exaix/core/types";
 import { isRequestStatus, type RequestStatusType } from "@exaix/core/status";
 import {
   createGroupNode,
@@ -77,7 +76,7 @@ export interface IRequestViewState {
  */
 export type InternalRequestAction = RequestOperation;
 
-// --- Phase 13.6: Visual constants ---
+// --- Visual constants ---
 export const PRIORITY_ICONS: Record<string, string> = {
   [RequestPriority.CRITICAL]: TUI_PRIORITY_ICONS.critical,
   [RequestPriority.HIGH]: TUI_PRIORITY_ICONS.high,
@@ -105,7 +104,7 @@ export const STATUS_COLORS: Record<string, string> = {
   [RequestStatus.ANALYZING]: "magenta",
 };
 
-// --- Phase 13.6: Key bindings ---
+// --- Key bindings ---
 
 export enum RequestAction {
   NAVIGATE_UP = "navigate-up",
@@ -240,7 +239,10 @@ export const REQUEST_KEY_BINDINGS = new RequestKeyBindings().KEY_BINDINGS;
  */
 export class MinimalRequestServiceMock implements IRequestService {
   constructor(private requests: IRequest[] = []) {}
-  listRequests(_status?: RequestStatusType, _includeArchived?: boolean): Promise<IRequest[]> {
+  listRequests(
+    _status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    _includeArchived?: Opt<boolean, Reason.QueryFilter>,
+  ): Promise<IRequest[]> {
     return Promise.resolve(this.requests);
   }
   getRequestContent(_: string): Promise<string> {
@@ -251,18 +253,22 @@ export class MinimalRequestServiceMock implements IRequestService {
   }
   analyze(
     _: string,
-    _options?: { mode?: AnalysisMode; force?: boolean },
+    _options?: Opt<{ mode?: AnalysisMode; force?: boolean }, Reason.OptionalInput>,
   ): Promise<IRequestAnalysis> {
     return Promise.resolve({} as IRequestAnalysis);
   }
-  createRequest(_: string, __?: IRequestOptions): Promise<IRequest> {
+  createRequest(_: string, __?: Opt<IRequestOptions, Reason.OptionalInput>): Promise<IRequest> {
     return Promise.resolve({} as IRequest);
   }
   updateRequestStatus(_requestId: string, _status: RequestStatusType): Promise<boolean> {
     return Promise.resolve(true);
   }
 
-  create(description: string, options?: IRequestOptions, _source?: RequestSource): Promise<IRequestMetadata> {
+  create(
+    description: string,
+    options?: Opt<IRequestOptions, Reason.OptionalInput>,
+    _source?: Opt<RequestSource, Reason.OptionalInput>,
+  ): Promise<IRequestMetadata> {
     return Promise.resolve({
       trace_id: "new-request",
       path: "request-1.md",
@@ -277,7 +283,7 @@ export class MinimalRequestServiceMock implements IRequestService {
     } as IRequestMetadata);
   }
 
-  async list(status?: RequestStatusType): Promise<IRequest[]> {
+  async list(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequest[]> {
     return await this.listRequests(status);
   }
 
@@ -291,11 +297,7 @@ export class MinimalRequestServiceMock implements IRequestService {
   }
 }
 
-// --- Phase 13.6: Enhanced TUI Session ---
-/**
- * Enhanced TUI session for Request Manager.
- * Features: tree view, grouping, detail panel, search/filter, help screen.
- */
+/** Enhanced TUI session for Request Manager: tree view, grouping, detail panel, search/filter, help screen. */
 export class RequestManagerTuiSession extends TuiSessionBase {
   // Enhanced state
   protected state: IRequestViewState;
@@ -358,20 +360,14 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     return helperIsGroupNode(this.state.requestTree, id);
   }
 
-  /**
-   * Get the index of the currently selected request (for backwards compatibility).
-   * Returns the index in the requests array, or 0 if nothing selected.
-   */
+  /** Index of the selected request in `requests`, or 0 if none selected (back-compat with array-based selection). */
   getSelectedIndexInRequests(): number {
     if (!this.state.selectedRequestId) return 0;
     const idx = this.requests.findIndex((r) => r.trace_id === this.state.selectedRequestId);
     return idx >= 0 ? idx : 0;
   }
 
-  /**
-   * Set selection by index (for backwards compatibility).
-   * Selects the request at the given index in the requests array.
-   */
+  /** Selects the request at `idx` in `requests` (back-compat with array-based selection). */
   setSelectedByIndex(idx: number): void {
     if (idx >= 0 && idx < this.requests.length) {
       this.state.selectedRequestId = this.requests[idx].trace_id;
@@ -598,7 +594,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   }
 
   private formatDetailContent(
-    request: IRequest | undefined,
+    request: Opt<IRequest, Reason.OptionalContext>,
     content: string,
     analysis: IRequestAnalysis | null,
   ): string {
@@ -749,10 +745,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     }
   }
 
-  /**
-   * Handle completed dialogs (delegated from handleKey).
-   * Extracted to keep handleKey concise and improve testability.
-   */
+  /** Handles completed dialogs (delegated from handleKey) — extracted for testability. */
   private async processDialogCompletion(
     dialog: InputDialog | ConfirmDialog | null,
     dialogType: RequestDialogTypeUnion,
@@ -1020,17 +1013,12 @@ export class RequestManagerTuiSession extends TuiSessionBase {
 
 // --- Legacy TUI Session (backwards compatibility) ---
 /**
- * Legacy TUI session for Request Manager. Encapsulates state and user interaction logic.
- * @deprecated Use RequestManagerTuiSession instead
+ * Legacy TUI session for Request Manager.
+ * @deprecated Use RequestManagerTuiSession instead.
  */
 export class LegacyRequestManagerTuiSession {
   private selectedIndex = 0;
   private statusMessage = "";
-
-  /**
-   * @param requests Initial list of requests
-   * @param service Service for request operations
-   */
   constructor(private readonly requests: IRequest[], private readonly service: IRequestService) {}
 
   /** Get the currently selected request index. */
@@ -1080,10 +1068,6 @@ export class LegacyRequestManagerTuiSession {
     }
   }
 
-  /**
-   * Trigger a request action and update status.
-   * @param action Action to perform
-   */
   async #triggerAction(action: InternalRequestAction) {
     try {
       switch (action) {
@@ -1143,7 +1127,7 @@ export class RequestManagerView implements IRequestService {
     return new RequestManagerTuiSession(requests, this.service);
   }
 
-  listRequests(status?: RequestStatusType): Promise<IRequest[]> {
+  listRequests(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequest[]> {
     return this.service.listRequests(status);
   }
 
@@ -1157,12 +1141,12 @@ export class RequestManagerView implements IRequestService {
 
   analyze(
     requestId: string,
-    options?: { mode?: AnalysisMode; force?: boolean },
+    options?: Opt<{ mode?: AnalysisMode; force?: boolean }, Reason.OptionalInput>,
   ): Promise<IRequestAnalysis> {
     return this.service.analyze(requestId, options);
   }
 
-  createRequest(description: string, options?: IRequestOptions): Promise<IRequest> {
+  createRequest(description: string, options?: Opt<IRequestOptions, Reason.OptionalInput>): Promise<IRequest> {
     return this.service.createRequest(description, options);
   }
 
@@ -1170,11 +1154,15 @@ export class RequestManagerView implements IRequestService {
     return this.service.updateRequestStatus(requestId, status);
   }
 
-  create(description: string, options?: IRequestOptions, source?: RequestSource): Promise<IRequestMetadata> {
+  create(
+    description: string,
+    options?: Opt<IRequestOptions, Reason.OptionalInput>,
+    source?: Opt<RequestSource, Reason.OptionalInput>,
+  ): Promise<IRequestMetadata> {
     return this.service.create(description, options, source);
   }
 
-  list(status?: RequestStatusType): Promise<IRequest[]> {
+  list(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<IRequest[]> {
     return this.service.list(status);
   }
 

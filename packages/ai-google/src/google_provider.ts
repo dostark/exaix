@@ -65,10 +65,9 @@ const GOOGLE_FUNCTION_CALLING_MODE_AUTO = "AUTO";
 const GOOGLE_FUNCTION_CALLING_MODE_ANY = "ANY";
 const GOOGLE_FUNCTION_CALLING_MODE_NONE = "NONE";
 
-/** Map IToolChoice to Gemini's wire-format toolConfig per the Phase 153 mapping table.
- *  `disable_parallel_tool_use` has no documented Gemini API equivalent; the field is
- *  accepted on IToolChoice but has no effect for Google in this phase (Pre-Gap Analysis
- *  GAP-1). */
+/**
+ * Maps tool choice to Gemini; parallel-tool disabling has no API equivalent.
+ */
 function mapToolChoiceGoogle(choice: IToolChoice): GoogleToolConfig {
   switch (choice.type) {
     case "auto":
@@ -108,19 +107,14 @@ export class GoogleProvider extends BaseProvider {
     const endpoint = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
 
     const contents: GoogleContent[] = [];
-    // Gemini requires a conversation to lead with a user turn: a model `functionCall` whose
-    // preceding turn is not a user turn is rejected with an HTTP 400 ("function call turn
-    // must come immediately after a user turn or after a function response turn") — GAP-153-E.
-    // Push the user text first, then the prior functionCall/functionResponse pair, so the
-    // model turn has an immediately-prior user counterpart and the alternation is preserved.
+    // Gemini requires a user turn immediately before a model functionCall.
+    // Lead with the prompt, then replay the prior functionCall/functionResponse pair.
     contents.push({ role: "user", parts: [{ text: prompt }] });
     if (options?.priorTurn) {
       const priorTurn = options.priorTurn;
       contents.push({
         role: "model",
-        // GAP-153-E: Gemini requires replaying the original thought_signature on a replayed
-        // functionCall — without it the API returns an HTTP 400 ("Function call is missing
-        // a thought_signature in functionCall parts").
+        // Gemini requires replaying the original thought_signature on a replayed functionCall.
         parts: [{
           functionCall: {
             name: priorTurn.toolName,

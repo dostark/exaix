@@ -256,7 +256,7 @@ Deno.test("[configuring] createConfigAdapter returns DirectConfigAdapter when no
   }
 });
 
-// ── Step 15 (GAP-21): createConfigAdapterAsync verifies process liveness ──────
+// ── createConfigAdapterAsync verifies process liveness ──────────────────────
 
 Deno.test("[configuring] createConfigAdapterAsync returns DirectConfigAdapter for a STALE pid", async () => {
   const dir = Deno.makeTempDirSync({ prefix: "daemon-adapter-stale-" });
@@ -309,7 +309,7 @@ Deno.test("[configuring] createConfigAdapterAsync returns DaemonConfigAdapter fo
   }
 });
 
-// ── Phase 139 Step 4 (GAP-1): the daemon set() override runs assertWritable ──
+// ── the daemon set() override runs assertWritable ─────────────────────────
 
 Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for a locked key", async () => {
   const { adapter, dir, db } = setupDaemonAdapter();
@@ -341,7 +341,7 @@ Deno.test("[configuring] DaemonConfigAdapter.set refuses a locked key via a prof
   }
 });
 
-// ── Phase 139 Step 5 (GAP-6): the daemon checksum reads the DB, not the store ─
+// ── the daemon checksum reads the DB, not the store ────────────────────────
 
 Deno.test("[configuring] DaemonConfigAdapter.verifyIntegrity detects a raw db.prepare write", async () => {
   const { adapter, dir, db } = setupDaemonAdapter();
@@ -349,10 +349,9 @@ Deno.test("[configuring] DaemonConfigAdapter.verifyIntegrity detects a raw db.pr
     // Seed the checksum from the current DB state.
     const seeded = await adapter.verifyIntegrity();
     assertEquals(seeded.ok, true);
-    // Mutate the DB directly (not the store, not the adapter). Because
-    // computeIntegrityChecksum() reads getAllEffectiveValues(this.db) — never
-    // the store — this out-of-band edit must be detected as a mismatch. If the
-    // checksum hashed the store instead, this would silently pass.
+    // Mutate the DB directly (bypassing store/adapter). computeIntegrityChecksum() reads
+    // getAllEffectiveValues(this.db), never the store, so this out-of-band edit must be
+    // detected as a mismatch.
     db.prepare(
       "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, ?, ?, ?)",
     ).run("daemon_test.timeout_ms", "77777", "manual", "hot");

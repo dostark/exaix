@@ -31,16 +31,10 @@ export interface ICommand<T = void> {
   name: string;
   description: string;
 
-  /**
-   * Execute the command with the given arguments.
-   * @param args Command arguments
-   */
+  /** Execute the command with the given arguments. */
   execute(args: ICommandArgs): Promise<T>;
 
-  /**
-   * Validate the command arguments.
-   * @param args Command arguments
-   */
+  /** Validate the command arguments. */
   validate(args: ICommandArgs): IValidationResult;
 }
 

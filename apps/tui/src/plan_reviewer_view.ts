@@ -6,7 +6,7 @@
  * @related-files [@exaix/core/planning, apps/tui/src/tui_dashboard.ts]
  */
 
-import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
+import type { IPlanDetails, IPlanMetadata, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_UNKNOWN_LABEL, DialogStatus } from "@exaix/core";
 import { TUI_ACTION_SEARCH, TUI_ELEMENT_ACTION_BUTTONS, TUI_LABEL_CANCEL } from "@exaix/tui/helpers/constants.ts";
 import type { IPlanService } from "@exaix/core/types";
@@ -22,11 +22,7 @@ import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/k
 
 export type IPlan = IPlanMetadata;
 
-/**
- * Plan-specific state extensions beyond BaseTreeView
- * BaseTreeView provides: selectedId, tree, filterText, isLoading, loadingMessage,
- * showHelp, activeDialog, useColors, spinnerFrame, lastRefresh, scrollOffset
- */
+/** Plan-specific state extensions beyond BaseTreeView's selection/filter/dialog fields. */
 export interface IPlanViewExtensions {
   /** Show diff view */
   showDiff: boolean;
@@ -551,7 +547,7 @@ export class PlanReviewerView {
     return await this.service.approve(planId, reviewer);
   }
 
-  async reject(planId: string, reviewer: string, reason?: string): Promise<boolean> {
+  async reject(planId: string, reviewer: string, reason?: Opt<string, Reason.OptionalInput>): Promise<boolean> {
     return await this.service.reject(planId, reviewer, reason);
   }
 
@@ -589,7 +585,7 @@ export class DbLikePlanServiceAdapter implements IPlanService {
     });
     return true;
   }
-  async reject(planId: string, reviewer: string, reason?: string): Promise<boolean> {
+  async reject(planId: string, reviewer: string, reason?: Opt<string, Reason.OptionalInput>): Promise<boolean> {
     await this.db.updatePlanStatus(planId, PlanStatus.REJECTED);
     await this.db.logActivity({
       action_type: "plan.reject",
@@ -603,7 +599,7 @@ export class DbLikePlanServiceAdapter implements IPlanService {
   revise(_planId: string, _comments: string[]): Promise<void> {
     return Promise.resolve();
   }
-  list(_status?: PlanStatusType): Promise<IPlan[]> {
+  list(_status?: Opt<PlanStatusType, Reason.QueryFilter>): Promise<IPlan[]> {
     return this.listPending();
   }
   async show(planId: string): Promise<IPlanDetails> {
@@ -638,13 +634,13 @@ export class MinimalPlanServiceMock implements IPlanService {
   async approve(_planId: string, _reviewer: string): Promise<boolean> {
     return await Promise.resolve(true);
   }
-  async reject(_planId: string, _reviewer: string, _reason?: string): Promise<boolean> {
+  async reject(_planId: string, _reviewer: string, _reason?: Opt<string, Reason.OptionalInput>): Promise<boolean> {
     return await Promise.resolve(true);
   }
   revise(_planId: string, _comments: string[]): Promise<void> {
     return Promise.resolve();
   }
-  list(_status?: PlanStatusType): Promise<IPlan[]> {
+  list(_status?: Opt<PlanStatusType, Reason.QueryFilter>): Promise<IPlan[]> {
     return Promise.resolve(this.plans);
   }
   show(planId: string): Promise<IPlanDetails> {

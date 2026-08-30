@@ -107,10 +107,7 @@ export class CapabilityMatcher {
     };
   }
 
-  /**
-   * Score how well a blueprint's description/routing_hint matches the request text.
-   * Uses simple word overlap: shared unique words / total unique words in both.
-   */
+  /** Scores word overlap between request text and blueprint description/routing_hint. */
   private computeTextScore(
     requestText: string,
     description: string,
@@ -133,14 +130,7 @@ export class CapabilityMatcher {
     return overlapCount / textTokens.size;
   }
 
-  /**
-   * Fallback selection when no blueprint matches criteria exactly.
-   * Returns the closest-matching blueprint rather than throwing.
-   * Scores all blueprints by capability overlap and returns the best,
-   * or null if the list is empty.
-   * When requestText is available, boosts candidates whose description
-   * or routing_hint matches the request text (Phase 131 Step 8).
-   */
+  /** Selects closest blueprint by capability overlap and text score when no exact match exists. */
   fallback(
     blueprints: ILoadedBlueprint[],
     criteria: IRoutingMatchCriteria,

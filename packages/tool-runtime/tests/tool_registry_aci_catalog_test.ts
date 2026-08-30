@@ -14,8 +14,8 @@ import { AciDocSchema } from "@exaix/schemas";
 import { ToolSideEffectScope } from "@exaix/core";
 import { createCoreToolSchemas, renderAciDocFragments, validateAciExampleAgainstSchema } from "@exaix/tool-runtime";
 
-/** Canonical side-effect scope per Step 4's Actions: NONE for read/search/list/grep/git-info;
- * PORTAL for file/directory mutation; NETWORK for fetch_url; SYSTEM for run_command/deno_task. */
+/** Canonical side-effect scopes: NONE for read/search/list/grep/git-info;
+ * PORTAL for mutation; NETWORK for fetch_url; SYSTEM for run_command/deno_task. */
 const EXPECTED_SCOPES: Record<string, ToolSideEffectScope> = {
   read_file: ToolSideEffectScope.NONE,
   write_file: ToolSideEffectScope.PORTAL,

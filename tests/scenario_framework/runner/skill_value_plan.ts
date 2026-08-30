@@ -27,9 +27,7 @@ export interface IFullTrialCandidate {
 }
 
 /**
- * Ranks screening results by absolute mean delta, descending, and takes the top N as
- * "ranked" candidates. Every critical skill id not already selected is appended as a
- * "critical" candidate, whether or not it had a screening result at all.
+ * Ranks screening results by absolute mean delta and takes the top N as "ranked"; every critical skill id not already selected is appended as "critical" regardless of screening.
  */
 export function planFullTrials(
   screening: IScreeningResult[],

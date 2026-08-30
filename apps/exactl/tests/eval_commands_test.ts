@@ -11,13 +11,9 @@ import { fromFileUrl, join } from "@std/path";
 import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
-// history({}) resolves its history paths (JSONL dir and the SQLite eval.db
-// fallback) relative to Deno.cwd(), not the test's tempDir — chdir into
-// tempDir for the duration of each history test so real repo-root eval
-// history (e.g. from live scenario runs) can't leak into these assertions.
-// Anchored to the repo root (not Deno.cwd()): `deno test --parallel` shares one
-// process cwd across worker threads, so a module-load Deno.cwd() can capture
-// another worker's soon-deleted tempdir and the restore chdir would then ENOENT.
+// history({}) resolves paths relative to Deno.cwd(), not tempDir, so tests chdir into
+// tempDir for the duration of each history test. ORIGINAL_CWD is anchored to the repo root
+// (not a module-load Deno.cwd()) because `deno test --parallel` shares cwd across workers.
 const ORIGINAL_CWD = fromFileUrl(new URL("../../..", import.meta.url));
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}

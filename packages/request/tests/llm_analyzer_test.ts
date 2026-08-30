@@ -217,10 +217,6 @@ Deno.test({
   },
 });
 
-// ---------------------------------------------------------------------------
-// Step 21: Prompt template references new field names
-// ---------------------------------------------------------------------------
-
 Deno.test("[LlmAnalyzer] prompt template references type, interpretations, and clarificationQuestion", async () => {
   const { provider, capturedPrompt } = createCapturingProvider(validAnalysisJson);
   const validator = createOutputValidator({ autoRepair: false });
@@ -232,10 +228,6 @@ Deno.test("[LlmAnalyzer] prompt template references type, interpretations, and c
   assertStringIncludes(capturedPrompt(), "interpretations");
   assertStringIncludes(capturedPrompt(), "clarificationQuestion");
 });
-
-// ---------------------------------------------------------------------------
-// Step 25: analyzerVersion in output metadata
-// ---------------------------------------------------------------------------
 
 Deno.test("[LlmAnalyzer] output includes analyzerVersion in metadata", async () => {
   const provider = new MockProvider(validAnalysisJson);

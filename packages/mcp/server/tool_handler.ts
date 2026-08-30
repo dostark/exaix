@@ -21,8 +21,7 @@ import type { JSONValue } from "@exaix/core";
 import type { IGitService } from "@exaix/core/types";
 
 /**
- * Base class for all MCP tool handlers
- * Provides common validation and logging functionality
+ * Base class for all MCP tool handlers; provides common validation and logging.
  * @visible
  */
 export abstract class ToolHandler {
@@ -42,11 +41,7 @@ export abstract class ToolHandler {
     this.permissions = permissions || null;
   }
 
-  /**
-   * Returns a read-only journal reader backed by the application database.
-   * Subclasses that need to query the activity journal should call this method
-   * rather than accessing a database service directly.
-   */
+  /** Returns a read-only journal reader backed by the application database; subclasses should use this rather than accessing the DB service directly. */
   protected getJournalReader(): IEventJournalReader {
     const db = this.context.db;
     return {
@@ -57,10 +52,7 @@ export abstract class ToolHandler {
     } as IEventJournalReader;
   }
 
-  /**
-   * Validates that a portal exists in configuration
-   * @throws Error if portal not found
-   */
+  /** Validates that a portal exists in configuration; throws if not found. */
   protected validatePortalExists(portalName: string): string {
     const portal = this.config.portals.find((p) => p.alias === portalName);
     if (!portal) {
@@ -69,10 +61,7 @@ export abstract class ToolHandler {
     return portal.target_path;
   }
 
-  /**
-   * Validates that an agent has permission for an operation on a portal
-   * @throws Error if permission denied
-   */
+  /** Validates that an agent has permission for an operation on a portal; throws if denied. */
   protected validatePermission(
     portalName: string,
     identityId: string,
@@ -90,10 +79,7 @@ export abstract class ToolHandler {
     }
   }
 
-  /**
-   * Validates path doesn't contain traversal attempts (../)
-   * @throws Error if path traversal detected
-   */
+  /** Validates path doesn't contain traversal attempts (../); throws if detected. */
   protected validatePathSafety(path: string): void {
     const normalized = normalize(path);
     if (normalized.includes("..") || normalized.startsWith("/")) {
@@ -102,14 +88,8 @@ export abstract class ToolHandler {
   }
 
   /**
-   * Resolves a portal-relative path to an absolute filesystem path, enforcing
-   * that the resolved path stays within the portal.
-   *
-   * Security (Finding 3): resolution is realpath-based via
-   * {@link PathSecurity.resolveWithinRoots} — symlinks (including the portal root
-   * itself) are resolved before the boundary check, so an in-portal symlink that
-   * points outside the portal is rejected. String-only `..` checks are insufficient
-   * because they never follow symlinks.
+   * Resolves a portal-relative path to an absolute path confined to the portal, via realpath-based
+   * resolution ({@link PathSecurity.resolveWithinRoots}) so an in-portal symlink escaping the portal is rejected.
    */
   protected async resolvePortalPath(portalPath: string, relativePath: string): Promise<string> {
     this.validatePathSafety(relativePath);
@@ -132,10 +112,7 @@ export abstract class ToolHandler {
     void this.logger.info(DomainEventType.McpToolExecuted, toolName, { ...metadata, portal });
   }
 
-  /**
-   * Formats a successful tool response with logging.
-   * Passes content blocks through directly to the agent.
-   */
+  /** Formats a successful tool response with logging; passes content blocks through directly to the agent. */
   protected formatSuccess(
     toolName: string,
     portal: string,
@@ -148,9 +125,8 @@ export abstract class ToolHandler {
   }
 
   /**
-   * Returns a structured tool-logic error response with isError:true (does not throw).
-   * Use for tool-logic failures (permission denied, not found, execution failed).
-   * Reserve throws for unrecoverable protocol-level server errors.
+   * Returns a structured tool-logic error response with isError:true (does not throw); use for
+   * tool-logic failures. Reserve throws for unrecoverable protocol-level server errors.
    */
   protected formatToolError(
     toolName: string,
@@ -175,10 +151,7 @@ export abstract class ToolHandler {
     };
   }
 
-  /**
-   * Formats a protocol-level error with logging and re-throws.
-   * Use only for unrecoverable server failures, not tool-logic errors.
-   */
+  /** Formats a protocol-level error with logging and re-throws; use only for unrecoverable server failures, not tool-logic errors. */
   protected formatError(
     toolName: string,
     portal: string,
@@ -194,10 +167,7 @@ export abstract class ToolHandler {
     throw error;
   }
 
-  /**
-   * Validates that a portal has a git repository
-   * @throws Error if .git directory doesn't exist
-   */
+  /** Validates that a portal has a git repository; throws if .git doesn't exist. */
   protected async validateGitRepository(portalPath: string, portalName: string): Promise<void> {
     try {
       await Deno.stat(join(portalPath, ".git"));
@@ -207,9 +177,8 @@ export abstract class ToolHandler {
   }
 
   /**
-   * Returns a per-portal IGitService instance from context.gitServiceFactory.
-   * Throws an explicit, documented error when the factory is absent — the same
-   * detectable failure mode Phase 142 proved for a missing ToolRegistry.
+   * Returns a per-portal IGitService instance from context.gitServiceFactory; throws an
+   * explicit error when the factory is absent, rather than failing implicitly downstream.
    */
   protected resolveGitService(portalPath: string): IGitService {
     const factory = this.context.gitServiceFactory;
@@ -225,10 +194,6 @@ export abstract class ToolHandler {
     return factory.createGitService(portalPath, `mcp:${portalPath}`);
   }
 
-  /**
-   * Execute the tool with validated arguments
-   * Implemented by subclasses
-   */
   abstract execute(args: Record<string, JSONValue>): Promise<MCPToolResponse>;
 
   /**

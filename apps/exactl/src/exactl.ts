@@ -142,8 +142,8 @@ const memoryCommands = new MemoryCommands(fullContext);
 const watchCommandInstance = new WatchCommand(fullContext);
 const waitStateCommands = new WaitStateCommands(fullContext);
 const evalCommands = new EvalCommands(fullContext);
-// Phase 134 Step 6: Solo model curation CLI. Reads the model registry floor for
-// display and writes curated lists to exa.config.toml (the resolver's read surface).
+// Solo model curation CLI. Reads the model registry floor for display and writes
+// curated lists to exa.config.toml (the resolver's read surface).
 const modelCommands = new ModelCommands(
   fullContext.modelRegistry ??
     new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) }),
@@ -202,8 +202,6 @@ export function __test_getContext(): {
 
 export type ExaCtlTestContext = ReturnType<typeof __test_getContext>;
 
-// Test helper: initialize the heavy services path (same logic used in non-test runtime)
-// Returns an object describing whether initialization succeeded and the constructed services.
 // Test helper: initialize the heavy services path (same logic used in non-test runtime)
 // Returns an object describing whether initialization succeeded and the constructed services.
 export function __test_initializeServices(
@@ -1309,7 +1307,7 @@ export const __test_command = new Command()
             }
           }),
       )
-      // Phase 139 Step 2: append-only override history (read-only audit).
+      // Append-only override history (read-only audit).
       .command(
         "history <path>",
         new Command()
@@ -1334,7 +1332,7 @@ export const __test_command = new Command()
             }
           }),
       )
-      // Phase 139 Step 3: revert a key to a historical value (append rollback row).
+      // Revert a key to a historical value (append rollback row).
       .command(
         "rollback <path> <id>",
         new Command()
@@ -1352,7 +1350,7 @@ export const __test_command = new Command()
             }
           }),
       )
-      // Phase 139 Step 4: per-key write lock (refused by adapter.set across surfaces).
+      // Per-key write lock (refused by adapter.set across surfaces).
       .command(
         "lock <path>",
         new Command()
@@ -1405,8 +1403,8 @@ export const __test_command = new Command()
             }
           }),
       )
-      // Phase 139 Step 6: open the current overrides in $EDITOR; changed lines
-      // are applied through adapter.set() (lock + validation funnel preserved).
+      // Open the current overrides in $EDITOR; changed lines are applied through
+      // adapter.set() (lock + validation funnel preserved).
       .command(
         "edit",
         new Command()
@@ -1423,7 +1421,7 @@ export const __test_command = new Command()
             }
           }),
       )
-      // Phase 138 Step 2: MCP deny-permanently blocklist management.
+      // MCP deny-permanently blocklist management.
       .command(
         "block",
         new Command()
@@ -1481,7 +1479,7 @@ export const __test_command = new Command()
               }),
           ),
       )
-      // Phase 138 Step 3: compaction recovery (hard-limit escape hatch).
+      // Compaction recovery (hard-limit escape hatch).
       .command(
         "compact",
         new Command()
@@ -1644,7 +1642,7 @@ export const __test_command = new Command()
             }
           }),
       )
-      // Phase 134 Step 6: Solo curation of per-size candidate lists (model_presets).
+      // Solo curation of per-size candidate lists (model_presets).
       .command(
         "model",
         new Command()
@@ -1926,7 +1924,7 @@ export const __test_command = new Command()
           },
         ),
       )
-      // Phase 53: identity subcommands (canonical) with agent as deprecated aliases
+      // identity subcommands (canonical) with agent as deprecated aliases
       .command(
         "identity",
         new Command()
@@ -2416,7 +2414,7 @@ export const __test_command = new Command()
               }),
           ),
       )
-      // Phase 17: Skill commands
+      // Skill commands
       .command(
         "skill",
         new Command()
@@ -2645,7 +2643,7 @@ __test_command.command("logs", logsCommand);
 __test_command.command("journal", journalCommand);
 
 // ---------------------------------------------------------------------------
-// models subcommand (Phase 134 Step 6 — Solo model registry display)
+// models subcommand (Solo model registry display)
 // ---------------------------------------------------------------------------
 
 const modelsCommand = new Command()
@@ -2776,7 +2774,7 @@ function parseSemVerSegments(v: string): { major: number; minor: number; patch: 
 __test_command.command("version", versionCommand);
 
 // ---------------------------------------------------------------------------
-// migrate subcommand (Step 6)
+// migrate subcommand
 // ---------------------------------------------------------------------------
 
 const migrateCommand = new Command()
@@ -2795,7 +2793,7 @@ const migrateCommand = new Command()
 __test_command.command("migrate", migrateCommand);
 
 // ---------------------------------------------------------------------------
-// tool subcommand (Phase 79: Tool Confirmation CLI)
+// tool subcommand (Tool Confirmation CLI)
 // ---------------------------------------------------------------------------
 
 const toolCommand = new Command()

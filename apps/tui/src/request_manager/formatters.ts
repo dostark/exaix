@@ -13,7 +13,7 @@ import {
   TUI_LAYOUT_VALUE_WIDTH,
   TUI_MSG_PRESS_QUIT,
 } from "@exaix/tui/helpers/constants.ts";
-import type { IRequest } from "@exaix/core/types";
+import type { IRequest, Opt, Reason } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 
 /**
@@ -186,7 +186,7 @@ export class RequestFormatter {
    * Format complete request detail content
    */
   static formatDetailContent(
-    request: IRequest | undefined,
+    request: Opt<IRequest, Reason.OptionalContext>,
     content: string,
     analysis: IRequestAnalysis | null = null,
   ): string {
@@ -197,7 +197,7 @@ export class RequestFormatter {
       ...this.formatSkillsSection(request),
     ];
 
-    // Analysis section (Phase 45.13)
+    // Analysis section
     if (analysis) {
       lines.push(...this.formatAnalysisSection(analysis));
     }

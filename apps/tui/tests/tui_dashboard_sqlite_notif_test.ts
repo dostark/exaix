@@ -22,14 +22,13 @@ Deno.test("TUI Dashboard + SQLite: handles notification service integration", as
   const { dashboard, notificationService, cleanup } = await createTuiDashboardWithNotification();
 
   try {
-    // Phase 1: Verify NotificationService is integrated
-    // This will initially fail if launchTuiDashboard doesn't accept or store the service
+    // Verifies NotificationService is integrated with the dashboard.
     assertEquals(dashboard.notificationService, notificationService);
 
-    // Phase 1: Verify in-memory notifications are gone
+    // Verify in-memory notifications are gone
     // assertEquals((dashboard.state as { notifications?: any }).notifications, undefined); // Type check confirms this
 
-    // Phase 1: Verify async rendering of notifications
+    // Verify async rendering of notifications
     await notificationService.notifyMemoryUpdate({
       id: "prop-1",
       created_at: new Date().toISOString(),
@@ -55,11 +54,11 @@ Deno.test("TUI Dashboard + SQLite: handles notification service integration", as
     const hasNotif = notifLines.some((l: string) => l.includes("Test ILearning"));
     assertEquals(hasNotif, true);
 
-    // Phase 1: Verify async status bar with count from DB
+    // Verify async status bar with count from DB
     const statusBar = await dashboard.renderStatusBar();
     assertEquals(statusBar.includes("🔔1"), true);
 
-    // Phase 1: Verify async dismissal
+    // Verify async dismissal
     await dashboard.dismissNotification("prop-1");
     const countAfterDismiss = await notificationService.getPendingCount();
     assertEquals(countAfterDismiss, 0);

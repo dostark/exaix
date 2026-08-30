@@ -23,11 +23,9 @@ import {
   DEFAULT_OPENCODE_CLI_MODEL,
 } from "./constants.ts";
 
-/** Per-tool bin/default-model pair `create()` selects between. Covers only the three
- * tools CliDelegateProviderFactory is ever actually constructed with — cursor/vscode are
- * interactive-launch tools (SessionAdapterRegistry), never routed through this factory,
- * and fall back to opencode's defaults below, matching the original isClaude ternary's
- * "anything non-claude" fallback (never exercised in practice, kept for parity). */
+/** Per-tool bin/default-model pair `create()` selects between. cursor/vscode are
+ * interactive-launch tools (SessionAdapterRegistry) never routed through this factory,
+ * so they fall back to opencode's defaults below. */
 const BIN_AND_MODEL_BY_TOOL: Partial<Record<SessionTool, { bin: string; defaultModel: string }>> = {
   [SessionToolSchema.enum["claude-code"]]: { bin: DEFAULT_CLAUDE_CLI_BIN, defaultModel: DEFAULT_CLAUDE_CLI_MODEL },
   [SessionToolSchema.enum.opencode]: { bin: DEFAULT_OPENCODE_CLI_BIN, defaultModel: DEFAULT_OPENCODE_CLI_MODEL },

@@ -37,16 +37,11 @@ export interface IClarifyOptions {
   proceed?: boolean;
   /** Cancel clarification and re-queue request as-is. */
   cancel?: boolean;
-  /**
-   * Interactive mode — prompt the user for each question in the current round
-   * sequentially and submit the collected answers automatically.
-   */
+  /** Interactive mode — prompt for each question in the current round and submit the collected answers. */
   interactive?: boolean;
   /**
-   * Custom prompt function used in interactive mode.
-   * Receives the question text and question ID; returns the user's answer or
-   * `null` if the user skips.  Defaults to `prompt()` when absent.
-   * Injected in tests to avoid real stdin.
+   * Custom prompt function for interactive mode; receives question text/ID, returns the
+   * answer or `null` on skip. Injected in tests to avoid real stdin; defaults to `prompt()`.
    */
   promptFn?: (questionText: string, questionId: string) => Promise<string | null>;
   /** Injected engine (for tests). When absent the handler skips processAnswers calls. */

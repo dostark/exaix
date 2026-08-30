@@ -13,11 +13,7 @@
  */
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Runtime context handed to an adapter for one fetch. Carries the provider's already
- * configured secret + base URL and an injected (stubbable) fetch, so adapters open no
- * new secret surface and are unit-testable without network access (§6.1/§8.2).
- */
+/** Runtime context handed to an adapter for one fetch with injected fetch and timeout. */
 export interface IAdapterContext {
   apiKey?: string;
   baseUrl: string;
@@ -51,17 +47,9 @@ export interface IProviderCatalogAdapter {
   /** Provider type this adapter serves (matches the ProviderRegistry key). */
   readonly provider: string;
 
-  /**
-   * Fetch the provider's current model list + per-model capabilities. MUST NOT throw
-   * on empty results (return []); MUST throw a typed CatalogError on auth/HTTP/parse
-   * failure so the scheduler can record the outcome and back off.
-   */
+  /** Fetch current model list and capabilities. Returns [] on empty; throws CatalogError on failure. */
   fetchCatalog(ctx: IAdapterContext): Promise<ICatalogEntry[]>;
 
-  /**
-   * Fetch per-model pricing IF the provider exposes a machine-readable price
-   * endpoint. Omitted (or returning []) when the provider has none — pricing then
-   * falls to the static catalog.
-   */
+  /** Fetch per-model pricing if exposed by provider; falls back to static catalog if omitted. */
   fetchPricing?(ctx: IAdapterContext): Promise<IPricingEntry[]>;
 }

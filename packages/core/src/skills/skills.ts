@@ -51,14 +51,9 @@ const DEFAULT_CONFIG: ISkillsConfig = {
   matchThreshold: 0.3,
 };
 
-/**
- * Directory checked ahead of the shipped catalog for a single skill's content, for the
- * lifetime of this process (Phase 158 Step 2, closes GAP-1). A `skill-version` arm sets
- * this to compare skill S at version a vs. version b without editing `Blueprints/Skills/`
- * or the generated `Memory/Skills/` tree — the caller MUST have already validated this
- * directory via `PathResolver` (see `tests/scenario_framework/runner/arm_overlay.ts`)
- * before setting it; `SkillsService` trusts the value and does not re-validate it.
- */
+/** Directory checked ahead of the shipped catalog for a skill's content (process lifetime).
+ * Lets a `skill-version` arm A/B-compare a skill without editing `Blueprints/Skills/` — the
+ * caller must validate this dir via `PathResolver`; `SkillsService` trusts it as-is. */
 export const EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_SKILL_OVERLAY_DIR";
 
 export class SkillsService implements ISkillsService {
@@ -323,15 +318,9 @@ export class SkillsService implements ISkillsService {
     return { matches: budgetedMatches, totalAvailable };
   }
 
-  /**
-   * Journal the outcome of a skill match.
-   *
-   * SKILL_EVENT_MATCH_COMPLETED was declared in constants.ts but never emitted, so skill
-   * matching left no trace in the Activity Journal at all: which skills were selected for a
-   * request, how many were dropped by the per-request cap, and whether the context budget
-   * truncated the set were all unobservable. A zero-match outcome is journalled too — "no
-   * skill applied" is a result worth seeing, not an absence of one.
-   */
+  /** Journals the outcome of a skill match — which skills were selected, how many were
+   *  dropped by the per-request cap, and whether the context budget truncated the set.
+   *  A zero-match outcome is journalled too, since "no skill applied" is itself a result. */
   private logMatchCompleted(
     matches: ISkillMatch[],
     totalAvailable: number,

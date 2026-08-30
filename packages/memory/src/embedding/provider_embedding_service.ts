@@ -23,11 +23,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 const EMBEDDING_CACHE_MAX_ENTRIES = 512;
 
-/**
- * Estimated cost per embedding API call in USD.
- * Based on ~100 tokens per query at ~$0.002/1K tokens.
- */
-
+/** Estimated cost per embedding API call in USD (~100 tokens at ~$0.002/1K tokens). */
 const ESTIMATED_EMBED_COST_USD = 0.0002;
 
 interface IEmbeddingFile {
@@ -49,10 +45,7 @@ interface IEmbeddingManifest {
   index: IManifestEntry[];
 }
 
-/**
- * File-backed embedding service that delegates vector generation to any
- * IEmbeddingProvider. Stores vectors as JSON files with a manifest index.
- */
+/** File-backed embedding service delegating vector generation to an IEmbeddingProvider. */
 export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   private embeddingsDir: string;
   private manifestPath: string;
@@ -64,7 +57,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   constructor(
     private config: Config,
     private provider: IEmbeddingProvider = new OllamaEmbeddingClient(),
-    private costRouter?: IMemoryCostRouter,
+    private costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>,
   ) {
     this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
@@ -88,10 +81,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   async embedLearning(learning: ILearning): Promise<void> {
     await this.initializeManifest();
 
-    // Check cost router before calling the embedding provider.
-    // When remote operations are not allowed (budget exhausted), skip
-    // embedding — the learning is stored text-only and can be searched
-    // via keyword fallback.
+    // Skip embedding if remote operations are disallowed by budget exhausted state.
     const remoteAllowed = this.costRouter ? await this.costRouter.isRemoteAllowed() : true;
     if (!remoteAllowed) return;
 

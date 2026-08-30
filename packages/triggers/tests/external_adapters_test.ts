@@ -281,7 +281,7 @@ Deno.test("[AdapterRegistry] register overwrites existing adapter for same sourc
 });
 
 // ---------------------------------------------------------------------------
-// Step 5 — Security: FilesystemAdapter symlink bypass (GAP-5)
+// Security: FilesystemAdapter symlink bypass
 // ---------------------------------------------------------------------------
 
 Deno.test("[FilesystemAdapter] rejects symlink pointing outside allowed directory", async () => {
@@ -305,7 +305,7 @@ Deno.test("[FilesystemAdapter] rejects symlink pointing outside allowed director
 });
 
 // ---------------------------------------------------------------------------
-// Step 5 — Security: InternalEventAdapter allow-list (GAP-6)
+// Security: InternalEventAdapter allow-list
 // ---------------------------------------------------------------------------
 
 Deno.test("[InternalEventAdapter] rejects unknown eventType string", async () => {

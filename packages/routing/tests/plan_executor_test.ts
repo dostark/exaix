@@ -132,16 +132,9 @@ content = "Hello World"
       assertEquals(commitMsg.includes("Step 1: Create File"), true);
       assertEquals(commitMsg.includes("Executed by agent"), false); // Final commit message not present
 
-      // Verify step commit exists (intermediate commit)
-      // We can check logs or just trust the final state for now,
-      // but let's check if we have more than 1 commit (initial + step + final)
-      // Actually GitTestHelper doesn't have commit count easily, but we can check log
+      // Verify step commit exists in the log.
       const log = await helper.runGit(["log", "--oneline"]);
       const commits = log.trim().split("\n");
-      // Should have at least: "Complete plan...", "Step 1:...", "Initial commit" (if created by helper?)
-      // GitTestHelper init doesn't create initial commit usually unless specified.
-      // GitService.ensureRepository does init.
-      // So we expect: "Complete plan...", "Step 1:..."
       assert(commits.length >= 2, "Should have at least 2 commits");
       assert(log.includes("Step 1: Create File"), "Should have step commit");
     },
@@ -155,14 +148,7 @@ Deno.test("PlanExecutor: handles multiple steps", async () => {
       const fixture_2 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_2.md");
       await writeBlueprint(fixture_2);
 
-      // Mock LLM response - we need different responses for different steps
-      // But MockProvider returns static response.
-      // We might need to subclass MockProvider or make it smarter if we want dynamic responses.
-      // For now, let's use a single response that works for both steps (e.g. overwriting same file or creating different files if we could control it)
-      // Since we can't easily control it with simple MockProvider, let's just make it create the same file content but maybe different path if the prompt included path?
-      // No, MockProvider ignores prompt.
-
-      // Let's create a SmartMockProvider for this test
+      // SmartMockProvider provides step-specific responses based on prompt contents.
       class SmartMockProvider extends MockProvider {
         override generate(prompt: string): Promise<IGenerateResult> {
           let content = "";
@@ -477,10 +463,7 @@ Deno.test("PlanExecutor: generates execution report", async () => {
 });
 
 Deno.test("PlanExecutor: passes its executionRoot (worktree path) to the code-changes delegate", async () => {
-  // Regression for the LIVE-RT worktree-path mismatch (Layer 12): the delegate must be invoked
-  // with the REAL worktree path PlanExecutor was constructed with (its repoPath/executionRoot),
-  // so the daemon spawns `claude -p` in the directory the execution loop actually created —
-  // not a recomputed `Workspace/worktrees/<traceId>` that no one made.
+  // Delegate must be invoked with the real worktree path PlanExecutor was constructed with.
   await withPlanExecutorTestContext(
     "plan-exec-delegate-worktree-",
     async ({ repoDir, writeBlueprint, createExecutor }) => {

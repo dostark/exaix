@@ -9,18 +9,12 @@
 
 export const MAX_IDEMPOTENCY_KEY_LENGTH = 1024;
 
-/**
- * Normalize an idempotency key by trimming whitespace.
- * Adapters should call this before setting the key on an envelope.
- */
+/** Trims an idempotency key; adapters should call this before setting the key on an envelope. */
 export function normalizeIdempotencyKey(key: string): string {
   return key.trim();
 }
 
-/**
- * Validate an idempotency key meets minimum/maximum length constraints.
- * Accepts a normalized (already trimmed) key.
- */
+/** True if a normalized (already-trimmed) key satisfies the min/max length constraints. */
 export function validateIdempotencyKey(key: string): boolean {
   const trimmed = key.trim();
   return trimmed.length >= 1 && trimmed.length <= MAX_IDEMPOTENCY_KEY_LENGTH;

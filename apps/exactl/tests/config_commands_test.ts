@@ -89,7 +89,7 @@ Deno.test("[configuring-cli] getProvenance returns source for overridden keys", 
   });
 });
 
-// ── Step 12 (GAP-18): --profile scoping on ConfigCommands.get/set ──────────
+// ── --profile scoping on ConfigCommands.get/set ───────────────────────────────
 
 /** Build a ConfigCommands wired to a seeded temp Config DB (matches config_cli_test). */
 function withProfileCommands(fn: (commands: ConfigCommands) => Promise<void> | void): Promise<void> {
@@ -134,7 +134,7 @@ Deno.test("[configuring-cli] get --profile returns the profile-scoped value, not
   });
 });
 
-// ── Step 15 (GAP-22): diff() returns a string (display convention, no console.log) ──
+// ── diff() returns a string (display convention, no console.log) ─────────────
 
 Deno.test("[configuring-cli] diff() returns a formatted string of overridden keys", async () => {
   await withProfileCommands(async (commands) => {
@@ -154,7 +154,7 @@ Deno.test("[configuring-cli] diff() returns a no-overrides message when nothing 
   });
 });
 
-// ── Phase 138 Step 2: config block CLI + MCP enforcement integration ─────────
+// ── config block CLI + MCP enforcement integration ────────────────────────────
 
 Deno.test({
   name: "[configuring-cli] config_block_cli: CLI add/list wires the blocklist and MCP enforcement rejects",
@@ -192,7 +192,7 @@ Deno.test({
   },
 });
 
-// ── Phase 139 Step 4: config lock CLI + MCP enforcement integration ──────────
+// ── config lock CLI + MCP enforcement integration ─────────────────────────────
 
 Deno.test({
   name: "[configuring-cli] config_lock_cli: CLI lock refuses a write through the MCP apply path, unlock re-enables",
@@ -253,7 +253,7 @@ Deno.test("[configuring-cli] ConfigCommands.unlock still functions after adapter
   }
 });
 
-// ── Phase 138 Step 3: CLI debounce + compact ────────────────────────────────
+// ── CLI debounce + compact ─────────────────────────────────────────────────────
 
 Deno.test({
   name: "[configuring-cli][security] set debounce rejects writes over the DB-backed window limit",
@@ -289,7 +289,7 @@ Deno.test("[configuring-cli] compact collapses config_overrides to one row per k
   });
 });
 
-// ── Phase 139 Step 2: config history CLI (read-only vertical slice) ──────────
+// ── config history CLI (read-only vertical slice) ─────────────────────────────
 
 Deno.test("[configuring-cli] ConfigCommands.history returns override rows DESC by id", async () => {
   await withProfileCommands(async (commands) => {
@@ -317,7 +317,7 @@ Deno.test("[configuring-cli] config_history_cli lists both values newest-first",
   });
 });
 
-// ── Phase 139 Step 3: config rollback CLI ───────────────────────────────────
+// ── config rollback CLI ────────────────────────────────────────────────────────
 
 Deno.test("[configuring-cli] config_rollback_cli rejects a non-numeric id with a clear error (GAP-4)", async () => {
   const dir = Deno.makeTempDirSync({ prefix: "config-rollback-nan-" });
@@ -352,12 +352,10 @@ Deno.test("[configuring-cli] config_rollback_cli restores the original value", a
   });
 });
 
-// ── Phase 139 Step 6: config edit ($EDITOR) ─────────────────────────────────
+// ── config edit ($EDITOR) ──────────────────────────────────────────────────────
 
-/**
- * Write a stub "editor" — an executable shell script that runs a Deno
- * transform in-place on the rendered override file. Invoked by `edit()` as
- * `<script> <tmpPath>`. Returns the absolute path to set as $EDITOR.
+/** Writes a stub "editor" shell script (invoked as `<script> <tmpPath>`) that runs a Deno
+ * transform in-place on the override file; returns its path to set as $EDITOR.
  */
 function writeStubEditor(dir: string, transform: string): string {
   const tsPath = `${dir}/stub_editor.ts`;

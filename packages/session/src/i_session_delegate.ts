@@ -43,11 +43,7 @@ export interface IPrepareBriefInput {
   gate: SessionGate;
   tool: SessionTool;
   objective: string;
-  /**
-   * Model the delegate tool should use (headless `--model <model>`). Optional.
-   * **Must be a pre-resolved `provider:model` string** — pass through `ModelResolver.resolve()`
-   * first. Raw `model_size` values (e.g. "M", "L") will be rejected by `prepareBrief()`.
-   */
+  /** Model for the delegate tool (headless `--model <model>`); must be pre-resolved `provider:model`, not a raw `model_size`. */
   model?: string;
   /** Artifact under work (request / plan / diff), worktree-relative. */
   artifactRef: string;
@@ -62,15 +58,12 @@ export interface IPrepareBriefInput {
   deadline?: string;
 }
 
-/** Result of a hardened-launch resolution (Phase 128 R3 Step 5). */
+/** Result of a hardened-launch resolution. */
 export interface IHardenedLaunchResult {
   launch: ISessionLaunch;
   /** If true, the generated agent.<identity_id> key mismatches brief.identity_id. */
   agentNameMismatch: boolean;
-  /**
-   * Warning from the version probe when the delegate binary is below the
-   * minimum supported version. Undefined when the probe is clean.
-   */
+  /** Warning from the version probe when the binary is below minimum version; undefined when the probe is clean. */
   versionWarning?: string;
 }
 
@@ -81,10 +74,8 @@ export interface ISessionDelegateService {
   /** Resolve the per-tool adapter and build a launch for the brief. */
   resolveLaunch(brief: SessionBrief, mode: SessionLaunchMode): ISessionLaunch;
   /**
-   * Resolve a hardened launch with permission hardening (Phase 128 R3).
-   * Only supported for headless mode. Uses the version probe + per-tool
-   * permission generator when brief.tool is opencode or claude-code.
-   * Returns the launch descriptor and any agent-name mismatch info.
+   * Resolves a hardened launch with permission hardening. Only supported for headless mode;
+   * uses the version probe + per-tool permission generator for opencode/claude-code tools.
    */
   resolveHardenedLaunch(
     brief: SessionBrief,
@@ -93,10 +84,8 @@ export interface ISessionDelegateService {
     pathResolver: PathResolver,
   ): Promise<IHardenedLaunchResult>;
   /**
-   * Resolve the delegate provider env for a given config + tool combo.
-   * Reads no env vars itself (package-pure); the caller (main.ts) resolves
-   * the key_env and passes the value. Returns an empty record when there is
-   * no provider block.
+   * Resolves the delegate provider env for a config+tool combo. Package-pure — reads no env
+   * vars itself; the caller (main.ts) resolves key_env and passes the value in.
    */
   resolveDelegateEnv(
     config: SessionDelegateConfig,

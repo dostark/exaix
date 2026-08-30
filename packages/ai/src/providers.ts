@@ -7,6 +7,7 @@
  */
 
 import type { IModelOptions, IModelProvider } from "./types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IGenerateResult } from "./providers/common.ts";
 import {
   createOpenAIChatCompletionsRequestInit,
@@ -40,10 +41,6 @@ declare const Deno: { env: { get(key: string): string | undefined } };
 // Mock Provider (for testing)
 // ============================================================================
 
-/**
- * Mock provider that returns a predictable, configurable response.
- * Used for unit testing and development.
- */
 export class MockProvider implements IModelProvider {
   public readonly id: string;
 
@@ -54,7 +51,7 @@ export class MockProvider implements IModelProvider {
     this.id = id;
   }
 
-  async generate(_prompt: string, _options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(_prompt: string, _options?: Opt<IModelOptions, Reason.AbstractBoundary>): Promise<IGenerateResult> {
     // Simulate async behavior
     await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
     return {
@@ -75,10 +72,8 @@ export class MockProvider implements IModelProvider {
 // Model Factory
 // ============================================================================
 
-/**
- * Minimal OpenAI-compatible shim used to create quick model-specific adapters
- * without importing the full `OpenAIProvider` implementation (avoids circular imports).
- */
+/** Minimal OpenAI-compatible shim for quick model-specific adapters — avoids importing
+ * the full `OpenAIProvider` implementation (would create a circular import). */
 
 export class OpenAIShim implements IModelProvider {
   public readonly id: string;
@@ -93,7 +88,7 @@ export class OpenAIShim implements IModelProvider {
     this.id = options.id ?? `openai-${this.model}`;
   }
 
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     const url = `${this.baseUrl}/v1/chat/completions`;
 
     // Use default retry parameters

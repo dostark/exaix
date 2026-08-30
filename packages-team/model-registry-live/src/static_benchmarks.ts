@@ -30,13 +30,9 @@ const OPENAI_MODELS_URL = "https://openai.com/index/";
 const GOOGLE_MODELS_URL = "https://blog.google/technology/google-deepmind/";
 
 /**
- * Curated SWE-bench Verified pass-rates cited from each vendor's own published model
- * announcement (Tier-2 offline floor, §5.8.1), normalised to [0,1]. Kept intentionally
- * small — this is a floor, not a leaderboard.
- *
- * NOTE (provisional): these scores are placeholders pending per-model verification against
- * the dated vendor publication. A maintainer MUST verify each (model, score, date)
- * against the cited source before treating these numbers as authoritative.
+ * Curated SWE-bench Verified pass-rates normalised to [0,1], cited from each vendor's own
+ * published announcement. NOTE: placeholders pending per-model verification against the
+ * cited source before treating as authoritative.
  */
 export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
   {
@@ -75,9 +71,9 @@ export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
     measuredAt: CURATED_MEASURED_AT,
     sourceUrl: GOOGLE_MODELS_URL,
   },
-  // §5.9 (GAP-A) — widen the curated floor beyond swe_bench_verified so top-N admission
-  // and the Step 8 `best` scorer can rank refactor/analysis task-types (design "any
-  // tracked benchmark"). Same vendor-cited-announcement sourcing as above.
+  // Widens the curated floor beyond swe_bench_verified so top-N admission and the `best`
+  // scorer can rank refactor/analysis task-types too. Same vendor-cited-announcement
+  // sourcing as above.
   {
     provider: PROVIDER_ANTHROPIC,
     model: "claude-opus-4-8",

@@ -19,10 +19,8 @@ export interface IResolvedModelJournalEntry {
 }
 
 /**
- * Extract the latest resolved provider:model string from journaled model.resolved
- * entries. `payload.selected` is the structured object the resolver emits; legacy string
- * payloads are accepted for forward/backward safety. Returns undefined when no usable
- * resolution exists for the agent.
+ * Extracts the latest resolved provider:model from journaled `model.resolved` entries;
+ * accepts both the structured `payload.selected` object and legacy string payloads.
  */
 export function deriveResolvedModel(entries: IResolvedModelJournalEntry[]): string | undefined {
   const resolved = entries.filter((e) => e.action === "model.resolved").at(-1);
@@ -45,9 +43,8 @@ function selectedToModelString(payload: Opt<JSONValue, Reason.OptionalInput>): s
 }
 
 /**
- * The agent status line for a single identity, showing the resolved provider:model when
- * the agent's declared model is empty (post-132.9 blueprints) and a journaled
- * resolution exists.
+ * Status line for a single identity: falls back to the journaled resolution when the
+ * agent's declared model is empty.
  */
 export function renderResolvedModelLine(agentModel: string, journalEntries: IResolvedModelJournalEntry[]): string {
   if (agentModel) return agentModel;

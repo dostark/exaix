@@ -12,16 +12,8 @@ import type { JSONValue } from "@exaix/core";
 import { GitCommitToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { GIT_CMD_COMMIT } from "@exaix/git/constants.ts";
 
-/**
- * GitCommitTool - Commits changes in portal git repositories
- *
- * Security:
- * - Validates portal exists
- * - Validates commit message not empty
- * - Optionally commits specific files
- * - Checks if git repository exists
- * - Logs all operations to IActivity Journal
- */
+/** Commits changes in a portal git repo; permission/existence checks route through `ToolHandler`,
+ * and all operations are logged to the IActivity Journal. */
 export class GitCommitTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = GitCommitToolArgsSchema.parse(args) as {

@@ -57,9 +57,9 @@ export interface IFailuresReport {
   topClassByCell: Array<{ cell: string; className: string; count: number }>;
 }
 
-/** An external-benchmark comparability row (Phase 144 Step 4): per (benchmark, version, cell) —
- *  outcome-channel resolved rate over the tasks run, task count vs the manifest's supported
- *  subset size, coverage, mean tracked cost, latest run date, and the harness+model identifiers. */
+/** An external-benchmark comparability row: per (benchmark, version, cell) — outcome-channel
+ *  resolved rate over the tasks run, task count vs the manifest's supported subset size,
+ *  coverage, mean tracked cost, latest run date, and the harness+model identifiers. */
 export interface IExternalCellRow {
   benchmark: string;
   benchmarkVersion: string;
@@ -242,16 +242,8 @@ export class EvalCommands extends BaseCommand {
     }
   }
 
-  /**
-   * `--view cost` renders a per-cell (cell_id/provider/model) comparison table of mean
-   * duration_ms, mean llm_duration_ms, total tokens, and total/mean tracked_cost_usd — sourced
-   * exclusively from eval_runs.total_tracked_cost_usd (Phase 140a Step 4). Absent values render
-   * "—", never "0": a cell whose every run had no tracked cost (all direct-API) is unknown
-   * spend, not free spend, and must never be confused with a predicted-cost figure.
-   *
-   * `--group-by subsystem|entity` renders per-family summary rows grouped by the chosen
-   * tag prefix (subsystem: or entity:) using store.summarizeByTag.
-   */
+  /** `--view cost`: per-cell table sourced from eval_runs.total_tracked_cost_usd; "—" means
+   *  unknown spend (never "0"/free). `--group-by subsystem|entity` groups by tag prefix instead. */
   report(options: {
     view?: string;
     scenario?: string;
@@ -373,8 +365,8 @@ export class EvalCommands extends BaseCommand {
       );
       for (const row of summary) {
         // A mean only where the criteria are graded. Over a pack of yes/no contract assertions it
-        // is the pass rate wearing three decimal places, and reading 0.971 as "97% healthy" is
-        // how a dead subsystem looked healthy in Phase 142 Step 17.
+        // is the pass rate wearing three decimal places, and reading 0.971 as "97% healthy" can
+        // mask a dead subsystem.
         const mean = row.graded ? row.meanScore.toFixed(3) : "—";
         // "—" on a first run: there is nothing for a trend to be against, and printing +0.000
         // would read as "no change" rather than "no comparison".
@@ -440,13 +432,9 @@ export class EvalCommands extends BaseCommand {
     }
   }
 
-  /**
-   * `--view external` (Phase 144 Step 4): external-benchmark comparability per
-   * (benchmark, benchmark_version, cell). Resolved rate is the outcome-channel pass over the
-   * tasks run — its denominator is never silently partial — stated next to the manifest's
-   * supported-subset size and coverage. Mean cost uses only `total_tracked_cost_usd` runs
-   * (never a predicted figure). Renders the single-sourced caveat block below the table.
-   */
+  /** `--view external`: external-benchmark comparability per (benchmark, version, cell).
+   *  Resolved rate's denominator is the tasks run (never silently partial); mean cost uses
+   *  only `total_tracked_cost_usd` runs, never a predicted figure. */
   private renderExternalReport(options: {
     pack?: string;
     dbPath?: string;
@@ -671,14 +659,9 @@ interface IFailuresRunRow {
 const FAMILY_TAG_PREFIX = "task:";
 const UNKNOWN_FAMILY = "unknown-family";
 
-/**
- * Compute the accuracy-vs-cost frontier over history runs (Phase 143 Step 4). Per cell:
- * mean score, mean tracked cost (only runs that report cost), cost_per_solved =
- * Σ cost / count(passed) (— when no passes), and the Pareto marking per the Metric Definitions
- * predicate: A dominates B iff meanScore(A) >= meanScore(B) AND meanCost(A) <= meanCost(B) with
- * at least one strict inequality; exact ties are co-dominant (both un-dominated); a cell with no
- * cost data is excluded from dominance entirely.
- */
+/** Accuracy-vs-cost frontier per cell: cost_per_solved = Σ cost / count(passed) (— when no
+ *  passes). Pareto-dominant iff meanScore(A) >= meanScore(B) AND meanCost(A) <= meanCost(B)
+ *  with a strict inequality; ties are co-dominant; cells with no cost data are excluded. */
 export function computeFrontierRows(runs: IFrontierRunRow[]): IFrontierCellRow[] {
   const groups = new Map<string, IFrontierRunRow[]>();
   for (const run of runs) {
@@ -748,11 +731,9 @@ function renderFrontierTable(rows: IFrontierCellRow[]): void {
   }
 }
 
-/**
- * Aggregate seeded history runs into the failures report (Phase 143 Step 5): per-class counts
- * with the class × family × cell breakdown, and the top class per cell. `failure_classes` and
- * `tags` are JSON strings in the row; family is the first `task:` tag.
- */
+/** Aggregates seeded history runs into the failures report: per-class counts with the class ×
+ *  family × cell breakdown, and the top class per cell. `failure_classes`/`tags` are JSON
+ *  strings in the row; family is the first `task:` tag. */
 export function computeFailuresReport(runs: IFailuresRunRow[]): IFailuresReport {
   const classMap = new Map<string, { count: number; families: Map<string, number>; cells: Map<string, number> }>();
   const cellClassCounts = new Map<string, Map<string, number>>();
@@ -834,11 +815,9 @@ function renderFailuresTable(report: IFailuresReport): void {
   }
 }
 
-/**
- * Resolve the coverage manifest path for a benchmark (Phase 144 Step 4): the manifest the
- * batch ingest publishes under tests/scenario_framework/fixtures/external/<dir>/manifest.json.
- * Unmapped benchmarks resolve to undefined and render subset/coverage as —.
- */
+/** Resolves the coverage manifest path for a benchmark: the manifest the batch ingest publishes
+ *  under tests/scenario_framework/fixtures/external/<dir>/manifest.json. Unmapped benchmarks
+ *  resolve to undefined and render subset/coverage as —. */
 function resolveExternalManifestPath(benchmark: string): string | undefined {
   const dir = EXTERNAL_BENCHMARK_FIXTURE_DIRS[benchmark];
   if (!dir) return undefined;
@@ -880,13 +859,9 @@ interface IExternalRunRow {
   benchmark_version: string | null;
 }
 
-/**
- * Compute the external-benchmark comparability rows (Phase 144 Step 4). Per
- * (benchmark, benchmark_version, cell_id): tasksRun is the number of run verdicts — the
- * resolved-rate denominator, never silently partial — resolvedRate = passed / tasksRun, and
- * subsetSize/coveragePct come from the coverage manifest keyed by benchmark_version (— when
- * unknown). Mean cost averages only runs that report total_tracked_cost_usd.
- */
+/** Computes external-benchmark comparability rows per (benchmark, benchmark_version, cell_id):
+ *  tasksRun is the run-verdict count (resolved-rate denominator, never silently partial),
+ *  resolvedRate = passed / tasksRun; subsetSize/coveragePct come from the coverage manifest. */
 export function computeExternalRows(
   runs: IExternalRunRow[],
   subsetByVersion: ReadonlyMap<string, number>,

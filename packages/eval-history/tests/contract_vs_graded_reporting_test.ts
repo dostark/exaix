@@ -141,9 +141,7 @@ Deno.test("[report] passedCount is exact, not the pass rate rounded back up", as
 });
 
 // ---------------------------------------------------------------------------
-// Trend deltas. `IFamilySummaryRow.delta` was declared and hardcoded `null`, and the report never
-// rendered a column for it — so "shows trend deltas after the second run" could not be true of any
-// report. A third dead field in the same file family as `tags` and `graded`.
+// Trend deltas: verifies delta calculation on repeated scenario observations.
 // ---------------------------------------------------------------------------
 
 Deno.test("[report] a family with only one observation per scenario has no delta", async () => {

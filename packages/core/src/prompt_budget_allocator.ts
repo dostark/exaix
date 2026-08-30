@@ -250,10 +250,7 @@ export class PromptBudgetAllocator {
       (hints.loopHistoryUsedTokens ?? 0);
   }
 
-  /**
-   * Adjust weight ratios based on request analysis.
-   * Returns the adjusted weight object, or SECTION_BASE_WEIGHTS if no analysis.
-   */
+  /** Adjusts weight ratios based on request analysis; returns SECTION_BASE_WEIGHTS if no analysis. */
   private _adjustWeights(
     analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): IPromptBudgetSectionsWeights {

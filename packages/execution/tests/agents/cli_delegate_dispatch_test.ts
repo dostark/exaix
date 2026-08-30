@@ -59,9 +59,8 @@ Deno.test("AgentOrchestrator: dispatches cli_delegate capability to CliDelegateS
     };
 
     // No real `claude` binary in the test environment — the strategy must throw
-    // AgentExecutionError (CONFIGURATION_ERROR), proving dispatch reached
-    // CliDelegateStrategy (a different strategy would fail differently, e.g. with
-    // "Model provider required" from ReActLoopStrategy).
+    // AgentExecutionError (CONFIGURATION_ERROR), proving dispatch reached CliDelegateStrategy
+    // (a different strategy would fail differently, e.g. "Model provider required").
     const err = await assertRejects(
       () =>
         executor.executeStep(context, {

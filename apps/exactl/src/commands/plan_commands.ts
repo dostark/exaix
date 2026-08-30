@@ -65,8 +65,7 @@ function extractPlanMetadata(planId: string, frontmatter: PlanFrontmatter): IPla
   };
 }
 
-/**
- * PlanCommands provides CLI operations for human review of AI-generated plans.
+/** PlanCommands provides CLI operations for human review of AI-generated plans.
  * All operations are atomic and logged to activity_log with actor='human'.
  */
 export class PlanCommands extends BaseCommand {
@@ -106,8 +105,7 @@ export class PlanCommands extends BaseCommand {
     return await enrichWithRequest(this.requestCommands, metadata, `plan ${planId}`);
   }
 
-  /**
-   * Approve a plan: move from Workspace/Plans to Workspace/Active
+  /** Approve a plan: move from Workspace/Plans to Workspace/Active.
    * Only plans with status='review' can be approved.
    */
   async approve(planId: string, skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
@@ -207,8 +205,7 @@ export class PlanCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Reject a plan: move from any directory to Workspace/Rejected with _rejected.md suffix
+  /** Reject a plan: moves from any directory to Workspace/Rejected with a `_rejected.md` suffix.
    * Requires a rejection reason.
    */
   async reject(planId: string, reason: string): Promise<void> {
@@ -333,8 +330,7 @@ export class PlanCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Request revision: append review comments to plan and update status to 'needs_revision'
+  /** Requests revision: appends review comments to the plan and sets status to 'needs_revision'.
    * Plan remains in Workspace/Plans for the agent to address.
    */
   async revise(planId: string, comments: string[]): Promise<void> {
@@ -457,15 +453,9 @@ export class PlanCommands extends BaseCommand {
     return `${body.trim()}\n\n${revisionMarker}\n\n${formattedComments}\n`;
   }
 
-  /**
-   * List all plans, optionally filtered by status.
-   * Scans multiple directories based on status:
-   * - Workspace/Plans: review, needs_revision, unknown
-   * - Workspace/Active: approved (running)
-   * - Workspace/Archive: approved (completed)
-   * - Workspace/Rejected: rejected
-   * - All directories when no filter is specified
-   */
+  /** Lists plans, optionally filtered by status. Maps status to directory: Workspace/Plans
+   * (review, needs_revision, unknown), Workspace/Active (approved/running), Workspace/Archive
+   * (approved/completed), Workspace/Rejected (rejected); scans all when unfiltered. */
   async list(statusFilter?: Opt<PlanStatusType, Reason.QueryFilter>): Promise<IPlanMetadata[]> {
     const plans: IPlanMetadata[] = [];
     const dirsToScan = this.resolvePlanDirectories(statusFilter);
@@ -518,11 +508,8 @@ export class PlanCommands extends BaseCommand {
    * Show details of a specific plan
    */
   async show(planId: string): Promise<IPlanDetails> {
-    // Check multiple directories in order of likelihood:
-    // 1. Workspace/Plans (review, needs_revision)
-    // 2. Workspace/Rejected (rejected plans with _rejected suffix)
-    // 3. Workspace/Active (approved/running)
-    // 4. Workspace/Archive (approved/completed)
+    // Checks directories in priority order: Plans, Rejected, Active, then Archive —
+    // first match wins.
 
     const searchPaths = [
       { path: join(this.workspacePlansDir, `${planId}.md`) },
@@ -568,9 +555,8 @@ export class PlanCommands extends BaseCommand {
     return `---\n${yamlContent}---\n\n${body}`;
   }
 
-  /**
-   * Extract frontmatter and body from markdown (YAML format)
-   * Returns both frontmatter and body, unlike base class version
+  /** Extracts frontmatter and body from markdown (YAML format).
+   * Unlike the base class version, returns both frontmatter and body.
    */
   private extractFrontmatterWithBody(markdown: string): { frontmatter: PlanFrontmatter; body: string } {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
@@ -591,10 +577,6 @@ export class PlanCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Load and parse a plan file
-   * @private
-   */
   private async loadPlan(planPath: string): Promise<{
     content: string;
     frontmatter: PlanFrontmatter;
@@ -611,10 +593,6 @@ export class PlanCommands extends BaseCommand {
     return { content, frontmatter, body };
   }
 
-  /**
-   * Get current user identity
-   * @private
-   */
   private async getUserContext(): Promise<{
     actor: string;
     now: string;

@@ -249,7 +249,7 @@ Deno.test("[configuring] getOverrideHistory returns ordered history", () => {
   }
 });
 
-// ── Phase 138 Step 2: config_mcp_blocklist DAO ──────────────────────────────
+// ── config_mcp_blocklist DAO ──────────────────────────────
 
 Deno.test("[configuring] addBlocklistPattern inserts row", () => {
   const { db, dir } = createTestDb();
@@ -359,7 +359,7 @@ Deno.test("[configuring] isPathBlocked respects agent scope", () => {
   }
 });
 
-// ── Phase 138 Step 3: rate limiting (countRecentCliWrites, hard limit, compact) ──
+// ── rate limiting (countRecentCliWrites, hard limit, compact) ──
 
 import { ConfigRateLimitedError } from "../../src/config/errors.ts";
 import type { IEventLogger } from "../../src/logger/event_logger.ts";
@@ -401,10 +401,9 @@ Deno.test("[configuring] countRecentCliWrites excludes rows older than the windo
   }
 });
 
-// The DB hard-limit is an anti-DoS guard against a runaway/malicious agent
-// flooding the append-only log — no legitimate use approaches it (~10 writes
-// per month). These are [security] tests that exercise the rejection branch at
-// a tiny injected threshold; production uses the real 1M/100K constants.
+// The DB hard-limit is an anti-DoS guard against a runaway/malicious agent flooding the
+// append-only log — no legitimate use approaches it (~10 writes/month). These [security]
+// tests exercise the rejection branch at a tiny injected threshold; production uses the real 1M/100K constants.
 const TEST_HARD_LIMIT = 3;
 const TEST_WARN_THRESHOLD = 2;
 
@@ -499,7 +498,7 @@ Deno.test("[configuring] compactOverrides collapses to one row per key preservin
   }
 });
 
-// ── Phase 139 Step 3: getOverrideById point lookup ──────────────────────────
+// ── getOverrideById point lookup ──────────────────────────────
 
 Deno.test("[configuring] getOverrideById returns the matching row / undefined", () => {
   const { db, dir } = createTestDb();
@@ -520,7 +519,7 @@ Deno.test("[configuring] getOverrideById returns the matching row / undefined", 
   }
 });
 
-// ── Phase 139 Step 4: config_locked_keys DAO ────────────────────────────────
+// ── config_locked_keys DAO ────────────────────────────
 
 Deno.test("[configuring] lockKey/unlockKey/isKeyLocked/listLockedKeys DAO round-trip", () => {
   const { db, dir } = createTestDb();

@@ -59,7 +59,7 @@ export interface ILoadedBlueprint {
 export interface IBlueprint {
   systemPrompt: string;
   identityId?: string;
-  /** Default skills to apply for all requests (Phase 17) — from frontmatter.default_skills. */
+  /** Default skills to apply for all requests, sourced from frontmatter.default_skills. */
   defaultSkills?: string[];
 }
 
@@ -71,7 +71,7 @@ export interface IBlueprintLoaderOptions {
   defaultModel?: string;
 }
 
-/** A single unknown-frontmatter-field warning (GAP-2). */
+/** A single unknown-frontmatter-field warning. */
 export interface IUnknownFieldWarning {
   field: string;
 }
@@ -100,13 +100,9 @@ const HitlPolicySchema = z.object({
   require_secondary_approval: z.array(HitlRuleSchema).default([]),
 });
 
-/**
- * Inline session-delegate schema — avoids the runtime cross-package import from
- * @exaix/schemas (mirrors the HITL inlining above). The runtime loader only needs
- * to ACCEPT and PRESERVE the block (the CLI `BlueprintFrontmatterSchema` validates
- * it strictly at create time), so unknown sub-keys pass through (W4 fix: the fork
- * previously dropped session_delegate entirely).
- */
+/** Inline session-delegate schema (mirrors the HITL inlining above); passthrough preserves
+ * unknown sub-keys since the CLI `BlueprintFrontmatterSchema` validates strictly at create
+ * time, avoiding a runtime cross-package import from @exaix/schemas. */
 const SessionDelegateConfigSchema = z.object({
   enabled: z.boolean().default(false),
   tool: z.string().min(1),
@@ -115,10 +111,7 @@ const SessionDelegateConfigSchema = z.object({
   launch_mode: z.string().optional(),
 }).passthrough();
 
-/**
- * Extended schema for runtime blueprint usage
- * More permissive than creation schema - allows older blueprints
- */
+/** Runtime blueprint schema; more permissive than the creation schema to allow older blueprints. */
 export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Agent identifier - required */
   identity_id: z.string().min(1).optional(),
@@ -132,7 +125,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Provider name (legacy field, prefer model with provider prefix) */
   provider: z.string().optional(),
 
-  // === Phase 131 Step 6 — declarative model preferences (W5/W20) ===
+  // === Declarative model preferences (W5/W20) ===
 
   /** Preferred provider hint (resolved by resolveIdentityModel; `model` overrides). */
   preferred_provider: z.string().min(1).optional(),
@@ -146,7 +139,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Reasoning-effort hint; ignored by providers that do not support it. */
   effort: z.string().min(1).optional(),
 
-  /** Soft ranking hints: cheapest, fastest (Phase 132) */
+  /** Soft ranking hints: cheapest, fastest. */
   characteristics: z.array(z.string()).optional(),
 
   /** Agent capabilities */
@@ -158,7 +151,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Description */
   description: z.string().optional(),
 
-  /** Routing hint for NL task matching (Phase 131 Step 8) */
+  /** Routing hint for NL task matching. */
   routing_hint: z.string().optional(),
 
   /** Language or locale this agent primarily supports */
@@ -176,8 +169,6 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Creator */
   created_by: z.string().optional(),
 
-  // === Phase 16.4+ Extensions ===
-
   /** Enable reflexive self-critique */
   reflexive: z.boolean().default(false),
 
@@ -190,12 +181,8 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Enable session memory */
   memory_enabled: z.boolean().default(false),
 
-  // === Phase 17 Skills Extension ===
-
   /** Default skills to apply */
   default_skills: z.array(z.string()).optional(),
-
-  // === Phase 58 Dynamic Execution Extension ===
 
   /** Tools this identity is permitted to use (from McpToolName or ToolName). */
   permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
@@ -206,34 +193,21 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Prefer this agent locally for routing fallback */
   routing_prefer_local: z.boolean().optional(),
 
-  // === Phase 118 Per-Action HITL Governance Extension ===
-
   /** Per-action HITL governance rules for this blueprint. */
   hitl: HitlPolicySchema.optional(),
-
-  // === Phase 111 Session Delegation (W4: previously dropped by the fork) ===
 
   /** Session delegation configuration; preserved on load so the daemon can act on it. */
   session_delegate: SessionDelegateConfigSchema.optional(),
 });
 
-/**
- * The set of frontmatter keys the unified runtime schema recognizes. Used by
- * {@link validateRuntimeFrontmatter} to warn (not reject) on unknown keys
- * (Phase 131 Step 2, GAP-2 — hard `.strict()` rejection lands in Step 8 once the
- * inert template fields are stripped).
- */
+/** Frontmatter keys the runtime schema recognizes; used by {@link validateRuntimeFrontmatter}
+ * to warn (not reject) on unknown keys. */
 const KNOWN_FRONTMATTER_KEYS: ReadonlySet<string> = new Set(
   Object.keys((RuntimeBlueprintFrontmatterSchema as z.ZodObject<z.ZodRawShape>).shape),
 );
 
-/**
- * Validates frontmatter against the unified runtime schema and surfaces unknown
- * top-level keys as **warnings** rather than rejecting them (GAP-2 warn-path).
- * Legacy runtime-only fields (provider/reflexive/memory_enabled/…) are part of
- * the schema and are NOT flagged. A future step (131 Step 8) flips this to hard
- * rejection once inert template fields are removed.
- */
+/** Validates frontmatter against the runtime schema, surfacing unknown top-level keys as
+ * warnings (not rejections); legacy runtime-only fields are part of the schema and not flagged. */
 export function validateRuntimeFrontmatter(
   frontmatter: Record<string, JSONValue>,
 ): IRuntimeFrontmatterValidation {
@@ -263,26 +237,14 @@ export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontma
 // IBlueprintLoader Service
 // ============================================================================
 
-/**
- * Unified blueprint loader service
- *
- * Provides consistent blueprint loading with:
- * - YAML frontmatter parsing
- * - Schema validation with Zod
- * - Backward compatibility with simple blueprints
- * - Extension fields for Phase 16.4+ features
- */
+/** Loads blueprints with YAML frontmatter parsing, Zod schema validation, and backward
+ * compatibility for frontmatter-less (plain markdown) blueprints. */
 export class IBlueprintLoader {
   private cache = new Map<string, ILoadedBlueprint>();
 
   constructor(private options: IBlueprintLoaderOptions) {}
 
-  /**
-   * Load a blueprint by agent ID
-   *
-   * @param identityId - The agent identifier (filename without .md)
-   * @returns ILoadedBlueprint or null if not found
-   */
+  /** Loads a blueprint; `identityId` is the filename without the `.md` extension. */
   async load(identityId: string): Promise<ILoadedBlueprint | null> {
     // Check cache first
     if (this.cache.has(identityId)) {
@@ -331,14 +293,7 @@ export class IBlueprintLoader {
     return blueprint;
   }
 
-  /**
-   * Parse blueprint content
-   *
-   * Handles three formats:
-   * 1. YAML frontmatter (--- delimited)
-   * 2. TOML frontmatter (+++ delimited)
-   * 3. Plain markdown (no frontmatter, entire content is system prompt)
-   */
+  /** Parses blueprint content: YAML (---) or TOML (+++) frontmatter, or plain markdown treated as the system prompt. */
   parse(content: string, identityId: string, path: string): ILoadedBlueprint {
     // Try YAML frontmatter first (most common)
     const yamlMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
@@ -351,10 +306,8 @@ export class IBlueprintLoader {
       );
     }
 
-    // TOML frontmatter (+++) is retired (Phase 131 Step 2): YAML (---) is the
-    // canonical, migrated-to format and the CLI now emits it. A legacy +++ file
-    // is reported as an explicit, actionable error rather than silently treated
-    // as a frontmatter-less system prompt.
+    // TOML frontmatter (+++) is retired; YAML (---) is now canonical. A legacy +++ file is
+    // reported as an explicit error rather than silently treated as a frontmatter-less prompt.
     if (content.startsWith("+++\n")) {
       throw new BlueprintLoadError(
         `Blueprint '${identityId}' uses retired TOML (+++) frontmatter; convert it to YAML (--- ... ---).`,
@@ -390,10 +343,8 @@ export class IBlueprintLoader {
       );
     }
 
-    // Validate frontmatter with the unified schema; unknown top-level keys are
-    // surfaced as warnings (GAP-2 warn-path) rather than rejected — hard
-    // `.strict()` rejection lands in Phase 131 Step 8 once inert template fields
-    // are stripped.
+    // Validate frontmatter with the unified schema; unknown top-level keys are surfaced as
+    // warnings rather than rejected.
     const validation = validateRuntimeFrontmatter(parsed);
     for (const w of validation.warnings) {
       console.warn(`Unknown frontmatter field '${w.field}' in blueprint '${identityId}' (ignored)`);
@@ -465,10 +416,7 @@ export class IBlueprintLoader {
     });
   }
 
-  /**
-   * Create minimal blueprint from content without frontmatter
-   * Backward compatible with simple blueprint files
-   */
+  /** Builds a minimal blueprint from frontmatter-less content (backward compatible with simple blueprint files). */
   private createMinimalBlueprint(
     content: string,
     identityId: string,
@@ -488,10 +436,7 @@ export class IBlueprintLoader {
     };
   }
 
-  /**
-   * Derive human-readable name from agent ID
-   * "code-reviewer" → "Code Reviewer"
-   */
+  /** Converts a kebab-case agent ID into a human-readable name, e.g. "code-reviewer" → "Code Reviewer". */
   private deriveNameFromId(identityId: string): string {
     return identityId
       .split("-")
@@ -499,15 +444,8 @@ export class IBlueprintLoader {
       .join(" ");
   }
 
-  /**
-   * Resolve agent ID to file path
-   *
-   * Phase 54: Only checks Blueprints/Identities/{identityId}.md (canonical path).
-   * Legacy Blueprints/Identities/ path is no longer supported.
-   *
-   * @param identityId - The agent identifier
-   * @returns Full path to the identity blueprint
-   */
+  /** Resolves an agent ID to its blueprint file path: only Blueprints/Identities/{identityId}.md
+   * (canonical) is checked; the legacy path is no longer supported. */
   private resolvePath(identityId: string): string {
     // If blueprintsPath already ends with 'Identities', use it directly
     if (this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)) {
@@ -612,10 +550,7 @@ export function createBlueprintLoader(blueprintsPath: string): IBlueprintLoader 
   return new IBlueprintLoader({ blueprintsPath });
 }
 
-/**
- * Standalone function for simple usage (backward compatible)
- * Drop-in replacement for request_common.loadBlueprint
- */
+/** Standalone drop-in replacement for request_common.loadBlueprint. */
 export async function loadBlueprint(
   blueprintsPath: string,
   identityId: string,

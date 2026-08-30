@@ -90,12 +90,8 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
   ToolName.CREATE_DIRECTORY,
 ]);
 
-/**
- * ReActLoopStrategy implements in-process agentic execution.
- * It uses the LLM to generate actions, executes them via ToolRegistry,
- * and maintains a loop until the task is complete.
- */
-/** Which native tool-choice branch produced this iteration's options (Phase 153 Step 11). */
+/** Executes an agentic loop: the LLM generates actions, ToolRegistry runs them, until the task completes. */
+/** Which native tool-choice branch produced this iteration's options. */
 export type NativeToolChoiceMode = "forced" | "any";
 
 export /** Internal type for dynamically-built provider.generate() options. */
@@ -106,9 +102,8 @@ interface GeneratedOptions {
   toolChoice?: { type: string; name?: string; disable_parallel_tool_use: boolean };
   priorTurn?: IProviderTurn;
   /**
-   * Phase 153 Step 11 diagnostic (GAP-153-B/D): which native tool-choice branch produced
-   * this iteration's options — "forced" (the PGAP-3 preferred-tool branch) or "any"
-   * (the unconstrained fallback). Non-wire: ignored by provider request builders.
+   * "forced" means the preferred-tool branch chose this iteration's tool choice;
+   * "any" means the unconstrained fallback. Non-wire: ignored by provider request builders.
    */
   nativeToolChoiceMode?: NativeToolChoiceMode;
 }
@@ -183,12 +178,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCacheCreationTokens = 0;
     let totalReasoningTokens = 0;
 
-    // Step 5: native-tools gate — both the opt-in flag AND the provider capability must be true.
-    // Provider instances carry a composite id "<type>-<model>" (ProviderFactory.generateId),
-    // while ProviderRegistry metadata is keyed by the BARE provider type — so look the
-    // metadata up by the composite id first (test/back-compat) and fall back to the type
-    // prefix before the first "-", otherwise native tool-calling never enables (Phase 153
-    // Step 11 live finding).
+    // Native-tools gate requires both the opt-in flag and provider capability. Provider ids
+    // are composite "<type>-<model>" but ProviderRegistry is keyed by the bare type, so look
+    // up the composite id first, then fall back to the prefix before the first "-".
     const providerIdForGate = this.provider!.id;
     let supportsNativeTools = providerIdForGate !== undefined &&
       ProviderRegistry.getProviderMetadata(providerIdForGate)?.supportsNativeTools === true;
@@ -213,9 +205,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const nativePreferredTool = nativeToolsUsed && TARGETED_EDIT_PATTERN.test(context.plan)
       ? ("patch_file" satisfies string)
       : undefined;
-    // Phase 153 Step 11 (GAP-153-B/D): record iteration-0's context.plan + derived
-    // nativePreferredTool so live non-convergence is attributable (did an exploration step
-    // run first, leaving the pattern unmatched and tool_choice unconstrained?).
+    // Records iteration-0's context.plan + derived nativePreferredTool so non-convergence
+    // is attributable (did an exploration step run first, leaving the pattern unmatched
+    // and tool_choice unconstrained?).
     console.debug("[ReActLoopStrategy] native tools:", {
       enabled: useNativeTools,
       planMatch: TARGETED_EDIT_PATTERN.test(context.plan),
@@ -279,8 +271,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       reasoningTokens: number;
     },
   ): IChangesetResult {
-    // Screen the final output before review (Phase 107 Step 5).
-    // Uses FINAL_ITERATION sentinel — the runner honours screen_final_output config.
+    // Screens the final output before review. Uses FINAL_ITERATION sentinel — the runner
+    // honours screen_final_output config.
     if (content) {
       void this.executor.guardrailRunner?.screen(content, context.trace_id, Number.MAX_SAFE_INTEGER);
       if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
@@ -375,7 +367,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         base.toolChoice = { type: "any" as const, disable_parallel_tool_use: true };
         base.nativeToolChoiceMode = "any";
       }
-      // Phase 153 Step 11 (GAP-153-B/D): one-line diagnostic of the branch chosen.
+      // One-line diagnostic of the native toolChoice branch chosen.
       console.debug(
         `[ReActLoopStrategy] native toolChoice=${base.nativeToolChoiceMode} ` +
           `preferredTool=${nativePreferredTool ?? "<unset>"} priorTurn=${nativeToolsPriorTurn ? "yes" : "no"}`,
@@ -410,10 +402,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   }
 
   /**
-   * Journal the ReAct producer's agent.prompt_assembled event immediately before the
-   * provider-bound call (Phase 112 Step 3): exactly one event per enabled iteration, none
-   * on the disabled path. Extracted from runSingleIteration to keep its own complexity
-   * within the project's threshold.
+   * Journals the prompt_assembled event immediately before the provider-bound call —
+   * exactly one event per enabled iteration, none on the disabled path.
    */
   private async emitPromptAssembledEvent(
     context: IExecutionContext,
@@ -432,10 +422,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     });
   }
 
-  /**
-   * Execute one iteration of the ReAct loop. Returns accumulated metrics and
-   * optionally a finished result when the loop should terminate early.
-   */
+  /** Executes one ReAct iteration; returns accumulated metrics and, if the loop should terminate early, a finished result. */
   private async runSingleIteration(
     params: IIterationParams,
   ): Promise<IIterationResult> {

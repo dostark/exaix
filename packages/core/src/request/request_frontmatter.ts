@@ -13,10 +13,9 @@ export interface IRequestFrontmatter {
   created: string;
   status: RequestStatusType;
   priority: string;
-  /** Identity blueprint to use for this request. CANONICAL since Phase 173 GAP-1:
-   *  this used to be `identity` while writer-side RequestSchema mandated `identity_id`,
-   *  so generated requests failed admission (`RequestProcessor.getRequestKindOrFail`
-   *  found neither field). */
+  /** Identity blueprint to use for this request. Must match writer-side RequestSchema's
+   *  `identity_id` field name exactly — a mismatched field name here made generated
+   *  requests fail admission (neither field found by RequestProcessor). */
   identity_id?: string;
   flow?: string;
   source: string;
@@ -26,22 +25,19 @@ export interface IRequestFrontmatter {
   allow_dynamic_routing?: boolean;
   target_branch?: string;
   model?: string;
-  /** Model size intent: S|M|L|XL (Phase 132) */
+  /** Model size intent: S|M|L|XL */
   model_size?: string;
-  /** Provider preference hint (Phase 132) */
+  /** Provider preference hint */
   preferred_provider?: string;
-  /** Enable extended thinking (Phase 132) */
+  /** Enable extended thinking */
   thinking?: boolean;
-  /** Reasoning effort tier: low|medium|high (Phase 132) */
+  /** Reasoning effort tier: low|medium|high */
   effort?: string;
-  /** Soft hints: cheapest|fastest, repeatable (Phase 132) */
+  /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
-  /**
-   * Skills to apply for this request. Accepts a YAML array (`skills: [a, b]`, how requests
-   * are hand-authored) or a string — the CLI writes a JSON-encoded array via JSON.stringify,
-   * and a bare comma-separated list is also tolerated. buildParsedRequest normalises all
-   * three. Typing this `string` alone made a hand-written array throw on `.trim()`.
-   */
+  /** Skills to apply for this request. Accepts a YAML array (hand-authored), a JSON-encoded
+   * array string (CLI-written), or a bare comma-separated string — `buildParsedRequest`
+   * normalises all three; typing this `string` alone broke hand-written arrays' `.trim()`. */
   skills?: string[] | string;
   /** Tags used by skill trigger matching and identity routing. Declared in RequestSchema but
    * previously absent here, so no builder could copy them and tag-driven matching never
@@ -52,20 +48,20 @@ export interface IRequestFrontmatter {
   assessed_at?: string;
   /** Path to the sibling `_clarification.json` file when a Q&A session exists. */
   clarification_session_path?: string;
-  /** Explicit acceptance criteria parsed from YAML frontmatter (Phase 49). */
+  /** Explicit acceptance criteria parsed from YAML frontmatter. */
   acceptance_criteria?: string[];
-  /** Expected outcomes parsed from YAML frontmatter (Phase 49). */
+  /** Expected outcomes parsed from YAML frontmatter. */
   expected_outcomes?: string[];
-  /** Scope constraints parsed from YAML frontmatter (Phase 49). */
+  /** Scope constraints parsed from YAML frontmatter. */
   scope?: { include?: string[]; exclude?: string[] };
   /** Scenario id stamped by the scenario runner via EXA_SCENARIO_ID, for fixture replay
-   *  call-site addressing (Phase 157). Absent outside the scenario framework. */
+   *  call-site addressing. Absent outside the scenario framework. */
   scenario_id?: string;
   /** Step id stamped by the scenario runner via EXA_STEP_ID, for fixture replay call-site
-   *  addressing (Phase 157). Absent outside the scenario framework. */
+   *  addressing. Absent outside the scenario framework. */
   step_id?: string;
   /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer stamped by
-   *  `scripts/plan_to_requests.ts --plan-context-root` (Phase 174 Step 2). Required by
+   *  `scripts/plan_to_requests.ts --plan-context-root`. Required by
    *  RequestProcessor for a flow request whose flow has a session_delegate_cycle step. */
   plan_context_ref?: string;
 }

@@ -543,3 +543,49 @@ export function run(): number {
 
   assertStringIncludes(result.output, "[ephemeral-comment]");
 });
+
+Deno.test("check_code_style flags a comment referencing a specific GAP identifier or post-gap analysis", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "ephemeral_gap_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempEphemeralGapComment
+ * @path ephemeral_gap_comment.ts
+ * @description Temporary regression file for ephemeral GAP-reference enforcement.
+ */
+
+export function run(): number {
+  // GAP-12 remediation: validate inputs.
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[ephemeral-comment]");
+});
+
+Deno.test("check_code_style allows natural language usage of the word gap", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "natural_gap_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempNaturalGapComment
+ * @path natural_gap_comment.ts
+ * @description Temporary regression file for natural gap word allowance.
+ */
+
+export function run(): number {
+  // Check the price gap between models.
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[ephemeral-comment]"), false, result.output);
+});

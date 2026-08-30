@@ -71,9 +71,9 @@ Deno.test("CliDelegateModelProvider: codex drops --output-schema when jsonSchema
 
     await provider.generate("prompt", { jsonSchema: { type: "object", properties: {} } });
 
-    // Phase 167 Step 4 closure: codex 0.147.0 rejects non-strict zod-to-json-schema output
-    // with invalid_json_schema (400), so --output-schema must never reach codex argv — schema
-    // conformance is enforced by PlanAdapter after <content> extraction instead.
+    // codex 0.147.0 rejects non-strict zod-to-json-schema output with invalid_json_schema (400),
+    // so --output-schema must never reach codex argv — schema conformance is enforced by
+    // PlanAdapter after <content> extraction instead.
     assertEquals(seenArgs.includes("--output-schema"), false);
     assertEquals(seenArgs.includes("exec"), true);
   } finally {

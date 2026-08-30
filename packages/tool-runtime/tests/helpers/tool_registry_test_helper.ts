@@ -19,10 +19,7 @@ import { type JSONObject, type JSONValue, toSafeJson } from "@exaix/core/types";
 import type { IToolResult } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
-/**
- * Test helper for ToolRegistry tests
- * Provides utilities for setting up temp directories, tool registry, and common test patterns
- */
+/** Test helper providing test setup and fixture utilities for ToolRegistry tests. */
 export class ToolRegistryTestHelper {
   public tempDir: string;
   public registry: ToolRegistry;

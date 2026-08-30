@@ -12,15 +12,7 @@ import { ReadFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
-/**
- * ReadFileTool - Reads file content from a portal
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal
- * - Validates file exists
- * - Logs all reads to IActivity Journal
- */
+/** Reads a portal file; validates portal existence, permission, and path traversal, and journals every read. */
 export class ReadFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     // Validate arguments with Zod schema

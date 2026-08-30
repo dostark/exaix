@@ -25,10 +25,7 @@ export interface ISelectorLike {
   selectProvider(criteria: ISelectionCriteria): Promise<string>;
 }
 
-/**
- * Declarative model preferences read from an identity's frontmatter. All fields
- * are optional; an explicit `model` (provider:model) overrides the rest.
- */
+/** Declarative model preferences read from an identity's frontmatter; all fields are optional. */
 export interface IModelPreferences {
   /** Explicit provider:model override (highest precedence; e.g. mock-agent). */
   model?: string;
@@ -63,11 +60,8 @@ function splitCanonical(canonical: string): IResolvedModel {
 }
 
 /**
- * Resolve an identity's model preferences into a concrete {provider, model}.
- *
- * `thinking` and `effort` are accepted but intentionally not forwarded to the
- * selector — they are provider-level execution hints with no influence on which
- * provider/model is chosen, so unsupported values degrade silently.
+ * `thinking`/`effort` are accepted but intentionally not forwarded to the selector — they
+ * are provider-level execution hints with no influence on which provider/model is chosen.
  */
 export async function resolveIdentityModel(
   prefs: IModelPreferences,

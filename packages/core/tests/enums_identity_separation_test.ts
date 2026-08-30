@@ -7,14 +7,6 @@
 import { assertEquals, assertFalse, assertNotEquals } from "@std/assert";
 import { ActivityActor, ActorType, AgentKind, MemoryBankSource, RequestKind } from "@exaix/core";
 import { GroupingMode, LogGroupingMode, RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui";
-/**
- * Tests for Step 55.8: Enum value contracts
- *
- * Success Criteria:
- * - All IDENTITY-named enum members exist with correct values
- * - All legacy AGENT-named members are removed
- * - Enum string values match expected format
- */
 
 Deno.test("ActorType enum has correct string values", () => {
   assertEquals(ActorType.USER, "user");

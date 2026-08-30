@@ -34,11 +34,6 @@ export class GitCommands extends BaseCommand {
     super(context);
   }
 
-  /**
-   * List all branches with metadata
-   * @param pattern Optional glob pattern for branch names
-   * @returns List of branches
-   */
   async listBranches(pattern?: Opt<string, Reason.OptionalInput>): Promise<IBranchInfo[]> {
     const workspaceRoot = this.config.system.root;
 
@@ -84,11 +79,6 @@ export class GitCommands extends BaseCommand {
     return branches;
   }
 
-  /**
-   * Show branch details
-   * @param branchName Branch name
-   * @returns Branch info with commit history
-   */
   async showBranch(branchName: string): Promise<{ branch: IBranchInfo; commits: ICommitInfo[] }> {
     const workspaceRoot = this.config.system.root;
 
@@ -141,10 +131,6 @@ export class GitCommands extends BaseCommand {
     return { branch, commits };
   }
 
-  /**
-   * Get repository status
-   * @returns Git status information
-   */
   async status(): Promise<{
     branch: string;
     modified: string[];
@@ -197,11 +183,6 @@ export class GitCommands extends BaseCommand {
     return { branch, modified, added, deleted, untracked };
   }
 
-  /**
-   * Search commit log by trace_id
-   * @param traceId Trace ID to search for
-   * @returns Commits matching the trace_id
-   */
   async logByTraceId(traceId: string): Promise<ICommitInfo[]> {
     const workspaceRoot = this.config.system.root;
 
@@ -242,12 +223,7 @@ export class GitCommands extends BaseCommand {
     return commits;
   }
 
-  /**
-   * Get diff for a specific commit or branch
-   * @param ref Git reference (commit SHA, branch name, etc.)
-   * @param compare Optional comparison ref (default: parent commit)
-   * @returns Diff output
-   */
+  /** Diff for `ref`; `compare` defaults to the parent commit. */
   async diff(ref: string, compare?: Opt<string, Reason.OptionalInput>): Promise<string> {
     const workspaceRoot = this.config.system.root;
 
@@ -261,10 +237,6 @@ export class GitCommands extends BaseCommand {
     return await this.runGitCommand(args);
   }
 
-  /**
-   * Execute a git command and return stdout
-   * @private
-   */
   private async runGitCommand(args: string[]): Promise<string> {
     const cmd = new Deno.Command("git", {
       args,

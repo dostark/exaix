@@ -69,12 +69,8 @@ export interface IRunner {
 }
 
 /**
- * Dependencies for constructing a fresh, per-call `AgentOrchestrator` inside
- * `runWithStrategy` — never a constructed `AgentOrchestrator` instance (GAP-2): the only
- * existing production construction pattern (`PlanExecutor.createAgentExecutor`) builds a
- * trace-scoped `PathResolver` and a portal-scoped `ToolRegistry` per execution, and
- * `AgentOrchestrator` carries instance-level mutable state (`planWrittenFiles`) that must
- * not survive past one call or it silently pre-authorizes a later, unrelated step's writes.
+ * Dependencies for constructing a fresh, per-call `AgentOrchestrator` — never a shared
+ * instance, since it carries mutable state (`planWrittenFiles`) that must not survive past one call.
  */
 export interface IAgentOrchestratorConstructionDeps {
   config: Config;
@@ -84,22 +80,13 @@ export interface IAgentOrchestratorConstructionDeps {
   provider?: IModelProvider;
   modelResolver?: ModelResolver;
   /**
-   * Test-only escape hatch: inject a custom `StrategyRegistry` (e.g. spy strategies) to
-   * avoid a live provider or subprocess in unit tests. Production wiring (Step 5) never
-   * sets this, so `AgentOrchestrator`'s own default registry (real ReAct/MCP/CliDelegate)
-   * applies there.
+   * Test-only escape hatch: inject a custom `StrategyRegistry` (e.g. spy strategies) to avoid
+   * a live provider/subprocess; production never sets this, so the default registry applies.
    */
   strategyRegistry?: StrategyRegistry;
 }
 
-/**
- * Maximum number of distinct flow-run `trace_id`s whose `planWrittenFiles` accumulator
- * `AgentOrchestratorAdapter` retains (post-gap analysis Step 10, GAP-1). Without a bound,
- * `planWrittenFilesByTrace` grows by one entry per unique trace_id for the daemon-boot
- * singleton adapter's entire lifetime. Mirrors the bounded-Map convention already
- * established for the identical trace-keyed-state-in-a-long-lived-singleton problem —
- * `apps/daemon/main.ts`'s `traceModelCache`/`TRACE_CACHE_MAX` (a prior "PG-6" remediation).
- */
+/** Bounds `planWrittenFiles` Map growth for this long-lived singleton (mirrors `apps/daemon/main.ts`'s `traceModelCache`). */
 export const PLAN_WRITTEN_FILES_TRACE_MAX: number = configurable({
   key: "flow.plan_written_files_trace_max",
   default: 100,
@@ -111,24 +98,11 @@ export const PLAN_WRITTEN_FILES_TRACE_MAX: number = configurable({
   swap: SwapClass.HOT,
 });
 
-/**
- * Adapter that wraps an IAgentRunner (or compatible IRunner) into FlowRunner's
- * IAgentExecutor interface. Loads blueprints by identityId and maps request types.
- */
+/** Wraps an IAgentRunner (or compatible IRunner) into FlowRunner's IAgentExecutor interface. */
 export class AgentOrchestratorAdapter {
   private loader: IBlueprintLoader;
 
-  /**
-   * Files legitimately written by an earlier step of the SAME flow run, keyed by that run's
-   * own `trace_id` — shared across the fresh, per-call `AgentOrchestrator` instances
-   * `runWithStrategy` constructs for each of that flow's steps (Phase 159 Step 8 finding: a
-   * later step's audit otherwise sees an empty Set and reverts an earlier step's still-
-   * uncommitted, legitimate write). Keying by trace_id (not sharing one Set process-wide)
-   * keeps different flow runs isolated, preserving GAP-2's guarantee. Grows for the lifetime
-   * of this adapter instance (the daemon's own lifetime) — a bounded, per-flow-run set of
-   * file paths, not cleaned up on flow completion; acceptable for now since each flow run
-   * adds a handful of entries, not unboundedly many.
-   */
+  /** Files legitimately written by an earlier flow step, keyed by trace_id and shared across this run's AgentOrchestrator instances so a later step's audit doesn't revert them. */
   private readonly planWrittenFilesByTrace = new Map<string, Set<string>>();
 
   constructor(
@@ -165,12 +139,7 @@ export class AgentOrchestratorAdapter {
     return await this.runner.run(blueprint, parsedRequest, undefined);
   }
 
-  /**
-   * Strategy-routed step execution (Phase 159). Builds a fresh, per-call
-   * `PathResolver`/`ToolRegistry`/`AgentOrchestrator` (mirroring
-   * `PlanExecutor.createAgentExecutor`), dispatches through the forced strategy, and
-   * bridges the returned `IChangesetResult.description` into `IAgentExecutionResult.content`.
-   */
+  /** Strategy-routed step execution: builds a fresh per-call PathResolver/ToolRegistry/AgentOrchestrator (mirroring PlanExecutor.createAgentExecutor) and bridges the result into IAgentExecutionResult.content. */
   async runWithStrategy(
     identityId: string,
     request: IFlowStepRequest,
@@ -196,9 +165,9 @@ export class AgentOrchestratorAdapter {
     const traceId = request.traceId ?? crypto.randomUUID();
     const pathResolver = new PathResolver(config, { traceId });
     const toolRegistry = new ToolRegistry({ config, traceId, baseDir: portalConfig.target_path, pathResolver });
-    // Bounded, least-recently-touched-evicted map (post-gap Step 10, GAP-1): re-inserting a
-    // key moves it to the end of the Map's iteration order, so an actively-touched trace is
-    // never the oldest entry and is never evicted while its flow run is still in progress.
+    // Bounded, least-recently-touched-evicted map: re-inserting a key moves it to the end of
+    // the Map's iteration order, so an actively-touched trace is never the oldest entry and
+    // is never evicted while its flow run is still in progress.
     let planWrittenFiles = this.planWrittenFilesByTrace.get(traceId);
     if (planWrittenFiles) {
       this.planWrittenFilesByTrace.delete(traceId);
@@ -239,17 +208,9 @@ export class AgentOrchestratorAdapter {
         strategy,
       };
       const result = await orchestrator.executeStep(context, options);
-      // A flow step's prompt (flowStepOutputInstruction, flow_runner.ts) requires the model
-      // to wrap its answer in <thought>/<content> tags, and for a final step, the <content>
-      // body must parse as plan JSON downstream. ReActLoopStrategy already extracts just the
-      // <content> body via its own OutputParser call before returning (createFinalResult);
-      // CliDelegateStrategy does not (`description: parsed.lastText`, the model's raw,
-      // unparsed text) — so bridging `result.description` unchanged fed the whole
-      // thought+content text into plan-JSON parsing and got rejected ("Invalid JSON:
-      // Unexpected token '<'", Phase 159 Step 8 live finding). Extracting here (not inside
-      // CliDelegateStrategy) keeps the fix scoped to this bridge — react's already-clean
-      // description has no <content> wrapper, so parseXMLTags' own no-tags-found fallback
-      // returns it unchanged.
+      // A flow step's prompt requires wrapping the answer in <thought>/<content> tags. ReAct
+      // already extracts the <content> body; CliDelegate returns raw unparsed text, so this
+      // bridge calls parseXMLTags itself (a no-op for react's already-clean description).
       const { content } = new OutputValidator().parseXMLTags(result.description);
       return {
         thought: `Strategy-routed step completed via ${strategy}`,

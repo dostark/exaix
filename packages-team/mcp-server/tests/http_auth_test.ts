@@ -189,13 +189,9 @@ Deno.test("[MCPServer auth] with mcp.require_auth=true, RFC 9728 protected-resou
 
 Deno.test("[security][MCPServer auth] with mcp.require_auth=true, the SSE trace-stream route is reachable without a bearer token (Phase 170 Weakness 2)", async () => {
   await withMCPServerAuth({ requireAuth: true, authTokenValue: "correct-token" }, async ({ server }) => {
-    // The trace-stream route is dispatched in buildHttpFetch() before the authGate check runs
-    // (server.ts's SseHandler.matchesTraceIdRoute branch returns early, bypassing authGate
-    // entirely). This regression test targets that ordering bug: it must be impossible to reach
-    // the SSE handler's own internal validation (400 for an invalid trace id) without first
-    // passing the bearer-auth gate (401). An intentionally-invalid trace id keeps the assertion
-    // safe/deterministic -- it never opens a real SseHandler.streamEvents() subscription, so
-    // there is no live stream to clean up.
+    // The trace-stream route is dispatched in buildHttpFetch() before the authGate check runs,
+    // bypassing it entirely, so this targets that ordering bug: an invalid trace id keeps the
+    // assertion safe (never opens a real SSE stream) while still requiring 401 before 400.
     const response = await server.buildHttpFetch()(
       new Request("http://localhost:3000/api/v1/traces/not-a-valid-trace-id/stream", {
         method: "GET",

@@ -15,13 +15,8 @@ import { ExecutionLoop } from "@exaix/execution";
 import type { ProviderType } from "@exaix/core";
 
 /**
- * Reproduction Test for Issue 001: Daemon Plan Lifecycle (Zombie Plans)
- *
- * This test replicates the behavior in src/main.ts where a plan is manually
- * parsed and executed. It verifies that when execution fails:
- * 1. The plan remains in Workspace/Active (Zombie state)
- * 2. No failure report is generated
- * 3. Git state is not reverted (impossible to test easily here without full git repo, but implied)
+ * Reproduces the zombie-plan lifecycle: when a manually parsed/executed plan's execution
+ * fails, it stays in Workspace/Active (never cleaned up) and no failure report is written.
  */
 Deno.test("Reproduction: Zombie Plan Lifecycle in Manual Execution Mode", async () => {
   // 1. Setup Environment

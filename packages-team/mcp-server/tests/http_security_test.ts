@@ -171,10 +171,8 @@ Deno.test("MCPServer: supports SSE transport configuration", async () => {
 
 Deno.test("MCPServer: handles HTTP POST requests", async () => {
   await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
-    // Create a mock initialize request. Host and Accept headers are required by the
-    // official SDK's Streamable HTTP transport (confirmed empirically) — a real client
-    // (or a real Deno.serve() connection) always sets Host; Accept negotiates the
-    // response framing.
+    // Host and Accept headers are required by the SDK's Streamable HTTP transport; a
+    // real client always sets Host, and Accept negotiates the response framing.
     const initRequest = new Request("http://localhost:3000", {
       method: "POST",
       headers: {
@@ -201,10 +199,8 @@ Deno.test("MCPServer: handles HTTP POST requests", async () => {
     assert(response.headers.get("X-Frame-Options") !== null);
     assert(response.headers.get("Strict-Transport-Security") !== null);
 
-    // Real Streamable HTTP (per spec, both legacy and modern legs) always frames a
-    // response as a single-event SSE stream, never bare application/json — confirmed
-    // empirically against the vendored SDK; this is the actual spec behavior this phase
-    // migrates onto, not a regression (see buildHttpFetch's doc comment).
+    // Streamable HTTP always frames a response as a single-event SSE stream, never bare
+    // application/json — this is the actual spec behavior, not a regression.
     assertEquals(response.headers.get("Content-Type"), "text/event-stream");
     assertEquals(response.status, 200);
   });
@@ -305,7 +301,7 @@ Deno.test("security: MCPServer allows a same-origin localhost request", async ()
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Step 3 (Phase 163) — legacy posture and listener lifecycle
+// Legacy posture and listener lifecycle
 
 /** Minimal shape of a parsed JSON-RPC response envelope. */
 interface ISseJsonRpcEnvelope {
@@ -353,7 +349,7 @@ Deno.test(
       const port = server.startHTTPServer(0);
 
       // The listener must actually accept connections before stop() — proves the port
-      // captured by startHTTPServer (Pre-Gap Analysis GAP-9) is real and reachable.
+      // captured by startHTTPServer is real and reachable.
       const before = await fetch(`http://localhost:${port}/`, { method: "GET" });
       await before.body?.cancel();
 

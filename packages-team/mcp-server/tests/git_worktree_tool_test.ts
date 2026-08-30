@@ -32,13 +32,8 @@ async function git(args: string[], cwd: string): Promise<{ code: number; stdout:
 }
 
 /**
- * Commits the seeded file and puts the resulting commit on a branch, returning both.
- *
- * The pin is exercised through a BRANCH ref rather than a raw SHA on purpose. `git worktree add
- * <path> <sha>` detaches on its own whenever the ref is a commit, so a SHA-based test passes
- * identically whether or not the tool forwards `--detach` — it re-asserts a git default instead of
- * this handler's flag handling. A branch ref makes the flag load-bearing: with `--detach` the
- * checkout is detached at the branch tip, without it the checkout is attached to the branch.
+ * Uses a BRANCH ref (not a raw SHA) so `--detach` is load-bearing: a SHA-based pin auto-detaches
+ * regardless of the flag, while a branch ref differs between detached and attached checkout.
  */
 async function seedCommit(portalPath: string): Promise<{ sha: string; branch: string }> {
   const branch = "pinned-base";

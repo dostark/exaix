@@ -129,10 +129,8 @@ Deno.test("GoogleProvider.attemptGenerate with priorTurn produces Gemini-legal c
   });
 
   assertExists(body.contents);
-  // Gemini rejects a conversation whose FIRST turn is a model functionCall ("function call
-  // turn must come immediately after a user turn or after a function response turn",
-  // HTTP 400 on a live two-iteration native run — GAP-153-E). The user text must lead, so
-  // the model functionCall has an immediately-prior user turn.
+  // User text must lead so the replayed model functionCall has an immediately preceding
+  // user turn, as required by Gemini's conversation ordering.
   assertEquals(body.contents.length, 3);
   assertEquals(body.contents[0].role, "user");
   assertEquals(body.contents[0].parts[0].text, "test prompt");

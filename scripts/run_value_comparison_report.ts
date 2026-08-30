@@ -182,8 +182,7 @@ export interface IFlowValueReportResult {
   valueReport: IFlowValueReport;
 }
 
-/** Calls the real `computePairedComparison`, and `computeValuePerToken` when a token
- *  delta is supplied — the arm-comparison half of GAP-1a's call-site. */
+/** Calls the real `computePairedComparison`, and `computeValuePerToken` when a token delta is supplied. */
 export function computeArmComparisonReport(request: IArmComparisonRequest): IArmComparisonReport {
   const comparison = computePairedComparison(request.input);
   if (request.deltaPromptTokens === undefined) {
@@ -192,10 +191,8 @@ export function computeArmComparisonReport(request: IArmComparisonRequest): IArm
   return { comparison, valuePerToken: computeValuePerToken(comparison.meanDelta, request.deltaPromptTokens) };
 }
 
-/** Calls the real `evaluateValidityGate`, then — when admitted — the real
- *  `assertValidityGate` too, confirming the throwing enforcement form agrees with the
- *  non-throwing one rather than only ever calling one of the two. This is the
- *  validity-gate half of GAP-1a's call-site for both functions. */
+/** Calls the real `evaluateValidityGate`, then — when admitted — the real `assertValidityGate`
+ *  too, confirming the throwing enforcement form agrees with the non-throwing one. */
 export function computeValidityGateReport(request: IValidityGateRequest): IValidityGateResult {
   const result = evaluateValidityGate(request.binding, request.evidence, request.valueRunCommitSha);
   if (result.admitted) {
@@ -206,9 +203,8 @@ export function computeValidityGateReport(request: IValidityGateRequest): IValid
   return result;
 }
 
-/** Calls the real `computePairedComparison` then `assertPlaceboDetected` — the
- *  placebo-arm half of GAP-1a's call-site. Catches the assertion's throw and reports
- *  detected:false with the reason, rather than aborting the whole report run. */
+/** Calls the real `computePairedComparison` then `assertPlaceboDetected`, catching the
+ *  assertion's throw and reporting detected:false with the reason instead of aborting. */
 export function computePlaceboReport(request: IArmComparisonRequest): IPlaceboReport {
   const comparison = computePairedComparison(request.input);
   try {
@@ -219,7 +215,7 @@ export function computePlaceboReport(request: IArmComparisonRequest): IPlaceboRe
   }
 }
 
-/** Calls the real `computeSkillReachability` — GAP-1b's skill-reachability call-site. */
+/** Calls the real `computeSkillReachability`. */
 export function computeSkillReachabilityReport(request: ISkillReachabilityRequest): ISkillReachabilityResult {
   return computeSkillReachability(
     request.catalog,
@@ -229,8 +225,7 @@ export function computeSkillReachabilityReport(request: ISkillReachabilityReques
   );
 }
 
-/** Calls the real `computePairedComparison` per screening entry, then the real
- *  `planFullTrials` — GAP-1b's full-trial-planning call-site. */
+/** Calls the real `computePairedComparison` per screening entry, then the real `planFullTrials`. */
 export function computeSkillFullTrialPlan(request: ISkillFullTrialPlanRequest): IFullTrialCandidate[] {
   const screening = request.screening.map((entry) => ({
     skillId: entry.skillId,
@@ -239,9 +234,8 @@ export function computeSkillFullTrialPlan(request: ISkillFullTrialPlanRequest): 
   return planFullTrials(screening, new Set(request.criticalSkillIds), request.topN);
 }
 
-/** Calls the real `computePairedComparison` per result, then the real
- *  `buildSkillValueReport` and `assertSkillDecisionsRecorded` — GAP-1b's skill
- *  value-reporting call-site. Catches the decisions assertion's throw rather than
+/** Calls the real `computePairedComparison` per result, then `buildSkillValueReport` and
+ *  `assertSkillDecisionsRecorded`, catching the decisions assertion's throw rather than
  *  aborting the whole report run. */
 export function computeSkillValueReport(request: ISkillValueReportRequest): ISkillValueReportResult {
   const results = request.results.map((entry) => ({
@@ -258,21 +252,18 @@ export function computeSkillValueReport(request: ISkillValueReportRequest): ISki
   }
 }
 
-/** Calls the real `computePairedComparison` then `groupDeltasByTaskType` — GAP-1b's
- *  identity per-task-type call-site. */
+/** Calls the real `computePairedComparison` then `groupDeltasByTaskType`. */
 export function computeIdentityTaskTypeReport(request: IIdentityTaskTypeRequest): ITaskTypeGroup[] {
   const comparison = computePairedComparison(request.input);
   return groupDeltasByTaskType(comparison.perTask, request.taskTypeById);
 }
 
-/** Calls the real `computePairedComparison` then `interpretPruneVerdict` — GAP-1b's
- *  identity-config prune-verdict call-site. */
+/** Calls the real `computePairedComparison` then `interpretPruneVerdict`. */
 export function computeIdentityPruneReport(request: IIdentityPruneRequest): PruneVerdict {
   return interpretPruneVerdict(computePairedComparison(request.input));
 }
 
-/** Calls the real `computeFlowReachability` and `buildFlowValueReport` — GAP-1b's
- *  flow-value call-site. */
+/** Calls the real `computeFlowReachability` and `buildFlowValueReport`. */
 export function computeFlowValueReport(request: IFlowValueRequest): IFlowValueReportResult {
   const reachability = computeFlowReachability(request.catalog, request.coverage);
   const results = request.results.map((entry) => ({
@@ -285,10 +276,8 @@ export function computeFlowValueReport(request: IFlowValueRequest): IFlowValueRe
   return { reachability, valueReport };
 }
 
-/** Calls the real `computeJudgeCalibration` — GAP-1b's judge-calibration call-site.
- *  Corrected inclusion: reachability and trustworthiness are separate questions, and
- *  synthetic input proves the former exactly as validly here as for every other
- *  function in this script. */
+/** Calls the real `computeJudgeCalibration`. Reachability and trustworthiness are separate
+ *  questions; synthetic input proves the former exactly as validly here as elsewhere. */
 export function computeJudgeCalibrationReport(input: IJudgeCalibrationInput): IJudgeCalibrationResult {
   return computeJudgeCalibration(input);
 }

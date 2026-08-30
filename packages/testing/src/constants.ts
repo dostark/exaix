@@ -13,10 +13,8 @@ import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION, ProviderType } 
 export const TEST_MODEL_OPENAI = "openai-gpt-4.1";
 
 // ============================================================================
-// Testing Constants
+// Testing Constants (exclusively used in tests)
 // ============================================================================
-// This module contains constants used exclusively in test files.
-// For production constants, see @exaix/core/config.
 
 // Test Prompts
 export const REGRESSION_TEST_PROMPT = "Hello, reply with 'OK'";
@@ -307,11 +305,8 @@ export const ENV_TEST_LLM_MODEL = "EXA_TEST_LLM_MODEL";
 
 const DEFAULT_TEST_LLM_PROVIDER: string = ProviderType.ANTHROPIC;
 
-// Deliberately NOT TEST_MODEL_ANTHROPIC/TEST_MODEL_GOOGLE/TEST_MODEL_OPENAI above — those
-// are stable placeholder strings for offline/mock tests (registry construction, token-usage
-// mapping, audit logging) allowed to go stale since none of them call a real API. A live
-// call needs a model that actually resolves today, per provider — so overriding
-// EXA_TEST_LLM_PROVIDER alone (without EXA_TEST_LLM_MODEL) still yields a working pair.
+// Maps providers to real, currently resolving live models (overriding EXA_TEST_LLM_PROVIDER
+// alone yields a working pair).
 const TEST_LLM_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
   [ProviderType.ANTHROPIC]: "claude-haiku-4-5-20251001",
   [ProviderType.OPENAI]: "gpt-5-mini",
@@ -323,11 +318,7 @@ export function getTestLlmProvider(): string {
   return Deno.env.get(ENV_TEST_LLM_PROVIDER) ?? DEFAULT_TEST_LLM_PROVIDER;
 }
 
-/**
- * The model a live-provider test should target: EXA_TEST_LLM_MODEL, else a current, valid
- * model for the resolved provider (getTestLlmProvider() — so overriding just the provider
- * still produces a working pair, not a mismatched provider/model).
- */
+/** Model targeted by live-provider tests: EXA_TEST_LLM_MODEL or provider-specific default. */
 export function getTestLlmModel(): string {
   const envModel = Deno.env.get(ENV_TEST_LLM_MODEL);
   if (envModel) return envModel;

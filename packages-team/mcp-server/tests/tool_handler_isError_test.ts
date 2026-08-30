@@ -355,8 +355,5 @@ Deno.test("QueryJournalTool: database failure returns isError:true, not thrown e
   assertIsErrorResponse(response);
 });
 
-// The ToolErrorCode taxonomy was previously "covered" here by asserting each member equalled its
-// own name (`ToolErrorCode.NOT_FOUND === "NOT_FOUND"`) — a restatement of the enum that passed
-// whether or not any handler emitted a code, and that omitted COMMAND_BLOCKED while claiming to
-// check them all. What the taxonomy is for — a classification observable downstream — is asserted
-// in packages/mcp/tests/tool_error_code_journal_test.ts.
+// Full ToolErrorCode taxonomy coverage (not a self-referential enum-name check) lives in
+// packages/mcp/tests/tool_error_code_journal_test.ts.

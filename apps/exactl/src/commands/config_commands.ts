@@ -230,7 +230,7 @@ export class ConfigCommands extends BaseCommand {
 
   // Renders overrides to a temp file, opens $EDITOR, and re-applies changed lines through
   // adapter.set() so lock/validation/debounce still apply (blocklist enforcement remains
-  // MCP-only, per design GAP-2). A non-zero editor exit discards all changes.
+  // MCP-only). A non-zero editor exit discards all changes.
   async edit(): Promise<void> {
     const adapter = await this.ensureAdapter();
     const overrides = adapter.listOverrides();
@@ -257,7 +257,7 @@ export class ConfigCommands extends BaseCommand {
       }
 
       const edited = await Deno.readTextFile(tmpPath);
-      // Pre-validate all changed lines before applying any (GAP-3).
+      // Pre-validate all changed lines before applying any.
       const pending: Array<{ key: string; value: ConfigValue }> = [];
       const errors: string[] = [];
       for (const line of edited.split("\n")) {

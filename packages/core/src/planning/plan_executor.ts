@@ -55,10 +55,8 @@ export interface IPlanStep {
   number: number;
   title: string;
   content: string;
-  /**
-   * Optional success criteria for this step. When populated, the daemon-side
-   * callback uses these as acceptanceCriteria for the delegate brief.
-   */
+  /** Success criteria for this step; when populated, the daemon-side callback
+   *  uses these as acceptanceCriteria for the delegate brief. */
   successCriteria?: string[];
 }
 
@@ -84,32 +82,19 @@ export interface IPlanExecutorOptions {
   amendmentGate?: IPlanAmendmentGate;
   /** Optional guardrail runner. When provided, built in createAgentExecutor. */
   guardrailRunner?: IGuardrailRunner;
-  /** Request-level IModelIntent fields that override blueprint values (Phase 132). */
+  /** Request-level IModelIntent fields that override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
-  /**
-   * Phase 135 Step 9 (GAP-C9): the resolver threaded into AgentOrchestrator so
-   * resolveModelFromBlueprint's ModelResolver.resolve() branch is reachable during real
-   * plan execution — without it, best/route/auto-admit/task_type derivation is
-   * unreachable regardless of identity blueprint content.
-   */
+  /** Resolver threaded into AgentOrchestrator so resolveModelFromBlueprint's
+   *  ModelResolver.resolve() branch is reachable during real execution — without it,
+   *  best/route/auto-admit/task_type derivation never fires, regardless of blueprint content. */
   modelResolver?: ModelResolver;
-  /**
-   * Phase 135 Step 11 (GAP-10, context-window half): the edition-selected registry
-   * threaded into AgentOrchestrator's internally-constructed PromptBudgetAllocator, so a
-   * step's real context-window resolution reaches production instead of always
-   * falling back to the hardcoded 128K default — without it, PromptBudgetAllocator
-   * never receives a registry and every allocate() call takes the fallback branch
-   * regardless of the resolved model's real context window.
-   */
+  /** Edition-selected registry threaded into AgentOrchestrator's PromptBudgetAllocator so
+   *  context-window resolution reaches production instead of the hardcoded 128K fallback —
+   *  without it every allocate() call ignores the resolved model's real context window. */
   modelRegistry?: IModelRegistry;
-  /**
-   * Optional callback invoked when a code-changes delegation result is
-   * reconciled. PlanExecutor calls this to delegate code-change steps to a
-   * foreign agent without importing the concrete launcher (layer-boundary seam).
-   * `worktreePath` is PlanExecutor's executionRoot — the real git worktree the
-   * execution loop created — so the delegate spawns in the directory that exists
-   * (not a recomputed one). Phase 111 Step 7; LIVE-RT worktree-path fix.
-   */
+  /** Invoked when a code-changes delegation result is reconciled; lets PlanExecutor delegate
+   *  code-change steps to a foreign agent without importing the concrete launcher. `worktreePath`
+   *  is PlanExecutor's real git worktree, so the delegate spawns where it actually exists. */
   onCodeChangesDelegate?: (
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
@@ -134,10 +119,8 @@ export interface IPlanAction {
   description?: string;
 }
 
-/**
- * Read `tags` off a plan context's frontmatter for skill trigger matching. The frontmatter
- * is an untyped JSON map here, and YAML admits either a list or a lone string.
- */
+/** Reads `tags` off a plan context's frontmatter for skill trigger matching (untyped JSON map;
+ *  YAML admits either a list or a lone string). */
 function frontmatterTags(context: IPlanContext): string[] | undefined {
   const raw = context.frontmatter?.tags;
   if (Array.isArray(raw)) {
@@ -148,13 +131,9 @@ function frontmatterTags(context: IPlanContext): string[] | undefined {
   return undefined;
 }
 
-/**
- * Concatenate every step's title and content into one document. Passed as
- * IExecutionContext.full_plan alongside each step's own fragment — a strategy
- * that drives a whole-task-at-once agent (CliDelegateStrategy) uses this to
- * orient on the complete plan instead of only the current step's isolated
- * instruction; ReAct/legacy strategies ignore it.
- */
+/** Concatenates every step's title and content into one document, passed as
+ *  IExecutionContext.full_plan so a whole-task-at-once strategy (CliDelegateStrategy) can
+ *  orient on the complete plan; ReAct/legacy strategies ignore it. */
 export function buildFullPlanText(steps: IPlanStep[]): string {
   return steps
     .map((step) => `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`)
@@ -322,12 +301,9 @@ export class PlanExecutor {
       options.matchedSkillTools = matchedSkillTools;
     }
 
-    // Phase 135 Step 11 (GAP-10, context-window half): build the allocator here (rather
-    // than leaving it undefined) so AgentOrchestrator's default construction
-    // (`promptBudgetAllocator ?? new PromptBudgetAllocator(...)`) is bypassed with one
-    // that carries the edition-selected registry. When modelRegistry is absent (e.g.
-    // tests that don't inject one), pass undefined through unchanged — AgentOrchestrator's
-    // own default still applies, preserving prior behavior exactly.
+    // Builds the allocator here (rather than leaving it undefined) so it carries the
+    // edition-selected registry, bypassing AgentOrchestrator's own default construction.
+    // When modelRegistry is absent, undefined passes through and that default still applies.
     const promptBudgetAllocator = this.options.modelRegistry
       ? new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger, this.options.modelRegistry)
       : undefined;
@@ -358,15 +334,9 @@ export class PlanExecutor {
     });
   }
 
-  /**
-   * Reachability Ledger (Phase 135): resolve the skill-trigger tier of
-   * deriveTaskType's precedence chain by re-running the same skill match the request
-   * already went through — using the plan's originating request subject (frontmatter.subject,
-   * carried through from RequestProcessor) against the application context's SkillsService,
-   * which is available here via IPlanExecutorOptions.context but was previously never called
-   * from PlanExecutor's path. Returns [] (not populated on options) when no skills service is
-   * configured, no match is found, or a match's triggers carry no recognised TaskType value.
-   */
+  /** Reachability Ledger: resolves the skill-trigger tier of deriveTaskType's precedence
+   *  chain by re-running the same skill match against the plan's request subject via
+   *  SkillsService; returns [] when unconfigured, unmatched, or no TaskType recognised. */
   private async deriveTopSkillTaskTypes(context: IPlanContext): Promise<TaskType[]> {
     const skills = this.options.context?.skills;
     const requestText = context.frontmatter.subject;
@@ -388,15 +358,9 @@ export class PlanExecutor {
     return candidateTaskTypes.filter((value): value is TaskType => knownTaskTypes.has(value));
   }
 
-  /**
-   * Re-runs the same skill match as deriveTopSkillTaskTypes (a second matchSkills call —
-   * kept separate rather than sharing one call, to leave deriveTopSkillTaskTypes's existing,
-   * tested behaviour untouched), then fetches each matched skill's full ISkill to read its
-   * `tools` declaration. Returns one array per match (in match order) for
-   * AgentOrchestrator's matchedSkillTools option, which unions and intersects them with the
-   * identity's permitted_tools — see skill_tools_derivation.ts. Returns [] when no skills
-   * service is configured or no request subject is available.
-   */
+  /** Re-runs the same skill match as deriveTopSkillTaskTypes (kept separate to leave that
+   *  method's tested behaviour untouched), then fetches each match's full ISkill for its
+   *  `tools`; returns one array per match, unioned/intersected with permitted_tools by the caller. */
   private async deriveMatchedSkillTools(context: IPlanContext): Promise<Array<string[] | undefined>> {
     const skills = this.options.context?.skills;
     const requestText = context.frontmatter.subject;
@@ -418,10 +382,7 @@ export class PlanExecutor {
     );
   }
 
-  /**
-   * Execute all plan steps sequentially, collecting action reports.
-   * Returns the last successful commit SHA.
-   */
+  /** Executes all plan steps sequentially, collecting action reports; returns the last successful commit SHA. */
   private async executeSteps(
     context: IPlanContext,
     portalName: string,
@@ -464,7 +425,6 @@ export class PlanExecutor {
           );
         }
 
-        // Step 66.2: Low Confidence Trigger Detection
         if (this.options.confidenceScorer && this.config.amendment?.enabled) {
           const assessment = this.options.confidenceScorer.assessQuick(
             result.description,
@@ -500,7 +460,6 @@ export class PlanExecutor {
           output: result.description,
         });
       } catch (error) {
-        // Step 66.2: Tool Error / Guardrail Block Trigger Detection
         if (
           this.config.amendment?.enabled &&
           !(error instanceof PlanAmendmentPendingError)

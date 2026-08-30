@@ -19,9 +19,9 @@ export interface ICostTracker {
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
-      /** Provider-reported cost (Phase 135) — recorded verbatim as provider_reported. */
+      /** Provider-reported cost, recorded verbatim as provider_reported. */
       costUsd?: number;
-      /** Explicit cost_source override (Phase 135). */
+      /** Explicit override for the recorded cost source. */
       costSource?: CostSource;
     },
     traceId?: string,

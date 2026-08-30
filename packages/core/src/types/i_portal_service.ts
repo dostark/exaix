@@ -96,10 +96,7 @@ export interface IPortalService {
    */
   getKnowledge(portalAlias: string): Promise<IPortalKnowledge | null>;
 
-  /**
-   * Trigger codebase knowledge analysis for a portal.
-   * Returns a human-readable summary of the analysis.
-   */
+  /** Trigger codebase knowledge analysis for a portal; returns a human-readable summary. */
   analyze(
     alias: string,
     options?: { mode?: PortalAnalysisMode; force?: boolean },

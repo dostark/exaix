@@ -41,8 +41,7 @@ const AnthropicToolUseContentBlockSchema = z.object({
   input: z.record(z.string(), z.unknown()),
 });
 
-/** Replayed `thinking` content block (GAP-153-F): Anthropic requires passing prior thinking
- *  blocks back with the tool_use they accompanied, carrying their signature verbatim. */
+/** Replayed thinking content block passed back with signature verbatim. */
 const AnthropicThinkingContentBlockSchema = z.object({
   type: z.literal("thinking"),
   thinking: z.string(),

@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
 
 /**
@@ -22,17 +23,13 @@ export interface IEmbeddingSearchResult {
   similarity: number;
 }
 
-/**
- * Embedding vector dimension
- * Using 64 dimensions for mock embeddings - lightweight but sufficient
- * for demonstrating semantic similarity
- */
+/** 64-dimensional mock embedding vector interface. */
 export interface IMemoryEmbeddingService {
   initializeManifest(): Promise<void>;
   embedLearning(learning: ILearning): Promise<void>;
   searchByEmbedding(
     query: string,
-    options?: { limit?: number; threshold?: number },
+    options?: Opt<{ limit?: number; threshold?: number }, Reason.QueryFilter>,
   ): Promise<IEmbeddingSearchResult[]>;
   getEmbedding(id: string): Promise<number[] | null>;
   deleteEmbedding(id: string): Promise<void>;
@@ -41,9 +38,7 @@ export interface IMemoryEmbeddingService {
 
 const EMBEDDING_DIM = 64;
 
-/**
- * Embedding file structure (stored as JSON)
- */
+/** Embedding file structure (stored as JSON). */
 interface EmbeddingFile {
   id: string;
   title: string;
@@ -52,30 +47,20 @@ interface EmbeddingFile {
   created_at: string;
 }
 
-/**
- * Manifest entry for an embedding
- */
+/** Manifest entry for an embedding. */
 interface ManifestEntry {
   id: string;
   title: string;
   embeddingFile: string;
 }
 
-/**
- * Manifest file structure
- */
+/** Manifest file structure. */
 interface EmbeddingManifest {
   generated_at: string;
   index: ManifestEntry[];
 }
 
-/**
- * Calculate cosine similarity between two vectors
- *
- * @param a - First vector
- * @param b - Second vector
- * @returns Cosine similarity (-1 to 1)
- */
+/** Calculate cosine similarity between two vectors (-1 to 1). */
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) {
     throw new Error(`Vector length mismatch: ${a.length} vs ${b.length}`);
@@ -101,16 +86,7 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / (normA * normB);
 }
 
-/**
- * Generate a deterministic mock embedding from text
- *
- * Uses a simple hash-based approach to create reproducible vectors.
- * This is NOT suitable for production semantic search, but demonstrates
- * the embedding workflow without external dependencies.
- *
- * @param text - Text to embed
- * @returns Normalized embedding vector
- */
+/** Generate a deterministic normalized mock embedding vector from text. */
 export function generateMockEmbedding(text: string): number[] {
   const vector = new Array(EMBEDDING_DIM).fill(0);
 
@@ -153,36 +129,21 @@ export function generateMockEmbedding(text: string): number[] {
   return vector;
 }
 
-/**
- * Memory Embedding Service
- *
- * Manages embedding generation and search for memory learnings.
- *
- * @deprecated Use ProviderEmbeddingService from packages/memory/src/embedding/provider_embedding_service.ts.
- *   MemoryEmbeddingService uses deterministic hash-based mock vectors and is retained only for
- *   backward compatibility with existing test fixtures. All production code in the daemon
- *   now uses ProviderEmbeddingService with a real embedding provider.
- */
+/** @deprecated Use ProviderEmbeddingService with a real embedding provider. */
 export class MemoryEmbeddingService implements IMemoryEmbeddingService {
   private embeddingsDir: string;
   private manifestPath: string;
   private hnsw: HnswVectorIndex;
   private indexBuilt = false;
 
-  /**
-   * Create a new Memory Embedding Service instance
-   *
-   * @param config - Exaix configuration
-   */
+  /** Create a new Memory Embedding Service instance. */
   constructor(private config: Config) {
     this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
     this.hnsw = new HnswVectorIndex();
   }
 
-  /**
-   * Initialize the embeddings directory and manifest
-   */
+  /** Initialize the embeddings directory and manifest. */
   async initializeManifest(): Promise<void> {
     await ensureDir(this.embeddingsDir);
 
@@ -196,11 +157,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     }
   }
 
-  /**
-   * Embed a learning and save to file
-   *
-   * @param learning - ILearning to embed
-   */
+  /** Embed a learning and save to file. */
   async embedLearning(learning: ILearning): Promise<void> {
     await this.initializeManifest();
 
@@ -228,13 +185,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     this.indexBuilt = true;
   }
 
-  /**
-   * Update the manifest with a new or updated embedding
-   *
-   * @param id - ILearning ID
-   * @param title - ILearning title
-   * @param embeddingPath - Path to the embedding file
-   */
+  /** Update the manifest with a new or updated embedding. */
   private async updateManifest(id: string, title: string, embeddingPath: string): Promise<void> {
     let manifest: EmbeddingManifest;
 
@@ -268,16 +219,10 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     await Deno.writeTextFile(this.manifestPath, JSON.stringify(manifest, null, 2));
   }
 
-  /**
-   * Search for similar learnings using embedding similarity
-   *
-   * @param query - Search query text
-   * @param options - Search options (limit, threshold)
-   * @returns Array of search results sorted by similarity
-   */
+  /** Search for similar learnings using embedding similarity sorted by score. */
   async searchByEmbedding(
     query: string,
-    options?: { limit?: number; threshold?: number },
+    options?: Opt<{ limit?: number; threshold?: number }, Reason.QueryFilter>,
   ): Promise<IEmbeddingSearchResult[]> {
     await this.initializeManifest();
     const limit = options?.limit || 10;
@@ -328,12 +273,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     return results.slice(0, limit);
   }
 
-  /**
-   * Get embedding for a specific learning
-   *
-   * @param id - ILearning ID
-   * @returns Embedding vector or null if not found
-   */
+  /** Get embedding for a specific learning or null if not found. */
   async getEmbedding(id: string): Promise<number[] | null> {
     await this.initializeManifest();
     const embeddingPath = join(this.embeddingsDir, `${id}.json`);
@@ -350,11 +290,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     }
   }
 
-  /**
-   * Delete embedding for a specific learning
-   *
-   * @param id - ILearning ID
-   */
+  /** Delete embedding for a specific learning ID. */
   async deleteEmbedding(id: string): Promise<void> {
     await this.initializeManifest();
     const embeddingPath = join(this.embeddingsDir, `${id}.json`);
@@ -375,11 +311,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     this.hnsw.delete(id);
   }
 
-  /**
-   * Get statistics about embeddings
-   *
-   * @returns Embedding statistics
-   */
+  /** Get statistics about embeddings. */
   async getStats(): Promise<{ total: number; generated_at: string }> {
     await this.initializeManifest();
     if (!await exists(this.manifestPath)) {

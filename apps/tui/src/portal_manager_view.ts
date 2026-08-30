@@ -542,10 +542,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
 // ===== Knowledge Rendering =====
 
-/**
- * Render an IPortalKnowledge record into display lines for the TUI detail pane.
- * Returns a "no analysis" message when knowledge is null.
- */
+/** Renders an IPortalKnowledge record into detail-pane display lines ("no analysis" message when null). */
 export function renderKnowledgeSection(knowledge: IPortalKnowledge | null): string[] {
   if (!knowledge) {
     return ["No analysis available — run `exactl portal analyze`"];
@@ -561,7 +558,10 @@ export class PortalManagerView implements IPortalService {
   add(
     targetPath: string,
     alias: string,
-    options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    options?: Opt<
+      { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+      Reason.OptionalInput
+    >,
   ): Promise<void> {
     return this.service.add(targetPath, alias, options);
   }
@@ -574,11 +574,11 @@ export class PortalManagerView implements IPortalService {
     return this.service.show(alias);
   }
 
-  remove(alias: string, options?: { keepCard?: boolean }): Promise<void> {
+  remove(alias: string, options?: Opt<{ keepCard?: boolean }, Reason.OptionalInput>): Promise<void> {
     return this.service.remove(alias, options);
   }
 
-  verify(alias?: string): Promise<IVerificationResult[]> {
+  verify(alias?: Opt<string, Reason.OptionalInput>): Promise<IVerificationResult[]> {
     return this.service.verify(alias);
   }
 
@@ -588,7 +588,7 @@ export class PortalManagerView implements IPortalService {
 
   analyze(
     alias: string,
-    options?: { mode?: PortalAnalysisMode; force?: boolean },
+    options?: Opt<{ mode?: PortalAnalysisMode; force?: boolean }, Reason.OptionalInput>,
   ): Promise<string> {
     return this.service.analyze(alias, options);
   }
@@ -617,7 +617,7 @@ export class PortalManagerView implements IPortalService {
     return this.service.refreshPortal(alias);
   }
 
-  removePortal(alias: string, options?: { keepCard?: boolean }): Promise<boolean> {
+  removePortal(alias: string, options?: Opt<{ keepCard?: boolean }, Reason.OptionalInput>): Promise<boolean> {
     return this.service.removePortal(alias, options);
   }
 

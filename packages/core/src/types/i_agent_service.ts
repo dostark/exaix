@@ -14,11 +14,7 @@ export interface IAgentService {
    */
   listAgents(): Promise<IAgentStatusItem[]>;
 
-  /**
-   * Get logs for a specific agent.
-   * @param identityId The ID of the agent to fetch logs for.
-   * @param limit Maximum number of log entries to return.
-   */
+  /** Get logs for a specific agent. */
   getAgentLogs(identityId: string, limit?: number): Promise<IAgentLogEntry[]>;
 
   /**

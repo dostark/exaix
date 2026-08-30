@@ -54,9 +54,8 @@ function outcomeFor(err: Error): RegistryRefreshOutcome {
 }
 
 /**
- * Coarse cron→interval for the back-off cap and timer cadence. Recognises the standard
- * catalog/pricing/benchmark crons (step-hours, daily-at-hour, weekly-by-dow); falls back
- * to a 6h default for anything else. Not a full cron engine (§7 needs only a bound).
+ * Coarse cron→interval for the back-off cap and timer cadence; not a full cron engine,
+ * it recognises only the standard catalog/pricing/benchmark crons and falls back to 6h.
  */
 export function cronIntervalMs(expr: string): number {
   const parts = expr.trim().split(/\s+/);
@@ -96,11 +95,10 @@ export class RegistryRefreshScheduler {
 
   /**
    * Validate the configured crons, honour refresh_on_start (one immediate pass), and
-   * schedule the repeating timer. Under DENO_TEST=1 the real timer is skipped so unit
-   * tests never leak a handle (§ test discipline).
+   * schedule the repeating timer; under DENO_TEST=1 the real timer is skipped.
    */
   start(): void {
-    // GAP-5: reuse the canonical 5-field validator — throws on an invalid/injecting cron.
+    // Reuse the canonical 5-field validator — throws on an invalid/injecting cron.
     validateCronExpression(this.catalogCron);
     validateCronExpression(this.pricingCron);
 
@@ -131,8 +129,7 @@ export class RegistryRefreshScheduler {
 
   /**
    * One full refresh pass over every registered adapter. Each provider is independent:
-   * a failure audits + emits refresh.failed + arms back-off, and never rolls back a
-   * sibling provider's committed swap (§7.2 degrade-to-static).
+   * a failure audits + emits refresh.failed + arms back-off, never rolling back a sibling.
    */
   async refreshOnce(): Promise<void> {
     const now = Date.now();
@@ -271,8 +268,7 @@ export class RegistryRefreshScheduler {
 
 /**
  * Construct the scheduler ONLY when model_registry.enabled === true — the opt-in gate.
- * Returns undefined otherwise, so a disabled/Solo daemon never constructs it and makes
- * zero outbound calls (§7.2 default posture).
+ * Returns undefined otherwise, so a disabled/Solo daemon makes zero outbound calls.
  */
 export function maybeCreateRefreshScheduler(
   service: ModelRegistryService,

@@ -73,7 +73,7 @@ function copyRealDogfoodFlow(root: string): void {
   );
 }
 
-/** Copies every identity the real dogfood-meta-workflow flow references (pre-gap/next-steps/post-gap). */
+/** Copies every identity the real dogfood-meta-workflow flow references. */
 function copyDogfoodFlowIdentities(root: string): void {
   const dir = join(root, "Blueprints", "Identities");
   Deno.mkdirSync(dir, { recursive: true });
@@ -167,9 +167,9 @@ function writeReviewPassFixture(recordingsDir: string): void {
 const REACT_COMPLETION_SUMMARY =
   "Completed the step successfully with high confidence. The implementation is correct and verified.";
 
-/** The pre-gap/post-gap react steps need their own recordings: `MockLLMProvider` only falls
- * back to its generic pattern matcher when ZERO recordings are loaded, so the review-pass
- * recording above disables that fallback for every other prompt. Neither step's output is asserted on directly. */
+/** Each react step needs its own recording: `MockLLMProvider` only falls back to its generic
+ * pattern matcher when ZERO recordings are loaded, so the review-pass recording above disables
+ * that fallback for every other prompt. Neither step's output is asserted on directly. */
 function writeReactCompletionFixture(recordingsDir: string, filename: string, identityName: string): void {
   Deno.mkdirSync(recordingsDir, { recursive: true });
   Deno.writeTextFileSync(
@@ -502,7 +502,7 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
       const planContextRef = ".exa/PlanContext/hardened-fixture.md";
-      // pre-gap's file-change audit (AgentOrchestrator.auditGitChanges) flags ANY untracked
+      // The file-change audit (AgentOrchestrator.auditGitChanges) flags ANY untracked
       // file in the portal, including the PlanContext copy the generator just wrote — commit
       // it so the worktree is clean before the real flow's first step runs.
       await new Deno.Command("git", { args: ["add", "-A"], cwd: portalDir }).output();

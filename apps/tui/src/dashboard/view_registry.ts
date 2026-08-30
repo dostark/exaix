@@ -81,15 +81,9 @@ export interface IDashboardViewsAndServices {
 }
 
 /**
- * Initialize all views for the TUI dashboard.
- *
- * @param options - Dashboard initialization options
- * @returns Views and services for the dashboard
- *
- * @remarks
- * If `options.services` is provided, those services will be used directly.
- * Otherwise, mock services are created for test mode, or an error is thrown
- * for production mode (services should be created by the core factory).
+ * If `options.services` is provided those are used directly; otherwise mock services are
+ * created for test mode, or an error is thrown in production mode (services should be
+ * created by the core factory).
  */
 export function initDashboardViews(
   options: IDashboardViewOptions = {},

@@ -126,10 +126,8 @@ Deno.test("EventBusService: should drop events when subscriber queue exceeds max
     bus.publish(makeEvent({ traceId, payload: { seq: i } }));
   }
 
-  // With sync delivery, the callback receives all events directly.
-  // The backpressure is enforced on the internal queue, but since we process
-  // synchronously, all events flow through. Verify the bus handled the volume
-  // without throwing.
+  // With sync delivery, the callback receives all events directly since backpressure is
+  // enforced on the internal queue, not the synchronous delivery path.
   assertEquals(processCount, overflowCount);
 });
 

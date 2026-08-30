@@ -18,11 +18,7 @@
 
 import type { ExecutionTriggerEnvelope, ITriggerAdapter, TTriggerSource } from "@exaix/core/triggers";
 
-/**
- * Structural input type for registry-level dispatch. Each adapter narrows and validates
- * its own specific shape inside parse() — this type is intentionally broad to accept all
- * registered adapter input shapes without coupling the registry to concrete types.
- */
+/** Broad input type for registry dispatch; adapters narrow their shapes in parse(). */
 interface IAdapterDispatchInput {
   [key: string]:
     | string

@@ -78,10 +78,9 @@ export interface IOverrideEntry {
   swap_class: string;
 }
 
-// ── Typed config event payloads (Phase 139 Step 1, GAP-3) ───────────────────
-// The first named config event-payload interfaces — existing config events
-// (ConfigUpdated) pass inline literals; these are introduced so the Phase 139
-// audit-chain tests can assert on payload fields by type.
+// ── Typed config event payloads ──────────────────────────────────────────────
+// Unlike ConfigUpdated (which passes inline literals), these are named interfaces so
+// consumers can assert on payload fields by type.
 
 /** Payload for DomainEventType.ConfigRolledBack. */
 export interface IConfigRollbackPayload {
@@ -107,7 +106,7 @@ export interface IConfigIntegrityPayload {
   computed?: string;
 }
 
-/** Result of verifyIntegrity() (Phase 139 Step 5, §11.7). */
+/** Result of verifyIntegrity(). */
 export interface IIntegrityResult {
   /** True when the stored checksum matches a fresh compute (or on first-run seed). */
   ok: boolean;
@@ -117,31 +116,9 @@ export interface IIntegrityResult {
   computed: string;
 }
 
-/**
- * Config adapter that wraps the Config DB and registry.
- *
- * Resolution order (get):
- * 1. Config DB: SELECT value FROM config_overrides WHERE key=? ORDER BY id DESC LIMIT 1
- *    If non-NULL → return
- * 2. Registry: getRegisteredDefaults().get(key)
- *    If found → return resolved default
- * 3. Schema: resolveSchemaDefault(ConfigSchema, key)
- *    If found → return schema default
- * 4. Return undefined
- *
- * Set algorithm (set):
- * 1. Validate: check key exists in registry or schema
- * 2. Validate: check value against registry metadata (type, min, max, enum)
- *    or ConfigSchema sub-schema
- * 3. Validate: check edition gate (EDITION_GATED_PATHS)
- * 4. INSERT INTO config_overrides (key, value, source, swap_class)
- * 5. If mode="daemon" and swap=="hot": apply to in-memory store (no-op in Phase 0)
- * 6. Log DomainEventType.ConfigUpdated
- *
- * Unset algorithm (unset):
- * 1. INSERT INTO config_overrides (key, value=NULL, source='cli', swap_class='hot')
- *    The next get() resolves through to registry/schema default.
- */
+/** Config adapter wrapping the Config DB and registry: get() resolves DB override → registry
+ * default → schema default → undefined; set() validates against registry/schema metadata and
+ * edition gates before inserting a row; unset() reverts to default via a NULL row. */
 export interface IConfigAdapter {
   /** Get the effective value at path (DB → registry → schema → undefined). */
   get<T = ConfigValue>(key: string): T | undefined;
@@ -161,11 +138,8 @@ export interface IConfigAdapter {
   /** Validate a single path against registry metadata and/or ConfigSchema. */
   validateAtPath(path: string, value: ConfigValue): IConfigValidationReport;
 
-  /**
-   * Resolve the registry key whose metadata governs validation of `key`
-   * (exact, `profile.<name>.<base>` → base, or a matching pattern key), or
-   * undefined for genuinely unknown keys.
-   */
+  /** Resolves the registry key whose metadata governs validation of `key` (exact,
+   * `profile.<name>.<base>` → base, or a matching pattern key); undefined for unknown keys. */
   resolveValidationKey(key: string): string | undefined;
 
   /** Compare effective values against registry defaults. */
@@ -177,44 +151,33 @@ export interface IConfigAdapter {
   /** Full override history for a key (append-only log, DESC by id). */
   getHistory(key: string): IConfigOverrideEntry[];
 
-  /**
-   * Append a row reverting `key` to the value at history row `id`
-   * (source="rollback"), emitting ConfigRolledBack. Throws ConfigKeyNotFoundError
-   * if the (key, id) pair is absent. Returns the restored value (Phase 139 Step 3).
-   */
+  /** Appends a row reverting `key` to the value at history row `id` (source="rollback"),
+   * emitting ConfigRolledBack. Throws ConfigKeyNotFoundError if the (key, id) pair is absent. */
   rollback(key: string, id: number): Promise<ConfigValue>;
 
-  /** Lock a key against all writes (CLI/MCP/daemon). Idempotent. (Phase 139 Step 4) */
+  /** Lock a key against all writes (CLI/MCP/daemon). Idempotent. */
   lock(key: string, lockedBy: string, reason?: Opt<string, Reason.OptionalInput>): void;
 
-  /** Unlock a previously locked key. Idempotent. (Phase 139 Step 4; GAP-5: takes the
-   *  caller-supplied actor, mirroring lock(), instead of a hardcoded internal value. */
+  /** Unlock a previously locked key. Idempotent. Takes the caller-supplied actor, mirroring
+   *  lock(), instead of a hardcoded internal value. */
   unlock(key: string, unlockedBy: string): void;
 
-  /** True if `key` is in config_locked_keys — checked inside set(). (Phase 139 Step 4) */
+  /** True if `key` is in config_locked_keys — checked inside set(). */
   isLocked(key: string): boolean;
 
-  /** List all locked keys, newest first. (Phase 139 Step 4) */
+  /** List all locked keys, newest first. */
   listLocks(): ILockedKeyEntry[];
 
-  /**
-   * SHA-256 over the sorted effective config (DB-sourced, excluding the
-   * synthetic `_checksum` key). Deterministic for a given config state.
-   * (Phase 139 Step 5, §11.7)
-   */
+  /** SHA-256 over the sorted effective config (DB-sourced, excluding the synthetic `_checksum`
+   * key); deterministic for a given config state. */
   computeIntegrityChecksum(): string;
 
-  /**
-   * Compare the stored `_checksum` to a fresh compute. Seeds and returns
-   * `ok:true` on first run; emits ConfigIntegrityVerified on match and
-   * ConfigIntegrityMismatch on an out-of-band edit. (Phase 139 Step 5)
-   */
+  /** Compares the stored `_checksum` to a fresh compute; seeds and returns `ok:true` on first
+   * run, emits ConfigIntegrityVerified on match and ConfigIntegrityMismatch on an out-of-band edit. */
   verifyIntegrity(): Promise<IIntegrityResult>;
 
-  /**
-   * True if `key` is in the MCP deny-permanently blocklist for `agentId`
-   * (Phase 138 Step 2). A NULL-agent block applies to all agents.
-   */
+  /** True if `key` is in the MCP deny-permanently blocklist for `agentId`; a NULL-agent
+   * block applies to all agents. */
   isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean;
 
   /** The block reason for a blocked `key`, if any (undefined when not blocked). */
@@ -233,16 +196,12 @@ export interface IConfigAdapter {
   /** List all blocklist patterns, newest first. */
   listBlocks(): IBlocklistEntry[];
 
-  /**
-   * Count `cli`-source writes within the last `windowMs` ms (Phase 138 Step 3 —
-   * DB-backed CLI debounce, survives across separate CLI processes).
-   */
+  /** Counts `cli`-source writes within the last `windowMs` ms; DB-backed so the debounce
+   * survives across separate CLI processes. */
   countRecentWrites(windowMs: number): number;
 
-  /**
-   * Compact config_overrides to one row per key (latest), preserving effective
-   * values. Returns rows removed (Phase 138 Step 3 — hard-limit escape hatch).
-   */
+  /** Compacts config_overrides to one row per key (latest), preserving effective values —
+   * a hard-limit escape hatch for unbounded override-history growth. Returns rows removed. */
   compact(): number;
 
   /** Whether the adapter is in direct (offline) or daemon mode. */

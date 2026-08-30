@@ -84,19 +84,14 @@ export class PlanAdapter {
     this.validator = createOutputValidator({ autoRepair: true });
   }
 
-  /**
-   * Parse and validate LLM plan content as JSON
-   * @param content - Raw LLM content from <content> tags
-   * @returns Validated Plan object
-   * @throws PlanValidationError if JSON is invalid or doesn't match schema
-   */
+  /** Parses/validates raw LLM <content> as JSON into a Plan; throws PlanValidationError if
+   *  invalid or schema mismatch. */
   parse(content: string): Plan {
     const trimmed = content.trim();
 
-    // Phase 141 Step 3a: strip prose around structured spans before parsing.
-    // LLMs commonly wrap structured output in prose ("I've added...\n<plan>...\n</plan>\nDone").
-    // Extract the first <plan>...</plan> span for XML path, or rely on extractJsonObjectSpan
-    // in json_repair.ts for the JSON path.
+    // Strip prose around structured spans before parsing — LLMs commonly wrap structured
+    // output in prose ("I've added...\n<plan>...\n</plan>\nDone"). Extracts the first
+    // <plan>...</plan> span for XML, or relies on extractJsonObjectSpan for JSON.
 
     // Try to extract <plan>...</plan> span (non-greedy, first occurrence)
     const planMatch = trimmed.match(/<plan>[\s\S]*?<\/plan>/);
@@ -151,14 +146,9 @@ export class PlanAdapter {
     });
   }
 
-  /**
-   * Substitutes real IPlanAction[] arrays for every TOML_BLOCK:N sentinel in envelope, then
-   * validates against PlanSchema directly. Bypasses OutputValidator (and its this.metrics
-   * tracking) since envelope is guaranteed free of embedded source code and needs no
-   * repairJSON fallback — a deliberate, documented divergence from the pure-JSON path (Phase
-   * 151 GAP-4): OutputValidator.getMetrics()/AgentRunner.getValidationMetrics() have zero
-   * production consumers today, so this is currently inert.
-   */
+  /** Substitutes real IPlanAction[] arrays for every TOML_BLOCK:N sentinel, then validates
+   *  against PlanSchema directly — bypasses OutputValidator since envelope is guaranteed
+   *  free of embedded source code and needs no repairJSON fallback. */
   private parseWithTomlActionBlocks(
     envelope: string,
     actionsByBlock: Map<number, IPlanAction[]>,
@@ -271,10 +261,7 @@ and will fail parsing even when the JSON itself is correct.
 `.trim();
   }
 
-  /**
-   * Convert Plan object to markdown for human readability
-   * (used for plan file storage and display)
-   */
+  /** Converts Plan to markdown for plan file storage and display. */
   toMarkdown(plan: Plan): string {
     const sections: string[] = [];
 

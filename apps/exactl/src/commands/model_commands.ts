@@ -35,7 +35,7 @@ export interface ICharacteristicMap {
   [characteristic: string]: string[];
 }
 
-/** Options for `models list` (Phase 135 Step 8 adds the optional `--benchmark` filter). */
+/** Options for `models list`; `--benchmark` adds an optional advisory score column. */
 export interface IListModelsOptions {
   benchmark?: string;
 }
@@ -55,12 +55,11 @@ export interface IPresetMap {
 }
 
 /**
- * The parsed exa.config.toml as this command sees it. Only `model_presets` is typed;
- * other keys survive the parse→mutate→stringify round-trip untouched at runtime.
+ * Only `model_presets` is typed; other keys survive the parse→mutate→stringify round-trip.
  */
 export interface IConfigToml {
   model_presets?: IPresetMap;
-  /** Phase 135 Step 5: the Team live-registry block; only `enabled` is read by the CLI. */
+  /** The Team live-registry block; only `enabled` is read by the CLI. */
   model_registry?: { enabled?: boolean };
 }
 
@@ -71,9 +70,8 @@ const VALID_SIZES: readonly string[] = ["S", "M", "L", "XL"];
 const STALENESS_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 /**
- * ModelCommands provides the Solo curation surface. Display commands read the injected
- * `IModelRegistry` (the DefaultModelRegistry floor); `config model` writes curated lists
- * to exa.config.toml via TOML write-back (the resolver's read surface).
+ * Display commands read the injected `IModelRegistry` floor; `config model` writes curated
+ * lists to exa.config.toml via TOML write-back (the resolver's read surface).
  */
 export class ModelCommands {
   constructor(
@@ -85,10 +83,9 @@ export class ModelCommands {
   // ── Display: models list / models pricing ──────────────────────────────────
 
   /**
-   * `models list [--benchmark <name>]` — provider:model, provenance, and verified_at
-   * staleness from the floor. With `--benchmark`, appends an advisory score column
-   * (§5.8.5) read via the injected `IBenchmarkReader` (Team only) — "-" when no reader
-   * is wired (Solo) or the model is unscored on that benchmark (honest degradation).
+   * `models list [--benchmark <name>]` shows provider:model, provenance, and verified_at
+   * staleness; `--benchmark` adds an advisory score column showing "-" when no reader is
+   * wired or the model is unscored (honest degradation).
    */
   async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<void> {
     const providers = await this.registry.getAllProviders();
@@ -150,12 +147,9 @@ export class ModelCommands {
   // ── Team: models refresh ────────────────────────────────────────────────────
 
   /**
-   * `models refresh` (Team surface, Phase 135 Step 5). The refresh itself runs inside the
-   * daemon's RegistryRefreshScheduler (cron-driven, or one immediate pass when
-   * `refresh_on_start`) — the CLI process holds only the Solo floor and cannot reach the
-   * live registry. So this command reads `model_registry.enabled`: when disabled/absent
-   * (Solo default) it refuses with guidance to enable the block; when enabled it points
-   * the operator at the daemon's refresh lifecycle.
+   * `models refresh` (Team surface). The refresh itself runs inside the daemon's
+   * RegistryRefreshScheduler; the CLI process holds only the Solo floor and cannot reach the
+   * live registry, so this reads `model_registry.enabled` to decide whether to refuse or guide.
    */
   // deno-lint-ignore require-await -- async so the guard's synchronous throw rejects the promise
   async refreshModels(): Promise<void> {
@@ -178,10 +172,9 @@ export class ModelCommands {
   // ── Curation: config model ──────────────────────────────────────────────────
 
   /**
-   * `config model --size <S> <entries…>` — validate and write a curated candidate list.
-   * Solo semantics (G10): each entry's provider must parse; an unregistered provider is
-   * allowed (flagged `unconfigured` on read); an ambiguous bare name is rejected. The
-   * whole write is atomic — any rejection leaves the file untouched (no partial state).
+   * `config model --size <S> <entries…>` validates and writes a curated candidate list.
+   * An unregistered provider is allowed (flagged `unconfigured`); an ambiguous bare name is
+   * rejected. The write is atomic — any rejection leaves the file untouched.
    */
   async setCandidates(size: string, entries: string[]): Promise<void> {
     this.assertValidSize(size);
@@ -193,10 +186,7 @@ export class ModelCommands {
     });
   }
 
-  /**
-   * `config model --size <S> --characteristic <name> <entries…>` — write a
-   * characteristic sub-list (intra-pool reorder hint the resolver honours).
-   */
+  /** `config model --size <S> --characteristic <name> <entries…>` writes a characteristic sub-list (intra-pool reorder hint the resolver honours). */
   async setCharacteristic(size: string, name: string, entries: string[]): Promise<void> {
     this.assertValidSize(size);
     await this.validateEntries(entries);
@@ -216,10 +206,7 @@ export class ModelCommands {
     });
   }
 
-  /**
-   * `config model --list` — the curated lists per size, each entry annotated with
-   * whether its provider is registered (`unconfigured`).
-   */
+  /** `config model --list` returns the curated lists per size, each entry annotated with whether its provider is registered (`unconfigured`). */
   async listCandidates(): Promise<Record<string, ISizeCandidates>> {
     const cfg = this.readConfig();
     const registered = new Set(await this.registry.getAllProviders());
@@ -245,14 +232,7 @@ export class ModelCommands {
     }
   }
 
-  /**
-   * Validate each entry (Solo G10). A curated entry is a **provider name** — the form
-   * the resolver's tryResolveCurated reads (it looks each entry up via
-   * ProviderRegistry.getProviderMetadata). A registered provider passes; an unknown
-   * entry that also matches a model name owned by >1 provider is ambiguous (the user
-   * likely typed a model instead of a provider) and is rejected with the qualifying
-   * options; any other unknown entry is allowed and later flagged `unconfigured`.
-   */
+  /** A curated entry is a provider name, not a model name; an unknown entry ambiguous across >1 provider is rejected, any other unknown entry is allowed and later flagged `unconfigured`. */
   private async validateEntries(entries: string[]): Promise<void> {
     const registered = new Set(await this.registry.getAllProviders());
     for (const entry of entries) {
@@ -300,9 +280,8 @@ export class ModelCommands {
   }
 
   /**
-   * Parse the config file. The raw parse result (the library's map type) is what we
-   * hand back to `stringify` on write so untyped keys survive the round-trip; the
-   * `IConfigToml` view narrows only the `model_presets` slice we read/mutate.
+   * Returns the raw parse result (not narrowed) — handed back to `stringify` on write so
+   * untyped keys survive the round-trip. `IConfigToml` narrows only the `model_presets` slice.
    */
   private readRawConfig(): ReturnType<typeof parse> {
     const path = this.requireConfigPath();
@@ -320,12 +299,8 @@ export class ModelCommands {
     await Deno.writeTextFile(path, stringify(raw));
   }
 
-  /**
-   * Return the preset object for `size`, creating it seeded with the schema-required
-   * base fields (from DEFAULT_MODEL_PRESETS) when absent — so a curated write never
-   * leaves `model_presets.<size>` missing max_cost_per_mtok / min_context_window /
-   * supports_thinking, which would make the config fail ConfigService validation.
-   */
+  /** Creates the preset for `size`, seeded from DEFAULT_MODEL_PRESETS when absent, so a
+   *  curated write never leaves required fields missing (ConfigService would fail validation). */
   private ensurePreset(cfg: IConfigToml, size: string): IModelPresetToml {
     cfg.model_presets ??= {};
     if (!cfg.model_presets[size]) {

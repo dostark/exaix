@@ -43,11 +43,7 @@ function matchesJsonSchemaType(value: JSONValue, schema: IToolParameterSchema): 
   }
 }
 
-/**
- * Checks `input` against `parameters`: every key must be a known property, every required
- * property must be present, and every present value's type (and enum membership, where
- * declared) must match its property's schema. Pure — no I/O, no tool execution.
- */
+/** Validates example input against schema: keys, required fields, and types/enums. */
 export function validateAciExampleAgainstSchema(
   parameters: IToolSchema,
   input: Record<string, JSONValue>,

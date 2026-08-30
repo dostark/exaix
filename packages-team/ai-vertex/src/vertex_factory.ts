@@ -17,10 +17,8 @@ import { VertexProvider } from "./vertex_provider.ts";
 import { DEFAULT_VERTEX_REGION, DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV, PROVIDER_VERTEX } from "./constants.ts";
 
 /**
- * Creates VertexProvider instances from a Google service-account credential.
- *
- * Honours the `[ai_vertex]` config block (`service_account_env`, `region`),
- * falling back to package defaults when the block or a field is absent.
+ * Honours the `[ai_vertex]` config block (`service_account_env`, `region`), falling
+ * back to package defaults when the block or a field is absent.
  */
 export class VertexProviderFactory extends AbstractProviderFactory {
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {

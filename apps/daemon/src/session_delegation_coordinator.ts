@@ -97,9 +97,8 @@ const EMPTY_TOKEN_STATS: SessionTokenStats = {
   total_tokens: 0,
 };
 
-/**
+/** Daemon-owned authority and lifecycle coordinator for a single delegation.
  * @visible
- * Daemon-owned authority and lifecycle coordinator for a single delegation.
  */
 export class SessionDelegationCoordinator implements ISessionDelegationCoordinator {
   constructor(

@@ -29,7 +29,7 @@ export interface IAdmissionInputs {
   keepNativeWhole: boolean;
   /** Top-N benchmark bound (the caller resolves the actual top-N set into benchmarkTopN). */
   topN: number;
-  /** Models in the top-`topN` of any tracked benchmark (Step 7, G6) — always admitted. */
+  /** Models in the top-`topN` of any tracked benchmark — always admitted. */
   benchmarkTopN: Set<string>;
 }
 
@@ -40,9 +40,8 @@ export interface IAdmittedEntry {
 }
 
 /**
- * Apply the §5.9 admission union to a provider's full catalog, returning the admitted
- * entries with their reasons. Curation and prior-use win over the native path so the
- * emitted reason reflects the user's explicit trust first.
+ * Applies the §5.9 admission union to a catalog; curation/prior-use win over the native
+ * path so the reported reason reflects the user's explicit trust first.
  */
 export function admit(entries: ICatalogEntry[], inputs: IAdmissionInputs): IAdmittedEntry[] {
   const admitted: IAdmittedEntry[] = [];
@@ -57,8 +56,8 @@ function admissionReason(model: string, inputs: IAdmissionInputs): AdmissionReas
   if (inputs.curatedModels.has(model)) return "curated";
   if (inputs.usedModels.has(model)) return "explicit_use";
   if (!inputs.isAggregator && inputs.keepNativeWhole) return "native";
-  // G6 (Step 7): a model in the top-N of any tracked benchmark clears the bar even on
-  // an aggregator with no curation/prior-use. Empty set (no benchmarks) ⇒ inert.
+  // A model in the top-N of any tracked benchmark clears the bar even on an aggregator
+  // with no curation/prior-use. Empty set (no benchmarks) ⇒ inert.
   if (inputs.benchmarkTopN.has(model)) return "benchmark_topn";
   return null;
 }

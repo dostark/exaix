@@ -13,14 +13,8 @@ import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
 /**
- * CreateDirectoryTool — creates a directory (and all parent directories) within a portal.
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal
- * - Requires PortalOperation.WRITE permission
- * - Idempotent: succeeds silently if directory already exists
- * - Logs to Activity Journal
+ * Requires `PortalOperation.WRITE`, blocks path traversal, and is idempotent (no-op if
+ * the directory already exists).
  */
 export class CreateDirectoryTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {

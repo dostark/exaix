@@ -24,18 +24,12 @@ import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Interface that the ReAct loop strategy requires from its executor.
- * Previously used AgentOrchestrator["methodName"] type-queries, creating
- * structural coupling. Now an independent interface.
- */
+/** Interface the ReAct loop strategy requires from its executor, decoupled from AgentOrchestrator's internal types. */
 export interface IReActLoopExecutor {
   logAgentOutput(traceId: string, output: string): Promise<void>;
   /**
-   * Journal an executed tool call as a dynamic_tool_call event (tool + args), matching
-   * the flow-based DynamicStepExecutor so trajectory analysis and tool-call auditing see
-   * the ReAct loop's tool use. Optional so lightweight test doubles need not implement it;
-   * the production adapter always does.
+   * Journals an executed tool call as a dynamic_tool_call event, matching DynamicStepExecutor
+   * so tool-call auditing works for the ReAct loop; optional since test doubles need not implement it.
    */
   logDynamicToolCall?(
     traceId: string,
@@ -65,14 +59,13 @@ export interface IReActLoopExecutor {
   currentPromptBudget?: IPromptBudget;
   budgetLogger?: IEventLogger;
   guardrailRunner?: IGuardrailRunner;
-  /** Phase 112 Step 3 — whether ACI tool guidance is injected into the ReAct execution prompt. */
+  /** Whether ACI tool guidance is injected into the ReAct execution prompt. */
   readonly aciDocsEnabled?: boolean;
-  /** Phase 112 Step 3 — the configured aggregate ACI prompt-injection character budget. */
+  /** The configured aggregate ACI prompt-injection character budget. */
   readonly aciDocPromptMaxChars?: number;
   /**
-   * Journal the ReAct producer's agent.prompt_assembled event (Phase 112 Step 3) — the
-   * `target` is `context.request_id` per Section E. Optional so lightweight test doubles
-   * need not implement it; the production adapter always does.
+   * Journals the ReAct producer's agent.prompt_assembled event; `target` is
+   * `context.request_id`. Optional since test doubles need not implement it.
    */
   logPromptAssembled?(
     traceId: string,
@@ -81,7 +74,7 @@ export interface IReActLoopExecutor {
   ): Promise<void>;
 }
 
-/** Phase 112 Step 3 — ACI tool-guidance options, nested inside IReActLoopAdapterOptions. */
+/** ACI tool-guidance options, nested inside IReActLoopAdapterOptions. */
 export interface IReActLoopAdapterAciOptions {
   /** Whether ACI tool guidance is injected into the ReAct execution prompt. */
   enabled?: boolean;
@@ -97,8 +90,7 @@ export interface IReActLoopAdapterOptions {
   aci?: IReActLoopAdapterAciOptions;
 }
 
-/**
- * Adapter that implements IReActLoopExecutor by composing AgentOrchestrator's services.
+/** Adapter that implements IReActLoopExecutor by composing AgentOrchestrator's services.
  * @visible
  */
 export class ReActLoopAdapter implements IReActLoopExecutor {

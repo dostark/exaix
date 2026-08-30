@@ -10,16 +10,7 @@ import { getApiKeyWithOptionalPersistence } from "../provider_api_key.ts";
 import { ProviderFactoryError } from "../errors.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Interface that all provider factories must implement.
- * Defines the contract for creating provider instances.
- */
 export interface IProviderFactory {
-  /**
-   * Create a provider instance with the given options.
-   * @param options Resolved provider configuration options
-   * @returns A configured provider instance
-   */
   create(options: IResolvedProviderOptions): Promise<IModelProvider>;
 }
 
@@ -38,10 +29,7 @@ export abstract class AbstractProviderFactory implements IProviderFactory {
   }
 }
 
-/**
- * Abstract factory for providers that require an API key.
- * Handles API key retrieval from environment or secure storage.
- */
+/** Abstract factory for providers that require an API key, retrieved from environment or secure storage. */
 export abstract class AbstractKeyBasedProviderFactory extends AbstractProviderFactory {
   constructor(protected envKeyName: string) {
     super();

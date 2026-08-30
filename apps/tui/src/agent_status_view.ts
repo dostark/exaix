@@ -317,10 +317,9 @@ export class AgentStatusView {
         lines.push(`  - ${issue}`);
       }
     }
-    // Phase 132 (GAP-10): surface the resolved provider:model from the journaled
-    // model.resolved event (never import execution services in the TUI). The agent-log
-    // adapter may carry structured journal entries; when it does not, no resolution line
-    // is rendered.
+    // Surfaces the resolved provider:model from the journaled model.resolved event (never
+    // import execution services in the TUI). Renders nothing if the agent-log adapter carries
+    // no structured journal entries.
     const journalEntries = logs.map((log) => log as IResolvedModelJournalEntry);
     const resolvedModel = deriveResolvedModel(journalEntries);
     if (resolvedModel) {
@@ -1077,10 +1076,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
 
 // ===== Legacy Support =====
 
-/**
- * Legacy TUI session for backwards compatibility
- * @deprecated Use AgentStatusTuiSession instead
- */
+/** @deprecated Use AgentStatusTuiSession instead. */
 export class LegacyAgentStatusTuiSession extends TuiSessionBase {
   private readonly agentView: AgentStatusView;
   private agents: IAgentStatusItem[] = [];

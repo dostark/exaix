@@ -111,11 +111,9 @@ Deno.test("FlowRunner: flow.step.started/completed carry no strategy field when 
 });
 
 Deno.test("FlowRunner: a strategy-declared step's userPrompt does NOT carry the <content> plan-envelope output instruction", async () => {
-  // Phase 167 Step 3 closure: the react step prompt must ONLY instruct tool-calling, never
-  // the "PLANNING phase / output a JSON plan in <content>" text, or a live codex model obeys
-  // the planning instruction and returns a plan JSON instead of toml tool actions (the real
-  // "No actions generated in ReAct iteration" failure). Regression over the whole execution
-  // strategy set: react, cli_delegate, mcp.
+  // The react step prompt must ONLY instruct tool-calling, never the "PLANNING phase / output
+  // a JSON plan in <content>" text, or a live codex model obeys the planning instruction and
+  // returns a plan JSON instead of toml tool actions. Regression over react, cli_delegate, mcp.
   for (
     const strategy of [
       ExecutionStrategyName.REACT,

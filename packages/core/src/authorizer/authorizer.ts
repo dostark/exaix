@@ -10,16 +10,15 @@
  * it with a policy-driven authorizer wired through ICapabilityModule.
  */
 
+import type { Opt, Reason } from "../types/optional_marker.ts";
+
 /**
  * An action a caller wants to perform.
  * Concrete values are edition-specific; the interface is intentionally generic.
  */
 export type AuthorizationAction = string;
 
-/**
- * The resource the action targets.
- * Concrete values are edition-specific; the interface is intentionally generic.
- */
+/** Concrete values are edition-specific; the interface is intentionally generic. */
 export type AuthorizationResource = string;
 
 /**
@@ -41,16 +40,12 @@ export interface IAuthorizationDecision {
 }
 
 /**
- * Authorization seam — the single attach point for entitlement logic.
- * Solo ships AllowAllAuthorizer (all permitted). Enterprise editions
- * implement policy-driven authorizers that register via
+ * Authorization seam — the single attach point for entitlement logic. Solo ships
+ * AllowAllAuthorizer; Enterprise editions register policy-driven authorizers via
  * ICapabilityModule.registerEntitlement().
  */
 export interface IAuthorizer {
-  /**
-   * Check whether an action on a resource is authorized.
-   * Returns a decision with the outcome and optional reason.
-   */
+  /** Checks whether an action on a resource is authorized. */
   authorize(
     action: AuthorizationAction,
     resource: AuthorizationResource,
@@ -59,15 +54,14 @@ export interface IAuthorizer {
 }
 
 /**
- * Default Solo authorizer — permits every action unconditionally.
- * Used by SoloComposer; Enterprise editions replace this via
- * registerCapabilityModule on the composer.
+ * Default Solo authorizer — permits every action unconditionally. Enterprise
+ * editions replace this via registerCapabilityModule on the composer.
  */
 export class AllowAllAuthorizer implements IAuthorizer {
   authorize(
     _action: AuthorizationAction,
     _resource: AuthorizationResource,
-    _context?: IAuthorizationContext,
+    _context?: Opt<IAuthorizationContext, Reason.AbstractBoundary>,
   ): IAuthorizationDecision {
     return { allowed: true, reason: "AllowAllAuthorizer: all actions permitted" };
   }

@@ -58,9 +58,9 @@ export const PROVIDER_GOOGLE_CAPABILITIES = ["chat", "streaming", "vision"] as c
 export const PROVIDER_GOOGLE_STRENGTHS = ["simple", "multimodal", "fast"] as const;
 export const PROVIDER_GOOGLE_COST_TIER = ProviderCostTier.FREEMIUM;
 
-/** Phase 132 capability metadata — context window (tokens). */
+/** Model context window in tokens. */
 export const GOOGLE_CONTEXT_WINDOW = 1_000_000;
-/** Phase 132 capability metadata — reference price in USD per 1M tokens (routing constraint). */
+/** Reference price in USD per million tokens for routing. */
 export const GOOGLE_COST_PER_MTok = 1.25;
 
 export const GOOGLE_PROVIDER_METADATA = {

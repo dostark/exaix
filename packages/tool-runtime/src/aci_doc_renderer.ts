@@ -66,15 +66,7 @@ function renderOneFragment(toolName: string, doc: AciDoc, sideEffectScope: strin
   ].join("\n");
 }
 
-/**
- * Renders bounded, schema-validated, delimiter-safe ACI fragments for the given
- * `visibleToolIds`, in registry (`tools[]`) order — deduplicated, with unknown IDs
- * ignored. Re-validates every selected tool's `aciDoc` and requires a populated
- * `sideEffectScope`; either failing omits the tool via `invalidToolIds`. Enforces both
- * the per-fragment `ACI_DOC_FRAGMENT_MAX_CHARS` bound and the caller-supplied aggregate
- * `maxChars`: a fragment that does not fit either bound is omitted whole (never sliced)
- * and `truncated` is set, while rendering continues to evaluate the remaining tools.
- */
+/** Renders bounded, schema-validated ACI doc fragments for requested tools in order. */
 export function renderAciDocFragments(
   tools: ITool[],
   visibleToolIds: string[],
@@ -122,12 +114,7 @@ export function renderAciDocFragments(
   };
 }
 
-/**
- * Returns the aggregate character budget for one `renderAciDocFragments` call: the
- * lesser of the configured aggregate limit and the model's own loop-history prompt
- * allocation (converted to characters). When no model prompt budget is available, the
- * configured aggregate remains the hard cap.
- */
+/** Calculates aggregate character budget from configured max and prompt allocation. */
 export function calculateAciDocBudgetChars(
   configuredMaxChars: number,
   promptBudget?: Opt<IPromptBudget, Reason.ExecutionConfig>,

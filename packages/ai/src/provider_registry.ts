@@ -12,10 +12,7 @@ type ProviderRegistryGlobal = typeof globalThis & {
   __exaixRegisteredProviderTypes?: string[];
 };
 
-/**
- * Metadata describing a provider's capabilities and characteristics.
- * Used for intelligent provider selection and cost optimization.
- */
+/** Metadata describing a provider's capabilities, used for selection and cost optimization. */
 export interface IProviderMetadata {
   /** Unique provider name */
   name: string;
@@ -43,21 +40,11 @@ export interface IProviderMetadata {
   costPerMtok?: number;
   /** Context window size in tokens (used for model size matching) */
   contextWindow?: number;
-  /**
-   * True when this provider is an aggregator reseller (e.g. OpenRouter) rather than a
-   * first-party model host. Absent for native providers. Read by F12 native admission
-   * (keep-native-whole skips aggregators) and the Step 6 `native_first` route policy
-   * (§5.7.2).
-   */
+  /** True when this provider is an aggregator reseller (e.g. OpenRouter) rather than a first-party host; skipped by native-admission and route-policy logic. */
   isAggregator?: boolean;
-  /**
-   * True when the provider's generate() implementation serializes IModelOptions.tools/
-   * toolChoice into a real API request (Anthropic after Step 2). Step 5's capability
-   * gate reads this to decide whether to use native tool-calling or the TOML-block
-   * prose convention. Absent/undefined is treated identically to false.
-   */
+  /** True when generate() serializes IModelOptions.tools/toolChoice into a real API request; the capability gate reads this to pick native tool-calling vs the TOML-block prose convention (absent/undefined behaves as false). */
   supportsNativeTools?: boolean;
-  /** Chat protocol format supported by this provider. Phase 155. */
+  /** Chat protocol format supported by this provider. */
   chatFormat?: ChatFormat;
 }
 
@@ -74,30 +61,15 @@ function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
 // Provider Registry
 // ============================================================================
 
-/**
- * Registry for provider factories.
- * Manages registration and lookup of provider factories by type.
- */
 export class ProviderRegistry {
   private static factories = new Map<string, IProviderFactory>();
   private static metadata = new Map<string, IProviderMetadata>();
 
-  /**
-   * Register a factory for a specific provider type.
-   * @param providerType The provider type this factory handles
-   * @param factory The factory instance
-   */
   static register(providerType: string, factory: IProviderFactory): void {
     this.factories.set(providerType, factory);
     syncRegisteredProviderTypes(this.factories.keys());
   }
 
-  /**
-   * Register a provider with its factory and metadata.
-   * @param providerType The provider type identifier
-   * @param factory The factory instance
-   * @param metadata Provider capabilities and characteristics
-   */
   static registerWithMetadata(
     providerType: string,
     factory: IProviderFactory,
@@ -108,48 +80,25 @@ export class ProviderRegistry {
     syncRegisteredProviderTypes(this.factories.keys());
   }
 
-  /**
-   * Get the factory for a specific provider type.
-   * @param providerType The provider type to look up
-   * @returns The factory instance, or undefined if not registered
-   */
   static getFactory(providerType: string): IProviderFactory | undefined {
     return this.factories.get(providerType);
   }
 
-  /**
-   * Get metadata for a specific provider.
-   * @param providerType The provider type to look up
-   * @returns Provider metadata, or undefined if not registered
-   */
   static getProviderMetadata(providerType: string): IProviderMetadata | undefined {
     return this.metadata.get(providerType);
   }
 
-  /**
-   * Get all registered provider types.
-   * @returns Array of all registered provider type strings
-   */
   static getSupportedProviders(): string[] {
     return Array.from(this.factories.keys());
   }
 
-  /**
-   * Get providers filtered by cost tier.
-   * @param costTier The cost tier to filter by
-   * @returns Array of provider names matching the cost tier
-   */
   static getProvidersByCostTier(costTier: ProviderCostTier): string[] {
     return Array.from(this.metadata.entries())
       .filter(([, metadata]) => metadata.costTier === costTier)
       .map(([providerType]) => providerType);
   }
 
-  /**
-   * Get providers suitable for a specific task type, sorted by cost priority.
-   * @param taskType The task type to find providers for
-   * @returns Array of provider names sorted from cheapest to most expensive
-   */
+  /** Providers for a task type, sorted from cheapest to most expensive. */
   static getProvidersForTask(taskType: string): string[] {
     return Array.from(this.metadata.entries())
       .filter(([, metadata]) => metadata.strengths.includes(taskType))
@@ -157,11 +106,7 @@ export class ProviderRegistry {
       .map(([providerType]) => providerType);
   }
 
-  /**
-   * Convert pricing tier to numeric priority for sorting (lower = cheaper).
-   * @param pricingTier The pricing tier
-   * @returns Numeric priority value
-   */
+  /** Numeric sort priority for a pricing tier; lower value means cheaper. */
   private static costPriority(pricingTier: PricingTier): number {
     switch (pricingTier) {
       case PricingTier.LOCAL:
@@ -179,10 +124,6 @@ export class ProviderRegistry {
     }
   }
 
-  /**
-   * Get all registered providers with their metadata.
-   * @returns Array of provider info objects with factory and metadata
-   */
   static getAllProviders(): Array<{ factory: IProviderFactory; metadata: IProviderMetadata }> {
     return Array.from(this.metadata.entries()).map(([providerType, metadata]) => ({
       factory: this.factories.get(providerType)!,
@@ -190,10 +131,7 @@ export class ProviderRegistry {
     }));
   }
 
-  /**
-   * Clear all registered factories and metadata.
-   * Primarily used for testing to ensure test isolation.
-   */
+  /** Clears all registered factories and metadata; used to isolate tests. */
   static clear(): void {
     this.factories.clear();
     this.metadata.clear();

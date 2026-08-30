@@ -30,18 +30,8 @@ interface IMCPResponseShape<TResult = any> {
   result?: TResult;
 }
 
-/**
- * Tests for read_file Tool Implementation
- *
- * Success Criteria:
- * - read_file tool executes successfully for valid inputs
- * - Returns file content as text
- * - Validates portal exists
- * - Validates file exists
- * - Prevents path traversal attacks
- * - Logs all invocations to IActivity Journal
- * - Returns appropriate errors for invalid cases
- */
+/** Tests read_file: success, portal/file existence checks, path-traversal prevention,
+ * and activity-journal logging. */
 
 // Helper for MCP Tool tests
 async function withMCPToolTest(

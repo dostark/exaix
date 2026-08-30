@@ -110,10 +110,7 @@ export interface IContextLoadResult {
 // Context Loader Service
 // ============================================================================
 
-/**
- * ContextLoader intelligently loads context files within token budgets,
- * using configurable strategies to prioritize and truncate content.
- */
+/** Loads context files within token budgets, using configurable strategies to prioritize and truncate content. */
 export class ContextLoader {
   private tokenCounter: (text: string) => number;
 
@@ -122,11 +119,6 @@ export class ContextLoader {
     this.tokenCounter = (text) => Math.ceil(text.length / 4);
   }
 
-  /**
-   * Load context files within token budget
-   * @param filePaths - Absolute paths to context files
-   * @returns Context load result with content and metadata
-   */
   async loadWithLimit(filePaths: string[]): Promise<IContextLoadResult> {
     // Short-circuit for local agents with no limits
     if (this.config.isLocalAgent) {
@@ -140,20 +132,20 @@ export class ContextLoader {
     const truncatedFiles: string[] = [];
     let totalTokens = 0;
 
-    // Step 1: Load and analyze all files
+    // Load and analyze all files
     const contextFiles = await this.loadContextFiles(filePaths);
 
-    // Step 2: Apply per-file token caps if configured
+    // Apply per-file token caps if configured
     const cappedFiles = this.applyPerFileCaps(
       contextFiles,
       warnings,
       truncatedFiles,
     );
 
-    // Step 3: Apply truncation strategy
+    // Apply truncation strategy
     const sortedFiles = this.applyStrategy(cappedFiles);
 
-    // Step 4: Select files that fit within budget
+    // Select files that fit within budget
     const selectedFiles: IContextFile[] = [];
 
     for (const file of sortedFiles) {
@@ -191,10 +183,10 @@ export class ContextLoader {
       }
     }
 
-    // Step 5: Format context for injection
+    // Format context for injection
     const content = this.formatContext(selectedFiles, warnings, limit);
 
-    // Step 6: Log context loading to IActivity Journal
+    // Log context loading to IActivity Journal
     this.logContextLoad({
       totalTokens,
       includedCount: includedFiles.length,

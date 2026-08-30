@@ -19,23 +19,10 @@ import type { IEvalHistoryEntry } from "./history_schema.ts";
 export interface IFamilySummaryRow {
   family: string;
   taskCount: number;
-  /**
-   * Scenarios that passed, counted exactly.
-   *
-   * Most subsystem packs ask yes/no questions, and `MEAN 1.000` over such a pack invites reading a
-   * drop to 0.971 as "97% healthy" when it means "one assertion of many broke". `7/7` says what
-   * happened.
-   */
+  /** Number of scenarios that passed, counted exactly. */
   passedCount: number;
   meanScore: number;
-  /**
-   * Whether a mean carries information for this family.
-   *
-   * True when some run scored strictly between 0 and 1 — that is, when the underlying criteria can
-   * be partly satisfied. Derived from the observed scores rather than from a hand-maintained list
-   * of "contract packs", so a pack that gains a judge-scored criterion starts reporting a mean
-   * without anyone remembering to reclassify it.
-   */
+  /** Whether a mean carries information (true when some run scored strictly between 0 and 1). */
   graded: boolean;
   meanPassAt1: number;
   reconcileRate: number;
@@ -43,12 +30,7 @@ export interface IFamilySummaryRow {
   delta: number | null;
 }
 
-/**
- * A run with its outcome-channel scores attached — the input shape of the harness-lift
- * comparison (Phase 143 Step 1). `tags` is JSON-parsed; `outcome_scores` holds the `score` of
- * each step whose `step_id` is in the queried outcome step set, in step order (empty when the
- * run has no outcome steps — a run without outcome evidence contributes no match).
- */
+/** A run with outcome-channel scores attached for harness-lift comparison. */
 export interface IOutcomeRunRow {
   run_id: string;
   scenario_id: string;
@@ -93,7 +75,7 @@ interface IRunRow {
   total_tokens_cache_read: number | null;
   total_tokens_cache_creation: number | null;
   total_tracked_cost_usd: number | null;
-  /** External-benchmark provenance (Phase 144 Step 4). NULL on pre-existing non-external runs. */
+  /** External-benchmark provenance; null on non-external runs. */
   benchmark: string | null;
   benchmark_version: string | null;
 }
@@ -116,10 +98,7 @@ interface ICriterionResultRow {
   judge?: { provider?: string; model?: string; reasoning?: string } | null;
 }
 
-/**
- * Resolve the evaluation database path.
- * Precedence: EXA_EVAL_DB_PATH env var > <workspaceRoot>/.exa/eval.db
- */
+/** Resolve eval DB path from EXA_EVAL_DB_PATH or <workspaceRoot>/.exa/eval.db. */
 export function resolveEvalDbPath(workspaceRoot?: Opt<string, Reason.OptionalInput>): string {
   const envPath = Deno.env.get("EXA_EVAL_DB_PATH");
   if (envPath) return envPath;
@@ -348,12 +327,12 @@ export class EvalSqliteStore {
         score: number;
         executionStatus?: string;
         criterionResults?: ICriterionResultRow[];
-        /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
+        /** Runner-observed wall-clock duration for this step, ms. */
         durationMs?: number;
-        /** LLM-call wall-clock duration summed from journal payloads, ms. Phase 140a Step 4. */
+        /** LLM-call wall-clock duration summed from journal payloads, ms. */
         llmDurationMs?: number;
         tokens?: { prompt: number; completion: number; cacheRead?: number; cacheCreation?: number; total: number };
-        /** Real tracked cost only — never a calculateCost() prediction. Phase 140a Step 4. */
+        /** Real tracked cost only — never a calculateCost() prediction. */
         trackedCostUsd?: number;
       }>,
       Reason.OptionalInput
@@ -501,13 +480,7 @@ export class EvalSqliteStore {
     ).all<IRunRow>(...params);
   }
 
-  /**
-   * Phase 144 Step 4 — query only the external-benchmark runs (those carrying `benchmark` +
-   * `benchmark_version` provenance). Input of the `exactl eval report --view external`
-   * comparability view; grouping, resolved-rate and coverage math stays in the CLI layer so the
-   * store remains a plain query surface. Runs with a NULL benchmark (every pre-existing
-   * non-external run) are never returned.
-   */
+  /** Query external-benchmark runs carrying benchmark provenance. */
   queryExternalRuns(options: { pack?: string } = {}): IRunRow[] {
     const conditions = ["benchmark IS NOT NULL AND benchmark != ''"];
     const params: (string | number)[] = [];
@@ -522,13 +495,7 @@ export class EvalSqliteStore {
     ).all<IRunRow>(...params);
   }
 
-  /**
-   * Phase 143 Step 1 — query runs with their outcome-channel step scores attached, the input
-   * of the harness-lift comparison. Filters on the same (scenario, pack) conditions as
-   * queryRuns and joins each run's `eval_run_steps` rows whose `step_id` is in
-   * `outcomeStepIds`. Querying only, never compute — the paired-delta math stays in
-   * `arm_comparison.ts` (pre-gap GAP-1: eval-history must not reimplement it).
-   */
+  /** Query runs with outcome-channel step scores attached for harness-lift comparison. */
   queryOutcomeRuns(options: {
     scenario?: string;
     pack?: string;

@@ -47,10 +47,7 @@ export enum CircuitState {
   HALF_OPEN = "half-open",
 }
 
-/**
- * Agent kind categories per GLOSSARY.md.
- * Identifies which runtime agent implementation handled an action.
- */
+/** Agent kind categories per GLOSSARY.md — identifies which runtime agent implementation handled an action. */
 export enum AgentKind {
   IDENTITY_RUNNER = "identity-runner",
   AGENT_EXECUTOR = "agent-executor",
@@ -144,10 +141,7 @@ export enum ToolName {
   GIT_STASH = "git_stash",
 }
 
-/**
- * Structured error codes for MCP tool-logic failures.
- * Both MCP handlers and ToolRegistry share this taxonomy without creating an import cycle.
- */
+/** Structured error codes for MCP tool-logic failures, shared by MCP handlers and ToolRegistry without creating an import cycle. */
 export enum ToolErrorCode {
   PERMISSION_DENIED = "PERMISSION_DENIED",
   NOT_FOUND = "NOT_FOUND",
@@ -157,11 +151,7 @@ export enum ToolErrorCode {
   EXECUTION_FAILED = "EXECUTION_FAILED",
 }
 
-/**
- * The scoring composition mode an eval scenario runs under (Phase 143 Step 3). Canonical
- * definition for the eval-history storage schema — the Test layer's `ScoringMode` in
- * tests/scenario_framework/runner/scoring.ts shares these exact string values.
- */
+/** The scoring composition mode an eval scenario runs under. Canonical definition for the eval-history storage schema — the Test layer's `ScoringMode` in tests/scenario_framework/runner/scoring.ts shares these exact string values. */
 export enum EvalScoringMode {
   ADDITIVE = "additive",
   GATED = "gated",
@@ -223,17 +213,14 @@ export enum ProviderType {
   OPENCODE_CLI = "opencode-cli",
   /** Headless Codex CLI, subscription-billed via ChatGPT OAuth (no metered API key) */
   CODEX_CLI = "codex-cli",
-  /** OpenAI-compatible chat provider (DeepSeek, Together, etc.) via Chat Completions API. Phase 155. */
+  /** OpenAI-compatible chat provider (DeepSeek, Together, etc.) via Chat Completions API. */
   OPENAI_CHAT = "openai-chat",
 }
 
-/** Chat protocol format for provider request/response serialization. Phase 155. */
+/** Chat protocol format for provider request/response serialization. */
 export type ChatFormat = "anthropic" | "openai" | "native";
 
-/**
- * Mock strategy types for the mock provider.
- * Defines different behaviors for mock responses during testing.
- */
+/** Strategy types for the mock provider's simulated responses during testing. */
 export enum MockStrategy {
   /** Use recorded responses from previous interactions */
   RECORDED = "recorded",
@@ -257,10 +244,7 @@ export enum DaemonStatus {
   UNKNOWN = GeneralStatus.UNKNOWN,
 }
 
-/**
- * Complexity levels for tasks and operations.
- * Used to determine processing requirements and resource allocation.
- */
+/** Complexity levels for tasks/operations, used to determine processing requirements and resource allocation. */
 export enum TaskComplexity {
   /** Basic operations requiring minimal processing */
   SIMPLE = "simple",
@@ -272,10 +256,7 @@ export enum TaskComplexity {
   EPIC = "epic",
 }
 
-/**
- * Pricing tiers for AI services and operations.
- * Determines cost categorization and billing levels.
- */
+/** Pricing tiers for AI services, used for cost categorization and billing levels. */
 export enum PricingTier {
   /** Local execution with no external costs */
   LOCAL = "local",
@@ -289,10 +270,7 @@ export enum PricingTier {
   HIGH = "high",
 }
 
-/**
- * Severity levels for security events and alerts.
- * Used to prioritize security responses and logging.
- */
+/** Severity levels for security events/alerts, used to prioritize security responses and logging. */
 export enum SecuritySeverity {
   /** Minor security events requiring basic logging */
   LOW = "low",
@@ -304,10 +282,6 @@ export enum SecuritySeverity {
   CRITICAL = "critical",
 }
 
-/**
- * Types of security events that can occur in the system.
- * Categorizes different kinds of security-related activities.
- */
 export enum SecurityEventType {
   /** Authentication-related events (login, logout, token validation) */
   AUTH = "auth",
@@ -321,10 +295,6 @@ export enum SecurityEventType {
   CONFIG_CHANGE = "config_change",
 }
 
-/**
- * Results of security events and operations.
- * Indicates the outcome of security-related actions.
- */
 export enum SecurityEventResult {
   /** Operation completed successfully */
   SUCCESS = "success",

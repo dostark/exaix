@@ -70,10 +70,9 @@ export const INTERPRETER_OVERLAY_ENV_KEYS: readonly string[] = [
   "GEM_PATH",
 ];
 
-/** Env vars that inject `git -c` configuration into every `git` child (the
- *  CVE-2022-24765 family): GIT_CONFIG_COUNT together with GIT_CONFIG_KEY_n /
- *  GIT_CONFIG_VALUE_n, plus the legacy GIT_CONFIG_PARAMETERS form. Env-provided
- *  config can redirect what an untrusted-repo `git submodule update` runs. */
+/** Env vars that inject `git -c` configuration into every `git` child (CVE-2022-24765
+ *  family): GIT_CONFIG_COUNT/KEY_n/VALUE_n and legacy GIT_CONFIG_PARAMETERS. Can redirect
+ *  what an untrusted-repo `git submodule update` runs. */
 export const GIT_ENV_CONFIG_KEYS: readonly string[] = ["GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS"];
 
 /** Prefixes of the paired `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` vars. */
@@ -112,11 +111,9 @@ export function stripInjectionEnvVars(env: Record<string, string>): Record<strin
   return out;
 }
 
-/** Build the fail-closed env for a FOREIGN agent child: the safe parent allowlist
- *  plus the explicit non-secret launch env, with injection vars and proxy vars
- *  excluded from both. Allows the caller (supervised_launch/session) to layer the
- *  injected delegate-provider key afterwards via merge. Pure: parent env is passed
- *  in, never read from the process. */
+/** Build the fail-closed env for a FOREIGN agent child: safe parent allowlist plus
+ *  explicit non-secret launch env, with injection/proxy vars excluded from both.
+ *  Pure — parent env is passed in, never read from the process. */
 export function buildAllowlistChildEnv(
   launchEnv: Record<string, string>,
   parentEnv: Record<string, string> = {},
@@ -137,12 +134,7 @@ export function buildAllowlistChildEnv(
   return result;
 }
 
-/**
- * Build the child env for a Deno.Command spawn. Returns `clearEnv: true` so the
- * built env is authoritative — Deno 2.x would otherwise merge `env` with the
- * process parent env, silently reintroducing scrubbed vars (Phase 167 Step 4 live
- * finding: the merged parent's `LD_LIBRARY_PATH` re-leaked and killed the spawn).
- */
+/** Builds the child env for a Deno.Command spawn. Returns `clearEnv: true` so the built env is authoritative — Deno 2.x would otherwise merge `env` with the parent process env, silently reintroducing scrubbed vars. */
 export function buildChildEnv(options: IChildEnvOptions): { env: Record<string, string>; clearEnv: boolean } {
   if (options.mode === "allowlist") {
     const env = buildAllowlistChildEnv(options.env ?? {}, options.parentEnv ?? Deno.env.toObject());
@@ -153,12 +145,7 @@ export function buildChildEnv(options: IChildEnvOptions): { env: Record<string, 
   return { env: stripInjectionEnvVars(merged), clearEnv: true };
 }
 
-/** Remove every injection-class var from the CURRENT process env. Called at daemon
- *  and exactl entry so inherited ambient vars (`LD_LIBRARY_PATH` from HPC toolchains,
- *  `NODE_OPTIONS`, git env-config, …) never reach ANY child — including the raw
- *  Deno.Command call sites that bypass SafeSubprocess. Secrets and proxy vars are
- *  deliberately kept: the daemon itself needs its provider keys, and a corporate
- *  proxy is legitimate for its own outbound git/network traffic. */
+/** Removes every injection-class var from the CURRENT process env. Called at daemon/exactl entry so inherited ambient vars never reach any child, including raw Deno.Command calls that bypass SafeSubprocess. Secrets and proxy vars are deliberately kept since the daemon needs its own provider keys/proxy. */
 export function scrubProcessEnv(): void {
   for (const key of Object.keys(Deno.env.toObject())) {
     if (isInjectionEnvVar(key)) {

@@ -15,13 +15,7 @@ import { GitTestHelper, setupPortalGitRepos } from "@exaix/git/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 
-/**
- * TDD Tests for ReviewRegistry Portal Support
- * Task 3.2: Review Tracking Updates
- *
- * Tests that ReviewRegistry can track reviews in portal repositories
- * and associate them with portal workspaces
- */
+/** Verifies review tracking and workspace association across portal repositories. */
 
 describe("ReviewRegistry Portal Support", () => {
   let portalRepoDir: string;

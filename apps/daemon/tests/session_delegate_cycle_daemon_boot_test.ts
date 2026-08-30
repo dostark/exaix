@@ -313,10 +313,8 @@ Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture
     await processor.process(requestPath);
 
     // The production-constructed SessionDelegateCycleStepHandler reached the real
-    // SessionDelegationCoordinator and it launched exactly one delegation for the
-    // fixture's single step — the reachability this test exists to prove. Downstream
-    // plan-JSON-schema validation of the cycle's free-text summary is an unrelated
-    // generic RequestProcessor concern, not a Phase 174 behavior.
+    // SessionDelegationCoordinator, which launched exactly one delegation for the
+    // fixture's single step — the reachability this test exists to prove.
     assertEquals(launcher.calls, 1, "the real coordinator must have launched exactly one delegation");
   } finally {
     ProviderRegistry.clear();

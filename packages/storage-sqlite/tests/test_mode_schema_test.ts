@@ -89,10 +89,8 @@ Deno.test("[test_mode_schema] outside test mode the constructor does NOT auto-cr
 });
 
 Deno.test("[test_mode_schema] opening a second DatabaseService while the first is open does not throw 'database is locked' (restart-overlap regression)", async () => {
-  // Repro of the LIVE-RT daemon-restart crash: the new daemon's DatabaseService opened while the
-  // old one's WAL lock lingered, and `PRAGMA journal_mode = WAL` (run before busy_timeout was set)
-  // failed immediately with "database is locked". With busy_timeout set FIRST, the second open
-  // waits out the transient lock instead of dying.
+  // Set busy_timeout before WAL mode so overlapping connections wait for transient locks
+  // instead of failing immediately.
   const tempDir = await Deno.makeTempDir({ prefix: "db-restart-overlap-" });
   const configPath = join(tempDir, "exa.config.toml");
   writeMinimalConfig(configPath, tempDir);

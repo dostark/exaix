@@ -11,10 +11,7 @@ import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult, Opt, Reason } from "@exaix/core/types";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 
-/**
- * CLI command handler for portal operations.
- * Delegates all business logic to the core PortalService.
- */
+/** CLI command handler for portal operations; delegates business logic to PortalService. */
 export class PortalCommands extends BaseCommand {
   constructor(context: ICommandContext) {
     super(context);
@@ -26,7 +23,10 @@ export class PortalCommands extends BaseCommand {
   async add(
     targetPath: string,
     alias: string,
-    options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    options?: Opt<
+      { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+      Reason.OptionalInput
+    >,
   ): Promise<void> {
     return await this.portals.add(targetPath, alias, options);
   }
@@ -48,14 +48,14 @@ export class PortalCommands extends BaseCommand {
   /**
    * Remove a portal
    */
-  async remove(alias: string, options?: { keepCard?: boolean }): Promise<void> {
+  async remove(alias: string, options?: Opt<{ keepCard?: boolean }, Reason.OptionalInput>): Promise<void> {
     return await this.portals.remove(alias, options);
   }
 
   /**
    * Verify portal integrity
    */
-  async verify(alias?: string): Promise<IVerificationResult[]> {
+  async verify(alias?: Opt<string, Reason.OptionalInput>): Promise<IVerificationResult[]> {
     return await this.portals.verify(alias);
   }
 
@@ -66,21 +66,15 @@ export class PortalCommands extends BaseCommand {
     return await this.portals.refresh(alias);
   }
 
-  /**
-   * Trigger codebase knowledge analysis for a portal.
-   * Returns a human-readable summary of the analysis.
-   */
+  /** Triggers codebase knowledge analysis for a portal; returns a human-readable summary. */
   async analyze(
     alias: string,
-    options?: { mode?: PortalAnalysisMode; force?: boolean },
+    options?: Opt<{ mode?: PortalAnalysisMode; force?: boolean }, Reason.OptionalInput>,
   ): Promise<string> {
     return await this.portals.analyze(alias, options);
   }
 
-  /**
-   * Display gathered knowledge for a portal.
-   * Returns formatted Markdown by default, or raw JSON with `--json`.
-   */
+  /** Returns formatted Markdown by default, or raw JSON when `options.json` is set. */
   async knowledge(
     alias: string,
     options?: Opt<{ json?: boolean }, Reason.OptionalInput>,

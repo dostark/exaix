@@ -250,10 +250,9 @@ Deno.test("SkillsService: matchSkills returns skills matching keywords", async (
 
 Deno.test("fix(skills): matchSkills does not penalize a partial match against a long trigger keyword list below the match threshold", async () => {
   await withInitializedSkillsService(async ({ service }) => {
-    // Mirrors the real tdd-methodology skill: 8 keywords, only 2 of which appear in a
-    // genuinely relevant bugfix request. The confidence formula divides by the trigger's
-    // total keyword count, so a broad-but-relevant skill scores below the 0.3 default
-    // matchThreshold and is silently excluded from dynamic matching.
+    // Mirrors tdd-methodology: 8 keywords, only 2 relevant. Confidence divides by total keyword
+    // count, so a broad-but-relevant skill can score below the 0.3 default matchThreshold and
+    // be silently excluded from dynamic matching.
     await service.createSkill({
       skill_id: "broad-trigger-list",
       name: "Broad Trigger List",
@@ -281,11 +280,9 @@ Deno.test("fix(skills): matchSkills does not penalize a partial match against a 
 
 Deno.test("fix-bug skill outranks tdd-methodology for a bugfix request", async () => {
   await withInitializedSkillsService(async ({ service }) => {
-    // Mirrors the two real global skills. fix-bug declares tight bug-focused triggers;
-    // tdd-methodology declares a broad implement/feature/... keyword list plus task_types
-    // that include bugfix. For a genuine bug-fix request, the bug-specialized skill must
-    // rank first so it — not the generic TDD methodology — is the skill injected into the
-    // execution agent's prompt.
+    // Mirrors two real global skills: fix-bug has tight bug-focused triggers; tdd-methodology
+    // has broad implement/feature/... keywords plus bugfix in task_types. For a genuine bug-fix
+    // request the specialized skill must rank first, not the generic TDD methodology.
     await service.createSkill({
       skill_id: "fix-bug",
       name: "Bug Fix",
@@ -357,10 +354,9 @@ Deno.test("fix-bug skill outranks tdd-methodology for a bugfix request", async (
       `fix-bug confidence (${fixBug.confidence.toFixed(2)}) should exceed tdd (${tdd.confidence.toFixed(2)})`,
     );
 
-    // Analysis-phase realistic match: AgentRunner.performDynamicSkillMatching passes
-    // keywords + taskType + filePaths + tags (not requestText alone). fix-bug must clear
-    // the match threshold and rank first there too, since that is the selection that
-    // routes the skill's context into the plan.
+    // Analysis-phase realistic match: AgentRunner.performDynamicSkillMatching passes keywords +
+    // taskType + filePaths + tags (not requestText alone) — fix-bug must clear the threshold and
+    // rank first here too, since this is the selection that injects context into the plan.
     const { matches: analysisMatches } = await service.matchSkills({
       keywords: ["fix", "null", "safety", "bugs", "crashes", "add", "checks"],
       taskType: "bugfix",

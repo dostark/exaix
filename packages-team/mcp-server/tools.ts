@@ -77,7 +77,7 @@ export const LIVE_MCP_TOOL_FACTORIES: ReadonlyMap<McpToolName, IMcpToolFactory> 
   [McpToolName.LIST_PLANS, (context, permissions, logger) => new ListPlansTool(context, permissions, logger)],
   [McpToolName.APPROVE_PLAN, (context, permissions, logger) => new ApprovePlanTool(context, permissions, logger)],
   [McpToolName.QUERY_JOURNAL, (context, permissions, logger) => new QueryJournalTool(context, permissions, logger)],
-  // Config tools (Phase 137)
+  // Config tools
   [McpToolName.CONFIG_GET, (context, permissions, logger) => new ConfigGetTool(context, permissions, logger)],
   [McpToolName.CONFIG_VALIDATE, (context, permissions, logger) => new ConfigValidateTool(context, permissions, logger)],
   [McpToolName.CONFIG_DIFF, (context, permissions, logger) => new ConfigDiffTool(context, permissions, logger)],
@@ -96,12 +96,8 @@ function liveMcpManifestNames(): McpToolName[] {
     .map((entry) => entry.name as McpToolName);
 }
 
-/**
- * Build a handler map for all live MCP tools (mcp_handler + mcp_domain).
- * The permissions parameter will be wired into handlers in Step 77.3 when
- * permission enforcement is made mandatory. It is accepted here now to fix
- * the assembly signature per Decision D8 without requiring callers to change again.
- */
+/** Build a handler map for all live MCP tools (mcp_handler + mcp_domain).
+ * `permissions` is accepted now but not yet enforced by handlers. */
 export function buildHandlers(
   context: ICliApplicationContext,
   permissions: IPortalPermissionsChecker,
@@ -120,15 +116,9 @@ export function buildHandlers(
   return handlers;
 }
 
-/**
- * Build a handler map for all tools allowed in dynamic (ReAct-style) execution.
- * Includes all manifest entries where dynamic_mode_allowed === true, regardless
- * of requires_human_approval. Tools with requires_human_approval === true are
- * gated at runtime by IToolConfirmationInterceptor inside DynamicStepExecutor
- * (Phase 79). When no interceptor is configured, DynamicStepExecutor's
- * resolvePermittedTools() defensively excludes approval-required tools using
- * DYNAMIC_MODE_TOOLS (which contains only the safe subset).
- */
+/** Build a handler map for tools allowed in dynamic (ReAct-style) execution: every manifest
+ * entry with dynamic_mode_allowed === true. When no confirmation interceptor is configured,
+ * resolvePermittedTools() defensively excludes approval-required tools via DYNAMIC_MODE_TOOLS. */
 export function buildDynamicHandlers(
   context: ICliApplicationContext,
   permissions: IPortalPermissionsChecker,

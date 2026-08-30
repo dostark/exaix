@@ -142,10 +142,8 @@ Deno.test("StructuredLogViewer: Real-time updates", async () => {
   const logger = new MockStructuredLogger();
   const viewer = new StructuredLogViewer(service, logger, { testMode: true }); // autoRefresh disabled in testMode
 
-  // Manually enable realTime for this test if needed, but handleNewLogEntry is relevant
-  // However, testMode disables realTime setup in constructor.
-  // We can manually enable it or just test handleNewLogEntry via public/protected mechanism?
-  // Or just call toggleRealTime() to enable subscription.
+  // testMode disables realTime setup in the constructor; call toggleRealTime() to enable
+  // the subscription manually so handleNewLogEntry can be exercised.
   viewer.toggleRealTime();
 
   await viewer.initialize();

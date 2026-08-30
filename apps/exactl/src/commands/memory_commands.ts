@@ -22,11 +22,6 @@ import type { IMemoryBankSummary, OutputFormat } from "@exaix/cli/types/memory_t
 
 export interface IMemoryCommandsContext extends ICommandContext {}
 
-/**
- * Memory Commands handler
- *
- * Provides CLI interface for Memory Banks operations.
- */
 export class MemoryCommands extends BaseCommand {
   private formatter: MemoryFormatter;
   private memoryRoot: string;
@@ -59,12 +54,6 @@ export class MemoryCommands extends BaseCommand {
 
   // ===== Memory List Command =====
 
-  /**
-   * List all memory banks with summary information
-   *
-   * @param format - Output format (table, json, md)
-   * @returns Formatted output string
-   */
   async list(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const summary = await this.getSummary();
 
@@ -132,22 +121,15 @@ export class MemoryCommands extends BaseCommand {
 
   // ===== Memory Search Command =====
 
-  /**
-   * Search across all memory banks
-   *
-   * @param query - Search query
-   * @param options - Search options
-   * @returns Formatted search results
-   */
   async search(
     query: string,
-    options?: {
+    options?: Opt<{
       portal?: string;
       tags?: string[];
       limit?: number;
       format?: OutputFormat;
       useEmbeddings?: boolean;
-    },
+    }, Reason.QueryFilter>,
   ): Promise<string> {
     const format = options?.format || MEMORY_COMMAND_DEFAULTS.FORMAT;
     const limit = options?.limit || MEMORY_COMMAND_DEFAULTS.LIMIT;
@@ -195,12 +177,6 @@ export class MemoryCommands extends BaseCommand {
 
   // ===== Project Commands =====
 
-  /**
-   * List all project memories
-   *
-   * @param format - Output format
-   * @returns Formatted project list
-   */
   async projectList(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const projects: { name: string; patterns: number; decisions: number }[] = [];
 
@@ -233,13 +209,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Show details of a specific project memory
-   *
-   * @param portal - Portal name
-   * @param format - Output format
-   * @returns Formatted project details or error message
-   */
   async projectShow(portal: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const projectMem = await this.memoryBank.getProjectMemory(portal);
 
@@ -260,12 +229,6 @@ export class MemoryCommands extends BaseCommand {
 
   // ===== Execution Commands =====
 
-  /**
-   * List execution history
-   *
-   * @param options - List options (portal filter, limit)
-   * @returns Formatted execution list
-   */
   async executionList(
     options?: Opt<{
       portal?: string;
@@ -292,13 +255,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Show details of a specific execution
-   *
-   * @param traceId - Execution trace ID
-   * @param format - Output format
-   * @returns Formatted execution details or error message
-   */
   async executionShow(traceId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const execution = await this.memoryBank.getExecutionByTraceId(traceId);
 
@@ -317,14 +273,8 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Global Memory Commands (Phase 12.8) =====
+  // ===== Global Memory Commands =====
 
-  /**
-   * Show global memory contents
-   *
-   * @param format - Output format
-   * @returns Formatted global memory or error message
-   */
   async globalShow(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const globalMem = await this.memoryBank.getGlobalMemory();
 
@@ -340,12 +290,6 @@ export class MemoryCommands extends BaseCommand {
     );
   }
 
-  /**
-   * List all global learnings
-   *
-   * @param format - Output format
-   * @returns Formatted learnings list
-   */
   async globalListLearnings(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const globalMem = await this.memoryBank.getGlobalMemory();
 
@@ -370,12 +314,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Show global memory statistics
-   *
-   * @param format - Output format
-   * @returns Formatted statistics or error message
-   */
   async globalStats(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const globalMem = await this.memoryBank.getGlobalMemory();
 
@@ -391,13 +329,6 @@ export class MemoryCommands extends BaseCommand {
     );
   }
 
-  /**
-   * Promote a learning from project to global scope
-   *
-   * @param portal - Source portal name
-   * @param promotion - Promotion details
-   * @returns Success or error message
-   */
   async promote(
     portal: string,
     promotion: {
@@ -418,13 +349,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Demote a learning from global to project scope
-   *
-   * @param learningId - ID of the learning to demote
-   * @param targetPortal - Target portal name
-   * @returns Success or error message
-   */
   async demote(learningId: string, targetPortal: string): Promise<string> {
     try {
       await this.memoryBank.demoteLearning(learningId, targetPortal);
@@ -436,12 +360,6 @@ export class MemoryCommands extends BaseCommand {
 
   // ===== Pending Proposals Commands =====
 
-  /**
-   * List all pending memory update proposals
-   *
-   * @param format - Output format
-   * @returns Formatted list of pending proposals
-   */
   async pendingList(eligible = false, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const proposals = eligible ? await this.autoApprovalService.listEligible() : await this.extractor.listPending();
 
@@ -460,13 +378,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Show details of a specific pending proposal
-   *
-   * @param proposalId - Proposal ID
-   * @param format - Output format
-   * @returns Formatted proposal details
-   */
   async pendingShow(proposalId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const proposal = await this.extractor.getPending(proposalId);
 
@@ -485,12 +396,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Approve a pending proposal
-   *
-   * @param proposalId - Proposal ID to approve
-   * @returns Success or error message
-   */
   async pendingApprove(
     proposalId?: Opt<string, Reason.OptionalInput>,
     dryRun = false,
@@ -530,13 +435,6 @@ export class MemoryCommands extends BaseCommand {
     return this.formatter.formatPendingDryRunTable(eligible);
   }
 
-  /**
-   * Reject a pending proposal
-   *
-   * @param proposalId - Proposal ID to reject
-   * @param reason - Rejection reason
-   * @returns Success or error message
-   */
   async pendingReject(proposalId: string, reason: string): Promise<string> {
     try {
       const proposal = await this.extractor.getPending(proposalId);
@@ -551,11 +449,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Approve all pending proposals
-   *
-   * @returns Success message with count
-   */
   async pendingApproveAll(): Promise<string> {
     try {
       const count = await this.extractor.approveAll();
@@ -570,13 +463,9 @@ export class MemoryCommands extends BaseCommand {
 
   // ===== Rebuild Index Command =====
 
-  /**
-   * Rebuild all memory bank indices
-   *
-   * @param options - Options for rebuilding
-   * @returns Status message
-   */
-  async rebuildIndex(options?: { includeEmbeddings?: boolean }): Promise<string> {
+  async rebuildIndex(
+    options?: Opt<{ includeEmbeddings?: boolean }, Reason.OptionalInput>,
+  ): Promise<string> {
     const messages: string[] = [];
 
     if (options?.includeEmbeddings) {
@@ -594,14 +483,8 @@ export class MemoryCommands extends BaseCommand {
     return messages.join("\n");
   }
 
-  // ===== Skills Commands (Phase 17) =====
+  // ===== Skills Commands =====
 
-  /**
-   * List all skills
-   *
-   * @param options - List options
-   * @returns Formatted list of skills
-   */
   async skillList(options: {
     category?: MemoryBankSource;
     format?: OutputFormat;
@@ -646,13 +529,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Show details of a specific skill
-   *
-   * @param skillId - Skill ID to show
-   * @param format - Output format
-   * @returns Formatted skill details
-   */
   async skillShow(skillId: string, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     try {
       await this.skills.initialize();
@@ -677,13 +553,6 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Match skills for a given request
-   *
-   * @param request - Request text to match against
-   * @param options - Match options
-   * @returns Matched skills with confidence scores
-   */
   async skillMatch(
     request: string,
     options: {
@@ -734,12 +603,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Derive a skill from learnings (simplified - requires manual learning IDs)
-   *
-   * @param options - Derivation options
-   * @returns Derived skill or error message
-   */
+  // Simplified: requires manually-specified learning IDs; no automatic learning selection.
   async skillDerive(options: {
     learningIds?: string[];
     name?: string;
@@ -821,13 +685,6 @@ export class MemoryCommands extends BaseCommand {
     };
   }
 
-  /**
-   * Create a new skill from a definition
-   *
-   * @param name - Skill name
-   * @param options - Skill options
-   * @returns Created skill confirmation
-   */
   async skillCreate(
     name: string,
     options: {

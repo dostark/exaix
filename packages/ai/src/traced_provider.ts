@@ -20,8 +20,8 @@ export class TracedProvider implements IModelProvider {
   public readonly id: string;
 
   constructor(
-    /** Public (Phase 157) so unwrapModelProvider can reach through a decorator chain to
-     *  report on the underlying provider (e.g. MockLLMProvider fixture drift). */
+    /** Public so unwrapModelProvider can reach through a decorator chain to report on
+     *  the underlying provider (e.g. MockLLMProvider fixture drift). */
     public readonly inner: IModelProvider,
     private logger: IEventLogger,
   ) {

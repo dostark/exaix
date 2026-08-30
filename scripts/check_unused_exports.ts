@@ -41,17 +41,7 @@ function isEntryPoint(repoPath: string): boolean {
   return repoPath.endsWith("/main.ts");
 }
 
-/**
- * `scripts/*.ts` files are never scanned as production roots (isProductionRoot only covers
- * packages/, packages-team/, apps/), so a package-owned pure function whose only real-world
- * consumer is its own scripts/ CLI wrapper (a deliberate, tested pattern — e.g.
- * checkToolCatalogParity in packages/mcp/src/tool_catalog_parity.ts, consumed by
- * scripts/check_tool_catalog_parity.ts) was invisible to importMap and got misreported as
- * dead code. This does a lightweight, import-only AST pass over scripts/*.ts (excluding its
- * own test files) to recognize that wiring, without adding scripts/ to allProdFiles — a
- * script's own self-contained exports (e.g. checkToolResultParity, defined and used within
- * the same file) must stay out of scope for the "must be imported elsewhere" check.
- */
+/** `scripts/*.ts` isn't scanned as a production root, so a package function only consumed by its own scripts/ CLI wrapper looks like dead code; this AST pass recognizes that import wiring without adding scripts/ itself to allProdFiles. */
 async function collectScriptImportedNames(): Promise<Set<string>> {
   const names = new Set<string>();
   for await (
@@ -176,7 +166,7 @@ async function main() {
   const allProdFiles: string[] = [];
   const scriptImportedNames = await collectScriptImportedNames();
 
-  // Step 1: collect all production .ts files
+  // Collect all production .ts files
   for await (
     const entry of walk(REPO_ROOT, {
       includeDirs: false,
@@ -205,7 +195,7 @@ async function main() {
     sourceCache.set(repoPath, { text: await Deno.readTextFile(entry.path), sourceFile: null });
   }
 
-  // Step 2: parse all files — collect imports + exports
+  // Parse all files — collect imports + exports
   for (const repoPath of allProdFiles) {
     const cached = sourceCache.get(repoPath)!;
     const sourceFile = ts.createSourceFile(repoPath, cached.text, ts.ScriptTarget.Latest, true);
@@ -268,7 +258,7 @@ async function main() {
     });
   }
 
-  // Step 3: handle export * from "..."
+  // Handle export * from "..."
   for (const repoPath of allProdFiles) {
     if (!isPackageEntrypoint(repoPath)) continue;
     const cached = sourceCache.get(repoPath)!;
@@ -313,14 +303,14 @@ async function main() {
     });
   }
 
-  // Step 4: identify @public files
+  // Identify @public files
   const publicFiles = new Set<string>();
   for (const repoPath of allProdFiles) {
     const cached = sourceCache.get(repoPath)!;
     if (hasPublicJSDoc(cached.text)) publicFiles.add(repoPath);
   }
 
-  // Step 5: report unwired exports
+  // Report unwired exports
   let errorCount = 0;
 
   for (const [name, sites] of exportMap) {

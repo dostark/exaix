@@ -12,6 +12,7 @@
  * @related-files [packages-team/model-registry-live/src/model_registry_service.ts, packages/schemas/src/config.ts]
  */
 import type { IBenchmarkEntry, ModelRegistryService } from "./model_registry_service.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Options for a models.dev ingest run, threaded from benchmark_source config. */
 export interface IModelsDevIngestOptions {
@@ -27,22 +28,14 @@ const DEVELOPER_PROVIDER_MAP: Record<string, string> = {
   "zhipuai": "glm",
 };
 
-/**
- * Domains excluded from benchmark ingestion — only artificialanalysis.ai is blocked.
- * Its citations are predominantly for non-tracked benchmarks (agent indices, custom
- * suites like SWE-Atlas, GDPval-AA, τ²-Bench Telecom) and do not carry SWE-Bench
- * Verified primary scores. benchlm.ai and llm-stats.com are permitted — they cite
- * few models (2-3 each) but those include top SWE-Bench Verified scores (claude-fable-5
- * at 95%, claude-opus-4-8 at 88.6%) that would otherwise be lost.
- */
+/** Domains excluded from ingestion: only artificialanalysis.ai (its citations are mostly non-tracked
+ * benchmarks). benchlm.ai/llm-stats.com stay permitted since they include otherwise-lost top
+ * SWE-Bench Verified scores despite citing few models. */
 const EXCLUDED_SOURCE_DOMAINS = [
   "artificialanalysis.ai",
 ];
 
-/**
- * Benchmark name normalisation: models.dev human-readable → Exaix snake_case.
- * Maps only benchmarks that Exaix tracks for admission (see §5.8 tracked_benchmarks).
- */
+/** Benchmark name normalisation: models.dev human-readable → Exaix snake_case; maps only tracked benchmarks (§5.8). */
 const BENCHMARK_NAME_MAP: Record<string, string> = {
   "SWE-Bench Verified": "swe_bench_verified",
   "SWE-Bench Pro": "swe_bench_pro",
@@ -80,7 +73,7 @@ function normaliseScore(raw: number): number {
 }
 
 /** Check whether a source URL comes from an excluded domain. */
-function isExcludedSource(sourceUrl: string | undefined): boolean {
+function isExcludedSource(sourceUrl: Opt<string, Reason.OptionalContext>): boolean {
   if (!sourceUrl) return false;
   try {
     const url = new URL(sourceUrl);
@@ -90,10 +83,7 @@ function isExcludedSource(sourceUrl: string | undefined): boolean {
   }
 }
 
-/**
- * Parse a models.dev model ID (`{developer}/{model_name}`) into Exaix provider and
- * model name. Developer slugs not found in DEVELOPER_PROVIDER_MAP pass through as-is.
- */
+/** Parses a models.dev ID (`{developer}/{model_name}`); unmapped developer slugs pass through as-is. */
 function parseModelId(id: string): { provider: string; model: string } {
   const slash = id.indexOf("/");
   if (slash === -1) return { provider: id, model: id };
@@ -103,21 +93,15 @@ function parseModelId(id: string): { provider: string; model: string } {
   };
 }
 
-/**
- * Normalise a models.dev benchmark name to Exaix snake_case. Returns undefined when
- * the benchmark name is not in our map (not tracked).
- */
+/** Normalises a models.dev benchmark name to Exaix snake_case; returns undefined if untracked. */
 function normaliseBenchmarkName(name: string): string | undefined {
   return BENCHMARK_NAME_MAP[name];
 }
 
 /**
- * Fetch models.dev/models.json, filter for tracked benchmarks, map model IDs to
- * (provider, model), and upsert via service.applyBenchmarks().
- *
- * On network / HTTP / JSON parse failure: emits a benchmark-refreshed event with
- * outcome REFRESH_OUTCOME_HTTP_ERROR or REFRESH_OUTCOME_PARSE_ERROR and returns 0.
- * Prior scores are left intact.
+ * Fetches models.dev/models.json and upserts tracked-benchmark scores via applyBenchmarks().
+ * On network/HTTP/parse failure, emits a benchmark-refreshed event and returns 0 without
+ * touching prior scores.
  */
 export async function fetchModelsDevBenchmarks(
   service: ModelRegistryService,

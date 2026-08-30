@@ -14,17 +14,11 @@ import { ChangesetResultSchema } from "@exaix/schemas/agent_orchestrator.ts";
 /** Fields from IExecutionContext used by OutputParser. */
 export type IOutputParserContext = Pick<IExecutionContext, "trace_id" | "request_id" | "plan">;
 
-/**
- * Parses LLM responses, validates changeset results, and logs generation metrics.
- * All methods are pure functions with no side effects.
- */
+/** All methods are pure functions with no side effects. */
 export class OutputParser {
   constructor(private readonly emptySha: string = "0000000000000000000000000000000000000000") {}
 
-  /**
-   * Parse agent response to extract changeset result.
-   * Extracts JSON from markdown code blocks or bare JSON.
-   */
+  /** Extracts JSON from markdown code blocks or bare JSON in the response. */
   parseAgentResponse(
     response: string,
     context: IOutputParserContext,

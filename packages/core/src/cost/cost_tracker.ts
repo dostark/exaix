@@ -40,9 +40,7 @@ type IPendingCostRecord = Omit<IProviderCostRecord, "id" | "costSource"> & {
   costSource: CostSource | null;
 };
 
-/**
- * Service for tracking and managing LLM provider costs.
- * Provides budget enforcement and cost analytics.
+/** Tracks and manages LLM provider costs; enforces budgets and analytics.
  * @visible
  */
 export class CostTracker implements ICostTracker {
@@ -74,13 +72,8 @@ export class CostTracker implements ICostTracker {
     private eventLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {}
 
-  /**
-   * Late-bind the edition-selected pricing lookup (Phase 135 GAP-4). Called by the
-   * daemon AFTER the registry is selected — the tracker is constructed earlier, so a
-   * constructor param alone cannot carry it. When set, trackGeneration prices
-   * split-per-Mtok (cost_source "registry_computed"); when unset, the legacy blended
-   * estimate is used (cost_source null).
-   */
+  /** Late-bound by the daemon (after registry selection) so trackGeneration can price
+   * split-per-Mtok instead of the legacy blended estimate. */
   setPricingLookup(lookup: IModelPricingLookup): void {
     this.pricingLookup = lookup;
     void this.eventLogger?.info(DomainEventType.CostPricingLookupSet, "pricing_lookup", {
@@ -101,10 +94,6 @@ export class CostTracker implements ICostTracker {
     return this.config?.cost_tracking?.max_batch_size ?? DEFAULT_COST_TRACKING_MAX_BATCH_SIZE;
   }
 
-  /**
-   * Track a provider request with token usage.
-   * Internal implementation for batching.
-   */
   private async trackRequest(
     provider: string,
     tokens: number,
@@ -187,12 +176,8 @@ export class CostTracker implements ICostTracker {
     return priced.cost;
   }
 
-  /**
-   * §5.5 reconciliation. Precedence: caller-supplied provider-reported cost →
-   * split-priced from the injected lookup (registry_computed) → legacy blended
-   * estimate (cost_source null). When both a reported and a computed cost exist and
-   * differ beyond the tolerance, emits model.cost.divergence.
-   */
+  /** Precedence: reported cost → registry-computed split price → legacy blended estimate.
+   * Emits model.cost.divergence when reported and computed differ beyond tolerance. */
   private async resolveCost(
     provider: string,
     tokens: number,

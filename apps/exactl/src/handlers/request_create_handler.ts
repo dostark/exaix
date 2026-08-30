@@ -73,10 +73,8 @@ export class RequestCreateHandler extends BaseCommand {
       const initialStatus = options.analyze ? RequestStatus.ANALYZING : RequestStatus.PENDING;
 
       // A flow request must carry NO identity: RequestProcessor.getRequestKindOrFail rejects
-      // the combination outright ("Request cannot specify both 'flow' and 'agent' fields").
-      // `agent` above always resolves to something because of the DEFAULT_IDENTITY_ID
-      // fallback, so writing it unconditionally made every CLI-created flow request — via the
-      // `--flow` flag as much as via file frontmatter — fail the moment the daemon parsed it.
+      // specifying both. `agent` above always resolves via the DEFAULT_IDENTITY_ID fallback,
+      // so it must be added conditionally here rather than unconditionally.
       const frontmatterFields: Record<string, string | boolean> = {
         trace_id,
         created,
@@ -209,13 +207,8 @@ export class RequestCreateHandler extends BaseCommand {
     this.addCallSiteFrontmatterFields(frontmatterFields);
   }
 
-  /**
-   * Stamp scenario_id/step_id from EXA_SCENARIO_ID/EXA_STEP_ID (Phase 157). The scenario
-   * runner exports these per step so a `submit-request` step's `exactl request --file`
-   * subprocess can carry them into the created request's frontmatter — the transport
-   * AgentRunner later reads to key fixture replay by call site instead of prompt hash.
-   * Absent outside the scenario framework.
-   */
+  /** Stamps scenario_id/step_id from EXA_SCENARIO_ID/EXA_STEP_ID so AgentRunner can key
+   * fixture replay by call site instead of prompt hash; absent outside the scenario framework. */
   private addCallSiteFrontmatterFields(frontmatterFields: Record<string, string | boolean | number>): void {
     const scenarioId = Deno.env.get("EXA_SCENARIO_ID");
     const stepId = Deno.env.get("EXA_STEP_ID");
@@ -267,10 +260,9 @@ export class RequestCreateHandler extends BaseCommand {
         throw new Error("File is empty");
       }
 
-      // A submitted file may already carry frontmatter. Passing it through as free text
-      // would paste it into the BODY of a newly generated frontmatter block, so every
-      // field it declared — skills, tags, identity — was silently dropped. Split it off
-      // and fold it into the options instead; the body alone becomes the description.
+      // A submitted file may already carry frontmatter; passing it through as free text would
+      // paste it into the BODY of a newly generated block, silently dropping its fields. Split
+      // it off and fold it into the options instead; the body alone becomes the description.
       const { frontmatter, body } = splitFileFrontmatter(trimmed);
       if (!frontmatter) return this.create(trimmed, options, RequestSource.FILE);
 
@@ -293,13 +285,9 @@ interface ISplitFile {
   body: string;
 }
 
-/**
- * Split a submitted request file into its leading frontmatter block and body.
- *
- * Returns a null frontmatter when the file has no block, when the YAML is unparseable, or
- * when it parses to something other than a mapping — in every one of those cases the file is
- * plain prose and must be submitted verbatim rather than silently truncated at a stray `---`.
- */
+/** Splits a submitted request file into its frontmatter block and body. Returns a null
+ * frontmatter (file treated as plain prose) when there is no block, the YAML is unparseable,
+ * or it parses to something other than a mapping — never silently truncated at a stray `---`. */
 function splitFileFrontmatter(content: string): ISplitFile {
   const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
   if (!match) return { frontmatter: null, body: content };
@@ -317,24 +305,9 @@ function splitFileFrontmatter(content: string): ISplitFile {
   }
 }
 
-/**
- * Fold a submitted file's frontmatter into the create options.
- *
- * An option passed at the command line always wins: the flag is the more explicit intent,
- * stated for this invocation, whereas the file's frontmatter travels with the file. Fields
- * the request pipeline owns — `trace_id`, `created`, `status`, `source`, `created_by` — are
- * deliberately NOT carried over; `create()` mints fresh ones, so reusing a fixture's
- * trace_id would collide in the journal on the second submission.
- *
- * `flow` and `identity` are mutually exclusive, and the exclusion has to be re-applied HERE
- * because a frontmatter-declared flow arrives too late for the CLI's own guard. `--identity`
- * carries a default (`exactl.ts:376`), so `options.identity` is always populated, and
- * `request_actions.ts:124` clears it only when the `--flow` FLAG is present. A flow that comes
- * from the file instead reached the validator alongside that defaulted identity and was
- * rejected outright — which is what failed 15 of the flow_blueprints scenarios at their submit
- * step. The rule applied is the CLI's existing one, unchanged: a flow request carries no
- * identity.
- */
+/** Folds a submitted file's frontmatter into create options; CLI flags always win. Pipeline-owned
+ * fields (trace_id, created, status, source, created_by) are never carried over since `create()`
+ * mints fresh ones; the flow/identity exclusion is re-applied here since a frontmatter flow bypasses the CLI's own --flow-only guard. */
 function mergeFileFrontmatterIntoOptions(
   frontmatter: IRequestFrontmatter,
   options: IRequestOptions,

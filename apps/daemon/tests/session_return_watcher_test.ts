@@ -344,12 +344,9 @@ Deno.test("[session_return_watcher] an over-budget accepted return also journals
 });
 
 Deno.test("[session_return_watcher][security] journaled events carry traceId as the actual ILogEvent field, not just target — required for trace_scoped journal-assert to find them", async () => {
-  // GAP found live proving Phase 167 Step 4's mandated trace-scoped session.delegate.*
-  // assertions: journal() set `target` to the traceId but never the ILogEvent `traceId`
-  // field itself, so EventLogger.log() fell back to a fresh crypto.randomUUID() for the
-  // persisted row's trace_id column — the exact column a `trace_scoped: true`
-  // journal-assert filters on (`WHERE trace_id = ?`). A row whose target LOOKS like the
-  // right trace but whose trace_id column is a random UUID is invisible to that filter.
+  // journal() sets `target` to the traceId but never the ILogEvent `traceId` field, so
+  // EventLogger.log() falls back to a random UUID for the persisted row's trace_id column —
+  // the exact column a `trace_scoped: true` journal-assert filters on (`WHERE trace_id = ?`).
   const rig = await makeRig();
   try {
     const brief = await setup(rig, "plan_review", ["Workspace/Plans/**"]);

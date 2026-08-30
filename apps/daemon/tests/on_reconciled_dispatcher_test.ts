@@ -267,12 +267,9 @@ Deno.test("[on_reconciled_dispatcher] refinement abandoned marks clarification u
 });
 
 Deno.test("[on_reconciled_dispatcher][security] session.delegate.reconciled is logged with the actual traceId argument, not just target — required for trace_scoped journal-assert to find it", async () => {
-  // GAP found live proving Phase 167 Step 4's mandated trace-scoped session.delegate.*
-  // assertions: every call site here passed traceId only as `target`; the real
-  // EventLogger.info(action, target, payload?, traceId?) 4th argument was never
-  // supplied, so the persisted row's trace_id column fell back to a fresh
-  // crypto.randomUUID() — invisible to a `trace_scoped: true` journal-assert's
-  // `WHERE trace_id = ?` filter, regardless of what `target` holds.
+  // session.delegate.reconciled must be logged with the real traceId as the 4th
+  // argument, not just as `target` — otherwise the persisted row's trace_id column
+  // falls back to a fresh random UUID, invisible to a trace-scoped journal-assert.
   const rig = await makeRig("plan_review");
   try {
     await dropReturn(rig, "approved", "Plan looks correct.");

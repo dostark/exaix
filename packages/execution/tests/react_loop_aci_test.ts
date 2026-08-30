@@ -158,11 +158,11 @@ Deno.test("[ReActLoopAci] duplicate IDs are deduplicated everywhere; unknown IDs
     createOptions(["read_file", "read_file", "does_not_exist"]),
   );
   const availableToolsLine = prompt.split("\n").find((line) => line.startsWith("read_file"));
-  // The tool-listing line trusts permitted_tools verbatim (pre-existing behaviour, unchanged
-  // by Step 3) but deduplicates the repeated "read_file" entry — it never appears twice.
+  // The tool-listing line trusts permitted_tools verbatim but deduplicates the repeated
+  // "read_file" entry — it never appears twice.
   assertEquals(availableToolsLine, "read_file, does_not_exist");
-  // The ACI renderer (Step 2) independently ignores unknown IDs: only a real registry tool
-  // can produce a fragment, and read_file's fragment appears exactly once, not twice.
+  // The ACI renderer independently ignores unknown IDs: only a real registry tool can
+  // produce a fragment, and read_file's fragment appears exactly once, not twice.
   const aciOccurrences = prompt.split("### read_file").length - 1;
   assertEquals(aciOccurrences, 1, "the ACI fragment for read_file must appear exactly once");
   assertEquals(prompt.includes("### does_not_exist"), false, "an unknown tool ID can never render a fragment");

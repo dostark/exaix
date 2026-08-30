@@ -13,15 +13,7 @@ import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
 const GIT_SUBCOMMAND_STATUS = "status";
 
-/**
- * GitStatusTool - Queries git repository status in portals
- *
- * Security:
- * - Validates portal exists
- * - Checks if git repository exists
- * - Returns formatted status output
- * - Logs all operations to IActivity Journal
- */
+/** Queries git repository status in a portal, validating portal and git-repo existence and logging the operation to the Activity Journal. */
 export class GitStatusTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = GitStatusToolArgsSchema.parse(args);

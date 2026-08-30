@@ -23,14 +23,8 @@ function extractJsonObjectSpan(input: string): string {
   return match ? match[0] : input;
 }
 
-/**
- * Escapes a literal newline that occurs INSIDE a JSON string value. A single left-to-right scan
- * tracks whether the cursor is inside a string (honoring `\"` escapes), so a newline BETWEEN two
- * string tokens (the normal formatting of any multi-line, multi-key JSON object) is left alone —
- * unlike the previous /"[^"]*\n[^"]*"/g regex, which matched from one value's closing quote,
- * across the structural `,\n  ` between two keys, to the next key's opening quote, corrupting
- * virtually any well-formatted multi-line JSON.
- */
+/** Escapes a literal newline inside a JSON string value via a left-to-right scan that tracks
+ *  string context (honoring `\"` escapes), unlike a naive regex which corrupts the `,\n` between keys. */
 function escapeNewlinesInStrings(input: string): string {
   let result = "";
   let inString = false;

@@ -421,7 +421,7 @@ Deno.test("[TriggerIngestion] dispatches emit TriggerIngested and TriggerAccepte
 });
 
 // ============================================================================
-// Step 7 — Cleanup Tests
+// Cleanup Tests
 // ============================================================================
 
 Deno.test("[TriggerIngestion] duplicate idempotency key returns DEDUPLICATED disposition", async () => {

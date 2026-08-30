@@ -133,6 +133,12 @@ const SEQUENTIAL_FILES: string[] = [
   // pool even after DENO_JOBS was scaled to hardwareConcurrency — this file alone
   // oversubscribes spawn capacity regardless of overall worker count.
   "apps/exactl/tests/blueprint_commands_test.ts",
+  // The hardened delegation test probes the real OpenCode binary. Under Batch 1 spawn
+  // pressure, that probe can fail before writing its per-test permission config.
+  "apps/daemon/tests/session_delegation_coordinator_test.ts",
+  // Sequencing assertions advance promise-controlled steps with zero-delay timers. Heavy
+  // Batch 1 event-loop pressure can delay the first dispatch past the assertion boundary.
+  "packages/flow/tests/session_delegate_cycle_sequencing_test.ts",
   // DiskSpaceHealthCheck shells out to `df` per check; under Batch 1's worker
   // pool the subprocess spawn intermittently errors (same spawn-contention class
   // as blueprint_commands_test.ts above), and DiskSpaceHealthCheck.critical=true

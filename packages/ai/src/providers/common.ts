@@ -23,29 +23,21 @@ export interface IGenerateResult {
     cacheReadTokens?: number;
     /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
     cacheCreationTokens?: number;
-    /** Reasoning/thinking tokens (Anthropic output_tokens_details.thinking_tokens, OpenAI
-     *  completion_tokens_details.reasoning_tokens, Google usageMetadata.thoughtsTokenCount,
-     *  Codex turn.completed.usage.reasoning_output_tokens). A SUBSET of completionTokens
-     *  (billed as output, not additional) when the underlying provider reports one — never 0
-     *  for "no reasoning happened"; undefined when the provider/model doesn't report a
-     *  breakdown at all. */
+    /** Reasoning/thinking tokens (Anthropic/OpenAI/Google/Codex all report differently). A SUBSET
+     *  of completionTokens (billed as output) when reported — never 0 for "no reasoning"; undefined
+     *  when the provider/model doesn't report a breakdown. */
     reasoningTokens?: number;
   };
   model: string;
   provider: string;
   cost_usd?: number;
   streamed?: boolean;
-  /**
-   * Why the generation ended, when the provider reports it (Anthropic stop_reason:
-   * "end_turn", "max_tokens", "stop_sequence", ...). "max_tokens" means the content
-   * was truncated mid-generation — callers parsing structured output should treat
-   * that as an incomplete response, not a malformed one.
-   */
+  /** Why generation ended (Anthropic stop_reason: "end_turn", "max_tokens", "stop_sequence", ...).
+   * "max_tokens" means truncated mid-generation — callers should treat that as incomplete, not malformed. */
   stop_reason?: string;
-  /** Native tool calls the model made. Present only when the provider's response
-   *  included a tool_use block(s) AND the caller requested tools via
-   *  IModelOptions.tools. May contain multiple entries for parallel tool use.
-   *  Absent (undefined) for every response today. */
+  /** Native tool calls the model made; present only when the response included a tool_use block
+   *  AND the caller requested tools via IModelOptions.tools. May contain multiple entries for
+   *  parallel tool use. */
   toolCalls?: IProviderToolCall[];
 }
 
@@ -60,14 +52,14 @@ export interface IProviderToolCall {
    *  for forward compatibility with future provider support. */
   type?: string;
   /** Gemini's `thoughtSignature` for this functionCall — must be replayed verbatim on
-   *  the next request's model functionCall part (GAP-153-E). */
+   *  the next request's model functionCall part. */
   thoughtSignature?: string;
   /** Anthropic thinking blocks that preceded the tool_use block in the same assistant
    *  message — must be passed back complete and unmodified (with their signature) ahead
-   *  of the tool_use on the next request (GAP-153-F). */
+   *  of the tool_use on the next request. */
   thinkingBlocks?: IThinkingReplayBlock[];
   /** OpenAI reasoning content (`reasoning_content`) accompanying the tool call — must be
-   *  echoed back on the replayed assistant message for multi-turn continuity (GAP-153-G). */
+   *  echoed back on the replayed assistant message for multi-turn continuity. */
   reasoningContent?: string;
 }
 
@@ -177,12 +169,7 @@ export function isRetryable(error: Error): boolean {
   return true; // Generic errors (like network) are retryable
 }
 
-/**
- * Retry a promise-returning function with exponential backoff.
- * @param fn The async function to retry
- * @param options.maxRetries Maximum number of retries
- * @param options.baseDelayMs Initial delay in ms
- */
+/** Retries a promise-returning function with exponential backoff (maxRetries, baseDelayMs). */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   options: { maxRetries: number; baseDelayMs: number },
@@ -213,12 +200,9 @@ function hasInnerProvider(provider: IModelProvider): provider is IWrappingModelP
   return "inner" in provider;
 }
 
-/**
- * Reach through a decorator chain (TracedProvider, RateLimitedProvider, ...) to the
- * underlying provider (Phase 157 Step 4). Used by daemon shutdown to find a MockLLMProvider,
- * regardless of how many wrappers ProviderFactory applied, so it can report fixture drift.
- * Returns the provider itself when it is not wrapped.
- */
+/** Reaches through a decorator chain (TracedProvider, RateLimitedProvider, ...) to the underlying
+ * provider. Used by daemon shutdown to find a MockLLMProvider and report fixture drift; returns
+ * the provider itself when it is not wrapped. */
 export function unwrapModelProvider(provider: IModelProvider): IModelProvider {
   let current = provider;
   while (hasInnerProvider(current)) {

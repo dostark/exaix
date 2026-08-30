@@ -13,14 +13,8 @@ import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
 /**
- * PatchFileTool — applies an exact string replacement within a portal file.
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal
- * - Requires PortalOperation.WRITE permission
- * - Fails loudly if search string not found or is ambiguous (multiple matches)
- * - Logs all patch operations to Activity Journal
+ * Applies an exact string replacement within a portal file. Fails loudly (rather than
+ * silently no-op) if the search string is not found or matches more than once.
  */
 export class PatchFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {

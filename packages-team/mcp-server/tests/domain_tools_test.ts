@@ -136,10 +136,7 @@ Deno.test("MCP Domain Tools", async (t) => {
   await t.step("QueryJournalTool", async () => {
     // Log some activity first
     db.logActivity("test", "test.action", "target", { foo: "bar" });
-    // Wait for flush? DatabaseService writes async.
-    // We need to wait or force flush.
-    // Since we don't have public flush, let's just wait a bit or use getRecentActivities which flushes internally?
-    // Looking at db.ts: getRecentActivity calls flush(). Great.
+    // getRecentActivity flushes internally, so no manual wait is needed here.
 
     const tool = new QueryJournalTool(context);
     const result = await tool.execute({

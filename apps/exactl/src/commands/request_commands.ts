@@ -26,13 +26,10 @@ import {
   type IRequestShowResult,
 } from "@exaix/core/request";
 import { join } from "@std/path";
-import { WaitStateSchema } from "@exaix/flow";
 import type { Opt, Reason } from "@exaix/core/types";
+import { WaitStateSchema } from "@exaix/flow";
 
-/**
- * RequestCommands provides CLI operations for creating and managing requests.
- * All operations are logged to activity_log with actor='human'.
- */
+/** All operations are logged to activity_log with actor='human'. */
 export class RequestCommands extends BaseCommand {
   private createHandler: RequestCreateHandler;
   private listHandler: RequestListHandler;
@@ -49,25 +46,15 @@ export class RequestCommands extends BaseCommand {
     this.clarifyHandler = new RequestClarifyHandler(context);
   }
 
-  /**
-   * Run intent analysis for a specific request.
-   * Internal helper for request promotion or manual trigger.
-   */
+  /** Internal helper for request promotion or manual trigger. */
   async analyze(
     idOrFilename: string,
     mode: AnalysisMode = AnalysisMode.HYBRID,
-    force?: boolean,
+    force?: Opt<boolean, Reason.OptionalInput>,
   ): Promise<IRequestAnalysis> {
     return await this.showHandler.analyze(idOrFilename, mode, force);
   }
 
-  /**
-   * Create a new request with the given description
-   * @param description The request description/task
-   * @param options Optional settings (agent, priority, portal)
-   * @param source How the request was created (cli, file, interactive)
-   * @returns Request metadata including path and trace_id
-   */
   async create(
     description: string,
     options: IRequestOptions = {},
@@ -76,12 +63,6 @@ export class RequestCommands extends BaseCommand {
     return await this.createHandler.create(description, options, source);
   }
 
-  /**
-   * Create a request from a file's content
-   * @param filePath Path to file containing the request description
-   * @param options Optional settings (agent, priority, portal)
-   * @returns Request metadata
-   */
   async createFromFile(
     filePath: string,
     options: IRequestOptions = {},
@@ -89,20 +70,15 @@ export class RequestCommands extends BaseCommand {
     return await this.createHandler.createFromFile(filePath, options);
   }
 
-  /**
-   * List requests in the inbox
-   * @param status Optional status filter
-   * @returns Array of request entries sorted by created date (newest first)
-   */
-  async list(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]> {
+  /** Requests are sorted by created date, newest first. */
+  async list(
+    status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    includeArchived?: Opt<boolean, Reason.QueryFilter>,
+  ): Promise<IRequestEntry[]> {
     return await this.listHandler.list(status, includeArchived);
   }
 
-  /**
-   * Show details of a specific request
-   * @param idOrFilename Full trace_id, short trace_id (8 chars), or filename
-   * @returns Request metadata and content body
-   */
+  /** `idOrFilename` accepts a full trace_id, an 8-char short trace_id, or a filename. */
   async show(idOrFilename: string): Promise<IRequestShowResult> {
     return await this.showHandler.show(idOrFilename);
   }
@@ -112,12 +88,7 @@ export class RequestCommands extends BaseCommand {
     return result.content;
   }
 
-  /**
-   * Manage the clarification Q&A loop for a REFINING request.
-   * @param requestId The request ID (filename without .md)
-   * @param options Flags: answers, proceed, cancel, engine (for DI in tests)
-   * @returns Current clarification state with pending questions and quality score
-   */
+  /** `options.engine` is for DI in tests. */
   async clarify(
     requestId: string,
     options?: Opt<IClarifyOptions, Reason.OptionalInput>,

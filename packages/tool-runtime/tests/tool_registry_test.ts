@@ -16,17 +16,7 @@ import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { createToolRegistryTestContext } from "./helpers/tool_registry_test_helper.ts";
 
-/**
- * Tests for Step 4.1: The Tool Registry
- *
- * Success Criteria:
- * - Tool registration with JSON schemas
- * - Tool execution with security validation
- * - Path traversal attempts rejected
- * - Tool execution logged to IActivity Journal
- * - Restricted commands blocked
- * - Structured error handling
- */
+/** Tests for Tool Registry registration, validation, and execution. */
 
 interface IToolRegistryTestContext {
   workspaceRoot: string;

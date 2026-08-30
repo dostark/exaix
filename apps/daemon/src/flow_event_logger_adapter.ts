@@ -27,10 +27,7 @@ interface IFlowEventPayloadWithTraceId {
   traceId?: string;
 }
 
-/**
- * @param logger The daemon's real IEventLogger (writes to the activity journal).
- * @returns An IFlowEventLogger suitable for FlowRunner's `eventLogger` dependency.
- */
+/** Wraps the daemon's IEventLogger (which writes to the activity journal) as an IFlowEventLogger. */
 export function createFlowEventLogger(logger: IEventLogger): IFlowEventLogger {
   return {
     log: <TEvent extends string>(

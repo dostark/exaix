@@ -27,11 +27,7 @@ function fileExists(path: string): boolean {
 
 const ANALYSIS_DOC_PRESENT = fileExists(ANALYSIS_DOC);
 
-/**
- * Slice §7.5 out of the analysis doc: from its heading to the next same-or-higher heading.
- * Returns "" when the section is absent — callers must treat that as a failure, never as
- * an empty-and-therefore-passing set.
- */
+/** Slices a section by its heading through the next same-or-higher heading; returns "" when absent — callers must treat that as a failure, never an empty-and-passing set. */
 function sliceSection(doc: string, sectionNumber: string): string {
   const escaped = sectionNumber.replace(".", "\\.");
   const start = doc.search(new RegExp(`^#{2,4}\\s+${escaped}\\s`, "m"));

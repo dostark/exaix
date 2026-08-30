@@ -15,7 +15,7 @@ import {
   MCP_CONTENT_TYPE_STRUCTURED_DATA,
   ToolErrorCode,
 } from "@exaix/core";
-import type { ICliApplicationContext } from "@exaix/core/types";
+import type { ICliApplicationContext, Opt, Reason } from "@exaix/core/types";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { ConfigPathBlockedError, ConfigRateLimitedError, createConfigAdapter, resolveTier } from "@exaix/core/config";
@@ -27,7 +27,7 @@ function serializeStructuredData(value: object): JSONValue {
   return JSON.parse(JSON.stringify(value)) as JSONValue;
 }
 
-// ── Staging state for ConfigSet/Apply (Step 6) ──────────────────────────
+// ── Staging state for ConfigSet/Apply ──────────────────────────
 interface IPendingChange {
   key: string;
   value: JSONValue;
@@ -42,8 +42,7 @@ const CONFIG_APPLY_STATUS_ERROR = "error";
 const CONFIG_SET_TOOL_NAME = "config_set";
 
 function addPendingChange(key: string, value: JSONValue): void {
-  // Phase 138 Step 3: cap pending changes per session (in-process guard). Added
-  // at the top so the existing auto-discard timer + record shape are untouched.
+  // Caps pending changes per session (in-process guard).
   if (pendingChanges.length >= MCP_CONFIG_SET_MAX_PENDING) {
     throw new ConfigRateLimitedError(
       "mcp",
@@ -95,8 +94,8 @@ export class ConfigGetTool extends ToolHandler {
 
   constructor(
     context: ICliApplicationContext,
-    permissions?: IPortalPermissionsChecker,
-    logger?: IEventLogger,
+    permissions?: Opt<IPortalPermissionsChecker, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     super(context, permissions, logger);
   }
@@ -182,8 +181,8 @@ export class ConfigValidateTool extends ToolHandler {
 
   constructor(
     context: ICliApplicationContext,
-    permissions?: IPortalPermissionsChecker,
-    logger?: IEventLogger,
+    permissions?: Opt<IPortalPermissionsChecker, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     super(context, permissions, logger);
   }
@@ -247,8 +246,8 @@ export class ConfigDiffTool extends ToolHandler {
 
   constructor(
     context: ICliApplicationContext,
-    permissions?: IPortalPermissionsChecker,
-    logger?: IEventLogger,
+    permissions?: Opt<IPortalPermissionsChecker, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     super(context, permissions, logger);
   }
@@ -297,17 +296,14 @@ export class ConfigDiffTool extends ToolHandler {
   }
 }
 
-/**
- * MCP tool for staging a config change (set). Writes are NOT applied until
- * ConfigApplyTool is called. Requires human approval.
- */
+/** MCP tool for staging a config change; writes apply only via ConfigApplyTool and require human approval. */
 export class ConfigSetTool extends ToolHandler {
   private adapter: IConfigAdapter | null = null;
 
   constructor(
     context: ICliApplicationContext,
-    permissions?: IPortalPermissionsChecker,
-    logger?: IEventLogger,
+    permissions?: Opt<IPortalPermissionsChecker, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     super(context, permissions, logger);
   }
@@ -350,7 +346,7 @@ export class ConfigSetTool extends ToolHandler {
         );
       }
 
-      // Phase 138 Step 2: refuse writes to deny-permanently blocked paths.
+      // Refuses writes to deny-permanently blocked paths.
       if (this.getAdapter().isPathBlocked(key)) {
         const reason = this.getAdapter().getBlockReason(key);
         return this.formatToolError(
@@ -363,7 +359,7 @@ export class ConfigSetTool extends ToolHandler {
         );
       }
 
-      // Phase 138 Step 1: route by the key's three-tier authorization tier.
+      // Routes by the key's three-tier authorization tier.
       const tier = resolveTier(validationKey);
 
       if (tier === "safe") {
@@ -427,10 +423,7 @@ export class ConfigSetTool extends ToolHandler {
   }
 }
 
-/**
- * MCP tool for applying all staged config changes. Drains the pending list
- * and calls adapter.set() for each entry. Requires human approval.
- */
+/** MCP tool for applying all staged config changes; drains the pending list and requires human approval. */
 export class ConfigApplyTool extends ToolHandler {
   async execute(_args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     try {
@@ -450,7 +443,7 @@ export class ConfigApplyTool extends ToolHandler {
       // failures are recorded as errors instead of escaping as unhandled rejections.
       const results: Array<{ key: string; status: string; error?: string }> = [];
       for (const { key, value } of pending) {
-        // Phase 138 Step 2: a key blocked between staging and apply is refused.
+        // A key blocked between staging and apply is refused.
         if (adapter.isPathBlocked(key)) {
           results.push({
             key,
@@ -517,8 +510,8 @@ export class ConfigGetProvenanceTool extends ToolHandler {
 
   constructor(
     context: ICliApplicationContext,
-    permissions?: IPortalPermissionsChecker,
-    logger?: IEventLogger,
+    permissions?: Opt<IPortalPermissionsChecker, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     super(context, permissions, logger);
   }

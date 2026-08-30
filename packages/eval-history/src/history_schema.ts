@@ -11,11 +11,7 @@
 import { z } from "zod";
 import { BINARY_VERSION, EvalScoringMode, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
-/**
- * Component versions stamped onto each eval-history entry for provenance. `binary_version` +
- * `schema_version` pin the exactl binary and the declarative scenario contract; `framework_commit`
- * + `framework_dirty` pin the scenario-framework SOURCE revision that actually produced the run.
- */
+/** Component versions stamped onto each eval-history entry for provenance. */
 export interface IComponentVersions {
   binary_version: string;
   schema_version: string;
@@ -28,15 +24,15 @@ export const StepResultSchema = z.object({
   score: z.number().min(0).max(1),
   criteria_passed: z.number().int().min(0).optional(),
   criteria_total: z.number().int().min(0).optional(),
-  /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
+  /** Runner-observed wall-clock duration for this step, ms. */
   duration_ms: z.number().int().min(0).optional(),
-  /** LLM-call wall-clock duration summed from journal payloads, ms. Phase 140a Step 3/4. */
+  /** LLM-call wall-clock duration summed from journal payloads, ms. */
   llm_duration_ms: z.number().int().min(0).optional(),
   tokens_prompt: z.number().int().min(0).optional(),
   tokens_completion: z.number().int().min(0).optional(),
   tokens_cache_read: z.number().int().min(0).optional(),
   tokens_cache_creation: z.number().int().min(0).optional(),
-  /** Real tracked cost only — never a calculateCost() prediction. Phase 140a Step 3/4. */
+  /** Real tracked cost only — never a calculateCost() prediction. */
   tracked_cost_usd: z.number().min(0).optional(),
 });
 
@@ -68,7 +64,7 @@ export const EvalHistoryEntrySchema = z.object({
   provider: z.string().optional(),
   model: z.string().optional(),
   cell_id: z.string().optional(),
-  /** Scenario-level aggregates, summed across step_results. Phase 140a Step 4. */
+  /** Scenario-level aggregates, summed across step_results. */
   total_llm_duration_ms: z.number().int().min(0).optional(),
   total_tokens_prompt: z.number().int().min(0).optional(),
   total_tokens_completion: z.number().int().min(0).optional(),
@@ -76,20 +72,14 @@ export const EvalHistoryEntrySchema = z.object({
   total_tokens_cache_creation: z.number().int().min(0).optional(),
   /** Sum of only the steps with a defined tracked_cost_usd — never a predicted figure. */
   total_tracked_cost_usd: z.number().min(0).optional(),
-  /** Task-family tags propagated from scenario manifest. Phase 141 Step 1. */
+  /** Task-family tags propagated from scenario manifest. */
   tags: z.array(z.string()).optional(),
-  /** Failure taxonomy for the run (Phase 143 Step 5): distinct unrecovered anomaly eventTypes
-   *  plus the `execution-alignment` class, joined from the run's journal trace. Absent ⇒ no
-   *  failures classified. */
+  /** Failure taxonomy for the run: distinct unrecovered anomaly event types. */
   failure_classes: z.array(z.string()).optional(),
-  /** External-benchmark provenance (Phase 144 Step 4): present only on external-benchmark
-   *  runs (Terminal-Bench/SWE-bench). Absent on every pre-existing non-external run, so the
-   *  additive migration keeps old rows renderable. */
+  /** External-benchmark provenance present only on external-benchmark runs. */
   benchmark: z.string().min(1).optional(),
   benchmark_version: z.string().min(1).optional(),
-  /** Scoring composition mode (Phase 143 Step 3). Default additive so every pre-existing
-   *  row without an explicit mode reads unambiguously as additive. Values match the Test
-   *  layer's `ScoringMode` in tests/scenario_framework/runner/scoring.ts. */
+  /** Scoring composition mode; defaults to additive. */
   scoring_mode: z.nativeEnum(EvalScoringMode).default(EvalScoringMode.ADDITIVE),
   component_versions: z.object({
     binary_version: z.string(),

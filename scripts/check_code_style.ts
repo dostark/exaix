@@ -933,6 +933,10 @@ const IN_MODULE_COMMENT_LINE_LIMIT = 3;
 const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
   { pattern: /\bphase\s+\d+\b/i, hint: "a phase number" },
   { pattern: /\bstep\s+\d+\b/i, hint: "a step number" },
+  { pattern: /\bgaps?\s*[-#:]\s*[\w\d.-]+/i, hint: "a GAP identifier" },
+  { pattern: /\bgaps?\s+\d+\b/i, hint: "a GAP identifier" },
+  { pattern: /\b(?:pre|post)[ -]?gap\b/i, hint: "a pre/post-gap reference" },
+  { pattern: /\bgap\s+(?:analysis|remediation|finding|decision)\b/i, hint: "gap analysis/remediation details" },
   { pattern: /\btried\b/i, hint: "a narration of a prior attempt" },
   { pattern: /\b(?:didn't|did not)\s+work\b/i, hint: "what didn't work" },
 ];

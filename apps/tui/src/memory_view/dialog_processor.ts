@@ -122,10 +122,7 @@ export class DialogProcessor {
     if (!confirmed) return;
 
     await withDialogErrorHandling(context, async () => {
-      // Manual learning additions might need a separate service method or similar
-      // For now, we'll placeholder this or use internal service if available
-      // Based on memory_bank.ts, we might need a specifically tailored method
-      // but let's assume service has some method or we log it.
+      // No dedicated service method exists yet for manual learning additions; this is a placeholder.
       context.onStatusUpdate(TUI_STATUS_MSG_LEARNING_ADDED);
       await context.onTreeReload();
     });

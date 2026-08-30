@@ -31,11 +31,7 @@ interface IWebhookBodyObject {
 }
 
 export interface IWebhookAdapterConfig {
-  /**
-   * HMAC-SHA256 secret. REQUIRED to accept payloads: the adapter verifies the
-   * `x-hub-signature-256` header against it. Without a secret the adapter fails
-   * closed and rejects every payload (Finding 9).
-   */
+  /** HMAC-SHA256 secret. Without a secret the adapter fails closed and rejects payloads. */
   secret?: string;
   /** Override header name for the HMAC signature. Defaults to "x-hub-signature-256". */
   signatureHeader?: string;

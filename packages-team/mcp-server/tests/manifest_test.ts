@@ -154,7 +154,7 @@ Deno.test("[McpManifest] DYNAMIC_MODE_TOOLS contains expected 11 tools", () => {
     "search_files",
     "exaix_list_plans",
     "exaix_query_journal",
-    // Read-only config tools (Phase 137) — side-effect-free, safe for dynamic execution.
+    // Read-only config tools — side-effect-free, safe for dynamic execution.
     "exaix_config_get",
     "exaix_config_validate",
     "exaix_config_diff",

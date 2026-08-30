@@ -1225,7 +1225,8 @@ the next line already says.
   README, `ARCHITECTURE.md`, or the relevant `exaix-dev-docs/` doc) — not
   inline in the source.
 - **No ephemeral implementation history.** A comment must not reference a
-  plan phase/step number, narrate what was tried and abandoned, or explain
+  plan phase/step number, a specific GAP identifier (e.g. `GAP-1`, `GAP #2`),
+  pre/post-gap analysis notes, narrate what was tried and abandoned, or explain
   what previously didn't work. That belongs in the commit message and the
   phase-plan doc, which are the durable record of _why_; the code itself is
   only a record of _what it does now_. This does not apply to the module's
@@ -1241,10 +1242,10 @@ the next line already says.
 `scripts/check_code_style.ts` scans every comment past a module's own
 header block:
 
-| Tag                   | Detects                                                                |
-| --------------------- | ---------------------------------------------------------------------- |
-| `[long-comment]`      | A block comment or line-comment run longer than three physical lines   |
-| `[ephemeral-comment]` | A comment mentioning a phase/step number, or narrating a prior attempt |
+| Tag                   | Detects                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `[long-comment]`      | A block comment or line-comment run longer than three physical lines                     |
+| `[ephemeral-comment]` | A comment mentioning a phase/step number, GAP identifier, pre/post-gap, or prior attempt |
 
 Both are warnings by default (visible, non-blocking) and escalate to errors
 under `--convert-warnings-to-errors`.

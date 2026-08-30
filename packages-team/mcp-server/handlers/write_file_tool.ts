@@ -12,15 +12,7 @@ import { McpToolName } from "@exaix/mcp";
 import { dirname } from "@std/path";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * WriteFileTool - Writes file content to a portal
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal
- * - Creates parent directories if needed
- * - Logs all writes to IActivity Journal
- */
+/** Prevents path traversal, creates parent directories as needed, and logs all writes to the Activity Journal. */
 export class WriteFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = WriteFileToolArgsSchema.parse(args) as {

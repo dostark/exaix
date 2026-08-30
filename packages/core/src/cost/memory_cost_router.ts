@@ -11,6 +11,7 @@
 import type { IEventLogger } from "../logger/mod.ts";
 import type { ICostTracker } from "../types/mod.ts";
 import type { IMemoryBudgetStatus, IMemoryCostRouter } from "../types/mod.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 import { MemoryStorageTier } from "../types/enums.ts";
 import { DEFAULT_MEMORY_REMOTE_BUDGET_USD, MEMORY_EVENT_TIER_SELECTED } from "../types/constants.ts";
 
@@ -23,49 +24,17 @@ const REASON_BUDGET_EXHAUSTED = "daily_budget_exhausted";
 const REASON_WITHIN_BUDGET = "within_daily_budget";
 const REASON_NO_COST_TRACKER = "no_cost_tracker_configured";
 
-/**
- * Cost-aware router for memory storage tier selection.
- *
- * ## What it does
- *
- * Before a memory service calls an embedding provider (which
- * costs money), it asks the MemoryCostRouter whether a remote
- * operation is allowed. The router checks:
- *
- * 1. Is a cost tracker configured? If not → LOCAL (no budget
- *    infrastructure available, conservatively use free tier).
- * 2. Has the daily budget for remote memory ops been reached?
- *    If exhausted → LOCAL.
- * 3. Otherwise → REMOTE allowed.
- *
- * ## Budget accounting
- *
- * Every `recordOperation()` call persists the cost via the
- * injected `ICostTracker`. The cost is tracked under a synthetic
- * provider name `"memory_remote"` so it doesn't interfere with
- * LLM provider-specific budgets.
- *
- * ## Event emission
- *
- * Each `isRemoteAllowed()` call emits a `memory.tier_selected`
- * event with the selected tier, reason, and current daily cost
- * for observability.
- */
+/** Gates remote (paid) memory embedding calls behind a daily USD budget — falls back to
+ * LOCAL when no cost tracker is configured or budget is exhausted; costs are recorded
+ * under the synthetic "memory_remote" provider so they don't collide with LLM budgets. */
 export class MemoryCostRouter implements IMemoryCostRouter {
   private _selectedTier: MemoryStorageTier = MemoryStorageTier.LOCAL;
 
-  /**
-   * @param costTracker Optional cost tracker. When absent, the router
-   *   always returns LOCAL (conservative default — no budget data
-   *   means no remote operations).
-   * @param logger Optional event logger. When absent, tier selection
-   *   events are emitted as no-ops.
-   * @param dailyBudgetUsd Daily budget cap for remote memory operations
-   *   in USD. Defaults to `DEFAULT_MEMORY_REMOTE_BUDGET_USD` (2.00).
-   */
+  /** Without a `costTracker`, `isRemoteAllowed()` always returns LOCAL (conservative
+   *  default — no budget data means no remote operations). */
   constructor(
-    private costTracker?: ICostTracker,
-    private logger?: IEventLogger,
+    private costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
+    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     private dailyBudgetUsd: number = DEFAULT_MEMORY_REMOTE_BUDGET_USD,
   ) {}
 
@@ -73,19 +42,8 @@ export class MemoryCostRouter implements IMemoryCostRouter {
     return this._selectedTier;
   }
 
-  /**
-   * Check whether a remote (paid) memory operation is allowed under
-   * the current daily budget.
-   *
-   * Decision flow:
-   * - No cost tracker → LOCAL. Without budget infrastructure we
-   *   cannot track spend, so we conservatively block remote ops.
-   * - Budget exhausted → LOCAL. Daily spend cap has been reached.
-   * - Within budget → REMOTE. Remote operations are allowed.
-   *
-   * Emits `memory.tier_selected` event with the decision reason
-   * and current daily cost for observability.
-   */
+  /** Gates remote memory ops on the daily budget: no tracker or budget exhausted → LOCAL,
+   *  else REMOTE. Emits a `memory.tier_selected` event either way. */
   async isRemoteAllowed(): Promise<boolean> {
     if (!this.costTracker) {
       this._selectedTier = MemoryStorageTier.LOCAL;
@@ -119,21 +77,9 @@ export class MemoryCostRouter implements IMemoryCostRouter {
     return true;
   }
 
-  /**
-   * Record the cost of a completed remote memory operation.
-   *
-   * Persists the cost via `ICostTracker.persistEntry()` under the
-   * synthetic provider `"memory_remote"` so the daily accumulated
-   * spend includes all embedding/remote memory costs.
-   *
-   * When no cost tracker is configured, the cost is silently dropped
-   * (consistent with the conservative LOCAL-only behaviour).
-   *
-   * @param costUsd Estimated cost of the operation in USD. Use a small
-   *   value like `0.0002` for a single embedding query.
-   *   Note: tokens are reported as 0 because embedding APIs do not
-   *   expose per-request token counts — the cost is an approximation.
-   */
+  /** Persists cost under the synthetic `"memory_remote"` provider; silently dropped when
+   *  no tracker is configured. Tokens are reported as 0 — embedding APIs don't expose
+   *  per-request token counts, so `costUsd` is an approximation. */
   async recordOperation(costUsd: number): Promise<void> {
     if (!this.costTracker) return;
 
@@ -149,11 +95,6 @@ export class MemoryCostRouter implements IMemoryCostRouter {
     });
   }
 
-  /**
-   * Returns the current budget status — daily budget cap, accumulated
-   * daily cost for remote memory operations, and whether the operation
-   * is within budget.
-   */
   async getBudgetStatus(): Promise<IMemoryBudgetStatus> {
     if (!this.costTracker) {
       return {
@@ -171,13 +112,8 @@ export class MemoryCostRouter implements IMemoryCostRouter {
     };
   }
 
-  /**
-   * Emit a `memory.tier_selected` event for observability.
-   *
-   * The event carries the selected tier, the reason code, and the
-   * current daily cost so downstream consumers (log dashboards,
-   * CLI reporting) can analyse memory cost behaviour.
-   */
+  /** Emits `memory.tier_selected` with tier, reason, and daily cost for downstream
+   *  log dashboards / CLI reporting. */
   private async emitTierSelected(
     tier: MemoryStorageTier,
     reason: string,

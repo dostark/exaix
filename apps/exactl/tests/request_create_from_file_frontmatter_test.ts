@@ -133,11 +133,9 @@ Evaluate the pinned skills.
   });
 
   it("accepts a file whose frontmatter declares a flow, without an identity conflict", async () => {
-    // `--identity` carries a DEFAULT (exactl.ts:376), so options.identity is always populated,
-    // and the CLI's flow/identity exclusion (request_actions.ts:124) nulls it only when the
-    // `--flow` FLAG is present. A flow arriving from file frontmatter reaches the validator
-    // after that guard has run, so every flow fixture was rejected with "Cannot specify both
-    // 'flow' and 'agent'/'identity'" — 15 of the flow_blueprints scenarios at once.
+    // A flow declared in file frontmatter bypasses the CLI's flow/identity exclusion guard
+    // (that guard only fires on the `--flow` flag), so it must not conflict with the
+    // default identity that options.identity always carries.
     await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
     await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
 
@@ -154,13 +152,9 @@ Evaluate the pinned skills.
   });
 
   it("omits identity from a flow request's frontmatter, which the daemon requires", async () => {
-    // `create()` computes `agent = options.identity || options.agent || DEFAULT_IDENTITY_ID`
-    // and writes it into frontmatter unconditionally, so every flow request — including one
-    // made with the `--flow` FLAG — carried `identity: default` alongside `flow:`.
-    // RequestProcessor.getRequestKindOrFail (processor.ts:427) fails exactly that combination
-    // with "Request cannot specify both 'flow' and 'agent' fields", so a CLI-created flow
-    // request was rejected by the daemon every time. The pack could not catch it while the
-    // fixture's `flow:` was still being dropped, because the request was not a flow request.
+    // A flow request's frontmatter must omit `identity` entirely: `create()` always
+    // populates `agent` from options.identity as a fallback, but the daemon rejects
+    // any request carrying both `flow` and `agent`/`identity` fields.
     await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
     await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
 

@@ -111,17 +111,10 @@ import type { Opt, Reason } from "@exaix/core/types";
  */
 export interface IAgentExecutor {
   run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
-  /**
-   * Optional blueprint-existence probe used to validate every flow step's identity before
-   * execution. Absent executors (e.g. test doubles) simply skip the identity check.
-   */
+  /** Optional blueprint-existence probe; absent executors (e.g. test doubles) skip the identity check. */
   hasBlueprint?(identityId: string): Promise<boolean>;
-  /**
-   * Strategy-routed step execution (Phase 159): forces `identityId` through the agent
-   * strategy registry with `strategy`, bypassing the no-strategy `run()` path's single
-   * direct generate call. Absent executors fail fast when a step declares a strategy
-   * (`agent_step_handler.ts` surfaces a clear error rather than silently falling back).
-   */
+  /** Strategy-routed step execution: forces `identityId` through the agent strategy registry,
+   * bypassing `run()`'s single generate call. Absent executors fail fast rather than falling back. */
   runWithStrategy?(
     identityId: string,
     request: IFlowStepRequest,
@@ -158,28 +151,24 @@ export interface IFlowStepRequest {
   context: Record<string, JSONValue>;
   traceId?: string;
   requestId?: string;
-  /** Call-site key (Phase 157): the scenario/step that submitted the request, so LLM
-   *  calls made for this step can be addressed by call site instead of prompt hash. */
+  /** Call-site key: the scenario/step that submitted the request, so LLM calls can be addressed by call site instead of prompt hash. */
   scenarioId?: string;
   stepId?: string;
-  /** This flow-internal step's own id (Phase 157 Step 3), e.g. "define-endpoints". Scopes
-   *  call-index assignment per flow step so steps racing in the same parallel wave
-   *  (WaveOrchestrator.executeWave uses Promise.all) cannot collide on the same index. */
+  /** This flow-internal step's own id, e.g. "define-endpoints". Scopes call-index assignment per
+   *  flow step so steps racing in the same parallel wave (WaveOrchestrator.executeWave uses
+   *  Promise.all) cannot collide on the same index. */
   flowStepId?: string;
-  /** Skills to apply for this step execution (Phase 17) */
+  /** Skills to apply for this step execution */
   skills?: string[];
-  /** Structured request analysis from Step 11 */
+  /** Structured request analysis. */
   requestAnalysis?: IRequestAnalysis;
-  /** Resolved namespace reads for this step, keyed by binding key (Phase 64) */
+  /** Resolved namespace reads for this step, keyed by binding key. */
   sharedNamespace?: Record<string, string>;
-  /** Deterministic summaries for requested parallel groups (Phase 65) */
+  /** Deterministic summaries for requested parallel groups. */
   parallelGroupResults?: Record<string, IParallelGroupSummary>;
-  /**
-   * The flow's portal alias (Phase 159), threaded unchanged from `FlowRunner.execute()`'s
-   * own `request.portal`. Required by a strategy-routed step (`runWithStrategy`) to resolve
-   * `AgentOrchestrator.executeStep`'s mandatory `options.portal`; absent for a flow invoked
-   * with no portal, which is fine for a no-strategy step (`AgentRunner.run` never needs one).
-   */
+  /** The flow's portal alias, threaded unchanged from `FlowRunner.execute()`'s `request.portal`.
+   *  Required by a strategy-routed step to resolve `AgentOrchestrator.executeStep`'s mandatory
+   *  `options.portal`; absent is fine for a no-strategy step (`AgentRunner.run` never needs one). */
   portal?: string;
 }
 
@@ -203,11 +192,8 @@ export interface IFlowRunnerConfig {
   db?: IDatabaseService;
   gateEvaluator?: IGateEvaluator;
   config?: Config;
-  /**
-   * Canonical dynamic handler map from buildDynamicHandlers(context, permissions).
-   * Takes precedence over mcpHandlers. Using this ensures only manifest-approved
-   * dynamic tools are available to DynamicStepExecutor.
-   */
+  /** Canonical dynamic handler map from buildDynamicHandlers(context, permissions); takes
+   *  precedence over mcpHandlers and ensures only manifest-approved tools reach DynamicStepExecutor. */
   dynamicHandlers?: Map<McpToolName, ToolHandler>;
   /** @deprecated Use dynamicHandlers with buildDynamicHandlers() output instead. */
   mcpHandlers?: ToolHandler[];
@@ -219,14 +205,11 @@ export interface IFlowRunnerConfig {
   checkpointService?: IFlowCheckpointService;
   /** Optional wait-state service for durable approval/pause gates. No-op when omitted. */
   waitStateService?: IWaitStateService;
-  /**
-   * Model preset name for dynamic steps (e.g. "small", "medium", "large").
-   * When omitted, LlmClient defaults to "default" (models.default).
-   */
+  /** Model preset name for dynamic steps (e.g. "small", "medium", "large"); LlmClient defaults to "default" (models.default) when omitted. */
   dynamicModel?: string;
   /** Optional ModelResolver for resolving dynamicModel presets to provider:model. */
   modelResolver?: ModelResolver;
-  /** Optional Phase 118 HITL policy evaluator for per-action governance. No-op (Solo) when omitted. */
+  /** Optional HITL policy evaluator for per-action governance. No-op (Solo) when omitted. */
   hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   /** Dynamic-mode tool sets from the MCP manifest. Required for dynamic step execution. */
   dynamicModeTools?: ReadonlySet<string>;
@@ -235,26 +218,17 @@ export interface IFlowRunnerConfig {
   mcpClient?: IMcpClient & IToolManifestResolver;
   /** Pre-built confirmation interceptor for dynamic step execution. Created internally when omitted. */
   confirmationInterceptor?: IToolConfirmationInterceptor;
-  /**
-   * Durable per-request parent trace store (Phase 174 Step 2). Required for a flow with a
-   * session_delegate_cycle step whose request omits `traceId`; unused otherwise.
-   */
+  /** Durable per-request parent trace store. Required for a flow with a session_delegate_cycle step whose request omits `traceId`; unused otherwise. */
   flowTraceStore?: IFlowTraceStore;
   /** Daemon-owned session-delegation coordinator. Registers SessionDelegateCycleStepHandler when present. */
   sessionDelegationCoordinator?: ISessionDelegationCoordinator;
   /** Resolves a request's plan_context_ref beneath its executionRoot. Required alongside sessionDelegationCoordinator. */
   planContextResolver?: IPlanContextResolver;
-  /**
-   * SQLite launch source of truth for session_delegate_cycle claims (Phase 174 Step 4).
-   * Falls back to a process-local in-memory store (correct within one process, not
-   * crash-durable) when omitted, so existing sessionDelegationCoordinator wiring keeps
-   * working without also supplying this.
-   */
+  /** SQLite launch source of truth for session_delegate_cycle claims. Falls back to a process-local
+   *  in-memory store (correct within one process, not crash-durable) when omitted, so existing
+   *  sessionDelegationCoordinator wiring keeps working without also supplying this. */
   sessionDelegateCycleClaimStore?: ISessionDelegateCycleClaimStore;
-  /**
-   * Atomic JSON checkpoint store for session_delegate_cycle resume (Phase 174 Step 4).
-   * Falls back to a process-local in-memory store (not crash-durable) when omitted.
-   */
+  /** Atomic JSON checkpoint store for session_delegate_cycle resume. Falls back to a process-local in-memory store (not crash-durable) when omitted. */
   sessionDelegateCycleStore?: ISessionDelegateCycleStore;
 }
 
@@ -290,7 +264,7 @@ export interface IStepResult {
   fallbackUsed?: boolean;
   /** True when compensation actions were executed for this completed step. */
   compensationRan?: boolean;
-  /** Deferred namespace writes flushed after the wave settles (Phase 64). */
+  /** Deferred namespace writes flushed after the wave settles. */
   namespaceWrites?: IStepNamespaceWrites;
   /** When set, the step created a durable wait state that must be resolved before the flow can continue. */
   waitStateId?: string;
@@ -301,20 +275,18 @@ interface IStepNamespaceWrites {
   stepOutput: string;
 }
 
-/**
- * The original flow-execution request, threaded unchanged from `FlowRunner.execute()`
- * through every internal step method. `portal` (Phase 159) is carried here so a
- * strategy-routed step can resolve a portal alias for `AgentOrchestrator.executeStep`.
- */
+/** The original flow-execution request, threaded unchanged from `FlowRunner.execute()` through
+ *  every internal step method. `portal` is carried here so a strategy-routed step can resolve
+ *  a portal alias for `AgentOrchestrator.executeStep`. */
 type IFlowOriginalRequest = {
   userPrompt: string;
   traceId?: string;
   requestId?: string;
   requestAnalysis?: IRequestAnalysis;
   portal?: string;
-  /** Portal-configured worktree root (Phase 174 Step 2); required by a session_delegate_cycle step. */
+  /** Portal-configured worktree root; required by a session_delegate_cycle step. */
   executionRoot?: string;
-  /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer (Phase 174 Step 2); required by a session_delegate_cycle step. */
+  /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */
   planContextRef?: string;
 };
 

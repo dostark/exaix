@@ -33,10 +33,8 @@ export interface IAuditLoggerConfig {
 // ============================================================================
 
 /**
- * Specialized audit logger for security-critical operations.
- * Provides tamper-evident logging with alerting capabilities.
- * Primary event transport goes through IEventLogger; tamper-evident
- * JSONL file is a secondary append-only sink.
+ * Security-critical audit logger: primary event transport goes through IEventLogger;
+ * a tamper-evident JSONL file is a secondary append-only sink for alerting-critical events.
  */
 export class AuditLogger implements IAuditLogger {
   private readonly logger?: IEventLogger;
@@ -74,20 +72,12 @@ export class AuditLogger implements IAuditLogger {
     }
   }
 
-  /**
-   * Send security alert for critical events
-   * This is a placeholder - in production this would integrate with
-   * alerting systems, email, Slack, etc.
-   */
+  /** Placeholder: logs to console only; production should integrate with real alerting (email/Slack/PagerDuty/SIEM). */
   async sendSecurityAlert(auditEntry: Record<string, JSONValue>): Promise<void> {
     // Placeholder implementation
     await console.error("[SECURITY ALERT]", JSON.stringify(auditEntry, null, 2));
 
-    // TODO: Integrate with actual alerting system
-    // - Send email to security team
-    // - Post to Slack/Discord security channel
-    // - Trigger PagerDuty/monitoring alerts
-    // - Log to SIEM system
+    // TODO: integrate with real alerting (email, Slack/Discord, PagerDuty, SIEM).
   }
 
   // ============================================================================

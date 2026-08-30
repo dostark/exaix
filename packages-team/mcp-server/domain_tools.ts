@@ -48,7 +48,7 @@ export class CreateRequestTool extends ToolHandler {
     try {
       const requestCmd = new RequestCommands(this.context);
 
-      // Phase 54: Use identity (canonical) with agent fallback for backward compatibility
+      // Use identity (canonical) with agent fallback for backward compatibility
       const identityId = identity ?? agent;
 
       const result = await requestCmd.create(

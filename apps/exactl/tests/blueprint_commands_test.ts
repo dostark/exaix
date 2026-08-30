@@ -76,8 +76,7 @@ Deno.test("[blueprint] create - generates valid blueprint file", async () => {
     );
     assertEquals(await exists(blueprintPath), true);
 
-    // Verify file content (YAML frontmatter — the TOML→YAML migration completed
-    // in Phase 131 Step 2; the writer emits `---` blocks).
+    // Verify file content (YAML frontmatter; the writer emits `---` blocks).
     const content = await Deno.readTextFile(blueprintPath);
     assertStringIncludes(content, "---");
     assertStringIncludes(content, `identity_id: ${identityId}`);
@@ -860,7 +859,7 @@ Deno.test("[blueprint] show - throws on blueprint with invalid frontmatter", asy
 });
 
 // ============================================================================
-// Test Suite: Blueprint Status Lifecycle & Filters (Phase 93 Solo salvage)
+// Test Suite: Blueprint Status Lifecycle & Filters
 // ============================================================================
 
 Deno.test("[blueprint] list - includes status defaulting to active", async () => {

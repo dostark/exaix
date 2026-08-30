@@ -108,10 +108,7 @@ export function createStubProvider(
   };
 }
 
-/**
- * Create a minimal ICliApplicationContext with all-optional stubs.
- * Override any field to inject controlled behaviour for tests.
- */
+/** Create a minimal ICliApplicationContext with all-optional stubs for testing. */
 export function createStubCliContext(
   overrides: Partial<ICliApplicationContext> = {},
 ): ICliApplicationContext {

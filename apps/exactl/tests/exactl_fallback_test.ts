@@ -10,10 +10,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { __test_initializeServices } from "../src/exactl.ts";
 
-/**
- * Regression test for "exactl journal crash when config missing"
- * Verifies that the fallback DB stub includes queryActivity method.
- */
+/** Regression test: fallback DB stub must include queryActivity to avoid a crash on missing config. */
 Deno.test("CLI: should provide safe fallback DB when initialization fails", async () => {
   // Simulate service initialization failure (e.g. missing config)
   const result = await __test_initializeServices({ simulateFail: true });

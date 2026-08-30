@@ -1494,9 +1494,7 @@ export class ToolRegistry implements IToolRegistry {
         };
       }
 
-      // Array.prototype.join writes `replace` literally — unlike String.prototype.replace(),
-      // it never interprets $&/$`/$'/$$/$<digit> substitution patterns in the replacement text
-      // (Phase 154 GAP-6).
+      // Array.prototype.join writes replacement literally without interpreting substitution patterns.
       const patched = segments.join(replace);
       await Deno.writeTextFile(resolvedPath, patched);
       return this.formatSuccess({ path });

@@ -13,10 +13,8 @@ export interface IDelegateBriefArgs {
 
 const ACCEPTANCE_HEADING_PATTERN = /^##\s+(?:Acceptance|Success\s+Criteria|Acceptance\s+Criteria)\s*$/im;
 
-/**
- * Extracts bullet items from an Acceptance / Success Criteria / Acceptance Criteria
- * heading in step markdown content. Returns an empty array when no such section exists.
- */
+/** Extracts bullet items from an Acceptance/Success Criteria heading in step markdown;
+ * returns [] when no such section exists. */
 export function parseAcceptanceFromContent(content: string): string[] {
   const match = ACCEPTANCE_HEADING_PATTERN.exec(content);
   if (!match) return [];
@@ -48,11 +46,8 @@ export function buildDelegateBriefArgs(
   };
 }
 
-/**
- * Checks whether a brief objective is contentless (empty) or matches the legacy
- * placeholder shape ("Execute step N"). Returns true when the guard should reject
- * the brief (Phase 150 Step 2).
- */
+/** Checks whether a brief objective is contentless (empty) or matches the legacy
+ * placeholder shape ("Execute step N"); true means the guard should reject the brief. */
 export function isContentlessBrief(objective: string): boolean {
   if (!objective || objective.trim().length === 0) return true;
   const placeholderPattern = /^[Ee]xecute\s+step\s+\d+/;

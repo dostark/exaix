@@ -291,10 +291,8 @@ describe("DaemonCommands", {
     });
 
     it("should have force-kill capability", async () => {
-      // This test verifies that the stop() method has logic to force-kill
-      // if graceful shutdown fails. We can't easily test the actual timeout
-      // behavior in a unit test without making it flaky, so we just verify
-      // the mechanism exists by checking the code path works.
+      // Can't test actual force-kill timeout behavior without flakiness, so this
+      // just verifies the stop() force-kill code path is reachable.
 
       // Create a simple daemon
       await daemonCommands.start();
@@ -820,7 +818,7 @@ await new Promise(() => {}); // Run forever
 });
 
 // ---------------------------------------------------------------------------
-// Step 5 & 6: version fields in status + migrate --check
+// version fields in status + migrate --check
 // ---------------------------------------------------------------------------
 
 describe("DaemonCommands - version fields in status() (Step 5)", {

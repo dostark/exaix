@@ -154,8 +154,8 @@ Deno.test("lists all active portals", async () => {
 });
 
 // --- TDD: Interactive TUI Controls ---
-// Note: With Phase 13.3, navigation uses tree view with groups.
-// home/end navigate the tree (may land on group nodes), not just portals.
+// Note: navigation uses tree view with groups; home/end navigate the tree
+// (may land on group nodes), not just portals.
 
 Deno.test("TUI: keyboard navigation and selection", () => {
   const { service: _service, view: _view, tui } = createPortalTuiWithPortals([
@@ -201,7 +201,7 @@ Deno.test("TUI: action triggers and state update", async () => {
   assertEquals(service.actions[0], { type: "open", id: "Docs" });
   await tui.handleKey(KEYS.R); // refresh Docs
   assertEquals(service.actions[1], { type: "refresh", id: "Docs" });
-  // Note: 'd' now shows confirm dialog (Phase 13.3), need to confirm
+  // Note: 'd' now shows confirm dialog, need to confirm
   await tui.handleKey(KEYS.D); // shows dialog
   await tui.handleKey(KEYS.ENTER); // confirm remove
   assertEquals(service.actions[2], { type: "remove", id: "Docs" });
@@ -625,7 +625,7 @@ Deno.test("PortalManagerTuiSession keyboard actions - invalid selection", async 
 });
 
 // ============================================================
-// Phase 13.3 Enhanced Portal Manager Tests
+// Enhanced Portal Manager Tests
 // ============================================================
 
 Deno.test("Phase 13.3: Portal tree is built with status groups", () => {

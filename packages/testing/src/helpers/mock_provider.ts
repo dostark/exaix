@@ -12,10 +12,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { makeGenerateResult } from "./test_helpers.ts";
 
-/**
- * Creates a mock LLM provider that returns predefined responses.
- * Used across multiple test files to avoid duplication.
- */
+/** Creates a mock LLM provider returning predefined responses. */
 export function createMockProvider(responses: string[]): IModelProvider {
   let callCount = 0;
   return {

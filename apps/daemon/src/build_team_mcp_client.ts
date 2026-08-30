@@ -16,12 +16,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 
-/**
- * Build the Team-edition `mcpClient` for the real `FlowRunner`, fail-soft: returns
- * `undefined` (no dynamic-step mode) and logs `DynamicToolsInitFailed` on any wiring
- * error. `buildDynamicHandlers` is Team-gated (BSL package) and loaded via a dynamic
- * import; `LocalToolDispatcher` is MIT and imported statically.
- */
+/** Fail-soft: returns `undefined` and logs `DynamicToolsInitFailed` on any wiring error. */
 export async function buildTeamMcpClient(
   context: IApplicationContext,
   portalPermissions: IPortalPermissionsChecker,

@@ -15,16 +15,7 @@ import { createMockConfig } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
 
-/**
- * Tests for Step 2.3: Path Security & Portal Resolver
- *
- * Success Criteria:
- * - Test 1: Resolve valid alias path → Returns absolute system path.
- * - Test 2: Path traversal attempt (@Portal/../../secret) → Throws SecurityError.
- * - Test 3: Accessing file outside allowed roots → Throws SecurityError.
- * - Test 4: Unknown alias (@Unknown/file.txt) → Throws error.
- * - Test 5: Root path itself is valid (@Portal/) → Returns portal root path.
- */
+/** Tests for PathResolver alias and security validation. */
 
 Deno.test("PathResolver: resolves valid alias path", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-" });
@@ -193,10 +184,7 @@ Deno.test("[security] PathResolver: handles Windows-style path traversal", async
     const config = createMockConfig(tempDir);
     const resolver = new PathResolver(config);
 
-    // Try Windows-style path traversal
-    // Note: On Unix, backslash is treated as filename character, not separator
-    // So it will try to find a file literally named "..\\secret.txt"
-    // The path normalization doesn't reject it, but file won't exist
+    // Windows backslash path traversal attempt (treated as literal filename on POSIX).
     const resolved = await resolver.resolve("@Blueprints/..\\secret.txt");
     // Resolution succeeds because path is within Blueprints root
     assert(resolved.includes("Blueprints"), "Resolved path should include Blueprints");
@@ -505,9 +493,7 @@ Deno.test("[security] PathResolver: logs security violations to database", async
 });
 
 // ============================================================================
-// GAP-6 Remediation: EventLogger Integration Tests
-// ============================================================================
-// GAP-6 Remediation: EventLogger Integration Tests
+// EventLogger Integration Tests
 // ============================================================================
 
 interface CapturedEvent {

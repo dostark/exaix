@@ -100,7 +100,7 @@ export interface IModelOptions {
   conversationId?: string;
   /** JSON Schema to enforce via the provider's --json-schema mechanism (e.g. claude-code). Only CliDelegateModelProvider uses this; stateless HTTP providers ignore it. */
   jsonSchema?: Record<string, JSONValue>;
-  /** Native tool definitions for provider-enforced tool selection. When set, the provider serializes these into a real API-level tools[] parameter instead of relying on prose instructions. Absent for every call today — this phase's ReActLoopStrategy code path (Step 5) is the first production caller. */
+  /** Native tool definitions serialized into provider API requests. */
   tools?: IToolDefinition[];
   /** Provider-level tool choice constraint. Mirrors Anthropic's four-valued
    *  tool_choice plus disable_parallel_tool_use on auto/any/tool types.
@@ -110,25 +110,21 @@ export interface IModelOptions {
    *  tool_use + user tool_result) when continuing a native tool-use loop.
    *  Absent for every call today. */
   priorTurn?: IProviderTurn;
-  /** Chat protocol format for the provider. Default "anthropic" (Messages API
-   *  with content_blocks/tool_use). "openai" = Chat Completions API with
-   *  tool_calls/tool_call_id. "native" = Exaix TOML action blocks (Phase 151). */
+  /** Chat protocol format: "anthropic" (Messages API), "openai" (Chat Completions API), or "native" (TOML action blocks). */
   chatFormat?: ChatFormat;
-  /** Where this call happened, for fixture replay addressing (Phase 157). Assigned by AgentRunner from IParsedRequest.scenarioId/stepId; absent for every call outside the scenario framework, which keeps MockLLMProvider's recorded-strategy lookup keyed by prompt hash exactly as before. */
+  /** Location of call for fixture replay addressing. Assigned by AgentRunner from IParsedRequest. */
   callSite?: ICallSite;
 }
 
-/** Where an LLM call happened, for fixture replay addressing (Phase 157). Recorded fixtures are addressed by call site rather than by prompt content, so an edited system prompt reports as drift on the affected fixtures instead of invalidating the whole set. */
 export interface ICallSite {
   scenarioId: string;
   stepId: string;
-  /** Flow-internal step id (e.g. "define-endpoints"), present only for calls FlowRunner drives. Added (Phase 157 Step 3) because keying solely by (scenarioId, stepId, callIndex) raced across flow steps in the same parallel wave — WaveOrchestrator.executeWave runs wave steps concurrently via Promise.all, and the shared callIndex counter could be read by two steps before either advanced it, landing both on the same index and causing one step's captured fixture to silently overwrite the other's. A flow step's own id is unique within its flow and never invoked concurrently with itself, so keying by it makes the collision structurally impossible. */
+  /** Flow-internal step id (e.g. "define-endpoints"), present only for calls driven by FlowRunner. */
   flowStepId?: string;
   /** Ordinal of this logical call within the step, incremented once per consumed response.
    *  A retried logical call (internal to executeWithRetry) keeps the same index. */
   callIndex: number;
 }
-
 /**
  * Standard interface that all model providers must implement.
  */
@@ -161,16 +157,14 @@ export interface IResolvedProviderOptions {
   mockStrategy?: MockStrategy;
   /** Mock fixtures directory */
   mockFixturesDir?: string;
-  /** Refuse to answer a prompt/call site with no recording, instead of falling back to
-   *  patterns (Phase 157). */
+  /** Refuse to answer an unrecorded prompt/call site instead of falling back to patterns. */
   mockStrict?: boolean;
-  /** Directory to record fixtures into, from EXA_CAPTURE_FIXTURES_DIR (Phase 157). Operator- triggered only — never set by committed config. Refused when the resolved provider is mock (capturing the mock's own guesses would manufacture an authoritative-looking fixture set that encodes them). */
+  /** Directory to record fixtures into from EXA_CAPTURE_FIXTURES_DIR; rejected when provider is mock. */
   captureFixturesDir?: string;
   /** Custom provider ID */
   id?: string;
   /** Responses for scripted mock */
   responses?: string[];
-  /** Optional event logger for usage tracking */
   logger?: IEventLogger;
   /** Resolved Exaix config — lets provider-specific factories read their option blocks. */
   config?: Config;

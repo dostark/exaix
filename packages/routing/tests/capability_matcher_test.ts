@@ -135,7 +135,7 @@ Deno.test("CapabilityMatcher: includes deprecated blueprints when allowed", () =
   assertEquals(candidate?.identityId, "test-agent");
 });
 
-// ── Gap 60-2: Streaming capability tests ──────────────────────────────────
+// ── Streaming capability tests ──────────────────────────────────────────────
 
 Deno.test("CapabilityMatcher: matches blueprint with streaming capability", () => {
   const matcher = new CapabilityMatcher();

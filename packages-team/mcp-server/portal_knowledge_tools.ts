@@ -33,9 +33,8 @@ function classifyPortalKnowledgeToolError(message: string): ToolErrorCode {
 }
 
 /**
- * Tool for querying AST-derived code symbols (functions, classes, interfaces, consts, types,
- * enums) already extracted into a portal's persisted knowledge by `portal analyze`. Read-only —
- * it never triggers analysis itself, it only serves what strategy 6 already computed.
+ * Queries AST-derived code symbols (functions, classes, interfaces, consts, types, enums)
+ * already extracted into a portal's persisted knowledge by `portal analyze`. Read-only.
  */
 export class PortalSymbolsTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {

@@ -20,6 +20,7 @@ import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import type { Opt, Reason } from "@exaix/core/types";
 /**
  * Interface for Notification Service to support mocks and strict typing
  */
@@ -42,25 +43,16 @@ export interface INotificationService {
   readonly database: IDatabaseService;
 }
 
-/**
- * Notification Service
- *
- * Handles user notifications for memory updates using SQLite storage.
- */
+/** Handles user notifications for memory updates via SQLite storage. */
 export class NotificationService implements INotificationService {
   constructor(
     private config: Config,
     private db: IDatabaseService,
-    private logger?: IEventLogger,
+    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     // No file path needed - using database only!
   }
 
-  /**
-   * Notify user of a pending memory update
-   *
-   * @param proposal - The pending proposal
-   */
   async notifyMemoryUpdate(proposal: IMemoryUpdateProposal): Promise<void> {
     const metadata = JSON.stringify({
       learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
@@ -96,9 +88,9 @@ export class NotificationService implements INotificationService {
   async notify(
     message: string,
     type = "info",
-    proposalId?: string,
-    traceId?: string,
-    metadata?: string,
+    proposalId?: Opt<string, Reason.OptionalInput>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    metadata?: Opt<string, Reason.OptionalContext>,
   ): Promise<void> {
     const id = crypto.randomUUID();
     await this.db.preparedRun(
@@ -125,12 +117,6 @@ export class NotificationService implements INotificationService {
     return this.db;
   }
 
-  /**
-   * Notify of approval
-   *
-   * @param proposalId - Approved proposal ID
-   * @param learningTitle - Title of the learning
-   */
   notifyApproval(proposalId: string, learningTitle: string): void {
     if (this.logger) {
       this.logger.info(
@@ -144,12 +130,6 @@ export class NotificationService implements INotificationService {
     }
   }
 
-  /**
-   * Notify of rejection
-   *
-   * @param proposalId - Rejected proposal ID
-   * @param reason - Rejection reason
-   */
   notifyRejection(proposalId: string, reason: string): void {
     if (this.logger) {
       this.logger.info(
@@ -163,11 +143,7 @@ export class NotificationService implements INotificationService {
     }
   }
 
-  /**
-   * Get all pending notifications (not dismissed)
-   *
-   * @returns Array of notifications
-   */
+  /** Returns notifications that haven't been dismissed. */
   async getNotifications(): Promise<IMemoryNotification[]> {
     const rows = await this.db.preparedAll<IMemoryNotification>(
       `
@@ -182,11 +158,6 @@ export class NotificationService implements INotificationService {
     return rows;
   }
 
-  /**
-   * Get count of pending notifications
-   *
-   * @returns Number of pending notifications
-   */
   async getPendingCount(): Promise<number> {
     const result = await this.db.preparedGet<{ count: number }>(
       `
@@ -200,11 +171,7 @@ export class NotificationService implements INotificationService {
     return result?.count || 0;
   }
 
-  /**
-   * Clear a specific notification (soft-delete)
-   *
-   * @param proposalId - Proposal ID to clear
-   */
+  /** Soft-deletes a notification (sets dismissed_at) rather than removing the row. */
   async clearNotification(proposalId: string): Promise<void> {
     await this.db.preparedRun(
       `
@@ -216,12 +183,8 @@ export class NotificationService implements INotificationService {
     );
   }
 
-  /**
-   * Notify a digest summary of pending memory updates, throttled once per 24 hours.
-   *
-   * @param pendingCount - Number of pending memory update proposals
-   * @returns true when a digest was emitted, false when throttled
-   */
+  /** Emits a digest summary of pending updates, throttled to once per 24 hours; returns
+   * whether a digest was actually emitted. */
   async notifyPendingDigestIfNeeded(pendingCount: number): Promise<boolean> {
     if (pendingCount <= 0) {
       return false;

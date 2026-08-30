@@ -116,10 +116,9 @@ Deno.test("CliDelegateModelProvider: opencode calls set OPENCODE_CONFIG to a con
 });
 
 Deno.test("CliDelegateModelProvider: the OPENCODE_CONFIG file is written under cwd, not the system tempdir", async () => {
-  // The daemon process only holds --allow-write for its own sandbox/portal tree, not the
-  // OS tempdir — Deno.makeTempFile() (which defaults to the OS tempdir) fails with
-  // NotCapable there. Verified live: "Requires write access to <TMP>, run again with the
-  // --allow-write flag" when this wrote outside cwd.
+  // The daemon process only holds --allow-write for its own sandbox/portal tree, not the OS
+  // tempdir — Deno.makeTempFile() (which defaults to the OS tempdir) fails with NotCapable
+  // there, so the config file must be written under cwd instead.
   const cwd = await Deno.makeTempDir();
   try {
     let seenEnv: Record<string, string> | undefined;
@@ -350,16 +349,9 @@ Deno.test("CliDelegateModelProvider: strips and empties ANTHROPIC_API_KEY/ANTHRO
 });
 
 Deno.test("[security] CliDelegateModelProvider: strips LD_*/DYLD_* dynamic-linker env vars from the spawned env", async () => {
-  // Deno's scoped --allow-run=<bin> permission (the daemon's own posture — see
-  // DAEMON_SPAWN_RUN_BINARIES) refuses to forward any env var whose name starts with
-  // "LD_" or "DYLD_" to a spawned child: `Deno.errors.NotCapable: Requires --allow-run
-  // permissions to spawn subprocess with <VAR> environment variable. Alternatively,
-  // spawn with the environment variable unset.` These vars instruct the dynamic linker
-  // to load arbitrary shared libraries into the child, so an operator whose shell sets
-  // LD_LIBRARY_PATH/LD_PRELOAD (common: CUDA/conda/HPC toolchains) would otherwise see
-  // every headless CLI delegate (claude/opencode/codex) fail every generate() call with
-  // a generic "Subprocess failed" error — discovered live while proving Phase 167 Step
-  // 3's forced-ReAct Codex evidence on a workstation with LD_LIBRARY_PATH set.
+  // Deno's scoped --allow-run=<bin> permission refuses to forward any env var starting with
+  // "LD_" or "DYLD_" to a spawned child (throws NotCapable unless unset). Left unstripped, an
+  // operator with LD_LIBRARY_PATH/LD_PRELOAD set (CUDA/conda/HPC) would see every CLI delegate fail with a generic "Subprocess failed" error.
   let seenEnv: Record<string, string> | undefined;
   const run: IRunCliDelegateProcess = (_command, _args, options) => {
     seenEnv = options.env;
@@ -396,11 +388,9 @@ Deno.test("[security] CliDelegateModelProvider: strips LD_*/DYLD_* dynamic-linke
 });
 
 Deno.test("[security] CliDelegateModelProvider: buildDelegateEnv only forwards an explicit allowlist of safe parent env vars", async () => {
-  // GAP-14 (Phase 167 post-gap-analysis): the pre-fix implementation was a 7-pattern
-  // denylist (5 exact keys + 2 dynamic-linker prefixes) starting from the daemon's FULL
-  // ambient environment — any other secret-shaped var (cloud credentials, VCS tokens, DB
-  // URLs, the SSH agent socket, or this daemon's OWN OPENROUTER_API_KEY) passed through
-  // unfiltered. This test proves the fix: only an explicit safe-key allowlist is forwarded.
+  // Forwards only an explicit safe-key allowlist rather than a denylist, so secret-shaped
+  // vars (cloud credentials, VCS tokens, DB URLs, the SSH agent socket, this daemon's own
+  // OPENROUTER_API_KEY) never reach the spawned child.
   let seenEnv: Record<string, string> | undefined;
   const run: IRunCliDelegateProcess = (_command, _args, options) => {
     seenEnv = options.env;

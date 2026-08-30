@@ -27,10 +27,9 @@ Deno.test("[step132.2] per-model rate overrides provider-level rate", async () =
     });
     const tracker = new CostTracker(db, config);
 
-    // trackGeneration emits cost tracking — the rate lookup should resolve
-    // "provider:model" before falling back to bare provider.
-    // With per-model rate 0.01/Mtok and 1000 tokens:
-    // cost = 0.01 * (1000 / 1000) = 0.01
+    // trackGeneration should resolve "provider:model" rate before falling back to
+    // the bare provider. With per-model rate 0.01/Mtok and 1000 tokens, expected
+    // cost = 0.01 * (1000/1000) = 0.01.
     await tracker.trackGeneration(
       "anthropic",
       "claude-sonnet",

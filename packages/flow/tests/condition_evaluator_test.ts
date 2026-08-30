@@ -161,19 +161,9 @@ Deno.test("ConditionEvaluationError: includes condition and stepId", () => {
   assertEquals(err.message, "eval failed");
 });
 
-// ---------------------------------------------------------------------------
-// Phase 142 Step 13 — "all previous steps succeeded" must be expressible.
-//
-// `results` is a Record keyed by step id, and the sandbox permits array methods only on real
-// arrays and does not allowlist `Object.values`. So `results.every(...)` fails with
-// "Method 'every' is only allowed on arrays" and `Object.values(results).every(...)` fails with
-// "Only allowlisted array method calls are permitted" — the commonest condition a flow author
-// would write is inexpressible, and it fails CLOSED: the guarded step is silently skipped, the
-// flow aggregates nothing, and the request dies on "Invalid JSON: Unexpected end of JSON input"
-// with nothing pointing at the condition. Two shipped flows were written against that shape.
-//
-// `steps` is the array view of the same results, so the intent can be written directly.
-// ---------------------------------------------------------------------------
+// The sandbox permits array methods only on real arrays and doesn't allowlist
+// `Object.values`, so `results.every(...)` fails; `steps` is the array view of the
+// same results — use `steps.every(...)` to express "all previous steps succeeded".
 
 Deno.test("[condition] steps exposes the results as an array, so every() is usable", async () => {
   const evaluator = new ConditionEvaluator();

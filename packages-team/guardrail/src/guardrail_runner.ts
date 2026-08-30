@@ -45,9 +45,8 @@ export class GuardrailRunner implements IGuardrailRunner {
   }
 
   /**
-   * Screen agent output. Handles check_interval_iterations and screen_final_output:
-   * - Regular calls (iteration < MAX_SAFE_INTEGER): screened every Nth iteration per config.
-   * - Final-output calls (identified by caller): pass a large iteration sentinel.
+   * Screens agent output every Nth iteration (check_interval_iterations); final-output
+   * calls pass a large iteration sentinel to force screen_final_output handling.
    */
   async screen(
     agentOutput: string,

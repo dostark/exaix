@@ -19,10 +19,5 @@ export enum ActorType {
   AGENT = "agent",
 }
 
-/**
- * Valid actor identities in the system.
- *
- * These values are either exact ActorType categories or scoped actor strings
- * built from ActorType values.
- */
+/** Either an exact ActorType, or a scoped `ActorType:id` string. */
 export type Actor = `${ActorType}` | `${ActorType}:${string}`;

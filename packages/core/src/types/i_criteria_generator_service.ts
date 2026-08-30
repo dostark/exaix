@@ -11,22 +11,8 @@ import type { EvaluationCriterion } from "@exaix/core/types";
 
 import type { IRequestAnalysis } from "@exaix/schemas";
 
-/**
- * Generates request-specific EvaluationCriterion objects from a structured
- * request analysis. Criteria produced here are merged with static criteria at
- * gate evaluation time when `includeRequestCriteria` is enabled.
- *
- * Note: `fromSpecification()` is deferred to Phase 49 — IRequestSpecification
- * is not persisted in PlanFrontmatterSchema and is unavailable at evaluation time.
- */
+/** Generates request-specific criteria from a request analysis, merged with static criteria at gate evaluation when `includeRequestCriteria` is enabled. */
 export interface ICriteriaGeneratorService {
-  /**
-   * Derive evaluation criteria from the goals and acceptance criteria found in
-   * the provided request analysis.
-   *
-   * @param analysis - Structured analysis output from IRequestAnalyzerService.
-   * @returns Array of EvaluationCriterion objects; empty when no extractable
-   *   goals or acceptance criteria are present.
-   */
+  /** Returns an empty array when the analysis has no extractable goals or acceptance criteria (never throws). */
   fromAnalysis(analysis: IRequestAnalysis): EvaluationCriterion[];
 }

@@ -166,10 +166,9 @@ Deno.test("[delegate_hardening] resolveHardenedLaunch returns versionWarning fie
 
   const result = await svc.resolveHardenedLaunch(brief, "headless", config);
 
-  // versionWarning is undefined when probe succeeds (binary on PATH, version >= minimum)
-  // or a string when binary not found / version below minimum.
-  // The probe behavior is tested in delegate_version_probe_test.ts;
-  // here we just verify the field is present on the result type.
+  // versionWarning is undefined when the probe succeeds, or a string when the binary is
+  // missing/outdated. Probe behavior itself is tested in delegate_version_probe_test.ts;
+  // this only verifies the field is present on the result type.
   assertExists("versionWarning" in result);
 });
 
@@ -208,10 +207,9 @@ Deno.test("[delegate_hardening] injected probe receives exact minimum versions f
 });
 
 Deno.test("[delegate_hardening][security] unhardened Codex launch (resolveLaunch, no harden_permissions) still includes --sandbox read-only", () => {
-  // GAP-16 (Phase 167 post-gap-analysis): the base codex headless launch previously had
-  // no --sandbox flag at all — an operator who omitted harden_permissions=true got a
-  // fully unconstrained Codex process, relying entirely on Codex CLI's own unconfirmed
-  // default. This proves the base launch is never fully unconstrained.
+  // The base codex headless launch previously had no --sandbox flag at all — an operator who
+  // omitted harden_permissions=true got a fully unconstrained process. This proves the base
+  // launch is never fully unconstrained.
   const sessionDir = "/tmp/test-unhardened-codex-sandbox";
   const svc = makeService(sessionDir);
   const launch = svc.resolveLaunch(codexBrief(), "headless");
@@ -251,9 +249,9 @@ Deno.test("[delegate_hardening][security] hardened Codex launch stays read-only 
 });
 
 Deno.test("[delegate_hardening][security] resolveHardenedLaunch fails closed when the version probe reports the binary unsupported", async () => {
-  // GAP-17 (Phase 167 post-gap-analysis): the pre-fix implementation only set
-  // versionWarning and proceeded to build the launch anyway — a compromised, ancient,
-  // or version-spoofing binary was spawned exactly as if it had passed the gate.
+  // The pre-fix implementation only set versionWarning and proceeded to build the launch
+  // anyway — a compromised, ancient, or version-spoofing binary was spawned exactly as if
+  // it had passed the gate.
   const sessionDir = await Deno.makeTempDir();
   const svc = makeService(sessionDir, {
     versionProbe: () => Promise.resolve({ version: "0.1.0", supported: false, warning: "too old" }),

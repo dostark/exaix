@@ -31,11 +31,7 @@ export interface ISessionReturnWatcherDeps {
   processor: SessionReturnProcessor;
   resultStore: ISessionDelegationResultStore;
   logger: ISessionEventSink;
-  /**
-   * Optional callback fired on each successful reconciliation (outcome.accepted === true).
-   * Receives traceId and the reconciled decision. Gate hooks (Steps 5–7) use this to
-   * map delegated output to the appropriate artifact.
-   */
+  /** Callback fired once per accepted reconciliation (never on rejection); receives the delegation outcome. */
   onReconciled?: (outcome: ISessionDelegationOutcome) => void | Promise<void>;
 }
 
@@ -47,11 +43,8 @@ export class SessionReturnWatcher {
 
   constructor(private readonly deps: ISessionReturnWatcherDeps) {}
 
-  /**
-   * Process one detected return.json path: derive the traceId from its parent
-   * directory, reconcile via the processor, and journal the outcome. A
-   * not-yet-complete return (GAP-10) is a silent no-op.
-   */
+  /** Process one detected return.json path: derive traceId from its parent directory, reconcile
+   *  via the processor, and journal the outcome. A not-yet-complete return is a silent no-op. */
   async handleReturnPath(path: string): Promise<void> {
     const traceId = basename(dirname(path));
     const outcome = await this.deps.processor.processReturn(traceId);
@@ -136,11 +129,8 @@ export class SessionReturnWatcher {
     this.fsWatcher = null;
   }
 
-  /** `target` keeps carrying the traceId too (existing convention elsewhere, e.g.
-   *  recovery.ts's SessionDelegateCrashRecovered) — `traceId` is additive, not a swap, and
-   *  is what actually populates the persisted row's trace_id column (EventLogger.log()
-   *  falls back to a fresh crypto.randomUUID() when it is omitted), which is the column
-   *  every `trace_scoped: true` journal-assert filters on. */
+  /** `traceId` populates the persisted row's `trace_id` column — EventLogger.log() falls back to a
+   *  fresh UUID if omitted, so passing `target` here keeps `trace_scoped: true` journal filters working. */
   private async journal(action: string, target: string, payload: ISessionDelegateEventPayload): Promise<void> {
     await this.deps.logger.log({ action, target, payload, traceId: target, icon: "🤝" });
   }

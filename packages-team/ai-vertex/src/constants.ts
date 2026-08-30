@@ -58,8 +58,8 @@ export const VERTEX_AI_HOST_SUFFIX = "-aiplatform.googleapis.com";
 export const DEFAULT_VERTEX_ENDPOINT = "https://us-central1-aiplatform.googleapis.com/v1";
 
 /**
- * Build the regional generateContent endpoint for a project + model.
- * e.g. https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/publishers/google/models/m:generateContent
+ * Builds the regional generateContent endpoint, e.g.
+ * https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/publishers/google/models/m:generateContent
  */
 export function buildVertexEndpoint(region: string, projectId: string, model: string): string {
   return `https://${region}${VERTEX_AI_HOST_SUFFIX}/v1/projects/${projectId}/locations/${region}` +

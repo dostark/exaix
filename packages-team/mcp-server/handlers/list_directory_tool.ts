@@ -11,15 +11,7 @@ import { MCP_CONTENT_TYPE_STRUCTURED_DATA, PortalOperation, ToolErrorCode } from
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * ListDirectoryTool - Lists files and directories in a portal path
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal
- * - Returns structured directory listing
- * - Logs all operations to IActivity Journal
- */
+/** Validates the portal and blocks path traversal before listing; logs every operation to the Activity Journal. */
 export class ListDirectoryTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = ListDirectoryToolArgsSchema.parse(args) as {

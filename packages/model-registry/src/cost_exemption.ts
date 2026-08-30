@@ -9,11 +9,7 @@
 import { ProviderCostTier } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Determine if a provider is cost-exempt.
- * Returns true when costTier ∈ {LOCAL, FREE} or when a genuine endpoint $0 price is detected.
- * Returns false for unknown provenance and paid tiers.
- */
+/** Returns true if provider cost tier is LOCAL/FREE or has a genuine $0 price. */
 export function isCostExempt(
   metadata?: Opt<{ costTier?: ProviderCostTier; costPerMtok?: number } | null, Reason.OptionalInput>,
   pricing?: Opt<{ costPerMtok?: number; provenance?: string } | null, Reason.OptionalInput>,

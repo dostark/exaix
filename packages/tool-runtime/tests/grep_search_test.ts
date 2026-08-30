@@ -39,11 +39,7 @@ Deno.test("ToolRegistry: grep_search", async (t) => {
   await t.step("finds pattern in files", async () => {
     const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "foo", path: "." });
     assertEquals(result.success, true);
-    // Should match file1.ts (2 matches if we count literal 'foo' but regex might match differently depending on pattern)
-    // grep 'foo' matches 'foo' substring
-    // file1.ts:1:const foo = 'bar';
-    // file1.ts:2:console.log(foo);
-    // src/nested.ts:1:export const foo = 123;
+    // Matches expected occurrences across file1.ts and src/nested.ts.
 
     // Sort logic in grep depends on file system order, but we can check content
     const matches = result.data as Array<{ file: string; line: number; content: string }>;

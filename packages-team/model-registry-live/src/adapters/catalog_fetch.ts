@@ -21,8 +21,7 @@ const HTTP_FORBIDDEN = 403;
 export type AuthScheme = "bearer" | "x-api-key" | "none";
 
 /**
- * GET `{baseUrl}{path}`, map non-2xx to a typed CatalogError, parse JSON, and validate
- * against `schema`. Returns the parsed value; throws CatalogAuth/Http/ParseError.
+ * GET `{baseUrl}{path}`, mapping non-2xx to a typed CatalogAuth/Http/ParseError.
  */
 export async function fetchAndParse<T>(
   provider: string,

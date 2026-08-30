@@ -60,10 +60,7 @@ export type SafeJsonInput =
   | SafeJsonInput[]
   | { [key: string]: SafeJsonInput };
 
-/**
- * Safely converts any value to a JSONValue by stripping undefined properties.
- * This is useful for passing complex types to the IActivity Journal.
- */
+/** Converts a value to JSONValue by stripping undefined properties (for the Activity Journal). */
 export function toSafeJson(value: SafeJsonInput): JSONValue {
   if (value === undefined || value === null) return null;
 
@@ -84,10 +81,7 @@ export function toSafeJson(value: SafeJsonInput): JSONValue {
   return value as JSONValue;
 }
 
-/**
- * Extract field from JSON string using dot notation
- * Supports nested objects and arrays (e.g., "user.profile.age", "items.0.name")
- */
+/** Extracts a field from a JSON string via dot notation (e.g. "user.profile.age", "items.0.name"). */
 export function jsonExtract(input: string, fieldPath: string): JSONValue {
   let data: JSONValue;
   try {

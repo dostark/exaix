@@ -26,18 +26,9 @@ export interface ILegacySseServerHandle {
   stop(): Promise<void>;
 }
 
-/**
- * Starts a minimal legacy-SSE-shaped MCP server on an ephemeral local port
- * (or the given `port`). Only understands `initialize` and `tools/list` —
- * enough to let `SSEClientTransport.connect()` succeed for fallback testing;
- * any HTTP method/path other than `GET /sse` and `POST /messages` 404s,
- * which is what makes a same-URL Streamable HTTP attempt fail first. When
- * `requiredToken` is set, every request (both the `GET /sse` stream and
- * `POST /messages`) must carry `Authorization: Bearer <requiredToken>` or
- * receives a real HTTP 401 — mirrors `authenticated_reference_server.ts`'s
- * gating pattern, needed because `SSEClientTransport`'s `AuthProvider`
- * attaches the header to every request, including the initial SSE GET.
- */
+// Minimal legacy-SSE MCP server: only `initialize`/`tools/list`; any other path 404s (so a
+// same-URL Streamable HTTP attempt fails first). With `requiredToken` set, every request must
+// include a matching `Authorization: Bearer` header or receives a real 401.
 export function startLegacySseReferenceServer(
   port: number = 0,
   requiredToken?: Opt<string, Reason.OptionalInput>,

@@ -64,11 +64,7 @@ export const STATIC_OVERLAY: StaticOverlay = {
   },
 };
 
-/**
- * Look up a "provider:model" overlay entry — the §9 source for fields a provider's
- * list endpoint omits (OpenAI capabilities, Ollama windows). Returns undefined when no
- * curated row exists, so a caller must not stamp overlay-sourced fields as `endpoint`.
- */
+/** Look up a "provider:model" overlay entry for curated defaults omitted by list endpoints. */
 export function getOverlayEntry(provider: string, model: string): IOverlayEntry | undefined {
   return STATIC_OVERLAY[`${provider}:${model}`];
 }

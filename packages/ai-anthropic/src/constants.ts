@@ -60,9 +60,9 @@ export const PROVIDER_ANTHROPIC_CAPABILITIES = ["chat", "streaming", "vision"] a
 export const PROVIDER_ANTHROPIC_STRENGTHS = ["complex", "reasoning", "analysis"] as const;
 export const PROVIDER_ANTHROPIC_COST_TIER = ProviderCostTier.PAID;
 
-/** Phase 132 capability metadata — context window for one Claude turns (tokens). */
+/** Capability metadata — context window for Claude turns (tokens). */
 export const ANTHROPIC_CONTEXT_WINDOW = 200_000;
-/** Phase 132 capability metadata — reference price in USD per 1M tokens (routing constraint). */
+/** Capability metadata — reference price in USD per 1M tokens (routing constraint). */
 export const ANTHROPIC_COST_PER_MTok = 3;
 
 export const ANTHROPIC_PROVIDER_METADATA = {

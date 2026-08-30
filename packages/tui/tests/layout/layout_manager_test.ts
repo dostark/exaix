@@ -739,21 +739,7 @@ Deno.test("LayoutManager: resizePane - up with neighbors (bottom pane)", () => {
     { id: "bottom", viewName: "BottomView", x: 0, y: 12, width: 80, height: 12, focused: false },
   ];
 
-  // Resize bottom pane UP (should grow bottom, shrink top)
-  // Logic ResizeDirection.UP: pane.height (bottom) -= amount? No.
-  // ResizeDirection.UP direction on bottom pane usually means pulling top edge up?
-  // Implementation: ResizeDirection.UP -> pane.height -= amount.
-  // This shrinks the pane.
-  // If we want to GROW bottom pane UP into top pane, we should resize TOP pane DOWN? No.
-  // We should resize BOTTOM pane... wait.
-  // If we drag the divider UP...
-  // Usually divider belongs to the pane above/left?
-  // If we pick "bottom" pane and resize ResizeDirection.UP:
-  // Implementation: height shrinks. Neighbor above?
-  // `findAffectedPane` ResizeDirection.UP: neighbor y + h === source.y. (Top pane).
-  // `if (affected && affected.y > pane.y)` -> Top.y (0) > Bottom.y (12)? False.
-  // So affected is NOT updated.
-  // So bottom pane shrinks. Top pane stays. Gap created.
+  // Resizing bottom pane UP shrinks its height without modifying the top neighbor.
 
   manager.resizePane(panes, "bottom", ResizeDirection.UP, 2);
   assertEquals(panes[1].height, 10);

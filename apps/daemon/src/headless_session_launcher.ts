@@ -40,37 +40,26 @@ export interface IHeadlessSessionLauncherDeps {
   /** Set of absolute binary paths or binary names permitted to spawn. */
   allowlist: ReadonlySet<string>;
   /**
-   * Injectable spawn function. Defaults to `(args) => new Deno.Command(args.command, { ... }).spawn()`.
-   * Override in tests under `DENO_TEST` to avoid real subprocess execution.
+   * Defaults to `new Deno.Command(...).spawn()`; override in tests to avoid a real subprocess.
    */
   spawn?: (args: ISpawnArgs) => Deno.ChildProcess;
-  /**
-   * Overall wall-clock deadline (ms) bounding one launch() call before the child is
-   * killed (Phase 167 GAP-15). Defaults to DELEGATE_LAUNCH_TIMEOUT_MS; overridable for
-   * deterministic tests.
-   */
+  /** Wall-clock deadline (ms) before the child is killed; defaults to DELEGATE_LAUNCH_TIMEOUT_MS. */
   launchTimeoutMs?: Opt<number, Reason.OptionalDependency>;
-  /**
-   * Cumulative byte cap per drained stream before truncation (Phase 167 GAP-15).
-   * Defaults to DELEGATE_STREAM_MAX_BYTES; overridable for deterministic tests.
-   */
+  /** Cumulative byte cap per drained stream before truncation; defaults to DELEGATE_STREAM_MAX_BYTES. */
   streamMaxBytes?: Opt<number, Reason.OptionalDependency>;
 }
 
 const RETURN_FILE = "return.json";
 
 /**
- * Fire-and-forget headless session launcher. Spawns the binary, waits for exit in
- * a detached promise, and synthesizes an abandoned return on exit-without-return.
+ * Fire-and-forget: spawns the binary and synthesizes an abandoned return if it exits without writing one.
  */
 export class HeadlessSessionLauncher {
   constructor(private readonly deps: IHeadlessSessionLauncherDeps) {}
 
   /**
-   * Spawn a headless session tool. Returns once the process has been spawned
-   * (fire-and-forget); exit handling and abandoned synthesis happen asynchronously.
-   * When delegateProviderEnv is provided, it is merged after sanitizeChildEnv so
-   * injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
+   * Fire-and-forget: returns once spawned; exit handling happens asynchronously. delegateProviderEnv
+   * is merged after sanitizeChildEnv so injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
    */
   async launch(
     launch: ISessionLaunch,
@@ -90,10 +79,9 @@ export class HeadlessSessionLauncher {
         args: args.args,
         cwd: args.cwd,
         env: args.env,
-        // The sanitized child env is the COMPLETE intended env — Deno.Command would otherwise
-        // merge it with the parent process env, reintroducing ambient LD_LIBRARY_PATH (which
-        // Deno's scoped --allow-run refuses to forward, killing the spawn) and any parent
-        // secrets the sanitize just stripped (Phase 167 Step 4 live finding).
+        // The sanitized child env is the COMPLETE intended env — clearEnv prevents Deno.Command from
+        // merging it with the parent env, which would reintroduce ambient LD_LIBRARY_PATH and any
+        // parent secrets the sanitize just stripped.
         clearEnv: args.clearEnv,
         stdout: "piped",
         stderr: "piped",
@@ -145,14 +133,9 @@ export class HeadlessSessionLauncher {
   }
 
   /**
-   * Read the child's piped stdout, attempt to parse as JSON events
-   * (e.g. opencode --format json), and if found, synthesize a return.json.
-   * Uses the extracted delegate_return_parser for parsing and git diff for
-   * paths_touched.
-   * Returns true when synthesis succeeded.
-   * Fail-safe: catches all errors (incl. mock ChildProcess with no real stdout).
+   * @internal Visible for testing. Parses opencode --format json stdout and synthesizes return.json;
+   * fail-safe — catches all errors, including a mock ChildProcess with no real stdout.
    */
-  /** @internal Visible for testing — parses opencode --format json stdout. */
   async tryReadStdoutAndSynthesize(
     child: Deno.ChildProcess,
     traceId: string,
@@ -195,10 +178,8 @@ export class HeadlessSessionLauncher {
 
     const parsed = parseDelegateStdout(rawStdout, tool);
 
-    // Compute paths_touched: union of parser toolPaths + git diff.
-    // OpenCode's tool_use events carry absolute filePaths. Convert them to
-    // worktree-relative so the scope checker (which rejects absolute paths)
-    // can match them against permitted_paths.
+    // paths_touched = union of parser toolPaths + git diff. OpenCode's tool_use absolute filePaths
+    // are converted to worktree-relative since the scope checker rejects absolute paths.
     let pathsTouched = parsed.toolPaths;
     if (worktreePath) {
       pathsTouched = pathsTouched.map((p) => {
@@ -246,10 +227,7 @@ export class HeadlessSessionLauncher {
     return true;
   }
 
-  /**
-   * Drain one child stream completely, bounded by DELEGATE_STDOUT_DRAIN_MS.
-   * Returns the concatenated output as a string.
-   */
+  /** Drains one child stream completely, bounded by DELEGATE_STDOUT_DRAIN_MS. */
   private async drainStream(stream: ReadableStream<Uint8Array>, label: string): Promise<string> {
     const reader = stream.getReader();
     const chunks: Uint8Array[] = [];
@@ -306,8 +284,8 @@ export class HeadlessSessionLauncher {
   }
 
   /**
-   * Use NUL-delimited porcelain status so tracked, untracked, deleted, copied,
-   * and both sides of renamed paths reach scope reconciliation.
+   * NUL-delimited porcelain status so tracked, untracked, deleted, copied, and renamed paths
+   * (both sides) reach scope reconciliation.
    */
   private async computeGitChanges(worktreePath: string): Promise<string[]> {
     try {

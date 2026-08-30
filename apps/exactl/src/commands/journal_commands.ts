@@ -65,12 +65,8 @@ export class JournalCommands extends BaseCommand {
   }
 
   /**
-   * Readiness barrier: block until `event` is journalled ABOVE `since` (default: the current
-   * max rowid at call time — the barrier only counts events that appear while waiting), or the
-   * timeout elapses. Exits 0 with `Journal event present: <event>` on a match, 1 with a timeout
-   * message otherwise. The `since` baseline (rowid) lets a caller ignore a stale event a prior
-   * run produced — scenario steps pass the scenario's journal baseline so a `daemon.ready` that
-   * fired before this barrier started still counts.
+   * Readiness barrier: blocks until `event` is journalled after `since` (default: the max rowid
+   * at call time, so only events appearing while waiting count). Exits 0 on match, 1 on timeout.
    */
   async wait(options: IJournalWaitOptions): Promise<void> {
     const event = options.event;

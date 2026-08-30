@@ -76,14 +76,9 @@ function createDisplayServiceStub(): IDisplayService {
 }
 
 /**
- * Assemble the application context the MCP server runs on.
- *
- * The provider, git and display services are stubs by design — the standalone server
- * evaluates transport, discovery, permissions and filesystem tools, not LLM or git
- * behaviour. The ToolRegistry, however, is NOT optional: SearchFilesTool and
- * RunCommandTool delegate to `context.toolRegistry` and fail with "ToolRegistry not
- * available in context" without it, so `tools/list` would advertise 24 tools of which 2
- * could never be called by an external client.
+ * Provider, git, and display services are stubs by design — this server exercises
+ * transport, discovery, permissions, and filesystem tools, not LLM or git behaviour.
+ * ToolRegistry is NOT optional: SearchFilesTool/RunCommandTool fail without it.
  */
 export function buildServerContext(
   configService: ConfigService,
@@ -161,12 +156,9 @@ if (import.meta.main) {
     const server = new MCPServer(mcpServerOptions);
     await server.startHTTPServer(port);
   } else {
-    // Step 2: stdio fully migrated onto the official SDK's serveStdio + McpServer —
-    // legacy: "serve" is the SDK's own default (a 2025-era opening is pinned to a
-    // 2025-era instance from the same factory and served exactly as a hand-wired stdio
-    // server serves it today); Exaix's stdio consumers are subprocess-launched by
-    // `exactl mcp start` and always freshly spawned per connection, so this matches
-    // pre-migration behavior exactly (see server.ts's buildSdkServer Architecture Notes).
+    // stdio uses the official SDK's serveStdio + McpServer with legacy: "serve" (the SDK
+    // default) — Exaix's stdio consumers are freshly spawned per connection via `exactl
+    // mcp start`, matching pre-migration hand-wired behavior (see server.ts's buildSdkServer).
     serveStdio(() => buildMcpServer(mcpServerOptions), { legacy: "serve" });
   }
 }

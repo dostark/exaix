@@ -36,11 +36,7 @@ export class McpCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Connects outbound to a real external MCP server, lists its tools or
-   * calls one, prints a human-readable result, and always closes the
-   * connection — even when the requested action throws.
-   */
+  /** Connects outbound to an MCP server, lists/calls a tool, and always closes the connection — even when the requested action throws. */
   async connect(
     endpoint: string,
     options: { listTools?: boolean; callTool?: string; args?: string },

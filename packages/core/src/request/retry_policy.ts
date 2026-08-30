@@ -135,22 +135,12 @@ export type IRetryPolicyConfig = z.infer<typeof RetryPolicyConfigSchema>;
 // RetryPolicy Class
 // ============================================================================
 
-/**
- * RetryPolicy implements exponential backoff with jitter
- *
- * Usage:
- * ```typescript
- * const policy = new RetryPolicy({ maxRetries: 3 });
- * const result = await policy.execute(async (ctx) => {
- *   return await llmProvider.generate(prompt, { temperature: ctx.temperature });
- * });
- * ```
- */
+/** Exponential backoff retry policy with jitter. Usage: `new RetryPolicy({ maxRetries: 3 }).execute(fn)`. */
 export class RetryPolicy implements IRetryPolicy {
   private config: IRetryPolicyConfig;
   private onRetry?: RetryEventCallback;
 
-  constructor(config?: Partial<IRetryPolicyConfig>) {
+  constructor(config?: Opt<Partial<IRetryPolicyConfig>, Reason.SensibleDefault>) {
     this.config = RetryPolicyConfigSchema.parse(config || {});
   }
 
@@ -162,16 +152,10 @@ export class RetryPolicy implements IRetryPolicy {
     return this;
   }
 
-  /**
-   * Execute an operation with retry logic
-   *
-   * @param operation - Function to execute, receives retry context
-   * @param options - Optional operation-specific settings
-   * @returns IRetryResult with success/failure details
-   */
+  /** Executes an operation with retry logic, retrying with backoff and jitter until success or maxRetries is reached. */
   async execute<T>(
     operation: (context: { temperature: number; attempt: number }) => Promise<T>,
-    options?: IRetryableOperationOptions,
+    options?: Opt<IRetryableOperationOptions, Reason.OptionalInput>,
   ): Promise<IRetryResult<T>> {
     const startTime = Date.now();
     const maxRetries = options?.maxRetries ?? this.config.maxRetries;

@@ -10,12 +10,6 @@ import { appendToRequest, extractSection, mergeAsContext, passthrough, templateF
 import { jsonExtract } from "@exaix/core/types";
 import { readFixtureTextSync } from "@exaix/testing";
 
-/**
- * Test suite for built-in transform functions in flow inter-step communication
- *
- * Following TDD approach: tests define expected behavior before implementation
- */
-
 Deno.test("Transform Functions - passthrough", async (t) => {
   await t.step("should pass data unchanged", () => {
     const input = "Hello, World!";

@@ -53,9 +53,8 @@ interface IXmlPlanParams {
 const XML_TAG_TOOL = "tool";
 
 /**
- * Attempts to parse an XML plan string into a PlanSchema-compatible JSON object.
- * Returns { success: true, plan } on success, { success: false, error } on failure.
- * The returned plan object can then be validated with PlanSchema.safeParse().
+ * Parses an XML plan string into a PlanSchema-compatible JSON object; validate the
+ * returned plan with PlanSchema.safeParse().
  */
 export function tryParseXmlPlan(input: string): IXmlPlanParseResult {
   const trimmed = input.trim();
@@ -191,10 +190,7 @@ function extractAttribute(xml: string, attr: string): string | undefined {
   return match ? match[1] : undefined;
 }
 
-/**
- * Extract all raw XML blocks for a given tag (including the tag wrappers).
- * Used for complex nested content like <params>.
- */
+/** Extract all raw XML blocks for a given tag (including the tag wrappers), e.g. `<params>`. */
 function extractBlocks(xml: string, tag: string): string[] {
   const regex = new RegExp(`<${tag}(\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "g");
   const results: string[] = [];
@@ -218,10 +214,7 @@ function extractRawElements(xml: string, tag: string): string[] {
   return results;
 }
 
-/**
- * Parse a <params> block into a flat key-value record.
- * Child element names become keys, their text content becomes values.
- */
+/** Parse a `<params>` block into a flat key-value record (child element names -> text content). */
 function parseParamsBlock(paramsXml: string): IXmlPlanParams {
   const params: IXmlPlanParams = {};
   // Strip the outer <params> wrapper first

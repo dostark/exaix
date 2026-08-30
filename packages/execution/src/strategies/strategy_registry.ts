@@ -21,10 +21,7 @@ export class StrategyRegistry {
     this.strategies.set(strategy.name, strategy);
   }
 
-  /**
-   * Resolve a strategy by name
-   * @throws Error if strategy not found
-   */
+  /** Resolve a strategy by name. @throws Error if not found. */
   resolve(name: string): IExecutionStrategy {
     const strategy = this.strategies.get(name);
     if (!strategy) {

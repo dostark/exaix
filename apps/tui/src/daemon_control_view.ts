@@ -881,8 +881,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
 // ===== Legacy Support =====
 
 /**
- * Legacy TUI session for backwards compatibility
- * @deprecated Use DaemonControlTuiSession instead
+ * @deprecated Use DaemonControlTuiSession instead.
  */
 export class LegacyDaemonControlTuiSession extends TuiSessionBase {
   private readonly daemonView: DaemonControlView;

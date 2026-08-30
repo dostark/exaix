@@ -56,10 +56,7 @@ function makeSatisfiedResponse(summary = "Implement JWT validation"): string {
   return JSON.stringify({ satisfied: true, refinedBody: makeSpec(summary) });
 }
 
-/**
- * Returns a pre-built active session that already has one round of questions
- * (as if startSession was already called). Used for processAnswers tests.
- */
+/** Returns an active session with one completed question round. */
 function makeSessionWithRound1(): IClarificationSession {
   return {
     requestId: "req-10",

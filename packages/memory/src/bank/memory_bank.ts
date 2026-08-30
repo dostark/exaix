@@ -451,7 +451,7 @@ export class MemoryBankService implements IMemoryBankService {
     }
   }
 
-  // ===== Global Memory Operations (Phase 12.8) =====
+  // ===== Global Memory Operations =====
 
   /** Get global memory @returns Global memory or null if not initialized */
   async getGlobalMemory(): Promise<IGlobalMemory | null> {

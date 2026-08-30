@@ -36,10 +36,8 @@ export interface INetPolicyResult {
 }
 
 /**
- * Evaluate whether the process's granted net access is consistent with the
- * configured `allow_net` policy. Only the strict-block case (`allow_net=[]`)
- * yields a violation when net is granted; other policies are enforced by the
- * launcher's `--allow-net` flag and treated as compliant here.
+ * Flags a violation only when `allow_net=[]` (strict block) but net was granted anyway;
+ * other policies are enforced by the launcher's `--allow-net` flag and treated as compliant.
  */
 export function evaluateNetPolicy(input: INetPolicyInput): INetPolicyResult {
   const isStrictBlock = input.allowNet !== undefined && input.allowNet.length === 0;

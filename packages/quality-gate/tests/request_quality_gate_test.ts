@@ -85,10 +85,7 @@ function createMockEventLogger(): MockEventLogger {
 function makeLlmAssessmentResponse(score: number, recommendation: string): string {
   return JSON.stringify({ score, level: "good", issues: [], recommendation });
 }
-// Requests known to score at specific ranges with the heuristic:
-//   HIGH_SCORE (>=70):  action verb + file ref + acceptance criteria
-//   MID_SCORE  (20-69): no action verbs, moderate length
-//   LOW_SCORE  (<20):   fewer than 20 characters total
+// Fixtures span the heuristic's high (>=70), medium (20–69), and low (<20) ranges.
 const HIGH_SCORE_REQUEST = "Implement JWT validation in src/auth.ts — must return 401 on invalid token";
 // score: base 50 + file_ref +15 + acceptance_criteria +20 = 85 → PROCEED
 const MID_SCORE_REQUEST = "The authentication system is broken and users cannot log in to the application";

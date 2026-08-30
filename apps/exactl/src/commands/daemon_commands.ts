@@ -168,9 +168,9 @@ export class DaemonCommands extends BaseCommand {
       const allowNet = this.config.system.allow_net;
       const perms = DAEMON_SPAWN_PERMISSIONS;
 
-      // GAP-11: derive every flag from the typed DAEMON_SPAWN_PERMISSIONS struct
-      // so it is the single source of truth (no hardcoded flag list that could
-      // drift from the documented permission template).
+      // Derive every flag from the typed DAEMON_SPAWN_PERMISSIONS struct so it is the
+      // single source of truth (no hardcoded flag list that could drift from the
+      // documented permission template).
       const flags: string[] = [];
       // read: empty scope list → unscoped --allow-read; otherwise scoped.
       flags.push(perms.read.length === 0 ? "--allow-read" : `--allow-read=${perms.read.join(",")}`);

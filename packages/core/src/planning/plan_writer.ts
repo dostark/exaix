@@ -40,9 +40,8 @@ export interface IRequestMetadata {
   subject?: string;
   requestAnalysis?: IRequestAnalysis;
   /**
-   * Phase 132 (GAP-4): request-level model intent (CLI flags) forwarded onto the plan
-   * frontmatter so native plan execution applies the same overrides the delegation
-   * path resolves.
+   * Request-level model intent (CLI flags) forwarded onto the plan frontmatter so native
+   * plan execution applies the same overrides the delegation path resolves.
    */
   requestIntent?: Partial<IModelIntent>;
 }
@@ -85,10 +84,7 @@ export interface ITokenUsageSummary {
 // Plan Writer Service
 // ============================================================================
 
-/**
- * PlanWriter formats agent execution results into structured markdown plans
- * and writes them to Workspace/Plans for user review
- */
+/** Formats agent execution results into structured markdown plans, written to Workspace/Plans for user review. */
 export class PlanWriter {
   private adapter: PlanAdapter;
 
@@ -163,10 +159,7 @@ export class PlanWriter {
     return writeResult!;
   }
 
-  /**
-   * Format the complete plan document
-   * Step 6.7: Validates JSON plan and converts to markdown
-   */
+  /** Validates the JSON plan and converts it to the final markdown document. */
   private async formatPlan(
     result: IAgentExecutionResult,
     metadata: IRequestMetadata,
@@ -321,9 +314,8 @@ export class PlanWriter {
   }
 
   /**
-   * Phase 132 (GAP-4): carry the request's model intent onto the plan frontmatter so
-   * native plan execution (ExecutionLoop → PlanExecutor → BlueprintService) applies the
-   * same request overrides the delegation path resolves.
+   * Carries the request's model intent onto the plan frontmatter so native plan execution
+   * (ExecutionLoop → PlanExecutor → BlueprintService) applies the same overrides the delegation path resolves.
    */
   private applyRequestIntentToFrontmatter(frontmatter: PlanFrontmatter, requestIntent: Partial<IModelIntent>): void {
     const passthrough = frontmatter as PlanFrontmatter & Record<string, JSONValue | undefined>;

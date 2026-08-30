@@ -194,7 +194,7 @@ export class ReviewCommands extends BaseCommand {
   }
 
   private async bestEffortLinkRequestRejection(
-    requestId: string | undefined,
+    requestId: Opt<string, Reason.OptionalContext>,
     rejectedRelative: string,
   ): Promise<void> {
     if (!requestId) return;
@@ -451,7 +451,7 @@ export class ReviewCommands extends BaseCommand {
     };
   }
 
-  private async listArtifacts(filters?: IArtifactFilters): Promise<IArtifact[]> {
+  private async listArtifacts(filters?: Opt<IArtifactFilters, Reason.QueryFilter>): Promise<IArtifact[]> {
     let query =
       `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
        FROM artifacts WHERE 1=1`;
@@ -523,7 +523,7 @@ export class ReviewCommands extends BaseCommand {
   private async updateArtifactStatus(
     artifactId: string,
     status: Exclude<IReviewStatus, typeof ReviewStatus.PENDING>,
-    reason?: string,
+    reason?: Opt<string, Reason.OptionalInput>,
   ): Promise<void> {
     const artifact = await this.getArtifactRecord(artifactId);
     const fullPath = join(this.config.system.root, artifact.file_path);
@@ -649,12 +649,10 @@ export class ReviewCommands extends BaseCommand {
     return portalPaths;
   }
 
-  /**
-   * List all pending reviews (agent-created branches)
-   * @param statusFilter Optional filter: 'pending', 'approved', 'rejected'
-   * @returns List of review metadata
-   */
-  async list(statusFilter?: string, typeFilter?: string): Promise<IReviewMetadata[]> {
+  async list(
+    statusFilter?: Opt<string, Reason.QueryFilter>,
+    typeFilter?: Opt<string, Reason.QueryFilter>,
+  ): Promise<IReviewMetadata[]> {
     const requestedType = this.normalizeTypeFilter(typeFilter);
     const normalizedStatus = this.normalizeStatusFilter(statusFilter);
     const reviews: IReviewMetadata[] = [];
@@ -692,7 +690,7 @@ export class ReviewCommands extends BaseCommand {
 
   private async appendArtifactReviews(
     reviews: IReviewMetadata[],
-    normalizedStatus: IReviewStatus | undefined,
+    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
   ): Promise<void> {
     const artifacts = await this.listArtifacts({
       status: normalizedStatus,
@@ -718,7 +716,7 @@ export class ReviewCommands extends BaseCommand {
   }
 
   private getDbReviewQuery(
-    normalizedStatus: IReviewStatus | undefined,
+    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
   ): { sql: string; args: (string | number | boolean | null)[] } {
     const base =
       "SELECT trace_id, portal, branch, repository, base_branch, worktree_path, files_changed, created, created_by, status, approved_at, approved_by, rejected_at, rejected_by, rejection_reason FROM reviews";
@@ -729,7 +727,7 @@ export class ReviewCommands extends BaseCommand {
   private async appendDbCodeReviews(
     reviews: IReviewMetadata[],
     dbBranches: Set<string>,
-    normalizedStatus: IReviewStatus | undefined,
+    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
   ): Promise<void> {
     try {
       const query = this.getDbReviewQuery(normalizedStatus);
@@ -830,7 +828,7 @@ export class ReviewCommands extends BaseCommand {
   private async appendGitScannedCodeReviews(
     reviews: IReviewMetadata[],
     dbBranches: Set<string>,
-    normalizedStatus: IReviewStatus | undefined,
+    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
   ): Promise<void> {
     const portalPaths = await this.getPortalRepoPaths();
 
@@ -842,7 +840,7 @@ export class ReviewCommands extends BaseCommand {
   private async appendGitScannedCodeReviewsFromRepo(
     reviews: IReviewMetadata[],
     dbBranches: Set<string>,
-    normalizedStatus: IReviewStatus | undefined,
+    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
     repoPath: string,
   ): Promise<void> {
     const defaultBranch = await this.getDefaultBranch(repoPath);
@@ -927,7 +925,7 @@ export class ReviewCommands extends BaseCommand {
     repoPath: string,
     defaultBranch: string,
     branch: string,
-    normalizedStatus: IReviewStatus | undefined,
+    normalizedStatus: Opt<IReviewStatus, Reason.QueryFilter>,
   ): Promise<IReviewMetadata | null> {
     const parsed = this.parseRequestAndTraceFromBranch(branch);
     if (!parsed) return null;
@@ -988,11 +986,6 @@ export class ReviewCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Show detailed review information including diff
-   * @param branchName Branch name or request_id
-   * @returns Review details
-   */
   async show(branchName: string): Promise<IReviewDetails> {
     // Artifact-backed review
     if (this.isArtifactId(branchName)) {
@@ -1146,10 +1139,6 @@ export class ReviewCommands extends BaseCommand {
     };
   }
 
-  /**
-   * Approve review - merge branch to main
-   * @param branchName Branch name or request_id
-   */
   async approve(branchName: string): Promise<void> {
     try {
       // Validate input
@@ -1234,8 +1223,8 @@ export class ReviewCommands extends BaseCommand {
           }\n\nTrace-Id: ${review.trace_id}`,
         ]);
       } catch (mergeError) {
-        // Phase 37.7 (negative path): if merge fails (e.g., conflict), avoid leaving the repo
-        // in a conflicted state and ensure we don't orphan a worktree checkout.
+        // If merge fails (e.g., conflict), avoid leaving the repo in a conflicted state and
+        // ensure we don't orphan a worktree checkout.
         if (review.worktree_path) {
           await this.bestEffortAbortMerge(portalGitService);
           await this.bestEffortCleanupWorktreeCheckout(portalGitService, review);
@@ -1258,8 +1247,8 @@ export class ReviewCommands extends BaseCommand {
         command: this.getCommandLineString(),
       }, review.trace_id);
 
-      // Phase 37.7: worktree lifecycle cleanup (opt-in strategy leaves an extra checkout).
-      // Keep branch-based reviews unchanged; only auto-clean worktree-based ones.
+      // Worktree lifecycle cleanup (opt-in strategy leaves an extra checkout). Keep
+      // branch-based reviews unchanged; only auto-clean worktree-based ones.
       if (review.worktree_path) {
         await this.cleanupWorktreeReview(portalGitService, review);
       }

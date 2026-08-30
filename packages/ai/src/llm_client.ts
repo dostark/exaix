@@ -70,17 +70,14 @@ Respond in JSON format:
 
 export class LlmClient implements ILlmClient {
   constructor(
-    private readonly config?: Config,
-    private readonly testProvider?: IModelProvider,
+    private readonly config?: Opt<Config, Reason.OptionalDependency>,
+    private readonly testProvider?: Opt<IModelProvider, Reason.TestOverride>,
     private readonly defaultModel: string = DEFAULT_MODEL_FALLBACK,
-    private readonly resolver?: ModelResolver,
+    private readonly resolver?: Opt<ModelResolver, Reason.OptionalDependency>,
   ) {}
 
-  /**
-   * Parse a blueprint model string into provider and model components.
-   * Supports formats: "provider:model", "gpt-*" (implicit OpenAI), plain model name.
-   */
-  private static parseModelString(model: string | undefined): { provider?: string; model?: string } {
+  /** Parses "provider:model", "gpt-*" (implicit OpenAI), or a plain model name. */
+  private static parseModelString(model: Opt<string, Reason.OptionalInput>): { provider?: string; model?: string } {
     if (!model) return {};
 
     if (model.includes(":")) {
@@ -97,9 +94,8 @@ export class LlmClient implements ILlmClient {
   }
 
   /**
-   * Resolve an IModelProvider from the blueprint model string.
-   * Blueprint overrides (provider:model) take priority over env/config.
-   * Falls back to the standard ProviderFactory resolution when no model is specified.
+   * Resolves an IModelProvider from the blueprint model string. Blueprint overrides
+   * (provider:model) take priority over env/config; falls back to ProviderFactory otherwise.
    */
   private async resolveProvider(
     model?: Opt<string, Reason.AbstractBoundary>,

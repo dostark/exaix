@@ -412,7 +412,7 @@ Deno.test("[scenario_matrix] a scenario WITHOUT a matrix block parses unchanged 
 });
 
 Deno.test("[scenario_matrix] GAP-7: EXA_CONFIG_PATH is the daemon's real config source (apps/daemon/main.ts reads it)", async () => {
-  // The full live config-swap is proven in Step 5's provider-live cutover with a real daemon.
+  // The full live config-swap is proven separately with a real daemon end-to-end cutover.
   // Here we assert the wiring path exists: the expander overlays EXA_CONFIG_PATH, and the
   // daemon's bootstrap reads exactly that env var to choose the config it loads.
   const mainSrc = await Deno.readTextFile(join(REPO_ROOT, "apps", "daemon", "main.ts"));

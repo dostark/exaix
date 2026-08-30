@@ -16,15 +16,7 @@ import type { Opt, Reason } from "../types/optional_marker.ts";
 import { getAllEffectiveValues } from "./db.ts";
 import { CONFIG_CHECKSUM_KEY } from "../types/constants.ts";
 
-/**
- * Create a handler function that hot-applies new Config DB overrides to
- * an InMemoryConfigStore. Designed to be called by a polling loop or
- * file-watcher callback.
- *
- * Only swap:hot keys are applied immediately. Restart-required keys are
- * skipped (they are already persisted in the DB and will be picked up on
- * the next daemon boot).
- */
+/** Hot-applies new Config DB overrides to an InMemoryConfigStore from a polling/file-watcher loop. Only swap:hot keys apply immediately; restart-required keys already persist in the DB and load on the next daemon boot. */
 export function createDbWatcherHandler(
   store: InMemoryConfigStore,
   db: Database,
@@ -34,9 +26,8 @@ export function createDbWatcherHandler(
     const effective = getAllEffectiveValues(db);
     let changes = 0;
     for (const [key, value] of effective) {
-      // The synthetic integrity checksum (Step 5, GAP-4) refreshes on every
-      // write; it is not a user override and must not trigger a hot-apply or a
-      // spurious ConfigDbWatcherChangeDetected.
+      // The synthetic integrity checksum refreshes on every write; it is not a user
+      // override and must not trigger a hot-apply or a spurious ConfigDbWatcherChangeDetected.
       if (key === CONFIG_CHECKSUM_KEY) continue;
       if (value === null) continue; // skip seed/init rows (no user override)
       const current = store.get(key);

@@ -17,7 +17,7 @@ export type GuardrailVerdict = "pass" | "violation";
 /** Guardrail severity type. */
 export type GuardrailSeverity = "warn" | "block";
 
-/** Typed payload for voting.* events (Phase 113). */
+/** Typed payload for voting.* events. */
 export interface IVotingEventPayload {
   step_id: string;
   strategy: VotingStrategy;
@@ -29,7 +29,7 @@ export interface IVotingEventPayload {
   error?: string;
 }
 
-/** Planning-producer variant of agent.prompt_assembled (Phase 112 Step 1) — preserves every legacy field `AgentRunner.run` already emitted. */
+/** Planning-producer variant of agent.prompt_assembled — preserves every legacy field `AgentRunner.run` already emitted. */
 export interface IAgentPromptAssembledPlanningPayload {
   prompt_kind: "planning";
   identity_id: string;
@@ -39,7 +39,7 @@ export interface IAgentPromptAssembledPlanningPayload {
   retrievalLatencyMs: number;
 }
 
-/** ReAct-producer variant of agent.prompt_assembled (Phase 112 Step 3) — per-iteration ACI-fragment injection. */
+/** ReAct-producer variant of agent.prompt_assembled — per-iteration ACI-fragment injection. */
 export interface IAgentPromptAssembledReactPayload {
   prompt_kind: "react";
   /** Zero-based ReAct loop iteration index this prompt was assembled for. */
@@ -54,12 +54,12 @@ export interface IAgentPromptAssembledReactPayload {
   truncated: boolean;
 }
 
-/** Typed payload for agent.prompt_assembled events (Phase 112 Step 1), discriminated by `prompt_kind`. */
+/** Typed payload for agent.prompt_assembled events, discriminated by `prompt_kind`. */
 export type IAgentPromptAssembledPayload =
   | IAgentPromptAssembledPlanningPayload
   | IAgentPromptAssembledReactPayload;
 
-/** Typed payload for hitl.policy.matched events (Phase 118). */
+/** Typed payload for hitl.policy.matched events. */
 export interface IHitlPolicyMatchedPayload {
   traceId: string;
   stepId?: string;
@@ -69,7 +69,7 @@ export interface IHitlPolicyMatchedPayload {
   surface: HitlSurface;
 }
 
-/** Typed payload for model.resolved events (Phase 132). */
+/** Typed payload for model.resolved events. */
 export interface IModelResolutionTraceEventPayload {
   intent: {
     model_size?: string;
@@ -85,26 +85,22 @@ export interface IModelResolutionTraceEventPayload {
   selected: { provider: string; model: string; attempt: number };
   reason: ModelResolutionReason;
   duration_ms: number;
-  /** Phase 135 Step 6 (GAP-9): the route policy that chose the provider (>1 route). */
+  /** The route policy that chose the provider (when more than one route was considered). */
   route_reason?: IRouteReason;
-  /** Phase 135 Step 6 (GAP-9): the routes weighed, with price + health, for the journal. */
+  /** The routes weighed, with price + health, for the journal. */
   considered_routes?: IConsideredRoute[];
-  /**
-   * Phase 135 Step 8 (GAP-9): how the intent's task_type was derived — one of
-   * frontmatter|identity|skill|static_map|analyzer|unknown. Lives on the trace payload
-   * (not just IResolvedModel) so it reaches `exactl logs`. Additive/optional.
-   */
+  /** How task_type was derived (frontmatter|identity|skill|static_map|analyzer|unknown); lives here (not just IResolvedModel) so it reaches `exactl logs`. */
   task_type_source?: TaskTypeSource;
 }
 
-/** One weighed route in a multi-route decision (Phase 135 Step 6, §5.7.4). */
+/** One weighed route in a multi-route decision (see spec §5.7.4). */
 export interface IConsideredRoute {
   provider: string;
   price?: number;
   health_score: number;
 }
 
-/** Typed payload for model.route.selected events (Phase 135 Step 6, §5.7.4). */
+/** Typed payload for model.route.selected events (see spec §5.7.4). */
 export interface IModelRouteSelectedPayload {
   model: string;
   chosen_provider: string;
@@ -112,7 +108,7 @@ export interface IModelRouteSelectedPayload {
   considered: IConsideredRoute[];
 }
 
-/** Typed payload for model.pricing.stale events (Phase 135). */
+/** Typed payload for model.pricing.stale events. */
 export interface IModelPricingStalePayload {
   provider: string;
   model: string;
@@ -122,7 +118,7 @@ export interface IModelPricingStalePayload {
   staleness_max_days: number;
 }
 
-/** Typed payload for model.cost.divergence events (Phase 135, §5.5.2). */
+/** Typed payload for model.cost.divergence events (see spec §5.5.2). */
 export interface IModelCostDivergencePayload {
   provider: string;
   model: string;
@@ -131,24 +127,24 @@ export interface IModelCostDivergencePayload {
   delta_pct: number;
 }
 
-/** Reason a model cleared the §5.9 admission bar (Phase 135 Step 3). */
+/** Reason a model cleared the §5.9 admission bar. */
 export type ModelAdmittedReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
 
-/** Typed payload for model.admitted events (Phase 135 Step 3, F12). */
+/** Typed payload for model.admitted events (F12). */
 export interface IModelAdmittedPayload {
   provider: string;
   model: string;
   reason: ModelAdmittedReason;
 }
 
-/** Typed payload for model.retired events (Phase 135 Step 3 — removed at refresh). */
+/** Typed payload for model.retired events — removed at refresh. */
 export interface IModelRetiredPayload {
   provider: string;
   model: string;
   last_seen_at: number;
 }
 
-/** Typed payload for model.catalog.refreshed events (Phase 135 Step 5, §7). */
+/** Typed payload for model.catalog.refreshed events (see spec §7). */
 export interface IModelCatalogRefreshedPayload {
   provider: string;
   models_added: number;
@@ -156,7 +152,7 @@ export interface IModelCatalogRefreshedPayload {
   duration_ms: number;
 }
 
-/** Typed payload for model.pricing.refreshed events (Phase 135 Step 5, §7). */
+/** Typed payload for model.pricing.refreshed events (see spec §7). */
 export interface IModelPricingRefreshedPayload {
   provider: string;
   prices_updated: number;
@@ -174,7 +170,7 @@ export type RegistryRefreshOutcome =
 /** Which refresh pass an audit row / failure describes — mirrors registry_refresh_audit.kind. */
 export type RegistryRefreshKind = "catalog" | "pricing";
 
-/** Typed payload for model.registry.refresh.failed events (Phase 135 Step 5, §7.2). */
+/** Typed payload for model.registry.refresh.failed events (see spec §7.2). */
 export interface IModelRegistryRefreshFailedPayload {
   provider: string;
   kind: RegistryRefreshKind;
@@ -182,23 +178,14 @@ export interface IModelRegistryRefreshFailedPayload {
   detail: string;
 }
 
-/**
- * Typed payload for model.benchmark.refreshed events (Phase 135 Step 7, §5.8).
- * `outcome` reuses the refresh-outcome union: success for a completed ingest pass,
- * parse_error / http_error for a source that failed (previous scores stay intact).
- */
+/** Typed payload for model.benchmark.refreshed events (see spec §5.8); `outcome` reuses the refresh-outcome union (success/parse_error/http_error), previous scores stay intact on failure. */
 export interface IModelBenchmarkRefreshedPayload {
   benchmark: string;
   scores_written: number;
   outcome: RegistryRefreshOutcome;
 }
 
-/**
- * Typed payload for model.benchmark.missing events (Phase 135 Step 8, §5.8.3 honest
- * degradation — GAP-D). Emitted per candidate the `best` scorer could not rank because
- * it has no score on the task-relevant benchmark; the candidate is ranked last, never
- * dropped or errored.
- */
+/** Typed payload for model.benchmark.missing events (honest degradation, see spec §5.8.3); emitted when `best` can't rank a candidate lacking a benchmark score — ranked last, never dropped or errored. */
 export interface IModelBenchmarkMissingPayload {
   provider: string;
   model: string;

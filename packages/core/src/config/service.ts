@@ -72,10 +72,9 @@ export class ConfigService {
   }
 
   private createDefaultConfig(): void {
-    // Bootstrap-only (Phase 137): every other section (paths, watcher, skills,
-    // agents.convergence, execution, etc.) resolves entirely from ConfigSchema
-    // defaults, so it does not need to be written here. Mirrors
-    // templates/exa.config.sample.toml minus the illustrative [[portals]] entry.
+    // Bootstrap-only: every other section resolves entirely from ConfigSchema defaults,
+    // so it does not need to be written here. Mirrors templates/exa.config.sample.toml
+    // minus the illustrative [[portals]] entry.
     const defaultConfig = `
 [system]
 root = "."

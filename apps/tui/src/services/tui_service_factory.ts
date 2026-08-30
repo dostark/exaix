@@ -42,7 +42,7 @@ import type {
 } from "@exaix/core/types";
 import type { IDaemonService, IDatabaseService, IJournalService, ILogService, IMemoryService } from "@exaix/core/types";
 import type { IStructuredLogger } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types";
+import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -70,10 +70,7 @@ export interface ITuiServiceFactoryOptions {
   databaseService: IDatabaseService;
 }
 
-/**
- * Create all services needed by the TUI dashboard.
- * This function bridges core services with TUI interfaces.
- */
+/** Bridges core services with TUI interfaces. */
 export function createTuiServices(
   options: ITuiServiceFactoryOptions,
 ): ITuiServiceBundle {
@@ -187,7 +184,11 @@ export function createTuiServices(
         error: (error as Error)?.message ?? String(error),
       });
     },
-    time: async <T>(_op: string, fn: () => Promise<T>, _metadata?: Record<string, JSONValue>): Promise<T> => await fn(),
+    time: async <T>(
+      _op: string,
+      fn: () => Promise<T>,
+      _metadata?: Opt<Record<string, JSONValue>, Reason.AbstractBoundary>,
+    ): Promise<T> => await fn(),
   };
 
   // Wrap the output in a logger-like object for LogServiceAdapter

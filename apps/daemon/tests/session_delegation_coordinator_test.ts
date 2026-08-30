@@ -303,13 +303,9 @@ Deno.test("[session_delegation_coordinator][Tier A] launched event is trace-link
   }
 });
 
-// ─── GAP-2 remediation (Phase 174 Step 8): disabled/misconfigured session_delegate ───────
-//
-// packages/flow/tests/session_delegate_cycle_dispatch_test.ts proves the outer FlowRunner
-// state main.ts produces for these two misconfigurations (no coordinator constructed at
-// all, so the step type is never even registered). This proves the coordinator's own
-// independent defense-in-depth guard (`assertEnabled()`) also fails closed before the
-// launcher is ever reached, for a coordinator that somehow got constructed anyway.
+// Tests the coordinator's own defense-in-depth guard (`assertEnabled()`), independent of
+// packages/flow/tests/session_delegate_cycle_dispatch_test.ts which covers the outer
+// FlowRunner path (no coordinator constructed at all) for the same misconfigurations.
 
 Deno.test("[session_delegation_coordinator][security] enabled=false rejects before the launcher is ever invoked", async () => {
   const delegateService = new RecordingDelegateService();
@@ -351,14 +347,9 @@ Deno.test("[session_delegation_coordinator][security] gates omitting code_change
   assertEquals(delegateService.prepared.length, 0, "prepareBrief must never be called when gates omits code_changes");
 });
 
-// ─── GAP-3 remediation (Phase 174 Step 9): hardened-permission identity threading ────────
-//
-// Every other coordinator test above uses `RecordingDelegateService`, a stub whose
-// `resolveHardenedLaunch` always returns a fixed `agentNameMismatch: false` regardless of
-// input — it cannot prove the coordinator threads a caller-supplied `identityId` into the
-// real OpenCode permission config. This uses the real `SessionDelegateService` so
-// `resolveLaunch()`'s `harden_permissions` branch (session_delegation_coordinator.ts:204-224)
-// genuinely calls `generateOpencodePermissionConfig`, and reads the config file it writes.
+// Unlike other coordinator tests, which use a `RecordingDelegateService` stub returning a
+// fixed `agentNameMismatch`, this uses the real `SessionDelegateService` so the
+// `harden_permissions` branch genuinely calls `generateOpencodePermissionConfig`.
 
 const HARDENED_CONFIG: SessionDelegateConfig = {
   ...CONFIG,

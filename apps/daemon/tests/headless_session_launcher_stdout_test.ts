@@ -378,13 +378,9 @@ Deno.test("[launcher_stdout] drains verbose stdout and stderr before awaiting ch
 });
 
 Deno.test("[launcher_stdout] cumulative byte cap truncates a stream instead of buffering it unbounded", async () => {
-  // GAP-15 (Phase 167 post-gap-analysis): DELEGATE_STDOUT_DRAIN_MS only bounds idle time
-  // between individual reads, not the cumulative bytes accumulated — an adversarial or
-  // verbose child could grow the in-memory buffer without bound. With streamMaxBytes
-  // injected far below the payload size, the JSONL line is cut off mid-object, fails to
-  // parse, and synthesis falls back to the generic per-gate summary instead of the full
-  // (never-truncated) filler text — proving the cap actually stopped buffering, not just
-  // that a return.json happens to exist.
+  // streamMaxBytes caps cumulative buffered bytes (not just idle time between reads); here it's
+  // set far below the payload so the JSONL line is truncated mid-object, forcing the generic
+  // summary fallback — proving the cap actually stops buffering.
   const rig = await makeRig("codex");
   try {
     const filler = "y".repeat(2_000);

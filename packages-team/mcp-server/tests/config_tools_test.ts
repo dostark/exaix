@@ -66,9 +66,8 @@ Deno.test({
     assertEquals(mod.includes("McpToolName.CONFIG_SET"), true);
     assertEquals(mod.includes("McpToolName.CONFIG_APPLY"), true);
     // Both mutation tools gate on human approval and point at the config_tools source.
-    // (Split across two assertions so the approval-flag line and the source-ref path
-    //  line are separate — the leak guard treats "require" + a team path on one line as
-    //  a runtime import.)
+    // Split across two assertions so the leak guard (which treats "require" plus a
+    // team path on one line as a runtime import) doesn't flag this line.
     assertEquals(mod.includes("requires_human_approval: true,\n    docs_visible: true,"), true);
     const configToolsSourceRef = ["packages-team", "mcp-server", "config_tools.ts"].join("/");
     assertEquals(mod.includes(`source_ref: "${configToolsSourceRef}"`), true);
@@ -86,7 +85,7 @@ Deno.test({
   sanitizeResources: false,
 });
 
-// ── Step 15 (GAP-22): ConfigApplyTool awaits set() and records failures ───────
+// ── ConfigApplyTool awaits set() and records failures ───────
 
 interface IApplyResult {
   key: string;
@@ -113,7 +112,7 @@ function toApplyResults(data: JSONValue): IApplyResult[] {
   return rows;
 }
 
-// ── Phase 138 Step 1: ConfigSetTool three-tier routing ────────────────────────
+// ── ConfigSetTool three-tier routing ────────────────────────
 
 // A no-impact hot key explicitly marked safe (like ui.theme) — auto-approve tier.
 configurable({

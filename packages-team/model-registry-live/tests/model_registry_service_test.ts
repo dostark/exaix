@@ -26,7 +26,7 @@ Deno.test("empty catalog: reads fall through to the floor (Solo equivalence)", a
 
     const floorProviders = await floor.getAllProviders();
     assertEquals(await svc.getAllProviders(), floorProviders);
-    // getContextWindow / getModelCapability / getModelsByCapability delegate too (GAP-8).
+    // getContextWindow / getModelCapability / getModelsByCapability delegate too.
     assertEquals(
       await svc.getContextWindow("anthropic", "claude-opus-4-8"),
       await floor.getContextWindow("anthropic", "claude-opus-4-8"),

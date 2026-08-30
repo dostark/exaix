@@ -25,10 +25,8 @@ import { createPermissionsService, createToolContext, withToolPermissionTest } f
 
 Deno.test("security: search_files must not find content outside the authorized portal via path traversal (Phase 170 Weakness 3)", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.READ] }, async (env) => {
-    // A file outside "TestPortal" but still under the test's system root (env.tempDir) --
-    // exactly the class of location ToolRegistry.getAllowedRoots() treats as allowed
-    // (it includes the system root itself), even though validatePermission() above only
-    // ever checked the caller's permission for "TestPortal", not the wider system root.
+    // env.tempDir is outside "TestPortal" but ToolRegistry.getAllowedRoots() still permits it
+    // (it includes the system root), even though validatePermission() above only checked "TestPortal".
     const secretFileName = "outside-portal-secret-marker.txt";
     await Deno.writeTextFile(join(env.tempDir, secretFileName), "TOPSECRET");
 

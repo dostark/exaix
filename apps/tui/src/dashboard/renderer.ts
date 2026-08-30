@@ -154,10 +154,7 @@ export async function prodRender(
     return;
   }
 
-  // Main content (simplified multi-pane rendering)
-  // For now, Exaix dashboard renders the active pane or portal view
-  // To support true multi-pane rendering, we'd need a virtual grid or buffer
-  // For this refactor, we maintain the "view active pane" logic but with flexible bounds
+  // Renders only the active pane; true multi-pane rendering would need a virtual grid/buffer.
 
   await renderActivePaneContent(panes, activePaneId, theme, portalView);
   await renderStatusBar(width, headerLine, notificationService);

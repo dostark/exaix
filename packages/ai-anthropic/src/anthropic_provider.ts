@@ -44,10 +44,7 @@ import type { JSONValue } from "@exaix/core";
  */
 export type AnthropicProviderOptions = IBaseProviderOptions;
 
-/**
- * Error thrown when tool_choice (any/tool) conflicts with extended thinking,
- * which Anthropic does not support together.
- */
+/** Error thrown when tool_choice conflicts with extended thinking. */
 export class AnthropicToolChoiceThinkingConflictError extends ModelProviderError {
   constructor(toolChoiceType: string) {
     super(
@@ -107,9 +104,7 @@ export class AnthropicProvider extends BaseProvider {
 
     if (options?.priorTurn) {
       const priorTurn = options.priorTurn;
-      // GAP-153-F: Anthropic requires passing the assistant message's thinking blocks back
-      // complete and unmodified (with their signature) alongside the tool_use they
-      // accompanied — a missing/edited block yields an HTTP 400. Emit them verbatim first.
+      // Anthropic requires passing prior thinking blocks back verbatim alongside tool_use.
       const content: AnthropicRequestContentBlock[] = [
         ...(priorTurn.thinkingBlocks?.map((block): AnthropicRequestContentBlock => ({
           type: "thinking",
@@ -176,10 +171,7 @@ export class AnthropicProvider extends BaseProvider {
     try {
       return await this.postMessages(requestBody);
     } catch (error) {
-      // Newer models reject tuning parameters older models accept (observed live:
-      // HTTP 400 "`temperature` is deprecated for this model." from claude-sonnet-5).
-      // Strip the named parameter and retry once rather than failing the whole call
-      // over a knob — self-healing for future parameter deprecations, no model list.
+      // If a model rejects a deprecated tuning parameter with HTTP 400, strip and retry once.
       if (!(error instanceof Error)) throw error;
       const strippedBody = stripRejectedParameter(requestBody, error);
       if (!strippedBody) throw error;
@@ -231,8 +223,7 @@ type AnthropicRequestMessage = {
   content: string | unknown[];
 };
 
-/** One outbound assistant content block — a replayed `thinking` block (GAP-153-F) or a
- *  `tool_use` block. User-side text/tool_result blocks are typed inline where built. */
+/** One outbound assistant content block: a replayed thinking block or a tool_use block. */
 type AnthropicRequestContentBlock =
   | {
     type: "thinking";
@@ -305,10 +296,7 @@ function mapToolChoice(choice: IToolChoice): AnthropicWireToolChoice {
 /** Matches Anthropic's 400 wording when a request parameter is rejected for the model. */
 const REJECTED_PARAM_PATTERN = /`(\w+)` is (?:deprecated|not supported)/;
 
-/**
- * If `error` is an HTTP 400 naming a parameter this request actually sent as
- * deprecated/unsupported, return a copy of the body without that parameter; null otherwise.
- */
+/** Returns a copy of requestBody with the parameter named in a 400 error removed, or null. */
 function stripRejectedParameter(
   requestBody: AnthropicRequestBody,
   error: Error,

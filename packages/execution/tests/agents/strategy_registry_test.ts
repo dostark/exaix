@@ -56,10 +56,7 @@ Deno.test("StrategyRegistry Tests - Should throw for unknown strategy", () => {
   );
 });
 
-/**
- * Mock strategy with optional dispose() lifecycle method.
- * Used to verify IExecutionStrategy.dispose?() optional-chaining contract (Step 61.6).
- */
+/** Mock strategy with optional dispose() lifecycle method, used to verify IExecutionStrategy.dispose?() optional-chaining contract. */
 class MockDisposableStrategy implements IExecutionStrategy {
   disposeCalled = false;
 

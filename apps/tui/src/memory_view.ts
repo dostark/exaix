@@ -51,11 +51,6 @@ export interface IMemoryViewState {
 
 // ===== TUI Session =====
 
-/**
- * TUI Session for Memory View
- *
- * Manages state and user interaction for Memory Bank navigation.
- */
 export class MemoryViewTuiSession extends TuiSessionBase {
   private state: IMemoryViewState;
   private service: IMemoryService;
@@ -688,11 +683,6 @@ export class MemoryViewTuiSession extends TuiSessionBase {
 
 // ===== View =====
 
-/**
- * Memory Bank View
- *
- * Controller for Memory Bank TUI interface.
- */
 export class MemoryView {
   private service: IMemoryService;
 

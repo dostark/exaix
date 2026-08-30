@@ -20,10 +20,7 @@ function pidPath(rootDir: string): string {
   return join(rootDir, ".exa", "daemon.pid");
 }
 
-/**
- * Poll for the daemon PID file and verify the process is alive.
- * Checks every 500ms. Returns true when the daemon is running, false on timeout.
- */
+/** Polls the PID file every 500ms until the process is alive or `timeoutMs` elapses. */
 export async function waitForReadiness(rootDir: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {

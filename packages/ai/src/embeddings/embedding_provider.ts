@@ -14,12 +14,7 @@
  * Each concrete implementation handles one backend (Ollama, OpenAI, etc.).
  */
 export interface IEmbeddingProvider {
-  /**
-   * Generate embedding vectors for one or more input texts.
-   * Returns an array of vectors, one per input text, in the same order.
-   * @param texts - Array of text strings to embed.
-   * @returns Array of embedding vectors (number arrays).
-   */
+  /** Generates embedding vectors for each input text, in the same order. */
   embed(texts: string[]): Promise<number[][]>;
 
   /**
@@ -27,9 +22,6 @@ export interface IEmbeddingProvider {
    */
   readonly providerId: string;
 
-  /**
-   * Embedding dimension for the configured model.
-   * Used by downstream consumers to validate vector compatibility.
-   */
+  /** Embedding dimension for the configured model; used to validate vector compatibility. */
   readonly dimension: number;
 }

@@ -13,13 +13,9 @@ import { GitCreateBranchToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { GIT_CMD_CHECKOUT } from "@exaix/git/constants.ts";
 
 /**
- * GitCreateBranchTool - Creates feature branches in portal git repositories
- *
- * Security:
- * - Validates portal exists
- * - Validates branch name format (feat/, fix/, docs/, chore/, refactor/, test/)
- * - Checks if git repository exists
- * - Logs all operations to IActivity Journal
+ * Creates feature branches in portal git repositories. Validates the portal exists, the
+ * branch name matches an allowed prefix (feat/, fix/, docs/, chore/, refactor/, test/),
+ * and that the git repository exists, then logs the operation to the Activity Journal.
  */
 export class GitCreateBranchTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {

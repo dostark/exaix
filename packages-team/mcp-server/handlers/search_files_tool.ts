@@ -27,8 +27,7 @@ export class SearchFilesTool extends ToolHandler {
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
 
-      // Resolve and validate the search base against the single authorized portal (Phase 170
-      // Weakness 3): the same canonical per-portal resolver the other MCP file handlers use,
+      // Resolve against the single authorized portal via the canonical per-portal resolver,
       // so a "path": ".." (or symlink) traversal can never leave the caller's portal even
       // though ToolRegistry's own allowed-roots list is intentionally global.
       const searchPath = path ? await this.resolvePortalPath(portalPath, path) : portalPath;

@@ -18,10 +18,6 @@ import type { ITool, Opt, Reason } from "@exaix/core/types";
 
 const SANITIZED_MARKER = "[REMOVED]";
 
-/**
- * Builds execution prompts for LLM agents. Handles input sanitization, token budget
- * enforcement, context cache integration, and prompt assembly.
- */
 export class PromptBuilder {
   private portalRoot?: string;
 
@@ -138,12 +134,7 @@ Respond with valid JSON containing the changeset result:
 Ensure your response contains ONLY valid JSON, no additional text.`;
   }
 
-  /**
-   * Filters the registry's tool list down to `permittedTools` when set. `permittedTools`
-   * undefined means no restriction is in effect (e.g. no skill declared tools and the
-   * identity has no permitted_tools) — the full registry list passes through unfiltered,
-   * preserving the tool-visibility behaviour from before permitted_tools was computed.
-   */
+  /** `permittedTools` undefined means no restriction -- the full registry list passes through unfiltered. */
   private filterToolsByPermitted(
     tools: Opt<ITool[], Reason.OptionalContext>,
     permittedTools: Opt<string[], Reason.OptionalContext>,

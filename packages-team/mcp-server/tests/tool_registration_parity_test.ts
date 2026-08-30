@@ -92,11 +92,9 @@ Deno.test("ToolRegistrationParity: every tools/list description matches the cano
   await withToolsListResult((result) => {
     const manifestByName = new Map(LIVE_MANIFEST_ENTRIES.map((entry) => [entry.name, entry.description]));
 
-    // Step 6 (Phase 154): served descriptions are the manifest description with the
-    // manifest's own `preferred_tool_choice_hint` appended via `appendToolChoiceHint` -
-    // not the raw manifest description. Compare against that same production helper so
-    // this test still catches real drift (a handler hardcoding a description that
-    // disagrees with the manifest) without false-failing on the sanctioned hint suffix.
+    // Served descriptions are the manifest description with the manifest's own
+    // `preferred_tool_choice_hint` appended via `appendToolChoiceHint`, not the raw
+    // manifest description — compare against that same production helper.
 
     const mismatches: string[] = [];
     for (const tool of result.tools) {

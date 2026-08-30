@@ -61,9 +61,9 @@ export const PROVIDER_OPENAI_CAPABILITIES = ["chat", "streaming", "vision", "too
 export const PROVIDER_OPENAI_STRENGTHS = ["general", "creative", "complex"] as const;
 export const PROVIDER_OPENAI_COST_TIER = ProviderCostTier.PAID;
 
-/** Phase 132 capability metadata — context window (tokens). */
+/** Capability metadata — context window (tokens). */
 export const OPENAI_CONTEXT_WINDOW = 128_000;
-/** Phase 132 capability metadata — reference price in USD per 1M tokens (routing constraint). */
+/** Capability metadata — reference price in USD per 1M tokens (routing constraint). */
 export const OPENAI_COST_PER_MTok = 2.5;
 
 export const OPENAI_PROVIDER_METADATA = {

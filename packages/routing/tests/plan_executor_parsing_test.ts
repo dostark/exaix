@@ -295,11 +295,9 @@ trace_id: test-trace-123
 
       assertEquals(stepMatches.length, 2);
 
-      // Step 1 has empty/whitespace-only content
       const step1Content = stepMatches[0][2].trim();
       assertEquals(step1Content, "");
 
-      // Step 2 has content
       const step2Content = stepMatches[1][2].trim();
       assertEquals(step2Content.includes("Some content here"), true);
     });
@@ -342,17 +340,14 @@ trace_id: test-trace-123
 
       assertEquals(stepMatches.length, 3);
 
-      // Validate step 1
       assertEquals(stepMatches[0][1], "1");
       assertEquals(stepMatches[0][2], "Create User Model");
       assertEquals(stepMatches[0][3].includes("Add User interface"), true);
 
-      // Validate step 2
       assertEquals(stepMatches[1][1], "2");
       assertEquals(stepMatches[1][2], "Add Authentication Routes");
       assertEquals(stepMatches[1][3].includes("POST /api/auth/signup"), true);
 
-      // Validate step 3
       assertEquals(stepMatches[2][1], "3");
       assertEquals(stepMatches[2][2], "Add Middleware");
       assertEquals(stepMatches[2][3].includes("Verify JWT tokens"), true);

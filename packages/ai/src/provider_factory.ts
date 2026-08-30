@@ -50,20 +50,8 @@ export function ensureProviderRegistryInitialized(): void {
 // ProviderFactory Implementation
 // ============================================================================
 
-/**
- * Factory for creating LLM providers based on environment and configuration.
- * Provides static methods for provider instantiation and info.
- */
 export class ProviderFactory {
-  /**
-   * Create an LLM provider using a fallback chain.
-   * Tries primary, then fallbacks, with optional health check and retry logic.
-   *
-   * @param config - Exaix configuration
-   * @param fallback - Fallback chain config
-   * @param db - Optional database service for cost tracking
-   * @returns An IModelProvider instance
-   */
+  /** Creates an LLM provider via a fallback chain: tries primary, then fallbacks, with optional health check and retry logic. */
   static async createWithFallback(
     config: Config,
     fallback: {
@@ -118,14 +106,7 @@ export class ProviderFactory {
     );
   }
 
-  /**
-   * Create an LLM provider by looking up a named fallback chain in configuration.
-   *
-   * @param config - Exaix configuration
-   * @param chainName - Name of the fallback chain to use (e.g., "balanced", "fast")
-   * @param db - Optional database service for cost tracking
-   * @returns An IModelProvider instance
-   */
+  /** Creates an LLM provider from a named fallback chain in config.provider_strategy.fallback_chains. */
   static async createByChainName(
     config: Config,
     chainName: string,
@@ -158,18 +139,7 @@ export class ProviderFactory {
       costTracker,
     );
   }
-  /**
-   * Create an LLM provider based on environment and configuration.
-   *
-   * Priority order:
-   * 1. Environment variables (EXA_LLM_PROVIDER, EXA_LLM_MODEL, etc.)
-   * 2. Config file [ai] section
-   * 3. Defaults (MockLLMProvider)
-   *
-   * @param config - Exaix configuration
-   * @param db - Optional database service for cost tracking
-   * @returns An IModelProvider instance
-   */
+  /** Creates an LLM provider; priority order: EXA_LLM_* env vars > config `[ai]` section > MockLLMProvider default. */
   static async create(
     config: Config,
     db?: Opt<IDatabaseService, Reason.OptionalDependency>,
@@ -181,14 +151,7 @@ export class ProviderFactory {
     return await this.createAndWrap(config, options, db, costTracker);
   }
 
-  /**
-   * Create an LLM provider by name from the models configuration.
-   *
-   * @param config - Exaix configuration
-   * @param name - Name of the model configuration (e.g., "default", "fast")
-   * @param db - Optional database service for cost tracking
-   * @returns An IModelProvider instance
-   */
+  /** Creates an LLM provider by name (e.g. "default", "fast") from the models configuration. */
   static async createByName(
     config: Config,
     name: string,
@@ -206,35 +169,17 @@ export class ProviderFactory {
     return await this.createAndWrap(config, options, db, costTracker);
   }
 
-  /**
-   * Get information about what provider would be created
-   *
-   * @param config - Exaix configuration
-   * @returns Provider information for logging
-   */
   static getProviderInfo(config: Config): IProviderInfo {
     const options = this.resolveOptions(config);
     return this.buildProviderInfo(options);
   }
 
-  /**
-   * Get information about what provider would be created by name
-   *
-   * @param config - Exaix configuration
-   * @param name - Name of the model configuration
-   * @returns Provider information for logging
-   */
   static getProviderInfoByName(config: Config, name: string): IProviderInfo {
     const options = this.resolveOptionsByName(config, name);
     return this.buildProviderInfo(options);
   }
 
-  /**
-   * Resolve provider options from environment and config.
-   * Accepts a model-level config (may have optional fields) and merges
-   * env vars, modelConfig, and global config to produce a fully populated
-   * ResolvedProviderOptions (guarantees timeoutMs).
-   */
+  /** Merges env vars, modelConfig, and global config into IResolvedProviderOptions; guarantees timeoutMs is populated. */
   private static isModelConfigInput(
     rawModelConfig: JSONValue,
   ): rawModelConfig is z.input<typeof ModelConfigSchema> {
@@ -296,16 +241,9 @@ export class ProviderFactory {
     // Resolve base url and timeout (env > merged > defaults)
     const baseUrl = envBaseUrl ?? merged.base_url;
 
-    // Resolve timeout with provider-specific fallback from ai_timeout config.
-    // NOTE: reads modelConfig/config.ai's OWN timeout_ms directly, not merged.timeout_ms —
-    // when config.ai is unset, baseAi falls back to a synthetic { provider: MOCK, timeout_ms:
-    // DEFAULT_AI_TIMEOUT_MS } object, and `merged = {...baseAi, ...modelConfig}` leaves that
-    // fallback's timeout_ms in place whenever modelConfig itself carries none — silently
-    // shadowing the config.ai_timeout.providers[providerType] branch below for every caller
-    // whose config.ai is unset (e.g. createMockConfig-based callers with no explicit
-    // models[name].timeout_ms). Reading modelConfig.timeout_ms and config.ai's real
-    // (pre-fallback) timeout_ms distinguishes a genuine user-set value from the synthetic
-    // default.
+    // Reads modelConfig's own timeout_ms and config.ai's pre-fallback timeout_ms directly (not
+    // merged.timeout_ms) — merged always carries baseAi's synthetic default when config.ai is
+    // unset, which would otherwise shadow the config.ai_timeout.providers[providerType] branch below.
     const explicitTimeoutMs = modelConfig?.timeout_ms ?? (config.ai as AiConfig | undefined)?.timeout_ms;
     let timeoutMs = DEFAULTS.DEFAULT_AI_TIMEOUT_MS;
     if (envTimeout) {
@@ -322,15 +260,14 @@ export class ProviderFactory {
     // Mock-specific
     const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULTS.DEFAULT_MOCK_STRATEGY;
     const mockFixturesDir = merged.mock?.fixtures_dir ?? baseAi?.mock?.fixtures_dir;
-    // MOCK_STRICT env (Phase 157 Step 3) lets a scenario pack scope strict mode per step —
-    // the sandbox has one shared exa.config.toml, so per-pack strictness can't be a config
-    // key. Unset falls back to the config value, exactly as Step 2 wired it.
+    // MOCK_STRICT env lets a scenario pack scope strict mode per step — the sandbox has one shared
+    // exa.config.toml, so per-pack strictness can't be a config key. Unset falls back to the config value.
     const envMockStrict = this.safeEnvGet("MOCK_STRICT");
     const mockStrict = envMockStrict !== undefined
       ? envMockStrict === "1"
       : (merged.mock?.strict ?? baseAi?.mock?.strict ?? false);
 
-    // Operator-triggered capture (Phase 157) — env-only, never a committed config value.
+    // Operator-triggered capture — env-only, never a committed config value.
     const captureFixturesDir = this.safeEnvGet("EXA_CAPTURE_FIXTURES_DIR");
 
     return {
@@ -369,9 +306,8 @@ export class ProviderFactory {
   ): Promise<IModelProvider> {
     let provider = await this.createProvider(options);
 
-    // Operator-triggered capture (Phase 157): wrap the real provider in a recording wrapper.
-    // Refused outright for mock — capturing the mock's own guesses would manufacture an
-    // authoritative-looking fixture set that encodes the very guesses this phase removes.
+    // Operator-triggered capture: wraps the real provider in a recording wrapper. Refused for mock —
+    // capturing the mock's own guesses would manufacture an authoritative-looking fixture set from guesses.
     if (options.captureFixturesDir) {
       if (options.provider === ProviderType.MOCK) {
         throw new ProviderFactoryError(
@@ -437,10 +373,9 @@ export class ProviderFactory {
     // Try registry first for modern providers
     const factory = ProviderRegistry.getFactory(options.provider);
     if (factory) {
-      // For key-based factories (which validate API keys on creation), we
-      // must eagerly instantiate so that missing credentials cause create()
-      // to reject as tests and calling code expect. Other factories can be
-      // returned lazily to defer heavy initialization.
+      // Key-based factories validate API keys on creation, so we eagerly instantiate them —
+      // missing credentials must cause create() to reject, as tests and callers expect. Other
+      // factories are returned lazily to defer heavy initialization.
       if (factory instanceof AbstractKeyBasedProviderFactory) {
         return await factory.create(options);
       }
@@ -464,11 +399,9 @@ export class ProviderFactory {
   private static generateProviderId(options: IResolvedProviderOptions): string {
     // Special case for mock provider which includes strategy
     if (options.provider === DEFAULTS.PROVIDER_MOCK) {
-      // `recorded` is the DEFAULT strategy, and MockLLMProvider silently substitutes regex
-      // patterns when no fixtures are configured — so this id claimed a replay that never
-      // happened on every run. It is the id the daemon journals (via getProviderInfoByName),
-      // so a reader auditing which responses a scenario saw was told "recorded" while the
-      // answers came from patterns. Report the EFFECTIVE strategy instead.
+      // `recorded` is the default strategy, but MockLLMProvider silently substitutes regex patterns
+      // when no fixtures are configured. Since this id is journaled (getProviderInfoByName) for
+      // auditing which responses a scenario saw, report the EFFECTIVE strategy, not the configured one.
       const configured = options.mockStrategy ?? DEFAULTS.PROVIDER_ID_MOCK_DEFAULT_STRATEGY;
       const effective = configured === DEFAULTS.PROVIDER_ID_MOCK_DEFAULT_STRATEGY && !options.mockFixturesDir
         ? DEFAULTS.PROVIDER_ID_MOCK_PATTERN_STRATEGY
@@ -498,10 +431,7 @@ export class ProviderFactory {
 // Registry Initialization
 // ============================================================================
 
-/**
- * Initialize package-owned provider factories in registry with metadata.
- * Concrete extracted providers are registered by a root composition bootstrap.
- */
+/** Initializes package-owned provider factories in the registry; concrete extracted providers are registered separately by a root composition bootstrap. */
 export function initializeRegistry(): void {
   const supported = ProviderRegistry.getSupportedProviders();
 
@@ -523,13 +453,7 @@ export function initializeRegistry(): void {
 // Provider Validation and Health Checks
 // ============================================================================
 
-/**
- * Validate that a provider connection is working by making a lightweight test request.
- * This is used for health checks in fallback chains.
- *
- * @param provider - The provider to validate
- * @returns Promise that resolves if connection is healthy, rejects if not
- */
+/** Validates a provider connection via a lightweight test request; used for health checks in fallback chains. */
 export async function validateProviderConnection(provider: IModelProvider): Promise<void> {
   try {
     // Use a minimal test prompt that should work with any provider

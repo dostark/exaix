@@ -20,10 +20,7 @@ export interface IProviderDefaults {
   readonly defaultRetryBackoffMs: number;
 }
 
-/**
- * Static registry that maps provider-type strings to their IProviderDefaults implementation.
- * Populated at application bootstrap before any provider call is made.
- */
+/** Populated at application bootstrap before any provider call is made. */
 export class ProviderDefaultsRegistry {
   private static readonly _registry = new Map<string, IProviderDefaults>();
 

@@ -6,6 +6,7 @@
  * @architectural-layer Core
  * @related-files ["packages/core/src/config/registry.ts"]
  */
+import type { Opt, Reason } from "../types/optional_marker.ts";
 export interface IConfigWriteCause {
   message: string;
 }
@@ -25,7 +26,7 @@ export class ConfigValidationError extends Error {
 }
 
 export class ConfigWriteError extends Error {
-  constructor(key: string, cause?: IConfigWriteCause) {
+  constructor(key: string, cause?: Opt<IConfigWriteCause, Reason.OptionalContext>) {
     const msg = `Failed to write configuration key '${key}'`;
     super(cause ? `${msg}: ${cause.message}` : msg);
     this.name = "ConfigWriteError";
@@ -33,21 +34,15 @@ export class ConfigWriteError extends Error {
   }
 }
 
-/**
- * Thrown / surfaced when an MCP config write targets a path in the
- * config_mcp_blocklist (Phase 138 Step 2).
- */
+/** Thrown when an MCP config write targets a path in config_mcp_blocklist. */
 export class ConfigPathBlockedError extends Error {
-  constructor(key: string, reason?: string) {
+  constructor(key: string, reason?: Opt<string, Reason.OptionalContext>) {
     super(`Config path "${key}" is blocked from MCP writes${reason ? `: ${reason}` : ""}`);
     this.name = "ConfigPathBlockedError";
   }
 }
 
-/**
- * Thrown / surfaced when a config write exceeds a rate limit (Phase 138 Step 3):
- * CLI debounce, MCP pending cap, or DB page hard-limit.
- */
+/** Thrown when a config write exceeds a rate limit: CLI debounce, MCP pending cap, or DB page hard-limit. */
 export class ConfigRateLimitedError extends Error {
   constructor(surface: string, limit: string) {
     super(`Config rate limit exceeded on ${surface}: ${limit}`);
@@ -56,12 +51,11 @@ export class ConfigRateLimitedError extends Error {
 }
 
 /**
- * Thrown by adapter.set() (via assertWritable) when a write targets a key in
- * config_locked_keys (Phase 139 Step 4). A locked key is refused by every write
- * surface — CLI, MCP, and the daemon adapter — until `config unlock`.
+ * Thrown by adapter.set() (via assertWritable) for a write to a key in config_locked_keys.
+ * A locked key is refused by every write surface — CLI, MCP, daemon — until `config unlock`.
  */
 export class ConfigKeyLockedError extends Error {
-  constructor(key: string, reason?: string) {
+  constructor(key: string, reason?: Opt<string, Reason.OptionalContext>) {
     super(`Config key "${key}" is locked${reason ? `: ${reason}` : ""}`);
     this.name = "ConfigKeyLockedError";
   }

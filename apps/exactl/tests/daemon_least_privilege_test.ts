@@ -62,10 +62,8 @@ Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net=<default
   try {
     const flags = cmds.callSpawnFlags();
     const netFlag = flags.find((f) => f.startsWith("--allow-net="));
-    // Derived from the constant the spawn path reads. This case asserts that an undefined
-    // allow_net falls back to the default grant rather than to --allow-all or a blanket grant;
-    // the membership of that default is pinned per-provider in
-    // tests/daemon/net_allowlist_covers_providers_test.ts.
+    // An undefined allow_net falls back to the default host grant, not --allow-all; the
+    // default host set is pinned in tests/daemon/net_allowlist_covers_providers_test.ts.
     assertEquals(netFlag, `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`);
   } finally {
     await cleanup();

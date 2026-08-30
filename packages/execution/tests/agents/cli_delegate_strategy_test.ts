@@ -266,11 +266,9 @@ Deno.test("CliDelegateStrategy: strips ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKE
 });
 
 Deno.test("CliDelegateStrategy: buildDelegateEnv is allowlist-based — no ambient secrets/proxy reach the delegate; the delegate's OWN OAuth token survives", async () => {
-  // GAP-28 remediation (shared child-env policy): CliDelegateStrategy used inherit mode,
-  // which forwarded the daemon's full secret stack (OPENROUTER_API_KEY, GitHub/AWS/SSH) to
-  // the write-capable delegate. It must now be allowlist-based: only the 6 safe parent keys
-  // plus the deliberate PWD override and the delegate's own subscription auth
-  // (CLAUDE_CODE_OAUTH_TOKEN) reach the subprocess.
+  // buildDelegateEnv is allowlist-based: only the 6 safe parent keys plus the deliberate
+  // PWD override and the delegate's own subscription auth (CLAUDE_CODE_OAUTH_TOKEN) reach
+  // the subprocess — no ambient secrets/proxy vars (e.g. OPENROUTER_API_KEY) leak through.
   const originalPwd = Deno.env.get("PWD");
   const originalOauth = Deno.env.get("CLAUDE_CODE_OAUTH_TOKEN");
   const originalOpenRouter = Deno.env.get("OPENROUTER_API_KEY");
@@ -322,13 +320,9 @@ Deno.test("CliDelegateStrategy: buildDelegateEnv is allowlist-based — no ambie
 });
 
 Deno.test("CliDelegateStrategy: overrides the subprocess PWD env var to match the resolved portal/worktree path, not the daemon's own stale PWD", async () => {
-  // Live-observed root cause: Deno.Command's `cwd` option changes the OS-level working
-  // directory the subprocess is spawned into, but does NOT touch a `PWD` env var inherited
-  // via Deno.env.toObject() (buildDelegateEnv's base) — the daemon's own PWD (wherever it was
-  // originally launched from) leaks through unchanged. opencode's CLI (JS/TS-based) resolves
-  // relative tool-call paths against process.env.PWD rather than the kernel cwd, so a write
-  // meant for a worktree checkout silently landed in the daemon's own launch directory
-  // instead — reproduced via a minimal Deno.Command + real opencode probe before this fix.
+  // Deno.Command's `cwd` option changes the OS-level working directory but does NOT touch
+  // the `PWD` env var (inherited via Deno.env.toObject()) — opencode's CLI resolves relative
+  // tool-call paths against process.env.PWD rather than the kernel cwd, so this override is required.
   const originalPwd = Deno.env.get("PWD");
   Deno.env.set("PWD", "/some/stale/daemon/launch/dir");
 
@@ -562,11 +556,9 @@ Deno.test("CliDelegateStrategy: throws AgentExecutionError when the opencode sub
 });
 
 Deno.test("CliDelegateStrategy: parses opencode JSONL events for files_changed and usage, normalizing opencode's absolute filePath to a portal-relative path", async () => {
-  // Verified live (2026-07-20): opencode's real `edit`/`write` tool_use events report
-  // filePath as an ABSOLUTE path, not portal-relative. GitAuditService's unauthorized-
-  // change check compares against `git status --porcelain` output, which is always
-  // relative — an unnormalized absolute path here never matches and every real opencode
-  // edit gets reverted as a false-positive security violation.
+  // opencode's real `edit`/`write` tool_use events report filePath as an ABSOLUTE path, not
+  // portal-relative. GitAuditService's unauthorized-change check compares against relative
+  // `git status --porcelain` output, so an unnormalized absolute path here would falsely revert every edit.
   const events = [
     JSON.stringify({ type: "text", part: { text: "Patched the null guard." } }),
     JSON.stringify({
@@ -600,9 +592,8 @@ Deno.test("CliDelegateStrategy: parses opencode JSONL events for files_changed a
 
 Deno.test("CliDelegateStrategy: a claude turn with no parsed tool paths falls back to git status for files_changed", async () => {
   // claude's parsed toolPaths is empty today; without the git-status fallback the step audit
-  // would flag every real write as a false-positive security violation and the plan would
-  // never reach Archive (wait-for-execution-completion timeout). The real writes must become
-  // the authorized files_changed.
+  // would flag every real write as a false-positive security violation, and the plan would
+  // never reach Archive (wait-for-execution-completion timeout).
   const dir = Deno.makeTempDirSync();
   const git = (args: string[], cwd: string) => new Deno.Command("git", { args, cwd }).output();
   try {

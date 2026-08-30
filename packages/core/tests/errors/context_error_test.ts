@@ -10,16 +10,6 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { ContextError } from "@exaix/core/errors";
 
-/**
- * ContextError - Enhanced error class with context preservation
- *
- * This class addresses section 20 of the security audit:
- * "Insufficient Error Context in Stack Traces"
- *
- * Provides structured error context and stack trace preservation
- * for better debugging and error handling throughout the application.
- */
-
 Deno.test("ContextError: creates error with message and context", () => {
   const error = new ContextError("Test error message", {
     operation: "test_operation",

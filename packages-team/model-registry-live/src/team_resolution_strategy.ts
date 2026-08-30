@@ -33,21 +33,21 @@ export interface ITeamStrategyDeps {
   buildContext(provider: string): IAdapterContext;
   /** True when the provider is an aggregator reseller (§5.7.2 isAggregator metadata). */
   isAggregator(provider: string): boolean;
-  /** Per-route health sub-signals for the §5.7 route policy (Step 6). */
+  /** Per-route health sub-signals for the §5.7 route policy. */
   routeHealth(provider: string): IRouteHealthSignals;
-  /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE) — Step 6. */
+  /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE). */
   costExempt(provider: string): boolean;
   /** D7 fallback signal: provider cost metadata for the post-pricing-lookup isCostExempt check. */
   providerCostMetadata(provider: string): IProviderCostMetadata | undefined;
-  /** Configured route policy (Step 6). */
+  /** Configured route policy. */
   routePolicy: IRouteReason;
-  /** Configured near-tie price tolerance for cheapest (Step 6). */
+  /** Configured near-tie price tolerance for cheapest. */
   routePriceTolerance: number;
-  /** Configured per-model provider order for user_order (G4, Step 6). */
+  /** Configured per-model provider order for user_order (G4). */
   routeOrder: Record<string, string[]>;
-  /** §5.8.4 task-type → ranking benchmark(s), canonical TaskType keys (Step 8, GAP-B). */
+  /** §5.8.4 task-type → ranking benchmark(s), canonical TaskType keys. */
   benchmarkMap?: Partial<Record<TaskType, string[]>>;
-  /** F8 opt-in — the strategy's own config gate for rankUsage (Step 8). Default false. */
+  /** F8 opt-in — the strategy's own config gate for rankUsage. Default false. */
   usageTiebreak?: boolean;
 }
 
@@ -60,10 +60,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     private readonly deps: ITeamStrategyDeps,
   ) {}
 
-  /**
-   * Team explicit semantics (G10): admitted → verbatim; real-but-unadmitted →
-   * auto-admit + resolve; not real → throw unknown model.
-   */
+  /** Team explicit semantics (G10): admitted models resolve verbatim; real-but-unadmitted auto-admit; not-real throws unknown model. */
   async validateExplicit(provider: string, model: string): Promise<IResolvedRoute> {
     const admittedModels = await this.registry.getProviderModels(provider);
     if (admittedModels.some((m) => m.model === model)) {
@@ -102,12 +99,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     return { provider, model };
   }
 
-  /**
-   * Route sub-step (§5.7, Step 6): apply the configured policy over all catalog routes
-   * for the chosen model. A model with one route short-circuits with `single_route` and
-   * emits no event; a multi-route decision emits model.route.selected and carries the
-   * considered routes back for the trace payload.
-   */
+  /** Route policy sub-step (§5.7): single-route models short-circuit with `single_route` (no event); multi-route selection emits model.route.selected with the considered routes. */
   async selectRoute(resolved: IResolvedRoute): Promise<IRouteSelectionResult> {
     const policy = new RoutePolicy(this.registry, { routeHealth: (p) => this.deps.routeHealth(p) }, {
       isAggregator: (p) => this.deps.isAggregator(p),
@@ -151,13 +143,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     };
   }
 
-  /**
-   * `best` characteristic (§5.8.3, Step 8): rank candidates by the first
-   * `benchmarkMap[taskType]` benchmark with a score, descending. A candidate with no
-   * score on ANY of the task's benchmarks is left OUT of the returned map (honest
-   * degradation — the resolver's blend then ranks it last) and emits
-   * model.benchmark.missing naming the first (primary) benchmark for the task.
-   */
+  /** `best` characteristic (§5.8.3): ranks candidates by the first `benchmarkMap[taskType]` benchmark with a score. Candidates with no score on any benchmark are omitted from the returned map (not zeroed) and emit model.benchmark.missing. */
   async scoreBest(
     candidates: IResolvedRoute[],
     taskType: TaskType,
@@ -189,11 +175,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     return scores;
   }
 
-  /**
-   * Usage tiebreak (F8, Step 8): MFU then MRU order over provider_costs, restricted to
-   * the offered candidate pool. Self-gated on deps.usageTiebreak — returns undefined
-   * (inert) when the flag is off, regardless of what the resolver offers.
-   */
+  /** Usage tiebreak (F8): MFU-then-MRU order over provider_costs restricted to the offered candidates; returns undefined when deps.usageTiebreak is off. */
   async rankUsage(candidates: IResolvedRoute[]): Promise<string[] | undefined> {
     if (!this.deps.usageTiebreak) return undefined;
     const ranked = await this.registry.getUsageRank();

@@ -161,14 +161,9 @@ export class McpAgentStrategy implements IExecutionStrategy {
   private buildAgentArgs(_blueprint: IAgentFileBlueprint, _options: IAgentExecutionOptions): string[] {
     const args = ["run"];
 
-    // Permissions (Phase 170 Weakness 1): the spawned MCP agent process always runs with
-    // the same scoped grant — read + network — regardless of SecurityMode. It previously
-    // granted unrestricted --allow-all to non-SANDBOXED (HYBRID) modes, inverting the
-    // documented SecurityMode containment mapping. SANDBOXED's read+net scope is the named
-    // prior-phase contract (tests/security/subprocess_isolation_test.ts, Step 61.7/G3);
-    // HYBRID was reduced to that same scoped set in Phase 170, since buildAgentArgs has no
-    // portal path here to express the richer --allow-read=<portal> scoping
-    // (see Security_Decision_Ledger D006).
+    // Both SANDBOXED and HYBRID modes spawn the MCP agent with the same scoped grant
+    // (--allow-read --allow-net), never --allow-all — this call site has no portal path
+    // to express a narrower --allow-read=<portal> scope.
     args.push("--allow-read", "--allow-net");
 
     // Path to entry point
@@ -240,9 +235,8 @@ export class McpAgentStrategy implements IExecutionStrategy {
       throw new Error("ToolRegistry not available in AgentOrchestrator");
     }
 
-    // Phase 61 Compatibility Bridge:
-    // If tool specifies 'portal' and 'path', translate to '@Portal/path' for legacy registry tools.
-    // This allows MCP agents to use (portal, path) while ToolRegistry expects alias paths.
+    // If tool specifies 'portal' and 'path', translate to '@Portal/path' for legacy registry tools,
+    // since MCP agents use (portal, path) while ToolRegistry expects alias paths.
     const enrichedParams = { ...params };
     if (params.portal && params.path && typeof params.path === "string" && !params.path.startsWith("@")) {
       enrichedParams.path = `@${params.portal}/${params.path}`;
@@ -276,10 +270,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
     }
   }
 
-  /**
-   * Dispose of resources (signal listeners, process manager)
-   * Call this when the strategy is no longer needed
-   */
+  /** Call this when the strategy is no longer needed. */
   dispose(): void {
     this.processManager.dispose();
   }

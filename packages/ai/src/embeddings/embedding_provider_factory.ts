@@ -29,12 +29,7 @@ export type IEmbeddingProviderConfig =
   | ({ provider: "openai" } & IOpenAIEmbeddingConfig)
   | ({ provider: "llamacpp" } & ILlamaCppEmbeddingConfig);
 
-/**
- * Create an IEmbeddingProvider from discriminated config.
- * @param config - Provider-specific config with a `provider` discriminator.
- * @returns Concrete IEmbeddingProvider instance.
- * @throws EmbeddingError if the provider is unknown or not yet implemented.
- */
+/** Throws EmbeddingError if the provider is unknown or not yet implemented. */
 export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbeddingProvider {
   switch (config.provider) {
     case "ollama":

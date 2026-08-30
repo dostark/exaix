@@ -15,6 +15,7 @@ import type { TaskComplexity } from "@exaix/core";
 
 import { DefaultRoutingStrategy } from "./routing/default_routing_strategy.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Local interface for HealthCheckService dependency to respect boundary
@@ -39,7 +40,7 @@ export interface ISelectionCriteria {
   allowLocal?: boolean;
   /** Scoring hints — "cheapest", "fastest", etc. Weighted blend in ModelResolver. */
   characteristics?: string[];
-  /** Phase 132 — rate-limit headroom influence weight (0-1). 0=disabled. */
+  /** Rate-limit headroom influence weight (0-1); 0 = disabled. */
   rateLimitWeight?: number;
 }
 
@@ -56,18 +57,13 @@ export class ProviderSelector {
     registry: typeof ProviderRegistry,
     costTracker: ICostTracker,
     healthChecker: IProviderHealthChecker,
-    strategy?: IProviderRoutingStrategy,
+    strategy?: Opt<IProviderRoutingStrategy, Reason.OptionalDependency>,
   ) {
     // Default-wire the historical routing; a paid edition injects an alternative strategy.
     this.strategy = strategy ?? new DefaultRoutingStrategy(registry, costTracker, healthChecker);
   }
 
-  /**
-   * Select the optimal provider based on the given criteria.
-   * @param criteria Selection criteria
-   * @returns The name of the selected provider
-   * @throws Error if no suitable provider is found
-   */
+  /** Selects the optimal provider based on the given criteria; throws if none is suitable. */
   async selectProvider(criteria: ISelectionCriteria): Promise<string> {
     const startTime = performance.now();
     try {
@@ -77,13 +73,7 @@ export class ProviderSelector {
     }
   }
 
-  /**
-   * Select provider for a specific task using configuration-driven strategy.
-   * @param config Configuration with provider strategy
-   * @param taskType Task type (simple, complex, etc.)
-   * @returns The name of the selected provider
-   * @throws Error if no suitable provider is found
-   */
+  /** Selects a provider for a task using the config-driven strategy; throws if none is suitable. */
   async selectProviderForTask(config: Config, taskType: string): Promise<string> {
     const startTime = performance.now();
     try {

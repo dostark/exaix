@@ -26,10 +26,7 @@ interface IGenerationProvider {
   generate(prompt: string, options?: IModelCallOptions & { max_tokens?: number }): Promise<{ content: string }>;
 }
 
-/**
- * Manages loop history ring buffer, compaction, and budget checking.
- * @visible
- */
+/** @visible */
 export class HistoryManager {
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
 
@@ -71,11 +68,8 @@ export class HistoryManager {
     }
   }
 
-  /**
-   * Compact older loop history entries to free budget.
-   * Preserves the last `keepLastN` entries as individual steps and replaces
-   * all older entries with a single compacted summary.
-   */
+  /** Compact older loop history entries: keeps the last `keepLastN` as individual steps and
+   *  replaces all older entries with a single compacted summary. */
   async compactLoopHistory(
     keepLastN: Opt<number, Reason.SensibleDefault> = DEFAULT_KEEP_LAST_N_STEPS,
   ): Promise<void> {

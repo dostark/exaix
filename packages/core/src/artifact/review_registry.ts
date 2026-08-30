@@ -108,16 +108,8 @@ export class ReviewRegistry {
     return id;
   }
 
-  /**
-   * Create a new review with branch creation in specified repository
-   * Higher-level API that combines branch creation and registration
-   *
-   * @param traceId - Trace ID for the review (must be valid UUID)
-   * @param portal - Portal name (or null for workspace)
-   * @param branch - Branch name (already created by GitService)
-   * @param repository - Absolute path to git repository
-   * @returns Review ID
-   */
+  /** Despite the name, this doesn't create the branch — `branch` must already exist
+   * (created by GitService); this only registers the review record for it. */
   async createReview(
     traceId: string,
     portal: string | null,
@@ -136,12 +128,6 @@ export class ReviewRegistry {
     });
   }
 
-  /**
-   * Get diff for a review from its repository
-   *
-   * @param reviewId - Review ID
-   * @returns Git diff output
-   */
   async getDiff(reviewId: string): Promise<string> {
     const review = await this.get(reviewId);
     if (!review) {

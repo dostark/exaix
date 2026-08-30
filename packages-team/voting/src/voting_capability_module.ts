@@ -32,7 +32,7 @@ export class VotingCapabilityModule implements ICapabilityModule {
 
     const r = registry as FlowStepHandlerRegistry;
     r.register(handler);
-    // Phase 121 Step 4: alias CONSENSUS to the same VotingStepHandler
+    // Alias CONSENSUS to the same VotingStepHandler
     r.registerWithKey(FlowStepType.CONSENSUS, handler);
   }
 }

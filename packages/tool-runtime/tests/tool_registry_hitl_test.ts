@@ -206,8 +206,7 @@ Deno.test("hitl: setHitlBlueprintRules updates the rules used by evaluator on th
 
   const newRules: HitlRule[] = [{ tool: "write_file", reason: "set post-construction" }];
 
-  // Constructed with NO blueprint rules, mirroring every real ToolRegistry construction
-  // site (Phase 154 Step 3: hitlBlueprintRules was never populated by any of them).
+  // Constructed with no initial blueprint rules; updated via setter before execution.
   await withRegistry(new InspectingEvaluator(), undefined, undefined, async (registry) => {
     registry.setHitlBlueprintRules(newRules);
     await registry.execute("read_file", { path: "/nonexistent" });

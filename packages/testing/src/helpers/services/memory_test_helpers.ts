@@ -20,7 +20,7 @@ import {
 import { MemoryStatus } from "@exaix/core/status";
 import type { IExecutionMemory, ILearning, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryExtractorService } from "@exaix/memory";
-import type { JSONObject } from "@exaix/core/types";
+import type { JSONObject, Opt, Reason } from "@exaix/core/types";
 import {
   TEST_AGENT_NAME,
   TEST_ID,
@@ -77,15 +77,11 @@ export function createFailedExecutionMemory(portal: string, traceId: string): IE
   };
 }
 
-/**
- * Creates a test execution with learnable content and returns a proposal ID
- * This helper encapsulates the common pattern of creating an execution, analyzing it,
- * and creating a proposal for testing memory extractor operations.
- */
+/** Creates a test execution with learnable content and returns a proposal ID. */
 export async function createTestProposal(
   extractor: MemoryExtractorService,
   portal: string = TEST_PROJECT_NAME,
-  traceId?: string,
+  traceId?: Opt<string, Reason.TestOverride>,
 ): Promise<string | null> {
   // Use a unique trace ID if not provided
   const executionTraceId = traceId ??

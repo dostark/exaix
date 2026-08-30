@@ -28,13 +28,7 @@ export interface IStructuredPlan {
   steps: IStructuredPlanStep[];
 }
 
-/**
- * Detect and parse structured plans with an "Execution Steps" section.
- *
- * Looks for:
- * - "## Execution Steps" header
- * - One or more step headers: "## Step N: Title"
- */
+/** Looks for an "## Execution Steps" header followed by one or more "## Step N: Title" headers. */
 export function parseStructuredPlanFromMarkdown(
   planContent: string,
   frontmatter: IStructuredPlanFrontmatter,

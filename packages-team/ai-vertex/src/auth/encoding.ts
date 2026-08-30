@@ -10,10 +10,7 @@
 
 import { BASE64_CHUNK_SIZE } from "../constants.ts";
 
-/**
- * Base64url-encode a string or byte array. Encodes in fixed-size chunks so large
- * inputs (e.g. RSA signatures) never overflow the call stack via argument spread.
- */
+/** Encodes in fixed-size chunks so large inputs (e.g. RSA signatures) never overflow the call stack via argument spread. */
 export function base64UrlEncode(input: Uint8Array | string): string {
   const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
   let binary = "";

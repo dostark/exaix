@@ -22,7 +22,7 @@ import {
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
 import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
-import type { IJournalFilterOptions } from "@exaix/core/types";
+import type { IJournalFilterOptions, Opt, Reason } from "@exaix/core/types";
 
 /**
  * WatchCommand provides real-time execution tailing via SSE or historical fallback.
@@ -35,7 +35,7 @@ export class WatchCommand extends BaseCommand {
   /**
    * Watch a trace by ID. Tries SSE stream first; falls back to DB query.
    */
-  async watch(traceId: string, _testMode?: boolean): Promise<void> {
+  async watch(traceId: string, _testMode?: Opt<boolean, Reason.TestOverride>): Promise<void> {
     // Validate traceId
     const parseResult = z.string().uuid().safeParse(traceId);
     if (!parseResult.success) {
@@ -122,13 +122,7 @@ export class WatchCommand extends BaseCommand {
     }
   }
 
-  /**
-   * Pretty-print a streaming event with color-coded output.
-   * - Heartbeats: dim gray
-   * - Tool events: cyan
-   * - LLM events: white
-   * - Flow status: green
-   */
+  /** Pretty-prints a streaming event with color-coded output by event category. */
   static printSseEvent(event: IStreamingEvent): void {
     const timestamp = colors.dim(new Date(event.timestamp).toISOString().slice(11, 19));
     const type = event.type;

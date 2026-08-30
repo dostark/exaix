@@ -22,7 +22,13 @@ import {
   RequestSource,
   SkillStatus,
 } from "@exaix/core";
-import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core/types";
+import {
+  type Opt,
+  type PortalAnalysisMode,
+  type PortalExecutionStrategy,
+  PortalStatus,
+  type Reason,
+} from "@exaix/core/types";
 import { TuiIcon } from "@exaix/tui";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";
@@ -92,7 +98,10 @@ export class MockPortalService implements IPortalService {
   add(
     _targetPath: string,
     _alias: string,
-    _options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    _options?: Opt<
+      { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+      Reason.TestStub
+    >,
   ): Promise<void> {
     return Promise.resolve();
   }
@@ -135,15 +144,15 @@ export class MockPortalService implements IPortalService {
     return Promise.resolve();
   }
 
-  removePortal(_alias: string, _options?: { keepCard?: boolean }): Promise<boolean> {
+  removePortal(_alias: string, _options?: Opt<{ keepCard?: boolean }, Reason.TestStub>): Promise<boolean> {
     return Promise.resolve(true);
   }
 
-  remove(_alias: string, _options?: { keepCard?: boolean }): Promise<void> {
+  remove(_alias: string, _options?: Opt<{ keepCard?: boolean }, Reason.TestStub>): Promise<void> {
     return Promise.resolve();
   }
 
-  verify(_alias?: string): Promise<IVerificationResult[]> {
+  verify(_alias?: Opt<string, Reason.TestStub>): Promise<IVerificationResult[]> {
     return Promise.resolve([]);
   }
 
@@ -165,7 +174,7 @@ export class MockPortalService implements IPortalService {
 
   analyze(
     _alias: string,
-    _options?: { mode?: PortalAnalysisMode; force?: boolean },
+    _options?: Opt<{ mode?: PortalAnalysisMode; force?: boolean }, Reason.TestStub>,
   ): Promise<string> {
     return Promise.resolve("Mock analysis result");
   }
@@ -179,7 +188,7 @@ export class MockPlanService implements IPlanService {
     return Promise.resolve([]);
   }
 
-  list(_statusFilter?: PlanStatusType): Promise<IPlanMetadata[]> {
+  list(_statusFilter?: Opt<PlanStatusType, Reason.TestStub>): Promise<IPlanMetadata[]> {
     return this.listPending();
   }
 
@@ -199,11 +208,19 @@ export class MockPlanService implements IPlanService {
     });
   }
 
-  approve(_planId: string, _reviewer?: string, _skills?: string[]): Promise<boolean> {
+  approve(
+    _planId: string,
+    _reviewer?: Opt<string, Reason.TestStub>,
+    _skills?: Opt<string[], Reason.TestStub>,
+  ): Promise<boolean> {
     return Promise.resolve(true);
   }
 
-  reject(_planId: string, _reviewer?: string, _reason?: string): Promise<boolean> {
+  reject(
+    _planId: string,
+    _reviewer?: Opt<string, Reason.TestStub>,
+    _reason?: Opt<string, Reason.TestStub>,
+  ): Promise<boolean> {
     return Promise.resolve(true);
   }
 
@@ -212,18 +229,14 @@ export class MockPlanService implements IPlanService {
   }
 }
 
-/**
- * MockLogService
- * Implements IDatabaseService and IJournalService for MonitorView and other components.
- */
 export class MockLogService implements IDatabaseService, IJournalService {
   logActivity(
     _actor: string,
     _actionType: string,
     _target: string | null,
     _payload: Record<string, _JSONValue>,
-    _traceId?: string,
-    _identityId?: string | null,
+    _traceId?: Opt<string, Reason.TestStub>,
+    _identityId?: Opt<string | null, Reason.TestStub>,
   ): void {}
 
   waitForFlush(): Promise<void> {
@@ -246,15 +259,15 @@ export class MockLogService implements IDatabaseService, IJournalService {
     return Promise.resolve();
   }
 
-  preparedGet<T>(_query: string, _params?: SqliteParam[]): Promise<T | null> {
+  preparedGet<T>(_query: string, _params?: Opt<SqliteParam[], Reason.TestStub>): Promise<T | null> {
     return Promise.resolve(null);
   }
 
-  preparedAll<T>(_query: string, _params?: SqliteParam[]): Promise<T[]> {
+  preparedAll<T>(_query: string, _params?: Opt<SqliteParam[], Reason.TestStub>): Promise<T[]> {
     return Promise.resolve([]);
   }
 
-  preparedRun(_query: string, _params?: SqliteParam[]): Promise<unknown> {
+  preparedRun(_query: string, _params?: Opt<SqliteParam[], Reason.TestStub>): Promise<unknown> {
     return Promise.resolve({});
   }
 
@@ -274,7 +287,7 @@ export class MockLogService implements IDatabaseService, IJournalService {
     return Promise.resolve([]);
   }
 
-  getRecentActivity(_limit?: number): Promise<IActivityRecord[]> {
+  getRecentActivity(_limit?: Opt<number, Reason.TestStub>): Promise<IActivityRecord[]> {
     return Promise.resolve([]);
   }
 
@@ -325,7 +338,7 @@ export class MockDaemonService implements IDaemonService {
 export class MockRequestService implements IRequestService {
   create(
     description: string,
-    options?: IRequestOptions,
+    options?: Opt<IRequestOptions, Reason.TestStub>,
     source: RequestSource = RequestSource.TUI,
   ): Promise<IRequestMetadata> {
     return Promise.resolve({
@@ -342,15 +355,21 @@ export class MockRequestService implements IRequestService {
     });
   }
 
-  createRequest(description: string, options?: IRequestOptions): Promise<IRequestMetadata> {
+  createRequest(description: string, options?: Opt<IRequestOptions, Reason.TestStub>): Promise<IRequestMetadata> {
     return this.create(description, options);
   }
 
-  list(_status?: RequestStatusType, _includeArchived?: boolean): Promise<IRequestEntry[]> {
+  list(
+    _status?: Opt<RequestStatusType, Reason.TestStub>,
+    _includeArchived?: Opt<boolean, Reason.TestStub>,
+  ): Promise<IRequestEntry[]> {
     return Promise.resolve([]);
   }
 
-  listRequests(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]> {
+  listRequests(
+    status?: Opt<RequestStatusType, Reason.TestStub>,
+    includeArchived?: Opt<boolean, Reason.TestStub>,
+  ): Promise<IRequestEntry[]> {
     return this.list(status, includeArchived);
   }
 
@@ -382,7 +401,10 @@ export class MockRequestService implements IRequestService {
     return Promise.resolve(null);
   }
 
-  analyze(_requestId: string, _options?: { mode?: AnalysisMode; force?: boolean }): Promise<IRequestAnalysis> {
+  analyze(
+    _requestId: string,
+    _options?: Opt<{ mode?: AnalysisMode; force?: boolean }, Reason.TestStub>,
+  ): Promise<IRequestAnalysis> {
     return Promise.reject(new Error("Not implemented in mock"));
   }
 }
@@ -496,8 +518,8 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
   }
 
   getExecutionHistory(
-    _portalOrOptions?: string | { portal?: string; limit?: number },
-    _limit?: number,
+    _portalOrOptions?: Opt<string | { portal?: string; limit?: number }, Reason.TestStub>,
+    _limit?: Opt<number, Reason.TestStub>,
   ): Promise<IExecutionMemory[]> {
     return Promise.resolve([
       {
@@ -561,7 +583,10 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     return Promise.resolve();
   }
 
-  searchMemory(_query: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  searchMemory(
+    _query: string,
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.TestStub>,
+  ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([
       {
         id: "mem-1",
@@ -581,11 +606,17 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     ]);
   }
 
-  searchByTags(_tags: string[], _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  searchByTags(
+    _tags: string[],
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.TestStub>,
+  ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
 
-  searchByKeyword(_keyword: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  searchByKeyword(
+    _keyword: string,
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.TestStub>,
+  ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
 
@@ -598,7 +629,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     return Promise.resolve([]);
   }
 
-  getRecentActivity(_limit?: number): Promise<IActivitySummary[]> {
+  getRecentActivity(_limit?: Opt<number, Reason.TestStub>): Promise<IActivitySummary[]> {
     return Promise.resolve([]);
   }
 
@@ -779,7 +810,10 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     return Promise.resolve([GitBranchName.MAIN, MOCK_PROJECT_NAME]);
   }
 
-  search(query: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  search(
+    query: string,
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.TestStub>,
+  ): Promise<IMemorySearchResult[]> {
     return this.searchMemory(query, _options);
   }
 
@@ -898,7 +932,7 @@ export class MockSkillsService implements ISkillsService {
     return Promise.resolve();
   }
 
-  listSkills(_filter?: { source?: string; status?: string }): Promise<ISkill[]> {
+  listSkills(_filter?: Opt<{ source?: string; status?: string }, Reason.TestStub>): Promise<ISkill[]> {
     return Promise.resolve([
       {
         id: "user-skill-id",
@@ -949,11 +983,19 @@ export class MockStructuredLogger implements IStructuredLogger {
   child(_additionalContext: Partial<ILogContext>): IStructuredLogger {
     return this;
   }
-  debug(_message: string, _metadata?: LogMetadata): void {}
-  info(_message: string, _metadata?: LogMetadata): void {}
-  warn(_message: string, _metadata?: LogMetadata): void {}
-  error(_message: string, _error?: Error, _metadata?: LogMetadata): void {}
-  fatal(_message: string, _error?: Error, _metadata?: LogMetadata): void {}
+  debug(_message: string, _metadata?: Opt<LogMetadata, Reason.TestStub>): void {}
+  info(_message: string, _metadata?: Opt<LogMetadata, Reason.TestStub>): void {}
+  warn(_message: string, _metadata?: Opt<LogMetadata, Reason.TestStub>): void {}
+  error(
+    _message: string,
+    _error?: Opt<Error, Reason.TestStub>,
+    _metadata?: Opt<LogMetadata, Reason.TestStub>,
+  ): void {}
+  fatal(
+    _message: string,
+    _error?: Opt<Error, Reason.TestStub>,
+    _metadata?: Opt<LogMetadata, Reason.TestStub>,
+  ): void {}
   time<T>(_operation: string, fn: () => Promise<T>): Promise<T> {
     return fn();
   }
@@ -963,7 +1005,7 @@ export class MockStructuredLogger implements IStructuredLogger {
  * MockStructuredLoggerService
  */
 export class MockStructuredLoggerService implements ILogService {
-  getStructuredLogs(_options?: ILogQueryOptions): Promise<IStructuredLogEntry[]> {
+  getStructuredLogs(_options?: Opt<ILogQueryOptions, Reason.TestStub>): Promise<IStructuredLogEntry[]> {
     return Promise.resolve([]);
   }
   subscribeToLogs(_callback: (entry: IStructuredLogEntry) => void): () => void {
@@ -996,10 +1038,10 @@ export class MockNotificationService implements INotificationService {
 
   notify(
     message: string,
-    _type?: string,
-    _proposalId?: string,
-    _traceId?: string,
-    _metadata?: string,
+    _type?: Opt<string, Reason.TestStub>,
+    _proposalId?: Opt<string, Reason.TestStub>,
+    _traceId?: Opt<string, Reason.TestStub>,
+    _metadata?: Opt<string, Reason.TestStub>,
   ): Promise<void> {
     console.log(`[Notification] ${message}`);
     return Promise.resolve();

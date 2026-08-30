@@ -38,11 +38,7 @@ export class RoutingPolicyLoader {
     this.policyPath = join(options.root, routingConfig?.policy_path ?? ".exaix/routing.policy.yaml");
   }
 
-  /**
-   * Start watching the policy file for changes.
-   * On modify events, the internal cache is invalidated so the next
-   * loadPolicy() call re-reads the file.
-   */
+  /** Start watching policy file; invalidates internal cache on modify events. */
   startWatching(): void {
     if (this.abortController) return;
     this.abortController = new AbortController();

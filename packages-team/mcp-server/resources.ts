@@ -35,13 +35,7 @@ export interface IMCPResourceTemplate {
 // Resource Discovery
 // ============================================================================
 
-/**
- * Parse portal:// URI into portal name and path
- *
- * @example
- * parsePortalURI("portal://MyApp/src/auth.ts")
- * // => { portal: "MyApp", path: "src/auth.ts" }
- */
+/** Parses `portal://<name>/<path>` into `{ portal, path }`; returns null on mismatch. */
 export function parsePortalURI(uri: string): { portal: string; path: string } | null {
   const match = uri.match(/^portal:\/\/([^/]+)\/(.*)$/);
   if (!match) {
@@ -195,11 +189,7 @@ export async function discoverAllResources(
   return allResources;
 }
 
-/**
- * Get resource templates for portal patterns
- *
- * Resource templates describe URI patterns that can be read dynamically.
- */
+/** Resource templates describe URI patterns MCP clients can read dynamically. */
 export function getResourceTemplates(config: Config): IMCPResourceTemplate[] {
   return config.portals.map((portal) => ({
     uriTemplate: `portal://${portal.alias}/{path}`,

@@ -22,12 +22,8 @@ const EVENT_LOOP_RESPONSIVENESS_CHECKS = 20;
 const EVENT_LOOP_RESPONSIVE_THRESHOLD_MS = 25;
 
 /**
- * Tests for Step 2.1: The File Watcher (Stable Read)
- *
- * Success Criteria:
- * - Test 1: Rapidly touch a file 10 times in 1 second → Watcher only processes it once
- * - Test 2: Write a 10MB file in 500ms chunks → Watcher waits until final chunk before processing
- * - Test 3: Delete a file immediately after creating it → Watcher handles `NotFound` gracefully
+ * Tests for the file watcher's stable-read handling: debounced rapid rewrites,
+ * chunked large writes, and graceful handling of a file deleted mid-watch.
  */
 
 // Updated helper to use non-blocking delay utility

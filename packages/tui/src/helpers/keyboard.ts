@@ -45,10 +45,7 @@ export interface INavigationState {
 
 // ===== Key Constants =====
 
-/**
- * All possible key values for key bindings
- * This object serves as both the type definition and runtime constants
- */
+/** All possible key values for key bindings. */
 export const KEYS = {
   // Navigation keys
   UP: "up",
@@ -155,18 +152,12 @@ export const KEYS = {
   ONE_TO_SEVEN: "1-7",
 } as const;
 
-/**
- * All possible key values for key bindings
- * Derived from the KEYS object values for type safety
- */
+/** Key values derived from KEYS for type safety. */
 export type KeyValue = typeof KEYS[keyof typeof KEYS];
 
 // ===== Key Validation =====
 
-/**
- * All valid key values for runtime validation
- * Automatically derived from KEYS object values
- */
+/** Valid key values for runtime validation. */
 const VALID_KEY_VALUES = new Set(Object.values(KEYS));
 
 /**
@@ -227,10 +218,7 @@ export class KeyboardManager<TAction extends string | KeyHandler = string> {
     return this;
   }
 
-  /**
-   * Handle a key press
-   * Returns true if the key was handled
-   */
+  /** Handle a key press; returns true if handled. */
   async handle(key: string): Promise<boolean> {
     if (!this.enabled) return false;
 
@@ -300,7 +288,7 @@ export class KeyboardManager<TAction extends string | KeyHandler = string> {
   /**
    * Normalize key string for consistent matching
    */
-  private normalizeKey(key: string, modifiers?: KeyModifier[]): string {
+  private normalizeKey(key: string, modifiers?: Opt<KeyModifier[], Reason.UiDefault>): string {
     let normalized = key.toLowerCase();
 
     // Already has modifiers in string form

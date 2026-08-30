@@ -29,8 +29,8 @@ export const ZSkillMatch = z.object({
   content: z.string().min(1),
   matchScore: z.number().min(0).max(1),
   tags: z.array(z.string()).default([]),
-  /** Criticality flag (Phase 131 W16) — carried from the skill so the prompt
-   * formatter can render critical skills as a protected segment. */
+  /** Criticality flag carried from the skill so the prompt formatter can render critical
+   * skills as a protected segment. */
   critical: z.boolean().default(false),
 });
 

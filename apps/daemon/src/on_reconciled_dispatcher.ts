@@ -174,7 +174,7 @@ async function dispatchReconciledOutcome(
             promptTokens: costRecord.promptTokens,
             completionTokens: costRecord.completionTokens,
             totalTokens: costRecord.tokens,
-            // Phase 135: the delegate's reported session cost is authoritative.
+            // The delegate's reported session cost is authoritative.
             costUsd: outcome.costUsd,
             costSource: outcome.costUsd !== undefined ? "provider_reported" : undefined,
           },

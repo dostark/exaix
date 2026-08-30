@@ -23,9 +23,7 @@ import type { IDatabaseConnection } from "./connection_pool.ts";
 export type SqliteParam = string | number | boolean | null;
 
 /**
- * The `activity` journal table DDL — mirrors migrations/001_init.sql. Applied by the constructor
- * ONLY in test mode (production creates it via migrations). All statements are IF NOT EXISTS so it
- * is idempotent and safe to run against an already-migrated DB.
+ * Idempotent, test-only activity table DDL matching migrations/001_init.sql.
  */
 const ACTIVITY_TABLE_DDL = `
   CREATE TABLE IF NOT EXISTS activity (
@@ -50,10 +48,7 @@ const ACTIVITY_TABLE_DDL = `
 `;
 
 /**
- * Columns of the `activity` table that may be used as a SQL identifier (e.g. the
- * DISTINCT field). Any caller-supplied identifier MUST be validated against this
- * allowlist before interpolation, since identifiers cannot be parameterized
- * (Finding 12 — prevents column-name / sub-select injection).
+ * Allowlisted activity-table identifiers; SQL identifiers cannot be parameterized.
  */
 const ACTIVITY_COLUMNS: ReadonlySet<string> = new Set([
   "id",
@@ -138,7 +133,7 @@ export class DatabaseService implements IDatabaseService {
   private isClosing = false;
   private readonly dbBreaker: CircuitBreaker;
 
-  constructor(config: Config, poolConnection?: IDatabaseConnection) {
+  constructor(config: Config, poolConnection?: Opt<IDatabaseConnection, Reason.OptionalDependency>) {
     this.poolConnection = poolConnection;
 
     if (poolConnection) {
@@ -152,10 +147,8 @@ export class DatabaseService implements IDatabaseService {
       this.db.exec(`PRAGMA foreign_keys = ${config.database.sqlite.foreign_keys ? "ON" : "OFF"};`);
     }
 
-    // In test mode, ensure the production-shaped `activity` table exists. Production creates it
-    // via migrations (setup_db) before the daemon starts; test-mode journals have no such step,
-    // so without this a fresh test DB / test-mode daemon hits "no such table: activity". Gated on
-    // isTestMode() so production still relies on migrations (no silent schema creation in prod).
+    // Tests lack migration setup, so initialize the activity schema only in test mode.
+    // Production must continue to rely on migrations rather than silently creating tables.
     if (isTestMode()) {
       this.db.exec(ACTIVITY_TABLE_DDL);
     }
@@ -181,13 +174,13 @@ export class DatabaseService implements IDatabaseService {
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
-    traceId?: string,
-    actorType?: string | null,
-    identityId?: string | null,
-    agentKind?: string | null,
-    promptTokens?: number,
-    completionTokens?: number,
-    costUsd?: number,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    actorType?: Opt<string | null, Reason.OptionalContext>,
+    identityId?: Opt<string | null, Reason.OptionalContext>,
+    agentKind?: Opt<string | null, Reason.OptionalContext>,
+    promptTokens?: Opt<number, Reason.OptionalInput>,
+    completionTokens?: Opt<number, Reason.OptionalInput>,
+    costUsd?: Opt<number, Reason.OptionalInput>,
   ): void {
     if (this.isClosing) {
       console.warn("Cannot log activity: DatabaseService is closing");

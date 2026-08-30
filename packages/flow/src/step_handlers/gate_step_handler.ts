@@ -13,12 +13,11 @@ import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import { DomainEventType } from "@exaix/core/events";
 import { MILESTONE_APPROVAL_GATE_ENTERED } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import { toGateConfig } from "../flow_runner.ts";
 
-/**
- * Mutable reference to pendingWaitStateId so GateStepHandler can set it
- * on the FlowRunner instance without FlowRunner exposing the field as public.
- */
+/** Mutable reference to pendingWaitStateId so GateStepHandler can set it on the
+ *  FlowRunner instance without FlowRunner exposing the field as public. */
 export interface IPendingWaitStateRef {
   current: string | undefined;
 }
@@ -131,11 +130,11 @@ export class GateStepHandler implements IFlowStepHandler {
 
   async #emitMilestone(
     milestoneType: IExecutionMilestone["milestoneType"],
-    traceId: string | undefined,
+    traceId: Opt<string, Reason.TraceAbsent>,
     summary: string,
-    progressHint?: IExecutionMilestone["progressHint"],
+    progressHint?: Opt<IExecutionMilestone["progressHint"], Reason.OptionalContext>,
     requiresAttention = false,
-    attentionReason?: string,
+    attentionReason?: Opt<string, Reason.OptionalContext>,
   ): Promise<void> {
     if (!this.#milestoneEmitter) return;
     await this.#milestoneEmitter.emit({

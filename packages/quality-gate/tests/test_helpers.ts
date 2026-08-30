@@ -11,10 +11,7 @@
 import type { ZodType } from "zod";
 import type { IOutputValidator, IValidationResult } from "../src/internal_types.ts";
 
-/**
- * Create a minimal IOutputValidator for testing.
- * Performs JSON.parse + Zod schema validation with no repair logic.
- */
+/** Creates a test validator that performs JSON parsing and Zod validation without repair. */
 export function createTestValidator(): IOutputValidator {
   return {
     validate<T>(
