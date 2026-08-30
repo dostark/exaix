@@ -928,6 +928,124 @@ function stripQuotedStringsAndComments(line: string): string {
   return result;
 }
 
+const IN_MODULE_COMMENT_LINE_LIMIT = 3;
+
+const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
+  { pattern: /\bphase\s+\d+\b/i, hint: "a phase number" },
+  { pattern: /\bstep\s+\d+\b/i, hint: "a step number" },
+  { pattern: /\btried\b/i, hint: "a narration of a prior attempt" },
+  { pattern: /\b(?:didn't|did not)\s+work\b/i, hint: "what didn't work" },
+];
+
+function reportCommentViolation(
+  rule: "long-comment" | "ephemeral-comment",
+  repoPath: string,
+  lineNum: number,
+  message: string,
+): void {
+  const severity = convertWarnings ? "ERROR" : "WARN";
+  console.log(`${severity} [${rule}] ${repoPath}:${lineNum} – ${message}`);
+  if (convertWarnings) errorCount++;
+  else warnCount++;
+}
+
+// Evaluates one already-closed comment (a block comment or a run of consecutive
+// `//` lines) against the length and ephemeral-reference rules. Never called for
+// the module's own leading header comment — that block is governed by §7 instead.
+function evaluateInModuleComment(repoPath: string, startLine: number, commentLines: string[]): void {
+  if (commentLines.length === 0) return;
+
+  if (commentLines.length > IN_MODULE_COMMENT_LINE_LIMIT) {
+    reportCommentViolation(
+      "long-comment",
+      repoPath,
+      startLine,
+      `Comment spans ${commentLines.length} lines, more than the ${IN_MODULE_COMMENT_LINE_LIMIT}-line limit for in-module comments. Shorten it to the one non-obvious fact a reader needs, or move a longer explanation into the module's own documentation.`,
+    );
+  }
+
+  const commentText = commentLines.join("\n");
+  for (const { pattern, hint } of EPHEMERAL_COMMENT_PATTERNS) {
+    if (pattern.test(commentText)) {
+      reportCommentViolation(
+        "ephemeral-comment",
+        repoPath,
+        startLine,
+        `Comment references ${hint}; implementation history belongs in the commit message or phase-plan doc, not in code that outlives the task that produced it.`,
+      );
+      break;
+    }
+  }
+}
+
+// Scans every comment past the module's own header for the two comment-discipline
+// rules in CODE_STYLE.md §16: a hard length limit, and a ban on narrating ephemeral
+// implementation history (phase/step numbers, prior failed attempts).
+function checkCommentDiscipline(repoPath: string, lines: string[], templateLiteralLines: Set<number>): void {
+  let pastHeader = false;
+  let inBlock = false;
+  let blockStartLine = -1;
+  let blockLines: string[] = [];
+  let lineRunStartLine = -1;
+  let lineRunLines: string[] = [];
+
+  const flushLineRun = () => {
+    if (pastHeader) evaluateInModuleComment(repoPath, lineRunStartLine, lineRunLines);
+    lineRunStartLine = -1;
+    lineRunLines = [];
+  };
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    const lineNum = idx + 1;
+    if (templateLiteralLines.has(lineNum)) {
+      flushLineRun();
+      continue;
+    }
+
+    const rawLine = lines[idx];
+    const trimmed = rawLine.trim();
+
+    if (inBlock) {
+      blockLines.push(rawLine);
+      if (trimmed.includes("*/")) {
+        inBlock = false;
+        if (pastHeader) evaluateInModuleComment(repoPath, blockStartLine, blockLines);
+        blockLines = [];
+      }
+      continue;
+    }
+
+    if (!trimmed) {
+      flushLineRun();
+      continue;
+    }
+
+    if (trimmed.startsWith("/*")) {
+      flushLineRun();
+      if (trimmed.includes("*/")) {
+        if (pastHeader) evaluateInModuleComment(repoPath, lineNum, [rawLine]);
+      } else {
+        inBlock = true;
+        blockStartLine = lineNum;
+        blockLines = [rawLine];
+      }
+      continue;
+    }
+
+    if (trimmed.startsWith("//")) {
+      if (lineRunStartLine === -1) lineRunStartLine = lineNum;
+      lineRunLines.push(rawLine);
+      continue;
+    }
+
+    flushLineRun();
+    if (!pastHeader && !trimmed.startsWith("#!")) {
+      pastHeader = true;
+    }
+  }
+  flushLineRun();
+}
+
 async function checkFile(path: string) {
   const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const text = await Deno.readTextFile(path);
@@ -948,6 +1066,8 @@ async function checkFile(path: string) {
       templateLiteralLines.add(idx + 1);
     }
   }
+
+  checkCommentDiscipline(repoPath, lines, templateLiteralLines);
 
   let inMultiLineComment = false;
   let inMultiLineImport = false;

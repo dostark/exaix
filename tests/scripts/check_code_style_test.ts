@@ -395,3 +395,151 @@ export type { Actor } from "./src/types/actor.ts";
     await Deno.writeTextFile(filePath, originalContent);
   }
 });
+
+Deno.test("check_code_style flags a block comment longer than three lines outside the module header", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "long_block_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempLongBlockComment
+ * @path long_block_comment.ts
+ * @description Temporary regression file for long in-module comment enforcement.
+ */
+
+export function run(): number {
+  /*
+   * one
+   * two
+   * three
+   */
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[long-comment]");
+});
+
+Deno.test("check_code_style flags a run of consecutive line comments longer than three lines", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "long_line_comment_run.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempLongLineCommentRun
+ * @path long_line_comment_run.ts
+ * @description Temporary regression file for long line-comment run enforcement.
+ */
+
+export function run(): number {
+  // one
+  // two
+  // three
+  // four
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[long-comment]");
+});
+
+Deno.test("check_code_style allows an in-module comment of exactly three lines", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "short_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempShortComment
+ * @path short_comment.ts
+ * @description Temporary regression file confirming three-line comments are allowed.
+ */
+
+export function run(): number {
+  // one
+  // two
+  // three
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[long-comment]"), false, result.output);
+});
+
+Deno.test("check_code_style does not flag the module's own header comment for length", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "long_header.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempLongHeader
+ * @path long_header.ts
+ * @description Temporary regression file confirming the module header is exempt
+ *   from the in-module comment length rule regardless of how many lines it uses.
+ * @related-files []
+ */
+
+export function run(): number {
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[long-comment]"), false, result.output);
+});
+
+Deno.test("check_code_style flags a comment referencing a phase or step number", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "ephemeral_phase_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempEphemeralPhaseComment
+ * @path ephemeral_phase_comment.ts
+ * @description Temporary regression file for ephemeral phase-reference enforcement.
+ */
+
+export function run(): number {
+  // Phase 12 Step 3: wire this up.
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[ephemeral-comment]");
+});
+
+Deno.test("check_code_style flags a comment narrating a prior failed attempt", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "ephemeral_attempt_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempEphemeralAttemptComment
+ * @path ephemeral_attempt_comment.ts
+ * @description Temporary regression file for ephemeral prior-attempt enforcement.
+ */
+
+export function run(): number {
+  // We tried caching here but it didn't work.
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[ephemeral-comment]");
+});

@@ -3,7 +3,7 @@ title: "Code Style & Standards"
 description: Coding standards and stylistic requirements for Exaix
 agent_priority: mandatory
 copilot_knowledge_base: true
-version: 1.2
+version: 1.3
 capabilities: [linting_rules, naming_conventions, testing_patterns]
 links:
   - "packages/core/src/constants.ts"
@@ -1205,6 +1205,49 @@ Both skip framework packages (`@exaix/core`, `@exaix/schemas`, `@exaix/ai`,
 `@exaix/cli`, `@exaix/tui`), same-package imports, and test files. See
 `scripts/check_code_style.md` for the full tag reference, current warning
 counts, and per-file breakdown.
+
+---
+
+## 16. Comment Discipline {#comment-discipline}
+
+Code must be self-explanatory in the vast majority of cases: clear naming,
+small functions, and obvious control flow do the job a comment would
+otherwise have to do. Insert a comment only when the code's quality would
+genuinely be worse without it — a non-obvious invariant, a subtle
+constraint, or a workaround for a specific bug, not a restatement of what
+the next line already says.
+
+- **No multiline in-module comments longer than three lines.** A block
+  comment (`/* … */`, `/** … */`) or a run of consecutive `//` lines that
+  spans more than three physical lines, anywhere past the module's own
+  header comment, is a violation. If an explanation genuinely needs more
+  than three lines, it belongs in the module's own documentation (a
+  README, `ARCHITECTURE.md`, or the relevant `exaix-dev-docs/` doc) — not
+  inline in the source.
+- **No ephemeral implementation history.** A comment must not reference a
+  plan phase/step number, narrate what was tried and abandoned, or explain
+  what previously didn't work. That belongs in the commit message and the
+  phase-plan doc, which are the durable record of _why_; the code itself is
+  only a record of _what it does now_. This does not apply to the module's
+  own header comment, whose Implementation Plan reference is a distinct,
+  mandatory field under §7.
+- **Long or stale comments must be cut, not kept.** When a comment grows
+  past what these rules allow, either delete it — most code is clear
+  without it — or rewrite it as a short, concrete statement of the one
+  non-obvious fact a reader needs.
+
+### Automated enforcement
+
+`scripts/check_code_style.ts` scans every comment past a module's own
+header block:
+
+| Tag                   | Detects                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `[long-comment]`      | A block comment or line-comment run longer than three physical lines   |
+| `[ephemeral-comment]` | A comment mentioning a phase/step number, or narrating a prior attempt |
+
+Both are warnings by default (visible, non-blocking) and escalate to errors
+under `--convert-warnings-to-errors`.
 
 ---
 
