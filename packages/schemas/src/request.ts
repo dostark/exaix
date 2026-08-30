@@ -17,6 +17,15 @@ import { REQUEST_STATUS_VALUES } from "@exaix/core/status";
  *
  * Uses --- delimiters for YAML (Dataview compatible)
  */
+/**
+ * Worktree-relative pointer to a Phase-173 PlanContext sandbox copy
+ * (`.exa/PlanContext/<slug>.md`), stamped only by `scripts/plan_to_requests.ts` when it
+ * copies the source plan under `--plan-context-root` (Phase 174 Step 2 GAP-1).
+ */
+export const PlanContextRefSchema = z.string().regex(
+  /^\.exa\/PlanContext\/[A-Za-z0-9._-]+\.md$/,
+);
+
 export const RequestSchema = z.object({
   trace_id: z.string().uuid("Invalid trace_id: must be a valid UUID"),
   identity_id: z.string().min(1, "identity_id cannot be empty"),
@@ -28,6 +37,9 @@ export const RequestSchema = z.object({
 
   /** Explicit skills to apply for this request (overrides trigger matching) */
   skills: z.array(z.string()).optional(),
+
+  /** Provenance for a session_delegate_cycle flow request; omitted for all other requests. */
+  plan_context_ref: PlanContextRefSchema.optional(),
 });
 
 export type Request = z.infer<typeof RequestSchema>;

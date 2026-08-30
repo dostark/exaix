@@ -13,8 +13,10 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { DomainEventType } from "@exaix/core/events";
 import type { CostSource } from "@exaix/core/types";
-import { SessionBriefSchema, SessionGateSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
+import { SessionGateSchema } from "@exaix/schemas/session_delegate.ts";
 import type { IReviewStatus } from "@exaix/core/status";
+import type { ISessionBriefReader } from "@exaix/session/session_brief_reader.ts";
+import type { ISessionDelegationOutcome } from "@exaix/session/session_delegation.ts";
 import {
   buildAmendmentDecision,
   buildClarificationFromDelegation,
@@ -34,7 +36,7 @@ export interface IReconciledLogger {
 }
 
 export interface IOnReconciledDeps {
-  sessionDir: string;
+  briefReader: ISessionBriefReader;
   workspaceRoot: string;
   reviewRegistry: {
     getByTrace(traceId: string): Promise<Array<{ id: string }>>;
@@ -60,18 +62,34 @@ export interface IOnReconciledDeps {
 /** @returns An onReconciled callback suitable for SessionReturnWatcher. */
 export function createOnReconciledHandler(
   deps: IOnReconciledDeps,
-): (traceId: string, decision: string) => Promise<void> {
-  return async (traceId: string, _decision: string): Promise<void> => {
-    const briefPath = join(deps.sessionDir, traceId, "brief.json");
-    const returnPath = join(deps.sessionDir, traceId, "return.json");
+): (outcome: ISessionDelegationOutcome) => Promise<void> {
+  const dispatched = new Map<string, Promise<void>>();
+  return async (outcome: ISessionDelegationOutcome): Promise<void> => {
+    const existing = dispatched.get(outcome.delegationTraceId);
+    if (existing) return await existing;
+    const dispatch = dispatchReconciledOutcome(deps, outcome);
+    dispatched.set(outcome.delegationTraceId, dispatch);
+    await dispatch;
+  };
+}
 
+async function dispatchReconciledOutcome(
+  deps: IOnReconciledDeps,
+  outcome: ISessionDelegationOutcome,
+): Promise<void> {
+  const traceId = outcome.delegationTraceId;
+  try {
+    const brief = await deps.briefReader.read(traceId);
+    if (!outcome.decision || !outcome.tokenStats) {
+      throw new Error("accepted delegation outcome is incomplete");
+    }
+    const sessionResult = {
+      decision: outcome.decision,
+      summary: outcome.summary,
+      token_stats: outcome.tokenStats,
+      cost_usd: outcome.costUsd,
+    };
     try {
-      const briefRaw = await Deno.readTextFile(briefPath);
-      const brief = SessionBriefSchema.parse(JSON.parse(briefRaw));
-
-      const returnRaw = await Deno.readTextFile(returnPath);
-      const sessionReturn = SessionReturnSchema.parse(JSON.parse(returnRaw));
-
       switch (brief.gate) {
         case "refinement": {
           const requestId = brief.artifact_ref
@@ -80,7 +98,7 @@ export function createOnReconciledHandler(
           const clarification = buildClarificationFromDelegation({
             requestId,
             originalBody: brief.objective,
-            sessionReturn,
+            sessionReturn: sessionResult,
           });
           const clarDir = join(deps.workspaceRoot, "Clarifications");
           await ensureDir(clarDir);
@@ -97,7 +115,7 @@ export function createOnReconciledHandler(
         case "plan_review": {
           const amendment = buildAmendmentDecision({
             amendmentId: crypto.randomUUID(),
-            sessionReturn,
+            sessionReturn: sessionResult,
             decidedBy: `session:${brief.tool}`,
             now: new Date().toISOString(),
           });
@@ -114,7 +132,7 @@ export function createOnReconciledHandler(
           break;
         }
         case SessionGateSchema.enum.review: {
-          const patch = buildReviewDecisionPatch(sessionReturn);
+          const patch = buildReviewDecisionPatch(sessionResult);
           const reviews = await deps.reviewRegistry.getByTrace(traceId);
           if (reviews.length === 0) {
             deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
@@ -144,8 +162,8 @@ export function createOnReconciledHandler(
         const costRecord = sessionReturnToCostRecord({
           id: crypto.randomUUID(),
           tool: brief.tool,
-          sessionReturn,
-          costUsd: sessionReturn.cost_usd,
+          sessionReturn: sessionResult,
+          costUsd: outcome.costUsd,
           traceId,
           timestamp: new Date(),
         });
@@ -157,17 +175,22 @@ export function createOnReconciledHandler(
             completionTokens: costRecord.completionTokens,
             totalTokens: costRecord.tokens,
             // Phase 135: the delegate's reported session cost is authoritative.
-            costUsd: sessionReturn.cost_usd,
-            costSource: sessionReturn.cost_usd !== undefined ? "provider_reported" : undefined,
+            costUsd: outcome.costUsd,
+            costSource: outcome.costUsd !== undefined ? "provider_reported" : undefined,
           },
           costRecord.traceId,
         );
       }
-    } catch (err) {
+    } catch {
       deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
-        error: err instanceof Error ? err.message : String(err),
+        error: "post-reconcile dispatch failed",
         gate: "unknown",
       }, traceId);
     }
-  };
+  } catch {
+    deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+      error: "post-reconcile dispatch failed",
+      gate: "unknown",
+    }, traceId);
+  }
 }

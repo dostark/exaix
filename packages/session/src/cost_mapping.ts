@@ -13,13 +13,19 @@
 
 import { DEFAULT_UNKNOWN_LABEL, SESSION_COST_PROVIDER_PREFIX } from "@exaix/core/types";
 import type { IProviderCostRecord } from "@exaix/core/types";
-import type { SessionReturn, SessionTool } from "@exaix/schemas/session_delegate.ts";
+import type { SessionTokenStats, SessionTool } from "@exaix/schemas/session_delegate.ts";
+
+/** Reconciled usage fields consumed by cost attribution. */
+export interface ISessionCostResult {
+  token_stats: SessionTokenStats;
+  cost_usd?: number;
+}
 
 /** Inputs for building a delegated cost record. */
 export interface ISessionCostInput {
   id: string;
   tool: SessionTool;
-  sessionReturn: SessionReturn;
+  sessionReturn: ISessionCostResult;
   costUsd?: number;
   traceId?: string;
   portal?: string;

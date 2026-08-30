@@ -32,12 +32,7 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
-import {
-  buildDelegateBriefArgs,
-  isContentlessBrief,
-  PlanAmendmentGate,
-  PlanAmendmentService,
-} from "@exaix/core/planning";
+import { PlanAmendmentGate, PlanAmendmentService } from "@exaix/core/planning";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -58,7 +53,15 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import { AgentOrchestratorAdapter, FlowLoader, FlowRunner } from "@exaix/flow";
+import {
+  AgentOrchestratorAdapter,
+  createJudgeEvaluator,
+  FlowLoader,
+  FlowRunner,
+  FlowTraceStore,
+  GateEvaluator,
+  PlanContextResolver,
+} from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -84,6 +87,7 @@ import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/typ
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { createFlowEventLogger } from "./src/flow_event_logger_adapter.ts";
+import { JudgeAgentRunner } from "./src/judge_agent_runner.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
 import { buildTeamMcpClient } from "./src/build_team_mcp_client.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
@@ -104,10 +108,18 @@ import { DEFAULT_MCP_IDENTITY_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOL
 import type { LocalToolDispatcher } from "@exaix/mcp/server";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
+import { SessionBriefReader } from "@exaix/session/session_brief_reader.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
 import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
 import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
+import {
+  createCodeChangesDelegateAdapter,
+  SessionDelegationCoordinator,
+} from "./src/session_delegation_coordinator.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
+import { SessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
+import { SessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -437,10 +449,19 @@ if (import.meta.main) {
     // produce a doubled Workspace/Workspace/Requests path the watcher never scans
     // (Phase 124 GAP-9, caught by the Step 4b E2E).
     const recoveryRoot = config.system.root;
+    // Phase 174 Step 4: shared with the session_delegate_cycle FlowRunner wiring below —
+    // the claim store is the launch source of truth cycle-owned orphan recovery routes
+    // through, and the cycle store is its atomic JSON resume checkpoint.
+    const sessionDelegateCycleClaimStore = new SessionDelegateCycleClaimStore(dbService);
+    const sessionDelegateCycleStore = new SessionDelegateCycleStore(
+      join(config.system.root, "Memory", "Execution"),
+    );
     const recoveredCount = await recoverOrphanedDelegations({
       db: dbService,
       logger,
       workspaceRoot: recoveryRoot,
+      briefReader: new SessionBriefReader(join(config.system.root, "Session")),
+      claimStore: sessionDelegateCycleClaimStore,
     });
     if (recoveredCount > 0) {
       logger.info(DomainEventType.SessionDelegateCrashRecovered, "crash-recovery", { recovered: recoveredCount });
@@ -673,8 +694,6 @@ if (import.meta.main) {
 
     // ── Session-delegation runtime (Phase 111) ──────────────────────────
     const LAUNCH_MODE_HEADLESS = "headless";
-    const DECISION_ABANDONED = "abandoned";
-    const DECISION_CHANGES_MADE = "changes_made";
     const GATE_REFINEMENT = "refinement";
     const GATE_PLAN_REVIEW = "plan_review";
     const GATE_CODE_CHANGES = "code_changes";
@@ -720,6 +739,7 @@ if (import.meta.main) {
     let _headlessLauncher: HeadlessSessionLauncher | null = null;
     let _sessionDelegateService: SessionDelegateService | null = null;
     let _sessionWaitStore: SessionWaitStore | null = null;
+    let _sessionResultStore: SessionDelegationResultStore | null = null;
     if (config.session_delegate?.enabled) {
       const sessionDir = join(config.system.root, "Session");
       const workspaceRoot = join(config.system.root, config.paths.workspace);
@@ -728,6 +748,8 @@ if (import.meta.main) {
       await ensureDir(waitStoreBase);
 
       _sessionWaitStore = new SessionWaitStore(waitStoreBase);
+      _sessionResultStore = new SessionDelegationResultStore(waitStoreBase);
+      const briefReader = new SessionBriefReader(sessionDir);
       _sessionDelegateService = new SessionDelegateService({
         registry: createDefaultSessionAdapterRegistry(),
         sessionDir,
@@ -741,6 +763,7 @@ if (import.meta.main) {
         sessionDir,
         workspaceRoot,
         waitStore: _sessionWaitStore,
+        resultStore: _sessionResultStore,
       });
 
       const allowlist = new Set([
@@ -758,7 +781,7 @@ if (import.meta.main) {
       });
 
       const onReconciled = createOnReconciledHandler({
-        sessionDir,
+        briefReader,
         workspaceRoot,
         reviewRegistry: {
           getByTrace: (traceId: string) => reviewRegistry.getByTrace(traceId),
@@ -773,6 +796,7 @@ if (import.meta.main) {
       sessionReturnWatcher = new SessionReturnWatcher({
         sessionDir,
         processor,
+        resultStore: _sessionResultStore,
         logger,
         onReconciled,
       });
@@ -902,8 +926,32 @@ if (import.meta.main) {
         modelResolver,
       },
     );
+    // Phase 174 Step 2: built once, before FlowRunner, and shared with the code-changes
+    // delegate adapter below — the session_delegate_cycle flow step and the legacy
+    // PlanExecutor code-change path are two consumers of the same coordinator authority.
+    const sessionDelegationCoordinator = _sessionDelegateService && _sessionWaitStore && _sessionResultStore &&
+        _headlessLauncher && config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
+      ? new SessionDelegationCoordinator({
+        config: config.session_delegate,
+        delegateService: _sessionDelegateService,
+        waitStore: _sessionWaitStore,
+        resultStore: _sessionResultStore,
+        launcher: _headlessLauncher,
+        resolveModel: (traceId: string) =>
+          resolveModelFromTrace(
+            traceId,
+            join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH),
+            modelResolver,
+          ),
+        resolveProviderApiKey: (keyEnv: string) => Deno.env.get(keyEnv),
+        now: () => new Date(),
+        sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+      }, logger)
+      : undefined;
+    const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider)));
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,
+      gateEvaluator,
       config,
       eventLogger: flowLogger,
       hitlPolicyEvaluator,
@@ -911,6 +959,11 @@ if (import.meta.main) {
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
       mcpClient,
+      flowTraceStore: new FlowTraceStore(join(config.system.root, "Memory", "Execution", "flow_traces")),
+      sessionDelegationCoordinator,
+      planContextResolver: sessionDelegationCoordinator ? new PlanContextResolver() : undefined,
+      sessionDelegateCycleClaimStore,
+      sessionDelegateCycleStore,
     });
 
     // The processor needs the flow itself, not a verdict about it: it previously cast
@@ -987,6 +1040,7 @@ if (import.meta.main) {
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
+            identityId: DAEMON_IDENTITY_ID,
             gate: GATE_REFINEMENT,
             tool: sd.tool,
             objective: body,
@@ -1098,143 +1152,11 @@ if (import.meta.main) {
       }
     }, { db: dbService });
 
-    const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher &&
-        config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
-      ? async (
-        traceId: string,
-        step: { number: number; title: string; content: string; successCriteria?: string[] },
-        worktreePath: string,
-      ): Promise<string> => {
-        const sd = config.session_delegate!;
-        const requestsDir = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH);
-        const resolvedModel = await resolveModelFromTrace(traceId, requestsDir, modelResolver);
-        if (isContentlessBrief(step.content)) {
-          await logger.warn(DomainEventType.SessionDelegateContentlessBrief, traceId, {
-            trace_id: traceId,
-            step_id: String(step.number),
-            objective_preview: step.content.slice(0, 80),
-          });
-          return DECISION_ABANDONED;
-        }
-        try {
-          const briefArgs = buildDelegateBriefArgs(step);
-          const brief = await _sessionDelegateService!.prepareBrief({
-            traceId,
-            gate: GATE_CODE_CHANGES,
-            tool: sd.tool,
-            ...(resolvedModel ? { model: resolvedModel } : sd.model ? { model: sd.model } : {}),
-            objective: briefArgs.objective,
-            ...(briefArgs.acceptanceCriteria ? { acceptanceCriteria: briefArgs.acceptanceCriteria } : {}),
-            artifactRef: `trace:${traceId}/step:${step.number}`,
-            // `paths_touched` are worktree-relative, so a portal code change reports
-            // `src/main.ts` — the previous hardcoded `Workspace/**` matched none of it
-            // and reconcile rejected every live return as a scope violation. Presets
-            // declare the tree their tasks may edit; the fallback preserves the prior
-            // behaviour for configs that have not opted in.
-            permittedPaths: sd.permitted_paths ?? [`Workspace/**`],
-            // Use the REAL worktree the execution loop created (PlanExecutor's executionRoot),
-            // not a recomputed path — fixes the LIVE-RT "No such cwd" spawn failure (Layer 12).
-            worktreePath,
-            tokenBudget: sd.token_budget ??
-              { max_input_tokens: 50000, max_output_tokens: 50000, max_total_tokens: 100000 },
-            deadline: new Date(Date.now() + 3_600_000).toISOString(),
-          });
-          const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
-          if (state.status !== "pending") {
-            logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
-              gate: GATE_CODE_CHANGES,
-              error: `failed to park wait state (${state.status})`,
-            });
-            return DECISION_ABANDONED;
-          }
-
-          if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
-            let launch: ISessionLaunch;
-            if (sd.harden_permissions) {
-              const hardened = await _sessionDelegateService!.resolveHardenedLaunch(
-                brief,
-                LAUNCH_MODE_HEADLESS,
-                sd,
-              );
-              if (hardened.agentNameMismatch) {
-                await logger.info(DomainEventType.SessionDelegateAgentMismatch, traceId, {
-                  tool: sd.tool,
-                });
-              }
-              if (hardened.versionWarning) {
-                await logger.warn(DomainEventType.SessionDelegateVersionWarning, traceId, {
-                  warning: hardened.versionWarning,
-                  tool: sd.tool,
-                });
-              }
-              launch = hardened.launch;
-            } else {
-              launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
-            }
-            let delegateProviderEnv: Record<string, string> | undefined;
-            if (sd.provider) {
-              const apiKey = Deno.env.get(sd.provider.key_env);
-              if (!apiKey && sd.provider.name !== ProviderType.OLLAMA) {
-                throw new Error(
-                  `[session_delegate] provider '${sd.provider.name}' requires env '${sd.provider.key_env}' — not set`,
-                );
-              }
-              if (apiKey) {
-                delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
-              }
-            }
-            // Phase 124 Step 4a: emit the launched event BEFORE spawning so a
-            // crash during launch leaves a `launched` with no terminal event —
-            // the orphan that recoverOrphanedDelegations re-queues on restart.
-            // traceId is the explicit 4th argument (not just target) so the persisted
-            // row's trace_id column matches, for trace_scoped journal-assert (Step 4).
-            await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
-              gate: GATE_CODE_CHANGES,
-              tool: sd.tool,
-              brief: brief.objective,
-            }, traceId);
-            await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
-          }
-          // `briefed` records that a brief was prepared and parked — true on every
-          // launch mode. It was previously emitted only on the non-headless branch,
-          // so a headless run (the dogfood path) journalled `launched` with no
-          // `briefed`, leaving the audit chain incomplete and making any assertion
-          // on the event unsatisfiable (Phase 150 LIVE-RT, GAP-D).
-          // Awaited, like the `launched` emission above: an un-awaited write races
-          // daemon shutdown and is simply lost, which is how the old non-headless
-          // emission could go missing too.
-          await logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
-            mode: sd.launch_mode,
-            tool: sd.tool,
-            gate: GATE_CODE_CHANGES,
-          }, traceId);
-
-          // Block until reconciled or deadline — poll every 2s
-          const deadline = Date.parse(brief.deadline);
-          while (Date.now() < deadline) {
-            const current = await _sessionWaitStore!.get(traceId);
-            if (current && current.status === "resumed") {
-              return current.decision === DECISION_CHANGES_MADE ? DECISION_CHANGES_MADE : DECISION_ABANDONED;
-            }
-            if (current && (current.status === "expired" || current.status === "cancelled")) {
-              return DECISION_ABANDONED;
-            }
-            await new Promise((r) => setTimeout(r, 2000));
-          }
-          return DECISION_ABANDONED;
-        } catch (err) {
-          // Brief preparation or launch failed — journal a distinct failure event (not reconciled)
-          logger.info(DomainEventType.SessionDelegateBriefFailed, traceId, {
-            gate: GATE_CODE_CHANGES,
-            step_id: String(step.number),
-            error: err instanceof Error ? err.message : String(err),
-          });
-          try {
-            await _sessionWaitStore!.expire(traceId);
-          } catch { /* ignore */ }
-          return DECISION_ABANDONED;
-        }
-      }
+    const onCodeChangesDelegate = sessionDelegationCoordinator
+      ? createCodeChangesDelegateAdapter({
+        coordinator: sessionDelegationCoordinator,
+        logger,
+      })
       : undefined;
 
     const gitServiceFactory = {

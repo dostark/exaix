@@ -852,6 +852,8 @@ export enum FlowStepType {
   CONSENSUS = "consensus",
   /** P113: Multi-agent voting/consensus — fans out N runners and resolves majority/weighted/llm-judge */
   VOTING_GROUP = "voting_group",
+  /** Phase 174: sequential per-plan-step session-delegation orchestration. Not an agent strategy. */
+  SESSION_DELEGATE_CYCLE = "session_delegate_cycle",
 }
 
 /**

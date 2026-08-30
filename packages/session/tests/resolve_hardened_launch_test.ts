@@ -9,7 +9,6 @@
 import { assertEquals, assertExists, assertMatch, assertRejects } from "@std/assert";
 import type { SessionBrief, SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
 import {
-  DOGFOOD_DEVELOPER_IDENTITY_ID,
   MINIMUM_VERSION_CLAUDE_CODE,
   MINIMUM_VERSION_CODEX,
   MINIMUM_VERSION_OPENCODE,
@@ -35,9 +34,12 @@ function makeService(sessionDir: string, overrides: Partial<ISessionDelegateServ
   });
 }
 
+const TEST_IDENTITY = "dogfood-coder";
+
 function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
+    identity_id: TEST_IDENTITY,
     gate: "code_changes" as const,
     tool: "opencode",
     objective: "Execute step test",
@@ -56,6 +58,7 @@ function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInp
 function claudeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
+    identity_id: TEST_IDENTITY,
     gate: "code_changes" as const,
     tool: "claude-code",
     objective: "Execute step test",
@@ -137,10 +140,10 @@ Deno.test("[delegate_hardening] resolveHardenedLaunch appends permission flags f
   assertMatch(argsJoined, /--allowedTools/);
 });
 
-Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical DOGFOOD_DEVELOPER_IDENTITY_ID", async () => {
+Deno.test("[delegate_hardening] agentNameMismatch is false when the brief's identity_id round-trips through the generator", async () => {
   const sessionDir = await Deno.makeTempDir();
   const svc = makeService(sessionDir);
-  const brief = opencodeBrief();
+  const brief = opencodeBrief({ identity_id: "dogfood-coder" });
   const config = hardenedConfig();
 
   const result = await svc.resolveHardenedLaunch(brief, "headless", config);
@@ -148,17 +151,11 @@ Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical 
   assertEquals(result.agentNameMismatch, false);
 });
 
-Deno.test("[delegate_hardening] agentNameMismatch comparison logic is structurally correct", () => {
-  // Verify the generator always uses DOGFOOD_DEVELOPER_IDENTITY_ID as the agent key.
-  // If this changes, agentNameMismatch will become true until the daemon-side
-  // event emission is updated.
-  const config = buildOpencodePermissionConfig(["src/**"]);
-  assertExists(config.agent[DOGFOOD_DEVELOPER_IDENTITY_ID], "agent key must match canonical identity");
-  assertEquals(config.agent[DOGFOOD_DEVELOPER_IDENTITY_ID].edit, { "*": "deny", "src/**": "allow" });
-
-  // Verify that a non-canonical key would NOT match — proving the mismatch
-  // detection logic would trigger if the generator diverged.
-  assertEquals(config.agent["non-canonical-identity"], undefined);
+Deno.test("[delegate_hardening] the generator keys the agent config on whichever identity_id it is given", () => {
+  const config = buildOpencodePermissionConfig(["src/**"], "dogfood-coder");
+  assertExists(config.agent["dogfood-coder"]);
+  assertEquals(config.agent["dogfood-coder"].edit, { "*": "deny", "src/**": "allow" });
+  assertEquals(config.agent["some-other-identity"], undefined);
 });
 
 Deno.test("[delegate_hardening] resolveHardenedLaunch returns versionWarning field on result", async () => {

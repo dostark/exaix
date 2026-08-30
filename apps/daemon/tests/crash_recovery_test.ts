@@ -13,6 +13,8 @@ import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { JSONValue } from "@exaix/core";
 import { recoverOrphanedDelegations } from "../src/recovery.ts";
+import { SessionBriefReader } from "@exaix/session/session_brief_reader.ts";
+import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 
 async function makeDb(): ReturnType<typeof initTestDbService> {
   const svc = await initTestDbService();
@@ -122,6 +124,62 @@ Deno.test("[crash_recovery] emits session.delegate.crash_recovered event on reco
 
     await Deno.remove(workspaceRoot, { recursive: true });
   } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[crash_recovery][security] redacted launch payload recovers from brief without leaking host paths", async () => {
+  const { db, cleanup } = await makeDb();
+  const workspaceRoot = await Deno.makeTempDir();
+  const sessionDir = await Deno.makeTempDir();
+  try {
+    const logger = new EventLogger({ db });
+    const traceId = makeTraceId();
+    const traceDir = join(sessionDir, traceId);
+    await Deno.mkdir(traceDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(traceDir, "brief.json"),
+      JSON.stringify(SessionBriefSchema.parse({
+        trace_id: traceId,
+        identity_id: "test-identity",
+        gate: "code_changes",
+        tool: "codex",
+        objective: "Validated recovery objective",
+        artifact_ref: ".exa/PlanContext/phase-174.md",
+        permitted_paths: ["packages/**"],
+        token_budget: { max_input_tokens: 1, max_output_tokens: 1, max_total_tokens: 2 },
+        resume_token: "must-not-be-journaled",
+        deadline: "2026-12-31T00:00:00.000Z",
+      })),
+    );
+    await seedEvent(db, DomainEventType.SessionDelegateLaunched, traceId, {
+      gate: "code_changes",
+      tool: "codex",
+      artifact_ref: ".exa/PlanContext/phase-174.md",
+    });
+
+    const count = await recoverOrphanedDelegations({
+      db,
+      logger,
+      workspaceRoot,
+      briefReader: new SessionBriefReader(sessionDir),
+    });
+    assertEquals(count, 1);
+    const request = await Deno.readTextFile(
+      join(workspaceRoot, "Workspace", "Requests", `${traceId}_crash_recovery.md`),
+    );
+    assertEquals(request.includes("Validated recovery objective"), true);
+
+    await db.waitForFlush();
+    const event = (await db.getActivitiesByTraceSafe(traceId)).find(
+      (item) => item.action_type === DomainEventType.SessionDelegateCrashRecovered,
+    );
+    assertExists(event);
+    assertEquals(event!.payload.includes(workspaceRoot), false);
+    assertEquals(event!.payload.includes("must-not-be-journaled"), false);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+    await Deno.remove(sessionDir, { recursive: true });
     await cleanup();
   }
 });

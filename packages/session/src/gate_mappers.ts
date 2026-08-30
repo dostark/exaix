@@ -17,7 +17,7 @@ import { ClarificationSessionSchema, ClarificationSessionStatus } from "@exaix/s
 import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import { ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
-import type { SessionDecision, SessionReturn } from "@exaix/schemas/session_delegate.ts";
+import type { SessionDecision } from "@exaix/schemas/session_delegate.ts";
 
 /** A minimal Review patch a delegated review decision produces. */
 export interface IReviewDecisionPatch {
@@ -25,10 +25,16 @@ export interface IReviewDecisionPatch {
   rejection_reason?: string;
 }
 
+/** Accepted-result fields consumed by gate mappers after reconciliation. */
+export interface ISessionDecisionResult {
+  decision: SessionDecision;
+  summary: string;
+}
+
 /** Inputs for building a delegated plan-amendment decision. */
 export interface IAmendmentDecisionInput {
   amendmentId: string;
-  sessionReturn: SessionReturn;
+  sessionReturn: ISessionDecisionResult;
   /** Attribution for the decision, e.g. "session:claude-code". */
   decidedBy: string;
   /** ISO timestamp of the decision. */
@@ -40,7 +46,7 @@ export interface IRefinementClarificationInput {
   requestId: string;
   /** The original, unmodified request body. */
   originalBody: string;
-  sessionReturn: SessionReturn;
+  sessionReturn: ISessionDecisionResult;
 }
 
 /** Map a delegated plan_review verb to an amendment-decision verdict. */
@@ -75,7 +81,7 @@ export function sessionDecisionToReviewStatus(decision: SessionDecision): IRevie
 }
 
 /** Build a Review status patch; the rejection reason is carried only on reject. */
-export function buildReviewDecisionPatch(sessionReturn: SessionReturn): IReviewDecisionPatch {
+export function buildReviewDecisionPatch(sessionReturn: ISessionDecisionResult): IReviewDecisionPatch {
   const status = sessionDecisionToReviewStatus(sessionReturn.decision);
   return status === ReviewStatus.REJECTED ? { status, rejection_reason: sessionReturn.summary } : { status };
 }

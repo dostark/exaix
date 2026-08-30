@@ -114,6 +114,7 @@ export interface IPlanExecutorOptions {
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
+    identityId: string,
   ) => Promise<string>;
 }
 
@@ -437,7 +438,7 @@ export class PlanExecutor {
       try {
         let result: { description: string } | undefined;
 
-        const delegateOutcome = await this._tryDelegateStep(step, traceId, actionReports);
+        const delegateOutcome = await this._tryDelegateStep(step, traceId, actionReports, context.identity);
         if (delegateOutcome.skip) continue;
         if (delegateOutcome.result) {
           result = delegateOutcome.result;
@@ -526,16 +527,22 @@ export class PlanExecutor {
     step: IPlanStep,
     traceId: string,
     actionReports: IPlanActionReport[],
+    identityId: string,
   ): Promise<{ skip: boolean; result?: { description: string } }> {
     if (!this.options.onCodeChangesDelegate) {
       return { skip: false };
     }
-    const delegateResult = await this.options.onCodeChangesDelegate(traceId, {
-      number: step.number,
-      title: step.title,
-      content: step.content,
-      successCriteria: step.successCriteria ?? undefined,
-    }, this.repoPath);
+    const delegateResult = await this.options.onCodeChangesDelegate(
+      traceId,
+      {
+        number: step.number,
+        title: step.title,
+        content: step.content,
+        successCriteria: step.successCriteria ?? undefined,
+      },
+      this.repoPath,
+      identityId,
+    );
     if (delegateResult === "changes_made") {
       return {
         skip: false,

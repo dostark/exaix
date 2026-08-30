@@ -21,6 +21,7 @@ const service = new SessionDelegateService({
 Deno.test("[step132.5] prepareBrief rejects model_size instead of resolved provider:model", async () => {
   const input: IPrepareBriefInput = {
     traceId: "trace-1",
+    identityId: "test-identity",
     gate: "refinement" as never,
     tool: "opencode",
     objective: "test",
@@ -40,6 +41,7 @@ Deno.test("[step132.5] prepareBrief rejects model_size instead of resolved provi
 Deno.test("[step132.5] prepareBrief accepts resolved provider:model string", async () => {
   const input: IPrepareBriefInput = {
     traceId: "trace-2",
+    identityId: "test-identity",
     gate: "refinement" as never,
     tool: "opencode",
     objective: "test",

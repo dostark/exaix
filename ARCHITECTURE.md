@@ -141,6 +141,66 @@ control surface via a `routing` config block (Phase 123 R10): `provider` orderin
 (`zdr`), and data-collection consent (`data_collection`). These fields are serialised
 into the request body alongside `model` and `messages`.
 
+### Session Delegate Cycle — Sequential Governed Delegations {#session-delegate-cycle}
+
+The Handoff Contract above hands **one** pipeline gate to a session tool: one brief, one
+launch, one return. `FlowStepType.SESSION_DELEGATE_CYCLE` (`type: session_delegate_cycle`,
+Phase 174) is a distinct flow-step **type** — not a `strategy` value (see the `Flow Step
+Execution Axes` subsection below) — that drives **N** of those single-shot handoffs in
+strict sequence, one hardened-plan step at a time, each individually reviewed before the next
+is allowed to start. It is the production replacement for routing an entire multi-step
+implementation phase through the `cli_delegate` strategy on a single step: that strategy hands
+the whole task to one unsupervised CLI session, while `session_delegate_cycle` decomposes it
+into N governed, independently-reviewed delegations.
+
+**Mechanism** (`SessionDelegateCycleStepHandler`, `@exaix/flow`): `PlanContextResolver`
+resolves the request's sandboxed hardened-plan copy (`plan_context_ref`, always
+root-relative to the configured portal — never request prose or flow YAML), the shared
+phase-step-manifest parser parses its per-step manifests, and each parsed step is delegated
+strictly in sequence via the injected `ISessionDelegationCoordinator`. No
+promise for sequence N+1 exists before sequence N's outcome AND its `IGateEvaluator` review
+both pass; any failure class halts before further coordinator calls.
+
+**Configuration** (`ISessionDelegateCycleConfig`, on the step's `delegateCycle:` key):
+
+```yaml
+delegateCycle:
+  requireChangedPaths: true # non-empty paths_touched required; always true today
+  review:
+    identity: quality-judge # judge identity evaluating each completed step
+    criteria: [code_correctness, has_tests, task_fulfillment]
+    threshold: 0.8
+    onFail: halt # halt | retry
+    maxRetries: 3
+    includeRequestCriteria: false
+```
+
+**Durability and lineage (Phase 174 Step 4):** a SQLite-backed `ISessionDelegateCycleClaimStore`
+is the launch source of truth — a unique `(parentTraceId, parentStepId, sequence, planDigest)`
+key guarantees at most one durable launch across crash points and duplicate handler/watcher
+entry. An atomic JSON checkpoint (`ISessionDelegateCycleStore`) mirrors progress
+(`completedSteps`, an optional `inFlight` step, `status`) for cheap resume without re-scanning
+claims; a checkpoint whose identity or `planDigest` no longer matches, or that is already
+terminal, is rejected (`checkpoint_mismatch`) rather than silently overwritten. Each sequence's
+delegation runs under its own `delegationTraceId`, distinct from the parent flow's trace, with
+`parent_trace_id` carried in the `session.delegate.launched` event payload for lineage.
+
+**Journal events:** `session.delegate.cycle_started`, `.cycle_step_completed`,
+`.cycle_step_rejected` (carrying a categorical `ISessionDelegateCycleRejectionReason` —
+`plan_too_large` | `too_many_steps` | `plan_parse_failed` | `non_completed_status` |
+`empty_paths_touched` | `review_failed` | `checkpoint_mismatch` — deliberately excluding free
+text, review feedback, or paths, since those could carry prompt content or host paths),
+`.cycle_completed`, and `.cycle_resumed` — all journaled under the **parent** flow's trace
+(unlike `session.delegate.launched`, journaled under the delegation's own trace).
+
+**Production usage:** `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:next-steps` is the
+shipped consumer — it replaced a `strategy: cli_delegate` step with `type:
+session_delegate_cycle`, so the dogfood loop's per-step implementation now runs through this
+governed mechanism instead of one unsupervised CLI session. Full design, durability model, and
+verification evidence: `exaix-dev-docs/planning/phase-174-dogfood-recursive-step-orchestration.md`;
+package-level configuration and restart/failure semantics:
+`packages/flow/README.md#session-delegate-cycle`, `packages/session/README.md`.
+
 ---
 
 ## Key Design Principles
@@ -508,6 +568,14 @@ path, so a step with no `strategy` is byte-for-byte unaffected. See
 `exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md` for the full rollout
 rationale and the catalog-wide decision rubric, and `docs/Exaix_User_Guide.md` for the
 field's user-facing documentation.
+
+`type: session_delegate_cycle` (see the `Session Delegate Cycle` subsection above) is
+a separate axis from both of these: a flow step's `type:` selects its `IFlowStepHandler`
+entirely (`FlowRunner`'s dispatch, before `AgentStepHandler`/`execution_mode`/`strategy` ever
+apply), so `strategy: cli_delegate` and `type: session_delegate_cycle` are not alternatives on
+the same step — one is an `AgentStepHandler` execution mode, the other is a different handler
+altogether that happens to solve the same "delegate this work to a session tool" problem at a
+different granularity (one whole step vs. N reviewed sub-steps).
 
 ## Per-Action HITL Governance {#hitl-governance}
 

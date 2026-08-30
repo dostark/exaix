@@ -15,6 +15,8 @@ import { join } from "@std/path";
 import { SessionBriefSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionDecision, SessionReconcileRejection } from "@exaix/schemas/session_delegate.ts";
 import { reconcile } from "./reconcile.ts";
+import { buildSessionDelegationOutcome, type ISessionDelegationOutcome } from "./session_delegation.ts";
+import type { ISessionDelegationResultStore } from "./session_delegation_result_store.ts";
 import type { ISessionWaitStore } from "./wait/i_session_wait_store.ts";
 
 /** Outcome of processing a dropped return.json for one trace. */
@@ -28,6 +30,10 @@ export interface ISessionReturnOutcome {
   rejection?: SessionReconcileRejection;
   scopeViolations: string[];
   budgetExceeded: boolean;
+  /** Preserved typed return projection; available even for duplicate notifications. */
+  delegationOutcome?: ISessionDelegationOutcome;
+  /** True when this notification observed an already-published result. */
+  duplicate?: boolean;
 }
 
 /** Dependencies for SessionReturnProcessor (constructor DI, all Config-free). */
@@ -37,6 +43,7 @@ export interface ISessionReturnProcessorDeps {
   /** Scope root for gates without a worktree (refinement / plan_review / review). */
   workspaceRoot: string;
   waitStore: ISessionWaitStore;
+  resultStore: ISessionDelegationResultStore;
 }
 
 const BRIEF_FILE = "brief.json";
@@ -50,6 +57,8 @@ const NOT_PROCESSED: ISessionReturnOutcome = {
 };
 
 export class SessionReturnProcessor {
+  private readonly traceQueues = new Map<string, Promise<void>>();
+
   constructor(private readonly deps: ISessionReturnProcessorDeps) {}
 
   /**
@@ -58,6 +67,26 @@ export class SessionReturnProcessor {
    * return.json is absent/invalid; on a rejection the wait state is left pending.
    */
   async processReturn(traceId: string): Promise<ISessionReturnOutcome> {
+    return await this.withTraceLock(
+      traceId,
+      (): Promise<ISessionReturnOutcome> => this.processReturnLocked(traceId),
+    );
+  }
+
+  private async processReturnLocked(traceId: string): Promise<ISessionReturnOutcome> {
+    const stored = await this.deps.resultStore.getRecord(traceId);
+    if (stored) {
+      return {
+        ...NOT_PROCESSED,
+        accepted: stored.outcome.status !== "rejected",
+        decision: stored.outcome.decision,
+        rejection: stored.outcome.rejection,
+        budgetExceeded: false,
+        delegationOutcome: stored.outcome,
+        duplicate: true,
+      };
+    }
+
     const dir = join(this.deps.sessionDir, traceId);
     const brief = await readParsed(join(dir, BRIEF_FILE), (raw) => SessionBriefSchema.parse(JSON.parse(raw)));
     if (!brief) return NOT_PROCESSED;
@@ -76,8 +105,15 @@ export class SessionReturnProcessor {
 
     const worktreeRoot = brief.worktree_path ?? this.deps.workspaceRoot;
     const result = reconcile({ brief, sessionReturn, worktreeRoot });
+    const delegationOutcome = buildSessionDelegationOutcome({
+      brief,
+      sessionReturn,
+      accepted: result.accepted,
+      rejection: result.rejection,
+    });
 
     if (result.accepted) {
+      await this.deps.resultStore.publishAccepted(traceId, delegationOutcome);
       await this.deps.waitStore.resume(traceId, sessionReturn.resume_token, result.decision);
       return {
         processed: true,
@@ -85,9 +121,11 @@ export class SessionReturnProcessor {
         decision: result.decision,
         scopeViolations: [],
         budgetExceeded: result.budgetExceeded,
+        delegationOutcome,
       };
     }
 
+    await this.deps.resultStore.publishRejected(traceId, delegationOutcome);
     // Rejected: leave the wait state pending so a corrected return can be dropped
     // (or the deadline watcher expires it). Never resume on untrusted output.
     return {
@@ -96,7 +134,25 @@ export class SessionReturnProcessor {
       rejection: result.rejection,
       scopeViolations: result.scopeViolations,
       budgetExceeded: result.budgetExceeded,
+      delegationOutcome,
     };
+  }
+
+  private async withTraceLock<T>(traceId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.traceQueues.get(traceId) ?? Promise.resolve();
+    let release: () => void = () => {};
+    const pending = new Promise<void>((resolve: () => void): void => {
+      release = resolve;
+    });
+    const queued = previous.then((): Promise<void> => pending);
+    this.traceQueues.set(traceId, queued);
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (this.traceQueues.get(traceId) === queued) this.traceQueues.delete(traceId);
+    }
   }
 }
 

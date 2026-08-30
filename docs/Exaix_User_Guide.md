@@ -1843,6 +1843,64 @@ a worked example of this rollout, chosen to match its own direct-execution compa
 (see `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s `feature-development`
 decision).
 
+#### Session Delegate Cycle Step Type
+
+`session_delegate_cycle` is a flow step **type**, not a `strategy` value — it selects an
+entirely different step handler, so it cannot be combined with `strategy:` on the same step.
+Where `strategy: cli_delegate` hands one whole step to a single unsupervised CLI session,
+`session_delegate_cycle` decomposes a hardened, multi-step implementation plan into **N**
+separate session delegations, run strictly one at a time, each individually reviewed before the
+next is allowed to start:
+
+```yaml
+steps:
+  - id: implement-steps
+    name: Implement Steps (TDD)
+    type: session_delegate_cycle
+    identity: dogfood-coder # identity_id threaded to the delegate's hardened launch
+    dependsOn: [plan-review]
+    input:
+      source: request # the request must carry plan_context_ref — no static plan path here
+      transform: passthrough
+    delegateCycle:
+      requireChangedPaths: true # non-empty paths_touched required (currently always true)
+      review:
+        identity: quality-judge # judge identity that reviews each completed step
+        criteria: [code_correctness, has_tests, task_fulfillment]
+        threshold: 0.8
+        onFail: halt # only halt is accepted for this step type
+        maxRetries: 3 # accepted but unused — see Failure semantics below
+        includeRequestCriteria: false
+```
+
+**Required `[session_delegate]` settings:** the step reuses the same `[session_delegate]` TOML
+config documented above for the single-shot handoff (`enabled`, `tool`, `gates` must include
+`code_changes`, `launch_mode`, `permitted_paths`); there is no separate cycle-specific config
+block. A misconfigured or disabled `[session_delegate]` fails the flow at the cycle step, and
+never silently falls back to autonomous (non-delegated) execution.
+
+**Provenance:** the plan the cycle executes comes from `plan_context_ref` on the request, set by
+`RequestProcessor` — never from the flow YAML or request body text — and resolved strictly
+relative to the request's configured portal root. Neither the flow definition nor the request
+prose can substitute a different plan or point outside the portal.
+
+**Restart behavior:** the cycle is crash-safe. A SQLite claim (unique per
+`parentTraceId`/`parentStepId`/`sequence`/`planDigest`) guarantees at most one durable launch per
+step even across a daemon restart or duplicate watcher entry; a JSON checkpoint lets a restarted
+daemon resume a running cycle, replay an already-completed one with zero relaunches, or reject a
+checkpoint whose plan or identity no longer matches (rather than silently overwriting it).
+
+**Failure semantics:** any failure — a hollow or rejected delegate return, a failed review, an
+oversized/too-long plan, a plan-parse error, or a checkpoint mismatch — halts the cycle before
+launching the next step; there is no partial credit and no silent re-plan. The step handler
+never implemented retry, so `session_delegate_cycle`'s `review.onFail` accepts only `halt` —
+`retry` and `continue-with-warning` fail schema validation rather than silently doing nothing
+(`maxRetries` is still accepted, inherited from the shared gate schema, but has no effect). Full
+mechanism and journal-event detail: `packages/flow/README.md#session-delegate-cycle`.
+
+**Production example:** `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:next-steps` ships this
+configuration in production, replacing an earlier `strategy: cli_delegate` step.
+
 #### Flow Step Execution Modes
 
 A flow step declares how it executes via `execution_mode`:

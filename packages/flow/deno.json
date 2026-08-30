@@ -23,6 +23,8 @@
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/request": "../request/mod.ts",
+    "@exaix/session": "../session/mod.ts",
+    "@exaix/session/": "../session/src/",
     "@exaix/testing": "../testing/mod.ts",
     "@exaix/testing/": "../testing/src/",
     "@exaix/ai": "../ai/mod.ts",

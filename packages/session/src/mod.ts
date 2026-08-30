@@ -63,6 +63,26 @@ import { deriveCodexSandboxFlags } from "./codex_sandbox_flags.ts";
 import { resolveSessionDelegateConfig } from "./config_resolver.ts";
 import type { ISessionDelegateScopes } from "./config_resolver.ts";
 import type { ISessionDelegateEventPayload } from "./event_payload.ts";
+import { SessionBriefReader } from "./session_brief_reader.ts";
+import type { ISessionBriefReader } from "./session_brief_reader.ts";
+import {
+  buildSessionDelegationOutcome,
+  SessionDelegateLaunchedPayloadSchema,
+  SessionDelegationOutcomeSchema,
+  SessionDelegationResultRecordSchema,
+  SessionDelegationResultStateSchema,
+  SessionDelegationStatusSchema,
+} from "./session_delegation.ts";
+import type {
+  IBuildSessionDelegationOutcomeInput,
+  ISessionDelegateLaunchedPayload,
+  ISessionDelegationCoordinator,
+  ISessionDelegationOutcome,
+  ISessionDelegationRequest,
+  ISessionDelegationResultRecord,
+} from "./session_delegation.ts";
+import { SessionDelegationResultStore } from "./session_delegation_result_store.ts";
+import type { ISessionDelegationResultStore } from "./session_delegation_result_store.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -103,3 +123,23 @@ export type { IOpencodePermissionConfig };
 export { resolveSessionDelegateConfig };
 export type { ISessionDelegateScopes };
 export type { ISessionDelegateEventPayload };
+export { SessionBriefReader };
+export type { ISessionBriefReader };
+export {
+  buildSessionDelegationOutcome,
+  SessionDelegateLaunchedPayloadSchema,
+  SessionDelegationOutcomeSchema,
+  SessionDelegationResultRecordSchema,
+  SessionDelegationResultStateSchema,
+  SessionDelegationStatusSchema,
+};
+export type {
+  IBuildSessionDelegationOutcomeInput,
+  ISessionDelegateLaunchedPayload,
+  ISessionDelegationCoordinator,
+  ISessionDelegationOutcome,
+  ISessionDelegationRequest,
+  ISessionDelegationResultRecord,
+};
+export { SessionDelegationResultStore };
+export type { ISessionDelegationResultStore };

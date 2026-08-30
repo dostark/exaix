@@ -16,6 +16,8 @@ import { DomainEventType } from "@exaix/core/events";
 import { FS_WRITE_EVENT_KINDS } from "@exaix/core/types";
 import type { ILogEvent } from "@exaix/core/types";
 import type { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import type { ISessionDelegationOutcome } from "@exaix/session/session_delegation.ts";
+import type { ISessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
 import type { ISessionDelegateEventPayload } from "@exaix/session/event_payload.ts";
 
 /** Narrow journaling seam — satisfied structurally by EventLogger. */
@@ -27,13 +29,14 @@ export interface ISessionReturnWatcherDeps {
   /** Absolute Session/ directory watched for {traceId}/return.json drops. */
   sessionDir: string;
   processor: SessionReturnProcessor;
+  resultStore: ISessionDelegationResultStore;
   logger: ISessionEventSink;
   /**
    * Optional callback fired on each successful reconciliation (outcome.accepted === true).
    * Receives traceId and the reconciled decision. Gate hooks (Steps 5–7) use this to
    * map delegated output to the appropriate artifact.
    */
-  onReconciled?: (traceId: string, decision: string) => void | Promise<void>;
+  onReconciled?: (outcome: ISessionDelegationOutcome) => void | Promise<void>;
 }
 
 const RETURN_FILE = "return.json";
@@ -62,11 +65,20 @@ export class SessionReturnWatcher {
 
     if (outcome.accepted) {
       await this.journal(DomainEventType.SessionDelegateReconciled, traceId, {
+        trace_id: traceId,
+        parent_trace_id: outcome.delegationOutcome?.parentTraceId,
+        parent_step_id: outcome.delegationOutcome?.parentStepId,
+        sequence: outcome.delegationOutcome?.sequence,
         decision: outcome.decision ?? null,
       });
-      // Notify the post-reconcile hook (e.g. gate artifact mapping).
-      if (this.deps.onReconciled && outcome.decision) {
-        await this.deps.onReconciled(traceId, outcome.decision);
+      if (!outcome.delegationOutcome) {
+        throw new Error("accepted delegation result is unavailable");
+      }
+      // Compare-and-set before dispatch: duplicate watcher notifications can
+      // observe the stored outcome but only one owns post-reconcile side effects.
+      const ownsDelivery = await this.deps.resultStore.markDelivered(traceId);
+      if (ownsDelivery && this.deps.onReconciled) {
+        await this.deps.onReconciled(outcome.delegationOutcome);
       }
       // Budget overage is non-blocking but must be auditable as its own event (P2).
       if (outcome.budgetExceeded) {

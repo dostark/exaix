@@ -1881,8 +1881,53 @@ export const DEFAULT_FLOW_MAX_RETRIES: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Maximum bytes of a resolved PlanContext document a session_delegate_cycle step will parse. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_MAX_PLAN_BYTES: number = configurable({
+  key: "flow.session_delegate_cycle_max_plan_bytes",
+  default: 200_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum PlanContext document size in bytes a session_delegate_cycle step will parse",
+  min: 1_000,
+  max: 5_000_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum number of plan steps a session_delegate_cycle step will delegate in one run. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_MAX_STEPS: number = configurable({
+  key: "flow.session_delegate_cycle_max_steps",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of plan steps a session_delegate_cycle step will delegate in one run",
+  min: 1,
+  max: 500,
+  swap: SwapClass.RESTART,
+});
+
 /** Schema version for flow checkpoints. Bump on breaking checkpoint shape changes. */
 export const FLOW_CHECKPOINT_SCHEMA_VERSION = "1";
+
+/** Poll interval while a session_delegate_cycle step awaits a claim another launcher owns. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_CLAIM_POLL_MS: number = configurable({
+  key: "flow.session_delegate_cycle_claim_poll_ms",
+  default: 2_000,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Poll interval in milliseconds while a session_delegate_cycle step awaits a claim owned by another launcher",
+  min: 50,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Poll attempts before a session_delegate_cycle step gives up awaiting an owned-elsewhere claim. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_CLAIM_MAX_POLLS: number = configurable({
+  key: "flow.session_delegate_cycle_claim_max_polls",
+  default: 150,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum poll attempts before a session_delegate_cycle step fails a claim it does not own",
+  min: 1,
+  max: 10_000,
+  swap: SwapClass.RESTART,
+});
 
 // Flow event names
 export const FLOW_EVENT_STEP_RETRY = "flow.step.retry";
@@ -3022,8 +3067,6 @@ export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
  */
 export const SESSION_FLAG_SKIP_GIT_REPO_CHECK = "--skip-git-repo-check";
 
-/** Dogfood-developer identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-developer.md:identity_id`. */
-export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
 /**
  * Minimum supported versions for delegate tool permission-hardening features
  * (Phase 128 R3). Below these, the tool may not support --permission-mode /

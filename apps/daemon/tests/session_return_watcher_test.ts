@@ -10,11 +10,14 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
+import { EventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core/types";
+import { initTestDbService } from "@exaix/testing";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
 import { SessionReturnWatcher } from "../src/session_return_watcher.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 
@@ -35,6 +38,7 @@ class RecordingSink {
 interface IRig {
   sessionDir: string;
   store: SessionWaitStore;
+  resultStore: SessionDelegationResultStore;
   sink: RecordingSink;
   watcher: SessionReturnWatcher;
   service: SessionDelegateService;
@@ -45,17 +49,24 @@ async function makeRig(): Promise<IRig> {
   const sessionDir = await Deno.makeTempDir();
   const waitDir = await Deno.makeTempDir();
   const store = new SessionWaitStore(waitDir, fixedClock);
+  const resultStore = new SessionDelegationResultStore(waitDir);
   const service = new SessionDelegateService({
     registry: createDefaultSessionAdapterRegistry(),
     clock: fixedClock,
     sessionDir,
   });
-  const processor = new SessionReturnProcessor({ sessionDir, workspaceRoot: sessionDir, waitStore: store });
+  const processor = new SessionReturnProcessor({
+    sessionDir,
+    workspaceRoot: sessionDir,
+    waitStore: store,
+    resultStore,
+  });
   const sink = new RecordingSink();
-  const watcher = new SessionReturnWatcher({ sessionDir, processor, logger: sink });
+  const watcher = new SessionReturnWatcher({ sessionDir, processor, resultStore, logger: sink });
   return {
     sessionDir,
     store,
+    resultStore,
     sink,
     watcher,
     service,
@@ -69,6 +80,7 @@ async function makeRig(): Promise<IRig> {
 async function setup(rig: IRig, gate: SessionBrief["gate"], permitted: string[]): Promise<SessionBrief> {
   const brief = await rig.service.prepareBrief({
     traceId: crypto.randomUUID(),
+    identityId: "test-identity",
     gate,
     tool: "claude-code",
     objective: "Do the work.",
@@ -172,10 +184,12 @@ Deno.test("[session_return_watcher] onReconciled callback invoked on accept, not
         sessionDir: rig.sessionDir,
         workspaceRoot: rig.sessionDir,
         waitStore: rig.store,
+        resultStore: rig.resultStore,
       }),
+      resultStore: rig.resultStore,
       logger: rig.sink,
-      onReconciled: (traceId: string, decision: string) => {
-        reconciledCalls.push(`${traceId}:${decision}`);
+      onReconciled: (outcome) => {
+        reconciledCalls.push(`${outcome.delegationTraceId}:${outcome.decision}`);
       },
     });
 
@@ -206,6 +220,102 @@ Deno.test("[session_return_watcher] onReconciled callback invoked on accept, not
     await watcher.handleReturnPath(path2);
     assertEquals(reconciledCalls.length, 1, "onReconciled must NOT fire on rejection");
   } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[session_return_watcher][race] duplicate notifications resume and dispatch exactly once", async () => {
+  const rig = await makeRig();
+  try {
+    let callbackCount = 0;
+    const watcher = new SessionReturnWatcher({
+      sessionDir: rig.sessionDir,
+      processor: new SessionReturnProcessor({
+        sessionDir: rig.sessionDir,
+        workspaceRoot: rig.sessionDir,
+        waitStore: rig.store,
+        resultStore: rig.resultStore,
+      }),
+      resultStore: rig.resultStore,
+      logger: rig.sink,
+      onReconciled: () => {
+        callbackCount += 1;
+      },
+    });
+    const brief = await setup(rig, "code_changes", ["src/**"]);
+    const path = await dropReturn(rig, brief.trace_id, {
+      trace_id: brief.trace_id,
+      resume_token: brief.resume_token,
+      decision: "changes_made",
+      summary: "exactly once",
+      paths_touched: ["src/a.ts"],
+      token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    });
+
+    await Promise.all([
+      watcher.handleReturnPath(path),
+      watcher.handleReturnPath(path),
+      watcher.handleReturnPath(path),
+    ]);
+
+    assertEquals(callbackCount, 1);
+    assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
+    assertEquals((await rig.resultStore.get(brief.trace_id))?.summary, "exactly once");
+  } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[session_return_watcher][Tier A] reconciled event persists delegation and parent lineage", async () => {
+  const rig = await makeRig();
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const parentTraceId = crypto.randomUUID();
+    const brief = await rig.service.prepareBrief({
+      traceId: crypto.randomUUID(),
+      parentTraceId,
+      parentStepId: "7",
+      sequence: 7,
+      identityId: "test-identity",
+      gate: "code_changes",
+      tool: "codex",
+      objective: "Persist lineage.",
+      artifactRef: ".exa/PlanContext/phase-174.md",
+      permittedPaths: ["src/**"],
+      tokenBudget: { max_input_tokens: 10, max_output_tokens: 10, max_total_tokens: 20 },
+    });
+    await rig.store.park(brief.trace_id, brief.gate, brief.resume_token, brief.deadline);
+    const path = await dropReturn(rig, brief.trace_id, {
+      trace_id: brief.trace_id,
+      resume_token: brief.resume_token,
+      decision: "changes_made",
+      summary: "lineage persisted",
+      paths_touched: ["src/a.ts"],
+      token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    });
+    const watcher = new SessionReturnWatcher({
+      sessionDir: rig.sessionDir,
+      processor: new SessionReturnProcessor({
+        sessionDir: rig.sessionDir,
+        workspaceRoot: rig.sessionDir,
+        waitStore: rig.store,
+        resultStore: rig.resultStore,
+      }),
+      resultStore: rig.resultStore,
+      logger: new EventLogger({ db }),
+    });
+
+    await watcher.handleReturnPath(path);
+    await db.waitForFlush();
+
+    const event = (await db.getActivitiesByTraceSafe(brief.trace_id)).find(
+      (item) => item.action_type === DomainEventType.SessionDelegateReconciled,
+    );
+    assertEquals(event !== undefined, true);
+    assertEquals(event?.payload.includes(parentTraceId), true);
+    assertEquals(event?.payload.includes('"parent_step_id":"7"'), true);
+  } finally {
+    await cleanup();
     await rig.cleanup();
   }
 });

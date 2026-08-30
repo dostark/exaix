@@ -6,7 +6,13 @@
  * @related-files [packages/flow/mod.ts, packages/request/src/router.ts]
  */
 
-import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate } from "@exaix/schemas/flow.ts";
+import type {
+  IFlow,
+  IFlowNamespaceWrite,
+  IFlowStep,
+  IGateEvaluate,
+  ISessionDelegateCycleRejectionReason,
+} from "@exaix/schemas/flow.ts";
 import { encodeHex } from "@std/encoding/hex";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
@@ -51,8 +57,20 @@ import type {
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
+import { SessionDelegateCycleStepHandler } from "./step_handlers/session_delegate_cycle_step_handler.ts";
 import { UnknownFlowStepError } from "./step_handlers/flow_step_error.ts";
 import type { IStepExecutionContext } from "./step_handlers/step_handler.ts";
+import { type IFlowTraceStore, isUuid } from "./flow_trace_store.ts";
+import type { IPlanContextResolver } from "./plan_context_resolver.ts";
+import type { ISessionDelegationCoordinator } from "@exaix/session/session_delegation.ts";
+import {
+  createInMemorySessionDelegateCycleClaimStore,
+  type ISessionDelegateCycleClaimStore,
+} from "@exaix/session/session_delegate_cycle_claim_store.ts";
+import {
+  createInMemorySessionDelegateCycleStore,
+  type ISessionDelegateCycleStore,
+} from "@exaix/session/session_delegate_cycle_store.ts";
 import {
   FlowCheckpointService,
   FlowNamespaceService,
@@ -126,6 +144,8 @@ export interface IFlowRunner {
       portal?: string;
       scenarioId?: string;
       stepId?: string;
+      executionRoot?: string;
+      planContextRef?: string;
     },
   ): Promise<IFlowResult>;
 }
@@ -215,6 +235,27 @@ export interface IFlowRunnerConfig {
   mcpClient?: IMcpClient & IToolManifestResolver;
   /** Pre-built confirmation interceptor for dynamic step execution. Created internally when omitted. */
   confirmationInterceptor?: IToolConfirmationInterceptor;
+  /**
+   * Durable per-request parent trace store (Phase 174 Step 2). Required for a flow with a
+   * session_delegate_cycle step whose request omits `traceId`; unused otherwise.
+   */
+  flowTraceStore?: IFlowTraceStore;
+  /** Daemon-owned session-delegation coordinator. Registers SessionDelegateCycleStepHandler when present. */
+  sessionDelegationCoordinator?: ISessionDelegationCoordinator;
+  /** Resolves a request's plan_context_ref beneath its executionRoot. Required alongside sessionDelegationCoordinator. */
+  planContextResolver?: IPlanContextResolver;
+  /**
+   * SQLite launch source of truth for session_delegate_cycle claims (Phase 174 Step 4).
+   * Falls back to a process-local in-memory store (correct within one process, not
+   * crash-durable) when omitted, so existing sessionDelegationCoordinator wiring keeps
+   * working without also supplying this.
+   */
+  sessionDelegateCycleClaimStore?: ISessionDelegateCycleClaimStore;
+  /**
+   * Atomic JSON checkpoint store for session_delegate_cycle resume (Phase 174 Step 4).
+   * Falls back to a process-local in-memory store (not crash-durable) when omitted.
+   */
+  sessionDelegateCycleStore?: ISessionDelegateCycleStore;
 }
 
 /**
@@ -271,6 +312,10 @@ type IFlowOriginalRequest = {
   requestId?: string;
   requestAnalysis?: IRequestAnalysis;
   portal?: string;
+  /** Portal-configured worktree root (Phase 174 Step 2); required by a session_delegate_cycle step. */
+  executionRoot?: string;
+  /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer (Phase 174 Step 2); required by a session_delegate_cycle step. */
+  planContextRef?: string;
 };
 
 /** Shared context for step-level execution (reduces parameter count across step methods). */
@@ -572,6 +617,38 @@ export interface IFlowEventPayloadMap {
     traceId: string;
     stepIds: string[];
   };
+  [DomainEventType.SessionDelegateCycleStarted]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    planStepCount: number;
+  };
+  [DomainEventType.SessionDelegateCycleStepCompleted]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    delegationTraceId: string;
+    sequence: number;
+  };
+  [DomainEventType.SessionDelegateCycleStepRejected]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    /** Absent for a plan-level rejection (too large / too many steps / parse failure). */
+    sequence?: number;
+    reason: ISessionDelegateCycleRejectionReason;
+  };
+  [DomainEventType.SessionDelegateCycleCompleted]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    stepCount: number;
+  };
+  [DomainEventType.SessionDelegateCycleResumed]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+  };
 }
 
 export type IFlowEventPayload<TEvent extends string> = TEvent extends keyof IFlowEventPayloadMap
@@ -733,6 +810,7 @@ export class FlowRunner implements IFlowRunner {
   private readonly retryBudgetService: RetryBudgetService;
   private compensationService!: CompensationService;
   private waveOrchestrator!: WaveOrchestrator;
+  private flowTraceStore?: IFlowTraceStore;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -759,6 +837,7 @@ export class FlowRunner implements IFlowRunner {
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
     this.waitStateService = options.waitStateService;
     this.modelResolver = options.modelResolver;
+    this.flowTraceStore = options.flowTraceStore;
     this.checkpointCoordinator = new FlowCheckpointCoordinator({
       checkpointService: this.checkpointService,
       stepDurabilityStore: this.stepDurabilityStore,
@@ -810,6 +889,41 @@ export class FlowRunner implements IFlowRunner {
     this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
     this.eventLogger.log("flow.deprecation.consensus", { step_type: FlowStepType.CONSENSUS });
+
+    if (options.sessionDelegationCoordinator && options.planContextResolver) {
+      this.stepHandlerRegistry.register(
+        new SessionDelegateCycleStepHandler({
+          coordinator: options.sessionDelegationCoordinator,
+          planContextResolver: options.planContextResolver,
+          gateEvaluator: this.gateEvaluator!,
+          eventLogger: this.eventLogger,
+          claimStore: options.sessionDelegateCycleClaimStore ?? createInMemorySessionDelegateCycleClaimStore(),
+          cycleStore: options.sessionDelegateCycleStore ?? createInMemorySessionDelegateCycleStore(),
+        }),
+      );
+    }
+  }
+
+  /**
+   * Resolves the stable parent trace id a session_delegate_cycle flow requires. Reuses a
+   * valid supplied UUID; otherwise mints/reuses one durably keyed by requestId so retry and
+   * restart correlate to the same lineage (Phase 174 Step 2 GAP-4).
+   */
+  private async normalizeCycleParentTraceId(
+    request: { traceId?: string; requestId?: string },
+    flowRunId: string,
+  ): Promise<string> {
+    if (request.traceId && isUuid(request.traceId)) return request.traceId;
+    if (!request.requestId) {
+      throw new FlowExecutionError(
+        "session_delegate_cycle requires a traceId or requestId to establish a stable parent trace",
+        flowRunId,
+      );
+    }
+    if (!this.flowTraceStore) {
+      throw new FlowExecutionError("session_delegate_cycle requires a configured flowTraceStore", flowRunId);
+    }
+    return await this.flowTraceStore.getOrCreate(request.requestId);
   }
 
   private initCoreServices(): void {
@@ -1032,11 +1146,17 @@ export class FlowRunner implements IFlowRunner {
       portal?: string;
       scenarioId?: string;
       stepId?: string;
+      executionRoot?: string;
+      planContextRef?: string;
     },
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
     const startedAt = new Date();
     const flowContentHash = await this.computeFlowContentHash(flow);
+
+    if (flow.steps.some((step) => step.type === FlowStepType.SESSION_DELEGATE_CYCLE)) {
+      request = { ...request, traceId: await this.normalizeCycleParentTraceId(request, flowRunId) };
+    }
 
     // Ensure dynamic step executor is initialized (deferred async init for modelResolver path)
     await this.ensureDynamicExecutor(flow, flowRunId);
@@ -1682,6 +1802,8 @@ export class FlowRunner implements IFlowRunner {
         traceId: request.traceId,
         requestId: request.requestId,
         requestAnalysis: request.requestAnalysis,
+        executionRoot: request.executionRoot,
+        planContextRef: request.planContextRef,
       },
       stepRequest: {
         userPrompt: stepRequest.userPrompt,

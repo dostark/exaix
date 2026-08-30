@@ -14,6 +14,17 @@ import type { JSONValue } from "@exaix/core/types";
 
 /** Typed payload for a session.delegate.* event (all fields optional, JSON-safe). */
 export interface ISessionDelegateEventPayload {
+  trace_id?: string;
+  parent_trace_id?: string;
+  parent_step_id?: string;
+  sequence?: number;
+  gate?: string;
+  tool?: string;
+  mode?: string;
+  cycle_owned?: boolean;
+  artifact_ref?: string;
+  error?: string;
+  warning?: string;
   accepted?: boolean;
   decision?: string | null;
   rejected?: boolean;

@@ -12,7 +12,6 @@
 
 import { dirname, join } from "@std/path";
 import {
-  DOGFOOD_DEVELOPER_IDENTITY_ID,
   MINIMUM_VERSION_CLAUDE_CODE,
   MINIMUM_VERSION_CODEX,
   MINIMUM_VERSION_OPENCODE,
@@ -139,6 +138,10 @@ export class SessionDelegateService implements ISessionDelegateService {
 
     const brief = SessionBriefSchema.parse({
       trace_id: input.traceId,
+      parent_trace_id: input.parentTraceId,
+      parent_step_id: input.parentStepId,
+      sequence: input.sequence,
+      identity_id: input.identityId,
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,
@@ -212,9 +215,10 @@ export class SessionDelegateService implements ISessionDelegateService {
         brief.worktree_path ?? dirname(this.briefPathFor(brief.trace_id)),
         this.deps.pathResolver,
         brief.trace_id,
+        brief.identity_id,
       );
       launch.configPath = permConfig.configPath;
-      agentNameMismatch = permConfig.agentKey !== DOGFOOD_DEVELOPER_IDENTITY_ID;
+      agentNameMismatch = permConfig.agentKey !== brief.identity_id;
     } else if (brief.tool === TOOL_CLAUDE_CODE) {
       const flags = deriveClaudeToolFlags(brief);
       launch.args.push(...flags);

@@ -152,6 +152,23 @@ Deno.test("[integrity] system identities (default, mock-model) are exempt from t
   }
 });
 
+Deno.test("[integrity] dogfood-developer is exempt from the orphan-identity rule (invoked directly via --identity, not via a flow)", async () => {
+  const root = await buildCatalog({
+    identities: [
+      { id: "coder", skills: ["review"] },
+      { id: "dogfood-developer", skills: ["review"] },
+    ],
+    skills: ["review"],
+    flows: [{ id: "f", identities: ["coder"] }],
+  });
+  try {
+    const r = checkBlueprintIntegrity(root);
+    assertEquals(r.ok, true, JSON.stringify(r.violations));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("[integrity] a skill used by no identity FAILS (orphan skill)", async () => {
   const root = await buildCatalog({
     identities: [{ id: "coder", skills: ["review"] }],

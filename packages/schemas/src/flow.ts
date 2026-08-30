@@ -241,20 +241,114 @@ const FlowStepSchemaBase = z.object({
   strategy: FlowStepStrategySchema.optional(),
 });
 
-export const FlowStepSchema = FlowStepSchemaBase.superRefine((step, ctx) => {
-  if (step.strategy === undefined) return;
-  if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
+/**
+ * Configuration for a `session_delegate_cycle` flow step (Phase 174 Step 2). The plan
+ * itself is request provenance (`plan_context_ref`), not flow configuration — this
+ * schema carries only the review gate and the non-empty-touched-paths requirement.
+ */
+export const SessionDelegateCycleConfigSchema = z.object({
+  requireChangedPaths: z.literal(true).default(true),
+  review: GateEvaluateSchema,
+}).superRefine((config, ctx) => {
+  // GAP-4 remediation (Phase 174 Step 10): SessionDelegateCycleStepHandler halts
+  // unconditionally on any failed review — it never honors onFail: retry or
+  // continue-with-warning, so accepting them here would silently promise behavior
+  // this step type cannot deliver.
+  if (config.review.onFail !== FlowGateOnFail.HALT) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "strategy is invalid on a DYNAMIC step — DYNAMIC already selects tools at runtime",
-      path: ["strategy"],
+      code: "custom",
+      path: ["review", "onFail"],
+      message: `session_delegate_cycle's review.onFail only supports "${FlowGateOnFail.HALT}" — ` +
+        `the step handler halts unconditionally on any failed review and does not implement retry ` +
+        `or continue-with-warning`,
     });
   }
-  if (step.type !== FlowStepType.AGENT) {
+});
+
+export type ISessionDelegateCycleConfig = z.infer<typeof SessionDelegateCycleConfigSchema>;
+
+/**
+ * Categorical halt reason for a rejected cycle step (Phase 174 Step 3). Deliberately
+ * excludes free-text error messages, review feedback, or paths — the
+ * `session.delegate.cycle_step_rejected` event journals this reason, and raw failure
+ * text could carry prompt content or host paths.
+ */
+export const SessionDelegateCycleRejectionReasonSchema = z.enum([
+  "plan_too_large",
+  "too_many_steps",
+  "plan_parse_failed",
+  "non_completed_status",
+  "empty_paths_touched",
+  "review_failed",
+  // Phase 174 Step 4: a persisted checkpoint's identity (parentTraceId/flowStepId) or
+  // planDigest no longer matches the current attempt, or the checkpoint is already
+  // terminal (completed/failed) and cannot be resumed.
+  "checkpoint_mismatch",
+]);
+
+export type ISessionDelegateCycleRejectionReason = z.infer<typeof SessionDelegateCycleRejectionReasonSchema>;
+
+/** Validated shape of `IAgentExecutionResult.raw` for a completed session_delegate_cycle step. */
+export const SessionDelegateCycleAggregateSchema = z.object({
+  stepCount: z.number().int().nonnegative(),
+  touchedPaths: z.array(z.string()),
+  steps: z.array(z.object({
+    sequence: z.number().int().positive(),
+    delegationTraceId: z.string().uuid(),
+    summary: z.string(),
+  })),
+});
+
+export type ISessionDelegateCycleAggregate = z.infer<typeof SessionDelegateCycleAggregateSchema>;
+
+export const FlowStepSchema = FlowStepSchemaBase.extend({
+  /** Config for `type: session_delegate_cycle` steps only. */
+  delegateCycle: SessionDelegateCycleConfigSchema.optional(),
+}).superRefine((step, ctx) => {
+  if (step.strategy !== undefined) {
+    if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "strategy is invalid on a DYNAMIC step — DYNAMIC already selects tools at runtime",
+        path: ["strategy"],
+      });
+    }
+    if (step.type !== FlowStepType.AGENT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "strategy is only valid on an agent-type step",
+        path: ["strategy"],
+      });
+    }
+  }
+
+  if (step.type === FlowStepType.SESSION_DELEGATE_CYCLE) {
+    if (step.delegateCycle === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "delegateCycle config is required on a session_delegate_cycle step",
+        path: ["delegateCycle"],
+      });
+    }
+    if (step.strategy !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "strategy is invalid on a session_delegate_cycle step",
+        path: ["strategy"],
+      });
+    }
+    if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "execution_mode: dynamic is invalid on a session_delegate_cycle step",
+        path: ["execution_mode"],
+      });
+    }
+  } else if (step.delegateCycle !== undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "strategy is only valid on an agent-type step",
-      path: ["strategy"],
+      message: "delegateCycle is only valid on a session_delegate_cycle step",
+      path: ["delegateCycle"],
     });
   }
 });

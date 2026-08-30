@@ -32,6 +32,10 @@ export interface IStepExecutionContext {
     readonly traceId?: string;
     readonly requestId?: string;
     readonly requestAnalysis?: IRequestAnalysis;
+    /** Portal-configured worktree root (Phase 174 Step 2); required by a session_delegate_cycle step. */
+    readonly executionRoot?: string;
+    /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer (Phase 174 Step 2); required by a session_delegate_cycle step. */
+    readonly planContextRef?: string;
   };
 
   /** The prepared step request */

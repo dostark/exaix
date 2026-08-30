@@ -49,6 +49,11 @@ export type SessionTokenBudget = z.infer<typeof SessionTokenBudgetSchema>;
 /** Brief (input contract) materialized to Session/{traceId}/brief.json. */
 export const SessionBriefSchema = z.object({
   trace_id: z.string().uuid(),
+  parent_trace_id: z.string().uuid().optional(),
+  parent_step_id: z.string().min(1).optional(),
+  sequence: z.number().int().positive().optional(),
+  /** The blueprint identity_id actually delegating this session. */
+  identity_id: z.string().min(1),
   gate: SessionGateSchema,
   tool: SessionToolSchema,
   objective: z.string().min(1),

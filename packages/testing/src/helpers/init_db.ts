@@ -214,6 +214,28 @@ export const ARTIFACTS_TABLE_SQL = `
 `;
 
 /**
+ * SQL for the Phase 174 Step 4 session-delegate-cycle claims table (mirrors
+ * migrations/001_init.sql). The launch source of truth for session_delegate_cycle
+ * flow steps.
+ */
+export const SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS session_delegate_cycle_claims (
+    parent_trace_id     TEXT NOT NULL,
+    parent_step_id      TEXT NOT NULL,
+    sequence            INTEGER NOT NULL,
+    plan_digest         TEXT NOT NULL,
+    delegation_trace_id TEXT NOT NULL,
+    state               TEXT NOT NULL CHECK (state IN ('claimed', 'launched', 'returned', 'reviewed', 'failed')),
+    outcome_json        TEXT,
+    failure_reason      TEXT,
+    created_at          TEXT NOT NULL,
+    updated_at          TEXT NOT NULL,
+    UNIQUE (parent_trace_id, parent_step_id, sequence, plan_digest)
+  );
+  CREATE INDEX IF NOT EXISTS idx_cycle_claims_delegation_trace ON session_delegate_cycle_claims(delegation_trace_id);
+`;
+
+/**
  * SQL for the Phase 135 Team model-registry tables (mirrors migrations/001_init.sql,
  * §5.2). Lets tests set up the registry schema without hand-writing DDL or running
  * the migration runner.
@@ -294,6 +316,7 @@ export function initFullSchema(db: DatabaseService): void {
   db.instance.exec(PENDING_TOOL_CONFIRMATIONS_TABLE_SQL);
   db.instance.exec(PROVIDER_COSTS_TABLE_SQL);
   db.instance.exec(ARTIFACTS_TABLE_SQL);
+  db.instance.exec(SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL);
 }
 
 /**

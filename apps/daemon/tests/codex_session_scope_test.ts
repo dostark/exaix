@@ -15,6 +15,7 @@ import type { ILogEvent } from "@exaix/core/types";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { HeadlessSessionLauncher } from "../src/headless_session_launcher.ts";
 import type { ISpawnArgs } from "../src/headless_session_launcher.ts";
@@ -56,8 +57,10 @@ Deno.test("[codex_session_scope][security] untracked forbidden Codex write canno
     const clock = { now: () => FIXED_NOW };
     const service = new SessionDelegateService({ registry, clock, sessionDir });
     const store = new SessionWaitStore(waitDir, clock);
+    const resultStore = new SessionDelegationResultStore(waitDir, clock.now);
     const brief = await service.prepareBrief({
       traceId: crypto.randomUUID(),
+      identityId: "test-identity",
       gate: "code_changes",
       tool: "codex",
       objective: "Implement the permitted source change.",
@@ -87,7 +90,8 @@ Deno.test("[codex_session_scope][security] untracked forbidden Codex write canno
     const sink = new RecordingSink();
     const watcher = new SessionReturnWatcher({
       sessionDir,
-      processor: new SessionReturnProcessor({ sessionDir, workspaceRoot: worktree, waitStore: store }),
+      processor: new SessionReturnProcessor({ sessionDir, workspaceRoot: worktree, waitStore: store, resultStore }),
+      resultStore,
       logger: sink,
       onReconciled: () => {
         reconciled = true;

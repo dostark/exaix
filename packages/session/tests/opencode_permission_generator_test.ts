@@ -18,11 +18,13 @@ import type { IOpencodePermissionConfig } from "@exaix/session/opencode_permissi
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 
+const TEST_IDENTITY = "dogfood-coder";
+
 Deno.test(
   "[opencode_perm] generator allows each permitted_paths glob under edit, denies '*'",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**", "tests/**"]);
-    const agent = config.agent["dogfood-developer"];
+    const config = buildOpencodePermissionConfig(["src/**", "tests/**"], TEST_IDENTITY);
+    const agent = config.agent[TEST_IDENTITY];
     assertEquals(agent.edit["*"], "deny");
     assertEquals(agent.edit["src/**"], "allow");
     assertEquals(agent.edit["tests/**"], "allow");
@@ -32,9 +34,9 @@ Deno.test(
 Deno.test(
   "[opencode_perm] generator denies external_directory by default",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**"]);
+    const config = buildOpencodePermissionConfig(["src/**"], TEST_IDENTITY);
     assertEquals(
-      config.agent["dogfood-developer"].external_directory["**"],
+      config.agent[TEST_IDENTITY].external_directory["**"],
       "deny",
     );
   },
@@ -43,17 +45,27 @@ Deno.test(
 Deno.test(
   "[opencode_perm] generator sets bash to deny by default",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**"]);
-    assertEquals(config.agent["dogfood-developer"].bash["*"], "deny");
+    const config = buildOpencodePermissionConfig(["src/**"], TEST_IDENTITY);
+    assertEquals(config.agent[TEST_IDENTITY].bash["*"], "deny");
   },
 );
 
 Deno.test(
   "[opencode_perm] generated config validates against the permission Zod schema",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**", "tests/**", "*.md"]);
+    const config = buildOpencodePermissionConfig(["src/**", "tests/**", "*.md"], TEST_IDENTITY);
     const result = OpencodeConfigSchema.safeParse(config);
     assertEquals(result.success, true);
+  },
+);
+
+Deno.test(
+  "[opencode_perm] the agent key is the caller's identity, not a fixed value",
+  () => {
+    const first = buildOpencodePermissionConfig(["src/**"], "identity-one");
+    const second = buildOpencodePermissionConfig(["src/**"], "identity-two");
+    assertEquals(Object.keys(first.agent), ["identity-one"]);
+    assertEquals(Object.keys(second.agent), ["identity-two"]);
   },
 );
 
@@ -101,10 +113,12 @@ Deno.test(
         tmpDir,
         resolver,
         "test-trace-01",
+        TEST_IDENTITY,
       );
 
-      assertEquals(result.config.agent["dogfood-developer"].edit["*"], "deny");
-      assertEquals(result.config.agent["dogfood-developer"].edit["src/**"], "allow");
+      assertEquals(result.agentKey, TEST_IDENTITY);
+      assertEquals(result.config.agent[TEST_IDENTITY].edit["*"], "deny");
+      assertEquals(result.config.agent[TEST_IDENTITY].edit["src/**"], "allow");
       assertEquals(result.configPath.length > 0, true);
 
       const stat = await Deno.stat(result.configPath);
