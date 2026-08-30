@@ -44,11 +44,7 @@ export interface ISelectionCriteria {
   rateLimitWeight?: number;
 }
 
-/**
- * Provider selection facade. The routing decision is delegated to an injectable
- * IProviderRoutingStrategy (defaulting to DefaultRoutingStrategy); this class adds the
- * selection-timing metrics that wrap every decision.
- */
+/** Delegates provider selection to a routing strategy and records timing metrics. */
 export class ProviderSelector {
   private selectionMetrics = new Map<string, { count: number; totalTime: number; avgTime: number }>();
   private readonly strategy: IProviderRoutingStrategy;

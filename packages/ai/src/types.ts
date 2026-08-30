@@ -65,15 +65,11 @@ export interface IProviderTurn {
    *  (text, image, document, etc.) matching Anthropic's tool_result.content shape. */
   toolResultContent: string | Array<{ type: string; [key: string]: JSONValue }>;
   toolResultIsError: boolean;
-  /** Gemini's `thoughtSignature` from the prior model functionCall response part.
-   *  Gemini requires replaying it on the FOLLOW-UP request's model functionCall or it
-   *  returns an HTTP 400 ("Function call is missing a thought_signature...") — GAP-153-E. */
+  /** Gemini thought signature required when replaying the prior function call. */
   thoughtSignature?: string;
-  /** Anthropic thinking blocks from the prior assistant message that must be replayed
-   *  complete and unmodified (with signature) ahead of the tool_use block — GAP-153-F. */
+  /** Signed Anthropic thinking blocks replayed before the tool-use block. */
   thinkingBlocks?: IThinkingReplayBlock[];
-  /** OpenAI reasoning content from the prior assistant message to echo back with the
-   *  tool call outputs for multi-turn continuity — GAP-153-G. */
+  /** OpenAI reasoning content replayed with tool-call outputs. */
   reasoningContent?: string;
 }
 

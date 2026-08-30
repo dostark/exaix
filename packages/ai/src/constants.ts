@@ -59,9 +59,7 @@ export const DEFAULT_LOCAL_MODEL_TIMEOUT_MS: number = configurable({
   swap: SwapClass.HOT,
 });
 
-/** Phase 157: how many times CaptureRecordingProvider retries a call site before giving up
- *  on a contract-satisfying response. Retries are recorded as fixture metadata, never
- *  discarded silently — see IRecordedResponse.capture. */
+/** Maximum capture attempts before rejecting a contract-invalid response. */
 export const DEFAULT_CAPTURE_MAX_ATTEMPTS: number = configurable({
   key: "ai.capture_max_attempts",
   default: 3,
@@ -72,8 +70,7 @@ export const DEFAULT_CAPTURE_MAX_ATTEMPTS: number = configurable({
   swap: SwapClass.HOT,
 });
 
-/** Phase 157 Step 4: fraction of in-use fixtures that must have drifted (a call-site hit
- *  whose prompt hash no longer matches) before a run flags the set as due for re-capture. */
+/** Drift fraction that marks an in-use fixture set for recapture. */
 export const DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD: number = configurable({
   key: "ai.fixture_drift_recapture_threshold",
   default: 0.2,
@@ -84,9 +81,7 @@ export const DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD: number = configurable({
   swap: SwapClass.HOT,
 });
 
-/** Phase 157 Step 4: fraction of capture attempts that were failures before a call site is
- *  raised as a product finding — a prompt the real model can't reliably satisfy — rather
- *  than kept as a fixture to keep re-rolling. */
+/** Failure fraction that promotes a capture problem to a product finding. */
 export const DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD: number = configurable({
   key: "ai.capture_failure_product_finding_threshold",
   default: 0.4,

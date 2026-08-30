@@ -102,9 +102,7 @@ export type OpenAIResponse = {
       content?: string;
       /** Present when finish_reason is "tool_calls". */
       tool_calls?: OpenAIToolCall[];
-      /** Reasoning content disclosed by the model (Chat Completions reasoning models);
-       *  must be echoed back on the replayed assistant message for multi-turn continuity
-       *  (GAP-153-G). */
+      /** Reasoning content replayed with the assistant message for continuity. */
       reasoning_content?: string;
     };
     text?: string;
@@ -158,8 +156,7 @@ export type AnthropicResponse = {
     type?: string;
     text?: string;
     thinking?: string;
-    /** Anthropic forces replayed thinking blocks to carry this signature verbatim
-     *  (passing back a block without it, or an edited one, yields an HTTP 400) — GAP-153-F. */
+    /** Signature required to replay an Anthropic thinking block unchanged. */
     signature?: string;
     /** tool_use block fields — present only when type === "tool_use". */
     id?: string;
@@ -354,8 +351,7 @@ export type OpenAiChatMessage =
   | {
     role: "assistant";
     content: null;
-    /** Echoed reasoning content from the prior turn, when the model disclosed any — must
-     *  be passed back with the tool call outputs for multi-turn continuity (GAP-153-G). */
+    /** Prior reasoning content replayed with tool-call outputs. */
     reasoning_content?: string;
     tool_calls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
   }
@@ -379,8 +375,7 @@ export function buildOpenAiMessages(
     messages.push({
       role: "assistant",
       content: null,
-      // GAP-153-G: echo the prior reasoning content back verbatim so multi-turn native
-      // tool calling keeps reasoning continuity on OpenAI reasoning models.
+      // Preserve disclosed reasoning across native tool-calling turns.
       ...(priorTurn.reasoningContent !== undefined ? { reasoning_content: priorTurn.reasoningContent } : {}),
       tool_calls: [{
         id: priorTurn.toolUseId,
@@ -452,8 +447,7 @@ export function extractOpenAIToolCalls(d: OpenAIResponse): IProviderToolCall[] |
   const rawCalls = d.choices?.[0]?.message?.tool_calls;
   if (!rawCalls || rawCalls.length === 0) return undefined;
 
-  // GAP-153-G: the assistant message's reasoning content applies to the whole turn; carry
-  // it onto every extracted tool call so the strategy can echo it back on the next request.
+  // Carry turn-level reasoning on each call so the next request can replay it.
   const reasoningContent = d.choices?.[0]?.message?.reasoning_content;
 
   const parsed: IProviderToolCall[] = [];
@@ -518,8 +512,7 @@ export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] |
       name: part.functionCall.name,
       input: part.functionCall.args,
       type: "function",
-      // Gemini requires replaying the thought_signature on the next turn's functionCall
-      // (GAP-153-E) — carry it so the strategy can feed it back via priorTurn.
+      // Gemini requires the thought signature on the next function-call turn.
       ...(part.functionCall.thoughtSignature !== undefined
         ? { thoughtSignature: part.functionCall.thoughtSignature }
         : {}),
@@ -572,8 +565,7 @@ export function extractAnthropicToolCalls(d: AnthropicResponse): IProviderToolCa
     name: block.name ?? "",
     input: block.input ?? {},
     type: "tool_use",
-    // GAP-153-F: capture the thinking block(s) that led up to this tool_use (all thinking
-    // blocks that precede it and come after the previous tool_use, if any).
+    // Capture thinking blocks since the preceding tool-use boundary.
     ...(collectThinkingBlocksBefore(content, content.indexOf(block)) ?? {}),
   }));
 }

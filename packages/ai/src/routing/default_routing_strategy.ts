@@ -23,10 +23,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 /** A registered provider entry with its factory and metadata. */
 type ProviderEntry = { factory: IProviderFactory; metadata: IProviderMetadata };
 
-/**
- * The historical, cost/health/complexity-aware provider routing. Extracted verbatim from
- * ProviderSelector so the selection behaviour is preserved while the decision becomes pluggable.
- */
+/** Selects providers using cost, health, and task-complexity signals. */
 export class DefaultRoutingStrategy implements IProviderRoutingStrategy {
   constructor(
     private registry: typeof ProviderRegistry,

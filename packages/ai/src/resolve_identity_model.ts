@@ -59,10 +59,7 @@ function splitCanonical(canonical: string): IResolvedModel {
   return { provider: canonical.slice(0, idx), model: canonical.slice(idx + 1) };
 }
 
-/**
- * `thinking`/`effort` are accepted but intentionally not forwarded to the selector — they
- * are provider-level execution hints with no influence on which provider/model is chosen.
- */
+/** Resolves provider and model; execution hints do not affect selection. */
 export async function resolveIdentityModel(
   prefs: IModelPreferences,
   selector: ISelectorLike,
