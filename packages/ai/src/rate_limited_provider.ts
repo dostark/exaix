@@ -57,8 +57,8 @@ export class RateLimitedProvider implements IModelProvider {
   public dayStart = Date.now();
 
   constructor(
-    /** Public (Phase 157) so unwrapModelProvider can reach through a decorator chain to
-     *  report on the underlying provider (e.g. MockLLMProvider fixture drift). */
+    /** Public so unwrapModelProvider can reach through a decorator chain to report on
+     *  the underlying provider (e.g. MockLLMProvider fixture drift). */
     public readonly inner: IModelProvider,
     private limits: IRateLimitConfig,
   ) {
@@ -117,7 +117,7 @@ export class RateLimitedProvider implements IModelProvider {
             promptTokens: result.usage.promptTokens,
             completionTokens: result.usage.completionTokens,
             totalTokens: result.usage.totalTokens,
-            // Phase 135: pass provider-reported cost through (e.g. OpenRouter usage.cost).
+            // Pass provider-reported cost through (e.g. OpenRouter usage.cost).
             costUsd: result.cost_usd,
             costSource: result.cost_usd !== undefined ? "provider_reported" : undefined,
           },
@@ -159,11 +159,7 @@ export class RateLimitedProvider implements IModelProvider {
     }
   }
 
-  /**
-   * Estimate token count for a prompt
-   * Rough estimation: 1 token ≈ 4 characters (English text)
-   * But cap the estimation to be more conservative for very large prompts
-   */
+  /** Estimates token count as prompt.length / 4, capped for very large prompts. */
   private estimateTokens(
     prompt: string,
     _options?: Opt<{ max_tokens?: number }, Reason.OptionalInput>,
@@ -172,10 +168,7 @@ export class RateLimitedProvider implements IModelProvider {
     // This prevents over-estimation that would block legitimate requests
     return Math.min(Math.ceil(prompt.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN), TOKEN_ESTIMATION_MAX_TOKENS);
   }
-  /**
-   * Extract provider name from provider ID for cost tracking
-   * Examples: "anthropic-claude-3-sonnet" -> "anthropic", "openai-gpt-4" -> "openai"
-   */
+  /** Extracts provider name from an id like "anthropic-claude-3-sonnet" -> "anthropic". */
   private extractProviderName(providerId: string): string {
     // Provider IDs follow pattern: "provider-model" or "rate-limited-provider-model"
     const parts = providerId.replace(/^rate-limited-/, "").split("-");

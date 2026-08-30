@@ -33,7 +33,7 @@ import type { ICapabilityProfile, IModelEntry, IModelRegistry, Opt, Reason } fro
 import { DEFAULT_MOCK_MODEL, ProviderType, TaskType } from "@exaix/core/types";
 import type { IRouteReason } from "@exaix/schemas";
 
-/** The route-decision fields the route sub-step adds to the trace payload (Step 6). */
+/** The route-decision fields the route sub-step adds to the trace payload. */
 interface IRouteTraceInfo {
   route_reason?: IRouteReason;
   considered_routes?: IConsideredRouteInput[];
@@ -45,7 +45,7 @@ interface ITraceMeta {
   routeInfo?: IRouteTraceInfo;
 }
 
-/** The intent fields scoreCandidates reads (Step 8: characteristics + best's task_type). */
+/** The intent fields scoreCandidates reads: characteristics and best's task_type. */
 interface IScoreCandidatesIntent {
   model?: IModelIntent["model"];
   characteristics?: IModelIntent["characteristics"];
@@ -57,12 +57,8 @@ const CHARACTERISTIC_BEST = "best";
 const REASON_PRESET_DEFAULT: ModelResolutionReason = "preset_default";
 const REASON_CHARACTERISTICS_SCORED: ModelResolutionReason = "characteristics_scored";
 
-/**
- * Normalize boolean-typed intent fields that arrive as YAML-failsafe STRINGS. The blueprint
- * frontmatter is parsed with `schema: "failsafe"` (all scalars become strings), so
- * `thinking: false` yields the STRING "false" — truthy in JS, which would make the resolver
- * demand a thinking-capable provider and fail. Coerce `"true"`/`"false"` at the boundary.
- */
+/** Coerces YAML-failsafe-parsed boolean fields: `thinking: false` arrives as the string
+ *  "false" (truthy in JS), which would wrongly demand a thinking-capable provider. */
 function normalizeIntentBooleans(intent: IModelIntent): IModelIntent {
   const rawThinking: string | boolean | undefined = intent.thinking as string | boolean | undefined;
   if (typeof rawThinking === "string") {
@@ -87,9 +83,7 @@ const EFFORT_MAX_TOKENS: Record<EffortTier, number> = {
   high: 8192,
 };
 
-/**
- * Policy-driven model resolver. Stateless by design — all state lives in
- * the injected dependencies (selector, registry, config).
+/** Policy-driven model resolver. Stateless — state lives in the injected dependencies.
  * @visible
  */
 export class ModelResolver {
@@ -102,10 +96,8 @@ export class ModelResolver {
     private strategy?: Opt<IResolutionStrategy, Reason.OptionalDependency>,
   ) {}
 
-  /**
-   * Resolve a IModelIntent to a concrete provider:model with per-call options.
-   * Precedence: explicit model override > characteristics scoring > preset default.
-   */
+  /** Resolves an IModelIntent to a concrete provider:model. Precedence: explicit model
+   *  override > characteristics scoring > preset default. */
   async resolve(intent: IModelIntent): Promise<IResolvedModel> {
     const startTime = Date.now();
     intent = normalizeIntentBooleans(intent);
@@ -174,8 +166,8 @@ export class ModelResolver {
     if (!intent.model || !intent.model.includes(":")) return null;
     const [rawProvider, ...rest] = intent.model.split(":");
     const rawModel = rest.join(":");
-    // Team seam (GAP-1): validate/auto-admit the explicit choice against the live
-    // catalog. Absent (Solo) ⇒ pass the explicit choice through unchanged (134).
+    // Team seam validates/auto-admits the explicit choice against the live catalog;
+    // absent (Solo) it passes the explicit choice through unchanged.
     const route = this.strategy?.validateExplicit
       ? await this.strategy.validateExplicit(rawProvider, rawModel)
       : { provider: rawProvider, model: rawModel };
@@ -297,7 +289,7 @@ export class ModelResolver {
     if (this.modelRegistry) {
       const registry = this.modelRegistry;
       // Resilience: a throwing registry must not crash resolution — return null so the
-      // caller falls through to the Phase 132 scoring path (graceful degrade).
+      // caller falls through to the scoring path (graceful degrade).
       let models: IModelEntry[];
       try {
         models = await registry.getModelsByCapability(this.profileFor(intent.model_size));
@@ -409,10 +401,9 @@ export class ModelResolver {
     const candidates = this.applyCapabilityFilter(allProviders, intent);
     if (candidates.length === 0) return null;
 
-    // Preferred-provider soft hint: select it directly when it is eligible (registered,
-    // capability-filtered, healthy) instead of consulting the routing strategy — the
-    // documented "narrow candidate pool, skip cross-provider scoring" behaviour. Falls
-    // through to the strategy when the hint cannot satisfy the intent.
+    // Preferred-provider soft hint: select it directly when eligible (registered,
+    // capability-filtered, healthy), skipping cross-provider scoring. Falls through
+    // to the strategy when the hint cannot satisfy the intent.
     const preferredChosen = await this.tryPreferProvider(intent, candidates);
     const providerName = preferredChosen ?? await this.selector.selectProvider(criteria);
     const providerMetadata = ProviderRegistry.getProviderMetadata(providerName);
@@ -432,9 +423,9 @@ export class ModelResolver {
       );
     }
 
-    // Phase 132 (GAP-5/6): decide the concrete winner/model/reason — the preferred hint
-    // wins directly, otherwise the characteristic blend (incl. rate-limit headroom)
-    // decides over the selector pick, and fallback attempts report reason "fallback".
+    // Decide the concrete winner/model/reason: the preferred hint wins directly,
+    // otherwise the characteristic blend (incl. rate-limit headroom) decides over the
+    // selector pick, and fallback attempts report reason "fallback".
     const { winner, model: winnerModel, reason: pickedReason, scores } = await this.decideResolvedPick(
       intent,
       candidates,
@@ -450,7 +441,7 @@ export class ModelResolver {
       attempt,
     };
 
-    // Phase 135 Step 6: non-pinned scored choice → apply the route policy (Team seam).
+    // Non-pinned scored choice → apply the route policy (Team seam).
     const routeInfo = await this.applyRouteSubStep(resolved);
 
     await this.emitTrace(
@@ -465,11 +456,9 @@ export class ModelResolver {
     return resolved;
   }
 
-  /**
-   * Decide the concrete provider + model + trace reason for a non-thinking resolveOnce
-   * attempt. A preferred-provider soft hint wins directly (skip cross-provider scoring);
-   * otherwise the characteristic blend decides over the selector pick.
-   */
+  /** Decides the concrete provider + model + trace reason for a non-thinking resolveOnce
+   *  attempt: a preferred-provider hint wins directly, otherwise the characteristic
+   *  blend decides over the selector pick. */
   private async decideResolvedPick(
     intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
@@ -479,7 +468,7 @@ export class ModelResolver {
     let model = this.selectModelForProvider(providerName, intent) ?? providerName;
     if (this.modelRegistry && intent.model_size) {
       // Resilience: a throwing registry must not crash resolution — keep the
-      // metadata-selected model and continue via the Phase 132 scoring path.
+      // metadata-selected model and continue via the scoring path.
       try {
         const entries = await this.modelRegistry.getModelsByCapability(this.profileFor(intent.model_size));
         if (entries.length > 0) {
@@ -522,13 +511,9 @@ export class ModelResolver {
     return preferred;
   }
 
-  /**
-   * Phase 135 Step 8 (GAP-C): the score blend DECIDES the outcome, not just the trace —
-   * the highest-scored candidate overrides the selector's pick when it differs, gated on
-   * a health check so we never override into an unhealthy provider the selector would
-   * have filtered out. With no characteristics (the formerly-arbitrary/"random" pick),
-   * falls to the strategy's last-resort usage tiebreak instead.
-   */
+  /** The score blend decides the outcome, not just the trace: the highest-scored candidate
+   *  overrides the selector's pick when it differs, gated on a health check. With no
+   *  characteristics, falls to the strategy's last-resort usage tiebreak instead. */
   private async decideWinner(
     intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
@@ -566,14 +551,9 @@ export class ModelResolver {
     return { winner, reason };
   }
 
-  /**
-   * Phase 135 Step 14 (GAP-12): `best_ranked` must reflect that `best`'s score
-   * actually decided the blended winner, not merely that `best` was requested and a
-   * task_type resolved (the prior behaviour — see GAP-12's post-gap-analysis finding).
-   * Re-scores the SAME candidate pool with `best` excluded from the characteristics
-   * list and compares winners: if the top scorer is unchanged, `best` was not decisive
-   * (a `cheapest`/other characteristic already determined the outcome on its own).
-   */
+  /** `best_ranked` must reflect that `best`'s score actually decided the blended winner,
+   *  not merely that `best` was requested. Re-scores the same candidate pool with `best`
+   *  excluded and compares winners: an unchanged top scorer means `best` wasn't decisive. */
   private async wasBestDecisive(
     intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
@@ -591,12 +571,9 @@ export class ModelResolver {
     return !(winnersWithoutBest.length === 1 && winnersWithoutBest[0] === winner);
   }
 
-  /**
-   * Phase 135 Step 8 (F8): offer the strategy's rankUsage hook the no-characteristics
-   * candidate pool as a last-resort tiebreak. Returns the winning provider name, or null
-   * when no strategy/hook is present, the hook opts out (returns undefined — its own
-   * usage_tiebreak config gate), or the winner isn't in the candidate pool.
-   */
+  /** Offers the strategy's rankUsage hook the no-characteristics candidate pool as a
+   *  last-resort tiebreak. Returns the winning provider name, or null when no
+   *  strategy/hook is present, the hook opts out, or the winner isn't in the pool. */
   private async applyUsageTiebreak(
     intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
@@ -705,13 +682,9 @@ export class ModelResolver {
     return providerName;
   }
 
-  /**
-   * Phase 135 Step 8 (GAP-C): async so `best` can pull benchmark scores from the Team
-   * seam (`IResolutionStrategy.scoreBest`) into the SAME weighted blend as
-   * `cheapest`/`fastest` — `["best","cheapest"]` produces one weighted order, not a
-   * best-only override pass. `best` is skipped (never mis-ranks) when no strategy/hook
-   * is registered (Solo) or `task_type` is UNKNOWN/absent.
-   */
+  /** Async so `best` can pull benchmark scores from the Team seam into the same weighted
+   *  blend as `cheapest`/`fastest`. Skips `best` when no strategy/hook is registered
+   *  (Solo) or task_type is UNKNOWN/absent. */
   private async scoreCandidates(
     candidates: Array<{ metadata: IProviderMetadata }>,
     intent: IScoreCandidatesIntent,
@@ -768,13 +741,9 @@ export class ModelResolver {
     return scores;
   }
 
-  /**
-   * Rate-limit headroom blended into the characteristic score (132.2 / GAP-3):
-   * finalScore = characteristicsScore * (1 - rateLimitWeight) + rateLimitScore *
-   * rateLimitWeight, where rateLimitScore = remaining / maxRpm in [0,1].
-   * Only active when config.provider_strategy.rate_limit_weight > 0 and a registry
-   * rate-limit view is available; any failure degrades to the unblended score.
-   */
+  /** finalScore = characteristicsScore * (1 - weight) + (remaining/maxRpm) * weight.
+   *  Only active when rate_limit_weight > 0 and a registry rate-limit view is available;
+   *  any failure degrades to the unblended score. */
   private async applyRateLimitBlend(provider: string, characteristicsScore: number): Promise<number> {
     const weight = this.config.provider_strategy?.rate_limit_weight;
     if (!weight || weight <= 0 || !this.modelRegistry) return characteristicsScore;
@@ -839,10 +808,10 @@ export class ModelResolver {
       selected: { provider: resolved.provider, model: resolved.model, attempt: resolved.attempt ?? 1 },
       reason,
       duration_ms: meta.durationMs,
-      // Phase 135 Step 6 (GAP-9): route decision on the journalled trace payload.
+      // Route decision on the journalled trace payload.
       ...(routeInfo?.route_reason ? { route_reason: routeInfo.route_reason } : {}),
       ...(consideredRoutes.length > 0 ? { considered_routes: consideredRoutes } : {}),
-      // Phase 135 Step 8 (GAP-9): task-type derivation source, additive on the trace.
+      // Task-type derivation source, additive on the trace.
       ...(intent.task_type_source ? { task_type_source: intent.task_type_source } : {}),
     });
   }
@@ -872,12 +841,9 @@ export class ModelResolver {
     };
   }
 
-  /**
-   * Phase 135 Step 6 route sub-step: apply the Team seam's selectRoute to a non-pinned
-   * scored choice. Mutates `resolved` in place (provider + route_reason) and returns the
-   * trace info. No strategy / no selectRoute hook (Solo) ⇒ inert: returns empty info and
-   * leaves `resolved` untouched.
-   */
+  /** Applies the Team seam's selectRoute to a non-pinned scored choice. Mutates `resolved`
+   *  in place (provider + route_reason) and returns the trace info. No strategy / no
+   *  selectRoute hook (Solo) ⇒ inert: returns empty info and leaves `resolved` untouched. */
   private async applyRouteSubStep(resolved: IResolvedModel): Promise<IRouteTraceInfo> {
     if (!this.strategy?.selectRoute) return {};
     const selection = await this.strategy.selectRoute({ provider: resolved.provider, model: resolved.model });
@@ -888,11 +854,8 @@ export class ModelResolver {
   }
 }
 
-/**
- * Resolve a model_size to a concrete provider by applying the preset profile's
- * constraints (cost, context window, thinking) against registered providers.
- * Returns the first matching provider:model.
- */
+/** Resolves a model_size to a concrete provider by applying the preset profile's
+ *  constraints (cost, context window, thinking) against registered providers. */
 export function resolvePresetFromSize(
   size: string,
   configPresets: Record<string, ModelPreset> = DEFAULT_MODEL_PRESETS,

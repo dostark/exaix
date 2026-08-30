@@ -43,11 +43,9 @@ function describeOptionalCallSite(callSite: Opt<ICallSite, Reason.OptionalContex
   return callSite ? describeCallSite(callSite) : "an unkeyed call";
 }
 
-/** Deterministic filename for a call site (or, absent one, for a prompt hash) — the
- *  addressing that makes re-capture overwrite rather than accumulate variants.
- *  flowStepId (Phase 157 Step 3) is included when present so two different flow steps
- *  sharing (scenarioId, stepId, callIndex) — which happens when parallel-wave steps race the
- *  shared call-index counter — write to distinct files instead of overwriting each other. */
+/** Deterministic filename for a call site (or a prompt hash) so re-capture overwrites
+ *  rather than accumulates variants. flowStepId is included when present so parallel-wave
+ *  steps racing the shared call-index counter write to distinct files. */
 function fixtureFilename(callSite: Opt<ICallSite, Reason.OptionalContext>, promptHash: string): string {
   if (!callSite) return `${promptHash}.json`;
   const parts = [callSite.scenarioId, callSite.stepId];
@@ -80,10 +78,8 @@ function responsePreview(response: string): string {
   return collapsed.length > 160 ? `${collapsed.slice(0, 157)}...` : collapsed;
 }
 
-/**
- * Shape-only validation (never quality): returns a violation reason, or null when the
- * response satisfies its call site's contract.
- */
+/** Shape-only validation (never quality): returns a violation reason, or null when the
+ *  response satisfies its call site's contract. */
 function validateCaptureContract(prompt: string, response: string): string | null {
   if (isReActLoopPrompt(prompt)) {
     const hasCompletion = /STATUS:\s*COMPLETE/i.test(response);

@@ -21,10 +21,7 @@ export class MockProviderFactory extends AbstractProviderFactory {
       strictRecordings: options.mockStrict,
     });
 
-    // `recorded` is the default strategy and the provider silently substitutes default
-    // patterns when no fixtures are configured, so an id of `mock-recorded-<model>` claimed a
-    // replay that never happened — every scenario journal so far says "recorded" while the
-    // responses came from regexes. Name what actually ran.
+    // Silent fallback to pattern responses would otherwise be misreported as a recorded replay.
     if (!options.id && provider.isPatternFallback) {
       return Object.assign(provider, { id: `mock-pattern-${options.model}` });
     }

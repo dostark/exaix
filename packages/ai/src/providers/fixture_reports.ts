@@ -25,10 +25,8 @@ export interface IFlakinessSummary {
   flakyFixtures: IFlakinessEntry[];
 }
 
-/**
- * Reports fixtures whose capture failure rate is at or above `threshold`. A fixture
- * with no `capture` metadata was captured on the first attempt and is never flaky.
- */
+/** Reports fixtures whose capture failure rate is at or above `threshold`. A fixture
+ *  with no `capture` metadata was captured on the first attempt and is never flaky. */
 export async function reportFlakiness(
   dir: string,
   threshold: number = DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD,

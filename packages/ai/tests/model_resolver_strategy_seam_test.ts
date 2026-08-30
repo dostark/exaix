@@ -263,9 +263,9 @@ Deno.test('[step135.8][GAP-C] ["best","cheapest"] blends into one weighted order
     // characteristics fed one scoring pass (both providers are viable outcomes
     // depending on weighting, but the reason must reflect a blended decision).
     assertEquals(["high-bench", "cheap"].includes(result.provider), true);
-    // GAP-12: with these scores, "high-bench" wins narrowly (0.5 vs 0.495) — best's
-    // maxed score IS what tips the balance (without it, "cheap" would win on price
-    // alone, 0.99 vs 0), so reason correctly reflects best as decisive here.
+    // With these scores, "high-bench" wins narrowly (0.5 vs 0.495) — best's maxed score
+    // IS what tips the balance (without it, "cheap" would win on price alone, 0.99 vs 0),
+    // so reason correctly reflects best as decisive here.
     const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
     assertEquals(resolvedEvents[0]?.payload?.reason, "best_ranked");
   } finally {

@@ -8,6 +8,8 @@
  * @related-files [packages/ai/src/embeddings/embedding_provider_factory.ts, packages/ai-ollama/src/ollama_embedding_client.ts]
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
+
 /**
  * Structured error codes for embedding operations.
  */
@@ -20,17 +22,15 @@ export type EmbeddingErrorCode =
   | "INVALID_CONFIG"
   | "EMBEDDING_CANCELLED";
 
-/**
- * Typed error for embedding provider operations.
- * Carries a structured error code for programmatic handling by callers.
- */
+/** Typed error for embedding provider operations; carries a structured error code
+ *  for programmatic handling by callers. */
 export class EmbeddingError extends Error {
   override readonly name = "EmbeddingError";
 
   constructor(
     readonly code: EmbeddingErrorCode,
     message: string,
-    cause?: Error,
+    cause?: Opt<Error, Reason.OptionalContext>,
   ) {
     super(message);
     if (cause) {

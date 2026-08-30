@@ -93,10 +93,8 @@ export class LlmClient implements ILlmClient {
     return { model: normalized };
   }
 
-  /**
-   * Resolves an IModelProvider from the blueprint model string. Blueprint overrides
-   * (provider:model) take priority over env/config; falls back to ProviderFactory otherwise.
-   */
+  /** Resolves an IModelProvider from the blueprint model string. Blueprint overrides
+   *  (provider:model) take priority over env/config; falls back to ProviderFactory. */
   private async resolveProvider(
     model?: Opt<string, Reason.AbstractBoundary>,
   ): Promise<IModelProvider> {
