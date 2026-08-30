@@ -792,7 +792,8 @@ for the parity guard.
 - The `IAgentExecutorDeps` interface (16 fields at peak, now 12) continues to shrink as services bundle their own sub-dependencies.
 - Adding a new execution capability means adding a new service, not growing AgentExecutor.
 
-For the full extraction plan, see `packages/execution/src/agent_orchestrator.ts` class comment.
+See the table above for the full extraction plan; `packages/execution/src/agent_orchestrator.ts`'s
+module header lists the corresponding service files.
 
 #### 6a. IExecutionStrategy — Per-Step Direct-API vs Headless-CLI Execution
 

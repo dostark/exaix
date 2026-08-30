@@ -82,28 +82,22 @@ export interface IAgentFileBlueprint {
   permitted_tools?: string[];
   allowed_paths?: string[];
   systemPrompt: string;
-  /** Per-action HITL governance rules (Phase 118). Resolved by ExecutionLoop for ToolRegistry path. */
+  /** Per-action HITL governance rules. Resolved by ExecutionLoop for ToolRegistry path. */
   hitl?: HitlPolicy;
 }
 
 /** Optional configuration for AgentOrchestrator. */
 export interface IAgentOrchestratorOptions {
   guardrailRunner?: IGuardrailRunner;
-  /** Request-level IModelIntent fields override blueprint values (Phase 132). */
+  /** Request-level IModelIntent fields override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
-  /**
-   * Phase 135 Step 8 (§5.8.8) — the caller's highest-confidence skill match's
-   * triggers.task_types, in priority order (first = most confident). AgentOrchestrator has
-   * no SkillsService dependency; a caller that already matched skills (e.g. AgentRunner)
-   * may supply this to participate in the derivation precedence chain.
-   */
+  /** The caller's highest-confidence skill match's triggers.task_types, in priority order
+   *  (first = most confident). AgentOrchestrator has no SkillsService dependency; a caller
+   *  that already matched skills (e.g. AgentRunner) supplies this for the derivation chain. */
   topSkillTaskTypes?: TaskType[];
-  /**
-   * The `tools` declared by every skill matched for this execution, one array per matched
-   * skill. AgentOrchestrator has no SkillsService dependency; a caller that already matched
-   * skills (e.g. PlanExecutor) may supply this so executeStep can union them and intersect
-   * with the identity blueprint's permitted_tools — see skill_tools_derivation.ts.
-   */
+  /** The `tools` declared by every skill matched for this execution, one array per matched
+   *  skill. A caller that already matched skills (e.g. PlanExecutor) supplies this so
+   *  executeStep can union them and intersect with the blueprint's permitted_tools. */
   matchedSkillTools?: Array<string[] | undefined>;
 }
 
@@ -126,13 +120,9 @@ export interface IAgentOrchestratorDeps {
   guardrailRunner?: IGuardrailRunner;
   options?: IAgentOrchestratorOptions;
   modelResolver?: ModelResolver;
-  /**
-   * Externally-owned set of files already legitimately written by an earlier step of the
-   * same plan/flow run — shared across per-call orchestrator instances so a later step's
-   * audit doesn't flag an earlier step's still-uncommitted writes (see the field doc on
-   * `planWrittenFiles`). Defaults to a fresh, empty Set when omitted (PlanExecutor's own
-   * one-orchestrator-per-plan usage, unaffected by this change).
-   */
+  /** Externally-owned set of files already legitimately written by an earlier step of the
+   *  same plan/flow run, shared across per-call orchestrator instances so a later step's
+   *  audit doesn't flag them. Defaults to a fresh, empty Set when omitted. */
   planWrittenFiles?: Set<string>;
 }
 
@@ -150,37 +140,9 @@ export class AgentExecutionError extends Error {
   }
 }
 
-/**
- * AgentOrchestrator — orchestrator and strategy dispatcher for agent execution.
- *
- * Delegates each concern to an injected service:
- *
- *   BlueprintService        → load, validate, and resolve agent blueprints
- *   PromptBuilder           → build and sanitize execution prompts
- *   ExecutionContextService → budget allocation, context cache, token counting
- *   GitAuditService         → git audit, SHA resolution, file path validation
- *   OutputParser            → LLM response parsing, changeset result validation
- *   HistoryManager          → loop history ring buffer, compaction, budget checking
- *   ReActLoopAdapter        → IReActLoopExecutor (decouples ReActLoopStrategy)
- *   StrategyRegistry        → selects IExecutionStrategy (ReAct, MCP, Legacy)
- *
- * Remaining concerns handled inline (not yet extracted):
- *   executeStep             → main execution method with blueprint loading,
- *                             budget allocation, strategy dispatch,
- *                             error handling, and result processing
- *   Public API              → logExecutionStart, logExecutionComplete,
- *                             getRecentActivitiesByTraceId, etc.
- *   Security                → buildSubprocessPermissions, auditAndRevertChanges
- *   Git operations          → auditAndRevertChanges (composite of audit + revert)
- *
- * @see BlueprintService
- * @see PromptBuilder
- * @see ExecutionContextService
- * @see GitAuditService
- * @see OutputParser
- * @see HistoryManager
- * @see ReActLoopAdapter
- */
+/** Orchestrator and strategy dispatcher for agent execution — delegates blueprint
+ *  loading, prompt building, budget/context, git audit, output parsing, and loop history
+ *  to the injected services named in the module header. */
 export class AgentOrchestrator {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
@@ -206,47 +168,33 @@ export class AgentOrchestrator {
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
 
-  /**
-   * Files written by any step of the current plan through legitimate portal-scoped tools.
-   * The audit runs after every step against the CUMULATIVE worktree, but earlier steps'
-   * changes stay uncommitted until plan completion — so a later read-only step must still
-   * treat those earlier writes as authorized. PlanExecutor's one-orchestrator-per-plan
-   * pattern accumulates this naturally across steps for free. A strategy-routed flow step
-   * (Phase 159's `runWithStrategy`) instead constructs a fresh orchestrator PER STEP (GAP-2 —
-   * an instance must never survive past one call, or it silently pre-authorizes a later,
-   * unrelated flow's writes) — so for a multi-step flow run, `deps.planWrittenFiles` lets the
-   * caller inject the SAME Set across those per-step instances (keyed by the flow run's own
-   * trace_id), restoring the accumulation PlanExecutor gets for free while keeping different
-   * flow runs isolated from each other (Phase 159 Step 8 finding: without this, a later step
-   * in the same flow reverted an earlier step's still-uncommitted, legitimate write).
-   */
+  /** Files written by any step of the current plan through legitimate portal-scoped
+   *  tools; the audit runs against the CUMULATIVE worktree, so `deps.planWrittenFiles`
+   *  lets a caller share this Set across the fresh-per-step orchestrators a flow builds. */
   private readonly planWrittenFiles: Set<string>;
 
-  /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
+  /** Exposes current prompt budget to IReActLoopExecutor. */
   public get currentPromptBudget(): IPromptBudget | undefined {
     return this.ctx.currentPromptBudget;
   }
 
-  /** Exposes context budget manager to IReActLoopExecutor (Phase 83). */
+  /** Exposes context budget manager to IReActLoopExecutor. */
   public get contextBudgetManager(): IContextBudgetManager | undefined {
     return this.ctx.contextBudgetManager;
   }
 
-  /** Exposes snapshot store to async compaction tier (Phase 83). */
+  /** Exposes snapshot store to async compaction tier. */
   public get snapshotStore(): ISnapshotStore | undefined {
     return this.ctx.snapshotStore;
   }
 
-  /** Budget pressure logger forwarded to IReActLoopExecutor (Phase 83). */
+  /** Budget pressure logger forwarded to IReActLoopExecutor. */
   public get budgetLogger(): IEventLogger {
     return this.logger;
   }
 
-  /**
-   * Optional guardrail screening runner forwarded to IReActLoopExecutor (Phase 115 Step 1).
-   * Undefined in Solo (the ReAct seam is a no-op); paid editions (P107) inject one via the
-   * edition composer. Exposing it here is the production wiring path for the seam.
-   */
+  /** Optional guardrail screening runner forwarded to IReActLoopExecutor. Undefined in
+   *  Solo (the ReAct seam is a no-op); paid editions inject one via the edition composer. */
   public get guardrailRunner(): IGuardrailRunner | undefined {
     return this._guardrailRunner;
   }
@@ -306,16 +254,9 @@ export class AgentOrchestrator {
     }
   }
 
-  /**
-   * Build CliDelegateStrategy from the [cli_delegate] config block (opt-in, disabled
-   * by default). Prefers the ToolRegistry's resolved baseDir over the portal's static
-   * config path — when a plan runs in a git worktree (PortalExecutionStrategy.WORKTREE),
-   * ToolRegistry is the only thing that knows the worktree checkout path (it is
-   * constructed with baseDir = the worktree). Without this, CliDelegateStrategy would
-   * point the headless CLI at the wrong directory whenever a worktree is in play,
-   * matching how ReActLoopStrategy's tool calls are already worktree-scoped via
-   * ToolRegistry.execute().
-   */
+  /** Builds CliDelegateStrategy from the [cli_delegate] config block. Prefers the
+   *  ToolRegistry's resolved baseDir over the portal's static config path — in a worktree
+   *  run, ToolRegistry alone knows the worktree checkout path. */
   private buildCliDelegateStrategy(cliDelegateConfig: NonNullable<Config["cli_delegate"]>): CliDelegateStrategy {
     const bin = cliDelegateConfig.bin_overrides?.[0] ??
       (cliDelegateConfig.tool === SessionToolSchema.enum["claude-code"]
@@ -338,24 +279,7 @@ export class AgentOrchestrator {
     this._toolRegistry = registry;
   }
 
-  /**
-   * Loop history tracking completed execution steps for summarization.
-   */
-
-  /**
-   * Compact older loop history entries to free budget.
-   * Preserves the last `keepLastN` entries as individual steps and replaces
-   * all older entries with a single compacted summary.
-   */
-
-  /**
-   * Check if loop history exceeds the budget threshold and trigger compaction.
-   */
-
-  /**
-   * Query recent activities for a given trace ID.
-   * Used by sub-agents via parent_context_query to understand execution context.
-   */
+  /** Loop history of completed execution steps, delegated to HistoryManager. */
   public get loopHistory(): Array<ILoopHistoryEntry | ICompactedEntry> {
     return this.historyManager.loopHistory;
   }
@@ -370,6 +294,9 @@ export class AgentOrchestrator {
     if (!this.ctx.currentPromptBudget) return;
     await this.historyManager.checkBudget(this.ctx.currentPromptBudget);
   }
+
+  /** Queries recent activities for a trace ID; used by sub-agents via
+   *  parent_context_query to understand execution context. */
   public async getRecentActivitiesByTraceId(
     traceId: string,
     limit: Opt<number, Reason.SensibleDefault> = 10,
@@ -391,10 +318,7 @@ export class AgentOrchestrator {
     });
   }
 
-  /**
-   * Set execution context for agent operations
-   * Changes working directory to context location
-   */
+  /** Sets execution context for agent operations; changes working directory to it. */
   setExecutionContext(context: IWorkspaceExecutionContext): void {
     // Store original directory if not already stored
     if (!this.originalWorkingDirectory) {
@@ -432,10 +356,7 @@ export class AgentOrchestrator {
     }
   }
 
-  /**
-   * Execute function within execution context, then restore
-   * Ensures directory is always restored even if function throws
-   */
+  /** Executes `fn` within execution context, then restores — even if `fn` throws. */
   async withExecutionContext<T>(
     context: IWorkspaceExecutionContext,
     fn: () => Promise<T> | T,
@@ -457,10 +378,7 @@ export class AgentOrchestrator {
     }
   }
 
-  /**
-   * Dispose of all resources (strategy signal listeners, etc.)
-   * Call this when the AgentOrchestrator is no longer needed
-   */
+  /** Disposes all resources (strategy signal listeners, etc.); call when no longer needed. */
   dispose(): void {
     // Invalidate context cache at end of execution
     this.ctx.invalidateCache();
@@ -488,24 +406,12 @@ export class AgentOrchestrator {
     return this.executionContext?.allowedPaths;
   }
 
-  /**
-   * Determine if agent requires git tracking based on capabilities
-   * Agents with write capabilities need branch creation and commit tracking
-   *
-   * @param blueprint - Agent blueprint with capabilities
-   * @returns true if agent has write capabilities requiring git tracking
-   */
+  /** True if the agent's write capabilities require branch creation and commit tracking. */
   requiresGitTracking(blueprint: IAgentFileBlueprint): boolean {
     return requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
   }
 
-  /**
-   * Check if agent is read-only (no write capabilities)
-   * Inverse of requiresGitTracking
-   *
-   * @param blueprint - Agent blueprint with capabilities
-   * @returns true if agent has no write capabilities
-   */
+  /** True if the agent has no write capabilities (inverse of requiresGitTracking). */
   isReadOnlyAgent(blueprint: IAgentFileBlueprint): boolean {
     return isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools);
   }
@@ -525,15 +431,9 @@ export class AgentOrchestrator {
   public static sanitizePrompt(prompt: string): string {
     return BlueprintService.sanitizePrompt(prompt);
   }
-  /**
-   * Bridges blueprint-level permitted_tools/allowed_paths onto per-call options
-   * (Phase 56/61), then narrows permitted_tools to the union of matched skills'
-   * tools intersected with the identity's own allowlist — a skill can only
-   * narrow within what the identity already permits, never grant a tool the
-   * identity doesn't allow (see skill_tools_derivation.ts). Only takes effect
-   * when the caller supplied matchedSkillTools; otherwise the identity's own
-   * allowlist is left unfiltered.
-   */
+  /** Bridges blueprint-level permitted_tools/allowed_paths onto per-call options, then
+   *  narrows permitted_tools to matched skills' tools intersected with the identity's own
+   *  allowlist — a skill can only narrow, never grant a tool the identity doesn't allow. */
   private applyBlueprintToolScope(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
@@ -578,7 +478,7 @@ export class AgentOrchestrator {
       );
     }
 
-    // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
+    // Load blueprint — capabilities array drives strategy dispatch (MCP > ReAct > Legacy).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
     await this.ctx.allocateBudget(
@@ -597,13 +497,9 @@ export class AgentOrchestrator {
 
     this.applyBlueprintToolScope(_blueprint, options);
 
-    // Phase 154 Step 3: forward this blueprint's own hitl.require_secondary_approval rules
-    // to the ToolRegistry instance the resolved strategy will call execute() on, so a
-    // blueprint's own approval rules gate ReActLoopStrategy/LegacyAgentStrategy/
-    // McpAgentStrategy tool calls the same way DynamicStepExecutor's Flow path already
-    // honors identity.hitl?.require_secondary_approval. Previously hitlBlueprintRules was
-    // declared and evaluated by ToolRegistry's HITL middleware but never actually
-    // populated by any production caller.
+    // Forward this blueprint's own hitl.require_secondary_approval rules to the
+    // ToolRegistry the resolved strategy will call execute() on, so the blueprint's
+    // approval rules gate every strategy's tool calls, same as identity.hitl.
     this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
 
     try {
@@ -614,11 +510,9 @@ export class AgentOrchestrator {
       }
       const validated = await strategy.execute(_blueprint, context, options);
 
-      // Real usage from the strategy, when reported; otherwise undefined —
-      // logExecutionComplete's own default (token count + $0 cost, GAP-25) applies.
-      // No heuristic cost estimation: GAP-23/GAP-24 established it cannot be made
-      // accurate (output tokens are unknowable pre-call; input-side cache-tier
-      // pricing is unpopulated data).
+      // Real usage from the strategy, when reported; otherwise undefined — no heuristic
+      // cost estimation, since output tokens are unknowable pre-call and input-side
+      // cache-tier pricing is unpopulated data.
       const usage = validated.usage
         ? {
           tokens: validated.usage.prompt_tokens + validated.usage.completion_tokens,
@@ -632,19 +526,15 @@ export class AgentOrchestrator {
         }
         : undefined;
 
-      // Step 61.3/61.4: Real SHA and Audit
+      // Real SHA and Audit
       const portalPath = this.resolveAuditPortalPath(portal);
 
       // 1. Capture real SHA
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
 
-      // 2. Perform Audit. Authorize the union of the identity's allowed_paths and every
-      //    file an EARLIER step of this plan already had audited and written through
-      //    legitimate portal-scoped tools. When the blueprint declares allowed_paths,
-      //    it is a real allowlist — this step's own files_changed must NOT be allowed to
-      //    widen it, or a self-reporting agent could claim any path and have the audit
-      //    rubber-stamp it. When no allowed_paths is declared, the identity has no
-      //    path restriction, so this step's own files_changed is trusted like before.
+      // Perform Audit. Authorize allowed_paths plus every file an EARLIER step already
+      // wrote through legitimate tools; when allowed_paths is declared, this step's own
+      // files_changed must NOT widen it, or a self-reporting agent could rubber-stamp any path.
       const declaresAllowedPaths = (options.allowed_paths?.length ?? 0) > 0;
       const authorizedPaths = declaresAllowedPaths
         ? [...(options.allowed_paths ?? []), ...this.planWrittenFiles]
@@ -671,19 +561,14 @@ export class AgentOrchestrator {
         );
       }
 
-      // Audit passed: this step's writes are now legitimate and accumulate for
-      // later steps' audits (see the comment on planWrittenFiles above). Only the
-      // files actually within the declared allowlist accumulate — a self-reported
-      // files_changed entry outside allowed_paths never reaches here since the
-      // audit above would have already thrown for it.
+      // Audit passed: this step's writes are now legitimate and accumulate for later
+      // steps' audits (see planWrittenFiles above) — a self-reported files_changed entry
+      // outside allowed_paths never reaches here since the audit above would have thrown.
       for (const file of validated.files_changed ?? []) this.planWrittenFiles.add(file);
 
       // Track step in loop history for potential summarization. Falls back to a
-      // char-count heuristic over the full step context (system prompt + request +
-      // plan + description) when no strategy-reported usage exists — the same
-      // sources the removed estimateExecutionUsage() counted (GAP-25). Loop-history
-      // token tracking is unrelated to cost estimation and must not go unset or
-      // shrink to a narrower text source than before.
+      // char-count heuristic over the full step context when no strategy-reported usage
+      // exists; loop-history token tracking is unrelated to cost estimation.
       const loopHistoryTokens = usage?.tokens ?? Math.max(
         1,
         this.ctx.estimateTokensSync(
@@ -726,24 +611,16 @@ export class AgentOrchestrator {
     }
   }
 
-  /**
-   * Log output from an agent subprocess
-   */
+  /** Logs output from an agent subprocess. */
   public async logAgentOutput(traceId: string, output: string): Promise<void> {
     await this.logger.info(DomainEventType.AgentOutput, "subprocess", { output }, traceId);
   }
 
-  /**
-   * Build execution prompt for LLM agent
-   */
   private resolveModelId(blueprint: IAgentFileBlueprint): string {
     return this.blueprintService.resolveModelId(blueprint);
   }
 
-  /**
-   * Build execution prompt for LLM agent.
-   * Delegates to PromptBuilder.
-   */
+  /** Builds execution prompt for LLM agent. Delegates to PromptBuilder. */
   buildExecutionPrompt(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
@@ -793,14 +670,7 @@ export class AgentOrchestrator {
     return flags;
   }
 
-  /**
-   * Audit git changes to detect unauthorized modifications
-   */
-
-  /**
-   * Revert unauthorized changes in hybrid mode
-   * Uses git checkout to discard unauthorized modifications
-   */
+  /** Audits git changes to detect unauthorized modifications. */
   auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
     return this.gitAuditService.auditGitChanges(portalPath, authorizedFiles);
   }
@@ -813,6 +683,7 @@ export class AgentOrchestrator {
     return this.gitAuditService.validateFilePath(filePath, portalPath);
   }
 
+  /** Reverts unauthorized changes in hybrid mode via git checkout. */
   revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
     return this.gitAuditService.revertUnauthorizedChanges(portalPath, unauthorizedFiles);
   }
@@ -824,21 +695,9 @@ export class AgentOrchestrator {
     return this.config.portals?.find((p) => p.alias === alias);
   }
 
-  /**
-   * Resolve the directory executeStep's post-execution security audit checks.
-   * Prefers the ToolRegistry's resolved baseDir (the worktree checkout, when
-   * PortalExecutionStrategy.WORKTREE is in play) over the static config path —
-   * the same worktree-aware resolution CliDelegateStrategy's resolvePortalPath
-   * already uses. A step's real writes land in the worktree; auditing the
-   * mounted portal (portal.target_path) checks a directory with no diff,
-   * which either silently no-ops the audit or flags real writes as
-   * unauthorized once a strategy's files_changed reports actual paths (see
-   * CliDelegateStrategy's opencode integration, phase-140). Excludes the case
-   * where baseDir is just ToolRegistry's own default (config.system.root,
-   * when no explicit baseDir was passed at construction — e.g.
-   * McpAgentStrategy's ToolRegistry) — that is never a valid audit directory
-   * and must not override the real portal path.
-   */
+  /** Resolves the directory executeStep's audit checks: prefers ToolRegistry's resolved
+   *  baseDir (worktree checkout) over the static portal path, since a step's real writes
+   *  land in the worktree and auditing the mounted portal would miss them. */
   private resolveAuditPortalPath(portal: IPortalConfig): string {
     const toolRegistryBaseDir = this._toolRegistry?.getBaseDir();
     return toolRegistryBaseDir && toolRegistryBaseDir !== this.config.system.root
@@ -846,18 +705,9 @@ export class AgentOrchestrator {
       : portal.target_path;
   }
 
-  /**
-   * Resolve executeStep's dispatch strategy. `options.strategy` (Phase 159), when
-   * present, is returned verbatim — an unconditional override, never cross-checked
-   * against `blueprint.capabilities`. This mirrors capability dispatch's own behavior
-   * of never restricting *which* strategy runs, only what it may touch (that
-   * enforcement stays in `applyBlueprintToolScope` and the permission check, both of
-   * which run regardless of the override). Absent an override, capability dispatch
-   * applies unchanged (Phase 61: prefer MCP or ReAct if specified, fallback to legacy).
-   * CLI_DELEGATE is an explicit opt-in choice (blueprint capabilities + [cli_delegate]
-   * config enabled) — it never overrides MCP, and it is never chosen implicitly as a
-   * fallback for a missing CLI binary; a step that names it must have it available.
-   */
+  /** Resolves executeStep's dispatch strategy. `options.strategy`, when present, is an
+   *  unconditional override, never cross-checked against `blueprint.capabilities`. Absent
+   *  one: prefer MCP or ReAct if specified, fallback to legacy; CLI_DELEGATE is opt-in only. */
   private resolveStrategyName(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,

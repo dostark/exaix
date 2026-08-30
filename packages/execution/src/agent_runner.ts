@@ -54,17 +54,15 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Blueprint defines the agent's persona and system instructions
- * Initially just a system prompt, can be extended later
- */
+/** Blueprint defines the agent's persona and system instructions. Initially just a
+ *  system prompt, can be extended later. */
 export interface IBlueprint {
   systemPrompt: string;
 
   /** Optional: Agent identifier for logging */
   identityId?: string;
 
-  /** Optional: Default skills to apply for all requests (Phase 17) */
+  /** Optional: Default skills to apply for all requests */
   defaultSkills?: string[];
 }
 
@@ -108,13 +106,13 @@ export interface IParsedRequest {
   /** Optional: Tags for skill matching */
   tags?: string[];
 
-  /** Optional: Explicit skills to apply (overrides trigger matching) - Phase 17 */
+  /** Optional: Explicit skills to apply (overrides trigger matching) */
   skills?: string[];
 
   /** Optional: Enable dynamic routing for this request */
   allowDynamicRouting?: boolean;
 
-  /** Optional: Model intent fields from request frontmatter (Phase 132) */
+  /** Optional: Model intent fields from request frontmatter */
   model?: string;
   model_size?: string;
   preferred_provider?: string;
@@ -122,15 +120,15 @@ export interface IParsedRequest {
   effort?: string;
   characteristics?: string[];
 
-  /** Scenario id from request frontmatter, for fixture replay call-site addressing
-   *  (Phase 157). Absent outside the scenario framework. */
+  /** Scenario id from request frontmatter, for fixture replay call-site addressing.
+   *  Absent outside the scenario framework. */
   scenarioId?: string;
-  /** Step id from request frontmatter, for fixture replay call-site addressing
-   *  (Phase 157). Absent outside the scenario framework. */
+  /** Step id from request frontmatter, for fixture replay call-site addressing.
+   *  Absent outside the scenario framework. */
   stepId?: string;
-  /** Flow-internal step id, assigned by FlowRunner from IFlowStep.id for calls it drives
-   *  (Phase 157 Step 3 — scopes call-index assignment per flow step so concurrent steps in
-   *  the same parallel wave cannot collide on the same index). Absent for non-flow calls. */
+  /** Flow-internal step id, assigned by FlowRunner from IFlowStep.id for calls it drives —
+   *  scopes call-index assignment per flow step so concurrent steps in the same parallel
+   *  wave cannot collide on the same index. Absent for non-flow calls. */
   flowStepId?: string;
 }
 
@@ -147,7 +145,7 @@ export interface IAgentExecutionResult {
   /** The raw, unparsed response from the LLM */
   raw: string;
 
-  /** Skills that were matched and injected (Phase 17) */
+  /** Skills that were matched and injected */
   skillsApplied?: string[];
 }
 
@@ -170,7 +168,7 @@ export interface IAgentRunnerConfig {
   /** Optional: Pre-configured output validator instance */
   outputValidatorInstance?: IOutputValidator;
 
-  /** Optional: Skills service for procedural memory (Phase 17) */
+  /** Optional: Skills service for procedural memory */
   skillsService?: ISkillsService;
 
   /** Optional: Disable automatic skill matching */
@@ -179,11 +177,11 @@ export interface IAgentRunnerConfig {
   /** Optional: Application context for service resolution */
   context?: IApplicationContext;
 
-  /** Optional: Segment-level context budget manager (Phase 83). When present, called in
-   * constructPrompt() after all prompt parts are collected, before joining. */
+  /** Optional: Segment-level context budget manager. When present, called in
+   *  constructPrompt() after all prompt parts are collected, before joining. */
   contextBudgetManager?: IContextBudgetManager;
 
-  /** Optional: Milestone emitter for semantic progress events (Phase 92). No-op when omitted. */
+  /** Optional: Milestone emitter for semantic progress events. No-op when omitted. */
   milestoneEmitter?: IMilestoneEmitter;
 }
 
@@ -204,12 +202,9 @@ export interface IPlanAdapter {
   getSchemaInstructions(): string;
 }
 
-/**
- * Comma-separated skill ids to exclude from the resolved set for this process's lifetime
- * (Phase 158 Step 2, closes GAP-2). A skill-ablation arm's control side sets this instead
- * of adding a request-contract field; safe because the scenario framework runs one
- * scenario per daemon process, so concurrent arms never share an env.
- */
+/** Comma-separated skill ids to exclude from the resolved set for this process's lifetime.
+ *  A skill-ablation arm's control side sets this instead of adding a request-contract
+ *  field; safe because the scenario framework runs one scenario per daemon process. */
 export const EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR = "EXA_EVAL_SUPPRESS_SKILLS";
 
 function readSuppressedSkillIds(): Set<string> {
@@ -221,25 +216,9 @@ function readSuppressedSkillIds(): Set<string> {
 // Agent Runner Service
 // ============================================================================
 
-/**
- * IAgentRunner combines Blueprint (system prompt) with IParsedRequest (user prompt),
- * executes via an LLM provider, and parses the structured XML response.
- *
- * Enhanced with retry/recovery (Phase 16.3):
- * - Exponential backoff on transient failures
- * - Temperature adjustment on retries
- * - Detailed retry logging
- *
- * Enhanced with output validation (Phase 16.2):
- * - XML tag extraction (<thought>, <content>)
- * - JSON repair for malformed outputs
- * - Validation metrics tracking
- *
- * Enhanced with Skills Architecture (Phase 17):
- * - Automatic skill matching based on request context
- * - Skill context injection into prompts
- * - Skill usage tracking
- */
+/** Combines Blueprint (system prompt) with IParsedRequest (user prompt), executes via an
+ *  LLM provider, and parses the structured XML response — with retry/recovery, output
+ *  validation, and the Skills Architecture layered in. */
 export class AgentRunner implements IAgentRunner {
   private logger?: IEventLogger;
   private retryPolicy: IRetryPolicy;
@@ -251,7 +230,7 @@ export class AgentRunner implements IAgentRunner {
 
   private modelProvider: IModelProvider;
   private config?: IAgentRunnerConfig;
-  /** Next call index per (scenarioId, stepId), for fixture replay addressing (Phase 157).
+  /** Next call index per (scenarioId, stepId), for fixture replay addressing.
    *  Incremented once per consumed response — a retried logical call keeps its index. */
   private callIndexByCallSite = new Map<string, number>();
 
@@ -316,12 +295,8 @@ export class AgentRunner implements IAgentRunner {
     });
   }
 
-  /**
-   * Run the agent with a blueprint and request
-   * @param blueprint - The agent's blueprint (system prompt)
-   * @param request - The parsed user request
-   * @returns Structured execution result with thought and content
-   */
+  /** Runs the agent with a blueprint (system prompt) and the parsed user request,
+   *  returning a structured execution result with thought and content. */
   async run(
     blueprint: IBlueprint,
     request: IParsedRequest,
@@ -332,15 +307,15 @@ export class AgentRunner implements IAgentRunner {
     const traceId = request.traceId;
     const requestId = request.requestId;
 
-    // Phase 17/70: Match skills based on request context
+    // Match skills based on request context
     const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, identityId);
 
     // Log agent execution start
     this.logExecutionStart(request, identityId, traceId, requestId, skillIds);
 
-    // Step 1: Construct the combined prompt (with skill context) (Phase 70).
-    // Critical skills (W16) render into a separate, protected segment so the
-    // output contract and hard constraints survive context-budget pressure.
+    // Construct the combined prompt (with skill context). Critical skills render into a
+    // separate, protected segment so the output contract and hard constraints survive
+    // context-budget pressure.
     const skillContextString = renderSkillsSection(skillsContext);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
     const combinedPrompt = await this.constructPrompt(
@@ -350,7 +325,7 @@ export class AgentRunner implements IAgentRunner {
       criticalSkillContext,
     );
 
-    // Phase 70: Log prompt assembled event for observability
+    // Log prompt assembled event for observability
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
       DomainEventType.AgentPromptAssembled,
@@ -379,7 +354,7 @@ export class AgentRunner implements IAgentRunner {
       full_prompt: combinedPrompt,
     }, traceId);
 
-    // Step 2: Execute via the model provider (with retry if enabled)
+    // Execute via the model provider (with retry if enabled)
     const callSite = this.resolveCallSite(request);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
     const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId, jsonSchema, callSite);
@@ -392,7 +367,7 @@ export class AgentRunner implements IAgentRunner {
     }
     this.markCallSiteConsumed(callSite);
 
-    // Step 3: Parse the response to extract thought and content
+    // Parse the response to extract thought and content
     const generateResult = retryResult.value;
     await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${identityId}`);
     const rawResponse = generateResult?.content || "";
@@ -405,10 +380,8 @@ export class AgentRunner implements IAgentRunner {
       completion_tokens: generateResult?.usage?.completionTokens ?? null,
     }, traceId);
     // A max_tokens stop means the answer was cut off mid-generation: downstream structured
-    // parsing (plan JSON, <content> extraction) is expected to fail on it, and that failure
-    // must be attributable to truncation, not treated as a mysteriously malformed model
-    // response (observed live: 3 identical "Invalid JSON: Unexpected end of JSON input"
-    // retries against truncated 4096-token plans).
+    // parsing is expected to fail on it, and that failure must be attributable to
+    // truncation, not treated as a mysteriously malformed model response.
     if (generateResult?.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS && this.logger) {
       void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
         identity_id: identityId,
@@ -451,12 +424,9 @@ export class AgentRunner implements IAgentRunner {
 
     const matchingStartTime = Date.now();
     try {
-      // ONE rule: the resulting set is pinned ∪ dynamically-matched ∪ identity defaults.
-      // This replaced three branch-specific merge rules (a pin unioned all defaults, a
-      // dynamic hit unioned only `critical` ones, a dynamic miss took all defaults), under
-      // which nobody could predict why a given skill was or was not injected. Prompt bloat
-      // is controlled by keeping identity default_skills short, not by dropping defaults
-      // conditionally; `critical` now serves only its other job — surviving compaction.
+      // ONE rule: the resulting set is pinned ∪ dynamically-matched ∪ identity defaults —
+      // no branch-specific merge rules, so it's always predictable why a skill was or
+      // wasn't injected. Prompt bloat is controlled by keeping default_skills short.
       const matchScores = new Map<string, number>();
       const skillIds: string[] = [];
       const add = (id: string, score: number) => {
@@ -486,12 +456,9 @@ export class AgentRunner implements IAgentRunner {
       const defaults = blueprint.defaultSkills ?? [];
       for (const id of defaults) add(id, 0.5);
 
-      // Phase 158 Step 2: a skill-ablation arm's control side suppresses a skill from the
-      // FINAL resolved set — after pinned/matched/defaults are unioned, not only from the
-      // dynamic-match sub-path — so a skill that only ever arrives via a pin or a default
-      // is suppressed just as reliably as a dynamically matched one. Env-scoped rather than
-      // a request-contract field: the scenario framework runs one scenario per daemon
-      // process, so concurrent arms never share an env.
+      // A skill-ablation arm's control side suppresses a skill from the FINAL resolved
+      // set — after pinned/matched/defaults are unioned, not only from the dynamic-match
+      // sub-path — so a pin- or default-only skill is suppressed just as reliably.
       const suppressed = readSuppressedSkillIds();
       const suppressedPresent = skillIds.filter((id) => suppressed.has(id));
       for (const id of suppressedPresent) {
@@ -523,9 +490,7 @@ export class AgentRunner implements IAgentRunner {
     }
   }
 
-  /**
-   * Perform dynamic skill matching with a 500ms timeout guard (Phase 70)
-   */
+  /** Performs dynamic skill matching with a 500ms timeout guard. */
   private async performDynamicSkillMatching(
     request: IParsedRequest,
     identityId: string,
@@ -616,18 +581,9 @@ export class AgentRunner implements IAgentRunner {
     );
   }
 
-  /**
-   * Assign the call site for this logical call (Phase 157), reading — but not yet
-   * incrementing — the next call index for (scenarioId, stepId, flowStepId). Absent when the
-   * request carries no scenarioId/stepId, which keeps every call outside the scenario
-   * framework keyed by prompt hash exactly as before.
-   *
-   * flowStepId is included in the counter key (Step 3) because flow-internal steps in the
-   * same parallel wave call this synchronously before either awaits — without flowStepId,
-   * two different steps could read the same unconsumed counter value and collide on one
-   * callIndex. A flow step's own id is unique within its flow and never invoked concurrently
-   * with itself, so scoping the counter by it makes the collision structurally impossible.
-   */
+  /** Assigns the call site for this logical call, reading (not yet incrementing) the next
+   *  call index for (scenarioId, stepId, flowStepId); flowStepId scopes the counter so
+   *  concurrent flow steps in the same parallel wave cannot collide on one callIndex. */
   private resolveCallSite(request: IParsedRequest): ICallSite | undefined {
     if (!request.scenarioId || !request.stepId) return undefined;
     const key = this.callSiteCounterKey(request.scenarioId, request.stepId, request.flowStepId);
@@ -642,11 +598,9 @@ export class AgentRunner implements IAgentRunner {
     };
   }
 
-  /**
-   * Advance the call index for a call site once its response has actually been consumed.
-   * Retries within the SAME logical call never reach this — they reuse the callSite object
-   * assigned before the retry loop started — so only a subsequent run() sees the new index.
-   */
+  /** Advances the call index for a call site once its response has actually been
+   *  consumed. Retries within the SAME logical call reuse the callSite object assigned
+   *  before the retry loop started, so only a subsequent run() sees the new index. */
   private markCallSiteConsumed(callSite: Opt<ICallSite, Reason.OptionalContext>): void {
     if (!callSite) return;
     const key = this.callSiteCounterKey(callSite.scenarioId, callSite.stepId, callSite.flowStepId);
@@ -779,13 +733,7 @@ export class AgentRunner implements IAgentRunner {
     );
   }
 
-  /**
-   * Construct the combined prompt from blueprint and request
-   * @param blueprint - Agent blueprint
-   * @param request - User request
-   * @param skillContext - Optional skill context to inject (Phase 17)
-   * @returns Combined prompt string
-   */
+  /** Constructs the combined prompt from blueprint, request, and optional skill context. */
   private async constructPrompt(
     blueprint: IBlueprint,
     request: IParsedRequest,
@@ -824,13 +772,9 @@ export class AgentRunner implements IAgentRunner {
       entries.push({ content: memoryContext, kind: k.reflection, priority: 40, nonCompactable: false });
     }
     if (request.userPrompt.trim()) {
-      // Skills render under their own "### HEADING" markers (prompt_formatter.ts); without an
-      // equally distinct marker here, the user's actual request reads as more trailing
-      // instructional/example text rather than the task to act on now. A markdown heading
-      // (e.g. "### YOUR TASK") is the wrong tool here: request bodies routinely start with
-      // their own "#"/"##" heading (as this codebase's own fixture requests do), which then
-      // outranks a fixed "###" wrapper in document structure. Use an hr-delimited block instead
-      // so the boundary is unambiguous regardless of the request's own internal heading levels.
+      // Skills render under their own "### HEADING" markers; a markdown heading here would
+      // be outranked by a request body's own "#"/"##" headings, so use an hr-delimited
+      // block instead so the task boundary stays unambiguous either way.
       const labeledRequest = `---\nYOUR TASK — this is the actual task to complete now:\n---\n\n${request.userPrompt}`;
       entries.push({ content: labeledRequest, kind: k.request, priority: 75, nonCompactable: true });
     }
@@ -872,24 +816,14 @@ export class AgentRunner implements IAgentRunner {
     return filtered.map((s) => s.content).join("\n\n");
   }
 
-  /**
-   * Extract keywords from text for skill matching (Phase 17)
-   * @param text - Text to extract keywords from
-   * @returns Array of keywords
-   */
+  /** Extracts keywords from text for skill matching. */
   private extractKeywords(text: string): string[] {
     return extractKeywords(text);
   }
 
-  /**
-   * Parse the LLM response to extract <thought> and <content> tags
-   * Falls back to treating the whole response as content if tags are missing
-   * Enhanced with Phase 16.2 OutputValidator for consistent parsing.
-   * @param rawResponse - Raw response from the LLM
-   * @returns Parsed result with thought, content, and raw response
-   */
+  /** Parses the LLM response to extract <thought> and <content> tags via OutputValidator;
+   *  falls back to treating the whole response as content if tags are missing. */
   private parseResponse(rawResponse: string): IAgentExecutionResult {
-    // Use OutputValidator for consistent XML parsing (Phase 16.2)
     const parsed = this.outputValidator.parseXMLTags(rawResponse);
 
     return {
@@ -899,17 +833,12 @@ export class AgentRunner implements IAgentRunner {
     };
   }
 
-  /**
-   * Get validation metrics from the output validator (Phase 16.2)
-   * @returns Current validation metrics
-   */
+  /** Gets validation metrics from the output validator. */
   getValidationMetrics(): IValidationMetrics {
     return this.outputValidator.getMetrics();
   }
 
-  /**
-   * Reset validation metrics (Phase 16.2)
-   */
+  /** Resets validation metrics. */
   resetValidationMetrics(): void {
     this.outputValidator.resetMetrics();
   }
@@ -918,14 +847,9 @@ export class AgentRunner implements IAgentRunner {
    * Log activity to IActivity Journal (if database provided)
    */
 
-  /**
-   * Journal a dynamic skill-match that timed out or threw.
-   *
-   * This path silently degrades the agent — it proceeds with NO skills at all — and was
-   * previously visible only as a console warning, so the Activity Journal showed a normal
-   * run. The 500ms timeout is separated from a genuine failure so the two are
-   * distinguishable after the fact.
-   */
+  /** Journals a dynamic skill-match that timed out or threw — this path silently
+   *  degrades the agent (proceeds with NO skills at all), so the Activity Journal must
+   *  record it. The 500ms timeout is distinguished from a genuine failure. */
   private logSkillRetrievalFailure(message: string, identityId: string): void {
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
@@ -936,14 +860,9 @@ export class AgentRunner implements IAgentRunner {
     console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", message);
   }
 
-  /**
-   * Journal the final skill set for a request together with the three inputs that produced it.
-   *
-   * `skills.match_completed` covers only the dynamic-matching stage, which is skipped
-   * entirely for a request that pins skills — so that path left the Activity Journal with no
-   * record of which skills the agent actually ran with. The breakdown is what makes the union
-   * auditable: it answers "why is this skill in my prompt?" without re-deriving the merge.
-   */
+  /** Journals the final skill set together with the three inputs that produced it.
+   *  `skills.match_completed` alone is skipped entirely for a pinned request, so this
+   *  breakdown is what makes the union auditable without re-deriving the merge. */
   private logSkillResolution(
     identityId: string,
     skillIds: string[],
@@ -975,11 +894,9 @@ export class AgentRunner implements IAgentRunner {
     void this.logger.info(actionType, target, payload, traceId);
   }
 
-  /**
-   * Debug-level activity log (filtered out unless the logger's minLevel is DEBUG). Used for
-   * diagnostic dumps (e.g. the full assembled prompt) that are too verbose for INFO but useful
-   * when investigating why a live provider call produced unexpected output.
-   */
+  /** Debug-level activity log (filtered out unless the logger's minLevel is DEBUG). Used
+   *  for diagnostic dumps too verbose for INFO but useful when investigating unexpected
+   *  provider output. */
   private logActivityDebug(
     actionType: string,
     target: string | null,
