@@ -2,7 +2,7 @@
  * @module ToolRegistryAciCatalogTest
  * @path packages/tool-runtime/tests/tool_registry_aci_catalog_test.ts
  * @description Phase 112 Step 4 — verifies the complete `createCoreToolSchemas()` catalog: all
- *   14 ReAct tools have a schema-valid `aciDoc`, a non-empty rendered fragment, the canonical
+ *   16 ReAct tools have a schema-valid `aciDoc`, a non-empty rendered fragment, the canonical
  *   `sideEffectScope`, a worked example compatible with the tool's own `parameters` schema, and
  *   an anti-example that genuinely violates a named constraint (unknown key, missing required
  *   key, wrong type, or invalid enum value) of that same schema.
@@ -31,11 +31,13 @@ const EXPECTED_SCOPES: Record<string, ToolSideEffectScope> = {
   git_info: ToolSideEffectScope.NONE,
   deno_task: ToolSideEffectScope.SYSTEM,
   patch_file: ToolSideEffectScope.PORTAL,
+  query_relationships: ToolSideEffectScope.NONE,
+  who_depends_on: ToolSideEffectScope.NONE,
 };
 
-Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the 14 named ReAct tools", () => {
+Deno.test("[ToolRegistryAciCatalog] createCoreToolSchemas returns exactly the 16 named ReAct tools", () => {
   const tools = createCoreToolSchemas();
-  assertEquals(tools.length, 14);
+  assertEquals(tools.length, 16);
   assertEquals(new Set(tools.map((t) => t.name)), new Set(Object.keys(EXPECTED_SCOPES)));
 });
 
@@ -57,7 +59,7 @@ Deno.test("[ToolRegistryAciCatalog] every tool renders a non-empty ACI fragment"
   const allIds = tools.map((t) => t.name);
   const result = renderAciDocFragments(tools, allIds, 1_000_000);
   assertEquals(result.invalidToolIds, [], "no tool's aciDoc should be rejected as invalid");
-  assertEquals(result.fragmentCount, 14);
+  assertEquals(result.fragmentCount, 16);
   assertEquals(result.truncated, false);
   for (const toolId of allIds) {
     assert(result.text.includes(toolId), `rendered ACI text is missing a fragment for ${toolId}`);

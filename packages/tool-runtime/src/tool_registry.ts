@@ -23,6 +23,7 @@ import type {
   IToolRegistry,
   IToolResult,
 } from "@exaix/core/types";
+import { queryRelationships, type RelationshipEdgeKind, whoDependsOn } from "@exaix/portal/knowledge";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -240,6 +241,7 @@ export class ToolRegistry implements IToolRegistry {
   private identityId?: string;
   private pathResolver: { resolve(path: string): Promise<string> } | undefined;
   private gitServiceFactory: IGitServiceFactory | undefined;
+  private applicationContext: IApplicationContext | undefined;
   private tools: Map<string, ITool>;
   private baseDir: string;
   private pipeline: IMiddlewarePipeline<IToolContext>;
@@ -295,6 +297,7 @@ export class ToolRegistry implements IToolRegistry {
 
     this.pathResolver = resolvedOptions?.pathResolver;
     this.gitServiceFactory = resolvedOptions?.gitServiceFactory;
+    this.applicationContext = ctx;
     this.tools = new Map();
     this.pipeline = resolvedPipeline ?? createNoopPipeline<IToolContext>();
     this.pathSecurity = resolvedPathSecurity ?? createPathSecurity();
@@ -482,6 +485,11 @@ export class ToolRegistry implements IToolRegistry {
       ToolName.PATCH_FILE,
       (p) => this.patchFile(str(p.path), optStr(p.search), optStr(p.replace)),
     );
+    this.executors.set(
+      ToolName.QUERY_RELATIONSHIPS,
+      (p) => this.queryRelationshipsTool(str(p.from), optStr(p.kind) as RelationshipEdgeKind | undefined),
+    );
+    this.executors.set(ToolName.WHO_DEPENDS_ON, (p) => this.whoDependsOnTool(str(p.path)));
   }
 
   /**
@@ -634,6 +642,42 @@ export class ToolRegistry implements IToolRegistry {
     } catch {
       // Validation reporting must not break tool execution.
     }
+  }
+
+  /** Resolves the portal alias/path this registry's baseDir is rooted at, mirroring the
+   *  `ownPortal` comparison resolvePath already uses for `@`-alias resolution. */
+  private currentPortal(): { alias: string; path: string } | undefined {
+    const portal = this.config.portals.find((p) => resolve(p.target_path) === this.baseDir);
+    return portal ? { alias: portal.alias, path: portal.target_path } : undefined;
+  }
+
+  private async queryRelationshipsTool(
+    from: string,
+    kind?: Opt<RelationshipEdgeKind, Reason.QueryFilter>,
+  ): Promise<IToolResult> {
+    const portalKnowledgeService = this.applicationContext?.portalKnowledge;
+    if (!portalKnowledgeService) {
+      return { success: false, error: "query_relationships requires a portal-knowledge service, none is configured" };
+    }
+    const portal = this.currentPortal();
+    if (!portal) {
+      return { success: false, error: "query_relationships: current execution root is not a configured portal" };
+    }
+    const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
+    return this.formatSuccess(queryRelationships(knowledge, from, kind) as unknown as JSONValue);
+  }
+
+  private async whoDependsOnTool(path: string): Promise<IToolResult> {
+    const portalKnowledgeService = this.applicationContext?.portalKnowledge;
+    if (!portalKnowledgeService) {
+      return { success: false, error: "who_depends_on requires a portal-knowledge service, none is configured" };
+    }
+    const portal = this.currentPortal();
+    if (!portal) {
+      return { success: false, error: "who_depends_on: current execution root is not a configured portal" };
+    }
+    const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
+    return this.formatSuccess(whoDependsOn(knowledge, path) as unknown as JSONValue);
   }
 
   /**

@@ -357,7 +357,7 @@ Deno.test("ToolRegistry: getTools - returns all registered tools", () => {
 
   const tools = registry.getTools();
 
-  assertEquals(tools.length, 14);
+  assertEquals(tools.length, 16);
   const toolNames = tools.map((t) => t.name);
   assertEquals(toolNames.includes(ToolName.READ_FILE), true);
   assertEquals(toolNames.includes(ToolName.WRITE_FILE), true);

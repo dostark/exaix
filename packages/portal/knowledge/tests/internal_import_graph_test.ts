@@ -124,3 +124,24 @@ Deno.test("InternalImportGraphBuilder: handles a nonexistent entrypoint graceful
     assertEquals(result, { edges: [], droppedOutOfBounds: [] });
   });
 });
+
+Deno.test("InternalImportGraphBuilder: resolves edges when portalPath is a symlink to the real directory (the standard portal-mount shape)", async () => {
+  await withPortalFixture({
+    "mod.ts": "import { helper } from './services/helper.ts';\nexport function start(): void { helper(); }\n",
+    "services/helper.ts": "export function helper(): void {}\n",
+  }, async (root) => {
+    const parent = await makeTempDir();
+    try {
+      const symlinkPath = join(parent, "Portals-alias");
+      await Deno.symlink(root, symlinkPath, { type: "dir" });
+
+      const builder = new InternalImportGraphBuilder();
+      const result = await builder.build(symlinkPath, ["mod.ts"]);
+
+      assertEquals(result.edges, [{ from: "mod.ts", to: "services/helper.ts", kind: "file_imports_file_internal" }]);
+      assertEquals(result.droppedOutOfBounds, []);
+    } finally {
+      await Deno.remove(parent, { recursive: true });
+    }
+  });
+});
