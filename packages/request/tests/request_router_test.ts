@@ -347,11 +347,8 @@ Deno.test("RequestRouter: applies routing policy service for default routing whe
   assertEquals(decisionEvent?.payload?.allow_dynamic_routing, true);
 });
 
-// ---------------------------------------------------------------------------
-// Phase 142 Step 17 — createParsedRequest forwarded only the body and ids, so a
-// request's `skills` and `tags` never reached AgentRunner. Explicit pinning was
-// therefore inert on this path and tag-driven trigger matching never fired.
-// ---------------------------------------------------------------------------
+// Regression: createParsedRequest forwarded only the body and ids, so a request's
+// `skills` and `tags` never reached AgentRunner and trigger matching never fired.
 
 Deno.test("[step17] RequestRouter forwards frontmatter skills to the agent request", async () => {
   const { mockAgentRunner, router } = createRouterTestContext({ config: createMockConfig("/tmp/exaix-step17-router") });

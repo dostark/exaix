@@ -132,10 +132,8 @@ Deno.test("[RequestProcessor] populates IParsedRequest.tags from analysis", () =
 });
 
 Deno.test("[RequestProcessor] keeps frontmatter tags when analysis supplies its own", () => {
-  // Phase 142 Step 17G: `request.tags = analysis.tags` discarded whatever the request author
-  // wrote in `tags:` frontmatter. Those tags are the only input the skill matcher scores
-  // against a skill's declared trigger tags, so tag-driven skill selection could never fire
-  // for a request that also went through analysis — which every request does.
+  // Regression: overwriting request.tags with analysis.tags discarded the frontmatter
+  // author's tags, breaking tag-driven skill selection for every analyzed request.
   const frontmatter = { ...makeTestFrontmatter(), tags: ["self-critique", "architecture-review"] };
   const request = buildParsedRequest("Review the exception paths", frontmatter, "req-tags", "trace-tags");
   const analysis = makeAnalysis({ tags: ["error-handling", "reliability"] });
@@ -308,14 +306,7 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
     const planPath = await processor.process(filePath);
     assertExists(planPath, "Plan should be generated");
 
-    // Read plan content and check for analysis metadata
     const planContent = await Deno.readTextFile(planPath);
-    // Depending on PlanWriter implementation, check for frontmatter or JSON
-    // RequestProcessor passes it in metadata.requestAnalysis to PlanWriter
-    // If PlanWriter doesn't yet support showing it in the file, we can at least check if it was ORM-logged
-    // But Step 10 is exactly about including it in metadata.
-    // For now, check if the string "requestAnalysis" appears in the plan file
-    // (Actual verification of metadata schema happens in Step 10 implementation)
     assertExists(planContent.includes("requestAnalysis"), "Plan file should contain analysis metadata");
   } finally {
     await env.cleanup();
@@ -351,9 +342,7 @@ Deno.test("[RequestProcessor] skips analysis if request status is already PLANNE
   }
 });
 
-// ---------------------------------------------------------------------------
-// Step 22: enabled flag — skip analysis when config.request_analysis.enabled = false
-// ---------------------------------------------------------------------------
+// enabled flag — skip analysis when config.request_analysis.enabled = false
 
 Deno.test("[RequestProcessor] skips analysis when request_analysis.enabled is false", async () => {
   const env = await makeRequestProcessorEnv();
@@ -387,9 +376,7 @@ Deno.test("[RequestProcessor] skips analysis when request_analysis.enabled is fa
   }
 });
 
-// ---------------------------------------------------------------------------
-// Step 23: persist_analysis flag — skip persistence when persist_analysis = false
-// ---------------------------------------------------------------------------
+// persist_analysis flag — skip persistence when persist_analysis = false
 
 Deno.test("[RequestProcessor] skips persisting analysis when persist_analysis is false", async () => {
   const env = await makeRequestProcessorEnv();
@@ -419,9 +406,7 @@ Deno.test("[RequestProcessor] skips persisting analysis when persist_analysis is
   }
 });
 
-// ---------------------------------------------------------------------------
-// Step 24: DEFAULT_ANALYZER_MODE fallback — not hard-coded HEURISTIC
-// ---------------------------------------------------------------------------
+// DEFAULT_ANALYZER_MODE fallback — not hard-coded HEURISTIC
 
 Deno.test("[RequestProcessor] uses DEFAULT_ANALYZER_MODE (hybrid) not HEURISTIC as fallback mode", async () => {
   const env = await makeRequestProcessorEnv();

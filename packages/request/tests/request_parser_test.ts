@@ -150,10 +150,7 @@ Deno.test("RequestParser: logs parse failure on invalid YAML", async () => {
   });
 });
 
-// ============================================================================
-// Phase 173: canonical identity_id frontmatter field (identity fully retired,
-// no deployments yet to require a legacy-ingestion alias)
-// ============================================================================
+// canonical identity_id frontmatter field
 
 Deno.test("RequestParser: parses canonical identity_id from frontmatter", async () => {
   const errors: LoggedError[] = [];

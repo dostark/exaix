@@ -59,12 +59,7 @@ Deno.test("[GAP-11] buildParsedRequest sets undefined when frontmatter has no IM
   assertEquals(req.characteristics, undefined);
 });
 
-// ---------------------------------------------------------------------------
-// Phase 142 Step 17 — frontmatter inputs that skill resolution depends on.
-// `tags` was never copied (IRequestFrontmatter did not even declare it), and
-// `skills` only parsed when written as a JSON string, so a hand-authored YAML
-// array raised "frontmatter.skills.trim is not a function".
-// ---------------------------------------------------------------------------
+// Frontmatter inputs that skill resolution depends on: tags and skills forwarding.
 
 Deno.test("[step17] buildParsedRequest forwards frontmatter tags for trigger matching", () => {
   const fm = makeFrontmatter({ tags: ["review", "error-handling"] });

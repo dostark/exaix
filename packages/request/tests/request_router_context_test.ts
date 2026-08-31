@@ -24,11 +24,6 @@ import {
   setupPortalWorkspaceTestDirs,
 } from "@exaix/testing";
 
-/**
- * TDD Tests for RequestRouter IWorkspaceExecutionContext Integration
- * Task 1.3: Request Router Integration
- */
-
 describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
   let tempDir: string;
   let portalDir: string;

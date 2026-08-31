@@ -347,10 +347,8 @@ Deno.test("[RequestProcessor] passes IRequestSpecification to buildParsedRequest
 // ---------------------------------------------------------------------------
 
 Deno.test("[RequestProcessor] builds quality gate from TOML config when none injected", async () => {
-  // Arrange: set heuristic mode with a very high minimum threshold and
-  // block_unactionable=false so the quality gate recommends NEEDS_CLARIFICATION
-  // instead of REJECT.  Status → REFINING can only happen via the quality gate;
-  // a missing-blueprint failure would set FAILED instead.
+  // heuristic mode + block_unactionable=false → gate recommends NEEDS_CLARIFICATION,
+  // not REJECT; status → REFINING can only happen via the quality gate.
   const env = await makeEnv();
   try {
     // Body is ≥20 chars (avoids short-body penalty) and vague enough that
@@ -386,9 +384,7 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
   }
 });
 
-// ---------------------------------------------------------------------------
-// Phase 111 Step 5 — refinement-delegation gate
-// ---------------------------------------------------------------------------
+// refinement-delegation gate
 
 Deno.test("[RequestProcessor] refinement-delegation fires onDelegateRefinement when config enables it", async () => {
   const env = await makeEnv();

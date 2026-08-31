@@ -317,10 +317,8 @@ Test body
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // Additional coverage: malformed frontmatter, show by filename,
 // updateRequestStatus by filename, list with non-md files
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("RequestService.show: returns default metadata for file without frontmatter", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-nofm-" });
@@ -441,9 +439,7 @@ Deno.test("RequestService.list: skips files without valid frontmatter", async ()
   }
 });
 
-// ---------------------------------------------------------------------------
-// Step 24: analyze() cache guard — returns cached without re-running analyzer
-// ---------------------------------------------------------------------------
+// analyze() cache guard — returns cached without re-running analyzer
 
 Deno.test("RequestService.analyze: returns cached analysis when force=false and cache exists", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-cache-" });

@@ -15,11 +15,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { RequestStatus } from "@exaix/core/status";
 import { createStubDisplay, createStubGit, createStubProvider, readFixtureTextSync, REPO_ROOT } from "@exaix/testing";
 
-/**
- * Regression test for: "Request processing fails with test-provider selection"
- * Root cause: main.ts was passing the llmProvider as the 4th parameter (testProvider) to RequestProcessor.
- * This caused RequestProcessor to use it as an override, bypassing dynamic provider selection.
- */
+/** A caller-passed testProvider overrides dynamic ProviderSelector routing — must be omitted. */
 Deno.test("[regression] RequestProcessor uses ProviderSelector when no testProvider is passed", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "exaix-regression-" });
 

@@ -646,12 +646,9 @@ Review this pull request for security issues.`;
       assert(flowRunnerCalled, "FlowRunner.execute should be called for flow requests");
     });
 
-    it("should hand FlowRunner the request's scenario_id/step_id so LLM calls stay keyed (Phase 157)", async () => {
-      // The call-site transport (runner env -> exactl frontmatter -> daemon parse) stops at
-      // FlowRunner.execute: the flow request carries the key, but processor.ts passed only
-      // userPrompt/traceId/requestId/portal, so every flow-step LLM call was unkeyed and
-      // capture mode refused it ("Capture refused for an unkeyed call"). The execute request
-      // must receive scenario_id/step_id from the frontmatter.
+    it("should hand FlowRunner the request's scenario_id/step_id so LLM calls stay keyed", async () => {
+      // Without scenario_id/step_id on the execute request, every flow-step LLM call is
+      // unkeyed and capture mode refuses it ("Capture refused for an unkeyed call").
       const { traceId, requestPath } = createTestRequestPath(testDir);
       let receivedRequest: { scenarioId?: string; stepId?: string } | undefined;
 
@@ -691,10 +688,8 @@ Review this pull request for security issues.`;
     });
 
     it("should hand FlowRunner the LOADED flow, not an id-only stub", async () => {
-      // processor.ts built `{ id: frontmatter.flow } as IFlow` — a cast, not a load — so every
-      // field but `id` was undefined and FlowRunner crashed on `flow.steps.length`
-      // (flow_runner.ts:981) with "Cannot read properties of undefined". The sibling test above
-      // could not catch it: it asserts only that execute() was CALLED, ignoring its argument.
+      // An id-only `{ id: frontmatter.flow } as IFlow` stub crashes FlowRunner on
+      // `flow.steps.length`; the sibling test above only asserts execute() was called.
       const { traceId, requestPath } = createTestRequestPath(testDir);
       let receivedFlow: IFlow | undefined;
 

@@ -60,10 +60,8 @@ Deno.test("[BlueprintResolver.resolve] falls back to the repo-root Blueprints/Id
   const { testDir, blueprintsPath } = await makeBlueprintsDir();
   const mockLogger = createMockEventLogger();
   const originalCwd = Deno.cwd();
-  // A sibling-of-repo directory (like the scenario framework's auto-deployed
-  // sandboxes under <parent-of-repo>/exaix-sandboxes/<run-id>/) has no
-  // Blueprints/ in any cwd-upward-walk ancestor, so only the module-relative
-  // fallback in findInRepoRoots can locate the repo's real "default" identity.
+  // A sibling-of-repo directory has no Blueprints/ in any cwd-upward-walk ancestor, so
+  // only the module-relative fallback in findInRepoRoots can locate the identity.
   const outsideRepoDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_outside_repo_" });
   try {
     Deno.chdir(outsideRepoDir);

@@ -192,9 +192,7 @@ Deno.test("[HeuristicAnalyzer] handles Unicode and special characters", () => {
   assertEquals(Array.isArray(result.referencedFiles), true);
 });
 
-// ---------------------------------------------------------------------------
-// Step 21: Ambiguity objects include interpretations field
-// ---------------------------------------------------------------------------
+// Ambiguity objects include interpretations field
 
 Deno.test("[HeuristicAnalyzer] ambiguity objects include empty interpretations array", () => {
   const text = "Maybe fix that thing somehow. It should probably work better.";
