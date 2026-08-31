@@ -52,7 +52,7 @@ function plan(overrides: {
   });
 }
 
-// ── The decision ────────────────────────────────────────────────────────────────────────────
+// The decision
 
 Deno.test("[sandbox-cleanup] a successful run removes a runner-minted sandbox", () => {
   assertEquals(plan({}).retention, SandboxRetention.REMOVED);
@@ -94,7 +94,7 @@ Deno.test("[sandbox-cleanup] an in-sandbox output dir is preserved; an external 
   assertEquals(plan({ outputDir: "/elsewhere/evidence" }).preserve, []);
 });
 
-// ── Applying it ─────────────────────────────────────────────────────────────────────────────
+// Applying it
 
 async function makeSandbox(): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "sandbox-cleanup-" });

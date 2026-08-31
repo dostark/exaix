@@ -291,9 +291,7 @@ Deno.test("ConfigService loads config successfully", async () => {
   }
 });
 
-// ============================================================================
 // ConfigService Error Handling Tests
-// ============================================================================
 
 Deno.test("ConfigService handles missing config file", async (t) => {
   const tempDir = await Deno.makeTempDir({ prefix: "config-missing-test-" });
@@ -635,9 +633,7 @@ runtime = "./Runtime"`,
   });
 });
 
-// ============================================================================
 // Security Tests - Use `deno test --filter "[security]"` to run only these
-// ============================================================================
 
 Deno.test("[security] Env Variable Access: EXA_ prefixed vars are accessible", () => {
   // This test verifies the security model where only EXA_* env vars should be accessible

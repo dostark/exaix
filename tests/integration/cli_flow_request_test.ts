@@ -15,9 +15,7 @@ Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) 
     let traceId: string;
     let requestId: string;
 
-    // ========================================================================
     // Test 1: Create flow request with correct metadata
-    // ========================================================================
     await t.step("Test 1: Create flow request with correct metadata", async () => {
       const result = await env.createFlowRequest("Process user data pipeline", "refactoring", {
         identityId: "mock-agent",
@@ -29,9 +27,7 @@ Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) 
       requestId = traceId.substring(0, 8);
     });
 
-    // ========================================================================
     // Test 2: IFlow as Flow request file has correct metadata
-    // ========================================================================
     await t.step("Test 2: IFlow as Flow request file has correct metadata", async () => {
       const requestPath = join(env.tempDir, "Workspace", "Requests", `request-${requestId}.md`);
       const content = await Deno.readTextFile(requestPath);
@@ -44,9 +40,7 @@ Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) 
       assertStringIncludes(content, "Process user data pipeline");
     });
 
-    // ========================================================================
     // Test 3: IActivity Journal logs flow request creation
-    // ========================================================================
     await t.step("Test 3: IActivity Journal logs flow request creation", async () => {
       // Simulate what the request processor would log
       env.db.logActivity(
@@ -86,9 +80,7 @@ Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) 
 Deno.test("Integration: IFlow as Flow Request Validation", async (t) => {
   const env = await TestEnvironment.create();
   try {
-    // ========================================================================
     // Test 4: IFlow as Flow request validation works
-    // ========================================================================
     await t.step("Test 4: IFlow as Flow request with invalid flow is rejected", async () => {
       // This would be tested at the CLI level, but we can test the validation logic
       // For now, just verify that valid flows can be created
@@ -100,9 +92,7 @@ Deno.test("Integration: IFlow as Flow Request Validation", async (t) => {
       assertStringIncludes(content, "flow: refactoring");
     });
 
-    // ========================================================================
     // Test 5: IFlow as Flow request with portal works
-    // ========================================================================
     await t.step("Test 5: IFlow as Flow request with portal metadata", async () => {
       const result = await env.createFlowRequest("Portal flow request", "refactoring", {
         portal: "TestPortal",

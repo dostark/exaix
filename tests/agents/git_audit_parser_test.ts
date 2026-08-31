@@ -82,9 +82,7 @@ async function buildExecutor(tempDir: string, portalPath: string) {
   return { executor, dbService };
 }
 
-// ============================================================================
 // Test 1: Untracked file is flagged
-// ============================================================================
 
 Deno.test({
   name: "auditGitChanges: untracked file is flagged as unauthorized",
@@ -116,9 +114,7 @@ Deno.test({
   },
 });
 
-// ============================================================================
 // Test 2: Modified tracked file is flagged
-// ============================================================================
 
 Deno.test({
   name: "auditGitChanges: modified tracked file is flagged as unauthorized",
@@ -150,9 +146,7 @@ Deno.test({
   },
 });
 
-// ============================================================================
 // Test 3: Authorized file is NOT flagged
-// ============================================================================
 
 Deno.test({
   name: "auditGitChanges: file in allowed_paths is not flagged",
@@ -184,9 +178,7 @@ Deno.test({
   },
 });
 
-// ============================================================================
 // Test 4: Non-git directory returns empty array
-// ============================================================================
 
 Deno.test({
   name: "auditGitChanges: non-git directory returns empty array",
@@ -215,9 +207,7 @@ Deno.test({
   },
 });
 
-// ============================================================================
 // Test 5: Mixed: one authorized, one unauthorized, only unauthorized returned
-// ============================================================================
 
 Deno.test({
   name: "auditGitChanges: mixed files — only unauthorized returned",
@@ -254,9 +244,7 @@ Deno.test({
   },
 });
 
-// ============================================================================
 // Test 6: Clean working tree returns empty array
-// ============================================================================
 
 Deno.test({
   name: "auditGitChanges: clean working tree returns empty array",

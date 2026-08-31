@@ -134,9 +134,7 @@ Deno.test("[value-comparison-report] assertThrows sanity: the real assertValidit
   });
 });
 
-// ---------------------------------------------------------------------------------------
 // Step 10 — skill/identity/flow reporting layers, same synthetic-only-data discipline.
-// ---------------------------------------------------------------------------------------
 
 const SYNTHETIC_SKILL_REACHABILITY_REQUEST: ISkillReachabilityRequest = {
   catalog: [{ skillId: "demo-skill-a", critical: false }, { skillId: "demo-skill-b", critical: true }],

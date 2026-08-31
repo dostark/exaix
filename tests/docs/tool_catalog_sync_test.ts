@@ -36,7 +36,7 @@ function getExpectedToolNames(): string[] {
     .sort();
 }
 
-// ── Structural tests ──────────────────────────────────────────────────────────
+// Structural tests
 
 Deno.test("tool_catalog_sync: TOOLS.md contains AGENT_TOOLS markers", async () => {
   const content = await Deno.readTextFile(TOOLS_MD_PATH);
@@ -62,7 +62,7 @@ Deno.test("tool_catalog_sync: TOOLS.md describes Source column as a current owne
   );
 });
 
-// ── Completeness tests ────────────────────────────────────────────────────────
+// Completeness tests
 
 Deno.test("tool_catalog_sync: all manifest docs-visible tools appear in TOOLS.md", async () => {
   const section = await readAgentToolsSection();

@@ -233,9 +233,7 @@ Deno.test("package dependency graph reports @exaix/git runtime dependency only o
   assertEquals(gitEdges, [{ from: "@exaix/git", to: "@exaix/core" }]);
 });
 
-// ---------------------------------------------------------------------------
 // buildBoundaryReport — unit tests with synthetic IDenoInfoJson fixtures
-// ---------------------------------------------------------------------------
 
 Deno.test("buildBoundaryReport: file with only package deps is extractable", () => {
   const repo = Deno.cwd();
@@ -394,9 +392,7 @@ Deno.test("buildBoundaryReport: file with no deps is extractable", () => {
   assertEquals(report.externalDirect, []);
 });
 
-// ---------------------------------------------------------------------------
 // renderBoundaryReport — output format tests
-// ---------------------------------------------------------------------------
 
 Deno.test("renderBoundaryReport: extractable file shows EXTRACTABLE verdict", () => {
   const report: IBoundaryReport = {
@@ -447,9 +443,7 @@ Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => 
   assertStringIncludes(text, "and 1 more");
 });
 
-// ---------------------------------------------------------------------------
 // explainBoundary — integration test against live repo files
-// ---------------------------------------------------------------------------
 
 Deno.test("explainBoundary: packages/mcp/src/tool_result_converter.ts is extractable", async () => {
   const discovery = await discoverPackageRoots();

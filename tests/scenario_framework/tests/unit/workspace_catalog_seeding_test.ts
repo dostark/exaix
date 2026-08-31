@@ -92,7 +92,6 @@ Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Portal fixtures must arrive as git repositories.
 //
 // All mutation of a portal goes through a git worktree — `PortalExecutionStrategy.WORKTREE`,
@@ -103,7 +102,6 @@ Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
 //
 // Initialised at seed time rather than committed: nested .git trees inside the repo are
 // awkward to carry, and a per-run repo is what makes worktrees safe to create concurrently.
-// ---------------------------------------------------------------------------
 
 async function gitIn(cwd: string, args: string[]): Promise<{ ok: boolean; out: string }> {
   const result = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" }).output();
@@ -164,7 +162,6 @@ Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", a
   }
 });
 
-// ---------------------------------------------------------------------------
 // Portal mutation must land in a worktree branch, never on the portal's default branch.
 //
 // `getExecutionStrategy` forces PortalExecutionStrategy.WORKTREE for every portal task and
@@ -172,7 +169,6 @@ Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", a
 // and the failure is silent, because a write that misses the worktree lands on the checked-out
 // default branch and looks like success. Seeding portals as real repositories is what made
 // that failure mode reachable, so the check ships alongside it.
-// ---------------------------------------------------------------------------
 
 Deno.test("[portal_drift] a portal mutated through a worktree branch is not flagged", async () => {
   const ws = await Deno.makeTempDir({ prefix: "drift-ok-" });
@@ -230,7 +226,6 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
   }
 });
 
-// ---------------------------------------------------------------------------
 // Phase 142 Step 7 — seeding must be additive at the FILE level, not the directory level.
 //
 // The first full six-subsystem run (the cutover) found every flow scenario after
@@ -240,7 +235,6 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
 // catalog stayed partial for every later scenario in the shared sandbox. Per-pack runs never saw
 // it, because the scenario that creates the directory and the scenarios that need the catalog were
 // never in the same invocation.
-// ---------------------------------------------------------------------------
 
 Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed, not skipped", async () => {
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-" });

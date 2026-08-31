@@ -43,9 +43,7 @@ class MockAgentRunner {
   }
 }
 
-// ============================================================
 // JudgeEvaluator.evaluate() Tests
-// ============================================================
 
 Deno.test("JudgeEvaluator: evaluates content with valid JSON response", async () => {
   const mockRunner = new MockAgentRunner();
@@ -151,9 +149,7 @@ Deno.test("JudgeEvaluator: passes context to agent runner", async () => {
   assertEquals(mockRunner.lastRequest.context?.evaluationMode, true);
 });
 
-// ============================================================
 // JSON Parsing Tests
-// ============================================================
 
 Deno.test("JudgeEvaluator: repairs malformed JSON with missing quotes", async () => {
   const mockRunner = new MockAgentRunner();
@@ -237,9 +233,7 @@ Deno.test("JudgeEvaluator: extracts score from text with percentage", async () =
   assertEquals(typeof result.overallScore, "number");
 });
 
-// ============================================================
 // Score Normalization Tests
-// ============================================================
 
 Deno.test("JudgeEvaluator: normalizes criterion score above 1.0", async () => {
   const mockRunner = new MockAgentRunner();
@@ -326,9 +320,7 @@ Deno.test("JudgeEvaluator: clamps score above 100 to 1.0", async () => {
   assertEquals(result.criteriaScores.code_correctness.score, 1.0);
 });
 
-// ============================================================
 // Multiple Criteria Tests
-// ============================================================
 
 Deno.test("JudgeEvaluator: handles multiple criteria scores", async () => {
   const mockRunner = new MockAgentRunner();
@@ -378,9 +370,7 @@ Deno.test("JudgeEvaluator: handles multiple criteria scores", async () => {
   assertEquals(result.criteriaScores.follows_conventions.passed, false);
 });
 
-// ============================================================
 // Error Handling Tests
-// ============================================================
 
 Deno.test("JudgeEvaluator: handles agent runner error gracefully", async () => {
   const mockRunner = new MockAgentRunner();
@@ -419,9 +409,7 @@ Deno.test("JudgeEvaluator: returns default evaluation for unparseable response",
   assertEquals(typeof result.overallScore, "number");
 });
 
-// ============================================================
 // JudgeInvoker Interface Tests
-// ============================================================
 
 Deno.test("JudgeEvaluator: implements JudgeInvoker interface", async () => {
   const mockRunner = new MockAgentRunner();
@@ -456,9 +444,7 @@ Deno.test("JudgeEvaluator: implements JudgeInvoker interface", async () => {
   assertEquals(result.pass, true);
 });
 
-// ============================================================
 // createJudgeEvaluator Factory Tests
-// ============================================================
 
 Deno.test("createJudgeEvaluator: creates evaluator from agent runner", async () => {
   const mockRunner = new MockAgentRunner();

@@ -32,9 +32,7 @@ import {
   ANALYSIS_COMPLEX_FILE_THRESHOLD,
 } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Shared fixtures
-// ---------------------------------------------------------------------------
 
 const TRACE_ID = "trace-e2e-001";
 const REQUEST_ID = "req-e2e-001";
@@ -98,9 +96,7 @@ function makeMemories(memoryContext: string): EnhancedRequest {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Gap 1: ReflexiveAgent enhanced critique with goals from analysis
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] Gap 1: reflexive agent enhanced critique with goals", async () => {
   let capturedPrompt = "";
@@ -156,9 +152,7 @@ Deno.test("[E2E] Gap 1: reflexive agent enhanced critique with goals", async () 
   );
 });
 
-// ---------------------------------------------------------------------------
 // Gap 2: Memory context feeds into RequestAnalyzer analysis
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] Gap 2: memory context feeds into analysis", async () => {
   const MEMORY_SNIPPET = "Previously fixed auth bug in src/services/auth.ts";
@@ -208,9 +202,7 @@ Deno.test("[E2E] Gap 2: memory context feeds into analysis", async () => {
   assertStringIncludes(capturedPrompt, MEMORY_SNIPPET);
 });
 
-// ---------------------------------------------------------------------------
 // Gap 3: Content-based complexity classification
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] Gap 3: short simple request → SIMPLE complexity", () => {
   const result = analyzeHeuristic("Fix typo in README");
@@ -243,9 +235,7 @@ Deno.test("[E2E] Gap 3: many file refs → COMPLEX complexity", () => {
   assertEquals(result.complexity, RequestAnalysisComplexity.COMPLEX);
 });
 
-// ---------------------------------------------------------------------------
 // Gap 4: Structured frontmatter criteria flow through pipeline
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] Gap 4: structured frontmatter criteria propagate through pipeline", () => {
   const frontmatter: IRequestFrontmatter = {

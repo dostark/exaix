@@ -70,11 +70,10 @@ async function getFlowAgentRefs(flowPath: string): Promise<string[]> {
   return agentRefs;
 }
 
-// ============================================================================
 // Flow Agent Resolution Tests
-// ============================================================================
 
-// ============================================================================ Catalog-wide Flow Tests ============================================================================ These enumerate Blueprints/Flows/ rather than naming files one per Deno.test, so a renamed or newly added flow file is covered automatically instead of silently skipped.
+// Catalog-wide Flow Tests: enumerate Blueprints/Flows/ rather than naming files one per
+// Deno.test, so a renamed or newly added flow file is covered automatically.
 
 /** Flows that have never declared `defaultSkills`. Listed rather than fixed because whether
  * every flow REQUIRES defaultSkills is unconfirmed; this list must shrink, never grow. */
@@ -98,9 +97,7 @@ Deno.test("Flow validation: no flow loses its defaultSkills", async () => {
   );
 });
 
-// ============================================================================
 // Comprehensive Agent Coverage Test
-// ============================================================================
 
 Deno.test("Flow validation: all flow-referenced agents exist", async () => {
   const identityIds = await getAllAgentIds();

@@ -13,9 +13,7 @@ import { CriterionClass, CriterionStatus } from "../schema/step_schema.ts";
 import { configurable } from "@exaix/core/config";
 import { ConfigValueType } from "@exaix/core";
 
-// ============================================================================
 // Scoring modes
-// ============================================================================
 
 /** The scoring composition mode a scenario runs under (Phase 143 Step 3). */
 export enum ScoringMode {
@@ -25,9 +23,7 @@ export enum ScoringMode {
   GATED = "gated",
 }
 
-// ============================================================================
 // Exported interfaces
-// ============================================================================
 
 export interface IScenarioVerdict {
   scenarioId: string;
@@ -57,9 +53,7 @@ export interface IMultiTrialMetrics {
   pass_pow_k: number;
 }
 
-// ============================================================================
 // Configurable defaults for eval scoring
-// ============================================================================
 
 /**
  * Default minimum suite score (0.0–1.0) required to pass an eval-mode scenario
@@ -87,18 +81,14 @@ export const DEFAULT_EVAL_TRIALS: number = configurable({
   max: 100,
 });
 
-// ============================================================================
 // RunVerdict constants
-// ============================================================================
 
 export const RunVerdict = {
   PASSING: { allPassed: true, infraError: false, scenarios: [] } as IRunVerdict,
   INFRA_ERROR: { allPassed: false, infraError: true, scenarios: [] } as IRunVerdict,
 } as const;
 
-// ============================================================================
 // Score-threshold gating functions (used by main.ts for RunVerdict)
-// ============================================================================
 
 /**
  * Determines whether a single suite score meets the threshold.

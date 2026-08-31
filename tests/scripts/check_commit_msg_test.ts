@@ -281,7 +281,7 @@ impact: ReqProc: added validation; EventLogger: added audit entry`;
   });
 });
 
-// ── Plan-step traceability (path: <doc>#<step>) ──────────────────────────────
+// Plan-step traceability (path: <doc>#<step>)
 
 // style-exclude:FIXTURE_READABILITY - Compact plan-doc excerpt kept inline for step-parsing test clarity
 const PLAN_DOC = `## Implementation Plan
@@ -959,7 +959,7 @@ describe("parsePlanStep + validatePlanStepDiff integration (wrapped bullets)", (
   });
 });
 
-// ── Cross-repo git resolution under an inherited hook environment ────────────
+// Cross-repo git resolution under an inherited hook environment
 
 describe("gitOut", () => {
   it("ignores inherited GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX when running a cross-repo -C command", async () => {

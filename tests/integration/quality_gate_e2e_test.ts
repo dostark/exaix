@@ -29,9 +29,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createMockProvider } from "@exaix/testing";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeMeta() {
   return {
@@ -108,9 +106,7 @@ function makeStubGate(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Group 1 – Pipeline integration (via RequestProcessor)
-// ---------------------------------------------------------------------------
 
 Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
   const env = await TestEnvironment.create();
@@ -118,9 +114,7 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
   try {
     await env.createBlueprint("senior-coder");
 
-    // -----------------------------------------------------------------------
     // PROCEED: well-specified request should pass through without early return
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] well-specified request proceeds through quality gate",
       async () => {
@@ -144,10 +138,8 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
       },
     );
 
-    // -----------------------------------------------------------------------
     // NEEDS_CLARIFICATION: processor must exit early with REFINING status
     // and persist a clarification session
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] vague request enters Q&A loop",
       async () => {
@@ -173,9 +165,7 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
       },
     );
 
-    // -----------------------------------------------------------------------
     // AUTO_ENRICH: processor should NOT exit early; enrichedBody used downstream
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] underspecified request auto-enriched",
       async () => {
@@ -203,9 +193,7 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
       },
     );
 
-    // -----------------------------------------------------------------------
     // REJECT: processor must set FAILED status and exit early
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] rejected request sets FAILED status",
       async () => {
@@ -224,9 +212,7 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
       },
     );
 
-    // -----------------------------------------------------------------------
     // DISABLED GATE: processor proceeds normally regardless of request quality
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] disabled quality gate passes all requests",
       async () => {
@@ -256,10 +242,8 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
       },
     );
 
-    // -----------------------------------------------------------------------
     // LLM UNAVAILABLE: gate in hybrid mode, LLM throws — heuristic takes over
     // and the pipeline completes without throwing.
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] Pipeline degrades gracefully when LLM unavailable",
       async () => {
@@ -313,9 +297,7 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Group 2 – Clarification session lifecycle
-// ---------------------------------------------------------------------------
 
 Deno.test("Quality Gate E2E – clarification session lifecycle", async (t) => {
   const env = await TestEnvironment.create();
@@ -327,9 +309,7 @@ Deno.test("Quality Gate E2E – clarification session lifecycle", async (t) => {
     );
     const requestId = basename(filePath, ".md");
 
-    // -----------------------------------------------------------------------
     // Session persistence round-trip
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] clarification session persists and resumes",
       async () => {
@@ -347,9 +327,7 @@ Deno.test("Quality Gate E2E – clarification session lifecycle", async (t) => {
       },
     );
 
-    // -----------------------------------------------------------------------
     // Quality score improves after answers processed by ClarificationEngine
-    // -----------------------------------------------------------------------
     await t.step(
       "[E2E] quality score improves across Q&A rounds",
       async () => {
@@ -394,9 +372,7 @@ Deno.test("Quality Gate E2E – clarification session lifecycle", async (t) => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Internal helper — construct RequestProcessor with injected quality gate
-// ---------------------------------------------------------------------------
 
 function buildProcessor(
   env: TestEnvironment,

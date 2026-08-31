@@ -15,9 +15,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
-// ============================================================
 // Mock infrastructure
-// ============================================================
 
 class StubAgentExecutor implements IAgentExecutor {
   async run(_identityId: string, _req: IFlowStepRequest): Promise<IAgentExecutionResult> {
@@ -45,9 +43,7 @@ class CapturingGateEvaluator extends GateEvaluator {
   }
 }
 
-// ============================================================
 // Helpers
-// ============================================================
 
 function makeGateFlow(
   stepIncludeRequestCriteria?: boolean,
@@ -85,9 +81,7 @@ function makeGateFlow(
   return FlowSchema.parse(raw);
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test(
   "[FlowRunner] applies flow-level includeRequestCriteria to gate steps",

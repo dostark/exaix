@@ -20,9 +20,7 @@ import { AnalysisMode } from "@exaix/core/types";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 
-// ---------------------------------------------------------------------------
 // Test 1: Heuristic-only analysis path
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "Integration: request analysis – heuristic-only analyzer",
@@ -104,9 +102,7 @@ Deno.test(
   },
 );
 
-// ---------------------------------------------------------------------------
 // Test 2: Default (hybrid) analysis path – plan frontmatter and flow request
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "Integration: request analysis – plan annotation and flow request",

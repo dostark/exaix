@@ -205,9 +205,7 @@ async function testProviderTokenMetrics(
   validateTokenMetrics(payload, providerName);
 }
 
-// =============================================================================
 // Google Gemini Token Metrics Test
-// =============================================================================
 
 Deno.test({
   name: "Google Gemini - token metrics tracking with real API",
@@ -254,9 +252,7 @@ Deno.test({
   },
 });
 
-// =============================================================================
 // OpenAI GPT Token Metrics Test
-// =============================================================================
 
 Deno.test({
   name: "OpenAI GPT - token metrics tracking with real API",
@@ -303,9 +299,7 @@ Deno.test({
   },
 });
 
-// =============================================================================
 // Anthropic Claude Token Metrics Test
-// =============================================================================
 
 Deno.test({
   name: "Anthropic Claude - token metrics tracking with real API",

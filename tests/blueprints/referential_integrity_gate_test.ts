@@ -23,14 +23,14 @@ import {
   SKILLS_DIR,
 } from "./test_helpers.ts";
 
-// ── Const helpers ───────────────────────────────────────────────────
+// Const helpers
 
 /** All valid McpToolName values for permitted_tools validation. */
 const VALID_MCP_TOOL_NAMES = new Set(
   Object.values(McpToolName) as string[],
 );
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// Helpers
 
 function listActiveIdentityIds(): string[] {
   const ids: string[] = [];
@@ -51,7 +51,7 @@ function loadActiveIdentities(): Array<{ id: string; fm: IIdentityFrontmatter }>
   return out;
 }
 
-// ── 1. Referential-integrity: every default_skills resolves ──────────
+// 1. Referential-integrity: every default_skills resolves
 
 Deno.test({
   name: "[step9/integrity-gate] all default_skills references resolve to existent .skill.md files — FAILS CLOSED",
@@ -82,7 +82,7 @@ Deno.test({
   },
 });
 
-// ── 2. FAILS CLOSED: dangling skill ref on a synthetic identity ──────
+// 2. FAILS CLOSED: dangling skill ref on a synthetic identity
 
 Deno.test({
   name: "[step9/integrity-gate] a dangling skill reference is detected — FAILS CLOSED",
@@ -155,7 +155,7 @@ Deno.test({
   },
 });
 
-// ── 4. FAILS CLOSED: wrong skills on synthetic identity ──────────────
+// 4. FAILS CLOSED: wrong skills on synthetic identity
 
 Deno.test({
   name: "[step9/integrity-gate] a wrong-skills identity is caught — FAILS CLOSED",
@@ -210,7 +210,7 @@ Deno.test({
   },
 });
 
-// ── 6. FAILS CLOSED: over-privileged synthetic identity ──────────────
+// 6. FAILS CLOSED: over-privileged synthetic identity
 
 Deno.test({
   name: "[step9/integrity-gate] an over-privileged read-only identity is caught — FAILS CLOSED",
@@ -233,7 +233,7 @@ Deno.test({
   },
 });
 
-// ── 7. capabilities behavioral-only gate ─────────────────────────────
+// 7. capabilities behavioral-only gate
 
 Deno.test({
   name: "[step9/integrity-gate] no identity has McpToolName values in capabilities — FAILS CLOSED",

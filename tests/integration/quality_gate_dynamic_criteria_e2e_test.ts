@@ -40,9 +40,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createMockProvider } from "@exaix/testing";
 import { CriteriaGenerator } from "@exaix/core/skills";
 
-// ============================================================
 // Shared fixtures
-// ============================================================
 
 function makeAnalysisWithGoals(): IRequestAnalysis {
   return {
@@ -179,9 +177,7 @@ function makeCritiqueJSON(overrides: Partial<{ quality: string; confidence: numb
   });
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test(
   "[E2E] request goals generate dynamic evaluation criteria",

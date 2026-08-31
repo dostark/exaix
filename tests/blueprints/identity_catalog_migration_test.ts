@@ -71,9 +71,7 @@ function walkIdentitiesTree(): string[] {
   return out;
 }
 
-// ─────────────────────────────────────────────
 // Test 1: Every identity has a response-contract skill in default_skills
-// ─────────────────────────────────────────────
 
 /** Each identity carries exactly one output contract; the four analysis identities use a
  * domain-specific response-contract-<domain> variant instead of the generic one. */
@@ -103,9 +101,7 @@ Deno.test({
   },
 });
 
-// ─────────────────────────────────────────────
 // Test 2: No file under Blueprints/Identities/** contains a contract-fragment include
-// ─────────────────────────────────────────────
 Deno.test({
   name: "[step7] no identity/example/template contains a contract-fragment {{include:}}",
   fn() {
@@ -124,9 +120,7 @@ Deno.test({
   },
 });
 
-// ─────────────────────────────────────────────
 // Test 3: Blueprints/Fragments/ no longer contains contract fragments
-// ─────────────────────────────────────────────
 Deno.test({
   name: "[step7] Fragments/ directory no longer contains contract/methodology fragments",
   fn() {
@@ -143,9 +137,7 @@ Deno.test({
 // Active-identity default_skills coverage lives in referential_integrity_gate and
 // identity_catalog_load tests.
 
-// ─────────────────────────────────────────────
 // Test: New skills exist on disk
-// ─────────────────────────────────────────────
 Deno.test({
   name:
     "[step7] new domain skills exist (verdict-rubric, architecture-review, performance-analysis, requirements-analysis, research-methodology, blueprint-best-practices)",
@@ -171,9 +163,7 @@ Deno.test({
   },
 });
 
-// ─────────────────────────────────────────────
 // Test 6: Every active identity body is slim (no methodology sections)
-// ─────────────────────────────────────────────
 const METHODOLOGY_HEADINGS = [
   "## Core Responsibilities",
   "## Analysis Framework",

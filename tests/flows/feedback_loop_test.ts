@@ -93,9 +93,7 @@ class MockAgentRunner {
   }
 }
 
-// ============================================================
 // FeedbackLoop Basic Tests
-// ============================================================
 
 // Helper to setup feedback loop components
 function setupFeedbackLoop(defaultScore: number, configOverrides: Partial<FeedbackLoopConfig> = {}) {
@@ -120,9 +118,7 @@ function setupFeedbackLoop(defaultScore: number, configOverrides: Partial<Feedba
   return { mockJudge, gateEvaluator, improvementAgent, feedbackLoop, config };
 }
 
-// ============================================================
 // FeedbackLoop Basic Tests
-// ============================================================
 
 Deno.test("FeedbackLoop: stops when target score reached", async () => {
   const { feedbackLoop, config } = setupFeedbackLoop(0.95); // Above target
@@ -165,9 +161,7 @@ Deno.test("FeedbackLoop: tracks iterations correctly", async () => {
   assertExists(result.iterations[0].durationMs);
 });
 
-// ============================================================
 // Stop Condition Tests
-// ============================================================
 
 Deno.test("FeedbackLoop: stops on no improvement", async () => {
   const { mockJudge, feedbackLoop, config } = setupFeedbackLoop(0.7, {
@@ -228,9 +222,7 @@ Deno.test("FeedbackLoop: stops on improvement agent error", async () => {
   assertEquals(result.stopReason, "error");
 });
 
-// ============================================================
 // Improvement Agent Tests
-// ============================================================
 
 Deno.test("FeedbackLoop: calls improvement agent with correct parameters", async () => {
   const { feedbackLoop, improvementAgent, config } = setupFeedbackLoop(0.6, {
@@ -270,9 +262,7 @@ Deno.test("FeedbackLoop: uses improved content in subsequent iterations", async 
   assertEquals(result.finalContent, "Much better content");
 });
 
-// ============================================================
 // SimpleImprovementAgent Tests
-// ============================================================
 
 Deno.test("SimpleImprovementAgent: formats prompt correctly", async () => {
   const mockRunner = new MockAgentRunner();
@@ -312,9 +302,7 @@ Deno.test("SimpleImprovementAgent: returns improved content", async () => {
   assertEquals(result, "Beautifully refactored code");
 });
 
-// ============================================================
 // createFeedbackLoop Factory Tests
-// ============================================================
 
 Deno.test("createFeedbackLoop: creates functional feedback loop", async () => {
   const mockJudge = new MockJudgeInvoker();
@@ -341,9 +329,7 @@ Deno.test("createFeedbackLoop: creates functional feedback loop", async () => {
   assertExists(result.finalContent);
 });
 
-// ============================================================
 // runSelfCorrectingAgent Tests
-// ============================================================
 
 Deno.test("runSelfCorrectingAgent: runs complete self-correcting flow", async () => {
   const mockJudge = new MockJudgeInvoker();
@@ -413,9 +399,7 @@ Deno.test("runSelfCorrectingAgent: improves through iterations", async () => {
   assertEquals(result.initialContent, "First attempt");
 });
 
-// ============================================================
 // Duration Tracking Tests
-// ============================================================
 
 Deno.test("FeedbackLoop: tracks total duration", async () => {
   const { feedbackLoop, config } = setupFeedbackLoop(0.95, { maxIterations: 3 });
@@ -426,9 +410,7 @@ Deno.test("FeedbackLoop: tracks total duration", async () => {
   assertEquals(result.iterations[0].durationMs >= 0, true);
 });
 
-// ============================================================
 // Multiple Criteria Tests
-// ============================================================
 
 Deno.test("FeedbackLoop: handles multiple criteria", async () => {
   const { feedbackLoop, config } = setupFeedbackLoop(0.95, {

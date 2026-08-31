@@ -52,9 +52,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       assertEquals(activeExists, true, "Plan should be in Active");
     });
 
-    // ========================================================================
     // Test 1: Execution failure is detected
-    // ========================================================================
     await t.step("Test 1: Execution failure is detected and captured", async () => {
       // Modify the plan to include the special failure marker
       await env.injectFailureMarker(activePlanPath);
@@ -71,9 +69,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       failureError = result.error;
     });
 
-    // ========================================================================
     // Test 2: Git changes rolled back
-    // ========================================================================
     await t.step("Test 2: Git changes are rolled back on failure", async () => {
       // Get current branch
       const branchCmd = new Deno.Command(PortalOperation.GIT, {
@@ -91,9 +87,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       assertExists(mainBranch, "Main branch should exist");
     });
 
-    // ========================================================================
     // Test 3: Failure report generated
-    // ========================================================================
     await t.step("Test 3: Failure report generated with error details", async () => {
       // Wait for any async report generation
       const { promise, resolve } = Promise.withResolvers<void>();
@@ -125,9 +119,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       );
     });
 
-    // ========================================================================
     // Test 4: Plan status updated
-    // ========================================================================
     await t.step("Test 4: Plan moved to Rejected on failure", async () => {
       // After failure, plan should be in Rejected with _failed.md suffix
       const requestId = `request-${traceId.substring(0, 8)}`;
@@ -138,9 +130,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       assertEquals(inRejected, true, "Plan should be in Workspace/Rejected");
     });
 
-    // ========================================================================
     // Test 5: Lease released
-    // ========================================================================
     await t.step("Test 5: Lease is released even on failure", async () => {
       // Create a new execution loop
       const newLoop = env.createExecutionLoop("new-agent");
@@ -166,9 +156,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       }
     });
 
-    // ========================================================================
     // Test 6: Failure logged to IActivity Journal
-    // ========================================================================
     await t.step("Test 6: All failure steps logged with trace_id", async () => {
       const activities = await env.getActivityLog(traceId);
 
@@ -188,9 +176,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       }
     });
 
-    // ========================================================================
     // Test 7: Original request unaffected
-    // ========================================================================
     await t.step("Test 7: Original request archived to Rejected on failure", async () => {
       // Request should be moved to Rejected
       const requestExistsInInbox = await env.fileExists(

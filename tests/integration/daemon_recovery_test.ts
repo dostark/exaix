@@ -117,9 +117,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       );
     });
 
-    // ========================================================================
     // Test 1: In-progress plans detected after restart
-    // ========================================================================
     await t.step("Test 1: In-progress plans detected after restart", async () => {
       const recovery = new RecoveryService({
         config: env.config,
@@ -150,9 +148,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       assert(executingPlans.length >= 0, "May have executing plans");
     });
 
-    // ========================================================================
     // Test 2: Orphaned leases cleaned up
-    // ========================================================================
     await t.step("Test 2: Orphaned leases cleaned up on daemon start", async () => {
       const recovery = new RecoveryService({
         config: env.config,
@@ -170,9 +166,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       // Main point: shouldn't prevent new execution
     });
 
-    // ========================================================================
     // Test 3: Git working directory restored
-    // ========================================================================
     await t.step("Test 3: Git working directory state is restored", async () => {
       // Simulate dirty git state from crash
       await env.writeFile("uncommitted-change.txt", "dirty state");
@@ -205,9 +199,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       );
     });
 
-    // ========================================================================
     // Test 4: Incomplete plans can be resumed
-    // ========================================================================
     await t.step("Test 4: Incomplete plans can be resumed or re-queued", async () => {
       const recovery = new RecoveryService({
         config: env.config,
@@ -235,9 +227,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       }
     });
 
-    // ========================================================================
     // Test 5: IActivity Journal preserves pre-crash entries
-    // ========================================================================
     await t.step("Test 5: IActivity Journal preserves pre-crash entries", async () => {
       // Wait for any pending log writes
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -251,9 +241,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       assertEquals(JSON.parse(preCrash.payload).plan, "crash-test");
     });
 
-    // ========================================================================
     // Test 6: No duplicate executions after recovery
-    // ========================================================================
     await t.step("Test 6: No duplicate executions after recovery", async () => {
       // Create new loop after "restart"
       const loop = new ExecutionLoop({
@@ -287,9 +275,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       );
     });
 
-    // ========================================================================
     // Test 7: System returns to healthy state
-    // ========================================================================
     await t.step("Test 7: System returns to healthy state", async () => {
       // Can process new requests normally
       const { traceId: newTraceId } = await env.createRequest("Post-recovery task");

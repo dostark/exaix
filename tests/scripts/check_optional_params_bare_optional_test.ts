@@ -38,7 +38,7 @@ function firstParam(src: string): ts.ParameterDeclaration {
   return found;
 }
 
-// ── `| undefined` union form ────────────────────────────────────────────────────
+// `| undefined` union form
 
 Deno.test("[bare-optional] flags `x: string | undefined`", () => {
   assertEquals(hasBareOptional(firstParam("function f(x: string | undefined) {}")), true);
@@ -65,7 +65,7 @@ Deno.test("[bare-optional] flags a bare `| undefined` in a NON-trailing param po
   assertEquals(hasBareOptional(mid), true);
 });
 
-// ── `?` token form (now treated identically to `| undefined`) ────────────────────
+// `?` token form (now treated identically to `| undefined`)
 
 Deno.test("[bare-optional] flags a bare `?` param `x?: string`", () => {
   assertEquals(hasBareOptional(firstParam("function f(x?: string) {}")), true);
@@ -79,7 +79,7 @@ Deno.test("[bare-optional] flags a bare `?` with an object type", () => {
   assertEquals(hasBareOptional(firstParam("function f(x?: { a: number }) {}")), true);
 });
 
-// ── Compliant / out-of-scope forms (NOT flagged) ─────────────────────────────────
+// Compliant / out-of-scope forms (NOT flagged)
 
 Deno.test("[bare-optional] does NOT flag a plain required param", () => {
   assertEquals(hasBareOptional(firstParam("function f(x: string) {}")), false);
@@ -103,7 +103,7 @@ Deno.test("[bare-optional] does NOT flag a union WITHOUT undefined", () => {
   assertEquals(hasBareOptional(firstParam("function f(x: string | number) {}")), false);
 });
 
-// ── MARKED_NOT_OPTIONAL exemption for non-trailing Opt params ─────────────────────
+// MARKED_NOT_OPTIONAL exemption for non-trailing Opt params
 
 /** Collect type-shape violations for a source snippet. */
 function shapeViolations(src: string): ReturnType<typeof collectTypeShapeViolations> {

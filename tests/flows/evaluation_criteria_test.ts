@@ -21,9 +21,7 @@ import {
 } from "@exaix/core/evaluation";
 import { EvaluationCategory, FulfillmentStatus } from "@exaix/core";
 
-// ============================================================
 // CRITERIA Constants Tests
-// ============================================================
 
 Deno.test("CRITERIA: contains CODE_CORRECTNESS", () => {
   assertExists(CRITERIA.CODE_CORRECTNESS);
@@ -57,9 +55,7 @@ Deno.test("CRITERIA: all criteria have valid schema", () => {
   }
 });
 
-// ============================================================
 // CRITERION_SETS Tests
-// ============================================================
 
 Deno.test("CRITERION_SETS: contains CODE_REVIEW set", () => {
   assertExists(CRITERION_SETS.CODE_REVIEW);
@@ -82,9 +78,7 @@ Deno.test("CRITERION_SETS: CODE_REVIEW includes key criteria", () => {
   assertEquals(criteriaNames.includes("code_correctness"), true);
 });
 
-// ============================================================
 // getCriteriaByNames Tests
-// ============================================================
 
 Deno.test("getCriteriaByNames: retrieves single criterion", () => {
   const criteria = getCriteriaByNames(["CODE_CORRECTNESS"]);
@@ -125,9 +119,7 @@ Deno.test("getCriteriaByNames: returns empty array for all unknown", () => {
   assertEquals(criteria.length, 0);
 });
 
-// ============================================================
 // calculateWeightedScore Tests
-// ============================================================
 
 function makeCriterionResult(
   name: string,
@@ -208,9 +200,7 @@ Deno.test("calculateWeightedScore: returns 0 for empty criteria", () => {
   assertEquals(score, 0);
 });
 
-// ============================================================
 // checkRequiredCriteria Tests
-// ============================================================
 
 const correctnessAndCompletenessCriteria: EvaluationCriterion[] = [
   {
@@ -298,9 +288,7 @@ Deno.test("checkRequiredCriteria: uses custom threshold", () => {
   assertEquals(passedLow, true);
 });
 
-// ============================================================
 // createCriterion Tests
-// ============================================================
 
 Deno.test("createCriterion: creates criterion with defaults", () => {
   const criterion = createCriterion("CUSTOM_CHECK", "Custom description");
@@ -328,9 +316,7 @@ Deno.test("createCriterion: validates through schema", () => {
   assertExists(criterion);
 });
 
-// ============================================================
 // buildEvaluationPrompt Tests
-// ============================================================
 
 Deno.test("buildEvaluationPrompt: includes content", () => {
   const criteria: EvaluationCriterion[] = [CRITERIA.CODE_CORRECTNESS];
@@ -468,9 +454,7 @@ Deno.test("buildEvaluationPrompt (multi): example JSON shows every criterion nam
   );
 });
 
-// ============================================================
 // Schema Validation Tests
-// ============================================================
 
 Deno.test("EvaluationCriterionSchema: validates correct criterion", () => {
   const result = EvaluationCriterionSchema.safeParse({
@@ -513,9 +497,7 @@ Deno.test("EvaluationCriterionSchema: applies default weight", () => {
   assertEquals(result.weight, 1.0);
 });
 
-// ============================================================
 // Phase 48 — Step 1: New goal-aligned built-in criteria
-// ============================================================
 
 Deno.test("[EvaluationCriteria] GOAL_ALIGNMENT has correct weight and category", () => {
   assertExists(CRITERIA.GOAL_ALIGNMENT);
@@ -573,9 +555,7 @@ Deno.test("[EvaluationCriteria] existing criteria remain unchanged", () => {
   assertEquals(CRITERION_SETS.CODE_REVIEW.length, 5);
 });
 
-// ============================================================
 // Phase 48 — Step 2: RequirementFulfillmentSchema
-// ============================================================
 
 Deno.test("[EvaluationCriteria] RequirementFulfillmentSchema validates MET status", () => {
   const result = RequirementFulfillmentSchema.parse({

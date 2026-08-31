@@ -683,3 +683,26 @@ export function run(): number {
 
   assertEquals(result.output.includes("[decorative-comment]"), false, result.output);
 });
+
+Deno.test("check_code_style allows a comment quoting a markdown heading example", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "markdown_heading_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempMarkdownHeadingComment
+ * @path markdown_heading_comment.ts
+ * @description Temporary regression file for markdown-heading-example allowance.
+ */
+
+export function run(): number {
+  // Extract ATX headings (\`#\` … \`######\`) from markdown text.
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[decorative-comment]"), false, result.output);
+});

@@ -16,7 +16,7 @@ import {
   isRuntimeArtifactPath,
 } from "../../scripts/check_runtime_artifacts.ts";
 
-// ── isRuntimeArtifactPath ──────────────────────────────────────────────────────
+// isRuntimeArtifactPath
 
 Deno.test("[isRuntimeArtifactPath] flags a file directly under venv/", () => {
   assert(isRuntimeArtifactPath("some/task/venv/bin/python"));
@@ -47,7 +47,7 @@ Deno.test("[isRuntimeArtifactPath] does NOT flag ordinary source paths", () => {
   assertEquals(isRuntimeArtifactPath("packages/core/src/types/json.ts"), false);
 });
 
-// ── findEmbeddedRuntimeArtifactPaths ───────────────────────────────────────────
+// findEmbeddedRuntimeArtifactPaths
 
 Deno.test("[findEmbeddedRuntimeArtifactPaths] finds a runtime-artifact path inside diff --git headers", () => {
   const patch = [
@@ -85,7 +85,7 @@ Deno.test("[findEmbeddedRuntimeArtifactPaths] dedupes repeated occurrences of th
   assertEquals(findEmbeddedRuntimeArtifactPaths(patch), ["venv/bin/python"]);
 });
 
-// ── findRuntimeArtifactViolations (integration of both classes) ────────────────
+// findRuntimeArtifactViolations (integration of both classes)
 
 Deno.test("[findRuntimeArtifactViolations] flags a staged file literally under a runtime-artifact dir", () => {
   const violations = findRuntimeArtifactViolations([

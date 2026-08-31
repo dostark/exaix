@@ -17,9 +17,7 @@ import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import type { IDocCommandRunner, IPortalKnowledgeServiceOptions } from "@exaix/portal/knowledge";
 import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 const NULL_RUNNER: IDocCommandRunner = {
   run(_entrypoint: string, _portalPath: string): Promise<string | null> {
@@ -80,9 +78,7 @@ function makeServiceOptions(overrides: Partial<IPortalKnowledgeServiceOptions> =
   };
 }
 
-// ---------------------------------------------------------------------------
 // Fixture builders
-// ---------------------------------------------------------------------------
 
 /** Create a Python-dominant portal fixture. */
 async function createPythonPortal(baseDir: string): Promise<string> {
@@ -115,9 +111,7 @@ async function createMixedPortal(baseDir: string): Promise<string> {
   return dir;
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test({
   name: "[portal] [E2E] Solo default registry extracts Python symbols — real symbolMap",

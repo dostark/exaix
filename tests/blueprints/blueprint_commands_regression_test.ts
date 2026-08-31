@@ -65,9 +65,7 @@ function createTestConfig(root: string) {
 // Create stub db for testing
 const stubDb = createStubDb();
 
-// ============================================================================
 // Regression Tests for Blueprint Frontmatter Parsing
-// ============================================================================
 
 Deno.test("[regression] Blueprint list works with YAML frontmatter (---)", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa_blueprint_regression_" });

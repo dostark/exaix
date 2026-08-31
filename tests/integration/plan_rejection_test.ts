@@ -54,9 +54,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       assertEquals(planExists, true, "Plan should exist before rejection");
     });
 
-    // ========================================================================
     // Test 1: Plan can be rejected with a reason
-    // ========================================================================
     await t.step("Test 1: Plan can be rejected with reason", async () => {
       // Read plan content before rejection
       const beforeContent = await Deno.readTextFile(planPath);
@@ -69,9 +67,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       assertExists(rejectedPath, "Should return rejected plan path");
     });
 
-    // ========================================================================
     // Test 2: Rejected plan moved to /Workspace/Rejected
-    // ========================================================================
     await t.step("Test 2: Rejected plan moved to /Workspace/Rejected", async () => {
       // Verify plan is in Rejected directory
       const rejectedExists = await env.fileExists("Workspace/Rejected/callback-reader_plan.md");
@@ -86,9 +82,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       assertEquals(activeExists, false, "Plan should NOT be in /Workspace/Active");
     });
 
-    // ========================================================================
     // Test 3: Rejected plan status updated
-    // ========================================================================
     await t.step("Test 3: Rejected plan status updated to 'rejected'", async () => {
       const content = await Deno.readTextFile(rejectedPath);
 
@@ -99,9 +93,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       );
     });
 
-    // ========================================================================
     // Test 4: Rejection reason appended
-    // ========================================================================
     await t.step("Test 4: Rejection reason appended to plan", async () => {
       const content = await Deno.readTextFile(rejectedPath);
 
@@ -112,9 +104,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       assertStringIncludes(content, "async/await");
     });
 
-    // ========================================================================
     // Test 5: Original request unchanged
-    // ========================================================================
     await t.step("Test 5: Original request remains unchanged", async () => {
       // Request should still exist
       const requestExists = await env.fileExists(
@@ -129,9 +119,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       assertStringIncludes(content, "callback-based file reader");
     });
 
-    // ========================================================================
     // Test 6: Rejection logged to IActivity Journal
-    // ========================================================================
     await t.step("Test 6: Rejection logged to IActivity Journal", async () => {
       // Log the rejection activity
       env.db.logActivity(
@@ -159,9 +147,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       assertStringIncludes(payload.reason, "coding standards");
     });
 
-    // ========================================================================
     // Test 7: Trace ID preserved
-    // ========================================================================
     await t.step("Test 7: Rejected plan preserves original trace_id", async () => {
       const content = await Deno.readTextFile(rejectedPath);
 

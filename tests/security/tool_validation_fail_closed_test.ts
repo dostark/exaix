@@ -25,9 +25,7 @@ import { createMCPRequest } from "@exaix/mcp/testing";
 
 const SECRET_MARKER = "SUPER_SECRET_TOKEN_abc123xyz";
 
-// ============================================================================
 // rawResult must not be forwarded to MCP clients
-// ============================================================================
 
 Deno.test("[security] MCP boundary validator: rawResult field is not included in client-facing error text", async () => {
   const failure: IToolResultValidationFailure = {
@@ -82,9 +80,7 @@ Deno.test("[security] MCP boundary validator: rawResult field is not included in
   }
 });
 
-// ============================================================================
 // validateToolResultEnvelope rawResult capture
-// ============================================================================
 
 Deno.test("[security] tool_validation_fail_closed: rawResult is captured in failure object for audit", () => {
   const raw = { success: "maybe", data: { secret: SECRET_MARKER } };

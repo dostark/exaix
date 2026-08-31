@@ -229,9 +229,7 @@ export function levenshteinTrajectory(a: string[], b: string[]): number {
   return matrix[b.length][a.length];
 }
 
-// ---------------------------------------------------------------------------
 // Internal helpers
-// ---------------------------------------------------------------------------
 
 function expectedToolNames(expected: IExpectedTrajectory): string[] {
   return expected.expectedSequence.map((e) => e.tool);

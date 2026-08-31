@@ -8,8 +8,9 @@
 import { MemoryBankSource, RequestSource, SkillStatus } from "@exaix/core";
 import { PlanStatus, type PlanStatusType } from "@exaix/core/status";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
+import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Test Data Factories =====
+// Test Data Factories
 
 export interface ITestRequestFixture {
   trace_id: string;
@@ -91,7 +92,7 @@ export const skillFactory = new TestDataFactory<ITestSkillFixture>(() => ({
   description: "Test skill",
 }));
 
-// ===== Mock Service Base Classes =====
+// Mock Service Base Classes
 
 /**
  * Base class for mock services with common CRUD operations
@@ -146,7 +147,7 @@ export class MockRequestService extends BaseMockService<ITestRequestFixture> {
     super(initialRequests);
   }
 
-  listRequests(status?: RequestStatusType): Promise<ITestRequestFixture[]> {
+  listRequests(status?: Opt<RequestStatusType, Reason.QueryFilter>): Promise<ITestRequestFixture[]> {
     if (status) {
       return Promise.resolve(this.items.filter((r) => r.status === status));
     }
@@ -160,7 +161,7 @@ export class MockRequestService extends BaseMockService<ITestRequestFixture> {
 
   createRequest(
     description: string,
-    options?: { priority?: string; identity?: string; portal?: string; model?: string },
+    options?: Opt<{ priority?: string; identity?: string; portal?: string; model?: string }, Reason.TestOverride>,
   ): Promise<ITestRequestFixture> {
     return this.create({
       trace_id: `test-${Date.now()}`,
@@ -199,7 +200,7 @@ export class MockPlanService extends BaseMockService<ITestPlanFixture> {
     return this.update(id, { status: PlanStatus.APPROVED });
   }
 
-  rejectPlan(id: string, reason?: string): Promise<boolean> {
+  rejectPlan(id: string, reason?: Opt<string, Reason.OptionalInput>): Promise<boolean> {
     const updateData: Partial<ITestPlanFixture> = { status: PlanStatus.REJECTED };
     if (reason !== undefined) {
       updateData.rejectionReason = reason;
@@ -208,7 +209,7 @@ export class MockPlanService extends BaseMockService<ITestPlanFixture> {
   }
 }
 
-// ===== Common Test Data Sets =====
+// Common Test Data Sets
 
 export const commonTestData = {
   requests: {
@@ -283,7 +284,7 @@ export const commonTestData = {
   },
 };
 
-// ===== Utility Functions =====
+// Utility Functions
 
 /**
  * Creates a standard test scenario with service, view, and TUI session

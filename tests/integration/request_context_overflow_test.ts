@@ -22,9 +22,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
     const LARGE_FILE_SIZE = 10000; // 10KB per file
     const createdFiles: string[] = [];
 
-    // ========================================================================
     // Setup: Create many large files
-    // ========================================================================
     await t.step("Setup: Create 50 large files", async () => {
       for (let i = 0; i < LARGE_FILE_COUNT; i++) {
         const fileName = `large_file_${i.toString().padStart(3, "0")}.ts`;
@@ -40,9 +38,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
 
     let traceId: string;
 
-    // ========================================================================
     // Test 1: Request with many file references is accepted
-    // ========================================================================
     await t.step("Test 1: Request with many file references accepted", async () => {
       // Create request that references all files
       const fileList = createdFiles.map((f) => `- ${f}`).join("\n");
@@ -61,9 +57,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       assertEquals(exists, true, "Request should be saved");
     });
 
-    // ========================================================================
     // Test 2: Context loader gracefully truncates
-    // ========================================================================
     await t.step("Test 2: Context loader gracefully truncates large content", async () => {
       const contextLoader = new ContextLoader({
         maxTokens: 10000, // Low limit for test
@@ -85,9 +79,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       assert(context.totalTokens < 10000, "Context should be truncated under limit");
     });
 
-    // ========================================================================
     // Test 3: Plan is still generated
-    // ========================================================================
     await t.step("Test 3: Plan generated despite context limits", async () => {
       // Create a plan (simulating what daemon would do)
       const planPath = await env.createPlan(traceId, "refactor-large", {
@@ -106,9 +98,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       assert(planContent.includes("refactor-large"), "Plan should have content");
     });
 
-    // ========================================================================
     // Test 4: Warning logged about truncation
-    // ========================================================================
     await t.step("Test 4: Warning logged about context truncation", async () => {
       // Wait for any async logging
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -123,9 +113,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       assertEquals(payload.skipped_files_count, 47);
     });
 
-    // ========================================================================
     // Test 5: Execution proceeds
-    // ========================================================================
     await t.step("Test 5: Execution proceeds with available context", async () => {
       const planPath = await env.getPlanByTraceId(traceId);
       if (planPath) {
@@ -144,9 +132,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       }
     });
 
-    // ========================================================================
     // Test 6: Report indicates context limits
-    // ========================================================================
     await t.step("Test 6: Report indicates context was limited", async () => {
       // Check if there's any indication in logs about context handling
       const activities = await env.getActivityLog(traceId);
@@ -158,9 +144,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       assert(payload.total_tokens < 10000, "logged context size must stay below the configured limit");
     });
 
-    // ========================================================================
     // Test 7: No crashes from large input
-    // ========================================================================
     await t.step("Test 7: No memory errors or crashes", () => {
       // If we got here, no crashes occurred
       // Additional check: memory usage is reasonable

@@ -16,7 +16,7 @@ import { createStubContext } from "@exaix/testing";
 const context = createStubContext();
 const permissions = new AllowAllPermissionsService();
 
-// ── Name-preservation regression tests ───────────────────────────────────────
+// Name-preservation regression tests
 
 Deno.test("backwards_compat: all McpToolName enum values are registered in buildHandlers()", () => {
   const handlers = buildHandlers(context, permissions);

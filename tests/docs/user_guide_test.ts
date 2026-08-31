@@ -9,9 +9,7 @@ import { assert, assertStringIncludes } from "@std/assert";
 import { FlowInputSource } from "@exaix/core";
 import { readUserGuide } from "./helpers.ts";
 
-// ============================================================================
 // User Guide Structure Tests
-// ============================================================================
 
 Deno.test("User Guide has main sections", async () => {
   const guide = await readUserGuide();
@@ -41,9 +39,7 @@ Deno.test("User Guide has CLI Reference section", async () => {
   assertStringIncludes(guide, "CLI Reference");
 });
 
-// ============================================================================
 // Memory Banks Documentation Tests
-// ============================================================================
 
 Deno.test("User Guide documents Memory Banks", async () => {
   const guide = await readUserGuide();
@@ -97,9 +93,7 @@ Deno.test("User Guide documents structured data features", async () => {
   assert(hasWorkspace, "User Guide should document workspace layout saving");
 });
 
-// ============================================================================
 // CLI Documentation Tests
-// ============================================================================
 
 Deno.test("User Guide documents exactl command", async () => {
   const guide = await readUserGuide();
@@ -130,9 +124,7 @@ Deno.test("User Guide documents request commands", async () => {
   assert(hasRequest, "User Guide should document request commands");
 });
 
-// ============================================================================
 // Deployment Documentation Tests
-// ============================================================================
 
 Deno.test("User Guide documents deploy script", async () => {
   const guide = await readUserGuide();
@@ -156,9 +148,7 @@ Deno.test("User Guide documents deno task commands", async () => {
   assertStringIncludes(guide, "deno task");
 });
 
-// ============================================================================
 // File Watcher Documentation Tests (Step 5.4)
-// ============================================================================
 
 Deno.test("User Guide documents file watcher configuration", async () => {
   const guide = await readUserGuide();

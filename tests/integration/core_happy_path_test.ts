@@ -23,9 +23,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
     let planPath: string;
     let activePlanPath: string;
 
-    // ========================================================================
     // Test 1: Request Creation
-    // ========================================================================
     await t.step("Test 1: Create request with valid frontmatter", async () => {
       const result = await env.createRequest(
         "Implement a simple hello world function in TypeScript",
@@ -59,9 +57,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       );
     });
 
-    // ========================================================================
     // Test 2: Plan Generation (simulated - normally done by daemon)
-    // ========================================================================
     await t.step("Test 2: Plan created referencing request trace_id", async () => {
       // Simulate plan generation (in real system, daemon would do this)
       planPath = await env.createPlan(traceId, "implement-hello", {
@@ -89,9 +85,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       assertStringIncludes(content, McpToolName.WRITE_FILE);
     });
 
-    // ========================================================================
     // Test 3: Plan Approval
-    // ========================================================================
     await t.step("Test 3: Plan approval moves to Workspace/Active with status=approved", async () => {
       activePlanPath = await env.approvePlan(planPath);
 
@@ -108,9 +102,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       assertStringIncludes(content, "status: approved");
     });
 
-    // ========================================================================
     // Test 4 & 5: Execution (creates branch and commits)
-    // ========================================================================
     await t.step("Test 4: Execution creates feature branch", async () => {
       const loop = env.createExecutionLoop("test-agent");
 
@@ -160,9 +152,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       }
     });
 
-    // ========================================================================
     // Test 6: Report Generation
-    // ========================================================================
     await t.step("Test 6: Report generated with execution summary", async () => {
       // Generate report (normally done by execution loop on success)
       const reportConfig = {
@@ -197,9 +187,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       assertStringIncludes(reportContent, ExecutionStatus.COMPLETED);
     });
 
-    // ========================================================================
     // Test 7: IActivity Journal Logging
-    // ========================================================================
     await t.step("Test 7: All operations logged with trace_id correlation", async () => {
       // Wait for any pending log writes
       await new Promise((resolve) => setTimeout(resolve, 200));

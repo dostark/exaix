@@ -114,7 +114,6 @@ Deno.test("[tag-safety] the profile path is unchanged", () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // An excluded tag in the request is a MODIFIER, not a selector.
 //
 // `--tag` is OR across tags, so `--tag subsystem:mcp-client --tag provider-live` — the documented
@@ -122,7 +121,6 @@ Deno.test("[tag-safety] the profile path is unchanged", () => {
 // the whole of swe_tasks. On a live tier that is real money spent on the wrong scenarios. The
 // escape tag's job is to turn the CI-safety filter off for the subsystem being asked about; it is
 // not itself a thing to select.
-// ---------------------------------------------------------------------------
 
 Deno.test("[tag-safety] an excluded tag does not widen the selection to other subsystems", () => {
   const scenarios = [

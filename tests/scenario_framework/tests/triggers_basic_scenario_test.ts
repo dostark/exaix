@@ -16,9 +16,7 @@ import { InMemoryIdempotencyLedger } from "../../../packages/triggers/services/i
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Shared helpers
-// ---------------------------------------------------------------------------
 
 // Webhook HMAC verification is mandatory (Finding 9), so scenario payloads are signed.
 const WEBHOOK_SECRET = "triggers_basic-scenario-secret";
@@ -78,9 +76,7 @@ function makeTrackedLogger(): IEventLogger & { calls: Array<{ action: string; pa
   };
 }
 
-// ---------------------------------------------------------------------------
 // Scenario tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[triggers_basic] webhook adapter produces valid envelope", async () => {
   const adapter = new WebhookAdapter({ secret: WEBHOOK_SECRET });

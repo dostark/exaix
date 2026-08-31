@@ -30,9 +30,7 @@ Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
 
     const { processor } = env.createRequestProcessor();
 
-    // ========================================================================
     // Test: Full integration - Request → IBlueprint as Blueprint → MockProvider → Plan
-    // ========================================================================
     await t.step("End-to-end: Request file to plan generation", async () => {
       const requestResult = await env.createRequest(
         "Implement user authentication with JWT tokens",
@@ -50,9 +48,7 @@ Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
       assert(planExists, "Plan file should exist on filesystem");
     });
 
-    // ========================================================================
     // Test: PlanWriter integration - MockProvider output → Formatted plan
-    // ========================================================================
     await t.step("PlanWriter processes MockProvider output correctly", async () => {
       const planContent = await Deno.readTextFile(planPath);
 
@@ -65,9 +61,7 @@ Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
       );
     });
 
-    // ========================================================================
     // Test: RequestProcessor updates request status
-    // ========================================================================
     await t.step("RequestProcessor updates request status to 'planned'", async () => {
       const requestContent = await Deno.readTextFile(requestPath);
       assertStringIncludes(requestContent, "status: planned", "Status should update after planning");
@@ -77,9 +71,7 @@ Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
   }
 });
 
-// ============================================================================
 // Test: Concurrent Request Processing (Integration-specific)
-// ============================================================================
 
 Deno.test("Integration: Concurrent Requests with Shared MockLLMProvider", async () => {
   const env = await TestEnvironment.create();
@@ -128,9 +120,7 @@ Deno.test("Integration: Concurrent Requests with Shared MockLLMProvider", async 
   }
 });
 
-// ============================================================================
 // Test: IActivity Logging Integration
-// ============================================================================
 
 Deno.test("Integration: Mock Plan Generation - IActivity Logging", async () => {
   const env = await TestEnvironment.create();

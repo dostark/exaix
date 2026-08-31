@@ -75,7 +75,7 @@ async function withJournal(
   }
 }
 
-// --- expect_count -----------------------------------------------------------
+// expect_count
 
 Deno.test("[journal_assert] expect_count 0 passes when no matching rows exist", async () => {
   await withJournal(undefined, async (ws) => {
@@ -123,7 +123,7 @@ Deno.test("[journal_assert] trace_scoped resolves to the FIRST request.created (
   });
 });
 
-// --- expect_sum -------------------------------------------------------------
+// expect_sum
 
 Deno.test("[journal_assert] expect_sum passes when the summed payload field is above the bound", async () => {
   await withJournal(undefined, async (ws) => {
@@ -174,7 +174,7 @@ Deno.test("[journal_assert] expect_sum fails when the sum is at or below the bou
   });
 });
 
-// --- expect_contains (latest matching row) ----------------------------------
+// expect_contains (latest matching row)
 
 Deno.test("[journal_assert] expect_contains inspects the LATEST matching row's payload", async () => {
   await withJournal([
@@ -223,7 +223,7 @@ Deno.test("[journal_assert] current-trace request analysis cannot be satisfied b
   });
 });
 
-// --- probe projection -------------------------------------------------------
+// probe projection
 
 Deno.test("[journal_assert] a projected probe emits payload-extracted columns for json-query scoring", async () => {
   await withJournal(undefined, async (ws) => {
@@ -328,7 +328,7 @@ Deno.test("[journal_assert] payload_contains + payload_not_contains encode an EX
   });
 });
 
-// --- sums aggregate ---------------------------------------------------------
+// sums aggregate
 
 Deno.test("[journal_assert] sums emits a single aggregate row of COALESCE(SUM(...)) columns", async () => {
   await withJournal([
@@ -375,7 +375,7 @@ Deno.test("[journal_assert] sums defaults to 0 when no rows match (informational
   });
 });
 
-// --- runtime-var substitution -------------------------------------------------
+// runtime-var substitution
 
 Deno.test("[journal_assert] $REQUEST_ID resolves from the SCENARIO baseline, not a high per-step barrier baseline", async () => {
   await withJournal([
@@ -399,7 +399,7 @@ Deno.test("[journal_assert] $REQUEST_ID resolves from the SCENARIO baseline, not
   });
 });
 
-// --- schema round-trip ------------------------------------------------------
+// schema round-trip
 
 Deno.test("[journal_assert] the declarative configs validate against ScenarioStepSchema", () => {
   const configs: JournalAssertConfig[] = [

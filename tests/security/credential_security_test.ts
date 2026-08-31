@@ -11,9 +11,7 @@ import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { SecureCredentialStore } from "@exaix/core";
 
-// ============================================================================
 // Unit Tests for SecureCredentialStore
-// ============================================================================
 
 Deno.test("[security] SecureCredentialStore: encrypts and decrypts correctly", async () => {
   const testKey = "sk-test123456789";
@@ -112,9 +110,7 @@ Deno.test("[security] SecureCredentialStore: handles special characters", async 
   assertEquals(retrieved, specialKey);
 });
 
-// ============================================================================
 // Integration Tests with Provider Factory
-// ============================================================================
 
 Deno.test("[security] SecureCredentialStore: simulates environment variable initialization", async () => {
   // Simulate the initialization process without actually accessing env

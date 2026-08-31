@@ -23,9 +23,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     const coderAgentId = "integration-coder";
     const customAgentId = "custom-prompt-agent";
 
-    // ========================================================================
     // Test 1: Create Blueprint from Scratch
-    // ========================================================================
     await t.step("Test 1: Create blueprint with valid YAML frontmatter", async () => {
       const result = await blueprintCommands.create(testAgentId, {
         name: "Integration Test Agent",
@@ -58,9 +56,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       assertEquals(activities.length, 1, "Should log blueprint.created activity");
     });
 
-    // ========================================================================
     // Test 2: Create Blueprint by cloning an existing one (--from)
-    // ========================================================================
     await t.step("Test 2: --from clones model and capabilities from a prototype identity", async () => {
       // Clone the identity created in Test 1.
       const result = await blueprintCommands.create(coderAgentId, {
@@ -78,9 +74,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       assertEquals(result.model, "ollama:codellama:13b");
     });
 
-    // ========================================================================
     // Test 3: Create Blueprint with Custom System Prompt from File
-    // ========================================================================
     await t.step("Test 3: Custom system prompt loaded from file", async () => {
       customPromptPath = join(env.tempDir, "custom-prompt.txt");
       const customPrompt = readFixtureTextSync(
@@ -104,9 +98,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       assertStringIncludes(content, "<content>");
     });
 
-    // ========================================================================
     // Test 4: Validation Detects Invalid Blueprints
-    // ========================================================================
     await t.step("Test 4: Validation detects missing fields", async () => {
       // Create invalid blueprint manually
       const invalidPath = join(env.tempDir, "Blueprints", "Identities", "invalid-test.md");
@@ -129,9 +121,7 @@ Invalid blueprint without identity_id field
       );
     });
 
-    // ========================================================================
     // Test 5: Reserved Names Rejected
-    // ========================================================================
     await t.step("Test 5: Reserved identity_id names rejected", async () => {
       await assertRejects(
         async () =>
@@ -154,9 +144,7 @@ Invalid blueprint without identity_id field
       );
     });
 
-    // ========================================================================
     // Test 6: Duplicate Names Rejected
-    // ========================================================================
     await t.step("Test 6: Duplicate identity_id rejected", async () => {
       await assertRejects(
         async () =>
@@ -169,9 +157,7 @@ Invalid blueprint without identity_id field
       );
     });
 
-    // ========================================================================
     // Test 7: Edit Blueprint
-    // ========================================================================
     await t.step("Test 7: Edit modifies blueprint and re-validates", async () => {
       const blueprintPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);
       const originalContent = await Deno.readTextFile(blueprintPath);
@@ -192,9 +178,7 @@ Invalid blueprint without identity_id field
       assertStringIncludes(updatedContent, "model: 'ollama:llama3.2:latest'");
     });
 
-    // ========================================================================
     // Test 8: Use Blueprint in Request
-    // ========================================================================
     await t.step("Test 8: Blueprint referenced in request creation", async () => {
       const { filePath } = await env.createRequest(
         "Test request using custom agent",
@@ -210,9 +194,7 @@ Invalid blueprint without identity_id field
       assertEquals(blueprintExists, true, "Blueprint should exist for request processing");
     });
 
-    // ========================================================================
     // Test 9: List Blueprints
-    // ========================================================================
     await t.step("Test 9: List shows all created blueprints", async () => {
       const blueprints = await blueprintCommands.list();
 
@@ -224,9 +206,7 @@ Invalid blueprint without identity_id field
       assert(identityIds.includes(customAgentId), "Should include custom agent");
     });
 
-    // ========================================================================
     // Test 10: Show Blueprint Details
-    // ========================================================================
     await t.step("Test 10: Show displays full blueprint content", async () => {
       const result = await blueprintCommands.show(testAgentId);
 
@@ -238,9 +218,7 @@ Invalid blueprint without identity_id field
       assertStringIncludes(result.content, "<content>");
     });
 
-    // ========================================================================
     // Test 11: Remove Blueprints
-    // ========================================================================
     await t.step("Test 11: Remove deletes blueprint file", async () => {
       // Remove test blueprints
       await blueprintCommands.remove(customAgentId, { force: true });
@@ -264,9 +242,7 @@ Invalid blueprint without identity_id field
       assert(activities.length >= 3, "Should log removal activities");
     });
 
-    // ========================================================================
     // Test 12: IActivity Journal Completeness
-    // ========================================================================
     await t.step("Test 12: All operations logged to IActivity Journal", async () => {
       await env.db.waitForFlush();
 

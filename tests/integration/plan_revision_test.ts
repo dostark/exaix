@@ -70,9 +70,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       });
     });
 
-    // ========================================================================
     // Test 1: Plan can receive revision comments
-    // ========================================================================
     await t.step("Test 1: Plan in review can receive revision comments", async () => {
       // Verify plan is in review status
       const beforeContent = await Deno.readTextFile(planPath);
@@ -86,9 +84,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       assertStringIncludes(afterContent, revisionComment1);
     });
 
-    // ========================================================================
     // Test 2: Revision comments appended to content
-    // ========================================================================
     await t.step("Test 2: Revision comments appended to plan content", async () => {
       const content = await Deno.readTextFile(planPath);
 
@@ -104,9 +100,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       assertStringIncludes(content, McpToolName.WRITE_FILE);
     });
 
-    // ========================================================================
     // Test 3: Status remains "review"
-    // ========================================================================
     await t.step("Test 3: Plan status remains 'review' after revision", async () => {
       const content = await Deno.readTextFile(planPath);
 
@@ -118,9 +112,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       assert(!content.includes("status: approved"), "Should not be approved");
     });
 
-    // ========================================================================
     // Test 4: Multiple revision rounds supported
-    // ========================================================================
     await t.step("Test 4: Multiple revision rounds accumulate comments", async () => {
       // Add second revision
       await revisePlan(env, planPath, revisionComment2);
@@ -138,9 +130,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       assertStringIncludes(content, "Previous Comments");
     });
 
-    // ========================================================================
     // Test 5: Original trace_id maintained
-    // ========================================================================
     await t.step("Test 5: Revised plan maintains original trace_id", async () => {
       const content = await Deno.readTextFile(planPath);
 
@@ -153,9 +143,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       assertEquals(traceMatch[1], traceId);
     });
 
-    // ========================================================================
     // Test 6: Revision logged to IActivity Journal
-    // ========================================================================
     await t.step("Test 6: Revision requests logged to IActivity Journal", async () => {
       // Log revision activity
       env.db.logActivity(
@@ -181,9 +169,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       assertEquals(payload.revision_number, 2);
     });
 
-    // ========================================================================
     // Test 7: Plan can be approved after revision
-    // ========================================================================
     await t.step("Test 7: Plan can be approved after revision", async () => {
       // Approve the revised plan
       const activePath = await env.approvePlan(planPath);

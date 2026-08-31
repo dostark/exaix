@@ -19,9 +19,7 @@ import {
   writeVersionFile,
 } from "../../scripts/check_version.ts";
 
-// ---------------------------------------------------------------------------
 // parseSemVer
-// ---------------------------------------------------------------------------
 
 describe("parseSemVer", () => {
   it("parses a standard version string correctly", () => {
@@ -50,9 +48,7 @@ describe("parseSemVer", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // formatSemVer
-// ---------------------------------------------------------------------------
 
 describe("formatSemVer", () => {
   it("formats { 1, 2, 3 } as '1.2.3'", () => {
@@ -60,9 +56,7 @@ describe("formatSemVer", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // bumpPatch
-// ---------------------------------------------------------------------------
 
 describe("bumpPatch", () => {
   it("increments patch from 1.0.5 to 1.0.6", () => {
@@ -81,9 +75,7 @@ describe("bumpPatch", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // bumpMinor
-// ---------------------------------------------------------------------------
 
 describe("bumpMinor", () => {
   it("increments minor from 1.2.5 to 1.3.0 and resets patch", () => {
@@ -106,9 +98,7 @@ describe("bumpMinor", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // classifyChanges
-// ---------------------------------------------------------------------------
 
 describe("classifyChanges", () => {
   it("triggers minor on migrations/*.sql", () => {
@@ -159,9 +149,7 @@ describe("classifyChanges", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // readVersionFile / writeVersionFile — integration using temp files
-// ---------------------------------------------------------------------------
 
 describe("readVersionFile and writeVersionFile", () => {
   let tmpDir: string;

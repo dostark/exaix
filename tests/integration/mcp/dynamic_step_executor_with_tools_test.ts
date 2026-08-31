@@ -64,7 +64,7 @@ class StubListDirTool extends ToolHandler {
   }
 }
 
-// ── LocalToolDispatcher Map constructor tests ───────────────────────────────────────────
+// LocalToolDispatcher Map constructor tests
 
 Deno.test(
   "LocalToolDispatcher: accepts Map<McpToolName, ToolHandler> as canonical dynamic handler input",
@@ -121,7 +121,7 @@ Deno.test(
   },
 );
 
-// ── FlowRunner dynamic wiring tests ───────────────────────────────────────────
+// FlowRunner dynamic wiring tests
 
 Deno.test(
   "FlowRunner: accepts dynamicHandlers Map in config and wires LocalToolDispatcher canonically",

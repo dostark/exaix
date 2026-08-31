@@ -123,9 +123,7 @@ export function renderScenarioTemplate(
   ].join("\n");
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // Phase 141 — swe_tasks dogfood-loop template
-// ────────────────────────────────────────────────────────────────────────────
 
 const INDENT = "  ";
 
@@ -376,7 +374,7 @@ export function renderSweTaskTemplate(
     "",
     "steps:",
     ...renderSweSetupSteps(portalDir, { includeCliDelegatePatch: hasCliDelegate }),
-    // ── daemon lifecycle ──
+    // daemon lifecycle
     `  - id: "start-daemon"`,
     `    type: "exactl"`,
     `    command: "daemon"`,
@@ -412,7 +410,7 @@ export function renderSweTaskTemplate(
     `    input_criteria: []`,
     `    output_criteria: []`,
     "",
-    // ── request → plan → execution ──
+    // request → plan → execution
     `  - id: "submit-request"`,
     `    type: "exactl"`,
     `    command: "request"`,
@@ -458,7 +456,7 @@ export function renderSweTaskTemplate(
       ? `        score_weight: ${scoreWeights.execution_completed}`
       : `        score_weight: 0.15`,
     "",
-    // ── review → test ──
+    // review → test
     `  - id: "approve-review"`,
     `    type: "shell"`,
     `    command: "sh"`,
@@ -501,7 +499,7 @@ export function renderSweTaskTemplate(
         "",
       ]
       : []),
-    // ── trajectory ──
+    // trajectory
     ...(!hasCliDelegate
       ? [
         `  - id: "assert-trajectory"`,
@@ -519,7 +517,7 @@ export function renderSweTaskTemplate(
         "",
       ]
       : []),
-    // ── LLM judge ──
+    // LLM judge
     `  - id: "prepare-llm-judge-evidence"`,
     `    type: "shell"`,
     `    command: "sh"`,
@@ -550,7 +548,7 @@ export function renderSweTaskTemplate(
       ? `        score_weight: ${scoreWeights.llm_judge_quality}`
       : `        score_weight: 0.4`,
     "",
-    // ── cleanup ──
+    // cleanup
     `  - id: "stop-daemon"`,
     `    type: "exactl"`,
     `    command: "daemon"`,
@@ -630,9 +628,7 @@ export function renderSweTaskBareTemplate(
   return parts.filter(Boolean).join("\n");
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // Phase 144 Step 2 — external_bench_task template (Terminal-Bench container-portal)
-// ────────────────────────────────────────────────────────────────────────────
 
 /** Container mount destination + WORKDIR for external-benchmark tasks — matches the
  *  upstream benchmark's own container convention (Terminal-Bench uses `/app`), unlike the

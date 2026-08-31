@@ -264,7 +264,7 @@ async function readLastEvent(configPath: string, actionType: string): Promise<bo
   }
 }
 
-// ── Test 1: real Streamable HTTP over the CLI entry point ───────────────────
+// Test 1: real Streamable HTTP over the CLI entry point
 
 Deno.test({
   name:
@@ -289,7 +289,7 @@ Deno.test({
   },
 });
 
-// ── Test 2: real stdio over a subprocess pipe ────────────────────────────────
+// Test 2: real stdio over a subprocess pipe
 
 Deno.test({
   name: "[cutover] exactl mcp start (stdio) serves a real client over stdio matching the golden fixture",
@@ -342,7 +342,7 @@ Deno.test({
   },
 });
 
-// ── Test 3: real Team daemon boot executes analyze-codebase's dynamic step ────
+// Test 3: real Team daemon boot executes analyze-codebase's dynamic step
 
 Deno.test({
   name:
@@ -374,7 +374,7 @@ Deno.test({
   },
 });
 
-// ── Test 4: real config-driven auth over the CLI entry point ─────────────────
+// Test 4: real config-driven auth over the CLI entry point
 
 Deno.test({
   name:

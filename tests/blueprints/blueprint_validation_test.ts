@@ -52,9 +52,7 @@ async function getMarkdownFiles(dir: string): Promise<string[]> {
   return files;
 }
 
-// ============================================================================
 // Root Blueprint Tests
-// ============================================================================
 
 Deno.test("Blueprint validation: default.md passes schema", async () => {
   const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "default.md"));
@@ -105,9 +103,7 @@ Deno.test("Blueprint validation: quality-judge.md passes schema", async () => {
   );
 });
 
-// ============================================================================
 // Example Blueprint Tests
-// ============================================================================
 
 Deno.test("Blueprint validation: research-synthesizer.md (promoted from examples) passes schema", async () => {
   const content = await Deno.readTextFile(
@@ -127,9 +123,7 @@ Deno.test("Blueprint validation: research-synthesizer.md (promoted from examples
   );
 });
 
-// ============================================================================
 // New Agent Tests
-// ============================================================================
 
 Deno.test("Blueprint validation: security-expert.md passes schema", async () => {
   const content = await Deno.readTextFile(
@@ -217,9 +211,7 @@ Deno.test("Blueprint validation: test-engineer.md passes schema", async () => {
   );
 });
 
-// ============================================================================
 // Model Format Tests
-// ============================================================================
 
 Deno.test("Blueprint validation: all agents have valid model format", async () => {
   const modelRegex = /^[a-z]+:[a-z0-9-.:/]+$/;
@@ -244,9 +236,7 @@ Deno.test("Blueprint validation: all agents have valid model format", async () =
   }
 });
 
-// ============================================================================
 // YAML Format Tests
-// ============================================================================
 
 Deno.test("Blueprint validation: all agents use YAML frontmatter (not TOML)", async () => {
   const allFiles = [
@@ -274,9 +264,7 @@ Deno.test("Blueprint validation: all agents use YAML frontmatter (not TOML)", as
   }
 });
 
-// ============================================================================
 // Skills Assignment Tests
-// ============================================================================
 
 Deno.test("Blueprint validation: voting-judge.md passes schema", async () => {
   const content = await Deno.readTextFile(

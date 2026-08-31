@@ -161,7 +161,7 @@ Deno.test("[validateAciDocs] real createCoreToolSchemas() catalog is fully compl
   assertEquals(result.checkedTools, 14);
 });
 
-// ── runCli: exit-code wrapper ────────────────────────────────────────────────
+// runCli: exit-code wrapper
 
 Deno.test("[runCli] a compliant catalog exits 0 in both default and strict mode", () => {
   const load = () => [compliantTool("read_file")];

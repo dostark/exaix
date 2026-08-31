@@ -14,9 +14,7 @@ import { PlanAdapter } from "@exaix/core/planning";
 import { initTestDbService } from "@exaix/testing";
 import { getWorkspacePlansDir } from "@exaix/testing";
 
-// ============================================================================
 // Test Configuration
-// ============================================================================
 
 const OLLAMA_MODEL = "llama3.2";
 const OLLAMA_BASE_URL = Deno.env.get("OLLAMA_BASE_URL") || "http://localhost:11434";
@@ -78,9 +76,7 @@ function createTestRequest() {
   };
 }
 
-// ============================================================================
 // Integration Tests
-// ============================================================================
 
 Deno.test({
   name: "Ollama Integration: Generate JSON plan with llama3.2",
@@ -249,9 +245,7 @@ Deno.test({
   console.log("✅ Invalid JSON handling verified");
 });
 
-// ============================================================================
 // Skip Message for CI/Local without Ollama
-// ============================================================================
 
 if (EXA_TEST_ENABLE_OLLAMA && !OLLAMA_AVAILABLE) {
   console.log(`

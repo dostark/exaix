@@ -287,7 +287,7 @@ Deno.test("[md-paths] --fix rewrites link-style refs but NOT bare-prose example 
   }
 });
 
-// ── Bare-path-in-prose backtick facet ──────────────────────────────────────
+// Bare-path-in-prose backtick facet
 
 Deno.test("[md-backtick] a RESOLVABLE bare prose path is reported as a style violation", async () => {
   const { root, cleanup } = await sandbox();
@@ -468,7 +468,7 @@ Deno.test("[md-paths] scans nested markdown and resolves relative to each file's
   }
 });
 
-// ── Anchor-fragment validation (markdown-link syntax only) ────────────────
+// Anchor-fragment validation (markdown-link syntax only)
 
 Deno.test("[md-anchors] slugify matches GitHub's algorithm for known-good repo anchors", () => {
   assertEquals(slugify("Behavioral Guidelines"), "behavioral-guidelines");

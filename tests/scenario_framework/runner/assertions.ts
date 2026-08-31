@@ -1103,9 +1103,7 @@ function rewriteCriteriaWithTarget(
   });
 }
 
-// -----------------------------------------------------------------------------
 // Version Assertion Criteria (Phase 51 Secondary Goal)
-// -----------------------------------------------------------------------------
 
 function evaluateVersionEqualsCriterion(
   options: IEvaluateCriterionOptions,

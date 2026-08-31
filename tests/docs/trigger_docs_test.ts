@@ -10,9 +10,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ExecutionTriggerEnvelopeSchema } from "@exaix/core/triggers";
 
-// ---------------------------------------------------------------------------
 // TriggerDocs: ARCHITECTURE.md trigger section links are valid
-// ---------------------------------------------------------------------------
 
 Deno.test("[TriggerDocs] ARCHITECTURE.md trigger section links are valid", async () => {
   const content = await Deno.readTextFile(join(Deno.cwd(), "ARCHITECTURE.md"));
@@ -36,9 +34,7 @@ Deno.test("[TriggerDocs] ARCHITECTURE.md trigger section links are valid", async
   );
 });
 
-// ---------------------------------------------------------------------------
 // TriggerDocs: config schema example is valid against TriggerConfigSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[TriggerDocs] config schema example is valid against TriggerConfigSchema", () => {
   // Canonical envelope example — as it would appear in operator docs.

@@ -121,12 +121,10 @@ Deno.test("[prune] retentionDays of 0 selects everything, and is still only a pl
   }
 });
 
-// ---------------------------------------------------------------------------
 // `--root` is operator input that drives a recursive delete. Pointing it one level too high —
 // at the parent of the repo, which is the DEFAULT sandbox base's parent — would put the repo
 // checkout itself among the candidates, and a stale mtime is all it would take. A sandbox never
 // has a top-level `.git`; a repository always does, so that is the discriminator.
-// ---------------------------------------------------------------------------
 
 Deno.test("[security] a git repository is never selected for pruning", async () => {
   const root = await seedSandboxRoot([{ name: "a-sandbox", ageDays: 30 }, { name: "a-checkout", ageDays: 30 }]);

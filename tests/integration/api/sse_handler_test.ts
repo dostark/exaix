@@ -11,9 +11,7 @@ import { SseHandler } from "@exaix-team/mcp-server";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { STREAMING_EVENT_HEARTBEAT, STREAMING_EVENT_TOOL_START } from "@exaix/core";
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 function makeEvent(overrides: Partial<IStreamingEvent> = {}): IStreamingEvent {
   return {
@@ -26,9 +24,7 @@ function makeEvent(overrides: Partial<IStreamingEvent> = {}): IStreamingEvent {
   };
 }
 
-// ============================================================================
 // Event Formatting Tests
-// ============================================================================
 
 Deno.test("SseHandler: formatSseEvent produces valid text/event-stream output", () => {
   const event = makeEvent({ type: STREAMING_EVENT_TOOL_START, payload: { tool: "read_file" } });
@@ -50,9 +46,7 @@ Deno.test("SseHandler: formatSseEvent includes all required fields", () => {
   assertStringIncludes(formatted, JSON.stringify(event));
 });
 
-// ============================================================================
 // Route Matching Tests
-// ============================================================================
 
 Deno.test("SseHandler: matchesTraceIdRoute returns true for valid trace stream path", () => {
   assertEquals(SseHandler.matchesTraceIdRoute("/api/v1/traces/550e8400-e29b-41d4-a716-446655440000/stream"), true);
@@ -80,9 +74,7 @@ Deno.test("SseHandler: extractTraceId returns null for invalid path", () => {
   assertEquals(SseHandler.extractTraceId("/other/path"), null);
 });
 
-// ============================================================================
 // Validation Tests
-// ============================================================================
 
 Deno.test("SseHandler: validateTraceId returns true for valid UUID", () => {
   assertEquals(SseHandler.validateTraceId("550e8400-e29b-41d4-a716-446655440000"), true);
@@ -97,9 +89,7 @@ Deno.test("SseHandler: validateTraceId returns false for non-UUID values", () =>
   assertEquals(SseHandler.validateTraceId("<script>alert(1)</script>"), false);
 });
 
-// ============================================================================
 // Request Handler Tests (unit-level, no network)
-// ============================================================================
 
 Deno.test("SseHandler: handleRequest returns 400 for non-GET method", async () => {
   const bus = new EventBusService();
@@ -189,9 +179,7 @@ Deno.test(
   },
 );
 
-// ============================================================================
 // Integration Test: SSE Stream with Event Bus
-// ============================================================================
 
 Deno.test(
   "security: SseHandler closes an event-idle stream after the idle timeout (Phase 170 sub-phase 2)",

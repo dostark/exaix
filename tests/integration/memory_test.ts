@@ -29,7 +29,7 @@ import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IExecutionMemory, ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { getMemoryGlobalDir } from "@exaix/testing";
 
-// ===== Full Workflow Tests =====
+// Full Workflow Tests
 
 Deno.test("Integration: full workflow - execution → extract → approve → search", async () => {
   const { config, db, cleanup } = await initTestDbService();
@@ -196,7 +196,7 @@ Deno.test("Integration: promote workflow - project → global", async () => {
   }
 });
 
-// ===== Search Workflow Tests =====
+// Search Workflow Tests
 
 Deno.test("Integration: search workflow - tag + keyword + embedding combined", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -300,7 +300,7 @@ Deno.test("Integration: search workflow - tag + keyword + embedding combined", a
   }
 });
 
-// ===== CLI Workflow Tests =====
+// CLI Workflow Tests
 
 Deno.test("Integration: CLI workflow - complete command sequence", async () => {
   const { config, db, cleanup } = await initTestDbService();
@@ -433,7 +433,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
   }
 });
 
-// ===== Performance Tests =====
+// Performance Tests
 
 Deno.test("Integration: performance - search completes under 100ms", async () => {
   const { config, cleanup } = await initTestDbService();

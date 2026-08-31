@@ -17,7 +17,7 @@ import { McpToolName, ToolName } from "@exaix/core";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { IDENTITIES_DIR, readRawFrontmatter, SKILLS_DIR } from "./test_helpers.ts";
 
-// ── Helpers ──────────────────────────────────────────────────────────
+// Helpers
 
 /** Names of all valid tool names (McpToolName ∪ ToolName). */
 const VALID_TOOL_NAMES = new Set([
@@ -37,7 +37,7 @@ function listActiveIdentities(): string[] {
   return ids.sort();
 }
 
-// ── 1. Active identity load via IBlueprintLoader ──────────────────────
+// 1. Active identity load via IBlueprintLoader
 
 Deno.test({
   name: "[step9/catalog-load] every active identity loads through IBlueprintLoader with valid frontmatter",
@@ -70,7 +70,7 @@ Deno.test({
   },
 });
 
-// ── default_skills resolve to loadable .skill.md files ───────────────
+// default_skills resolve to loadable .skill.md files
 
 Deno.test({
   name: "[step9/catalog-load] all identity default_skills resolve to existing .skill.md files",
@@ -107,7 +107,7 @@ Deno.test({
   },
 });
 
-// ── 5. capabilities are behavioral-only (no tool names) ──────────────
+// 5. capabilities are behavioral-only (no tool names)
 
 Deno.test({
   name: "[step9/catalog-load] every identity's capabilities are behavioral-only (no tool-name values)",
@@ -137,7 +137,7 @@ Deno.test({
   },
 });
 
-// ── every active identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS) ──
+// every active identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS)
 
 /** mock-agent declares no capabilities at all — test-only identity, not a real execution path. */
 const IDENTITIES_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
@@ -176,7 +176,7 @@ Deno.test({
   },
 });
 
-// ── 6. permitted_tools are valid tool-name values ────────────────────
+// 6. permitted_tools are valid tool-name values
 
 Deno.test({
   name: "[step9/catalog-load] permitted_tools values are valid McpToolName or ToolName members",
@@ -210,7 +210,7 @@ Deno.test({
   },
 });
 
-// ── 7. No unresolved {{include:}} after load ─────────────────────────
+// 7. No unresolved {{include:}} after load
 
 Deno.test({
   name:
@@ -244,4 +244,4 @@ Deno.test({
   },
 });
 
-// ── 8. Template count consistency ────────────────────────────────────
+// 8. Template count consistency

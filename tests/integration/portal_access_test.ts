@@ -16,9 +16,7 @@ Deno.test("[security] Integration: Portal Access - Security enforcement", async 
   const env = await TestEnvironment.create();
 
   try {
-    // ========================================================================
     // Setup: Create portal structure
-    // ========================================================================
     await t.step("Setup: Create portal with restricted access", async () => {
       // Create portal directories
       await env.writeFile(
@@ -59,9 +57,7 @@ export function main() {
 
     let alphaTraceId: string;
 
-    // ========================================================================
     // Test 1: Agent can read files within assigned portal
-    // ========================================================================
     await t.step("Test 1: Agent reads within assigned portal", async () => {
       const result = await env.createRequest(
         "Read and summarize the main.ts file",
@@ -87,9 +83,7 @@ export function main() {
       assert(context.includedFiles.length > 0, "Should include portal files");
     });
 
-    // ========================================================================
     // Test 2: Agent cannot read outside portal
-    // ========================================================================
     await t.step("Test 2: Agent denied access outside portal", async () => {
       // The ContextLoader itself doesn't enforce portal boundaries -
       // that's done at a higher level by the execution loop's file access policies
@@ -121,9 +115,7 @@ export function main() {
       assert(denialLogged, "Access denial should be logged");
     });
 
-    // ========================================================================
     // Test 3: Symlink validation
-    // ========================================================================
     await t.step("Test 3: Portal symlinks validated", async () => {
       // Create symlink inside portal pointing outside
       const symlinkPath = join(env.tempDir, "Portals/project-alpha/sneaky_link");
@@ -162,9 +154,7 @@ export function main() {
       }
     });
 
-    // ========================================================================
     // Test 4: Portal access logged
-    // ========================================================================
     await t.step("Test 4: Portal access logged to IActivity Journal", async () => {
       await new Promise((resolve) => setTimeout(resolve, 200));
       env.db.waitForFlush();
@@ -178,9 +168,7 @@ export function main() {
       assertEquals(payload.attempted_path, join(env.tempDir, ".exa/secrets.json"));
     });
 
-    // ========================================================================
     // Test 5: Execution respects portal boundaries
-    // ========================================================================
     await t.step("Test 5: Execution respects portal permissions", async () => {
       const { traceId } = await env.createRequest(
         "Create a new file in the project",
@@ -209,9 +197,7 @@ export function main() {
       assertExists(result);
     });
 
-    // ========================================================================
     // Test 6: Cross-portal access denied
-    // ========================================================================
     await t.step("Test 6: Cross-portal access denied", async () => {
       const { traceId } = await env.createRequest(
         "Read beta project files",
@@ -244,9 +230,7 @@ export function main() {
       assert(true, "Cross-portal access correctly denied");
     });
 
-    // ========================================================================
     // Test 7: Portal config changes respected
-    // ========================================================================
     await t.step("Test 7: Portal configuration changes respected", async () => {
       // Modify portal permissions (add new allowed path)
       const portalConfig = {

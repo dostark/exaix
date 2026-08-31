@@ -352,7 +352,7 @@ Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and ta
   }
 });
 
-// ─── Phase 173 Step 1 — Why This Step Exists block ─────────────────────────────
+// Phase 173 Step 1 — Why This Step Exists block
 
 const CONTEXT_FIXTURE_PATH = join(FIXTURES_DIR, "phase-nn-fixture-with-context.md");
 
@@ -451,7 +451,7 @@ Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far
   }
 });
 
-// ─── Phase 173 Step 2 — PlanContext copy + pointer ─────────────────────────────
+// Phase 173 Step 2 — PlanContext copy + pointer
 
 const PLAN_CONTEXT_POINTER_RE =
   /> Full phase context: `\.exa\x2fPlanContext\x2f([^`]+)\.md` \(read this if the context above isn't enough\)\./;
@@ -650,7 +650,7 @@ Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is 
   }
 });
 
-// ─── Phase 173 Step 5 remediation - admission contract (GAP-1) ────────────────
+// Phase 173 Step 5 remediation - admission contract (GAP-1)
 
 const REPO_ROOT_ADM = join(import.meta.dirname!, "..", "..");
 const FM_SLICE_RE = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
@@ -780,7 +780,7 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
   }
 });
 
-// ─── Phase 174 Step 2 — plan_context_ref frontmatter provenance ────────────────
+// Phase 174 Step 2 — plan_context_ref frontmatter provenance
 
 Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref only when a copy occurred", async () => {
   const wt = await makeFakeWorktree({ withGit: true });

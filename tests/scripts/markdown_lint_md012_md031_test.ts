@@ -10,9 +10,7 @@ import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts"
 
 const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 
-// ---------------------------------------------------------------------------
 // MD012 — no multiple consecutive blank lines
-// ---------------------------------------------------------------------------
 
 Deno.test("[MD012] flags multiple consecutive blank lines", () => {
   const md = ["# Title", "", "", "", "Paragraph.", ""].join("\n");
@@ -67,9 +65,7 @@ Deno.test("[MD012] flags blanks outside fence but not inside", () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // MD031 — fenced code blocks should be surrounded by blank lines
-// ---------------------------------------------------------------------------
 
 Deno.test("[MD031] flags fence not preceded by blank line", () => {
   const md = [

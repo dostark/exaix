@@ -60,7 +60,7 @@ class NoopEventLogger implements IFlowEventLogger {
   log<TEvent extends string>(_event: TEvent, _payload: Record<string, JSONValue>): void {}
 }
 
-// ── LocalToolDispatcher: ToolHandler[] path (legacy) ────────────────────────────────────
+// LocalToolDispatcher: ToolHandler[] path (legacy)
 
 Deno.test("backwards_compat: LocalToolDispatcher accepts ToolHandler[] array (legacy path still works)", async () => {
   const handlers: ToolHandler[] = [new StubReadHandler(), new StubListDirHandler()];
@@ -99,7 +99,7 @@ Deno.test("backwards_compat: LocalToolDispatcher getToolDefinitions works from l
   assertEquals(defs[0].name, McpToolName.READ_FILE);
 });
 
-// ── FlowRunner: deprecated mcpHandlers path ───────────────────────────────────
+// FlowRunner: deprecated mcpHandlers path
 
 Deno.test("backwards_compat: FlowRunner accepts deprecated mcpHandlers ToolHandler[] in config", () => {
   const mockAgentExecutor = {

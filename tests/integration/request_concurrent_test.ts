@@ -18,9 +18,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
   try {
     const requests: Array<{ traceId: string; filePath: string; planPath?: string }> = [];
 
-    // ========================================================================
     // Test 1: Multiple requests queued concurrently
-    // ========================================================================
     await t.step("Test 1: Multiple requests can be queued concurrently", async () => {
       // Create 3 requests in parallel
       const createPromises = [
@@ -46,9 +44,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
       }
     });
 
-    // ========================================================================
     // Test 2: Lease mechanism prevents duplicate processing
-    // ========================================================================
     await t.step("Test 2: Lease mechanism prevents duplicate processing", async () => {
       // Create plans for all requests
       for (let i = 0; i < requests.length; i++) {
@@ -101,9 +97,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
       // (lease should prevent duplicate processing)
     });
 
-    // ========================================================================
     // Test 3: Each request maintains own trace_id chain
-    // ========================================================================
     await t.step("Test 3: Each request maintains own trace_id chain", () => {
       // Each request has its own trace_id
       for (const request of requests) {
@@ -122,9 +116,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
       assertEquals(uniqueTraceIds.size, requests.length, "All trace_ids should be unique");
     });
 
-    // ========================================================================
     // Test 4: No interference between concurrent executions
-    // ========================================================================
     await t.step("Test 4: No interference between concurrent executions", async () => {
       // Approve remaining plans
       const activePaths: string[] = [];
@@ -152,9 +144,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
       // (task-b should create output-b.txt, not output-a.txt)
     });
 
-    // ========================================================================
     // Test 5: All requests complete successfully
-    // ========================================================================
     await t.step("Test 5: All requests complete successfully", async () => {
       // Give time for all executions to complete
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -175,9 +165,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
       assert(completedCount >= 0, "Executions should not crash");
     });
 
-    // ========================================================================
     // Test 6: IActivity log correctly attributes actions
-    // ========================================================================
     await t.step("Test 6: IActivity log correctly attributes to trace_ids", async () => {
       for (const request of requests) {
         const activities = await env.getActivityLog(request.traceId);
@@ -193,9 +181,7 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
       }
     });
 
-    // ========================================================================
     // Test 7: Resource contention handled gracefully
-    // ========================================================================
     await t.step("Test 7: No deadlocks from resource contention", async () => {
       // Create new requests to verify system isn't deadlocked
       const { traceId } = await env.createRequest("Post-concurrent test");

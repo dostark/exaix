@@ -21,9 +21,7 @@ import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /** Build a minimal IPortalKnowledgeConfig for testing. */
 function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKnowledgeConfig {
@@ -96,9 +94,7 @@ async function createMockPortalDir(baseDir: string): Promise<string> {
   return portalDir;
 }
 
-// ---------------------------------------------------------------------------
 // Test 1: quick mode analysis
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] portal knowledge pipeline with quick mode", async () => {
   const { cleanup } = await initTestDbService();
@@ -128,9 +124,7 @@ Deno.test("[E2E] portal knowledge pipeline with quick mode", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Test 2: standard mode (no LLM, null runner skips deno doc)
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] portal knowledge pipeline with standard mode (mock LLM)", async () => {
   const { cleanup } = await initTestDbService();
@@ -159,9 +153,7 @@ Deno.test("[E2E] portal knowledge pipeline with standard mode (mock LLM)", async
   }
 });
 
-// ---------------------------------------------------------------------------
 // Test 3: knowledge persisted as knowledge.json
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
   const { cleanup } = await initTestDbService();
@@ -196,9 +188,7 @@ Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Test 4: knowledge mapped to IProjectMemory files
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -230,9 +220,7 @@ Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Test 5: knowledge available in request processing context
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[E2E] knowledge available in request processing context",
@@ -332,9 +320,7 @@ Deno.test(
   },
 );
 
-// ---------------------------------------------------------------------------
 // Test 6: stale knowledge triggers re-analysis
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () => {
   const { cleanup } = await initTestDbService();
@@ -370,9 +356,7 @@ Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () =>
   }
 });
 
-// ---------------------------------------------------------------------------
 // Test 7: standard mode populates new strategy fields (phase-105 GAP-7)
-// ---------------------------------------------------------------------------
 
 Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields", async () => {
   const { cleanup } = await initTestDbService();

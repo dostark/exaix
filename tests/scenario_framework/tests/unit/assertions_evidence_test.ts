@@ -359,9 +359,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] failure manifests include step 
   }
 });
 
-// -----------------------------------------------------------------------------
 // Version Assertion Criteria Tests (Phase 51 Secondary Goal)
-// -----------------------------------------------------------------------------
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] version-equals criterion passes when versions match", async () => {
   await withTempWorkspace(async (workspaceRoot) => {
@@ -493,9 +491,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] version criteria can check work
   }, "scenario-framework-version-");
 });
 
-// ---------------------------------------------------------------------------
 // LLM Endpoint Dispatch Tests — via ProviderFactory
-// ---------------------------------------------------------------------------
 
 const DISABLED_OPTS = { sanitizeResources: false, sanitizeOps: false };
 
