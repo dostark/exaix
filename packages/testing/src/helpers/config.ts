@@ -17,11 +17,6 @@ import { DEFAULT_TIMEOUT_MS, SqliteJournalMode } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { TEST_PORTAL_ALIAS } from "./constants.ts";
 
-/**
- * Creates a mock configuration for testing.
- * @param root The root directory for the mock system.
- * @param overrides Optional overrides for specific config sections.
- */
 export function createMockConfig(root: string, overrides: Partial<Config> = {}): Config {
   const defaultModels = {
     default: { provider: "mock", model: "gpt-5.2-pro", timeout_ms: DEFAULT_TIMEOUT_MS },
@@ -65,25 +60,15 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
       ...(overrides.provider_strategy ?? {}),
       fallback_chains: overrides.provider_strategy?.fallback_chains ?? {},
     },
-    // Disable quality gate by default in tests so processor tests are not
-    // interrupted by heuristic scores on short test bodies. Tests that
-    // specifically exercise the quality gate pass an explicit testQualityGate
-    // stub or patch this field in their own config.
+    // Off by default so heuristic scores on short test bodies don't interrupt tests.
     quality_gate: overrides.quality_gate ?? { enabled: false },
     // Provide default workspace portal for tests
     portals: defaultPortals,
   });
 }
 
-/**
- * Creates a test config file for testing.
- * Returns the path to the written config file.
- *
- * Phase 137: TOML is bootstrap-only. Most settings live in .exa/config.db
- * and are overridable via `exactl config set`. This helper writes only
- * the essential bootstrap sections. Tests that need specific overrides
- * should use DirectConfigAdapter.set() or seedConfigDb() instead.
- */
+/** Writes only the bootstrap TOML sections; most settings live in .exa/config.db —
+ *  use DirectConfigAdapter.set() or seedConfigDb() for other overrides. */
 export async function writeTestConfigFile(root: string): Promise<string> {
   const configPath = join(root, "exa.config.toml");
 

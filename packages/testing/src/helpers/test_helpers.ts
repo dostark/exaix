@@ -39,11 +39,7 @@ interface ILocalConfigService {
   getSchemaVersion(): string;
 }
 
-/**
- * Create a fully-typed stub implementation of the DatabaseService used in tests.
- * Returns an object matching `IDatabaseService` with no-op implementations so
- * tests can pass it without casting to `any`.
- */
+/** No-op `IDatabaseService` stub, so tests can pass it without casting to `any`. */
 export function createStubDb(
   overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {},
 ): IDatabaseService {
@@ -53,8 +49,8 @@ export function createStubDb(
       _actionType: string,
       _target: string | null,
       _payload: JSONObject,
-      _traceId?: string,
-      _identityId?: string | null,
+      _traceId?: Opt<string, Reason.AbstractBoundary>,
+      _identityId?: Opt<string | null, Reason.AbstractBoundary>,
     ) => {
       /* noop */
     },
@@ -83,7 +79,7 @@ export function createStubDb(
       }
       return [];
     },
-    getRecentActivity: (_limit?: number) => Promise.resolve([]),
+    getRecentActivity: (_limit?: Opt<number, Reason.AbstractBoundary>) => Promise.resolve([]),
     insertToolConfirmationRequest: (_request: ToolConfirmationRequest) => Promise.resolve(),
     writeToolConfirmationDecision: (_id: string, _decision: Omit<ToolConfirmationDecision, "id">) => Promise.resolve(),
     getToolConfirmationDecision: (_id: string) => Promise.resolve(null),
@@ -130,10 +126,14 @@ export function createStubConfig(config: Config): ILocalConfigService {
     getAll: () => getConfig(),
     getConfigPath: () => "/mock/exa.config.toml",
     reload: () => getConfig(),
-    addPortal: (alias: string, targetPath: string, options?: {
-      defaultBranch?: string;
-      executionStrategy?: PortalExecutionStrategy;
-    }) => {
+    addPortal: (
+      alias: string,
+      targetPath: string,
+      options?: Opt<{
+        defaultBranch?: string;
+        executionStrategy?: PortalExecutionStrategy;
+      }, Reason.AbstractBoundary>,
+    ) => {
       const existingIndex = portals.findIndex((portal) => portal.alias === alias);
       const next: IPortalConfigEntry = {
         alias,
@@ -166,10 +166,6 @@ export function createStubConfig(config: Config): ILocalConfigService {
   };
 }
 
-/**
- * Build a minimal IGenerateResult from a content string.
- * Convenience helper for test stubs.
- */
 export function makeGenerateResult(
   content: string,
   overrides: Opt<Partial<IGenerateResult>, Reason.TestOverride> = {},
@@ -196,10 +192,6 @@ export function createStubProvider(
   };
 }
 
-/**
- * Create a stub IGitService for tests.
- * Returns an object matching `IGitService` with no-op implementations.
- */
 export function createStubGit(
   overrides: Opt<Partial<IGitService>, Reason.TestOverride> = {},
 ): IGitService {
@@ -215,12 +207,12 @@ export function createStubGit(
 /**
  * Create a stub IDisplayService for tests.
  */
-export function createStubDisplay(db?: IDatabaseService): IDisplayService {
+export function createStubDisplay(db?: Opt<IDatabaseService, Reason.OptionalDependency>): IDisplayService {
   const logWithLevel = (
     action: string,
     target: string | null,
     payload: LogMetadata = {},
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> => {
     if (!db) {
       return Promise.resolve();
@@ -237,16 +229,36 @@ export function createStubDisplay(db?: IDatabaseService): IDisplayService {
   };
 
   const display: IDisplayService = {
-    info: (action: string, target: string | null, payload?: LogMetadata, traceId?: string) =>
-      logWithLevel(action, target, payload, traceId),
-    warn: (action: string, target: string | null, payload?: LogMetadata, traceId?: string) =>
-      logWithLevel(action, target, payload, traceId),
-    error: (action: string, target: string | null, payload?: LogMetadata, traceId?: string) =>
-      logWithLevel(action, target, payload, traceId),
-    debug: (action: string, target: string | null, payload?: LogMetadata, traceId?: string) =>
-      logWithLevel(action, target, payload, traceId),
-    fatal: (action: string, target: string | null, payload?: LogMetadata, traceId?: string) =>
-      logWithLevel(action, target, payload, traceId),
+    info: (
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.AbstractBoundary>,
+      traceId?: Opt<string, Reason.AbstractBoundary>,
+    ) => logWithLevel(action, target, payload, traceId),
+    warn: (
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.AbstractBoundary>,
+      traceId?: Opt<string, Reason.AbstractBoundary>,
+    ) => logWithLevel(action, target, payload, traceId),
+    error: (
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.AbstractBoundary>,
+      traceId?: Opt<string, Reason.AbstractBoundary>,
+    ) => logWithLevel(action, target, payload, traceId),
+    debug: (
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.AbstractBoundary>,
+      traceId?: Opt<string, Reason.AbstractBoundary>,
+    ) => logWithLevel(action, target, payload, traceId),
+    fatal: (
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.AbstractBoundary>,
+      traceId?: Opt<string, Reason.AbstractBoundary>,
+    ) => logWithLevel(action, target, payload, traceId),
   };
 
   return display;
@@ -278,10 +290,7 @@ export function createStubContext(overrides: Partial<ICliApplicationContext> = {
   return context;
 }
 
-/**
- * Bypass strict TypeScript casting in tests — avoids double `as` casts.
- * Usage: castAny<IModelProvider>({ generate: ... })
- */
+/** Bypass strict TypeScript casting in tests — avoids double `as` casts. */
 export function castAny<T>(val: object): T {
   return val as T;
 }

@@ -15,10 +15,7 @@ import { join } from "@std/path";
 import { REVIEW_STATUS_VALUES } from "@exaix/core/status";
 import type { Config } from "@exaix/schemas/config.ts";
 
-/**
- * SQL statement to create the activity table with all indexes.
- * Centralized here to avoid duplication across tests.
- */
+/** Centralized here to avoid duplicated CREATE TABLE statements across tests. */
 export const ACTIVITY_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS activity (
     id TEXT PRIMARY KEY,
@@ -42,10 +39,7 @@ export const ACTIVITY_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_activity_agent_kind ON activity(agent_kind);
 `;
 
-/**
- * Initialize an in‑memory SQLite database with the `activity` table.
- * This helper is used by multiple tests to avoid duplicated CREATE TABLE statements.
- */
+/** In-memory `Database` with just the `activity` table (raw handle, not a `DatabaseService`). */
 export function initTestDb(): Database {
   const db = new Database(":memory:");
   db.exec(`
@@ -68,17 +62,12 @@ export function initTestDb(): Database {
   return db;
 }
 
-/**
- * Initialize activity table schema on an existing DatabaseService.
- * Useful for reconnection tests where a new DatabaseService connects to existing data.
- */
+/** For reconnection tests: a new DatabaseService connecting to already-existing data. */
 export function initActivityTableSchema(db: DatabaseService): void {
   db.instance.exec(ACTIVITY_TABLE_SQL);
 }
 
-/**
- * SQL for reviews table (mirrors migrations/001_init.sql; `created_by` since Phase 36)
- */
+/** SQL for reviews table (mirrors migrations/001_init.sql). */
 export const REVIEWS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
@@ -213,11 +202,7 @@ export const ARTIFACTS_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created DESC);
 `;
 
-/**
- * SQL for the Phase 174 Step 4 session-delegate-cycle claims table (mirrors
- * migrations/001_init.sql). The launch source of truth for session_delegate_cycle
- * flow steps.
- */
+/** SQL for the session-delegate-cycle claims table (mirrors migrations/001_init.sql). */
 export const SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS session_delegate_cycle_claims (
     parent_trace_id     TEXT NOT NULL,
@@ -235,11 +220,7 @@ export const SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_cycle_claims_delegation_trace ON session_delegate_cycle_claims(delegation_trace_id);
 `;
 
-/**
- * SQL for the Phase 135 Team model-registry tables (mirrors migrations/001_init.sql,
- * §5.2). Lets tests set up the registry schema without hand-writing DDL or running
- * the migration runner.
- */
+/** SQL for the Team model-registry tables (mirrors migrations/001_init.sql). */
 export const REGISTRY_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS model_catalog (
     provider          TEXT    NOT NULL,
@@ -319,10 +300,6 @@ export function initFullSchema(db: DatabaseService): void {
   db.instance.exec(SESSION_DELEGATE_CYCLE_CLAIMS_TABLE_SQL);
 }
 
-/**
- * Initialize a DatabaseService with an in-memory database for testing.
- * Uses a temporary directory for the config root.
- */
 function resolveSqliteLibraryPath(): string | null {
   const candidates = [
     "/usr/lib/x86_64-linux-gnu/libsqlite3.so.0",
@@ -344,6 +321,7 @@ function resolveSqliteLibraryPath(): string | null {
   return null;
 }
 
+/** DatabaseService over an in-memory DB, with a temp-dir config root. */
 export async function initTestDbService(): Promise<
   { db: DatabaseService; config: Config; tempDir: string; cleanup: () => Promise<void> }
 > {

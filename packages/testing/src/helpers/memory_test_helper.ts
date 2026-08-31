@@ -26,11 +26,9 @@ import type {
 import type { MemoryType } from "@exaix/core";
 import { MemoryReferenceType } from "@exaix/core";
 import { TEST_IDENTITY_ID } from "./constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Base no-op stub for IMemoryBankService.
- * Extend this in tests and override only the methods you need.
- */
+/** No-op `IMemoryBankService` stub — extend and override only what a test needs. */
 export class NullMemoryBankStub implements IMemoryBankService {
   getProjectMemory(_portal: string): Promise<IProjectMemory | null> {
     return Promise.resolve(null);
@@ -53,7 +51,10 @@ export class NullMemoryBankStub implements IMemoryBankService {
   getExecutionByTraceId(_traceId: string): Promise<IExecutionMemory | null> {
     return Promise.resolve(null);
   }
-  getExecutionHistory(_portal?: string, _limit?: number): Promise<IExecutionMemory[]> {
+  getExecutionHistory(
+    _portal?: Opt<string, Reason.AbstractBoundary>,
+    _limit?: Opt<number, Reason.AbstractBoundary>,
+  ): Promise<IExecutionMemory[]> {
     return Promise.resolve([]);
   }
   getGlobalMemory(): Promise<IGlobalMemory | null> {
@@ -82,13 +83,22 @@ export class NullMemoryBankStub implements IMemoryBankService {
   demoteLearning(_learningId: string, _targetPortal: string): Promise<void> {
     return Promise.resolve();
   }
-  searchMemory(_query: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  searchMemory(
+    _query: string,
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.AbstractBoundary>,
+  ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
-  searchByTags(_tags: string[], _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  searchByTags(
+    _tags: string[],
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.AbstractBoundary>,
+  ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
-  searchByKeyword(_keyword: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  searchByKeyword(
+    _keyword: string,
+    _options?: Opt<{ portal?: string; limit?: number }, Reason.AbstractBoundary>,
+  ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
   searchMemoryAdvanced(
@@ -96,7 +106,7 @@ export class NullMemoryBankStub implements IMemoryBankService {
   ): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
-  getRecentActivity(_limit?: number): Promise<IActivitySummary[]> {
+  getRecentActivity(_limit?: Opt<number, Reason.AbstractBoundary>): Promise<IActivitySummary[]> {
     return Promise.resolve([]);
   }
   rebuildIndices(): Promise<void> {
@@ -110,10 +120,7 @@ export class NullMemoryBankStub implements IMemoryBankService {
   }
 }
 
-/**
- * Base no-op stub for IMemoryEmbeddingService.
- * Extend this in tests and override only the methods you need.
- */
+/** No-op `IMemoryEmbeddingService` stub — extend and override only what a test needs. */
 export class NullEmbeddingStub implements IMemoryEmbeddingService {
   initializeManifest(): Promise<void> {
     return Promise.resolve();
@@ -123,7 +130,7 @@ export class NullEmbeddingStub implements IMemoryEmbeddingService {
   }
   searchByEmbedding(
     _query: string,
-    _options?: { limit?: number; threshold?: number },
+    _options?: Opt<{ limit?: number; threshold?: number }, Reason.AbstractBoundary>,
   ): Promise<IEmbeddingSearchResult[]> {
     return Promise.resolve([]);
   }

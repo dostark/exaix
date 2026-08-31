@@ -15,10 +15,6 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { GitBranchName } from "@exaix/git";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Create a stub IGitService with no-op implementations.
- * Useful for CLI initialization and testing.
- */
 export function createGitServiceStub(overrides: Partial<IGitService> = {}): IGitService {
   const base: IGitService = {
     setRepository: () => {},
@@ -40,10 +36,6 @@ export function createGitServiceStub(overrides: Partial<IGitService> = {}): IGit
   return { ...base, ...overrides };
 }
 
-/**
- * Create a stub IModelProvider with minimal implementation.
- * Useful for CLI initialization and testing.
- */
 export function createProviderStub(
   overrides: Opt<Partial<IModelProvider>, Reason.TestOverride> = {},
 ): IModelProvider {
