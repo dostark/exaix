@@ -39,3 +39,17 @@ Deno.test("Agent docs: completion evidence must survive session restarts", async
   assert(/must not be the sole\s+user-facing proof artifact/.test(md));
   assert(md.includes("durable, phase-named workspace/sandbox output directory"));
 });
+
+Deno.test("Agent docs: local completion validation is focused by default", async () => {
+  const agentInstructions = await Deno.readTextFile("CLAUDE.md");
+  const nextSteps = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
+
+  assert(agentInstructions.includes("focused, file-scoped validation"));
+  assert(agentInstructions.includes("Do not run `deno run -A scripts/ci.ts all` as a default local check"));
+  assert(
+    !agentInstructions.includes(
+      "Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`",
+    ),
+  );
+  assert(nextSteps.includes("Use focused, file-scoped test commands by default"));
+});

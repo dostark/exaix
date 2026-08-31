@@ -152,7 +152,8 @@ Complete this checklist for every implementation task, in order.
 
 ### Before Claiming Complete
 
-1. Ensure `deno check packages/ apps/ tests/` is clean.
+1. Ensure focused `deno check` validation is clean for every touched source/test file;
+   expand to the owning package or app only when cross-file type relationships require it.
 2. Do not use raw SQL table creation in tests when project helpers already cover the setup.
 3. Do not bypass failing checks or ignore pre-commit failures.
 4. Do not introduce magic numbers or strings — see [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values).
@@ -161,24 +162,40 @@ Complete this checklist for every implementation task, in order.
 7. Avoid introducing new dependencies unless necessary.
 8. Fix source behavior, not tests — never edit or weaken a test just to make it pass unless the test itself is wrong.
 9. If you modified any MCP tool handler under `packages/mcp/server/`, run `deno task docs-sync-schemas` and stage the result.
-10. Run the quick verification command below after each discrete implementation step.
-11. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`. If it fails without a clear cause, `.github/workflows/code-quality.yml` and `.github/workflows/pr-validation.yml` are the exact CI step definitions — read them directly rather than trusting a hand-copied summary, which will drift.
-12. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete — mark it `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
-13. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
+10. Run focused, file-scoped validation after each discrete implementation step, following
+    the active task skill's required gates and executing every test written or modified.
+11. Before any PR handoff or completion claim, run the applicable focused checks: changed
+    tests (including real scenario/E2E execution), lint, type-check, format, and the
+    relevant fast repository gates. Do not run `deno run -A scripts/ci.ts all` as a default local check.
+    Reserve repository-wide test/coverage runs for massive or cross-cutting changes,
+    shared code imported by more than three unrelated packages, an explicit user request,
+    or a planning document that explicitly requires repository-wide validation.
+12. If you cannot execute required focused validation in the current environment, state
+    which checks were skipped and why. A task with skipped required checks must NOT be
+    marked complete — mark it `PENDING VERIFICATION` and list the exact commands needed.
+13. If a selected validation gate fails, do not claim completion; identify the root cause,
+    fix it without bypass flags, and rerun that gate until it passes.
 
-### Quick CI Verification
+### Local Verification Policy
 
-When running `deno task test_parallel`, always redirect stdout+stderr to a temp file to capture full output without truncation, then search for failures. Requires `ripgrep` (`rg`); fall back to `grep -E` if unavailable:
+For normal local work, prefer focused commands such as `deno test --allow-all <changed-test-file>`,
+`deno lint <changed-files>`, and `deno check <changed-files>`, plus the task skill's fast
+repository gates. This matches [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)
+and avoids sequential full-suite + coverage runs during a narrow step.
+
+When a repository-wide run is justified by one of the exceptions above, redirect
+`deno task test_parallel` output to a temp file to avoid truncation, then search for
+failures. Requires `ripgrep` (`rg`); fall back to `grep -E` if unavailable:
 
 ```bash
 deno task test_parallel > /tmp/test_output.txt 2>&1
 rg "FAILED|failed|error" /tmp/test_output.txt   # or: grep -E "FAILED|failed|error" /tmp/test_output.txt
 ```
 
-Full CI pipeline (`all` and `test` run the full suite; `all` additionally re-runs it a
-second time with coverage instrumentation, plus a full binary compile — expensive, use
-`--skip-tests` for a fast local check+build pass when the test suite isn't the thing you
-need re-verified):
+Repository-wide CI reference (not the default local verification): `all` and `test` run
+the full suite; `all` additionally re-runs it with coverage instrumentation and compiles
+all binaries. Leave this expensive cycle to hosted CI unless an exception above applies.
+Use `--skip-tests` for a local check+build pass when compilation needs verification:
 
 ```bash
 deno run -A scripts/ci.ts all                # everything (check + test x2 + build)
@@ -197,7 +214,7 @@ deno run -A scripts/ci.ts coverage            # coverage verification only
 
 **Common CI failures:**
 
-- **Test failures**: run `deno test --allow-all` and fix failing tests
+- **Test failures**: rerun the failing test file with `deno test --allow-all <test-file>` and fix it
 - **Complexity breaches**: refactor complex functions (see complexity check output)
 - **Duplication**: extract common code into shared utilities
 - **Coverage drops**: add tests for uncovered code paths
