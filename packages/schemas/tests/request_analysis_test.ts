@@ -196,9 +196,7 @@ Deno.test("[RequestAnalysisSchema] validates all taskType enum values", () => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Step 21: RequirementSchema — new type / explicit fields
-// ---------------------------------------------------------------------------
+// RequirementSchema — type / explicit fields
 
 Deno.test("[RequirementSchema] accepts type: functional / non-functional / constraint", () => {
   for (const type of ["functional", "non-functional", "constraint"] as const) {
@@ -225,9 +223,7 @@ Deno.test("[RequirementSchema] rejects invalid type value", () => {
   assertEquals(r.success, false);
 });
 
-// ---------------------------------------------------------------------------
-// Step 21: AmbiguitySchema — new interpretations / clarificationQuestion fields
-// ---------------------------------------------------------------------------
+// AmbiguitySchema — interpretations / clarificationQuestion fields
 
 Deno.test("[AmbiguitySchema] accepts interpretations array", () => {
   const r = AmbiguitySchema.safeParse({
@@ -262,18 +258,14 @@ Deno.test("[AmbiguitySchema] clarificationQuestion absent when not provided", ()
   if (r.success) assertEquals(r.data.clarificationQuestion, undefined);
 });
 
-// ---------------------------------------------------------------------------
-// Step 25: RequestTaskType — BUGFIX is canonical, FIX variant removed
-// ---------------------------------------------------------------------------
+// RequestTaskType — BUGFIX is canonical, FIX variant removed
 
 Deno.test("[RequestTaskType] does not contain FIX variant — BUGFIX is canonical", () => {
   assertEquals(Object.values(RequestTaskType).includes("fix" as RequestTaskType), false);
   assertEquals(Object.values(RequestTaskType).includes(RequestTaskType.BUGFIX), true);
 });
 
-// ---------------------------------------------------------------------------
-// Step 25: RequestAnalysisMetadataSchema includes analyzerVersion
-// ---------------------------------------------------------------------------
+// RequestAnalysisMetadataSchema includes analyzerVersion
 
 Deno.test("[RequestAnalysisMetadataSchema] includes analyzerVersion field with string type", () => {
   const r = RequestAnalysisSchema.safeParse(validAnalysis);

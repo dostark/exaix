@@ -9,23 +9,15 @@
 import { z } from "zod";
 import { REQUEST_STATUS_VALUES } from "@exaix/core/status";
 
-/**
- * Schema for Exaix request frontmatter
- *
- * Validates the YAML frontmatter structure in request markdown files
- * located in Workspace/Requests
- *
- * Uses --- delimiters for YAML (Dataview compatible)
- */
-/**
- * Worktree-relative pointer to a Phase-173 PlanContext sandbox copy
- * (`.exa/PlanContext/<slug>.md`), stamped only by `scripts/plan_to_requests.ts` when it
- * copies the source plan under `--plan-context-root` (Phase 174 Step 2 GAP-1).
- */
+/** Worktree-relative pointer to a PlanContext sandbox copy (`.exa/PlanContext/<slug>.md`),
+ *  stamped only by `scripts/plan_to_requests.ts` when it copies the source plan under
+ *  `--plan-context-root`. */
 export const PlanContextRefSchema = z.string().regex(
   /^\.exa\/PlanContext\/[A-Za-z0-9._-]+\.md$/,
 );
 
+/** Validates the YAML frontmatter in request markdown files under Workspace/Requests
+ *  (--- delimiters, Dataview compatible). */
 export const RequestSchema = z.object({
   trace_id: z.string().uuid("Invalid trace_id: must be a valid UUID"),
   identity_id: z.string().min(1, "identity_id cannot be empty"),

@@ -32,15 +32,12 @@ export const MCPConfigSchema = z.object({
   transport: z.nativeEnum(McpTransportType).default(McpTransportType.STDIO),
   server_name: z.string().default("exaix"),
   version: z.string().default(DEFAULT_MCP_VERSION),
-  /** Phase 163 Step 4: require a Bearer token on every HTTP-transport request. Off by default. */
+  /** Require a Bearer token on every HTTP-transport request. Off by default. */
   require_auth: z.boolean().default(false),
-  /**
-   * Name of the environment variable holding the shared-secret Bearer token, following the
-   * same env-var-indirection convention as `ai_openrouter.api_key_env` — the token itself
-   * never sits in plaintext config.
-   */
+  /** Same env-var-indirection convention as `ai_openrouter.api_key_env` — the token
+   *  itself never sits in plaintext config. */
   auth_token_env: z.string().default("MCP_AUTH_TOKEN"),
-  /** Phase 163 Step 9: reported lifetime (seconds) for the static shared-secret token's AuthInfo.expiresAt. */
+  /** Reported lifetime (seconds) for the static shared-secret token's AuthInfo.expiresAt. */
   auth_token_expiry_seconds: z.number().int().positive().default(DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS),
 });
 
@@ -179,7 +176,7 @@ export const CreateRequestToolArgsSchema = z.object({
   description: z.string().min(1, "Description required"),
   /** @deprecated Use identity instead */
   agent: z.string().default(DEFAULT_AGENT_MODEL),
-  /** Identity to assign (Phase 54 canonical field) */
+  /** Identity to assign — the canonical field. */
   identity: z.string().default(DEFAULT_AGENT_MODEL),
   context: z.array(z.string()).optional(),
   identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),

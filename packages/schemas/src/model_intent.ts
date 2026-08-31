@@ -44,7 +44,7 @@ export interface IModelIntent {
   estimated_input_tokens?: number;
   /** The derived or declared task type driving the `best` scorer's benchmark_map lookup (Team). Rides the intent/trace in Solo without affecting selection. */
   task_type?: TaskType;
-  /** GAP-9 — how task_type was derived; rides the intent to the trace. */
+  /** How task_type was derived; rides the intent to the trace. */
   task_type_source?: TaskTypeSource;
 }
 
@@ -100,5 +100,6 @@ export interface IModelResolutionTrace {
   duration_ms: number;
 }
 
-/** GAP-6: Zod enum for the reasoning effort tiers, so intent parsing and validation round-trip through a schema. */
+/** Zod enum for the reasoning effort tiers, so intent parsing and validation round-trip
+ *  through a schema. */
 export const EffortTierSchema = z.enum(["low", "medium", "high"]);

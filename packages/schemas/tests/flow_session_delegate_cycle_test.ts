@@ -91,10 +91,8 @@ Deno.test("[schema] requireChangedPaths defaults to true when omitted", () => {
   assertEquals(result.delegateCycle?.requireChangedPaths, true);
 });
 
-// GAP-4 remediation (Phase 174 Step 10): SessionDelegateCycleStepHandler halts
-// unconditionally on any failed review — it never honors onFail: retry or
-// continue-with-warning. The schema must reject those values for this step type
-// instead of silently accepting a configuration it cannot actually implement.
+// SessionDelegateCycleStepHandler halts unconditionally on any failed review — it never
+// honors onFail: retry or continue-with-warning, so the schema must reject those values.
 
 Deno.test("[schema] session_delegate_cycle step rejects review.onFail: retry", () => {
   const step = {

@@ -11,11 +11,8 @@
 
 import { z } from "zod";
 
-/**
- * Schema for a single step manifest embedded in a phase planning document.
- * Distinct from RequestSchema — shares only the `skills` field.
- * Maps to request frontmatter via the generator's identity → identity_id, etc.
- */
+/** Distinct from RequestSchema — shares only the `skills` field. Maps to request
+ *  frontmatter via the generator's identity → identity_id, etc. */
 export const StepManifestSchema = z.object({
   /** 1-based step number (must be positive integer) */
   step: z.number().int().positive(),

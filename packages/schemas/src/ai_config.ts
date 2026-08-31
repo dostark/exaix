@@ -21,10 +21,8 @@ import {
   ProviderType,
 } from "@exaix/core";
 
-/**
- * Dynamic provider type schema - validates against registered providers
- * This replaces the hardcoded enum to make provider types configurable
- */
+/** Validates against registered providers, not a hardcoded enum, so provider types
+ *  stay configurable. */
 export const ProviderTypeSchema = z.string().min(1).refine(
   (_val) => {
     // For schema validation, allow any non-empty string
@@ -56,7 +54,7 @@ export const MockConfigSchema = z.object({
   /** Delay in ms for slow strategy */
   delay_ms: z.number().positive().optional(),
   /** Refuse to answer a prompt/call site with no recording, instead of falling back to
-   *  patterns (Phase 157). Off by default — matches today's behaviour. */
+   *  patterns. Off by default — matches today's behaviour. */
   strict: z.boolean().optional(),
 }).default({
   strategy: DEFAULT_MOCK_STRATEGY,
@@ -126,17 +124,7 @@ function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<str
   }
   return result;
 }
-/**
- * @module AIConfigSchema
- * @path packages/schemas/src/ai_config.ts
- * @description Defines the Zod schema for AI provider configuration, including model selection, retry strategies, and mock provider settings.
- * @architectural-layer Config
- * @related-files ["packages/schemas/src/config.ts"]
- */
-
-/**
- * Default models for each provider - now registry-driven
- */
+/** Registry-driven, not hardcoded per provider. */
 export function getDefaultModels(): Record<string, string> {
   return buildProviderRecord(getDefaultModelForProvider);
 }

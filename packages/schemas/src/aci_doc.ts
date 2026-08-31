@@ -29,11 +29,8 @@ const ACI_DOC_MIN_GUIDANCE_CHARS = 10;
 /** Minimum length for `example.output` — a worked output must be non-empty, but is often short. */
 const ACI_DOC_MIN_OUTPUT_CHARS = 1;
 
-/**
- * Bounded example-input record: JSON-only values (blocks functions, symbols, and other
- * non-serializable payloads from entering the trusted prompt section), capped property
- * count and serialized size so one ACI block cannot exhaust the prompt-injection budget.
- */
+/** JSON-only values, capped property count and serialized size, so one ACI block cannot
+ *  exhaust the prompt-injection budget. */
 const AciDocInputSchema = z.record(z.string(), JSONValueSchema)
   .refine((obj) => Object.keys(obj).length <= ACI_DOC_INPUT_MAX_PROPERTIES, {
     message: `at most ${ACI_DOC_INPUT_MAX_PROPERTIES} example-input properties`,
@@ -42,10 +39,7 @@ const AciDocInputSchema = z.record(z.string(), JSONValueSchema)
     message: `serialized example input exceeds ${ACI_DOC_INPUT_MAX_CHARS} chars`,
   });
 
-/**
- * Agent-Computer Interface documentation block (Anthropic ACI / Poka-Yoke):
- * clear summary, when/when-not guidance, a worked example, and an anti-example.
- */
+/** Agent-Computer Interface documentation block (Anthropic ACI / Poka-Yoke). */
 export const AciDocSchema = z.object({
   summary: z.string().min(ACI_DOC_MIN_GUIDANCE_CHARS).max(ACI_DOC_SUMMARY_MAX_CHARS),
   when_to_use: z.string().min(ACI_DOC_MIN_GUIDANCE_CHARS).max(ACI_DOC_GUIDANCE_MAX_CHARS),

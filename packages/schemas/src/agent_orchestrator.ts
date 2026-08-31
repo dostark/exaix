@@ -113,13 +113,10 @@ export const ChangesetResultSchema = z.object({
      *  breakdown (subset of completion_tokens, billed as output). undefined when the
      *  provider/model doesn't report one — never 0 for "no reasoning happened". */
     reasoning_tokens: z.number().int().nonnegative().optional(),
-    /** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's
-     *  own calculateCost() rate-based guess ("predicted"). Defaults to "predicted" so
-     *  every existing direct-API call site that doesn't explicitly set this preserves
-     *  today's exact behavior; CliDelegateStrategy and the session-delegate path
-     *  explicitly set "tracked". */
+    /** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's own
+     *  calculateCost() rate-based guess ("predicted", the default). */
     cost_source: ChangesetCostSourceSchema.default("predicted"),
-  }).optional().describe("LLM usage metrics (Phase 69)"),
+  }).optional().describe("LLM usage metrics"),
 });
 export type IChangesetResult = z.infer<typeof ChangesetResultSchema>;
 

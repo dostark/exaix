@@ -11,15 +11,6 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { ExecutionStrategyName, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 
-/**
- * Tests for Phase 159 Step 1: FlowStepSchema `strategy` field
- *
- * Success Criteria:
- * - The schema accepts only react | mcp | cli_delegate on DECLARED agent steps
- * - A DYNAMIC or non-agent step declaring `strategy` fails schema validation
- * - Existing flow schema tests remain green (no behavioural change without `strategy`)
- */
-
 Deno.test("FlowStepSchema: accepts strategy: react on a DECLARED agent step", () => {
   const step = {
     id: "test-step",

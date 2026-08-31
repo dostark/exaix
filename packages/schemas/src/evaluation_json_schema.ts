@@ -13,20 +13,14 @@ import { CriterionResultSchema, EvaluationResultSchema } from "@exaix/core/evalu
 import { zodToJsonSchema } from "./json_schema_adapter.ts";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Returns a JSON Schema derived from EvaluationResultSchema — the multi-criteria
- * preset response format used by the LLM judge (e.g. GOAL_ALIGNED_REVIEW).
- * Not cached, so a schema change at runtime is never stale.
- */
+/** The multi-criteria preset response format used by the LLM judge (e.g.
+ *  GOAL_ALIGNED_REVIEW). Not cached, so a schema change at runtime is never stale. */
 export function getEvaluationResultJsonSchema(): Record<string, JSONValue> {
   return zodToJsonSchema(EvaluationResultSchema);
 }
 
-/**
- * Returns a JSON Schema derived from CriterionResultSchema — the single-criterion
- * judge response format. Used when no preset is configured.
- * Not cached, so a schema change at runtime is never stale.
- */
+/** The single-criterion judge response format, used when no preset is configured. Not
+ *  cached, so a schema change at runtime is never stale. */
 export function getCriterionResultJsonSchema(): Record<string, JSONValue> {
   return zodToJsonSchema(CriterionResultSchema);
 }

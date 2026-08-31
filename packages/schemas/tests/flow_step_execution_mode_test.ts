@@ -11,16 +11,6 @@ import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
-/**
- * Tests for Phase 56 Step 1.2: FlowStepSchema Updates
- *
- * Success Criteria:
- * - FlowStepSchema accepts execution_mode field with DECLARED or DYNAMIC values
- * - FlowStepSchema defaults execution_mode to DECLARED when not specified
- * - FlowStepSchema accepts permitted_tools array for dynamic steps
- * - FlowStepSchema strips unknown fields (Zod strict behavior preserved)
- */
-
 Deno.test("FlowStepSchema: accepts execution_mode: declared", () => {
   const step = {
     id: "test-step",

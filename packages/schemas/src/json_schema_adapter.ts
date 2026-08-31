@@ -12,12 +12,9 @@
 import type { JSONValue } from "@exaix/core";
 import { z } from "zod";
 
-/**
- * Convert a Zod schema to a JSON Schema object by walking its _def tree.
- * Only handles the schema shapes used in this codebase (ZodObject, ZodArray,
- * ZodString, ZodNumber, ZodBoolean, ZodNativeEnum, ZodOptional, ZodDefault,
- * ZodEffects, ZodUnion, ZodRecord).
- */
+/** Only handles the schema shapes used in this codebase (ZodObject, ZodArray, ZodString,
+ *  ZodNumber, ZodBoolean, ZodNativeEnum, ZodOptional, ZodDefault, ZodEffects, ZodUnion,
+ *  ZodRecord). */
 export function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, JSONValue> {
   return walkSchema(schema);
 }

@@ -36,18 +36,8 @@
 import { z } from "zod";
 import { SkillQualityCriterionSchema, SkillTriggersSchema } from "./memory_bank.ts";
 
-/**
- * Schema for the SKILL.md envelope — frontmatter fields plus exaix-block fields.
- *
- * Frontmatter fields (from YAML frontmatter):
- *   name, description, version, scope, agent, tools
- *
- * exaix-block fields (from `exaix:` YAML block):
- *   skill_id, triggers, constraints, output_requirements, quality_criteria
- *
- * Both groups are merged into a single zod object because the parser extracts
- * them from the same markdown document and the generator consumes them together.
- */
+/** Frontmatter fields and exaix-block fields merged into one zod object, since the
+ *  parser extracts both from the same markdown document. */
 export const SkillEnvelopeSchema = z.object({
   // === Frontmatter fields ===
   name: z.string().min(1).max(100).describe("Human-readable skill name"),

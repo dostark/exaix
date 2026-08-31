@@ -11,16 +11,6 @@ import { McpToolName } from "@exaix/mcp";
 import { assertEquals, assertThrows } from "@std/assert";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 
-/**
- * Tests for Phase 56 Step 1.3: BlueprintFrontmatterSchema Updates
- *
- * Success Criteria:
- * - BlueprintFrontmatterSchema accepts permitted_tools array
- * - BlueprintFrontmatterSchema permits empty permitted_tools array
- * - BlueprintFrontmatterSchema rejects invalid tool names in permitted_tools
- * - BlueprintFrontmatterSchema strips unknown fields (Zod strict behavior)
- */
-
 Deno.test("BlueprintFrontmatterSchema: accepts permitted_tools array", () => {
   const frontmatter = {
     identity_id: "senior-coder",

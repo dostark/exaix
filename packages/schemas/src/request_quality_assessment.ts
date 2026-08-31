@@ -105,10 +105,7 @@ export type IRequestQualityAssessmentMetadata = z.infer<
  * Full structured quality assessment of a request, produced by RequestQualityGate.
  */
 export const RequestQualityAssessmentSchema = z.object({
-  /**
-   * Overall quality score (0–100).
-   * 0 = completely vague/unactionable; 100 = fully specified, ready to execute.
-   */
+  /** 0 = completely vague/unactionable; 100 = fully specified, ready to execute. */
   score: z.number().int().min(0).max(100),
   /** Quality level derived from the score and configured thresholds. */
   level: z.nativeEnum(RequestQualityLevel),
@@ -116,10 +113,7 @@ export const RequestQualityAssessmentSchema = z.object({
   issues: z.array(RequestQualityIssueSchema),
   /** Recommended action for the quality gate pipeline. */
   recommendation: z.nativeEnum(RequestQualityRecommendation),
-  /**
-   * If auto-enrich is recommended, the LLM-improved version of the request body.
-   * Absent when auto-enrichment was not performed.
-   */
+  /** Set when auto-enrich is recommended; the LLM-improved version of the request body. */
   enrichedBody: z.string().optional(),
   /** Assessment timing and strategy metadata. */
   metadata: RequestQualityAssessmentMetadataSchema,

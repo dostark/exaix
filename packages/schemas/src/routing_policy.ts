@@ -29,7 +29,7 @@ export const ZRoutingMatchCriteria = z.object({
   taskType: z.string().min(1).optional(),
   portalType: z.string().min(1).optional(),
   tags: z.array(z.string()).default([]),
-  /** Request body text for NL-based matching against description/routing_hint (Phase 131 Step 8) */
+  /** Request body text for NL-based matching against description/routing_hint. */
   requestText: z.string().optional(),
 });
 

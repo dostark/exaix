@@ -58,11 +58,8 @@ export interface IAgentWhitelistResult {
   identity_id: string;
 }
 
-/**
- * Minimal interface for portal permission checkers used by MCP tool handlers.
- * PortalPermissionsService satisfies this interface structurally; test fixtures
- * (e.g. AllowAllPermissionsService) implement it without importing the concrete service.
- */
+/** PortalPermissionsService satisfies this structurally; test fixtures (e.g.
+ *  AllowAllPermissionsService) implement it without importing the concrete service. */
 export interface IPortalPermissionsChecker {
   checkOperationAllowed(
     portalAlias: string,
@@ -75,11 +72,8 @@ export interface IPortalPermissionsChecker {
 // Security Modes
 // ============================================================================
 
-/**
- * Security mode for agent execution:
- * - sandboxed: No file system access, all operations via MCP tools
- * - hybrid: Read-only portal access, writes via MCP tools with audit
- */
+/** sandboxed: no file system access, all operations via MCP tools. hybrid: read-only
+ *  portal access, writes via MCP tools with audit. */
 export const SecurityModeSchema = z.nativeEnum(SecurityMode);
 
 /**
@@ -164,7 +158,7 @@ export const PortalPermissionsSchema = z.object({
   // Security settings
   security: PortalSecurityConfigSchema.optional(),
 
-  // Session delegation configuration (Phase 111)
+  // Session delegation configuration
   session_delegate: SessionDelegateConfigSchema.optional(),
 });
 

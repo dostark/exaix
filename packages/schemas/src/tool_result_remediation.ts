@@ -117,17 +117,7 @@ function validateForFailureStage(
 // Remediation Dispatch
 // ============================================================================
 
-/**
- * Applies the remediation policy for a validation failure.
- *
- * - fail_closed: stops immediately and returns the failure.
- * - escalate_only: surfaces the failure as an audit event without stopping execution.
- * - normalize_then_validate: calls context.normalize() then revalidates the payload.
- * - retry_once: retries once using context.retry() if the tool allows it.
- * - retry_with_backoff: retries up to policy.maxRetries times using context.retry().
- *
- * Retry is blocked when idempotency or side-effect constraints are violated.
- */
+/** Retry is blocked when idempotency or side-effect constraints are violated. */
 export async function applyRemediationPolicy(
   toolName: string,
   policy: IToolResultRemediationPolicy,

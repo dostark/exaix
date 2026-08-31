@@ -16,10 +16,8 @@ import { z } from "zod";
 // Root schema
 // ============================================================================
 
-/**
- * Structured request specification compiled from a clarification Q&A session.
- * Follows the Specification-Driven Development (SDD) methodology.
- */
+/** Compiled from a clarification Q&A session, following the Specification-Driven
+ *  Development (SDD) methodology. */
 export const RequestSpecificationSchema = z.object({
   /** Concise summary of what the user wants. */
   summary: z.string().min(1),

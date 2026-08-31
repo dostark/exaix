@@ -296,10 +296,8 @@ Deno.test("[session_delegate] every matrix entry uses a real decision verb", () 
   }
 });
 
-// Phase 150 LIVE-RT: the per-step brief hardcoded permitted_paths to `Workspace/**`,
-// which can never match the worktree-relative paths a portal code change touches
-// (`src/main.ts`), so every live delegate return was rejected as a scope violation.
-// The scope is now operator-declared per config preset.
+// Regression: a hardcoded `Workspace/**` permitted_paths can never match the
+// worktree-relative paths a portal code change touches (`src/main.ts`).
 Deno.test("[session_delegate] SessionDelegateConfigSchema accepts operator-declared permitted_paths", () => {
   const parsed = SessionDelegateConfigSchema.parse({
     enabled: true,

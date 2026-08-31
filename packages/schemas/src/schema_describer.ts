@@ -9,10 +9,6 @@
 
 import { z, type ZodType } from "zod";
 
-/**
- * Generate a human-readable schema description from a Zod schema
- * Useful for providing context to LLMs for fixing validation errors.
- */
 export function describeSchema<T>(
   schema: ZodType<T>,
 ): string {

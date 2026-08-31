@@ -10,19 +10,6 @@ import { assertEquals } from "@std/assert";
 import { RequestStatus } from "@exaix/core/status";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 
-/**
- * Tests for Step 2.2: The Zod Frontmatter Parser
- *
- * Success Criteria (from Implementation Plan):
- * - Test 1: Valid frontmatter + Zod validation → Returns typed Request object
- * - Test 2: Missing required field (trace_id) → Throws validation error with specific field name
- * - Test 3: Invalid enum value (status: "banana") → Throws error listing valid options
- * - Test 4: Extra fields in frontmatter → Ignored (Zod strips unknown keys by default)
- * - Test 5: No frontmatter delimiters → Throws "No frontmatter found" error
- *
- * Uses YAML frontmatter format (--- delimiters).
- */
-
 Deno.test("RequestSchema: valid frontmatter object passes validation", () => {
   const validRequest = {
     trace_id: "550e8400-e29b-41d4-a716-446655440000",

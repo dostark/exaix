@@ -60,12 +60,7 @@ type IUnvalidatedPayload = JSONValue;
 // Stateless validation helpers
 // ============================================================================
 
-/**
- * Validates an IToolResult envelope at the executor or adapter boundary.
- * Returns null on success, IToolResultValidationFailure on schema mismatch.
- *
- * rawResult is captured for audit logging but must not be forwarded to clients.
- */
+/** rawResult is captured for audit logging but must not be forwarded to clients. */
 export function validateToolResultEnvelope(
   toolName: string,
   result: IUnvalidatedPayload,
@@ -106,12 +101,8 @@ export function validateToolResultEnvelope(
   );
 }
 
-/**
- * Validates an MCPToolResponse at the MCP server boundary.
- * isError:true responses are treated as structurally valid — the tool surfaced
- * a typed error, which is not a schema violation.
- * Returns null on success, IToolResultValidationFailure on schema mismatch.
- */
+/** isError:true responses are treated as structurally valid — the tool surfaced a typed
+ *  error, which is not a schema violation. */
 export function validateMCPToolResponse(
   toolName: string,
   response: IUnvalidatedPayload,
