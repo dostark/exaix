@@ -2,8 +2,8 @@
  * @module ScenarioFrameworkJudgeMethodologyInjectionTest
  * @path tests/scenario_framework/tests/unit/judge_methodology_injection_test.ts
  * @description Tests for injecting the catalog's own judge-methodology skills
- * (verdict-rubric, response-contract-judge) into the LLM-judge prompt. Live-observed
- * 2026-08-02: a 10-trial noise-floor test on identical evidence produced scores from
+ * (verdict-rubric, response-contract-judge) into the LLM-judge prompt. A live-observed
+ * 10-trial noise-floor test on identical evidence produced scores from
  * 0.19 to 0.98 (stdev 0.32), including outright hallucinated claims ("no null check at
  * all" on code that demonstrably has one) — the judge prompt never referenced these two
  * `critical: true`, `usage_count: 0` skills that exist specifically to fix this

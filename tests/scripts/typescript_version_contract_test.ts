@@ -2,8 +2,8 @@
  * @module TypeScriptVersionContractTest
  * @path tests/scripts/typescript_version_contract_test.ts
  * @description Phase 165 (P3): pins the npm `typescript` dependency to the 6.x line and
- * implements the TypeScript-7 migration trigger. TypeScript 7.0.x (stable July 2026) ships
- * no stable programmatic API — only ./unstable/* subpaths — so the five gate scripts that
+ * implements the TypeScript-7 migration trigger. TypeScript 7.0.x ships no stable
+ * programmatic API — only ./unstable/* subpaths — so the five gate scripts that
  * use the legacy compiler API cannot move yet. The moment the pin moves to major 7 this
  * test fails the default suite with a pointer to the migration runbook.
  */

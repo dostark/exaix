@@ -11,7 +11,7 @@
  * @description Phase 158 Step 7's live-catalog wiring: reads the real
  *   `Blueprints/{Identities,Skills,Flows}` catalog and asserts every artefact carries
  *   the decision recorded in `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s
- *   "Step 7 decisions — 2026-08-04" table (skills/identities: KEEP; the one flow this
+ *   "Step 7 decisions" table (skills/identities: KEEP; the one flow this
  *   phase measured: AWAITING_REMEASUREMENT, since its only result is confounded by
  *   execution strategy — see that phase's Step 6 caveat and Phase 159). This is an
  *   operator-run gate, matching `check_blueprint_integrity.ts`'s pattern for the same
@@ -43,7 +43,7 @@ const NO_MEASURABLE_EFFECT_GO_TIER = "abs(Δ) < 0.01 at n=1 on the Go tier; kept
 const NOT_CORPUS_REACHABLE = "not matched by any of the 19 swe_tasks corpus tasks run live";
 const NOT_EXERCISED_BY_AN_ARM = "not exercised by an arm this run";
 
-/** Skills the 2026-08-04 live run measured a real effect for (full or screening trials). */
+/** Skills the live run measured a real effect for (full or screening trials). */
 const SKILL_DECISIONS: IArtefactDecisionEntry[] = [
   keep(ArtefactKind.SKILL, "response-contract", "n=3 mean Δ +0.557, cost-neutral to cost-saving"),
   keep(
@@ -162,7 +162,7 @@ const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
   ),
 ];
 
-/** The 2026-08-04 live run's recorded decisions. */
+/** The live run's recorded decisions. */
 export const ARTEFACT_DECISIONS_2026_08_04: IArtefactDecisionEntry[] = [
   ...SKILL_DECISIONS,
   ...IDENTITY_DECISIONS,

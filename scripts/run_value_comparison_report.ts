@@ -18,13 +18,13 @@
  * (`identity_task_type_report.ts`), `interpretPruneVerdict`
  * (`identity_config_prune_verdict.ts`), `computeFlowReachability`
  * (`flow_corpus_reachability.ts`), `buildFlowValueReport` (`flow_value_report.ts`), and
- * `computeJudgeCalibration` (`judge_calibration.ts`, Step 10). The 2026-08-04 post-gap
+ * `computeJudgeCalibration` (`judge_calibration.ts`, Step 10). The post-gap
  * analysis found these functions had zero production callers despite six Reachability
  * Ledger rows claiming they computed published live-run numbers. This script is
  * deliberately generic — it reads paired-comparison input from an external JSON file
  * rather than embedding any of phase-158's own historical numbers, which are unclean,
  * retry-heavy live-run measurements that should not be encoded as a permanent fixture
- * (see the plan doc's 2026-08-04 design correction on Step 9). Real future live-run
+ * (see the plan doc's design correction on Step 9). Real future live-run
  * data is meant to flow through this script instead of being transcribed into a
  * markdown table by hand. `computeJudgeCalibration` was initially left out of Step 10 on
  * the reasoning that a synthetic demonstration proves nothing about real calibration —

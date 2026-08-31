@@ -5,7 +5,7 @@
  * catalog artefact (skill, identity, flow) must carry a recorded decision or a
  * non-coverage reason. Flows carry one extra rule the other two kinds do not: a flow
  * decision cannot be remove/revise/keep unless it is backed by a clean (non-confounded)
- * measurement — the 2026-08-04 flow-ablation result is confounded by execution strategy
+ * measurement — the flow-ablation result is confounded by execution strategy
  * (see phase-158-artefact-value-evaluation.md Step 6), so it can only ever back
  * AWAITING_REMEASUREMENT until Phase 159 lands.
  * @architectural-layer Test

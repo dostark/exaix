@@ -11,7 +11,7 @@
  *   `cost_source: "provider_reported"` upstream of CostTracker's own precedence logic
  *   (fixed: the mock no longer reports a cost at all).
  *
- *   Reachability Ledger follow-up (closed 2026-07-12): the second test below proves
+ *   Reachability Ledger follow-up: the second test below proves
  *   `cost_source: "registry_computed"` itself. The standard identity-request path
  *   resolves via `agents.default_model`/`ai.provider`, tied to the `mock` provider TYPE —
  *   `setPricingLookup`'s `getModelPricing(provider, model)` lookup is a pure parameterized

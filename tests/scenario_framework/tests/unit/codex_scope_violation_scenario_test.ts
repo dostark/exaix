@@ -7,7 +7,7 @@
  *   for the trace-scoped `action_type`/`expect_count`/`payload_*` step fields this
  *   scenario uses instead of the older journal-event-exists criterion kind.
  *
- *   LIVE DEVIATION (2026-08-24): the real codex-cli PLANNING provider fails closed AT
+ *   LIVE DEVIATION: the real codex-cli PLANNING provider fails closed AT
  *   PLAN TIME for this fixture — it recognizes both writes as out-of-scope and generates
  *   a plan whose only step is read-only, so the delegate is briefed with no write intent
  *   and `session.delegate.scope_violation` never fires. The scenario therefore asserts

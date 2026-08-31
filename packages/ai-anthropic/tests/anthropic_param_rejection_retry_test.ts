@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @description Regression test for parameter-rejection self-healing. Claude 5 family
  * models reject the `temperature` parameter with HTTP 400 ("`temperature` is deprecated
- * for this model.") — observed live 2026-07-17 when ReActLoopStrategy's execution call
+ * for this model.") — observed live when ReActLoopStrategy's execution call
  * (which always passes temperature) hit claude-sonnet-5 and failed instantly, killing
  * the swe_tasks execution phase. The provider must strip the named parameter and retry
  * once instead of failing the whole execution over a tuning knob.

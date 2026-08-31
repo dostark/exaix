@@ -19,8 +19,8 @@ const SWE_BENCH_PRO = "swe_bench_pro";
 const GPQA = "gpqa";
 /** Every curated floor row is provenance "static". */
 const STATIC_PROVENANCE: BenchmarkProvenance = "static";
-// Epoch-ms floor timestamp for the curated set (2025-06-01); a fixed value keeps the
-// upsert idempotent across re-applies rather than stamping Date.now() each load.
+// A fixed epoch-ms floor keeps the curated-set upsert idempotent across re-applies rather
+// than stamping Date.now() each load.
 const CURATED_MEASURED_AT = 1_748_736_000_000;
 // Each row cites the VENDOR's own model-card/announcement. Leaderboard products
 // (swebench.com, llm-stats, …) are human references only, NOT eligible data sources.

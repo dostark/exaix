@@ -6,7 +6,7 @@
  * reason, so no measured or unmeasured artefact is silently left unaddressed. Flows
  * carry one extra rule the other two kinds do not: a flow decision cannot be
  * remove/revise/keep unless `cleanMeasurement` is set, because the only flow-ablation
- * result this phase produced (feature-development, 2026-08-04) is confounded by
+ * result this phase produced for feature-development is confounded by
  * execution strategy — see phase-158-artefact-value-evaluation.md's Step 6 caveat.
  * A flow can only be AWAITING_REMEASUREMENT until a Phase-159-clean re-run backs a real
  * decision.

@@ -9,7 +9,7 @@
  *   [doc-glob]  Glob for phase plan docs (default: exaix-dev-docs/planning/phase-*.md).
  *
  * @description Mechanizes the repo-wide "does this ✅ ledger row have a real call-site"
- *   grep audit that phase-158's 2026-08-04 post-gap analysis had to do by hand: it found
+ *   grep audit that phase-158's post-gap analysis had to do by hand: it found
  *   six Reachability Ledger rows marked ✅ closed, naming specific functions
  *   (`computePairedComparison`, `evaluateValidityGate`, nine Step 4-6 reporting modules,
  *   etc.) as the production call-site that produced published live-run numbers — and a

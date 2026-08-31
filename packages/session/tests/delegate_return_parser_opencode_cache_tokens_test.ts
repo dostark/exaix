@@ -10,7 +10,7 @@
  * (part.tokens.cache: {read, write}) — this specific field shape is Ledger:
  * LIVE_CACHE_TOKEN_VERIFICATION pending, since no live opencode probe with active prompt
  * caching has been captured yet (unlike the tool_use/tokens shape, which was captured live
- * on 2026-07-20 per delegate_return_parser_test.ts).
+ * in the live probe documented by delegate_return_parser_test.ts).
  * @architectural-layer Services
  * @related-files [packages/session/src/delegate_return_parser.ts]
  */

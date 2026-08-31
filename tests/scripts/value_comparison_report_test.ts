@@ -11,7 +11,7 @@
  *   IValueComparisonReportInput. All numbers here are deliberately illustrative
  *   (0.4/0.5/0.9-style round values), never phase-158's actual historical measurements —
  *   those are unclean, retry-heavy live-run numbers that must not be encoded as a
- *   fixture (see the plan doc's 2026-08-04 design correction on Step 9). This test
+ *   fixture (see the plan doc's design correction on Step 9). This test
  *   verifies the plumbing is wired correctly, not any historical claim.
  * @architectural-layer Test
  * @dependencies [@std/assert]

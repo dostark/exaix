@@ -52,7 +52,7 @@ Deno.test("[delegate_return_parser] opencode tool_use write and edit contribute 
 });
 
 Deno.test("[delegate_return_parser] opencode real CLI event shape (tool + state.input.filePath) is parsed, not the legacy tool_use.input.file_path shape", () => {
-  // Captured verbatim from a live `opencode run --format json` probe (2026-07-20):
+  // Captured verbatim from a live `opencode run --format json` probe:
   // the real event nests the tool name directly under `part.tool` and the path
   // under `part.state.input.filePath` — not `part.tool_use.name`/`.input.file_path`.
   const stdout =

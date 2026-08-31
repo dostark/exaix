@@ -1232,6 +1232,13 @@ the next line already says.
   only a record of _what it does now_. This does not apply to the module's
   own header comment, whose Implementation Plan reference is a distinct,
   mandatory field under §7.
+- **No calendar dates in any comment.** Dates are ephemeral context and must
+  not survive in code comments in numeric, ISO, compact, named-month,
+  month/year, quarter/year, or date-time form. Put time-specific history in
+  version control or project documentation. Unlike the other in-module
+  comment-discipline rules, this applies to inline comments and the module's
+  own header comment as well as standalone line and block comments. Date-shaped
+  runtime strings and other executable data are not comments and remain valid.
 - **No document-section references.** A comment must not cite a section
   number via the `§` symbol — neither a phase-plan/spec section (e.g. `§5.9`,
   `(§6.1, F12)`) nor a section of this file or another project doc (e.g.
@@ -1251,14 +1258,14 @@ the next line already says.
 
 ### Automated enforcement
 
-`scripts/check_code_style.ts` scans every comment past a module's own
-header block:
+`scripts/check_code_style.ts` scans every comment for calendar dates and
+applies the remaining rules past a module's own header block:
 
-| Tag                    | Detects                                                                                                         |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `[long-comment]`       | A block comment or line-comment run longer than three physical lines                                            |
-| `[ephemeral-comment]`  | A comment mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
-| `[decorative-comment]` | A comment line using a repeated-punctuation separator or dash-wrapped text                                      |
+| Tag                    | Detects                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[long-comment]`       | A block comment or line-comment run longer than three physical lines                                                                          |
+| `[ephemeral-comment]`  | A comment containing a calendar date or mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
+| `[decorative-comment]` | A comment line using a repeated-punctuation separator or dash-wrapped text                                                                    |
 
 All three are warnings by default (visible, non-blocking) and escalate to
 errors under `--convert-warnings-to-errors`.

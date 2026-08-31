@@ -91,7 +91,7 @@ function registerConcreteProviders(): void {
     );
   }
 
-  // OpenRouter ships in Solo (all editions) per edition decision D5b/D-providers (2026-06-13):
+  // OpenRouter ships in Solo (all editions) per edition decision D5b/D-providers:
   // a BYO-key, independently-free aggregator — gating it adds no value.
   if (!supported.includes(PROVIDER_OPENROUTER)) {
     const openrouterMetadata: IProviderMetadata = {

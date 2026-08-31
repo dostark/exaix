@@ -5,7 +5,7 @@
  *   parses every phase plan doc's "Reachability Ledger" table(s) and, for each row
  *   marked ✅, verifies the code identifiers named in its "Production call-site" cell
  *   actually have a call/reference site outside their own definition file and outside
- *   test files. Exists because phase-158's post-gap analysis (2026-08-04) found six
+ *   test files. Exists because phase-158's post-gap analysis found six
  *   ✅ rows whose named call-sites were never actually invoked by any committed code —
  *   this mechanizes the repo-wide grep audit that finding required by hand.
  * @architectural-layer Script (test)

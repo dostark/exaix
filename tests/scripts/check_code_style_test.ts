@@ -590,6 +590,87 @@ export function run(): number {
   assertStringIncludes(result.output, "[ephemeral-comment]");
 });
 
+Deno.test("check_code_style flags calendar dates in common numeric and named forms", async () => {
+  const dateForms = [
+    "2026-08-31",
+    "20260831",
+    "31/08/2026",
+    "08/31/26",
+    "August 31, 2026",
+    "31 Aug 2026",
+    "August 2026",
+    "Q3 2026",
+  ];
+
+  for (const [index, dateForm] of dateForms.entries()) {
+    const tempDir = await Deno.makeTempDir();
+    const filePath = join(tempDir, `ephemeral_date_comment_${index}.ts`);
+    await Deno.writeTextFile(
+      filePath,
+      `/**
+ * @module TempEphemeralDateComment
+ * @path ephemeral_date_comment.ts
+ * @description Temporary regression file for date-reference enforcement.
+ */
+
+export function run(): number {
+  const value = 1; // Released on ${dateForm}.
+  return value;
+}
+`,
+    );
+
+    const result = await runCheckCodeStyle(filePath);
+
+    assertStringIncludes(result.output, "[ephemeral-comment]", dateForm);
+    assertStringIncludes(result.output, "calendar date", dateForm);
+  }
+});
+
+Deno.test("check_code_style flags a calendar date in the module header", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "ephemeral_header_date.ts");
+  const headerDate = "2026-08-31";
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempEphemeralHeaderDate
+ * @path ephemeral_header_date.ts
+ * @description Generated on ${headerDate} for date-reference enforcement.
+ */
+
+export const value = 1;
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[ephemeral-comment]");
+  assertStringIncludes(result.output, "calendar date");
+});
+
+Deno.test("check_code_style allows date-shaped text outside comments", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "runtime_date_string.ts");
+  const runtimeDate = "2026-08-31";
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempRuntimeDateString
+ * @path runtime_date_string.ts
+ * @description Confirms runtime data is outside comment discipline.
+ */
+
+export const releaseDate = "${runtimeDate}";
+export const releaseNote = \`// Released on ${runtimeDate}.\`;
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[ephemeral-comment]"), false, result.output);
+});
+
 Deno.test("check_code_style allows natural language usage of the word gap", async () => {
   const tempDir = await Deno.makeTempDir();
   const filePath = join(tempDir, "natural_gap_comment.ts");

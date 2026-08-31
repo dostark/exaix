@@ -50,7 +50,7 @@ export const CAPABILITY_EDITION: Record<string, string> = {
   [CAP_HITL_GOVERNANCE]: EDITION_TEAM,
   [CAP_GUARDRAIL_ADVANCED]: EDITION_TEAM,
   // OpenRouter intentionally omitted: it ships in Solo (all editions) per edition decision
-  // D5b/D-providers (2026-06-13) — a BYO-key, independently-free aggregator, not a Team gate.
+  // D5b/D-providers — a BYO-key, independently-free aggregator, not a Team gate.
   [CAP_EXTENDED_LANG_EXTRACTION]: EDITION_TEAM,
   [CAP_MODEL_REGISTRY_LIVE]: EDITION_TEAM,
   [CAP_MODEL_ROUTING_RIGOR]: EDITION_TEAM,

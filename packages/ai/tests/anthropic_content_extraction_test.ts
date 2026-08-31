@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @description Regression test for extractAnthropicContent against thinking-model responses.
  * Claude 5 family models (e.g. claude-sonnet-5) prepend a `thinking` content block before the
- * `text` block when adaptive thinking triggers — observed live 2026-07-17 on the swe_tasks
+ * `text` block when adaptive thinking triggers — observed live on the swe_tasks
  * analysis prompt, where content[0] was `{type: "thinking"}` and taking content[0].text
  * yielded "" for a response whose text block held a complete 10k-char answer.
  */

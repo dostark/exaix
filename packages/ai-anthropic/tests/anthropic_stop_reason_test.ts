@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @description The Messages API reports HOW a generation ended via stop_reason; a 200
  * response with stop_reason "max_tokens" means the output was truncated mid-generation.
- * Observed live 2026-07-17: truncated plan JSON surfaced as a baffling "Invalid JSON:
+ * Observed live: truncated plan JSON surfaced as a baffling "Invalid JSON:
  * Unexpected end of JSON input" three times per request because Exaix dropped stop_reason
  * entirely. The provider must propagate it on IGenerateResult so callers can distinguish
  * "model finished" from "model was cut off".

@@ -5,8 +5,8 @@
  * usageMetadata.thoughtsTokenCount when the model does internal reasoning — for
  * DEFAULT_GOOGLE_MODEL ("gemini-flash-latest", a 2.5+-class model), dynamic thinking is
  * enabled BY DEFAULT (no explicit thinkingConfig required), so this field is already present
- * in live responses today, not merely a hypothetical opt-in surface (verified live via
- * official Google docs 2026-08-22: "Gemini 2.5 Flash defaults to a dynamic thinking budget").
+ * in live responses, not merely a hypothetical opt-in surface (verified against official
+ * Google documentation: "Gemini 2.5 Flash defaults to a dynamic thinking budget").
  * GoogleUsageMetadata only declares promptTokenCount/candidatesTokenCount/totalTokenCount —
  * the real thinking-token count is dropped at parse time. With the Gemini API,
  * candidatesTokenCount already INCLUDES thinking tokens (a subset, not additional), so total

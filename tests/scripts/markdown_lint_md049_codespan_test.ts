@@ -1,8 +1,8 @@
 /**
  * @module MarkdownLintMd049CodespanTest
  * @path tests/scripts/markdown_lint_md049_codespan_test.ts
- * @description Regression test for a destructive MD049 auto-fix bug (Phase 144 post-gap
- *   remediation writeup incident, 2026-08-10): MD049 is only ever DETECTED on a heading using
+ * @description Regression test for a destructive MD049 auto-fix bug from a Phase 144 post-gap
+ *   remediation incident: MD049 is only ever DETECTED on a heading using
  *   underscore emphasis, but once triggered anywhere in the file the fixer's underscore-to-
  *   asterisk regex (`/_([^_]+)_/g`) ran across the ENTIRE document's raw line text — including
  *   backtick code spans and fenced code blocks on OTHER, non-heading lines. Any identifier

@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkJudgeDiffEvidenceTest
  * @path tests/scenario_framework/tests/unit/judge_diff_evidence_test.ts
  * @description Tests for computing a git diff as LLM-judge evidence instead of a raw
- * final-state file dump. Live-observed 2026-08-02: two of ten repeated judge calls on
+ * final-state file dump. In a live probe, two of ten repeated judge calls on
  * identical, genuinely-fixed evidence hallucinated "does not represent a diff/fix" and
  * "the original buggy fixture file, not a fixed version" — the judge was never shown
  * that anything changed, only the final state, and had to guess. A diff against the

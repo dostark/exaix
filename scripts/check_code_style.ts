@@ -949,6 +949,27 @@ const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
   { pattern: /§/, hint: "a document-section reference (§)" },
 ];
 
+const MONTH_NAME_PATTERN =
+  "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+const FOUR_DIGIT_YEAR_PATTERN = "(?:19|20)\\d{2}";
+const TWO_OR_FOUR_DIGIT_YEAR_PATTERN = `(?:\\d{2}|${FOUR_DIGIT_YEAR_PATTERN})`;
+const MONTH_NUMBER_PATTERN = "(?:0?[1-9]|1[0-2])";
+const DAY_NUMBER_PATTERN = "(?:0?[1-9]|[12]\\d|3[01])";
+const COMMENT_DATE_PATTERNS: RegExp[] = [
+  new RegExp(
+    `\\b${FOUR_DIGIT_YEAR_PATTERN}[-/.]${MONTH_NUMBER_PATTERN}[-/.]${DAY_NUMBER_PATTERN}\\b`,
+  ),
+  new RegExp(`\\b${FOUR_DIGIT_YEAR_PATTERN}${MONTH_NUMBER_PATTERN}${DAY_NUMBER_PATTERN}\\b`),
+  new RegExp(
+    `\\b(?:${MONTH_NUMBER_PATTERN}[-/.]${DAY_NUMBER_PATTERN}|${DAY_NUMBER_PATTERN}[-/.]${MONTH_NUMBER_PATTERN})[-/.]${TWO_OR_FOUR_DIGIT_YEAR_PATTERN}\\b`,
+  ),
+  new RegExp(
+    `\\b(?:${MONTH_NAME_PATTERN}[\\s.-]+${DAY_NUMBER_PATTERN}(?:st|nd|rd|th)?(?:,|[\\s.-])+(?:${FOUR_DIGIT_YEAR_PATTERN})|${DAY_NUMBER_PATTERN}(?:st|nd|rd|th)?[\\s.-]+${MONTH_NAME_PATTERN}(?:,|[\\s.-])+(?:${FOUR_DIGIT_YEAR_PATTERN})|${MONTH_NAME_PATTERN}[\\s.-]+${FOUR_DIGIT_YEAR_PATTERN})\\b`,
+    "i",
+  ),
+  new RegExp(`\\bQ[1-4][\\s.-]+${FOUR_DIGIT_YEAR_PATTERN}\\b`, "i"),
+];
+
 function reportCommentViolation(
   rule: "long-comment" | "ephemeral-comment" | "decorative-comment",
   repoPath: string,
@@ -959,6 +980,31 @@ function reportCommentViolation(
   console.log(`${severity} [${rule}] ${repoPath}:${lineNum} – ${message}`);
   if (convertWarnings) errorCount++;
   else warnCount++;
+}
+
+function checkCommentDates(repoPath: string, text: string): void {
+  const sourceFile = ts.createSourceFile(repoPath, text, ts.ScriptTarget.Latest, false);
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, text);
+
+  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+    if (
+      token !== ts.SyntaxKind.SingleLineCommentTrivia &&
+      token !== ts.SyntaxKind.MultiLineCommentTrivia
+    ) {
+      continue;
+    }
+
+    const commentText = scanner.getTokenText();
+    if (!COMMENT_DATE_PATTERNS.some((pattern) => pattern.test(commentText))) continue;
+
+    const lineNum = sourceFile.getLineAndCharacterOfPosition(scanner.getTokenPos()).line + 1;
+    reportCommentViolation(
+      "ephemeral-comment",
+      repoPath,
+      lineNum,
+      "Comment contains a calendar date; time-specific context belongs in version control or project documentation, not code comments that should remain durable.",
+    );
+  }
 }
 
 // Evaluates one already-closed comment (a block comment or a run of consecutive
@@ -1001,9 +1047,8 @@ function evaluateInModuleComment(repoPath: string, startLine: number, commentLin
   }
 }
 
-// Scans every comment past the module's own header for the two comment-discipline
-// rules in CODE_STYLE.md §16: a hard length limit, and a ban on narrating ephemeral
-// implementation history (phase/step numbers, prior failed attempts).
+// Scans comments past the module header for length, ephemeral-history, and decoration rules.
+// Calendar dates are scanned separately because their ban also applies to headers and inline comments.
 function checkCommentDiscipline(repoPath: string, lines: string[], templateLiteralLines: Set<number>): void {
   let pastHeader = false;
   let inBlock = false;
@@ -1076,6 +1121,8 @@ async function checkFile(path: string) {
 
   // AST-based layer-aware constant import check (supersedes the old regex rule)
   checkLayerLeaks(path, text, repoPath);
+
+  checkCommentDates(repoPath, text);
 
   const templateLiteralLines = new Set<number>();
   let templateLiteralState = false;
