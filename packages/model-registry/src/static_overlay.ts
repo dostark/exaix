@@ -13,9 +13,9 @@ export interface IOverlayEntry {
   inputPerMtok?: number;
   outputPerMtok?: number;
   contextWindow?: number;
-  /** Max output tokens where the provider's list endpoint omits it (§6.3 thin lists). */
+  /** Max output tokens where the provider's list endpoint omits it. */
   maxOutputTokens?: number;
-  /** Capability flags for thin endpoints (OpenAI list, Ollama tags) — §9 mandatory overlay. */
+  /** Capability flags for thin endpoints (OpenAI list, Ollama tags). */
   supportsThinking?: boolean;
   supportsEffort?: boolean;
   verifiedAt: number;
