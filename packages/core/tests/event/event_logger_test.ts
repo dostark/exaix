@@ -18,9 +18,7 @@ import { STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "@exaix/
 type ITestDb = Awaited<ReturnType<typeof initTestDbService>>["db"];
 type IEventLoggerOptions = ConstructorParameters<typeof EventLogger>[0];
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 interface IEventLoggerTestCtx {
   db: ITestDb;
@@ -59,9 +57,7 @@ async function withEventLoggerTest(
   }
 }
 
-// ============================================================================
 // Basic Logging Tests
-// ============================================================================
 
 Deno.test("EventLogger: should write event to IActivity Journal", async () => {
   await withEventLoggerTest(async ({ db, logger }) => {
@@ -143,9 +139,7 @@ Deno.test("EventLogger: should include payload values in console output", async 
   });
 });
 
-// ============================================================================
 // Log Level Tests
-// ============================================================================
 
 Deno.test("EventLogger: should respect minLevel configuration", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
@@ -183,9 +177,7 @@ Deno.test("EventLogger: should use appropriate icons for each level", async () =
   }, { minLevel: LogLevel.DEBUG });
 });
 
-// ============================================================================
 // Child Logger Tests
-// ============================================================================
 
 Deno.test("EventLogger: child should inherit parent defaults", async () => {
   await withEventLoggerTest(async ({ db, logger: _logger }) => {
@@ -235,9 +227,7 @@ Deno.test("EventLogger: child should override parent defaults when specified", a
   });
 });
 
-// ============================================================================
 // Actor Identity Tests
-// ============================================================================
 
 Deno.test("EventLogger: should resolve user identity from git config or OS", async () => {
   // This test verifies getUserIdentity() returns a non-empty string
@@ -256,9 +246,7 @@ Deno.test("EventLogger: should cache user identity after first resolution", asyn
   assertEquals(identity1, identity2);
 });
 
-// ============================================================================
 // Error Handling Tests
-// ============================================================================
 
 Deno.test("EventLogger: should fallback to console-only when DB unavailable", async () => {
   const logs: string[] = [];
@@ -296,9 +284,7 @@ Deno.test("EventLogger: should not throw when DB write fails", async () => {
   });
 });
 
-// ============================================================================
 // Format Tests
-// ============================================================================
 
 Deno.test("EventLogger: should format timestamps consistently", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
@@ -330,9 +316,7 @@ Deno.test("EventLogger: should indent multi-line payloads", async () => {
   });
 });
 
-// ============================================================================
 // Custom Icon Tests
-// ============================================================================
 
 Deno.test("EventLogger: should allow custom icons in log events", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
@@ -350,9 +334,7 @@ Deno.test("EventLogger: should allow custom icons in log events", async () => {
   });
 });
 
-// ============================================================================
 // Integration Tests
-// ============================================================================
 
 Deno.test("EventLogger: full integration with database and console", async () => {
   await withEventLoggerTest(async ({ db, logger, logs, restoreConsole }) => {
@@ -386,9 +368,7 @@ Deno.test("EventLogger: full integration with database and console", async () =>
   }, { prefix: "[Exaix]" });
 });
 
-// ============================================================================
 // Event Bus Integration Tests
-// ============================================================================
 
 Deno.test("EventLogger: should publish events to event bus when configured", async () => {
   EventBusService.resetInstance();

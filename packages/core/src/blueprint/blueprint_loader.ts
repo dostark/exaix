@@ -81,9 +81,7 @@ export interface IRuntimeFrontmatterValidation {
   errors: string[];
 }
 
-// ============================================================================
 // Blueprint Schema (Extended for Runtime)
-// ============================================================================
 
 /** Inline HITL policy schema — avoids runtime cross-package import from @exaix/schemas. */
 const HitlRuleSchema = z.object({
@@ -122,7 +120,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Provider name (legacy field, prefer model with provider prefix) */
   provider: z.string().optional(),
 
-  // === Declarative model preferences (W5/W20) ===
+  // Declarative model preferences (W5/W20)
 
   /** Preferred provider hint (resolved by resolveIdentityModel; `model` overrides). */
   preferred_provider: z.string().min(1).optional(),
@@ -226,13 +224,9 @@ export function validateRuntimeFrontmatter(
 
 export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
 
-// ============================================================================
 // Loaded Blueprint Type
-// ============================================================================
 
-// ============================================================================
 // IBlueprintLoader Service
-// ============================================================================
 
 /** Loads blueprints with YAML frontmatter parsing, Zod schema validation, and backward
  * compatibility for frontmatter-less (plain markdown) blueprints. */
@@ -518,9 +512,7 @@ export class IBlueprintLoader {
   }
 }
 
-// ============================================================================
 // Errors
-// ============================================================================
 
 /**
  * Error thrown when blueprint loading fails
@@ -536,9 +528,7 @@ export class BlueprintLoadError extends Error {
   }
 }
 
-// ============================================================================
 // Factory Functions
-// ============================================================================
 
 /**
  * Create a IBlueprintLoader with default configuration

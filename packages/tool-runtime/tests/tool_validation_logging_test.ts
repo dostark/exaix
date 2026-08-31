@@ -36,9 +36,7 @@ import {
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
 import type { IPlanAmendmentService } from "@exaix/core/types";
 
-// ============================================================================
 // Mock helpers
-// ============================================================================
 
 interface ICapturedEvent {
   action: string;
@@ -106,9 +104,7 @@ function makePolicy(
   };
 }
 
-// ============================================================================
 // Outcome → event action mapping
-// ============================================================================
 
 Deno.test("tool_validation_logging: fail_closed outcome logs TOOL_VALIDATION_EVENT_FAIL_CLOSED", async () => {
   const logger = createMockLogger();
@@ -179,9 +175,7 @@ Deno.test("tool_validation_logging: passed with retriesAttempted=0 logs TOOL_VAL
   assertEquals(logger.events[0].payload?.metricValue, 1);
 });
 
-// ============================================================================
 // logValidationFailures=false suppresses logging
-// ============================================================================
 
 Deno.test("tool_validation_logging: logValidationFailures=false suppresses all events", async () => {
   const logger = createMockLogger();
@@ -199,9 +193,7 @@ Deno.test("tool_validation_logging: logValidationFailures=false suppresses all e
   assertEquals(logger.events.length, 0);
 });
 
-// ============================================================================
 // Plan amendment integration
-// ============================================================================
 
 Deno.test("tool_validation_logging: triggerPlanAmendmentOnFailure=true with terminal outcome calls shouldAmend", async () => {
   const logger = createMockLogger();

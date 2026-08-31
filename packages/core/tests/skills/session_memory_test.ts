@@ -24,7 +24,7 @@ import {
 import { MemoryStatus } from "@exaix/core/status";
 import { NullEmbeddingStub, NullMemoryBankStub } from "@exaix/testing";
 
-// ===== Mock Services =====
+// Mock Services
 
 class MockMemoryBankService extends NullMemoryBankStub {
   constructor(
@@ -93,7 +93,7 @@ function createMockEmbeddingService(
   return new MockEmbeddingService(searchResults);
 }
 
-// ===== Test Data =====
+// Test Data
 
 const sampleEmbeddingResults: IEmbeddingSearchResult[] = [
   {
@@ -173,7 +173,7 @@ const sampleExecutions: IExecutionMemory[] = [
   },
 ];
 
-// ===== Configuration Tests =====
+// Configuration Tests
 
 Deno.test("SessionMemoryService - default configuration", () => {
   const memoryBank = createMockMemoryBank();
@@ -221,7 +221,7 @@ Deno.test("SessionMemoryService - update configuration", () => {
   assertEquals(config.threshold, 0.1);
 });
 
-// ===== Memory Lookup Tests =====
+// Memory Lookup Tests
 
 Deno.test("SessionMemoryService - lookupMemories returns empty when disabled", async () => {
   const memoryBank = createMockMemoryBank(sampleSearchResults);
@@ -299,7 +299,7 @@ Deno.test("SessionMemoryService - lookupMemories filters by type config", async 
   assertEquals(hasExecution, false);
 });
 
-// ===== Request Enhancement Tests =====
+// Request Enhancement Tests
 
 Deno.test("SessionMemoryService - enhanceRequest returns empty context when disabled", async () => {
   const memoryBank = createMockMemoryBank(sampleSearchResults);
@@ -355,7 +355,7 @@ Deno.test("SessionMemoryService - enhanceRequest respects maxContextLength", asy
   assertLess(enhanced.memoryContext.length, 200); // Some buffer for formatting
 });
 
-// ===== Insight Saving Tests =====
+// Insight Saving Tests
 
 Deno.test("SessionMemoryService - saveInsight creates learning entry", async () => {
   const savedLearnings: ILearning[] = [];
@@ -463,7 +463,7 @@ Deno.test("SessionMemoryService - saveInsights saves multiple", async () => {
   assertEquals(savedLearnings.length, 2);
 });
 
-// ===== Tag-based Search Tests =====
+// Tag-based Search Tests
 
 Deno.test("SessionMemoryService - getMemoriesByTag filters correctly", async () => {
   const memoryBank = createMockMemoryBank(sampleSearchResults);
@@ -478,7 +478,7 @@ Deno.test("SessionMemoryService - getMemoriesByTag filters correctly", async () 
   }
 });
 
-// ===== Execution History Tests =====
+// Execution History Tests
 
 Deno.test("SessionMemoryService - getRecentExecutions returns formatted memories", async () => {
   const memoryBank = createMockMemoryBank([], [], sampleExecutions);
@@ -503,7 +503,7 @@ Deno.test("SessionMemoryService - getRecentExecutions respects limit", async () 
   assertEquals(memories.length, 1);
 });
 
-// ===== Key Term Extraction Tests =====
+// Key Term Extraction Tests
 
 Deno.test("SessionMemoryService - extracts key terms from query", async () => {
   const memoryBank = createMockMemoryBank([]);
@@ -532,7 +532,7 @@ Deno.test("SessionMemoryService - extracts key terms from query", async () => {
   assertEquals(terms.includes("operations"), true);
 });
 
-// ===== Memory Item Formatting Tests =====
+// Memory Item Formatting Tests
 
 Deno.test("SessionMemoryService - formats memory items with tags", async () => {
   const memoryBank = createMockMemoryBank(sampleSearchResults);

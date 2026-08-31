@@ -25,7 +25,7 @@ import { getTheme } from "@exaix/tui/helpers/colors.ts";
 import { createMockDialogRenderOptions } from "../helpers.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Box Characters Tests =====
+// Box Characters Tests
 
 Deno.test("BOX: has all required characters", () => {
   assertEquals(BOX.topLeft, "┌");
@@ -36,7 +36,7 @@ Deno.test("BOX: has all required characters", () => {
   assertEquals(BOX.vertical, "│");
 });
 
-// ===== Box Rendering Tests =====
+// Box Rendering Tests
 
 Deno.test("renderBoxTop: renders with title", () => {
   const theme = getTheme(false);
@@ -82,7 +82,7 @@ Deno.test("renderButton: renders unfocused button", () => {
   assertStringIncludes(result, " OK ");
 });
 
-// ===== Wrap Text Tests =====
+// Wrap Text Tests
 
 Deno.test("wrapToWidth: wraps long text", () => {
   const lines = wrapToWidth("This is a long line that needs wrapping", 15);
@@ -98,7 +98,7 @@ Deno.test("wrapToWidth: preserves short text", () => {
   assertEquals(lines[0], "Short");
 });
 
-// ===== Confirm Dialog Tests =====
+// Confirm Dialog Tests
 
 Deno.test("ConfirmDialog: creates with options", () => {
   const dialog = new ConfirmDialog({
@@ -204,7 +204,7 @@ Deno.test("ConfirmDialog: renders correctly", () => {
   assertStringIncludes(text, "No");
 });
 
-// ===== Input Dialog Tests =====
+// Input Dialog Tests
 
 Deno.test("InputDialog: creates with options", () => {
   const dialog = new InputDialog({
@@ -303,7 +303,7 @@ Deno.test("InputDialog: renders correctly", () => {
   assertStringIncludes(text, "Cancel");
 });
 
-// ===== Select Dialog Tests =====
+// Select Dialog Tests
 
 Deno.test("SelectDialog: creates with options", () => {
   const dialog = new SelectDialog({

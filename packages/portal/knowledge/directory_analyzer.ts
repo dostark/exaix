@@ -20,9 +20,7 @@ import {
 } from "@exaix/core";
 import type { IArchitectureLayer, IMonorepoPackage, IPortalKnowledge } from "@exaix/schemas";
 
-// ---------------------------------------------------------------------------
 // Internal types
-// ---------------------------------------------------------------------------
 
 /** Result of a portal directory walk. */
 export interface IWalkResult {
@@ -31,9 +29,7 @@ export interface IWalkResult {
   extensionDistribution: Record<string, number>;
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function getExtension(filename: string): string {
   const dot = filename.lastIndexOf(".");
@@ -150,9 +146,7 @@ function detectMonorepoPackages(
   return packages;
 }
 
-// ---------------------------------------------------------------------------
 // BFS walker helpers
-// ---------------------------------------------------------------------------
 
 function recordFile(result: IWalkResult, relPath: string, name: string): void {
   result.files.push(relPath);
@@ -199,9 +193,7 @@ async function collectPriorityFiles(root: string, result: IWalkResult, scanLimit
   return true;
 }
 
-// ---------------------------------------------------------------------------
 // BFS walker
-// ---------------------------------------------------------------------------
 
 export async function walkDirectory(
   root: string,
@@ -243,9 +235,7 @@ export async function walkDirectory(
   return result;
 }
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 /** Analyse the directory structure of a portal codebase into stats, layers, and techStack. */
 export async function analyzeDirectory(

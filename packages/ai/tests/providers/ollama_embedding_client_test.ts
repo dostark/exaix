@@ -11,9 +11,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { EmbeddingError } from "../../src/embeddings/embedding_errors.ts";
 
-// ============================================================================
 // Constructor Validation Tests
-// ============================================================================
 
 Deno.test("OllamaEmbeddingClient: rejects non-localhost baseUrl", () => {
   try {
@@ -35,9 +33,7 @@ Deno.test("OllamaEmbeddingClient: accepts localhost variants", () => {
   new OllamaEmbeddingClient({ baseUrl: "http://[::1]:11434" });
 });
 
-// ============================================================================
 // Embedding Tests (with mock fetch)
-// ============================================================================
 
 const originalFetch = globalThis.fetch;
 

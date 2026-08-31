@@ -17,9 +17,7 @@ import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { type IReportConfig, type ITraceData, MissionReporter } from "@exaix/core/artifact";
 import { join } from "@std/path";
 
-// ============================================================================
 // Helper Functions
-// ============================================================================
 
 /**
  * Creates a test trace data with sensible defaults
@@ -128,9 +126,7 @@ async function withMissionReporter(
   }
 }
 
-// ============================================================================
 // Test: Basic Report Generation
-// ============================================================================
 
 Deno.test("MissionReporter: generates execution memory record after successful execution", async () => {
   await withMissionReporter(async ({ db, tempDir, reporter }) => {

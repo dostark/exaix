@@ -12,9 +12,7 @@ import { join } from "@std/path";
 import { PythonSymbolExtractor } from "@exaix/portal/knowledge";
 import { DEFAULT_SYMBOL_MAP_LIMIT, SYMBOL_EXTRACT_MAX_FILE_BYTES, SYMBOL_EXTRACT_MAX_FILES } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Fixture helpers
-// ---------------------------------------------------------------------------
 
 const FIXTURE_DIR = join(
   import.meta.dirname ?? ".",
@@ -27,9 +25,7 @@ function fixtureFiles(): string[] {
   return ["src/main.py", "src/utils.py"];
 }
 
-// ---------------------------------------------------------------------------
 // Extraction test — basic contract
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[PythonSymbolExtractor] extracts functions/classes/consts from a Python fixture with signatures and docs",
@@ -83,9 +79,7 @@ Deno.test(
   },
 );
 
-// ---------------------------------------------------------------------------
 // PageRank ranking test
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[PythonSymbolExtractor] ranks symbols by cross-file import count and caps at DEFAULT_SYMBOL_MAP_LIMIT",
@@ -117,9 +111,7 @@ Deno.test(
   },
 );
 
-// ---------------------------------------------------------------------------
 // Non-matching language returns []
-// ---------------------------------------------------------------------------
 
 Deno.test("[PythonSymbolExtractor] returns [] for a non-Python language", async () => {
   const extractor = new PythonSymbolExtractor();
@@ -131,9 +123,7 @@ Deno.test("[PythonSymbolExtractor] returns [] for a non-Python language", async 
   assertEquals(result, []);
 });
 
-// ---------------------------------------------------------------------------
 // [security] Path traversal rejection
-// ---------------------------------------------------------------------------
 
 Deno.test({
   name: "[PythonSymbolExtractor] [security] rejects an entrypoint path outside the portal (PathResolver)",
@@ -151,9 +141,7 @@ Deno.test({
   },
 });
 
-// ---------------------------------------------------------------------------
 // [security] Pathological file bounds (byte cap + node-count cap + time cap)
-// ---------------------------------------------------------------------------
 
 Deno.test({
   name:
@@ -205,9 +193,7 @@ Deno.test({
   },
 });
 
-// ---------------------------------------------------------------------------
 // [security] File-count cap
-// ---------------------------------------------------------------------------
 
 Deno.test({
   name: "[PythonSymbolExtractor] [security] caps a zone with more than SYMBOL_EXTRACT_MAX_FILES files",
@@ -238,9 +224,7 @@ Deno.test({
   },
 });
 
-// ---------------------------------------------------------------------------
 // [security] No network access at extraction time
-// ---------------------------------------------------------------------------
 
 Deno.test({
   name: "[PythonSymbolExtractor] [security] extracts with no --allow-net (local locateFile, no network fetch)",

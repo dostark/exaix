@@ -32,7 +32,7 @@ import {
 } from "@exaix/tui/helpers/tree_view.ts";
 import { createTestTree } from "../helpers.ts";
 
-// ===== Tree Icons Tests =====
+// Tree Icons Tests
 
 Deno.test("TREE_ICONS: has all required icons", () => {
   assertEquals(TREE_ICONS.expanded, "▼");
@@ -40,7 +40,7 @@ Deno.test("TREE_ICONS: has all required icons", () => {
   assertEquals(TREE_ICONS.leaf, "•");
 });
 
-// ===== Create Node Tests =====
+// Create Node Tests
 
 Deno.test("createNode: creates basic node", () => {
   const node = createNode("test-id", "Test Label", "item");
@@ -75,7 +75,7 @@ Deno.test("createGroupNode: creates node with children", () => {
   assertEquals(group.expanded, true); // Default expanded
 });
 
-// ===== Flatten Tree Tests =====
+// Flatten Tree Tests
 
 Deno.test("flattenTree: flattens simple tree", () => {
   const tree = createTestTree();
@@ -123,7 +123,7 @@ Deno.test("flattenTree: respects expanded state", () => {
   assertEquals(flatExpanded.length, 2);
 });
 
-// ===== Find Node Tests =====
+// Find Node Tests
 
 Deno.test("findNode: finds node by id", () => {
   const tree = createTestTree();
@@ -145,7 +145,7 @@ Deno.test("findNode: returns null for non-existent id", () => {
   assertEquals(node, null);
 });
 
-// ===== Find Parent Tests =====
+// Find Parent Tests
 
 Deno.test("findParent: finds parent of child", () => {
   const tree = createTestTree();
@@ -167,7 +167,7 @@ Deno.test("findParent: returns null for root nodes", () => {
   assertEquals(parent, null);
 });
 
-// ===== Toggle Node Tests =====
+// Toggle Node Tests
 
 Deno.test("toggleNode: expands collapsed node", () => {
   const tree = createTestTree();
@@ -192,7 +192,7 @@ Deno.test("toggleNode: does not mutate original tree", () => {
   assertEquals(findNode(tree, "root1")?.expanded, originalRoot1Expanded);
 });
 
-// ===== Expand/Collapse All Tests =====
+// Expand/Collapse All Tests
 
 Deno.test("expandAll: expands all nodes with children", () => {
   const tree = createTestTree();
@@ -218,7 +218,7 @@ Deno.test("collapseAll: collapses all nodes", () => {
   assertEquals(root2?.expanded, false);
 });
 
-// ===== Expand To Tests =====
+// Expand To Tests
 
 Deno.test("expandTo: expands ancestors of target", () => {
   let tree = createTestTree();
@@ -235,7 +235,7 @@ Deno.test("expandTo: expands ancestors of target", () => {
   assertEquals(findNode(tree, "root2")?.expanded, false);
 });
 
-// ===== Count Visible Nodes Tests =====
+// Count Visible Nodes Tests
 
 Deno.test("countVisibleNodes: counts expanded nodes", () => {
   const tree = createTestTree();
@@ -249,7 +249,7 @@ Deno.test("countVisibleNodes: handles collapsed tree", () => {
   assertEquals(count, 2); // Only root1 and root2
 });
 
-// ===== Node Index Tests =====
+// Node Index Tests
 
 Deno.test("getNodeAtIndex: gets node at valid index", () => {
   const tree = createTestTree();
@@ -276,7 +276,7 @@ Deno.test("getNodeIndex: returns -1 for non-existent node", () => {
   assertEquals(index, -1);
 });
 
-// ===== Navigation Tests =====
+// Navigation Tests
 
 Deno.test("getNextNodeId: gets next visible node", () => {
   const tree = createTestTree();
@@ -314,7 +314,7 @@ Deno.test("getLastNodeId: gets last visible node", () => {
   assertEquals(last, "root2");
 });
 
-// ===== Render Tests =====
+// Render Tests
 
 Deno.test("renderTreeLine: renders node with expand indicator", () => {
   const tree = createTestTree();

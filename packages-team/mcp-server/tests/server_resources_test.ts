@@ -73,9 +73,7 @@ async function createTestServer(portals: Array<{ alias: string; files: Record<st
   return { server, db, tempDir, cleanup };
 }
 
-// ============================================================================
 // Resources List Tests
-// ============================================================================
 
 Deno.test("MCP Server: handles resources/list request", async () => {
   const { server, cleanup } = await createTestServer([{
@@ -133,9 +131,7 @@ Deno.test("MCP Server: resources/list discovers multiple portals", async () => {
   }
 });
 
-// ============================================================================
 // Resources Read Tests
-// ============================================================================
 
 Deno.test("MCP Server: handles resources/read request", async () => {
   const { server, cleanup } = await createTestServer([{

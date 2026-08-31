@@ -24,9 +24,7 @@ import {
 } from "@exaix/core";
 import { resolveNpmPackageFile, resolveNpmWasmPath } from "./npm_wasm_loader.ts";
 
-// ---------------------------------------------------------------------------
 // Base class
-// ---------------------------------------------------------------------------
 
 /** Shared base for tree-sitter-based extractors; see abstract members below. */
 export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
@@ -49,9 +47,7 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   private _parser: Parser | null = null;
   private _query: Query | null = null;
 
-  // -----------------------------------------------------------------------
   // Initialization (lazy, once)
-  // -----------------------------------------------------------------------
 
   private ensureInitialized(): Promise<void> {
     if (this._initPromise) return this._initPromise;
@@ -90,9 +86,7 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
     this._query = new Query(language, this.scmQuerySource());
   }
 
-  // -----------------------------------------------------------------------
   // ISymbolExtractor implementation
-  // -----------------------------------------------------------------------
 
   async extractSymbols(
     portalPath: string,
@@ -171,9 +165,7 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
       .slice(0, DEFAULT_SYMBOL_MAP_LIMIT);
   }
 
-  // -----------------------------------------------------------------------
   // Helpers
-  // -----------------------------------------------------------------------
 
   /** Recursively count syntax nodes in the tree. The `child` callback
    * returns a node-like object or null — only non-null values recurse. */

@@ -17,7 +17,7 @@ export interface ISpinnerConfig {
   interval: number; // ms
 }
 
-// ===== Spinner Definitions =====
+// Spinner Definitions
 
 export interface ISpinnerState {
   active: boolean;
@@ -123,7 +123,7 @@ export function nextFrame(state: ISpinnerState): ISpinnerState {
   };
 }
 
-// ===== Spinner Rendering =====
+// Spinner Rendering
 
 /**
  * Render a spinner frame
@@ -283,7 +283,7 @@ export function formatDuration(seconds: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-// ===== Animated Indicators =====
+// Animated Indicators
 
 /**
  * Render a pulsing dot indicator

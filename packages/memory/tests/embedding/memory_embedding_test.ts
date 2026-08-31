@@ -23,7 +23,7 @@ import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryIndexDir } from "@exaix/testing";
 
-// ===== Test Fixtures =====
+// Test Fixtures
 
 const testLearning: ILearning = {
   id: "bbbbbbbb-2222-4000-8000-000000000001",
@@ -64,7 +64,7 @@ const unrelatedLearning: ILearning = {
   status: MemoryStatus.APPROVED,
 };
 
-// ===== cosineSimilarity Tests =====
+// cosineSimilarity Tests
 
 Deno.test("cosineSimilarity calculates correctly for identical vectors", () => {
   const vectorA = [1, 0, 0, 0];
@@ -106,7 +106,7 @@ Deno.test("cosineSimilarity calculates correctly for similar vectors", () => {
   assertGreaterOrEqual(similarity, 0.9);
 });
 
-// ===== generateMockEmbedding Tests =====
+// generateMockEmbedding Tests
 
 Deno.test("generateMockEmbedding produces deterministic vectors", () => {
   const text = "This is a test string for embedding";
@@ -155,7 +155,7 @@ Deno.test("generateMockEmbedding produces normalized vectors", () => {
   assertAlmostEquals(magnitude, 1.0, 0.01);
 });
 
-// ===== embedLearning Tests =====
+// embedLearning Tests
 
 Deno.test("MemoryEmbeddingService: embedLearning creates embedding file", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -217,7 +217,7 @@ Deno.test("MemoryEmbeddingService: embedLearning updates manifest", async () => 
   }
 });
 
-// ===== searchByEmbedding Tests =====
+// searchByEmbedding Tests
 
 Deno.test("MemoryEmbeddingService: searchByEmbedding returns similar entries", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -280,7 +280,7 @@ Deno.test("MemoryEmbeddingService: searchByEmbedding ranks by similarity", async
   }
 });
 
-// ===== Edge Cases =====
+// Edge Cases
 
 Deno.test("MemoryEmbeddingService: searchByEmbedding returns empty array when no embeddings exist", async () => {
   const { config, cleanup } = await initTestDbService();

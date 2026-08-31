@@ -18,9 +18,7 @@ import type { ICodeConvention, IFileSignificance } from "@exaix/schemas/portal_k
 import { ARCHITECTURE_INFERRER_MAX_FILE_TOKENS, ARCHITECTURE_INFERRER_TOKEN_BUDGET } from "@exaix/core";
 import type { ILogger } from "@exaix/core/types";
 
-// ---------------------------------------------------------------------------
 // Mock helpers
-// ---------------------------------------------------------------------------
 
 function makeMockProvider(response: string): IModelProvider {
   return {
@@ -79,9 +77,7 @@ class MockOutputValidator implements IArchitectureValidator {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Shared fixtures
-// ---------------------------------------------------------------------------
 
 const MOCK_OVERVIEW = "## Architecture\n\nThis project uses a service pattern.";
 
@@ -101,9 +97,7 @@ const CONVENTIONS: ICodeConvention[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[ArchitectureInferrer] generates architecture overview from mock LLM response", async () => {
   const inferrer = new ArchitectureInferrer(
@@ -268,9 +262,7 @@ Deno.test("[ArchitectureInferrer] stays within ARCHITECTURE_INFERRER_TOKEN_BUDGE
   );
 });
 
-// ---------------------------------------------------------------------------
 // Retry and fallback helpers
-// ---------------------------------------------------------------------------
 
 function makeFailCountProvider(failCount: number, successResponse: string): IModelProvider {
   let attempts = 0;
@@ -318,9 +310,7 @@ function makeMockLogger(): { logger: ILogger; errors: Array<{ message: string; e
   };
 }
 
-// ---------------------------------------------------------------------------
 // Retry tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[ArchitectureInferrer] retries on LLM failure and succeeds on 2nd attempt", async () => {
   const inferrer = new ArchitectureInferrer(

@@ -20,9 +20,7 @@ import {
 
 import { AnalysisMode } from "@exaix/core/request";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 const validGoal = {
   description: "Add unit tests for UserService",
@@ -61,9 +59,7 @@ const validAnalysis = {
   },
 };
 
-// ---------------------------------------------------------------------------
 // RequestGoalSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestGoalSchema] validates explicit goal", () => {
   const result = RequestGoalSchema.safeParse(validGoal);
@@ -93,9 +89,7 @@ Deno.test("[RequestGoalSchema] rejects invalid priority (zero)", () => {
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // RequirementSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequirementSchema] validates confidence range 0.0–1.0", () => {
   const low = RequirementSchema.safeParse({ ...validRequirement, confidence: 0.0 });
@@ -119,9 +113,7 @@ Deno.test("[RequirementSchema] rejects missing description", () => {
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // AmbiguitySchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[AmbiguitySchema] validates all impact enum values", () => {
   for (const impact of Object.values(AmbiguityImpact)) {
@@ -140,9 +132,7 @@ Deno.test("[AmbiguitySchema] rejects missing impact", () => {
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // RequestAnalysisSchema — full object
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalysisSchema] validates complete valid analysis", () => {
   const result = RequestAnalysisSchema.safeParse(validAnalysis);

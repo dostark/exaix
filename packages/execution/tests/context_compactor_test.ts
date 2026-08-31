@@ -16,7 +16,7 @@ import { CONTEXT_PRIORITY_TOOL_RESULT } from "@exaix/core";
 import type { IContextSegment } from "@exaix/execution";
 import { LlmContextCompactor, NoopContextCompactor } from "@exaix/execution";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function makeToolResultSegment(): IContextSegment {
   return {
@@ -52,7 +52,7 @@ function makeFailingProvider(): IModelProvider {
   } as IModelProvider;
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test("[ContextCompactor] LlmContextCompactor: summarize() calls provider.generate() with a non-empty prompt", async () => {
   let capturedPrompt = "";

@@ -85,7 +85,7 @@ export function appendToolChoiceHint(name: string, description: string): string 
 }
 
 export const TOOL_MANIFEST: IToolManifestEntry[] = [
-  // ── Portal / file tools (MCP handlers) ──────────────────────────────────
+  // Portal / file tools (MCP handlers)
   {
     name: McpToolName.READ_FILE,
     kind: ToolKind.MCP_HANDLER,
@@ -336,7 +336,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     delegates_to_registry: true,
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
-  // ── Git tools (MCP handlers) ────────────────────────────────────────────
+  // Git tools (MCP handlers)
   {
     name: McpToolName.GIT_CREATE_BRANCH,
     kind: ToolKind.MCP_HANDLER,
@@ -473,7 +473,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     delegates_to_registry: true,
     remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
-  // ── Domain tools (MCP domain) ────────────────────────────────────────────
+  // Domain tools (MCP domain)
   {
     name: McpToolName.CREATE_REQUEST,
     kind: ToolKind.MCP_DOMAIN,
@@ -610,7 +610,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     parallel_safe: true,
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
-  // ── Config tools ──────────────────────────────────────────────────────────
+  // Config tools
   {
     name: McpToolName.CONFIG_GET,
     kind: ToolKind.MCP_DOMAIN,
@@ -758,7 +758,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     parallel_safe: false,
     remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
-  // ── Internal-only tools (ToolRegistry, not exposed via MCP) ─────────────
+  // Internal-only tools (ToolRegistry, not exposed via MCP)
   {
     name: "fetch_url",
     kind: ToolKind.INTERNAL_ONLY,

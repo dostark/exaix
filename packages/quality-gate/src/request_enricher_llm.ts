@@ -12,9 +12,7 @@
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 
-// ---------------------------------------------------------------------------
 // Prompt template
-// ---------------------------------------------------------------------------
 
 const ENRICHMENT_PROMPT_TEMPLATE = `You are improving a task request to make it more actionable for an AI agent.
 
@@ -44,9 +42,7 @@ Rewrite the request body to be:
 
 Respond with ONLY the improved request body text.`;
 
-// ---------------------------------------------------------------------------
 // Helper
-// ---------------------------------------------------------------------------
 
 function formatIssuesForPrompt(issues: IRequestQualityIssue[]): string {
   return issues
@@ -57,9 +53,7 @@ function formatIssuesForPrompt(issues: IRequestQualityIssue[]): string {
     .join("\n");
 }
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 /** Rewrites an underspecified body, returning the original on LLM failure. */
 export async function enrichRequest(

@@ -13,9 +13,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { MessageRole } from "@exaix/core";
 import { PORTAL_LABEL } from "@exaix/core";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface IMCPPrompt {
   name: string;
@@ -42,9 +40,7 @@ export interface IMCPPromptResult {
   messages: IMCPPromptMessage[];
 }
 
-// ============================================================================
 // Prompt Definitions
-// ============================================================================
 
 /**
  * Get all available prompts

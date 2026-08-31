@@ -8,7 +8,7 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Theme Interface =====
+// Theme Interface
 
 export interface ITuiTheme {
   // UI Elements
@@ -68,7 +68,7 @@ export interface ITuiTheme {
   reset: string;
 }
 
-// ===== ANSI Color Codes =====
+// ANSI Color Codes
 
 export const ANSI = {
   // Reset
@@ -113,7 +113,7 @@ export const ANSI = {
   bgWhite: "\x1b[47m",
 } as const;
 
-// ===== Default Theme =====
+// Default Theme
 
 export const defaultTheme: ITuiTheme = {
   // UI Elements
@@ -177,7 +177,7 @@ export const defaultTheme: ITuiTheme = {
   reset: ANSI.reset,
 };
 
-// ===== No-Color Theme =====
+// No-Color Theme
 
 function createEmptyTheme(): ITuiTheme {
   const empty = "";
@@ -225,7 +225,7 @@ function createEmptyTheme(): ITuiTheme {
 
 export const noColorTheme: ITuiTheme = createEmptyTheme();
 
-// ===== Theme Manager =====
+// Theme Manager
 
 /**
  * Get the active theme based on color preference
@@ -234,7 +234,7 @@ export function getTheme(useColors: boolean): ITuiTheme {
   return useColors ? defaultTheme : noColorTheme;
 }
 
-// ===== Color Utilities =====
+// Color Utilities
 
 /**
  * Wrap text with a color code and reset

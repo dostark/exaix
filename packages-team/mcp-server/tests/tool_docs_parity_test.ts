@@ -35,7 +35,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   [ToolCategory.META]: "meta",
 };
 
-// ── Parity tests ──────────────────────────────────────────────────────────────
+// Parity tests
 
 Deno.test("docs_parity: category labels in TOOLS.md match manifest ToolCategory", async () => {
   const section = await readAgentToolsSection();

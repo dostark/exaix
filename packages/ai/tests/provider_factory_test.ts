@@ -41,9 +41,7 @@ function parallelSafeTest(
   Deno.test({ name, ignore: skipInParallel, fn });
 }
 
-// ============================================================================
 // Test Fixtures
-// ============================================================================
 
 /**
  * Helper to set env vars and clean up after test
@@ -128,9 +126,7 @@ async function withConcreteProviders<T>(fn: () => Promise<T> | T): Promise<T> {
   }
 }
 
-// ============================================================================
 // AI Config Schema Tests
-// ============================================================================
 
 Deno.test("AiConfigSchema: accepts valid config", () => {
   const validConfig = {
@@ -185,9 +181,7 @@ Deno.test("AiConfigSchema: validates timeout_ms range", () => {
   assertEquals(result.success, false);
 });
 
-// ============================================================================
 // Default Provider Tests
-// ============================================================================
 
 Deno.test("ProviderFactory: defaults to MockLLMProvider when no config", async () => {
   const config = createTestConfig();
@@ -207,9 +201,7 @@ Deno.test("ProviderFactory: defaults to MockLLMProvider when ai section missing"
   assertEquals(provider.id.startsWith("mock"), true);
 });
 
-// ============================================================================
 // Environment Variable Tests
-// ============================================================================
 
 parallelSafeTest(
   "ProviderFactory: EXA_LLM_PROVIDER=mock creates MockLLMProvider",
@@ -261,9 +253,7 @@ parallelSafeTest(
   }),
 );
 
-// ============================================================================
 // Config File Tests
-// ============================================================================
 
 Deno.test("ProviderFactory: config ai.provider=ollama creates OllamaProvider", async () => {
   await withConcreteProviders(async () => {
@@ -285,9 +275,7 @@ Deno.test("ProviderFactory: config ai.provider=mock creates MockLLMProvider", as
   assertEquals(provider.id.startsWith("mock"), true);
 });
 
-// ============================================================================
 // API Key Tests
-// ============================================================================
 
 parallelSafeTest(
   "ProviderFactory: anthropic requires ANTHROPIC_API_KEY",
@@ -323,9 +311,7 @@ parallelSafeTest(
   }),
 );
 
-// ============================================================================
 // Unknown Provider Tests
-// ============================================================================
 
 Deno.test(
   "ProviderFactory: any provider falls back to mock with warning",
@@ -355,9 +341,7 @@ Deno.test(
   }),
 );
 
-// ============================================================================
 // Provider Options Tests
-// ============================================================================
 
 Deno.test(
   "ProviderFactory: EXA_LLM_BASE_URL sets base URL for Ollama",
@@ -457,9 +441,7 @@ Deno.test(
   },
 );
 
-// ============================================================================
 // MockLLMProvider Strategy Tests
-// ============================================================================
 
 Deno.test("ProviderFactory: mock strategy from config", async () => {
   const config = createTestConfig({
@@ -475,9 +457,7 @@ Deno.test("ProviderFactory: mock strategy from config", async () => {
   assertEquals(provider.id.startsWith("mock"), true);
 });
 
-// ============================================================================
 // Integration with IModelProvider Tests
-// ============================================================================
 
 Deno.test("ProviderFactory: created provider implements IModelProvider", async () => {
   // Use scripted strategy for testing (doesn't require recorded fixtures)
@@ -506,9 +486,7 @@ Deno.test("ProviderFactory: provider can be used for plan generation", async () 
   assertEquals(typeof response.content, "string");
 });
 
-// ============================================================================
 // getProviderInfo Tests
-// ============================================================================
 
 Deno.test("ProviderFactory: getProviderInfo returns provider details", () => {
   return withConcreteProviders(() => {
@@ -534,9 +512,7 @@ Deno.test(
   }),
 );
 
-// ============================================================================
 // Anthropic Provider Placeholder Tests
-// ============================================================================
 
 Deno.test(
   "ProviderFactory: anthropic with API key returns placeholder MockLLMProvider",
@@ -560,9 +536,7 @@ Deno.test(
   }),
 );
 
-// ============================================================================
 // OpenAI Provider Placeholder Tests
-// ============================================================================
 
 Deno.test(
   "ProviderFactory: openai with API key returns placeholder MockLLMProvider",
@@ -586,9 +560,7 @@ Deno.test(
   }),
 );
 
-// ============================================================================
 // Llama Model Routing Tests
-// ============================================================================
 
 Deno.test("ProviderFactory: llama model prefix routes to LlamaProvider", async () => {
   const config = createTestConfig({
@@ -616,9 +588,7 @@ Deno.test("ProviderFactory: llama model prefix routes to LlamaProvider from env"
   }
 });
 
-// ============================================================================
 // Unknown Provider ID Generation Test
-// ============================================================================
 
 Deno.test("ProviderFactory: any provider generates unknown ID", () => {
   // This tests the default case in generateProviderId
@@ -641,9 +611,7 @@ Deno.test("ProviderFactory: any provider generates unknown ID", () => {
   }
 });
 
-// ============================================================================
 // getProviderForModel Helper Tests
-// ============================================================================
 
 Deno.test("getProviderForModel: creates provider for model", async () => {
   const provider = await getProviderForModel("codellama:13b");
@@ -659,9 +627,7 @@ Deno.test("getProviderForModel: handles regular ollama models", async () => {
   assertStringIncludes(provider.id, "llama3.2");
 });
 
-// ============================================================================
 // Named Model Tests
-// ============================================================================
 Deno.test("ProviderFactory: createWithFallback returns primary if healthy", async () => {
   const config = createTestConfig();
   config.models = {
@@ -868,9 +834,7 @@ Deno.test("ProviderFactory: a mock with no fixtures is reported as pattern, not 
 // against MockLLMProvider directly in mock_execution_pattern_regression_test.ts, where the
 // recordings can be supplied without going through config resolution.
 
-// ============================================================================
 // Capture Wiring Tests
-// ============================================================================
 
 parallelSafeTest(
   "ProviderFactory: EXA_CAPTURE_FIXTURES_DIR wraps a non-mock provider in CaptureRecordingProvider",

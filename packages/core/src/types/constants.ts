@@ -19,24 +19,18 @@ import {
 } from "./enums.ts";
 import { configurable } from "../config/registry.ts";
 
-// ============================================================================
 // HTTP Status Codes
-// ============================================================================
 export const HTTP_UNAUTHORIZED = 401;
 export const HTTP_FORBIDDEN = 403;
 export const HTTP_TOO_MANY_REQUESTS = 429;
 export const HTTP_SERVER_ERROR = 500;
 
-// ============================================================================
 // Edition Constants
-// ============================================================================
 export const EDITION_SOLO = "solo";
 export const EDITION_TEAM = "team";
 export const EDITION_ENTERPRISE = "enterprise";
 
-// ============================================================================
 // Guardrail
-// ============================================================================
 /** Maximum time (ms) to wait for a guardrail policy evaluation before timing out. */
 export const GUARDRAIL_SCREEN_TIMEOUT_MS: number = configurable({
   key: "guardrail.screen_timeout_ms",
@@ -51,9 +45,7 @@ export const GUARDRAIL_SCREEN_TIMEOUT_MS: number = configurable({
 /** Maximum characters to include in the flagged_excerpt field of a GuardrailIncident. */
 export const GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS = 500;
 
-// ============================================================================
 // HITL / Governance
-// ============================================================================
 /** Maximum time (ms) for a HitlPolicyEvaluator.evaluate() call to stay within. */
 export const HITL_EVAL_BUDGET_MS: number = configurable({
   key: "hitl.eval_budget_ms",
@@ -65,9 +57,7 @@ export const HITL_EVAL_BUDGET_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Path Configuration Defaults
-// ============================================================================
 export const DEFAULT_WORKSPACE_PATH = "Workspace";
 export const DEFAULT_RUNTIME_PATH = ".exa";
 export const DEFAULT_MEMORY_PATH = "Memory";
@@ -202,9 +192,7 @@ export const MILESTONE_FLOW_FAILED = "flow.failed";
 /** Activity-journal event logged by dynamic_step_executor.ts for every tool call decision. */
 export const ACTIVITY_EVENT_DYNAMIC_TOOL_CALL = "dynamic_tool_call";
 
-// ============================================================================
 // Database Validation Limits
-// ============================================================================
 
 // Database defaults
 export const DEFAULT_DATABASE_BATCH_FLUSH_MS: number = configurable({
@@ -276,9 +264,7 @@ export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD: number = configurable
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Config DB — polling and dynamic key namespaces
-// ============================================================================
 /** Polling interval (ms) for the Config DB watcher that detects external overrides via MAX(id) change. */
 export const DEFAULT_CONFIG_DB_POLL_INTERVAL_MS: number = configurable({
   key: "config_db.poll_interval_ms",
@@ -294,9 +280,7 @@ export const CONFIG_PROFILE_KEY_PREFIX = "profile.";
 /** Wildcard segment used in `configurable()` pattern keys (e.g. `models.*.model`); a concrete key validates against the matching pattern key's metadata. */
 export const CONFIG_PATTERN_WILDCARD = "*";
 
-// ============================================================================
 // Config Rate Limiting
-// ============================================================================
 
 /** Sliding window (ms) over which CLI `config set` writes are counted. */
 export const CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS = 5_000;
@@ -309,9 +293,7 @@ export const CONFIG_DB_OVERRIDE_WARN_THRESHOLD = 100_000;
 /** config_overrides row count at which non-recovery writes are hard-blocked. */
 export const CONFIG_DB_OVERRIDE_HARD_LIMIT = 1_000_000;
 
-// ============================================================================
 // Config Integrity Checksum
-// ============================================================================
 
 /** Synthetic config_overrides key for the Config-DB integrity checksum; excluded from the checksum computation, listOverrides/diff, and the DB watcher so it never surfaces as a user override. */
 export const CONFIG_CHECKSUM_KEY = "_checksum";
@@ -326,9 +308,7 @@ export const CONFIG_INTEGRITY_POLL_INTERVAL_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // File Watcher Validation Limits
-// ============================================================================
 
 // Watcher defaults
 export const DEFAULT_WATCHER_DEBOUNCE_MS: number = configurable({
@@ -367,11 +347,7 @@ export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE: number = configurable({
   swap: SwapClass.HOT,
 });
 
-// ============================================================================
-
-// ============================================================================
 // Session Delegate
-// ============================================================================
 /** Maximum time (ms) to drain a headless delegate's stdout stream. */
 export const DELEGATE_STDOUT_DRAIN_MS: number = configurable({
   key: "delegate.stdout_drain_ms",
@@ -410,9 +386,7 @@ export const DELEGATE_STREAM_MAX_BYTES: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Service Limits and Batch Sizes
-// ============================================================================
 export const DEFAULT_LOG_BUFFER_SIZE: number = configurable({
   key: "logging.buffer_size",
   default: 10000,
@@ -437,7 +411,6 @@ export const DEFAULT_NONE_VALUE = "none";
 export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
 
 // Agent Validation Limits
-// ============================================================================
 export const AGENT_MAX_ITERATIONS_MIN = 1;
 export const AGENT_MAX_ITERATIONS_MAX = 100;
 
@@ -465,9 +438,7 @@ export const DEFAULT_AGENT_MAX_ITERATIONS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ---------------------------------------------------------------------------
 // ACI (Agent-Computer Interface / Poka-Yoke) tool guidance
-// ---------------------------------------------------------------------------
 export const DEFAULT_AGENT_INJECT_ACI_DOCS: boolean = configurable({
   key: "agent.inject_aci_docs",
   default: false,
@@ -635,9 +606,7 @@ export const ENV_PORTAL_ALIAS = "EXA_PORTAL";
 // MCP content types
 export const MCP_CONTENT_TYPE_STRUCTURED_DATA = "exaix_structured_data";
 
-// ============================================================================
 // AI Provider Defaults and Limits
-// ============================================================================
 export const DEFAULT_AI_TIMEOUT_MS: number = configurable({
   key: "ai.timeout_ms",
   default: 30000,
@@ -786,9 +755,7 @@ export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
 export const PROVIDER_VERTEX = ProviderType.VERTEX;
 export const PROVIDER_OPENROUTER = ProviderType.OPENROUTER;
 
-// ============================================================================
 // UI/Preview Validation Limits
-// ============================================================================
 export const PROMPT_PREVIEW_LENGTH_MIN = 10;
 export const PROMPT_PREVIEW_LENGTH_MAX = 500;
 export const PROMPT_PREVIEW_EXTENDED_MIN = 50;
@@ -814,9 +781,7 @@ export const PROMPT_PREVIEW_EXTENDED: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // MCP Defaults
-// ============================================================================
 export const DEFAULT_MCP_ENABLED: boolean = configurable({
   key: "mcp.enabled",
   default: true,
@@ -861,9 +826,7 @@ export const DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Git Defaults
-// ============================================================================
 export const GIT_TIMEOUT_MS_MIN = 1000;
 export const GIT_TIMEOUT_MS_MAX = 60000;
 export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN: string = configurable({
@@ -983,9 +946,7 @@ export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Rate Limiting Validation Limits
-// ============================================================================
 
 // Rate limiting defaults
 export const DEFAULT_RATE_LIMIT_ENABLED: boolean = configurable({
@@ -1041,9 +1002,7 @@ export const RATE_LIMIT_WINDOW_DAY_MS = 86_400_000; // 1 day
 export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 
-// ============================================================================
 // Prompt Budgeting
-// ============================================================================
 
 /** Provider ID prefixes that identify local/self-hosted LLM providers. */
 export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as const;
@@ -1202,9 +1161,7 @@ export const SECTION_BASE_WEIGHTS = {
   loopHistory: 0.05,
 } as const;
 
-// ============================================================================
 // Cost Tracking Validation Limits
-// ============================================================================
 export const COST_TRACKING_BATCH_DELAY_MS_MIN = 100;
 export const COST_TRACKING_BATCH_DELAY_MS_MAX = 60000;
 export const COST_TRACKING_MAX_BATCH_SIZE_MIN = 1;
@@ -1323,9 +1280,7 @@ export const TOKENS_PER_COST_UNIT: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Health Check Validation Limits
-// ============================================================================
 export const HEALTH_MEMORY_WARN_PERCENT_MIN = 1;
 export const HEALTH_MEMORY_WARN_PERCENT_MAX = 99;
 export const HEALTH_MEMORY_CRITICAL_PERCENT_MIN = 1;
@@ -1369,9 +1324,7 @@ export const DEFAULT_MEMORY_CRITICAL_PERCENT: number = configurable({
   swap: SwapClass.HOT,
 });
 
-// ============================================================================
 // Provider Strategy Validation Limits
-// ============================================================================
 export const PROVIDER_STRATEGY_BUDGETS_MIN = 0;
 
 // Provider strategy defaults
@@ -1436,9 +1389,7 @@ export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
   "local_first": ["ollama", "openai"],
 };
 
-// ============================================================================
 // Milestone Streaming Defaults
-// ============================================================================
 /** Whether milestone streaming is enabled by default. */
 export const DEFAULT_MILESTONE_STREAMING_ENABLED: boolean = configurable({
   key: "execution.milestone_streaming_enabled",
@@ -1448,18 +1399,14 @@ export const DEFAULT_MILESTONE_STREAMING_ENABLED: boolean = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
 // Provider Validation Limits
-// ============================================================================
 export const PROVIDER_FREE_QUOTA_REQUESTS_PER_DAY_MIN = 0;
 export const PROVIDER_TIMEOUT_MS_MIN = 1000;
 export const PROVIDER_TIMEOUT_MS_MAX = 300000;
 export const PROVIDER_RATE_LIMIT_RPM_MIN = 1;
 export const PROVIDER_RATE_LIMIT_RPM_MAX = 1000;
 
-// ============================================================================
 // API Endpoint Defaults
-// ============================================================================
 export const DEFAULT_SUBPROCESS_TIMEOUT_MS: number = configurable({
   key: "execution.subprocess_timeout_ms",
   default: 30000,
@@ -1470,11 +1417,7 @@ export const DEFAULT_SUBPROCESS_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================ Keyboard Key Constants - DEPRECATED: Use KEYS from src/t../helpers/keyboard.ts ============================================================================ All KEY_ constants have been moved to the KEYS object in src/t../helpers/keyboard.ts for better type safety and consistency. Please import from there instead.
-
-// ============================================================================
 // Logging Defaults
-// ============================================================================
 export const DEFAULT_LOG_LEVEL: string = configurable({
   key: "logging.level",
   default: LogLevel.INFO as string,
@@ -1503,14 +1446,10 @@ export const DEFAULT_LOG_MAX_FILES: number = configurable({
 export const LOG_FILE_PREFIX = "structured-log";
 export const LOG_FILE_EXTENSION = ".jsonl";
 
-// ============================================================================
 // Trigger Adapter Constants
-// ============================================================================
 export const TRIGGER_PAYLOAD_MAX_BYTES = 1_048_576; // 1 MB
 
-// ============================================================================
 // CLI Display and Validation Constants
-// ============================================================================
 export const PORTAL_ALIAS_MAX_LENGTH = 50;
 
 export const LOG_RENDERER_MAX_MESSAGE_LENGTH = 100;
@@ -1520,9 +1459,7 @@ export const LOG_RENDERER_SEPARATOR_LENGTH = 50;
 export const TIME_MS_PER_SECOND = 1000;
 export const TIME_MS_PER_MINUTE = 60_000;
 export const TIME_MS_PER_HOUR = 3_600_000;
-// ============================================================================
 // Retry and Error Constants
-// ============================================================================
 
 /** Error types that should trigger a retry */
 export const RETRYABLE_ERROR_TYPES = [
@@ -1558,9 +1495,7 @@ export const RETRYABLE_HTTP_STATUS_CODES = [
   "504", // Gateway Timeout
 ];
 
-// ============================================================================
 // General System Limits and Thresholds
-// ============================================================================
 
 /** Maximum length for names (portals, agents, etc.) */
 export const MAX_NAME_LENGTH = 50;
@@ -1667,9 +1602,7 @@ export const DEFAULT_AGENT_TIMEOUT_MS: number = configurable({
 /** Maximum length for system prompts */
 export const MAX_PROMPT_LENGTH = 50000;
 
-// ============================================================================
 // Prompt Context Defaults
-// ============================================================================
 
 export const PORTAL_LABEL = "portal";
 export const ACTIVITY_ACTOR_AGENT = "agent";
@@ -1720,9 +1653,7 @@ export const CONFIDENCE_ADJUSTMENT_VERY_SHORT = -20;
 export const CONFIDENCE_LENGTH_THRESHOLD_SHORT = 50;
 export const CONFIDENCE_LENGTH_THRESHOLD_VERY_SHORT = 20;
 
-// ============================================================================
 // Execution Artifacts
-// ============================================================================
 
 export const EXECUTION_ARTIFACT_SECTION_SEPARATOR = "\n\n---\n\n";
 export const EXECUTION_ARTIFACT_PLAN_SECTION_TITLE = "## Plan Output";
@@ -1750,9 +1681,7 @@ export const EXECUTION_REPORT_PROMPT_MAX_CHARS: number = configurable({
 export const EXECUTION_REPORT_TEMPERATURE = 0.2;
 export const EXECUTION_REPORT_MAX_TOKENS = 2000;
 
-// ============================================================================
 // Shared UI Icons (used by both Core and TUI)
-// ============================================================================
 
 export const ICON_SUCCESS = "✅";
 export const ICON_FAILURE = "❌";
@@ -1775,7 +1704,7 @@ export const SHARED_DEFAULT_ICONS: Record<string, string> = {
   fatal: "💀",
 };
 
-// === Request Analysis ===
+// Request Analysis
 
 /** Actionability score below which hybrid mode escalates to LLM analysis. */
 export const DEFAULT_ACTIONABILITY_THRESHOLD: number = configurable({
@@ -2015,7 +1944,7 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
   commit: TaskType.COMMIT,
 };
 
-// === Portal Knowledge ===
+// Portal Knowledge
 
 /** Maximum files to scan in quick mode. */
 export const DEFAULT_QUICK_SCAN_LIMIT: number = configurable({
@@ -2166,9 +2095,7 @@ export const DENO_DOC_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ---------------------------------------------------------------------------
 // Multi-language symbol extraction
-// ---------------------------------------------------------------------------
 
 /** Source-file extensions per language recognized by the symbol extractors. */
 export const LANGUAGE_SOURCE_EXTENSIONS: Record<string, readonly string[]> = {
@@ -2325,7 +2252,7 @@ export const PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS: Record<string, string> = {
   mcp: "Model Context Protocol server",
 };
 
-// === Request Quality Gate ===
+// Request Quality Gate
 
 /** Default quality gate assessment mode. */
 export const DEFAULT_QG_MODE: string = configurable({
@@ -2382,7 +2309,7 @@ export const DEFAULT_MAX_CLARIFICATION_ROUNDS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// --- Heuristic signal thresholds ---
+// Heuristic signal thresholds
 
 /** Minimum body character count; shorter bodies incur the short-body penalty. */
 export const QG_SHORT_BODY_MAX_CHARS = 20;
@@ -2468,7 +2395,7 @@ export const QG_FILE_REF_PATTERNS: RegExp[] = [
 export const QG_TECH_SPECIFICS_PATTERN =
   /\b(?:api|sdk|http|https|rest|graphql|sql|json|xml|yaml|toml|deno|node|python|typescript|javascript|react|vue|postgres|sqlite|redis|docker|kubernetes|jwt|oauth|websocket)\b/i;
 
-// --- Cross-phase context keys ---
+// Cross-phase context keys
 
 /**
  * Key used to store the `IRequestSpecification` produced by the quality gate
@@ -2494,7 +2421,7 @@ export const DEFAULT_CLARIFICATION_MODEL_KEY: string = configurable({
   swap: SwapClass.RESTART,
 });
 
-// === Acceptance Criteria Propagation ===
+// Acceptance Criteria Propagation
 
 /**
  * Maximum number of dynamically generated EvaluationCriterion objects that
@@ -2559,7 +2486,7 @@ export const CRITERION_NAME_MAX_LENGTH = 50;
  */
 export const CRITERION_NAME_SANITIZE_PATTERN = /[^a-z0-9_]/g;
 
-// === Quality Pipeline Hardening ===
+// Quality Pipeline Hardening
 // Constants for Phase 49 hardening improvements across the quality pipeline.
 
 /**
@@ -2611,15 +2538,11 @@ export const COMPLEXITY_BODY_LENGTH_LOW = 50;
  */
 export const COMPLEXITY_FILE_REF_PATTERN = /(\/[\w.-]+|[a-z0-9_]+\.(ts|js|md|json|py|go|rs|c|cpp|h))/gi;
 
-// ============================================================================
 // Tool IClassification for Dynamic Execution (Phase 56)
-// ============================================================================
 
 // MCP tool names and related work sets are now owned by @exaix/mcp.
 
-// ============================================================================
 // Agent Execution & Prompting (Phase 61 Cleanup)
-// ============================================================================
 
 /** Prefixes used for plan step execution prompts */
 export const PROMPT_PLAN_STEP_TASK_PREFIX = "CURRENT TASK:\n";
@@ -2697,9 +2620,7 @@ export const CONTEXT_SECTION_TRUNCATED = "context.section.truncated";
 /** Event name emitted when total estimated tokens exceed context window. @deprecated Use `DomainEventType.ContextBudgetExceeded` from `@exaix/core/events` instead. */
 export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 
-// ============================================================================
 // Context Budget Manager — Segment-Level Compaction
-// ============================================================================
 
 /** Maximum median latency in ms for the synchronous compaction tier (no LLM calls). */
 export const CONTEXT_BUDGET_OVERHEAD_TARGET_MS = 15;
@@ -2750,9 +2671,7 @@ export const JsonSchemaType = {
   NULL: "null",
 } as const;
 
-// ============================================================================
 // Tool Result Validation
-// ============================================================================
 
 /** Maximum retries for schema validation failures — applies only to idempotent, side-effect-free tools. */
 export const TOOL_RESULT_VALIDATION_MAX_RETRIES: number = configurable({
@@ -2768,9 +2687,7 @@ export const TOOL_RESULT_VALIDATION_MAX_RETRIES: number = configurable({
 /** Semantic version for tool result schema descriptors returned via exaix/tools/result_schema. */
 export const TOOL_RESULT_SCHEMA_VERSION = "1.0.0";
 
-// ============================================================================
 // Tool Confirmation Interceptor
-// ============================================================================
 
 /** Default timeout in seconds for human tool confirmation requests. Auto-deny on expiry. */
 export const DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S: number = configurable({
@@ -2960,9 +2877,7 @@ export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "mod
 /** Cost-record provider prefix for a delegated (human-run) session tool. */
 export const SESSION_COST_PROVIDER_PREFIX = "session:";
 
-// ============================================================================
 // Daemon Least-Privilege Spawn Permissions
-// ============================================================================
 
 /** Binaries the daemon is allowed to run via `--allow-run`. This is the SINGLE source of truth for the run allowlist — both `DaemonCommands.start()` and `scripts/dogfood_daemon.ts` import it, so the list cannot drift between the two launch paths. Mirrors the historical `deno task dev` allowlist plus the delegate binaries (`opencode`, `claude`). */
 export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
@@ -3069,9 +2984,7 @@ export async function runWithConcurrency<T>(
   await Promise.all(executing);
 }
 
-// ============================================================================
 // Subsystem Evaluation
-// ============================================================================
 /** Suite-score floor for a subsystem evaluation pack run (`deno task eval:subsystems`). Not an arbitrary round number: before lifecycle steps (daemon start, setup, teardown) were zero-weighted, they carried equal weight with the one step asserting the behaviour under test, so a *total* failure of the tested mechanism could still score 0.800 and pass. With lifecycle steps zero-weighted, the same class of failure scores 0.500. 0.7 sits strictly between that broken score (0.500) and the pre-fix floor (0.800): low enough that a healthy deterministic pack never trips it, high enough that a broken mechanism does. `tests/eval/subsystem_score_threshold_test.ts` pins both bounds and keeps the `deno.json` tasks — which cannot import a constant — in step with this value. */
 export const SUBSYSTEM_EVAL_SCORE_THRESHOLD: number = configurable({
   key: "eval.subsystem_score_threshold",

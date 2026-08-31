@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { createNotificationTestProposal, runNotificationTest } from "@exaix/testing";
 
-// ===== NotificationService Tests =====
+// NotificationService Tests
 
 Deno.test("NotificationService: notifyMemoryUpdate logs to IActivity Journal", async () => {
   await runNotificationTest(async ({ db, notification }) => {

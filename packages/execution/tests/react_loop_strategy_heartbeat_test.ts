@@ -23,9 +23,7 @@ import {
 import type { JSONValue } from "@exaix/core/types";
 import { makeGenerateResult as makeResult } from "@exaix/testing";
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 type TestToolParams = Record<string, JSONValue>;
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
@@ -120,9 +118,7 @@ function createDeferredProvider(id: string): {
   };
 }
 
-// ============================================================================
 // Heartbeat Emission Tests
-// ============================================================================
 
 Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running LLM call", async () => {
   const { bus, heartbeats } = createHeartbeatRecorder();
@@ -171,9 +167,7 @@ Deno.test("ReActLoopStrategy: heartbeat should include step name and elapsed tim
   bus.close();
 });
 
-// ============================================================================
 // Timer Cleanup Tests
-// ============================================================================
 
 Deno.test("ReActLoopStrategy: timer should be cleared on success", async () => {
   const bus = new EventBusService();

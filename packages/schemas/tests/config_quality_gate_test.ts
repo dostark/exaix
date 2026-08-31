@@ -25,9 +25,7 @@ function baseConfig() {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigSchema] validates quality_gate section", () => {
   const result = ConfigSchema.safeParse({

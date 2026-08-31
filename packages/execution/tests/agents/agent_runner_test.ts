@@ -18,9 +18,7 @@ import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
-// ============================================================================
 // Test Fixtures
-// ============================================================================
 
 const sampleBlueprint: IBlueprint = {
   systemPrompt: `You are a helpful coding assistant.
@@ -51,9 +49,7 @@ function helloWorld(): string {
 You can call this function to get the greeting message.
 </content>`;
 
-// ============================================================================
 // Test 1: IAgentRunner combines System Prompt and User Request correctly
-// ============================================================================
 
 Deno.test("IAgentRunner combines System Prompt and User Request correctly", async () => {
   let capturedPrompt = "";
@@ -170,9 +166,7 @@ Deno.test("IAgentRunner injects memory context when provided", async () => {
   assertStringIncludes(capturedPrompt, memoryContext);
 });
 
-// ============================================================================
 // Test 2: IAgentRunner calls modelProvider.generate with the combined prompt
-// ============================================================================
 
 Deno.test("IAgentRunner calls modelProvider.generate", async () => {
   let generateCalled = false;
@@ -212,9 +206,7 @@ Deno.test("IAgentRunner passes complete prompt to modelProvider.generate", async
   assertEquals(receivedPrompt.length > 0, true, "Prompt should not be empty");
 });
 
-// ============================================================================
 // Test 3: IAgentRunner parses a structured response into thought and content
-// ============================================================================
 
 Deno.test("IAgentRunner parses well-formed XML response", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -287,9 +279,7 @@ Deno.test("IAgentRunner preserves raw response", async () => {
   assertEquals(result.raw, wellFormedResponse);
 });
 
-// ============================================================================
 // Test 4: IAgentRunner handles malformed responses
-// ============================================================================
 
 Deno.test("IAgentRunner handles response with no XML tags (fallback)", async () => {
   const plainResponse = "This is just plain text with no XML tags";
@@ -373,9 +363,7 @@ Deno.test("IAgentRunner handles empty response", async () => {
   assertEquals(result.raw, "");
 });
 
-// ============================================================================
 // Test 5: Handles empty blueprints or requests gracefully
-// ============================================================================
 
 Deno.test("IAgentRunner handles empty system prompt", async () => {
   const emptyBlueprint: IBlueprint = {
@@ -431,9 +419,7 @@ Deno.test("IAgentRunner handles whitespace-only prompts", async () => {
   assertExists(result);
 });
 
-// ============================================================================
 // Additional Edge Cases
-// ============================================================================
 
 Deno.test("IAgentRunner handles very long responses", async () => {
   const longThought = "a".repeat(10000);
@@ -500,9 +486,7 @@ Deno.test("IAgentRunner can be reused for multiple runs", async () => {
   assertExists(result3);
 });
 
-// ============================================================================
 // Error Recovery and Handling
-// ============================================================================
 
 Deno.test("IAgentRunner handles provider errors gracefully", async () => {
   const errorProvider = new MockProvider(wellFormedResponse);
@@ -594,9 +578,7 @@ Deno.test("IAgentRunner handles provider returning undefined", async () => {
   assertExists(result);
 });
 
-// ============================================================================
 // Context Management
-// ============================================================================
 
 Deno.test("IAgentRunner handles request with large context", async () => {
   const largeContext: IParsedRequest = {
@@ -669,9 +651,7 @@ Deno.test("IAgentRunner handles request with many context keys", async () => {
   assertExists(result);
 });
 
-// ============================================================================
 // Response Parsing Edge Cases
-// ============================================================================
 
 Deno.test("IAgentRunner handles case-insensitive XML tags", async () => {
   const response = `<THOUGHT>Uppercase thought</THOUGHT>
@@ -745,9 +725,7 @@ Deno.test("IAgentRunner handles self-closing tags", async () => {
   assertStringIncludes(result.content, "Only content here");
 });
 
-// ============================================================================
 // IBlueprint and Request Variations
-// ============================================================================
 
 Deno.test("IAgentRunner handles blueprint with identityId", async () => {
   const blueprintWithId: IBlueprint = {

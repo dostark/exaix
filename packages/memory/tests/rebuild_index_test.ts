@@ -19,7 +19,7 @@ import type { ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import { getMemoryGlobalDir, getMemoryIndexDir } from "@exaix/testing";
 
-// ===== Test Setup Helpers =====
+// Test Setup Helpers
 
 /**
  * Set up test data for rebuild-index tests
@@ -95,7 +95,7 @@ async function setupTestData(
   );
 }
 
-// ===== rebuildIndices Tests =====
+// rebuildIndices Tests
 
 Deno.test("MemoryBankService: rebuildIndices regenerates all indices", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -155,7 +155,7 @@ Deno.test("MemoryBankService: rebuildIndicesWithEmbeddings includes embeddings",
   }
 });
 
-// ===== Index Content Verification =====
+// Index Content Verification
 
 Deno.test("MemoryBankService: rebuildIndices indexes learnings tags", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -215,7 +215,7 @@ Deno.test("MemoryBankService: rebuildIndices preserves existing data on rebuild"
   }
 });
 
-// ===== Edge Cases =====
+// Edge Cases
 
 Deno.test("MemoryBankService: rebuildIndices handles empty memory banks", async () => {
   const { config, cleanup } = await initTestDbService();

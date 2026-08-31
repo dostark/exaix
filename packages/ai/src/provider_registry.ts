@@ -53,13 +53,9 @@ function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
   globalRegistry.__exaixRegisteredProviderTypes = Array.from(providerTypes);
 }
 
-// ============================================================================
 // Interfaces
-// ============================================================================
 
-// ============================================================================
 // Provider Registry
-// ============================================================================
 
 export class ProviderRegistry {
   private static factories = new Map<string, IProviderFactory>();

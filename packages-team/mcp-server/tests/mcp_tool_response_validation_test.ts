@@ -11,9 +11,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { validateMCPToolResponse } from "@exaix/schemas/tool_result_validator.ts";
 
-// ============================================================================
 // isError:true — must pass as valid, not flagged as validation failure
-// ============================================================================
 
 Deno.test("MCP boundary validator: isError:true response passes schema check without error", () => {
   const response = {

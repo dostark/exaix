@@ -71,9 +71,7 @@ function makeMinimalKnowledge(portalAlias: string): IPortalKnowledge {
   };
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Tests
-// ──────────────────────────────────────────────────────────────────────────────
 
 Deno.test("[PortalService] getKnowledge returns knowledge for analyzed portal", async () => {
   const { projectsDir, portalsDir, tempDir, service, cleanup } = await makePortalKnowledgePathEnv();

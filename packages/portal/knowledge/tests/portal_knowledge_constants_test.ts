@@ -25,9 +25,7 @@ import {
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
 } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Numeric constants — correct types and sensible values
-// ---------------------------------------------------------------------------
 
 Deno.test("[PortalKnowledgeConstants] DEFAULT_QUICK_SCAN_LIMIT is 200", () => {
   assertEquals(DEFAULT_QUICK_SCAN_LIMIT, 200);
@@ -65,9 +63,7 @@ Deno.test("[PortalKnowledgeConstants] DENO_DOC_TIMEOUT_MS is 15000", () => {
   assertEquals(DENO_DOC_TIMEOUT_MS, 15_000);
 });
 
-// ---------------------------------------------------------------------------
 // Array constants — non-empty arrays with expected entries
-// ---------------------------------------------------------------------------
 
 Deno.test("[PortalKnowledgeConstants] DEFAULT_IGNORE_PATTERNS contains node_modules", () => {
   assertExists(DEFAULT_IGNORE_PATTERNS);
@@ -96,9 +92,7 @@ Deno.test("[PortalKnowledgeConstants] PORTAL_KNOWLEDGE_PRIORITY_PATTERNS is non-
   assertEquals(PORTAL_KNOWLEDGE_PRIORITY_PATTERNS.length > 0, true);
 });
 
-// ---------------------------------------------------------------------------
 // Record constants — architecture layer dir mappings
-// ---------------------------------------------------------------------------
 
 Deno.test("[PortalKnowledgeConstants] PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS maps services dir", () => {
   assertExists(PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS);

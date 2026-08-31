@@ -13,9 +13,7 @@ import { ConfigSchema } from "@exaix/schemas";
 import { ExaPathDefaults, LogLevel, PortalAnalysisMode } from "@exaix/core";
 import * as DEFAULTS from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Minimal valid config base (only truly required fields — system + paths)
-// ---------------------------------------------------------------------------
 
 interface IBaseConfig {
   system: { root: string; log_level: string };
@@ -29,9 +27,7 @@ function baseConfig(): IBaseConfig {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigSchema] validates portal_knowledge section", () => {
   const result = ConfigSchema.safeParse({

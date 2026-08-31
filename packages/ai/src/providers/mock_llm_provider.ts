@@ -24,9 +24,7 @@ import {
 import { ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ============================================================================
 // Types and Interfaces
-// ============================================================================
 
 /**
  * Recorded response from a real LLM call
@@ -127,9 +125,7 @@ export interface IMockLLMProviderOptions {
   tokensPerResponse?: ITokenCount;
 }
 
-// ============================================================================
 // Custom Error Type
-// ============================================================================
 
 /**
  * Error thrown by MockLLMProvider
@@ -141,9 +137,7 @@ export class MockLLMError extends Error {
   }
 }
 
-// ============================================================================
 // MockLLMProvider Implementation
-// ============================================================================
 
 /** Stable string key for a call site, used to match a recording against options.callSite.
  *  Includes flowStepId so two flow steps sharing (scenarioId, stepId, callIndex) — which
@@ -335,9 +329,7 @@ export class MockLLMProvider implements IModelProvider {
     }
   }
 
-  // ============================================================================
   // IModelProvider Implementation
-  // ============================================================================
 
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     if (this.strategy === "failing") {
@@ -391,9 +383,7 @@ export class MockLLMProvider implements IModelProvider {
     };
   }
 
-  // ============================================================================
   // Strategy Implementations
-  // ============================================================================
 
   /** Recorded strategy: look up a response by call site when the caller supplies one, falling
    *  back to the whole-prompt-hash lookup otherwise — unchanged for calls without options.callSite. */
@@ -535,9 +525,7 @@ export class MockLLMProvider implements IModelProvider {
     return this.responses[this.responseIndex++ % this.responses.length];
   }
 
-  // ============================================================================
   // Public Utilities
-  // ============================================================================
 
   /**
    * Get the number of calls made to this provider
@@ -625,9 +613,7 @@ export class MockLLMProvider implements IModelProvider {
     return recording;
   }
 
-  // ============================================================================
   // Private Helpers
-  // ============================================================================
 
   /**
    * Load recordings from a fixture directory
@@ -1071,9 +1057,7 @@ I will create a plan to address this request.
   }
 }
 
-// ============================================================================
 // Helper Functions
-// ============================================================================
 
 /**
  * Create a MockLLMProvider with common plan generation responses.

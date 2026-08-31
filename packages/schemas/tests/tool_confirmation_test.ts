@@ -11,7 +11,7 @@ import { assertEquals, assertFalse } from "@std/assert";
 import { ToolConfirmationDecisionSchema, ToolConfirmationRequestSchema } from "@exaix/schemas/tool_confirmation.ts";
 import { initTestDbService } from "@exaix/testing";
 
-// ── ToolConfirmationRequestSchema ─────────────────────────────────────────────
+// ToolConfirmationRequestSchema
 
 Deno.test("ToolConfirmationRequestSchema: valid request round-trips correctly", () => {
   const input = {
@@ -83,7 +83,7 @@ Deno.test("ToolConfirmationRequestSchema: empty toolName fails", () => {
   assertFalse(result.success, "Empty toolName must be rejected");
 });
 
-// ── ToolConfirmationDecisionSchema ────────────────────────────────────────────
+// ToolConfirmationDecisionSchema
 
 Deno.test("ToolConfirmationDecisionSchema: denial with TIMEOUT reason parses correctly", () => {
   const input = {

@@ -32,9 +32,7 @@ import {
 const KNOWN_MUTATING_TOOL = "write_file";
 const KNOWN_READONLY_TOOL = "read_file";
 
-// ============================================================================
 // lookupRemediationPolicy
-// ============================================================================
 
 Deno.test("tool_result_remediation_policy: lookupRemediationPolicy returns policy for known tool", () => {
   const policy = lookupRemediationPolicy(KNOWN_MUTATING_TOOL);
@@ -60,9 +58,7 @@ Deno.test("tool_result_remediation_policy: read-only tool gets normalize_then_va
   assertEquals(policy.mode, REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE);
 });
 
-// ============================================================================
 // applyRemediationPolicy — fail_closed
-// ============================================================================
 
 Deno.test("tool_result_remediation_policy: fail_closed mode returns fail_closed outcome immediately", async () => {
   const policy: IToolResultRemediationPolicy = createRemediationPolicy("run_command", REMEDIATION_MODE_FAIL_CLOSED);
@@ -77,9 +73,7 @@ Deno.test("tool_result_remediation_policy: fail_closed mode returns fail_closed 
   assertEquals(result.retriesAttempted, 0);
 });
 
-// ============================================================================
 // applyRemediationPolicy — escalate_only
-// ============================================================================
 
 Deno.test("tool_result_remediation_policy: escalate_only mode returns escalated outcome", async () => {
   const policy: IToolResultRemediationPolicy = createRemediationPolicy("run_command", REMEDIATION_MODE_ESCALATE_ONLY);
@@ -94,9 +88,7 @@ Deno.test("tool_result_remediation_policy: escalate_only mode returns escalated 
   assertEquals(result.retriesAttempted, 0);
 });
 
-// ============================================================================
 // applyRemediationPolicy — normalize_then_validate
-// ============================================================================
 
 Deno.test("tool_result_remediation_policy: normalize_then_validate without normalize fn returns normalization_failed", async () => {
   const policy: IToolResultRemediationPolicy = createRemediationPolicy(

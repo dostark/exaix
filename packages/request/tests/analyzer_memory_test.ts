@@ -19,9 +19,7 @@ import {
   setupTestLlmAnalyzer,
 } from "./test_helpers.ts";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 const MEMORY_CONTEXT_TEXT =
   "RELEVANT MEMORIES:\n- Fixed auth service bug in src/services/auth.ts\n- Added JWT validation";
@@ -40,9 +38,7 @@ function makeEnhancedRequest(memoryContext = MEMORY_CONTEXT_TEXT): EnhancedReque
 
 const VALID_JSON = makeValidJson({ taskType: RequestTaskType.BUGFIX });
 
-// ---------------------------------------------------------------------------
 // LlmAnalyzer — prompt injection
-// ---------------------------------------------------------------------------
 
 Deno.test("[LlmAnalyzer] includes memory context in LLM prompt when memories provided", async () => {
   let capturedPrompt = "";
@@ -72,9 +68,7 @@ Deno.test("[LlmAnalyzer] omits memory section from prompt when no memories provi
   assertEquals(capturedPrompt.includes("RELEVANT MEMORIES"), false);
 });
 
-// ---------------------------------------------------------------------------
 // HeuristicAnalyzer — memory keyword signals
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] includes file refs from memory context when provided", () => {
   const result = analyzeHeuristic("Fix the login bug.", {
@@ -93,9 +87,7 @@ Deno.test("[HeuristicAnalyzer] works correctly without memory context", () => {
   assertEquals(Array.isArray(result.referencedFiles), true);
 });
 
-// ---------------------------------------------------------------------------
 // RequestAnalyzer (integration) — wires memories through to LLM
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] uses memory context in LLM analysis when provided", async () => {
   let capturedPrompt = "";

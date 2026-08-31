@@ -29,7 +29,7 @@ import type { IContextBudgetManager, IContextBudgetManagerInput, IContextBudgetM
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { castAny, makeGenerateResult } from "@exaix/testing";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
@@ -210,7 +210,7 @@ class PressureBudgetManager implements IContextBudgetManager {
   }
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test(
   "[ReActLoopStrategyBudget] ReActLoopStrategy: calls contextBudgetManager.prepare() before each LLM iteration",

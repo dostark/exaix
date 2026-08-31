@@ -31,7 +31,7 @@ Deno.test("ToolRegistry run_command: result data shape is { output: string, exit
   }
 });
 
-// ── resultValidator wiring (Enforcement Point 2) ────────────────────────────
+// resultValidator wiring (Enforcement Point 2)
 
 Deno.test("ToolRegistry execute: resultValidator failure converts execution result to IToolResult failure", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "registry-validator-" });

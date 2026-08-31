@@ -58,9 +58,7 @@ async function runAgentTest(
   await assertions(result, agent);
 }
 
-// ============================================================================
 // CritiqueSchema Tests
-// ============================================================================
 
 Deno.test("[CritiqueSchema] validates correct critique", () => {
   const validCritique = {
@@ -109,9 +107,7 @@ Deno.test("[CritiqueSchema] rejects confidence out of range", () => {
   assert(!result.success);
 });
 
-// ============================================================================
 // ReflexiveAgent Basic Tests
-// ============================================================================
 
 Deno.test("[ReflexiveAgent] accepts excellent response on first iteration", async () => {
   const mockResponses = [
@@ -241,9 +237,7 @@ Deno.test("[ReflexiveAgent] tracks iterations correctly", async () => {
   });
 });
 
-// ============================================================================
 // Acceptance Logic Tests
-// ============================================================================
 
 Deno.test("[ReflexiveAgent] accepts based on confidence threshold", async () => {
   const mockResponses = [
@@ -297,9 +291,7 @@ Deno.test("[ReflexiveAgent] rejects with critical issues", async () => {
   });
 });
 
-// ============================================================================
 // Metrics Tests
-// ============================================================================
 
 Deno.test("[ReflexiveAgent] tracks metrics correctly", async () => {
   const mockResponses = [
@@ -368,9 +360,7 @@ Deno.test("[ReflexiveAgent] resets metrics", async () => {
   });
 });
 
-// ============================================================================
 // Factory Function Tests
-// ============================================================================
 
 Deno.test("[createReflexiveAgent] creates agent with defaults", () => {
   const provider = createMockProvider([]);
@@ -402,9 +392,7 @@ Deno.test("[createHighQualityReflexiveAgent] creates high quality agent", () => 
   // High quality agent should exist with stricter settings
 });
 
-// ============================================================================
 // Edge Cases
-// ============================================================================
 
 Deno.test("[ReflexiveAgent] handles critique parse failure gracefully", async () => {
   const mockResponses = [

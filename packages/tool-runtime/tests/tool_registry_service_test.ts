@@ -97,7 +97,7 @@ Deno.test("ToolRegistry: should reject unknown commands", async () => {
   assert(result.error?.includes("not allowed"));
 });
 
-// ===== Argument Validation Tests =====
+// Argument Validation Tests
 
 Deno.test("ToolRegistry: should block shell metacharacters", async () => {
   const registry = createRegistry();
@@ -167,7 +167,7 @@ Deno.test("ToolRegistry: should block unsafe grep options", async () => {
   assert(result.error?.includes("Unsafe grep option"));
 });
 
-// ===== Runtime Commands Tests =====
+// Runtime Commands Tests
 
 Deno.test("ToolRegistry: should allow safe npm subcommands", async () => {
   const registry = createRegistry();
@@ -207,7 +207,7 @@ async function runToolRegistryTest(fn: (registry: ToolRegistry, tempDir: string)
   }
 }
 
-// ===== File Operations Tests =====
+// File Operations Tests
 
 Deno.test("ToolRegistry: should create directory", async () => {
   await runToolRegistryTest(async (registry, tempDir) => {

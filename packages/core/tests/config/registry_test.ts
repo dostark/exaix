@@ -90,7 +90,7 @@ Deno.test("[configuring] EDITION_GATED_PATHS contains expected keys", () => {
   assertEquals(EDITION_GATED_PATHS.size, 3);
 });
 
-// ── resolveTier() three-tier authorization ──────────────────────────────────
+// resolveTier() three-tier authorization
 
 Deno.test("[configuring] resolveTier derives dangerous from swap:restart", () => {
   configurable({

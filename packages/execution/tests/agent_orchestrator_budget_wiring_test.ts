@@ -18,7 +18,7 @@ import type { ISnapshotStore } from "@exaix/execution";
 import { AgentOrchestrator, ExecutionContextService } from "@exaix/execution";
 import { castAny } from "@exaix/testing";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function makeMockBudgetManager(): IContextBudgetManager {
   return {
@@ -46,7 +46,7 @@ function makeMockSnapshotStore(): ISnapshotStore {
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test("[AgentOrchestrator] default production composition provides contextBudgetManager", () => {
   const executor = new AgentOrchestrator({

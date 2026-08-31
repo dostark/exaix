@@ -27,7 +27,7 @@ function serializeStructuredData(value: object): JSONValue {
   return JSON.parse(JSON.stringify(value)) as JSONValue;
 }
 
-// ── Staging state for ConfigSet/Apply ──────────────────────────
+// Staging state for ConfigSet/Apply
 interface IPendingChange {
   key: string;
   value: JSONValue;

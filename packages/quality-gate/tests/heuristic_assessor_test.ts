@@ -16,9 +16,7 @@ import { AnalysisMode } from "@exaix/core/types";
 import { QualityGateMode } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/core/request";
 
-// ---------------------------------------------------------------------------
 // Test helper — builds a minimal valid IRequestAnalysis
-// ---------------------------------------------------------------------------
 
 function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {
   return {
@@ -42,9 +40,7 @@ function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalys
   };
 }
 
-// ---------------------------------------------------------------------------
 // Vague / poor requests
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAssessor] scores vague one-liner as poor/unactionable", () => {
   const result = assessHeuristic("make it work better");
@@ -82,9 +78,7 @@ Deno.test("[HeuristicAssessor] detects question-only request", () => {
   assertExists(questionIssue);
 });
 
-// ---------------------------------------------------------------------------
 // Positive signals
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAssessor] positive: file references boost score", () => {
   const withFile =
@@ -116,9 +110,7 @@ Deno.test("[HeuristicAssessor] positive: structured requirements boost score", (
   assertEquals(structuredResult.score > unstructuredResult.score, true);
 });
 
-// ---------------------------------------------------------------------------
 // Score range and recommendation mapping
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAssessor] scores well-structured request as good/excellent", () => {
   const wellSpecified = `Implement JWT-based authentication for the REST API.
@@ -184,9 +176,7 @@ Current codebase uses Deno, Zod validation, and PostgreSQL. Auth is JWT-based.`;
   assertEquals(result.score >= 0, true);
 });
 
-// ---------------------------------------------------------------------------
 // Output shape
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAssessor] result has valid assessment shape", () => {
   const result = assessHeuristic("add login feature");
@@ -208,9 +198,7 @@ Deno.test("[HeuristicAssessor] completes in under 50ms", () => {
   assertEquals(elapsed < 50, true);
 });
 
-// ---------------------------------------------------------------------------
 // Phase-45 existingAnalysis integration
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[HeuristicAssessor] uses Phase-45 actionabilityScore as base when analysis provided",

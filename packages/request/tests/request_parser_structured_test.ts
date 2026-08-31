@@ -12,9 +12,7 @@ import { RequestParser } from "@exaix/request";
 import type { EventLogger } from "@exaix/core/logger";
 import type { JSONObject } from "@exaix/core/types";
 import type { IParsedRequestFile } from "@exaix/core/request";
-// ---------------------------------------------------------------------------
 // Logger helpers
-// ---------------------------------------------------------------------------
 
 interface LogEntry {
   level: "error" | "warn";
@@ -35,9 +33,7 @@ function createLogger(entries: LogEntry[]): EventLogger {
   } as Partial<EventLogger> as EventLogger;
 }
 
-// ---------------------------------------------------------------------------
 // YAML file helpers
-// ---------------------------------------------------------------------------
 
 async function withTempFile(content: string, fn: (path: string) => Promise<void>): Promise<void> {
   const tmpPath = await Deno.makeTempFile({ suffix: ".md" });
@@ -81,9 +77,7 @@ async function parseRequestWithFields(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Extraction tests (GREEN — fields present and valid)
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestParser] extracts acceptance_criteria from frontmatter", async () => {
   const { frontmatter, logs } = await parseRequestWithFields(
@@ -111,9 +105,7 @@ Deno.test("[RequestParser] extracts scope from frontmatter", async () => {
   assertEquals(logs.filter((l) => l.level === "warn").length, 0);
 });
 
-// ---------------------------------------------------------------------------
 // Guard tests (RED until runtime guards added to parser)
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[RequestParser] handles malformed acceptance_criteria gracefully (strips + warns)",
@@ -184,9 +176,7 @@ Deno.test(
   },
 );
 
-// ---------------------------------------------------------------------------
 // Backward compatibility
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestParser] parses existing files without new fields unchanged", async () => {
   const content = buildRequestContent("");

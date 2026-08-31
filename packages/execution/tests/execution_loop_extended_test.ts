@@ -20,7 +20,7 @@ import { initTestDbService } from "@exaix/testing";
 import { getWorkspaceActiveDir } from "@exaix/testing";
 import { readFixtureTextSync } from "@exaix/testing";
 
-// ===== executeNext tests =====
+// executeNext tests
 
 // Helper for test setup
 async function runExecutionTest(
@@ -86,7 +86,7 @@ async function runExecutionTest(
   }
 }
 
-// ===== executeNext tests =====
+// executeNext tests
 
 Deno.test("ExecutionLoop.executeNext: returns success when no plans available", async () => {
   await runExecutionTest("no-plans", async ({ loop }) => {

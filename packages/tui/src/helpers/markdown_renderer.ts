@@ -12,14 +12,14 @@ import { TUI_LAYOUT_FULL_WIDTH } from "./constants.ts";
 import { ANSI } from "./colors.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Interfaces =====
+// Interfaces
 
 export interface IRenderOptions {
   useColors: boolean;
   maxWidth?: number;
 }
 
-// ===== ANSI Styles =====
+// ANSI Styles
 
 export const MarkdownStyles = {
   h1: `${ANSI.bold}${ANSI.cyan}`, // Bold Cyan

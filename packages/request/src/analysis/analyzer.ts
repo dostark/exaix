@@ -33,9 +33,7 @@ import { type IEventLogger, LogSyncMethod } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /** Derive an actionability score from a partial heuristic result (ambiguity count + complexity proxy). */
 function heuristicActionabilityScore(partial: Partial<IRequestAnalysis>): number {
@@ -104,9 +102,7 @@ function completeFromHeuristic(
   };
 }
 
-// ---------------------------------------------------------------------------
 // RequestAnalyzer
-// ---------------------------------------------------------------------------
 
 /** Orchestrates heuristic and LLM analysis strategies to produce structured request intent analysis.
  * @visible */
@@ -182,9 +178,7 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
     return analyzeHeuristic(requestText);
   }
 
-  // -------------------------------------------------------------------------
   // Private helpers
-  // -------------------------------------------------------------------------
 
   private async _callLlmWithFallback(
     requestText: string,

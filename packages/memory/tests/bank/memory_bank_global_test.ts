@@ -29,7 +29,7 @@ import { createSampleLearning } from "@exaix/testing";
 import { createTestMemoryBankWithGlobal } from "../helpers/memory_bank_harness.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
-// ===== ILearning Schema Tests =====
+// ILearning Schema Tests
 
 Deno.test("LearningSchema: validates minimal learning", () => {
   const learning = createSampleLearning({
@@ -128,7 +128,7 @@ Deno.test("LearningSchema: rejects invalid status", () => {
   assertEquals(result.success, false);
 });
 
-// ===== GlobalMemory Schema Tests =====
+// GlobalMemory Schema Tests
 
 Deno.test("GlobalMemorySchema: validates empty global memory", () => {
   const globalMem: IGlobalMemory = {
@@ -197,7 +197,7 @@ Deno.test("GlobalMemorySchema: validates populated global memory", () => {
   assertEquals(result.success, true);
 });
 
-// ===== MemoryBankService Global Memory Tests =====
+// MemoryBankService Global Memory Tests
 
 Deno.test("MemoryBankService: getGlobalMemory returns null for new installation", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -363,7 +363,7 @@ Deno.test("MemoryBankService: addGlobalLearning logs to IActivity Journal", asyn
   }
 });
 
-// ===== Promote ILearning Tests =====
+// Promote ILearning Tests
 
 Deno.test("MemoryBankService: promoteLearning moves from project to global", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -489,7 +489,7 @@ Deno.test("MemoryBankService: promoteLearning from non-existent project throws",
   }
 });
 
-// ===== Demote ILearning Tests =====
+// Demote ILearning Tests
 
 Deno.test("MemoryBankService: demoteLearning moves from global to project", async () => {
   const { service, cleanup } = await createTestMemoryBankWithGlobal({
@@ -696,7 +696,7 @@ Deno.test("MemoryBankService: demoteLearning to non-existent project throws", as
   }
 });
 
-// ===== Global Stats Tests =====
+// Global Stats Tests
 
 Deno.test("MemoryBankService: getGlobalStats returns accurate statistics", async () => {
   const { config, cleanup } = await initTestDbService();

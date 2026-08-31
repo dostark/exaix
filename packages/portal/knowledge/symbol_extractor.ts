@@ -23,9 +23,7 @@ import {
   SystemCommand,
 } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 /** Options controlling symbol extraction behaviour. */
 export interface ISymbolExtractorOptions {
@@ -53,9 +51,7 @@ export interface IDocCommandRunner {
   run(entrypoint: string, portalPath: string): Promise<string | null>;
 }
 
-// ---------------------------------------------------------------------------
 // Types: deno doc --json node shapes
-// ---------------------------------------------------------------------------
 
 /** A single parameter from a deno doc function definition. */
 export interface IDenoDocParam {
@@ -126,9 +122,7 @@ class DenoDocCommandRunner implements IDocCommandRunner {
 /** Default real runner used in production. */
 const DEFAULT_RUNNER: IDocCommandRunner = new DenoDocCommandRunner();
 
-// ---------------------------------------------------------------------------
 // Kind mapping
-// ---------------------------------------------------------------------------
 
 const KIND_MAP: Record<string, ISymbolEntry["kind"] | undefined> = {
   function: "function",
@@ -146,9 +140,7 @@ function mapKind(denoKind: string, node: IDenoDocNode): ISymbolEntry["kind"] | n
   return KIND_MAP[denoKind] ?? null;
 }
 
-// ---------------------------------------------------------------------------
 // Signature reconstruction
-// ---------------------------------------------------------------------------
 
 function buildSignature(name: string, node: IDenoDocNode): string {
   if (node.functionDef) {
@@ -164,9 +156,7 @@ function buildSignature(name: string, node: IDenoDocNode): string {
   return name;
 }
 
-// ---------------------------------------------------------------------------
 // PageRank scoring
-// ---------------------------------------------------------------------------
 
 function computePageRankScores(
   symbols: ISymbolEntry[],
@@ -188,9 +178,7 @@ function computePageRankScores(
   }));
 }
 
-// ---------------------------------------------------------------------------
 // SymbolExtractor
-// ---------------------------------------------------------------------------
 
 /** Normalise raw `deno doc --json` output into the legacy flat-node format. Handles both Deno 1.x (bare array) and Deno 2.x (`{version, nodes: {...}}`). */
 function parseDenoDocNodes(raw: string): IDenoDocNode[] {

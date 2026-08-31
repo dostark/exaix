@@ -11,8 +11,9 @@ import { type ISpinnerState, renderSpinner } from "./spinner.ts";
 import { TUI_ICON_SUCCESS } from "./constants.ts";
 import { MessageType } from "@exaix/core";
 import { type SpinnerStyle, StatusIndicator } from "../types/enums.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Status Bar Interfaces =====
+// Status Bar Interfaces
 
 export interface IStatusBarItem {
   text: string;
@@ -41,7 +42,7 @@ export interface IMultiLineStatusBarState extends IStatusBarState {
   expanded: boolean;
 }
 
-// ===== Status Bar Rendering =====
+// Status Bar Rendering
 
 /**
  * Create initial status bar state
@@ -174,7 +175,7 @@ function truncateWithEllipsis(text: string, maxLen: number, _theme: ITuiTheme): 
   return text.slice(0, i) + "…";
 }
 
-// ===== Common Status Bar Helpers =====
+// Common Status Bar Helpers
 
 /**
  * Create a view title item
@@ -203,8 +204,8 @@ export function createCountItem(count: number, label: string, theme: ITuiTheme):
  */
 export function createStatusItem(
   status: StatusIndicator,
-  label?: string,
-  theme?: ITuiTheme,
+  label?: Opt<string, Reason.OptionalInput>,
+  theme?: Opt<ITuiTheme, Reason.UiDefault>,
 ): IStatusBarItem {
   const icons: Partial<Record<StatusIndicator, string>> = {
     [StatusIndicator.ACTIVE]: "●",
@@ -251,7 +252,7 @@ export function createTimestampItem(date: Date, theme: ITuiTheme): IStatusBarIte
   };
 }
 
-// ===== Status Bar Updates =====
+// Status Bar Updates
 
 /**
  * Set status bar message
@@ -302,14 +303,17 @@ export function setRightItems(state: IStatusBarState, items: IStatusBarItem[]): 
 /**
  * Set spinner state
  */
-export function setSpinner(state: IStatusBarState, spinner: ISpinnerState | undefined): IStatusBarState {
+export function setSpinner(
+  state: IStatusBarState,
+  spinner: Opt<ISpinnerState, Reason.OptionalInput>,
+): IStatusBarState {
   return {
     ...state,
     spinner,
   };
 }
 
-// ===== Multi-Line Status Bar =====
+// Multi-Line Status Bar
 
 /**
  * Create multi-line status bar state

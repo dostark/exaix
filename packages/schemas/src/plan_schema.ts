@@ -53,9 +53,7 @@ export const PlanFrontmatterSchema = z.object({
 
 export type PlanFrontmatter = z.infer<typeof PlanFrontmatterSchema>;
 
-// ============================================================================
 // Plan Step Schema
-// ============================================================================
 
 /**
  * Zod schema for individual tool actions within a step
@@ -104,9 +102,7 @@ export const PlanStepSchema = z.object({
 
 export type IPlanStep = z.infer<typeof PlanStepSchema>;
 
-// ============================================================================
 // QA Coverage Schemas (Flexible)
-// ============================================================================
 
 const QACoverageStatusSchema = z.enum(["PASS", "FAIL"]);
 
@@ -128,9 +124,7 @@ const QAE2ECaseSchema = z.object({
   status: QACoverageStatusSchema,
 }).passthrough();
 
-// ============================================================================
 // Plan Schema
-// ============================================================================
 
 /** Also supports specialized agent outputs (analysis, security, QA, performance). */
 export const PlanSchema = z.object({
@@ -151,9 +145,7 @@ export const PlanSchema = z.object({
   /** Optional: Risk assessment */
   risks: z.array(z.string()).optional(),
 
-  // ============================================================================
   // Specialized Agent Fields (Optional)
-  // ============================================================================
 
   /** Optional: Analysis results for code analysis agents */
   analysis: z.object({
@@ -291,9 +283,7 @@ export const PlanSchema = z.object({
 
 export type Plan = z.infer<typeof PlanSchema>;
 
-// ============================================================================
 // Specialized Types
-// ============================================================================
 
 /** Not cached, so a schema change at runtime is never stale. */
 export function getPlanJsonSchema(): Record<string, JSONValue> {

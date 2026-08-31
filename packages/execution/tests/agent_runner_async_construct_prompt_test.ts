@@ -18,7 +18,7 @@ import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IPa
 import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "@exaix/core";
 import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 
@@ -84,7 +84,7 @@ function makeDropFirstManager(): IContextBudgetManager {
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test("[IAgentRunner] constructPrompt calls contextBudgetManager.prepare() when configured", async () => {
   const { manager, captured } = makeCapturingManager();

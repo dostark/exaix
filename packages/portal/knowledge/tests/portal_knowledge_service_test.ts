@@ -26,9 +26,7 @@ import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
 import type { ISymbolEntry } from "@exaix/schemas";
 
-// ---------------------------------------------------------------------------
 // Mock helpers
-// ---------------------------------------------------------------------------
 
 function makeMockMemoryBank(): IMemoryBankService {
   return {
@@ -150,9 +148,7 @@ async function makeTempPortalPython(): Promise<{
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[PortalKnowledgeService] quick mode avoids LLM calls", async () => {
   const tempDir = await makeTempPortal();
@@ -491,9 +487,7 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
   }
 });
 
-// ============================================================================
 // getRelevantContext
-// ============================================================================
 
 Deno.test("[PortalKnowledgeService] getRelevantContext returns undefined when embedding disabled", async () => {
   const tempDir = await Deno.makeTempDir();

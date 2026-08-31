@@ -78,7 +78,7 @@ export interface IOverrideEntry {
   swap_class: string;
 }
 
-// ── Typed config event payloads ──────────────────────────────────────────────
+// Typed config event payloads
 // Unlike ConfigUpdated (which passes inline literals), these are named interfaces so
 // consumers can assert on payload fields by type.
 
@@ -616,7 +616,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return listLockedKeys(this.db);
   }
 
-  // ── Integrity checksum ─────────────────────────────────────────────────────
+  // Integrity checksum
 
   /** SHA-256 over the sorted effective config. DB-sourced via getAllEffectiveValues, never the in-memory store, so
    *  on a DaemonConfigAdapter the checksum still reflects the persisted DB an out-of-band edit mutates. The synthetic

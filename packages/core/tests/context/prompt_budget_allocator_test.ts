@@ -16,9 +16,7 @@ import type { ITokenizer } from "@exaix/core/func";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK, SECTION_BASE_WEIGHTS, SECTION_FLOORS } from "@exaix/core";
 
-// ============================================================================
 // Test 1: Base allocation respects model windows and safety buffer
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] allocates budgets respecting model context window", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -36,9 +34,7 @@ Deno.test("[PromptBudgetAllocator] allocates budgets respecting model context wi
   assertEquals(totalAllocated + budget.safetyBufferTokens, budget.totalBudgetTokens);
 });
 
-// ============================================================================
 // Test 2: Base allocation enforces section floors
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] enforces SECTION_FLOORS for system and plan", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -49,9 +45,7 @@ Deno.test("[PromptBudgetAllocator] enforces SECTION_FLOORS for system and plan",
   assertGreater(budget.sections.plan, SECTION_FLOORS.plan - 1);
 });
 
-// ============================================================================
 // Test 3: Waterfall reallocation shifts surplus from empty sections
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] reallocates surplus from empty memory/skills to plan", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -67,9 +61,7 @@ Deno.test("[PromptBudgetAllocator] reallocates surplus from empty memory/skills 
   assertGreater(budget.sections.plan, SECTION_BASE_WEIGHTS.plan * budget.totalBudgetTokens * 0.9);
 });
 
-// ============================================================================
 // Test 4: Base weights are applied proportionally
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] applies base weights to allocate sections", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -86,9 +78,7 @@ Deno.test("[PromptBudgetAllocator] applies base weights to allocate sections", a
   assertGreater(planRatio, 0.25);
 });
 
-// ============================================================================
 // Test 5: Unsupported model falls back to default
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -100,9 +90,7 @@ Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", asy
   assertGreater(budget.sections.plan, 0);
 });
 
-// ============================================================================
 // Test 6: Local model defaults to strict budgeting now (DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = true)
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] local model defaults to strict budget enforcement", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -117,9 +105,7 @@ Deno.test("[PromptBudgetAllocator] local model defaults to strict budget enforce
   assertGreater(budget.sections.plan, SECTION_FLOORS.plan - 1);
 });
 
-// ============================================================================
 // Test 7: Local model with enforcement enabled uses 32k strict budgeting
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local policy enabled", async () => {
   const allocator = new PromptBudgetAllocator({
@@ -138,9 +124,7 @@ Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local 
   assertGreater(budget.sections.plan, SECTION_FLOORS.plan - 1);
 });
 
-// ============================================================================
 // Test 8: Unknown cloud model stays strict and uses cloud fallback
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fallback", async () => {
   const allocator = new PromptBudgetAllocator();
@@ -151,9 +135,7 @@ Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fal
   assertGreater(budget.sections.plan, 0);
 });
 
-// ============================================================================
 // Test 9: Cloud enforcement can be disabled via policy override
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud policy disabled", async () => {
   const allocator = new PromptBudgetAllocator({
@@ -169,9 +151,7 @@ Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud p
   assertEquals(budget.sections.plan, 128_000);
 });
 
-// ============================================================================
 // Test 10: Overfill with enforcement ON throws ContextBudgetExceededError
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] overfill throws ContextBudgetExceededError when enforcement enabled", async () => {
   const allocator = new PromptBudgetAllocator({
@@ -190,9 +170,7 @@ Deno.test("[PromptBudgetAllocator] overfill throws ContextBudgetExceededError wh
   );
 });
 
-// ============================================================================
 // Test 11: Error message includes Object.keys(sections).length
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] error message includes sections count", async () => {
   const allocator = new PromptBudgetAllocator({
@@ -213,9 +191,7 @@ Deno.test("[PromptBudgetAllocator] error message includes sections count", async
   }
 });
 
-// ============================================================================
 // Test 12: Underfill — normal allocation, no error
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] underfill does not throw", async () => {
   const allocator = new PromptBudgetAllocator({ cloud: true, enabled: true });
@@ -228,9 +204,7 @@ Deno.test("[PromptBudgetAllocator] underfill does not throw", async () => {
   assert(budget.sections.plan > 0);
 });
 
-// ============================================================================
 // Test 13: enforcement.enabled overrides local:false
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] enabled:true overrides local:false sub-field", async () => {
   const allocator = new PromptBudgetAllocator({
@@ -249,9 +223,7 @@ Deno.test("[PromptBudgetAllocator] enabled:true overrides local:false sub-field"
   assert(budget.sections.system < LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
 });
 
-// ============================================================================
 // Request-Adaptive Weight Reallocation tests
-// ============================================================================
 
 function makeAnalysis(overrides: Partial<{
   taskType: RequestTaskType;
@@ -369,9 +341,7 @@ Deno.test("[PromptBudgetAllocator] ratio floors keep plan >= 0.30 after adjustme
   assert(budget.sections.system / usable >= 0.17, "system ratio should be >= 0.17 after floor + renormalize");
 });
 
-// ============================================================================
 // Budget event emission tests
-// ============================================================================
 
 interface CapturedEvent {
   action: string;
@@ -476,9 +446,7 @@ Deno.test("[PromptBudgetAllocator] budget events include tokenSource field", asy
   assertEquals(allocEvents[0].payload.tokenSource, "bpe");
 });
 
-// ============================================================================
 // Tokenizer integration tests
-// ============================================================================
 
 Deno.test("[PromptBudgetAllocator] uses injected ITokenizer when provided", async () => {
   const tokenizer: ITokenizer = new AiTokenEstimatorTokenizer();

@@ -26,9 +26,7 @@ import {
   DEFAULT_QG_PROCEED_THRESHOLD,
 } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /** Config that turns on hybrid mode with default thresholds. */
 function makeConfig(
@@ -93,9 +91,7 @@ const MID_SCORE_REQUEST = "The authentication system is broken and users cannot 
 
 const LOW_SCORE_REQUEST = "ok"; // < 20 chars → score = 10 → REJECT
 
-// ---------------------------------------------------------------------------
 // Mode: heuristic
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] heuristic mode avoids LLM calls", async () => {
   let generateCalled = false;
@@ -123,9 +119,7 @@ Deno.test("[RequestQualityGate] heuristic mode avoids LLM calls", async () => {
   assertEquals(generateCalled, false);
 });
 
-// ---------------------------------------------------------------------------
 // Mode: hybrid
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] hybrid mode skips LLM for high scores", async () => {
   let generateCalled = false;
@@ -179,9 +173,7 @@ Deno.test("[RequestQualityGate] hybrid mode calls LLM for borderline scores", as
   assertEquals(generateCalled, true);
 });
 
-// ---------------------------------------------------------------------------
 // Recommendation routing
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] recommends proceed above threshold", async () => {
   const gate = new RequestQualityGate(
@@ -208,9 +200,7 @@ Deno.test("[RequestQualityGate] recommends needs-clarification in poor range", a
   assertEquals(result.recommendation, RequestQualityRecommendation.NEEDS_CLARIFICATION);
 });
 
-// ---------------------------------------------------------------------------
 // AutoEnrich
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] enriches request when autoEnrich enabled", async () => {
   const enrichedText = "Improved: Create config file with full schema validation and defaults";
@@ -226,9 +216,7 @@ Deno.test("[RequestQualityGate] enriches request when autoEnrich enabled", async
   assertEquals(result.enrichedBody, enrichedText);
 });
 
-// ---------------------------------------------------------------------------
 // BlockUnactionable
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] blocks unactionable when configured", async () => {
   const gate = new RequestQualityGate(
@@ -238,9 +226,7 @@ Deno.test("[RequestQualityGate] blocks unactionable when configured", async () =
   assertEquals(result.recommendation, RequestQualityRecommendation.REJECT);
 });
 
-// ---------------------------------------------------------------------------
 // Activity logging
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] logs quality_assessed activity", async () => {
   const mockLogger = createMockEventLogger();
@@ -259,9 +245,7 @@ Deno.test("[RequestQualityGate] logs quality_assessed activity", async () => {
   assertEquals(mockLogger.loggedEvents[0].target, "req-123");
 });
 
-// ---------------------------------------------------------------------------
 // Disabled gate
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityGate] handles disabled gate (returns proceed)", async () => {
   const gate = new RequestQualityGate(
@@ -271,9 +255,7 @@ Deno.test("[RequestQualityGate] handles disabled gate (returns proceed)", async 
   assertEquals(result.recommendation, RequestQualityRecommendation.PROCEED);
 });
 
-// ---------------------------------------------------------------------------
 // Config wiring — buildQualityGateConfig
-// ---------------------------------------------------------------------------
 
 Deno.test("[buildQualityGateConfig] maps enabled flag from config", () => {
   const cfg = buildQualityGateConfig({ enabled: false });

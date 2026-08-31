@@ -51,7 +51,7 @@ function mapConfidenceLevelToAssessment(
   }
 }
 
-// ===== Configuration Schema =====
+// Configuration Schema
 
 /**
  * Session memory configuration
@@ -70,7 +70,7 @@ export const SessionMemoryConfigSchema = z.object({
 
 export type SessionMemoryConfig = z.infer<typeof SessionMemoryConfigSchema>;
 
-// ===== Memory Context Schema =====
+// Memory Context Schema
 
 /**
  * A memory item retrieved for context injection
@@ -127,7 +127,7 @@ export const SaveInsightResultSchema = z.object({
 
 export type SaveInsightResult = z.infer<typeof SaveInsightResultSchema>;
 
-// ===== Default Configuration =====
+// Default Configuration
 
 export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
   enabled: true,
@@ -139,7 +139,7 @@ export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
   maxContextLength: DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
 };
 
-// ===== Session Memory Service =====
+// Session Memory Service
 
 export class SessionMemoryService {
   private config: SessionMemoryConfig;
@@ -489,7 +489,7 @@ export class SessionMemoryService {
     return { ...this.config };
   }
 
-  // ===== Private Helper Methods =====
+  // Private Helper Methods
 
   /**
    * Extract key terms from a query for better search

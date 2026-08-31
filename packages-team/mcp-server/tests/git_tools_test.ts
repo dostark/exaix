@@ -24,9 +24,7 @@ interface IMCPResponseShape<TResult = any> {
   result?: TResult;
 }
 
-// ============================================================================
 // git_create_branch Tool Tests
-// ============================================================================
 
 Deno.test("git_create_branch: successfully creates feature branch", async () => {
   const ctx = await initMCPTest({ initGit: true });
@@ -96,9 +94,7 @@ Deno.test("git_create_branch: rejects non-git repository", async () => {
   }
 });
 
-// ============================================================================
 // git_commit Tool Tests
-// ============================================================================
 
 Deno.test("git_commit: successfully commits changes", async () => {
   const ctx = await initMCPTest({
@@ -174,9 +170,7 @@ Deno.test("git_commit: rejects when nothing to commit", async () => {
   }
 });
 
-// ============================================================================
 // git_status Tool Tests
-// ============================================================================
 
 Deno.test("git_status: shows clean repository status", async () => {
   const ctx = await initMCPTest({ initGit: true });
@@ -231,9 +225,7 @@ Deno.test("git_status: rejects non-git repository", async () => {
   }
 });
 
-// ============================================================================
 // git_commit Advanced Tests
-// ============================================================================
 
 Deno.test("git_commit: supports --signoff flag", async () => {
   const ctx = await initMCPTest({ initGit: true, fileContent: { "test.txt": "content" } });
@@ -326,9 +318,7 @@ Deno.test("git_commit: supports --amend flag", async () => {
   }
 });
 
-// ============================================================================
 // git_status Advanced Tests
-// ============================================================================
 
 Deno.test("git_status: supports --short flag explicitly", async () => {
   const ctx = await initMCPTest({
@@ -417,9 +407,7 @@ Deno.test("git_status: supports include_untracked=false", async () => {
   }
 });
 
-// ============================================================================
 // git_create_branch Advanced Tests
-// ============================================================================
 
 Deno.test("git_create_branch: supports --track flag", async () => {
   const ctx = await initMCPTest({ initGit: true });
@@ -516,9 +504,7 @@ Deno.test("git_create_branch: supports --force flag", async () => {
   }
 });
 
-// ============================================================================
 // git_log Tool Tests
-// ============================================================================
 
 Deno.test("git_log: supports max_count and oneline format", async () => {
   const ctx = await initMCPTest({ initGit: true, fileContent: { "a.txt": "one" } });
@@ -593,9 +579,7 @@ Deno.test("git_log: supports path filter", async () => {
   }
 });
 
-// ============================================================================
 // git_worktree Tool Tests
-// ============================================================================
 
 Deno.test("git_worktree: supports add/list/remove actions", async () => {
   const ctx = await initMCPTest({ initGit: true });
@@ -659,9 +643,7 @@ Deno.test("git_worktree: supports add/list/remove actions", async () => {
   }
 });
 
-// ============================================================================
 // [security] validateArgs guards through MCP surface
-// ============================================================================
 
 Deno.test("[security] git_commit: validateArgs is called on stage and commit args (stub bypasses validation)", async () => {
   const ctx = await initMCPTest({ initGit: true, fileContent: { "test.txt": "content" } });

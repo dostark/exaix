@@ -27,7 +27,7 @@ import {
 import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
 import { ScrollDirection } from "@exaix/tui";
 
-// ===== renderHelpScreen tests =====
+// renderHelpScreen tests
 
 Deno.test("renderHelpScreen: renders basic help screen", () => {
   const result = renderHelpScreen({
@@ -110,7 +110,7 @@ Deno.test("renderHelpScreen: respects useColors option", () => {
   assertEquals(resultColors.some((l: string) => l.includes("\x1b[")), true);
 });
 
-// ===== keyBindingsToHelpSections tests =====
+// keyBindingsToHelpSections tests
 
 Deno.test("keyBindingsToHelpSections: converts bindings to sections", () => {
   const bindings: IKeyBinding<"action1" | "action2">[] = [
@@ -141,7 +141,7 @@ Deno.test("keyBindingsToHelpSections: defaults to General category", () => {
   assertEquals(sections[0].title, "General");
 });
 
-// ===== Standard help sections tests =====
+// Standard help sections tests
 
 Deno.test("getNavigationHelpSection: returns navigation section", () => {
   const section = getNavigationHelpSection();
@@ -193,7 +193,7 @@ Deno.test("getGlobalHelpSection: returns global section", () => {
   assertEquals(section.items.some((i: { key: string; description?: string; action?: string }) => i.key === "q"), true);
 });
 
-// ===== renderQuickHelp tests =====
+// renderQuickHelp tests
 
 Deno.test("renderQuickHelp: renders quick help bar", () => {
   const items = [
@@ -229,7 +229,7 @@ Deno.test("getStandardQuickHelp: returns standard items", () => {
   assertEquals(items.some((i: { key: string; action?: string }) => i.action === "Help"), true);
 });
 
-// ===== Help Dialog State tests =====
+// Help Dialog State tests
 
 Deno.test("createHelpDialogState: creates initial state", () => {
   const state = createHelpDialogState();
@@ -313,7 +313,7 @@ Deno.test("scrollHelpDialog: does nothing when not visible", () => {
   assertEquals(scrolled.scrollOffset, 0);
 });
 
-// ===== handleHelpKey tests =====
+// handleHelpKey tests
 
 Deno.test("handleHelpKey: opens help with ?", () => {
   const state = createHelpDialogState();

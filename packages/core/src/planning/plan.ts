@@ -40,9 +40,7 @@ export class PlanService {
     this.workspaceRequestsDir = join(root, workspace, config.paths.requests!);
   }
 
-  // -------------------------------------------------------------------------
   // Private helpers
-  // -------------------------------------------------------------------------
 
   /** Parse YAML frontmatter and body from plan file content. Returns null when absent. */
   private parseFrontmatter(
@@ -82,9 +80,7 @@ export class PlanService {
     throw new Error(`Plan not found: ${planId}`);
   }
 
-  // -------------------------------------------------------------------------
   // Public API
-  // -------------------------------------------------------------------------
 
   async approve(planId: string, skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
     const sourcePath = join(this.workspacePlansDir, `${planId}.md`);

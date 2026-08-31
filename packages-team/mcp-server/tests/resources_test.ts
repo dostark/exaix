@@ -33,9 +33,7 @@ async function createTestPortal(tempDir: string, portalName: string, files: Reco
   return portalPath;
 }
 
-// ============================================================================
 // URI Parsing Tests
-// ============================================================================
 
 Deno.test("parsePortalURI: parses valid portal URI", () => {
   const result = parsePortalURI("portal://MyApp/src/auth.ts");
@@ -71,9 +69,7 @@ Deno.test("buildPortalURI: builds valid URI", () => {
   assertEquals(uri, "portal://MyApp/src/auth.ts");
 });
 
-// ============================================================================
 // Resource Discovery Tests
-// ============================================================================
 
 Deno.test("discoverPortalResources: discovers files in portal", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "mcp-resources-" });

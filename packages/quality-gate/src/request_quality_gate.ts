@@ -29,9 +29,7 @@ import { LlmQualityAssessor } from "./llm_assessor.ts";
 import { enrichRequest } from "./request_enricher_llm.ts";
 import { ClarificationEngine } from "./clarification_engine.ts";
 
-// ---------------------------------------------------------------------------
 // Config factory
-// ---------------------------------------------------------------------------
 
 /** TOML-derived quality-gate input before defaults are applied. */
 export interface IQualityGateTomlConfig {
@@ -75,9 +73,7 @@ export function buildRequestQualityGateFromConfig(
   return new RequestQualityGate(buildQualityGateConfig(cfg), provider, validator, eventLogger);
 }
 
-// ---------------------------------------------------------------------------
 // RequestQualityGate
-// ---------------------------------------------------------------------------
 
 /** Applies configured heuristic, LLM, or hybrid request-quality assessment. */
 export class RequestQualityGate implements IRequestQualityGateService {
@@ -105,9 +101,7 @@ export class RequestQualityGate implements IRequestQualityGateService {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // IRequestQualityGateService — assess
-  // ---------------------------------------------------------------------------
 
   async assess(
     requestText: string,
@@ -155,18 +149,14 @@ export class RequestQualityGate implements IRequestQualityGateService {
     return result;
   }
 
-  // ---------------------------------------------------------------------------
   // IRequestQualityGateService — enrich
-  // ---------------------------------------------------------------------------
 
   enrich(requestText: string, issues: IRequestQualityIssue[]): Promise<string> {
     if (!this.provider) return Promise.resolve(requestText);
     return enrichRequest(this.provider, requestText, issues);
   }
 
-  // ---------------------------------------------------------------------------
   // IRequestQualityGateService — clarification
-  // ---------------------------------------------------------------------------
 
   async startClarification(
     requestId: string,
@@ -203,9 +193,7 @@ export class RequestQualityGate implements IRequestQualityGateService {
     return true;
   }
 
-  // ---------------------------------------------------------------------------
   // Private helpers
-  // ---------------------------------------------------------------------------
 
   private async _runAssessment(requestText: string): Promise<IRequestQualityAssessment> {
     const { minimum, proceed } = this.config.thresholds;

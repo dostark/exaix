@@ -66,7 +66,7 @@ export interface IContextBudgetManager {
   prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput>;
 }
 
-// ─── Protected kinds ──────────────────────────────────────────────────────────
+// Protected kinds
 // Segments of these kinds are always kept regardless of priority or budget pressure.
 const ALWAYS_KEEP_KINDS = new Set<IContextSegment["kind"]>([
   ContextSegmentKindSchema.enum.system,

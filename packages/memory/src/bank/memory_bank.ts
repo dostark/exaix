@@ -172,7 +172,7 @@ export class MemoryBankService implements IMemoryBankService {
     throw lastError || new Error("Unexpected error in file locking");
   }
 
-  // ===== Project Memory Operations =====
+  // Project Memory Operations
 
   /** Get project memory for a specific portal @param portal - Portal name @returns Project memory or null if not found */
   async getProjectMemory(portal: string): Promise<IProjectMemory | null> {
@@ -364,7 +364,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  // ===== Execution Memory Operations =====
+  // Execution Memory Operations
 
   /** Create execution memory record @param execution - Execution memory data */
   async createExecutionRecord(execution: IExecutionMemory): Promise<void> {
@@ -451,7 +451,7 @@ export class MemoryBankService implements IMemoryBankService {
     }
   }
 
-  // ===== Global Memory Operations =====
+  // Global Memory Operations
 
   /** Get global memory @returns Global memory or null if not initialized */
   async getGlobalMemory(): Promise<IGlobalMemory | null> {
@@ -767,7 +767,7 @@ export class MemoryBankService implements IMemoryBankService {
     await this.writeMarkdownFile(join(this.globalDir, "learnings.md"), md);
   }
 
-  // ===== Search Operations =====
+  // Search Operations
 
   /** Search memory banks for matching content @param query - Search query string @param options - Search options (portal filter, limit) @returns Array of search results */
   async searchMemory(
@@ -852,7 +852,7 @@ export class MemoryBankService implements IMemoryBankService {
     }));
   }
 
-  // ===== Index Management =====
+  // Index Management
 
   /** Rebuild all indices for fast lookups Creates: - files.json: File path → executions mapping - patterns.json: Pattern → projects mapping - tags.json: Tag → projects/patterns mapping */
   async rebuildIndices(): Promise<void> {
@@ -909,7 +909,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  // ===== Helper Methods =====
+  // Helper Methods
 
   /**
    * Read markdown file content

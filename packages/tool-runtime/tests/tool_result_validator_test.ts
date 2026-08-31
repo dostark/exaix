@@ -13,9 +13,7 @@ import {
   validateToolResultEnvelope,
 } from "@exaix/schemas/tool_result_validator.ts";
 
-// ============================================================================
 // validateToolResultEnvelope — envelope validation
-// ============================================================================
 
 Deno.test("tool_result_validator: valid success envelope passes", () => {
   const result = validateToolResultEnvelope("run_command", {
@@ -105,9 +103,7 @@ Deno.test("tool_result_validator: failure issues do not embed raw payload values
   }
 });
 
-// ============================================================================
 // IToolResultValidator interface conformance
-// ============================================================================
 
 Deno.test("tool_result_validator: IToolResultValidator interface is exported and callable", () => {
   const validator: IToolResultValidator = {

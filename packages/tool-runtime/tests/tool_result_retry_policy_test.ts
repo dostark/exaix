@@ -35,9 +35,7 @@ const SAFE_RETRY_TOOL = "search_files";
 // idempotent=false, side_effect_scope=PORTAL (mutating, unsafe to retry)
 const UNSAFE_RETRY_TOOL = "write_file";
 
-// ============================================================================
 // retry_once — successful retry
-// ============================================================================
 
 Deno.test("tool_result_retry_policy: retry_once with successful retry returns passed", async () => {
   const policy: IToolResultRemediationPolicy = createRemediationPolicy(SAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {
@@ -100,9 +98,7 @@ Deno.test("tool_result_retry_policy: retry_once without retry callback returns f
   assertEquals(result.retriesAttempted, 0);
 });
 
-// ============================================================================
 // retry_with_backoff — bounded retry
-// ============================================================================
 
 Deno.test("tool_result_retry_policy: retry_with_backoff retries up to maxRetries and returns passed on success", async () => {
   let callCount = 0;
@@ -157,9 +153,7 @@ Deno.test("tool_result_retry_policy: retry_with_backoff returns retry_exhausted 
   assertEquals(result.retriesAttempted, 2);
 });
 
-// ============================================================================
 // Idempotency and side-effect guards
-// ============================================================================
 
 Deno.test("tool_result_retry_policy: retry blocked for non-idempotent tool when requiresIdempotency=true", async () => {
   const policy: IToolResultRemediationPolicy = createRemediationPolicy(UNSAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {

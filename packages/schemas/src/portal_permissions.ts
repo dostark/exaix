@@ -16,9 +16,7 @@ import {
 } from "@exaix/core";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
-// ============================================================================
 // Permission Check Interfaces
-// ============================================================================
 
 /**
  * Result of a permission check
@@ -68,9 +66,7 @@ export interface IPortalPermissionsChecker {
   ): IPermissionCheckResult;
 }
 
-// ============================================================================
 // Security Modes
-// ============================================================================
 
 /** sandboxed: no file system access, all operations via MCP tools. hybrid: read-only
  *  portal access, writes via MCP tools with audit. */
@@ -81,9 +77,7 @@ export const SecurityModeSchema = z.nativeEnum(SecurityMode);
  */
 export const PortalOperationSchema = z.nativeEnum(PortalOperation);
 
-// ============================================================================
 // Enhanced Permission Model
-// ============================================================================
 
 /**
  * Permission action types
@@ -118,9 +112,7 @@ export const PermissionSchema = z.object({
 
 export type IPermission = z.infer<typeof PermissionSchema>;
 
-// ============================================================================
 // Portal Security Configuration
-// ============================================================================
 
 /**
  * Security settings for a portal

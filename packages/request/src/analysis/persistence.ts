@@ -14,9 +14,7 @@ import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/core/request";
 
-// ---------------------------------------------------------------------------
 // Path helpers
-// ---------------------------------------------------------------------------
 
 /** Derive the `_analysis.json` path from the request `.md` path, e.g.
  * `Workspace/Requests/my-request.md` → `Workspace/Requests/my-request_analysis.json`. */
@@ -27,9 +25,7 @@ export function deriveAnalysisPath(requestFilePath: string): string {
   return `${base}_analysis.json`;
 }
 
-// ---------------------------------------------------------------------------
 // Save
-// ---------------------------------------------------------------------------
 
 /** Persist `analysis` alongside `requestFilePath` as `<stem>_analysis.json`, atomically
  * (temp file, then rename). */
@@ -44,9 +40,7 @@ export async function saveAnalysis(
   await Deno.rename(tmpPath, finalPath);
 }
 
-// ---------------------------------------------------------------------------
 // Load
-// ---------------------------------------------------------------------------
 
 /** Load and validate the `_analysis.json` sibling of `requestFilePath`; returns `null` if
  * missing, unparsable, or schema-invalid. */

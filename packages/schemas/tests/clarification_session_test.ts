@@ -10,9 +10,7 @@
 import { assertEquals } from "@std/assert";
 import { ClarificationQuestionSchema, ClarificationRoundSchema, ClarificationSessionSchema } from "@exaix/schemas";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function validQuestion() {
   return {
@@ -50,9 +48,7 @@ function validSession() {
   };
 }
 
-// ---------------------------------------------------------------------------
 // ClarificationQuestionSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationQuestionSchema] validates a valid question", () => {
   const result = ClarificationQuestionSchema.safeParse(validQuestion());
@@ -75,9 +71,7 @@ Deno.test("[ClarificationQuestionSchema] rejects unknown category value", () => 
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // ClarificationRoundSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationRoundSchema] validates round without answers", () => {
   const result = ClarificationRoundSchema.safeParse(validRound());
@@ -101,9 +95,7 @@ Deno.test("[ClarificationRoundSchema] rejects round number below 1", () => {
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // ClarificationSessionSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationSessionSchema] validates complete session", () => {
   const result = ClarificationSessionSchema.safeParse(validSession());

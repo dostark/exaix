@@ -30,9 +30,7 @@ import {
 } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/core/request";
 import type { IRequestAnalysisContext, Opt, Reason } from "@exaix/core/types";
-// ---------------------------------------------------------------------------
 // File reference extraction
-// ---------------------------------------------------------------------------
 
 function normalizeSchemaFileRef(path: string): string {
   if (path.startsWith("src/shared/schemas/")) {
@@ -54,9 +52,7 @@ function extractFileRefs(text: string): string[] {
   return [...found];
 }
 
-// ---------------------------------------------------------------------------
 // Complexity classification
-// ---------------------------------------------------------------------------
 
 function countBullets(text: string): number {
   return (text.match(/^[\s]*[-*+]\s+|^\s*\d+\.\s+/gm) ?? []).length;
@@ -86,9 +82,7 @@ function classifyComplexity(
   return RequestAnalysisComplexity.MEDIUM;
 }
 
-// ---------------------------------------------------------------------------
 // Ambiguity detection
-// ---------------------------------------------------------------------------
 
 function detectAmbiguities(text: string): IAmbiguity[] {
   const ambiguities: IAmbiguity[] = [];
@@ -128,9 +122,7 @@ function detectAmbiguities(text: string): IAmbiguity[] {
   return ambiguities;
 }
 
-// ---------------------------------------------------------------------------
 // Task type classification
-// ---------------------------------------------------------------------------
 
 function classifyTaskType(text: string): RequestTaskType {
   const lower = text.toLowerCase();
@@ -159,9 +151,7 @@ function classifyTaskType(text: string): RequestTaskType {
   return RequestTaskType.UNKNOWN;
 }
 
-// ---------------------------------------------------------------------------
 // Tag / keyword extraction
-// ---------------------------------------------------------------------------
 
 const ACTION_VERBS = [
   "implement",
@@ -217,9 +207,7 @@ function extractTags(text: string, fileRefs: string[]): string[] {
   return [...tags];
 }
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 /** Zero-cost heuristic analysis. Returns a `Partial<IRequestAnalysis>` omitting fields that
  * require LLM output or defaults (`goals`, `requirements`, `acceptanceCriteria`,

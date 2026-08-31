@@ -58,9 +58,7 @@ async function withMCPToolTest(
   }
 }
 
-// ============================================================================
 // read_file Tool Tests
-// ============================================================================
 
 Deno.test("read_file: successfully reads file from portal", async () => {
   await withMCPToolTest(
@@ -205,9 +203,7 @@ Deno.test("read_file: rejects invalid arguments schema", async () => {
   });
 });
 
-// ============================================================================
 // write_file Tool Tests
-// ============================================================================
 
 Deno.test("write_file: successfully writes file to portal", async () => {
   await withMCPToolTest({}, async ({ server, portalPath }) => {
@@ -320,9 +316,7 @@ Deno.test("write_file: logs invocation to IActivity Journal", async () => {
   });
 });
 
-// ============================================================================
 // list_directory Tool Tests
-// ============================================================================
 
 Deno.test("list_directory: lists files in portal root", async () => {
   await withMCPToolTest(

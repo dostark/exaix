@@ -132,9 +132,7 @@ Deno.test("PathResolver: root path itself is valid", async () => {
   }
 });
 
-// ============================================================================
 // Additional Security Tests
-// ============================================================================
 
 Deno.test("PathResolver: rejects path without @ alias", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-no-alias-" });
@@ -343,9 +341,7 @@ Deno.test("PathResolver: rejects empty path after alias", async () => {
   }
 });
 
-// ============================================================================
 // IActivity Logging Tests
-// ============================================================================
 
 Deno.test("[security] PathResolver: logs security violations to console when no DB", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-log-" });
@@ -385,9 +381,7 @@ Deno.test("[security] PathResolver: logs security violations to console when no 
   }
 });
 
-// ============================================================================
 // IActivity Logging with Database Tests
-// ============================================================================
 
 Deno.test("PathResolver: logs successful resolution to database", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-db-success-" });
@@ -492,9 +486,7 @@ Deno.test("[security] PathResolver: logs security violations to database", async
   }
 });
 
-// ============================================================================
 // EventLogger Integration Tests
-// ============================================================================
 
 interface CapturedEvent {
   action: string;

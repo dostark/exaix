@@ -30,7 +30,7 @@ async function withInitializedSkillsService(
   }
 }
 
-// ===== Directory Structure Tests =====
+// Directory Structure Tests
 
 Deno.test("SkillsService: initialize creates directory structure", async () => {
   await withInitializedSkillsService(async ({ config }) => {
@@ -43,7 +43,7 @@ Deno.test("SkillsService: initialize creates directory structure", async () => {
   });
 });
 
-// ===== CRUD Operations Tests =====
+// CRUD Operations Tests
 
 Deno.test("SkillsService: createSkill creates and indexes skill", async () => {
   await withInitializedSkillsService(async ({ service, config }) => {
@@ -219,7 +219,7 @@ Deno.test("SkillsService: deprecateSkill marks skill as deprecated", async () =>
   });
 });
 
-// ===== Trigger Matching Tests =====
+// Trigger Matching Tests
 
 Deno.test("SkillsService: matchSkills returns skills matching keywords", async () => {
   await withInitializedSkillsService(async ({ service }) => {
@@ -503,7 +503,7 @@ Deno.test("SkillsService: matchSkills respects maxSkillsPerRequest limit", async
   });
 });
 
-// ===== Skill Context Building Tests =====
+// Skill Context Building Tests
 
 Deno.test("SkillsService: buildSkillContext generates markdown context", async () => {
   await withInitializedSkillsService(async ({ service }) => {
@@ -574,7 +574,7 @@ Deno.test("SkillsService: buildSkillContext combines multiple skills", async () 
   });
 });
 
-// ===== Skill Derivation Tests =====
+// Skill Derivation Tests
 
 Deno.test("SkillsService: deriveSkillFromLearnings creates skill with derived_from", async () => {
   await withInitializedSkillsService(async ({ service }) => {
@@ -598,7 +598,7 @@ Deno.test("SkillsService: deriveSkillFromLearnings creates skill with derived_fr
   });
 });
 
-// ===== Skill Index Management Tests =====
+// Skill Index Management Tests
 
 Deno.test("SkillsService: rebuildIndex scans all skill directories", async () => {
   await withInitializedSkillsService(async ({ service }) => {

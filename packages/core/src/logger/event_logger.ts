@@ -81,9 +81,7 @@ export interface IEventLogger {
   child(overrides: Partial<ILogEvent>): IEventLogger;
 }
 
-// ============================================================================
 // Implementation
-// ============================================================================
 
 /** Log level priority for filtering */
 const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
@@ -106,9 +104,7 @@ const DEFAULT_ICONS: Record<LogLevel, string> = {
 /** Cached user identity to avoid repeated git calls */
 let cachedUserIdentity: string | null = null;
 
-// ============================================================================
 // Output Implementations
-// ============================================================================
 
 /**
  * Console output with rich formatting (timestamp, level, context tags).
@@ -485,9 +481,7 @@ export class EventLogger implements IEventLogger {
     cachedUserIdentity = null;
   }
 
-  // ============================================================================
   // Private Methods
-  // ============================================================================
 
   /**
    * Format and log event to console

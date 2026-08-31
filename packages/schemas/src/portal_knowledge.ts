@@ -12,9 +12,7 @@
 import { z } from "zod";
 import { SystemCommand } from "@exaix/core";
 
-// ============================================================================
 // Sub-schemas
-// ============================================================================
 
 /**
  * Significant file within a portal codebase, annotated with its role.
@@ -146,9 +144,7 @@ export const MonorepoPackageSchema = z.object({
 
 export type IMonorepoPackage = z.infer<typeof MonorepoPackageSchema>;
 
-// ============================================================================
 // Root schema
-// ============================================================================
 
 /**
  * Complete knowledge gathered about a mounted portal codebase.

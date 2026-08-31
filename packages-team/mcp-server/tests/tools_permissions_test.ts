@@ -18,9 +18,7 @@ import { initToolPermissionTest } from "@exaix/mcp/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { IApplicationContext } from "@exaix/core/types";
 
-// ============================================================================
 // Read Operation Permission Tests
-// ============================================================================
 
 // Helper for tool permission tests
 async function withToolPermission(
@@ -48,9 +46,7 @@ async function withToolPermission(
   }
 }
 
-// ============================================================================
 // Read Operation Permission Tests
-// ============================================================================
 
 Deno.test("MCP Tools: read_file requires read permission", async () => {
   await withToolPermission(
@@ -91,9 +87,7 @@ Deno.test("MCP Tools: read_file rejects when read permission denied", async () =
   );
 });
 
-// ============================================================================
 // Write Operation Permission Tests
-// ============================================================================
 
 Deno.test("MCP Tools: write_file requires write permission", async () => {
   await withToolPermission(
@@ -139,9 +133,7 @@ Deno.test("MCP Tools: write_file rejects when write permission denied", async ()
   );
 });
 
-// ============================================================================
 // Git Operation Permission Tests
-// ============================================================================
 
 Deno.test("MCP Tools: git_status requires git permission", async () => {
   await withToolPermission(
@@ -179,9 +171,7 @@ Deno.test("MCP Tools: git_status rejects when git permission denied", async () =
   );
 });
 
-// ============================================================================
 // Agent Whitelist Tests
-// ============================================================================
 
 Deno.test("MCP Tools: rejects non-whitelisted agent", async () => {
   await withToolPermission(

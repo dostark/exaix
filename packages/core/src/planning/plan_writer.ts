@@ -78,9 +78,7 @@ export interface ITokenUsageSummary {
   costUsd?: number;
 }
 
-// ============================================================================
 // Plan Writer Service
-// ============================================================================
 
 /** Formats agent execution results into structured markdown plans, written to Workspace/Plans for user review. */
 export class PlanWriter {

@@ -576,9 +576,7 @@ export const DomainEventType = {
   DaemonUncaughtError: "daemon.uncaught_error",
   DaemonErrorHandlersRegistered: "daemon.error_handlers_registered",
 
-  // ---------------------------------------------------------------------------
   // Guardrail
-  // ---------------------------------------------------------------------------
   GuardrailScreenPass: "guardrail.screen.pass",
   GuardrailScreenViolation: "guardrail.screen.violation",
   GuardrailScreenError: "guardrail.screen.error",
@@ -587,34 +585,24 @@ export const DomainEventType = {
   GuardrailInitialized: "guardrail.initialized",
   GuardrailInitFailed: "guardrail.init_failed",
 
-  // ---------------------------------------------------------------------------
   // Dynamic tools
-  // ---------------------------------------------------------------------------
   DynamicToolsInitFailed: "dynamic_tools.init_failed",
 
-  // ---------------------------------------------------------------------------
   // Voting / Consensus
-  // ---------------------------------------------------------------------------
   VotingStarted: "voting.started",
   VotingResolved: "voting.resolved",
   VotingNoConsensus: "voting.no_consensus",
   VotingRunnerFailed: "voting.runner_failed",
   VotingStepConsensusResolved: "voting.step.consensus_resolved",
 
-  // ---------------------------------------------------------------------------
   // HITL / Governance
-  // ---------------------------------------------------------------------------
   HitlPolicyMatched: "hitl.policy.matched",
 
-  // ---------------------------------------------------------------------------
   // Health check events
-  // ---------------------------------------------------------------------------
   HealthCheckAll: "health.check_all",
   HealthCheckProvider: "health.check_provider",
 
-  // ---------------------------------------------------------------------------
   // Agent prompt assembly. Same value as the old raw string constant AGENT_EVENT_PROMPT_ASSEMBLED, now a taxonomy member.
-  // ---------------------------------------------------------------------------
   AgentPromptAssembled: "agent.prompt_assembled",
 } as const;
 

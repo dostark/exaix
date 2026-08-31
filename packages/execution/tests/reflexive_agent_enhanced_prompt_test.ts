@@ -18,9 +18,7 @@ import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } 
 import { createMockProvider } from "@exaix/testing";
 import { MAX_CRITIQUE_REQUIREMENTS } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeFakeAgentResult(content: string): IAgentExecutionResult {
   return { content, thought: "", raw: content };
@@ -83,9 +81,7 @@ function makeAnalysisWithGoalsAndACs(nGoals: number, nAcs: number): IRequestAnal
   };
 }
 
-// ---------------------------------------------------------------------------
 // Cap tests — RED until extract + cap are implemented
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[buildEnhancedCritiquePrompt] caps requirements at MAX_CRITIQUE_REQUIREMENTS",

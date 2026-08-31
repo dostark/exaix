@@ -16,9 +16,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPattern, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { PortalAnalysisMode } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowledge {
   return {
@@ -59,9 +57,7 @@ function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowle
   };
 }
 
-// ---------------------------------------------------------------------------
 // Mock MemoryBankService helpers
-// ---------------------------------------------------------------------------
 
 type IMemoryBankCalls = {
   getProjectMemory: string[];
@@ -124,9 +120,7 @@ function makeMockMemoryBank(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[KnowledgePersistence] saves knowledge.json atomically", async () => {
   const tempDir = await Deno.makeTempDir();

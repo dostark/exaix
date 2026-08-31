@@ -54,9 +54,7 @@ async function makeServerWithValidator(
   return { server, cleanup };
 }
 
-// ============================================================================
 // Backward compatibility: no resultValidator leaves behavior unchanged
-// ============================================================================
 
 Deno.test("handler_registry_result_validation: MCPServer starts without resultValidator (backward compat)", async () => {
   const { server, cleanup } = await makeServerWithValidator(undefined);
@@ -141,9 +139,7 @@ Deno.test("handler_registry_result_validation: read-only MCP tool recovers throu
   }
 });
 
-// ============================================================================
 // resultValidator is called when tools/call is handled
-// ============================================================================
 
 Deno.test("handler_registry_result_validation: injected validator is called after tool execution", async () => {
   const calls: Array<{ toolName: string; response: JSONValue }> = [];

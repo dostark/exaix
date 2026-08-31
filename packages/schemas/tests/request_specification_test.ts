@@ -11,9 +11,7 @@
 import { assertEquals } from "@std/assert";
 import { RequestSpecificationSchema } from "@exaix/schemas";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function validSpec() {
   return {
@@ -30,9 +28,7 @@ function validSpec() {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestSpecificationSchema] validates complete specification", () => {
   const result = RequestSpecificationSchema.safeParse(validSpec());

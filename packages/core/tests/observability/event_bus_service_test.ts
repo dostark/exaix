@@ -11,9 +11,7 @@ import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { EVENT_BUS_MAX_SUBSCRIBER_QUEUE, STREAMING_EVENT_HEARTBEAT, STREAMING_EVENT_TOOL_START } from "@exaix/core";
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 function makeEvent(overrides: Partial<IStreamingEvent> = {}): IStreamingEvent {
   return {
@@ -26,9 +24,7 @@ function makeEvent(overrides: Partial<IStreamingEvent> = {}): IStreamingEvent {
   };
 }
 
-// ============================================================================
 // Subscribe / Unsubscribe Tests
-// ============================================================================
 
 Deno.test("EventBusService: subscriber should receive events matching its traceId", () => {
   const bus = new EventBusService();
@@ -101,9 +97,7 @@ Deno.test("EventBusService: multiple subscribers for same traceId should all rec
   assertEquals(receivedB.length, 1);
 });
 
-// ============================================================================
 // Backpressure Tests
-// ============================================================================
 
 Deno.test("EventBusService: should drop events when subscriber queue exceeds max", () => {
   const bus = new EventBusService();
@@ -131,9 +125,7 @@ Deno.test("EventBusService: should drop events when subscriber queue exceeds max
   assertEquals(processCount, overflowCount);
 });
 
-// ============================================================================
 // Close Tests
-// ============================================================================
 
 Deno.test("EventBusService: close should remove all subscribers", () => {
   const bus = new EventBusService();
@@ -156,9 +148,7 @@ Deno.test("EventBusService: publish after close should not throw", () => {
   bus.publish(makeEvent());
 });
 
-// ============================================================================
 // Stream Subscription Tests
-// ============================================================================
 
 Deno.test("EventBusService: subscribeStream should deliver all events when consumer keeps up", async () => {
   const bus = new EventBusService();
@@ -222,9 +212,7 @@ Deno.test("EventBusService: subscribeStream should drop events under backpressur
   }
 });
 
-// ============================================================================
 // Edge Case Tests
-// ============================================================================
 
 Deno.test("EventBusService: should handle empty traceId subscribers", () => {
   const bus = new EventBusService();

@@ -13,12 +13,13 @@ import {
   TUI_MAIN_PANE_ID,
   TUI_SEPARATOR_ROW,
 } from "../helpers/constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { renderLayoutPresetListLines } from "./rendering.ts";
 import { ResizeDirection, SplitDirection, TuiViewName } from "../types/enums.ts";
 import type { JSONObject } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
-// ===== Layout Interfaces =====
+// Layout Interfaces
 
 export interface IPaneBounds extends JSONObject {
   x: number;
@@ -57,7 +58,7 @@ export interface ILayoutPreset {
   create: (width: number, height: number, views: string[]) => ILayoutPane[];
 }
 
-// ===== Layout Constants =====
+// Layout Constants
 
 export const LAYOUT_VERSION = "1.2";
 
@@ -65,7 +66,7 @@ export const MIN_PANE_WIDTH = 20;
 export const MIN_PANE_HEIGHT = 5;
 export const MAX_PANES = 6;
 
-// ===== Layout Presets =====
+// Layout Presets
 
 export const LAYOUT_PRESETS: ILayoutPreset[] = [
   {
@@ -265,11 +266,11 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
   },
 ];
 
-// ===== Layout Manager Class =====
+// Layout Manager Class
 
 type ResizeDirectionAlias = ResizeDirection;
 
-function resizePaneLeft(pane: ILayoutPane, affected: ILayoutPane | undefined, amount: number) {
+function resizePaneLeft(pane: ILayoutPane, affected: Opt<ILayoutPane, Reason.OptionalInput>, amount: number) {
   if (pane.width - amount < MIN_PANE_WIDTH) return;
   pane.width -= amount;
   if (affected && affected.x > pane.x) {
@@ -280,7 +281,7 @@ function resizePaneLeft(pane: ILayoutPane, affected: ILayoutPane | undefined, am
 
 function resizePaneRight(
   pane: ILayoutPane,
-  affected: ILayoutPane | undefined,
+  affected: Opt<ILayoutPane, Reason.OptionalInput>,
   amount: number,
   terminalWidth: number,
 ) {
@@ -295,7 +296,7 @@ function resizePaneRight(
   }
 }
 
-function resizePaneUp(pane: ILayoutPane, affected: ILayoutPane | undefined, amount: number) {
+function resizePaneUp(pane: ILayoutPane, affected: Opt<ILayoutPane, Reason.OptionalInput>, amount: number) {
   if (pane.height - amount < MIN_PANE_HEIGHT) return;
   pane.height -= amount;
   if (affected && affected.y > pane.y) {
@@ -306,7 +307,7 @@ function resizePaneUp(pane: ILayoutPane, affected: ILayoutPane | undefined, amou
 
 function resizePaneDown(
   pane: ILayoutPane,
-  affected: ILayoutPane | undefined,
+  affected: Opt<ILayoutPane, Reason.OptionalInput>,
   amount: number,
   terminalHeight: number,
 ) {
@@ -349,7 +350,7 @@ export class LayoutManager {
     this.terminalHeight = height;
   }
 
-  // ===== Terminal Size =====
+  // Terminal Size
 
   setTerminalSize(width: number, height: number): void {
     this.terminalWidth = width;
@@ -360,7 +361,7 @@ export class LayoutManager {
     return { width: this.terminalWidth, height: this.terminalHeight };
   }
 
-  // ===== Preset Operations =====
+  // Preset Operations
 
   getPresets(): ILayoutPreset[] {
     return LAYOUT_PRESETS;
@@ -382,7 +383,7 @@ export class LayoutManager {
     return preset.create(this.terminalWidth, this.terminalHeight, views);
   }
 
-  // ===== IPane Operations =====
+  // IPane Operations
 
   splitPane(
     panes: ILayoutPane[],
@@ -640,7 +641,7 @@ export class LayoutManager {
     return panes;
   }
 
-  // ===== Named Layouts =====
+  // Named Layouts
 
   saveNamedLayout(name: string, panes: ILayoutPane[], activePaneId: string): ILayout {
     const layout: ILayout = {
@@ -670,7 +671,7 @@ export class LayoutManager {
     return Array.from(this.namedLayouts.values());
   }
 
-  // ===== Layout Serialization =====
+  // Layout Serialization
 
   serializeLayout(panes: ILayoutPane[], activePaneId: string): string {
     const layout: ILayout = {
@@ -725,7 +726,7 @@ export class LayoutManager {
     return true;
   }
 
-  // ===== Layout Normalization =====
+  // Layout Normalization
 
   normalizeLayout(panes: ILayoutPane[]): ILayoutPane[] {
     // Ensure panes fit within terminal bounds
@@ -741,7 +742,7 @@ export class LayoutManager {
   }
 }
 
-// ===== Rendering Helpers =====
+// Rendering Helpers
 
 export function renderLayoutPresetPicker(
   presets: ILayoutPreset[],
@@ -802,8 +803,11 @@ export function renderResizeIndicator(
   return colorize(`Resize ${arrows[direction]}`, theme.primary, theme.reset);
 }
 
-// ===== Default Export =====
+// Default Export
 
-export function createLayoutManager(width?: number, height?: number): LayoutManager {
+export function createLayoutManager(
+  width?: Opt<number, Reason.UiDefault>,
+  height?: Opt<number, Reason.UiDefault>,
+): LayoutManager {
   return new LayoutManager(width, height);
 }

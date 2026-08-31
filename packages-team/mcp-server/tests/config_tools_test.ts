@@ -85,7 +85,7 @@ Deno.test({
   sanitizeResources: false,
 });
 
-// ── ConfigApplyTool awaits set() and records failures ───────
+// ConfigApplyTool awaits set() and records failures
 
 interface IApplyResult {
   key: string;
@@ -112,7 +112,7 @@ function toApplyResults(data: JSONValue): IApplyResult[] {
   return rows;
 }
 
-// ── ConfigSetTool three-tier routing ────────────────────────
+// ConfigSetTool three-tier routing
 
 // A no-impact hot key explicitly marked safe (like ui.theme) — auto-approve tier.
 configurable({

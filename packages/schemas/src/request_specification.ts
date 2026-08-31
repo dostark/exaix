@@ -12,9 +12,7 @@
 
 import { z } from "zod";
 
-// ============================================================================
 // Root schema
-// ============================================================================
 
 /** Compiled from a clarification Q&A session, following the Specification-Driven
  *  Development (SDD) methodology. */

@@ -14,7 +14,7 @@ import type { IModelProvider } from "@exaix/ai";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ── Stub factories ─────────────────────────────────────────────────────
+// Stub factories
 
 export function createStubGitService(
   overrides: Opt<Partial<IGitService>, Reason.TestOverride> = {},
@@ -122,7 +122,7 @@ export function createStubCliContext(
   };
 }
 
-// ── Console capture helper ─────────────────────────────────────────────
+// Console capture helper
 
 /**
  * Captures console.log output during the execution of a function.

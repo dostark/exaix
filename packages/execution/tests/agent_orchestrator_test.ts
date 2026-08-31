@@ -1694,7 +1694,7 @@ Deno.test({
   sanitizeOps: false,
 });
 
-// ===== YAML Deserialization Security Tests =====
+// YAML Deserialization Security Tests
 
 Deno.test({
   name: "AgentOrchestrator: loadBlueprint rejects YAML with code execution",
@@ -1886,7 +1886,7 @@ Deno.test({
   sanitizeOps: false,
 });
 
-// ===== Prompt Injection Mitigation Tests =====
+// Prompt Injection Mitigation Tests
 
 Deno.test({
   name: "AgentOrchestrator: sanitizes inputs in execution prompt",

@@ -25,9 +25,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 const RequestAnalysisCoreSchema = RequestAnalysisSchema.omit({ metadata: true });
 
-// ---------------------------------------------------------------------------
 // Analysis prompt template
-// ---------------------------------------------------------------------------
 
 const ANALYSIS_PROMPT_TEMPLATE = `You are a request intent analyzer for an AI orchestration system.
 Analyze the following request and extract structured information.
@@ -111,9 +109,7 @@ function buildPrompt(
     .replace("{CONTEXT_SECTION}", contextSection);
 }
 
-// ---------------------------------------------------------------------------
 // Fallback analysis returned whenever LLM output is invalid
-// ---------------------------------------------------------------------------
 
 function buildFallback(requestText: string): IRequestAnalysis {
   return {
@@ -136,9 +132,7 @@ function buildFallback(requestText: string): IRequestAnalysis {
   };
 }
 
-// ---------------------------------------------------------------------------
 // LlmAnalyzer class
-// ---------------------------------------------------------------------------
 
 /** Produces a full `IRequestAnalysis`, falling back to a safe default on any failure. */
 export class LlmAnalyzer {

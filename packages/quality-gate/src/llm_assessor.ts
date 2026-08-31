@@ -22,9 +22,7 @@ import { assessHeuristic } from "./heuristic_assessor.ts";
 // assessor itself after the LLM call returns.
 const LlmAssessmentResponseSchema = RequestQualityAssessmentSchema.omit({ metadata: true });
 
-// ---------------------------------------------------------------------------
 // Prompt template
-// ---------------------------------------------------------------------------
 
 const ASSESSMENT_PROMPT_TEMPLATE =
   `You are a technical product manager assessing whether an AI agent task request is specific enough to act on.
@@ -61,9 +59,7 @@ Analyze the request and return a JSON object with the following structure:
 
 Return ONLY the JSON object. No explanation, no markdown, no additional text.`;
 
-// ---------------------------------------------------------------------------
 // LlmQualityAssessor class
-// ---------------------------------------------------------------------------
 
 /** Produces assessments for LLM and hybrid quality-gate modes. */
 export class LlmQualityAssessor {
@@ -105,9 +101,7 @@ export class LlmQualityAssessor {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Private helpers
-  // ---------------------------------------------------------------------------
 
   private _fallback(requestText: string, start: number): IRequestQualityAssessment {
     const heuristic = assessHeuristic(requestText);

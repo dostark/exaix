@@ -24,9 +24,7 @@ import { FilesystemAdapter } from "../adapters/filesystem_adapter.ts";
 import { InternalEventAdapter } from "../adapters/internal_event_adapter.ts";
 import { AdapterRegistry, UnsupportedTriggerSourceError } from "../adapters/adapter_registry.ts";
 
-// ---------------------------------------------------------------------------
 // Test helpers
-// ---------------------------------------------------------------------------
 
 async function computeHmacSha256(secret: string, body: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -43,9 +41,7 @@ async function computeHmacSha256(secret: string, body: string): Promise<string> 
       .join("");
 }
 
-// ---------------------------------------------------------------------------
 // WebhookAdapter
-// ---------------------------------------------------------------------------
 
 Deno.test("[WebhookAdapter] source is webhook", () => {
   const adapter = new WebhookAdapter({});
@@ -126,9 +122,7 @@ Deno.test("security: WebhookAdapter fails closed when no secret is configured (F
   );
 });
 
-// ---------------------------------------------------------------------------
 // ScheduleAdapter
-// ---------------------------------------------------------------------------
 
 Deno.test("[ScheduleAdapter] source is schedule", () => {
   const adapter = new ScheduleAdapter();
@@ -181,9 +175,7 @@ Deno.test("[ScheduleAdapter] rejects arbitrary shell-injection attempt", async (
   );
 });
 
-// ---------------------------------------------------------------------------
 // FilesystemAdapter
-// ---------------------------------------------------------------------------
 
 Deno.test("[FilesystemAdapter] source is filesystem", () => {
   const adapter = new FilesystemAdapter({ allowedDir: "/workspace" });
@@ -228,9 +220,7 @@ Deno.test("[FilesystemAdapter] rejects empty path", async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // AdapterRegistry
-// ---------------------------------------------------------------------------
 
 Deno.test("[AdapterRegistry] resolve returns registered adapter", () => {
   const registry = new AdapterRegistry();
@@ -280,9 +270,7 @@ Deno.test("[AdapterRegistry] register overwrites existing adapter for same sourc
   assertEquals(resolved.source, "webhook");
 });
 
-// ---------------------------------------------------------------------------
 // Security: FilesystemAdapter symlink bypass
-// ---------------------------------------------------------------------------
 
 Deno.test("[FilesystemAdapter] rejects symlink pointing outside allowed directory", async () => {
   const allowedDir = await Deno.makeTempDir({ prefix: "exaix-allowed-" });
@@ -304,9 +292,7 @@ Deno.test("[FilesystemAdapter] rejects symlink pointing outside allowed director
   }
 });
 
-// ---------------------------------------------------------------------------
 // Security: InternalEventAdapter allow-list
-// ---------------------------------------------------------------------------
 
 Deno.test("[InternalEventAdapter] rejects unknown eventType string", async () => {
   const adapter = new InternalEventAdapter();
@@ -331,9 +317,7 @@ Deno.test("[InternalEventAdapter] accepts absent eventType as unknown", async ()
   assertEquals(envelope.subject, "unknown");
 });
 
-// ---------------------------------------------------------------------------
 // Integration: webhook adapter → registry dispatch (one representative path)
-// ---------------------------------------------------------------------------
 
 Deno.test("[Integration] WebhookAdapter parses and registry resolves for start_flow", async () => {
   const registry = new AdapterRegistry();

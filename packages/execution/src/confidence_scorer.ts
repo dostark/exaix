@@ -81,9 +81,7 @@ export interface IConfidenceMetrics {
   levelDistribution: Record<ConfidenceAssessmentLevel, number>;
 }
 
-// ============================================================================
 // Confidence Schema
-// ============================================================================
 
 /**
  * Schema for confidence assessment output
@@ -104,13 +102,9 @@ export const ConfidenceSchema = z.object({
 
 export type ConfidenceAssessment = z.infer<typeof ConfidenceSchema>;
 
-// ============================================================================
 // Configuration Types
-// ============================================================================
 
-// ============================================================================
 // Default Prompt Template
-// ============================================================================
 
 const DEFAULT_EXTRACTION_PROMPT = `You are analyzing an AI-generated response to assess confidence level.
 
@@ -154,9 +148,7 @@ Scoring Guidelines:
 - 30-49: Low confidence - significant uncertainties or assumptions
 - 0-29: Very low confidence - speculative, requires verification`;
 
-// ============================================================================
 // ConfidenceScorer Class
-// ============================================================================
 
 export class ConfidenceScorer {
   private agentRunner: AgentRunner;
@@ -434,9 +426,7 @@ export class ConfidenceScorer {
     this.scoreSum = 0;
   }
 
-  // ============================================================================
   // Private Methods
-  // ============================================================================
 
   private shouldFlagForReview(confidence: ConfidenceAssessment): boolean {
     if (!this.config.autoReview) return false;
@@ -480,9 +470,7 @@ export class ConfidenceScorer {
   }
 }
 
-// ============================================================================
 // Factory Functions
-// ============================================================================
 
 export function createConfidenceScorer(
   modelProvider: IModelProvider,

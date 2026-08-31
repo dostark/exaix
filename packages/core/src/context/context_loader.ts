@@ -17,9 +17,7 @@ import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 
-// ============================================================================
 // Types and Interfaces
-// ============================================================================
 
 /**
  * Configuration for context loading behavior
@@ -106,9 +104,7 @@ export interface IContextLoadResult {
   truncatedFiles: string[];
 }
 
-// ============================================================================
 // Context Loader Service
-// ============================================================================
 
 /** Loads context files within token budgets, using configurable strategies to prioritize and truncate content. */
 export class ContextLoader {

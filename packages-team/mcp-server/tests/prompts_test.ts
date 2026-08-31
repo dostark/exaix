@@ -21,9 +21,7 @@ import {
   getPrompts,
 } from "@exaix-team/mcp-server";
 
-// ============================================================================
 // Prompt List Tests
-// ============================================================================
 
 Deno.test("getPrompts: returns all available prompts", () => {
   const prompts = getPrompts();
@@ -49,9 +47,7 @@ Deno.test("getPrompt: returns null for unknown prompt", () => {
   assertEquals(prompt, null);
 });
 
-// ============================================================================
 // Execute Plan Prompt Tests
-// ============================================================================
 
 Deno.test("generateExecutePlanPrompt: generates prompt with plan details", async () => {
   const { db, cleanup } = await initTestDbService();
@@ -113,9 +109,7 @@ Deno.test("generateExecutePlanPrompt: logs to IActivity Journal", async () => {
   }
 });
 
-// ============================================================================
 // Create Review Prompt Tests
-// ============================================================================
 
 Deno.test("generateCreateReviewPrompt: generates prompt with review details", async () => {
   const { db, cleanup } = await initTestDbService();
@@ -189,9 +183,7 @@ Deno.test("generateCreateReviewPrompt: logs to IActivity Journal", async () => {
   }
 });
 
-// ============================================================================
 // Commit Message Prompt Tests
-// ============================================================================
 
 Deno.test("generateCommitMessagePrompt: generates prompt with commit task details", async () => {
   const { db, cleanup } = await initTestDbService();
@@ -215,9 +207,7 @@ Deno.test("generateCommitMessagePrompt: generates prompt with commit task detail
   }
 });
 
-// ============================================================================
 // Generic Prompt Generation Tests
-// ============================================================================
 
 Deno.test("generatePrompt: routes to execute_plan generator", async () => {
   const { db, cleanup } = await initTestDbService();

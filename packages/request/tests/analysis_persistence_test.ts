@@ -16,9 +16,7 @@ import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/reque
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 
-// ---------------------------------------------------------------------------
 // Fixture
-// ---------------------------------------------------------------------------
 
 function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {
   return {
@@ -42,9 +40,7 @@ function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalys
   };
 }
 
-// ---------------------------------------------------------------------------
 // Path derivation
-// ---------------------------------------------------------------------------
 
 Deno.test("[AnalysisPersistence] derives correct _analysis.json path from .md path", async () => {
   const dir = await Deno.makeTempDir();
@@ -62,9 +58,7 @@ Deno.test("[AnalysisPersistence] derives correct _analysis.json path from .md pa
   }
 });
 
-// ---------------------------------------------------------------------------
 // Save & Load round-trip
-// ---------------------------------------------------------------------------
 
 Deno.test("[AnalysisPersistence] saves analysis as JSON sibling file", async () => {
   const dir = await Deno.makeTempDir();
@@ -122,9 +116,7 @@ Deno.test("[AnalysisPersistence] analysis data round-trips without loss", async 
   }
 });
 
-// ---------------------------------------------------------------------------
 // Missing / invalid files
-// ---------------------------------------------------------------------------
 
 Deno.test("[AnalysisPersistence] returns null for missing analysis file", async () => {
   const dir = await Deno.makeTempDir();
@@ -165,9 +157,7 @@ Deno.test("[AnalysisPersistence] returns null for JSON not matching schema", asy
   }
 });
 
-// ---------------------------------------------------------------------------
 // Atomic write
-// ---------------------------------------------------------------------------
 
 Deno.test("[AnalysisPersistence] uses atomic write (temp file then rename)", async () => {
   const dir = await Deno.makeTempDir();

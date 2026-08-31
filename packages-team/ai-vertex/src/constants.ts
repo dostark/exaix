@@ -39,9 +39,7 @@ export const BASE64_CHUNK_SIZE = 0x8000;
 export const EVENT_AUTH_INVALID_SERVICE_ACCOUNT = "provider.auth.invalid_service_account";
 export const EVENT_AUTH_TOKEN_REFRESHED = "provider.auth.token_refreshed";
 
-// ============================================================================
 // Vertex AI provider defaults + endpoint construction
-// ============================================================================
 
 export const DEFAULT_VERTEX_MODEL = "gemini-2.5-flash";
 export const DEFAULT_VERTEX_REGION = "us-central1";

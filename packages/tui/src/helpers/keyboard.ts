@@ -9,7 +9,7 @@
 import { KeyModifier } from "../types/enums.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Key Handling Interfaces =====
+// Key Handling Interfaces
 
 export type KeyHandler = (key: string) => boolean | void | Promise<boolean | void>;
 
@@ -43,7 +43,7 @@ export interface INavigationState {
   pageSize?: number;
 }
 
-// ===== Key Constants =====
+// Key Constants
 
 /** All possible key values for key bindings. */
 export const KEYS = {
@@ -155,7 +155,7 @@ export const KEYS = {
 /** Key values derived from KEYS for type safety. */
 export type KeyValue = typeof KEYS[keyof typeof KEYS];
 
-// ===== Key Validation =====
+// Key Validation
 
 /** Valid key values for runtime validation. */
 const VALID_KEY_VALUES = new Set(Object.values(KEYS));
@@ -167,7 +167,7 @@ export function isValidKeyValue(key: string): key is KeyValue {
   return VALID_KEY_VALUES.has(key as KeyValue);
 }
 
-// ===== Key Binding Categories =====
+// Key Binding Categories
 
 /**
  * Categories for organizing key bindings in help screens and documentation
@@ -181,7 +181,7 @@ export enum KeyBindingCategory {
   GENERAL = "General",
 }
 
-// ===== Keyboard Manager =====
+// Keyboard Manager
 
 /**
  * Manages keyboard bindings and handlers
@@ -306,7 +306,7 @@ export class KeyboardManager<TAction extends string | KeyHandler = string> {
   }
 }
 
-// ===== Common Navigation Handlers =====
+// Common Navigation Handlers
 
 /**
  * Create navigation key handlers
@@ -356,7 +356,7 @@ export function createNavigationHandlers(
   };
 }
 
-// ===== Key Parsing =====
+// Key Parsing
 
 /**
  * Parse raw key input to IKeyEvent
@@ -428,7 +428,7 @@ export function matchesKey(key: string, pattern: string): boolean {
   return true;
 }
 
-// ===== Help Screen Generation =====
+// Help Screen Generation
 
 /**
  * Generate help screen content from key bindings

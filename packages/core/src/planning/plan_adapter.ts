@@ -20,9 +20,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { extractTomlActionBlocks } from "./toml_action_blocks.ts";
 import { tryParseXmlPlan } from "./xml_plan_parser.ts";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 interface QACase {
   scenario: string;
@@ -53,9 +51,7 @@ interface IEnvelopeStep {
   actions?: JSONValue;
 }
 
-// ============================================================================
 // Error Classes
-// ============================================================================
 
 /**
  * Error thrown when plan validation fails
@@ -70,9 +66,7 @@ export class PlanValidationError extends Error {
   }
 }
 
-// ============================================================================
 // Plan Adapter Service
-// ============================================================================
 
 /**
  * PlanAdapter validates JSON plans and converts them to markdown

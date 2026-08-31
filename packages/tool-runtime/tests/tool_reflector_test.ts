@@ -22,9 +22,7 @@ import {
   ToolReflectionSchema,
 } from "@exaix/tool-runtime";
 
-// ============================================================================
 // Mock LLM Provider
-// ============================================================================
 
 function makeReflectionJSON(options: {
   success?: boolean;
@@ -67,9 +65,7 @@ function createMockToolCall(overrides?: Partial<IToolCall>): IToolCall {
   };
 }
 
-// ============================================================================
 // ToolReflectionSchema Tests
-// ============================================================================
 
 // Helper to setup reflector test context
 function createMockAgentRunner(responses: string[]): IToolAgentExecutor {
@@ -106,9 +102,7 @@ function setupReflector(
   return { reflector, createExecutor };
 }
 
-// ============================================================================
 // ToolReflectionSchema Tests
-// ============================================================================
 
 Deno.test("[ToolReflectionSchema] validates correct reflection", () => {
   const valid = {
@@ -152,9 +146,7 @@ Deno.test("[ToolReflectionSchema] rejects confidence out of range", () => {
   assert(!result.success);
 });
 
-// ============================================================================
 // ToolReflector Basic Tests
-// ============================================================================
 
 Deno.test("[ToolReflector] accepts successful tool result", async () => {
   const { reflector, createExecutor } = setupReflector([
@@ -251,9 +243,7 @@ Deno.test("[ToolReflector] applies alternative parameters on retry", async () =>
   assertEquals(lastParams.path, "/correct/path.txt");
 });
 
-// ============================================================================
 // Parallel Execution Tests
-// ============================================================================
 
 Deno.test("[ToolReflector] executes independent calls in parallel", async () => {
   const responses = [
@@ -334,9 +324,7 @@ Deno.test("[ToolReflector] executes sequentially when parallel disabled", async 
   assertEquals(results.length, 2);
 });
 
-// ============================================================================
 // Metrics Tests
-// ============================================================================
 
 Deno.test("[ToolReflector] tracks metrics correctly", async () => {
   const { reflector, createExecutor } = setupReflector([
@@ -406,9 +394,7 @@ Deno.test("[ToolReflector] resets metrics", async () => {
   assertEquals(metrics.successfulCalls, 0);
 });
 
-// ============================================================================
 // Factory Function Tests
-// ============================================================================
 
 Deno.test("[createToolReflector] creates reflector with defaults", () => {
   const noopRunner: IToolAgentExecutor = { run: () => Promise.resolve({ content: "" }) };
@@ -481,9 +467,7 @@ Deno.test("[createFastToolReflector] creates fast reflector", async () => {
   assertEquals(result.retryCount, 0);
 });
 
-// ============================================================================
 // Edge Case Tests
-// ============================================================================
 
 Deno.test("[ToolReflector] handles parse failure gracefully", async () => {
   const { reflector, createExecutor } = setupReflector(["Invalid JSON response"]);

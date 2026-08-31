@@ -14,9 +14,7 @@ import type { IModelProvider } from "../../src/types.ts";
 import { ConnectionError, ModelProviderError, TimeoutError } from "../../src/providers/common.ts";
 import type { JSONObject } from "@exaix/core";
 
-// ============================================================================
 // Test 1: MockProvider returns configured response
-// ============================================================================
 
 Deno.test("MockProvider returns configured response", async () => {
   const expectedResponse = "This is a test response from the mock provider";
@@ -50,9 +48,7 @@ Deno.test("MockProvider ignores prompt content", async () => {
   assertEquals(result2.content, expectedResponse);
 });
 
-// ============================================================================
 // Test 2: OllamaProvider sends correct JSON payload
-// ============================================================================
 
 Deno.test("OllamaProvider sends correct JSON payload to /api/generate", async () => {
   let capturedRequest: Request | undefined;
@@ -147,9 +143,7 @@ Deno.test("OllamaProvider accepts custom baseUrl", async () => {
   }
 });
 
-// ============================================================================
 // Test 3: Provider handles connection errors gracefully
-// ============================================================================
 
 Deno.test("OllamaProvider throws ConnectionError on network failure", async () => {
   const originalFetch = globalThis.fetch;
@@ -277,9 +271,7 @@ Deno.test("OllamaProvider throws ModelProviderError when response field is missi
   }
 });
 
-// ============================================================================
 // Additional Edge Case Tests
-// ============================================================================
 
 Deno.test("MockProvider handles empty prompt", async () => {
   const provider = new MockProvider("response");

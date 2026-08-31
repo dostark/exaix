@@ -259,7 +259,6 @@ Deno.test("MCPServer: HTTP server only starts with SSE transport", async () => {
   });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Finding 5 — Host/Origin validation (anti DNS-rebinding / CSRF)
 
 function jsonRpcRequest(url: string, headers: Record<string, string> = {}): Request {
@@ -300,7 +299,6 @@ Deno.test("security: MCPServer allows a same-origin localhost request", async ()
   });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Legacy posture and listener lifecycle
 
 /** Minimal shape of a parsed JSON-RPC response envelope. */

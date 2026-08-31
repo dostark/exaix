@@ -27,9 +27,7 @@ import {
 } from "@exaix/core";
 import type { ILogger, Opt, Reason } from "@exaix/core/types";
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 /** Minimal validator interface: only the method used by ArchitectureInferrer. */
 export interface IArchitectureValidator {
@@ -48,9 +46,7 @@ export interface IArchitectureInferrerInput {
   fileContents?: Record<string, string>;
 }
 
-// ---------------------------------------------------------------------------
 // Internal constants
-// ---------------------------------------------------------------------------
 
 /** Characters-per-token estimate used for budget enforcement. */
 const CHARS_PER_TOKEN = 4;
@@ -72,9 +68,7 @@ only.
 
 `;
 
-// ---------------------------------------------------------------------------
 // ArchitectureInferrer
-// ---------------------------------------------------------------------------
 
 export class ArchitectureInferrer {
   private readonly _provider: IModelProvider;
@@ -128,9 +122,7 @@ export class ArchitectureInferrer {
     return buildFallbackOverview(input);
   }
 
-  // -------------------------------------------------------------------------
   // Private helpers
-  // -------------------------------------------------------------------------
 
   private _buildPrompt(input: IArchitectureInferrerInput): string {
     const budgetChars = ARCHITECTURE_INFERRER_TOKEN_BUDGET * CHARS_PER_TOKEN;

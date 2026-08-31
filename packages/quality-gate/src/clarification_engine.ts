@@ -27,9 +27,7 @@ export interface IClarificationEngineConfig {
   maxRounds: number;
 }
 
-// ---------------------------------------------------------------------------
 // LLM response schema
-// ---------------------------------------------------------------------------
 
 const ClarificationLlmResponseSchema = z.object({
   satisfied: z.boolean(),
@@ -39,9 +37,7 @@ const ClarificationLlmResponseSchema = z.object({
 
 type IClarificationLlmResponse = z.infer<typeof ClarificationLlmResponseSchema>;
 
-// ---------------------------------------------------------------------------
 // Prompt template
-// ---------------------------------------------------------------------------
 
 /** Maximum words per question section; keep prompts concise. */
 const MAX_HISTORY_ENTRIES = 5;
@@ -80,9 +76,7 @@ Otherwise, generate 2-4 targeted questions to fill remaining gaps. Respond with:
 Each question must include: id (format r${roundNumber}q<N>, 1-based), question (string), rationale (string), category (one of: goal, scope, constraint, acceptance, context, priority), required (boolean).`;
 }
 
-// ---------------------------------------------------------------------------
 // ClarificationEngine
-// ---------------------------------------------------------------------------
 
 /** Manages clarification rounds until satisfaction or the configured limit. */
 export class ClarificationEngine {
@@ -100,9 +94,7 @@ export class ClarificationEngine {
     this.config = config;
   }
 
-  // ---------------------------------------------------------------------------
   // Public API
-  // ---------------------------------------------------------------------------
 
   /** Creates a session with an empty first round when the LLM is unavailable. */
   async startSession(
@@ -183,9 +175,7 @@ export class ClarificationEngine {
     return { ...session, status: ClarificationSessionStatus.USER_CANCELLED };
   }
 
-  // ---------------------------------------------------------------------------
   // Private helpers
-  // ---------------------------------------------------------------------------
 
   /** Returns an empty-question round when LLM output fails or is invalid. */
   private async _generateRound(

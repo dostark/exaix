@@ -13,9 +13,7 @@ import type { JSONValue } from "../types/json.ts";
 import type { IAuditLogger, ISecurityEvent } from "../types/mod.ts";
 import { DomainEventType } from "../events/mod.ts";
 
-// ============================================================================
 // Types and Interfaces
-// ============================================================================
 
 /**
  * Configuration for AuditLogger
@@ -28,9 +26,7 @@ export interface IAuditLoggerConfig {
   config?: { paths?: { runtime?: string } };
 }
 
-// ============================================================================
 // Implementation
-// ============================================================================
 
 /** Primary event transport goes through IEventLogger; a tamper-evident JSONL file is a
  *  secondary append-only sink for alerting-critical events. */
@@ -78,9 +74,7 @@ export class AuditLogger implements IAuditLogger {
     // TODO: integrate with real alerting (email, Slack/Discord, PagerDuty, SIEM).
   }
 
-  // ============================================================================
   // Private Methods
-  // ============================================================================
 
   /**
    * Create a complete audit entry with all required fields

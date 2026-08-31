@@ -12,9 +12,7 @@ import { ActivityActor, type BlueprintStatus, McpToolName, TaskType, ToolName } 
 import { HitlPolicySchema } from "./hitl.ts";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
-// ============================================================================
 // Blueprint Interfaces
-// ============================================================================
 
 /**
  * Result from blueprint creation
@@ -60,9 +58,7 @@ export interface IBlueprintValidationResult {
   warnings?: string[];
 }
 
-// ============================================================================
 // Blueprint Frontmatter Schema
-// ============================================================================
 
 /**
  * Zod schema for blueprint frontmatter validation
@@ -140,9 +136,7 @@ export const BlueprintFrontmatterSchema = z.object({
 
 export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;
 
-// ============================================================================
 // Reserved Agent IDs
-// ============================================================================
 
 /**
  * Agent IDs that cannot be used for custom blueprints

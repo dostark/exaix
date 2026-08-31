@@ -256,7 +256,7 @@ Deno.test("[configuring] createConfigAdapter returns DirectConfigAdapter when no
   }
 });
 
-// ── createConfigAdapterAsync verifies process liveness ──────────────────────
+// createConfigAdapterAsync verifies process liveness
 
 Deno.test("[configuring] createConfigAdapterAsync returns DirectConfigAdapter for a STALE pid", async () => {
   const dir = Deno.makeTempDirSync({ prefix: "daemon-adapter-stale-" });
@@ -309,7 +309,7 @@ Deno.test("[configuring] createConfigAdapterAsync returns DaemonConfigAdapter fo
   }
 });
 
-// ── the daemon set() override runs assertWritable ─────────────────────────
+// the daemon set() override runs assertWritable
 
 Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for a locked key", async () => {
   const { adapter, dir, db } = setupDaemonAdapter();
@@ -341,7 +341,7 @@ Deno.test("[configuring] DaemonConfigAdapter.set refuses a locked key via a prof
   }
 });
 
-// ── the daemon checksum reads the DB, not the store ────────────────────────
+// the daemon checksum reads the DB, not the store
 
 Deno.test("[configuring] DaemonConfigAdapter.verifyIntegrity detects a raw db.prepare write", async () => {
   const { adapter, dir, db } = setupDaemonAdapter();

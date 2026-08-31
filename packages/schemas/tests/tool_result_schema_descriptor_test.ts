@@ -12,9 +12,7 @@ import { TOOL_RESULT_SCHEMA_VERSION } from "@exaix/core";
 import { ZodError } from "zod";
 import { ToolResultRemediationPolicySchema, ToolResultSchemaDescriptorSchema } from "@exaix/schemas";
 
-// ============================================================================
 // ToolResultSchemaDescriptorSchema
-// ============================================================================
 
 Deno.test("ToolResultSchemaDescriptorSchema: accepts minimal valid descriptor", () => {
   const policy = ToolResultRemediationPolicySchema.parse({

@@ -390,9 +390,7 @@ export type IFeedbackLoopConfig = z.infer<typeof FeedbackLoopSchema>;
 export type IBranchCondition = z.infer<typeof BranchConditionSchema>;
 export type IConsensusConfig = z.infer<typeof ConsensusConfigSchema>;
 
-// ============================================================================
 // Step Execution Durability Schemas
-// ============================================================================
 
 export const StepExecutionDispositionSchema = z.nativeEnum(StepExecutionDisposition);
 

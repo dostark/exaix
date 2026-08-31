@@ -23,7 +23,7 @@ function liveTools() {
   );
 }
 
-// ── Description quality tests ─────────────────────────────────────────────────
+// Description quality tests
 
 Deno.test("tool_quality: every live tool description meets minimum length", () => {
   const tooShort = liveTools().filter((e) => e.description.length < MIN_DESCRIPTION_LENGTH);

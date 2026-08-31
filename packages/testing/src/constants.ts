@@ -12,9 +12,7 @@ import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION, ProviderType } 
 
 export const TEST_MODEL_OPENAI = "openai-gpt-4.1";
 
-// ============================================================================
 // Testing Constants (exclusively used in tests)
-// ============================================================================
 
 // Test Prompts
 export const REGRESSION_TEST_PROMPT = "Hello, reply with 'OK'";
@@ -23,9 +21,7 @@ export const TEST_LOG_PREVIEW_LENGTH = 50;
 // Test Timeouts (in milliseconds)
 export const REGRESSION_TEST_TIMEOUT_MS = 30000;
 
-// ============================================================================
 // Provider / Transport Test Constants
-// ============================================================================
 
 // Use minimal retry/backoff in unit tests to avoid slowing the suite.
 export const TEST_RETRY_MAX_ATTEMPTS_SINGLE = 1;
@@ -174,9 +170,7 @@ export const ERROR_MSG_HTTP_404 = "404";
 export const ERROR_MSG_NOT_FOUND = "not_found";
 export const LOG_MSG_NOT_FOUND_DETECTED = "❌ 404/Not Found Error Detected!";
 
-// ============================================================================
 // Schema Describer Test Constants
-// ============================================================================
 
 export enum SchemaDescriberKey {
   Name = "name",
@@ -209,9 +203,7 @@ export enum SchemaDescriberToken {
   FieldSeparator = ": ",
 }
 
-// ============================================================================
 // Journal Formatter / Commands Test Constants
-// ============================================================================
 
 export enum JournalFormat {
   Json = "json",
@@ -276,9 +268,7 @@ export const JOURNAL_FILTER_INVALID = "invalidfilter";
 export const JOURNAL_INVALID_FILTER_PREFIX = "Invalid filter format:";
 export const JOURNAL_UNKNOWN_FILTER_PREFIX = "Unknown filter key:";
 
-// ============================================================================
 // Token Usage Regression Test Constants
-// ============================================================================
 
 // Test token counts for regression testing
 export const TEST_PROMPT_TOKENS_GOOGLE = 10;
@@ -336,9 +326,7 @@ export const TEST_PROVIDER_ID_GOOGLE_ERROR = "google-test";
 export const TEST_PROVIDER_ID_OPENAI_ERROR = "openai-test";
 export const TEST_PROVIDER_ID_ANTHROPIC_ERROR = "anthropic-test";
 
-// ============================================================================
 // Token Metrics Integration Test Constants
-// ============================================================================
 
 // Environment variable names
 export const ENV_TEST_ENABLE_PAID_LLM = "EXA_TEST_ENABLE_PAID_LLM";

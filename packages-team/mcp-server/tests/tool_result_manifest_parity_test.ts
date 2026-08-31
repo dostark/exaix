@@ -12,9 +12,7 @@ import { assert, assertEquals, assertExists } from "@std/assert";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import { TOOL_RESULT_REMEDIATION_MODES, TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas";
 
-// ============================================================================
 // remediationPolicyRef parity checks
-// ============================================================================
 
 Deno.test("tool_result_manifest_parity: every TOOL_MANIFEST entry has remediationPolicyRef", () => {
   for (const entry of TOOL_MANIFEST) {
@@ -34,9 +32,7 @@ Deno.test("tool_result_manifest_parity: all remediationPolicyRef values are know
   }
 });
 
-// ============================================================================
 // Schema registry parity checks
-// ============================================================================
 
 Deno.test("tool_result_manifest_parity: delegates_to_registry tools have entry in TOOL_RESULT_SCHEMA_REGISTRY", () => {
   const registryTools = TOOL_MANIFEST.filter((e) => e.delegates_to_registry === true && e.output_schema != null);

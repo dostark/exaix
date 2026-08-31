@@ -30,9 +30,7 @@ function parseFrontmatter(content: string): JSONObject {
   return parse(parts[1]) as JSONObject;
 }
 
-// ============================================================================
 // Core Error Handling Tests
-// ============================================================================
 
 async function setupPlanValidationEnv(requestContentTemplate: string) {
   const { db, config, tempDir, cleanup, requestsDir, blueprintsPath } = await makeRequestProcessorEnv();

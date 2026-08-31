@@ -31,7 +31,6 @@ import {
   withToolPermissionTest,
 } from "@exaix/mcp/testing";
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Helpers
 
 function assertIsErrorResponse(response: { isError?: boolean; content: Array<{ type: string; text?: string }> }): void {
@@ -75,7 +74,6 @@ async function expectProtectedToolError(
   });
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // ReadFileTool
 
 Deno.test("ReadFileTool: file not found returns isError:true, not thrown exception", async () => {
@@ -91,7 +89,6 @@ Deno.test("ReadFileTool: file not found returns isError:true, not thrown excepti
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // DeleteFileTool
 
 Deno.test("DeleteFileTool: file not found returns isError:true, not thrown exception", async () => {
@@ -127,7 +124,6 @@ Deno.test("DeleteFileTool: directory target returns isError:true, not thrown exc
   });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // MoveFileTool
 
 Deno.test("MoveFileTool: source not found returns isError:true, not thrown exception", async () => {
@@ -161,7 +157,6 @@ Deno.test("MoveFileTool: destination already exists returns isError:true, not th
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // PatchFileTool
 
 Deno.test("PatchFileTool: file not found returns isError:true, not thrown exception", async () => {
@@ -215,7 +210,6 @@ Deno.test("PatchFileTool: ambiguous search returns isError:true, not thrown exce
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // ListDirectoryTool
 
 Deno.test("ListDirectoryTool: missing subdirectory returns isError:true, not thrown exception", async () => {
@@ -230,7 +224,6 @@ Deno.test("ListDirectoryTool: missing subdirectory returns isError:true, not thr
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // GitStatusTool
 
 Deno.test("GitStatusTool: non-git portal returns isError:true, not thrown exception", async () => {
@@ -245,7 +238,6 @@ Deno.test("GitStatusTool: non-git portal returns isError:true, not thrown except
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // GitCreateBranchTool
 
 Deno.test("GitCreateBranchTool: non-git portal returns isError:true, not thrown exception", async () => {
@@ -261,7 +253,6 @@ Deno.test("GitCreateBranchTool: non-git portal returns isError:true, not thrown 
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // GitCommitTool
 
 Deno.test("GitCommitTool: commit failure returns isError:true, not thrown exception", async () => {
@@ -277,7 +268,6 @@ Deno.test("GitCommitTool: commit failure returns isError:true, not thrown except
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Domain tools
 
 Deno.test("CreateRequestTool: command failure returns isError:true, not thrown exception", async () => {

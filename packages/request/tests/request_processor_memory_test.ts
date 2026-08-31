@@ -18,9 +18,7 @@ import {
   makeFakeAnalyzer,
   makeRequestProcessorEnv as makeEnv,
 } from "./request_test_helpers.ts";
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeSpyMemoryService(): { service: SessionMemoryService; calls: string[] } {
   const calls: string[] = [];
@@ -54,9 +52,7 @@ function makeMockAnalyzer(): IRequestAnalyzerService & { capturedCtx: IRequestAn
   return mock;
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[RequestProcessor] calls SessionMemoryService.enhanceRequest() before analysis",

@@ -93,9 +93,7 @@ async function createPortalTestEnv() {
   };
 }
 
-// ──────────────────────────────────────────────────────────────────────
 // Validation
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: validateAlias rejects empty alias", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();
@@ -163,9 +161,7 @@ Deno.test("PortalService: validateAlias rejects too-long alias", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // add
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: add creates symlink and registers portal", async () => {
   const { service, cleanup, portalsDir, tempDir } = await createPortalTestEnv();
@@ -249,9 +245,7 @@ Deno.test("PortalService: add rejects an existing alias pointing at a different 
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // list
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: list returns empty for no portals", async () => {
   const { service, cleanup } = await createPortalTestEnv();
@@ -280,9 +274,7 @@ Deno.test("PortalService: list returns added portals with ACTIVE status", async 
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // show
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: show returns details for existing portal", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();
@@ -314,9 +306,7 @@ Deno.test("PortalService: show throws for non-existent portal", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // remove
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: remove deletes symlink", async () => {
   const { service, cleanup, tempDir, portalsDir } = await createPortalTestEnv();
@@ -360,9 +350,7 @@ Deno.test("PortalService: remove throws for non-existent portal", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // verify
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: verify reports ok for healthy portal", async () => {
   const { service, cleanup, tempDir, memoryProjectsDir } = await createPortalTestEnv();
@@ -403,9 +391,7 @@ Deno.test("PortalService: verify reports failed for broken portal", async () => 
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // refresh
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: refresh regenerates context card", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();
@@ -434,9 +420,7 @@ Deno.test("PortalService: refresh throws for non-existent portal", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // remove without keepCard (archives context card)
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: remove without keepCard archives context card", async () => {
   const { service, cleanup, tempDir, portalsDir, memoryProjectsDir } = await createPortalTestEnv();
@@ -494,9 +478,7 @@ Deno.test("PortalService: remove without keepCard handles missing context card g
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // add with defaultBranch
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: add with valid defaultBranch succeeds", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();
@@ -548,9 +530,7 @@ Deno.test("PortalService: add with empty defaultBranch rejects", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // list with broken symlinks
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: list includes broken symlinks with BROKEN status", async () => {
   const { service, cleanup, tempDir, portalsDir } = await createPortalTestEnv();
@@ -569,9 +549,7 @@ Deno.test("PortalService: list includes broken symlinks with BROKEN status", asy
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // show with broken symlink
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: show returns BROKEN status for dangling symlink", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();
@@ -592,9 +570,7 @@ Deno.test("PortalService: show returns BROKEN status for dangling symlink", asyn
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // verify all portals (no alias parameter)
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PortalService: verify all portals when no alias given", async () => {
   const { service, cleanup, tempDir, memoryProjectsDir } = await createPortalTestEnv();

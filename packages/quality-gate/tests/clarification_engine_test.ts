@@ -18,9 +18,7 @@ import {
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { ClarificationEngine } from "@exaix/quality-gate";
 import type { IGenerateResult } from "@exaix/ai/providers";
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /** Minimal valid IRequestSpecification for test assertions. */
 function makeSpec(summary: string = "Implement JWT validation"): IRequestSpecification {
@@ -81,9 +79,7 @@ function makeSessionWithRound1(): IClarificationSession {
   };
 }
 
-// ---------------------------------------------------------------------------
 // startSession
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationEngine] startSession generates Round 1 questions", async () => {
   const engine = new ClarificationEngine(
@@ -130,9 +126,7 @@ Deno.test("[ClarificationEngine] questions include category and rationale", asyn
   assertEquals(q.category, ClarificationQuestionCategory.ACCEPTANCE);
 });
 
-// ---------------------------------------------------------------------------
 // processAnswers
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationEngine] processAnswers incorporates answers", async () => {
   const engine = new ClarificationEngine(
@@ -204,9 +198,7 @@ Deno.test("[ClarificationEngine] generates IRequestSpecification from Q&A", asyn
   assertExists(finalized.refinedBody?.scope);
 });
 
-// ---------------------------------------------------------------------------
 // cancel / isComplete
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationEngine] supports user cancellation", () => {
   const engine = new ClarificationEngine(
@@ -221,9 +213,7 @@ Deno.test("[ClarificationEngine] supports user cancellation", () => {
   assertEquals(cancelled.status, ClarificationSessionStatus.USER_CANCELLED);
 });
 
-// ---------------------------------------------------------------------------
 // Error resilience
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationEngine] handles LLM failure in question generation", async () => {
   const failingProvider = {

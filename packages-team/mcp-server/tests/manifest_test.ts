@@ -18,7 +18,6 @@ import {
 } from "@exaix/mcp";
 import type { IToolManifestEntry } from "@exaix/mcp";
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Structural invariants
 
 Deno.test("[McpManifest] every entry has required fields with non-empty values", () => {
@@ -45,7 +44,6 @@ Deno.test("[McpManifest] total entry count is 30", () => {
   assertEquals(TOOL_MANIFEST.length, 30, "Expected 30 total tool entries in TOOL_MANIFEST");
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Live MCP tools
 
 Deno.test("[McpManifest] 14 MCP_HANDLER entries exist", () => {
@@ -63,7 +61,6 @@ Deno.test("[McpManifest] 5 INTERNAL_ONLY entries exist", () => {
   assertEquals(internal.length, 5, `Expected 5 INTERNAL_ONLY entries, got ${internal.length}`);
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // IClassification policy
 
 Deno.test("[McpManifest] INTERNAL_ONLY tools are never docs_visible", () => {
@@ -130,7 +127,6 @@ Deno.test("[McpManifest] requires_human_approval tools are dynamic_mode_allowed 
   );
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // DYNAMIC_MODE_TOOLS derivation
 
 Deno.test("[McpManifest] DYNAMIC_MODE_TOOLS matches manifest filter", () => {

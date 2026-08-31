@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { initTestDbService } from "@exaix/testing";
 import { createNotificationTestProposal, runNotificationTest } from "@exaix/testing";
 
-// ===== Migration Tests =====
+// Migration Tests
 
 Deno.test("Migration 003: adds notifications table to journal.db", async () => {
   const { db, cleanup } = await initTestDbService();
@@ -54,7 +54,7 @@ Deno.test("Migration 003: notifications table has correct schema", async () => {
   }
 });
 
-// ===== NotificationService SQLite Tests =====
+// NotificationService SQLite Tests
 
 Deno.test("NotificationService: inserts notification into database", async () => {
   await runNotificationTest(async ({ db, notification }) => {

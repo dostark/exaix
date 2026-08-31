@@ -9,9 +9,7 @@ import { assert, assertEquals } from "@std/assert";
 import type { IGenerateResult } from "../src/providers/common.ts";
 import type { IModelOptions, IModelProvider } from "../src/types.ts";
 
-// ============================================================================
 // Test 1: A provider CAN declare the optional generateStream method
-// ============================================================================
 
 class StreamingMockProvider implements IModelProvider {
   id = "streaming-mock";

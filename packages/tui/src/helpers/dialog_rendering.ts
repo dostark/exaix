@@ -10,7 +10,7 @@
 import { colorize, type ITuiTheme, visibleLength } from "./colors.ts";
 import { renderBoxBottom, renderBoxLine, renderBoxTop, wrapToWidth } from "./dialog_base.ts";
 
-// ===== Common Rendering Functions =====
+// Common Rendering Functions
 
 /**
  * Renders a dialog title bar with consistent styling
@@ -125,7 +125,7 @@ export function renderDialogButtons(
   return renderDialogLine(`${" ".repeat(padding)}${buttonLine}`, innerWidth, theme);
 }
 
-// ===== Utility Functions =====
+// Utility Functions
 
 /**
  * Calculates the optimal dialog width based on content

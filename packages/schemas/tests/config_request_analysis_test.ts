@@ -13,9 +13,7 @@ import { ConfigSchema } from "@exaix/schemas";
 import { ExaPathDefaults, LogLevel } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
 
-// ---------------------------------------------------------------------------
 // Minimal valid config base (only truly required fields — system + paths)
-// ---------------------------------------------------------------------------
 
 interface IBaseConfig {
   system: { root: string; log_level: string };
@@ -29,9 +27,7 @@ function baseConfig(): IBaseConfig {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigSchema] validates request_analysis section", () => {
   const result = ConfigSchema.safeParse({

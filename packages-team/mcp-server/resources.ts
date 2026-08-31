@@ -13,9 +13,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface IMCPResource {
   uri: string;
@@ -31,9 +29,7 @@ export interface IMCPResourceTemplate {
   description?: string;
 }
 
-// ============================================================================
 // Resource Discovery
-// ============================================================================
 
 /** Parses `portal://<name>/<path>` into `{ portal, path }`; returns null on mismatch. */
 export function parsePortalURI(uri: string): { portal: string; path: string } | null {

@@ -22,7 +22,7 @@ import type { ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryGlobalDir } from "@exaix/testing";
 
-// ===== Test Setup Helpers =====
+// Test Setup Helpers
 
 /**
  * Create test project memory with tags
@@ -130,7 +130,7 @@ async function setupTestLearnings(
   );
 }
 
-// ===== searchByTags Tests =====
+// searchByTags Tests
 
 // Helper for running memory search tests
 async function runMemorySearchTest(
@@ -150,7 +150,7 @@ async function runMemorySearchTest(
   }
 }
 
-// ===== searchByTags Tests =====
+// searchByTags Tests
 
 Deno.test("MemoryBankService: searchByTags returns matching entries (single tag)", async () => {
   await runMemorySearchTest({ includeLearnings: true }, async (service) => {
@@ -200,7 +200,7 @@ Deno.test("MemoryBankService: searchByTags with multiple tags uses AND logic", a
   });
 });
 
-// ===== searchByKeyword Tests =====
+// searchByKeyword Tests
 
 Deno.test("MemoryBankService: searchByKeyword finds text matches in titles", async () => {
   await runMemorySearchTest({ includeLearnings: true }, async (service) => {
@@ -253,7 +253,7 @@ Deno.test("MemoryBankService: searchByKeyword ranks by frequency", async () => {
   });
 });
 
-// ===== Combined Search Tests =====
+// Combined Search Tests
 
 Deno.test("MemoryBankService: combined search uses tiered approach (tags first)", async () => {
   await runMemorySearchTest({ includeLearnings: true }, async (service) => {
@@ -286,7 +286,7 @@ Deno.test("MemoryBankService: combined search falls back to keyword if no tag ma
   });
 });
 
-// ===== Edge Cases =====
+// Edge Cases
 
 Deno.test("MemoryBankService: searchByTags returns empty array for non-existent tags", async () => {
   await runMemorySearchTest({}, async (service) => {

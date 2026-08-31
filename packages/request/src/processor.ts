@@ -138,9 +138,7 @@ export interface IRequestProcessorConfig {
   flowLoader?: IFlowLoaderService;
 }
 
-// ============================================================================
 // RequestProcessor Implementation
-// ============================================================================
 
 export class RequestProcessor {
   /** Forwards the request frontmatter's model intent fields onto the plan so native
@@ -880,9 +878,7 @@ export class RequestProcessor {
   }
 }
 
-// ============================================================================
 // Exported helpers
-// ============================================================================
 
 /** Build a capped Markdown summary of IPortalKnowledge for injection into agent prompts. Includes: architecture overview (first 20 lines), top-5 key files, top-5 conventions sorted by evidenceCount descending. Capped at maxLines lines. */
 export function buildPortalKnowledgeSummary(

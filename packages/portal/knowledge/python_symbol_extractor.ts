@@ -21,9 +21,7 @@ import {
   SYM_NAME_CAPTURE,
 } from "./symbol_extraction_constants.ts";
 
-// ---------------------------------------------------------------------------
 // Python .scm query — mirrors tree-sitter-python's bundled tags.scm
-// ---------------------------------------------------------------------------
 
 const PYTHON_QUERY = `
 (function_definition name: (identifier) @name) @definition.function
@@ -31,9 +29,7 @@ const PYTHON_QUERY = `
 (module (expression_statement (assignment left: (identifier) @name) @definition.constant))
 `;
 
-// ---------------------------------------------------------------------------
 // Kind map from capture names
-// ---------------------------------------------------------------------------
 
 const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
   [`${SYM_DEF_PREFIX}function`]: SYM_KIND_FUNCTION,
@@ -41,9 +37,7 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
   [`${SYM_DEF_PREFIX}constant`]: SYM_KIND_CONST,
 };
 
-// ---------------------------------------------------------------------------
 // PythonSymbolExtractor
-// ---------------------------------------------------------------------------
 
 /** Python tree-sitter symbol extractor — Solo (MIT) tier. Returns `[]` for any `primaryLanguage` other than `"python"`. */
 export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
@@ -116,9 +110,7 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
     return imports;
   }
 
-  // -----------------------------------------------------------------------
   // Helpers
-  // -----------------------------------------------------------------------
 
   /** Build a one-line signature from the definition node's first line. */
   private _buildSignature(

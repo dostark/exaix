@@ -31,9 +31,7 @@ import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { exists } from "@std/fs";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 
-// ============================================================================
 // Types and Interfaces
-// ============================================================================
 
 /**
  * Trace data containing all information needed to generate a report
@@ -122,9 +120,7 @@ export interface IGitChangeStats {
   commitSha: string;
 }
 
-// ============================================================================
 // MissionReporter Implementation
-// ============================================================================
 
 /** @visible */
 export class MissionReporter {

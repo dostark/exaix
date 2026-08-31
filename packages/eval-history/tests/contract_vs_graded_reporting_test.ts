@@ -140,9 +140,7 @@ Deno.test("[report] passedCount is exact, not the pass rate rounded back up", as
   });
 });
 
-// ---------------------------------------------------------------------------
 // Trend deltas: verifies delta calculation on repeated scenario observations.
-// ---------------------------------------------------------------------------
 
 Deno.test("[report] a family with only one observation per scenario has no delta", async () => {
   await withStore((store) => {

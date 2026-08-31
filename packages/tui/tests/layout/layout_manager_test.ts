@@ -41,9 +41,9 @@ import { getTheme } from "@exaix/tui/helpers/colors.ts";
 import { createPanes, createTestPane, setupLayoutManager } from "./layout_test_helper.ts";
 const theme = getTheme(true);
 
-// ===== Layout Manager Tests =====
+// Layout Manager Tests
 
-// ===== Layout Manager Tests =====
+// Layout Manager Tests
 
 Deno.test("LayoutManager: creates with default dimensions", () => {
   const manager = createLayoutManager();
@@ -67,7 +67,7 @@ Deno.test("LayoutManager: setTerminalSize updates dimensions", () => {
   assertEquals(size.height, 30);
 });
 
-// ===== Preset Tests =====
+// Preset Tests
 
 Deno.test("LayoutManager: getPresets returns all presets", () => {
   const manager = createLayoutManager();
@@ -162,7 +162,7 @@ Deno.test("LayoutManager: applyPreset throws for unknown preset", () => {
   );
 });
 
-// ===== Split IPane Tests =====
+// Split IPane Tests
 
 Deno.test("LayoutManager: splitPane - vertical split", () => {
   const manager = setupLayoutManager();
@@ -233,7 +233,7 @@ Deno.test("LayoutManager: splitPane throws for pane too short", () => {
   );
 });
 
-// ===== Close IPane Tests =====
+// Close IPane Tests
 
 Deno.test("LayoutManager: closePane removes pane and expands adjacent", () => {
   const manager = setupLayoutManager();
@@ -268,7 +268,7 @@ Deno.test("LayoutManager: closePane throws for unknown pane", () => {
   );
 });
 
-// ===== Swap Panes Tests =====
+// Swap Panes Tests
 
 Deno.test("LayoutManager: swapPanes swaps view names", () => {
   const manager = createLayoutManager();
@@ -293,7 +293,7 @@ Deno.test("LayoutManager: swapPanes throws for unknown pane", () => {
   );
 });
 
-// ===== Maximize IPane Tests =====
+// Maximize IPane Tests
 
 Deno.test("LayoutManager: maximizePane maximizes pane", () => {
   const manager = setupLayoutManager();
@@ -332,7 +332,7 @@ Deno.test("LayoutManager: maximizePane restores pane", () => {
   assertEquals(panes[0].previousBounds, undefined);
 });
 
-// ===== Resize IPane Tests =====
+// Resize IPane Tests
 
 Deno.test("LayoutManager: resizePane - shrink left", () => {
   const manager = setupLayoutManager();
@@ -358,7 +358,7 @@ Deno.test("LayoutManager: resizePane - grow right", () => {
   assertEquals(panes[1].width, 35);
 });
 
-// ===== Named Layouts Tests =====
+// Named Layouts Tests
 
 Deno.test("LayoutManager: saveNamedLayout saves layout", () => {
   const manager = createLayoutManager();
@@ -411,7 +411,7 @@ Deno.test("LayoutManager: listNamedLayouts returns layout names", () => {
   assertEquals(names.includes("layout-2"), true);
 });
 
-// ===== Serialization Tests =====
+// Serialization Tests
 
 Deno.test("LayoutManager: serializeLayout creates JSON", () => {
   const manager = createLayoutManager();
@@ -480,7 +480,7 @@ Deno.test("LayoutManager: validateLayout rejects invalid layout", () => {
   assertEquals(manager.validateLayout({ name: "test" }), false);
 });
 
-// ===== Rendering Tests =====
+// Rendering Tests
 
 Deno.test("renderLayoutPresetPicker: renders preset list", () => {
   const presets = LAYOUT_PRESETS;
@@ -530,7 +530,7 @@ Deno.test("renderResizeIndicator: renders direction arrows", () => {
   assertEquals(renderResizeIndicator(ResizeDirection.DOWN, theme).includes("▼"), true);
 });
 
-// ===== View Picker Dialog Tests =====
+// View Picker Dialog Tests
 
 Deno.test("createViewPickerState: creates initial state", () => {
   const state = createViewPickerState();
@@ -592,7 +592,7 @@ Deno.test("handleViewPickerKey: number key selects view", () => {
   assertEquals(result.selectedView, "MonitorView");
 });
 
-// ===== Layout Preset Dialog Tests =====
+// Layout Preset Dialog Tests
 
 Deno.test("createLayoutPresetState: creates initial state", () => {
   const state = createLayoutPresetState();
@@ -620,7 +620,7 @@ Deno.test("handleLayoutPresetKey: selects preset on enter", () => {
   assertEquals(result.selectedPreset, "side-by-side");
 });
 
-// ===== Named Layout Dialog Tests =====
+// Named Layout Dialog Tests
 
 Deno.test("createNamedLayoutState: creates initial state", () => {
   const state = createNamedLayoutState();
@@ -697,7 +697,7 @@ Deno.test("handleNamedLayoutKey: saves on enter with name", () => {
   assertEquals(result.closed, true);
 });
 
-// ===== Utility Rendering Tests =====
+// Utility Rendering Tests
 
 Deno.test("renderSwapIndicator: renders swap mode", () => {
   const result = renderSwapIndicator("pane-1", null, theme);
@@ -712,7 +712,7 @@ Deno.test("renderSwapIndicator: renders swap with target", () => {
   assertEquals(result.length > 0, true);
 });
 
-// ===== Extended Resize Tests (Branch Coverage) =====
+// Extended Resize Tests (Branch Coverage)
 
 Deno.test("LayoutManager: resizePane - down with neighbors", () => {
   const manager = createLayoutManager(80, 24);
@@ -768,7 +768,7 @@ Deno.test("LayoutManager: resizePane - min size constraints", () => {
   assertEquals(panes[0].height, hBefore); // Should not change
 });
 
-// ===== Extended Validation Tests =====
+// Extended Validation Tests
 
 Deno.test("LayoutManager: validateLayout checks types strictly", () => {
   const manager = createLayoutManager();
@@ -824,7 +824,7 @@ Deno.test("renderResizeModeIndicator: renders when active", () => {
   assertEquals(result.includes("RESIZE MODE"), true);
 });
 
-// ===== Normalization Tests =====
+// Normalization Tests
 
 Deno.test("LayoutManager: normalizeLayout constrains panes", () => {
   const manager = createLayoutManager(80, 24);

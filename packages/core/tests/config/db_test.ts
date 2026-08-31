@@ -249,7 +249,7 @@ Deno.test("[configuring] getOverrideHistory returns ordered history", () => {
   }
 });
 
-// ── config_mcp_blocklist DAO ──────────────────────────────
+// config_mcp_blocklist DAO
 
 Deno.test("[configuring] addBlocklistPattern inserts row", () => {
   const { db, dir } = createTestDb();
@@ -359,7 +359,7 @@ Deno.test("[configuring] isPathBlocked respects agent scope", () => {
   }
 });
 
-// ── rate limiting (countRecentCliWrites, hard limit, compact) ──
+// rate limiting (countRecentCliWrites, hard limit, compact)
 
 import { ConfigRateLimitedError } from "../../src/config/errors.ts";
 import type { IEventLogger } from "../../src/logger/event_logger.ts";
@@ -498,7 +498,7 @@ Deno.test("[configuring] compactOverrides collapses to one row per key preservin
   }
 });
 
-// ── getOverrideById point lookup ──────────────────────────────
+// getOverrideById point lookup
 
 Deno.test("[configuring] getOverrideById returns the matching row / undefined", () => {
   const { db, dir } = createTestDb();
@@ -519,7 +519,7 @@ Deno.test("[configuring] getOverrideById returns the matching row / undefined", 
   }
 });
 
-// ── config_locked_keys DAO ────────────────────────────
+// config_locked_keys DAO
 
 Deno.test("[configuring] lockKey/unlockKey/isKeyLocked/listLockedKeys DAO round-trip", () => {
   const { db, dir } = createTestDb();

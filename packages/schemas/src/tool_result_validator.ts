@@ -52,13 +52,9 @@ function buildValidationFailure(
 /** Pre-validation payload of indeterminate structure, accepted by all boundary validators. */
 type IUnvalidatedPayload = JSONValue;
 
-// ============================================================================
 // IToolResultValidator — interface for optional DI
-// ============================================================================
 
-// ============================================================================
 // Stateless validation helpers
-// ============================================================================
 
 /** rawResult is captured for audit logging but must not be forwarded to clients. */
 export function validateToolResultEnvelope(

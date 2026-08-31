@@ -11,9 +11,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { createEmbeddingProvider } from "../../src/embeddings/embedding_provider_factory.ts";
 import { EmbeddingError } from "../../src/embeddings/embedding_errors.ts";
 
-// ============================================================================
 // Factory Tests
-// ============================================================================
 
 Deno.test("EmbeddingProviderFactory: returns Ollama provider for ollama config", () => {
   const provider = createEmbeddingProvider({

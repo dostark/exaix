@@ -18,9 +18,7 @@ import type { LogMetadata } from "@exaix/core";
 import type { IWaitStateService } from "@exaix/flow/wait_states/wait_state_service.ts";
 import type { IWaitState } from "@exaix/flow/wait_states/wait_state.ts";
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 function makeEnvelope(overrides: Partial<ExecutionTriggerEnvelope> = {}): ExecutionTriggerEnvelope {
   return {
@@ -100,9 +98,7 @@ function createMockWaitStateService(): IMockWaitStateService {
   };
 }
 
-// ============================================================================
 // TriggerPolicyGate Tests
-// ============================================================================
 
 Deno.test("[TriggerPolicyGate] evaluates idempotency check first", async () => {
   const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
@@ -138,9 +134,7 @@ Deno.test("[TriggerPolicyGate] rejects triggers produce typed event", async () =
   assertEquals(decision.rejectionReason, "duplicate_idempotency_key");
 });
 
-// ============================================================================
 // TriggerIngestionService Tests
-// ============================================================================
 
 Deno.test("[TriggerIngestion] start_flow with valid envelope creates request", async () => {
   const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();
@@ -420,9 +414,7 @@ Deno.test("[TriggerIngestion] dispatches emit TriggerIngested and TriggerAccepte
   }
 });
 
-// ============================================================================
 // Cleanup Tests
-// ============================================================================
 
 Deno.test("[TriggerIngestion] duplicate idempotency key returns DEDUPLICATED disposition", async () => {
   const ledger: IIdempotencyLedger = new InMemoryIdempotencyLedger();

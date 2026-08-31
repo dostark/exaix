@@ -34,9 +34,7 @@ export enum AmbiguityImpact {
   HIGH = "high",
 }
 
-// ============================================================================
 // Sub-schemas
-// ============================================================================
 
 /**
  * A single goal extracted from the request.
@@ -107,9 +105,7 @@ export const RequestAnalysisMetadataSchema = z.object({
 
 export type IRequestAnalysisMetadata = z.infer<typeof RequestAnalysisMetadataSchema>;
 
-// ============================================================================
 // Root schema
-// ============================================================================
 
 /**
  * Full structured analysis of a request, produced by RequestAnalyzer.

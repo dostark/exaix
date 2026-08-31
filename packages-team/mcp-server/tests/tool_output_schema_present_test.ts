@@ -20,7 +20,7 @@ function liveTools() {
   );
 }
 
-// ── Output schema presence tests ──────────────────────────────────────────────
+// Output schema presence tests
 
 Deno.test("output_schema: every live tool has a populated output_schema", () => {
   const missing = liveTools().filter((e) => !e.output_schema || !e.output_schema.type);

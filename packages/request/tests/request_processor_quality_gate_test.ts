@@ -31,9 +31,7 @@ import type { IClarificationSession } from "@exaix/schemas/clarification_session
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
 import type { SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 async function makeEnv() {
   const { db, config, tempDir, cleanup } = await initTestDbService();
@@ -160,9 +158,7 @@ function makeTestProcessor(
   return { processor, mockProvider };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestProcessor] quality gate runs before agent execution", async () => {
   const env = await makeEnv();
@@ -342,9 +338,7 @@ Deno.test("[RequestProcessor] passes IRequestSpecification to buildParsedRequest
   }
 });
 
-// ---------------------------------------------------------------------------
 // Config wiring integration
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestProcessor] builds quality gate from TOML config when none injected", async () => {
   // heuristic mode + block_unactionable=false → gate recommends NEEDS_CLARIFICATION,

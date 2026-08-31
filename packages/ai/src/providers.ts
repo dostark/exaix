@@ -37,9 +37,7 @@ const _OPENAI_TIMEOUT_MS = DEFAULT_AI_TIMEOUT_MS;
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
-// ============================================================================
 // Mock Provider (for testing)
-// ============================================================================
 
 export class MockProvider implements IModelProvider {
   public readonly id: string;
@@ -68,9 +66,7 @@ export class MockProvider implements IModelProvider {
   }
 }
 
-// ============================================================================
 // Model Factory
-// ============================================================================
 
 /** Minimal OpenAI-compatible shim for quick model-specific adapters — avoids importing
  * the full `OpenAIProvider` implementation (would create a circular import). */

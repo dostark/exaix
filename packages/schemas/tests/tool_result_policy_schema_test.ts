@@ -12,9 +12,7 @@ import { TOOL_RESULT_VALIDATION_MAX_RETRIES } from "@exaix/core";
 import { ZodError } from "zod";
 import { ToolResultRemediationPolicySchema } from "@exaix/schemas";
 
-// ============================================================================
 // Policy modes
-// ============================================================================
 
 Deno.test("ToolResultRemediationPolicySchema: accepts fail_closed mode", () => {
   const policy = ToolResultRemediationPolicySchema.parse({
@@ -68,9 +66,7 @@ Deno.test("ToolResultRemediationPolicySchema: accepts escalate_only mode", () =>
   assertEquals(policy.triggerPlanAmendmentOnFailure, true);
 });
 
-// ============================================================================
 // maxRetries boundaries
-// ============================================================================
 
 Deno.test("ToolResultRemediationPolicySchema: maxRetries upper bound uses TOOL_RESULT_VALIDATION_MAX_RETRIES", () => {
   const policy = ToolResultRemediationPolicySchema.parse({
@@ -105,9 +101,7 @@ Deno.test("ToolResultRemediationPolicySchema: rejects negative maxRetries", () =
   );
 });
 
-// ============================================================================
 // Validation errors
-// ============================================================================
 
 Deno.test("ToolResultRemediationPolicySchema: rejects unknown mode", () => {
   assertThrows(

@@ -32,9 +32,7 @@ export type IToolResultJsonSchemaProperty = IToolResultJsonSchemaDescriptor | { 
 
 export type IToolResultJsonSchemaProperties = Record<string, IToolResultJsonSchemaProperty>;
 
-// ============================================================================
 // Tool Result Envelope Schema
-// ============================================================================
 
 /** Validates packages/core/src/types/i_tool_registry.ts's `IToolResult`, not
  *  tool_reflector.ts's separate, unrelated `IToolResult`. */
@@ -70,9 +68,7 @@ export const ToolResultEnvelopeSchema = z.object({
 
 export type IToolResultEnvelope = z.infer<typeof ToolResultEnvelopeSchema>;
 
-// ============================================================================
 // Tool Result Validation Failure Schema
-// ============================================================================
 
 export const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
   "executor_boundary",
@@ -103,9 +99,7 @@ export const ToolResultValidationFailureSchema = z.object({
 
 export type IToolResultValidationFailure = z.infer<typeof ToolResultValidationFailureSchema>;
 
-// ============================================================================
 // Remediation Policy Schema
-// ============================================================================
 
 /** Remediation mode: stop execution immediately on schema mismatch. Default for mutating tools. */
 export const REMEDIATION_MODE_FAIL_CLOSED = "fail_closed" as const;
@@ -146,9 +140,7 @@ export const ToolResultRemediationPolicySchema = z.object({
 
 export type IToolResultRemediationPolicy = z.infer<typeof ToolResultRemediationPolicySchema>;
 
-// ============================================================================
 // Schema Descriptor (API Discovery)
-// ============================================================================
 
 /** Returned by the exaix/tools/result_schema JSON-RPC method; derived from the same
  *  canonical metadata as runtime validation so discovery and enforcement cannot drift. */
@@ -164,9 +156,7 @@ export const ToolResultSchemaDescriptorSchema = z.object({
 
 export type IToolResultSchemaDescriptor = z.infer<typeof ToolResultSchemaDescriptorSchema>;
 
-// ============================================================================
 // Tool Result Schema Registry
-// ============================================================================
 
 /** Only populated for ToolRegistry-backed tools (delegates_to_registry: true) with
  *  structured nested data; MCP-handler-only tools are validated at the MCP boundary instead. */
@@ -225,9 +215,7 @@ export const TOOL_RESULT_SCHEMA_DESCRIPTOR_REGISTRY: Record<string, IToolResultJ
   },
 };
 
-// ============================================================================
 // Schema Discovery — Request/Response Schemas (exaix/tools/result_schema)
-// ============================================================================
 
 export const ToolResultSchemaRequestSchema = z.object({
   tool: z.string().min(1),

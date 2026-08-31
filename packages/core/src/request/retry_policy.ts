@@ -94,9 +94,7 @@ export const RETRYABLE_MESSAGE_PATTERNS: string[] = [
   "gateway timeout",
 ];
 
-// ============================================================================
 // Configuration Schema
-// ============================================================================
 
 const DEFAULT_RETRY_POLICY_MAX_DELAY_MS = 30000;
 
@@ -131,9 +129,7 @@ export const RetryPolicyConfigSchema = z.object({
 
 export type IRetryPolicyConfig = z.infer<typeof RetryPolicyConfigSchema>;
 
-// ============================================================================
 // RetryPolicy Class
-// ============================================================================
 
 /** Exponential backoff retry policy with jitter. Usage: `new RetryPolicy({ maxRetries: 3 }).execute(fn)`. */
 export class RetryPolicy implements IRetryPolicy {
@@ -305,9 +301,7 @@ export class RetryPolicy implements IRetryPolicy {
   }
 }
 
-// ============================================================================
 // Factory Functions
-// ============================================================================
 
 /**
  * Create a RetryPolicy with default configuration

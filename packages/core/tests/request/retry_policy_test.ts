@@ -15,9 +15,7 @@ import {
   type IRetryContext,
   RetryPolicy,
 } from "@exaix/core/request";
-// ============================================================================
 // RetryPolicy.execute() Tests
-// ============================================================================
 
 Deno.test("[RetryPolicy] succeeds on first attempt", async () => {
   const policy = new RetryPolicy({ maxRetries: 3 });
@@ -119,9 +117,7 @@ Deno.test("[RetryPolicy] retries on message pattern match", async () => {
   }
 });
 
-// ============================================================================
 // Exponential Backoff Tests
-// ============================================================================
 
 Deno.test("[RetryPolicy] calculates exponential backoff", () => {
   const policy = new RetryPolicy({
@@ -167,9 +163,7 @@ Deno.test("[RetryPolicy] adds jitter to delay", () => {
   assertGreater(uniqueDelays.size, 1, "Jitter should produce variance");
 });
 
-// ============================================================================
 // Temperature Adjustment Tests
-// ============================================================================
 
 Deno.test("[RetryPolicy] increases temperature on retry", async () => {
   const policy = new RetryPolicy({
@@ -227,9 +221,7 @@ Deno.test("[RetryPolicy] caps temperature at maxTemperature", async () => {
   assertEquals(temperatures[2], 1.0);
 });
 
-// ============================================================================
 // Retry Callback Tests
-// ============================================================================
 
 Deno.test("[RetryPolicy] calls onRetry callback", async () => {
   const policy = new RetryPolicy({
@@ -252,9 +244,7 @@ Deno.test("[RetryPolicy] calls onRetry callback", async () => {
   assertEquals(retryContexts[1].attempt, 2);
 });
 
-// ============================================================================
 // Abort Signal Tests
-// ============================================================================
 
 Deno.test("[RetryPolicy] respects abort signal", async () => {
   const policy = new RetryPolicy({
@@ -280,9 +270,7 @@ Deno.test("[RetryPolicy] respects abort signal", async () => {
   assertLess(callCount, 5);
 });
 
-// ============================================================================
 // Factory Function Tests
-// ============================================================================
 
 Deno.test("[createRetryPolicy] creates policy with defaults", () => {
   const policy = createRetryPolicy();
@@ -311,9 +299,7 @@ Deno.test("[createAPIRetryPolicy] creates API-optimized policy", () => {
   assertEquals(config.initialDelayMs, 500);
 });
 
-// ============================================================================
 // isRetryable Tests
-// ============================================================================
 
 Deno.test("[RetryPolicy] isRetryable identifies retryable errors", () => {
   const policy = new RetryPolicy();
@@ -329,9 +315,7 @@ Deno.test("[RetryPolicy] isRetryable identifies retryable errors", () => {
   assert(!policy.isRetryable(new Error("authentication failed")));
 });
 
-// ============================================================================
 // Edge Cases
-// ============================================================================
 
 Deno.test("[RetryPolicy] handles maxRetries = 0", async () => {
   const policy = new RetryPolicy({ maxRetries: 0 });

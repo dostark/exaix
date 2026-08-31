@@ -18,9 +18,7 @@ import {
 } from "@exaix/schemas/request_quality_assessment.ts";
 import { enrichRequest } from "@exaix/quality-gate";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 const SAMPLE_ISSUES: IRequestQualityIssue[] = [
   {
@@ -39,9 +37,7 @@ const SAMPLE_ISSUES: IRequestQualityIssue[] = [
 
 const ORIGINAL_BODY = "make the login work better";
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestEnricherLlm] returns enriched body from LLM", async () => {
   const enrichedText = "Improve the login flow by:\n1. Fixing JWT validation\n2. Returning 401 on failure";

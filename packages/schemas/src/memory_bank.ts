@@ -27,7 +27,7 @@ import {
   ToolName,
 } from "@exaix/core";
 
-// ===== Project Memory Schemas =====
+// Project Memory Schemas
 
 export interface IMemorySearchResult {
   type: MemoryType;
@@ -110,7 +110,7 @@ export type IDecision = z.infer<typeof DecisionSchema>;
 export type IReference = z.infer<typeof ReferenceSchema>;
 export type IProjectMemory = z.infer<typeof ProjectMemorySchema>;
 
-// ===== Execution Memory Schemas =====
+// Execution Memory Schemas
 
 export const ChangesSchema = z.object({
   files_created: z.array(z.string()).describe("Files created during execution"),
@@ -149,7 +149,7 @@ export const ExecutionMemorySchema = z.object({
 export type IChanges = z.infer<typeof ChangesSchema>;
 export type IExecutionMemory = z.infer<typeof ExecutionMemorySchema>;
 
-// ===== Learning Schemas (Global Memory) =====
+// Learning Schemas (Global Memory)
 
 /**
  * Learning reference - links to supporting evidence
@@ -241,7 +241,7 @@ export type IGlobalAntiPattern = z.infer<typeof GlobalAntiPatternSchema>;
 export type IGlobalMemoryStats = z.infer<typeof GlobalMemoryStatsSchema>;
 export type IGlobalMemory = z.infer<typeof GlobalMemorySchema>;
 
-// ===== Memory Update Proposal Schema (Agent Memory Updates) =====
+// Memory Update Proposal Schema (Agent Memory Updates)
 
 /** Partial learning schema for proposals (without status/approved_at fields) — those
  *  fields are managed by the proposal workflow, not the learning itself. */
@@ -289,7 +289,7 @@ export const MemoryUpdateProposalSchema = z.object({
 export type IProposalLearning = z.infer<typeof ProposalLearningSchema>;
 export type IMemoryUpdateProposal = z.infer<typeof MemoryUpdateProposalSchema>;
 
-// ===== Skill Schemas (Skills Architecture) =====
+// Skill Schemas (Skills Architecture)
 
 /**
  * Skill trigger conditions - determines when a skill should be activated
@@ -328,7 +328,7 @@ export const SkillCompatibilitySchema = z.object({
  *  (observations) or Patterns (structures), Skills are actionable instructions that
  *  encode domain expertise, procedures, and best practices as reusable modules. */
 export const SkillSchema = z.object({
-  // === Memory Bank Standard Fields ===
+  // Memory Bank Standard Fields
   id: z.string().uuid(),
   created_at: z.string().datetime(),
   source: z.nativeEnum(MemoryBankSource).describe("Origin of the skill"),
@@ -339,19 +339,19 @@ export const SkillSchema = z.object({
 
   status: z.nativeEnum(SkillStatus).describe("Skill lifecycle status"),
 
-  // === Skill Identity ===
+  // Skill Identity
   skill_id: z.string().regex(/^[a-z0-9-]+$/).describe("Unique skill identifier (kebab-case)"),
   name: z.string().min(1).max(100).describe("Human-readable skill name"),
   version: z.string().regex(/^\d+\.\d+\.\d+$/).describe("Semantic version"),
   description: z.string().describe("Brief description of what the skill does"),
 
-  // === Trigger Conditions ===
+  // Trigger Conditions
   triggers: SkillTriggersSchema.describe("Conditions for automatic activation"),
 
-  // === Procedural Knowledge ===
+  // Procedural Knowledge
   instructions: z.string().min(10).describe("The procedural instructions (markdown)"),
 
-  // === Constraints and Quality ===
+  // Constraints and Quality
   constraints: z.array(z.string()).optional().describe("Rules that must be followed"),
   output_requirements: z.array(z.string()).optional().describe("Expected output format/content"),
   quality_criteria: z.array(SkillQualityCriterionSchema).optional().describe("Evaluation criteria"),
@@ -370,10 +370,10 @@ export const SkillSchema = z.object({
     "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the identity's permitted_tools",
   ),
 
-  // === Compatibility ===
+  // Compatibility
   compatible_with: SkillCompatibilitySchema.optional().describe("Compatibility constraints"),
 
-  // === Evolution Tracking ===
+  // Evolution Tracking
   derived_from: z.array(z.string()).optional().describe("Learning IDs this skill was derived from"),
   effectiveness_score: z.number().min(0).max(100).optional().describe("Measured effectiveness"),
   usage_count: z.number().default(0).describe("Number of times skill has been used"),
@@ -430,4 +430,4 @@ export const SkillIndexSchema = z.object({
 export type ISkillIndexEntry = z.infer<typeof SkillIndexEntrySchema>;
 export type ISkillIndex = z.infer<typeof SkillIndexSchema>;
 
-// ===== Helper Types =====
+// Helper Types

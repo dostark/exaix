@@ -46,7 +46,7 @@ function manifestAllDynamicToolNames(): string[] {
     .sort();
 }
 
-// ── DYNAMIC_MODE_TOOLS parity ─────────────────────────────────────────────────
+// DYNAMIC_MODE_TOOLS parity
 
 Deno.test("dynamic_parity: DYNAMIC_MODE_TOOLS matches manifest entries where dynamic_allowed && !requires_approval", () => {
   const manifestSafe = manifestSafeToolNames();
@@ -60,7 +60,7 @@ Deno.test("dynamic_parity: DYNAMIC_MODE_TOOLS matches manifest entries where dyn
   );
 });
 
-// ── DYNAMIC_MODE_APPROVAL_TOOLS parity ───────────────────────────────────────
+// DYNAMIC_MODE_APPROVAL_TOOLS parity
 
 Deno.test("dynamic_parity: DYNAMIC_MODE_APPROVAL_TOOLS matches manifest entries where dynamic_allowed && requires_approval", () => {
   const manifestApproval = manifestApprovalToolNames();
@@ -94,7 +94,7 @@ Deno.test("dynamic_parity: DYNAMIC_MODE_TOOLS and DYNAMIC_MODE_APPROVAL_TOOLS ar
   }
 });
 
-// ── buildDynamicHandlers parity ───────────────────────────────────────────────
+// buildDynamicHandlers parity
 
 Deno.test("dynamic_parity: buildDynamicHandlers() keys match all manifest dynamic_mode_allowed entries", () => {
   const dynamicHandlers = buildDynamicHandlers(context, permissions);

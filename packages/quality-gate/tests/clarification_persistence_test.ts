@@ -12,9 +12,7 @@ import type { IRequestSpecification } from "@exaix/schemas/request_specification
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import { loadClarification, renderSpecificationAsPrompt, saveClarification } from "@exaix/quality-gate";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeTempDir(): Promise<string> {
   return Deno.makeTempDir({ prefix: "clari_test_" });
@@ -30,9 +28,7 @@ function makeSession(requestId: string): IClarificationSession {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[ClarificationPersistence] saves session as JSON sibling file", async () => {
   const dir = await makeTempDir();
@@ -113,9 +109,7 @@ Deno.test("[ClarificationPersistence] uses atomic write", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // renderSpecificationAsPrompt
-// ---------------------------------------------------------------------------
 
 const FULL_SPEC: IRequestSpecification = {
   summary: "Implement JWT authentication",

@@ -13,7 +13,7 @@ import type { IContextBudgetManager } from "@exaix/execution";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IExecutionMilestone } from "@exaix/schemas/milestone_event.ts";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 interface IContextSegmentOverrides {
   segmentId: string;
@@ -70,7 +70,7 @@ class MockMilestoneEmitter implements IMilestoneEmitter {
   }
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test(
   "ContextBudgetManager: emits context.compaction.applied milestone when compaction occurs",

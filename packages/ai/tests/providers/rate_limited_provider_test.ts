@@ -26,9 +26,7 @@ function makeResult(content: string): IGenerateResult {
   };
 }
 
-// ============================================================================
 // Test Fixtures
-// ============================================================================
 
 /**
  * Create a mock provider for testing
@@ -61,9 +59,7 @@ function createErrorProvider(error: Error): IModelProvider {
   };
 }
 
-// ============================================================================
 // Unit Tests for RateLimitedProvider
-// ============================================================================
 
 Deno.test("RateLimitedProvider: allows calls within minute limit", async () => {
   const mockProvider = createMockProvider();

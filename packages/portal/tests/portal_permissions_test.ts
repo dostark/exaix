@@ -14,9 +14,7 @@ import { PortalPermissionsService } from "@exaix/portal";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-// ============================================================================
 // Test Helpers
-// ============================================================================
 
 function createTestPortal(overrides: Partial<IPortalPermissions> = {}): IPortalPermissions {
   return {
@@ -42,9 +40,7 @@ function createTestService(portals: IPortalPermissions[] = [createTestPortal()])
   return new PortalPermissionsService(portals, undefined);
 }
 
-// ============================================================================
 // Agent Whitelist Tests
-// ============================================================================
 
 Deno.test("IPortalPermissions: allows whitelisted agent", () => {
   const service = createTestService();
@@ -87,9 +83,7 @@ Deno.test("IPortalPermissions: rejects unknown portal", () => {
   assertEquals(result.reason?.includes("not found"), true);
 });
 
-// ============================================================================
 // Operation Permission Tests
-// ============================================================================
 
 Deno.test("IPortalPermissions: allows permitted read operation", () => {
   const portal = createTestPortal({
@@ -158,9 +152,7 @@ Deno.test("IPortalPermissions: rejects operation for non-whitelisted agent", () 
   assertEquals(result.reason?.includes("not allowed"), true);
 });
 
-// ============================================================================
 // Security Mode Tests
-// ============================================================================
 
 Deno.test("IPortalPermissions: returns sandboxed security mode", () => {
   const portal = createTestPortal({
@@ -203,9 +195,7 @@ Deno.test("IPortalPermissions: defaults to sandboxed if no security config", () 
   assertEquals(mode, SecurityMode.SANDBOXED);
 });
 
-// ============================================================================
 // Multiple Portals Tests
-// ============================================================================
 
 Deno.test("IPortalPermissions: handles multiple portals independently", () => {
   const portal1 = createTestPortal({
@@ -271,9 +261,7 @@ Deno.test("IPortalPermissions: validates operations per portal", () => {
   assertEquals(git2.allowed, true);
 });
 
-// ============================================================================
 // Audit Configuration Tests
-// ============================================================================
 
 Deno.test("IPortalPermissions: returns audit configuration", () => {
   const portal = createTestPortal({
@@ -307,9 +295,7 @@ Deno.test("IPortalPermissions: returns default audit config if not specified", (
   assertEquals(config?.log_all_actions, true);
 });
 
-// ============================================================================
 // Enhanced RBAC Permission Tests
-// ============================================================================
 
 Deno.test("IPortalPermissions: RBAC allows matching permission", () => {
   const portal = createTestPortal({

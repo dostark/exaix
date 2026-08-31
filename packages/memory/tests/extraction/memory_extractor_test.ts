@@ -37,7 +37,7 @@ import {
 } from "@exaix/testing";
 import { createMinimalProjectMemory } from "@exaix/testing";
 
-// ===== MemoryUpdateProposalSchema Tests =====
+// MemoryUpdateProposalSchema Tests
 
 Deno.test("MemoryUpdateProposalSchema: validates minimal proposal", () => {
   const proposal = createMinimalProposal();
@@ -74,7 +74,7 @@ Deno.test("MemoryUpdateProposalSchema: rejects invalid status", () => {
   assertEquals(result.success, false);
 });
 
-// ===== MemoryExtractorService Tests =====
+// MemoryExtractorService Tests
 
 /**
  * Creates test environment for memory extractor tests
@@ -212,7 +212,7 @@ Deno.test("MemoryExtractorService: analyzeExecution returns empty for trivial ex
   }
 });
 
-// ===== createProposal Tests =====
+// createProposal Tests
 
 Deno.test("MemoryExtractorService: createProposal writes to Pending directory", async () => {
   const { config, extractor, cleanup } = await initExtractorTest();
@@ -293,7 +293,7 @@ Deno.test("MemoryExtractorService: createProposal logs to IActivity Journal", as
   }
 });
 
-// ===== Pending Operations Tests =====
+// Pending Operations Tests
 
 Deno.test("MemoryExtractorService: listPending returns all pending proposals", async () => {
   const { extractor, cleanup } = await initExtractorTest();

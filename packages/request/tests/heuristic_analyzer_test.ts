@@ -12,9 +12,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { analyzeHeuristic } from "@exaix/request";
 import { AmbiguityImpact, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 
-// ---------------------------------------------------------------------------
 // File reference detection
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] detects file references in request text", () => {
   const text = `
@@ -40,9 +38,7 @@ Deno.test("[HeuristicAnalyzer] returns empty referencedFiles when none present",
   assertEquals(result.referencedFiles, []);
 });
 
-// ---------------------------------------------------------------------------
 // Keyword / tag extraction
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] extracts action verbs as tags", () => {
   const text = "Implement a new cache layer. Refactor the database service. Add tests for it.";
@@ -53,9 +49,7 @@ Deno.test("[HeuristicAnalyzer] extracts action verbs as tags", () => {
   assertEquals(joined.includes("implement") || joined.includes("refactor") || joined.includes("add"), true);
 });
 
-// ---------------------------------------------------------------------------
 // Complexity classification
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] classifies simple single-line request", () => {
   const text = "Fix typo in README.";
@@ -109,9 +103,7 @@ Deno.test("[HeuristicAnalyzer] classifies epic multi-phase request", () => {
   assertEquals(result.complexity, RequestAnalysisComplexity.EPIC);
 });
 
-// ---------------------------------------------------------------------------
 // Ambiguity detection
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] detects ambiguity signals in vague requests", () => {
   const text = "Maybe fix that thing. It should probably work better somehow.";
@@ -139,9 +131,7 @@ Deno.test("[HeuristicAnalyzer] detects no ambiguity in well-specified requests",
   assertEquals(highImpact.length, 0);
 });
 
-// ---------------------------------------------------------------------------
 // Task type classification
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] classifies task type from 'fix' verb as bugfix", () => {
   const text = "Fix the NullPointerException in OrderService.processPayment().";
@@ -173,9 +163,7 @@ Deno.test("[HeuristicAnalyzer] classifies task type from 'implement' as feature"
   assertEquals(result.taskType, RequestTaskType.FEATURE);
 });
 
-// ---------------------------------------------------------------------------
 // Edge cases
-// ---------------------------------------------------------------------------
 
 Deno.test("[HeuristicAnalyzer] handles empty request text gracefully", () => {
   const result = analyzeHeuristic("");

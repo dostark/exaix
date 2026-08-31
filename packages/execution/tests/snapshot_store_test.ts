@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import type { IContextBudgetSnapshot } from "@exaix/schemas";
 import { FileSnapshotStore, SecurityError } from "@exaix/execution";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function makeSnapshot(traceId: string, stepId = "step-1"): IContextBudgetSnapshot {
   return {
@@ -36,7 +36,7 @@ function makeResolver(tempDir: string): { resolve(path: string): Promise<string>
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test("[SnapshotStore] FileSnapshotStore: saves snapshot JSON to path rooted in @Memory/Execution/", async () => {
   const tempDir = await Deno.makeTempDir();

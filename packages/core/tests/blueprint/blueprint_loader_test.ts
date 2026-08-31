@@ -37,9 +37,7 @@ async function teardown(dir: string) {
   }
 }
 
-// ============================================================================
 // IBlueprintLoader.load() Tests
-// ============================================================================
 
 Deno.test("[IBlueprintLoader] loads blueprint with YAML frontmatter", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
@@ -230,9 +228,7 @@ Content
   }
 });
 
-// ============================================================================
 // Extension Fields Tests
-// ============================================================================
 
 Deno.test("[IBlueprintLoader] parses reflexive agent configuration", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
@@ -279,9 +275,7 @@ Deno.test("[IBlueprintLoader] parses memory and skills configuration", async () 
   }
 });
 
-// ============================================================================
 // Caching Tests
-// ============================================================================
 
 Deno.test("[IBlueprintLoader] caches loaded blueprints", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
@@ -353,9 +347,7 @@ Content
   }
 });
 
-// ============================================================================
 // Backward Compatibility Tests
-// ============================================================================
 
 Deno.test("[IBlueprintLoader] toLegacyBlueprint returns compatible interface", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
@@ -450,9 +442,7 @@ Deno.test("[createBlueprintLoader] factory function creates loader", async () =>
   }
 });
 
-// ============================================================================
 // Name Derivation Tests
-// ============================================================================
 
 Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
@@ -481,9 +471,7 @@ Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () =>
   }
 });
 
-// ============================================================================
 // Identities Path Tests
-// ============================================================================
 
 Deno.test("[IBlueprintLoader] loads from Identities path (canonical)", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();

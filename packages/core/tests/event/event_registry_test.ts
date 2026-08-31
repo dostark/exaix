@@ -11,9 +11,7 @@ import { DomainEventType, EventRegistry, type IEventRegistry, type TDomainEventT
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core";
 
-// ============================================================================
 // DomainEventType values
-// ============================================================================
 
 Deno.test("[EventRegistry] DomainEventType has correct values", () => {
   assertEquals(DomainEventType.FlowStepExecuted, "flow.step.executed");
@@ -38,9 +36,7 @@ Deno.test("[EventRegistry] TDomainEventType resolves from all enum values", () =
   }
 });
 
-// ============================================================================
 // EventRegistry — construction
-// ============================================================================
 
 function createMockLogger(): {
   logger: IEventLogger;
@@ -90,9 +86,7 @@ Deno.test("[EventRegistry] registerPublisher stores sourceId and event types", (
   assertEquals(publishers.get("test_source")?.has(DomainEventType.ChildRunSpawned), false);
 });
 
-// ============================================================================
 // EventRegistry — emit validation
-// ============================================================================
 
 Deno.test("[EventRegistry] emit with unregistered sourceId throws", async () => {
   const { registry } = createRegistry();

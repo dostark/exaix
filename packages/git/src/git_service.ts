@@ -60,13 +60,9 @@ function getRandomString(length: number): string {
   return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
 }
 
-// ============================================================================
 // Types
-// ============================================================================
 
-// ============================================================================
 // Git Error Classes
-// ============================================================================
 
 export class GitError extends Error {
   constructor(message: string) {
@@ -117,9 +113,7 @@ export class GitSecurityError extends GitError {
   }
 }
 
-// ============================================================================
 // GitService Implementation
-// ============================================================================
 
 export class GitService implements IGitService {
   private config: Config;

@@ -36,9 +36,7 @@ export const TUI_MSG_PRESS_QUIT = "Press ESC or q to close";
 export const TUI_MSG_PRESS_CLOSE_HELP = "\nPress ? or Esc to close help";
 export const TUI_MSG_DASHBOARD_HEADER = "                         Exaix TUI Dashboard                               ";
 
-// ============================================================================
 // TUI Layout and Display Constants
-// ============================================================================
 export const TUI_LAYOUT_LABEL_WIDTH = 30;
 export const TUI_LAYOUT_FULL_WIDTH = 80;
 export const TUI_LAYOUT_MEDIUM_WIDTH = 60;
@@ -62,21 +60,15 @@ export const TUI_PREVIEW_MEDIUM = 60;
 export const TUI_SPINNER_FRAMES = 10;
 export const TUI_MAIN_PANE_ID = "main";
 
-// ============================================================================
 // TUI Focusable Element IDs
-// ============================================================================
 export const TUI_ELEMENT_ACTION_BUTTONS = "action-buttons";
 
-// ============================================================================
 // General System Limits and Thresholds
-// ============================================================================
 
 /** Narrow width for TUI minor panels and windows */
 export const TUI_LAYOUT_NARROW_WIDTH = 50;
 
-// ============================================================================
 // TUI Portal Icons
-// ============================================================================
 export const TUI_ICON_PORTAL_ACTIVE = "🟢";
 export const TUI_ICON_PORTAL_BROKEN = "🔴";
 export const TUI_ICON_PORTAL_INACTIVE = "⚪";
@@ -89,9 +81,7 @@ export const TUI_ICON_WARNING = "⚠️";
 export const TUI_ICON_DEBUG = "🔍";
 export const TUI_ICON_FATAL = "💀";
 
-// ============================================================================
 // TUI Priority Icons
-// ============================================================================
 export const TUI_PRIORITY_ICONS: Record<string, string> = {
   critical: "🔴",
   high: "🟠",
@@ -100,9 +90,7 @@ export const TUI_PRIORITY_ICONS: Record<string, string> = {
   default: "⚪", // Fallback
 };
 
-// ============================================================================
 // TUI Status Icons
-// ============================================================================
 export const TUI_STATUS_ICONS: Record<string, string> = {
   pending: "⏳",
   queued: "📋",
@@ -115,50 +103,38 @@ export const TUI_STATUS_ICONS: Record<string, string> = {
   deprecated: "⚫",
 };
 
-// ============================================================================
 // TUI Agent Status Icons
-// ============================================================================
 export const TUI_AGENT_STATUS_ICONS: Record<string, string> = {
   active: "🟢",
   inactive: "🟡",
   error: "🔴",
 };
 
-// ============================================================================
 // TUI Agent Health Icons
-// ============================================================================
 export const TUI_AGENT_HEALTH_ICONS: Record<string, string> = {
   healthy: "✅",
   warning: "⚠️",
   critical: "❌",
 };
 
-// ============================================================================
 // TUI Log Level Icons
-// ============================================================================
 export const TUI_LOG_LEVEL_ICONS: Record<string, string> = {
   info: "ℹ️",
   warn: "⚠️",
   error: "❌",
 };
 
-// ============================================================================
 // TUI Source Icons
-// ============================================================================
 export const TUI_SOURCE_ICONS: Record<string, string> = {
   core: "📦",
   project: "📁",
   learned: "📚",
 };
 
-// ============================================================================
 // TUI Skill Icon
-// ============================================================================
 export const TUI_SKILL_ICON = "🎯";
 
-// ============================================================================
 // TUI Portal Status Icons
-// ============================================================================
 export const TUI_PORTAL_ICONS = {
   active: TUI_ICON_PORTAL_ACTIVE,
   broken: TUI_ICON_PORTAL_BROKEN,
@@ -166,9 +142,7 @@ export const TUI_PORTAL_ICONS = {
   folder: TUI_ICON_FOLDER,
 } as const;
 
-// ============================================================================
 // TUI Tree Icons
-// ============================================================================
 export const TUI_TREE_ICONS = {
   expanded: "▼",
   collapsed: "▶",
@@ -192,9 +166,7 @@ export const TUI_TREE_ICONS = {
   log: "📋",
 } as const;
 
-// ============================================================================
 // TUI Default Log Icons
-// ============================================================================
 export const TUI_DEFAULT_ICONS: Record<string, string> = {
   info: TUI_ICON_SUCCESS,
   warn: TUI_ICON_WARNING,
@@ -203,9 +175,7 @@ export const TUI_DEFAULT_ICONS: Record<string, string> = {
   fatal: TUI_ICON_FATAL,
 };
 
-// ============================================================================
 // TUI Log Event Icons
-// ============================================================================
 export const TUI_LOG_ICONS: Record<string, string> = {
   "request_created": "📝",
   "request.created": "📝",
@@ -222,9 +192,7 @@ export const TUI_LOG_ICONS: Record<string, string> = {
   "default": "📋",
 };
 
-// ============================================================================
 // TUI Daemon Status Icons
-// ============================================================================
 export const TUI_DAEMON_STATUS_ICONS: Record<string, string> = {
   running: "🟢",
   stopped: "🔴",
@@ -232,9 +200,7 @@ export const TUI_DAEMON_STATUS_ICONS: Record<string, string> = {
   unknown: "❓",
 };
 
-// ============================================================================
 // TUI Dashboard Icons
-// ============================================================================
 export const TUI_DASHBOARD_ICONS = {
   views: {
     PortalManagerView: "🌀",
@@ -275,30 +241,20 @@ export const TUI_DASHBOARD_ICONS = {
   },
 } as const;
 
-// ============================================================================
 // TUI Node Types
-// ============================================================================
 export const TUI_NODE_TYPE_AGENT = "agent";
 export const TUI_NODE_TYPE_MODEL_GROUP = "model_group";
 export const TUI_NODE_TYPE_STATUS_GROUP = "status_group";
 
-// ============================================================================
 // TUI View Labels
-// ============================================================================
 export const TUI_LABEL_CANCEL = "Cancel";
 export const TUI_LABEL_PORTAL_MANAGER = "Portal Manager";
 
-// ============================================================================
 // TUI Separator Strings
-// ============================================================================
 export const TUI_SEPARATOR_ROW = "├────────────────────────────────────────┤";
 
-// ============================================================================
 // TUI Key Display Labels
-// ============================================================================
 export const TUI_KEY_LABEL_ENTER = "Enter";
 
-// ============================================================================
 // TUI Action Types
-// ============================================================================
 export const TUI_ACTION_SEARCH = "search";

@@ -8,9 +8,7 @@
  */
 import { assertEquals, assertExists } from "@std/assert";
 import type { IRequestFrontmatter } from "@exaix/core/request";
-// ---------------------------------------------------------------------------
 // acceptance_criteria
-// ---------------------------------------------------------------------------
 
 Deno.test("[IRequestFrontmatter] accepts acceptance_criteria string array", () => {
   const fm: IRequestFrontmatter = {
@@ -38,9 +36,7 @@ Deno.test("[IRequestFrontmatter] acceptance_criteria is optional", () => {
   assertEquals(fm.acceptance_criteria, undefined);
 });
 
-// ---------------------------------------------------------------------------
 // expected_outcomes
-// ---------------------------------------------------------------------------
 
 Deno.test("[IRequestFrontmatter] accepts expected_outcomes string array", () => {
   const fm: IRequestFrontmatter = {
@@ -68,9 +64,7 @@ Deno.test("[IRequestFrontmatter] expected_outcomes is optional", () => {
   assertEquals(fm.expected_outcomes, undefined);
 });
 
-// ---------------------------------------------------------------------------
 // scope
-// ---------------------------------------------------------------------------
 
 Deno.test("[IRequestFrontmatter] accepts scope with include and exclude arrays", () => {
   const fm: IRequestFrontmatter = {
@@ -114,9 +108,7 @@ Deno.test("[IRequestFrontmatter] scope is optional", () => {
   assertEquals(fm.scope, undefined);
 });
 
-// ---------------------------------------------------------------------------
 // Backward compatibility
-// ---------------------------------------------------------------------------
 
 Deno.test("[IRequestFrontmatter] existing fields unaffected by new additions", () => {
   const fm: IRequestFrontmatter = {

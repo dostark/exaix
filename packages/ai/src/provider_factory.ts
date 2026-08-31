@@ -46,9 +46,7 @@ export function ensureProviderRegistryInitialized(): void {
   externalProviderRegistryBootstrap?.();
 }
 
-// ============================================================================
 // ProviderFactory Implementation
-// ============================================================================
 
 export class ProviderFactory {
   /** Creates an LLM provider via a fallback chain: tries primary, then fallbacks, with optional health check and retry logic. */
@@ -283,9 +281,7 @@ export class ProviderFactory {
     };
   }
 
-  // ============================================================================
   // Private Methods
-  // ============================================================================
 
   /**
    * Resolve provider options by name
@@ -427,9 +423,7 @@ export class ProviderFactory {
   }
 }
 
-// ============================================================================
 // Registry Initialization
-// ============================================================================
 
 /** Initializes package-owned provider factories in the registry; concrete extracted providers are registered separately by a root composition bootstrap. */
 export function initializeRegistry(): void {
@@ -449,9 +443,7 @@ export function initializeRegistry(): void {
   }
 }
 
-// ============================================================================
 // Provider Validation and Health Checks
-// ============================================================================
 
 /** Validates a provider connection via a lightweight test request; used for health checks in fallback chains. */
 export async function validateProviderConnection(provider: IModelProvider): Promise<void> {

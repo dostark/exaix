@@ -23,9 +23,7 @@ import {
   McpTransportType,
 } from "@exaix/core";
 
-// ============================================================================
 // MCP Configuration Schema
-// ============================================================================
 
 export const MCPConfigSchema = z.object({
   enabled: z.boolean().default(true),
@@ -43,9 +41,7 @@ export const MCPConfigSchema = z.object({
 
 export type MCPConfig = z.infer<typeof MCPConfigSchema>;
 
-// ============================================================================
 // MCP Tool Schemas
-// ============================================================================
 
 const MCP_ERR_PORTAL_REQUIRED = "Portal name required";
 const MCP_ERR_IDENTITY_REQUIRED = "Identity ID required";
@@ -242,9 +238,7 @@ export type MCPToolArgs =
   | z.infer<typeof SearchFilesToolArgsSchema>
   | z.infer<typeof PortalSymbolsToolArgsSchema>;
 
-// ============================================================================
 // MCP Response Schemas
-// ============================================================================
 
 const MCPTextContentSchema = z.object({
   type: z.literal("text"),
@@ -276,9 +270,7 @@ export type MCPContent = z.infer<typeof MCPContentSchema>;
 export type MCPToolResponse = z.infer<typeof MCPToolResponseSchema>;
 export type MCPError = z.infer<typeof MCPErrorSchema>;
 
-// ============================================================================
 // MCP Resource Schemas
-// ============================================================================
 
 export const MCPResourceSchema = z.object({
   uri: z.string().startsWith("portal://", "URI must start with portal://"),
@@ -289,9 +281,7 @@ export const MCPResourceSchema = z.object({
 
 export type IMCPResource = z.infer<typeof MCPResourceSchema>;
 
-// ============================================================================
 // MCP Prompt Schemas
-// ============================================================================
 
 export const MCPPromptArgumentSchema = z.object({
   name: z.string(),
@@ -307,9 +297,7 @@ export const MCPPromptSchema = z.object({
 
 export type IMCPPrompt = z.infer<typeof MCPPromptSchema>;
 
-// ============================================================================
 // MCP Tool Definition Schema
-// ============================================================================
 
 export const MCPToolSchema = z.object({
   name: z.string(),

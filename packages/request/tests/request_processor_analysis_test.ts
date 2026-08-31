@@ -43,9 +43,7 @@ import {
   makeThrowingAnalyzer,
 } from "./request_test_helpers.ts";
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 type AnalysisEnv = Awaited<ReturnType<typeof makeRequestProcessorEnv>>;
 
@@ -103,13 +101,9 @@ function makeStubAnalysisProcessor(
   return { processor };
 }
 
-// ============================================================================
 // Tests
-// ============================================================================
 
-// ============================================================================
 // Unit tests: applyAnalysisToRequest
-// ============================================================================
 
 Deno.test("[RequestProcessor] populates IParsedRequest.taskType from analysis", () => {
   const frontmatter = makeTestFrontmatter();
@@ -174,9 +168,7 @@ Deno.test("[RequestProcessor] populates request.context.analysis for downstream 
   assertEquals((request.context.analysis as IRequestAnalysis).taskType, RequestTaskType.FEATURE);
 });
 
-// ============================================================================
 // Integration tests: RequestProcessor pipeline
-// ============================================================================
 
 Deno.test("[RequestProcessor] runs analysis before agent execution", async () => {
   const env = await makeRequestProcessorEnv();

@@ -55,7 +55,7 @@ export interface IInsertOverrideOpts {
 const CONFIG_DB_FILE = "config.db";
 const CONFIG_DB_DIR = ".exa";
 
-// ── Config `source` vocabulary ────────────────────
+// Config `source` vocabulary
 // All values the `source` column of config_overrides may take, co-located here
 // (the Config-DB layer owns the column) rather than split across constants.ts.
 /** Seed rows written by seedConfigDb (NULL value, registry default resolves). */
@@ -251,7 +251,7 @@ export function getOverrideHistory(
   }));
 }
 
-// ── config_mcp_blocklist DAO ──────────────────────────────
+// config_mcp_blocklist DAO
 
 /** Adds a deny-permanently blocklist pattern. `agentId` scopes the block to one agent; omit it (NULL) to block for all agents. Idempotent on the `(agent_id, key_pattern)` unique key. */
 export function addBlocklistPattern(
@@ -319,7 +319,7 @@ export function isPathBlocked(
   return rows.some((row) => globMatches(row.key_pattern, key));
 }
 
-// ── config_locked_keys DAO ────────────────────────────────
+// config_locked_keys DAO
 
 /** Lock `key` against writes. Idempotent on the `key` PRIMARY KEY (re-lock updates the row). */
 export function lockKey(

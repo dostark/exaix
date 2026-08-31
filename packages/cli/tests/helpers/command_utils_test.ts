@@ -10,9 +10,7 @@
 import { assertEquals } from "@std/assert";
 import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 
-// ──────────────────────────────────────────────────────────────────────
 // formatValidationErrors
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("CommandUtils.formatValidationErrors: returns empty string when valid", () => {
   assertEquals(CommandUtils.formatValidationErrors({ isValid: true, errors: [] }), "");
@@ -98,9 +96,7 @@ Deno.test("CommandUtils.formatValidationErrors: handles values containing colons
   assertEquals(result, "Validation failed:\n- Url: invalid format: http://example.com");
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // printMetadata
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("CommandUtils.printMetadata: prints title and key-value pairs", () => {
   const logs: string[] = [];

@@ -31,9 +31,7 @@ function makeConfidenceJSON(options: {
   });
 }
 
-// ============================================================================
 // ConfidenceSchema Tests
-// ============================================================================
 
 Deno.test("[ConfidenceSchema] validates correct confidence", () => {
   const valid = {
@@ -92,9 +90,7 @@ Deno.test("[ConfidenceSchema] rejects negative score", () => {
   assert(!result.success);
 });
 
-// ============================================================================
 // ConfidenceScorer Tests
-// ============================================================================
 
 Deno.test("[ConfidenceScorer] assess extracts high confidence", async () => {
   const mockResponses = [
@@ -145,9 +141,7 @@ Deno.test("[ConfidenceScorer] assess handles parse failure gracefully", async ()
   assertEquals(result.flaggedForReview, true);
 });
 
-// ============================================================================
 // Quick Assessment Tests
-// ============================================================================
 
 Deno.test("[ConfidenceScorer] assessQuick gives high score for certain language", () => {
   const scorer = createConfidenceScorer(createMockProvider([]));
@@ -184,9 +178,7 @@ Deno.test("[ConfidenceScorer] assessQuick lowers score for questions", () => {
   assertLess(result.score, 65); // Questions and uncertainty lower score
 });
 
-// ============================================================================
 // Aggregation Tests
-// ============================================================================
 
 Deno.test("[ConfidenceScorer] aggregate calculates average correctly", () => {
   const scorer = createConfidenceScorer(createMockProvider([]));
@@ -301,9 +293,7 @@ Deno.test("[ConfidenceScorer] aggregate tracks flaggedForReview", () => {
   assertEquals(result.anyFlaggedForReview, true);
 });
 
-// ============================================================================
 // Metrics Tests
-// ============================================================================
 
 Deno.test("[ConfidenceScorer] tracks metrics correctly", async () => {
   const mockResponses = [
@@ -339,9 +329,7 @@ Deno.test("[ConfidenceScorer] resets metrics", async () => {
   assertEquals(metrics.averageScore, 0);
 });
 
-// ============================================================================
 // Factory Function Tests
-// ============================================================================
 
 Deno.test("[createConfidenceScorer] creates scorer with defaults", () => {
   const scorer = createConfidenceScorer(createMockProvider([]));
@@ -372,9 +360,7 @@ Deno.test("[createLenientConfidenceScorer] creates lenient scorer", async () => 
   assertEquals(result.flaggedForReview, false);
 });
 
-// ============================================================================
 // Edge Case Tests
-// ============================================================================
 
 Deno.test("[ConfidenceScorer] handles boundary scores", () => {
   const scorer = createConfidenceScorer(createMockProvider([]));

@@ -16,9 +16,7 @@ import type { IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 // Minimal key-file stubs used across tests
 const NO_KEY_FILES: IFileSignificance[] = [];
 
-// ---------------------------------------------------------------------------
 // Service naming pattern
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] detects service naming pattern", () => {
   const files = [
@@ -33,9 +31,7 @@ Deno.test("[PatternDetector] detects service naming pattern", () => {
   assertEquals(convention.category, "naming");
 });
 
-// ---------------------------------------------------------------------------
 // Repository naming pattern
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] detects repository naming pattern", () => {
   const files = [
@@ -48,9 +44,7 @@ Deno.test("[PatternDetector] detects repository naming pattern", () => {
   assertEquals(convention.evidenceCount, 2);
 });
 
-// ---------------------------------------------------------------------------
 // Test layout patterns
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] detects co-located test layout", () => {
   const files = [
@@ -81,9 +75,7 @@ Deno.test("[PatternDetector] detects mirror test layout", () => {
   assertEquals(convention.category, "structure");
 });
 
-// ---------------------------------------------------------------------------
 // Test file naming convention
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] detects test file naming convention", () => {
   const files = [
@@ -101,9 +93,7 @@ Deno.test("[PatternDetector] detects test file naming convention", () => {
   assertEquals(mentionsUnderscore, true);
 });
 
-// ---------------------------------------------------------------------------
 // Barrel export pattern
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] detects barrel export pattern", () => {
   const files = [
@@ -120,9 +110,7 @@ Deno.test("[PatternDetector] detects barrel export pattern", () => {
   assertEquals(convention.category, "structure");
 });
 
-// ---------------------------------------------------------------------------
 // Example file paths
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] provides examples for each convention", () => {
   const files = [
@@ -138,9 +126,7 @@ Deno.test("[PatternDetector] provides examples for each convention", () => {
   assertEquals(exampleInInput, true, "Examples should reference input file paths");
 });
 
-// ---------------------------------------------------------------------------
 // Categories
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] assigns correct categories", () => {
   const files = [
@@ -165,9 +151,7 @@ Deno.test("[PatternDetector] assigns correct categories", () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // Heuristic-only mode (no readFileContents)
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] works in heuristic-only mode", () => {
   const files = [
@@ -180,9 +164,7 @@ Deno.test("[PatternDetector] works in heuristic-only mode", () => {
   assertEquals(result.length > 0, true);
 });
 
-// ---------------------------------------------------------------------------
 // Content-based import detection via readFileContents callback
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] detects import patterns when reading file contents", async () => {
   const files = [
@@ -201,9 +183,7 @@ Deno.test("[PatternDetector] detects import patterns when reading file contents"
   assertEquals(importConvention.category, "imports");
 });
 
-// ---------------------------------------------------------------------------
 // evidenceCount and confidence thresholds
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] sets evidenceCount to number of matching files per convention", () => {
   const files = [
@@ -235,9 +215,7 @@ Deno.test("[PatternDetector] assigns confidence high for 10+ evidence files", ()
   assertEquals(convention.confidence, "high");
 });
 
-// ---------------------------------------------------------------------------
 // Adaptive sample size
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] computeAdaptiveSampleSize scales with total files (5% floor, min 10, max 50)", () => {
   // 5% of 10 = 0.5, floor = 0, clamped to min 10
@@ -262,9 +240,7 @@ Deno.test("[PatternDetector] computeAdaptiveSampleSize handles min >= max", () =
   assertEquals(computeAdaptiveSampleSize(500, 100, 50), 100);
 });
 
-// ---------------------------------------------------------------------------
 // Stratified sampling
-// ---------------------------------------------------------------------------
 
 Deno.test("[PatternDetector] stratified sampling covers all top-level directories", () => {
   const files = [

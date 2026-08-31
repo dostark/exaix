@@ -18,9 +18,7 @@ import { LlmAnalyzer } from "@exaix/request";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 const validAnalysisJson = JSON.stringify({
   goals: [{ description: "Add unit tests", explicit: true, priority: 1 }],
@@ -40,9 +38,7 @@ const validAnalysisJson = JSON.stringify({
   },
 });
 
-// ---------------------------------------------------------------------------
 // Test Helpers
-// ---------------------------------------------------------------------------
 
 function createCapturingProvider(responseJson: string): { provider: IModelProvider; capturedPrompt: () => string } {
   let capturedPrompt = "";
@@ -65,9 +61,7 @@ function createCapturingProvider(responseJson: string): { provider: IModelProvid
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[LlmAnalyzer] parses valid LLM JSON response into IRequestAnalysis", async () => {
   const provider = new MockProvider(validAnalysisJson);

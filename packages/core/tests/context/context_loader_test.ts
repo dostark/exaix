@@ -15,9 +15,7 @@ import type { IActivityRecord } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 
-// ============================================================================
 // Test Setup and Fixtures
-// ============================================================================
 
 let testDir: string;
 const testFiles: string[] = [];
@@ -59,9 +57,7 @@ afterEach(async () => {
   testFiles.length = 0;
 });
 
-// ============================================================================
 // Test 1: Token Limit Enforcement
-// ============================================================================
 
 describe("Token Limit Enforcement", () => {
   it("should respect token limits with safety margin", async () => {
@@ -152,9 +148,7 @@ describe("Token Limit Enforcement", () => {
   });
 });
 
-// ============================================================================
 // Test 2: Warning Block Generation
-// ============================================================================
 
 describe("Warning Block Generation", () => {
   it("should include warning block when files are skipped", async () => {
@@ -220,9 +214,7 @@ describe("Warning Block Generation", () => {
   });
 });
 
-// ============================================================================
 // Test 3: Agent Receives Warning and Can Reference It
-// ============================================================================
 
 describe("Agent Warning Accessibility", () => {
   it("should include warning in result that agent can parse", async () => {
@@ -273,9 +265,7 @@ describe("Agent Warning Accessibility", () => {
   });
 });
 
-// ============================================================================
 // Test 3b: Context Content Format
-// ============================================================================
 
 describe("Context Content Format", () => {
   it("should format context with file paths as headers", async () => {
@@ -314,9 +304,7 @@ describe("Context Content Format", () => {
   });
 });
 
-// ============================================================================
 // Test 4: Local Agent Behavior (No Limits)
-// ============================================================================
 
 describe("Local Agent Behavior", () => {
   it("should load all files for local agents", async () => {
@@ -364,9 +352,7 @@ describe("Local Agent Behavior", () => {
   });
 });
 
-// ============================================================================
 // Test 5: Truncation Strategies
-// ============================================================================
 
 describe("Truncation Strategies", () => {
   it("smallest-first should prioritize smallest files", async () => {
@@ -471,9 +457,7 @@ describe("Truncation Strategies", () => {
   });
 });
 
-// ============================================================================
 // Test 6: Per-File Token Caps
-// ============================================================================
 
 describe("Per-File Token Caps", () => {
   it("should enforce per-file token caps", async () => {
@@ -516,9 +500,7 @@ describe("Per-File Token Caps", () => {
   });
 });
 
-// ============================================================================
 // Test 7: Error Handling
-// ============================================================================
 
 describe("Error Handling", () => {
   it("should handle missing files gracefully", async () => {
@@ -564,9 +546,7 @@ describe("Error Handling", () => {
   });
 });
 
-// ============================================================================
 // Test 8: Result Structure
-// ============================================================================
 
 describe("Result Structure", () => {
   it("should return complete IContextLoadResult structure", async () => {
@@ -600,9 +580,7 @@ describe("Result Structure", () => {
   });
 });
 
-// ============================================================================
 // Test 9: Token Budget Boundary Cases
-// ============================================================================
 
 describe("Token Budget Boundary Cases", () => {
   it("should handle exact budget boundary", async () => {
@@ -712,9 +690,7 @@ describe("Token Budget Boundary Cases", () => {
   });
 });
 
-// ============================================================================
 // Test 10: File System Error Handling
-// ============================================================================
 
 describe("File System Error Handling", () => {
   it("should handle permission denied errors gracefully", async () => {
@@ -844,9 +820,7 @@ describe("File System Error Handling", () => {
   });
 });
 
-// ============================================================================
 // Test 11: Edge Cases and Special Content
-// ============================================================================
 
 describe("Edge Cases and Special Content", () => {
   it("should handle very long file paths", async () => {
@@ -918,9 +892,7 @@ describe("Edge Cases and Special Content", () => {
   });
 });
 
-// ============================================================================
 // Test 12: Drop-Largest Strategy
-// ============================================================================
 
 describe("Drop-Largest Strategy", () => {
   it("should sort files smallest first with drop-largest", async () => {
@@ -967,9 +939,7 @@ describe("Drop-Largest Strategy", () => {
   });
 });
 
-// ============================================================================
 // Test 13: IActivity Logging with Database
-// ============================================================================
 
 describe("IActivity Logging with Database", () => {
   it("should log context loading to database when configured", async () => {
@@ -1074,9 +1044,7 @@ describe("IActivity Logging with Database", () => {
   });
 });
 
-// ============================================================================
 // Test 14: Default Strategy (fallback)
-// ============================================================================
 
 describe("Default Strategy Fallback", () => {
   it("should handle unknown strategy by returning files in original order", async () => {

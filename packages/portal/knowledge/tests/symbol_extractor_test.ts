@@ -12,9 +12,7 @@ import { assertEquals } from "@std/assert";
 import { type IDenoDocNode, type IDocCommandRunner, SymbolExtractor } from "@exaix/portal/knowledge";
 import { DEFAULT_SYMBOL_MAP_LIMIT, runWithConcurrency, SYMBOL_EXTRACTOR_CONCURRENCY } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Mock helpers
-// ---------------------------------------------------------------------------
 
 /** Creates a mock command runner that returns a fixed JSON string or null. */
 function mockRunner(response: string | null): IDocCommandRunner {
@@ -30,9 +28,7 @@ function makeDocNode(
   return { kind, name, location: { filename: "src/main.ts" }, ...overrides };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[SymbolExtractor] returns empty array for non-TypeScript portal", async () => {
   const extractor = new SymbolExtractor(mockRunner("[]"));
@@ -182,9 +178,7 @@ Deno.test("[SymbolExtractor] returns empty array when runner returns null", asyn
   assertEquals(result, []);
 });
 
-// ---------------------------------------------------------------------------
 // Full-source extraction (directory batching + dedup + concurrency)
-// ---------------------------------------------------------------------------
 
 Deno.test("[SymbolExtractor] extracts symbols from all TS files (not just entrypoints)", async () => {
   const nodesA = [

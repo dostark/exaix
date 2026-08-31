@@ -16,9 +16,7 @@ import { QualityGateMode } from "@exaix/core";
 import { LlmQualityAssessor } from "@exaix/quality-gate";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeValidLlmResponse(): string {
   return JSON.stringify({
@@ -45,9 +43,7 @@ function makeValidLlmResponseWithIssues(): string {
   });
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[LlmQualityAssessor] parses valid LLM response", async () => {
   const assessor = new LlmQualityAssessor(

@@ -18,9 +18,7 @@
 
 import { EDITION_ENTERPRISE, EDITION_TEAM } from "../types/constants.ts";
 
-// ============================================================================
 // Capability IDs
-// ============================================================================
 
 /** P113: VOTING_GROUP step type — Team/Enterprise only */
 export const CAP_VOTING = "voting";
@@ -44,9 +42,7 @@ export const CAP_MODEL_ROUTING_RIGOR = "model_routing_rigor";
 /** P134/draft: Enterprise model governance (admission, audit) — Enterprise only, reserved */
 export const CAP_MODEL_REGISTRY_GOVERNANCE = "model_registry_governance";
 
-// ============================================================================
 // Edition tier map
-// ============================================================================
 
 /** Maps each capability ID to its required edition tier. */
 export const CAPABILITY_EDITION: Record<string, string> = {

@@ -22,7 +22,7 @@ import {
 } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyModifier } from "@exaix/tui";
 
-// ===== Key Constants Tests =====
+// Key Constants Tests
 
 Deno.test("KEYS: has navigation keys", () => {
   assertEquals(KEYS.UP, "up");
@@ -37,7 +37,7 @@ Deno.test("KEYS: has action keys", () => {
   assertEquals(KEYS.TAB, "tab");
 });
 
-// ===== Key Validation Tests =====
+// Key Validation Tests
 
 Deno.test("isValidKeyValue: validates navigation keys", () => {
   assertEquals(isValidKeyValue("up"), true);
@@ -102,7 +102,7 @@ Deno.test("isValidKeyValue: rejects invalid keys", () => {
   assertEquals(isValidKeyValue("random"), false);
 });
 
-// ===== Parse Key Tests =====
+// Parse Key Tests
 
 Deno.test("parseKey: parses simple key", () => {
   const event = parseKey("a");
@@ -134,7 +134,7 @@ Deno.test("parseKey: normalizes to lowercase", () => {
   assertEquals(event.modifiers.has(KeyModifier.CTRL), true);
 });
 
-// ===== Format Key Tests =====
+// Format Key Tests
 
 Deno.test("formatKey: formats simple key", () => {
   const result = formatKey("a");
@@ -156,7 +156,7 @@ Deno.test("formatKey: formats multiple modifiers", () => {
   assertEquals(result, "Ctrl+Shift+S");
 });
 
-// ===== Match Key Tests =====
+// Match Key Tests
 
 Deno.test("matchesKey: matches simple key", () => {
   assertEquals(matchesKey("a", "a"), true);
@@ -172,7 +172,7 @@ Deno.test("matchesKey: is case insensitive", () => {
   assertEquals(matchesKey("Ctrl+C", "ctrl+c"), true);
 });
 
-// ===== Keyboard Manager Tests =====
+// Keyboard Manager Tests
 
 // Helper for KeyboardManager tests
 function setupManager<T extends string>(action: T = "test" as T, key: KeyValue = "x") {
@@ -267,7 +267,7 @@ Deno.test("KeyboardManager: getBindingsByCategory groups bindings", () => {
   assertEquals(groups.get("Actions")?.length, 1);
 });
 
-// ===== Navigation Handlers Tests =====
+// Navigation Handlers Tests
 
 // Helper for navigation tests
 function setupNavHandlers(initialIndex = 0, length = 10) {
@@ -321,7 +321,7 @@ Deno.test("createNavigationHandlers: respects bounds", () => {
   assertEquals(ctx.getIndex(), 9);
 });
 
-// ===== Generate Help Screen Tests =====
+// Generate Help Screen Tests
 
 Deno.test("generateHelpScreen: generates help with title", () => {
   const bindings: IKeyBinding<string>[] = [

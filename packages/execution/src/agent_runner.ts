@@ -212,9 +212,7 @@ function readSuppressedSkillIds(): Set<string> {
   return new Set(raw.split(",").map((id) => id.trim()).filter((id) => id.length > 0));
 }
 
-// ============================================================================
 // Agent Runner Service
-// ============================================================================
 
 /** Combines Blueprint (system prompt) with IParsedRequest (user prompt), executes via an
  *  LLM provider, and parses the structured XML response — with retry/recovery, output

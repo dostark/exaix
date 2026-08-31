@@ -43,9 +43,7 @@ async function withEnv<T>(vars: Record<string, string | undefined>, fn: () => Pr
   }
 }
 
-// ============================================================================
 // Provider Selector Tests
-// ============================================================================
 
 Deno.test("ProviderSelector: selects optimal provider based on criteria", async () => {
   const { db: _db, cleanup } = await initTestDbService();

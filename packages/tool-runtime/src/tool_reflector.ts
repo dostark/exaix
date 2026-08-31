@@ -60,9 +60,7 @@ export interface IToolReflectorMetrics {
   issueTypeDistribution: Record<string, number>;
 }
 
-// ============================================================================
 // Reflection Schema
-// ============================================================================
 
 /**
  * Schema for tool reflection output
@@ -84,13 +82,9 @@ export const ToolReflectionSchema = z.object({
 
 export type IToolReflection = z.infer<typeof ToolReflectionSchema>;
 
-// ============================================================================
 // Types
-// ============================================================================
 
-// ============================================================================
 // Default Prompt Template
-// ============================================================================
 
 const DEFAULT_REFLECTION_PROMPT = `You are evaluating whether a tool call achieved its intended purpose.
 
@@ -132,9 +126,7 @@ Respond with a JSON object:
   "insights": ["Insight 1", "Insight 2"]
 }`;
 
-// ============================================================================
 // ToolReflector Class
-// ============================================================================
 
 export class ToolReflector {
   private agentRunner: IToolAgentExecutor;
@@ -471,9 +463,7 @@ export class ToolReflector {
   }
 }
 
-// ============================================================================
 // Factory Functions
-// ============================================================================
 
 export function createToolReflector(
   agentRunner: IToolAgentExecutor,

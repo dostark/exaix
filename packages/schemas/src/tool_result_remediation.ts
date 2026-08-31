@@ -25,9 +25,7 @@ import {
 import type { IToolResultValidator } from "./tool_result_validator.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ============================================================================
 // Exported interfaces (must precede functional code — check:style requirement)
-// ============================================================================
 
 /** Possible outcomes produced by applyRemediationPolicy. */
 export type IRemediationOutcome =
@@ -63,9 +61,7 @@ export interface IRemediationToolMetadata {
   sideEffectScope: ToolSideEffectScope;
 }
 
-// ============================================================================
 // Remediation Outcome Constants
-// ============================================================================
 
 /** Validation passed after remediation (normalize or retry succeeded). */
 export const REMEDIATION_OUTCOME_PASSED = "passed" as const;
@@ -113,9 +109,7 @@ function validateForFailureStage(
     : validator.validateEnvelope(toolName, candidate);
 }
 
-// ============================================================================
 // Remediation Dispatch
-// ============================================================================
 
 /** Retry is blocked when idempotency or side-effect constraints are violated. */
 export async function applyRemediationPolicy(

@@ -12,9 +12,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { analyzeDirectory } from "@exaix/portal/knowledge";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 async function makeTempDir(): Promise<string> {
   return await Deno.makeTempDir({ prefix: "exa_dir_analyzer_test_" });
@@ -26,9 +24,7 @@ async function writeFile(dir: string, relPath: string, content = ""): Promise<vo
   await Deno.writeTextFile(full, content);
 }
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] counts files and directories correctly
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] counts files and directories correctly", async () => {
   const root = await makeTempDir();
@@ -46,9 +42,7 @@ Deno.test("[DirectoryAnalyzer] counts files and directories correctly", async ()
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] builds extension distribution
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] builds extension distribution", async () => {
   const root = await makeTempDir();
@@ -68,9 +62,7 @@ Deno.test("[DirectoryAnalyzer] builds extension distribution", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] respects ignorePatterns
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] respects ignorePatterns", async () => {
   const root = await makeTempDir();
@@ -87,9 +79,7 @@ Deno.test("[DirectoryAnalyzer] respects ignorePatterns", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] respects scanLimit
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] respects scanLimit", async () => {
   const root = await makeTempDir();
@@ -107,9 +97,7 @@ Deno.test("[DirectoryAnalyzer] respects scanLimit", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] detects architecture layers from standard directories
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] detects architecture layers from standard directories", async () => {
   const root = await makeTempDir();
@@ -130,9 +118,7 @@ Deno.test("[DirectoryAnalyzer] detects architecture layers from standard directo
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] detects primary language from extension distribution
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] detects primary language from extension distribution", async () => {
   const root = await makeTempDir();
@@ -150,9 +136,7 @@ Deno.test("[DirectoryAnalyzer] detects primary language from extension distribut
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] detects monorepo structure and populates packages[] entries
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] detects monorepo structure and populates packages[] entries", async () => {
   const root = await makeTempDir();
@@ -177,9 +161,7 @@ Deno.test("[DirectoryAnalyzer] detects monorepo structure and populates packages
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] handles empty directory
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] handles empty directory", async () => {
   const root = await makeTempDir();
@@ -194,9 +176,7 @@ Deno.test("[DirectoryAnalyzer] handles empty directory", async () => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] handles missing directory gracefully
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] handles missing directory gracefully", async () => {
   const result = await analyzeDirectory("/nonexistent/path/that/does/not/exist", [], 500);
@@ -205,9 +185,7 @@ Deno.test("[DirectoryAnalyzer] handles missing directory gracefully", async () =
   assertEquals(result.stats?.totalDirectories, 0);
 });
 
-// ---------------------------------------------------------------------------
 // [DirectoryAnalyzer] priority files collected before scanLimit applies
-// ---------------------------------------------------------------------------
 
 Deno.test("[DirectoryAnalyzer] priority files collected before scanLimit applies", async () => {
   const root = await makeTempDir();

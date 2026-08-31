@@ -18,9 +18,7 @@ import {
   SymbolEntrySchema,
 } from "@exaix/schemas";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 const validFileSignificance = {
   path: "src/main.ts",
@@ -101,9 +99,7 @@ const validPortalKnowledge = {
   },
 };
 
-// ---------------------------------------------------------------------------
 // FileSignificanceSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[FileSignificanceSchema] validates all role enum values", () => {
   const roles = [
@@ -134,9 +130,7 @@ Deno.test("[FileSignificanceSchema] lineCount is optional", () => {
   assertEquals(result.success, true);
 });
 
-// ---------------------------------------------------------------------------
 // ArchitectureLayerSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[ArchitectureLayerSchema] validates complete layer", () => {
   const result = ArchitectureLayerSchema.safeParse(validArchitectureLayer);
@@ -149,9 +143,7 @@ Deno.test("[ArchitectureLayerSchema] rejects missing name", () => {
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // CodeConventionSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[CodeConventionSchema] validates all category enum values", () => {
   const categories = [
@@ -192,9 +184,7 @@ Deno.test("[CodeConventionSchema] rejects negative evidenceCount", () => {
   assertEquals(result.success, false);
 });
 
-// ---------------------------------------------------------------------------
 // DependencyInfoSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[DependencyInfoSchema] validates packageManager enum values", () => {
   const managers = ["npm", "deno", "pip", "cargo", "go", "maven", "other"] as const;
@@ -217,9 +207,7 @@ Deno.test("[DependencyInfoSchema] keyDependency version and purpose are optional
   assertEquals(result.success, true);
 });
 
-// ---------------------------------------------------------------------------
 // SymbolEntrySchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[SymbolEntrySchema] validates all kind enum values", () => {
   const kinds = ["function", "class", "interface", "const", "type", "enum"] as const;
@@ -235,9 +223,7 @@ Deno.test("[SymbolEntrySchema] doc and pageRankScore are optional", () => {
   assertEquals(result.success, true);
 });
 
-// ---------------------------------------------------------------------------
 // MonorepoPackageSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[MonorepoPackageSchema] validates complete package", () => {
   const result = MonorepoPackageSchema.safeParse(validMonorepoPackage);
@@ -250,9 +236,7 @@ Deno.test("[MonorepoPackageSchema] framework is optional", () => {
   assertEquals(result.success, true);
 });
 
-// ---------------------------------------------------------------------------
 // PortalKnowledgeSchema — valid complete object
-// ---------------------------------------------------------------------------
 
 Deno.test("[PortalKnowledgeSchema] validates complete valid knowledge object", () => {
   const result = PortalKnowledgeSchema.safeParse(validPortalKnowledge);

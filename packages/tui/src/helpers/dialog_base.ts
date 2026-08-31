@@ -18,7 +18,7 @@ import {
 } from "./constants.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 
-// ===== Dialog Types =====
+// Dialog Types
 
 import { DialogStatus, MemoryScope, RequestOperation } from "@exaix/core";
 import { KEYS } from "./keyboard.ts";
@@ -65,7 +65,7 @@ export interface ISelectDialogOptions<T = string> {
   selectedIndex?: number;
 }
 
-function createDialogResult<T>(state: DialogState, value: T | undefined): DialogResult<T> {
+function createDialogResult<T>(state: DialogState, value: Opt<T, Reason.OptionalInput>): DialogResult<T> {
   if (state === DialogStatus.CONFIRMED && value !== undefined) {
     return { type: DialogStatus.CONFIRMED, value };
   }
@@ -100,7 +100,7 @@ function initSimpleDialogRender(options: IDialogRenderOptions): {
   return { theme, innerWidth, lines };
 }
 
-// ===== Box Drawing Characters =====
+// Box Drawing Characters
 
 export const BOX = {
   topLeft: "┌",
@@ -123,7 +123,7 @@ export const BOX = {
   doubleBottomRight: "╝",
 } as const;
 
-// ===== Base Dialog Class =====
+// Base Dialog Class
 
 /**
  * Abstract base class for all dialogs
@@ -538,7 +538,7 @@ export class SelectDialog<T = string> extends DialogBase<T> {
   }
 }
 
-// ===== Rendering Helpers =====
+// Rendering Helpers
 
 /**
  * Render top border with optional title
@@ -660,7 +660,7 @@ export function wrapToWidth(text: string, width: number): string[] {
   return lines;
 }
 
-// ===== Dialog Render Setup Helper =====
+// Dialog Render Setup Helper
 
 /**
  * Common render setup for dialogs - extracts duplicated initialization code

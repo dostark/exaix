@@ -451,9 +451,7 @@ Deno.test("GitService: commit - includes description in commit message", async (
   }
 });
 
-// ============================================================================
 // Additional Coverage Tests for Checkout Branch
-// ============================================================================
 
 Deno.test("GitService: checkoutBranch - logs successful checkout", async () => {
   const { repoDir, cleanup, db } = await createGitTestContext("git-test-checkout-");
@@ -595,9 +593,7 @@ Deno.test("GitService: branch operations preserve traceId context", async () => 
   }
 });
 
-// ============================================================================
 // Issue #8: Git Service Without Proper Error Recovery - Verification Tests
-// ============================================================================
 
 Deno.test("GitService: handles repository lock conflicts with retry", async () => {
   const { repoDir, cleanup, git } = await createGitTestContext("git-test-lock-");

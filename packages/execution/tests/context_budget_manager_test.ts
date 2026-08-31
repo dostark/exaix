@@ -30,7 +30,7 @@ import type { LogMetadata } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { EventLogger } from "@exaix/core/logger";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function makeSegment(
   overrides: Partial<IContextSegment> & { kind: IContextSegment["kind"] },
@@ -62,7 +62,7 @@ function makePromptBudget(loopHistoryTokens = 10_000) {
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 Deno.test("[ContextBudgetManager] returns all segments unchanged when total tokens under budget", async () => {
   const manager: IContextBudgetManager = new ContextBudgetManager();

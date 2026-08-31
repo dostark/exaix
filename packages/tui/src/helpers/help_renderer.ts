@@ -14,7 +14,7 @@ import { ScrollDirection } from "../types/enums.ts";
 import type { IKeyBinding } from "./keyboard.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Help Interfaces =====
+// Help Interfaces
 
 export interface IHelpItem {
   key: string;
@@ -44,7 +44,7 @@ export interface IHelpDialogState {
   content: string[];
 }
 
-// ===== Help Screen Rendering =====
+// Help Screen Rendering
 
 /**
  * Render a help screen
@@ -128,7 +128,7 @@ export function keyBindingsToHelpSections<T extends string>(
   return sections;
 }
 
-// ===== Standard Help Sections =====
+// Standard Help Sections
 
 /**
  * Standard navigation help section
@@ -193,7 +193,7 @@ export function getGlobalHelpSection(): IHelpSection {
   };
 }
 
-// ===== Quick Help Bar =====
+// Quick Help Bar
 
 /**
  * Render a quick help bar (single line)
@@ -225,7 +225,7 @@ export function getStandardQuickHelp(): { key: string; action: string }[] {
   ];
 }
 
-// ===== Help Dialog Operations =====
+// Help Dialog Operations
 
 /**
  * Create help dialog state

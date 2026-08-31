@@ -39,9 +39,7 @@ import {
   readFixtureTextSync,
 } from "@exaix/testing";
 
-// ============================================================================
 // Test Utilities
-// ============================================================================
 
 function createTestRequestPath(tempDir: string): { traceId: string; requestPath: string } {
   const traceId = crypto.randomUUID();
@@ -95,9 +93,7 @@ function createBlueprintContent(): string {
   return fixture_1;
 }
 
-// ============================================================================
 // Tests
-// ============================================================================
 
 describe("RequestProcessor", () => {
   let testDir: string;

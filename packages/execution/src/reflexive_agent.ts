@@ -102,17 +102,11 @@ export interface IReflexionMetrics {
 
 const REFLEXIVE_AGENT_ACTIVITY_SOURCE = "reflexive_agent" as const;
 
-// ============================================================================
 // Critique Schema
-// ============================================================================
 
-// ============================================================================
 // Reflexive Execution Types
-// ============================================================================
 
-// ============================================================================
 // Critique Prompt Templates
-// ============================================================================
 
 const DEFAULT_CRITIQUE_PROMPT = `You are a quality assurance expert evaluating an AI-generated response.
 
@@ -175,9 +169,7 @@ Focus especially on issues marked as "critical" or "major".
 
 Maintain the same format as the original response, but with improved quality.`;
 
-// ============================================================================
 // ReflexiveAgent Class
-// ============================================================================
 
 export class ReflexiveAgent {
   public agentRunner: IAgentRunner;
@@ -294,7 +286,7 @@ export class ReflexiveAgent {
   async run(
     blueprint: IBlueprint,
     request: IParsedRequest,
-    requestAnalysis?: IRequestAnalysis,
+    requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<IReflexiveExecutionResult> {
     // Run reflexive loop through middleware pipeline to centralize timing/error handling
     interface ReflexiveAgentContext extends IServiceContext {
@@ -743,7 +735,7 @@ export class ReflexiveAgent {
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): void {
     if (this.config.verbose) {
       console.debug(`[ReflexiveAgent] ${_actor} ${actionType}`, {
@@ -762,20 +754,18 @@ export class ReflexiveAgent {
   }
 }
 
-// ============================================================================
 // Factory Functions
-// ============================================================================
 
 export function createReflexiveAgent(
   modelProvider: IModelProvider,
-  config?: IReflexiveAgentConfig,
+  config?: Opt<IReflexiveAgentConfig, Reason.FactoryPreset>,
 ): ReflexiveAgent {
   return new ReflexiveAgent(modelProvider, config);
 }
 
 export function createCodeReviewReflexiveAgent(
   modelProvider: IModelProvider,
-  config?: IReflexiveAgentConfig,
+  config?: Opt<IReflexiveAgentConfig, Reason.FactoryPreset>,
 ): ReflexiveAgent {
   return new ReflexiveAgent(modelProvider, {
     maxIterations: 2,
@@ -787,7 +777,7 @@ export function createCodeReviewReflexiveAgent(
 
 export function createHighQualityReflexiveAgent(
   modelProvider: IModelProvider,
-  config?: IReflexiveAgentConfig,
+  config?: Opt<IReflexiveAgentConfig, Reason.FactoryPreset>,
 ): ReflexiveAgent {
   return new ReflexiveAgent(modelProvider, {
     maxIterations: 5,

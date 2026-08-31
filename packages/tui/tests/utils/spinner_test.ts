@@ -29,7 +29,7 @@ import {
 } from "@exaix/tui/helpers/spinner.ts";
 import { SpinnerStyle } from "@exaix/tui";
 
-// ===== Spinner Definitions Tests =====
+// Spinner Definitions Tests
 
 Deno.test("SPINNERS: has all spinner styles", () => {
   const styles = ["dots", "braille", "line", "arc", "bounce", "pulse"];
@@ -55,7 +55,7 @@ Deno.test("SPINNERS: all spinners have required properties", () => {
   }
 });
 
-// ===== Spinner State Tests =====
+// Spinner State Tests
 
 Deno.test("createSpinnerState: creates inactive state", () => {
   const state = createSpinnerState();
@@ -93,7 +93,7 @@ Deno.test("nextFrame: increments frame", () => {
   assertEquals(state.frame, 2);
 });
 
-// ===== Spinner Rendering Tests =====
+// Spinner Rendering Tests
 
 Deno.test("renderSpinnerFrame: returns frame character", () => {
   const frame = renderSpinnerFrame(0, SpinnerStyle.DOTS);
@@ -136,7 +136,7 @@ Deno.test("renderSpinner: shows elapsed time when enabled", () => {
   assertStringIncludes(result, "5s");
 });
 
-// ===== Progress State Tests =====
+// Progress State Tests
 
 Deno.test("createProgressState: creates initial state", () => {
   const state = createProgressState(100);
@@ -165,7 +165,7 @@ Deno.test("incrementProgress: increments by one", () => {
   assertEquals(state.current, 2);
 });
 
-// ===== Progress Bar Rendering Tests =====
+// Progress Bar Rendering Tests
 
 Deno.test("renderProgressBar: shows 0%", () => {
   const state = createProgressState(100);
@@ -203,7 +203,7 @@ Deno.test("renderProgressBar: respects width", () => {
   assertStringIncludes(result, "]");
 });
 
-// ===== Format Duration Tests =====
+// Format Duration Tests
 
 Deno.test("formatDuration: formats seconds", () => {
   assertEquals(formatDuration(30), "30s");
@@ -222,7 +222,7 @@ Deno.test("formatDuration: formats hours", () => {
   assertEquals(formatDuration(7200), "2h");
 });
 
-// ===== Animated Indicators Tests =====
+// Animated Indicators Tests
 
 Deno.test("renderPulsingDot: returns different characters", () => {
   const dots = new Set<string>();
@@ -245,7 +245,7 @@ Deno.test("renderActivityIndicator: shows active state", () => {
   assertStringIncludes("○◔◑◕●", result);
 });
 
-// ===== Loading State Tests =====
+// Loading State Tests
 
 Deno.test("createLoadingState: creates initial state", () => {
   const state = createLoadingState();

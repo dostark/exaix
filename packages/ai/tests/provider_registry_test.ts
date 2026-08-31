@@ -19,9 +19,7 @@ import type { Config } from "@exaix/schemas";
 
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
 
-// ============================================================================
 // Basic Registry Tests
-// ============================================================================
 
 Deno.test("ProviderRegistry: can register and retrieve factories", () => {
   ProviderRegistry.clear();
@@ -40,9 +38,7 @@ Deno.test("ProviderRegistry: returns undefined for unregistered providers", () =
   assertEquals(retrieved, undefined);
 });
 
-// ============================================================================
 // Enhanced Metadata Tests
-// ============================================================================
 
 Deno.test("ProviderRegistry: can register providers with metadata", () => {
   ProviderRegistry.clear();
@@ -173,9 +169,7 @@ Deno.test("ProviderRegistry: metadata includes free quota information", () => {
   assertEquals(retrieved.freeQuota?.tokensPerMonth, 1000000);
 });
 
-// ============================================================================
 // Basic Registry Tests
-// ============================================================================
 
 Deno.test("ProviderRegistry: returns undefined for unregistered providers", () => {
   ProviderRegistry.clear();

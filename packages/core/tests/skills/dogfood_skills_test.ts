@@ -21,7 +21,7 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 const SKILL_SLUGS = ["gap-analysis", "step-execution"] as const;
 
-// ===== Schema validation tests (structural integrity) =====
+// Schema validation tests (structural integrity)
 
 for (const slug of SKILL_SLUGS) {
   Deno.test(`[dogfood-skills] ${slug} validates against SkillSchema`, async () => {
@@ -62,7 +62,7 @@ Deno.test("[dogfood-skills] both skills have non-empty instructions", async () =
   }
 });
 
-// ===== Runtime loading tests (SkillsService.getSkill) =====
+// Runtime loading tests (SkillsService.getSkill)
 
 function seedSkillDir(skillsDir: string): Promise<void> {
   return seedSkillFiles(skillsDir);

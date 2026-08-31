@@ -36,9 +36,7 @@ describe("ReviewRegistry", () => {
     await cleanup();
   });
 
-  // ============================================================================
   // Registration Tests
-  // ============================================================================
 
   it("should register a new review", async () => {
     const input: IRegisterReviewInput = {
@@ -122,9 +120,7 @@ describe("ReviewRegistry", () => {
     );
   });
 
-  // ============================================================================
   // Retrieval Tests
-  // ============================================================================
 
   it("should get review by ID", async () => {
     const input: IRegisterReviewInput = {
@@ -222,9 +218,7 @@ describe("ReviewRegistry", () => {
     assertEquals(payload.trace_id, trace_id);
   });
 
-  // ============================================================================
   // Listing Tests
-  // ============================================================================
 
   it("should list all reviews", async () => {
     const trace_id = crypto.randomUUID();
@@ -402,9 +396,7 @@ describe("ReviewRegistry", () => {
     assertEquals(reviews[0].created_by, "agent-1");
   });
 
-  // ============================================================================
   // Status Update Tests
-  // ============================================================================
 
   it("should update review to approved status", async () => {
     const input: IRegisterReviewInput = {
@@ -518,9 +510,7 @@ describe("ReviewRegistry", () => {
     );
   });
 
-  // ============================================================================
   // Utility Method Tests
-  // ============================================================================
 
   it("should get all reviews for a trace", async () => {
     const trace_id = crypto.randomUUID();
@@ -640,9 +630,7 @@ describe("ReviewRegistry", () => {
     assertEquals(payload.count, count);
   });
 
-  // ============================================================================
   // Deletion Tests
-  // ============================================================================
 
   it("should delete a review", async () => {
     const trace_id = crypto.randomUUID();

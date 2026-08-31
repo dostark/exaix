@@ -37,14 +37,14 @@ export class MemoryExtractorService {
     this.pendingDir = join(config.system?.root || Deno.cwd(), config.paths?.memory || "Memory", "Pending");
   }
 
-  // ===== Extraction Operations =====
+  // Extraction Operations
 
-  // ===== Extraction Operations =====
+  // Extraction Operations
 
   analyzeExecution(execution: IExecutionMemory): IProposalLearning[] {
     return LearningExtractor.extract(execution);
   }
-  // ===== Proposal Operations =====
+  // Proposal Operations
 
   async createProposal(
     learning: IProposalLearning,

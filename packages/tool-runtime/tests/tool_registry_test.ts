@@ -387,9 +387,7 @@ Deno.test("ToolRegistry: execute - validates required parameters", async () => {
   );
 });
 
-// ============================================================================
 // Security Tests - Use `deno test --filter "[security]"` to run only these
-// ============================================================================
 
 Deno.test("[security] ToolRegistry: read_file - blocks path traversal to /etc/passwd", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "security-test-" });

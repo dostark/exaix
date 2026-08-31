@@ -27,7 +27,7 @@ function manifestLiveToolNames(): string[] {
     .sort();
 }
 
-// ── Parity tests ──────────────────────────────────────────────────────────────
+// Parity tests
 
 Deno.test("parity: every live manifest tool is registered in buildHandlers()", () => {
   const handlers = buildHandlers(context, permissions);

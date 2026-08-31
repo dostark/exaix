@@ -11,9 +11,7 @@
 import { assertEquals } from "@std/assert";
 import { RequestQualityAssessmentSchema, RequestQualityIssueSchema } from "@exaix/schemas";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function validIssue() {
   return {
@@ -38,9 +36,7 @@ function validAssessment() {
   };
 }
 
-// ---------------------------------------------------------------------------
 // RequestQualityIssueSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityIssueSchema] validates individual issue", () => {
   const result = RequestQualityIssueSchema.safeParse(validIssue());
@@ -86,9 +82,7 @@ Deno.test("[RequestQualityIssueSchema] validates all severity enum values", () =
   }
 });
 
-// ---------------------------------------------------------------------------
 // RequestQualityAssessmentSchema
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestQualityAssessmentSchema] validates complete valid assessment", () => {
   const result = RequestQualityAssessmentSchema.safeParse(validAssessment());

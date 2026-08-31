@@ -13,9 +13,7 @@
 import { ActorType, AgentKind } from "@exaix/core";
 import type { ILogEvent } from "@exaix/core";
 import type { IServiceContext } from "@exaix/core/types";
-// ============================================================================
 // Type Contract Verification
-// ============================================================================
 
 // Verify ILogEvent has all three separation fields
 const _logEvent: ILogEvent = {

@@ -54,9 +54,7 @@ class StubPortalKnowledgeService implements IPortalKnowledgeService {
   }
 }
 
-// ---------------------------------------------------------------------------
 // IPortalKnowledgeConfig — verify all required fields exist with correct types
-// ---------------------------------------------------------------------------
 
 const validConfig: IPortalKnowledgeConfig = {
   autoAnalyzeOnMount: false,
@@ -77,9 +75,7 @@ const validConfig: IPortalKnowledgeConfig = {
   gitHistorySince: "1.year",
 };
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[IPortalKnowledgeService] stub satisfies interface contract", () => {
   const svc: IPortalKnowledgeService = new StubPortalKnowledgeService();

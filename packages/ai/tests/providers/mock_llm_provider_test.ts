@@ -23,9 +23,7 @@ import {
   MockLLMProvider,
 } from "../../src/providers/mock_llm_provider.ts";
 
-// ============================================================================
 // Test 1: MockLLMProvider implements IModelProvider interface
-// ============================================================================
 
 Deno.test("MockLLMProvider implements IModelProvider interface", () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED);
@@ -47,9 +45,7 @@ Deno.test("MockLLMProvider accepts custom id", () => {
   assertEquals(provider.id, "custom-mock");
 });
 
-// ============================================================================
 // Test 2: Scripted Strategy - Return responses in sequence
-// ============================================================================
 
 Deno.test("Scripted: returns responses in order", async () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {
@@ -112,9 +108,7 @@ Deno.test("Scripted: stores call history", async () => {
   assertEquals(provider.callHistory[1].prompt, "second prompt");
 });
 
-// ============================================================================
 // Test 3: Recorded Strategy - Replay responses by prompt hash
-// ============================================================================
 
 Deno.test("Recorded: returns response matching prompt hash", async () => {
   const recordings: IRecordedResponse[] = [
@@ -171,9 +165,7 @@ Deno.test("Recorded: hash function is deterministic", () => {
   assert(hash1 !== hash3);
 });
 
-// ============================================================================
 // Test 4: IPattern Strategy - Match prompts with regex patterns
-// ============================================================================
 
 Deno.test("IPattern: matches prompt and returns configured response", async () => {
   const patterns: IPatternMatcher[] = [
@@ -236,9 +228,7 @@ Deno.test("IPattern: supports dynamic response generation", async () => {
   assertStringIncludes(result, "Add hello Function");
 });
 
-// ============================================================================
 // Test 5: Failing Strategy - Always throw error
-// ============================================================================
 
 Deno.test("Failing: throws MockLLMError on every call", async () => {
   const provider = new MockLLMProvider(MockStrategy.FAILING);
@@ -275,9 +265,7 @@ Deno.test("Failing: still tracks call count", async () => {
   assertEquals(provider.callCount, 2);
 });
 
-// ============================================================================
 // Test 6: Slow Strategy - Add artificial delay
-// ============================================================================
 
 Deno.test("Slow: adds configured delay before response", async () => {
   const provider = new MockLLMProvider(MockStrategy.SLOW, {
@@ -340,9 +328,7 @@ Deno.test({ name: "Slow: can be used for timeout testing", sanitizeOps: false, s
   }
 });
 
-// ============================================================================
 // Test 7: Token Tracking
-// ============================================================================
 
 Deno.test("MockLLMProvider tracks token usage", async () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {
@@ -370,9 +356,7 @@ Deno.test("MockLLMProvider accumulates tokens across calls", async () => {
   assertEquals(provider.totalTokens.output, 150);
 });
 
-// ============================================================================
 // Test 8: Reset and State Management
-// ============================================================================
 
 Deno.test("MockLLMProvider reset() clears all state", async () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {
@@ -411,9 +395,7 @@ Deno.test("MockLLMProvider getLastCall returns undefined when no calls made", ()
   assertEquals(provider.getLastCall(), undefined);
 });
 
-// ============================================================================
 // Test 9: Plan Generation Simulation
-// ============================================================================
 
 Deno.test("MockLLMProvider can simulate plan generation", async () => {
   const provider = new MockLLMProvider(MockStrategy.PATTERN, {
@@ -444,9 +426,7 @@ The feature will be implemented according to specifications.`,
   assertStringIncludes(result, "1. Analyze");
 });
 
-// ============================================================================
 // Test 10: Integration with IModelProvider consumers
-// ============================================================================
 
 Deno.test("MockLLMProvider can be used as IModelProvider", async () => {
   // Function that accepts any IModelProvider
@@ -481,9 +461,7 @@ Deno.test("MockLLMProvider supports ModelOptions parameter", async () => {
   assertEquals(lastCall?.options?.temperature, 0.7);
 });
 
-// ============================================================================
 // Test 11: Recorded Strategy Fallback to IPattern Matching
-// ============================================================================
 
 Deno.test("Recorded: falls back to patterns when no recording found", async () => {
   const patterns: IPatternMatcher[] = [
@@ -547,9 +525,7 @@ Deno.test("Recorded: auto-initializes default patterns when empty", async () => 
   assertStringIncludes(result.content, "<content>");
 });
 
-// ============================================================================
 // Test 12: Default IPattern Responses for Plan Creation
-// ============================================================================
 
 Deno.test("Default patterns: handles 'implement' requests", async () => {
   const provider = new MockLLMProvider(MockStrategy.RECORDED, {
@@ -655,9 +631,7 @@ Deno.test("Default patterns: handles generic requests with catch-all", async () 
   assertStringIncludes(result, '"description"');
 });
 
-// ============================================================================
 // Test 13: Plan Format Validation
-// ============================================================================
 
 Deno.test("Default patterns: responses include required <thought> tags", async () => {
   const provider = new MockLLMProvider(MockStrategy.RECORDED, {
@@ -715,9 +689,7 @@ Deno.test("Default patterns: bug fix plans mention regression testing", async ()
   assertStringIncludes(result, "Regression Test");
 });
 
-// ============================================================================
 // Test 14: Integration with RequestProcessor Flow
-// ============================================================================
 
 Deno.test("Mock provider generates valid plans for RequestProcessor", async () => {
   const provider = new MockLLMProvider(MockStrategy.RECORDED, {
@@ -765,9 +737,7 @@ Deno.test("Mock provider handles multiple sequential plan generations", async ()
   assertStringIncludes(result2, "fix");
 });
 
-// ============================================================================
 // Test 15: Helper Functions
-// ============================================================================
 
 Deno.test("createPlanGeneratorMock helper creates working provider", async () => {
   const provider = createPlanGeneratorMock();
@@ -799,9 +769,7 @@ Deno.test("createSlowMock helper creates delayed provider", async () => {
   assert(elapsed >= 100, `Expected at least 100ms delay, got ${elapsed.toFixed(2)}ms`);
 });
 
-// ============================================================================
 // Test 16: Additional Scripted Strategy Tests
-// ============================================================================
 
 Deno.test("Scripted: handles single response correctly", async () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {
@@ -877,9 +845,7 @@ Deno.test("Scripted: response with special characters and unicode", async () => 
   assertEquals((await provider.generate("3")).content, "Special <>&\"'");
 });
 
-// ============================================================================
 // Test 17: Additional IPattern Strategy Tests
-// ============================================================================
 
 Deno.test("IPattern: matches case-insensitive patterns", async () => {
   const provider = new MockLLMProvider(MockStrategy.PATTERN, {
@@ -1005,9 +971,7 @@ Deno.test("IPattern: tracks calls even when pattern doesn't match", async () => 
   assertEquals(provider.callHistory.length, 0);
 });
 
-// ============================================================================
 // Test 18: Additional Failing Strategy Tests
-// ============================================================================
 
 Deno.test("Failing: throws error with default message", async () => {
   const provider = new MockLLMProvider(MockStrategy.FAILING);
@@ -1134,9 +1098,7 @@ Deno.test("Failing: works with ModelOptions parameter", async () => {
   assertEquals(provider.callHistory[0].options?.temperature, 0.7);
 });
 
-// ============================================================================
 // Test 19: Additional Slow Strategy Tests
-// ============================================================================
 
 Deno.test("Slow: delay is accurate", async () => {
   const delays = [100, 200, 500];

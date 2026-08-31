@@ -18,7 +18,7 @@ import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import { getMemoryIndexDir } from "@exaix/testing";
 
-// ===== Test Fixture =====
+// Test Fixture
 
 const testLearning: ILearning = {
   id: "ffffffff-1111-4000-8000-000000000001",
@@ -33,7 +33,7 @@ const testLearning: ILearning = {
   status: MemoryStatus.APPROVED,
 };
 
-// ===== cosineSimilarity Edge Cases =====
+// cosineSimilarity Edge Cases
 
 Deno.test("cosineSimilarity throws error for vector length mismatch", () => {
   const vectorA = [1, 2, 3];
@@ -77,7 +77,7 @@ Deno.test("cosineSimilarity handles negative values", () => {
   assertAlmostEquals(similarity, -1.0, 0.001);
 });
 
-// ===== generateMockEmbedding Edge Cases =====
+// generateMockEmbedding Edge Cases
 
 Deno.test("generateMockEmbedding handles empty string", () => {
   const embedding = generateMockEmbedding("");
@@ -121,7 +121,7 @@ Deno.test("generateMockEmbedding handles unicode", () => {
   assertEquals(embedding.length, 64);
 });
 
-// ===== MemoryEmbeddingService.initializeManifest =====
+// MemoryEmbeddingService.initializeManifest
 
 Deno.test(
   "MemoryEmbeddingService: initializeManifest creates directory and manifest",
@@ -184,7 +184,7 @@ Deno.test(
   },
 );
 
-// ===== MemoryEmbeddingService.getEmbedding =====
+// MemoryEmbeddingService.getEmbedding
 
 Deno.test(
   "MemoryEmbeddingService: getEmbedding returns vector for existing learning",
@@ -256,7 +256,7 @@ Deno.test(
   },
 );
 
-// ===== MemoryEmbeddingService.deleteEmbedding =====
+// MemoryEmbeddingService.deleteEmbedding
 
 Deno.test(
   "MemoryEmbeddingService: deleteEmbedding removes embedding and updates manifest",
@@ -331,7 +331,7 @@ Deno.test(
   },
 );
 
-// ===== MemoryEmbeddingService.getStats =====
+// MemoryEmbeddingService.getStats
 
 Deno.test(
   "MemoryEmbeddingService: getStats returns statistics",
@@ -384,7 +384,7 @@ Deno.test(
   },
 );
 
-// ===== searchByEmbedding Edge Cases =====
+// searchByEmbedding Edge Cases
 
 Deno.test(
   "MemoryEmbeddingService: searchByEmbedding skips missing embedding files",
@@ -498,7 +498,7 @@ Deno.test(
   },
 );
 
-// ===== embedLearning edge cases =====
+// embedLearning edge cases
 
 Deno.test(
   "MemoryEmbeddingService: embedLearning creates directory if not exists",

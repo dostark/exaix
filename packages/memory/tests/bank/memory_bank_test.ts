@@ -36,7 +36,7 @@ import { createTestMemoryBankWithProject } from "../helpers/memory_bank_harness.
 function generateTestUUID(): string {
   return crypto.randomUUID();
 }
-// ===== Project Memory Tests =====
+// Project Memory Tests
 
 Deno.test("MemoryBankService: getProjectMemory returns null for non-existent portal", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -188,7 +188,7 @@ Deno.test("MemoryBankService: updateProjectMemory merges updates", async () => {
   }
 });
 
-// ===== Execution Memory Tests =====
+// Execution Memory Tests
 
 Deno.test("MemoryBankService: createExecutionRecord creates directory structure", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -392,7 +392,7 @@ Deno.test("MemoryBankService: createExecutionRecord handles failed execution wit
   }
 });
 
-// ===== Search & Query Tests =====
+// Search & Query Tests
 
 Deno.test("MemoryBankService: searchMemory finds matching content", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -428,7 +428,7 @@ Deno.test("MemoryBankService: searchMemory finds matching content", async () => 
   }
 });
 
-// ===== IActivity Journal Integration Tests =====
+// IActivity Journal Integration Tests
 
 Deno.test("MemoryBankService: createProjectMemory logs to IActivity Journal", async () => {
   const { db, config, cleanup } = await initTestDbService();
@@ -553,7 +553,7 @@ Deno.test("MemoryBankService: setEmbeddingService logs to IActivity Journal", as
   }
 });
 
-// ===== Index Management Tests =====
+// Index Management Tests
 
 Deno.test("MemoryBankService: rebuildIndices generates index files", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -626,7 +626,7 @@ Deno.test("MemoryBankService: getRecentActivity combines execution history", asy
   }
 });
 
-// ===== Concurrency and File Locking Tests =====
+// Concurrency and File Locking Tests
 
 Deno.test("MemoryBankService: concurrent project memory updates maintain data integrity", async () => {
   const { config, cleanup } = await initTestDbService();

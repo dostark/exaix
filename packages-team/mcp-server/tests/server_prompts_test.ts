@@ -13,9 +13,7 @@ import { initSimpleMCPServer } from "@exaix/mcp/testing";
 
 type IMCPServerTestContext = Awaited<ReturnType<typeof initSimpleMCPServer>>;
 
-// ============================================================================
 // Prompts List Tests
-// ============================================================================
 
 // Helper for MCP server tests
 async function withMCPServer(
@@ -29,9 +27,7 @@ async function withMCPServer(
   }
 }
 
-// ============================================================================
 // Prompts List Tests
-// ============================================================================
 
 Deno.test("MCP Server: handles prompts/list request", async () => {
   await withMCPServer(async ({ server }) => {
@@ -80,9 +76,7 @@ Deno.test("MCP Server: prompts/list includes descriptions and arguments", async 
   });
 });
 
-// ============================================================================
 // Prompts Get Tests
-// ============================================================================
 
 Deno.test("MCP Server: handles prompts/get for execute_plan", async () => {
   await withMCPServer(async ({ server }) => {

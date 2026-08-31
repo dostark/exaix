@@ -12,9 +12,7 @@ import type { ICritique } from "@exaix/execution";
 import { EXISTING_SCORE_CONFIDENCE_WEIGHT, GOAL_ALIGNMENT_CONFIDENCE_WEIGHT } from "@exaix/core";
 import { createMockProvider } from "@exaix/testing";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function makeConfidenceJSON(score: number): string {
   const level = score >= 70 ? ConfidenceAssessmentLevel.HIGH : ConfidenceAssessmentLevel.MEDIUM;
@@ -44,9 +42,7 @@ function makeCritique(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[ConfidenceScorer] includes goal alignment factor when critique with fulfillment available",

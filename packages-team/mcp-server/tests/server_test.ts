@@ -284,9 +284,7 @@ Deno.test("MCP Server: classifyError handles non-Error objects", async () => {
   }
 });
 
-// ============================================================================
 // serveStdio + McpServer — official-SDK dispatch parity
-// ============================================================================
 
 Deno.test(
   "[MCPServer SDK] serveStdio-served tools/list, resources/list, prompts/list, and representative tools/call responses match Step 1's golden fixture exactly",
@@ -390,9 +388,7 @@ Deno.test("[MCPServer] exaix/tools/result_schema round-trips through the officia
   }
 });
 
-// ============================================================================
 // Streamable HTTP transport — real-wire golden-fixture parity
-// ============================================================================
 
 Deno.test(
   "[MCPServer HTTP] tools/list and tools/call over real Streamable HTTP match the golden fixture",

@@ -7,7 +7,7 @@
  * @related-files [apps/tui/src/daemon_control_view.ts, apps/tui/src/agent_status_view.ts, apps/tui/src/monitor_view.ts]
  */
 
-// ===== Box Drawing Characters =====
+// Box Drawing Characters
 
 /**
  * Standard fixed-width box drawing components for TUI panels.
@@ -46,7 +46,7 @@ export const TUI_SECTION = {
   EMPTY: `${TUI_BOX.VERTICAL}${" ".repeat(61)}${TUI_BOX.VERTICAL}`,
 } as const;
 
-// ===== Separators =====
+// Separators
 
 export const TUI_SEPARATOR = {
   HEAVY: "━".repeat(40),
@@ -54,7 +54,7 @@ export const TUI_SEPARATOR = {
   DOTS: "┈".repeat(40),
 } as const;
 
-// ===== Status Icons =====
+// Status Icons
 
 export const TUI_ICON = {
   SUCCESS: "✔",

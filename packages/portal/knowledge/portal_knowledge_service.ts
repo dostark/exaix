@@ -75,9 +75,7 @@ export interface IPortalKnowledgeServiceOptions {
   createVectorIndex?: () => IVectorIndex;
 }
 
-// ---------------------------------------------------------------------------
 // Local types
-// ---------------------------------------------------------------------------
 
 /** Minimal interface for vector index operations used by PortalKnowledgeService. */
 interface IVectorIndex {
@@ -88,9 +86,7 @@ interface IVectorIndex {
   load(snapshot: IVectorIndexSnapshot): void;
 }
 
-// ---------------------------------------------------------------------------
 // Local constants
-// ---------------------------------------------------------------------------
 
 /** Estimated tokens per character for rough token counting. */
 const ESTIMATED_TOKENS_PER_CHAR = 0.25;
@@ -107,13 +103,9 @@ const CHUNK_SENTENCE_GROUP_SIZE = 2;
 /** Number of sentences to overlap between adjacent groups (keeps context continuity). */
 const CHUNK_SENTENCE_OVERLAP = 1;
 
-// ---------------------------------------------------------------------------
 // Service implementation
-// ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
 // PortalKnowledgeService
-// ---------------------------------------------------------------------------
 
 /** Multiplier applied to maxFilesToRead for `deep` mode analysis. */
 const _DEEP_MODE_FILE_CAP_MULTIPLIER = 3;
@@ -183,9 +175,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     void this._memoryBank;
   }
 
-  // -------------------------------------------------------------------------
   // IPortalKnowledgeService implementation
-  // -------------------------------------------------------------------------
 
   async analyze(
     portalAlias: string,
@@ -585,9 +575,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     await this._persistIndex(portalAlias, indexData);
   }
 
-  // -------------------------------------------------------------------------
   // Private helpers
-  // -------------------------------------------------------------------------
 
   /** Resolve portal alias from a portal path by scanning the cached knowledge. */
   private _resolveAliasFromPath(_portalPath: string): string | undefined {

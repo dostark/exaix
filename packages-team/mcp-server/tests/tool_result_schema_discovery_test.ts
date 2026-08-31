@@ -35,9 +35,7 @@ interface ISchemaDiscoveryProperties {
   [key: string]: ISchemaDiscoveryProperty | undefined;
 }
 
-// ============================================================================
 // exaix/tools/result_schema — schema discovery endpoint
-// ============================================================================
 
 Deno.test("tool_result_schema_discovery: known tool returns schema descriptor", async () => {
   const ctx = await initMCPTestWithoutPortal();

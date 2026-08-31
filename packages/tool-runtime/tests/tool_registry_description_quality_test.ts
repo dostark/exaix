@@ -19,7 +19,7 @@ function registryTools() {
   return registry.getTools();
 }
 
-// ── Description quality tests ─────────────────────────────────────────────────
+// Description quality tests
 
 Deno.test("tool_registry_quality: every tool description meets minimum length", () => {
   const tooShort = registryTools().filter((t) => t.description.length < MIN_DESCRIPTION_LENGTH);

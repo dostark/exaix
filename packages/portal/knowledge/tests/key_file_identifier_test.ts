@@ -11,9 +11,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { identifyKeyFiles } from "@exaix/portal/knowledge";
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] identifies entrypoint files
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] identifies entrypoint files", () => {
   const files = ["main.ts", "src/utils.ts", "README.md", "mod.ts", "index.js"];
@@ -28,9 +26,7 @@ Deno.test("[KeyFileIdentifier] identifies entrypoint files", () => {
   assertEquals(paths.includes("mod.ts"), true);
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] identifies config files
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] identifies config files", () => {
   const files = [
@@ -48,9 +44,7 @@ Deno.test("[KeyFileIdentifier] identifies config files", () => {
   assertEquals(paths.includes("tsconfig.json"), true);
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] identifies schema/types files
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] identifies schema/types files", () => {
   const files = [
@@ -69,9 +63,7 @@ Deno.test("[KeyFileIdentifier] identifies schema/types files", () => {
   assertEquals(paths.some((p) => p.includes("schema") || p.includes("types")), true);
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] identifies test helper files
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] identifies test helper files", () => {
   const files = [
@@ -91,9 +83,7 @@ Deno.test("[KeyFileIdentifier] identifies test helper files", () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] identifies routing files
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] identifies routing files", () => {
   const files = [
@@ -108,9 +98,7 @@ Deno.test("[KeyFileIdentifier] identifies routing files", () => {
   assertEquals(routing.length > 0, true);
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] assigns correct roles
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] assigns correct roles", () => {
   const files = [
@@ -134,9 +122,7 @@ Deno.test("[KeyFileIdentifier] assigns correct roles", () => {
   assertEquals(build!.role, "build");
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] sorts by significance (entrypoints first)
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] sorts by significance", () => {
   const files = [
@@ -155,9 +141,7 @@ Deno.test("[KeyFileIdentifier] sorts by significance", () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] handles no significant files
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] handles no significant files", () => {
   const files = [
@@ -172,9 +156,7 @@ Deno.test("[KeyFileIdentifier] handles no significant files", () => {
   assertEquals(Array.isArray(result), true);
 });
 
-// ---------------------------------------------------------------------------
 // [KeyFileIdentifier] respects output cap limit
-// ---------------------------------------------------------------------------
 
 Deno.test("[KeyFileIdentifier] respects output cap limit", () => {
   const files = Array.from({ length: 100 }, (_, i) => `pkg${i}.json`);

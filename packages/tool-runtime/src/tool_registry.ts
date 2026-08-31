@@ -76,9 +76,7 @@ interface IToolContext extends IServiceContext {
 /** Fallback trace ID used when no traceId is supplied to ToolRegistry or its operations. */
 const DEFAULT_TOOL_REGISTRY_TRACE_ID = "tool-registry";
 
-// ============================================================================
 // Command Whitelist
-// ============================================================================
 
 // Combined whitelist for backward compatibility
 const ALLOWED_COMMANDS = new Set([
@@ -105,9 +103,7 @@ const ALLOWED_COMMANDS = new Set([
   SystemCommand.GREP,
 ]);
 
-// ============================================================================
 // Argument Validation Functions
-// ============================================================================
 
 /**
  * Validate command arguments for security and safety
@@ -235,9 +231,7 @@ function validateGrepArguments(args: string[]): { valid: boolean; reason?: strin
   return { valid: true };
 }
 
-// ============================================================================
 // ToolRegistry Implementation
-// ============================================================================
 
 export class ToolRegistry implements IToolRegistry {
   private config: Config;

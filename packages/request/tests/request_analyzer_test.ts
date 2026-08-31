@@ -18,9 +18,7 @@ import { AnalysisMode } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { makeValidAnalysisJson as makeValidJson } from "./test_helpers.ts";
 
-// ---------------------------------------------------------------------------
 // Heuristic mode
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] analyzes in heuristic mode without provider", async () => {
   const analyzer = new RequestAnalyzer({ mode: AnalysisMode.HEURISTIC });
@@ -58,9 +56,7 @@ Deno.test("[RequestAnalyzer] heuristic mode never calls provider", async () => {
   assertEquals(generateCalled, false);
 });
 
-// ---------------------------------------------------------------------------
 // LLM mode
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] analyzes in LLM mode with mock provider", async () => {
   const provider = new MockProvider(makeValidJson());
@@ -73,9 +69,7 @@ Deno.test("[RequestAnalyzer] analyzes in LLM mode with mock provider", async () 
   assertEquals(result.taskType, RequestTaskType.FEATURE);
 });
 
-// ---------------------------------------------------------------------------
 // Hybrid mode
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] hybrid mode skips LLM for high-actionability requests", async () => {
   // Heuristic will classify a long well-specified request as high actionability ...
@@ -134,9 +128,7 @@ Deno.test("[RequestAnalyzer] hybrid mode calls LLM for low-actionability request
   assertEquals(llmCalled, true);
 });
 
-// ---------------------------------------------------------------------------
 // Metadata
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] records durationMs in metadata", async () => {
   const analyzer = new RequestAnalyzer({ mode: AnalysisMode.HEURISTIC });
@@ -153,9 +145,7 @@ Deno.test("[RequestAnalyzer] populates analyzedAt timestamp", async () => {
   assertEquals(isNaN(Date.parse(result.metadata.analyzedAt)), false);
 });
 
-// ---------------------------------------------------------------------------
 // Activity logging
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] logs activity to database when db provided", async () => {
   const logged: string[] = [];
@@ -191,9 +181,7 @@ Deno.test("[RequestAnalyzer] works without db (no logging, no error)", async () 
   assertExists(result);
 });
 
-// ---------------------------------------------------------------------------
 // Merging
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] merges heuristic file refs into LLM results", async () => {
   const llmJsonNoFiles = JSON.stringify({
@@ -224,9 +212,7 @@ Deno.test("[RequestAnalyzer] merges heuristic file refs into LLM results", async
   assertEquals(result.referencedFiles.some((f: string) => f.includes("src/services/cache_service.ts")), true);
 });
 
-// ---------------------------------------------------------------------------
 // Graceful failure
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestAnalyzer] handles LLM failure gracefully in hybrid mode (falls back to heuristic)", async () => {
   const failingProvider = {

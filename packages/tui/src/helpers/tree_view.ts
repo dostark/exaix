@@ -10,7 +10,7 @@ import { colorize, getTheme, padEnd, visibleLength } from "./colors.ts";
 import { TUI_TREE_ICONS } from "./constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Tree Node Types =====
+// Tree Node Types
 
 export interface ITreeNode<T = unknown> {
   id: string;
@@ -53,7 +53,7 @@ export const defaultTreeOptions: ITreeRenderOptions = {
   focusedId: undefined,
 };
 
-// ===== Tree Icons =====
+// Tree Icons
 
 export const TREE_ICONS = {
   expanded: TUI_TREE_ICONS.expanded,
@@ -80,9 +80,9 @@ export const TREE_ICONS = {
 
 export type TreeIconType = keyof typeof TREE_ICONS;
 
-// ===== Flat Node (for rendering) =====
+// Flat Node (for rendering)
 
-// ===== Tree Line Characters =====
+// Tree Line Characters
 
 const TREE_CHARS = {
   vertical: "│",
@@ -92,7 +92,7 @@ const TREE_CHARS = {
   space: " ",
 } as const;
 
-// ===== Tree Utilities =====
+// Tree Utilities
 
 /**
  * Flatten tree to array for rendering
@@ -290,7 +290,7 @@ export function getNodeIndex<T>(nodes: ITreeNode<T>[], id: string): number {
   return flat.findIndex((f) => f.node.id === id);
 }
 
-// ===== Rendering =====
+// Rendering
 
 /**
  * Render a tree node line
@@ -441,7 +441,7 @@ export function renderTreePanel<T>(
   return lines;
 }
 
-// ===== Navigation Helpers =====
+// Navigation Helpers
 
 /**
  * Get next visible node ID
@@ -485,7 +485,7 @@ export function getLastNodeId<T>(nodes: ITreeNode<T>[]): string | null {
   return flat.length > 0 ? flat[flat.length - 1].node.id : null;
 }
 
-// ===== Factory Functions =====
+// Factory Functions
 
 /**
  * Create a tree node

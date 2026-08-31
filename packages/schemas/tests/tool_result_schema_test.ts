@@ -12,9 +12,7 @@ import { Severity, ToolErrorCode, ToolSideEffectScope } from "@exaix/core";
 import { ZodError } from "zod";
 import { ToolResultEnvelopeSchema, ToolResultValidationFailureSchema } from "@exaix/schemas";
 
-// ============================================================================
 // ToolResultEnvelopeSchema
-// ============================================================================
 
 Deno.test("ToolResultEnvelopeSchema: accepts valid success result", () => {
   const result = ToolResultEnvelopeSchema.parse({
@@ -101,9 +99,7 @@ Deno.test("ToolResultEnvelopeSchema: rejects failed result without error", () =>
   );
 });
 
-// ============================================================================
 // ToolResultValidationFailureSchema
-// ============================================================================
 
 Deno.test("ToolResultValidationFailureSchema: accepts valid failure with issues", () => {
   const failure = ToolResultValidationFailureSchema.parse({

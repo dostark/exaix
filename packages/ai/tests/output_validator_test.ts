@@ -11,9 +11,7 @@ import { McpToolName } from "@exaix/mcp";
 import { z } from "zod";
 import { createOutputValidator, createPlanValidator, OutputValidator } from "@exaix/tool-runtime";
 
-// ============================================================================
 // XML Tag Parsing Tests
-// ============================================================================
 
 Deno.test("[OutputValidator] parses XML tags correctly", () => {
   const validator = new OutputValidator();
@@ -79,9 +77,7 @@ Deno.test("[OutputValidator] preserves multiline content", () => {
   assert(result.content.includes("Line 3"));
 });
 
-// ============================================================================
 // JSON Validation Tests
-// ============================================================================
 
 Deno.test("[OutputValidator] validates valid JSON against schema", () => {
   const validator = new OutputValidator();
@@ -123,9 +119,7 @@ Deno.test("[OutputValidator] fails on schema mismatch", () => {
   assert(result.errors.some((e) => e.path.includes("age")));
 });
 
-// ============================================================================
 // JSON Repair Tests
-// ============================================================================
 
 Deno.test("[OutputValidator] repairs markdown code blocks", () => {
   const validator = new OutputValidator({ autoRepair: true });
@@ -189,9 +183,7 @@ Deno.test("[OutputValidator] removes line comments", () => {
   assert(result.repairSucceeded);
 });
 
-// ============================================================================
 // Named Schema Tests
-// ============================================================================
 
 Deno.test("[OutputValidator] validates evaluation schema", () => {
   const validator = new OutputValidator();
@@ -282,9 +274,7 @@ Deno.test("[OutputValidator] validates toolCall schema", () => {
   assertEquals(result.value?.tool, McpToolName.READ_FILE);
 });
 
-// ============================================================================
 // Combined Parse and Validate Tests
-// ============================================================================
 
 Deno.test("[OutputValidator] parseAndValidate extracts and validates", () => {
   const validator = new OutputValidator();
@@ -311,9 +301,7 @@ Deno.test("[OutputValidator] parseAndValidate handles validation failure", () =>
   assertEquals(result.parsed.thought, "Processing");
 });
 
-// ============================================================================
 // Metrics Tests
-// ============================================================================
 
 Deno.test("[OutputValidator] tracks validation metrics", () => {
   const validator = new OutputValidator();
@@ -350,9 +338,7 @@ Deno.test("[OutputValidator] resets metrics", () => {
   assertEquals(metrics.totalAttempts, 0);
 });
 
-// ============================================================================
 // Factory Function Tests
-// ============================================================================
 
 Deno.test("[createOutputValidator] creates validator with defaults", () => {
   const validator = createOutputValidator();
@@ -379,9 +365,7 @@ Deno.test("[createPlanValidator] creates plan-specific validator", () => {
   assert(result.success);
 });
 
-// ============================================================================
 // Edge Cases
-// ============================================================================
 
 Deno.test("[OutputValidator] handles empty content", () => {
   const validator = new OutputValidator();
@@ -456,9 +440,7 @@ Deno.test("[OutputValidator] provides detailed error paths", () => {
   assert(errorPath.includes("email") || errorPath.includes("profile"));
 });
 
-// ============================================================================
 // Output Schema Registry Tests
-// ============================================================================
 
 Deno.test("[OutputSchemas] evaluation schema rejects invalid verdict", () => {
   const validator = new OutputValidator();

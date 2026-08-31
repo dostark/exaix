@@ -12,9 +12,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { parseConfigFiles } from "@exaix/portal/knowledge";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 async function makeTempDir(): Promise<string> {
   return await Deno.makeTempDir({ prefix: "exa_config_parser_test_" });
@@ -48,9 +46,7 @@ async function withConfigTest(
   }
 }
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] parses package.json dependencies
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] parses package.json dependencies", async () => {
   await withConfigTest(
@@ -76,9 +72,7 @@ Deno.test("[ConfigParser] parses package.json dependencies", async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] parses deno.json imports and tasks
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] parses deno.json imports and tasks", async () => {
   await withConfigTest(
@@ -104,9 +98,7 @@ Deno.test("[ConfigParser] parses deno.json imports and tasks", async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] parses tsconfig.json compiler options
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] parses tsconfig.json compiler options", async () => {
   await withConfigTest(
@@ -130,9 +122,7 @@ Deno.test("[ConfigParser] parses tsconfig.json compiler options", async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] detects test framework from dependencies
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] detects test framework from dependencies", async () => {
   await withConfigTest(
@@ -150,9 +140,7 @@ Deno.test("[ConfigParser] detects test framework from dependencies", async () =>
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] detects web framework from dependencies
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] detects web framework from dependencies", async () => {
   await withConfigTest(
@@ -169,9 +157,7 @@ Deno.test("[ConfigParser] detects web framework from dependencies", async () => 
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] detects build tool from scripts
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] detects build tool from scripts", async () => {
   await withConfigTest(
@@ -189,9 +175,7 @@ Deno.test("[ConfigParser] detects build tool from scripts", async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] reads .gitignore and adds patterns to ignorePatterns
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] reads .gitignore and adds patterns to ignorePatterns", async () => {
   await withConfigTest(
@@ -208,9 +192,7 @@ Deno.test("[ConfigParser] reads .gitignore and adds patterns to ignorePatterns",
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] handles malformed JSON gracefully
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] handles malformed JSON gracefully", async () => {
   await withConfigTest(
@@ -225,9 +207,7 @@ Deno.test("[ConfigParser] handles malformed JSON gracefully", async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] returns empty for directory with no config files
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] returns empty for directory with no config files", async () => {
   await withConfigTest(
@@ -243,9 +223,7 @@ Deno.test("[ConfigParser] returns empty for directory with no config files", asy
   );
 });
 
-// ---------------------------------------------------------------------------
 // [ConfigParser] extracts key dependencies with purpose heuristic
-// ---------------------------------------------------------------------------
 
 Deno.test("[ConfigParser] extracts key dependencies with purpose heuristic", async () => {
   await withConfigTest(

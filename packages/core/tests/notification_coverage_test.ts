@@ -131,7 +131,7 @@ Deno.test("NotificationService: getNotifications on uninitialized state", async 
   }
 });
 
-// ===== clearNotification Edge Cases =====
+// clearNotification Edge Cases
 
 Deno.test("NotificationService: clearNotification handles non-existent proposal", async () => {
   const { notification, cleanup } = await initNotificationTest();
@@ -165,7 +165,7 @@ Deno.test("NotificationService: clearNotification on empty file", async () => {
   }
 });
 
-// ===== getPendingCount Edge Cases =====
+// getPendingCount Edge Cases
 
 Deno.test("NotificationService: getPendingCount with mixed notification types", async () => {
   const { notification, cleanup } = await initNotificationTest();
@@ -194,7 +194,7 @@ Deno.test("NotificationService: getPendingCount returns 0 on empty database", as
   }
 });
 
-// ===== logActivity Edge Cases =====
+// logActivity Edge Cases
 
 Deno.test("NotificationService: notifyApproval handles db errors gracefully", () => {
   const config = createMockConfig(Deno.cwd());
@@ -248,7 +248,7 @@ Deno.test("NotificationService: notifyMemoryUpdate handles db errors gracefully"
   }
 });
 
-// ===== Multiple Operations =====
+// Multiple Operations
 
 Deno.test("NotificationService: multiple operations in sequence", async () => {
   const { notification, cleanup } = await initNotificationTest();

@@ -1303,9 +1303,7 @@ export enum TestDetectionKind {
   NONE = "none",
 }
 
-// ============================================================================
 // Step Execution Durability Enums
-// ============================================================================
 
 /** Disposition of a step execution record: executed normally, replayed, skipped because a
  *  prior identical execution was reused, or invalidated. */

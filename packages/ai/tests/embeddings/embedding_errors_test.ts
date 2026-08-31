@@ -10,9 +10,7 @@
 import { assertEquals, assertInstanceOf } from "@std/assert";
 import { EmbeddingError } from "../../src/embeddings/embedding_errors.ts";
 
-// ============================================================================
 // EmbeddingError Tests
-// ============================================================================
 
 Deno.test("EmbeddingError: extends Error with correct code", () => {
   const err = new EmbeddingError("MODEL_NOT_FOUND", "Model nomic-embed-text not found");

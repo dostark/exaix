@@ -14,9 +14,7 @@ import { ClarificationSessionSchema, type IClarificationSession } from "@exaix/s
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { RequestStatus } from "@exaix/core/status";
 
-// ---------------------------------------------------------------------------
 // Path derivation
-// ---------------------------------------------------------------------------
 
 /** Derives the sibling clarification JSON path for a request file. */
 function deriveClarificationPath(requestFilePath: string): string {
@@ -26,9 +24,7 @@ function deriveClarificationPath(requestFilePath: string): string {
   return join(dir, `${base}_clarification.json`);
 }
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 /** Persists a clarification session through an atomic rename. */
 export async function saveClarification(
@@ -64,9 +60,7 @@ export async function loadClarification(
   }
 }
 
-// ---------------------------------------------------------------------------
 // Re-entry helpers
-// ---------------------------------------------------------------------------
 
 /** Atomically returns a clarified request to pending for watcher re-entry. */
 export async function finalizeAndWritePending(
@@ -118,9 +112,7 @@ export async function finalizeAndWritePending(
   await Deno.rename(tmpPath, requestFilePath);
 }
 
-// ---------------------------------------------------------------------------
 // Spec rendering
-// ---------------------------------------------------------------------------
 
 /** Renders a specification, omitting empty sections except the required summary. */
 export function renderSpecificationAsPrompt(spec: IRequestSpecification): string {

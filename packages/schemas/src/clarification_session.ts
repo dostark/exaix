@@ -13,9 +13,7 @@
 import { z } from "zod";
 import { RequestSpecificationSchema } from "./request_specification.ts";
 
-// ============================================================================
 // Enums
-// ============================================================================
 
 /**
  * Category of information a clarification question seeks to gather.
@@ -40,9 +38,7 @@ export enum ClarificationSessionStatus {
   USER_CANCELLED = "user-cancelled",
 }
 
-// ============================================================================
 // Sub-schemas
-// ============================================================================
 
 /**
  * A single question asked by the planning agent within a clarification round.
@@ -91,9 +87,7 @@ export const QualityHistoryEntrySchema = z.object({
 
 export type IQualityHistoryEntry = z.infer<typeof QualityHistoryEntrySchema>;
 
-// ============================================================================
 // Root schema
-// ============================================================================
 
 /**
  * Full state of a clarification session for a single request.

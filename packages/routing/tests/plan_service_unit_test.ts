@@ -49,9 +49,7 @@ function createReviewPlanContent(overrides?: Record<string, string>): string {
   return `---\n${yamlLines.join("\n")}\n---\n\n# Plan\n\n## Steps\n\n1. Step one\n2. Step two\n`;
 }
 
-// ──────────────────────────────────────────────────────────────────────
 // approve
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PlanService.approve: moves plan from Plans to Active", async () => {
   const root = await Deno.makeTempDir({ prefix: "plan-svc-approve-" });
@@ -146,9 +144,7 @@ Deno.test("PlanService.approve: with skills injects into frontmatter", async () 
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // reject
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PlanService.reject: moves plan to Rejected directory", async () => {
   const root = await Deno.makeTempDir({ prefix: "plan-svc-reject-" });
@@ -200,9 +196,7 @@ Deno.test("PlanService.reject: throws for non-existent plan", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // list
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PlanService.list: returns empty array when no plans exist", async () => {
   const root = await Deno.makeTempDir({ prefix: "plan-svc-list-empty-" });
@@ -266,9 +260,7 @@ Deno.test("PlanService.list: filters by status", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // show
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PlanService.show: returns details for existing plan", async () => {
   const root = await Deno.makeTempDir({ prefix: "plan-svc-show-" });
@@ -305,9 +297,7 @@ Deno.test("PlanService.show: throws for non-existent plan", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // revise
-// ──────────────────────────────────────────────────────────────────────
 
 Deno.test("PlanService.revise: appends revision comments to plan", async () => {
   const root = await Deno.makeTempDir({ prefix: "plan-svc-revise-" });

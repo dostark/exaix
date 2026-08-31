@@ -17,9 +17,7 @@ function toSeamPlaceholder(registry: { register(h: { stepType: string }): void }
   return registry;
 }
 
-// ============================================================
 // Test doubles
-// ============================================================
 
 class StubVotingService implements IVotingConsensusService {
   run(_config: VotingGroupConfig, _basePrompt: string, _traceId: string): Promise<VotingResult> {
@@ -45,9 +43,7 @@ class SpyRegistry {
   }
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test("[voting] VotingCapabilityModule registers VotingStepHandler for voting_group", () => {
   const votingService = new StubVotingService();

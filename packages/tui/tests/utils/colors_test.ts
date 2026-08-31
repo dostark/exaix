@@ -28,7 +28,7 @@ import {
   warning,
 } from "@exaix/tui/helpers/colors.ts";
 
-// ===== ANSI Constants Tests =====
+// ANSI Constants Tests
 
 Deno.test("ANSI: has reset code", () => {
   assertEquals(ANSI.reset, "\x1b[0m");
@@ -49,7 +49,7 @@ Deno.test("ANSI: has style codes", () => {
   assertEquals(ANSI.underline, "\x1b[4m");
 });
 
-// ===== Theme Tests =====
+// Theme Tests
 
 Deno.test("getTheme: returns default theme when colors enabled", () => {
   const theme = getTheme(true);
@@ -88,7 +88,7 @@ Deno.test("defaultTheme: has all required keys", () => {
   }
 });
 
-// ===== Colorize Tests =====
+// Colorize Tests
 
 Deno.test("colorize: wraps text with color and reset", () => {
   const result = colorize("hello", ANSI.red);
@@ -105,7 +105,7 @@ Deno.test("colorize: uses custom reset", () => {
   assertEquals(result, `${ANSI.red}hello${ANSI.blue}`);
 });
 
-// ===== Helper Function Tests =====
+// Helper Function Tests
 
 Deno.test("bold: applies bold styling when colors enabled", () => {
   const result = bold("hello", true);
@@ -143,7 +143,7 @@ Deno.test("info: applies blue color", () => {
   assertStringIncludes(result, ANSI.blue);
 });
 
-// ===== Strip ANSI Tests =====
+// Strip ANSI Tests
 
 Deno.test("stripAnsi: removes color codes", () => {
   const colored = `${ANSI.red}hello${ANSI.reset}`;
@@ -163,7 +163,7 @@ Deno.test("stripAnsi: handles text without codes", () => {
   assertEquals(stripped, "hello world");
 });
 
-// ===== Visible Length Tests =====
+// Visible Length Tests
 
 Deno.test("visibleLength: calculates length excluding ANSI codes", () => {
   const colored = `${ANSI.red}hello${ANSI.reset}`;
@@ -179,7 +179,7 @@ Deno.test("visibleLength: handles multiple codes", () => {
   assertEquals(visibleLength(colored), 2);
 });
 
-// ===== Padding Tests =====
+// Padding Tests
 
 Deno.test("padEnd: pads plain text to width", () => {
   const result = padEnd("hi", 5);

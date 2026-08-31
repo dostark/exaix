@@ -12,9 +12,7 @@
 import { z } from "zod";
 import { QualityGateMode } from "@exaix/core";
 
-// ============================================================================
 // Enums
-// ============================================================================
 
 /**
  * Category of quality issue found in a request.
@@ -61,9 +59,7 @@ export enum RequestQualityRecommendation {
 // QualityGateMode (heuristic/llm/hybrid) is defined in packages/core/src/enums.ts
 // and used via z.nativeEnum(QualityGateMode) — no re-export needed here.
 
-// ============================================================================
 // Sub-schemas
-// ============================================================================
 
 /**
  * A single quality issue identified within a request.
@@ -97,9 +93,7 @@ export type IRequestQualityAssessmentMetadata = z.infer<
   typeof RequestQualityAssessmentMetadataSchema
 >;
 
-// ============================================================================
 // Root schema
-// ============================================================================
 
 /**
  * Full structured quality assessment of a request, produced by RequestQualityGate.

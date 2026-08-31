@@ -27,9 +27,7 @@ import {
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 
-// ============================================================================
 // Fixtures
-// ============================================================================
 
 function makeCapturingProvider(response?: string): {
   provider: IModelProvider;
@@ -61,9 +59,7 @@ function makeCapturingProvider(response?: string): {
   return { provider, capturedPrompts };
 }
 
-// ============================================================================
 // Test environment setup
-// ============================================================================
 
 async function makeKnowledgeProcessorEnv(opts: {
   knowledgeService?: IPortalKnowledgeService & { callCount: number };
@@ -150,9 +146,7 @@ ${opts.body ?? "Test body"}`;
   return filePath;
 }
 
-// ============================================================================
 // Unit tests: buildPortalKnowledgeSummary
-// ============================================================================
 
 Deno.test("[RequestProcessor] buildPortalKnowledgeSummary: generates Markdown header and conventions", () => {
   const knowledge = makeKnowledge();
@@ -181,9 +175,7 @@ Deno.test("[RequestProcessor] buildPortalKnowledgeSummary: caps convention lists
   assertEquals(lines.length <= PORTAL_KNOWLEDGE_PROMPT_MAX_LINES, true);
 });
 
-// ============================================================================
 // Integration tests: RequestProcessor + IPortalKnowledgeService
-// ============================================================================
 
 Deno.test("[RequestProcessor] resolves portal knowledge before execution and injects it into context", async () => {
   const mockKnowledge = makeMockKnowledgeService();
