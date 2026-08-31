@@ -36,14 +36,8 @@ export type IToolResultJsonSchemaProperties = Record<string, IToolResultJsonSche
 // Tool Result Envelope Schema
 // ============================================================================
 
-/**
- * Runtime schema for IToolResult from packages/core/src/types/i_tool_registry.ts.
- * Validates the envelope produced by ToolRegistry-backed tool executors at
- * Enforcement Points 1 (executor boundary) and 2 (adapter boundary).
- *
- * Note: tool_reflector.ts:IToolResult is a separate reflective evaluation
- * interface and is out of scope for Phase 78 payload validation.
- */
+/** Validates packages/core/src/types/i_tool_registry.ts's `IToolResult`, not
+ *  tool_reflector.ts's separate, unrelated `IToolResult`. */
 export const ToolResultEnvelopeMetaSchema = z.object({
   tool: z.string().min(1),
   resultType: z.string().min(1),
@@ -89,11 +83,7 @@ export const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
 
 export type ToolResultValidationStage = typeof TOOL_RESULT_VALIDATION_STAGE_VALUES[number];
 
-/**
- * Structured representation of a tool result payload validation failure.
- * The rawResult field MUST NOT be forwarded to MCP clients — it is for
- * internal audit logging only.
- */
+/** `rawResult` MUST NOT be forwarded to MCP clients — internal audit logging only. */
 export const ToolResultValidationFailureSchema = z.object({
   tool: z.string().min(1),
   stage: z.enum(TOOL_RESULT_VALIDATION_STAGE_VALUES),
@@ -144,10 +134,6 @@ export const TOOL_RESULT_REMEDIATION_MODES: ReadonlySet<string> = new Set(
 
 export type ToolResultRemediationMode = typeof TOOL_RESULT_REMEDIATION_MODE_VALUES[number];
 
-/**
- * Policy governing how validation failures are handled for a specific tool.
- * maxRetries is bounded by TOOL_RESULT_VALIDATION_MAX_RETRIES.
- */
 export const ToolResultRemediationPolicySchema = z.object({
   tool: z.string().min(1),
   mode: z.enum(TOOL_RESULT_REMEDIATION_MODE_VALUES),
@@ -164,16 +150,13 @@ export type IToolResultRemediationPolicy = z.infer<typeof ToolResultRemediationP
 // Schema Descriptor (API Discovery)
 // ============================================================================
 
-/**
- * Descriptor returned by the exaix/tools/result_schema JSON-RPC method.
- * Derived from the same canonical metadata as runtime validation so discovery
- * and enforcement cannot drift independently.
- */
+/** Returned by the exaix/tools/result_schema JSON-RPC method; derived from the same
+ *  canonical metadata as runtime validation so discovery and enforcement cannot drift. */
 export const ToolResultSchemaDescriptorSchema = z.object({
   tool: z.string().min(1),
   schemaVersion: z.string().min(1),
   envelopeSchema: z.unknown(),
-  /** Phase 77's output_schema promoted to a Zod schema for runtime validation. */
+  /** output_schema promoted to a Zod schema for runtime validation. */
   resultDataSchema: z.unknown().optional(),
   remediationPolicy: ToolResultRemediationPolicySchema,
   experimental: z.boolean().default(true),
@@ -185,14 +168,8 @@ export type IToolResultSchemaDescriptor = z.infer<typeof ToolResultSchemaDescrip
 // Tool Result Schema Registry
 // ============================================================================
 
-/**
- * Registry mapping tool name → Zod schema for the tool's IToolResult.data field.
- * Only populated for ToolRegistry-backed tools (delegates_to_registry: true)
- * that expose structured nested data payloads.
- *
- * MCP-handler-only tools (ReadFileTool, WriteFileTool, etc.) return MCPToolResponse
- * directly and are validated at the MCP boundary, not here.
- */
+/** Only populated for ToolRegistry-backed tools (delegates_to_registry: true) with
+ *  structured nested data; MCP-handler-only tools are validated at the MCP boundary instead. */
 export const TOOL_RESULT_SCHEMA_REGISTRY: Record<string, z.ZodType> = {
   run_command: z.object({
     output: z.string(),
@@ -252,20 +229,11 @@ export const TOOL_RESULT_SCHEMA_DESCRIPTOR_REGISTRY: Record<string, IToolResultJ
 // Schema Discovery — Request/Response Schemas (exaix/tools/result_schema)
 // ============================================================================
 
-/**
- * Request schema for the exaix/tools/result_schema JSON-RPC method.
- * The caller provides the tool name to look up.
- */
 export const ToolResultSchemaRequestSchema = z.object({
   tool: z.string().min(1),
 });
 
 export type IToolResultSchemaRequest = z.infer<typeof ToolResultSchemaRequestSchema>;
 
-/**
- * Response schema for the exaix/tools/result_schema JSON-RPC method.
- * Alias of ToolResultSchemaDescriptorSchema — same canonical type for both
- * runtime validation and API discovery so they cannot drift independently.
- */
 export const ToolResultSchemaResponseSchema = ToolResultSchemaDescriptorSchema;
 export type IToolResultSchemaResponse = IToolResultSchemaDescriptor;

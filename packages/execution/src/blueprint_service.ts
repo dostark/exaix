@@ -42,10 +42,7 @@ interface BlueprintInput {
   task_type?: IModelIntent["task_type"];
 }
 
-/**
- * Zod schema for blueprint frontmatter validation
- * Prevents YAML deserialization attacks by using strict validation
- */
+/** Strict validation prevents YAML deserialization attacks. */
 export const BlueprintSchema = z.object({
   identity_id: z.string().optional(),
   name: z.string().max(100).optional(),
@@ -54,12 +51,7 @@ export const BlueprintSchema = z.object({
   capabilities: z.array(z.string().max(MAX_NAME_LENGTH)).max(20).default([]),
   permitted_tools: z.array(z.string().max(MAX_NAME_LENGTH)).max(100).optional(),
   allowed_paths: z.array(z.string().max(255)).max(100).optional(),
-  /**
-   * Per-action HITL governance rules (Phase 118). Declared here (not just relied on via
-   * `.passthrough()`) so it is Zod-validated and typed, not silently passed through as
-   * `unknown` — this schema previously omitted it entirely, so `validatedFrontmatter.hitl`
-   * was untyped and never copied into the returned blueprint (Phase 154 Step 3).
-   */
+  /** Declared explicitly (not left to `.passthrough()`) so it is Zod-validated and typed. */
   hitl: HitlPolicySchema.optional(),
   created: z.string().optional(),
   created_by: z.string().optional(),
@@ -68,11 +60,6 @@ export const BlueprintSchema = z.object({
   default_skills: z.array(z.string()).optional(),
 }).passthrough();
 
-/**
- * Loads, validates, and resolves agent blueprints from the filesystem.
- * Encapsulates YAML parsing, Zod schema validation, model resolution,
- * and prompt sanitization.
- */
 export class BlueprintService {
   constructor(
     private config: Config,
@@ -81,10 +68,6 @@ export class BlueprintService {
     private options?: Opt<IAgentOrchestratorOptions, Reason.OptionalContext>,
   ) {}
 
-  /**
-   * Load agent blueprint from file with security validation.
-   * Returns the parsed blueprint and any resolved call options from ModelResolver.
-   */
   async loadBlueprint(rawAgentName: string): Promise<IBlueprintLoadResult> {
     const agentName = InputValidator.validateBlueprintName(rawAgentName);
     const blueprintPath = this.resolveBlueprintPath(agentName);
@@ -118,10 +101,6 @@ export class BlueprintService {
           permitted_tools: validatedFrontmatter.permitted_tools,
           allowed_paths: validatedFrontmatter.allowed_paths,
           systemPrompt: sanitizedPrompt,
-          // Phase 154 Step 3: was parsed by BlueprintSchema but dropped here, so
-          // AgentOrchestrator's IAgentFileBlueprint.hitl (see its own doc comment,
-          // "Resolved by ExecutionLoop for ToolRegistry path") was always undefined
-          // regardless of what a blueprint's frontmatter declared.
           hitl: validatedFrontmatter.hitl,
         },
         resolvedCallOptions,
@@ -163,8 +142,7 @@ export class BlueprintService {
         taskTypeMap: this.config.model_registry?.task_type_map,
       });
       const intent: IModelIntent = {
-        // Phase 132.10 merge rule (GAP-4): request-level intent overrides blueprint
-        // values for any explicitly-set field; unset fields fall through to the blueprint.
+        // Request-level intent overrides the blueprint for any explicitly-set field.
         model: requestIntent?.model || validatedFrontmatter.model,
         model_size: requestIntent?.model_size ?? extras.model_size,
         characteristics: requestIntent?.characteristics ?? extras.characteristics,
@@ -201,10 +179,6 @@ export class BlueprintService {
     return join(blueprintsBase, DEFAULT_IDENTITIES_PATH, `${agentName}.md`);
   }
 
-  /**
-   * Resolve model ID string from blueprint.
-   * If model already contains ":", return as-is. Otherwise, composite "provider:model".
-   */
   resolveModelId(blueprint: IAgentFileBlueprint): string {
     return blueprint.model.includes(":") ? blueprint.model : `${blueprint.provider}:${blueprint.model}`;
   }

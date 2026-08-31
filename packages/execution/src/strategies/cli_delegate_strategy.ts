@@ -119,31 +119,20 @@ const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROP
  *  launch env explicitly (never via the ambient parent). */
 const DELEGATE_OAUTH_ENV_KEY = "CLAUDE_CODE_OAUTH_TOKEN";
 
-// git status read used by detectGitChanges() to surface the delegate's real writes as
-// files_changed. Kept LOCAL (not imported from @exaix/git) so a strategy file does not reach
-// into a low-level constants module — CODE_STYLE.md §15; values mirror git_audit_service's.
+// Used by detectGitChanges(). Kept LOCAL (not imported from @exaix/git) so a strategy
+// file does not reach into a low-level constants module; values mirror git_audit_service's.
 const GIT_CMD_STATUS = "status";
 const GIT_FLAG_PORCELAIN = "--porcelain";
 const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
 const GIT_STATUS_TIMEOUT_MS = 30_000;
 
-/**
- * Build the spawn env via the SHARED child-env policy (`buildAllowlistChildEnv`,
- * allowlist mode): only the safe parent keys (PATH/HOME/LANG/LC_ALL/TERM/TMPDIR) plus the
- * deliberate PWD override and the delegate's own OAuth subscription auth reach the
- * subprocess. Ambient secrets (OPENROUTER_API_KEY, cloud/VCS/SSH credentials) and proxy
- * vars are excluded — the delegate is a foreign agent and must run fail-closed (GAP-28).
- * The prior inherit mode forwarded the daemon's full secret stack, which the shared policy
- * reserves for first-party tools only.
- * Deno.Command's `cwd` option changes the OS-level working directory the subprocess
- * is spawned into, but does NOT update a `PWD` env var inherited via
- * Deno.env.toObject() — the daemon's own PWD (wherever it was originally launched
- * from) otherwise leaks through unchanged. opencode's CLI resolves relative tool-call
- * paths against process.env.PWD rather than the kernel cwd (live-verified: a write
- * meant for a worktree checkout landed in the daemon's own launch directory instead),
- * so PWD must always be kept in sync with the real spawn cwd.
- */
+/** Uses the SHARED allowlist child-env policy: ambient secrets (provider keys,
+ *  cloud/VCS/SSH credentials) and proxy vars are excluded — the delegate is a foreign
+ *  agent and must run fail-closed, unlike the full-inherit mode first-party tools get. */
 function buildDelegateEnv(portalPath: string): Record<string, string> {
+  // Deno.Command's `cwd` changes the OS-level spawn directory but does NOT update the
+  // inherited `PWD` env var — opencode resolves relative tool-call paths against
+  // process.env.PWD, not the kernel cwd, so PWD must be kept in sync with it.
   const launchEnv: Record<string, string> = { PWD: portalPath };
   const oauth = Deno.env.get(DELEGATE_OAUTH_ENV_KEY);
   if (oauth !== undefined) {
@@ -154,24 +143,16 @@ function buildDelegateEnv(portalPath: string): Record<string, string> {
   return env;
 }
 
-/**
- * opencode's tool_use events report an ABSOLUTE filePath (verified via a live CLI
- * probe); claude's parsed toolPaths is always empty today. GitAuditService's
- * unauthorized-change check compares files_changed against `git status --porcelain`
- * output, which is always portal-relative — an unnormalized absolute path never
- * matches, so every real write gets reverted as a false-positive security violation.
- */
+/** opencode's tool_use events report an ABSOLUTE filePath, but GitAuditService's
+ *  unauthorized-change check compares files_changed against portal-relative `git status`
+ *  output — an unnormalized path never matches, so a real write reverts as a false-positive. */
 function toPortalRelativePaths(paths: string[], portalPath: string): string[] {
   return paths.map((path) => isAbsolute(path) ? relative(portalPath, path) : path);
 }
 
-/**
- * CliDelegateStrategy implements agent-step execution by driving a headless CLI
- * tool (claude / opencode) instead of calling IModelProvider directly. Not the
- * async, durable-wait gate delegation used by SessionDelegateService/
- * HeadlessSessionLauncher — this runs synchronously, once per plan step,
- * within the normal AgentOrchestrator.executeStep flow.
- */
+/** Drives a headless CLI tool (claude/opencode) instead of calling IModelProvider
+ *  directly. Not the async, durable-wait gate delegation used by SessionDelegateService/
+ *  HeadlessSessionLauncher — this runs synchronously, once per plan step. */
 export class CliDelegateStrategy implements IExecutionStrategy {
   public readonly name = ExecutionStrategyName.CLI_DELEGATE;
   private readonly run: IRunCliDelegateProcess;
@@ -204,12 +185,9 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       : await this.runOpencodeStep(context.trace_id, objective, portalPath);
 
     const reportedPaths = toPortalRelativePaths(parsed.toolPaths, portalPath);
-    // claude's parsed toolPaths is empty today (its print-mode stream emits no per-turn
-    // tool_use lines), so the delegate's REAL writes would be invisible to the step audit and
-    // every legitimate change flagged as a false-positive security violation — which fails the
-    // plan, the plan never reaches Archive, and the scenario's wait-for-execution-completion
-    // times out. Fall back to the worktree's actual `git status` changes when the stream
-    // reported nothing, so the real writes become the step's authorized files_changed.
+    // claude's print-mode stream emits no per-turn tool_use lines, so parsed.toolPaths is
+    // always empty — fall back to actual `git status` changes so real writes still become
+    // the step's authorized files_changed, instead of reverting as a false-positive.
     const filesChanged = reportedPaths.length > 0 ? reportedPaths : await this.detectGitChanges(portalPath);
 
     const executionTimeMs = Date.now() - startTime;
@@ -322,14 +300,8 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     return parseDelegateStdout(result.stdout, this.deps.tool);
   }
 
-  /**
-   * Detect the delegate's REAL worktree writes via `git status --porcelain` — used when the
-   * CLI tool's stream reported no tool paths (claude), so the step audit sees the actual
-   * changes as authorized files_changed instead of flagging every write as a false-positive
-   * security violation. Mirrors git_audit_service's own status read (same flags/timeout).
-   * The git command constants are kept LOCAL rather than imported from @exaix/git so a
-   * strategy file does not reach into a low-level constants module (CODE_STYLE.md §15).
-   */
+  /** Fallback for when the CLI tool's stream reported no tool paths (claude); mirrors
+   *  git_audit_service's own status read (same flags/timeout). */
   private async detectGitChanges(portalPath: string): Promise<string[]> {
     try {
       const result = await SafeSubprocess.run(
@@ -350,14 +322,9 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
   }
 
-  /**
-   * On a trace's first turn, lead with the whole plan (context.full_plan) so the
-   * CLI session orients on the complete task before ever seeing an isolated,
-   * ReAct-shaped step fragment — a fresh session handed only "Tools: read_file"
-   * has no coherent goal to act on. Later turns in the same resumed session
-   * already carry that orientation in conversation history, so they only need
-   * the current step's fragment (context.plan) to know what to do next.
-   */
+  /** First turn leads with the whole plan (context.full_plan) so the CLI session orients
+   *  on the complete task before seeing an isolated step fragment. Later turns in the same
+   *  resumed session already carry that orientation in conversation history. */
   private buildObjective(blueprint: IAgentFileBlueprint, context: IExecutionContext, isFirstTurn: boolean): string {
     const taskSection = isFirstTurn && context.full_plan
       ? `TASK: ${context.request}\n\nFULL PLAN:\n${context.full_plan}\n\nBEGIN WITH THE FIRST STEP BELOW.`

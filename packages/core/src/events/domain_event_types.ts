@@ -93,14 +93,14 @@ export interface IModelResolutionTraceEventPayload {
   task_type_source?: TaskTypeSource;
 }
 
-/** One weighed route in a multi-route decision (see spec §5.7.4). */
+/** One weighed route in a multi-route decision. */
 export interface IConsideredRoute {
   provider: string;
   price?: number;
   health_score: number;
 }
 
-/** Typed payload for model.route.selected events (see spec §5.7.4). */
+/** Typed payload for model.route.selected events. */
 export interface IModelRouteSelectedPayload {
   model: string;
   chosen_provider: string;
@@ -118,7 +118,7 @@ export interface IModelPricingStalePayload {
   staleness_max_days: number;
 }
 
-/** Typed payload for model.cost.divergence events (see spec §5.5.2). */
+/** Typed payload for model.cost.divergence events. */
 export interface IModelCostDivergencePayload {
   provider: string;
   model: string;
@@ -127,7 +127,7 @@ export interface IModelCostDivergencePayload {
   delta_pct: number;
 }
 
-/** Reason a model cleared the §5.9 admission bar. */
+/** Reason a model cleared the admission bar. */
 export type ModelAdmittedReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
 
 /** Typed payload for model.admitted events (F12). */
@@ -144,7 +144,7 @@ export interface IModelRetiredPayload {
   last_seen_at: number;
 }
 
-/** Typed payload for model.catalog.refreshed events (see spec §7). */
+/** Typed payload for model.catalog.refreshed events. */
 export interface IModelCatalogRefreshedPayload {
   provider: string;
   models_added: number;
@@ -152,7 +152,7 @@ export interface IModelCatalogRefreshedPayload {
   duration_ms: number;
 }
 
-/** Typed payload for model.pricing.refreshed events (see spec §7). */
+/** Typed payload for model.pricing.refreshed events. */
 export interface IModelPricingRefreshedPayload {
   provider: string;
   prices_updated: number;
@@ -170,7 +170,7 @@ export type RegistryRefreshOutcome =
 /** Which refresh pass an audit row / failure describes — mirrors registry_refresh_audit.kind. */
 export type RegistryRefreshKind = "catalog" | "pricing";
 
-/** Typed payload for model.registry.refresh.failed events (see spec §7.2). */
+/** Typed payload for model.registry.refresh.failed events. */
 export interface IModelRegistryRefreshFailedPayload {
   provider: string;
   kind: RegistryRefreshKind;
@@ -178,14 +178,14 @@ export interface IModelRegistryRefreshFailedPayload {
   detail: string;
 }
 
-/** Typed payload for model.benchmark.refreshed events (see spec §5.8); `outcome` reuses the refresh-outcome union (success/parse_error/http_error), previous scores stay intact on failure. */
+/** Typed payload for model.benchmark.refreshed events; `outcome` reuses the refresh-outcome union (success/parse_error/http_error), previous scores stay intact on failure. */
 export interface IModelBenchmarkRefreshedPayload {
   benchmark: string;
   scores_written: number;
   outcome: RegistryRefreshOutcome;
 }
 
-/** Typed payload for model.benchmark.missing events (honest degradation, see spec §5.8.3); emitted when `best` can't rank a candidate lacking a benchmark score — ranked last, never dropped or errored. */
+/** Typed payload for model.benchmark.missing events; emitted when `best` can't rank a candidate lacking a benchmark score — ranked last, never dropped or errored. */
 export interface IModelBenchmarkMissingPayload {
   provider: string;
   model: string;
