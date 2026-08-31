@@ -50,21 +50,16 @@ interface IRawPlan extends JSONObject {
   steps?: IRawPlanStep[];
 }
 
-/**
- * Rewrites one action's params from a source tool's shape to the target McpToolName's
- * shape. Only "edit"-family tools need structural remapping (opencode's flat
- * oldString/newString → Exaix's flat search/replace, Phase 154 Step 4); every other
- * mapped tool already uses matching param key names, so those pass through unchanged
- * once the tool name itself is remapped.
- */
+/** Only "edit"-family tools need structural remapping (opencode's flat
+ *  oldString/newString → Exaix's flat search/replace); every other mapped tool already
+ *  uses matching param key names. */
 type ParamsRemapper = (params: JSONObject) => JSONObject;
 
 function remapEditParams(params: JSONObject): JSONObject {
   const path = params.path ?? params.filePath;
-  // `newString` passes through unsanitized by design — it does not need $-pattern escaping
-  // here. The sink (ToolRegistry.patchFile()/PatchFileTool.execute()) writes `replace` via
-  // Array.prototype.join, which is literal by construction (Phase 154 GAP-6); sanitizing at
-  // this pass-through layer would be redundant, not defense-in-depth.
+  // `newString` passes through unsanitized by design: the sink (PatchFileTool.execute())
+  // writes `replace` via Array.prototype.join, which is literal by construction, so
+  // sanitizing at this pass-through layer would be redundant, not defense-in-depth.
   return { path, search: params.oldString, replace: params.newString };
 }
 
@@ -74,18 +69,9 @@ function remapPathAlias(params: JSONObject): JSONObject {
   return { path: filePath, ...rest };
 }
 
-/**
- * Opencode-vocabulary tool name -> [Exaix McpToolName, params remapper].
- *
- * "edit_file"/"edit" + {path|filePath, oldString, newString} is LIVE-VERIFIED (the
- * trace-340a896b rejection this module fixes). "read"/"write"/"bash"/"grep"/"list" are
- * opencode's documented native tool names (https://opencode.ai/docs/tools/) added
- * defensively — opencode's docs describe what each tool does but don't publish exact
- * param field names, so those five params remappers are a best-effort guess (path-alias
- * or pass-through), not a confirmed observation. They are safe no-ops if the guess is
- * wrong: an unrecognized params shape just flows through unchanged and downstream
- * execution fails the same way it would have without this adapter.
- */
+/** Only "edit_file"/"edit" is live-verified; the other five entries are a best-effort
+ *  guess at opencode's undocumented param field names — safe no-ops if wrong, since an
+ *  unrecognized shape just flows through unchanged. */
 type ToolMapEntry = readonly [McpToolName, ParamsRemapper];
 
 const identityRemapper: ParamsRemapper = (p) => p;
@@ -144,12 +130,8 @@ function remapStep(step: IRawPlanStep): { step: IRawPlanStep; changed: boolean }
   return { step: next, changed };
 }
 
-/**
- * Parses `raw` as JSON and rewrites every step's `tools`/`actions[].tool`+`params` that
- * match a known opencode-vocabulary alias onto the corresponding McpToolName + params
- * shape. Returns the input unchanged (changed: false) when `raw` isn't valid JSON, has
- * no `steps` array, or contains no mappable tool names — never throws.
- */
+/** Returns the input unchanged (changed: false) when `raw` isn't valid JSON, has no
+ *  `steps` array, or contains no mappable tool names — never throws. */
 export function adaptOpencodePlanJson(raw: string): IAdaptOpencodePlanJsonResult {
   let parsed: IRawPlan;
   try {

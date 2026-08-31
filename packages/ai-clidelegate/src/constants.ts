@@ -26,21 +26,8 @@ export const DEFAULT_OPENCODE_CLI_MODEL: string = configurable({
   description: "Default model identifier for the headless opencode-cli provider",
   swap: SwapClass.RESTART,
 });
-/**
- * **[Corrected post-implementation, 2026-08-15]** The original "gpt-5.2-codex" choice was
- * WRONG: a live `codex exec --model gpt-5.2-codex` call against a real ChatGPT-account
- * session returned `HTTP 400 "The 'gpt-5.2-codex' model is not supported when using Codex
- * with a ChatGPT account."` The `-codex`-suffixed family (gpt-5.1-codex-max, gpt-5.2-codex,
- * gpt-5.3-codex) is API-key-billed only (OpenAI's Responses API) and deprecated for
- * ChatGPT-account sign-in — the `~/.codex/config.toml` migration notice this constant was
- * originally justified from ("gpt-5.1-codex-max" -> "gpt-5.2-codex") tracks that API-side
- * rename, not a ChatGPT-account-compatible model. The current, ChatGPT-account-compatible
- * family, confirmed live (2026-08-15) against `learn.chatgpt.com/docs/models`, is
- * gpt-5.6-{sol,terra,luna}. "gpt-5.6-terra" — "the pragmatic all-rounder... a natural
- * starting point for work you previously gave GPT-5.5" — matches this environment's own
- * `~/.codex/config.toml` operator default and Exaix's existing convention of a balanced,
- * not flagship, per-tool default (mirrors DEFAULT_CLAUDE_CLI_MODEL's "claude-sonnet-5").
- */
+/** The `-codex`-suffixed family (gpt-5.1-codex-max, gpt-5.2-codex, …) is API-key-billed
+ *  only and unsupported for ChatGPT-account sign-in — use a gpt-5.6-{sol,terra,luna} model. */
 export const DEFAULT_CODEX_CLI_MODEL: string = configurable({
   key: "codex_cli.model",
   default: "gpt-5.6-terra",
@@ -78,9 +65,9 @@ export const PROVIDER_CLI_DELEGATE_CAPABILITIES = ["chat"] as const;
 export const PROVIDER_CLI_DELEGATE_STRENGTHS = ["subscription-billed", "no-api-key"] as const;
 export const PROVIDER_CLI_DELEGATE_COST_TIER = ProviderCostTier.FREE;
 
-/** Phase 132 capability metadata — headless CLI agents carry large native context windows. */
+/** Headless CLI agents carry large native context windows. */
 export const CLI_DELEGATE_CONTEXT_WINDOW = 200_000;
-/** Phase 132 capability metadata — subscription-billed subprocess, no metered per-token cost. */
+/** Subscription-billed subprocess — no metered per-token cost. */
 export const CLI_DELEGATE_COST_PER_MTok = 0;
 
 export const CLAUDE_CLI_PROVIDER_METADATA = {
