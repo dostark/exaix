@@ -660,3 +660,26 @@ export function run(): number {
 
   assertEquals(result.output.includes("[decorative-comment]"), false, result.output);
 });
+
+Deno.test("check_code_style allows a comment echoing a triple-equals code comparison", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "code_echo_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempCodeEchoComment
+ * @path code_echo_comment.ts
+ * @description Temporary regression file for triple-equals code-echo allowance.
+ */
+
+export function run(): number {
+  // No migration records (inputHash === "") — only real execution records
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[decorative-comment]"), false, result.output);
+});

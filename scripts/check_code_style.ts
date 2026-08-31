@@ -930,10 +930,11 @@ function stripQuotedStringsAndComments(line: string): string {
 
 const IN_MODULE_COMMENT_LINE_LIMIT = 3;
 
-// Matches a run of 3+ repeated separator/decoration characters anywhere on a comment
+// Matches a run of 4+ repeated separator/decoration characters anywhere on a comment
 // line — pure banner lines ("// ====...") and text wrapped in dashes ("// ── Foo ──...")
-// alike. These add characters without adding meaning; write a plain comment instead.
-const DECORATIVE_COMMENT_LINE_PATTERN = /[=\-_~*#─━═▬•]{3,}/;
+// alike. Threshold is 4, not 3, so a 3-char code echo in prose (e.g. `x === ""`) doesn't
+// false-positive against the real `===`/`!==` operators.
+const DECORATIVE_COMMENT_LINE_PATTERN = /[=\-_~*#─━═▬•]{4,}/;
 
 const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
   { pattern: /\bphase\s+\d+\b/i, hint: "a phase number" },
