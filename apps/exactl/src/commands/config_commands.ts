@@ -179,7 +179,7 @@ export class ConfigCommands extends BaseCommand {
       .map((o) => o.key.replace("profile.", ""));
   }
 
-  // ── MCP deny-permanently blocklist management ───────────────────────────────
+  // MCP deny-permanently blocklist management
 
   async blockAdd(pattern: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
     (await this.ensureAdapter()).addBlock(pattern, reason);
@@ -212,7 +212,7 @@ export class ConfigCommands extends BaseCommand {
     return (await this.ensureAdapter()).rollback(path, id);
   }
 
-  // ── Key locking ──────────────────────────────────────────────────────────────
+  // Key locking
 
   async lock(path: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
     (await this.ensureAdapter()).lock(path, CONFIG_LOCKED_BY_CLI, reason);
@@ -226,7 +226,7 @@ export class ConfigCommands extends BaseCommand {
     return (await this.ensureAdapter()).listLocks();
   }
 
-  // ── Config edit ($EDITOR) ─────────────────────────────────────────────────
+  // Config edit ($EDITOR)
 
   // Renders overrides to a temp file, opens $EDITOR, and re-applies changed lines through
   // adapter.set() so lock/validation/debounce still apply (blocklist enforcement remains

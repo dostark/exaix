@@ -17,9 +17,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
-// ---------------------------------------------------------------------------
 // Mock helpers
-// ---------------------------------------------------------------------------
 
 function makeKnowledgeResult(alias: string): IPortalKnowledge {
   return {
@@ -85,9 +83,7 @@ function makeKnowledgeConfig(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "[portal add] triggers quick analysis on mount when enabled",

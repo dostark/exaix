@@ -48,7 +48,7 @@ async function createTestEnvironmentWithProposal(traceId?: string) {
   return { commands, memoryBank, extractor, cleanup, proposalId, learnings };
 }
 
-// ===== Pending List Tests =====
+// Pending List Tests
 
 Deno.test("MemoryCommands: pendingList returns empty message", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -87,7 +87,7 @@ Deno.test("MemoryCommands: pendingList --format json outputs valid JSON", async 
   }
 });
 
-// ===== Pending Show Tests =====
+// Pending Show Tests
 
 Deno.test("MemoryCommands: pendingShow displays proposal details", async () => {
   const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal(
@@ -133,7 +133,7 @@ Deno.test("MemoryCommands: pendingShow --format json outputs valid JSON", async 
   }
 });
 
-// ===== Pending Approve Tests =====
+// Pending Approve Tests
 
 Deno.test("MemoryCommands: pendingApprove merges learning", async () => {
   const { commands, memoryBank, cleanup, proposalId } = await createTestEnvironmentWithProposal(
@@ -166,7 +166,7 @@ Deno.test("MemoryCommands: pendingApprove non-existent returns error", async () 
   }
 });
 
-// ===== Pending Reject Tests =====
+// Pending Reject Tests
 
 Deno.test("MemoryCommands: pendingReject archives proposal", async () => {
   const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal(
@@ -194,7 +194,7 @@ Deno.test("MemoryCommands: pendingReject non-existent returns error", async () =
   }
 });
 
-// ===== Pending Approve All Tests =====
+// Pending Approve All Tests
 
 Deno.test("MemoryCommands: pendingApproveAll processes all", async () => {
   const { commands, memoryBank, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment({

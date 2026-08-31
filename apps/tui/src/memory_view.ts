@@ -29,7 +29,7 @@ import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { MEMORY_STALE_MS } from "@exaix/tui/config.ts";
 import { coerceMemoryTuiScope, type IMemoryTuiScopeType, MemoryTuiScope } from "./memory_view/memory_scope.ts";
 
-// ===== Interfaces =====
+// Interfaces
 
 export interface IMemoryViewState {
   activeScope: IMemoryTuiScopeType;
@@ -49,7 +49,7 @@ export interface IMemoryViewState {
 
 // Service Adapter moved to apps/common/adapters/memory_adapter.ts
 
-// ===== TUI Session =====
+// TUI Session
 
 export class MemoryViewTuiSession extends TuiSessionBase {
   private state: IMemoryViewState;
@@ -78,7 +78,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     };
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   getState(): IMemoryViewState {
     return { ...this.state };
@@ -141,7 +141,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     return this.state.activeDialog !== null && this.state.activeDialog.isActive();
   }
 
-  // ===== Initialization =====
+  // Initialization
 
   /**
    * Initialize the view by loading memory bank data
@@ -225,7 +225,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     flatten(this.state.tree);
   }
 
-  // ===== Navigation =====
+  // Navigation
 
   /**
    * Handle keyboard input
@@ -383,7 +383,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     return findParent(this.state.tree, null);
   }
 
-  // ===== Actions =====
+  // Actions
 
   private async fetchPendingProposal(action: string): Promise<Awaited<ReturnType<typeof this.service.getPending>>> {
     const node = this.findNodeById(this.state.selectedNodeId);
@@ -498,7 +498,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Detail Content =====
+  // Detail Content
 
   /**
    * Load detail content for a node
@@ -522,7 +522,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Search =====
+  // Search
 
   /**
    * Execute search query
@@ -576,7 +576,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     ].join("\n");
   }
 
-  // ===== Help =====
+  // Help
 
   private renderHelpContent(): string {
     return [
@@ -608,7 +608,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     ].join("\n");
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   /**
    * Render the tree panel
@@ -681,7 +681,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
   }
 }
 
-// ===== View =====
+// View
 
 export class MemoryView {
   private service: IMemoryService;

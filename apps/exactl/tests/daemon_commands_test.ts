@@ -817,9 +817,7 @@ await new Promise(() => {}); // Run forever
   });
 });
 
-// ---------------------------------------------------------------------------
 // version fields in status + migrate --check
-// ---------------------------------------------------------------------------
 
 describe("DaemonCommands - version fields in status() (Step 5)", {
   sanitizeResources: false,
@@ -928,9 +926,7 @@ describe("DaemonCommands - migrate() compatibility check (Step 6)", {
   });
 });
 
-// ---------------------------------------------------------------------------
 // waitForDaemonReady — journal polling for daemon.ready
-// ---------------------------------------------------------------------------
 
 describe("DaemonCommands - waitForDaemonReady", {
   sanitizeResources: false,

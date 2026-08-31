@@ -20,7 +20,7 @@ import { TUI_SECTION } from "@exaix/tui/helpers/decorations.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 import type { IDaemonService } from "@exaix/core/types";
 
-// ===== View State =====
+// View State
 
 /**
  * State interface for Daemon Control View
@@ -48,7 +48,7 @@ export interface IDaemonViewState {
   autoRefreshInterval: number;
 }
 
-// ===== Constants =====
+// Constants
 
 /** CLI command constants */
 const CLI_CMD_START = "start";
@@ -74,7 +74,7 @@ const HELP_AUTO_REFRESH_DESC = "Toggle auto-refresh";
 const HELP_HELP_DESC = "Toggle this help";
 const HELP_QUIT_DESC = "Close/Back";
 
-// ===== Icons and Visual Constants =====
+// Icons and Visual Constants
 
 export const DAEMON_STATUS_ICONS: Record<string, string> = {
   [DaemonStatus.RUNNING]: TUI_DAEMON_STATUS_ICONS.running,
@@ -96,9 +96,9 @@ export const LOG_LEVEL_COLORS: Record<string, string> = {
   error: ANSI.red,
 };
 
-// ===== Key Bindings =====
+// Key Bindings
 
-// ===== Daemon Key Action Types =====
+// Daemon Key Action Types
 export enum DaemonKeyAction {
   START = "start",
   STOP = "stop",
@@ -111,7 +111,7 @@ export enum DaemonKeyAction {
   QUIT = "quit",
   CANCEL = "cancel",
 }
-// ===== Key Binding Categories =====
+// Key Binding Categories
 
 export class DaemonKeyBindings extends KeyBindingsBase<DaemonKeyAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<DaemonKeyAction, KeyBindingCategory>[] = [
@@ -175,7 +175,7 @@ export class DaemonKeyBindings extends KeyBindingsBase<DaemonKeyAction, KeyBindi
 
 export const DAEMON_KEY_BINDINGS = new DaemonKeyBindings().KEY_BINDINGS;
 
-// ===== CLI Daemon Service Implementation =====
+// CLI Daemon Service Implementation
 
 /**
  * CLI-backed implementation of DaemonService.
@@ -223,7 +223,7 @@ export class CLIDaemonService implements IDaemonService {
   }
 }
 
-// ===== Daemon Control View Class =====
+// Daemon Control View Class
 
 /**
  * View/controller for daemon control. Delegates to injected DaemonService.
@@ -264,7 +264,7 @@ export class DaemonControlView {
   }
 }
 
-// ===== Minimal Mock for Tests =====
+// Minimal Mock for Tests
 
 /**
  * Minimal DaemonService mock for TUI session tests
@@ -316,7 +316,7 @@ export class MinimalDaemonServiceMock implements IDaemonService {
   }
 }
 
-// ===== TUI Session Class =====
+// TUI Session Class
 
 /**
  * Interactive TUI session for Daemon Control View
@@ -345,7 +345,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     };
   }
 
-  // ===== Initialization =====
+  // Initialization
 
   /**
    * Initialize the session by fetching daemon status
@@ -359,7 +359,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   override getViewName(): string {
     return "Daemon Control";
@@ -417,7 +417,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     return [...DAEMON_KEY_BINDINGS];
   }
 
-  // ===== Status Operations =====
+  // Status Operations
 
   async refreshStatus(): Promise<void> {
     this.localSpinnerState = startSpinner(this.localSpinnerState, "Refreshing...");
@@ -470,7 +470,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     return DaemonStatus.UNKNOWN;
   }
 
-  // ===== Daemon Actions =====
+  // Daemon Actions
 
   showStartConfirm(): void {
     if (this.state.status === DaemonStatus.RUNNING) {
@@ -557,7 +557,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Logs View =====
+  // Logs View
 
   async showLogs(): Promise<void> {
     this.localSpinnerState = startSpinner(this.localSpinnerState, "Loading logs...");
@@ -574,7 +574,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     this.state.showLogs = false;
   }
 
-  // ===== Config View =====
+  // Config View
 
   showConfig(): void {
     this.state.showConfig = true;
@@ -584,7 +584,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     this.state.showConfig = false;
   }
 
-  // ===== Auto-Refresh =====
+  // Auto-Refresh
 
   toggleAutoRefresh(): void {
     this.state.autoRefresh = !this.state.autoRefresh;
@@ -610,7 +610,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Help Screen =====
+  // Help Screen
 
   override toggleHelp(): void {
     this.state.showHelp = !this.state.showHelp;
@@ -645,7 +645,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     ];
   }
 
-  // ===== Dialog Handling =====
+  // Dialog Handling
 
   private pendingDialogAction: DaemonAction | null = null;
 
@@ -676,7 +676,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Key Handling =====
+  // Key Handling
 
   async handleKey(key: string): Promise<boolean> {
     if (await this.handleDialogKey(key)) return true;
@@ -752,7 +752,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   renderStatusPanel(): string[] {
     const lines: string[] = [];
@@ -858,7 +858,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     });
   }
 
-  // ===== Focusable Elements =====
+  // Focusable Elements
 
   getFocusableElements(): string[] {
     if (this.state.activeDialog) {
@@ -870,7 +870,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     return ["start-button", "stop-button", "restart-button", "logs-button", "refresh-button"];
   }
 
-  // ===== Lifecycle =====
+  // Lifecycle
 
   override dispose(): void {
     this.stopDaemonAutoRefresh();
@@ -878,7 +878,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
   }
 }
 
-// ===== Legacy Support =====
+// Legacy Support
 
 /**
  * @deprecated Use DaemonControlTuiSession instead.

@@ -28,9 +28,7 @@ const CHILD_TARGET = "child-target";
 const TEST_TRACE_ID = "test-trace-123";
 const TEST_USER = "user:test-user";
 
-// ============================================================================
 // Stub Database Interface Tests
-// ============================================================================
 
 Deno.test("[regression] Stub db object has required logActivity method", () => {
   // This is the stub db object used in exactl.ts fallback paths
@@ -132,9 +130,7 @@ Deno.test("[regression] EventLogger child loggers work with stub db", async () =
   assert(true, "Child logger should work with stub db");
 });
 
-// ============================================================================
 // CLI Command Regression Tests
-// ============================================================================
 
 Deno.test({
   name: "[regression] CLI falls back gracefully when services fail to initialize",
@@ -194,9 +190,7 @@ Deno.test("[regression] CLI test mode context has stub db with required methods"
   }
 });
 
-// ============================================================================
 // Specific Command Regression Tests
-// ============================================================================
 
 Deno.test("[regression] BlueprintCommands works with stub db", async () => {
   // Create minimal config

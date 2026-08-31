@@ -25,9 +25,9 @@ import {
   TUI_LIMIT_SHORT,
 } from "@exaix/tui/helpers/constants.ts";
 
-// ===== Color Constants =====
+// Color Constants
 
-// ===== Panel Interface =====
+// Panel Interface
 
 export interface IPanelRenderOptions {
   width: number;
@@ -35,7 +35,7 @@ export interface IPanelRenderOptions {
   useColors: boolean;
 }
 
-// ===== Color Constants =====
+// Color Constants
 
 export const MemoryColors = {
   global: ANSI.magenta,
@@ -128,7 +128,7 @@ function renderProjectReferences(
   }
 }
 
-// ===== Project Panel =====
+// Project Panel
 
 export function renderProjectPanel(
   memory: IProjectMemory | null,
@@ -159,7 +159,7 @@ export function renderProjectPanel(
   return lines.join("\n");
 }
 
-// ===== Global Panel =====
+// Global Panel
 
 export function renderGlobalPanel(
   memory: IGlobalMemory | null,
@@ -221,7 +221,7 @@ export function renderGlobalPanel(
   return lines.join("\n");
 }
 
-// ===== Execution Panel =====
+// Execution Panel
 
 export function renderExecutionPanel(
   memory: IExecutionMemory | null,
@@ -303,7 +303,7 @@ function renderExecutionLessons(lines: string[], memory: IExecutionMemory): void
   }
 }
 
-// ===== Execution List Panel =====
+// Execution List Panel
 
 export function renderExecutionListPanel(
   executions: IExecutionMemory[],
@@ -345,7 +345,7 @@ export function renderExecutionListPanel(
   return lines.join("\n");
 }
 
-// ===== Search Panel =====
+// Search Panel
 
 export function renderSearchPanel(
   query: string,
@@ -394,7 +394,7 @@ export function renderSearchPanel(
   return lines.join("\n");
 }
 
-// ===== Pending Panel =====
+// Pending Panel
 
 export function renderPendingPanel(
   proposals: IMemoryUpdateProposal[],
@@ -437,7 +437,7 @@ export function renderPendingPanel(
   return lines.join("\n");
 }
 
-// ===== Stats Panel =====
+// Stats Panel
 
 export function renderStatsPanel(
   stats: {
@@ -462,7 +462,7 @@ export function renderStatsPanel(
   return lines.join("\n");
 }
 
-// ===== Helper Functions =====
+// Helper Functions
 
 function getCategoryColor(category: string): string {
   switch (category) {

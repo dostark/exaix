@@ -16,9 +16,7 @@ import type { IPortalService } from "@exaix/core/types";
 import { PortalStatus, SystemCommand } from "@exaix/core";
 import type { IPortalInfo } from "@exaix/core/types";
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Fixtures
-// ──────────────────────────────────────────────────────────────────────────────
 
 function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowledge {
   return {
@@ -113,9 +111,7 @@ function makeMockService(knowledge: IPortalKnowledge | null = null): IPortalServ
   };
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Unit tests: renderKnowledgeSection()
-// ──────────────────────────────────────────────────────────────────────────────
 
 Deno.test("[PortalKnowledgeView] displays architecture overview", () => {
   const knowledge = makeKnowledge({ architectureOverview: "## Architecture\nHexagonal pattern.\n" });
@@ -158,9 +154,7 @@ Deno.test("[PortalKnowledgeView] shows no-analysis message when missing", () => 
   assertStringIncludes(text, "exactl portal analyze");
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Integration tests: keybinding 'a' in PortalManagerTuiSession
-// ──────────────────────────────────────────────────────────────────────────────
 
 Deno.test("[PortalKnowledgeView] keybinding a triggers re-analysis", async () => {
   const knowledge = makeKnowledge();

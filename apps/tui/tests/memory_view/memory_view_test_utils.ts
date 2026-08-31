@@ -30,7 +30,7 @@ import type { IMemoryService } from "@exaix/core/types";
 import { MemoryViewTuiSession } from "../../src/memory_view.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
-// ===== Interfaces =====
+// Interfaces
 
 export interface IMemoryViewServiceOptions {
   projects?: string[];
@@ -41,7 +41,7 @@ export interface IMemoryViewServiceOptions {
   searchResults?: IMemorySearchResult[];
 }
 
-// ===== Mock Service =====
+// Mock Service
 
 export class ExtendedMockMemoryService implements IMemoryService {
   private projects: string[] = ["TestPortal"];

@@ -19,11 +19,11 @@ import { MinimalRequestServiceMock, RequestManagerView } from "../src/request_ma
 import type { IRequest } from "@exaix/core/types";
 import { RequestPriority, RequestSource } from "@exaix/core";
 
-// ===== Test Data =====
+// Test Data
 
 const TEST_SKILLS: ISkillSummary[] = sampleTestSkills();
 
-// ===== SkillsManagerView Tests =====
+// SkillsManagerView Tests
 
 Deno.test("SkillsManagerView: renders skill tree", async () => {
   const { session } = createSkillsManagerTuiSession(TEST_SKILLS);
@@ -121,7 +121,7 @@ testSkillsSessionRender(
   },
 );
 
-// ===== AgentStatusView Skills Tests =====
+// AgentStatusView Skills Tests
 
 Deno.test("AgentStatusView: displays defaultSkills in detail", async () => {
   const mockService = new MinimalAgentServiceMock([
@@ -152,7 +152,7 @@ Deno.test("AgentStatusView: displays defaultSkills in detail", async () => {
   assertStringIncludes(detailText, "tdd-methodology");
 });
 
-// ===== RequestManagerView Skills Tests =====
+// RequestManagerView Skills Tests
 
 Deno.test("RequestManagerView: shows skills in request detail", async () => {
   const requests: IRequest[] = [

@@ -39,7 +39,7 @@ export interface ILogEntry {
   timestamp: string;
 }
 
-// ===== View State =====
+// View State
 
 export interface ILogViewExtensions {
   /** Whether detail view is shown */
@@ -207,7 +207,7 @@ export class MonitorViewBindings extends KeyBindingsBase<MonitorViewAction, KeyB
 
 export const MONITOR_KEY_BINDINGS = new MonitorViewBindings().KEY_BINDINGS;
 
-// ===== Monitor View Class =====
+// Monitor View Class
 
 /**
  * View/controller for monitoring logs. Delegates to injected LogService.
@@ -326,7 +326,7 @@ export class MonitorView {
   }
 }
 
-// ===== Minimal Mock for Tests =====
+// Minimal Mock for Tests
 
 /**
  * Minimal LogService mock for TUI session tests
@@ -394,7 +394,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     this.selectFirstLog();
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   override getViewName(): string {
     return "Monitor";
@@ -436,7 +436,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     return !this.monitorView.isStreaming();
   }
 
-  // ===== Tree Building =====
+  // Tree Building
 
   protected override buildTree(items: ILogEntry[] = []): void {
     const logs = items.length > 0 ? items : this.monitorView.getFilteredLogs();
@@ -510,7 +510,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     }
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   renderLogTree(): string[] {
     if (this.state.tree.length === 0) {
@@ -612,7 +612,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     return `${logs.length} logs${paused}${autoRefresh}${bookmarks}${grouping}`;
   }
 
-  // ===== Actions =====
+  // Actions
 
   showLogDetail(logId: string): void {
     this.setLoading(true, "Loading details...");
@@ -850,9 +850,9 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     });
   }
 
-  // ===== Navigation =====
+  // Navigation
 
-  // ===== Dialog Management =====
+  // Dialog Management
 
   public override onDialogClosed(dialog: DialogBase): void {
     const result = dialog.getResult();
@@ -882,7 +882,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     this.pendingDialogType = null;
   }
 
-  // ===== Key Handling =====
+  // Key Handling
 
   /**
    * Handle navigation and selection keys
@@ -1007,7 +1007,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     return false;
   }
 
-  // ===== Lifecycle =====
+  // Lifecycle
 
   cleanup(): void {
     this.stopAutoRefresh();

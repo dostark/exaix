@@ -28,9 +28,9 @@ import {
 } from "./helpers.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Test Fixtures =====
+// Test Fixtures
 
-// ===== renderPendingPanel Tests =====
+// renderPendingPanel Tests
 
 Deno.test("renderPendingPanel: renders proposals list", () => {
   const proposals = createMockProposals();
@@ -138,7 +138,7 @@ Deno.test("renderPendingPanel: limits display to 10 items", () => {
   assertEquals(rendered.includes("... and 5 more"), true);
 });
 
-// ===== renderStatsPanel Tests =====
+// renderStatsPanel Tests
 
 Deno.test("renderStatsPanel: renders statistics", () => {
   const stats = {
@@ -176,7 +176,7 @@ Deno.test("renderStatsPanel: shows all categories", () => {
   assertEquals(rendered.includes("Learnings:"), true);
 });
 
-// ===== MemoryViewTuiSession Pending Actions Tests =====
+// MemoryViewTuiSession Pending Actions Tests
 
 Deno.test("MemoryViewTuiSession: 'n' jumps to pending scope", async () => {
   const { session } = await createInitializedMemoryViewSession(createMockProposals());

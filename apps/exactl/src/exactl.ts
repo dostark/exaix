@@ -2642,9 +2642,7 @@ __test_command.command("log", logCommand);
 __test_command.command("logs", logsCommand);
 __test_command.command("journal", journalCommand);
 
-// ---------------------------------------------------------------------------
 // models subcommand (Solo model registry display)
-// ---------------------------------------------------------------------------
 
 const modelsCommand = new Command()
   .description("Inspect the Solo model registry floor (models list/pricing)")
@@ -2697,9 +2695,7 @@ const modelsCommand = new Command()
 
 __test_command.command("models", modelsCommand);
 
-// ---------------------------------------------------------------------------
 // version subcommand
-// ---------------------------------------------------------------------------
 
 const versionCommand = new Command()
   .description("Show Exaix binary and workspace schema version information")
@@ -2773,9 +2769,7 @@ function parseSemVerSegments(v: string): { major: number; minor: number; patch: 
 
 __test_command.command("version", versionCommand);
 
-// ---------------------------------------------------------------------------
 // migrate subcommand
-// ---------------------------------------------------------------------------
 
 const migrateCommand = new Command()
   .description("Workspace migration utilities")
@@ -2792,9 +2786,7 @@ const migrateCommand = new Command()
 
 __test_command.command("migrate", migrateCommand);
 
-// ---------------------------------------------------------------------------
 // tool subcommand (Tool Confirmation CLI)
-// ---------------------------------------------------------------------------
 
 const toolCommand = new Command()
   .description("Manage pending tool confirmations")
@@ -2828,9 +2820,7 @@ const toolCommand = new Command()
 
 __test_command.command("tool", toolCommand);
 
-// ---------------------------------------------------------------------------
 // skills subcommand alias (wires the Skills Service)
-// ---------------------------------------------------------------------------
 
 const skillsCommand = new Command()
   .description("Manage procedural skills (Alias for 'memory skill')")
@@ -2887,9 +2877,7 @@ const skillsCommand = new Command()
 
 __test_command.command("skills", skillsCommand);
 
-// ---------------------------------------------------------------------------
 // watch subcommand (live execution streaming)
-// ---------------------------------------------------------------------------
 
 const watchCommand = new Command()
   .description("Tail live execution events for a trace (SSE stream with historical fallback)")
@@ -2907,9 +2895,7 @@ const watchCommand = new Command()
 
 __test_command.command("watch", watchCommand);
 
-// ---------------------------------------------------------------------------
 // eval subcommand (evaluation framework)
-// ---------------------------------------------------------------------------
 
 const evalCommand = new Command()
   .description("Run evaluations and query evaluation history")

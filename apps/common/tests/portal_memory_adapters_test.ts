@@ -27,9 +27,7 @@ import type { ConfigAdapter as _ConfigAdapter } from "../../../apps/common/adapt
 import type { ConfigService as _ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
 
-// ──────────────────────────────────────────────────────────────────────
 // PortalAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockPortalService(overrides: Partial<PortalService> = {}): PortalService {
   const defaultDetails: IPortalDetails = {
@@ -199,9 +197,7 @@ Deno.test("PortalAdapter: getPortalActivityLog returns placeholder", () => {
   assertEquals(log[0].includes("not yet implemented"), true);
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // MemoryServiceAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockMemoryBank(overrides: Partial<MemoryBankService> = {}): MemoryBankService {
   return ({
@@ -377,9 +373,7 @@ Deno.test("MemoryServiceAdapter: rejectPending delegates to extractor", async ()
   assertEquals(rejectionReason, "not relevant");
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // ArchiveAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockArchiveService(overrides: Partial<ArchiveService> = {}): ArchiveService {
   const sampleEntry: ArchiveEntry = {
@@ -461,9 +455,7 @@ Deno.test("ArchiveAdapter: getTrace delegates to getByTraceId", async () => {
   assertEquals(capturedId, "trace-1");
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // FlowValidatorAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockFlowValidatorImpl(overrides: Partial<FlowValidatorImpl> = {}): FlowValidatorImpl {
   return ({
@@ -536,9 +528,7 @@ Deno.test("FlowValidatorAdapter: validateFile with errors", async () => {
   assertEquals(result.warnings, []);
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // DaemonServiceAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockDaemonCommands(
   overrides: Partial<DaemonCommands> = {},

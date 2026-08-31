@@ -18,7 +18,7 @@ import { createGroupNode, createNode, flattenTree, type ITreeNode } from "@exaix
 import type { JSONObject } from "@exaix/core/types";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Interfaces =====
+// Interfaces
 
 export type IPlan = IPlanMetadata;
 
@@ -37,7 +37,7 @@ export interface IDbLike {
   logActivity(activity: JSONObject): Promise<void>;
 }
 
-// ===== Plan Status Icons =====
+// Plan Status Icons
 
 const PLAN_NODE_TYPE = "plan" as const;
 
@@ -55,7 +55,7 @@ const PLAN_ICONS: Record<PlanStatusType | "folder", string> = {
   folder: "📁",
 } as const;
 
-// ===== Plan Action Types =====
+// Plan Action Types
 export enum IPlanAction {
   VIEW_DIFF = "view-diff",
   APPROVE = "approve",
@@ -64,7 +64,7 @@ export enum IPlanAction {
   APPROVE_ALL = "approve-all",
 }
 
-// ===== TUI Session =====
+// TUI Session
 
 export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
   private plans: IPlan[];
@@ -83,7 +83,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     this.buildTree(plans);
   }
 
-  // ===== BaseTreeView Implementation =====
+  // BaseTreeView Implementation
 
   override getViewName(): string {
     return "Plan Reviewer";
@@ -137,7 +137,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     }
   }
 
-  // ===== Tree Building =====
+  // Tree Building
 
   protected override buildTree(plans: IPlan[]): void {
     const categories = this.categorizePlans(plans);
@@ -253,7 +253,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     }
   }
 
-  // ===== Event Handlers =====
+  // Event Handlers
 
   public override async handleKey(key: string): Promise<boolean> {
     // Escape closes diff if visible
@@ -340,7 +340,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     }
   }
 
-  // ===== Actions =====
+  // Actions
 
   private async toggleDiff(): Promise<void> {
     const selected = this.getSelectedNode();
@@ -434,7 +434,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     );
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   updatePlans(newPlans: IPlan[]): void {
     this.plans = newPlans;
@@ -458,7 +458,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     return this.state.tree;
   }
 
-  // ===== Backward Compatibility for Tests =====
+  // Backward Compatibility for Tests
 
   renderPlanTree(): string[] {
     return this.renderTreeView();

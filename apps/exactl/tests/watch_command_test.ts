@@ -12,9 +12,7 @@ import { WatchCommand } from "../src/commands/watch.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { ActivityActor } from "@exaix/core";
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 const VALID_TRACE_ID = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -38,9 +36,7 @@ function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ output: stri
     });
 }
 
-// ============================================================================
 // Command Instantiation Tests
-// ============================================================================
 
 Deno.test("WatchCommand: should construct without errors", async () => {
   const { context, cleanup } = await createCliTestContext();
@@ -52,9 +48,7 @@ Deno.test("WatchCommand: should construct without errors", async () => {
   }
 });
 
-// ============================================================================
 // Historical Fallback Tests (trace not in active execution)
-// ============================================================================
 
 Deno.test("WatchCommand: watch should display historical events for completed trace", async () => {
   const { context, db, cleanup } = await createCliTestContext();
@@ -107,9 +101,7 @@ Deno.test("WatchCommand: watch should show message for trace with no events", as
   }
 });
 
-// ============================================================================
 // Validation Tests
-// ============================================================================
 
 Deno.test("WatchCommand: should reject non-UUID traceId", async () => {
   const { context, cleanup } = await createCliTestContext();
@@ -137,9 +129,7 @@ Deno.test("WatchCommand: should reject non-UUID traceId", async () => {
   }
 });
 
-// ============================================================================
 // SSE Formatter Tests
-// ============================================================================
 
 Deno.test("WatchCommand: formatSseEvent formats heartbeat as dim", async () => {
   const { output } = await withCapturedOutput(() =>

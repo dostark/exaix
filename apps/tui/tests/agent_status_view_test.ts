@@ -27,7 +27,7 @@ import { TuiGroupBy } from "@exaix/tui";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { assertEquals, assertExists } from "@std/assert";
 
-// ===== Mock IAgentService for testing =====
+// Mock IAgentService for testing
 
 class MockAgentService implements IAgentService {
   private agents: IAgentStatusItem[] = [
@@ -104,7 +104,7 @@ async function createInitializedSession(
   return session;
 }
 
-// ===== Existing Tests (Updated) =====
+// Existing Tests (Updated)
 
 Deno.test("AgentStatusView: renders agent list", async () => {
   const view = createTestView();
@@ -154,7 +154,7 @@ Deno.test("AgentStatusView: formatUptime", () => {
   }
 });
 
-// ===== IAgentViewState Tests =====
+// IAgentViewState Tests
 
 Deno.test("IAgentViewState: interface has all required properties", () => {
   // TypeScript compile-time check via usage
@@ -177,7 +177,7 @@ Deno.test("IAgentViewState: interface has all required properties", () => {
   }
 });
 
-// ===== Icon Tests =====
+// Icon Tests
 
 Deno.test("AGENT_STATUS_ICONS: has all status types", () => {
   const requiredKeys = [AgentStatus.ACTIVE, AgentStatus.INACTIVE, AgentStatus.ERROR];
@@ -223,7 +223,7 @@ Deno.test("AGENT_STATUS_COLORS: has all status types", () => {
   }
 });
 
-// ===== Key Bindings Tests =====
+// Key Bindings Tests
 
 Deno.test("AGENT_KEY_BINDINGS: has all expected bindings", () => {
   const requiredActions: AgentAction[] = [
@@ -251,7 +251,7 @@ Deno.test("AGENT_KEY_BINDINGS: each has key, action, description, category", () 
   }
 });
 
-// ===== TUI Session Tests =====
+// TUI Session Tests
 
 Deno.test("AgentStatusTuiSession: initializes correctly", async () => {
   const session = await createInitializedSession();

@@ -16,7 +16,7 @@ import type { IMemoryService } from "@exaix/core/types";
 import { MockMemoryService } from "../src/tui_dashboard_mocks.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Test Setup =====
+// Test Setup
 
 function createTestSession(): MemoryViewTuiSession {
   const mockService = new MockMemoryService();
@@ -32,7 +32,7 @@ async function enterSearchAndType(session: MemoryViewTuiSession, text: string): 
   }
 }
 
-// ===== Session Initialization Tests =====
+// Session Initialization Tests
 
 Deno.test("MemoryViewTuiSession: initializes with default state", () => {
   const session = createTestSession();
@@ -64,7 +64,7 @@ Deno.test("MemoryViewTuiSession: initialize loads pending count", async () => {
   assertEquals(session.getPendingCount(), 1);
 });
 
-// ===== State Accessor Tests =====
+// State Accessor Tests
 
 Deno.test("MemoryViewTuiSession: getActiveScope returns current scope", async () => {
   const session = createTestSession();
@@ -91,7 +91,7 @@ Deno.test("MemoryViewTuiSession: isSearchActive tracks search mode", async () =>
   assertEquals(session.isSearchActive(), true);
 });
 
-// ===== Navigation Tests =====
+// Navigation Tests
 
 Deno.test("MemoryViewTuiSession: up/down navigation changes selection", async () => {
   const session = createTestSession();
@@ -158,7 +158,7 @@ Deno.test("MemoryViewTuiSession: home/end keys jump to first/last", async () => 
   assertEquals(session.getSelectedNodeId(), tree[0].id);
 });
 
-// ===== Scope Jumping Tests =====
+// Scope Jumping Tests
 
 Deno.test("MemoryViewTuiSession: 'g' jumps to global scope", async () => {
   const session = createTestSession();
@@ -196,7 +196,7 @@ Deno.test("MemoryViewTuiSession: 'n' jumps to pending scope", async () => {
   assertEquals(session.getActiveScope(), MemoryTuiScope.PENDING);
 });
 
-// ===== Search Tests =====
+// Search Tests
 
 Deno.test("MemoryViewTuiSession: 's' activates search mode", async () => {
   const session = createTestSession();
@@ -267,7 +267,7 @@ Deno.test("MemoryViewTuiSession: enter executes search", async () => {
   assertEquals(tree[0]?.label.includes("Search"), true);
 });
 
-// ===== Detail Content Tests =====
+// Detail Content Tests
 
 Deno.test("MemoryViewTuiSession: getDetailContent returns content", async () => {
   const session = createTestSession();
@@ -288,7 +288,7 @@ Deno.test("MemoryViewTuiSession: '?' shows help content", async () => {
   assertEquals(content.includes("Navigation"), true);
 });
 
-// ===== Rendering Tests =====
+// Rendering Tests
 
 Deno.test("MemoryViewTuiSession: renderTreePanel returns formatted tree", async () => {
   const session = createTestSession();
@@ -341,7 +341,7 @@ Deno.test("MemoryViewTuiSession: getFocusableElements returns panel list", () =>
   assertEquals(elements.length >= 2, true);
 });
 
-// ===== MemoryView Controller Tests =====
+// MemoryView Controller Tests
 
 Deno.test("MemoryView: creates TUI session", () => {
   const mockService = new MockMemoryService();
@@ -359,7 +359,7 @@ Deno.test("MemoryView: getService returns service instance", () => {
   assertExists(service);
 });
 
-// ===== Node IFinding Tests =====
+// Node IFinding Tests
 
 Deno.test("MemoryViewTuiSession: findNodeById returns correct node", async () => {
   const session = createTestSession();

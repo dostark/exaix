@@ -19,9 +19,7 @@ function cast<T>(obj: any): T {
   return obj as T;
 }
 
-// ──────────────────────────────────────────────────────────────────────
 // ConfigAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockConfigService(overrides: Partial<ConfigService> = {}): ConfigService {
   return Object.assign(Object.create(ConfigService.prototype), {
@@ -76,9 +74,7 @@ Deno.test("ConfigAdapter: delegates all methods", async () => {
   assertEquals(reloadCalled, true);
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // MemoryBankAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockMemoryBankService(overrides: Partial<MemoryBankService> = {}): MemoryBankService {
   return Object.assign(Object.create(MemoryBankService.prototype), {
@@ -185,9 +181,7 @@ Deno.test("MemoryBankAdapter: delegates global and search methods", async () => 
   assertEquals(rebuildCalled, true);
 });
 
-// ──────────────────────────────────────────────────────────────────────
 // MemoryExtractorAdapter
-// ──────────────────────────────────────────────────────────────────────
 
 function createMockMemoryExtractorService(overrides: Partial<MemoryExtractorService> = {}): MemoryExtractorService {
   return Object.assign(Object.create(MemoryExtractorService.prototype), {

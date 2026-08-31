@@ -26,7 +26,7 @@ import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 import { DialogStatus, LogLevel, MessageType } from "@exaix/core";
 import { LogGroupingMode, TuiColorName, TuiNodeType } from "@exaix/tui";
 
-// ===== View State =====
+// View State
 
 /**
  * View-specific extensions for StructuredLogViewer
@@ -60,7 +60,7 @@ export interface ILogViewExtensions {
   detailContent: string;
 }
 
-// ===== Icons and Visual Constants =====
+// Icons and Visual Constants
 
 export const STRUCTURED_LOG_ICONS: Record<string, string> = {
   "debug": "🔍",
@@ -86,7 +86,7 @@ export const STRUCTURED_LOG_LEVEL_COLORS: Record<LogLevel, string> = {
   [LogLevel.FATAL]: TuiColorName.MAGENTA,
 };
 
-// ===== Key Bindings =====
+// Key Bindings
 
 export enum StructuredLogViewerAction {
   NAVIGATE_UP = "navigate-up",
@@ -259,7 +259,7 @@ export class StructuredLogViewerKeyBindings extends KeyBindingsBase<StructuredLo
 
 export const STRUCTURED_LOG_VIEWER_KEY_BINDINGS = new StructuredLogViewerKeyBindings().KEY_BINDINGS;
 
-// ===== StructuredLogViewer Class =====
+// StructuredLogViewer Class
 
 /**
  * View/controller for structured log monitoring with real-time streaming.
@@ -699,9 +699,9 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
     }
   }
 
-  // ===== TUI Session Base Implementation =====
+  // TUI Session Base Implementation
 
-  // ===== Dialog Handlers =====
+  // Dialog Handlers
 
   protected override onDialogClosed(dialog: DialogBase): void {
     const result = dialog.getResult();
@@ -725,7 +725,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
     this.pendingDialogType = null;
   }
 
-  // ===== Input Handling =====
+  // Input Handling
 
   /**
    * Handle detail view key actions
@@ -1010,7 +1010,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
     return statusParts.join(" | ");
   }
 
-  // ===== Testing Helpers =====
+  // Testing Helpers
 
   /** Exposed for testing to access view-specific state */
   getExtensions(): ILogViewExtensions {

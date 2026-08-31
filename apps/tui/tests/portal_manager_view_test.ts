@@ -153,7 +153,7 @@ Deno.test("lists all active portals", async () => {
   assertEquals(portals[0].alias, "Main");
 });
 
-// --- TDD: Interactive TUI Controls ---
+// TDD: Interactive TUI Controls
 // Note: navigation uses tree view with groups; home/end navigate the tree
 // (may land on group nodes), not just portals.
 
@@ -624,9 +624,7 @@ Deno.test("PortalManagerTuiSession keyboard actions - invalid selection", async 
   assertEquals(tui.getStatusMessage(), "Error: No portal selected");
 });
 
-// ============================================================
 // Enhanced Portal Manager Tests
-// ============================================================
 
 Deno.test("Phase 13.3: Portal tree is built with status groups", () => {
   const { tui } = createPortalTuiWithPortals([

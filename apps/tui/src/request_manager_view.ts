@@ -22,7 +22,7 @@ import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_ren
 import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 
-// --- Extracted utilities ---
+// Extracted utilities
 import {
   isGroupNode as helperIsGroupNode,
   MainKeyHandler,
@@ -76,7 +76,7 @@ export interface IRequestViewState {
  */
 export type InternalRequestAction = RequestOperation;
 
-// --- Visual constants ---
+// Visual constants
 export const PRIORITY_ICONS: Record<string, string> = {
   [RequestPriority.CRITICAL]: TUI_PRIORITY_ICONS.critical,
   [RequestPriority.HIGH]: TUI_PRIORITY_ICONS.high,
@@ -104,7 +104,7 @@ export const STATUS_COLORS: Record<string, string> = {
   [RequestStatus.ANALYZING]: "magenta",
 };
 
-// --- Key bindings ---
+// Key bindings
 
 export enum RequestAction {
   NAVIGATE_UP = "navigate-up",
@@ -233,7 +233,7 @@ export class RequestKeyBindings extends KeyBindingsBase<RequestAction, KeyBindin
 
 export const REQUEST_KEY_BINDINGS = new RequestKeyBindings().KEY_BINDINGS;
 
-// --- Minimal RequestService mock for TUI session tests ---
+// Minimal RequestService mock for TUI session tests
 /**
  * Minimal IRequestService mock for TUI session tests.
  */
@@ -338,7 +338,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     this.buildTree();
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   getState(): IRequestViewState {
     return this.state;
@@ -374,7 +374,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Tree Building =====
+  // Tree Building
 
   buildTree(): void {
     const filtered = this.getFilteredRequests();
@@ -482,7 +482,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     return createNode(request.trace_id, label, "item");
   }
 
-  // ===== Filtering =====
+  // Filtering
 
   getFilteredRequests(): IRequest[] {
     let filtered = this.requests;
@@ -517,7 +517,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     return filtered;
   }
 
-  // ===== Grouping =====
+  // Grouping
 
   toggleGrouping(): void {
     const modes = [
@@ -538,7 +538,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     this.setStatus(`Show Archived: ${this.state.showArchived ? "ON" : "OFF"}`, MessageType.INFO);
   }
 
-  // ===== Navigation =====
+  // Navigation
 
   navigateTree(direction: NavDirection): void {
     this.state.selectedRequestId = NavigationHandler.navigate(
@@ -570,7 +570,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     );
   }
 
-  // ===== Detail View =====
+  // Detail View
 
   async showRequestDetail(requestId: string): Promise<void> {
     try {
@@ -605,7 +605,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     return this.state.detailContent;
   }
 
-  // ===== Dialogs =====
+  // Dialogs
 
   showSearchDialog(): void {
     this.state.activeDialog = new InputDialog({
@@ -792,7 +792,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Help =====
+  // Help
 
   getHelpSections(): IHelpSection[] {
     return [
@@ -844,7 +844,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     });
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   renderTree(): string[] {
     if (this.state.requestTree.length === 0) {
@@ -909,7 +909,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     return lines.join("\n");
   }
 
-  // ===== Key Handling =====
+  // Key Handling
 
   async handleKey(key: string): Promise<boolean> {
     // Handle active dialog first
@@ -984,7 +984,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     );
   }
 
-  // ===== Lifecycle =====
+  // Lifecycle
 
   override async refresh(): Promise<void> {
     try {
@@ -1011,7 +1011,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   }
 }
 
-// --- Legacy TUI Session (backwards compatibility) ---
+// Legacy TUI Session (backwards compatibility)
 /** Legacy TUI session for Request Manager.
  * @deprecated Use RequestManagerTuiSession instead.
  */

@@ -259,9 +259,7 @@ Deno.test("handleRequestCreate: displays analysis when analyze=true", async () =
   }
 });
 
-// ---------------------------------------------------------------------------
 // Hybrid mode engine routes to HYBRID, not HEURISTIC
-// ---------------------------------------------------------------------------
 
 Deno.test("handleRequestAnalyze: hybrid engine routes to HYBRID mode", async () => {
   const { display, calls } = createDisplay();

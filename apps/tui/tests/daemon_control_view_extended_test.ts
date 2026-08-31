@@ -18,7 +18,7 @@ import {
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { setupDaemonTest } from "./daemon_test_utils.ts";
 
-// ===== MinimalDaemonServiceMock Tests =====
+// MinimalDaemonServiceMock Tests
 
 Deno.test("MinimalDaemonServiceMock: restart logs correctly", async () => {
   const mock = new MinimalDaemonServiceMock();
@@ -50,7 +50,7 @@ Deno.test("MinimalDaemonServiceMock: setErrors works", async () => {
   assertEquals(errors.length, 2);
 });
 
-// ===== DaemonControlView Tests =====
+// DaemonControlView Tests
 
 Deno.test("DaemonControlView: service delegation works", async () => {
   const { mock, view } = await setupDaemonTest();
@@ -70,7 +70,7 @@ Deno.test("DaemonControlView: service delegation works", async () => {
   assertEquals(errors.length, 1);
 });
 
-// ===== DaemonControlTuiSession Status Parsing =====
+// DaemonControlTuiSession Status Parsing
 
 [
   {
@@ -116,7 +116,7 @@ Deno.test("DaemonControlView: service delegation works", async () => {
   });
 });
 
-// ===== DaemonControlTuiSession State Accessors =====
+// DaemonControlTuiSession State Accessors
 
 Deno.test("DaemonControlTuiSession: getLogContent returns logs", async () => {
   const { session } = await setupDaemonTest({
@@ -159,7 +159,7 @@ Deno.test("DaemonControlTuiSession: getLastStatusCheck", async () => {
   assertExists(session.getLastStatusCheck());
 });
 
-// ===== DaemonControlTuiSession Actions =====
+// DaemonControlTuiSession Actions
 
 Deno.test("DaemonControlTuiSession: startDaemon success", async () => {
   const { session } = await setupDaemonTest({
@@ -222,7 +222,7 @@ Deno.test("DaemonControlTuiSession: restartDaemon success", async () => {
   });
 });
 
-// ===== DaemonControlTuiSession Dialog Behavior =====
+// DaemonControlTuiSession Dialog Behavior
 
 Deno.test("DaemonControlTuiSession: showStartConfirm blocked when running", async () => {
   const { session } = await setupDaemonTest({
@@ -299,7 +299,7 @@ Deno.test("DaemonControlTuiSession: handleKey 'a' toggles auto-refresh", async (
   session.dispose();
 });
 
-// ===== DaemonControlTuiSession Rendering =====
+// DaemonControlTuiSession Rendering
 
 Deno.test("DaemonControlTuiSession: renderStatusPanel shows info", async () => {
   const { session } = await setupDaemonTest();
@@ -366,7 +366,7 @@ Deno.test("DaemonControlTuiSession: renderConfig shows configuration info", asyn
   assertEquals(lines.some((l) => l.includes("")), true);
 });
 
-// ===== LegacyDaemonControlTuiSession Tests =====
+// LegacyDaemonControlTuiSession Tests
 
 Deno.test("LegacyDaemonControlTuiSession: initialize and getStatus", async () => {
   const mock = new MinimalDaemonServiceMock();
@@ -386,7 +386,7 @@ Deno.test("LegacyDaemonControlTuiSession: getFocusableElements", () => {
   assertEquals(elements.includes("logs"), true);
 });
 
-// ===== Dialog Confirmation Flow =====
+// Dialog Confirmation Flow
 
 Deno.test("DaemonControlTuiSession: confirm start dialog executes start", async () => {
   const { session } = await setupDaemonTest({

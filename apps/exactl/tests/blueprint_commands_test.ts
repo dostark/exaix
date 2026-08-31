@@ -30,9 +30,7 @@ import {
   TEST_BLUEPRINT_YAML_VERSION,
 } from "@exaix/testing";
 
-// ============================================================================
 // Test Setup
-// ============================================================================
 
 let testEnv: TestEnvironment;
 let commands: BlueprintCommands;
@@ -48,9 +46,7 @@ async function teardownTest() {
   await testEnv.cleanup();
 }
 
-// ============================================================================
 // Test Suite: Blueprint Create Command
-// ============================================================================
 
 Deno.test("[blueprint] create - generates valid blueprint file", async () => {
   await setupTest();
@@ -278,9 +274,7 @@ Deno.test("[blueprint] create - logs to IActivity Journal", async () => {
   }
 });
 
-// ============================================================================
 // Test Suite: Blueprint List Command
-// ============================================================================
 
 Deno.test("[blueprint] list - shows all blueprints", async () => {
   await setupTest();
@@ -387,9 +381,7 @@ Missing identity_id
   }
 });
 
-// ============================================================================
 // Test Suite: Blueprint Show Command
-// ============================================================================
 
 Deno.test("[blueprint] show - displays full blueprint", async () => {
   await setupTest();
@@ -426,9 +418,7 @@ Deno.test("[blueprint] show - rejects non-existent blueprint", async () => {
   }
 });
 
-// ============================================================================
 // Test Suite: Blueprint Validate Command
-// ============================================================================
 
 Deno.test("[blueprint] validate - accepts valid blueprint", async () => {
   await setupTest();
@@ -504,9 +494,7 @@ System prompt without thought and content tags.
   }
 });
 
-// ============================================================================
 // Test Suite: Blueprint Remove Command
-// ============================================================================
 
 Deno.test("[blueprint] remove - deletes blueprint file", async () => {
   await setupTest();
@@ -570,9 +558,7 @@ Deno.test("[blueprint] remove - rejects non-existent blueprint", async () => {
   }
 });
 
-// ============================================================================
 // Test Suite: Edit Command
-// ============================================================================
 
 Deno.test("[blueprint] edit - validates after editing", async () => {
   await setupTest();
@@ -858,9 +844,7 @@ Deno.test("[blueprint] show - throws on blueprint with invalid frontmatter", asy
   }
 });
 
-// ============================================================================
 // Test Suite: Blueprint Status Lifecycle & Filters
-// ============================================================================
 
 Deno.test("[blueprint] list - includes status defaulting to active", async () => {
   await setupTest();

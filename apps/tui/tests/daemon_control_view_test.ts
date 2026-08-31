@@ -23,7 +23,7 @@ import {
 } from "../src/daemon_control_view.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Mock CLI Daemon Service for testing (no real process spawn) =====
+// Mock CLI Daemon Service for testing (no real process spawn)
 
 class MockCLIDaemonService implements IDaemonService {
   state = DaemonStatus.STOPPED;
@@ -53,7 +53,7 @@ class MockCLIDaemonService implements IDaemonService {
   }
 }
 
-// ===== Existing Tests (Updated) =====
+// Existing Tests (Updated)
 
 Deno.test("DaemonControlView: shows daemon status and logs", async () => {
   const service = new MockCLIDaemonService();
@@ -107,7 +107,7 @@ Deno.test("CLIDaemonService: start, stop, restart, getStatus, getLogs, getErrors
   assert(Array.isArray(errors));
 });
 
-// ===== DaemonViewState Tests =====
+// DaemonViewState Tests
 
 Deno.test("DaemonViewState: interface has all required properties", () => {
   // TypeScript compile-time check via usage
@@ -126,7 +126,7 @@ Deno.test("DaemonViewState: interface has all required properties", () => {
   assertEquals(state.status, DaemonStatus.UNKNOWN);
 });
 
-// ===== Icon Tests =====
+// Icon Tests
 
 Deno.test("DAEMON_STATUS_ICONS: has all status types", () => {
   const requiredKeys = [DaemonStatus.RUNNING, DaemonStatus.STOPPED, "error", DaemonStatus.UNKNOWN];
@@ -146,7 +146,7 @@ Deno.test("DAEMON_STATUS_COLORS: has all status types", () => {
   }
 });
 
-// ===== Key Bindings Tests =====
+// Key Bindings Tests
 
 Deno.test("DAEMON_KEY_BINDINGS: has all expected bindings", () => {
   const requiredActions = [
@@ -174,7 +174,7 @@ Deno.test("DAEMON_KEY_BINDINGS: each has key, action, description, category", ()
   }
 });
 
-// ===== TUI Session Tests =====
+// TUI Session Tests
 
 Deno.test("DaemonControlTuiSession: initializes correctly", async () => {
   const { session } = await setupDaemonTest({

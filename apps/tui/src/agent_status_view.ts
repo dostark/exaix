@@ -58,7 +58,7 @@ import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IResolvedModelJournalEntry } from "./agent_status/resolved_model.ts";
 
-// ===== View State =====
+// View State
 
 /**
  * State interface for Agent Status View
@@ -90,9 +90,9 @@ export interface IAgentViewState {
   autoRefreshInterval: number;
 }
 
-// ===== Icons and Visual Constants =====
+// Icons and Visual Constants
 
-// ===== Constants & Enums =====
+// Constants & Enums
 
 export const AGENT_STATUS_ICONS: Record<string, string> = {
   [AgentStatus.ACTIVE]: TUI_AGENT_STATUS_ICONS.active,
@@ -123,9 +123,9 @@ export const AGENT_STATUS_COLORS: Record<string, string> = {
   critical: TuiColorName.RED,
 };
 
-// ===== Key Bindings =====
+// Key Bindings
 
-// ===== Agent Action Types =====
+// Agent Action Types
 export enum AgentAction {
   NAVIGATE_UP = "navigate-up",
   NAVIGATE_DOWN = "navigate-down",
@@ -145,7 +145,7 @@ export enum AgentAction {
   QUIT = "quit",
   CANCEL = "cancel",
 }
-// ===== Key Binding Categories =====
+// Key Binding Categories
 
 export class AgentKeyBindings extends KeyBindingsBase<AgentAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<AgentAction, KeyBindingCategory>[] = [
@@ -241,7 +241,7 @@ export class AgentKeyBindings extends KeyBindingsBase<AgentAction, KeyBindingCat
 
 export const AGENT_KEY_BINDINGS = new AgentKeyBindings().KEY_BINDINGS;
 
-// ===== Agent Status View Class =====
+// Agent Status View Class
 
 /**
  * View/controller for agent status. Delegates to injected IAgentService.
@@ -357,7 +357,7 @@ export class AgentStatusView {
   }
 }
 
-// ===== Minimal Mock for Tests =====
+// Minimal Mock for Tests
 
 /**
  * Minimal IAgentService mock for TUI session tests
@@ -397,7 +397,7 @@ export class MinimalAgentServiceMock implements IAgentService {
   }
 }
 
-// ===== TUI Session Class =====
+// TUI Session Class
 
 /**
  * Interactive TUI session for Agent Status View
@@ -429,7 +429,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     };
   }
 
-  // ===== Initialization =====
+  // Initialization
 
   /**
    * Initialize the session by loading agents
@@ -445,7 +445,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   override getViewName(): string {
     return DEFAULT_IDENTITIES_PATH;
@@ -538,7 +538,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     return [...AGENT_KEY_BINDINGS];
   }
 
-  // ===== Tree Building =====
+  // Tree Building
 
   private isGroupNode(id: string): boolean {
     return id.startsWith("status-") || id.startsWith("model-");
@@ -584,7 +584,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Navigation =====
+  // Navigation
 
   navigateUp(): void {
     if (this.state.selectedAgentId) {
@@ -620,7 +620,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Tree Operations =====
+  // Tree Operations
 
   toggleSelectedNode(): void {
     if (this.state.selectedAgentId && this.isGroupNode(this.state.selectedAgentId)) {
@@ -654,7 +654,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     this.state.agentTree = expandAll(this.state.agentTree);
   }
 
-  // ===== Grouping =====
+  // Grouping
 
   toggleGrouping(): void {
     if (this.state.groupBy === TuiGroupBy.NONE) {
@@ -674,7 +674,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     this.selectFirstAgent();
   }
 
-  // ===== Detail Panel =====
+  // Detail Panel
 
   async showAgentDetail(): Promise<void> {
     if (!this.state.selectedAgentId || this.isGroupNode(this.state.selectedAgentId)) {
@@ -737,7 +737,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     this.state.detailContent = "";
   }
 
-  // ===== Log Viewer =====
+  // Log Viewer
 
   async showAgentLogs(): Promise<void> {
     if (!this.state.selectedAgentId || this.isGroupNode(this.state.selectedAgentId)) {
@@ -774,7 +774,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     this.state.logContent = "";
   }
 
-  // ===== Search =====
+  // Search
 
   showSearchDialog(): void {
     this.state.activeDialog = new InputDialog({
@@ -798,7 +798,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     this.selectFirstAgent();
   }
 
-  // ===== Auto-Refresh =====
+  // Auto-Refresh
 
   toggleAutoRefresh(): void {
     this.state.autoRefresh = !this.state.autoRefresh;
@@ -850,7 +850,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Help Screen =====
+  // Help Screen
 
   override toggleHelp(): void {
     this.state.showHelp = !this.state.showHelp;
@@ -893,7 +893,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     ];
   }
 
-  // ===== Dialog Handling =====
+  // Dialog Handling
 
   closeDialog(): void {
     if (this.state.activeDialog) {
@@ -906,7 +906,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Key Handling =====
+  // Key Handling
 
   async handleKey(key: string): Promise<boolean> {
     // Handle active dialog first
@@ -958,7 +958,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     });
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   renderAgentTree(): string[] {
     if (this.state.agentTree.length === 0) {
@@ -1026,7 +1026,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     });
   }
 
-  // ===== Focusable Elements =====
+  // Focusable Elements
 
   getFocusableElements(): string[] {
     if (this.state.activeDialog) {
@@ -1044,7 +1044,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     return elements;
   }
 
-  // ===== Backwards Compatibility =====
+  // Backwards Compatibility
 
   /**
    * Get selected index in agent list (for compatibility)
@@ -1066,7 +1066,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  // ===== Lifecycle =====
+  // Lifecycle
 
   override dispose(): void {
     this.stopAgentAutoRefresh();
@@ -1074,7 +1074,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
   }
 }
 
-// ===== Legacy Support =====
+// Legacy Support
 
 /** @deprecated Use AgentStatusTuiSession instead. */
 export class LegacyAgentStatusTuiSession extends TuiSessionBase {

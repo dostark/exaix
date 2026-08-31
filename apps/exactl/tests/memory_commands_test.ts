@@ -13,7 +13,7 @@ import { UIOutputFormat } from "@exaix/tui";
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
 import { createTestExecution, createTestProject } from "@exaix/testing";
 
-// ===== Memory List Tests =====
+// Memory List Tests
 
 Deno.test("MemoryCommands: list returns summary with no data", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -72,7 +72,7 @@ Deno.test("MemoryCommands: list --format md outputs markdown", async () => {
   }
 });
 
-// ===== Memory Search Tests =====
+// Memory Search Tests
 
 Deno.test("MemoryCommands: search finds patterns by name", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -129,7 +129,7 @@ Deno.test("MemoryCommands: search --format json outputs valid JSON", async () =>
   }
 });
 
-// ===== Project Commands Tests =====
+// Project Commands Tests
 
 Deno.test("MemoryCommands: project list shows all projects", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -202,7 +202,7 @@ Deno.test("MemoryCommands: project show --format json outputs valid JSON", async
   }
 });
 
-// ===== Execution Commands Tests =====
+// Execution Commands Tests
 
 Deno.test("MemoryCommands: execution list returns history", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -321,7 +321,7 @@ Deno.test("MemoryCommands: execution show --format md outputs markdown", async (
   }
 });
 
-// ===== Rebuild Index Test =====
+// Rebuild Index Test
 
 Deno.test("MemoryCommands: rebuild-index completes successfully", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();

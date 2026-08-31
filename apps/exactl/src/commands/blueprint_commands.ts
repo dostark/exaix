@@ -26,9 +26,7 @@ import {
 } from "@exaix/schemas/blueprint.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ============================================================================
 // Types and Interfaces
-// ============================================================================
 
 /**
  * Frontmatter data parsed from YAML/TOML
@@ -87,9 +85,7 @@ Your reasoning.
 </content>
 `;
 
-// ============================================================================
 // BlueprintCommands Implementation
-// ============================================================================
 
 export class BlueprintCommands extends BaseCommand {
   constructor(context: ICommandContext) {

@@ -39,7 +39,7 @@ import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 type IPruneWorktreesOptions = Parameters<GitService["pruneWorktrees"]>[0];
 
-// ===== Plan Command Error Handlers =====
+// Plan Command Error Handlers
 
 Deno.test("plan list error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -101,7 +101,7 @@ Deno.test("plan revise error exits with message", async () => {
   });
 });
 
-// ===== Review Command Error Handlers =====
+// Review Command Error Handlers
 
 Deno.test("review list error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -139,7 +139,7 @@ Deno.test("review reject error exits with message", async () => {
   });
 });
 
-// ===== Git Command Error Handlers =====
+// Git Command Error Handlers
 
 Deno.test("git branches error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -177,7 +177,7 @@ Deno.test("git log error exits with message", async () => {
   });
 });
 
-// ===== Daemon Command Error Handlers =====
+// Daemon Command Error Handlers
 
 Deno.test("daemon start error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -239,7 +239,7 @@ Deno.test("daemon logs error exits with message", async () => {
   });
 });
 
-// ===== Portal Command Error Handlers =====
+// Portal Command Error Handlers
 
 Deno.test("portal add error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -253,7 +253,7 @@ Deno.test("portal add error exits with message", async () => {
   });
 });
 
-// ===== Git Worktree Commands =====
+// Git Worktree Commands
 
 Deno.test("git worktrees list rejects --portal and --repo together", async () => {
   await withTestMod(async (mod, _ctx) => {
@@ -343,7 +343,7 @@ Deno.test("git worktrees prune passes options to GitService", async () => {
   }
 });
 
-// ===== Portal Commands =====
+// Portal Commands
 
 Deno.test("portal add rejects invalid execution strategy", async () => {
   await withTestMod(async (mod, _ctx) => {
@@ -378,7 +378,7 @@ Deno.test("portal verify logs warnings and summary", async () => {
   });
 });
 
-// ===== Review Show Branches =====
+// Review Show Branches
 
 Deno.test("review show --diff prints diff only", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -514,7 +514,7 @@ Deno.test("portal refresh error exits with message", async () => {
   });
 });
 
-// ===== Blueprint Command Error Handlers =====
+// Blueprint Command Error Handlers
 
 Deno.test("blueprint list error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -576,7 +576,7 @@ Deno.test("blueprint remove error exits with message", async () => {
   });
 });
 
-// ===== Blueprint Alias Commands =====
+// Blueprint Alias Commands
 
 Deno.test("blueprint rm alias calls remove", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -592,7 +592,7 @@ Deno.test("blueprint rm alias calls remove", async () => {
   });
 });
 
-// ===== Request List with Status Filter =====
+// Request List with Status Filter
 
 Deno.test("request list passes status filter", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -615,7 +615,7 @@ Deno.test("request list error exits with message", async () => {
   });
 });
 
-// ===== Review List with Status Filter =====
+// Review List with Status Filter
 
 Deno.test("review list passes status filter", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -636,7 +636,7 @@ Deno.test("review list empty prints message", async () => {
   });
 });
 
-// ===== Portal List with Entries =====
+// Portal List with Entries
 
 Deno.test("portal list prints entries when present", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -664,7 +664,7 @@ Deno.test("portal list prints entries when present", async () => {
   });
 });
 
-// ===== Git Status with Changes =====
+// Git Status with Changes
 
 Deno.test("git status prints changes when present", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -683,7 +683,7 @@ Deno.test("git status prints changes when present", async () => {
   });
 });
 
-// ===== Memory Commands =====
+// Memory Commands
 
 Deno.test("memory default action shows list", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -838,7 +838,7 @@ Deno.test("memory pending approve --dry-run previews auto-approvals", async () =
   });
 });
 
-// ===== Flow Commands =====
+// Flow Commands
 Deno.test("flow show calls flowCommands.showFlow", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
@@ -866,7 +866,7 @@ Deno.test("flow validate calls flowCommands.validateFlow", async () => {
   });
 });
 
-// ===== Blueprint Show Content Preview =====
+// Blueprint Show Content Preview
 
 Deno.test("blueprint show displays content preview", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -889,7 +889,7 @@ Deno.test("blueprint show displays content preview", async () => {
   });
 });
 
-// ===== Blueprint Validate with Warnings =====
+// Blueprint Validate with Warnings
 
 Deno.test("blueprint validate valid with warnings", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -907,7 +907,7 @@ Deno.test("blueprint validate valid with warnings", async () => {
   });
 });
 
-// ===== Request with All Options =====
+// Request with All Options
 
 Deno.test("request create with all options", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -986,14 +986,14 @@ Deno.test("request create with flow option", async () => {
   });
 });
 
-// ===== --agent flag removed =====
+// --agent flag removed
 // Note: --agent flag removal is verified by CLI framework - unknown options automatically rejected
 
-// ===== __test_initializeServices with instantiateDb =====
+// __test_initializeServices with instantiateDb
 // Note: Skip instantiateDb test as it loads native SQLite library that can't be easily unloaded
 // The path is covered by other integration tests that properly manage DB lifecycle
 
-// ===== Plan List with needs_revision Status =====
+// Plan List with needs_revision Status
 
 Deno.test("plan list shows needs_revision icon", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -1008,7 +1008,7 @@ Deno.test("plan list shows needs_revision icon", async () => {
   });
 });
 
-// ===== Request List with Different Priorities =====
+// Request List with Different Priorities
 
 Deno.test("request list shows different priority icons", async () => {
   await withTestMod(async (mod, ctx) => {
@@ -1056,7 +1056,7 @@ Deno.test("request list shows different priority icons", async () => {
   });
 });
 
-// ===== End-to-End Flow Request Testing =====
+// End-to-End Flow Request Testing
 
 Deno.test("end-to-end flow request workflow", async () => {
   await withTestMod(async (mod, ctx) => {

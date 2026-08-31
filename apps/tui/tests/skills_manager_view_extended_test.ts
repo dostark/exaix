@@ -32,9 +32,9 @@ import {
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
-// ===== Test Data =====
+// Test Data
 
-// ===== Constants Tests =====
+// Constants Tests
 
 Deno.test("SkillsManagerView: SOURCE_ICONS has all sources", () => {
   assertExists(SOURCE_ICONS.core);
@@ -68,7 +68,7 @@ Deno.test("SkillsManagerView: SKILLS_KEY_BINDINGS has required keys", () => {
   assertEquals(actions.includes(SkillsAction.BACK), true);
 });
 
-// ===== SkillsManagerView Core Tests =====
+// SkillsManagerView Core Tests
 
 Deno.test("SkillsManagerView: getCachedSkills returns empty initially", () => {
   const mockService = new MinimalSkillsServiceMock([]);
@@ -143,7 +143,7 @@ Deno.test("SkillsManagerView: createSkillsManagerView factory function works", (
   assertEquals(view instanceof SkillsManagerView, true);
 });
 
-// ===== MinimalSkillsServiceMock Tests =====
+// MinimalSkillsServiceMock Tests
 
 Deno.test("MinimalSkillsServiceMock: listSkills filters by source", async () => {
   const skills = sampleTestSkills();
@@ -189,7 +189,7 @@ Deno.test("MinimalSkillsServiceMock: setSkills replaces skills", async () => {
   assertEquals((await mock.listSkills()).length, 5);
 });
 
-// ===== TUI Session Tests =====
+// TUI Session Tests
 
 testSkillsSessionRender(
   "SkillsManagerTuiSession: navigation with 'j' and 'k' keys",

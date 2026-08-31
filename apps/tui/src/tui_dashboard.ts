@@ -57,7 +57,7 @@ import {
 // Type alias for convenience
 type Theme = ITuiTheme;
 
-// ===== Dashboard Interfaces =====
+// Dashboard Interfaces
 
 /**
  * Common interface for all TUI views to ensure consistent orchestration.
@@ -185,7 +185,7 @@ export interface ITuiDashboard {
   };
 }
 
-// ===== Dashboard Icons =====
+// Dashboard Icons
 
 // Runtime-loaded TUI helpers are imported at module initialization so the dynamic
 // dependency is still tracked by the module graph while avoiding imports inside
@@ -241,7 +241,7 @@ export const DASHBOARD_ICONS = {
 // style-exclude:RUNTIME_REGISTRY - Dynamic import is required at runtime to avoid circular dependency and load TUI service factory only when the dashboard is initialized.
 const tuiServiceFactoryModule = import("./services/tui_service_factory.ts");
 
-// ===== Dashboard Key Bindings =====
+// Dashboard Key Bindings
 
 type DashboardAction =
   | "next_pane"
@@ -333,7 +333,7 @@ export class DashboardKeyBindings extends KeyBindingsBase<DashboardAction> {
 
 export const DASHBOARD_KEY_BINDINGS = new DashboardKeyBindings().KEY_BINDINGS;
 
-// ===== Help Sections =====
+// Help Sections
 
 export function getDashboardHelpSections(): IHelpSection[] {
   return [
@@ -426,7 +426,7 @@ export function tryDisableRawMode(): boolean {
 
 // Notification helpers are now handled by INotificationService
 
-// ===== Default Dashboard State =====
+// Default Dashboard State
 
 export function createDefaultDashboardState(): IDashboardViewState {
   return {
@@ -444,7 +444,7 @@ export function createDefaultDashboardState(): IDashboardViewState {
   };
 }
 
-// ===== View Indicator Rendering =====
+// View Indicator Rendering
 
 export function renderViewIndicator(panes: IPane[], activePaneId: string, theme: Theme): string {
   const indicators: string[] = [];
@@ -466,7 +466,7 @@ export function renderViewIndicator(panes: IPane[], activePaneId: string, theme:
   return indicators.join("  ");
 }
 
-// ===== Global Help Overlay Rendering =====
+// Global Help Overlay Rendering
 
 export function renderGlobalHelpOverlay(_theme: Theme): string[] {
   const sections = getDashboardHelpSections();
@@ -479,11 +479,11 @@ export function renderGlobalHelpOverlay(_theme: Theme): string[] {
   });
 }
 
-// ===== Notification Panel Rendering =====
+// Notification Panel Rendering
 
 // `renderNotificationPanel` and `handleMemoryNotifications` now live in `@exaix/tui/helpers/notifications.ts`.
 
-// ===== View Picker Rendering =====
+// View Picker Rendering
 
 export function renderViewPicker(
   views: ITuiView[],
@@ -527,7 +527,7 @@ export function renderViewPicker(
   return lines;
 }
 
-// ===== IPane Title Bar Rendering =====
+// IPane Title Bar Rendering
 
 export function renderPaneTitleBar(pane: IPane, theme: Theme): string {
   const icon = DASHBOARD_ICONS.views[pane.view.name] || "📦";

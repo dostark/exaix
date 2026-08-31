@@ -43,7 +43,7 @@ import {
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
-// ===== Mock Service with Full Data =====
+// Mock Service with Full Data
 
 class MockMemoryServiceFull extends MinimalMemoryServiceMock implements IMemoryService {
   private projects = ["my-app", "api-service", "web-client"];
@@ -239,7 +239,7 @@ function createMockProposal(
   };
 }
 
-// ===== Integration Tests =====
+// Integration Tests
 
 Deno.test("TUI Integration: full workflow - navigate → view → search", async () => {
   const service = new MockMemoryServiceFull();
@@ -429,7 +429,7 @@ Deno.test("TUI Integration: handles large memory sets", async () => {
   assertGreater(treePanel.length, 0);
 });
 
-// ===== Markdown Renderer Tests =====
+// Markdown Renderer Tests
 
 Deno.test("renderMarkdown: renders headers with colors", () => {
   const md = "# Header 1\n## Header 2\n### Header 3";

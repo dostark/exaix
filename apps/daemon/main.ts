@@ -283,7 +283,7 @@ if (import.meta.main) {
       );
     });
 
-    // ── Config DB: populate in-memory store and create adapter ────────────
+    // Config DB: populate in-memory store and create adapter
     // Populate InMemoryConfigStore from Config DB + registry defaults, then
     // wire DaemonConfigAdapter into the context.
     const configStore = new InMemoryConfigStore();
@@ -642,10 +642,10 @@ if (import.meta.main) {
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
-    // ── Review Registry (needed before session-delegation for onReconciled wiring) ──
+    // Review Registry (needed before session-delegation for onReconciled wiring)
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
-    // ── Session-delegation runtime ──────────────────────────────────────
+    // Session-delegation runtime
     const LAUNCH_MODE_HEADLESS = "headless";
     const GATE_REFINEMENT = "refinement";
     const GATE_PLAN_REVIEW = "plan_review";

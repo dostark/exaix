@@ -78,9 +78,7 @@ function initPlanTest(tempDir: string) {
   return { context };
 }
 
-// ============================================================================
 // Regression Tests for Plan List Directory Scanning
-// ============================================================================
 
 Deno.test("[regression] Plan list finds approved plans in Active directory", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa_plan_regression_" });
@@ -201,9 +199,7 @@ Deno.test("[regression] Plan list handles empty directories gracefully", async (
   }
 });
 
-// ============================================================================
 // Regression Test for Plan Rejection Directory Scanning
-// ============================================================================
 
 /** Regression: reject() must search all plan directories (Active, Rejected, etc.), not only Workspace/Plans. */
 Deno.test("[regression] Plan reject finds plans in any directory", async () => {
@@ -243,9 +239,7 @@ Deno.test("[regression] Plan reject finds plans in any directory", async () => {
   }
 });
 
-// ============================================================================
 // Regression Test for Plan Request Context
-// ============================================================================
 
 /** Regression: plan list/show must include request context (agent, portal, priority), not just plan metadata. */
 Deno.test("[regression] Plan list and show include request context information", async () => {

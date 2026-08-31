@@ -8,7 +8,7 @@
 
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Helper Functions =====
+// Helper Functions
 
 /**
  * Handle navigation keys (up, down, home, end)

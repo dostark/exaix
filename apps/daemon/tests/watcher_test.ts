@@ -431,9 +431,7 @@ Deno.test("File stability - eventual consistency with delayed write", async () =
   }
 });
 
-// ============================================================================
 // FileWatcher class integration tests
-// ============================================================================
 
 Deno.test("FileWatcher: processes .md files and ignores dotfiles", async () => {
   const { helper, cleanup } = await createWatcherTestContext("watcher-class-filter-");
@@ -730,9 +728,7 @@ Deno.test("FileWatcher: handles rename events (file moves)", async () => {
   }
 });
 
-// ============================================================================
 // Issue #4: File Stability Checking with Blocking Operations - Tests
-// ============================================================================
 
 Deno.test("File Stability - Non-blocking delay utility", async () => {
   // Test delay returns a promise

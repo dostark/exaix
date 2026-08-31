@@ -39,7 +39,7 @@ import type { IBlueprintCreateOptions, IBlueprintRemoveOptions } from "../src/co
 // (`__test_getContext()` / `__test_command`) with in-process stubs — no tempdir or
 // real DB. See other CLI test modules for filesystem/DB integration.
 
-// ---- Basic module export sanity tests ----
+// Basic module export sanity tests
 Deno.test({
   name: "exactl exposes test context when EXA_TEST_MODE=1",
   ignore: !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1",
@@ -55,7 +55,7 @@ Deno.test({
   },
 });
 
-// ---- Parse-based command tests (merged from existing test suite) ----
+// Parse-based command tests (merged from existing test suite)
 Deno.test("plan approve calls planCommands.approve", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
@@ -729,7 +729,7 @@ Deno.test("blueprint create successful prints created message", async () => {
   });
 });
 
-// ---- Additional focused tests to improve coverage for apps/exactl/src/exactl.ts ----
+// Additional focused tests to improve coverage for apps/exactl/src/exactl.ts
 
 Deno.test("exactl: --version prints version and exits (in-process)", async () => {
   await withTestMod(async (mod, _ctx) => {

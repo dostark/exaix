@@ -14,7 +14,7 @@ import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment
 import { LearningBuilder } from "../../../tests/fixtures/memory_builder.ts";
 import { createTestProject } from "@exaix/testing";
 
-// ===== Global Show Tests =====
+// Global Show Tests
 
 Deno.test("MemoryCommands: globalShow returns empty for uninitialized", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -72,7 +72,7 @@ Deno.test("MemoryCommands: globalShow --format md outputs markdown", async () =>
   }
 });
 
-// ===== Global List Learnings Tests =====
+// Global List Learnings Tests
 
 Deno.test("MemoryCommands: globalListLearnings returns empty message", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -134,7 +134,7 @@ Deno.test("MemoryCommands: globalListLearnings --format json outputs valid JSON"
   }
 });
 
-// ===== Global Stats Tests =====
+// Global Stats Tests
 
 Deno.test("MemoryCommands: globalStats displays statistics", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -186,7 +186,7 @@ Deno.test("MemoryCommands: globalStats --format json outputs valid JSON", async 
   }
 });
 
-// ===== Promote Command Tests =====
+// Promote Command Tests
 
 Deno.test("MemoryCommands: promote moves learning to global", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -246,7 +246,7 @@ Deno.test("MemoryCommands: promote non-existent project returns error", async ()
   }
 });
 
-// ===== Demote Command Tests =====
+// Demote Command Tests
 
 Deno.test("MemoryCommands: demote moves learning to project", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();

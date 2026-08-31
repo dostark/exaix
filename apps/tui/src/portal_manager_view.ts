@@ -34,7 +34,7 @@ import {
 } from "@exaix/tui/helpers/constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Portal View Extensions =====
+// Portal View Extensions
 
 export interface IPortalViewExtensions {
   /** Detail panel content */
@@ -43,7 +43,7 @@ export interface IPortalViewExtensions {
   lastRefresh: number;
 }
 
-// ===== Portal Actions =====
+// Portal Actions
 
 export enum PortalAction {
   NAVIGATE_UP = "navigate-up",
@@ -64,7 +64,7 @@ export enum PortalAction {
   ANALYZE = "analyze",
 }
 
-// ===== Portal Status Icons =====
+// Portal Status Icons
 
 const PORTAL_ICONS = {
   active: TUI_PORTAL_ICONS.active,
@@ -73,7 +73,7 @@ const PORTAL_ICONS = {
   folder: TUI_PORTAL_ICONS.folder,
 } as const;
 
-// ===== Key Bindings =====
+// Key Bindings
 
 export class PortalKeyBindings extends KeyBindingsBase<PortalAction, KeyBindingCategory> {
   readonly KEY_BINDINGS: readonly IKeyBinding<PortalAction, KeyBindingCategory>[] = [
@@ -142,7 +142,7 @@ export class PortalKeyBindings extends KeyBindingsBase<PortalAction, KeyBindingC
 
 export const PORTAL_KEY_BINDINGS = new PortalKeyBindings().KEY_BINDINGS;
 
-// ===== TUI Session =====
+// TUI Session
 
 export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
   private portals: IPortalInfo[];
@@ -160,7 +160,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     this.buildTree(portals);
   }
 
-  // ===== Tree Building =====
+  // Tree Building
 
   protected buildTree(portals: IPortalInfo[]): void {
     const active: ITreeNode<IPortalInfo>[] = [];
@@ -236,9 +236,9 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     this.syncSelectedIndex();
   }
 
-  // ===== Backwards Compatibility =====
+  // Backwards Compatibility
 
-  // ===== Selection & Sync =====
+  // Selection & Sync
 
   override setSelectedIndex(idx: number, _maxLength?: Opt<number, Reason.UiDefault>): void {
     // Sync tree selection with index in portals array
@@ -268,7 +268,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     return 0;
   }
 
-  // ===== Dialog Result Handling =====
+  // Dialog Result Handling
 
   protected override onDialogClosed(dialog: DialogBase): void {
     const result = dialog.getResult();
@@ -279,7 +279,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     }
   }
 
-  // ===== Key Handling =====
+  // Key Handling
 
   override async handleKey(key: string): Promise<boolean> {
     // If dialog is active, handle it first (might involve onDialogClosed which is async)
@@ -360,7 +360,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     await this.executeOpen();
   }
 
-  // ===== Actions =====
+  // Actions
 
   private async executeOpen(): Promise<void> {
     const selected = this.getSelectedNode();
@@ -443,7 +443,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     );
   }
 
-  // ===== State Accessors =====
+  // State Accessors
 
   getSelectedPortal(): ITreeNode<IPortalInfo> | null {
     return this.getSelectedNode();
@@ -475,7 +475,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     return this.state.tree;
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   renderActionButtons(): string {
     if (!this.portals.length) return "";
@@ -540,7 +540,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
   }
 }
 
-// ===== Knowledge Rendering =====
+// Knowledge Rendering
 
 /** Renders an IPortalKnowledge record into detail-pane display lines ("no analysis" message when null). */
 export function renderKnowledgeSection(knowledge: IPortalKnowledge | null): string[] {
@@ -550,7 +550,7 @@ export function renderKnowledgeSection(knowledge: IPortalKnowledge | null): stri
   return formatKnowledge(knowledge);
 }
 
-// ===== View Controller =====
+// View Controller
 
 export class PortalManagerView implements IPortalService {
   constructor(public readonly service: IPortalService) {}

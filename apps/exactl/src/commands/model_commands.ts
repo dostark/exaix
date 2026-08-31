@@ -78,7 +78,7 @@ export class ModelCommands {
     private readonly benchmarkReader?: Opt<IBenchmarkReader, Reason.OptionalDependency>,
   ) {}
 
-  // ── Display: models list / models pricing ──────────────────────────────────
+  // Display: models list / models pricing
 
   /** `models list [--benchmark <name>]` shows provider:model, provenance, and verified_at
    *  staleness; `--benchmark` adds an advisory score column, "-" when unscored. */
@@ -139,7 +139,7 @@ export class ModelCommands {
     console.log("");
   }
 
-  // ── Team: models refresh ────────────────────────────────────────────────────
+  // Team: models refresh
 
   /** `models refresh` (Team surface). Refresh runs inside the daemon's
    *  RegistryRefreshScheduler; the CLI holds only the Solo floor, so this reads
@@ -162,7 +162,7 @@ export class ModelCommands {
     );
   }
 
-  // ── Curation: config model ──────────────────────────────────────────────────
+  // Curation: config model
 
   /** `config model --size <S> <entries…>` validates and writes a curated candidate list.
    *  An unregistered provider is allowed (flagged `unconfigured`); an ambiguous bare name
@@ -215,7 +215,7 @@ export class ModelCommands {
     return result;
   }
 
-  // ── Validation helpers ───────────────────────────────────────────────────────
+  // Validation helpers
 
   private assertValidSize(size: string): void {
     if (!VALID_SIZES.includes(size)) {
@@ -261,7 +261,7 @@ export class ModelCommands {
     return [...new Set(entries)];
   }
 
-  // ── TOML write-back ──────────────────────────────────────────────────────────
+  // TOML write-back
 
   private requireConfigPath(): string {
     if (!this.configPath) {
@@ -305,7 +305,7 @@ export class ModelCommands {
     return cfg.model_presets[size];
   }
 
-  // ── Rendering helpers ─────────────────────────────────────────────────────────
+  // Rendering helpers
 
   private renderVerifiedAt(verifiedAt?: Opt<number, Reason.OptionalInput>): string {
     if (verifiedAt === undefined) return "-";

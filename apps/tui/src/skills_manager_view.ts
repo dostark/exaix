@@ -30,7 +30,7 @@ import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory
 import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
-// ===== Interfaces =====
+// Interfaces
 
 /**
  * Service interface for skills operations
@@ -51,7 +51,7 @@ export interface ISkillsViewExtensions {
   groupBy: SkillGroupingMode;
 }
 
-// ===== Icons and Visual Constants =====
+// Icons and Visual Constants
 
 export const SOURCE_ICONS: Record<string, string> = {
   core: TUI_SOURCE_ICONS.core,
@@ -67,7 +67,7 @@ export const STATUS_ICONS: Record<string, string> = {
 
 export const SKILL_ICON = TUI_SKILL_ICON;
 
-// ===== Portal Actions =====
+// Portal Actions
 
 export enum SkillsAction {
   NAVIGATE_UP = "navigate-up",
@@ -169,7 +169,7 @@ export class SkillsKeyBindings extends KeyBindingsBase<SkillsAction, KeyBindingC
 
 export const SKILLS_KEY_BINDINGS = new SkillsKeyBindings().KEY_BINDINGS;
 
-// ===== Help Sections =====
+// Help Sections
 
 const SKILLS_HELP_SECTIONS: IHelpSection[] = [
   {
@@ -203,7 +203,7 @@ const SKILLS_HELP_SECTIONS: IHelpSection[] = [
   },
 ];
 
-// ===== Skills Manager View Class =====
+// Skills Manager View Class
 
 /**
  * View/controller for skills management
@@ -246,7 +246,7 @@ export class SkillsManagerView {
   }
 }
 
-// ===== Minimal Mock for Tests =====
+// Minimal Mock for Tests
 
 export class MinimalSkillsServiceMock implements ISkillsService {
   private skills: ISkill[] = [];
@@ -255,7 +255,9 @@ export class MinimalSkillsServiceMock implements ISkillsService {
     this.skills = skills;
   }
 
-  listSkills(filter?: { source?: MemoryBankSource; status?: SkillStatus }): Promise<ISkill[]> {
+  listSkills(
+    filter?: Opt<{ source?: MemoryBankSource; status?: SkillStatus }, Reason.QueryFilter>,
+  ): Promise<ISkill[]> {
     let result = [...this.skills];
     if (filter?.source) {
       result = result.filter((s) => s.source === filter.source);
@@ -336,7 +338,7 @@ export class MinimalSkillsServiceMock implements ISkillsService {
   }
 }
 
-// ===== TUI Session Class =====
+// TUI Session Class
 
 /**
  * Interactive TUI session for Skills Manager View
@@ -360,7 +362,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     };
   }
 
-  // ===== Initialization =====
+  // Initialization
 
   async initialize(): Promise<void> {
     this.setLoading(true, "Loading skills...");
@@ -389,7 +391,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     this.skills = await this.skillsView.getSkillsList(filter);
   }
 
-  // ===== Tree Building =====
+  // Tree Building
 
   protected override buildTree(): void {
     let filteredSkills = [...this.skills];
@@ -537,7 +539,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     this.skillsViewExtensions.detailContent = "";
   }
 
-  // ===== Dialogs =====
+  // Dialogs
 
   showSearchDialog(): void {
     this.showInputDialog({
@@ -596,7 +598,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     this.pendingDialogType = "delete";
   }
 
-  // ===== Dialog Handlers =====
+  // Dialog Handlers
 
   protected override onDialogClosed(dialog: DialogBase): void {
     const result = dialog.getResult();
@@ -624,7 +626,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     this.pendingDialogType = null;
   }
 
-  // ===== Dialog Handlers =====
+  // Dialog Handlers
 
   private handleSearchResult(value: string): void {
     this.state.filterText = value;
@@ -683,7 +685,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     }
   }
 
-  // ===== Grouping =====
+  // Grouping
 
   cycleGrouping(): void {
     const modes = [SkillGroupingMode.SOURCE, SkillGroupingMode.STATUS, SkillGroupingMode.NONE];
@@ -693,7 +695,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     this.setStatus(`Grouping: ${this.skillsViewExtensions.groupBy}`, MessageType.INFO);
   }
 
-  // ===== Refresh =====
+  // Refresh
 
   override async refresh(): Promise<void> {
     this.setLoading(true, "Refreshing...");
@@ -706,7 +708,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     }
   }
 
-  // ===== Base Implementation =====
+  // Base Implementation
 
   override getKeyBindings(): IKeyBinding<string>[] {
     return SKILLS_KEY_BINDINGS.map((b) => ({ ...b, action: b.action as string }));
@@ -716,7 +718,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     return "Skills Manager";
   }
 
-  // ===== Rendering =====
+  // Rendering
 
   render(): string {
     const lines: string[] = [];
@@ -778,7 +780,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     return this.skillsViewExtensions.detailContent;
   }
 
-  // ===== Input Handling =====
+  // Input Handling
 
   public override async handleKey(key: string): Promise<boolean> {
     // 1. Handle dialogs (delegated to base)
@@ -908,7 +910,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
   }
 }
 
-// ===== View Factory =====
+// View Factory
 
 /**
  * Create a SkillsManagerView instance

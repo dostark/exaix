@@ -17,7 +17,7 @@ import type { IMemoryNotification } from "@exaix/core/types";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import type { IPortalService } from "@exaix/core/types";
 
-// ===== Types =====
+// Types
 
 export type CapturedConsole = {
   logs: string[];

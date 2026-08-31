@@ -247,7 +247,7 @@ async function bootAndProbeFlow(
   });
 }
 
-// ── Team-edition daemon wiring ────────────────────────────────────────────────
+// Team-edition daemon wiring
 
 Deno.test({
   name: "[daemon wiring] with EXAIX_EDITION=team, the real FlowRunner construction path (via the daemon's own " +
@@ -305,7 +305,7 @@ Deno.test({
   },
 });
 
-// ── Solo-edition unchanged behavior ──────────────────────────────────────────
+// Solo-edition unchanged behavior
 
 Deno.test({
   name: "[daemon wiring] with EXAIX_EDITION=solo (default), dynamic-step wiring is absent exactly as before — " +
@@ -336,7 +336,7 @@ Deno.test({
   },
 });
 
-// ── Dispatcher surface parity ────────────────────────────────────────────────
+// Dispatcher surface parity
 
 Deno.test({
   name: "[daemon wiring] LocalToolDispatcher built from buildDynamicHandlers() exposes exactly the union of " +
@@ -358,7 +358,7 @@ Deno.test({
   },
 });
 
-// ── Fail-soft degradation ─────────────────────────────────────────────────
+// Fail-soft degradation
 
 Deno.test({
   name:

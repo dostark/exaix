@@ -20,7 +20,7 @@ import {
 } from "@exaix/tui/dialogs/memory_dialogs.ts";
 import { createMockProposal, renderDialog, testDialogInteraction } from "./memory_view/memory_view_test_utils.ts";
 
-// ===== ConfirmApproveDialog Tests =====
+// ConfirmApproveDialog Tests
 
 testDialogInteraction(
   "ConfirmApproveDialog: renders correctly",
@@ -119,7 +119,7 @@ Deno.test("ConfirmApproveDialog: getProposal returns proposal", () => {
   assertEquals(retrieved.learning.title, "Error Handling IPattern as IPattern");
 });
 
-// ===== ConfirmRejectDialog Tests =====
+// ConfirmRejectDialog Tests
 
 testDialogInteraction(
   "ConfirmRejectDialog: renders correctly",
@@ -208,7 +208,7 @@ Deno.test("ConfirmRejectDialog: confirms with reason", () => {
   }
 });
 
-// ===== AddLearningDialog Tests =====
+// AddLearningDialog Tests
 
 testDialogInteraction(
   "AddLearningDialog: renders correctly",
@@ -268,7 +268,7 @@ Deno.test("AddLearningDialog: getFocusableElements returns all fields", () => {
   assertEquals(elements.includes("cancel-btn"), true);
 });
 
-// ===== PromoteDialog Tests =====
+// PromoteDialog Tests
 
 testDialogInteraction(
   "PromoteDialog: renders correctly",
@@ -335,7 +335,7 @@ Deno.test("PromoteDialog: getters return correct values", () => {
   assertEquals(dialog.getSourcePortal(), "source-project");
 });
 
-// ===== BulkApproveDialog Tests =====
+// BulkApproveDialog Tests
 
 testDialogInteraction(
   "BulkApproveDialog: renders correctly",
@@ -420,7 +420,7 @@ Deno.test("BulkApproveDialog: getCount returns count", () => {
   assertEquals(dialog.getCount(), 42);
 });
 
-// ===== General Dialog Behavior Tests =====
+// General Dialog Behavior Tests
 
 Deno.test("All dialogs: getFocusableElements returns non-empty arrays", () => {
   const proposal = createMockProposal("id", "Title");

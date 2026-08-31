@@ -310,9 +310,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
   });
 });
 
-// ============================================================
 // Enhanced Monitor View Tests
-// ============================================================
 
 Deno.test("Phase 13.5: MonitorTuiSession - creates session", () => {
   const { session } = createMonitorSession([sampleLogEntry()]);

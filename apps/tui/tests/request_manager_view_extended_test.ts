@@ -45,7 +45,7 @@ import {
 } from "../src/request_manager_view.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
-// ===== Test Data =====
+// Test Data
 
 function createTestRequests(): IRequest[] {
   return [
@@ -141,7 +141,7 @@ function createTestSessionWithMockService(
   return session;
 }
 
-// ===== Constants Tests =====
+// Constants Tests
 
 Deno.test("RequestManagerView: STATUS_COLORS covers all statuses", () => {
   assertExists(STATUS_COLORS.pending);
@@ -174,7 +174,7 @@ Deno.test("RequestManagerView: PRIORITY_ICONS and STATUS_ICONS have all values",
   assertEquals(STATUS_ICONS.failed, "💥");
 });
 
-// ===== RequestManagerView Tests =====
+// RequestManagerView Tests
 
 Deno.test("RequestManagerView: renderRequestList with various statuses", () => {
   const mockService = new MinimalRequestServiceMock();
@@ -203,7 +203,7 @@ Deno.test("RequestManagerView: renderRequestList shows priorities", () => {
   assertStringIncludes(output, "🔵"); // low
 });
 
-// ===== RequestManagerTuiSession Tests =====
+// RequestManagerTuiSession Tests
 
 Deno.test("RequestManagerTuiSession: getSelectedRequest returns correct request", () => {
   const mockService = new MinimalRequestServiceMock();
@@ -535,7 +535,7 @@ Deno.test("RequestManagerTuiSession: p key on non-request does nothing", async (
   }
 });
 
-// ===== LegacyRequestManagerTuiSession Tests =====
+// LegacyRequestManagerTuiSession Tests
 
 Deno.test("LegacyRequestManagerTuiSession: getSelectedIndex and setSelectedIndex", () => {
   const session = createLegacyTuiSession(createTestRequests());
@@ -624,7 +624,7 @@ Deno.test("LegacyRequestManagerTuiSession: error handling in actions", async () 
   assertStringIncludes(session.getStatusMessage(), "Error:");
 });
 
-// ===== RequestServiceAdapter Tests =====
+// RequestServiceAdapter Tests
 
 Deno.test("RequestServiceAdapter: updateRequestStatus returns false (not implemented)", async () => {
   const mockMetadata: IRequestMetadata = {

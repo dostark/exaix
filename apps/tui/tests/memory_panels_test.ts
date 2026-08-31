@@ -53,7 +53,7 @@ const colorOptions: IPanelRenderOptions = {
   useColors: true,
 };
 
-// ===== Helper to create valid test data =====
+// Helper to create valid test data
 
 function createProjectMemory(overrides: Partial<IProjectMemory> = {}): IProjectMemory {
   return {
@@ -119,7 +119,7 @@ function createGlobalMemory(overrides: Partial<IGlobalMemory> = {}): IGlobalMemo
   };
 }
 
-// ===== MemoryColors tests =====
+// MemoryColors tests
 
 Deno.test("MemoryColors: has all required colors", () => {
   assertExists(MemoryColors.global);
@@ -134,7 +134,7 @@ Deno.test("MemoryColors: has all required colors", () => {
   assertExists(MemoryColors.reset);
 });
 
-// ===== renderProjectPanel tests =====
+// renderProjectPanel tests
 
 Deno.test("renderProjectPanel: renders null memory", () => {
   const result = renderProjectPanel(null, "test-portal", defaultOptions);
@@ -210,7 +210,7 @@ Deno.test("renderProjectPanel: handles color options", () => {
   assertEquals(typeof noColorResult, "string");
 });
 
-// ===== renderGlobalPanel tests =====
+// renderGlobalPanel tests
 
 Deno.test("renderGlobalPanel: renders null memory", () => {
   const result = renderGlobalPanel(null, defaultOptions);
@@ -277,7 +277,7 @@ Deno.test("renderGlobalPanel: renders statistics", () => {
   assertEquals(result.length > 0, true);
 });
 
-// ===== renderExecutionPanel tests =====
+// renderExecutionPanel tests
 
 Deno.test("renderExecutionPanel: renders null memory", () => {
   const result = renderExecutionPanel(null, defaultOptions);
@@ -340,7 +340,7 @@ Deno.test("renderExecutionPanel: renders with lessons learned", () => {
   assertEquals(result.length > 0, true);
 });
 
-// ===== renderExecutionListPanel tests =====
+// renderExecutionListPanel tests
 
 Deno.test("renderExecutionListPanel: renders empty list", () => {
   const result = renderExecutionListPanel([], 0, defaultOptions);
@@ -381,7 +381,7 @@ Deno.test("renderExecutionListPanel: handles many executions", () => {
   assertEquals(result.length > 0, true);
 });
 
-// ===== renderSearchPanel tests =====
+// renderSearchPanel tests
 
 Deno.test("renderSearchPanel: renders empty results", () => {
   const result = renderSearchPanel("test query", [], 0, defaultOptions);
@@ -445,7 +445,7 @@ Deno.test("renderSearchPanel: displays tags", () => {
   assertEquals(result.length > 0, true);
 });
 
-// ===== renderPendingPanel tests =====
+// renderPendingPanel tests
 
 Deno.test("renderPendingPanel: renders empty proposals", () => {
   const result = renderPendingPanel([], 0, defaultOptions);
@@ -544,7 +544,7 @@ Deno.test("renderPendingPanel: handles selection", () => {
   assertEquals(typeof result1, "string");
 });
 
-// ===== renderStatsPanel tests =====
+// renderStatsPanel tests
 
 Deno.test("renderStatsPanel: renders basic stats", () => {
   const stats = {
@@ -593,7 +593,7 @@ Deno.test("renderStatsPanel: handles color options", () => {
   assertEquals(typeof noColorResult, "string");
 });
 
-// ===== Edge cases and error handling =====
+// Edge cases and error handling
 
 Deno.test("renderProjectPanel: handles very long overview", () => {
   const memory = createProjectMemory({

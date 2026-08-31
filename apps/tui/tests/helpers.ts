@@ -213,9 +213,7 @@ export function createTuiWithRequests(arr: Array<Partial<IRequest>> = []): {
   return { service, view, tui };
 }
 
-// -------------------------
 // Log entry helpers (for MonitorView tests)
-// -------------------------
 let logIdCounter = 1;
 
 export function sampleLogEntry(overrides: ILogEntryOverrides = {}): ILogEntry {
@@ -308,9 +306,7 @@ export function sampleSingleMonitorLog(): ILogEntry[] {
   ]);
 }
 
-// -------------------------
 // Portal helpers
-// -------------------------
 export function samplePortal(overrides: IPortalInfoOverrides = {}): IPortalInfo {
   return {
     alias: overrides.alias ?? `Portal-${Math.floor(Math.random() * 1e6)}`,
@@ -438,9 +434,7 @@ export function createPortalTuiWithPortals(arr: IPortalInfoOverrides[] = []): {
   return { service, view, tui };
 }
 
-// -------------------------
 // Monitor helpers
-// -------------------------
 class MockDatabaseService implements IDatabaseService, IJournalService {
   constructor(private readonly _activityRecords: IActivityRecord[] = []) {}
   logActivity() {}
@@ -628,9 +622,7 @@ export function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverride
 
 export const createMonitorViewSession = createMonitorTuiSession;
 
-// -------------------------
 // Plan reviewer helpers
-// -------------------------
 export function createPlanReviewerSession(plans: IPlan[] = []): {
   mock: MinimalPlanServiceMock;
   session: PlanReviewerTuiSession;
@@ -640,9 +632,7 @@ export function createPlanReviewerSession(plans: IPlan[] = []): {
   return { mock, session };
 }
 
-// -------------------------
 // Tree view helpers
-// -------------------------
 export function createTestTree(): ITreeNode[] {
   return [
     {
@@ -714,9 +704,7 @@ export function createLargeTestTree(depth: number = 3, breadth: number = 5): ITr
   return createLevel(0, "node-");
 }
 
-// -------------------------
 // Key simulation helpers
-// -------------------------
 export async function simulateKeySequence(
   handler: (key: string) => void | Promise<void>,
   keys: string[],
@@ -734,9 +722,7 @@ export function typeString(text: string): string[] {
   return text.split("");
 }
 
-// -------------------------
 // Render assertion helpers
-// -------------------------
 export function getVisibleText(lines: string[]): string[] {
   // Strip ANSI codes for easier assertions
   // deno-lint-ignore no-control-regex
@@ -758,9 +744,7 @@ export function countLinesContaining(lines: string[], text: string): number {
   return visibleLines.filter((line) => line.includes(text)).length;
 }
 
-// -------------------------
 // Legacy request manager helpers
-// -------------------------
 export function createLegacyMockRequestService(): IRequestService {
   return {
     list: () => Promise.resolve([]),
@@ -862,9 +846,7 @@ export function createLegacyTuiSessionWithErrors(): InstanceType<typeof _LegacyR
   return new _LegacyRequestManagerTuiSession(requests, mockService as IRequestService);
 }
 
-// -------------------------
 // Dialog test helpers
-// -------------------------
 export function createMockDialogRenderOptions(width: number = 60, height: number = 20): {
   useColors: boolean;
   width: number;
@@ -877,9 +859,7 @@ export function createMockDialogRenderOptions(width: number = 60, height: number
   };
 }
 
-// -------------------------
 // Skills Manager helpers
-// -------------------------
 
 export enum SkillSource {
   CORE = "core",

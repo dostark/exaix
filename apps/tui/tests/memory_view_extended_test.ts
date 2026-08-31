@@ -21,7 +21,7 @@ import {
   testSessionRender,
 } from "./memory_view/memory_view_test_utils.ts";
 
-// ===== Tests =====
+// Tests
 
 Deno.test("MemoryViewTuiSession: getters return correct values", () => {
   const session = createTestSession();

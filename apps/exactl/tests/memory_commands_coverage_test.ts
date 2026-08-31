@@ -62,7 +62,7 @@ function buildTestProposalData(scope: MemoryScope = MemoryScope.GLOBAL, project?
   };
 }
 
-// ===== Search with Embeddings Tests =====
+// Search with Embeddings Tests
 
 Deno.test("MemoryCommands: search with useEmbeddings option", async () => {
   const { commands, memoryBank, config, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -147,7 +147,7 @@ Deno.test("MemoryCommands: search --format md outputs markdown", async () => {
   }
 });
 
-// ===== Project List Markdown Format Test =====
+// Project List Markdown Format Test
 
 Deno.test("MemoryCommands: project list --format md outputs markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -185,7 +185,7 @@ Deno.test("MemoryCommands: project show --format md outputs markdown", async () 
   }
 });
 
-// ===== Execution List Markdown Format Test =====
+// Execution List Markdown Format Test
 
 Deno.test("MemoryCommands: execution list --format md outputs markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -218,7 +218,7 @@ Deno.test("MemoryCommands: execution list --format md outputs markdown", async (
   }
 });
 
-// ===== Global Memory Tests =====
+// Global Memory Tests
 
 Deno.test("MemoryCommands: globalListLearnings --format md outputs markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -270,7 +270,7 @@ Deno.test("MemoryCommands: globalStats --format md outputs markdown", async () =
   }
 });
 
-// ===== Promote/Demote Error Handling Tests =====
+// Promote/Demote Error Handling Tests
 
 Deno.test("MemoryCommands: promote returns error for non-existent project", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -309,7 +309,7 @@ Deno.test("MemoryCommands: demote returns error for non-existent learning", asyn
   }
 });
 
-// ===== Pending Commands Error Handling =====
+// Pending Commands Error Handling
 
 Deno.test("MemoryCommands: pendingApprove returns error for non-existent proposal", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -333,7 +333,7 @@ Deno.test("MemoryCommands: pendingReject returns error for non-existent proposal
   }
 });
 
-// ===== Rebuild Index with Embeddings =====
+// Rebuild Index with Embeddings
 
 Deno.test("MemoryCommands: rebuildIndex with embeddings option", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -360,7 +360,7 @@ Deno.test("MemoryCommands: rebuildIndex with embeddings option", async () => {
   }
 });
 
-// ===== Edge Cases for Execution Show =====
+// Edge Cases for Execution Show
 
 Deno.test("MemoryCommands: execution show with error message", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -466,7 +466,7 @@ Deno.test("MemoryCommands: execution show --format md with full data", async () 
   }
 });
 
-// ===== Global ILearning Table Format =====
+// Global ILearning Table Format
 
 Deno.test("MemoryCommands: globalListLearnings table format with learnings", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -497,7 +497,7 @@ Deno.test("MemoryCommands: globalListLearnings table format with learnings", asy
   }
 });
 
-// ===== Global Stats with Data =====
+// Global Stats with Data
 
 Deno.test("MemoryCommands: globalStats with learnings by category and project", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -541,7 +541,7 @@ Deno.test("MemoryCommands: globalStats with learnings by category and project", 
   }
 });
 
-// ===== Pending Commands Success Paths =====
+// Pending Commands Success Paths
 
 Deno.test("MemoryCommands: pendingList and pendingShow return proposal details", async () => {
   const { commands, extractor, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
@@ -616,7 +616,7 @@ Deno.test("MemoryCommands: pendingApproveAll approves multiple proposals", async
   }
 });
 
-// ===== Skills Commands Coverage =====
+// Skills Commands Coverage
 
 Deno.test("MemoryCommands: skillList returns empty message when no skills exist", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();

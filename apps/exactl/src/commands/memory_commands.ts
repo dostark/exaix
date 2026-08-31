@@ -52,7 +52,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Memory List Command =====
+  // Memory List Command
 
   async list(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const summary = await this.getSummary();
@@ -119,7 +119,7 @@ export class MemoryCommands extends BaseCommand {
     return count;
   }
 
-  // ===== Memory Search Command =====
+  // Memory Search Command
 
   async search(
     query: string,
@@ -175,7 +175,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Project Commands =====
+  // Project Commands
 
   async projectList(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const projects: { name: string; patterns: number; decisions: number }[] = [];
@@ -227,7 +227,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Execution Commands =====
+  // Execution Commands
 
   async executionList(
     options?: Opt<{
@@ -273,7 +273,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Global Memory Commands =====
+  // Global Memory Commands
 
   async globalShow(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const globalMem = await this.memoryBank.getGlobalMemory();
@@ -358,7 +358,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Pending Proposals Commands =====
+  // Pending Proposals Commands
 
   async pendingList(eligible = false, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
     const proposals = eligible ? await this.autoApprovalService.listEligible() : await this.extractor.listPending();
@@ -461,7 +461,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  // ===== Rebuild Index Command =====
+  // Rebuild Index Command
 
   async rebuildIndex(
     options?: Opt<{ includeEmbeddings?: boolean }, Reason.OptionalInput>,
@@ -483,7 +483,7 @@ export class MemoryCommands extends BaseCommand {
     return messages.join("\n");
   }
 
-  // ===== Skills Commands =====
+  // Skills Commands
 
   async skillList(options: {
     category?: MemoryBankSource;

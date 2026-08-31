@@ -20,9 +20,7 @@ import { RequestStatus } from "@exaix/core/status";
 import { saveClarification } from "@exaix/quality-gate";
 import { createCliTestContext } from "../helpers/test_setup.ts";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 function makeSession(overrides: Partial<IClarificationSession> = {}): IClarificationSession {
   return {
@@ -104,9 +102,7 @@ async function setupClarifyTest(options: IClarifyTestSetupOptions): Promise<ICla
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test("[request clarify] displays pending questions", async () => {
   const requestId = "req-clarify-001";

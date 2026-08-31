@@ -16,9 +16,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { ExaPathDefaults, PortalAnalysisMode, SystemCommand } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Fixture helpers
-// ──────────────────────────────────────────────────────────────────────────────
 
 function makeKnowledge(alias = "my-portal"): IPortalKnowledge {
   return {
@@ -114,9 +112,7 @@ function makeKnowledgeConfig(): IPortalKnowledgeConfig {
   };
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Helper: write knowledge.json for a portal alias
-// ──────────────────────────────────────────────────────────────────────────────
 async function writeKnowledge(
   tempRoot: string,
   alias: string,
@@ -127,9 +123,7 @@ async function writeKnowledge(
   await Deno.writeTextFile(join(dir, "knowledge.json"), JSON.stringify(knowledge));
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Tests: `portal analyze`
-// ──────────────────────────────────────────────────────────────────────────────
 
 Deno.test("[portal analyze] triggers analysis and displays summary", async () => {
   const alias = "analyze-portal";
@@ -208,9 +202,7 @@ Deno.test("[portal analyze] force re-analyzes fresh knowledge", async () => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Tests: `portal knowledge`
-// ──────────────────────────────────────────────────────────────────────────────
 
 Deno.test("[portal knowledge] displays formatted knowledge", async () => {
   const { tempRoot, targetDir, context, cleanup } = await initPortalTest({ createTarget: true });
