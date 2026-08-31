@@ -16,35 +16,6 @@ import { createMCPRequest, createToolCallRequest, initMCPTest } from "@exaix/mcp
 import type { MCPServer } from "@exaix-team/mcp-server";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Step 1's second Action — the exact current `MCPServer` constructor contract (as of the
- * pre-migration state this fixture characterizes), quoted verbatim from
- * `packages-team/mcp-server/server.ts:68-79`'s `MCPServerOptions` interface (not exported —
- * only the `MCPServer` class itself is). This is what `apps/mcp-server/main.ts:198`'s call
- * site must continue to satisfy after Step 2's SDK migration, or what its one call-site
- * update must account for:
- *
- * ```typescript
- * interface MCPServerOptions {
- *   context: ICliApplicationContext;
- *   transport: McpTransportType;
- *   logger?: IEventLogger;
- *   permissions?: IPortalPermissionsChecker;
- *   resultValidator?: IToolResultValidator;
- *   validationReportContext?: IValidationReportContext;
- *   remediationPolicyResolver?: (toolName: string, policy: IToolResultRemediationPolicy) => IToolResultRemediationPolicy;
- * }
- * ```
- *
- * `new MCPServer(options: MCPServerOptions)` is the single public constructor (no
- * overloads). Public instance API preserved alongside it: `start(): void`, `stop(): void`,
- * `isRunning(): boolean`, `getTransport(): string`, `getServerName(): string`,
- * `getVersion(): string`, `handleRequest(request: JSONRPCRequest): Promise<JSONRPCResponse>`,
- * `classifyError(error: ErrorPayload)`, `getSecurityHeaders()`, `addSecurityHeaders()`,
- * `handleHTTPRequest(request: Request): Promise<MCPHttpResponse>`,
- * `startHTTPServer(port?: number): Promise<void>`.
- */
-
 /** Minimal JSON-RPC 2.0 response shape captured verbatim from `MCPServer.handleRequest`. */
 export interface IGoldenJsonRpcResponse {
   jsonrpc: string;
@@ -69,11 +40,8 @@ interface IRepresentativeCallSpec {
   args: Record<string, JSONValue>;
 }
 
-/**
- * One representative `tools/call` per registered live tool category (Step 1's Action).
- * READ runs before WRITE in this fixed order so `list_directory`'s capture reflects only
- * the seeded portal content, not `write_file`'s mutation.
- */
+/** READ runs before WRITE in this fixed order so `list_directory`'s capture reflects only
+ *  the seeded portal content, not `write_file`'s mutation. */
 export const REPRESENTATIVE_TOOL_CALLS: readonly IRepresentativeCallSpec[] = [
   { category: "READ", toolName: "list_directory", args: { portal: "TestPortal" } },
   {
@@ -95,10 +63,7 @@ export const GOLDEN_FIXTURE_SEED_FILES: Readonly<Record<string, string>> = {
   "README.md": "# Golden Fixture Test Portal\n",
 };
 
-/**
- * Drives the given live, unmigrated `MCPServer` through the exact request set Step 1's
- * Actions specify. Pure function of `server` — no I/O beyond the server's own handling.
- */
+/** Pure function of `server` — no I/O beyond the server's own handling. */
 export async function captureGoldenFixture(server: MCPServer): Promise<IGoldenFixtureCapture> {
   const toolsList = await server.handleRequest(createMCPRequest("tools/list", {})) as IGoldenJsonRpcResponse;
   const resourcesList = await server.handleRequest(

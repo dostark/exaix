@@ -32,10 +32,8 @@ function classifyPortalKnowledgeToolError(message: string): ToolErrorCode {
   return ToolErrorCode.EXECUTION_FAILED;
 }
 
-/**
- * Queries AST-derived code symbols (functions, classes, interfaces, consts, types, enums)
- * already extracted into a portal's persisted knowledge by `portal analyze`. Read-only.
- */
+/** Queries AST-derived symbols already extracted into a portal's persisted knowledge by
+ *  `portal analyze` — read-only, does not run extraction itself. */
 export class PortalSymbolsTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = PortalSymbolsToolArgsSchema.parse(args);

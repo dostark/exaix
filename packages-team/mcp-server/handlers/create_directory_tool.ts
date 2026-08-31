@@ -12,10 +12,7 @@ import { PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Requires `PortalOperation.WRITE`, blocks path traversal, and is idempotent (no-op if
- * the directory already exists).
- */
+/** Idempotent — no-op if the directory already exists. */
 export class CreateDirectoryTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = CreateDirectoryToolArgsSchema.parse(args) as {

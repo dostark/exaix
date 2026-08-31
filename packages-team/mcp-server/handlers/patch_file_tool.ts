@@ -12,10 +12,8 @@ import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Applies an exact string replacement within a portal file. Fails loudly (rather than
- * silently no-op) if the search string is not found or matches more than once.
- */
+/** Fails loudly (rather than silently no-op) if the search string is not found or
+ *  matches more than once. */
 export class PatchFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = PatchFileToolArgsSchema.parse(args) as {

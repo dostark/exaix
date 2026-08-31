@@ -13,21 +13,8 @@ import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * MoveFileTool — moves or renames a file within a portal.
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal on BOTH source and destination
- * - Both paths must stay within portal bounds
- * - Requires PortalOperation.WRITE permission
- * - Only moves regular files — refuses directories
- * - Creates destination parent directories if needed
- * - Logs move to Activity Journal
- *
- * Note: This is a filesystem rename. In git repositories, agents should follow
- * move_file with git_commit so git tracks it as a rename (preserving history).
- */
+/** A plain filesystem rename — in git repositories, agents should follow with
+ *  git_commit so git tracks it as a rename (preserving history). */
 export class MoveFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = MoveFileToolArgsSchema.parse(args) as {

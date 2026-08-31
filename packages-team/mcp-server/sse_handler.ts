@@ -62,10 +62,8 @@ export class SseHandler {
     return result.success;
   }
 
-  /**
-   * Handles an incoming HTTP request: 405 for POST to the stream endpoint, 404 for a
-   * non-matching route, 400 for an invalid traceId, 200 text/event-stream on success.
-   */
+  /** 405 for POST to the stream endpoint, 404 for a non-matching route, 400 for an
+   *  invalid traceId, 200 text/event-stream on success. */
   handleRequest(req: Request): Response {
     const url = new URL(req.url);
     const pathname = url.pathname;

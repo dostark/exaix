@@ -12,20 +12,8 @@ import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * DeleteFileTool — removes a single file from a portal.
- *
- * Security:
- * - Validates portal exists
- * - Prevents path traversal
- * - Requires PortalOperation.WRITE permission
- * - Only removes regular files — refuses directories (use delete_directory when implemented)
- * - Logs deletion to Activity Journal
- *
- * Note: File is deleted at the filesystem level. If the portal is a git repository,
- * the deletion is recoverable via git history after a subsequent git_commit.
- * Agents should follow delete_file with git_commit to register the deletion.
- */
+/** Only removes regular files — refuses directories (use delete_directory when
+ *  implemented). Agents should follow with git_commit to register the deletion. */
 export class DeleteFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = DeleteFileToolArgsSchema.parse(args) as {

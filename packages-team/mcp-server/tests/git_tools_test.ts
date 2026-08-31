@@ -24,17 +24,6 @@ interface IMCPResponseShape<TResult = any> {
   result?: TResult;
 }
 
-/**
- * Tests for Git Tool Implementations
- *
- * Success Criteria:
- * - git_create_branch creates feature branches with validation
- * - git_commit commits changes with proper message validation
- * - git_status queries repository status
- * - All tools validate portal and git repository existence
- * - All tools log to IActivity Journal
- */
-
 // ============================================================================
 // git_create_branch Tool Tests
 // ============================================================================
@@ -671,7 +660,7 @@ Deno.test("git_worktree: supports add/list/remove actions", async () => {
 });
 
 // ============================================================================
-// [security] Phase 156 — validateArgs guards through MCP surface
+// [security] validateArgs guards through MCP surface
 // ============================================================================
 
 Deno.test("[security] git_commit: validateArgs is called on stage and commit args (stub bypasses validation)", async () => {

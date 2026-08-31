@@ -74,8 +74,5 @@ Deno.test("QueryJournalTool: execution failure returns isError:true response, no
   assertEquals((response.content[0] as { type: "text"; text: string }).text, "Journal unavailable");
 });
 
-// "ToolErrorCode: enum values cover required error taxonomy" was removed here: it compared each
-// enum member to its own name, so it passed whether or not any handler emitted a code — and until
-// recently none reached anywhere, because the base class took the argument as `_code` and dropped
-// it. The taxonomy's real contract, that the classification is produced and observable in the
-// activity journal, is asserted in packages/mcp/tests/tool_error_code_journal_test.ts.
+// The taxonomy's real contract — a classification is produced and observable in the
+// activity journal — is asserted in packages/mcp/tests/tool_error_code_journal_test.ts.

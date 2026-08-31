@@ -22,14 +22,8 @@ import { createStubConfig, createStubDisplay, createStubGit, createStubProvider 
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { IApplicationContext } from "@exaix/core/types";
 
-/**
- * Creates a test server with portals
- *
- * When called, this helper uses `initTestDbService()` to create a fresh
- * temporary workspace and database for the test. It returns `{ server, db,
- * tempDir, cleanup }` so callers should call `cleanup()` in their finally
- * block to remove the workspace and close the database.
- */
+/** Callers must call the returned `cleanup()` in a finally block to remove the
+ *  workspace and close the database. */
 async function createTestServer(portals: Array<{ alias: string; files: Record<string, string> }>) {
   const { db, tempDir, cleanup } = await initTestDbService();
   const portalConfigs: Array<

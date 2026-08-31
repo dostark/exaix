@@ -31,10 +31,8 @@ async function git(args: string[], cwd: string): Promise<{ code: number; stdout:
   return { code, stdout: new TextDecoder().decode(stdout).trim() };
 }
 
-/**
- * Uses a BRANCH ref (not a raw SHA) so `--detach` is load-bearing: a SHA-based pin auto-detaches
- * regardless of the flag, while a branch ref differs between detached and attached checkout.
- */
+/** Uses a BRANCH ref (not a raw SHA) so `--detach` is load-bearing: a SHA-based pin
+ *  auto-detaches regardless of the flag. */
 async function seedCommit(portalPath: string): Promise<{ sha: string; branch: string }> {
   const branch = "pinned-base";
   await git(["add", "-A"], portalPath);
