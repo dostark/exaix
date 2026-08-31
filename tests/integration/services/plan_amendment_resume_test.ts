@@ -59,7 +59,7 @@ Deno.test("applyApprovedAmendment preserves original plan structure", async () =
     assertEquals(updated.includes("status: approved"), true);
     assertEquals(updated.includes("status: amendment_pending"), false);
 
-    // Verify step 1 unchanged
+    // Verify first step unchanged
     assertEquals(updated.includes("## Step 1: Setup Environment"), true);
     assertEquals(updated.includes("Initialize all required dependencies"), true);
   } finally {
@@ -94,7 +94,7 @@ Deno.test("applyApprovedAmendment handles step removal correctly", async () => {
 
     const updated = service.applyApprovedAmendment(planContent, patch);
 
-    // Verify step 2 removed
+    // Verify second step removed
     assertEquals(updated.includes("## Step 2: To Be Removed"), false);
     assertEquals(updated.includes("This step should be removed"), false);
 

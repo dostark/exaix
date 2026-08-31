@@ -40,7 +40,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       const fileExists = await exists(blueprintPath);
       assertEquals(fileExists, true, "Blueprint file should exist");
 
-      // Verify YAML frontmatter format (TOML→YAML migration completed in Step 2).
+      // Verify YAML frontmatter format.
       const content = await Deno.readTextFile(blueprintPath);
       assertStringIncludes(content, "---", "Should use YAML delimiters");
       assertStringIncludes(content, `identity_id: ${testAgentId}`);

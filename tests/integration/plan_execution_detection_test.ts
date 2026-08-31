@@ -54,10 +54,8 @@ Deno.test("Integration: Plan Execution Detection - approved plan detected", asyn
   const env = await createWatcherEnv();
 
   try {
-    // Step 1: Ensure Workspace/Active directory exists
     const activePath = await createActiveDir(env);
 
-    // Step 2: Create an approved plan file (simulating plan approval)
     const traceId = crypto.randomUUID();
     const requestId = `request-${traceId.slice(0, 8)}`;
     const planContent = `---
@@ -89,16 +87,13 @@ A working hello world function with tests.
 
     await waitForWatcher();
 
-    // Step 4: Verify plan file exists and is readable
     await assertFileExists(planPath, "Plan file should exist");
 
-    // Step 5: Verify plan content is correct
     const content = await Deno.readTextFile(planPath);
     assertStringIncludes(content, traceId);
     assertStringIncludes(content, MemoryStatus.APPROVED);
     assertStringIncludes(content, "Implement a hello world function");
 
-    // Step 6: Verify frontmatter can be parsed
     const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
     assertExists(yamlMatch, "Should have YAML frontmatter");
 
@@ -118,7 +113,6 @@ Deno.test("Integration: Plan Execution Detection - ignores non-plan files", asyn
   const env = await createWatcherEnv();
 
   try {
-    // Step 1: Create various files in Workspace/Active
     const activePath = await createActiveDir(env);
 
     // Create non-plan files
@@ -129,7 +123,6 @@ Deno.test("Integration: Plan Execution Detection - ignores non-plan files", asyn
       JSON.stringify({ test: true }),
     );
 
-    // Step 2: Create one valid plan file
     const traceId = crypto.randomUUID();
     const planPath = join(activePath, `request-${traceId.slice(0, 8)}_plan.md`);
     await Deno.writeTextFile(
@@ -145,7 +138,6 @@ status: approved
 
     await waitForWatcher();
 
-    // Step 4: Verify only plan file would be detected by pattern
     const files = [];
     for await (const entry of Deno.readDir(activePath)) {
       if (entry.isFile && entry.name.endsWith("_plan.md")) {
@@ -166,10 +158,8 @@ Deno.test("Integration: Plan Execution Detection - handles invalid plan graceful
   const env = await createWatcherEnv();
 
   try {
-    // Step 1: Create Workspace/Active directory
     const activePath = await createActiveDir(env);
 
-    // Step 2: Create plan with invalid YAML
     const planPath = join(activePath, "invalid_plan.md");
     await Deno.writeTextFile(
       planPath,
@@ -184,7 +174,6 @@ status: invalid
 
     await waitForWatcher();
 
-    // Step 4: Verify file exists (detection should not delete it)
     await assertFileExists(planPath, "Invalid plan file should still exist");
 
     console.log("✅ Integration test passed: Invalid plan handled gracefully");
@@ -197,10 +186,8 @@ Deno.test("Integration: Plan Execution Detection - handles missing trace_id", as
   const env = await createWatcherEnv();
 
   try {
-    // Step 1: Create Workspace/Active directory
     const activePath = await createActiveDir(env);
 
-    // Step 2: Create plan without trace_id
     const planPath = join(activePath, "no-trace_plan.md");
     await Deno.writeTextFile(
       planPath,
@@ -215,7 +202,6 @@ status: approved
 
     await waitForWatcher();
 
-    // Step 4: Verify file exists (should not be deleted)
     await assertFileExists(planPath, "Plan without trace_id should still exist");
 
     console.log("✅ Integration test passed: Missing trace_id handled gracefully");

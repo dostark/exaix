@@ -58,10 +58,9 @@ model: "mock:gpt-5.2-pro"
 ---\nYou are a helpful assistant.`,
       );
 
-      // Phase 142 Step 13 made a missing loader a hard wiring fault: `loadFlowOrFail` reports
-      // "Flow requests require a flowLoader" and returns null, so the runner is never reached.
-      // Before that, the processor fabricated `{ id } as IFlow` and this test passed while the
-      // real path was broken. Delegation cannot be exercised without a loader.
+      // A missing loader is a hard wiring fault: `loadFlowOrFail` reports "Flow requests
+      // require a flowLoader" and returns null, so the runner is never reached. Previously the
+      // processor fabricated `{ id } as IFlow` and this test passed while the real path was broken.
       const flowLoader: IFlowLoaderService = {
         loadFlow: (flowId: string) =>
           // Parsed through the real schema so the stub gains the same defaults (version,

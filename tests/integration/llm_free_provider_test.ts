@@ -22,10 +22,8 @@ const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
 Deno.test(
   { name: "LLM provider integration (manual) - end-to-end RequestProcessor", ignore: _enabled !== "1" },
   async (_t) => {
-    // Manual integration test - opt-in only
-    // Requires:
-    //  - EXA_TEST_ENABLE_PAID_LLM=1 (explicit opt-in)
-    //  - EXA_TEST_OPENAI_API_KEY set
+    // Manual integration test - opt-in only. Requires EXA_TEST_ENABLE_PAID_LLM=1 and
+    // EXA_TEST_OPENAI_API_KEY set.
     const enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
     const apiKey = Deno.env.get("EXA_TEST_OPENAI_API_KEY");
 

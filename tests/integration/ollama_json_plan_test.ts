@@ -100,7 +100,6 @@ Deno.test({
     const blueprint = createJSONPlanBlueprint();
     const request = createTestRequest();
 
-    // Step 1: Generate plan with LLM
     console.log("📝 Generating plan with Ollama...");
     const startTime = Date.now();
     const agentResult = await runner.run(blueprint, request, undefined);
@@ -115,7 +114,6 @@ Deno.test({
     assertExists(agentResult.content, "Should have content section");
     assert(agentResult.content.length > 0, "Content should not be empty");
 
-    // Step 2: Validate JSON with PlanAdapter
     console.log("\n✅ Validating JSON with PlanAdapter...");
     const adapter = new PlanAdapter();
 
@@ -147,7 +145,6 @@ Deno.test({
       assert(step.description.length >= 1, `Step ${step.step} should have description`);
     });
 
-    // Step 3: Convert to markdown with PlanAdapter
     console.log("\n📝 Converting to markdown...");
     const markdown = adapter.toMarkdown(plan);
     assertExists(markdown, "Should generate markdown");
@@ -155,7 +152,6 @@ Deno.test({
     assertStringIncludes(markdown, "##", "Markdown should include headers");
     assertStringIncludes(markdown, plan.subject, "Markdown should include plan subject");
 
-    // Step 4: Write plan with PlanWriter
     console.log("\n💾 Writing plan with PlanWriter...");
     const planDir = getWorkspacePlansDir(tempDir);
     await Deno.mkdir(planDir, { recursive: true });
@@ -182,7 +178,6 @@ Deno.test({
 
     console.log(`✅ Plan written to: ${writeResult.planPath}`);
 
-    // Step 5: Verify written plan file
     const planContent = await Deno.readTextFile(writeResult.planPath);
 
     // Checkfrontmatter

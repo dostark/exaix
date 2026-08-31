@@ -108,10 +108,9 @@ Deno.test("[integration/session_return] valid return resumes the parked gate", a
 });
 
 Deno.test("[integration/session_return] processing the same return.json twice is an idempotent no-op (no throw)", async () => {
-  // Regression: Deno.watchFs fires multiple write events for one return.json, so the
-  // SessionReturnWatcher calls processReturn more than once for the same trace. The first call
-  // resumes the wait state; the second must NOT throw `wait state is resumed, not pending` (which
-  // crashed the daemon before the reconciled event persisted). The second call is a benign no-op.
+  // Regression: Deno.watchFs fires multiple write events for one return.json, so processReturn
+  // runs twice for the same trace. The second call must NOT throw `wait state is resumed, not
+  // pending` (which used to crash the daemon) — it's a benign no-op.
   const rig = await makeRig();
   try {
     const brief = await briefFor(rig, "code_changes", ["Workspace/**"]);

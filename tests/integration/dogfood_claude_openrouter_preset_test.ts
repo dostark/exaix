@@ -46,10 +46,9 @@ Deno.test("[delegate_matrix] preset selects the OpenRouter realm via session_del
 Deno.test("[delegate_matrix] preset uses only real provider fields — no fictional provider.order (GAP-4)", async () => {
   const raw = await Deno.readTextFile(PRESET_PATH);
   const parsed = ConfigSchema.parse(parseToml(raw));
-  // SessionDelegateProviderSchema is {name, key_env, base_url} only. The parsed provider
-  // block must carry exactly those keys — no `order` / routing field (the unimplementable
-  // pin the pre-gap analysis removed). Asserting on the parsed object (not raw text) avoids
-  // false positives from explanatory comments that mention `provider.order`.
+  // SessionDelegateProviderSchema is {name, key_env, base_url} only. The parsed provider block
+  // must carry exactly those keys — no `order`/routing field. Asserting on the parsed object
+  // (not raw text) avoids false positives from explanatory comments that mention `provider.order`.
   const provider = parsed.session_delegate?.provider ?? {};
   assertEquals(
     Object.keys(provider).sort(),

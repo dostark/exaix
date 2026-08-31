@@ -28,11 +28,9 @@ interface IOrderedEvent {
   action_type: string;
 }
 
-/**
- * Read the daemon's journal in insertion order. The `id` column is a TEXT UUID, so order by
- * SQLite's implicit integer `rowid` (monotonic with insertion) — the timestamp column is
- * unreliable here (default datetime granularity collides for same-second boot events).
- */
+// Read the daemon's journal in insertion order. The `id` column is a TEXT UUID, so order by
+// SQLite's implicit integer `rowid` (monotonic with insertion) — the timestamp column is
+// unreliable here (default datetime granularity collides for same-second boot events).
 async function readJournalOrdered(configPath: string): Promise<IOrderedEvent[]> {
   const configService = new ConfigService(configPath);
   const db = new DatabaseService(configService.getAll());

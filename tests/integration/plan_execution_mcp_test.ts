@@ -242,7 +242,6 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     const traceId = crypto.randomUUID();
     const requestId = `request-${traceId.slice(0, 8)}`;
 
-    // Step 1: Create approved plan in Workspace/Active/
     const planPath = await createHappyPathPlan(activePath, {
       traceId,
       requestId,
@@ -254,7 +253,6 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
       ],
     });
 
-    // Step 2: Verify plan detection and parsing
     const planFile = await Deno.readTextFile(planPath);
     assert(planFile.includes(traceId), "Plan should contain trace_id");
 
@@ -264,8 +262,7 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     assertEquals(frontmatter.identity, "mock-agent");
     assertEquals(frontmatter.portal, TEST_PORTAL_NAME);
 
-    // Step 3: Verify review can be registered
-    // (In real execution, AgentOrchestrator would create branch and commit)
+    // In real execution, AgentOrchestrator would create branch and commit
     const reviewRegistry = createReviewRegistry(dbService);
 
     const reviewId = await registerReview(
@@ -280,7 +277,6 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
       ),
     );
 
-    // Step 4: Verify review was registered correctly
     const review = await reviewRegistry.get(reviewId);
     assertExists(review, "Review should exist");
     assert(review !== null, "Review should not be null");
@@ -290,7 +286,6 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     assertEquals(review!.created_by, "mock-agent");
     assertEquals(review!.files_changed, 1);
 
-    // Step 5: Verify IActivity Journal events
     await dbService.waitForFlush();
     const events = dbService.getActivitiesByTrace(traceId);
 

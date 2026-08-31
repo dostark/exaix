@@ -14,13 +14,9 @@ import { join } from "@std/path";
 import { resolveDogfoodNetFlag } from "../../scripts/dogfood_daemon.ts";
 import { DAEMON_DEFAULT_NET_HOSTS } from "@exaix/core/types";
 
-// Derived from the constant the resolver itself reads, NOT a second copy of the host list. What
-// these cases assert is the FALLBACK decision — omitted/malformed input must yield the default
-// rather than null, an empty grant, or an unchecked cast of the raw value. Which hosts belong in
-// that default is a separate contract, pinned against each provider package's own base-URL
-// constant in tests/daemon/net_allowlist_covers_providers_test.ts. Restating the hosts here made
-// the two drift: adding the Google and OpenRouter hosts to the constant broke these three tests
-// without any behaviour changing.
+// Derived from the constant the resolver itself reads, NOT a second copy of the host list —
+// restating the hosts here previously caused drift when hosts were added to the constant.
+// These cases assert the FALLBACK decision: malformed input must yield the default, not null.
 const DEFAULT_NET = `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`;
 
 async function withConfig(body: string, fn: (path: string) => void): Promise<void> {

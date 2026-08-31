@@ -200,7 +200,7 @@ Deno.test("applyApprovedAmendment correctly applies patch to plan content", asyn
     assertEquals(updated.includes("## Step 2: Process Data Enhanced"), true);
     assertEquals(updated.includes("## Step 3: Generate Report Enhanced"), true);
     assertEquals(updated.includes("Process with enhanced logic"), true);
-    // Original step 1 preserved
+    // Original first step preserved
     assertEquals(updated.includes("## Step 1: Initial Setup"), true);
   } finally {
     await cleanup();

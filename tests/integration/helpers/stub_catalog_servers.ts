@@ -52,11 +52,9 @@ function anthropicHandler(): (req: Request) => Response {
   };
 }
 
-/**
- * OpenAI GET /v1/models — thin list (id + created only, per adapter's overlay reliance).
- * `collidingModel`, if given, additionally serves a second entry sharing that model id —
- * used to seed a 2-route model_catalog (Reachability Ledger: route-auto-admit-live-proof).
- */
+// OpenAI GET /v1/models — thin list (id + created only, per adapter's overlay reliance).
+// `collidingModel`, if given, additionally serves a second entry sharing that model id —
+// used to seed a 2-route model_catalog.
 function openAiHandler(collidingModel: Opt<string, Reason.OptionalInput>): (req: Request) => Response {
   return (req: Request) => {
     if (new URL(req.url).pathname !== "/v1/models") return new Response("not found", { status: 404 });
@@ -146,14 +144,9 @@ function startOne(
   };
 }
 
-/**
- * Start all five provider stubs. `failProvider`, if given, forces that one provider's
- * server to return HTTP 500 for every request (adapter-failure isolation testing) —
- * the other four stubs behave normally. `options.collidingModel`, if given, makes the
- * OpenAI stub additionally serve a model sharing that id — seeding a 2-route
- * model_catalog once both providers are admitted (Reachability Ledger:
- * route-auto-admit-live-proof).
- */
+// Start all five provider stubs. `failProvider`, if given, forces that provider's server to
+// return HTTP 500 for every request (adapter-failure isolation); the rest behave normally.
+// `options.collidingModel`, if given, makes the OpenAI stub also serve a model sharing that id.
 export function startAllStubCatalogServers(
   failProvider?: Opt<string, Reason.OptionalInput>,
   options?: Opt<{ collidingModel?: string }, Reason.OptionalInput>,

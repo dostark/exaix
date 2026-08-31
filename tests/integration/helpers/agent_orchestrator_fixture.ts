@@ -27,10 +27,7 @@ export interface IAgentExecutorFixture {
   cleanup: () => Promise<void>;
 }
 
-/**
- * Creates a temp workspace with a git-initialised TestPortal, a test-agent
- * blueprint, and an AgentOrchestrator-ready config + service wiring.
- */
+/** Creates a temp workspace with a git-initialised TestPortal, a test-agent blueprint, and an AgentOrchestrator-ready config + service wiring. */
 export async function setupAgentExecutorFixture(): Promise<IAgentExecutorFixture> {
   const { db, tempDir, cleanup } = await initTestDbService();
 

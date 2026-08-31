@@ -37,10 +37,6 @@ function hasApiKey(envVar: string): boolean {
   return !!key && key.length > 0;
 }
 
-/**
- * Handle common API errors and skip test if needed
- * Returns true if test should be skipped
- */
 function handleApiError(
   error: Error,
   providerName: string,

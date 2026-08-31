@@ -23,17 +23,8 @@ import { readFixtureTextSync } from "@exaix/testing";
 Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async () => {
   const helper = await ToolRegistryTestHelper.create("mcp-real-exec");
 
-  // Use ToolRegistryTestHelper's config and env to setup portal
-  // Wait! ToolRegistryTestHelper doesn't have TestEnvironment.
-  // But we can use setupPortal if we import it or use a raw setup.
-  // Actually, ToolRegistryTestHelper already provides a temp directory.
-
   const portalPath = join(helper.tempDir, "portal-test");
   await Deno.mkdir(portalPath, { recursive: true });
-
-  // Initialize git repo in portal manually here since we are not using TestEnvironment
-  // OR we can refactor ToolRegistryTestHelper to use TestEnvironment?
-  // For now, let's just keep the localized setup but standardize it.
 
   const gitInit = new Deno.Command("git", {
     args: ["init", "-b", TEST_DEFAULT_BRANCH],

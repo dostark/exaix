@@ -22,13 +22,13 @@ import { hasJournalEvent } from "./helpers/config_daemon_test_helpers.ts";
 import { ensureConfigDb, insertOverride, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { bootRealDaemon, writeDaemonConfigWithMockAi } from "./helpers/daemon_config.ts";
 
-// The migrated key the cutover resolves through the adapter (Phase 137 Step 10).
+// The migrated key the cutover resolves through the adapter.
 const CUTOVER_KEY = "ai.timeout_ms";
 // A non-default override value so the assertion proves a DB read, not a registry default.
 const OVERRIDE_VALUE = 45000;
-// The boot event that carries the adapter-resolved value + provenance (Step 11).
+// The boot event that carries the adapter-resolved value + provenance.
 const CUTOVER_EVENT = "config.cutover.resolved";
-// The watcher event emitted when an external override is hot-applied (Step 13).
+// The watcher event emitted when an external override is hot-applied.
 const WATCHER_CHANGE_EVENT = "config.db_watcher.change_detected";
 // Short poll interval (ms) so the watcher fires within a test-length boot.
 const TEST_POLL_INTERVAL_MS = "300";

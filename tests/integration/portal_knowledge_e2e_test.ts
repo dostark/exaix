@@ -46,20 +46,14 @@ function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKno
   };
 }
 
-/**
- * A no-op IDocCommandRunner that returns an empty symbol list,
- * avoiding real `deno doc` calls in tests.
- */
+/** A no-op IDocCommandRunner that returns an empty symbol list, avoiding real `deno doc` calls in tests. */
 const NULL_RUNNER: IDocCommandRunner = {
   run(_entrypoint: string, _portalPath: string): Promise<string | null> {
     return Promise.resolve("[]");
   },
 };
 
-/**
- * Create a minimal mock portal directory with TypeScript files
- * so PortalKnowledgeService has something to analyze.
- */
+/** Create a minimal mock portal directory with TypeScript files so PortalKnowledgeService has something to analyze. */
 async function createMockPortalDir(baseDir: string): Promise<string> {
   const portalDir = join(baseDir, "mock-portal");
   await ensureDir(join(portalDir, "src", "services"));
@@ -356,7 +350,7 @@ Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () =>
   }
 });
 
-// Test 7: standard mode populates new strategy fields (phase-105 GAP-7)
+// Test 7: standard mode populates new strategy fields
 
 Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields", async () => {
   const { cleanup } = await initTestDbService();

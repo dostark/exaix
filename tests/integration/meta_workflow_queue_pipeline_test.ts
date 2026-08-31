@@ -66,11 +66,9 @@ function parseRequestFrontmatter(filePath: string): IRequestFrontmatter {
   return parseYaml(match[1]) as IRequestFrontmatter;
 }
 
-/**
- * `plan_to_requests.ts` emits `depends_on` into the request BODY (not the frontmatter) —
- * see the `bodyLines` assembly in that script. Reading it off the frontmatter yields
- * `undefined` for every request and silently asserts nothing.
- */
+// `plan_to_requests.ts` emits `depends_on` into the request BODY (not the frontmatter) —
+// see the `bodyLines` assembly in that script. Reading it off the frontmatter yields
+// `undefined` for every request and silently asserts nothing.
 function parseDependsOn(filePath: string): number[] {
   const content = Deno.readTextFileSync(filePath);
   const match = content.match(/^depends_on:\s*(\[[^\]]*\])\s*$/m);

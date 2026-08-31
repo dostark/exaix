@@ -92,10 +92,9 @@ Deno.test({
           `expected "not running" in status output: ${statusAfterResult.stdout}`,
         );
       } finally {
-        // Guarantee the daemon is stopped even if an assertion above throws between
-        // start and the scripted stop — otherwise a failing assertion leaks the
-        // daemon process past the temp sandbox removal below. Idempotent: a no-op
-        // if `stop` already succeeded in the try block.
+        // Guarantee the daemon is stopped even if an assertion above throws before the
+        // scripted stop runs — otherwise the process leaks past the temp sandbox removal
+        // below. Idempotent: a no-op if `stop` already succeeded in the try block.
         await runScript(["stop"], env).catch(() => {});
       }
     } finally {

@@ -113,10 +113,9 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
       scorer: mockScorer,
     },
     async ({ config, root }) => {
-      // `paths.memoryExecution` ships root-relative ("Memory/Execution") but is also accepted
-      // memory-relative ("Execution"); getPlanAmendmentsDir applies the same disambiguation
-      // production uses, so derive from it rather than re-joining the segments here and
-      // double-prefixing "Memory/".
+      // `paths.memoryExecution` ships root-relative but is also accepted memory-relative;
+      // getPlanAmendmentsDir applies the same disambiguation production uses, so derive from
+      // it rather than re-joining the segments here and double-prefixing "Memory/".
       const memoryPath = `${root}/${config.paths.memory}`;
       const amendmentsPath = getPlanAmendmentsDir(root, config, traceId);
       const tracePath = dirname(amendmentsPath);

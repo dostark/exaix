@@ -14,17 +14,7 @@ import { dirname, join } from "@std/path";
 /** Repo root, from `tests/integration/helpers/` — the source of `migrations/` and `deno.json`. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
-/**
- * Migrate a daemon test workspace's `.exa/journal.db` by running `scripts/setup_db.ts`
- * with the workspace as CWD — the same step the scenario framework and the production
- * deploy pipeline run BEFORE any daemon starts.
- *
- * `DatabaseService` auto-creates only the `activity` table in test mode, so an unmigrated
- * workspace is missing every other production table. A Solo daemon never touches them and
- * boots anyway; a Team daemon seeds the curated benchmark floor at startup and dies with
- * `no such table: model_benchmark`, taking the whole boot down before `watcher.started`.
- * Idempotent (`schema_migrations` tracks applied files), so repeated boots are safe.
- */
+/** Migrates a workspace's `.exa/journal.db` via `scripts/setup_db.ts` before daemon boot — unmigrated, a Team daemon dies at startup with `no such table: model_benchmark`. Idempotent. */
 export async function migrateDaemonWorkspace(root: string): Promise<void> {
   const result = await new Deno.Command("deno", {
     args: ["run", "-A", "--config", join(REPO_ROOT, "deno.json"), join(REPO_ROOT, "scripts", "setup_db.ts")],
@@ -50,14 +40,7 @@ export function writeDaemonConfig(
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-/**
- * `workspace` portal's target_path must be a directory SEPARATE from the daemon's
- * own root — the git audit runs `git status` at the portal path, and if it aliases
- * the daemon root, the daemon's own runtime writes (.exa/*.db, logs/, Memory/Skills/
- * index.json, ...) all show up as "changed" and are flagged as unauthorized, since
- * they are never in the plan step's files_changed. `ensureRepository()` git-inits
- * the portal directory itself, so it only needs to exist on disk first.
- */
+/** Portal dir must be separate from the daemon root, or the git audit flags the daemon's own runtime writes (.exa/*.db, logs/, ...) as unauthorized changes. */
 export function writePortalDir(root: string): string {
   const portalDir = join(root, "portal-repo");
   Deno.mkdirSync(portalDir, { recursive: true });
@@ -79,11 +62,7 @@ export function daemonConfigSections(root: string, allowNetLine = "allow_net = [
   ];
 }
 
-/**
- * Write a bootstrap TOML config with a mock AI provider, used by daemon-boot
- * integration tests that spawn `apps/daemon/main.ts` and only need a valid
- * bootstrap plus a non-networked provider.
- */
+/** Bootstrap TOML config with a mock (non-networked) AI provider, for daemon-boot tests that don't need real network calls. */
 export function writeDaemonConfigWithMockAi(configPath: string, root: string): void {
   const cfg = [
     ...daemonConfigSections(root, ""),
@@ -99,11 +78,7 @@ export function writeDaemonConfigWithMockAi(configPath: string, root: string): v
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-/**
- * Read a daemon.pid file and assert it holds a live, numeric PID. Used by
- * leak-guard regression tests that must capture the PID before deliberately
- * triggering a failure, so they can later confirm teardown actually killed it.
- */
+/** Reads a daemon.pid and asserts it's a live PID — used by leak-guard tests to capture the PID before a deliberate failure, to later confirm teardown killed it. */
 export async function readDaemonPid(pidPath: string): Promise<number> {
   const pid = parseInt((await Deno.readTextFile(pidPath)).trim(), 10);
   if (Number.isNaN(pid)) {
@@ -112,11 +87,7 @@ export async function readDaemonPid(pidPath: string): Promise<number> {
   return pid;
 }
 
-/**
- * Assert that a previously-captured daemon PID is no longer alive. `Deno.kill`
- * with SIGCONT is a liveness probe (delivering a harmless signal): it throws
- * `NotFound` for a dead PID and succeeds silently for a live one.
- */
+/** Asserts a previously-captured PID is dead. `Deno.kill(pid, "SIGCONT")` is a harmless liveness probe — throws `NotFound` if dead, succeeds silently if alive. */
 export function assertDaemonPidIsDead(pid: number): void {
   let stillAlive = true;
   try {
@@ -133,16 +104,7 @@ export function assertDaemonPidIsDead(pid: number): void {
   }
 }
 
-/**
- * Boot the real daemon (`apps/daemon/main.ts`) as a subprocess, let it settle for
- * `settleMs`, then SIGTERM it. `extraEnv` merges over the base test env. If provided,
- * `midFlight` runs after the daemon has settled and before the post-inject wait — used
- * to write an external Config DB override the running daemon must pick up.
- *
- * Migrates the workspace first (see {@link migrateDaemonWorkspace}) so the daemon finds the
- * production schema, exactly as it does in a deployed workspace. Every caller writes its TOML
- * at the workspace root, so the root is `configPath`'s directory.
- */
+/** Boots the real daemon, settles, then SIGTERM's it; migrates the workspace first (see {@link migrateDaemonWorkspace}). `midFlight`, if given, runs after settle to inject an external Config DB override the daemon must pick up. */
 export async function bootRealDaemon(
   configPath: string,
   settleMs: number,

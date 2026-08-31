@@ -292,14 +292,14 @@ Deno.test("[plan-to-requests] metadata line carries portal and target_branch fro
     const { stderr } = await runGenerator([fixturePath, "--out-dir", tmpDir]);
     assertEquals(stderr, "");
 
-    // Step 1: explicit portal/target_branch in manifest
+    // First fixture step: explicit portal/target_branch in manifest
     const step1 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-step-1.md"));
     const m1 = step1.match(DOGFOOD_META_RE);
     assertExists(m1, "step 1 must have metadata line");
     assertEquals(m1[1], "exaix-self", "step 1 portal from manifest");
     assertEquals(m1[2], "feat/phase-nn-step-1", "step 1 target_branch from manifest");
 
-    // Step 3: no portal/target_branch in manifest → defaults
+    // Third fixture step: no portal/target_branch in manifest → defaults
     const step3 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-step-3.md"));
     const m3 = step3.match(DOGFOOD_META_RE);
     assertExists(m3, "step 3 must have metadata line");
@@ -352,8 +352,6 @@ Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and ta
   }
 });
 
-// Phase 173 Step 1 — Why This Step Exists block
-
 const CONTEXT_FIXTURE_PATH = join(FIXTURES_DIR, "phase-nn-fixture-with-context.md");
 
 Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Exists with Executive Summary + only shared bullets", async () => {
@@ -363,7 +361,7 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
     assertEquals(stderr, "");
     assertMatch(stdout, /Wrote 2 request file/);
 
-    // Step 1 shares the scripts/plan_to_requests.ts token with a constraint bullet.
+    // The first generated step shares the scripts/plan_to_requests.ts token with a constraint bullet.
     const step1 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-1.md"));
     assertEquals(step1.includes("## Why This Step Exists"), true);
     assertEquals(
@@ -381,7 +379,7 @@ Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Ex
     assertEquals(step1.includes("Never expose private submodule trees"), false, "non-matching bullet filtered");
     assertEquals(step1.includes("### Relevant Design Decisions"), false, "no-overlap sub-block omitted");
 
-    // Step 2 overlaps nothing: still gets the summary (always-present why), no bullet lists.
+    // The second generated step overlaps nothing: still gets the summary (always-present why), no bullet lists.
     const step2 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-2.md"));
     assertEquals(step2.includes("## Why This Step Exists"), true);
     assertEquals(step2.includes("**The Goal.**"), true);
@@ -450,8 +448,6 @@ Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far
     await Deno.remove(tmpDir, { recursive: true });
   }
 });
-
-// Phase 173 Step 2 — PlanContext copy + pointer
 
 const PLAN_CONTEXT_POINTER_RE =
   /> Full phase context: `\.exa\x2fPlanContext\x2f([^`]+)\.md` \(read this if the context above isn't enough\)\./;

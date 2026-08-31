@@ -74,15 +74,9 @@ function writeMockDaemonConfig(configPath: string, root: string): void {
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-/**
- * RateLimitedProvider.generate (packages/ai/src/rate_limited_provider.ts) calls
- * CostTracker.trackGeneration with NO traceId argument on the standard identity-request
- * path — every provider_costs row it inserts has trace_id = NULL. Filtering by traceId
- * here would silently match zero rows and return `undefined`, making both this test and
- * the sibling registry_computed test pass vacuously regardless of the real cost_source.
- * Read the single most-recent row instead — safe because each test uses its own fresh
- * tempDir/daemon and submits exactly one request.
- */
+// RateLimitedProvider.generate never passes traceId to CostTracker.trackGeneration on this
+// path, so every provider_costs row has trace_id = NULL; filtering by traceId would match
+// nothing. Read the latest row instead — safe since each test uses its own fresh tempDir/daemon.
 async function readCostSource(configPath: string): Promise<string | null | undefined> {
   const configService = new ConfigService(configPath);
   const db = new DatabaseService(configService.getAll());
@@ -121,16 +115,9 @@ function writeTeamDaemonConfig(configPath: string, root: string): void {
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-/**
- * Seed a model_pricing row directly (no network fetch) — mirrors
- * model_route_selection_test.ts's seedRoute helper, against the file-based sqlite DB a
- * real daemon subprocess reads. ("mock", "mock-model") matches exactly what
- * MockLLMProvider always reports (mock_llm_provider.ts) and what
- * config.agents.default_model resolves to on the standard identity-request path — so
- * ModelRegistryService.getModelPricing's parameterized provider/model lookup (no
- * provider-type filtering) finds this row for a real request without needing a
- * non-mock provider identity.
- */
+// Seeds model_pricing directly (no network fetch); mirrors model_route_selection_test.ts's
+// seedRoute helper. "mock"/"mock-model" must match MockLLMProvider's reported identity and
+// config.agents.default_model exactly, since the pricing lookup keys on provider+model.
 async function seedMockPricing(configPath: string): Promise<void> {
   const configService = new ConfigService(configPath);
   const db = new DatabaseService(configService.getAll());

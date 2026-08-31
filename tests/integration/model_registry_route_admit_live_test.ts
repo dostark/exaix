@@ -46,16 +46,9 @@ const TWO_ROUTE_REQUEST_ID = "step135-ledger-2route-req";
 const EXPLICIT_TRACE_ID = "33333333-3333-4333-8333-333333333333";
 const EXPLICIT_REQUEST_ID = "step135-ledger-explicit-req";
 
-/**
- * NO explicit model, just model_size: M — this is required to reach ModelResolver's
- * scored resolveOnce path (NOT tryResolveCurated, which — with no model_presets.M.candidates
- * configured — returns null and falls through). resolveOnce's model_registry.getModelsByCapability
- * lookup replaces the scored winner's default model string with whatever catalog row actually
- * matches that provider (model_resolver.ts:398-412) — so when the winning provider is
- * "anthropic" or "openai", the resolved model becomes the REAL catalog entry
- * "claude-stub-curated" (both providers carry a row for it), not a hardcoded per-provider
- * default. Only THEN does applyRouteSubStep's routesFor("claude-stub-curated") find 2 rows.
- */
+// NO explicit model, just model_size: M — forces ModelResolver's scored resolveOnce path
+// (not tryResolveCurated, which returns null with no model_presets.M.candidates configured).
+// resolveOnce's getModelsByCapability lookup swaps in the real catalog entry so routesFor finds 2 rows.
 function writeTwoRouteIdentity(root: string): void {
   const dir = join(root, "Blueprints", "Identities");
   Deno.mkdirSync(dir, { recursive: true });
@@ -126,19 +119,9 @@ function writeStructuredPlan(
   Deno.writeTextFileSync(join(dir, fileName), content);
 }
 
-/**
- * Team config: adapter stubs, refresh-on-start, a `workspace` portal. `keepNativeWhole`
- * controls the admission bound: the 2-route case needs it TRUE (default) so the
- * scheduled refresh admits both providers' native entries for the colliding model id;
- * the explicit-unadmit case needs it FALSE so the scheduled refresh does NOT pre-admit
- * `claude-stub-explicit-use`, leaving it genuinely unadmitted until the explicit plan
- * step's live auto-admit path admits it. `withModelSizePreset`, if true, writes a
- * capability-only `[model_presets.M]` block (no `candidates`) — required by the 2-route
- * case so `tryResolveCurated` (which does NOT call `applyRouteSubStep`) returns null,
- * falling through to the scored `resolveOnce` path, which DOES call `applyRouteSubStep`
- * and replaces the winning provider's default model string with the real catalog entry
- * via `model_registry.getModelsByCapability`.
- */
+// Team config: adapter stubs, refresh-on-start, a `workspace` portal. `keepNativeWhole` TRUE
+// (2-route case) pre-admits both providers' colliding-model entries; FALSE (explicit-unadmit
+// case) leaves it unadmitted until live auto-admit. `withModelSizePreset` forces the scored resolveOnce path.
 function writeTeamConfig(
   configPath: string,
   root: string,

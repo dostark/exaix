@@ -18,12 +18,9 @@ interface IUsagePayload {
   usage?: { tokens?: number; cost_usd_estimate?: number };
 }
 
-/**
- * Runs a single-step AgentOrchestrator execution through a LEGACY strategy whose
- * `execute()` result is supplied by the caller, then returns the journaled
- * `agent.execution_completed` usage payload. Shared by every cost-logging case
- * below — only the strategy's reported result and the resulting assertion differ.
- */
+// Runs a single-step AgentOrchestrator execution through a LEGACY strategy whose execute()
+// result is supplied by the caller, then returns the journaled agent.execution_completed
+// usage payload. Shared by every cost-logging case below.
 async function runCostLoggingStep(
   requestId: string,
   strategyResult: IChangesetResult,

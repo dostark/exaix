@@ -34,11 +34,9 @@ Deno.test("[dogfood-e2e] dogfood-developer identity loads through IBlueprintLoad
 
   assertExists(blueprint, "dogfood-developer must load");
   assertEquals(blueprint.identityId, "dogfood-developer");
-  // This test covers the GENERATOR flow, so all it needs from the identity is that it loads
-  // and carries the skill that flow depends on. It used to assert `skills.length === 8`,
-  // which broke the moment the list was legitimately curated (Phase 142 Step 17) while
-  // telling a reader nothing about which skills were expected or why. Which defaults the
-  // identity should carry is `dogfood_identity_test.ts`'s question, not this test's.
+  // This test covers the GENERATOR flow, so it only needs the identity to load and carry the
+  // skill that flow depends on. It used to assert `skills.length === 8`, which broke when the
+  // list was legitimately curated and told a reader nothing; skill defaults are `dogfood_identity_test.ts`'s concern.
   const skills = blueprint.frontmatter.default_skills ?? [];
   assertEquals(skills.includes("tdd-methodology"), true, "the generator flow assumes TDD guidance is loaded");
 });
@@ -124,7 +122,7 @@ Deno.test("[dogfood-e2e] plan_to_requests generates valid files from Phase 120 p
         assertEquals(result.data.priority >= 0 && result.data.priority <= 10, true);
       }
 
-      // Assert dogfood metadata line (GAP-13)
+      // Assert dogfood metadata line
       const metaMatch = content.match(DOGFOOD_META_RE);
       assertExists(metaMatch, `${fileName} must have dogfood metadata line`);
       assertEquals(typeof metaMatch[1], "string", `${fileName} portal must be a string`);

@@ -17,10 +17,9 @@ Deno.test("[Team] PortalExtractorsModule registers Rust/Go/Java extractors", () 
 
   module.registerSymbolExtractors(registry as ISeamRegistryPlaceholder);
 
-  // Verify each extractor resolves to a real instance (not EMPTY_SYMBOL_EXTRACTOR).
-  // The no-op returns [] for any language; registered extractors return [] only for
-  // non-matching primaryLanguage. We verify by calling with a matching language and
-  // asserting a non-empty extraction — proving the registered extractor is live.
+  // Verify each extractor resolves to a real instance (not EMPTY_SYMBOL_EXTRACTOR) by calling
+  // it with a matching language and asserting a non-empty extraction — the no-op returns []
+  // for any language, so a non-empty result proves the registered extractor is live.
   const rust = registry.getForLanguage("rust");
   assertEquals(
     rust.constructor.name,

@@ -22,7 +22,7 @@ Deno.test("[gap2] registerTeamModelRegistry: composer selects the live service, 
   try {
     db.instance.exec(REGISTRY_TABLES_SQL);
     const composer = new TeamComposer();
-    // Registration closes over db/config/logger/floor (GAP-3); healthChecker arrives via deps.
+    // Registration closes over db/config/logger/floor; healthChecker arrives via deps.
     registerTeamModelRegistry(composer, {
       db,
       config,
@@ -36,7 +36,7 @@ Deno.test("[gap2] registerTeamModelRegistry: composer selects the live service, 
       providerRegistry: {},
       healthChecker: HEALTHY,
     });
-    // The selected registry is the Team live service, NOT the Solo floor (GAP-2 ordering).
+    // The selected registry is the Team live service, NOT the Solo floor.
     assertEquals(selected instanceof ModelRegistryService, true);
     assertEquals(selected instanceof DefaultModelRegistry, false);
   } finally {

@@ -26,28 +26,14 @@ import { migrateDaemonWorkspace, writeDaemonConfig as writeConfig } from "./help
 
 /** Poll cadence while waiting for the booted daemon to satisfy a condition. */
 const BOOT_POLL_INTERVAL_MS = 500;
-/**
- * Upper bound on the boot+recover+flush wait. The poll exits early the moment the
- * condition holds, so a high ceiling only ever matters on a cold/slow CI runner —
- * it never slows a warm machine.
- */
+/** Upper bound on the boot+recover+flush wait; only matters on a cold/slow CI runner since the poll exits early. */
 const BOOT_RECOVER_CEILING_MS = 30_000;
 
 function writeDaemonConfig(configPath: string, root: string): void {
   writeConfig(configPath, root, "");
 }
 
-/** Boot the real daemon, wait for it to settle, then stop it. Returns once stopped. */
-/**
- * Boot the real daemon subprocess, then wait until `until()` reports success
- * (polling every {@link BOOT_POLL_INTERVAL_MS}) OR the `ceilingMs` deadline
- * elapses — whichever comes first — before sending SIGTERM. Condition-polling
- * (rather than a single fixed sleep) removes the cold-CI race: on a warm machine
- * the daemon is torn down as soon as the recovery event lands (~seconds), while a
- * slow CI runner is given the full ceiling to compile+boot+flush the batched
- * `crash_recovered` write. `until()` defaults to "always true" so callers that
- * only need the daemon to run for `ceilingMs` keep the old fixed-settle behaviour.
- */
+/** Boots the daemon and polls `until()` (or just waits `ceilingMs`) before SIGTERM — polling avoids the cold-CI race a fixed sleep would hit. */
 async function bootDaemonOnce(
   configPath: string,
   ceilingMs: number,
@@ -78,12 +64,9 @@ async function bootDaemonOnce(
 
 Deno.test({
   name: "[crash_recovery_e2e] real launched event without return → crash_recovered on restart, with re-queued request",
-  // Skipped on CI: this e2e boots a real daemon subprocess and asserts the batched
-  // `session.delegate.crash_recovered` journal event is flushed before the daemon is
-  // SIGTERM'd. On cold CI runners the flush races the teardown, so the event can be
-  // missing even though recovery succeeded (the re-queued request file is written).
-  // The test passes deterministically on a warm local machine; gate it out of CI until
-  // the boot helper waits on the journal event (not just the request file) before stop.
+  // Skipped on CI: the batched crash_recovered journal event can lose the race against
+  // SIGTERM teardown on a cold runner, even though recovery already succeeded. Re-enable
+  // once the boot helper waits on the journal event (not just the request file) before stopping.
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -100,11 +83,9 @@ Deno.test({
       // production schema, not just the `activity` table (see migrateDaemonWorkspace).
       await migrateDaemonWorkspace(tempDir);
 
-      // Seed a real launched event into the daemon's own file-backed journal —
-      // the same marker apps/daemon/main.ts emits (Step 4a) before spawning the
-      // delegate, with NO terminal event (simulating a crash before return.json).
-      // initActivityTableSchema guarantees the `activity` table exists on the
-      // fresh journal file the daemon will later open.
+      // Seed a real launched event (the marker apps/daemon/main.ts emits before spawning
+      // the delegate) with NO terminal event, simulating a crash before return.json.
+      // initActivityTableSchema ensures the activity table exists on this fresh journal file.
       {
         const configService = new ConfigService(configPath);
         const db = new DatabaseService(configService.getAll());
@@ -149,20 +130,12 @@ Deno.test({
         }
       });
 
-      // Poll for the RE-QUEUED REQUEST FILE (a filesystem side effect written by
-      // recoverOrphanedDelegations early in daemon startup before EventLogger
-      // flushes its batched crash_recovered write). This decouples "recovery
-      // happened" from "journal flush completed" — the file appears as soon as
-      // the recovery write is issued, while the journal event may lag behind
-      // EventLogger's internal batching. Polling the file is faster and avoids
-      // the flush-vs-read race that made the test flaky on cold CI runners.
+      // Poll for the re-queued request file: recoverOrphanedDelegations writes it
+      // before EventLogger's batched crash_recovered event is flushed, so polling
+      // the file avoids the flush-vs-read race that made this flaky on cold CI.
       const requestAppeared = (): Promise<boolean> => exists(requestPath);
 
       await t.step("booting a real daemon recovers the orphan", async () => {
-        // Poll for the re-queued request file. Once it exists, the daemon has
-        // run recoverOrphanedDelegations (early startup). A fixed sleep raced
-        // cold CI (slow deno cache); condition-polling exits early on a warm
-        // machine and gives a slow runner up to BOOT_RECOVER_CEILING_MS.
         await bootDaemonOnce(configPath, BOOT_RECOVER_CEILING_MS, requestAppeared);
       });
 

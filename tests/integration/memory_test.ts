@@ -39,7 +39,6 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
     const extractor = new MemoryExtractorService(config, db, memoryBank);
     const _embedding = new MemoryEmbeddingService(config);
 
-    // Step 1: Create project memory
     const projectMem: IProjectMemory = {
       portal: "integration-test-portal",
       overview: "Integration test project",
@@ -49,7 +48,6 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
     };
     await memoryBank.createProjectMemory(projectMem);
 
-    // Step 2: Simulate execution completion
     const execution: IExecutionMemory = {
       trace_id: "dddddddd-4444-4000-8000-000000000001",
       request_id: "REQ-INT-001",
@@ -70,28 +68,22 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
     };
     await memoryBank.createExecutionRecord(execution);
 
-    // Step 3: Extract learnings using analyzeExecution
     const extractedLearnings = extractor.analyzeExecution(execution);
     assertGreaterOrEqual(extractedLearnings.length, 1);
 
-    // Step 4: Create proposal from learning
     const proposalId = await extractor.createProposal(extractedLearnings[0], execution, "test-identity");
     assertExists(proposalId);
 
-    // Step 5: Verify pending proposal exists
     const pending = await extractor.listPending();
     assertGreaterOrEqual(pending.length, 1);
 
-    // Step 6: Approve the proposal
     await extractor.approvePending(proposalId);
 
-    // Step 7: Verify learning was merged as pattern to project (scope: project)
     // When scope is MemoryScope.PROJECT, approval adds as pattern, not global learning
     const updatedProjectMem = await memoryBank.getProjectMemory("integration-test-portal");
     assertExists(updatedProjectMem);
     assertGreaterOrEqual(updatedProjectMem.patterns.length, 1);
 
-    // Step 8: Search for the pattern
     const searchResults = await memoryBank.searchByKeyword("try-catch");
     assertGreaterOrEqual(searchResults.length, 1);
   } finally {
@@ -321,11 +313,11 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
     context.embeddings = new MemoryEmbeddingAdapter(embedding);
     const commands = new MemoryCommands(context);
 
-    // Step 1: List (should be empty or minimal)
+    // List (should be empty or minimal)
     const listResult = await commands.list(UIOutputFormat.TABLE);
     assertExists(listResult);
 
-    // Step 2: Create project memory via service (simulating real usage)
+    // Create project memory via service (simulating real usage)
     await memoryBank.createProjectMemory({
       portal: "cli-test-portal",
       overview: "CLI integration test project",
@@ -341,19 +333,15 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
       references: [],
     });
 
-    // Step 3: List projects
     const projectListResult = await commands.projectList(UIOutputFormat.TABLE);
     assertStringIncludes(projectListResult, "cli-test-portal");
 
-    // Step 4: Show project
     const projectShowResult = await commands.projectShow("cli-test-portal", UIOutputFormat.TABLE);
     assertStringIncludes(projectShowResult, "Factory IPattern");
 
-    // Step 5: Search
     const searchResult = await commands.search("factory", { format: UIOutputFormat.TABLE });
     assertStringIncludes(searchResult, "Factory");
 
-    // Step 6: Rebuild index
     const rebuildResult = await commands.rebuildIndex();
     assertStringIncludes(rebuildResult, "rebuilt");
   } finally {

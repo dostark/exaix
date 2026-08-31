@@ -123,8 +123,8 @@ Deno.test(
       MockStrategy.FAILING,
     );
     try {
-      // The event is emitted immediately before the provider-bound call (Step 3's
-      // Architecture Notes), so a subsequent provider failure must not erase it.
+      // The event is emitted immediately before the provider-bound call, so a subsequent
+      // provider failure must not erase it.
       await assertRejects(() => executor.execute(planPath, context));
       await db.waitForFlush();
 

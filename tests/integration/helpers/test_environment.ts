@@ -7,13 +7,6 @@
  */
 
 import type { IRecordedResponse } from "@exaix/ai/providers";
-/**
- * Test Environment Helper for Integration Tests
- *
- * Provides isolated, reproducible test workspace for end-to-end testing.
- * Creates temporary directory with complete Exaix workspace structure.
- */
-
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
@@ -507,10 +500,9 @@ This plan will accomplish the requested task.
     const requestId = fileName.replace(/_plan\.md$/, "");
     const activePath = join(getWorkspaceActiveDir(this.tempDir), fileName);
 
-    // Robustly wait for the plan to appear. In high-concurrency tests the file may
-    // be created slightly later or with a slightly different name/format. We poll
-    // for up to 2 seconds and also scan the Plans directory for matching files by
-    // name prefix or content that references the expected request_id or trace_id.
+    // Poll for up to 2s: in high-concurrency tests the plan file may appear slightly later
+    // or with a different name/format, so also scan the Plans directory for files matching
+    // by name prefix or content referencing the expected request_id/trace_id.
     let planExists = await exists(planPath);
 
     if (!planExists) {
@@ -560,10 +552,9 @@ This plan will accomplish the requested task.
     }
 
     if (!planExists) {
-      // As a last resort, scan both Workspace/Plans and Workspace/Active for a matching
-      // plan by `request_id` or `trace_id`. If an approved copy already exists in
-      // Workspace/Active, return that path (tests are happy as long as the plan is
-      // available for processing).
+      // Last resort: scan both Workspace/Plans and Workspace/Active for a plan matching
+      // `request_id`/`trace_id`. If an approved copy already exists in Workspace/Active,
+      // return that path — tests only need the plan to be available for processing.
       const plansDir = getWorkspacePlansDir(this.tempDir);
       const activeDir = getWorkspaceActiveDir(this.tempDir);
 

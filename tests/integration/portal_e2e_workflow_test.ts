@@ -399,7 +399,7 @@ parallelSafeTest("[e2e] Portal target_branch review approve merges into that bra
     assertEquals(result.success, true);
     assertEquals(result.traceId, traceId);
 
-    // Step 37.5 regression: feature branch should be created from targetBranch.
+    // Regression: feature branch should be created from targetBranch.
     const mergeBase = await gitStdout(portalTargetPath, ["merge-base", createdPortalBranch, targetBranch]);
     assertEquals(
       mergeBase,
