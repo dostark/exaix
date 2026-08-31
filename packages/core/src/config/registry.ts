@@ -11,12 +11,8 @@ import { SwapClass } from "../types/enums.ts";
 import type { ConfigValueType } from "../types/enums.ts";
 import type { ConfigValue } from "./db.ts";
 
-/**
- * MCP three-tier authorization classification for a configurable key.
- * - `"safe"`      — no security impact; MCP writes are auto-approved.
- * - `"leaf"`      — tunable, affects behaviour; MCP writes require human approval.
- * - `"dangerous"` — security-critical/destructive; approval + confirmation marker.
- */
+/** MCP authorization tier for a configurable key: `safe` auto-approves MCP writes,
+ *  `leaf` requires human approval, `dangerous` requires approval + confirmation marker. */
 export type ConfigTier = "safe" | "leaf" | "dangerous";
 
 export interface IConfigurableOpts<T = unknown> {
@@ -29,12 +25,9 @@ export interface IConfigurableOpts<T = unknown> {
   enum?: readonly (string | number)[];
   swap?: SwapClass;
   edition?: readonly string[];
-  /**
-   * Optional explicit MCP authorization tier override (Phase 138). When set,
-   * {@link resolveTier} returns it verbatim; otherwise the tier is derived from
-   * `swap`/`edition`. Use only for the rare no-impact `swap: "hot"` key (e.g.
-   * `ui.theme`) that should auto-approve.
-   */
+  /** When set, {@link resolveTier} returns it verbatim instead of deriving from
+   *  `swap`/`edition` — use only for a rare no-impact `swap: "hot"` key that should
+   *  auto-approve (e.g. `ui.theme`). */
   tier?: ConfigTier;
 }
 
@@ -63,17 +56,8 @@ export function getRegisteredDefaults(): ReadonlyMap<string, IRegisteredConfig> 
   return registry;
 }
 
-/**
- * Resolve the MCP three-tier authorization tier for a registered config key
- * (Phase 138 Step 1). Precedence:
- * 1. explicit `tier` override on the opts → returned verbatim;
- * 2. `swap === RESTART` or `edition` includes `"team"` → `"dangerous"`;
- * 3. otherwise → `"leaf"` (the common `swap: "hot"` / unregistered case).
- *
- * The own-portal `"safe"` auto-approve tier from design §11.3 is deferred to a
- * future phase (the MCP tool has no own-portal context today); `"safe"` is
- * reachable this phase only via an explicit `tier: "safe"` override.
- */
+/** The own-portal `"safe"` auto-approve tier is deferred until the MCP tool has
+ *  own-portal context; `"safe"` is reachable today only via an explicit override. */
 export function resolveTier(key: string): ConfigTier {
   const entry = registry.get(key);
   if (!entry) return "leaf";
@@ -84,11 +68,8 @@ export function resolveTier(key: string): ConfigTier {
   return "leaf";
 }
 
-/**
- * Retrieve the min/max/default bounds for a registered configurable key.
- * Returns undefined fields when the key is not registered or the field
- * was not specified. Callers should cast `default` to the expected type.
- */
+/** Returns undefined fields when the key is not registered or the field was not
+ *  specified. Callers should cast `default` to the expected type. */
 export function resolveConfigurableBounds(key: string): {
   min?: number;
   max?: number;
