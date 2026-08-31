@@ -108,8 +108,8 @@ Deno.test("[IngestTerminalBench] a hanging oracle solution is killed at the time
       );
       await Deno.writeTextFile(join(sourceDir, "run-tests.sh"), "#!/bin/bash\nuv pip install pytest==8.4.1\n");
       // Sleeps far longer than the test's timeout — a stand-in for a genuinely hung or
-      // pathologically slow oracle script (Phase 144 Step 5: batch ingest must never let one
-      // bad upstream task block the whole release).
+      // pathologically slow oracle script: batch ingest must never let one bad upstream task
+      // block the whole release.
       await Deno.writeTextFile(join(sourceDir, "solution.sh"), "#!/bin/bash\nsleep 30\n");
 
       const start = performance.now();
@@ -153,11 +153,9 @@ Deno.test("[IngestTerminalBench] reference.patch preserves binary file content �
           "author_email: fixture@example.com\ndifficulty: easy\ncategory: data-processing\ntags:\n  - data-processing\n",
       );
       await Deno.writeTextFile(join(sourceDir, "run-tests.sh"), "#!/bin/bash\nuv pip install pytest==8.4.1\n");
-      // The oracle solution writes a file containing a NUL byte — git treats any file with a
-      // NUL byte as binary; `git diff` (no --binary) only emits "Binary files differ", which
-      // `git apply` cannot reconstruct from (found via a real controls-sweep run across the
-      // pinned Terminal-Bench release, Phase 144 Step 5 — ~10 real tasks fail their reference
-      // control this exact way).
+      // The oracle solution writes a NUL byte, which git treats as binary; `git diff` (no
+      // --binary) only emits "Binary files differ", which `git apply` cannot reconstruct
+      // from — ~10 real tasks in the pinned Terminal-Bench release fail this exact way.
       await Deno.writeTextFile(
         join(sourceDir, "solution.sh"),
         String.raw`#!/bin/bash` + "\n" + String.raw`printf 'AB\x00CD' > /app/artifact.bin` + "\n",

@@ -475,9 +475,7 @@ Deno.test("[md-anchors] slugify matches GitHub's algorithm for known-good repo a
   assertEquals(slugify("Task Checklist"), "task-checklist");
   assertEquals(slugify("2. No Magic Numbers or Strings"), "2-no-magic-numbers-or-strings");
   // Regression: GitHub does NOT collapse a run left behind by a removed character —
-  // "Skills & Plans" strips only "&", both flanking spaces survive as two hyphens.
-  // Verified against this repo's own real (working) cross-reference in
-  // docs/Exaix_Dogfooding.md ("## 5. Skills & Plans" -> "#5-skills--plans").
+  // "Skills & Plans" strips only "&", so both flanking spaces survive as two hyphens.
   assertEquals(slugify("5. Skills & Plans"), "5-skills--plans");
   assertEquals(slugify("Search & Filter"), "search--filter");
   assertEquals(slugify("Split View / Panes"), "split-view--panes");

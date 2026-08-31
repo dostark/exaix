@@ -95,8 +95,8 @@ Deno.test("[constant-restatement] a single element is not treated as a restateme
 });
 
 Deno.test("[constant-restatement] the real repository is clean", async () => {
-  // The check is only worth registering if the tree currently satisfies it — a gate that is red
-  // on arrival gets ignored, which is the GAP-8 failure one step over.
+  // The check is only worth registering if the tree currently satisfies it — a gate that is
+  // red on arrival gets ignored.
   const findings = await checkRepository(Deno.cwd());
   assertEquals(
     findings.map((f) => `${f.file}: ${f.constant} restated as "${f.value}"`),

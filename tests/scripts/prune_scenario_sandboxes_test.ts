@@ -121,10 +121,9 @@ Deno.test("[prune] retentionDays of 0 selects everything, and is still only a pl
   }
 });
 
-// `--root` is operator input that drives a recursive delete. Pointing it one level too high —
-// at the parent of the repo, which is the DEFAULT sandbox base's parent — would put the repo
-// checkout itself among the candidates, and a stale mtime is all it would take. A sandbox never
-// has a top-level `.git`; a repository always does, so that is the discriminator.
+// `--root` drives a recursive delete; a mistyped path one level too high could put a repo
+// checkout among the candidates. A sandbox never has a top-level `.git`; a repository always
+// does — that is the discriminator.
 
 Deno.test("[security] a git repository is never selected for pruning", async () => {
   const root = await seedSandboxRoot([{ name: "a-sandbox", ageDays: 30 }, { name: "a-checkout", ageDays: 30 }]);
@@ -174,10 +173,9 @@ Deno.test("[prune] applying a plan removes exactly what it selected", async () =
 });
 
 Deno.test("[security] a directory with no sandbox marker is never selected", async () => {
-  // Excluding git checkouts is not enough. Pointed at `/home/user/git`, the plan still selected
-  // four ordinary directories that merely happened not to be repos. Identifying a sandbox
-  // POSITIVELY — by a marker the runner always writes — is what makes a mistyped `--root` inert
-  // instead of merely less bad.
+  // Excluding git checkouts is not enough: ordinary directories that merely aren't repos would
+  // still be selected. Identifying a sandbox POSITIVELY, by a marker the runner always writes,
+  // is what makes a mistyped `--root` inert instead of merely less bad.
   const root = await seedSandboxRoot([{ name: "real-sandbox", ageDays: 30 }]);
   try {
     const aged = new Date(Date.now() - 30 * DAY_MS);

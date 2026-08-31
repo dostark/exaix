@@ -258,7 +258,7 @@ Just a body without an exaix block.
 });
 
 Deno.test("[generate_skill_json] one positional + --check is rejected (insufficient args)", () => {
-  // GAP-16: `generate_skill_json.ts /tmp/x --check` must NOT treat "--check" as
+  // `generate_skill_json.ts /tmp/x --check` must NOT treat "--check" as
   // the sandbox-root positional. Only one real positional is present → invalid.
   const parsed = parseCliArgs(["/tmp/x", "--check"]);
   assertEquals(parsed, null, "one positional + a flag must be rejected, not silently accepted");
@@ -288,7 +288,7 @@ Deno.test("[generate_skill_json] a present-but-malformed exaix block fails (erro
   try {
     const skillsDir = createEmptySkillsDir(tempDir);
     // An exaix: block whose YAML is structurally broken (unparseable), not merely
-    // schema-invalid. GAP-19: this must produce an ERROR, not a silent warning-skip.
+    // schema-invalid, must produce an ERROR, not a silent warning-skip.
     createFixtureSkill(skillsDir, {
       exaix: `
 ---

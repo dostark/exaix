@@ -7,17 +7,9 @@
 
 import { lintMarkdown } from "../../scripts/markdown_lint.ts";
 
-/**
- * Regression tests for MD060/table-column-style.
- *
- * Bug: The custom linter previously computed an "expected" aligned table layout
- * from cell content widths and treated a broad Unicode range as double-width.
- * That diverged from markdownlint behavior and caused false positives for valid
- * aligned tables (notably ones containing symbols like "✓" and inline code).
- *
- * Fix: Detect table style (aligned/compact/tight) per table, and for aligned
- * style compare pipe positions using visual width with emoji handling.
- */
+// Regression tests for MD060/table-column-style: the linter previously treated a broad
+// Unicode range as double-width when computing table layout, causing false positives on
+// valid tables containing symbols like "✓". Pipe positions are now compared by visual width.
 
 type Options = { fix: boolean; strict: boolean; verbose: boolean };
 

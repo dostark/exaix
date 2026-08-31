@@ -146,7 +146,7 @@ Deno.test({
   fn: async () => {
     const copilotDir = createTempCorpus({
       // The "Symlinked root docs" section claims GLOSSARY.md too, but docs/GLOSSARY.md is a
-      // regular file (the moved dev glossary), not a symlink — GAP-133-2's drift class.
+      // regular file (the moved dev glossary), not a symlink.
       "docs/README.md": [
         "### Symlinked root docs",
         "",

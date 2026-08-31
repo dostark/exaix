@@ -23,10 +23,8 @@ const COPILOT_SKILLS = join(REPO_ROOT, ".copilot", "skills");
 const REPO_MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
 const REPO_BLUEPRINTS_SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
 
-/**
- * Produces a stable, order-independent fingerprint of a directory tree:
- * a sorted list of "<relative-path>:<byte-length>:<sha-256>" for every file.
- */
+// Produces a stable, order-independent fingerprint of a directory tree: a sorted list of
+// "<relative-path>:<byte-length>:<sha-256>" for every file.
 async function fingerprintDir(root: string): Promise<string[]> {
   const entries: string[] = [];
   async function walk(dir: string, prefix: string): Promise<void> {

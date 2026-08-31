@@ -44,10 +44,8 @@ Deno.test("[section-refs] a cross-file quoted citation matching a real heading p
 });
 
 Deno.test("[section-refs] the ordinal prefix on the real heading is ignored when matching", async () => {
-  // Regression: the exact bug this checker exists to catch. Five real citations in
-  // this repo named a section by title only ("Packages vs. Services — Placement
-  // Model"); the actual heading additionally carried a "7. " ordinal prefix. A
-  // citation must not be forced to also cite the ordinal.
+  // Regression: real citations in this repo name a section by title only, while the actual
+  // heading carries an ordinal prefix ("7. "); a citation must not be forced to cite it too.
   const { root, cleanup } = await sandbox();
   try {
     await Deno.writeTextFile(join(root, "ARCHITECTURE.md"), "### 7. Packages vs. Services\n\nbody\n");
@@ -79,7 +77,7 @@ Deno.test("[section-refs] a quoted citation naming a section title that never ex
 
 Deno.test("[section-refs] a citation word-wrapped across a soft line break still resolves", async () => {
   // Regression: exaix-dev-docs/dev/Exaix_Package_Migration_Plan.md wraps its prose
-  // at ~100 chars, splitting "`ARCHITECTURE.md`" and the §-citation naming its
+  // at ~100 chars, splitting "`ARCHITECTURE.md`" and the citation naming its
   // section across two source lines that render as one flowing sentence.
   const { root, cleanup } = await sandbox();
   try {
@@ -119,10 +117,9 @@ Deno.test("[section-refs] a citation wrapped inside a blockquote does not leak t
 });
 
 Deno.test("[section-refs] a citation wrapped inside an indented list continuation does not accumulate extra spaces", async () => {
-  // Regression: exaix-dev-docs/dev/Exaix_Edition_Separation_Design.md:1042-1043 wraps
-  // a list-item citation across two lines, the second indented two spaces to align
-  // under the bullet. Naive joining produced `Cost Controls by   Edition` (3 spaces),
-  // which then fails to match the real (single-spaced) heading text.
+  // Regression: a list-item citation wrapped across two lines, the second indented to align
+  // under the bullet, naively joined to `Cost Controls by   Edition` (3 spaces) — which then
+  // fails to match the real (single-spaced) heading text.
   const { root, cleanup } = await sandbox();
   try {
     await Deno.writeTextFile(join(root, "Exaix_White_Paper.md"), "## Cost Controls by Edition\n\nbody\n");

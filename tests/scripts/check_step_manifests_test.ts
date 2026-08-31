@@ -178,7 +178,6 @@ Deno.test("[check_step_manifests] multiple steps all need manifests", async () =
 
     const result: ICheckResult = await checkStepManifests(file);
     assertEquals(result.success, false);
-    // Must report step 3 as manifest-less
     assert(result.errors.some((e: string) => e.includes("Step 3")), "must flag step 3");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
@@ -189,7 +188,7 @@ Deno.test("[check_step_manifests] a step with a non-manifest yaml fence before i
   const tempDir = await Deno.makeTempDir({ prefix: "csm-fence-order-" });
   try {
     // An illustrative yaml fence (no # step-manifest) appears BEFORE the real
-    // manifest fence within the same step section (GAP-20).
+    // manifest fence within the same step section.
     const illustrative = "\n```yaml\n# just an example, not a manifest\nfoo: bar\n```\n";
     const content = stepMd(1, illustrative + MANIFEST_YAML);
     const file = createPlanDoc(tempDir, "phase-99-test.md", content);

@@ -121,10 +121,9 @@ impact: ReqProc: update`;
   });
 
   it("skips validation for GitHub pull-request merge commits", () => {
-    // Regression: GitHub's default "Merge pull request" button message (distinct
-    // from git CLI's "Merge branch" local-merge default) was not exempted, so any
-    // PR merged via the GitHub UI/API failed CI's Gate 0 with no way for the author
-    // to have written a structured message - GitHub, not a human or agent, writes it.
+    // Regression: GitHub's default "Merge pull request" message (distinct from git CLI's
+    // "Merge branch") was not exempted, so any PR merged via the GitHub UI/API failed CI's
+    // Gate 0 — GitHub, not a human or agent, writes that message.
     const msg = `Merge pull request #8 from dostark/copilot/fix-sequential-test-suite`;
     const result = validateCommitMsg(msg);
     assertEquals(result.success, true);
@@ -358,7 +357,7 @@ describe("parsePlanStep", () => {
   it("collects checked-criterion and done-test paths for the named step only", () => {
     const parsed = parsePlanStep(PLAN_DOC, 6);
     assertEquals(parsed.errors, []);
-    // Only step 6 ✅ criteria + ✅ tests, deduped, not bleeding into other steps.
+    // Only this step's ✅ criteria + ✅ tests, deduped, not bleeding into other steps.
     assertEquals(parsed.testPaths.sort(), [
       "apps/exactl/tests/model_commands_test.ts",
       "tests/integration/model_curation_cli_loop_test.ts",
@@ -402,7 +401,7 @@ describe("parsePlanStep", () => {
       parsed.itemLines.includes("- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`"),
       true,
     );
-    // Step 6 has 2 tests + 2 criteria = 4 item lines.
+    // This step has 2 tests + 2 criteria = 4 item lines.
     assertEquals(parsed.itemLines.length, 4);
   });
 
@@ -632,7 +631,7 @@ More prose here that must never be treated as part of the criterion above.
   });
 });
 
-// A plan whose step 6 has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
+// A plan whose step has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
 // style-exclude:FIXTURE_READABILITY - Compact plan-doc excerpt kept inline for deferred-parsing test clarity
 const PLAN_DOC_DEFERRED = `## Implementation Plan
 
@@ -963,13 +962,9 @@ describe("parsePlanStep + validatePlanStepDiff integration (wrapped bullets)", (
 
 describe("gitOut", () => {
   it("ignores inherited GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX when running a cross-repo -C command", async () => {
-    // Reproduces the live failure: git sets GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX for every
-    // hook subprocess (verified live via a real commit-msg hook trigger in a worktree
-    // checkout). Without sanitization, a nested `git -C <submodule> diff HEAD~1 HEAD`
-    // silently resolves against the INHERITED (wrong) repo instead of <submodule>,
-    // returning an empty diff — which made every plan-step ✅/deferred item look "not an
-    // added line" and blocked the commit. gitOut must produce the correct, non-empty
-    // result regardless of what GIT_* vars the calling process inherited.
+    // Reproduces the live failure: git sets GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX for every hook
+    // subprocess. Without sanitization, a nested `git -C <submodule> diff HEAD~1 HEAD` silently
+    // resolves against the INHERITED (wrong) repo, returning an empty diff that blocked commits.
     const repoDir = await Deno.makeTempDir();
     try {
       const run = (args: string[]) =>

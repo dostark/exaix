@@ -7,12 +7,8 @@
 
 import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
-/**
- * Regression tests for MD029/ol-prefix output volume.
- *
- * Behavior change: Reduce noise by reporting at most one MD029 finding per
- * ordered-list block (per indentation level).
- */
+// Regression tests for MD029/ol-prefix: at most one finding is reported per ordered-list
+// block (per indentation level), to reduce noise.
 
 const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 

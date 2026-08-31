@@ -28,11 +28,6 @@ describe("scripts/setup_hooks.ts", () => {
     const gitHooksDir = join(tmpDir, ".git", "hooks");
     await Deno.mkdir(gitHooksDir, { recursive: true });
 
-    // Run the script with mocks for REPO_ROOT and HOOKS_DIR if possible,
-    // or just assume standard structure for now if we can't easily override the path.
-    // Actually, I'll modify setup_hooks.ts to be more testable first?
-    // No, RED phase first.
-
     // For now, let's just check if the commit-msg hook exists after running
     // deno run -A scripts/setup_hooks.ts
     // (This would affect the ACTUAL repo, which might be okay for integration test).
@@ -70,11 +65,9 @@ describe("scripts/setup_hooks.ts", () => {
   });
 
   it("clears git-hook-injected GIT_* env vars before running the pre-push security suite", async () => {
-    // git sets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/etc. in a hook's own environment;
-    // left unset, these leak into `deno test`'s spawned children and corrupt any test
-    // that creates its own temp git repo (e.g. tests/security/git_security_regression_test.ts),
-    // making raw `git` commands there operate against THIS repo's real .git instead of
-    // the test's isolated one.
+    // git sets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/etc. in a hook's own environment; left
+    // unset, these leak into `deno test`'s spawned children and make raw `git` commands in
+    // tests with their own temp repo operate against THIS repo's real .git instead.
     const hookInstaller = await Deno.readTextFile("scripts/setup_hooks.ts");
     const securityTestLine = 'deno test --allow-all --filter "[security]" tests/';
     const idx = hookInstaller.indexOf(securityTestLine);
@@ -93,23 +86,9 @@ describe("scripts/setup_hooks.ts", () => {
 describe("event coverage visibility via the real pre-commit hook (real subprocess git commit)", () => {
   const REPO_ROOT = Deno.cwd();
 
-  /** Extracts the event-coverage block from the real installed pre-commit hook, so this
-   *  test always exercises whatever the hook actually says today, not a hand-duplicated
-   *  copy that could silently drift from the real file. `deno task X` is substituted with
-   *  its absolute-path `deno run` equivalent: `deno task` walks UP from the invocation
-   *  directory to find deno.json and then runs with CWD set to *that* directory (verified
-   *  empirically) — correct and unproblematic for a real developer commit (deno.json's
-   *  directory IS the repo root being committed to), but wrong for this test's isolated
-   *  scratch repo (which has no deno.json of its own, so `deno task` would redirect back
-   *  to this real repo and check *its* staged files instead of the scratch repo's). Plain
-   *  `deno run` with an absolute script path does not redirect CWD, so it correctly scopes
-   *  `git diff --cached` (inside check_event_coverage.ts) to the scratch repo. This still
-   *  exercises the exact real script, flags, and hook exit-code/error-message wrapper —
-   *  only the task-runner indirection is swapped for its equivalent expansion. The hooks
-   *  dir is resolved via `git rev-parse --git-path hooks` so the test also works from a
-   *  linked worktree (where `.git` is a pointer file, not a directory). The block header
-   *  is matched by its descriptive title (the leading sequence number is deliberately not
-   *  hard-coded) so the test does not break if the gate numbering is ever re-ordered. */
+  // Extracts the event-coverage block from the REAL installed pre-commit hook so this test
+  // never drifts from what it actually runs. `deno task X` redirects CWD by walking up to find
+  // deno.json, so it's swapped for absolute `deno run`, which correctly scopes to the scratch repo.
   async function extractEventCoverageHook(): Promise<string> {
     const proc = await new Deno.Command("git", {
       args: ["rev-parse", "--git-path", "hooks"],
@@ -139,14 +118,9 @@ describe("event coverage visibility via the real pre-commit hook (real subproces
     }
   }
 
-  /** Real scratch git repo nested under the sibling-of-repo sandbox root
-   *  (`<parent-of-repo>/exaix-sandboxes/precommit-hook-scratch-*`, or EXA_SANDBOX_BASE — the
-   *  same convention the scenario runner and scripts/prune_scenario_sandboxes.ts use). Kept
-   *  OUT of the repo tree so test scratch can never pollute the tracked checkout; each case
-   *  removes its dir in a `finally`, and stale dirs from interrupted runs are swept first.
-   *  extractEventCoverageHook uses an absolute `deno run` path, so the scratch repo only
-   *  needs to be a real git dir — nesting under `exaix-sandboxes/` keeps scratch artifacts
-   *  easy to find during local debugging without touching the repo tree. */
+  // Scratch git repo nested under the sibling-of-repo sandbox root (the same convention the
+  // scenario runner and scripts/prune_scenario_sandboxes.ts use), kept OUT of the repo tree so
+  // test scratch can never pollute the tracked checkout.
   const SCRATCH_PREFIX = "precommit-hook-scratch-";
 
   async function setupScratchRepo(fixtureContent: string): Promise<string> {

@@ -18,7 +18,7 @@ import { extractExecutiveSummary, extractRelevantConstraints } from "../../scrip
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 /** Shared doc-shaped fixture (mirrors real phase-153/173 section structure) — the SAME
- *  fixture Phase 173 Step 1's integration coverage uses, so there is exactly one. */
+ *  fixture the integration coverage uses, so there is exactly one. */
 const PHASE_DOC = await Deno.readTextFile(
   join(REPO_ROOT, "tests", "integration", "fixtures", "phase-nn-fixture-with-context.md"),
 );

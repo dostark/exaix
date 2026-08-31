@@ -105,15 +105,9 @@ Deno.test("compactDotReporterChunk flushes once it reaches terminal width", () =
   assertEquals(flushDotReporterState(state), "");
 });
 
-// --- killActiveChildGroups: orphan-prevention on external kill (SIGINT/SIGTERM/timeout) ---
-//
-// Root cause (live-observed, 2026-07-21): killing test_parallel.ts's top-level process does
-// NOT cascade to a `deno test` child's own children on Linux — a daemon subprocess a test
-// file spawned (bootRealDaemon, dogfood_e2e_test.ts) survives indefinitely with no
-// supervisor left to reap it. Proven via a standalone process-tree probe (detached: true +
-// Deno.kill(-pid, "SIGTERM") killed both a child and its independently-spawned grandchild;
-// omitting `detached` made the same call throw ESRCH — not just ineffective, inapplicable).
-// These tests cover the pure "which PIDs get signaled" contract via injectable seams.
+// killActiveChildGroups: orphan-prevention on external kill (SIGINT/SIGTERM/timeout).
+// Root cause: killing test_parallel.ts's top-level process does NOT cascade to a `deno test`
+// child's own children on Linux, so signaling the negative (process-group) pid is required.
 
 Deno.test("[killActiveChildGroups] signals every tracked pid as a negative (process-group) target", () => {
   const signaled: number[] = [];

@@ -7,15 +7,9 @@
 
 import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
-/**
- * Regression tests for MD032/blanks-around-lists.
- *
- * Bug: The custom linter incorrectly flagged multi-line ordered lists by
- * requiring a blank line before EACH list item (because continuation lines of
- * the previous list item are not list markers).
- *
- * Fix: Treat list-item continuation lines as part of the list context.
- */
+// Regression tests for MD032/blanks-around-lists: the linter previously required a blank line
+// before EACH item of a multi-line ordered list, since a continuation line isn't itself a list
+// marker. Continuation lines are now treated as part of the list context.
 
 const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 

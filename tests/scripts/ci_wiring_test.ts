@@ -30,12 +30,9 @@ Deno.test("[ci_wiring] scripts/ci.ts check action includes check:manifests", () 
 });
 
 Deno.test("[ci_wiring] both gates are wired via the shared static-check task list", () => {
-  // Phase 168 refactor: checkCommand and allCommand now both reference ONE shared
-  // STATIC_CHECK_TASKS array (see [ci_wiring] gate-parity tests below) instead of each
-  // duplicating its own inline list — so "wired in both arrays" is now a structural
-  // guarantee (same array reference) rather than a coincidence of textual duplication.
-  // This test still verifies its original Phase 125 GAP-14/15 intent: both gates are
-  // declared in the shared list, and both commands are wired to that shared list.
+  // checkCommand and allCommand both reference ONE shared STATIC_CHECK_TASKS array instead of
+  // each duplicating its own inline list, so "wired in both" is a structural guarantee (same
+  // array reference), not a coincidence of textual duplication.
   assert(
     CI_SOURCE.includes('{ cmd: ["deno", "task", "check:skill-envelopes"]'),
     "check:skill-envelopes must be declared in STATIC_CHECK_TASKS",
@@ -110,7 +107,7 @@ Deno.test("[ci_wiring] checkCommand and allCommand's static-check phases share t
   const checkTasks = extract(CI_SOURCE.slice(checkStart, checkEnd));
   const allTasks = extract(CI_SOURCE.slice(allStart, allEnd));
   // allCommand's later Testing/Coverage/Build phases add more tasks (test:security, etc.) — fine.
-  // This only asserts its static-check (Phase 1) gates are never a strict subset of checkCommand's.
+  // This only asserts its static-check gates are never a strict subset of checkCommand's.
   const onlyInCheck = [...checkTasks].filter((t) => !allTasks.has(t)).sort();
   assert(
     onlyInCheck.length === 0,
@@ -120,13 +117,9 @@ Deno.test("[ci_wiring] checkCommand and allCommand's static-check phases share t
 });
 
 Deno.test("[ci_wiring] allCommand declares a --skip-tests flag to skip Testing and Coverage", () => {
-  // Phase 2 (Testing) internally chains full test:solo/test:team/test_parallel + test:security,
-  // and Phase 3 (Coverage) re-runs the ENTIRE suite a second time with --coverage instrumentation
-  // (scripts/ci.ts's own verifyCoverage spawns `deno test --allow-all --coverage=...`) — together
-  // these can run the full suite twice, on top of Phase 4's real binary compile. Real CI
-  // (.github/workflows/*.yml) never invokes `ci.ts all` directly — it calls check/test/build as
-  // separate steps — so `all`'s slow default is purely a local/manual-run cost with no CI
-  // dependency on it staying unconditional.
+  // Testing chains the full suite, and Coverage re-runs it a second time with instrumentation
+  // on top of the real binary compile. Real CI never invokes `ci.ts all` directly, so this
+  // slow default is purely a local/manual-run cost.
   const allStart = CI_SOURCE.indexOf("const allCommand");
   const allEnd = CI_SOURCE.indexOf("const fixCommand");
   const allBody = CI_SOURCE.slice(allStart, allEnd);
@@ -151,10 +144,9 @@ Deno.test("[ci_wiring] --skip-tests gates Phase 2 (Testing) and Phase 3 (Coverag
     "expected all 4 phase banners present in allCommand, in order",
   );
 
-  // The guard must sit somewhere between Phase 1 finishing and Phase 4 starting (it legitimately
-  // precedes the "Phase 2: Testing" banner text itself, since the log line lives inside the
-  // conditional's branches) but must NOT appear before Phase 1 starts or after Phase 4 starts —
-  // Checks and Build always run unconditionally.
+  // The guard must sit somewhere between the Static Checks banner finishing and the Build banner
+  // starting (it legitimately precedes the Testing banner text itself, since the log line lives
+  // inside the conditional's branches) but must NOT appear outside that range.
   const skipGuardBetween1and4 = /skipTests/.test(allBody.slice(phase1Idx, phase4Idx));
   const skipGuardBeforePhase1 = /skipTests/.test(allBody.slice(0, phase1Idx));
   const skipGuardAfterPhase4Start = /skipTests/.test(allBody.slice(phase4Idx));

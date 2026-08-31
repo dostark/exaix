@@ -143,11 +143,9 @@ Deno.test("[auditLedgerRows] a named file that is an import.meta.main entrypoint
 });
 
 Deno.test("[auditLedgerRows] a named identifier called only from its own file's import.meta.main entrypoint is not flagged", () => {
-  // Regression: scripts/run_value_comparison_report.ts's computeArmComparisonReport is
-  // exported for testability and called by that same file's renderReport(), which is
-  // itself only called from that file's import.meta.main block — a real, reachable
-  // production call chain entirely inside one script, the same shape every operator-run
-  // script in this repo uses (check_blueprint_integrity.ts, check_artefact_decision_coverage.ts).
+  // Regression: an exported symbol called only from its own file's import.meta.main block is
+  // still a real, reachable production call chain — the shape every operator-run script here
+  // uses (check_blueprint_integrity.ts, check_artefact_decision_coverage.ts).
   const rows: IReachabilityLedgerRow[] = [{
     docPath: "phase-999-example.md",
     symbolLabel: "`paired-arm-comparison`",
@@ -425,10 +423,8 @@ Deno.test("[isClosedStatus] does not treat ⏳ or a removed-row note as closed",
 });
 
 Deno.test("[auditLedgerRows] audits a ✅ WIRED row exactly like a bare ✅ row (regression)", () => {
-  // scripts/check_reachability_ledger.ts previously used an exact-equality CLOSED_STATUS
-  // check, silently skipping every row using this repo's own established "✅ WIRED"/"✅ CORE"
-  // label convention (#next-steps skill's own "Do" list) — auditing zero such rows while
-  // reporting a clean pass. Confirmed also affecting phase-111/phase-121's own ledgers.
+  // Regression: an exact-equality CLOSED_STATUS check previously skipped every row using the
+  // "✅ WIRED"/"✅ CORE" label convention, auditing zero such rows while reporting a clean pass.
   const rows: IReachabilityLedgerRow[] = [{
     docPath: "phase-999-example.md",
     symbolLabel: "`paired-arm-comparison`",

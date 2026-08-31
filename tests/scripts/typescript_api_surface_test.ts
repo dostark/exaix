@@ -88,11 +88,9 @@ function walkKinds(node: ts.Node, kinds: string[]): void {
   ts.forEachChild(node, (child) => walkKinds(child, kinds));
 }
 
-/**
- * Blanks out comments (line + block), string literals, and template literals
- * while preserving newlines, so ts.<ident> scanning never flags tokens inside
- * comments or strings. Returns the same line count as the input.
- */
+// Blanks out comments (line + block), string literals, and template literals while preserving
+// newlines, so ts.<ident> scanning never flags tokens inside comments or strings. Returns the
+// same line count as the input.
 function stripCommentsAndStrings(source: string): string {
   let out = "";
   let i = 0;
