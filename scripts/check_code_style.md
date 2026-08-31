@@ -90,13 +90,14 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 ## Comment Discipline
 
-| Tag                   | Severity | Rule | What it detects                                                                      |
-| --------------------- | -------- | ---- | ------------------------------------------------------------------------------------ |
-| `[long-comment]`      | warn     | §16  | Block comment or line-comment run longer than 3 lines outside the header             |
-| `[ephemeral-comment]` | warn     | §16  | Comment mentions a phase/step number, GAP identifier, pre/post-gap, or prior attempt |
+| Tag                    | Severity | Rule | What it detects                                                                      |
+| ---------------------- | -------- | ---- | ------------------------------------------------------------------------------------ |
+| `[long-comment]`       | warn     | §16  | Block comment or line-comment run longer than 3 lines outside the header             |
+| `[ephemeral-comment]`  | warn     | §16  | Comment mentions a phase/step number, GAP identifier, pre/post-gap, or prior attempt |
+| `[decorative-comment]` | warn     | §16  | Comment line uses a repeated-punctuation separator or dash-wrapped text              |
 
-Both escalate to `error` under `--convert-warnings-to-errors`. Neither applies
-to the module's own leading header comment.
+All three escalate to `error` under `--convert-warnings-to-errors`. None
+applies to the module's own leading header comment.
 
 ---
 

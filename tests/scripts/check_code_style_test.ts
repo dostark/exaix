@@ -612,3 +612,51 @@ export function run(): number {
 
   assertEquals(result.output.includes("[ephemeral-comment]"), false, result.output);
 });
+
+Deno.test("check_code_style flags a decorative comment separator", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "decorative_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempDecorativeComment
+ * @path decorative_comment.ts
+ * @description Temporary regression file for decorative-separator enforcement.
+ */
+
+export function run(): number {
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[decorative-comment]");
+});
+
+Deno.test("check_code_style allows a plain comment with a short parenthetical dash", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "plain_dash_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempPlainDashComment
+ * @path plain_dash_comment.ts
+ * @description Temporary regression file for plain dash allowance.
+ */
+
+export function run(): number {
+  // Helpers -- kept short on purpose.
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertEquals(result.output.includes("[decorative-comment]"), false, result.output);
+});

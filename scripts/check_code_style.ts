@@ -930,6 +930,11 @@ function stripQuotedStringsAndComments(line: string): string {
 
 const IN_MODULE_COMMENT_LINE_LIMIT = 3;
 
+// Matches a run of 3+ repeated separator/decoration characters anywhere on a comment
+// line — pure banner lines ("// ====...") and text wrapped in dashes ("// ── Foo ──...")
+// alike. These add characters without adding meaning; write a plain comment instead.
+const DECORATIVE_COMMENT_LINE_PATTERN = /[=\-_~*#─━═▬•]{3,}/;
+
 const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
   { pattern: /\bphase\s+\d+\b/i, hint: "a phase number" },
   { pattern: /\bstep\s+\d+\b/i, hint: "a step number" },
@@ -943,7 +948,7 @@ const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
 ];
 
 function reportCommentViolation(
-  rule: "long-comment" | "ephemeral-comment",
+  rule: "long-comment" | "ephemeral-comment" | "decorative-comment",
   repoPath: string,
   lineNum: number,
   message: string,
@@ -979,6 +984,17 @@ function evaluateInModuleComment(repoPath: string, startLine: number, commentLin
         `Comment references ${hint}; implementation history belongs in the commit message or phase-plan doc, not in code that outlives the task that produced it.`,
       );
       break;
+    }
+  }
+
+  for (let i = 0; i < commentLines.length; i++) {
+    if (DECORATIVE_COMMENT_LINE_PATTERN.test(commentLines[i])) {
+      reportCommentViolation(
+        "decorative-comment",
+        repoPath,
+        startLine + i,
+        "Comment uses a decorative separator (====, ----, ────, or text wrapped in dashes). Drop it and write a plain comment — the decoration adds characters without adding meaning.",
+      );
     }
   }
 }
