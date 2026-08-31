@@ -308,8 +308,8 @@ export class RequestProcessor {
       return null;
     }
 
-    // Quality gate assessment (Phase 47) — runs before analysis and agent execution
-    // Gap §13: bypass re-assessment when assessed_at is already set (request already passed the gate)
+    // Quality gate assessment runs before analysis and agent execution; skip
+    // re-assessment when assessed_at is already set (request already passed the gate).
     const alreadyAssessed = !!frontmatter.assessed_at;
     const qgOutcome: { earlyReturn: true } | {
       earlyReturn: false;
@@ -355,9 +355,6 @@ export class RequestProcessor {
       await saveAnalysis(filePath, analysis).catch(() => {});
     }
 
-    // Resolve portal knowledge for portal-bound requests (Phase 143 Step 2: the
-    // `portal_knowledge.injection_enabled` switch gates the request-side injection —
-    // off means the knowledge service is never consulted at request time).
     const portalKnowledge = await this.resolvePortalKnowledge(frontmatter.portal);
 
     const context: IRequestProcessingContext = {
@@ -411,9 +408,9 @@ export class RequestProcessor {
       case RequestStatus.COMPLETED:
       case RequestStatus.FAILED:
       case RequestStatus.CANCELLED:
-      // Gap §1: NEEDS_CLARIFICATION → skip (awaiting user response; re-entry via finalizeAndWritePending)
+      // NEEDS_CLARIFICATION: awaiting user response; re-entry via finalizeAndWritePending.
       case RequestStatus.NEEDS_CLARIFICATION:
-      // Gap §1: REFINING → skip (active Q&A session; FileWatcher must not interrupt)
+      // REFINING: active Q&A session; FileWatcher must not interrupt.
       case RequestStatus.REFINING:
       case RequestStatus.ANALYZING:
         return true;
@@ -422,8 +419,8 @@ export class RequestProcessor {
     }
   }
 
-  /** Resolve portal knowledge for a portal-bound request, honoring the Phase 143 Step 2
-   *  `portal_knowledge.injection_enabled` ablation switch (off → never consulted). */
+  /** Honors the `portal_knowledge.injection_enabled` switch: off means the knowledge
+   *  service is never consulted at request time. */
   private async resolvePortalKnowledge(
     portal?: Opt<string, Reason.OptionalContext>,
   ): Promise<IPortalKnowledge | undefined> {
@@ -536,7 +533,9 @@ export class RequestProcessor {
     }
   }
 
-  /** A session_delegate_cycle flow step needs a portal-configured worktree root and the request's PlanContext pointer before it can dispatch (Phase 174 Step 2 GAP-1). Flow YAML and request text cannot choose `executionRoot` — it is derived solely from the daemon's configured portal registry. Returns `{}` for a flow with no cycle step. */
+  /** A session_delegate_cycle flow step needs a portal-configured worktree root and the request's PlanContext pointer
+   *  before it can dispatch. Flow YAML and request text cannot choose `executionRoot` — it is derived solely from the
+   *  daemon's configured portal registry. Returns `{}` for a flow with no cycle step. */
   private resolveCycleExecutionContext(
     flow: IFlow,
     frontmatter: IRequestFrontmatter,
@@ -599,9 +598,8 @@ export class RequestProcessor {
         traceId,
         requestId,
         portal: frontmatter.portal,
-        // Phase 157: the call-site key stamped by exactl (scenario_id/step_id) must reach the
-        // flow's agent steps, or every flow-step LLM call is unkeyed and capture mode refuses
-        // it. Without this, the transport stopped at FlowRunner.execute.
+        // The call-site key stamped by exactl (scenario_id/step_id) must reach the flow's
+        // agent steps, or every flow-step LLM call is unkeyed and capture mode refuses it.
         scenarioId: frontmatter.scenario_id,
         stepId: frontmatter.step_id,
         executionRoot: cycleContext.executionRoot,

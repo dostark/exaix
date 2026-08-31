@@ -18,12 +18,9 @@ import type { PortalAnalysisMode } from "@exaix/core/types";
 export interface IPortalKnowledgeConfig {
   /** Whether to automatically analyze the portal codebase after mount. */
   autoAnalyzeOnMount: boolean;
-  /**
-   * Default analysis depth.
-   * - `quick`    — directory scan + config parsing only; no LLM (<5 s)
-   * - `standard` — adds architecture inference (1 LLM call) + symbol extraction (~15 s)
-   * - `PortalAnalysisMode.DEEP`     — full convention mapping + complete symbol index (~60 s)
-   */
+  /** Default analysis depth: `quick` is directory scan + config parsing only (no LLM);
+   *  `standard` adds architecture inference + symbol extraction; `deep` adds full
+   *  convention mapping + complete symbol index. */
   defaultMode: PortalAnalysisMode;
   /** Maximum number of files to scan in quick mode. Default: 200. */
   quickScanLimit: number;
@@ -55,82 +52,37 @@ export interface IPortalKnowledgeConfig {
   gitHistorySince?: string;
 }
 
-/**
- * Service contract for portal codebase knowledge gathering.
- *
- * Implementations MUST:
- * - Persist results in `Memory/Projects/{portalAlias}/` via `IMemoryBankService`
- * - Never throw on partial analysis failure — degrade gracefully
- * - Respect {@link IPortalKnowledgeConfig.ignorePatterns} during traversal
- */
+/** Implementations MUST persist results via `IMemoryBankService`, never throw on
+ *  partial analysis failure (degrade gracefully), and respect
+ *  {@link IPortalKnowledgeConfig.ignorePatterns} during traversal. */
 export interface IPortalKnowledgeService {
-  /**
-   * Perform a full analysis of the portal codebase at the given path.
-   *
-   * @param portalAlias - The portal alias (used for persistence key).
-   * @param portalPath  - Absolute filesystem path to the portal root.
-   * @param mode        - Analysis depth; overrides `config.defaultMode` when supplied.
-   * @returns           Fully populated {@link IPortalKnowledge}.
-   */
+  /** `mode` overrides `config.defaultMode` when supplied. */
   analyze(
     portalAlias: string,
     portalPath: string,
     mode?: PortalAnalysisMode,
   ): Promise<IPortalKnowledge>;
 
-  /**
-   * Return cached knowledge if fresh, otherwise run a new analysis.
-   *
-   * Equivalent to: `(await isStale(alias)) ? analyze(alias, path) : loadCached(alias)`.
-   *
-   * @param portalAlias - The portal alias.
-   * @param portalPath  - Absolute filesystem path to the portal root.
-   * @returns           Fresh or cached {@link IPortalKnowledge}.
-   */
+  /** Equivalent to `(await isStale(alias)) ? analyze(alias, path) : loadCached(alias)`. */
   getOrAnalyze(
     portalAlias: string,
     portalPath: string,
   ): Promise<IPortalKnowledge>;
 
-  /**
-   * Return `true` if no cached knowledge exists or it has exceeded
-   * the configured {@link IPortalKnowledgeConfig.staleness} threshold.
-   *
-   * @param portalAlias - The portal alias to check.
-   */
+  /** True if no cached knowledge exists or it exceeds the configured
+   *  {@link IPortalKnowledgeConfig.staleness} threshold. */
   isStale(portalAlias: string): Promise<boolean>;
 
-  /**
-   * Perform an incremental knowledge update.
-   *
-   * In Phase 119 this is a **CLI-only** operation (triggered by
-   * `exactl portal analyze [--force]`). The `changedFiles` parameter is
-   * reserved for a future automatic-integration phase and may be ignored by
-   * current implementations.
-   *
-   * @param portalAlias  - The portal alias.
-   * @param portalPath   - Absolute filesystem path to the portal root.
-   * @param changedFiles - Optional list of changed file paths; reserved for future use.
-   * @returns            Updated {@link IPortalKnowledge}.
-   */
+  /** Currently a CLI-only operation (`exactl portal analyze [--force]`); `changedFiles`
+   *  is reserved for future automatic integration and may be ignored by implementations. */
   updateKnowledge(
     portalAlias: string,
     portalPath: string,
     changedFiles?: string[],
   ): Promise<IPortalKnowledge>;
 
-  /**
-   * Retrieve context-relevant portal knowledge chunks via vector similarity search.
-   *
-   * Returns `undefined` when:
-   * - `relevanceSearchEmbeddingEnabled` is `false`
-   * - The HNSW index is cold (not yet populated)
-   *
-   * @param requestText - The user request text to embed and search against.
-   * @param portalPath  - Absolute filesystem path to the portal root.
-   * @param maxTokens   - Maximum token count for the returned context string.
-   * @returns           Relevant context string, or `undefined` to fall back to full analysis.
-   */
+  /** Returns `undefined` (fall back to full analysis) when
+   *  `relevanceSearchEmbeddingEnabled` is false or the HNSW index is cold. */
   getRelevantContext(
     requestText: string,
     portalPath: string,
