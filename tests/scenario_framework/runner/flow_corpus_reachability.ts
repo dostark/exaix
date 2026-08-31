@@ -32,11 +32,7 @@ export interface IFlowReachabilityResult {
   nonCoverage: IFlowNonCoverageEntry[];
 }
 
-/**
- * A catalog flow is reachable when its coverage entry names at least one corpus task.
- * A coverage entry for a flow outside the catalog is ignored rather than reported,
- * since it is not one of the flows this report is evaluating.
- */
+/** A catalog flow is reachable when its coverage entry names at least one corpus task. A coverage entry for a flow outside the catalog is ignored rather than reported. */
 export function computeFlowReachability(
   catalog: IFlowCatalogEntry[],
   coverage: IFlowTaskCoverage[],

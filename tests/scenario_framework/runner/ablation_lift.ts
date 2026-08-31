@@ -73,7 +73,7 @@ export interface IAblationReport {
 
 export interface IAblationOptions {
   /** When provided, every subsystem comparison is checked against it before computation —
-   *  post-hoc task cherry-picking is rejected (pre-gap GAP-1 / validatePreregistration).
+   *  post-hoc task cherry-picking is rejected (see validatePreregistration).
    *  The spec's `armId` must be the subsystem's `ablate-<subsystem>` arm id. */
   preregistered?: IArmComparisonSpec;
 }
@@ -89,7 +89,7 @@ interface IAblateBucket {
   treatment?: ISideRun;
 }
 
-/** The `cell_id` prefix of feature-ablation cells (Phase 143 Step 2 cell taxonomy). */
+/** The `cell_id` prefix of feature-ablation cells. */
 export const ABLATE_CELL_PREFIX = "ablate-";
 
 /** The comparison arm id every contribution comparison of a subsystem uses (pre-registration contract). */
@@ -114,14 +114,9 @@ export function parseAblateCellId(
   return { subsystem: parts[0], tool: parts[1], provider: parts[2] };
 }
 
-/**
- * Build the feature-ablation report from outcome-channel history rows. Each task's control
- * score is the mean of the latest ablate-<subsystem> run's outcome scores; treatment likewise
- * from the latest full-config run. A task matches a subsystem only when both sides have a
- * latest run WITH outcome evidence — anything less is excluded and counted. Families group on
- * the `task:` tag (fallback: task id) within a (tool, provider, model) column; one family row
- * is emitted per subsystem arm with data.
- */
+// Builds the feature-ablation report from outcome-channel history rows: each task's control/
+// treatment score is the mean of the latest ablate-<subsystem>/full-config run's outcome scores.
+// A task matches a subsystem only when both sides have a latest run WITH outcome evidence.
 export function computeAblationContributions(
   rows: IOutcomeRunRow[],
   options: IAblationOptions = {},

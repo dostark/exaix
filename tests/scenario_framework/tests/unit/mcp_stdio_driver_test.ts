@@ -8,16 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { parseDriverArgs, sendJsonRpcRequests, spawnProcess } from "../../scripts/mcp_stdio_driver.ts";
 
-/**
- * Echo server that keeps reading until stdin closes.
- *
- * It used to `break` after the FIRST stdin chunk. `sendJsonRpcRequests` writes request N+1 only
- * after reading response N, so a second request always arrives in a second chunk — by which point
- * this server had exited and the write hit a closed pipe. Whether that surfaced as
- * "Broken pipe (os error 32)" or was silently absorbed by the pipe buffer depended on how fast the
- * subprocess got torn down, so the multi-request test passed in isolation and failed under the
- * parallel suite's load.
- */
+/** Echo server that keeps reading until stdin closes — it used to `break` after the first chunk, so a second request (written only after the first response) hit a closed pipe. */
 function echoServerScript(): string {
   return `
 const d=new TextDecoder(),e=new TextEncoder();
@@ -143,10 +134,9 @@ Deno.test("sendJsonRpcRequests — a server that exits early reports the server 
   } catch { /* ignore */ }
   await process.status;
 
-  // The previous assertions here were `Array.isArray(responses) === true` — always true for a
-  // declared array — and a disjunction satisfied by either branch, which together amounted to
-  // "something came back". What the fix actually guarantees is that the caller is left holding
-  // the server's diagnosis rather than the swallowed stream error.
+  // The previous assertions were always-true (`Array.isArray` on a declared array; an either-
+  // branch disjunction) — this checks the caller actually gets the server's diagnosis, not a
+  // swallowed stream error.
   assertEquals(responses.length, 1);
   assertEquals(responses[0].id, 1);
   assertEquals(responses[0].result, undefined, "a dead server cannot have produced a result");
@@ -159,10 +149,9 @@ Deno.test("sendJsonRpcRequests — a server that exits early reports the server 
 });
 
 Deno.test("sendJsonRpcRequests — a non-JSON line from the server becomes a -32700 parse error", async () => {
-  // This case previously sent a well-formed request to the echo server and asserted it was
-  // echoed back — the comment even conceded "the echo server echoes it back successfully". It
-  // was named for the parse-error path while exercising the success path, so the driver's own
-  // malformed-response branch (mcp_stdio_driver.ts:158-164) had no coverage at all.
+  // This case previously sent a well-formed request and asserted it was echoed back —
+  // exercising the success path while named for the parse-error path, so the driver's
+  // malformed-response branch had no coverage at all.
   const process = await spawnProcess([
     "deno",
     "eval",

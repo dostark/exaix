@@ -28,10 +28,9 @@ export interface IWriteSyntheticScenarioOptions {
   steps: ISyntheticScenarioStepDefinition[];
   schemaVersion: string;
   requestFixturePath?: string;
-  /** Scenario-level scoring mode (Phase 143 Step 3). Emitted as `scoring: "gated"`. */
+  /** Scenario-level scoring mode. Emitted as `scoring: "gated"`. */
   scoring?: "gated";
-  /** A single matrix cell (Phase 143 Step 6 grid): emits a `matrix:` block with one cell so the
-   *  run records a `cell_id` (+ `harness: bare` / `ablate:` markers). */
+  /** A single matrix cell: emits a `matrix:` block with one cell so the run records a `cell_id` (+ `harness: bare` / `ablate:` markers). */
   matrixCell?: {
     tool: string;
     provider: string;

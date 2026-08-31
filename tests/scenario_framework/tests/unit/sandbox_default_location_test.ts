@@ -116,12 +116,9 @@ Deno.test("[SandboxDefault] a resolved workspace_path equal to the repo root is 
   );
 });
 
-// Phase 142 Step 16 — provenance is recorded, not inferred.
-//
-// Cleanup must never remove a workspace the operator supplied. Deciding that by path shape
-// ("does it live under the sandbox base?") deletes a real workspace the day someone points
-// `--workspace` at a directory there — data loss with no undo — so the config carries the fact
-// directly from the one place that knows it: whether an explicit path was given.
+// Provenance is recorded, not inferred: deciding "is this operator-supplied" by path shape
+// would delete a real workspace the day `--workspace` points under the sandbox base, so the
+// config carries the fact directly — whether an explicit path was given.
 
 Deno.test("[SandboxDefault] a runner-minted sandbox is marked as such", () => {
   const config = withSandboxBase(

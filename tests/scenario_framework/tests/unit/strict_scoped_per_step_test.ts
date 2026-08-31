@@ -46,12 +46,9 @@ Deno.test("[strict_scoped_per_step] a step without MOCK_STRICT in its own env do
 });
 
 Deno.test("[strict_scoped_per_step] a MOCK_STRICT set on the runner's own process does not silently leak into a step that omits it", async () => {
-  // Guards the isolation property itself: buildStepBaseEnv spreads the runner's own process
-  // env first, then the step's own env last — a stray process-wide MOCK_STRICT (e.g. left
-  // over from an earlier --capture-fixtures-style flag) must not make every step "strict"
-  // regardless of what that step's own env: declares. This can only be caught by asserting
-  // isolation FAILS to hold if the runner env is dirty, proving per-step env is what should
-  // be relied on, not process-wide state.
+  // Guards the isolation property itself: buildStepBaseEnv spreads the runner's process env
+  // first, then the step's own env last — a stray process-wide MOCK_STRICT must not leak into
+  // a step that omits it. Asserted by proving isolation fails when the runner env is dirty.
   await withEnv({ MOCK_STRICT: "1" }, () => {
     const env = buildStepBaseEnv({
       ...BASE_OPTIONS,

@@ -129,11 +129,9 @@ export async function runScenarioInMode(
     executedStepIds.push(step.id);
 
     const expectFailure = step.expect_failure ?? false;
-    // An explicit `executionFailed` outranks the exit code. The executor sets it when the step
-    // failed at the EXECUTION stage, which on an `expect_failure` step includes "the command
-    // succeeded when a refusal was expected" — a case whose normalised exit code (1) reads here
-    // as the expected failure, inverting the verdict. Falling back to the exit code keeps the
-    // rule intact for callers that do not set the flag.
+    // `executionFailed` outranks the exit code: on an `expect_failure` step, "command succeeded
+    // when a refusal was expected" also normalises to exit code 1, which would otherwise read as
+    // the expected failure. The exit-code fallback only applies when the executor leaves the flag unset.
     const isExecutionFailed = executionResult.executionFailed ??
       (expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0);
 
@@ -152,10 +150,9 @@ export async function runScenarioInMode(
       anyCriteriaFailed = true;
     }
 
-    // A criterion (input/output_criteria) failure does not halt execution — subsequent
-    // steps (e.g. daemon stop cleanup) still run — but it must flip the FINAL outcome
-    // to scenario-failure once the run completes, instead of silently reporting
-    // success at score 1.0 exit code while suite_score/step status disagree.
+    // A criterion (input/output_criteria) failure does not halt execution, but it must flip the
+    // FINAL outcome to scenario-failure once the run completes — otherwise a run can report
+    // success at score 1.0 while suite_score/step status disagree.
     if (executionResult.criteriaFailed) {
       anyCriteriaFailed = true;
     }
@@ -218,10 +215,9 @@ export function selectScenariosForExecution(
       selection.tags,
     );
   } else if (selection.source === ScenarioSelectionSource.EXPLICIT_TAGS) {
-    // An excluded tag in the request is a MODIFIER — it turns the CI-safety filter off for what is
-    // being asked about — not a thing to select. `--tag subsystem:mcp-client --tag provider-live`
-    // otherwise unioned in every provider-live scenario from every pack, including all of
-    // swe_tasks, which on a live tier is real money spent on the wrong scenarios.
+    // An excluded tag in the request is a MODIFIER that turns the CI-safety filter off for what is
+    // asked about, not a thing to select — otherwise `--tag subsystem:mcp-client --tag provider-live`
+    // unions in every provider-live scenario from every pack, real money spent on the wrong ones.
     const selectors = selectorTags(selection.tags);
     selected = applyCiSafety(
       options.scenarios.filter((scenario) => scenario.tags.some((tag) => selectors.includes(tag))),
@@ -234,29 +230,14 @@ export function selectScenariosForExecution(
   return filterByEdition(selected);
 }
 
-/**
- * The tags that actually select, with the CI-safety escape tags removed.
- *
- * Falls back to the full list when nothing else was asked for: `--tag provider-live` alone is how
- * an operator requests the whole live tier, and there is nothing else it could mean.
- */
+/** Falls back to the full requested-tag list when removing CI-safety escape tags leaves nothing — `--tag provider-live` alone should mean the whole live tier, not an empty selection. */
 function selectorTags(requestedTags: string[]): string[] {
   const excluded = CI_EXCLUDED_TAGS as readonly string[];
   const selectors = requestedTags.filter((tag) => !excluded.includes(tag));
   return selectors.length > 0 ? selectors : requestedTags;
 }
 
-/**
- * Drop scenarios a mock-tier run cannot pass, unless the caller explicitly asked for them.
- *
- * `--tag` and `--pack` name a SET, and the caller means its runnable members. The filter used to
- * apply only on the profile-driven path, so every tag-scoped baseline in this phase was depressed
- * by `provider-live` and `manual-checkpoint` scenarios that were never going to pass — the flows
- * baseline of "3 of 28" included at least four of them.
- *
- * Requesting an excluded tag turns the filter off: the nightly recipe selects `--tag provider-live`,
- * and stripping exactly what was asked for would return nothing.
- */
+/** `--tag`/`--pack` select a SET's runnable members only — but requesting an excluded tag itself turns the filter off, since stripping exactly what was asked for would return nothing. */
 function applyCiSafety(scenarios: ISelectableScenario[], requestedTags: string[]): ISelectableScenario[] {
   const excluded = CI_EXCLUDED_TAGS as readonly string[];
   if (requestedTags.some((tag) => excluded.includes(tag))) {
@@ -268,15 +249,7 @@ function applyCiSafety(scenarios: ISelectableScenario[], requestedTags: string[]
   });
 }
 
-/**
- * The environment a child runner process needs to select scenarios for a given edition.
- *
- * The counterpart of `filterByEdition` below, and it lives beside it deliberately: this module is
- * the one place that knows the edition is carried in the environment, so nothing else has to name
- * the variable. A caller launching a runner for an edition-gated pack asks for the env rather than
- * constructing it — without this, a Team-gated pack run with no edition set selects *nothing* and
- * reports a green pack over an empty selection.
- */
+/** Counterpart of `filterByEdition` below — this is the one place that knows the edition lives in env, so callers ask for it rather than constructing it; skip it and a Team-gated pack with no edition set silently selects nothing. */
 export function editionEnv(edition: string): { [key: string]: string } {
   return { EXAIX_EDITION: edition };
 }
@@ -313,11 +286,9 @@ function filterByProfileDefaults(
   }
 
   if (selection.profile === ScenarioCiProfile.CORE) {
-    // The per-change tier: one representative per subsystem, not the whole mock catalog.
-    // It previously selected everything except the `provider_live` pack, which made it identical
-    // to ci-extended (86 scenarios each on a Team build) — a cheap tier that costs the same as the
-    // expensive one buys nothing, and the cadence it is supposed to implement was a fiction.
-    // The parity gates that also belong to this tier are deno tests, run by `deno task test:parity`.
+    // The per-change tier: one representative per subsystem, not the whole mock catalog. It used to
+    // select everything except `provider_live`, identical to ci-extended (86 scenarios on a Team
+    // build) — a cheap tier costing the same as the expensive one. Parity gates run via `deno task test:parity`.
     return ciSafe.filter((scenario) => scenario.tags.includes(SMOKE_TAG));
   }
 

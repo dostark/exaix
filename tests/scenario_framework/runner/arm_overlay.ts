@@ -17,12 +17,7 @@
 
 import type { PathResolver } from "@exaix/portal";
 
-/**
- * Resolves and validates a catalog overlay directory given as a portal alias path (e.g.
- * `@Memory/Skills/eval-overlay`). Rejects (via `PathResolver.resolve`'s own path-traversal
- * and symlink-escape checks) before the caller ever prepends the directory to a search
- * path or sets it as an env var for production code to read.
- */
+/** Resolves and validates a catalog overlay directory given as a portal alias path (e.g. `@Memory/Skills/eval-overlay`), via `PathResolver.resolve`'s path-traversal and symlink-escape checks. */
 export async function validateCatalogOverlayDir(
   pathResolver: PathResolver,
   aliasPath: string,

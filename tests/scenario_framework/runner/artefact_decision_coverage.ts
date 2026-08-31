@@ -36,11 +36,7 @@ export interface IArtefactRef {
 export interface IArtefactDecisionEntry extends IArtefactRef {
   status: ArtefactDecisionStatus;
   rationale: string;
-  /**
-   * Required to back a FLOW entry whose status is KEEP/REVISE/REMOVE — a flow decision
-   * claiming a real verdict must be backed by a measurement that isn't confounded by
-   * execution strategy (see module docstring). Unused for SKILL/IDENTITY entries.
-   */
+  /** Required to back a FLOW entry whose status is KEEP/REVISE/REMOVE — a flow decision claiming a real verdict must be backed by a measurement not confounded by execution strategy. */
   cleanMeasurement?: boolean;
 }
 
@@ -56,11 +52,7 @@ const DECISION_BACKED_STATUSES = new Set<ArtefactDecisionStatus>([
   ArtefactDecisionStatus.REMOVE,
 ]);
 
-/**
- * Throws if any catalog artefact lacks a matching decision entry, if an entry's
- * rationale is empty, or if a FLOW entry claims KEEP/REVISE/REMOVE without
- * `cleanMeasurement: true`.
- */
+/** Throws if any catalog artefact lacks a matching decision entry, if an entry's rationale is empty, or if a FLOW entry claims KEEP/REVISE/REMOVE without `cleanMeasurement: true`. */
 export function assertArtefactDecisionCoverage(
   catalog: IArtefactRef[],
   entries: IArtefactDecisionEntry[],

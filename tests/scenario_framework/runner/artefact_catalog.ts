@@ -17,7 +17,7 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ArtefactKind, type IArtefactRef } from "./artefact_decision_coverage.ts";
 
-/** Files in `Blueprints/Identities/` that are not identities Phase 158 measures. */
+/** Files in `Blueprints/Identities/` that are not curated, measured identities. */
 const NON_CURATED_IDENTITY_IDS: ReadonlySet<string> = new Set(["mock-agent", "default"]);
 
 async function loadIdentityRefs(identitiesDir: string): Promise<IArtefactRef[]> {
@@ -50,11 +50,7 @@ async function loadFlowRefs(flowsDir: string): Promise<IArtefactRef[]> {
   return refs;
 }
 
-/**
- * Reads the real `Blueprints/` catalog (identities, skills, flows) into the flat
- * `IArtefactRef[]` shape `assertArtefactDecisionCoverage` compares decisions against.
- * `blueprintsDir` is the `Blueprints/` directory itself (not its parent).
- */
+/** Reads the real `Blueprints/` catalog (identities, skills, flows) into the flat `IArtefactRef[]` shape `assertArtefactDecisionCoverage` compares against. `blueprintsDir` is `Blueprints/` itself, not its parent. */
 export async function loadArtefactCatalog(blueprintsDir: string): Promise<IArtefactRef[]> {
   const [identities, skills, flows] = await Promise.all([
     loadIdentityRefs(join(blueprintsDir, "Identities")),

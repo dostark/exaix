@@ -42,12 +42,8 @@ const KNOWN_FLAGS = new Set([
   "--bin",
 ]);
 
-/**
- * Parses `Deno.args`-shaped argv into `IRunJailedOptions`. Everything after a bare `--` is the
- * inner command's args, taken verbatim and in order — never re-parsed as flags — so the
- * request-fixture content sentinel, or any inner arg that happens to start with `-`, passes
- * through unmolested. Throws with a specific message on a missing `--` or a missing/unknown flag.
- */
+// Everything after a bare `--` is the inner command's args, taken verbatim and never
+// re-parsed as flags, so an inner arg that happens to start with `-` passes through unmolested.
 export function parseRunJailedArgs(argv: string[]): IRunJailedOptions {
   const sepIndex = argv.indexOf("--");
   if (sepIndex === -1) {
@@ -93,13 +89,9 @@ export function parseRunJailedArgs(argv: string[]): IRunJailedOptions {
   return { mountSource, mountDest, workdir, extraMounts, credentialBin, credentialStagingDir, bin, innerArgs };
 }
 
-/**
- * Refreshes a disposable copy of `credentialBin`'s host credential into `stagingDir`, and
- * returns the `--mount` args pointing the jail at it — or `[]` when the bin has no known
- * credential store, `HOME` is unset, or the live file is absent (graceful degradation to an
- * unauthenticated jailed run, matching `matrix_expander.ts`'s own `resolveCredentialMounts`).
- * Never mounts the live host file itself; never throws on a missing/unreadable source.
- */
+// Copies the live credential into a disposable staging dir rather than mounting it directly,
+// and returns [] instead of throwing when it's unavailable, matching `matrix_expander.ts`'s
+// own `resolveCredentialMounts` degradation to an unauthenticated jailed run.
 export async function stageCredentials(credentialBin: string, stagingDir: string): Promise<string[]> {
   const store = CREDENTIAL_STORES[credentialBin];
   const hostHome = Deno.env.get("HOME");
@@ -115,10 +107,7 @@ export async function stageCredentials(credentialBin: string, stagingDir: string
   }
 }
 
-/**
- * Builds the hardened jail launch for `options` — the pure core `if (import.meta.main)` spawns.
- * Exported for direct unit testing without a real docker daemon.
- */
+/** Exported separately from `if (import.meta.main)` for direct unit testing without a real docker daemon. */
 export async function buildRunJailedLaunch(options: IRunJailedOptions): Promise<{ bin: string; args: string[] }> {
   const credentialMountArgs = options.credentialBin && options.credentialStagingDir
     ? await stageCredentials(options.credentialBin, options.credentialStagingDir)

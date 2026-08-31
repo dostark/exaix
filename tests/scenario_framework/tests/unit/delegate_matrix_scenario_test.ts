@@ -34,10 +34,6 @@ const HARDENING_SCENARIO = join(
   "tests/scenario_framework/scenarios/provider_live/session_delegate_hardening_active_live.yaml",
 );
 
-/**
- * Read and parse the matrix scenario YAML, returning the parsed scenario.
- * Used by every test in this module.
- */
 async function parseMatrixScenario(): Promise<ReturnType<typeof ScenarioSchema.parse>> {
   const raw = await Deno.readTextFile(MATRIX_SCENARIO);
   return ScenarioSchema.parse(parseYaml(raw));
@@ -222,8 +218,7 @@ Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 5 cell-run
 });
 
 Deno.test("[delegate_matrix][security] the codex cell asserts the REAL worktree file-content proof (GREETING in src/main.ts), not just a reconciled journal row", async () => {
-  // Phase 167 Step 4's Action requires "retain the real worktree file-content proof"; GAP-30
-  // verified the matrix only asserted journal events, so a codex run returning
+  // The matrix previously only asserted journal events, so a codex run returning
   // accepted-changes_made with ZERO real edits could pass. Assert the codex cell carries a
   // file-contains step pinning the fixture's acceptance content.
   const scenario = await parseMatrixScenario();

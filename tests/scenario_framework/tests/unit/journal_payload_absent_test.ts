@@ -18,11 +18,7 @@ import { join } from "@std/path";
 import { evaluateCriterion } from "../../runner/assertions.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
 
-/**
- * The CLI journal exposes each row's payload as a JSON-STRING field (IActivityRecord.payload:
- * string). These NDJSON rows mirror that shape — an accepted reconcile vs. a non-scope-rejected
- * reconcile, both `session.delegate.reconciled`.
- */
+/** IActivityRecord.payload is a JSON-STRING field — these NDJSON rows mirror that shape. */
 const ACCEPTED_ROW = JSON.stringify({
   action_type: "session.delegate.reconciled",
   payload: JSON.stringify({ decision: { id: "d1" } }),

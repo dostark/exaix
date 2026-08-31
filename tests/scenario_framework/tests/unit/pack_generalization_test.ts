@@ -99,12 +99,8 @@ Deno.test("[ScenarioFrameworkPackGeneralization] every scenario file on disk is 
 });
 
 Deno.test("[ScenarioFrameworkPackGeneralization] every test file is accounted for — convention-based pack association", async () => {
-  // Convention: test files are associated with a pack via their filename.
-  //   {pack}_pack_test.ts       → pack (e.g. agent_flows_pack_test.ts → agent_flows)
-  //   {pack}_scenario_test.ts   → pack (e.g. triggers_basic_scenario_test.ts → triggers_basic)
-  //   All others                → framework (infrastructure, not pack-specific)
-  //
-  // Pack names use underscores consistently, matching test filename convention.
+  // Convention: filenames map to packs as {pack}_pack_test.ts or {pack}_scenario_test.ts;
+  // everything else is treated as framework-level (not pack-specific).
   const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const allPacks: string[] = [...new Set(catalog.map((s: IScenario) => s.pack))].sort();
   const validStems = new Set(allPacks);
@@ -145,11 +141,8 @@ Deno.test("[ScenarioFrameworkPackGeneralization] every test file is accounted fo
     for (const f of unassociated) console.error(`  - ${f}`);
   }
 
-  // The test passes as long as all files are loadable — the above is informational.
-  // Hard failures would be:
-  // 1. A file that names a pack that doesn't exist in the catalog
-  // 2. A file on disk that isn't a valid test file
-  // Both are caught by existing checks (schema validation + catalog discovery).
+  // Informational only — hard failures (unknown pack name, invalid test file) are already
+  // caught by schema validation and catalog discovery.
   assertEquals(uncoveredPacks.length <= allPacks.length, true);
 });
 

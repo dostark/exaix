@@ -40,9 +40,8 @@ const BENCHMARK_TAG_PREFIX = "bench:";
 const BENCHMARK_VERSION_TAG_PREFIX = "bench-version:";
 
 /** One tag's value shape: benchmark provenance derived from a manifest's `bench:<name>` /
- *  `bench-version:<sha>` tags (Phase 144 Step 5) — the convention `renderExternalBenchTaskTemplate`
- *  stamps onto every generated Terminal-Bench scenario. Absent on every internal (non-external)
- *  run, which carries neither tag. */
+ *  `bench-version:<sha>` tags — the convention `renderExternalBenchTaskTemplate` stamps onto
+ *  every generated Terminal-Bench scenario. Absent on every internal (non-external) run. */
 interface IBenchmarkProvenance {
   benchmark?: string;
   benchmarkVersion?: string;
@@ -59,13 +58,9 @@ function deriveBenchmarkProvenance(tags: Opt<string[], Reason.OptionalInput>): I
   };
 }
 
-/**
- * This is the actual, sole production call site that projects `manifest.steps` into the
- * array `EvalSqliteStore.writeRun`'s `steps` parameter receives; it is independent of and
- * not derived from `history_writer.ts`'s own `step_results` mapping (JSONL path only) — a
- * field widened only in `history_writer.ts` is silently absent from `eval_run_steps` unless
- * this projection is widened too (Phase 140a GAP-1).
- */
+// The sole production call site that projects `manifest.steps` into `EvalSqliteStore.writeRun`'s
+// `steps` parameter; independent of `history_writer.ts`'s own `step_results` (JSONL) mapping —
+// a field widened only there is silently absent from `eval_run_steps` unless widened here too.
 export async function writeEvalHistoryEntries(options: IWriteEvalHistoryEntriesOptions): Promise<void> {
   const historyFormat = options.historyFormat ?? "sqlite+jsonl";
   let sqliteStore: EvalSqliteStore | undefined;

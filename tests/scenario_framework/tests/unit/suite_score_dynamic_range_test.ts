@@ -80,8 +80,7 @@ Deno.test("[score-range] the pre-fix arithmetic is what this replaces", () => {
 });
 
 Deno.test("[score-range] daemon lifecycle steps carry no weight, by what they do", () => {
-  // `restart` too — Step 13 found 25 scenarios using `restart-daemon`, which an id-keyed check
-  // missed entirely.
+  // `restart` too — an id-keyed check missed 25 scenarios using `restart-daemon` entirely.
   for (const args of [["start"], ["stop"], ["restart"]]) {
     const onlyLifecycle = [outcome(step({ id: `daemon-${args[0]}`, command: "daemon", args }), 1)];
     // A scenario of nothing but lifecycle has no assertable content; it must not report 1.0.
@@ -107,8 +106,8 @@ Deno.test("[score-range] a non-daemon exactl step keeps full weight", () => {
 });
 
 Deno.test("[score-range] adding a lifecycle step no longer raises a broken scenario's floor", () => {
-  // The perverse incentive named in the plan: Step 17 added a seeding step to each skill scenario
-  // and moved its failure floor from 0.750 to 0.800 — it "scored better" purely by growing.
+  // The perverse incentive named in the plan: adding a seeding step to each skill scenario
+  // moved its failure floor from 0.750 to 0.800 — it "scored better" purely by growing.
   const withoutExtra = computeSuiteScore(scenarioOutcomes(0));
   const withExtra = computeSuiteScore([
     ...scenarioOutcomes(0),

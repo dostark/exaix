@@ -37,11 +37,11 @@ export interface IExternalBenchTaskTemplateOptions {
    *  oracle test content — mounted read-only ONLY for the verify step, at /oracle_tests,
    *  never visible to the delegate step. */
   oracleTestsDir: string;
-  /** Delegate tool, looked up in the shared BARE_DELEGATE_LAUNCH_SHAPES (Phase 143 reuse). */
+  /** Delegate tool, looked up in the shared BARE_DELEGATE_LAUNCH_SHAPES. */
   tool: string;
-  /** Pinned upstream release SHA (task.json's `source.version`, Phase 144 Step 1) — stamped
-   *  onto the scenario as a `bench-version:<sha>` tag (Phase 144 Step 5) so eval-history
-   *  entries can be attributed to a specific benchmark release, not just the benchmark name. */
+  /** Pinned upstream release SHA (task.json's `source.version`) — stamped onto the scenario as
+   *  a `bench-version:<sha>` tag so eval-history entries can be attributed to a specific
+   *  benchmark release, not just the benchmark name. */
   benchmarkVersion: string;
   scoringWeights?: Record<string, number>;
 }
@@ -52,7 +52,7 @@ export interface ICellDef {
   config: string;
   requiresBin?: string;
   requiresKey?: string;
-  /** Phase 143 Step 1: marks a bare-delegate baseline cell (rendered as `harness: bare`). */
+  /** Marks a bare-delegate baseline cell (rendered as `harness: bare`). */
   harness?: "bare";
 }
 
@@ -69,18 +69,16 @@ export interface ISweTaskTemplateOptions {
 }
 
 /** The outcome step id shared by the Exaix and bare swe templates — the outcome channel a
- *  harness-lift comparison filters on (Phase 143 Step 1 Architecture Notes). */
+ *  harness-lift comparison filters on. */
 export const VERIFY_TESTS_STEP_ID = "verify-tests";
 
-/** Default wall-clock bound for the bare delegate step (Phase 143 Step 1). */
+/** Default wall-clock bound for the bare delegate step. */
 const DEFAULT_BARE_DELEGATE_TIMEOUT_SEC = 600;
 /** OpenCode agent key for the bare-delegate SWE-task cell's staged permission config. */
 export const BARE_DELEGATE_AGENT_ID = "bare-delegate";
-/** Default wall-clock bound for the external-bench verify step (Phase 144 post-gap
- *  remediation, GAP-5) — a real pytest run against the hidden oracle-tests mount must
- *  declare its own bound explicitly rather than silently inherit the generic step-executor's
- *  120s default (`step_executor.ts`'s `timeout_sec ?? 120` fallback, which existed
- *  only because no step in this codebase had opted out of it before). */
+// Default wall-clock bound for the external-bench verify step: a real pytest run against the
+// hidden oracle-tests mount must declare its own bound explicitly rather than silently inherit
+// step_executor.ts's generic `timeout_sec ?? 120` fallback.
 const DEFAULT_EXTERNAL_BENCH_VERIFY_TIMEOUT_SEC = 300;
 
 interface IIdSequenceStepOptions {
@@ -123,7 +121,7 @@ export function renderScenarioTemplate(
   ].join("\n");
 }
 
-// Phase 141 — swe_tasks dogfood-loop template
+// swe_tasks dogfood-loop template
 
 const INDENT = "  ";
 
@@ -259,14 +257,9 @@ function _idSequenceStep(opts: IIdSequenceStepOptions): string {
   ].filter(Boolean).join("\n");
 }
 
-/**
- * The pinned-worktree setup steps shared by the Exaix and bare swe templates. Both templates
- * must run the task in the same worktree state (brief and worktree parity enforced by
- * construction — Phase 143 Step 1 baseline-fairness constraint), so the setup blocks are
- * rendered by one function and never diverge. `includeCliDelegatePatch` renders the
- * CLI-delegate-only `patch-blueprint-capability` step between setup-blueprints and setup-memory
- * (the Exaix loop needs it; the bare cell launches the delegate directly and does not).
- */
+// The pinned-worktree setup steps shared by the Exaix and bare swe templates, rendered by one
+// function so they can never diverge (both must run the task against the same worktree state).
+// `includeCliDelegatePatch` adds a CLI-delegate-only step the Exaix loop needs but bare cells don't.
 function renderSweSetupSteps(
   portalDir: string,
   opts: { includeCliDelegatePatch: boolean },
@@ -326,10 +319,7 @@ function renderSweSetupSteps(
   ];
 }
 
-/**
- * The outcome step both templates share: run the portal's scoped tests. This is the outcome
- * channel a harness-lift comparison scores on — the only channel that exists for bare cells.
- */
+/** The outcome step both templates share — the only scoring channel that exists for bare cells. */
 function renderSweVerifyTestsStep(scoreWeights: Record<string, number>): string {
   return [
     `  - id: "${VERIFY_TESTS_STEP_ID}"`,
@@ -347,12 +337,7 @@ function renderSweVerifyTestsStep(scoreWeights: Record<string, number>): string 
   ].join("\n");
 }
 
-/**
- * Render a complete swe_tasks benchmark scenario YAML against the
- * todo_app fixture portal. The template emits both CLI-delegate-specific
- * and direct-API-specific steps; irrelevant steps are skipped at
- * expansion time via matrix cell guards.
- */
+/** Renders a complete swe_tasks scenario YAML; irrelevant per-cell steps are skipped at expansion time via matrix cell guards. */
 export function renderSweTaskTemplate(
   task: ISweTaskTemplateOptions,
 ): string {
@@ -563,28 +548,18 @@ export function renderSweTaskTemplate(
   return parts.filter(Boolean).join("\n");
 }
 
-/**
- * Render the bare-delegate baseline scenario for a swe_tasks task (Phase 143 Step 1). Same
- * id/title/brief as the Exaix template (matching on scenario_id), the SAME pinned-worktree
- * setup steps (parity by construction), then a single `bare-delegate` SHELL step launching the
- * delegate directly with the task content as its own discrete args element (placeholder shape —
- * the matrix overlay rewrites command/args per cell tool), and the unchanged `verify-tests`
- * outcome step. Process/plan steps (daemon, request, plan, approve, review, judge, trajectory)
- * are structurally absent: bare cells have no journal, so process-channel criteria are excluded
- * from both sides of a lift comparison (Design Decision 1), never scored as 0 against the bare
- * cell. Every cell carries the `harness: bare` marker so the runner records
- * `cell_id: bare/<tool>/<provider>` and the `harness:bare` tag.
- */
+// Renders the bare-delegate baseline: same pinned-worktree setup and `verify-tests` outcome step
+// as the Exaix template, but process/plan steps are structurally absent (bare cells have no
+// journal) — process-channel criteria are excluded from BOTH sides of a lift comparison, never scored as 0.
 export function renderSweTaskBareTemplate(
   task: ISweTaskTemplateOptions,
 ): string {
   const scoreWeights = task.scoringWeights ?? {};
   const portalDir = task.portal ?? "todo_app";
 
-  // Phase 143 fix — the bare delegate is scoped to its worktree exactly like the daemon-run
-  // delegate: an opencode permission config is staged INTO the sandbox worktree and passed via
-  // OPENCODE_CONFIG, so the raw CLI cannot read outside the worktree (e.g. the repo's
-  // fixtures/swe_tasks/<task>/reference.patch solution). `**` = everything under the worktree.
+  // The bare delegate's opencode permission config is staged INTO the sandbox worktree via
+  // OPENCODE_CONFIG, so the raw CLI cannot read outside it — e.g. the repo's
+  // fixtures/swe_tasks/<task>/reference.patch solution. `**` = everything under the worktree.
   const bareScopeConfigJson = JSON.stringify(buildOpencodePermissionConfig(["**"], BARE_DELEGATE_AGENT_ID))
     .replaceAll('"', '\\"');
 
@@ -628,37 +603,21 @@ export function renderSweTaskBareTemplate(
   return parts.filter(Boolean).join("\n");
 }
 
-// Phase 144 Step 2 — external_bench_task template (Terminal-Bench container-portal)
+// external_bench_task template (Terminal-Bench container-portal)
 
 /** Container mount destination + WORKDIR for external-benchmark tasks — matches the
  *  upstream benchmark's own container convention (Terminal-Bench uses `/app`), unlike the
- *  bare swe_tasks jail's `/worktree` — see phase-144 Step 1's `scoped_test_cmd` values. */
+ *  bare swe_tasks jail's `/worktree`. */
 const EXTERNAL_BENCH_MOUNT_DEST = "/app";
 /** Where the hidden oracle test content is mounted — verify step only, never the delegate step. */
 const ORACLE_TESTS_MOUNT_DEST = "/oracle_tests";
 
-/**
- * Renders an `external_bench_task` scenario: the exemplar runs inside its vendored
- * environment bracket rather than the shared `renderSweSetupSteps` (hardcoded to copy +
- * `git init` into `$WORKSPACE_ROOT/todo-app`, which cannot represent an already-vendored
- * external portal — GAP-2). The delegate and verify steps are declarative `run-script` steps
- * invoking the framework-owned `run_jailed.ts` (`scripts/run_jailed.ts`), which wraps the
- * inner command with `buildJailLaunch` at RUN time — the exact same hardened container-launch
- * shape Phase 143's bare cells use, mounted at `/app` (the upstream benchmark's own
- * convention) instead of `/worktree`. GitHub issue #4: this used to bake the resolved
- * `docker run ...` invocation directly into the persisted scenario YAML as `type: "shell"`
- * steps (`check:scenario-declarative`'s `sandbox-setup`/`inline-script`/`test-run`
- * categories); routing through `run_jailed.ts` moves the actual process-spawning into
- * framework TypeScript, leaving the YAML declarative (a `run-script` step naming a framework
- * helper plus its typed flags). No docker-compose: `run_jailed.ts` issues a single
- * `docker run --rm` per step, so teardown is guaranteed by `--rm` on every exit path, not a
- * separate cleanup step.
- */
+// Renders external_bench_task: doesn't reuse renderSweSetupSteps (hardcoded copy+`git init`) since
+// the exemplar is already vendored. Delegate/verify steps are declarative `run-script` steps that
+// invoke `run_jailed.ts`, whose single `docker run --rm` per step guarantees teardown on every exit.
 
-/** Gitignored, framework-relative root for the STABLE (never-random) credential staging
- *  directories `run_jailed.ts` refreshes immediately before every jailed launch — reuses the
- *  already-gitignored `tests/scenario_framework/output/` tree so a staged auth/credential
- *  copy can never be accidentally committed. */
+/** Gitignored, framework-relative root for STABLE credential staging dirs — reuses the
+ *  already-gitignored `output/` tree so a staged credential copy can never be accidentally committed. */
 const CREDENTIAL_STAGING_ROOT = "$FRAMEWORK_HOME/output/.eval-jail-creds";
 
 /** `run_jailed.ts`'s path, `$FRAMEWORK_HOME`-relative — every external_bench_task container

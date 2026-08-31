@@ -246,11 +246,8 @@ export async function evaluateStepOutcome(
     };
   }
 
-  // Mirror the expect_failure semantics runScenarioInMode already applies (modes.ts):
-  // for a step that declares expect_failure, a non-zero exit is the EXPECTED outcome and a
-  // zero exit is the failure. Without this the short-circuit below skipped output criteria
-  // on every expect_failure step, so scenarios written to elicit a refusal passed without
-  // ever evaluating the assertion that made them meaningful.
+  // For an expect_failure step, a non-zero exit is the expected outcome; without inverting this,
+  // the short-circuit below skipped output criteria and refusal scenarios passed unevaluated.
   const expectFailure = options.step.expect_failure ?? false;
   const exitCode = options.executionResult?.exitCode ?? 0;
   const executionFailed = expectFailure ? exitCode === 0 : exitCode !== 0;
@@ -645,10 +642,9 @@ async function evaluateJournalEventExistsCriterion(
     e.action_type === criterion.event_type || e.event_type === criterion.event_type
   );
 
-  // payload_includes (Phase 142 Step 17): require at least one matching event whose parsed
-  // payload carries, under each named key, an array containing every listed string — proving
-  // e.g. that ids pinned in request frontmatter actually reached `skills.resolved`, which a
-  // bare event-type match cannot distinguish from a run that resolved something else.
+  // Requires a matching event whose payload carries, under each named key, an array containing
+  // every listed string — proving e.g. that ids pinned in request frontmatter actually reached
+  // `skills.resolved`, which a bare event-type match can't distinguish from a different resolve.
   if (criterion.payload_includes) {
     const includes = criterion.payload_includes;
     if (typeMatches.some((e) => payloadIncludesAll(e, includes))) return buildPassedResult(options, []);
@@ -676,9 +672,8 @@ async function evaluateJournalEventExistsCriterion(
     });
   }
 
-  // payload_absent (Phase 127 Step 7): require at least one matching event whose parsed payload
-  // does NOT carry every one of the given key/value pairs — proving e.g. an ACCEPTED reconcile
-  // (no `rejected: true`) rather than a non-scope-rejected one that emits the same event type.
+  // Requires a matching event whose payload omits every given key/value pair — proving e.g. an
+  // ACCEPTED reconcile (no `rejected: true`) rather than a rejected one with the same event type.
   const accepted = typeMatches.some((e) => !payloadContainsAll(e, criterion.payload_absent!));
   if (accepted) return buildPassedResult(options, []);
 
@@ -694,11 +689,7 @@ async function evaluateJournalEventExistsCriterion(
   });
 }
 
-/**
- * True when the event's payload contains EVERY key/value pair in `expected`. The CLI journal
- * serializes the payload as a JSON string (IActivityRecord.payload), so it is parsed first;
- * a payload that is missing, non-string, or unparseable is treated as not-containing.
- */
+/** True when the event's payload (parsed from its serialized JSON string) contains EVERY key/value pair in `expected`. */
 function payloadContainsAll(event: IJournalEvent, expected: IJournalPayloadFields): boolean {
   const payload = parseEventPayload(event);
   if (!payload) return false;
@@ -707,11 +698,7 @@ function payloadContainsAll(event: IJournalEvent, expected: IJournalPayloadField
   );
 }
 
-/**
- * True when, for every entry in `expected`, the event's payload holds an ARRAY under that key
- * containing each listed string. Membership rather than equality, so a criterion can pin the
- * ids it cares about without restating the whole array.
- */
+/** True when, for every entry in `expected`, the event's payload holds an ARRAY under that key containing each listed string (membership, not equality). */
 function payloadIncludesAll(event: IJournalEvent, expected: Record<string, string[]>): boolean {
   const payload = parseEventPayload(event);
   if (!payload) return false;
@@ -722,10 +709,7 @@ function payloadIncludesAll(event: IJournalEvent, expected: Record<string, strin
   });
 }
 
-/**
- * The CLI journal serializes each row's payload as a JSON string (IActivityRecord.payload);
- * the NDJSON path may already hold an object. Returns null when it is missing or unparseable.
- */
+/** The CLI journal serializes payload as a JSON string, but the NDJSON path may already hold an object. */
 function parseEventPayload(event: IJournalEvent): IJournalPayloadFields | null {
   const raw = event.payload;
   if (typeof raw === "string") {
@@ -1024,20 +1008,9 @@ async function* walkWorkspaceFiles(dir: string): AsyncGenerator<string> {
   }
 }
 
-/**
- * Resolve a step's `file_pattern` to the MOST RECENTLY WRITTEN match.
- *
- * Scenarios in a pack run share one sandbox workspace, so a pattern like `**\/*_plan.md`
- * matches every plan produced by every earlier scenario. Returning the first
- * directory-walk match — whatever order the walk happens to yield — made a step validate
- * an arbitrary scenario's artefact; with a criterion weak enough not to notice (e.g. a
- * field-exists check) that reads as a pass. Selecting the newest match correlates the step
- * with the request this scenario just submitted and waited for, which is what lets a shared
- * sandbox stay correct without per-scenario cleanup.
- *
- * Ties (same mtime) fall back to the lexically greatest path so the result stays
- * deterministic rather than walk-order dependent.
- */
+// Resolves a step's `file_pattern` to the MOST RECENTLY WRITTEN match: scenarios in a pack
+// share one sandbox workspace, so picking the first directory-walk match could validate an
+// arbitrary earlier scenario's artefact. Ties fall back to the lexically greatest path.
 async function resolveStepFilePattern(
   workspaceRoot: string,
   pattern: string,
@@ -1103,7 +1076,7 @@ function rewriteCriteriaWithTarget(
   });
 }
 
-// Version Assertion Criteria (Phase 51 Secondary Goal)
+// Version Assertion Criteria
 
 function evaluateVersionEqualsCriterion(
   options: IEvaluateCriterionOptions,
@@ -1168,14 +1141,7 @@ function evaluateVersionLteCriterion(
   };
 }
 
-/**
- * The number `min`/`max` compare against, and the noun that describes it.
- *
- * A query resolving to a number IS the quantity — `query: "length", min: 1` says "at least one
- * row". Measuring the length of a number instead yielded 0 for every input, so that criterion
- * could never pass; three scenarios used the form and each read as a missing journal row.
- * Arrays and strings keep counting elements/characters, which is what every other caller means.
- */
+/** The number `min`/`max` compare against: a query resolving to a number IS the quantity (not its length), unlike arrays/strings which count elements/characters. */
 interface IComparableNumber {
   value: number;
   noun: string;
@@ -1205,11 +1171,9 @@ function evaluateJsonQueryCriterion(
   try {
     const data = JSON.parse(outputData);
 
-    // Execute the query using a simple JSON path evaluation. A leading "." (as in the
-    // conventional ".[].field" array-map syntax) produces an empty first segment —
-    // skip it rather than indexing with key "". After a "[]"/"[*]" map segment, every
-    // subsequent field lookup projects across each array element (not onto the array
-    // itself, which has no such property).
+    // A leading "." (as in ".[].field") produces an empty first segment, skipped rather than
+    // indexed with key "". After a "[]"/"[*]" map segment, subsequent field lookups project
+    // across each array element rather than onto the array itself.
     const queryParts = criterion.query.split(".").filter((part) => part.length > 0);
     let result: any = data;
     let mapped = false;
@@ -1384,16 +1348,9 @@ function evaluateCommandOutputNotContainsCriterion(
   };
 }
 
-/**
- * Resolve judge provenance from step env, process env, or model resolution.
- * Precedence (so the judge model can differ from the scenario's own execution model):
- *   1. `EXA_EVAL_LLM_PROVIDER` / `EXA_EVAL_LLM_MODEL` — dedicated judge vars (step env or
- *      process env; the runner's base env already carries process env through).
- *   2. `EXA_LLM_PROVIDER` / `EXA_LLM_MODEL` — the scenario's own execution model (step env or
- *      process env).
- * Returns { provider, model } when both are available, undefined otherwise. A provider without
- * a model falls back to `EXA_EVAL_MODEL_SIZE`, then the provider itself.
- */
+// Prefers dedicated `EXA_EVAL_LLM_PROVIDER`/`EXA_EVAL_LLM_MODEL` judge vars over the scenario's
+// own `EXA_LLM_PROVIDER`/`EXA_LLM_MODEL`, so the judge model can differ from the execution model.
+// A provider without a model falls back to `EXA_EVAL_MODEL_SIZE`, then the provider itself.
 export function resolveEvalJudgeProvenance(
   env?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
 ): { provider: string; model: string } | undefined {
@@ -1407,10 +1364,7 @@ export function resolveEvalJudgeProvenance(
   return undefined;
 }
 
-/**
- * Build a synthetic structured EvaluationResult for multi-criteria preset sets
- * in mock mode, used to test the weighted-score composition path.
- */
+/** Builds a synthetic structured EvaluationResult for multi-criteria preset sets in mock mode, to exercise the weighted-score composition path. */
 function buildMockMultiCriteriaResult(
   criteria: EvaluationCriterion[],
 ): EvaluationResult {
@@ -1463,14 +1417,9 @@ function judgeResult(
   return provenance ? { ...provenance, reasoning } : undefined;
 }
 
-/**
- * Resolves the `context` buildEvaluationPrompt receives: `context_path`'s file content when
- * set (e.g. the original request fixture — lets a judge actually score "goal_alignment"/
- * "request_understanding" against a real stated objective instead of guessing from bare code),
- * else falls back to `rubric` (backward-compatible with rubric-only criteria), else undefined.
- * A missing/unreadable context_path file falls back the same way rather than erroring — the
- * judge call should degrade to less-informed scoring, not fail the step outright.
- */
+// Resolves the `context` buildEvaluationPrompt receives: `context_path`'s file content when set
+// (lets the judge score "goal_alignment" against a real stated objective), else `rubric`. A
+// missing/unreadable context_path degrades to the rubric fallback rather than failing the step.
 export async function resolveEvalJudgeContext(
   options: { workspaceRoot: string; rubric?: string; contextPath?: string },
 ): Promise<string | undefined> {
@@ -1485,16 +1434,9 @@ export async function resolveEvalJudgeContext(
   return options.rubric;
 }
 
-/**
- * Loads the catalog's judge-methodology skills' (verdict-rubric, response-contract-judge)
- * instructions directly from Memory/Skills/global/ — not through SkillsService/AgentRunner,
- * which would need a DB and risks EXA_EVAL_SUPPRESS_SKILLS (set for the arm under test)
- * leaking into the judge's own skill resolution in the same process. Both skills are
- * `critical: true` with `usage_count: 0` in the shipped catalog: authored for exactly this
- * (evidence-grounded, reason-before-score judging) but never wired into any judge call
- * path. A missing/unreadable/malformed skill file degrades gracefully — matching
- * resolveEvalJudgeContext's fallback convention — rather than failing the judge step.
- */
+// Reads judge-methodology skill files directly from Memory/Skills/global/ rather than through
+// SkillsService/AgentRunner, since that would need a DB and risks EXA_EVAL_SUPPRESS_SKILLS (set
+// for the arm under test) leaking into the judge's own skill resolution in the same process.
 export async function loadJudgeMethodologyInstructions(workspaceRoot: string): Promise<string> {
   const skillIds = ["verdict-rubric", "response-contract-judge"];
   const parts: string[] = [];
@@ -1511,12 +1453,7 @@ export async function loadJudgeMethodologyInstructions(workspaceRoot: string): P
   return parts.join("\n\n---\n\n");
 }
 
-/**
- * Prepends the loaded methodology instructions ahead of the evaluation request itself, so
- * the judge reads "how to judge" before "what to judge" — matching
- * response-contract-judge's own "read the goal, then the evidence" ordering. Empty
- * methodology returns the prompt unchanged.
- */
+/** Prepends methodology ahead of the evaluation request so the judge reads "how to judge" before "what to judge"; empty methodology returns the prompt unchanged. */
 export function prependMethodologyInstructions(prompt: string, methodology: string): string {
   if (!methodology) return prompt;
   return `${methodology}\n\n---\n\n${prompt}`;
@@ -1531,19 +1468,9 @@ async function runGitCapture(cwd: string, args: string[]): Promise<string> {
   return result.output;
 }
 
-/**
- * Computes a diff of `trackedFilePath` between its containing git repo's root commit and
- * the current working tree — deterministic, harness-computed evidence rather than the
- * judge inferring "did anything change" from a final-state-only snapshot. Diffs against
- * the working tree (not HEAD) rather than just the committed history: live-observed
- * 2026-08-02, a solved trial left its (correct) fix uncommitted, so a root..HEAD diff saw
- * nothing and would have reported "(no changes)" on code that was genuinely fixed —
- * exactly the broken-pipeline-read-as-worthless-artefact failure Phase 158's validity gate
- * exists to catch. Also fixes the earlier gap of judge calls given only a final-state file
- * hallucinating "does not represent a diff/fix" on code that was genuinely, verifiably
- * fixed. An empty diff (no real change at all) is reported explicitly rather than as
- * blank/ambiguous text the judge could misread either way.
- */
+// Diffs `trackedFilePath` between its repo's root commit and the WORKING TREE, not HEAD: a
+// solved trial can leave its correct fix uncommitted, and a root..HEAD diff would then report
+// "(no changes)" on code that was genuinely fixed. An empty diff is still reported explicitly.
 export async function computeGitDiffEvidence(
   workspaceRoot: string,
   trackedFilePath: string,
@@ -1765,32 +1692,18 @@ export async function evaluateLlmJudgeCriterion(
   }
 }
 
-/**
- * CLI-delegate providers (claude-cli, opencode-cli) spawn a headless CLI subprocess, not a
- * fast HTTP call — CliDelegateProviderFactory's own default timeout is
- * DEFAULT_CLI_DELEGATE_TIMEOUT_MS (300s), but ProviderFactory.resolveOptionsByName always
- * resolves a generic `timeoutMs` first (defaulting to DEFAULT_AI_TIMEOUT_MS, 30s, sized for
- * HTTP APIs) before CliDelegateProviderFactory.create() ever runs — and
- * `options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS` prefers that already-set 30s value
- * over its own larger default. Live-observed: a real opencode eval-judge call timed out at
- * exactly 30000ms. Returns an explicit CLI-appropriate override for claude-cli/opencode-cli,
- * or undefined (no override — the generic default applies) for every other provider.
- */
+// ProviderFactory.resolveOptionsByName resolves a generic `timeoutMs` (30s, sized for HTTP)
+// before CliDelegateProviderFactory.create() runs, so its own 300s CLI default never applies
+// once that's already set. A real opencode eval-judge call live-timed-out at exactly 30000ms.
 export function resolveEvalLlmTimeoutMs(provider: string): number | undefined {
   return provider === ProviderType.CLAUDE_CLI || provider === ProviderType.OPENCODE_CLI
     ? DEFAULT_CLI_DELEGATE_TIMEOUT_MS
     : undefined;
 }
 
-/**
- * Live-observed: the eval-judge's ephemeral provider config passed a hardcoded
- * "/tmp/exa-eval" literal as `system.root`. HTTP-based providers never read it, but
- * CliDelegateProviderFactory.create() uses `config.system.root` as the CLI subprocess's
- * `cwd` — and that literal directory does not exist, so every claude-cli/opencode-cli
- * judge call failed immediately ("Failed to spawn ...: No such cwd '/tmp/exa-eval'").
- * `Deno.cwd()` is always a real, existing directory, and non-CLI providers still never
- * read it, so this is safe for every provider, not just CLI-delegate ones.
- */
+// A hardcoded "/tmp/exa-eval" `system.root` doesn't exist, and CliDelegateProviderFactory uses
+// it as the CLI subprocess's cwd, so every claude-cli/opencode-cli judge call failed to spawn.
+// `Deno.cwd()` always exists; non-CLI providers never read this field, so it's safe for all.
 export function resolveEvalLlmJudgeConfigRoot(): string {
   return Deno.cwd();
 }
@@ -1800,8 +1713,7 @@ export async function callLlmEndpoint(
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
   jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
 ): Promise<string> {
-  // Step env (options.env) takes precedence over the runner's process env, consistent with
-  // the dispatch in evaluateLlmJudgeCriterion and resolveEvalJudgeProvenance. Reading only
+  // Step env (options.env) takes precedence over the runner's process env — reading only
   // Deno.env here silently ignored a step-declared EXA_EVAL_LLM_MOCK/EXA_LLM_PROVIDER and
   // fell through to the MockLLMProvider.
   const readEnv = (key: string): string | undefined => stepEnv?.[key] ?? Deno.env.get(key);

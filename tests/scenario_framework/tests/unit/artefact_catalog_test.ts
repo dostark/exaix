@@ -123,12 +123,12 @@ Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts 
 
   const byKind = (kind: ArtefactKind) => catalog.filter((r) => r.kind === kind).length;
 
-  // Phase 112 Step 7 added Blueprints/Identities/aci-react.md (a real-daemon scenario fixture
-  // identity), bringing the curated count from 15 to 16.
+  // Blueprints/Identities/aci-react.md (a real-daemon scenario fixture identity) is included,
+  // bringing the curated count to 16.
   assertEquals(byKind(ArtefactKind.IDENTITY), 16, "curated identities (excluding README, mock-agent, default)");
   assertEquals(byKind(ArtefactKind.SKILL), 27, "skills");
-  // Phase 158 published 17 (excluding templates/); Phase 159 added 3 mechanism-proof fixture
-  // flows (strategy-comparison-cli-delegate, strategy-comparison-react, strategy-routing-smoke),
-  // each with NON_COVERAGE entries in scripts/check_artefact_decision_coverage.ts's FLOW_DECISIONS.
+  // Includes 3 mechanism-proof fixture flows (strategy-comparison-cli-delegate,
+  // strategy-comparison-react, strategy-routing-smoke), each with NON_COVERAGE entries in
+  // scripts/check_artefact_decision_coverage.ts's FLOW_DECISIONS.
   assertEquals(byKind(ArtefactKind.FLOW), 20, "runnable flows (excluding templates/)");
 });

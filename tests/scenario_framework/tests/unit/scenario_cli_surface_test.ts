@@ -25,12 +25,7 @@ import { __test_command } from "../../../../apps/exactl/src/exactl.ts";
 
 const SCENARIOS_DIR = join(resolve(import.meta.dirname!, "..", ".."), "scenarios");
 
-/**
- * A registered subcommand, taken from the real root command's own return type — Cliffy's `Command`
- * is generic over its option/argument shape, so the root and its children are different types and
- * naming either explicitly requires a cast. Deriving the child type keeps the tree honest without
- * one, and the walk below tracks child LISTS rather than nodes so the root needs no name at all.
- */
+/** A registered subcommand — derived from `__test_command.getCommands()`'s own return type since Cliffy's `Command` is generic over its option/argument shape, so root and children are different types. */
 type CommandNode = ReturnType<typeof __test_command.getCommands>[number];
 
 /** Cliffy registers `show <flowId:string>` under the bare name `show`. */
@@ -81,12 +76,7 @@ async function collectInvocations(): Promise<IExactlInvocation[]> {
   return invocations;
 }
 
-/**
- * Walk the argv down the command tree, returning the failing prefix or null.
- *
- * Stops descending at the first token that is not a bare word (a flag or a positional's value),
- * and at a command with no children — both mean the remaining tokens are arguments, not names.
- */
+/** Walks the argv down the command tree, returning the failing prefix or null — stops at the first non-bare-word token or a childless command, since the remainder is arguments, not names. */
 function firstUnknownPrefix(argv: string[]): string | null {
   let candidates: CommandNode[] = __test_command.getCommands();
   for (let index = 0; index < argv.length; index += 1) {

@@ -33,34 +33,17 @@ export interface IExecuteScenarioStepOptions {
   cwd?: string;
   env?: { [key: string]: string };
   verbose?: boolean;
-  /**
-   * Epoch-ms floor for artefacts this scenario may claim as its own. Scenarios in a pack
-   * run share one sandbox workspace, so `**\/*_plan.md` also matches every plan an earlier
-   * scenario produced — a `wait-for-file` step was satisfied INSTANTLY by a stale match and
-   * returned before the current request's plan existed. Set to the scenario's start time,
-   * this rejects prior scenarios' artefacts the same way the daemon-ready wait rejects
-   * stale journal events via a `sinceRowid` baseline. Omit to accept any match.
-   */
+  // Epoch-ms floor for artefacts this scenario may claim as its own. Scenarios in a pack run
+  // share one sandbox workspace, so a `wait-for-file` step can be satisfied INSTANTLY by a stale
+  // match from an earlier scenario's artefact. Set to the scenario's start time; omit to accept any match.
   artifactBaselineMs?: number;
-  /**
-   * Journal rowid floor an `exactl journal wait --since $JOURNAL_BASELINE` barrier counts from —
-   * only events above it count.
-   *
-   * The wait command used to capture this itself, at the moment the wait began — which cannot see an
-   * event the PRECEDING step already produced. `exactl daemon start` now blocks until
-   * `daemon.ready` is journalled, so every `wait-for-daemon-ready` barrier placed after it
-   * (30 scenarios) sat above that row and waited out its timeout for a second `daemon.ready`
-   * that never comes. Pass the rowid the runner captured before the producing step ran.
-   * Omit to fall back to capturing at wait-start.
-   */
+  // Journal rowid floor a `journal wait --since $JOURNAL_BASELINE` barrier counts from. Capturing
+  // it at wait-start can miss an event the PRECEDING step already produced (e.g. `daemon start`
+  // journalling `daemon.ready` before the wait begins); pass the rowid captured before that step ran.
   journalBaselineRowid?: number;
-  /**
-   * The SCENARIO's journal rowid baseline (captured at scenario start, NOT the per-step
-   * barrier baseline) — used to resolve `$TRACE_ID`/`$REQUEST_ID` to the CURRENT scenario's
-   * request (the first `request.created` above it). A per-step barrier baseline rises above the
-   * request as execution progresses, so `$REQUEST_ID` (e.g. `exactl review approve`) would
-   * otherwise resolve to nothing. Falls back to `journalBaselineRowid` when omitted.
-   */
+  // The SCENARIO's journal rowid baseline (captured at scenario start), not the per-step barrier
+  // baseline — used to resolve `$TRACE_ID`/`$REQUEST_ID` to the CURRENT scenario's request. A
+  // per-step baseline rises above the request as execution progresses, so it would resolve to nothing.
   traceBaselineRowid?: number;
 }
 
@@ -74,34 +57,15 @@ export interface IScenarioStepExecutionResult {
   stdout: string;
   stderr: string;
   combinedOutput: string;
-  /**
-   * True when this step's own input/output criteria did not all pass, independent of
-   * exitCode. Distinguishes "the process ran fine but the assertions failed" from an
-   * execution failure — the mode engine (modes.ts) continues running subsequent steps
-   * (so cleanup steps like `daemon stop` still execute) but reports the scenario's
-   * final outcome as scenario-failure if this was ever true for any step.
-   */
+  // True when this step's criteria failed, independent of exitCode — distinguishes "process ran
+  // fine but assertions failed" from an execution failure. modes.ts still runs subsequent cleanup
+  // steps (e.g. `daemon stop`) but reports the scenario outcome as scenario-failure if ever true.
   criteriaFailed?: boolean;
-  /**
-   * True when the step failed at the EXECUTION stage, stated explicitly rather than inferred.
-   *
-   * `toModeExecutionResult` used to signal an execution failure by normalising `exitCode` to 1,
-   * and `modes.ts` re-derived the verdict from that exit code through `expect_failure` semantics —
-   * where a non-zero exit means *the expected failure happened*. On an `expect_failure` step the
-   * two readings are exact opposites, so a step that failed because its command unexpectedly
-   * SUCCEEDED was reported as the refusal the scenario asked for, and the scenario finished
-   * `Outcome: success` at `suite_score: 0.000`.
-   *
-   * Found by Phase 142 Step 21's first real run of the declared pack mutations: the mcp-client
-   * pack reported green while the scenario under it scored zero. Sibling of the Step 10 defect in
-   * `evaluateStepOutcome`, and fixed the same way — say what happened instead of encoding it in a
-   * value whose meaning depends on the reader.
-   */
+  // True when the step failed at the EXECUTION stage, stated explicitly rather than inferred from
+  // exitCode. Normalising exitCode to 1 on execution failure made `expect_failure` steps invert the
+  // reading: a command that unexpectedly SUCCEEDED read as "the expected failure happened".
   executionFailed?: boolean;
-  /**
-   * Criterion results populated by trajectory-assert steps (and potentially
-   * other non-shell step types) for direct forwarding into evaluateStepOutcome.
-   */
+  /** Criterion results populated by trajectory-assert steps, forwarded directly into evaluateStepOutcome. */
   criterionResults?: ICriterionResult[];
 }
 
@@ -115,10 +79,6 @@ export const CWD_WORKTREE_TOKEN = "$WORKTREE";
 /** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
  *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key). Resolved at
  *  step-execution time (the trace does not exist at scenario load). */
-/** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
- *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key), and
- *  `$JOURNAL_BASELINE` → the scenario's journal baseline rowid. Resolved at step-execution time
- *  (the trace does not exist at scenario load). */
 export function substituteRuntimeVars(
   spec: ICommandSpec,
   workspaceRoot: string,
@@ -351,10 +311,9 @@ async function executeWaitForFileStep(
       };
     }
 
-    // A failure_glob match means the outcome we're waiting for can never happen (e.g. the
-    // request that would have produced a plan was already rejected) — fail immediately
-    // instead of burning the rest of timeout_sec, and surface the failure file's content
-    // so the real error (not a generic timeout) reaches the scenario's failure details.
+    // A failure_glob match means the outcome we're waiting for can never happen — fail immediately
+    // instead of burning the rest of timeout_sec, and surface the failure file's content so the
+    // real error (not a generic timeout) reaches the scenario's failure details.
     if (failurePattern) {
       const failureFound = await findMatchingFiles(executionBase, failurePattern);
       if (failureFound.length > 0) {
@@ -546,12 +505,7 @@ async function executeFileContainsStep(
   };
 }
 
-/**
- * The current highest `rowid` in the workspace journal — the scenario journal baseline captured
- * before a run, handed to steps via `$JOURNAL_BASELINE` so an `exactl journal wait --since`
- * barrier ignores a prior scenario's events. Returns 0 for a missing/empty/uninitialized
- * journal (so the first event always counts as "after").
- */
+/** Current highest `rowid` in the workspace journal; returns 0 for a missing/empty/uninitialized journal so the first event always counts as "after". */
 export async function currentMaxRowid(workspaceRoot: string): Promise<number> {
   const dbPath = join(workspaceRoot, ".exa", "journal.db");
   try {
@@ -571,11 +525,7 @@ export async function currentMaxRowid(workspaceRoot: string): Promise<number> {
   }
 }
 
-/**
- * True when `path` was last modified at or after `baselineMs` — i.e. it belongs to the
- * current scenario rather than an earlier one sharing the workspace. No baseline means
- * every match is acceptable (single-scenario runs, and callers that do not correlate).
- */
+/** True when `path`'s mtime is at or after `baselineMs`; no baseline means every match is acceptable. */
 async function isAtOrAfterBaseline(
   path: string,
   baselineMs?: Opt<number, Reason.OptionalInput>,
@@ -643,9 +593,8 @@ interface ICommandSpec {
 }
 
 /** Resolve the current scenario's request trace: the first `request.created` rowid above the
- *  scenario's journal baseline. ASC+LIMIT 1 is deterministic (rowid is monotonic and ties never
- *  occur — two request.created rows CAN share a millisecond), and the baseline rejects an
- *  earlier scenario's request in a shared sandbox. */
+ *  scenario's journal baseline. ASC+LIMIT 1 stays deterministic even when two `request.created`
+ *  rows share a millisecond, since rowid (unlike the timestamp) is strictly monotonic. */
 function resolveCurrentTrace(
   workspaceRoot: string,
   baselineRowid?: Opt<number, Reason.OptionalInput>,
@@ -823,18 +772,9 @@ async function executeRemoveFilesStep(
   };
 }
 
-/** A `journal-assert` step: run a DECLARATIVE activity-journal assertion against the workspace
- *  journal — no raw SQL lives in scenario YAML, the framework builds the query from the step's
- *  filter/projection/assertion fields. `trace_scoped` resolves to the current request's trace
- *  (first request.created above the scenario baseline) so the assertion never reads an earlier
- *  scenario's rows in a shared sandbox.
- *
- *  Assertion contract: the step exits 0 when the assertion holds —
- *   - `expect_count`  : matching rows == N (negative assertion, e.g. "no tool calls");
- *   - `expect_sum`    : SUM(payload.<path>) > bound (e.g. "files changed > 0");
- *   - `expect_contains`: every substring appears in the LATEST matching row's payload;
- *   - otherwise       : at least one matching row exists.
- *  The result rows are emitted as JSON on stdout so json-query criteria can score them. */
+// A `journal-assert` step: a DECLARATIVE activity-journal assertion — no raw SQL lives in
+// scenario YAML, the framework builds the query from the step's filter/projection/assertion
+// fields. Result rows are emitted as JSON on stdout so json-query criteria can score them.
 function executeJournalAssertStep(
   options: IExecuteScenarioStepOptions,
   startedAt: string,

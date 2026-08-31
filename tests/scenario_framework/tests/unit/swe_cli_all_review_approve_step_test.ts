@@ -75,10 +75,9 @@ Deno.test("[swe_cli_all_review_approve] approve-review resolves the request via 
   );
 });
 
-// The trace-id derivation (rowid ASC within the scenario's journal baseline, 8-char prefix) is
-// now FRAMEWORK-OWNED in step_executor.resolveCurrentTrace — enforced by
-// journal_assert_test.ts ("$TRACE_ID scopes to the newest request's trace") rather than repeated
-// in every scenario YAML.
+// Trace-id derivation (rowid ASC within the scenario's journal baseline, 8-char prefix) is
+// framework-owned in step_executor.resolveCurrentTrace and enforced by journal_assert_test.ts,
+// not repeated in every scenario YAML.
 
 Deno.test("[swe_cli_all_review_approve] approve-review's output_criteria requires review.approved in the command output", async () => {
   const scenario = await parseScenario();

@@ -70,9 +70,8 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic scenario completes succe
 
 Deno.test("[ScenarioFrameworkSyntheticRunner] creates the workspace dir when it does not yet exist (sibling-default sandbox)", async () => {
   // Regression: the sibling-of-repo sandbox default produces a workspace_path that does NOT exist
-  // yet (`<base>/exaix-sandboxes/<run-id>`). A non-matrix scenario must still create it before the
-  // first step runs — otherwise the step executor spawns with a non-existent cwd and fails ENOENT
-  // ("No such cwd"). Earlier tests always passed a pre-created makeTempDir, hiding this path.
+  // yet. A non-matrix scenario must still create it before the first step runs, or the step
+  // executor spawns with a non-existent cwd and fails ENOENT ("No such cwd").
   await withSyntheticTestEnv(async ({ frameworkHome, outputDir }) => {
     // A workspace path that is intentionally NOT created up front.
     const uncreatedWorkspace = await Deno.makeTempDir({ prefix: "scenario-uncreated-" });

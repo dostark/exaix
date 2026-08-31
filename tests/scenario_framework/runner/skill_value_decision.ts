@@ -24,10 +24,6 @@ export interface ISkillValueDecision {
   rationale: string;
 }
 
-/**
- * Throws if any no-effect row in the report lacks a matching decision, or if a matching
- * decision's rationale is empty. Rows that are not no-effect need no decision.
- */
 export function assertSkillDecisionsRecorded(
   report: ISkillValueReport,
   decisions: ISkillValueDecision[],

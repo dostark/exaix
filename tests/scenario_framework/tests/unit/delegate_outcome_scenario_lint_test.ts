@@ -14,16 +14,7 @@ import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const SCENARIOS_DIR = join(REPO_ROOT, "tests/scenario_framework/scenarios");
 
-/**
- * The outcome scenario asserts the delegate's produced change. It must assert on
- * CONTENT the delegate wrote, not on plumbing events. Phase 150 LIVE-RT tightened
- * this twice: a `payload_absent` filter on `session.delegate.reconciled` is a
- * plumbing assertion (the first live run showed a scenario reconciling green while
- * touching zero files), and the content assertion now runs as a `shell` step
- * because the delegate's worktree path is named for the run's trace id and
- * criterion `path` values are literal — so a bare "is there a shell step" check
- * would be satisfied by every scenario's setup and prove nothing.
- */
+/** criterion `path` values are literal, so a trace-id-named worktree path needs a shell step instead of a file-assert type. */
 function assertsProducedContent(steps: ReturnType<typeof ScenarioSchema.parse>["steps"]): boolean {
   for (const step of steps) {
     if (
@@ -58,10 +49,9 @@ Deno.test("[delegate-outcome-lint] the outcome scenario asserts delegate-produce
 });
 
 Deno.test("[delegate-outcome-lint] plumbing-only scenarios do not satisfy the outcome check", async () => {
-  // Phase 167 Step 4 / GAP-30 added the real worktree file-content proof to the matrix
-  // scenario (assert-codex-worktree-change), so it is no longer plumbing-only — it now
-  // legitimately passes the outcome check. Re-point this anti-tauntology guard at a scenario
-  // that remains genuinely plumbing-only (a TUI flow with no delegate-content assertion).
+  // The matrix scenario now includes real worktree file-content proof, so it's no longer
+  // plumbing-only and legitimately passes the outcome check. Re-pointed this anti-tautology
+  // guard at a scenario that remains genuinely plumbing-only.
   const path = join(SCENARIOS_DIR, "provider_live/multi-agent-tui-flow.yaml");
   const parsed = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(path)));
   assert(

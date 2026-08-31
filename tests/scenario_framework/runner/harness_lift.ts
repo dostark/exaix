@@ -61,7 +61,7 @@ export interface IHarnessLiftReport {
 
 export interface IHarnessLiftOptions {
   /** When provided, every family comparison is checked against it before computation —
-   *  post-hoc task cherry-picking is rejected (pre-gap GAP-1 / validatePreregistration). */
+   *  post-hoc task cherry-picking is rejected (see validatePreregistration). */
   preregistered?: IArmComparisonSpec;
 }
 
@@ -72,7 +72,7 @@ export interface ISideRun {
   scores: number[];
 }
 
-/** The `cell_id` prefix of bare-delegate baseline cells (Phase 143 Step 1 cell taxonomy). */
+/** The `cell_id` prefix of bare-delegate baseline cells. */
 export const BARE_CELL_PREFIX = "bare/";
 
 /** The comparison arm id every harness-lift comparison uses (pre-registration contract). */
@@ -89,13 +89,9 @@ export function parseBareCellId(cellId: string | null): { tool: string; provider
   return { tool: parts[0], provider: parts[1] };
 }
 
-/**
- * Parse an Exaix cell_id into its (tool, provider) pair. The runner records
- * `<tool>-<provider>`, and BOTH names may contain dashes ("claude-code", "claude-cli"), so the
- * split is only reliable with the row's explicit `provider` column as a suffix hint: the tool
- * is the cell_id minus its trailing `-<provider>`. A last-dash fallback (provider without
- * dashes) keeps legacy rows pairing.
- */
+// Parses an Exaix `<tool>-<provider>` cell_id. Both names may contain dashes ("claude-code",
+// "claude-cli"), so this relies on the row's explicit `provider` column as a suffix hint; a
+// last-dash fallback (provider without dashes) keeps legacy rows pairing.
 export function parseExaixCellId(
   cellId: string | null,
   providerHint: string | null,
@@ -126,12 +122,9 @@ export function resolveFamily(tags: string[] | null, fallback: string): string {
   return fallback;
 }
 
-/**
- * The pairing identity of a run's TASK — what the lift/ablation views pair on. A bare cell
- * running `bare-swe-<task>` IS the same task as the Exaix cell's `swe-<task>` — the `bare-`
- * prefix is a rendering artifact and is stripped so the pair matches. (The `task:` tag is a
- * FAMILY grouping, never a per-task id, so it does not participate in pairing.)
- */
+// The pairing identity of a run's TASK. A bare cell running `bare-swe-<task>` IS the same task
+// as the Exaix cell's `swe-<task>` — the `bare-` prefix is a rendering artifact, stripped so the
+// pair matches. (The `task:` tag is a FAMILY grouping and does not participate in pairing.)
 export function resolveTaskIdentity(row: IOutcomeRunRow): string {
   const bare = row.cell_id?.startsWith(BARE_CELL_PREFIX) ?? false;
   if (bare && row.scenario_id.startsWith("bare-") && row.scenario_id.length > "bare-".length) {
@@ -170,13 +163,9 @@ interface IMatchBucket {
   unmatched: boolean;
 }
 
-/**
- * Build the harness-lift report from outcome-channel history rows. Each task's control score is
- * the mean of the latest bare run's outcome scores; treatment likewise from the latest Exaix
- * run. A task matches only when both sides have a latest run WITH outcome evidence — anything
- * less is excluded and counted. Families group on the `task:` tag (fallback: task id) within a
- * (tool, provider, model) column.
- */
+// Builds the harness-lift report from outcome-channel history rows: each task's control/treatment
+// score is the mean of the latest bare/Exaix run's outcome scores. A task matches only when both
+// sides have a latest run WITH outcome evidence — anything less is excluded and counted.
 export function computeHarnessLift(
   rows: IOutcomeRunRow[],
   options: IHarnessLiftOptions = {},

@@ -45,13 +45,9 @@ export interface IWriteEvalHistoryOptions {
 const FRAMEWORK_DIR = resolve(fromFileUrl(new URL(".", import.meta.url)), "..");
 const GIT_UNKNOWN_COMMIT = "unknown";
 
-/**
- * Capture the scenario-framework's git provenance for an eval run: the HEAD commit and whether the
- * working tree has uncommitted changes. This records WHICH framework code produced a result (the
- * runner/executor/assertion logic, which evolves independently of the declarative schema version).
- * Resolution failures (no git, detached, CI without .git) degrade to `unknown`/`false` rather than
- * failing the run — provenance is best-effort metadata, never a gate.
- */
+// Captures the scenario-framework's git provenance (HEAD commit, dirty working tree) for an
+// eval run. Resolution failures (no git, detached, CI without .git) degrade to `unknown`/`false`
+// rather than failing the run — provenance is best-effort metadata, never a gate.
 async function captureFrameworkGitProvenance(): Promise<{ commit: string; dirty: boolean }> {
   const git = gitServiceFor(FRAMEWORK_DIR);
   async function gitSafe(args: string[]): Promise<{ ok: boolean; out: string }> {
@@ -83,10 +79,7 @@ async function buildComponentVersions(): Promise<IComponentVersions> {
 const GLOBAL_HISTORY_DIR = "history";
 const HISTORY_FILE = "eval-history.jsonl";
 
-/**
- * Writes an eval history entry to both scenario-specific and global history files.
- * Uses atomic append: writes to a temp file in the same directory, then renames.
- */
+/** Writes an eval history entry to both scenario-specific and global history files (see `writeJsonlLine` for the atomic-append guarantee). */
 export async function writeEvalHistoryEntry(options: IWriteEvalHistoryOptions): Promise<IEvalHistoryEntry> {
   const componentVersions = await buildComponentVersions();
   const entry = buildEvalHistoryEntry(options.manifest, componentVersions, options);
@@ -174,11 +167,7 @@ interface IStepMetricAggregates {
   total_tracked_cost_usd?: number;
 }
 
-/**
- * Scenario-level aggregates summed across step_results. total_tracked_cost_usd sums only the
- * steps that have a defined trackedCostUsd, omitting (not zeroing) any step whose LLM calls
- * were all predicted-cost — a scenario with zero tracked steps produces undefined, not 0.
- */
+/** Scenario-level aggregates summed across step_results; each field OMITS (not zeroes) undefined steps, so zero tracked steps produces undefined, not 0. */
 function aggregateStepMetrics(steps: IRunManifestStep[]): IStepMetricAggregates {
   const sumOptional = (values: Array<number | undefined>): number | undefined => {
     const defined = values.filter((v): v is number => v !== undefined);
@@ -195,18 +184,9 @@ function aggregateStepMetrics(steps: IRunManifestStep[]): IStepMetricAggregates 
   };
 }
 
-/**
- * Appends a JSONL line to a file using true append mode (O_APPEND).
- * Deno.open with { append: true, create: true } opens or creates the file
- * and positions the write cursor at the end, so concurrent writers do not
- * clobber each other. A single write() syscall appends the line atomically
- * at the OS level (for lines < PIPE_BUF, typically 4KiB).
- *
- * Partial-line risk: if a single write() produces more bytes than the
- * kernel's atomic-guarantee size (PIPE_BUF on most Unixes), a concurrent
- * reader could see a partial line. In practice, JSONL entries are
- * 1–3 KiB, well within the guarantee. Documented for future awareness.
- */
+// Appends via true O_APPEND mode so concurrent writers don't clobber each other; a single
+// write() syscall appends atomically at the OS level for lines under PIPE_BUF (~4KiB). JSONL
+// entries run 1-3 KiB, well within that guarantee — above it a reader could see a partial line.
 async function writeJsonlLine(directory: string, entry: IEvalHistoryEntry): Promise<void> {
   const historyPath = resolve(directory, HISTORY_FILE);
   await Deno.mkdir(dirname(historyPath), { recursive: true });

@@ -96,10 +96,9 @@ Deno.test("[codex_scope_violation_live][security] asserts the external sentinel 
 });
 
 Deno.test("[codex_scope_violation_live][security] asserts NO review approval/merge for the trace (expect_count: 0 on review.*) — the phase promises 'never approves or merges the worktree'", async () => {
-  // GAP-29: the reframed scenario asserted fail-closed-reconciled + sentinel-absent but never
-  // verified the plan-promised "no review approval/merge occurs" — so it could pass even if
-  // the daemon later approved a review artifact for this trace. Assert a journal-assert step
-  // with expect_count: 0 over the review lifecycle family (review.created / review.approved).
+  // The reframed scenario asserted fail-closed-reconciled + sentinel-absent but never verified
+  // the plan-promised "no review approval/merge occurs" — assert a journal-assert step with
+  // expect_count: 0 over the review lifecycle family (review.created / review.approved).
   const scenario = await parseScenario();
   const step = scenario.steps.find((s) => s.id === "assert-no-review-approval");
   assert(step, "assert-no-review-approval step must exist");
@@ -110,12 +109,9 @@ Deno.test("[codex_scope_violation_live][security] asserts NO review approval/mer
 });
 
 Deno.test("[codex_scope_violation_live][security] a wait-for-reconcile journal barrier precedes every trace-scoped assertion (GAP-29 race guard)", async () => {
-  // GAP-29 live finding: wait-for-delegate-return polls the FILESYSTEM, but the reconciler
-  // commits `session.delegate.reconciled` ASYNCHRONOUSLY — asserting immediately after the
-  // FS poll intermittently ran before the row existed (returned [] and failed the scenario
-  // even though the delegate had correctly reconciled). The sibling outcome scenario uses a
-  // journal --wait barrier for the identical reason. This guard test pins that barrier so a
-  // future edit cannot silently reintroduce the race.
+  // wait-for-delegate-return polls the FILESYSTEM, but the reconciler commits
+  // `session.delegate.reconciled` ASYNCHRONOUSLY, so asserting right after the FS poll
+  // intermittently ran before the row existed. This guard pins the journal --wait barrier.
   const scenario = await parseScenario();
   const steps = scenario.steps;
   const resolveIdx = steps.findIndex((s) => s.id === "wait-for-reconcile");

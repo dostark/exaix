@@ -25,10 +25,9 @@ Deno.test("[TrajectoryScenario] trajectory-tool-order-assert parses with correct
 
   const assertStep = scenario.steps.find((s) => s.id === "assert-trajectory-order");
   assertEquals(assertStep?.type, ScenarioStepType.TRAJECTORY_ASSERT);
-  // Phase 142 Step 15 — the source step used to be pinned by name to `execute-source-step`, a
-  // step that ran the non-existent `exactl flow run`. What matters is that `source_step` resolves
-  // to a step the scenario declares: the trajectory is read from that step's journal window, so a
-  // name pointing at nothing yields an empty window and a silent 0.00 rather than an error.
+  // `source_step` must resolve to a step the scenario declares — the trajectory is read from
+  // that step's journal window, so a name pointing at nothing yields an empty window and a
+  // silent 0.00 rather than an error.
   assertEquals(
     scenario.steps.some((s) => s.id === assertStep?.source_step),
     true,

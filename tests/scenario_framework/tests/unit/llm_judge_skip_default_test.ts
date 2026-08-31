@@ -83,11 +83,9 @@ Deno.test({
 Deno.test({
   name: "[LlmJudgeSkip] EXA_EVAL_LLM_MOCK=false via step env (not process env) reaches the real-LLM path",
   fn: async () => {
-    // Regression: the step declares EXA_EVAL_LLM_MOCK as step env (options.env), but
-    // callLlmEndpoint used to read only Deno.env — so with the process env unset it silently
-    // fell through to the MockLLMProvider. With the step env honored and no EXA_LLM_PROVIDER
-    // configured, the real-LLM path must be taken and surface the "provider required" error,
-    // NOT quietly mock.
+    // Regression: callLlmEndpoint used to read only Deno.env, so a step env (options.env)
+    // EXA_EVAL_LLM_MOCK=false silently fell through to MockLLMProvider when the process env
+    // was unset. With step env honored, the real-LLM path must surface the error, not mock.
     const prevMock = Deno.env.get("EXA_EVAL_LLM_MOCK");
     const prevProvider = Deno.env.get("EXA_LLM_PROVIDER");
     Deno.env.delete("EXA_EVAL_LLM_MOCK");
@@ -111,15 +109,9 @@ Deno.test({
   name:
     "[LlmJudgeSkip] resolveEvalLlmTimeoutMs gives claude-cli/opencode-cli providers the CLI-appropriate timeout, not the generic 30s AI default",
   fn: () => {
-    // Live-observed: the eval-judge's real-LLM path builds its provider via the generic
-    // ProviderFactory.resolveOptionsByName, which defaults timeoutMs to DEFAULT_AI_TIMEOUT_MS
-    // (30000ms) unless EXA_LLM_TIMEOUT_MS/config.ai_timeout says otherwise — sized for fast
-    // HTTP API calls, not a headless CLI subprocess spawn. A real opencode judge call timed
-    // out at exactly 30000ms even though CliDelegateProviderFactory's own default is 300000ms
-    // (DEFAULT_CLI_DELEGATE_TIMEOUT_MS), because CliDelegateProviderFactory.create() prefers
-    // options.timeoutMs when it is set (`options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS`)
-    // — and the generic factory always sets it, to 30000, before CliDelegateProviderFactory
-    // ever gets a chance to apply its own larger default.
+    // ProviderFactory always sets timeoutMs to DEFAULT_AI_TIMEOUT_MS (30s, sized for HTTP
+    // calls) before CliDelegateProviderFactory can apply its own 300s CLI-subprocess default —
+    // so CLI-delegate providers need this override or a real judge call times out at 30s.
     assertEquals(resolveEvalLlmTimeoutMs(ProviderType.CLAUDE_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
     assertEquals(resolveEvalLlmTimeoutMs(ProviderType.OPENCODE_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
     // Non-CLI-delegate providers are untouched — no override needed, undefined lets
@@ -135,13 +127,9 @@ Deno.test({
   name:
     "[LlmJudgeSkip] resolveEvalLlmJudgeConfigRoot returns a directory that actually exists, not a placeholder literal",
   fn: async () => {
-    // Live-observed (2026-08-02, first swe_tasks run through the claude-code cell):
-    // CliDelegateProviderFactory.create() uses config.system.root as the CLI subprocess's
-    // cwd. The eval-judge's config previously hardcoded "/tmp/exa-eval", which does not
-    // exist on disk, so every claude-cli/opencode-cli judge call failed immediately with
-    // "Failed to spawn ...: No such cwd '/tmp/exa-eval'" — the main task's own CLI-delegate
-    // call succeeded because it used the real sandbox cwd, proving the bug was specific to
-    // the judge's separately-constructed config, not CliDelegateModelProvider itself.
+    // CliDelegateProviderFactory.create() uses config.system.root as the CLI subprocess cwd.
+    // A hardcoded, nonexistent placeholder there fails every claude-cli/opencode-cli judge
+    // call immediately with "No such cwd" — this must resolve to a real directory.
     const root = resolveEvalLlmJudgeConfigRoot();
     const stat = await Deno.stat(root);
     assertEquals(stat.isDirectory, true);
@@ -154,14 +142,9 @@ Deno.test({
   name:
     "[LlmJudgeSkip] resolveEvalJudgeContext reads context_path so goal_alignment/task_fulfillment/request_understanding criteria know the actual task",
   fn: async () => {
-    // Live-observed bug: buildEvaluationPrompt(content, criteria, context, multi)'s `context`
-    // slot was always fed `criterion.rubric` — never populated for preset-based criteria
-    // (GOAL_ALIGNED_REVIEW has no rubric) — so the judge saw a bare code file with ZERO
-    // information about what the original task/request was, while being asked to score
-    // "goal_alignment" (does it accomplish the stated objective) and
-    // "request_understanding" (correct understanding of the task). A real run scored those
-    // two criteria 0.35/0.50 despite code_correctness scoring 0.90 — exactly the pattern of a
-    // judge guessing at criteria it structurally cannot answer without the request text.
+    // buildEvaluationPrompt's `context` slot was always fed `criterion.rubric`, never
+    // populated for preset-based criteria (e.g. GOAL_ALIGNED_REVIEW has no rubric) — so the
+    // judge scored goal_alignment/request_understanding blind, without the task/request text.
     const tempDir = await Deno.makeTempDir();
     try {
       const requestPath = "request.md";

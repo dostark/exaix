@@ -56,11 +56,8 @@ Deno.test("[LlmJudgePreset] weighted score composition with varied scores", () =
     error_handling: { score: 0.0, passed: false, reasoning: "No error handling", issues: ["no try-catch"] },
     no_security_issues: { score: 1.0, passed: true, reasoning: "Secure", issues: [] },
   };
-  // weights: code_correctness=2.0(required), code_completeness=1.5(required),
-  // follows_conventions=0.8, error_handling=1.0, no_security_issues=2.0(required)
-  // totalWeight = 2.0 + 1.5 + 0.8 + 1.0 + 2.0 = 7.3
-  // weightedSum = 1.0*2.0 + 0.7*1.5 + 0.5*0.8 + 0.0*1.0 + 1.0*2.0 = 2.0 + 1.05 + 0.4 + 0.0 + 2.0 = 5.45
-  // expected = 5.45 / 7.3 ≈ 0.7466
+  // weights: correctness=2.0(required), completeness=1.5(required), conventions=0.8,
+  // error_handling=1.0, security=2.0(required); weightedSum/totalWeight = 5.45/7.3 ≈ 0.7466
   const score = calculateWeightedScore(criteriaResults, criteria);
   assertEquals(Math.round(score * 10000), Math.round((5.45 / 7.3) * 10000));
 });

@@ -16,12 +16,8 @@ import {
   RunVerdict,
 } from "../../runner/scoring.ts";
 
-/**
- * Simulates the runner's exit-code logic (main.ts steps 9+13):
- *   infraError → exit 2
- *   !allPassed → exit 1
- *   else       → exit 0
- */
+// Simulates the runner's exit-code logic:
+//   infraError → exit 2, !allPassed → exit 1, else → exit 0
 function deriveExitCode(runVerdict: IRunVerdict): number {
   if (runVerdict.infraError) return 2;
   if (!runVerdict.allPassed) return 1;

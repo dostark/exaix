@@ -34,12 +34,7 @@ const SCENARIOS_DIR = join(FRAMEWORK_HOME, "scenarios");
 /** Names the process environment supplies, which the runner merges in ahead of its own table. */
 const PASSTHROUGH_ENV_VARIABLES = ["HOME"];
 
-/**
- * Only UPPER_SNAKE names are candidates. Every variable the runner defines is uppercase, and a
- * scenario's steps carry embedded code where a lowercase `$name` belongs to that code, not to
- * the framework — `read -r id signal` binds `$signal` in one scenario's shell loop, and
- * `keyFiles[${i}]` is a TypeScript template literal inside another's inline script.
- */
+/** Only UPPER_SNAKE names are candidates — a lowercase `$name` (e.g. `$signal` bound by `read -r id signal`, or a TS template literal `${i}`) belongs to embedded scenario code, not the framework. */
 const VARIABLE_REFERENCE = /\$\{([A-Z][A-Z0-9_]*)\}|\$([A-Z][A-Z0-9_]*)/g;
 
 /** A node of a parsed YAML document — the shape `parseYaml` actually produces. */
@@ -63,11 +58,7 @@ interface IVariableReference {
   name: string;
 }
 
-/**
- * A name assigned inside the same string is a shell local — `WORKTREE=$(cat ...) && cd
- * "$WORKTREE"` is one command, and `expandInString` preserving the reference is what makes it
- * work. Those are correct and must not be reported.
- */
+/** A name assigned inside the same string (`WORKTREE=$(cat ...) && cd "$WORKTREE"`) is a shell local, and `expandInString` preserving the reference is what makes it work — must not be reported. */
 function isShellLocal(name: string, text: string): boolean {
   return new RegExp(`(^|[\\s;&|(])${name}=`).test(text);
 }
@@ -146,9 +137,8 @@ Deno.test("[scenario-vars] every declared flow_fixture resolves to a file that e
 
 Deno.test("[flow-fixture] a declared flow is staged into the sandbox's flow catalog", async () => {
   // `assertFlowExists` resolves `<root>/Blueprints/Flows/<id>.flow.yaml`, so a flow fixture that
-  // stays in the framework tree cannot be requested no matter how the variable expands.
-  // `dynamic-permission-boundary` spent two steps doing this copy by hand and still failed, on
-  // the unexpanded `$FLOW_FIXTURE`; staging it here is the same move as mounting `portals:`.
+  // stays in the framework tree cannot be requested no matter how the variable expands. Staging
+  // it here is the same move as mounting `portals:`.
   const ws = await Deno.makeTempDir({ prefix: "stage-flow-" });
   try {
     const fixture = join(FRAMEWORK_HOME, "fixtures", "flows", "dynamic_execution", "explore.flow.yaml");
@@ -165,8 +155,7 @@ Deno.test("[flow-fixture] a declared flow is staged into the sandbox's flow cata
 
 Deno.test("[flow-fixture] staging names the file after the flow's own id, not the fixture file", async () => {
   // `explore.flow.yaml` declares `id: explore-codebase`. Copying under the fixture's filename
-  // would put the flow at a path the loader never looks for — the mismatch Step 13 already
-  // fixed once for the shipped catalog (`flow_id_filename_agreement_test.ts`).
+  // would put the flow at a path the loader never looks for.
   const ws = await Deno.makeTempDir({ prefix: "stage-flow-id-" });
   try {
     await stageFlowFixture(ws, join(FRAMEWORK_HOME, "fixtures", "flows", "dynamic_execution", "explore.flow.yaml"));
@@ -178,9 +167,8 @@ Deno.test("[flow-fixture] staging names the file after the flow's own id, not th
 });
 
 Deno.test("[flow-fixture] every identity a fixture flow names exists in the catalog", async () => {
-  // Now that fixture flows are staged and actually load, their `identity:` references resolve at
-  // runtime — and seven of them named `researcher` or `voter`, neither of which the catalog has.
-  // The same defect class Step 13 cleared for the shipped flows, one directory over.
+  // Now that fixture flows are staged and actually load, their `identity:` references resolve
+  // at runtime — several of them named identities the catalog does not have.
   const catalog = new Set<string>();
   for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Identities"))) {
     if (entry.isFile && entry.name.endsWith(".md")) catalog.add(entry.name.replace(/\.md$/, ""));
@@ -214,11 +202,9 @@ Deno.test("[scenario-vars] a scenario declaring flow_fixture gets $FLOW_FIXTURE 
 });
 
 Deno.test("[flow-fixture] a scenario whose request names a flow must declare that flow", async () => {
-  // Phase 142 Step 7. A request fixture carrying `flow: <id>` only works if the flow is in the
-  // sandbox catalog, and the runner stages exactly what `flow_fixture` names. Two selection
-  // scenarios shared a fixture that Step 15 gave a `flow:` field without declaring the fixture
-  // themselves, so they passed only when another scenario had staged it first in the shared
-  // sandbox — and failed the moment the nightly tier ran them alone.
+  // A request fixture carrying `flow: <id>` only works if the flow is in the sandbox catalog,
+  // and the runner stages exactly what `flow_fixture` names — a scenario referencing a flow
+  // without declaring its fixture passes only if another scenario staged it first.
   const shippedFlows = new Set<string>();
   for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Flows"))) {
     if (entry.name.endsWith(".flow.yaml")) shippedFlows.add(entry.name.replace(/\.flow\.yaml$/, ""));
@@ -244,10 +230,9 @@ Deno.test("[flow-fixture] a scenario whose request names a flow must declare tha
 });
 
 Deno.test("[flow-fixture] the schema does not describe the field as unconsumed", async () => {
-  // Phase 142 Step 8. The schema carried `@deprecated ... not consumed by the scenario runner`,
-  // which was accurate when written and became the opposite of the truth the moment Step 15 wired
-  // the field. Twelve scenarios now depend on it, and a reader trusting the tag would delete a
-  // load-bearing declaration. Prose drifts silently; this pins it to the runner's actual behaviour.
+  // The schema carried `@deprecated ... not consumed by the scenario runner`, which became
+  // false once the field was wired up — a reader trusting the tag would delete a load-bearing
+  // declaration. Prose drifts silently; this pins it to the runner's actual behaviour.
   const schema = await Deno.readTextFile(join(FRAMEWORK_HOME, "schema", "scenario_schema.ts"));
   const runner = await Deno.readTextFile(join(FRAMEWORK_HOME, "runner", "synthetic_runner.ts"));
 

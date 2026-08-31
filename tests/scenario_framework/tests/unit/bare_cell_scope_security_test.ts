@@ -150,10 +150,9 @@ Deno.test("[security] bare claude-code launch carries the worktree-scoped tool f
 Deno.test("[security] bare claude-code launch is confined by the worktree boundary + tool surface (no wildcard bash)", () => {
   const { args } = expandBareClaudeCell();
   const allowedTools = args[args.indexOf("--allowedTools") + 1];
-  // The tool surface is scoped: no bare "Bash" — only git subcommands. Claude Code has no
-  // path-deny config (unlike opencode's external_directory), so the leak defense is the
-  // worktree boundary + this tool-surface restriction; a wildcard Bash would allow a
-  // `find / -name reference.patch` probe, which the scoped tools exclude.
+  // Claude Code has no path-deny config (unlike opencode's external_directory), so the leak
+  // defense is the worktree boundary + this tool-surface restriction — no bare "Bash", only
+  // git subcommands, since a wildcard Bash would allow a `find / -name reference.patch` probe.
   assertEquals(allowedTools.includes("Bash("), true);
   assertEquals(allowedTools.includes(",Bash,"), false, "no bare bash tool");
 });

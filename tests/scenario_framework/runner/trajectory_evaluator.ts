@@ -54,11 +54,6 @@ const SENSITIVE_KEYS = new Set(["password", "token", "api_key", "secret", "auth"
 
 const ARGS_DISPLAY_MAX_LENGTH = 200;
 
-/**
- * Captures tool-call trajectory from journal DB directly via SQLite.
- * Reads only rows within the specified rowid window matching
- * ACTIVITY_EVENT_DYNAMIC_TOOL_CALL.
- */
 export function captureToolCallsFromJournal(
   dbPath: string,
   opts: { sinceRowid: number; untilRowid: number },
@@ -153,10 +148,6 @@ export function redactArgs(args: Record<string, JSONValue>): string {
   return JSON.stringify(redacted);
 }
 
-/**
- * Scores an observed trajectory against an expected sequence.
- * Returns criterion results compatible with ICriterionResult.
- */
 export function scoreTrajectory(
   observed: ITrajectoryResult,
   expected: IExpectedTrajectory,

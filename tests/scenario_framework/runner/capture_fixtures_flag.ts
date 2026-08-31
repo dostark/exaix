@@ -24,28 +24,18 @@ import { reportFlakiness } from "@exaix/ai/providers";
 /** Read by packages/ai/src/provider_factory.ts's resolveOptions(). */
 export const CAPTURE_FIXTURES_ENV_VAR = "EXA_CAPTURE_FIXTURES_DIR";
 
-/**
- * Apply `--capture-fixtures <dir>`: resolve it to an absolute path and export it into the
- * runner's own process env. A no-op when no dir was given.
- */
+/** Applies `--capture-fixtures <dir>`: resolves it to an absolute path and exports it into the runner's own process env. A no-op when no dir was given. */
 export function applyCaptureFixturesFlag(dir: Opt<string, Reason.OptionalInput>): void {
   if (!dir) return;
   Deno.env.set(CAPTURE_FIXTURES_ENV_VAR, resolve(dir));
 }
 
-/**
- * The dir the daemon may actually write to. The daemon's write scope is the sandbox workspace
- * tree, so the requested (repo) dir would be denied with a NotCapable write error; capture
- * files are written here instead and mirrored back to the requested dir after the run.
- */
+/** The dir the daemon may actually write to: its write scope is the sandbox workspace tree, so the requested (repo) dir would be denied with a NotCapable write error. */
 export function sandboxCaptureFixturesDir(workspaceRoot: string, requestedDir: string): string {
   return join(workspaceRoot, "fixtures", "mock_recordings", basename(resolve(requestedDir)));
 }
 
-/**
- * Mirror every fixture file captured inside the sandbox back to the dir the operator asked
- * for. A no-op when nothing was captured (the requested dir is not created either).
- */
+/** Mirrors every fixture file captured inside the sandbox back to the dir the operator asked for. A no-op when nothing was captured. */
 export async function copyCapturedFixtures(requestedDir: string, workspaceRoot: string): Promise<void> {
   const sandboxDir = sandboxCaptureFixturesDir(workspaceRoot, requestedDir);
   const target = resolve(requestedDir);
@@ -61,11 +51,7 @@ export async function copyCapturedFixtures(requestedDir: string, workspaceRoot: 
   }
 }
 
-/**
- * After a --capture-fixtures run, print a warning naming any call site whose capture
- * failure rate crosses DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD (Phase 157 Step 4).
- * Reuses packages/ai's reportFlakiness — the runner does not re-scan fixture files itself.
- */
+/** After a --capture-fixtures run, prints a warning naming any call site whose capture failure rate crosses DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD. Reuses packages/ai's reportFlakiness. */
 export async function reportCaptureFlakiness(dir: string): Promise<void> {
   const summary = await reportFlakiness(dir);
   for (const entry of summary.flakyFixtures) {

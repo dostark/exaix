@@ -31,11 +31,7 @@ function populationStdev(values: number[], aroundMean: number): number {
   return Math.sqrt(variance);
 }
 
-/**
- * Groups per-task deltas by their declared task type. Every task in `perTask` must have
- * an entry in `taskTypeById` — an untyped task is a data-integrity gap, not a silently
- * dropped row, so this throws rather than skipping it.
- */
+/** Throws if a task in `perTask` has no entry in `taskTypeById` — a data-integrity gap, not a row to skip silently. */
 export function groupDeltasByTaskType(
   perTask: ITaskPairedResult[],
   taskTypeById: Record<string, string>,

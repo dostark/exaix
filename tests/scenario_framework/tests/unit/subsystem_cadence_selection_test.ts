@@ -37,12 +37,7 @@ async function catalogScenarios() {
   }));
 }
 
-/**
- * The `subsystem:mcp-server` pack is `edition: team`, so it is correctly absent from every
- * selection on a Solo build. Coverage is therefore asserted under Team, where all six exist, and
- * the Solo exclusion gets its own test — that asymmetry IS the edition-correctness the step asks
- * for, and asserting six subsystems on Solo would demand a pack that must not run there.
- */
+/** `subsystem:mcp-server` is `edition: team`, so it's absent from Solo selections by design — asserted as its own test, not folded into the six-subsystem Team coverage assertion. */
 async function selectUnderEdition(
   edition: string,
   scenarios: Awaited<ReturnType<typeof catalogScenarios>>,
@@ -156,10 +151,8 @@ Deno.test("[cadence] ci-core is a proper subset of ci-extended, not equal to it"
 
 Deno.test("[cadence] a provider-live scenario never pins the provider to mock", async () => {
   // `step.env` is merged LAST by the runner, so `EXA_LLM_PROVIDER: "mock"` in a step overrides
-  // whatever the operator sets. Four `selection-*` scenarios carried that pin after Step 15 moved
-  // them to the provider-live tier, which meant the tier they were moved to could never execute
-  // them — they would have run on the mock provider and reproduced exactly the zero-tool-call
-  // result that got them moved.
+  // whatever the operator sets. A `provider-live` scenario carrying that pin would silently
+  // run on mock and reproduce the exact zero-tool-call result it was moved to catch.
   const offenders: string[] = [];
   for (const scenario of await catalogScenarios()) {
     if (!scenario.tags.includes("provider-live")) continue;

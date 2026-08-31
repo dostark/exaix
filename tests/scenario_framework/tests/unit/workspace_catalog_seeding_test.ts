@@ -92,16 +92,9 @@ Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
   }
 });
 
-// Portal fixtures must arrive as git repositories.
-//
-// All mutation of a portal goes through a git worktree — `PortalExecutionStrategy.WORKTREE`,
-// and `agent_orchestrator.ts:292` treats the worktree checkout as the path ToolRegistry is
-// built against. A portal that is not a repo cannot have a worktree, so an agent given one
-// either bypasses the isolation or silently writes into the portal root. All nine shipped
-// fixtures were plain directories, so no scenario exercised the invariant at all.
-//
-// Initialised at seed time rather than committed: nested .git trees inside the repo are
-// awkward to carry, and a per-run repo is what makes worktrees safe to create concurrently.
+// Portal fixtures must be git repos: all portal mutation goes through a git worktree, and a
+// non-repo portal can't have one — an agent given one either bypasses isolation or silently
+// writes into the portal root.
 
 async function gitIn(cwd: string, args: string[]): Promise<{ ok: boolean; out: string }> {
   const result = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" }).output();
@@ -162,13 +155,9 @@ Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", a
   }
 });
 
-// Portal mutation must land in a worktree branch, never on the portal's default branch.
-//
-// `getExecutionStrategy` forces PortalExecutionStrategy.WORKTREE for every portal task and
-// GitService refuses operations on protected branches, but nothing ever checked the OUTCOME —
-// and the failure is silent, because a write that misses the worktree lands on the checked-out
-// default branch and looks like success. Seeding portals as real repositories is what made
-// that failure mode reachable, so the check ships alongside it.
+// `getExecutionStrategy` forces WORKTREE for every portal task, but nothing checked the
+// OUTCOME — a write that misses the worktree lands silently on the default branch and looks
+// like success.
 
 Deno.test("[portal_drift] a portal mutated through a worktree branch is not flagged", async () => {
   const ws = await Deno.makeTempDir({ prefix: "drift-ok-" });
@@ -226,15 +215,9 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
   }
 });
 
-// Phase 142 Step 7 — seeding must be additive at the FILE level, not the directory level.
-//
-// The first full six-subsystem run (the cutover) found every flow scenario after
-// `model-registry-team-cutover` failing with "Flow 'analyze-codebase' not found". That scenario
-// copies the catalog itself (`cp -r $FRAMEWORK_HOME/../../Blueprints $WORKSPACE_ROOT/Blueprints`),
-// and the runner's seeding skipped whenever `Blueprints/` merely EXISTED — so a partially-created
-// catalog stayed partial for every later scenario in the shared sandbox. Per-pack runs never saw
-// it, because the scenario that creates the directory and the scenarios that need the catalog were
-// never in the same invocation.
+// Seeding must be additive at the FILE level, not the directory level: seeding used to skip
+// whenever `Blueprints/` merely existed, so a scenario that creates the directory via its own
+// `cp -r`/`mkdir` left every later scenario in the shared sandbox with a partial catalog.
 
 Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed, not skipped", async () => {
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-" });
@@ -256,8 +239,8 @@ Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed,
 });
 
 Deno.test("[workspace_catalog_seeding] completing a partial catalog still never overwrites", async () => {
-  // The Step 13 guarantee must survive the fix: a scenario that patches an identity in the shared
-  // sandbox keeps its patch.
+  // The no-overwrite guarantee must survive the fix: a scenario that patches an identity in
+  // the shared sandbox keeps its patch.
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-nooverwrite-" });
   try {
     const identities = join(ws, "Blueprints", "Identities");

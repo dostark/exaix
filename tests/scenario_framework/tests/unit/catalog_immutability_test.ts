@@ -111,9 +111,9 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Identities/ are b
     const skillsBefore = await snapshotTree(skillsDir);
     const identitiesBefore = await snapshotTree(identitiesDir);
 
-    // Exercise both mechanisms Step 2 adds that touch a catalog tree, asserting each
-    // actually returned the overlay content — a silently-broken overlay would leave
-    // the trees unmutated too, which would make this test pass for the wrong reason.
+    // Exercise both mechanisms that touch a catalog tree, asserting each actually returned
+    // the overlay content — a silently-broken overlay would leave the trees unmutated too,
+    // which would make this test pass for the wrong reason.
     const overlaidSkill = await withEnv(
       EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR,
       skillOverlayDir,

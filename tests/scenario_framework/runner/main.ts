@@ -167,9 +167,9 @@ await new Command()
       passPowK: number;
     }>();
     let infraError = false;
-    // Phase 143 Step 4: `--max-cost-usd` stops scheduling (never truncates a running task).
+    // --max-cost-usd stops scheduling; it never truncates a running task.
     const budget = new BudgetTracker({ maxCostUsd: options.maxCostUsd });
-    // Phase 143 Step 5: the trial-0 workspace whose journal holds the run's trace.
+    // The trial-0 workspace whose journal holds the run's trace.
     let firstTrialWorkspaceRoot = "";
 
     for (const entry of selectedEntries) {
@@ -219,7 +219,7 @@ await new Command()
 
           if (trial === 0) {
             manifests.set(entry.id, result.manifest);
-            // Phase 143 Step 5: the run's trace lives in this trial's workspace journal.
+            // The run's trace lives in this trial's workspace journal.
             firstTrialWorkspaceRoot = trialWorkspaceRoot;
           }
 
@@ -242,8 +242,8 @@ await new Command()
         }
       }
 
-      // Phase 143 Step 4: accumulate the scenario's tracked cost (trial-0 manifest) toward the
-      // budget cap — checked between scenarios, so a running task is never truncated.
+      // Accumulate the scenario's tracked cost (trial-0 manifest) toward the budget cap —
+      // checked between scenarios, so a running task is never truncated.
       const runManifest = manifests.get(entry.id);
       if (runManifest) {
         budget.recordScenarioCost(computeScenarioTotalCost(runManifest.steps));
@@ -291,8 +291,8 @@ await new Command()
         passed: isPassed,
       });
 
-      // Phase 143 Step 5: join the run's journal trace into failure classes (recovered findings
-      // excluded; `execution-alignment` when reconciled but outcome below threshold).
+      // Join the run's journal trace into failure classes (recovered findings excluded;
+      // `execution-alignment` when reconciled but outcome below threshold).
       if (options.evalMode) {
         const manifest = manifests.get(entry.id);
         if (manifest && firstTrialWorkspaceRoot) {
@@ -329,9 +329,9 @@ await new Command()
       reportSuiteSummary(scenarioVerdicts, scoreThreshold);
     }
 
-    // 10b. Phase 157 Step 4: after a --capture-fixtures run, report which call sites needed
-    // retries to satisfy their contract — a call site the real model rarely satisfies on the
-    // first try is a product finding, not noise to smooth away by re-rolling.
+    // 10b. After a --capture-fixtures run, report which call sites needed retries to satisfy
+    // their contract — a call site the real model rarely satisfies on the first try is a
+    // product finding, not noise to smooth away by re-rolling.
     if (options.captureFixtures) {
       await reportCaptureFlakiness(resolve(options.captureFixtures));
       // The daemon captured into the sandbox (its write scope — buildStepBaseEnv rewrites the
@@ -360,14 +360,9 @@ await new Command()
       });
     }
 
-    // 13. Reclaim the sandbox this run minted.
-    //
-    // Nothing removed one before, so growth was unbounded and proportional to how often anyone ran
-    // scenarios — 103 sandboxes / 407 MB measured on one development machine, and each is now ~4 MB
-    // because the runner seeds Blueprints, Memory and the git-backed portal fixtures into it. On a
-    // CI runner that fills the disk and presents as an unrelated build failure.
-    //
-    // An infra error counts as "did not pass": that is precisely when the journal is needed.
+    // 13. Reclaim the sandbox this run minted. Nothing reclaimed one before, so growth was
+    // unbounded (103 sandboxes / 407 MB measured on one dev machine) and could fill a CI runner's
+    // disk as an unrelated-looking build failure. An infra error counts as "did not pass" — kept.
     await reclaimSandbox({
       runtimeConfig,
       keepSandbox: options.keepSandbox === true,
@@ -393,13 +388,7 @@ interface IReclaimSandboxOptions {
   runPassed: boolean;
 }
 
-/**
- * Decide and perform the sandbox's fate, then say what happened.
- *
- * Always prints the path when the sandbox is retained: a retained sandbox nobody can find is the
- * same as a deleted one, and the whole point of keeping a failed run's state is that someone reads
- * the journal and the daemon log in it.
- */
+/** Always prints the sandbox path when retained — an unfindable retained sandbox is as useless as a deleted one; the point of keeping it is that someone reads its journal and daemon log. */
 async function reclaimSandbox(options: IReclaimSandboxOptions): Promise<void> {
   const plan = planSandboxCleanup({
     workspacePath: options.runtimeConfig.workspace_path,

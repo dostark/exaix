@@ -34,13 +34,13 @@ export interface IRunManifestStep {
   executionStatus: string;
   criterionResults: ICriterionResult[];
   score?: number;
-  /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
+  /** Runner-observed wall-clock duration for this step, ms. */
   durationMs?: number;
-  /** Sum of journaled LLM call duration(s) in this step's rowid window, ms. Phase 140a Step 3. */
+  /** Sum of journaled LLM call duration(s) in this step's rowid window, ms. */
   llmDurationMs?: number;
-  /** Token breakdown summed from this step's journaled LLM calls. Phase 140a Step 3. */
+  /** Token breakdown summed from this step's journaled LLM calls. */
   tokens?: IRunManifestStepTokens;
-  /** Real tracked cost (cost_source: "tracked" journal rows only) for this step. Phase 140a Step 3. */
+  /** Real tracked cost (cost_source: "tracked" journal rows only) for this step. */
   trackedCostUsd?: number;
 }
 
@@ -51,23 +51,21 @@ export interface IRunManifest {
   outcome: string;
   steps: IRunManifestStep[];
   suite_score?: number;
-  /** The scoring mode the run was computed under (Phase 143 Step 3). Absent ⇒ additive. */
+  /** The scoring mode the run was computed under. Absent ⇒ additive. */
   scoringMode?: ScoringMode;
-  /** The run's failure classes (Phase 143 Step 5) — joined from its journal trace at
+  /** The run's failure classes — joined from its journal trace at
    *  history-write time; absent ⇒ no failures classified. */
   failureClasses?: string[];
   cellId?: string;
   provider?: string;
   model?: string;
-  /** Task-family tags propagated to eval history. Phase 141 Step 1. */
+  /** Task-family tags propagated to eval history. */
   tags?: string[];
   /** The pre-registered arm-comparison declaration this run measures against, when the
-   *  run is part of Phase 158's value-evaluation tier. Absent for ordinary mechanics runs. */
+   *  run is part of the value-evaluation tier. Absent for ordinary mechanics runs. */
   armComparison?: IArmComparisonSpec;
-  /** The Phase 142 mechanics evidence that admitted this value run through Step 3's
-   *  validity gate, kept distinct from `armComparison` so a later reader can tell "the
-   *  artefact ran" (mechanics) apart from "the artefact helped" (value). Absent for
-   *  ordinary mechanics runs. */
+  /** The mechanics evidence that admitted this value run through the validity gate, kept
+   *  distinct from `armComparison` so a reader can tell "ran" (mechanics) from "helped" (value). */
   mechanicsEvidence?: IMechanicsEvidence;
 }
 

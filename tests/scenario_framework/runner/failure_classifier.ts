@@ -31,18 +31,13 @@ export interface IFailureClassInput {
   scoreThreshold: number | undefined;
 }
 
-/** The eval-only failure class for "plausible work, failed verification" (Phase 143 Step 5). */
+/** The eval-only failure class for "plausible work, failed verification". */
 export const EXECUTION_ALIGNMENT_CLASS = "execution-alignment";
 
 /** The journal event that marks a scenario run's trace_id (emitted by the request daemon). */
 const RUN_TRACE_MARKER_EVENT = "request.created";
 
-/**
- * Map a run's trace activities to its failure classes: the distinct unrecovered anomaly
- * eventTypes from `classifyTraceAnomalies` (recovered findings excluded per the existing
- * recovery-pairing semantics), plus `execution-alignment` when a `session.delegate.reconciled`
- * event is present AND the outcome score is below the threshold. Sorted for determinism.
- */
+/** Unrecovered `classifyTraceAnomalies` eventTypes, plus `execution-alignment` when reconciled and below threshold; sorted for determinism. */
 export function computeFailureClasses(input: IFailureClassInput): string[] {
   const classes = new Set<string>();
   for (const finding of classifyTraceAnomalies(input.activities)) {
@@ -58,11 +53,7 @@ export function computeFailureClasses(input: IFailureClassInput): string[] {
   return [...classes].sort();
 }
 
-/**
- * Load a scenario run's trace activities from its workspace journal: the run's trace_id is the
- * first `request.created` event's, then all activities for that trace are returned. A missing
- * journal or absent marker yields an empty trace (no failure classes).
- */
+/** Trace_id is resolved from the first `request.created` event; a missing journal or marker yields an empty trace. */
 export function loadTraceActivities(journalPath: string): IActivityRecord[] {
   const db = new Database(journalPath, { readonly: true });
   try {

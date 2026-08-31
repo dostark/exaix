@@ -82,7 +82,7 @@ Deno.test("[delegate_matrix] the journal-assert steps reference the exact Domain
 });
 
 Deno.test("[scope_violation_live] the exact event-string constants are stable (mirror of domain_event_types.ts)", () => {
-  // Guards the Step 3 / Step 5 assertions against an upstream rename of the events.
+  // Guards these assertions against an upstream rename of the events.
   assertEquals(DomainEventType.SessionDelegateScopeViolation, "session.delegate.scope_violation");
   assertEquals(DomainEventType.SessionDelegateReconciled, "session.delegate.reconciled");
 });

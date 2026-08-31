@@ -15,7 +15,7 @@ import { ConfigValueType } from "@exaix/core";
 
 // Scoring modes
 
-/** The scoring composition mode a scenario runs under (Phase 143 Step 3). */
+/** The scoring composition mode a scenario runs under. */
 export enum ScoringMode {
   /** Weighted mean of step scores; criterion failures only lower their step. */
   ADDITIVE = "additive",
@@ -55,10 +55,7 @@ export interface IMultiTrialMetrics {
 
 // Configurable defaults for eval scoring
 
-/**
- * Default minimum suite score (0.0–1.0) required to pass an eval-mode scenario
- * run. Configurable via config DB key `eval.score_threshold`.
- */
+/** Default minimum suite score (0.0–1.0) required to pass an eval-mode scenario run. */
 export const DEFAULT_EVAL_SCORE_THRESHOLD: number = configurable({
   key: "eval.score_threshold",
   default: 0.5,
@@ -68,10 +65,7 @@ export const DEFAULT_EVAL_SCORE_THRESHOLD: number = configurable({
   max: 1.0,
 });
 
-/**
- * Default number of sequential trials per scenario in eval mode.
- * Configurable via config DB key `eval.trials`.
- */
+/** Default number of sequential trials per scenario in eval mode. */
 export const DEFAULT_EVAL_TRIALS: number = configurable({
   key: "eval.trials",
   default: 1,
@@ -90,29 +84,14 @@ export const RunVerdict = {
 
 // Score-threshold gating functions (used by main.ts for RunVerdict)
 
-/**
- * Determines whether a single suite score meets the threshold.
- * Boundary equality (score === threshold) counts as passing.
- */
+/** Whether a suite score meets the threshold (boundary equality counts as passing). */
 export function checkScoreThreshold(suiteScore: number, threshold: number): boolean {
   return suiteScore >= threshold;
 }
 
-/**
- * Resolves a scenario's pass/fail verdict from BOTH its recorded outcome and its
- * suite score. A threshold may only ever lower a verdict — it can never lift a
- * scenario whose steps failed.
- *
- * Phase 150 LIVE-RT: the first live delegate run printed ✅ PASSED at 0.727 while
- * its manifest recorded `scenario-failure` — three outcome assertions had failed,
- * but the verdict was taken from the weighted score alone and the outcome was
- * ignored. That is precisely the green-but-hollow pass this phase exists to make
- * impossible, one level above the delegate.
- *
- * @param outcome Manifest outcome (`"success"` when every step passed); `undefined`
- *   when no manifest was produced, which never passes.
- * @param threshold Score gate; when `undefined` the outcome alone decides.
- */
+// A threshold may only ever lower a verdict — never lift one whose recorded outcome failed.
+// Without this, a run could print a passing suite score while its manifest recorded a
+// scenario-failure outcome; the two must independently agree.
 export function resolveScenarioVerdict(
   outcome: Opt<string, Reason.OptionalContext>,
   suiteScore: number,
@@ -122,11 +101,7 @@ export function resolveScenarioVerdict(
   return threshold === undefined || checkScoreThreshold(suiteScore, threshold);
 }
 
-/**
- * Accumulates an array of per-scenario verdicts into a run-level verdict.
- * `allPassed` is true only when every scenario passed; `infraError` is set
- * separately by the caller when an infrastructure failure occurred.
- */
+/** `allPassed` is true only when every scenario passed; `infraError` is set separately by the caller. */
 export function accumulateRunVerdict(scenarios: IScenarioVerdict[]): IRunVerdict {
   if (scenarios.length === 0) {
     return { ...RunVerdict.PASSING, scenarios: [] };
@@ -141,12 +116,6 @@ export function accumulateRunVerdict(scenarios: IScenarioVerdict[]): IRunVerdict
 const DEFAULT_CRITERION_WEIGHT = 1.0;
 const DEFAULT_STEP_WEIGHT = 1.0;
 
-/**
- * Computes a step score (0.0–1.0) from criterion results.
- * Each criterion's score_weight controls its contribution.
- * When no criteria exist, returns 1.0 (pass).
- * When no weights are set, all criteria weigh equally.
- */
 export function computeStepScore(
   criterionResults: ICriterionResult[],
 ): number {
@@ -176,23 +145,9 @@ export function computeStepScore(
   return weightedSum / totalWeight;
 }
 
-/**
- * Weight a step contributes when it declares none.
- *
- * Daemon lifecycle carries **zero**: starting or stopping a daemon passing says nothing about the
- * behaviour under test, and counting it made the suite score really "the fraction of steps that
- * passed". Measured in Step 17: a mutation that dropped *every* pinned skill still scored 0.800,
- * above the 0.7 gate this phase installs, so the gate would have stayed green over a completely
- * dead subsystem. It also created a perverse incentive — a scenario that grew a setup step raised
- * its own failure floor from 0.750 to 0.800 and so "scored better" while broken.
- *
- * Keyed on what the step DOES, not what it is called. The teardown guard in `synthetic_runner.ts`
- * previously keyed on the id being exactly `start-daemon` and missed the 25 scenarios using
- * `restart-daemon`; naming convention is enforced by nothing.
- *
- * An explicit `step_weight` overrides this, so a scenario genuinely asserting something about
- * daemon lifecycle can still weigh it.
- */
+// Daemon lifecycle steps get zero weight: counting them turns the suite score into "fraction of
+// steps that passed" and rewards a scenario for padding itself with passing start/stop steps.
+// Keyed on step behavior (command+args), not on the step id, since id naming isn't enforced.
 function defaultStepWeight(step: IStepScoreInput["step"]): number {
   return isDaemonLifecycleStep(step) ? 0 : DEFAULT_STEP_WEIGHT;
 }
@@ -202,11 +157,6 @@ function isDaemonLifecycleStep(step: IStepScoreInput["step"]): boolean {
   return (step.args ?? []).some((arg) => arg === "start" || arg === "stop" || arg === "restart");
 }
 
-/**
- * Computes a suite score (0.0–1.0) from step outcomes.
- * Each step's step_weight controls its contribution.
- * When no weights are set, all steps weigh equally.
- */
 export function computeSuiteScore(
   stepOutcomes: IStepScoreInput[],
 ): number {
@@ -225,14 +175,9 @@ export function computeSuiteScore(
   return weightedSum / totalWeight;
 }
 
-/**
- * Phase 143 Step 3 — apply the security gate to an already-computed suite score.
- * The additive suite score already folds both channels (outcome + process, i.e. OUTPUT
- * and INPUT criterion phases) as a weighted mean over steps; gated scoring multiplies it
- * by a gate that is 0 exactly when ANY `class: security` criterion FAILED, matching
- * Harness-Bench's Security·Completion·Process semantics. An identity when nothing
- * security-class failed, so the additive default is byte-identical for existing scenarios.
- */
+// Multiplies suiteScore by a gate that is 0 exactly when ANY `class: security` criterion FAILED
+// (matching Harness-Bench's Security·Completion·Process semantics); an identity otherwise, so
+// the additive default stays byte-identical for scenarios with no security criteria.
 export function composeGated(
   suiteScore: number,
   criterionResults: ICriterionResult[],
@@ -243,10 +188,6 @@ export function composeGated(
   return securityViolation ? 0 : suiteScore;
 }
 
-/**
- * Computes multi-trial metrics from an array of trial scores.
- * Pure function — no side effects.
- */
 export function computeMultiTrialMetrics(
   trialScores: number[],
   scoreThreshold: number = 0.5,

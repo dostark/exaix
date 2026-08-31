@@ -39,14 +39,9 @@ interface IActivityMetricsRow {
   row_count: number;
 }
 
-/**
- * Phase 143 Step 1 — map a bare cell's delegate step stdout into the history step fields,
- * reusing the daemon's own `parseDelegateStdout` (pre-gap GAP-3: never reimplement delegate
- * parsing). Claude `{type:"result"}` usage and OpenCode JSONL `step_finish` token/cost events
- * land in `tokens_*` / `tracked_cost_usd` exactly as the journal path records them. Absent cost
- * stays `undefined` (the frontier view renders "—"); a stdout with nothing parseable records NO
- * metrics — fake zeros would read as "free run" in every cost view.
- */
+// Reuses the daemon's own `parseDelegateStdout` so parsing never drifts from the journal path.
+// A stdout with nothing parseable records NO metrics rather than fake zeros — zeros would read
+// as "free run" in every cost view.
 export function parseDelegateStepLlmMetrics(stdout: string, tool: SessionTool): IStepLlmMetrics {
   const parsed = parseDelegateStdout(stdout, tool);
   if (parsed.tokenStats.total === 0 && parsed.costUsd === undefined) {
@@ -64,14 +59,8 @@ export function parseDelegateStepLlmMetrics(stdout: string, tool: SessionTool): 
   };
 }
 
-/**
- * Sums `agent.execution_completed`/`agent.generation_completed` activity rows in
- * `(sinceRowid, untilRowid]` into per-step LLM metrics. Resolves `dbPath` internally exactly as
- * `step_executor.ts:currentMaxRowid` does, for signature consistency with that sibling function.
- * Returns all-undefined metrics (never throws) when the journal is missing, empty, or the window
- * contains no matching rows — a shell/wait-for-file step has no LLM call in its window, and that
- * is a normal, not an error, outcome.
- */
+// Never throws: returns all-undefined metrics when the journal is missing, empty, or the rowid
+// window has no matching rows — a shell/wait-for-file step legitimately has no LLM call.
 export async function readStepLlmMetrics(
   workspaceRoot: string,
   sinceRowid: number,

@@ -43,11 +43,7 @@ export function buildToolsConfigToml(workspaceRoot: string, portalPath: string):
   ].join("\n");
 }
 
-/**
- * Copy the fixture portal into the workspace and write the matching config.
- * The portal is recreated from scratch each run so mutating tools (write/patch/move/
- * delete) start from identical content and scenarios stay order-independent.
- */
+/** Recreated from scratch each run so mutating tools (write/patch/move/delete) start from identical content and scenarios stay order-independent. */
 export async function setupToolsPortal(
   workspaceRoot: string,
   fixturePortalPath: string,
@@ -63,9 +59,8 @@ export async function setupToolsPortal(
 
   await copy(resolve(fixturePortalPath), portalPath, { overwrite: true });
 
-  // Phase 156 Step 5: git-init the tools portal so git_* MCP tools have a real
-  // repository to operate in. Opt-in via MCP_GIT_INIT=1 env var so non-git
-  // scenarios are unaffected.
+  // git-init the tools portal so git_* MCP tools have a real repository to operate in.
+  // Opt-in via MCP_GIT_INIT=1 env var so non-git scenarios are unaffected.
   if (Deno.env.get("MCP_GIT_INIT") === "1") {
     const gitCmd = new Deno.Command("git", {
       args: ["init", "-b", "main"],

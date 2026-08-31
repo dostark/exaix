@@ -14,10 +14,6 @@ import { StepFailureStage } from "./assertions.ts";
 import type { IRunSyntheticScenarioResult } from "./synthetic_runner.ts";
 import type { IScenarioVerdict } from "./scoring.ts";
 
-/**
- * Prints detailed failure information for a failed scenario to the console.
- * @param result The full result of the synthetic scenario run.
- */
 export function reportScenarioFailure(result: IRunSyntheticScenarioResult): void {
   const failedSteps = result.stepOutcomes.filter(
     (o) => o.status === CriterionStatus.FAILED || o.status === CriterionStatus.ERROR,
@@ -69,10 +65,6 @@ export function reportScenarioFailure(result: IRunSyntheticScenarioResult): void
   console.log("%c-----------------------", "color: red; font-weight: bold;");
 }
 
-/**
- * Prints a suite summary table with per-scenario scores, pass/fail status,
- * and aggregate mean score.
- */
 export function reportSuiteSummary(
   scenarioVerdicts: IScenarioVerdict[],
   threshold?: Opt<number, Reason.OptionalInput>,

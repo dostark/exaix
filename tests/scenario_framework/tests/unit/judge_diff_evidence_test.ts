@@ -61,10 +61,9 @@ Deno.test("[JudgeDiffEvidence] a genuine fix produces a non-empty diff showing t
 });
 
 Deno.test("[JudgeDiffEvidence] an uncommitted fix in the working tree is still captured, not silently reported as no changes", async () => {
-  // Live-observed 2026-08-02: a Haiku-solved trial left its (correct) fix uncommitted —
-  // diffing root..HEAD alone saw nothing, since HEAD was still the init commit. A judge
-  // shown "(no changes)" for genuinely-fixed-but-uncommitted code is the exact broken-
-  // pipeline-read-as-worthless-artefact failure Phase 158's validity gate exists to catch.
+  // A Haiku-solved trial left its correct fix uncommitted — diffing root..HEAD alone saw
+  // nothing, since HEAD was still the init commit. Judging "(no changes)" against
+  // genuinely-fixed-but-uncommitted code is exactly the failure the validity gate exists to catch.
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-uncommitted-" });
   try {
     const repoDir = `${workspaceRoot}/todo-app`;

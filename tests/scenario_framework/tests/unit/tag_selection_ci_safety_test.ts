@@ -55,7 +55,7 @@ Deno.test("[tag-safety] a tag selection excludes provider-live and non-auto scen
 });
 
 Deno.test("[tag-safety] a pack selection is filtered the same way", () => {
-  // `--pack` is as much a set selection as `--tag`; the Step 13 flows baseline was taken this way.
+  // `--pack` is as much a set selection as `--tag`.
   assertEquals(idsFor({ scenarios: SCENARIOS, explicitPacks: ["flows"] }), ["mock-a", "mock-b"]);
 });
 
@@ -114,13 +114,9 @@ Deno.test("[tag-safety] the profile path is unchanged", () => {
   );
 });
 
-// An excluded tag in the request is a MODIFIER, not a selector.
-//
-// `--tag` is OR across tags, so `--tag subsystem:mcp-client --tag provider-live` — the documented
-// per-subsystem nightly form — unioned in every `provider-live` scenario from every pack, including
-// the whole of swe_tasks. On a live tier that is real money spent on the wrong scenarios. The
-// escape tag's job is to turn the CI-safety filter off for the subsystem being asked about; it is
-// not itself a thing to select.
+// An excluded tag in the request is a MODIFIER, not a selector: since `--tag` is OR across
+// tags, `--tag subsystem:mcp-client --tag provider-live` used to union in every provider-live
+// scenario from every pack — real money spent on the wrong scenarios on a live tier.
 
 Deno.test("[tag-safety] an excluded tag does not widen the selection to other subsystems", () => {
   const scenarios = [

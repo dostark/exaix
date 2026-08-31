@@ -88,11 +88,9 @@ Deno.test("[ScoreThreshold] accumulateRunVerdict — single scenario that passes
   assertEquals(verdict.scenarios[0].scenarioId, "solo");
 });
 
-// Phase 150 LIVE-RT: the first real delegate run reported ✅ PASSED at 0.727 while
-// its manifest recorded outcome "scenario-failure" — three outcome assertions had
-// failed (no briefed event, no reconciled event, file unchanged) but the weighted
-// suite score still cleared the gate. A threshold may only ever LOWER a verdict;
-// it must never override steps that actually failed.
+// A real delegate run reported ✅ PASSED at 0.727 while its manifest recorded
+// "scenario-failure" — three outcome assertions had failed but the weighted suite score
+// still cleared the gate. A threshold may only ever LOWER a verdict, never override failed steps.
 Deno.test("[ScoreThreshold] resolveScenarioVerdict — failed steps cannot pass on score alone", () => {
   assertEquals(resolveScenarioVerdict("scenario-failure", 0.727, 0.5), false);
 });

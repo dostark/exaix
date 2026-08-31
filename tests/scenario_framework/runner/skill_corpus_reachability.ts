@@ -15,8 +15,8 @@
 /** A skill from the catalog, reduced to what reachability and planning need. */
 export interface ISkillCatalogEntry {
   skillId: string;
-  /** ISkill.critical (Phase 131 W16's protected-prompt-segment flag), reused here per
-   *  Step 4's Actions as "whose value claim is load-bearing". */
+  /** ISkill.critical (protected-prompt-segment flag), reused here to flag "whose value claim is
+   *  load-bearing". */
   critical: boolean;
 }
 
@@ -36,34 +36,17 @@ export interface ISkillReachabilityResult {
   nonCoverage: INonCoverageEntry[];
 }
 
-/** One shipped identity's declared `default_skills`, independent of whether the corpus
- *  run under measurement ever selected that identity. Supplied so a non-coverage reason
- *  can distinguish "genuinely absent from every identity's defaults" from "outside this
- *  run's identity coverage" — see `computeSkillReachability`'s docstring. */
+/** One shipped identity's declared `default_skills`, independent of whether the corpus run
+ *  under measurement selected that identity — lets a non-coverage reason distinguish "absent
+ *  from every identity's defaults" from "outside this run's identity coverage". */
 export interface IIdentityDefaultSkills {
   identityId: string;
   defaultSkillIds: string[];
 }
 
-/**
- * Unions default_skills with every corpus task's matched skill ids to find the
- * corpus-reachable set. Catalog skills reached by neither path are published on the
- * non-coverage list with a reason naming the corpus size, so a reader can tell "no
- * task ever needed this skill" apart from "the corpus doesn't exist yet". A
- * default_skills entry that names a skill outside the catalog (e.g. a stale identity
- * reference) is silently ignored rather than reported, since it is not one of the
- * skills this report is evaluating.
- *
- * `allIdentityDefaultSkills` (optional, catalog-wide — every shipped identity, not
- * just the one(s) this run exercised) enriches a non-coverage reason when the skill is
- * still another identity's declared default: "not reached by this run" and "unused by
- * the catalog" are different findings, and GitHub issue #2 conflated them for
- * `response-contract-code-analysis`/`-judge`/`-performance`/`-qa`/`verdict-rubric` —
- * each is the default output contract for a real identity
- * (`code-analyst`/`quality-judge`+`voting-judge`/`performance-engineer`/`qa-engineer`)
- * the 19-task SWE corpus simply never routes to. Omitting this parameter (or passing
- * `[]`) reproduces the original, narrower reason exactly.
- */
+// Unions default_skills with every corpus match to find the corpus-reachable set; a default_skills
+// entry naming a skill outside the catalog is silently ignored rather than reported.
+// `allIdentityDefaultSkills` distinguishes "not reached by this run" from "unused by the catalog".
 export function computeSkillReachability(
   catalog: ISkillCatalogEntry[],
   defaultSkillIds: string[],

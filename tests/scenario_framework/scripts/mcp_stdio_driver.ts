@@ -125,8 +125,7 @@ export async function sendJsonRpcRequests(
   } finally {
     // A server that died before answering leaves stdin already closed; closing the writer
     // then rejects with "Writable stream is closed or errored". Swallow it so the caller
-    // still gets the real diagnostic (the server's own error) instead of a stream
-    // TypeError escaping as an unhandled rejection.
+    // gets the real diagnostic (the server's own error) instead of a stray TypeError.
     try {
       await writer.close();
     } catch { /* server stdin already gone — the real error is reported above */ }

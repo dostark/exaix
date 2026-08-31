@@ -77,12 +77,9 @@ Deno.test("[step_env] a longer var is not corrupted by a shorter prefix var (no 
 });
 
 Deno.test("[step_env] expandVariablesInStep expands $VARS in an llm-judge output_criteria's context_path", () => {
-  // Live-observed bug: expandVariablesInStep's output_criteria mapping only expanded
-  // "path"/"target_file" fields. An llm-judge criterion's context_path: "$REQUEST_FIXTURE"
-  // (pointing at the original request fixture, so the judge can score goal_alignment/
-  // request_understanding against the real stated objective) was left as the literal string
-  // "$REQUEST_FIXTURE" — Deno.readTextFile on that literal always fails, silently degrading
-  // to no context at all.
+  // Bug: output_criteria mapping only expanded "path"/"target_file" fields, so an llm-judge
+  // criterion's context_path: "$REQUEST_FIXTURE" was left as the literal string —
+  // Deno.readTextFile on that literal fails, silently degrading to no context at all.
   const step = {
     id: "judge-quality",
     type: ScenarioStepType.SHELL,

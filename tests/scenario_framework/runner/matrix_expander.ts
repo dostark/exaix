@@ -42,10 +42,7 @@ export interface IJailLaunchOptions {
   /** Extra raw `--mount <entry>` bind mounts beyond `mountSource` (e.g. the hidden oracle
    *  test directory for a verify-only step — never present during delegate editing). */
   extraMounts?: Opt<string[], Reason.OptionalInput>;
-  /** Explicit `--mount` args used VERBATIM instead of live-resolving credentials. A caller
-   *  that persists launch args into a static file (e.g. a scenario YAML) MUST supply this —
-   *  a live-resolved mount points at a disposable temp dir that goes stale after the process exits.
-   *  Use a companion setup step, never a `Deno.makeTempDirSync()` path. */
+  /** Explicit `--mount` args used VERBATIM instead of live-resolving credentials — required when a caller persists launch args to a static file (e.g. scenario YAML), since a live-resolved mount would go stale after the process exits. */
   credentialMountArgs?: Opt<string[], Reason.OptionalInput>;
 }
 

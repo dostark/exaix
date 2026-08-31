@@ -56,11 +56,9 @@ const DEFAULT_RUNTIME_TIMEOUT_SEC = 120;
 const NON_EMPTY_STRING = z.string().min(1);
 const ABSOLUTE_PATH = z.string().min(1).startsWith("/");
 
-// Sandbox default-location policy. When no explicit workspace_path is supplied, the runner
-// must NOT fall back to the repo root (resolve("") === CWD), which leaks runtime state
-// (.exa/journal.db, .logs/) into the working tree. Instead it deploys a sibling-of-repo
-// sandbox under `<base>/<SANDBOX_DIR_NAME>/<run-id>`, where `<base>` is the EXA_SANDBOX_BASE
-// env override when set, else the parent directory of the repo root.
+// Without an explicit workspace_path, the runner must NOT fall back to the repo root
+// (resolve("") === CWD), which leaks runtime state (.exa/journal.db, .logs/) into the working
+// tree — it deploys a sibling-of-repo sandbox under `<base>/<SANDBOX_DIR_NAME>/<run-id>` instead.
 const SANDBOX_BASE_ENV = "EXA_SANDBOX_BASE";
 const SANDBOX_DIR_NAME = "exaix-sandboxes";
 const SANDBOX_OUTPUT_SUBDIR = "output";
@@ -99,11 +97,9 @@ export const RuntimeConfigSchema = z.object({
   timeout_sec: z.number().int().positive().default(DEFAULT_RUNTIME_TIMEOUT_SEC),
   allow_dirty_workspace: z.boolean().default(false),
   verbose: z.boolean().default(false),
-  /**
-   * Phase 142 Step 16 — whether the runner minted `workspace_path` or the operator supplied it.
-   * Cleanup reads this instead of guessing from the path: deciding by shape would delete a real
-   * workspace the day someone points `--workspace` at a directory under the sandbox base.
-   */
+  /** Whether the runner minted `workspace_path` or the operator supplied it. Cleanup reads
+   *  this instead of guessing from the path: deciding by shape would delete a real workspace
+   *  the day someone points `--workspace` at a directory under the sandbox base. */
   workspace_provenance: z.nativeEnum(WorkspaceProvenance).default(WorkspaceProvenance.RUNNER_MINTED),
 }).strict();
 
@@ -113,23 +109,16 @@ export function loadRuntimeConfig(rawConfig: JSONObject): IRuntimeConfig {
   return RuntimeConfigSchema.parse(rawConfig);
 }
 
-/**
- * Compute the default sibling-of-repo sandbox root for a run when no explicit workspace_path
- * is supplied. Base is `EXA_SANDBOX_BASE` if set, else the parent directory of the repo root
- * (the framework lives at `<repo>/tests/scenario_framework`, so the repo root is two levels
- * above frameworkHome). The run-id keeps concurrent/repeated runs isolated.
- */
+// Computes the default sibling-of-repo sandbox root when no explicit workspace_path is
+// supplied. Base is `EXA_SANDBOX_BASE` if set, else the parent of the repo root (the framework
+// lives at `<repo>/tests/scenario_framework`, two levels below the repo root).
 function defaultSandboxRoot(frameworkHome: string, runId: string): string {
   const repoRoot = resolve(frameworkHome, "..", "..");
   const base = Deno.env.get(SANDBOX_BASE_ENV) ?? dirname(repoRoot);
   return join(resolve(base), SANDBOX_DIR_NAME, runId);
 }
 
-/**
- * Guard against routing runtime state into the repo tree. A resolved workspace root equal to
- * the repo root (the classic `resolve("")` === CWD leak) is rejected loudly so .exa/ and
- * .logs/ never contaminate the working tree.
- */
+/** Guards against routing runtime state into the repo tree: a resolved workspace root equal to the repo root (the classic `resolve("")` === CWD leak) is rejected loudly. */
 function assertNotRepoRoot(workspacePath: string, frameworkHome: string): void {
   const repoRoot = resolve(frameworkHome, "..", "..");
   if (workspacePath === repoRoot) {

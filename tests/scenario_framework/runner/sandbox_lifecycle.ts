@@ -20,13 +20,9 @@
 
 import { join, relative, resolve } from "@std/path";
 
-/**
- * Where the workspace came from.
- *
- * Tracked explicitly rather than inferred from the path: deciding by shape ("does it live under
- * the sandbox base?") deletes a real workspace the day someone points `--workspace` at a directory
- * there, and that is a data-loss bug with no undo.
- */
+// Where the workspace came from — tracked explicitly rather than inferred from the path, since
+// deciding by shape ("does it live under the sandbox base?") deletes a real workspace the day
+// someone points `--workspace` there. That's a data-loss bug with no undo.
 export enum WorkspaceProvenance {
   /** The runner created it for this invocation and owns its lifetime. */
   RUNNER_MINTED = "runner-minted",
@@ -54,16 +50,9 @@ export interface ISandboxCleanupPlan {
   retention: SandboxRetention;
   /** The sandbox this plan was computed for; `applySandboxCleanup` refuses any other target. */
   workspacePath: string;
-  /**
-   * Sandbox-relative entries that must survive removal.
-   *
-   * Evidence is preserved by EXCLUSION rather than relocation. The default `output_dir` is
-   * `<sandbox>/output` (`config.ts:153`), the run manifest and every artefact are written there,
-   * and eval-history entries reference those paths — moving them would leave the history pointing
-   * at nothing. Excluding the directory keeps every reference valid and still reclaims
-   * substantially all of the bytes, since the evidence is kilobytes against megabytes of seeded
-   * catalogs and portal fixtures.
-   */
+  // Sandbox-relative entries that must survive removal, preserved by EXCLUSION rather than
+  // relocation — eval-history entries reference the output dir's original path, and moving it
+  // would leave that history pointing at nothing.
   preserve: string[];
 }
 
@@ -94,13 +83,9 @@ function isInside(parent: string, child: string): boolean {
   return rel.length > 0 && !rel.startsWith("..") && !resolve(child).startsWith("..");
 }
 
-/**
- * Decide what happens to the sandbox, in strict precedence order.
- *
- * Provenance outranks everything: an operator's own directory is not ours to remove for any
- * reason. Then the explicit flag, then the failure asymmetry — the cost of keeping a failed run's
- * state is disk, the cost of discarding it is an undiagnosable failure.
- */
+// Strict precedence order: provenance outranks everything (an operator's own directory is never
+// ours to remove), then the explicit flag, then run failure — keeping a failed run costs disk;
+// discarding it costs an undiagnosable failure.
 export function planSandboxCleanup(options: IPlanSandboxCleanupOptions): ISandboxCleanupPlan {
   const preserve = isInside(options.workspacePath, options.outputDir)
     ? [relative(resolve(options.workspacePath), resolve(options.outputDir))]
@@ -117,13 +102,9 @@ export function planSandboxCleanup(options: IPlanSandboxCleanupOptions): ISandbo
   return { retention, workspacePath: resolve(options.workspacePath), preserve };
 }
 
-/**
- * Carry out the plan.
- *
- * Refuses a target the plan was not computed for. This is the framework's only recursive delete,
- * and a refactor that threads the wrong root should remove nothing rather than the wrong thing —
- * the mismatch is not recoverable once it has run.
- */
+// Refuses a target the plan was not computed for. This is the framework's only recursive delete,
+// and a refactor that threads the wrong root should remove nothing rather than the wrong thing —
+// the mismatch is not recoverable once it has run.
 export async function applySandboxCleanup(
   plan: ISandboxCleanupPlan,
   workspacePath: string,

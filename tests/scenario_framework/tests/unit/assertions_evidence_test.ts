@@ -359,7 +359,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] failure manifests include step 
   }
 });
 
-// Version Assertion Criteria Tests (Phase 51 Secondary Goal)
+// Version Assertion Criteria Tests
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] version-equals criterion passes when versions match", async () => {
   await withTempWorkspace(async (workspaceRoot) => {
@@ -609,11 +609,9 @@ Deno.test({
     "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint with EXA_EVAL_MODEL_SIZE=S and no explicit provider resolves via Ollama (GAP-1 free local S-tier candidate)",
   ...DISABLED_OPTS,
   fn: async () => {
-    // Since GAP-1 populated real contextWindow/costPerMtok metadata, Ollama (contextWindow
-    // 8192, cost 0) is the only registered candidate that meets the S preset unconfigured —
-    // it's the intended zero-config default, not a resolution failure. Point at an unused
-    // port (like the explicit EXA_LLM_PROVIDER=ollama test above) so this doesn't depend on a
-    // real local Ollama server.
+    // Ollama (contextWindow 8192, cost 0) is the only registered candidate meeting the S
+    // preset unconfigured — the intended zero-config default, not a resolution failure. Uses
+    // an unused port so this doesn't depend on a real local Ollama server.
     await withEnv({
       EXA_EVAL_MODEL_SIZE: "S",
       EXA_LLM_BASE_URL: "http://127.0.0.1:11999",
@@ -729,11 +727,9 @@ Deno.test({
     await withEnv({ EXA_LLM_PROVIDER: "claude-cli", ...NO_BACKWARD_KEYS }, async () => {
       try {
         const result = await callLlmEndpoint("test prompt");
-        // Before the resolveEvalLlmJudgeConfigRoot fix (2026-08-02), this always threw
-        // because the config's cwd literal ("/tmp/exa-eval") did not exist. On a machine
-        // where the claude binary is genuinely installed and authenticated, the spawn now
-        // succeeds instead — a non-empty response still proves routing reached
-        // CliDelegateModelProvider rather than silently falling back to mock.
+        // A non-empty response (or, in the catch below, a CLI-specific error) proves routing
+        // reached CliDelegateModelProvider — this environment may or may not have the claude
+        // binary installed and authenticated.
         assert(result.length > 0, "expected a non-empty CLI delegate response");
       } catch (err) {
         const msg = (err as Error).message;
@@ -748,10 +744,9 @@ Deno.test({
   },
 });
 
-// `expect_failure` was honoured in modes.ts (do not halt the scenario on a non-zero exit)
-// but NOT in evaluateStepOutcome, which short-circuited to EXECUTION failure on any
-// non-zero exit and skipped output criteria entirely. A scenario deliberately eliciting a
-// failure therefore "passed" without any of its assertions ever running — a false green.
+// `expect_failure` was honoured in modes.ts but not in evaluateStepOutcome, which
+// short-circuited to EXECUTION failure on any non-zero exit and skipped output criteria —
+// a scenario deliberately eliciting failure "passed" without assertions ever running.
 Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure evaluates output criteria on a non-zero exit", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
   try {
@@ -824,11 +819,9 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure fails the step w
   }
 });
 
-// Scenarios in a pack run share one sandbox workspace, so a glob like `**/*_plan.md`
-// matches every plan any earlier scenario produced. resolveStepFilePattern returned the
-// FIRST directory-walk match — arbitrary order — so a step validated some other scenario's
-// artefact. Resolving the most recently written match correlates the step with the request
-// it just submitted and waited for, which is what makes a shared sandbox safe.
+// Scenarios in a pack share one sandbox workspace, so a glob like `**/*_plan.md` matches
+// every earlier scenario's plan too. resolveStepFilePattern must resolve the most recently
+// written match, or a step can validate a different scenario's artefact.
 Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most recent match in a shared workspace", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-newest-" });
   try {

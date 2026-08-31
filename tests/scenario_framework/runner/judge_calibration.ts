@@ -32,12 +32,7 @@ function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-/**
- * Pearson correlation coefficient between judge scores and objective outcomes. Fewer
- * than 2 samples, or zero variance on either side (a constant judge score or a constant
- * outcome), makes the coefficient undefined by definition — reported as 0 rather than
- * NaN, since "no measurable calibration signal" is the honest reading either way.
- */
+/** Pearson correlation between judge scores and objective outcomes; fewer than 2 samples or zero variance on either side reports 0 rather than NaN — undefined either way, and 0 reads as "no measurable calibration signal". */
 export function computeJudgeCalibration(input: IJudgeCalibrationInput): IJudgeCalibrationResult {
   const { samples } = input;
   if (samples.length < 2) {

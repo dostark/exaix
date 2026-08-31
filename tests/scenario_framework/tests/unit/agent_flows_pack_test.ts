@@ -52,10 +52,9 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] CI-safe scenario list excludes scen
     packs: ["agent_flows"],
   });
 
-  // Phase 142 Step 7 — asserts the PROPERTY rather than a frozen list. The list broke the moment
-  // `guardrail-block-violation` was correctly retagged provider-live (its verdict is model-
-  // produced), which is a legitimate change the test should not have contested. What must hold is
-  // that the CI-safe view carries no scenario a mock-tier run cannot pass, and is not empty.
+  // Asserts the PROPERTY rather than a frozen list: retagging a scenario provider-live is a
+  // legitimate change this test should not contest. What must hold is that the CI-safe view
+  // carries no scenario a mock-tier run cannot pass, and is not empty.
   const ciSafeIds = ciSafeScenarios.map((scenario: IScenario) => scenario.id).sort();
   assert(ciSafeIds.length > 0, "the agent_flows pack must contribute something to CI");
 

@@ -72,12 +72,8 @@ export interface IRunSyntheticScenarioOptions {
   env?: { [key: string]: string };
   portalAliases?: string[];
   verbose?: boolean;
-  /**
-   * Explicit matrix cell selection by `tool` (e.g. "claude-code"), forwarded to
-   * resolveRunnableSteps. Every non-matching cell is recorded skipped rather than run —
-   * see IExpandMatrixOptions.selectedCell for why an explicit selection is required to run
-   * more than one cell of the same matrix scenario (one invocation per --cell).
-   */
+  /** Forwarded to resolveRunnableSteps; every non-matching cell is recorded skipped rather
+   *  than run. See IExpandMatrixOptions.selectedCell for why one invocation runs one cell. */
   selectedCell?: string;
   /** Upper bound applied to every step's `timeout_sec`; shortens only, never extends. */
   maxStepTimeoutSec?: number;
@@ -115,24 +111,13 @@ export interface IStepBaseEnvOptions {
   env?: { [key: string]: string };
 }
 
-/**
- * This file always lives within the Exaix repo at tests/scenario_framework/runner/.
- * Compute the repo root from this known location rather than from frameworkHome
- * (which may be a temp dir in tests).
- */
+/** Computed from this file's own known location rather than from frameworkHome, which
+ *  may be a temp dir in tests. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
-/**
- * Catalogs the daemon resolves against the WORKSPACE root rather than the repo, and which a
- * fresh sandbox therefore lacks entirely.
- *
- * `assertFlowExists` reads `<root>/Blueprints/Flows/<id>.flow.yaml` and `SkillsService` reads
- * `<root>/Memory/Skills`, so without these a flow request is rejected as "not found" and skill
- * matching runs against an empty catalog — neither of which looks like a missing-fixture
- * problem from the scenario's failure output. Seeded here for the same reason `setup_db.ts`
- * runs here: production has these in place before the daemon starts, and a scenario that has
- * to arrange them itself is testing its own setup.
- */
+/** Catalogs the daemon resolves against the WORKSPACE root rather than the repo, and which a
+ *  fresh sandbox therefore lacks entirely — without these a flow request is rejected as
+ *  "not found", which doesn't look like a missing-fixture problem from the failure output. */
 const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
   [join("Blueprints"), join("Blueprints")],
   // The full shipped Memory tree (Skills + template banks), so scenarios never need a
@@ -141,12 +126,8 @@ const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
   [join("Memory"), join("Memory")],
 ] as const;
 
-/**
- * Copy the shipped catalogs into a sandbox workspace, filling in only what is absent.
- *
- * Additive by design: a scenario that patches an identity inside its sandbox keeps the patch,
- * and an operator-supplied `--workspace` is never rewritten. Exported for direct testing.
- */
+/** Additive by design: a scenario that patches an identity inside its sandbox keeps the
+ *  patch, and an operator-supplied `--workspace` is never rewritten. */
 export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: string): Promise<void> {
   for (const [from, to] of SEEDED_CATALOGS) {
     const source = join(repoRoot, from);
@@ -159,20 +140,8 @@ export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: str
   }
 }
 
-/**
- * Copy every entry of `source` that `destination` lacks, recursing into directories both have.
- *
- * Additive at the FILE level rather than the directory level. Skipping whenever the destination
- * directory merely existed was enough until the first full six-subsystem run: `model-registry-
- * team-cutover` copies the catalog itself (`cp -r … $WORKSPACE_ROOT/Blueprints`), and after it the
- * shared sandbox held a `Blueprints/` that seeding then refused to complete — so every later flow
- * scenario failed with "Flow 'analyze-codebase' not found". Per-pack runs never saw it, because
- * the scenario that creates the directory and the scenarios that need the catalog were never in
- * the same invocation.
- *
- * A file the destination already has is left exactly as it is, which preserves the Step 13
- * guarantee that a scenario's own patch to an identity survives seeding.
- */
+/** Additive at the FILE level, not the directory level — a file the destination already has
+ *  is left exactly as it is, so a scenario's own patch to an identity survives seeding. */
 async function seedMissingEntries(source: string, destination: string): Promise<void> {
   await ensureDir(destination);
   for await (const entry of Deno.readDir(source)) {
@@ -189,19 +158,8 @@ async function seedMissingEntries(source: string, destination: string): Promise<
   }
 }
 
-/**
- * Copy a scenario's `flow_fixture` into the sandbox's flow catalog, named after the flow's own id.
- *
- * `assertFlowExists` resolves `<root>/Blueprints/Flows/<id>.flow.yaml`, so a fixture left in the
- * framework tree can never be requested — the scenario has to stage it. Eight scenarios declared
- * the field and none of them could: nothing read it, and `$FLOW_FIXTURE` expanded to nothing, so
- * `dynamic-permission-boundary`'s hand-rolled `cp` died on the literal `$FLOW_FIXTURE`. Doing it
- * here is the same move as mounting `portals:` and seeding the catalogs — setup the scenario
- * should not be testing.
- *
- * Overwrites: unlike the shipped catalogs, this file belongs to the scenario about to run, and a
- * stale copy from an earlier scenario sharing the sandbox would silently win.
- */
+/** A fixture left in the framework tree can never be requested by id — the scenario has to
+ *  stage it. Overwrites: a stale copy from an earlier scenario sharing the sandbox would win. */
 export async function stageFlowFixture(workspaceRoot: string, flowFixturePath: string): Promise<void> {
   const contents = await Deno.readTextFile(flowFixturePath);
   const declaredId = parseYaml(contents) as { id?: string } | null;
@@ -226,19 +184,8 @@ async function git(cwd: string, args: string[]): Promise<boolean> {
   return result.exitCode === 0;
 }
 
-/**
- * Copy the portal fixtures into the sandbox and initialise each as a git repository.
- *
- * Portals are mutated ONLY through git worktrees (`PortalExecutionStrategy.WORKTREE`), so a
- * portal that is not a repo has nowhere isolated to put an agent's changes — it either bypasses
- * the isolation or writes straight into the portal root. All nine shipped fixtures were plain
- * directories, so no scenario exercised that invariant.
- *
- * Initialised here rather than committed to the repo: nested `.git` trees are awkward to carry,
- * and a per-run repository is what makes `git worktree add` safe to call concurrently across
- * scenarios sharing a sandbox. Skips any portal that is already a repo, so a second pass never
- * discards history an earlier scenario created.
- */
+/** Portals are mutated ONLY through git worktrees, so a non-repo portal has nowhere isolated
+ *  to put an agent's changes. Initialised here, not committed: nested `.git` trees are awkward. */
 export async function seedPortalFixtures(workspaceRoot: string, repoRoot: string): Promise<void> {
   const source = join(repoRoot, PORTAL_FIXTURES_SOURCE);
   try {
@@ -287,16 +234,9 @@ export async function capturePortalBaselines(workspaceRoot: string): Promise<Por
   return baselines;
 }
 
-/**
- * Names every portal whose default branch moved or whose working tree was dirtied.
- *
- * Portal mutation is supposed to happen ONLY inside a git worktree on its own branch —
- * `getExecutionStrategy` forces `PortalExecutionStrategy.WORKTREE` for every portal task, and
- * `GitService` refuses operations on protected branches. Neither guarantee was ever checked
- * against an actual run, and the failure is silent: a write that misses the worktree lands on
- * the portal's checked-out default branch and looks exactly like success. That became possible
- * only once portals were seeded as real repositories, so the check ships with the seeding.
- */
+/** Portal mutation is supposed to happen ONLY inside a git worktree on its own branch. The
+ *  failure mode this guards is silent: a write that misses the worktree lands on the portal's
+ *  checked-out default branch and looks exactly like success. */
 export async function detectPortalDrift(
   workspaceRoot: string,
   baselines: readonly PortalBaseline[],
@@ -319,33 +259,23 @@ export async function detectPortalDrift(
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
-  // Ensure the sandbox workspace exists before ANY step runs. With the sibling-of-repo default
-  // (config.ts: <base>/exaix-sandboxes/<run-id>), workspace_path points at a directory that does
-  // not exist yet, and the step executor spawns commands with it as cwd — a missing dir fails with
-  // ENOENT ("No such cwd"). Matrix cells were covered by materializeCellConfig's ensureDir, but
-  // non-matrix scenarios were not; create it here unconditionally so every run mode is covered.
+  // Sandbox workspace may not exist yet (sibling-of-repo default), and the step executor
+  // spawns commands with it as cwd — create it unconditionally so every run mode is covered.
   await ensureDir(options.workspaceRoot);
 
-  // Seed the catalogs the daemon resolves against the workspace root. Without them a flow
-  // request is rejected as "Flow '<id>' not found" and skill matching scores against an empty
-  // catalog — both of which surface as unrelated-looking scenario failures.
+  // Without these, a flow request is rejected as "not found" and skill matching scores
+  // against an empty catalog — both surface as unrelated-looking scenario failures.
   await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
   await seedPortalFixtures(options.workspaceRoot, REPO_ROOT);
   await seedWorkspaceConfig(options.workspaceRoot, options.frameworkHome);
   const portalBaselines = await capturePortalBaselines(options.workspaceRoot);
 
-  // Baseline for artefact correlation. Scenarios in a pack run share one sandbox workspace,
-  // so a glob like `**/*_plan.md` matches every plan an earlier scenario left behind.
-  // Captured at scenario entry, this timestamp separates "produced by this scenario" from
-  // "left by a previous one", which is what makes the shared workspace safe without
-  // per-scenario cleanup.
+  // Baseline for artefact correlation: scenarios in a pack share one sandbox workspace, so
+  // this timestamp separates "produced by this scenario" from "left by a previous one".
   const scenarioStartedAtMs = Date.now();
 
-  // Run database migrations (setup_db.ts) so the sandbox's .exa/journal.db has all required
-  // tables (activity, provider_costs, etc.). Without this step the daemon hits "no such table"
-  // errors when the EventLogger or agent execution tries to write to missing tables. This must
-  // happen BEFORE any start-daemon step since the daemon expects the schema to already exist
-  // (production runs setup_db.ts before the daemon starts via the deploy pipeline).
+  // Must happen BEFORE any start-daemon step, since the daemon expects the schema (activity,
+  // provider_costs, etc.) to already exist, or it hits "no such table" errors.
   const setupDbResult = await new Deno.Command("deno", {
     args: [
       "run",
@@ -359,9 +289,8 @@ export async function runSyntheticScenario(
       EXA_MIGRATIONS_DIR: join(REPO_ROOT, "migrations"),
     },
   }).output();
-  // Fatal, not a warning: a scenario running against an unmigrated database fails later on
-  // whichever table it happens to touch first, which reads as an unrelated defect. Failing
-  // here names the real cause once.
+  // Fatal, not a warning: an unmigrated database otherwise fails later on whichever table
+  // it happens to touch first, reading as an unrelated defect.
   if (!setupDbResult.success) {
     throw new Error(
       `setup_db.ts failed with exit code ${setupDbResult.code} for workspace ${options.workspaceRoot}; ` +
@@ -399,33 +328,23 @@ export async function runSyntheticScenario(
 
   const stepOutcomes: IScenarioStepOutcome[] = [];
 
-  // Phase 127 Step 5 — matrix-aware step resolution. For a `matrix:` scenario this
-  // invokes expandMatrix() (closing its reachability ledger row); for a matrix-less
-  // scenario it returns a single pass-through group with the original steps. The runner
-  // executes the first runnable group; options.selectedCell narrows a multi-cell matrix
-  // to one cell explicitly (see IExpandMatrixOptions.selectedCell) so a caller that wants
-  // every cell exercised loops over cells itself, one invocation per --cell.
+  // Matrix-aware step resolution: for a `matrix:` scenario this expands to per-cell groups;
+  // for a matrix-less scenario it returns a single pass-through group. The runner executes
+  // the first runnable group; selectedCell narrows a multi-cell matrix to one cell explicitly.
   const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(loadedScenario.scenario, {
     env: envForExpansion,
     binOnPath: (bin) => binIsOnPath(bin),
-    // The daemon resolves a relative EXA_CONFIG_PATH against its CWD (the workspace),
-    // not the repo, so the cell's preset must be made absolute against the repo root
-    // (frameworkHome/../..) before it is overlaid onto the start-daemon step.
+    // The daemon resolves a relative EXA_CONFIG_PATH against its CWD (the workspace), not the
+    // repo, so the cell's preset must be made absolute against the repo root first.
     configBaseDir: REPO_ROOT,
     selectedCell: options.selectedCell,
   });
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
   let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
 
-  // Phase 127 Step 8 (LIVE-RT) + Phase 128: a scenario that boots a daemon on a dogfood preset
-  // carrying deploy-time sentinels needs a sentinel-resolved copy materialized into the workspace
-  // (root → workspace, worktree → the mounted portal) so the daemon roots where the runner submits
-  // requests. This applies to BOTH matrix cells (preset from the cell `config:`) AND non-matrix
-  // provider-live scenarios whose `start-daemon` step carries an EXA_CONFIG_PATH preset directly
-  // (e.g. the Phase 128 hardening scenario). A matrix cell's preset path is already absolute (the
-  // expander overlay resolved it); a non-matrix YAML preset path may contain $FRAMEWORK_HOME, so
-  // expand the start-daemon step's EXA_CONFIG_PATH against the run env first. materializeCellConfig
-  // is keyed on the start-daemon step and safely no-ops when no such step / EXA_CONFIG_PATH exists.
+  // A scenario booting a daemon on a preset carrying deploy-time sentinels needs a
+  // sentinel-resolved copy materialized into the workspace so the daemon roots where the
+  // runner submits requests. materializeCellConfig no-ops when no such step/path exists.
   stepsToRun = stepsToRun.map((step) =>
     step.id === MATRIX_START_DAEMON_STEP_ID && step.env?.EXA_CONFIG_PATH
       ? { ...step, env: { ...step.env, EXA_CONFIG_PATH: expandInString(step.env.EXA_CONFIG_PATH, envForExpansion) } }
@@ -437,40 +356,28 @@ export async function runSyntheticScenario(
   });
   stepsToRun = materialized.steps;
 
-  // Mount what the scenario declared. Runs AFTER materializeCellConfig so the `[[portals]]`
-  // entry lands in the workspace config the daemon actually boots with (mounting before it
-  // was overwritten by the materialized cell config silently lost the entry — the second
-  // scenario in a shared sandbox then failed execution with "Portal not found"). A fixture
-  // mount (target_path) is clean-staged first: the runner owns the reset, so an evaluated
-  // repo can never leak a prior scenario's/cell's changes or solution.
+  // Runs AFTER materializeCellConfig so the `[[portals]]` entry lands in the config the
+  // daemon actually boots with — mounting before it risks the entry being silently
+  // overwritten by the materialized cell config, failing with "Portal not found".
   await prepareDeclaredPortals(loadedScenario.scenario.portals, options, envForExpansion);
 
-  // The cell config's own [ai].provider/[ai].model (parsed above) becomes $CELL_PROVIDER /
-  // $CELL_MODEL for every step's existing $VAR expansion (executeSyntheticStep's baseEnv) —
-  // so a scenario's judge-quality step can reference the config's real provider/model instead
-  // of hardcoding a value that must be kept in sync with the config by hand.
+  // Exposed as $CELL_PROVIDER/$CELL_MODEL for step $VAR expansion, so a judge-quality step
+  // can reference the config's real provider/model instead of hardcoding one.
   const cellEnv: { [key: string]: string } = { ...(options.env ?? {}) };
   if (materialized.aiProvider) cellEnv.CELL_PROVIDER = materialized.aiProvider;
   if (materialized.aiModel) cellEnv.CELL_MODEL = materialized.aiModel;
   const runEnv = Object.keys(cellEnv).length > 0 ? cellEnv : options.env;
 
-  // A trajectory-assert step declares `source_step: <id>` in YAML rather than a literal rowid
-  // window (author-hostile and non-portable across runs). Track each step's own [start, end]
-  // journal rowid window as it executes so a later trajectory-assert step can be scoped to
-  // exactly its named source_step's execution — not the whole run, which would also capture
-  // unrelated tool calls from prior/later steps.
+  // Tracks each step's own [start, end] journal rowid window as it executes, so a later
+  // trajectory-assert step can scope to exactly its named source_step, not the whole run.
   const stepRowidWindows = new Map<string, { start: number; end: number }>();
 
-  // Journal rowid captured before the PREVIOUS step ran, handed to an
-  // `exactl journal wait --since-rowid $JOURNAL_BASELINE` barrier as its baseline. A barrier that
-  // captured its own baseline at wait-start could not
-  // see an event the step before it produced — which is exactly the case now that
-  // `exactl daemon start` blocks until `daemon.ready` is journalled.
+  // Rowid before the PREVIOUS step ran, handed to a `journal wait --since-rowid` barrier as
+  // its baseline — a barrier capturing its own baseline at wait-start would miss an event
+  // the prior step produced.
   let previousStepStartRowid = 0;
-  // The SCENARIO's journal baseline, captured once at scenario start — the floor for
-  // `$TRACE_ID`/`$REQUEST_ID` resolution (the current scenario's first `request.created`). A
-  // per-step barrier baseline would rise above the request as execution progresses and leave
-  // `$REQUEST_ID` (review approve) unresolvable.
+  // The SCENARIO's baseline, captured once at start — the floor for $TRACE_ID/$REQUEST_ID
+  // resolution. A per-step baseline would rise past the request and leave $REQUEST_ID unresolvable.
   const scenarioJournalBaselineRowid = await currentMaxRowid(options.workspaceRoot);
 
   let runResult: IRunScenarioInModeResult;
@@ -517,11 +424,9 @@ export async function runSyntheticScenario(
       },
     });
   } finally {
-    // A step's execution failure (e.g. a failing `run-tests` step) makes runScenarioInMode
-    // return immediately (modes.ts) without ever reaching a later `stop-daemon` cleanup step,
-    // leaking the daemon process this run started. `daemon stop` is idempotent (no-ops as
-    // daemon.not_running when nothing is running), so it is always safe to force-invoke here
-    // as a teardown guarantee whenever this run's steps include a start-daemon step.
+    // A step failure makes runScenarioInMode return immediately without reaching a later
+    // stop-daemon step, leaking the process. `daemon stop` is idempotent, so it is always
+    // safe to force-invoke as a teardown guarantee.
     if (stepsToRun.some(startsADaemon)) {
       await forceStopDaemon({
         workspaceRoot: options.workspaceRoot,
@@ -540,11 +445,9 @@ export async function runSyntheticScenario(
     stepRowidWindows,
     matrixCell: firstRunnable?.cell
       ? {
-        // Prefer the config-derived provider (materialized.aiProvider) over the cell's own
-        // `provider:` field — the YAML field may be a $CELL_PROVIDER placeholder today, and
-        // the config's [ai].provider is the actual source of truth for what ran regardless.
-        // A `harness: bare` cell (Phase 143 Step 1) records the `bare/<tool>/<provider>` shape.
-        // An `ablate` cell (Phase 143 Step 2) records the `ablate-<subsystem>/<tool>/<provider>` shape.
+        // Prefer the config-derived provider over the cell's own `provider:` field — the YAML
+        // field may be a $CELL_PROVIDER placeholder, while [ai].provider is the source of
+        // truth for what actually ran.
         cellId: firstRunnable.cell.harness === "bare"
           ? `bare/${firstRunnable.cell.tool}/${firstRunnable.cell.provider}`
           : firstRunnable.cell.ablate
@@ -568,10 +471,8 @@ export async function runSyntheticScenario(
     stepOutcomes,
   });
 
-  // Portal mutation is supposed to happen only inside a worktree on its own branch. A write
-  // that misses the worktree lands on the portal's checked-out default branch and otherwise
-  // looks exactly like success, so it is surfaced loudly rather than left to a reviewer to
-  // notice — the scenario's own criteria cannot see it.
+  // A write that misses the worktree lands on the portal's checked-out default branch and
+  // looks exactly like success, so it is surfaced loudly — the scenario's own criteria can't see it.
   const portalDrift = await detectPortalDrift(options.workspaceRoot, portalBaselines);
   if (portalDrift.length > 0) {
     console.error(
@@ -596,37 +497,17 @@ interface IForceStopDaemonOptions {
   env?: { [key: string]: string };
 }
 
-/**
- * True when a step launches a daemon this run would be responsible for stopping.
- *
- * The teardown guard previously keyed on the step ID being exactly `start-daemon`, which misses
- * every scenario that starts one under another name — 25 use `restart-daemon`, and `restart`
- * delegates to `start`. Those leaked a daemon whenever they failed before their own stop step.
- * Keying on what the step DOES rather than what it is called removes the dependency on naming
- * convention, which nothing enforces.
- */
+/** Keys on what the step DOES (command/args), not its id — a step named `restart-daemon`
+ *  still starts one, and nothing enforces a naming convention the teardown guard could trust. */
 function startsADaemon(step: { id: string; command?: string; args?: string[] }): boolean {
   if (step.id === MATRIX_START_DAEMON_STEP_ID) return true;
   if (step.command !== "daemon") return false;
   return (step.args ?? []).some((arg) => arg === "start" || arg === "restart");
 }
 
-/**
- * Copy the framework's `exa.config.toml` into the sandbox when it has none of its own.
- *
- * The daemon writes a minimal default config on first start — `[system]` and `[watcher]` only —
- * so every config-gated behaviour was OFF in scenario runs regardless of what the framework
- * config declared. `[amendment] enabled = true` never reached the daemon, so no plan amendment
- * could ever be proposed and `plan-amendment-lifecycle` waited out its timeout for a file
- * nothing would write; `[session_delegate]` was equally absent. Never overwrites an existing
- * config, so a scenario that writes its own keeps it.
- *
- * The copy is a plain `copy()` (Phase 157: now text-read-and-rewrite) so a `$FRAMEWORK_HOME`-
- * relative value the framework config declares — e.g. `[ai.mock] fixtures_dir` pointing at the
- * committed repo-tree fixture set — is expanded to an absolute path, the same substitution
- * step commands/env already get, instead of reaching the daemon as a literal `$FRAMEWORK_HOME`
- * string that resolves to nothing.
- */
+/** Without this, the daemon writes a minimal default config on first start, so config-gated
+ *  behaviour stays OFF regardless of the framework config. Text-read-and-rewrite, not a plain
+ *  copy, so a `$FRAMEWORK_HOME`-relative value expands to an absolute path. Never overwrites. */
 export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: string): Promise<void> {
   const destination = join(workspaceRoot, WORKSPACE_CONFIG_FILE);
   try {
@@ -640,13 +521,6 @@ export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: 
   } catch { /* framework config absent in this checkout */ }
 }
 
-/**
- * Mount a portal a scenario declared, so `portals:` means something.
- *
- * Best-effort and never fatal: a scenario whose declared source path does not exist should fail
- * on its own assertions with a legible message, not be aborted here by setup. The alias is
- * reported when the mount fails so the cause is not silent.
- */
 /** Git identity used for the initial commit in a staged fixture portal (mirrors the swe_tasks
  *  shell setup this staging replaces). */
 const SWE_FIXTURE_GIT_IDENTITY = { email: "swe-tasks@exaix.dev", name: "swe-tasks" } as const;
@@ -658,16 +532,8 @@ function isFixturePortal(portal: IPortalMount): portal is IPortalMount & { targe
   return typeof portal.target_path === "string";
 }
 
-/**
- * Prepare every portal a scenario declared. A fixture mount (`target_path` set) is clean-staged:
- * the runner removes any prior target, stale per-portal execution worktrees, and the stale
- * symlink — a shared sandbox persists across scenarios/cells in one invocation, and a
- * non-resetting copy would leave the previous scenario's working-tree changes (its solution) in
- * the evaluated repo — then copies the fixture and (when `git_init`) initializes a git repo with
- * the initial commit. The portal is then registered against the staged path. A direct mount (no
- * `target_path`) registers `source_path` unchanged. Runs AFTER materializeCellConfig so the
- * `[[portals]]` entry lands in the daemon's real config.
- */
+/** A fixture mount is clean-staged first — a shared sandbox persists across scenarios/cells,
+ *  and a non-resetting copy would leave the previous scenario's changes in the evaluated repo. */
 async function prepareDeclaredPortals(
   portals: IPortalMount[],
   options: IRunSyntheticScenarioOptions,
@@ -762,11 +628,8 @@ async function mountPortal(
   }
 }
 
-/**
- * Best-effort daemon teardown, run unconditionally in a `finally` around scenario execution.
- * Swallows all errors: this is a leak guard, not a scored scenario step, and `daemon stop`
- * already no-ops cleanly when no daemon is running for this workspace.
- */
+/** Swallows all errors: this is a leak guard, not a scored scenario step, and `daemon stop`
+ *  already no-ops cleanly when no daemon is running for this workspace. */
 async function forceStopDaemon(options: IForceStopDaemonOptions): Promise<void> {
   try {
     await new Deno.Command(options.exactlExecutable ?? "exactl", {
@@ -782,42 +645,19 @@ async function forceStopDaemon(options: IForceStopDaemonOptions): Promise<void> 
   }
 }
 
-/** Where the runner writes the sentinel-resolved per-cell config (under the workspace `.exa`). */
 /** The workspace's canonical config file — the single source of truth every step loads. */
 const WORKSPACE_CONFIG_FILE = "exa.config.toml";
 
-/**
- * The subset of a cell config's [ai] block this module extracts for $CELL_PROVIDER/$CELL_MODEL.
- * A parsed TOML document is not statically typed, so provider/model may be absent or (for a
- * malformed config) a non-string TOML value — the `typeof === "string"` guard at the call site
- * handles that case by treating it the same as "not present" rather than propagating a wrong type.
- */
+/** A parsed TOML document is not statically typed, so provider/model may be a non-string value
+ *  for a malformed config — the `typeof === "string"` guard at the call site treats that the
+ *  same as "not present" rather than propagating a wrong type. */
 interface IParsedAiBlock {
   ai?: { provider?: string; model?: string };
 }
 
-/**
- * Phase 127 Step 8 (LIVE-RT): for a runnable matrix cell, read the dogfood preset that the
- * `start-daemon` step's EXA_CONFIG_PATH points at, resolve its deploy-time sentinels
- * (`__DOGFOOD_ROOT__` → workspace, `__WORKTREE_PATH__` → the mounted portal) via
- * `resolveCellConfig`, and write the resolved config to the workspace's canonical
- * `exa.config.toml` — the SAME file every other step (add-portal, restart-daemon, submit-request)
- * loads via the baseEnv default. Writing one shared config is essential: `portal add` appends its
- * `[[portals]]` entry to whatever config EXA_CONFIG_PATH points at, and the daemon must run that
- * exact config to learn the portal — otherwise a request referencing `test-project` hits a daemon
- * whose config never registered it and stalls unprocessed. Because a running daemon does not hot-
- * reload config, the scenario follows the documented sequence (README §2.2): start-daemon →
- * add-portal → restart-daemon (stop+start, reloads the now-portal-bearing config) → submit-request.
- * The start-daemon step's EXA_CONFIG_PATH is repointed at the shared file. Runs BEFORE any step, so
- * every step sees one config. Works for BOTH in-repo (portal = repo) and a deployed sandbox with a
- * third-party portal. Steps without a start-daemon EXA_CONFIG_PATH are returned unchanged.
- *
- * Also parses the preset's own [ai].provider/[ai].model (the config's single source of truth for
- * which provider/model a cell runs) and returns them so scenario YAML steps can reference
- * $CELL_PROVIDER/$CELL_MODEL instead of hardcoding a provider/model string that must be kept in
- * sync with the config by hand — adding a new provider then means writing one new config file,
- * not hand-editing every scenario that exercises it.
- */
+/** Resolves the preset's deploy-time sentinels into the workspace's one shared config file,
+ *  since the daemon doesn't hot-reload — `portal add`'s entry only takes effect after
+ *  restart-daemon reloads it. Also returns [ai].provider/model for $CELL_PROVIDER/$CELL_MODEL. */
 export async function materializeCellConfig(
   steps: IScenarioStep[],
   targets: ICellConfigTargets,
@@ -847,15 +687,9 @@ export async function materializeCellConfig(
   };
 }
 
-/**
- * A trajectory-assert step's `source_step` names an earlier step by id; the schema requires it
- * but nothing previously resolved it into the `source_step_rowid_start`/`_end` fields
- * `executeScenarioStep` actually reads (step_executor.ts), which silently defaulted to (0, 0) —
- * scoring against an empty capture on every real run. Fills those fields from the named step's
- * own tracked rowid window (set in the caller's executeStep loop after that step ran). A
- * non-trajectory-assert step, or a source_step not yet seen (author error — validated by
- * scenario_schema.ts, not re-checked here), is returned unchanged.
- */
+/** Fills `source_step_rowid_start`/`_end` from the named step's own tracked rowid window,
+ *  since executeScenarioStep reads those fields directly and they otherwise default to (0, 0),
+ *  scoring against an empty capture. A non-trajectory-assert step is returned unchanged. */
 export function resolveTrajectorySourceStep(
   step: IScenarioStep,
   stepRowidWindows: Map<string, { start: number; end: number }>,
@@ -870,10 +704,7 @@ interface IExecuteSyntheticStepOptions {
   scenarioId: string;
   step: IScenarioStep;
   workspaceRoot: string;
-  /**
-   * Epoch-ms floor separating this scenario's artefacts from those of earlier scenarios
-   * sharing the sandbox workspace. Set to the scenario's start time.
-   */
+  /** Epoch-ms floor separating this scenario's artefacts from earlier ones sharing the sandbox. */
   artifactBaselineMs?: number;
   /** Journal rowid captured before the previous step ran — a barrier step's baseline. */
   journalBaselineRowid?: number;
@@ -896,14 +727,9 @@ interface IExecuteSyntheticStepOptions {
   verbose?: boolean;
 }
 
-/**
- * The `$VAR` names the runner defines for a step. Exported so the scenario tree can be checked
- * against the real table rather than a restatement of it: `expandInString` leaves an unknown
- * name verbatim (a shell local like `WORKTREE=$(...)` depends on that), so a name outside this
- * set does not fail at load — it reaches the step as the literal text `$NAME` and fails there.
- *
- * `CELL_PROVIDER`/`CELL_MODEL` are supplied per matrix cell via `options.env`, not here.
- */
+/** Exported so the scenario tree can be checked against the real table: `expandInString`
+ *  leaves an unknown name verbatim, so a name outside this set reaches the step as the literal
+ *  text `$NAME` and fails there instead of at load time. */
 export const SCENARIO_SUBSTITUTED_VARIABLES = [
   "REQUEST_FIXTURE",
   "FLOW_FIXTURE",
@@ -925,27 +751,14 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   // Substituted at step-execution time with the scenario's journal rowid baseline, so an
   // `exactl journal wait --since-rowid $JOURNAL_BASELINE` step ignores a prior scenario's events.
   "JOURNAL_BASELINE",
-  // Substituted at step-execution time by expandFileContentSentinels (matrix_expander.ts's
-  // REQUEST_FIXTURE_CONTENT_SENTINEL), NOT by expandInString — an exact-match args-element swap
-  // to the request fixture's raw bytes, never shell-interpolated (GAP-4). Unlike the standard
-  // bare-cell matrix path (which injects this sentinel dynamically at matrix-expansion time and
-  // never persists it), `external_bench_task`'s renderExternalBenchTaskTemplate (Phase 144 Step
-  // 2/5) bakes the sentinel directly into the persisted scenario YAML, so it is a name real
-  // committed scenarios reference on disk, not only an in-memory-only token.
+  // Substituted at step-execution time by expandFileContentSentinels — an exact-match
+  // args-element swap to the request fixture's raw bytes, never shell-interpolated.
   "REQUEST_FIXTURE_CONTENT",
 ] as const;
 
-/**
- * The base env every synthetic step's subprocess sees, before the step's own (already
- * $VAR-expanded) `env:` block is merged on top. Extracted from executeSyntheticStep so it can
- * be asserted directly, without spawning a real daemon or exactl process.
- *
- * EXA_SCENARIO_ID/EXA_STEP_ID (Phase 157) let a `submit-request` step's `exactl request --file`
- * subprocess stamp them into the created request's frontmatter — the transport that lets
- * fixture replay key by call site instead of prompt hash. Set alongside the other
- * runner-controlled vars (REQUEST_FIXTURE, WORKSPACE_ROOT, ...), which a step's own `env:`
- * cannot override.
- */
+/** Extracted from executeSyntheticStep so it can be asserted directly, without spawning a
+ *  real daemon or exactl process. EXA_SCENARIO_ID/EXA_STEP_ID let a `submit-request` step
+ *  stamp them into the created request's frontmatter, keying fixture replay by call site. */
 export function buildStepBaseEnv(options: IStepBaseEnvOptions): Record<string, string> {
   // The daemon's write scope is its workspace tree; a --capture-fixtures dir pointing into the
   // repo would be denied with a NotCapable write error. Rewrite it into the sandbox — the
@@ -990,13 +803,12 @@ async function executeSyntheticStep(
 
   const expandedStep = expandVariablesInStep(options.step, baseEnv);
   // Bare-delegate steps carry the task content as a sentinel arg element — expand it to the
-  // fixture's exact bytes AFTER env expansion (Phase 143 Step 1, GAP-4).
+  // fixture's exact bytes AFTER env expansion.
   const contentExpandedStep = await expandFileContentSentinels(expandedStep, options.requestFixturePath);
 
-  // A wait step's timeout is sized for a real run (120-180s). When iterating on a failure that
-  // is already visible in seconds, those waits dominate the loop: the step is going to fail and
-  // the only question is how long we pay to learn it. `--max-step-timeout` caps every step's
-  // budget. It only ever SHORTENS a timeout, so it cannot make a step pass that would not have.
+  // A wait step's timeout is sized for a real run (120-180s), which dominates the loop when
+  // iterating on a failure already visible in seconds. `--max-step-timeout` only ever
+  // SHORTENS a timeout, so it cannot make a step pass that would not have.
   const resolvedStep = options.maxStepTimeoutSec !== undefined
     ? {
       ...contentExpandedStep,
@@ -1098,10 +910,9 @@ function toModeExecutionResult(
     };
   }
 
-  // Only override exit code for execution failures, not criterion failures.
-  // Criterion failures should be recorded for scoring but not halt the scenario —
-  // instead they set criteriaFailed, which flips the FINAL scenario outcome to
-  // scenario-failure (modes.ts) without stopping subsequent steps (e.g. cleanup).
+  // Only override exit code for execution failures, not criterion failures — those set
+  // criteriaFailed instead, which modes.ts turns into a scenario-failure without halting
+  // subsequent steps (e.g. cleanup).
   if (outcome.failureStage === StepFailureStage.EXECUTION) {
     return {
       ...outcome.executionResult,
@@ -1128,8 +939,7 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     const stepScore = outcome.failureStage === "execution" ? 0 : computeStepScore(outcome.criterionResults);
     const window = options.stepRowidWindows.get(outcome.stepId);
     // A bare cell's delegate step never writes journal rows (the delegate is an external CLI):
-    // its cost/tokens come from the delegate's stdout via parseDelegateStdout instead of the
-    // journal window (Phase 143 Step 1).
+    // its cost/tokens come from the delegate's stdout via parseDelegateStepLlmMetrics instead.
     const isBareDelegate = options.matrixCell?.harness === "bare" &&
       outcome.stepId === BARE_DELEGATE_STEP_ID;
     const llmMetrics = window
@@ -1153,10 +963,8 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     };
   }));
 
-  // Phase 141: include unexecuted steps with score 0 so an early failure (e.g.
-  // wait-for-plan) correctly penalises the suite score instead of only scoring
-  // the subset of steps that ran (e.g. 10/11 = 0.909). Build a set of executed
-  // step IDs, then fill in any missing steps with score 0 and "skipped" status.
+  // Include unexecuted steps with score 0 so an early failure (e.g. wait-for-plan)
+  // penalises the suite score instead of only scoring the steps that ran (e.g. 10/11 = 0.909).
   const executedIds = new Set(options.stepOutcomes.map((o: IScenarioStepOutcome) => o.stepId));
   for (const fullStep of options.loadedScenario.steps) {
     if (executedIds.has(fullStep.id)) continue;
@@ -1196,11 +1004,9 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
   return {
     scenarioId: options.loadedScenario.scenario.id,
     pack: options.loadedScenario.scenario.pack,
-    // The field was declared, commented "propagated to eval history", read by `history_writer.ts`
-    // and filtered on by `summarizeByTag` — and set by nobody, so every `eval_runs` row carried an
-    // empty `tags` column and `eval report --group-by subsystem` reported "No matching summary
-    // data found" after a full 72-scenario run. An empty group is indistinguishable from "no runs
-    // yet", which is why nothing failed.
+    // tags must be populated here — history_writer.ts and summarizeByTag both filter on it, and
+    // a blank `tags` column makes `eval report --group-by subsystem` silently report no matching
+    // data instead of failing.
     tags: [
       ...(options.loadedScenario.scenario.tags ?? []),
       ...(options.matrixCell?.harness === "bare" ? [HARNESS_BARE_TAG] : []),
@@ -1208,8 +1014,8 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     ],
     mode: options.mode,
     outcome: mapScenarioOutcome(options.runResult),
-    // Phase 143 Step 3: under `scoring: gated` the security gate multiplies the additive
-    // suite score (gate = 0 iff any class:security criterion FAILED); additive is identity.
+    // Under `scoring: gated`, the security gate multiplies the additive suite score
+    // (gate = 0 iff any class:security criterion FAILED); additive mode uses identity.
     suite_score: scoringMode === ScoringMode.GATED
       ? composeGated(
         baseSuiteScore,
@@ -1304,12 +1110,7 @@ export function expandVariablesInStep(step: IScenarioStep, env: Record<string, s
 }
 
 /**
- * Phase 143 Step 1 — replace the bare delegate step's `$REQUEST_FIXTURE_CONTENT` sentinel with
- * the request fixture's exact bytes as ONE discrete args element. `expandVariablesInStep` leaves
- * the unknown name verbatim (it is not an env var), so this runs after it; the content is
- * inserted as-is — never shell-interpolated (GAP-4) — and a single pass means `$`/backtick
- * characters inside the task text cannot re-enter expansion. A step without the sentinel is
- * returned unchanged.
+ * Replaces the `$REQUEST_FIXTURE_CONTENT` sentinel in a step's args with the fixture's exact bytes, inserted as-is (never shell-interpolated); a step without the sentinel is returned unchanged.
  */
 export async function expandFileContentSentinels(
   step: IScenarioStep,
@@ -1327,10 +1128,7 @@ export async function expandFileContentSentinels(
 }
 
 /**
- * Expand `$VAR` and `${VAR}` references in a single pass, substituting each by the FULL
- * variable name. A single regex pass (not iterate-and-replaceAll over env keys) avoids the
- * prefix-collision bug where `$EXA_CONFIG` would corrupt `$EXA_CONFIG_PATH` to `<value>_PATH`
- * depending on key-iteration order. An unknown name is left untouched (preserved verbatim).
+ * A single regex pass (not iterate-and-replaceAll over env keys) avoids `$EXA_CONFIG` corrupting `$EXA_CONFIG_PATH`; unmatched names are left untouched.
  */
 function expandInString(str: string, env: Record<string, string>): string {
   if (!str) return str;
