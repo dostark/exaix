@@ -42,10 +42,9 @@ export interface IRefreshDiff {
   removed: number;
 }
 
-/** Provenance of a benchmark score row (§5.10 exact values). */
 export type BenchmarkProvenance = "static" | "remote_static";
 
-/** One benchmark score to persist (§5.8.2). `score` MUST be normalised to [0,1]. */
+/** `score` MUST be normalised to [0,1]. */
 export interface IBenchmarkEntry {
   provider: string;
   model: string;
@@ -57,7 +56,7 @@ export interface IBenchmarkEntry {
   sourceUrl?: string;
 }
 
-/** One refresh-audit row. `detail` MUST be credential-scrubbed by the caller (§8.2). */
+/** `detail` MUST be credential-scrubbed by the caller. */
 export interface IRefreshAuditRow {
   provider: string;
   kind: RegistryRefreshKind;
@@ -131,11 +130,7 @@ export class ModelRegistryService implements IModelRegistry {
     return entries.filter((e) => this.matchesProfile(e, profile));
   }
 
-  /**
-   * All providers offering `model` in the live catalog — the route inventory for the
-   * §5.7 multi-route policy. Reads model_catalog by model (no floor fallback: routes are
-   * a live-catalog concept; an empty catalog has no multi-route decision to make).
-   */
+  /** Unlike its siblings, no floor fallback: routes are a live-catalog-only concept. */
   async getModelRoutes(model: string): Promise<Array<{ provider: string; model: string }>> {
     const rows = await this.db.preparedAll<{ provider: string }>(
       "SELECT provider FROM model_catalog WHERE model = ? ORDER BY provider ASC",
@@ -338,14 +333,8 @@ export class ModelRegistryService implements IModelRegistry {
     return sortedAsc[idx];
   }
 
-  /**
-   * Admit a provider's freshly-fetched catalog and persist it (§5.9, F12). The adapter
-   * returns the FULL list; admission keeps only curated ∪ native ∪ previously-used
-   * (top-N benchmark is inert until Step 7). Persistence is all-or-nothing per provider
-   * via BEGIN IMMEDIATE / COMMIT — a mid-write failure rolls back and preserves the
-   * previous catalog. Emits model.admitted per admitted row and model.retired for rows
-   * present before but absent now.
-   */
+  /** The adapter returns the FULL catalog; admission keeps only curated ∪ native ∪ previously-used. Persistence is
+   *  all-or-nothing per provider via BEGIN IMMEDIATE / COMMIT. */
   async applyRefresh(
     provider: string,
     entries: ICatalogEntry[],
@@ -405,11 +394,7 @@ export class ModelRegistryService implements IModelRegistry {
     return { added, removed };
   }
 
-  /**
-   * Persist a provider's fetched pricing (§7 pricing refresh), atomic per-provider swap
-   * with the same all-or-nothing discipline as applyRefresh. Rows are stamped
-   * provenance 'endpoint' with verifiedAt = now. Returns the number of prices written.
-   */
+  /** Atomic per-provider swap, same all-or-nothing discipline as applyRefresh. */
   async applyPricing(provider: string, entries: IPricingEntry[]): Promise<number> {
     const now = Date.now();
     await this.db.preparedRun("BEGIN IMMEDIATE");
@@ -431,10 +416,7 @@ export class ModelRegistryService implements IModelRegistry {
     return entries.length;
   }
 
-  /**
-   * Write one refresh-audit row (§7 — every attempt is audited). `detail` is
-   * caller-scrubbed and MUST NOT contain credentials (the column comment is binding).
-   */
+  /** `detail` is caller-scrubbed and MUST NOT contain credentials (the column comment is binding). */
   async recordRefreshAudit(row: IRefreshAuditRow): Promise<void> {
     await this.db.preparedRun(
       `INSERT INTO registry_refresh_audit
@@ -453,12 +435,8 @@ export class ModelRegistryService implements IModelRegistry {
     );
   }
 
-  /**
-   * Upsert benchmark scores (§5.8.2). Idempotent on the (provider, model, benchmark) PK
-   * so re-applying the curated floor writes no duplicates. Every score is validated to
-   * [0,1] BEFORE any write — an out-of-range score is rejected (invalid input, not
-   * clamped-and-stored-raw), leaving existing rows untouched. Returns the row count.
-   */
+  /** Every score is validated BEFORE any write — an out-of-range score is rejected, not
+   *  clamped, leaving existing rows untouched. */
   async applyBenchmarks(entries: IBenchmarkEntry[]): Promise<number> {
     for (const e of entries) {
       if (!(e.score >= BENCHMARK_SCORE_MIN && e.score <= BENCHMARK_SCORE_MAX)) {
@@ -498,11 +476,7 @@ export class ModelRegistryService implements IModelRegistry {
     return row?.score;
   }
 
-  /**
-   * The set of models in the top-`topN` of ANY tracked benchmark (§5.9 G6). Feeds the
-   * admission filter's benchmark_topn path. Ranks by score DESC per benchmark and unions
-   * the leaders across all trackedBenchmarks.
-   */
+  /** Feeds the admission filter's benchmark_topn path: top-`topN` of ANY tracked benchmark. */
   async getBenchmarkTopN(trackedBenchmarks: string[], topN: number): Promise<Set<string>> {
     const top = new Set<string>();
     for (const benchmark of trackedBenchmarks) {
@@ -515,11 +489,8 @@ export class ModelRegistryService implements IModelRegistry {
     return top;
   }
 
-  /**
-   * MFU (most-frequently-used) then MRU (most-recently-used) usage rank over
-   * provider_costs (Phase 135 Step 8, F8) — a read-model, no new persistence. Ranks by
-   * SUM(requests) desc, ties broken by MAX(timestamp) desc.
-   */
+  /** MFU (most-frequently-used) then MRU (most-recently-used) usage rank — a read-model
+   *  over provider_costs, no new persistence. */
   async getUsageRank(): Promise<Array<{ provider: string; model: string }>> {
     const rows = await this.db.preparedAll<{ provider: string; model: string }>(
       `SELECT provider, model FROM provider_costs
@@ -529,7 +500,6 @@ export class ModelRegistryService implements IModelRegistry {
     return rows;
   }
 
-  /** Emit model.benchmark.refreshed for one ingest pass (Step 7, §5.8). */
   async emitBenchmarkRefreshed(
     benchmark: string,
     scoresWritten: number,
