@@ -24,11 +24,8 @@ function isGoogleHost(url: string): boolean {
   }
 }
 
-/**
- * Google Cloud service-account key. `auth_uri`/`token_uri` are constrained to
- * `*.googleapis.com` so a tampered key cannot redirect a signed JWT assertion to
- * an attacker-controlled host (SSRF / assertion exfiltration).
- */
+/** `auth_uri`/`token_uri` are constrained to `*.googleapis.com` so a tampered key
+ *  cannot redirect a signed JWT assertion to an attacker-controlled host (SSRF). */
 export const ServiceAccountKeySchema = z.object({
   type: z.literal("service_account"),
   project_id: z.string().min(1),
@@ -56,11 +53,8 @@ export function authEventPayload(fields: IProviderAuthEventPayload): LogMetadata
   return { provider: fields.provider, region: fields.region ?? null, refreshed: fields.refreshed };
 }
 
-/**
- * Parse and validate a service account from an environment variable.
- * On any failure returns `null` and emits a redacted event — the raw value and
- * parse error are NEVER logged, since they may contain `private_key` material.
- */
+/** On any failure returns `null` and emits a redacted event — the raw value and parse
+ *  error are NEVER logged, since they may contain `private_key` material. */
 export function parseServiceAccountFromEnv(
   envVar: string,
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
