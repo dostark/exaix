@@ -54,22 +54,13 @@ export interface ISessionDelegateServiceDeps {
   sessionDir: string;
   /** Defaults to defaultSessionPathSafety. */
   pathSafety?: ISessionPathSafety;
-  /**
-   * PathResolver for resolving @Runtime paths for generated permission configs
-   * (Phase 128 R3 Step 5). Required when harden_permissions is true.
-   * Optional to avoid breaking existing callers that don't use permission
-   * hardening.
-   */
+  /** For resolving @Runtime paths in generated permission configs; required for
+   *  OpenCode's harden_permissions path, throws there when absent. */
   pathResolver?: PathResolver;
   /** Defaults to probeDelegateVersion; injectable for deterministic minimum-version tests. */
   versionProbe?: Opt<typeof probeDelegateVersion, Reason.OptionalDependency>;
-  /**
-   * When true, an unsupported or failed version probe (Phase 167 GAP-17) only records
-   * IHardenedLaunchResult.versionWarning instead of refusing the launch. Defaults to
-   * false (fail closed) — opt in only when a caller has a specific, deliberate reason
-   * to launch an unsupported binary anyway. Production (apps/daemon/main.ts) does not
-   * set this.
-   */
+  /** Fail-open opt-out: an unsupported/failed version probe records a warning instead of
+   *  refusing the launch. Defaults to false (fail closed); production doesn't set this. */
   allowUnsupportedVersion?: Opt<boolean, Reason.OptionalDependency>;
 }
 
@@ -82,10 +73,8 @@ const TOOL_CODEX = "codex";
 /** System wall-clock implementation of the clock seam. */
 export const systemClock: ISessionClock = { now: () => new Date() };
 
-/**
- * Config-free path-safety helper. Rejects null bytes explicitly (PathSecurity
- * strips them silently) before delegating traversal detection to PathSecurity.
- */
+/** Rejects null bytes explicitly — PathSecurity strips them silently — before
+ *  delegating traversal detection to PathSecurity. */
 export const defaultSessionPathSafety: ISessionPathSafety = {
   normalize(path: string): string {
     if (path.includes("\x00")) {
@@ -95,11 +84,8 @@ export const defaultSessionPathSafety: ISessionPathSafety = {
   },
 };
 
-/**
- * Generate a single-use resume token: a UUID plus a 256-bit random suffix
- * (GAP-2). Bound to a trace + gate in the wait record, compared in constant time
- * at resume, and never reused.
- */
+/** Bound to a trace + gate in the wait record, compared in constant time at resume, and
+ *  never reused. */
 export function generateResumeToken(): string {
   const bytes = new Uint8Array(RESUME_TOKEN_ENTROPY_BYTES);
   crypto.getRandomValues(bytes);
@@ -189,9 +175,8 @@ export class SessionDelegateService implements ISessionDelegateService {
     const probeResult = this.deps.versionProbe
       ? await this.deps.versionProbe(launch.command, minVersion, {})
       : await probeDelegateVersion(launch.command, minVersion, {});
-    // GAP-17 (Phase 167 post-gap-analysis): fail closed by default — a compromised,
-    // ancient, or version-spoofing binary must not be spawned as if it had passed the
-    // gate. allowUnsupportedVersion is a deliberate, explicit opt-out.
+    // A compromised, ancient, or version-spoofing binary must not be spawned as if it
+    // had passed the gate.
     if (!probeResult.supported && !this.deps.allowUnsupportedVersion) {
       throw new Error(
         `resolveHardenedLaunch: '${launch.command}' version ${probeResult.version} does not meet the ` +
@@ -223,9 +208,8 @@ export class SessionDelegateService implements ISessionDelegateService {
       const flags = deriveClaudeToolFlags(brief);
       launch.args.push(...flags);
     } else if (brief.tool === TOOL_CODEX) {
-      // GAP-16: the base launch (BuiltinSessionAdapter) already carries
-      // --sandbox read-only; replace its mode in place rather than appending a second
-      // --sandbox pair the CLI would have to arbitrate between.
+      // The base launch already carries --sandbox read-only; replace its mode in place
+      // rather than appending a second --sandbox pair the CLI would have to arbitrate between.
       const flags = deriveCodexSandboxFlags(brief);
       const sandboxFlagIndex = launch.args.indexOf(SESSION_FLAG_SANDBOX);
       if (sandboxFlagIndex !== -1) {
