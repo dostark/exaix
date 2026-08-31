@@ -11,11 +11,8 @@
 import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
 import { REMEDIATION_MODE_FAIL_CLOSED, REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE } from "@exaix/schemas";
 
-/**
- * Minimal JSON Schema draft-07 descriptor used in tool manifest output_schema fields.
- * Only the properties needed to describe tool return shapes are modelled here.
- * Phase 78 will validate these descriptors more strictly using Zod.
- */
+/** Minimal JSON Schema draft-07 descriptor used in tool manifest output_schema fields.
+ *  Only the properties needed to describe tool return shapes are modelled here. */
 export interface IJsonSchemaDescriptor {
   type?: string;
   description?: string;
@@ -25,13 +22,9 @@ export interface IJsonSchemaDescriptor {
   enum?: string[];
 }
 
-/**
- * Canonical metadata record for one tool.
- * Registration fields drive server wiring, classification, and parity tests.
- * Agent-quality fields (description, output_schema, error_types, examples) drive
- * TOOLS.md generation and LLM tool selection. output_schema and error_types are
- * populated in full during Step 77.9; stubs are acceptable in Step 77.1.
- */
+/** Canonical metadata record for one tool. Registration fields drive server wiring,
+ *  classification, and parity tests. Agent-quality fields (description, output_schema,
+ *  error_types, examples) drive TOOLS.md generation and LLM tool selection. */
 export interface IToolManifestEntry {
   /** Stable external tool name (matches enum value). */
   name: string;
@@ -41,37 +34,32 @@ export interface IToolManifestEntry {
   category: ToolCategory;
   /** True if this tool may be selected by DynamicStepExecutor in ReAct mode. */
   dynamic_mode_allowed: boolean;
-  /** True if the dynamic executor must pause for human confirmation before calling this tool.
-   *  Phase 77: treated as a static exclusion from dynamic selection.
-   *  Phase 79 upgrades this to a runtime confirmation interceptor. */
+  /** True if the dynamic executor must pause for human confirmation before calling this
+   *  tool (currently a static exclusion from dynamic selection; a runtime confirmation
+   *  interceptor is a future upgrade). */
   requires_human_approval: boolean;
-  /** Phase 138: metadata-only hint that a write to this tool warrants an extra
-   *  confirmation prompt beyond approval (dangerous-tier config writes). No
-   *  confirmation-dialog runtime consumes this yet; it is a seam for a future
-   *  approval-UI phase. */
+  /** Metadata-only hint that a write to this tool warrants an extra confirmation prompt
+   *  beyond approval (dangerous-tier config writes). No confirmation-dialog runtime
+   *  consumes this yet; it is a seam for a future approval-UI phase. */
   requires_confirmation?: boolean;
   /** True if this tool should appear in TOOLS.md and tools/list catalog. */
   docs_visible: boolean;
   /** Current source ownership reference used by docs generation. This is an ownership hint, not a permanence guarantee. */
   source_ref?: string;
   /** Agent-facing description answering: what it does, when to prefer it, what it returns,
-   *  and what can go wrong. Full quality audit in Step 77.9. */
+   *  and what can go wrong. */
   description: string;
-  /** Short agent-facing tool-selection guidance (Phase 154 Step 5), e.g. "prefer for
-   *  targeted edits". Sourced from the same tool-selection guidance Phase 151/152
-   *  established for the internal ReAct loop (Blueprints/Skills/blueprint-best-practices.skill.md's
-   *  "Precision" practice), exposed here so external MCP clients get the same signal.
-   *  Metadata only in Step 5 — Step 6 wires a runtime consumer. */
+  /** Short agent-facing tool-selection guidance, e.g. "prefer for targeted edits". Sourced from the same
+   *  tool-selection guidance established for the internal ReAct loop (blueprint-best-practices.skill.md's
+   *  "Precision" practice), exposed here so external MCP clients get the same signal. */
   preferred_tool_choice_hint?: string;
-  /** JSON Schema draft-07 descriptor for the tool's accepted input parameters, mirroring
-   *  the handler's own getToolDefinition().inputSchema. Populated for MCP_HANDLER-kind
-   *  tools with a matching ToolRegistry entry (Phase 154 Step 1); used by
-   *  checkToolCatalogParity() to detect drift between ToolRegistry's and the
-   *  MCP-advertised parameter contract for the same logical tool. */
+  /** JSON Schema draft-07 descriptor for the tool's accepted input parameters, mirroring the handler's own
+   *  getToolDefinition().inputSchema. Populated for MCP_HANDLER-kind tools with a matching ToolRegistry entry;
+   *  used by checkToolCatalogParity() to detect drift between ToolRegistry's and the MCP-advertised contract. */
   input_schema?: IJsonSchemaDescriptor;
-  /** JSON Schema draft-07 descriptor for the tool's return shape (Decision D2). Populated fully in Step 77.9. */
+  /** JSON Schema draft-07 descriptor for the tool's return shape (Decision D2). */
   output_schema?: IJsonSchemaDescriptor;
-  /** ToolErrorCode string values this tool may return (populated fully in Step 77.4/77.9). */
+  /** ToolErrorCode string values this tool may return. */
   error_types?: string[];
   /** True if repeated calls with the same inputs produce the same result. */
   idempotent: boolean;
@@ -82,21 +70,15 @@ export interface IToolManifestEntry {
   /** True if this MCP handler delegates execution to ToolRegistry (Decision D4).
    *  Only run_command and search_files. */
   delegates_to_registry?: boolean;
-  /**
-   * References the remediation policy mode applied when this tool's result payload
-   * fails schema validation. One of: fail_closed, normalize_then_validate,
-   * retry_once, retry_with_backoff, escalate_only.
-   * Read-only/idempotent tools → normalize_then_validate; mutating tools → fail_closed.
-   */
+  /** References the remediation policy mode applied when this tool's result payload fails schema validation:
+   *  fail_closed, normalize_then_validate, retry_once, retry_with_backoff, or escalate_only. Read-only/idempotent
+   *  tools → normalize_then_validate; mutating tools → fail_closed. */
   remediationPolicyRef?: string;
 }
 
-/**
- * Appends a tool's `preferred_tool_choice_hint` (if set) to a base description, with a
- * clear delimiter, for surfaces with no dedicated hint field of their own — the MCP
- * `tools/list` protocol response only has `description` (Phase 154 Step 6). Returns
- * `description` unchanged when the tool has no hint set or is not in `TOOL_MANIFEST`.
- */
+/** Appends a tool's `preferred_tool_choice_hint` (if set) to a base description, with a clear delimiter, for
+ *  surfaces with no dedicated hint field of their own — the MCP `tools/list` response only has `description`.
+ *  Returns `description` unchanged when the tool has no hint set or is not in `TOOL_MANIFEST`. */
 export function appendToolChoiceHint(name: string, description: string): string {
   const hint = TOOL_MANIFEST.find((e) => e.name === name)?.preferred_tool_choice_hint;
   return hint ? `${description}\n\nSelection hint: ${hint}` : description;
@@ -628,7 +610,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     parallel_safe: true,
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
-  // ── Config tools (Phase 137) ─────────────────────────────────────────────
+  // ── Config tools ──────────────────────────────────────────────────────────
   {
     name: McpToolName.CONFIG_GET,
     kind: ToolKind.MCP_DOMAIN,
@@ -845,33 +827,18 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
   },
 ];
 
-/**
- * Canonical set of tool names safe for dynamic (ReAct-style) execution
- * WITHOUT requiring human approval. Used by DynamicStepExecutor when no
- * confirmation interceptor is configured (Phase 77 fallback behavior).
- * Derived from TOOL_MANIFEST where dynamic_mode_allowed === true AND
- * requires_human_approval === false.
- *
- * Do NOT use READ_ONLY_TOOLS for this purpose — it can drift from the manifest.
- *
- * See also: DYNAMIC_MODE_APPROVAL_TOOLS for tools that require an interceptor.
- */
+/** Canonical set of tool names safe for dynamic (ReAct-style) execution WITHOUT requiring human approval. Used by
+ *  DynamicStepExecutor when no confirmation interceptor is configured. Derived from TOOL_MANIFEST where
+ *  dynamic_mode_allowed === true AND requires_human_approval === false — do NOT use READ_ONLY_TOOLS instead, it can drift. */
 export const DYNAMIC_MODE_TOOLS: ReadonlySet<string> = new Set(
   TOOL_MANIFEST
     .filter((e) => e.dynamic_mode_allowed && !e.requires_human_approval)
     .map((e) => e.name),
 );
 
-/**
- * Tools that are allowed in dynamic (ReAct-style) execution but require
- * human approval via IToolConfirmationInterceptor before being called.
- * Derived from TOOL_MANIFEST where dynamic_mode_allowed === true AND
- * requires_human_approval === true.
- *
- * Phase 79 adds these to the DynamicStepExecutor tool surface when an
- * interceptor is injected. Without an interceptor they are excluded (same as
- * Phase 77 behavior) because DYNAMIC_MODE_TOOLS does not include them.
- */
+/** Tools that are allowed in dynamic (ReAct-style) execution but require human approval via
+ *  IToolConfirmationInterceptor before being called (dynamic_mode_allowed && requires_human_approval). Added to
+ *  the DynamicStepExecutor tool surface when an interceptor is injected; without one they stay excluded. */
 export const DYNAMIC_MODE_APPROVAL_TOOLS: ReadonlySet<string> = new Set(
   TOOL_MANIFEST
     .filter((e) => e.dynamic_mode_allowed && e.requires_human_approval)
