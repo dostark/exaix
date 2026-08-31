@@ -82,7 +82,7 @@ function extractSection(text: string, heading: string): string {
   return match ? match[1].trim() : "";
 }
 
-// ─── PlanContext sandbox copy (Phase 173 Step 2, GAP-2/GAP-3) ─────────────────
+// PlanContext sandbox copy (Phase 173 Step 2, GAP-2/GAP-3)
 
 /** Repo-ignored runtime directory inside the delegate worktree. */
 const PLAN_CONTEXT_RELATIVE_DIR = ".exa/PlanContext";
@@ -145,7 +145,7 @@ export async function copyDocIntoPlanContext(
   return destFile;
 }
 
-// ─── Phase-level context extraction (Phase 173 Step 1) ────────────────────────
+// Phase-level context extraction (Phase 173 Step 1)
 // Real phase docs carry their why/why-not context under real markdown headings
 // (`## Executive Summary`, `### Constraints`, `### Design Decisions`) which the
 // bold-label `extractSection` above cannot match — hence these heading-based

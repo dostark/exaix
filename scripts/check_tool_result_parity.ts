@@ -19,9 +19,7 @@
 import { TOOL_MANIFEST } from "@exaix/mcp/manifest.ts";
 import { TOOL_RESULT_REMEDIATION_MODE_VALUES, TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas/tool_result.ts";
 
-// ============================================================================
 // Exported types and functions (importable by tests)
-// ============================================================================
 
 /** Result of a parity check run. */
 export interface IParityCheckResult {
@@ -64,9 +62,7 @@ export function checkToolResultParity(): IParityCheckResult {
   };
 }
 
-// ============================================================================
 // CLI entry point
-// ============================================================================
 
 if (import.meta.main) {
   const result = checkToolResultParity();

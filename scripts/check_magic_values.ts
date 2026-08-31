@@ -20,7 +20,7 @@ import ts from "typescript";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
 
-// ── CLI flags ────────────────────────────────────────────────────────────────
+// CLI flags
 
 const args = new Set(Deno.args);
 const checkNumbers = !args.has("--no-numbers") && !args.has("--strings-only");
@@ -78,7 +78,7 @@ For each violation, a per-file breakdown is shown.
   Deno.exit(0);
 }
 
-// ── Configuration ────────────────────────────────────────────────────────────
+// Configuration
 
 const LOCAL_STRING_THRESHOLD = 3;
 const GLOBAL_STRING_THRESHOLD = 5;
@@ -205,7 +205,7 @@ function isLikelyStructuralNumber(value: number): boolean {
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
 
-// ── Data structures ──────────────────────────────────────────────────────────
+// Data structures
 
 type LiteralKind = "string" | "number";
 type ViolationScope = "global" | "local";
@@ -229,7 +229,7 @@ interface Violation {
   files: FileBreakdown[];
 }
 
-// ── Counting data (accumulated during AST walk) ──────────────────────────────
+// Counting data (accumulated during AST walk)
 
 /**
  * Accumulated counters keyed by `"string:literal"` or `"number:42"`.
@@ -243,7 +243,7 @@ interface ValueAccumulator {
   perFile: Map<string, number>;
 }
 
-// ── AST Visitor ──────────────────────────────────────────────────────────────
+// AST Visitor
 
 /**
  * Should this literal be skipped (whitelisted or irrelevant context)?
@@ -473,7 +473,7 @@ function calculateViolationScore(params: {
   return scopeBonus + occurrenceScore + spreadScore + constantBonus;
 }
 
-// ── Violation detection ──────────────────────────────────────────────────────
+// Violation detection
 
 function detectViolations(
   counters: Map<string, ValueAccumulator>,
@@ -548,7 +548,7 @@ function detectViolations(
   return violations;
 }
 
-// ── Sorting ──────────────────────────────────────────────────────────────────
+// Sorting
 
 function sortViolations(violations: Violation[]): Violation[] {
   return violations.sort((a, b) => {
@@ -569,7 +569,7 @@ function sortViolations(violations: Violation[]): Violation[] {
   });
 }
 
-// ── Reporting ────────────────────────────────────────────────────────────────
+// Reporting
 
 /** Maximum number of files to show per violation before summarising */
 const MAX_FILES_TO_SHOW = 10;
@@ -601,7 +601,7 @@ function reportViolations(violations: Violation[]): void {
   }
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// Main
 
 async function main(): Promise<void> {
   const counters = new Map<string, ValueAccumulator>();

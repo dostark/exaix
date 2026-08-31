@@ -231,9 +231,7 @@ export function createDotReporterState(wrapWidth = DEFAULT_DOT_WRAP_WIDTH): IDot
   };
 }
 
-// ---------------------------------------------------------------------------
 // TAP reporter support
-// ---------------------------------------------------------------------------
 
 interface ITapFailure {
   name: string;
@@ -641,9 +639,7 @@ async function runAndCapture(
   return { label, exitCode: effectiveExitCode, ...counts };
 }
 
-// ---------------------------------------------------------------------------
 // Summary table
-// ---------------------------------------------------------------------------
 const LABEL_W = 50; // visible chars for the label text
 const NUM_W = 6; // width of each numeric column
 const TIME_W = 7; // width of the time column
@@ -691,15 +687,11 @@ export async function main(args: string[]): Promise<number> {
     console.log(DOT_REPORTER_LEGEND);
   }
 
-  // ---------------------------------------------------------------------------
   // Edition filtering: exclude Team-only paths when EXAIX_EDITION is solo/unset
-  // ---------------------------------------------------------------------------
   const edition = Deno.env.get("EXAIX_EDITION") ?? "solo";
   const teamPaths = edition === "solo" ? [] : ["packages-team/"];
 
-  // ---------------------------------------------------------------------------
   // Batch 1: full test suite in parallel (use TAP reporter for error capture)
-  // ---------------------------------------------------------------------------
   const batch1Env: Record<string, string> = {
     ...Deno.env.toObject(),
     DENO_JOBS: BATCH1_WORKER_COUNT,
@@ -718,9 +710,7 @@ export async function main(args: string[]): Promise<number> {
     "tap",
   );
 
-  // ---------------------------------------------------------------------------
   // Batch 2: sequential files, one per Deno.Command, no DENO_JOBS set
-  // ---------------------------------------------------------------------------
   //
   // Kill any daemon processes left behind by the parallel batch. Parallel
   // tests that spawn daemons may leak them on timeout/abort; a leftover

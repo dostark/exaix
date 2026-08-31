@@ -18,9 +18,7 @@
 
 import { join } from "@std/path";
 
-// ---------------------------------------------------------------------------
 // Exported Types
-// ---------------------------------------------------------------------------
 
 export interface ISemVer {
   major: number;
@@ -41,17 +39,13 @@ export interface IVersionMeta {
   last_bump_date: string;
 }
 
-// ---------------------------------------------------------------------------
 // Paths (relative to repo root)
-// ---------------------------------------------------------------------------
 
 const REPO_ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
 const VERSION_FILE = join(REPO_ROOT, "packages", "core", "src", "version.ts");
 const META_FILE = join(REPO_ROOT, "packages", "core", "src", ".version_meta.json");
 
-// ---------------------------------------------------------------------------
 // Minor-bump trigger file patterns
-// ---------------------------------------------------------------------------
 
 const MINOR_TRIGGER_PATTERNS: RegExp[] = [
   /^src\/shared\/schemas\/config\.ts$/,
@@ -62,9 +56,7 @@ const MINOR_TRIGGER_PATTERNS: RegExp[] = [
   /^scripts\/setup_db\.ts$/,
 ];
 
-// ---------------------------------------------------------------------------
 // SemVer helpers (exported for unit testing)
-// ---------------------------------------------------------------------------
 
 export function parseSemVer(v: string): ISemVer {
   const parts = v.split(".");
@@ -91,18 +83,14 @@ export function bumpMinor(v: string): string {
   return formatSemVer({ major: sv.major, minor: sv.minor + 1, patch: 0 });
 }
 
-// ---------------------------------------------------------------------------
 // File classification (exported for unit testing)
-// ---------------------------------------------------------------------------
 
 export function classifyChanges(files: string[]): IClassification {
   const requiresMinor = files.some((f) => MINOR_TRIGGER_PATTERNS.some((re) => re.test(f)));
   return { requiresMinor };
 }
 
-// ---------------------------------------------------------------------------
 // version.ts I/O (exported for unit testing)
-// ---------------------------------------------------------------------------
 
 export function readVersionFile(path: string = VERSION_FILE): IVersionConstants {
   const text = Deno.readTextFileSync(path);
@@ -134,9 +122,7 @@ export function writeVersionFile(
   Deno.writeTextFileSync(path, text);
 }
 
-// ---------------------------------------------------------------------------
 // .version_meta.json I/O
-// ---------------------------------------------------------------------------
 
 export function readMetaFile(path: string = META_FILE): IVersionMeta {
   return JSON.parse(Deno.readTextFileSync(path)) as IVersionMeta;
@@ -146,9 +132,7 @@ export function writeMetaFile(date: string, path: string = META_FILE): void {
   Deno.writeTextFileSync(path, JSON.stringify({ last_bump_date: date }, null, 2) + "\n");
 }
 
-// ---------------------------------------------------------------------------
 // Git helpers
-// ---------------------------------------------------------------------------
 
 async function runGit(...args: string[]): Promise<string> {
   const cmd = new Deno.Command("git", { args, stdout: "piped", stderr: "piped" });
@@ -176,17 +160,13 @@ async function stageVersionFiles(): Promise<void> {
   if (code !== 0) throw new Error("Failed to stage version files");
 }
 
-// ---------------------------------------------------------------------------
 // Today's ISO date
-// ---------------------------------------------------------------------------
 
 function todayIso(): string {
   return new Date().toISOString().substring(0, 10);
 }
 
-// ---------------------------------------------------------------------------
 // Main entry point
-// ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
   const args = Deno.args;

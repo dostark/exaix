@@ -65,7 +65,7 @@ Options:
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
 
-// ── Data structures ───────────────────────────────────────────────────────────
+// Data structures
 
 interface FuncParam {
   name: string;
@@ -106,7 +106,7 @@ interface Violation {
   typeEndPos: number; // position after the type annotation, -1 if unknown
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function isTestFilePath(filePath: string): boolean {
   return filePath.includes("/tests/") || filePath.endsWith("_test.ts");
@@ -183,7 +183,7 @@ function paramNameUsedInBody(body: ts.FunctionBody, paramName: string, _sourceFi
   return found;
 }
 
-// ── Collectors ────────────────────────────────────────────────────────────────
+// Collectors
 
 export function collectFunctions(
   sourceFile: ts.SourceFile,
@@ -295,7 +295,7 @@ function collectCallSites(
   ts.forEachChild(sourceFile, visit);
 }
 
-// ── Analysis ──────────────────────────────────────────────────────────────────
+// Analysis
 
 interface MatchedFunc {
   decl: IFuncDecl;
@@ -444,7 +444,7 @@ function analyze(matched: MatchedFunc[]): Violation[] {
   return violations;
 }
 
-// ── Reporter ──────────────────────────────────────────────────────────────────
+// Reporter
 
 function report(violations: Violation[]): void {
   const redundant = violations.filter((v) => v.kind === ViolationKind.REDUNDANT_OPTIONAL);
@@ -501,7 +501,7 @@ function report(violations: Violation[]): void {
   }
 }
 
-// ── Staged mode (BARE_OPTIONAL enforcement on new code) ─────────────────────────
+// Staged mode (BARE_OPTIONAL enforcement on new code)
 
 /** Repo-root-relative paths of staged (added/copied/modified) `.ts`/`.tsx` files. */
 async function stagedTsFiles(): Promise<string[]> {
@@ -555,7 +555,7 @@ async function runStaged(): Promise<void> {
   Deno.exit(1);
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+// Main
 
 async function main(): Promise<void> {
   if (stagedOnly) {

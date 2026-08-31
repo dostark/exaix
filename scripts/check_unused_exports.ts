@@ -18,7 +18,7 @@ import { dirname, fromFileUrl, join, normalize } from "@std/path";
 const REPO_ROOT = normalize(join(dirname(fromFileUrl(import.meta.url)), ".."));
 const STRICT_MODE = Deno.args.includes("--strict");
 
-// ── File filtering ─────────────────────────────────────────────────────────
+// File filtering
 
 function isTestFilePath(repoPath: string): boolean {
   return repoPath.includes("/tests/") ||
@@ -71,7 +71,7 @@ async function collectScriptImportedNames(): Promise<Set<string>> {
   return names;
 }
 
-// ── AST helpers ────────────────────────────────────────────────────────────
+// AST helpers
 
 function hasExportModifier(node: ts.Node): boolean {
   if (!("modifiers" in node)) return false;
@@ -119,7 +119,7 @@ function hasPublicJSDoc(text: string): boolean {
   return /@public\b/.test(text);
 }
 
-// ── Name pattern helpers (relaxed mode only) ───────────────────────────────
+// Name pattern helpers (relaxed mode only)
 
 function isProviderMetadata(name: string): boolean {
   return /^PROVIDER_[A-Z]+_(DESCRIPTION|CAPABILITIES|STRENGTHS|COST_TIER)$/.test(name);
@@ -139,7 +139,7 @@ function isTestExport(name: string): boolean {
   return name.startsWith("__test_");
 }
 
-// ── Resolve relative import paths ──────────────────────────────────────────
+// Resolve relative import paths
 
 function resolveImport(importerRepoPath: string, importPath: string): string | null {
   if (importPath.startsWith(".")) {
@@ -148,7 +148,7 @@ function resolveImport(importerRepoPath: string, importPath: string): string | n
   return null;
 }
 
-// ── Data structures ────────────────────────────────────────────────────────
+// Data structures
 
 interface IExportSite {
   repoPath: string;
@@ -157,7 +157,7 @@ interface IExportSite {
   isTypeDecl: boolean;
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────
+// Main
 
 async function main() {
   const sourceCache = new Map<string, { text: string; sourceFile: ts.SourceFile | null }>();
@@ -201,7 +201,7 @@ async function main() {
     const sourceFile = ts.createSourceFile(repoPath, cached.text, ts.ScriptTarget.Latest, true);
     cached.sourceFile = sourceFile;
 
-    // ── imports ──
+    // imports
     ts.forEachChild(sourceFile, (node) => {
       if (!ts.isImportDeclaration(node) || !node.importClause) return;
       const clause = node.importClause;
@@ -226,7 +226,7 @@ async function main() {
       }
     });
 
-    // ── exports ──
+    // exports
     ts.forEachChild(sourceFile, (node) => {
       if (isNamedReExport(node)) {
         for (const el of node.exportClause.elements) {
