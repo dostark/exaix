@@ -6,14 +6,8 @@
 
 import { assertStringIncludes } from "@std/assert";
 
-/**
- * Tests for CI Quality Gates (Step 10.3.3)
- *
- * Verifies that the CI script correctly imposes:
- * 1. Security Regression Gates
- * 2. Documentation Drift Gates
- * 3. Coverage Thresholds
- */
+// Verifies that the CI script correctly imposes security regression gates, documentation
+// drift gates, and coverage thresholds.
 
 const CI_SCRIPT = "scripts/ci.ts";
 

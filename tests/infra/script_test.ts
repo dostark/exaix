@@ -9,10 +9,7 @@ import { join } from "@std/path";
 
 const CI_SCRIPT_PATH = join(Deno.cwd(), "scripts", "ci.ts");
 
-/**
- * Helper to run the CI script and capture output
- * Note: This test requires --allow-run permission
- */
+// Runs the CI script and captures output. Requires --allow-run permission.
 async function runCiScript(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
   try {
     const command = new Deno.Command(Deno.execPath(), {
@@ -37,12 +34,6 @@ async function runCiScript(args: string[]): Promise<{ code: number; stdout: stri
     throw error;
   }
 }
-
-// Deno.test("[ci] script should show help when run without args", async () => {
-//   const result = await runCiScript([]);
-//   // Cliffy shows help by default if no command
-//   assertStringIncludes(result.stderr + result.stdout, "Usage", "Should show usage info");
-// });
 
 Deno.test({
   name: "[ci] check command should run valid checkers",

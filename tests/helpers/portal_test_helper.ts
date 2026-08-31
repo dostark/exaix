@@ -17,15 +17,13 @@ import { createStubDisplay, createStubGit, createStubProvider } from "@exaix/tes
 import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../apps/common/adapters/portal_adapter.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
-import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
+import type { IPortalKnowledgeConfig, IPortalKnowledgeService, Opt, Reason } from "@exaix/core/types";
 import { PortalAnalysisMode } from "@exaix/core";
 import { getPortalsDir } from "@exaix/testing";
 
-/**
- * Build an empty portal-knowledge snapshot for a portal, used by the mock
- * PortalKnowledgeService below. Extracted so the three producing methods
- * (analyze / getOrAnalyze / updateKnowledge) share one shape.
- */
+// Build an empty portal-knowledge snapshot, used by the mock PortalKnowledgeService below.
+// Extracted so the three producing methods (analyze / getOrAnalyze / updateKnowledge) share
+// one shape.
 function emptyKnowledge(portal: string, mode: PortalAnalysisMode = PortalAnalysisMode.QUICK) {
   return {
     portal,
@@ -139,7 +137,7 @@ export class PortalConfigTestHelper {
   /**
    * Add a portal
    */
-  async addPortal(alias: string, targetPath?: string): Promise<void> {
+  async addPortal(alias: string, targetPath?: Opt<string, Reason.TestOverride>): Promise<void> {
     await this.commands.add(targetPath || this.targetDir, alias);
   }
 
@@ -160,7 +158,7 @@ export class PortalConfigTestHelper {
   /**
    * Verify portal(s)
    */
-  async verifyPortal(alias?: string): Promise<Awaited<ReturnType<PortalCommands["verify"]>>> {
+  async verifyPortal(alias?: Opt<string, Reason.QueryFilter>): Promise<Awaited<ReturnType<PortalCommands["verify"]>>> {
     return await this.commands.verify(alias);
   }
 
@@ -207,7 +205,7 @@ export class PortalConfigTestHelper {
   /**
    * Cleanup all resources
    */
-  async cleanup(additionalDirs: string[] = []): Promise<void> {
+  async cleanup(additionalDirs: Opt<string[], Reason.TestOverride> = []): Promise<void> {
     await this.dbCleanup();
     await Deno.remove(this.tempRoot, { recursive: true }).catch(() => {});
     await Deno.remove(this.targetDir, { recursive: true }).catch(() => {});
@@ -223,10 +221,13 @@ export class PortalConfigTestHelper {
  */
 export async function createPortalConfigTestContext(
   prefix: string,
-): Promise<{ helper: PortalConfigTestHelper; cleanup: (additionalDirs?: string[]) => Promise<void> }> {
+): Promise<{
+  helper: PortalConfigTestHelper;
+  cleanup: (additionalDirs?: Opt<string[], Reason.TestOverride>) => Promise<void>;
+}> {
   const helper = await PortalConfigTestHelper.create(prefix);
   return {
     helper,
-    cleanup: (additionalDirs?: string[]) => helper.cleanup(additionalDirs),
+    cleanup: (additionalDirs?: Opt<string[], Reason.TestOverride>) => helper.cleanup(additionalDirs),
   };
 }

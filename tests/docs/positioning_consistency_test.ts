@@ -15,19 +15,12 @@ import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
-// Ground truth from the plan's "Constraints" section (verbatim phase numbers — keep
-// this list and the plan's wording in sync; updating one should prompt updating the
-// other): "Phases explicitly excluded from this narrative... Phase 85 (postponed),
-// Phase 86 (cancelled), Phase 89 (cancelled), Phase 90 (cancelled)" plus GAP-1
-// ("EXCLUDE — ships nothing").
+// Ground truth for which phases must never be framed as delivered capability — keep this
+// list in sync with the planning doc's phase-exclusion table if it changes.
 const EXCLUDED_PHASES = [85, 86, 89, 90];
 
-// "All positioning claims must be grounded in shipped capabilities (Phases 82-84,
-// 87, 88...)" — 82 is hedged ("hardening in progress, do not claim complete" per the
-// Step 1 audit table), 83/84/87/88 ship complete. No positioning doc cites these by
-// number in its prose (see Check 2's note), so there is no string to assert on —
-// recorded here only so a reader can see the full shipped/excluded ground truth
-// this suite's checks are derived from in one place, alongside EXCLUDED_PHASES.
+// No positioning doc cites specific shipped-phase numbers in its prose, so there is nothing to
+// assert here beyond EXCLUDED_PHASES above — this note only records why the check stops there.
 
 const PHASE_MENTION_PATTERN = /Phases?\s+(\d+)/g;
 
@@ -78,16 +71,9 @@ Deno.test("[hallucination-bench] Three-tier reliability narrative — ARCHITECTU
   const architecture = await readDoc("ARCHITECTURE.md");
   const whitePaper = await readDoc("exaix-dev-docs/dev/Exaix_White_Paper.md");
 
-  // Adapted from the plan's "cite the same grounding phases for each (87 for
-  // Visibility; 83 complete + 82 hedged for Recoverability; 84 for Governance)":
-  // neither shipped doc actually cites phase numbers next to the three-tier
-  // pillars — both ground them in shared *mechanism* language instead (typed
-  // trace-linked events, idempotency keys, resume tokens). Asserting on literal
-  // phase-number citations that don't exist in the prose would make this check
-  // permanently red against the real, already-landed doc state, defeating its
-  // purpose as a forward-looking drift guard. This is the substantive property
-  // the plan's check protects: the two docs cannot drift into grounding the same
-  // pillar in different mechanisms. (Documented as a deviation in the commit body.)
+  // Neither doc cites phase numbers next to the three-tier pillars — they ground them in shared
+  // mechanism language instead (trace-linked events, idempotency keys, resume tokens). Assert on
+  // that mechanism language so the two docs can't drift apart on how each pillar is grounded.
   const pillarGrounding: Record<string, string> = {
     "Visibility": "trace-linked",
     "Recoverability": "idempotency keys",
@@ -116,15 +102,9 @@ Deno.test("[hallucination-bench] Differentiation material — README, white pape
   const whitePaper = await readDoc("exaix-dev-docs/dev/Exaix_White_Paper.md");
   const comparative = await readDoc("exaix-dev-docs/dev/Exaix_Comparative_Analysis.md");
 
-  // Adapted from the plan's "competitor classes ... (chat/IDE agents, cloud
-  // orchestration platforms, lightweight workflow scripts)": none of those three
-  // literal phrases appear in the shipped docs. What the docs actually share, and
-  // what would visibly drift if an editor swapped one doc's examples without the
-  // others, is a consistent set of named example tools anchoring the two
-  // competitor classes Phase 91 grounds its differentiation narrative in — "Chat /
-  // IDE Agents" (Copilot, Cursor) and "Orchestration Frameworks" (LangChain,
-  // AutoGen). Assert all three docs name all four. (Documented as a deviation in
-  // the commit body.)
+  // The docs don't share a literal competitor-class phrase, but do share a consistent set of
+  // named example tools anchoring the two competitor classes: "Chat / IDE Agents" (Copilot,
+  // Cursor) and "Orchestration Frameworks" (LangChain, AutoGen). Assert all three docs name all four.
   const exampleCompetitors = ["Copilot", "Cursor", "LangChain", "AutoGen"];
   const docs: Array<[string, string]> = [
     ["README.md", readme],
@@ -141,8 +121,7 @@ Deno.test("[hallucination-bench] Differentiation material — README, white pape
 
 Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementation definitions stay disjoint and complete", async () => {
   const rootGlossary = await readDoc("GLOSSARY.md");
-  // Package-extracted from docs/ to .copilot/docs/ during Phase 133's
-  // bucket unification.
+  // Historically split out of docs/ into .copilot/docs/.
   const devGlossary = await readDoc(".copilot/docs/GLOSSARY.md");
 
   const rootHeadings = extractTermHeadings(rootGlossary);
@@ -157,11 +136,9 @@ Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementatio
       `— Step 7's no-duplication mandate requires each term be defined exactly once`,
   );
 
-  // Step 1's audit assigned every term in the pre-split glossary to exactly one
-  // bucket: 15 concept-level terms to the new root GLOSSARY.md, and 5
-  // implementation-level groupings retained in the dev glossary. Confirm the
-  // union of the two documents still covers every inventoried term/grouping —
-  // i.e., the split lost nothing.
+  // Every term from the pre-split glossary was assigned to exactly one bucket (15 concept-level
+  // terms in root GLOSSARY.md, 5 implementation-level groupings in the dev glossary). Confirm the
+  // union still covers all of them — the split lost nothing.
   const conceptLevelTerms = [
     "Identity",
     "Identity Blueprint",
@@ -215,14 +192,9 @@ Deno.test("[hallucination-bench] GLOSSARY.md cross-link — README and the white
 Deno.test("[hallucination-bench] Exaix_Weaknesses.md stale-path regression — src/services/ only appears as corrected history", async () => {
   const weaknesses = await readDoc("exaix-dev-docs/dev/Exaix_Weaknesses.md");
 
-  // Step 6 removed stale `src/services/` citations that pointed at the
-  // pre-package-extraction (Phase 76) layout as if it were current. The document
-  // intentionally retains two historical mentions explaining *that* correction —
-  // a literal zero-occurrence assertion (the plan's literal wording) would fail
-  // against that deliberately-landed content. Assert instead that every remaining
-  // occurrence is framed as corrected history, not as a current citation — the
-  // actual regression this check exists to catch. (Documented as a deviation in
-  // the commit body.)
+  // The doc intentionally retains two historical mentions of the stale pre-package-extraction
+  // src/services/ path, framed as corrected history rather than current citations. Assert every
+  // remaining occurrence keeps that framing — that's the actual regression this check catches.
   const correctedHistoryFramingKeywords = [
     "no longer exists",
     "pre-package-extraction",

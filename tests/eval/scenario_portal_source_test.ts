@@ -24,13 +24,9 @@ import { parse as parseYaml } from "@std/yaml";
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const SCENARIOS_DIR = join(REPO_ROOT, "tests", "scenario_framework", "scenarios");
 
-/**
- * Variables the runner substitutes to a repository- or sandbox-relative location.
- *
- * `$HOME` is deliberately absent: the runner does substitute it (the shell does), which is
- * exactly why the defect survived review — the path expanded to something, just not to a
- * directory that exists on any other machine.
- */
+// Variables the runner substitutes to a repository- or sandbox-relative location. `$HOME` is
+// deliberately absent: the shell does substitute it, which is exactly why the defect survived
+// review — the path expanded to something, just not to a directory that exists on any other machine.
 const PORTABLE_ROOTS: readonly string[] = ["$FRAMEWORK_HOME", "$WORKSPACE_ROOT", "$REPO_ROOT"];
 
 interface IScenarioPortal {

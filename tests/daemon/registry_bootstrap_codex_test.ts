@@ -116,7 +116,7 @@ Deno.test("registry_bootstrap: a bare 'codex-cli' model string is resolvable by 
   assertEquals(result.provider, "codex-cli");
   // Proves ProviderDefaultsRegistry carries a real default, not the
   // "${providerType}-model" fallback getDefaultModelForProvider uses when no defaults are
-  // registered (Pre-Gap Analysis GAP-2).
+  // registered.
   assertEquals(result.model, CODEX_CLI_DEFAULTS.defaultModel);
 });
 
@@ -126,8 +126,7 @@ Deno.test("registry_bootstrap: ProviderDefaultsRegistry carries CODEX_CLI_DEFAUL
   assertEquals(ProviderDefaultsRegistry.get(PROVIDER_CODEX_CLI), CODEX_CLI_DEFAULTS);
   assertEquals(getDefaultModels()["codex-cli"], CODEX_CLI_DEFAULTS.defaultModel);
   assertEquals(getDefaultEndpoints()["codex-cli"], CODEX_CLI_DEFAULTS.defaultEndpoint);
-  // The exact regression the Pre-Gap Analysis flagged: without
-  // ProviderDefaultsRegistry.register(PROVIDER_CODEX_CLI, ...), this would read
-  // "codex-cli-model" instead.
+  // Without ProviderDefaultsRegistry.register(PROVIDER_CODEX_CLI, ...), this would
+  // read "codex-cli-model" instead.
   assertEquals(getDefaultModels()["codex-cli"] === "codex-cli-model", false);
 });

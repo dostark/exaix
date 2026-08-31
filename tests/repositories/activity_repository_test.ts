@@ -331,10 +331,9 @@ Deno.test("Repository pattern: separates data access from business logic", () =>
   const implClass = "DatabaseActivityRepository";
   assertEquals(typeof implClass, "string");
 
-  // In a real architecture test, we would scan the codebase to ensure:
-  // 1. Services import repository interfaces, not DatabaseService
-  // 2. Repository implementations handle data mapping
-  // 3. Business logic doesn't contain SQL or database-specific code
+  // In a real architecture test, we would scan the codebase to ensure services import
+  // repository interfaces (not DatabaseService), implementations handle data mapping, and
+  // business logic contains no SQL or database-specific code.
 
   assertEquals(true, true); // Architecture validation placeholder
 });

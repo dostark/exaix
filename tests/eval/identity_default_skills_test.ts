@@ -21,22 +21,14 @@ const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
 const MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
 
-/**
- * Upper bound on an identity's `default_skills`.
- *
- * Matches `DEFAULT_CONFIG.maxSkillsPerRequest` in `packages/core/src/skills/skills.ts`: that
- * cap governs dynamically matched skills, and defaults should not be able to exceed on their
- * own what matching is allowed to contribute in total.
- */
+// Upper bound on an identity's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`
+// in `packages/core/src/skills/skills.ts`: that cap governs dynamically matched skills, and
+// defaults should not exceed on their own what matching is allowed to contribute in total.
 const MAX_DEFAULT_SKILLS = 5;
 
-/**
- * Skills that reach a prompt through trigger matching rather than `default_skills`.
- *
- * Mirrors `scripts/check_blueprint_integrity.ts:TRIGGER_MATCHED_SKILLS`. Each declares triggers
- * (keywords, tags, task types), so listing it as a default charges every request for a skill the
- * matcher would supply only to the requests that need it.
- */
+// Skills that reach a prompt through trigger matching rather than `default_skills`. Mirrors
+// `scripts/check_blueprint_integrity.ts:TRIGGER_MATCHED_SKILLS`. Each declares triggers (keywords,
+// tags, task types), so listing it as a default charges every request for a skill the matcher would only supply when needed.
 const TRIGGER_MATCHED_SKILL_IDS: ReadonlySet<string> = new Set([
   "fix-bug",
   "portal-grounding",
@@ -55,13 +47,9 @@ interface IIdentityDefaults {
   defaults: string[];
 }
 
-/**
- * Every runtime skill id, across every scope.
- *
- * Delegates to the shared scope declaration: this test and
- * `skill_seed_runtime_integrity_test.ts` previously disagreed about where the runtime catalog
- * lives, and the disagreement is what produced two exclusions for skills that were present.
- */
+// Every runtime skill id, across every scope. Delegates to the shared scope declaration: this
+// test and `skill_seed_runtime_integrity_test.ts` previously disagreed about where the runtime
+// catalog lives, and the disagreement is what produced two exclusions for skills that were present.
 function readCatalogSkillIds(): Promise<Set<string>> {
   return readRuntimeSkillIds(MEMORY_SKILLS);
 }
@@ -122,9 +110,8 @@ Deno.test("identity_default_skills — no identity carries both the generic and 
 
 Deno.test("identity_default_skills — the README's authoring example obeys the rules a real identity must", async () => {
   // The README is where a contributor learns the shape, so a stale example reintroduces exactly
-  // what a pruning step removed. Its previous example carried `portal-grounding`, which Phase 142
-  // Step 17 removed from all 15 identities because the skill declares triggers and is picked up
-  // dynamically — and the cap test could never have caught it, since three entries is under budget.
+  // what a prior pruning removed. Its previous example carried `portal-grounding`, removed from all
+  // identities because the skill declares triggers and is picked up dynamically — the cap test couldn't have caught it.
   const readme = await Deno.readTextFile(join(IDENTITIES_DIR, "README.md"));
   const catalog = await readCatalogSkillIds();
 

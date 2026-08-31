@@ -16,12 +16,9 @@
  */
 import { join } from "@std/path";
 
-/**
- * A runtime skill document as it sits on disk.
- *
- * Field-addressable rather than fully typed: callers compare a declared set of seed→runtime
- * fields by name, and `SkillSchema` (not this type) is what validates the shape.
- */
+// A runtime skill document as it sits on disk. Field-addressable rather than fully typed:
+// callers compare a declared set of seed→runtime fields by name, and `SkillSchema` (not this
+// type) is what validates the shape.
 export interface IRuntimeSkillDocument {
   [field: string]: JsonSkillValue;
 }
@@ -35,12 +32,9 @@ export type JsonSkillValue =
   | JsonSkillValue[]
   | { [key: string]: JsonSkillValue };
 
-/**
- * Runtime catalog scopes, in the order `SkillsService` reads them.
- *
- * The project scope is parameterised by project name upstream; this repository's own catalog
- * ships under `Exaix`, which is what the seed skills are generated into.
- */
+// Runtime catalog scopes, in the order `SkillsService` reads them. The project scope is
+// parameterised by project name upstream; this repository's own catalog ships under `Exaix`,
+// which is what the seed skills are generated into.
 export const RUNTIME_SKILL_SCOPES: readonly string[] = [
   "global",
   "core",

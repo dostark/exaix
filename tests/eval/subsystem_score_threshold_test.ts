@@ -62,10 +62,9 @@ Deno.test("[eval-threshold] every subsystem task passes the declared threshold",
 });
 
 Deno.test("[eval-threshold] the threshold sits inside the corrected dynamic range", () => {
-  // Step 7's finding: before daemon-lifecycle steps were zero-weighted, a totally dead subsystem
-  // scored 0.800 and the gate stayed green. The mutation that now takes a flow scenario to 0.500
-  // is what makes 0.7 a gate rather than a decoration — so the threshold must sit strictly between
-  // the two observations, or it is re-derived from nothing.
+  // Before daemon-lifecycle steps were zero-weighted, a totally dead subsystem scored 0.800 and
+  // the gate stayed green. The mutation that now takes a flow scenario to 0.500 is what makes 0.7
+  // a gate rather than a decoration — the threshold must sit strictly between the two observations.
   const brokenScoreAfterScoringFix = 0.5;
   const brokenScoreBeforeScoringFix = 0.8;
 

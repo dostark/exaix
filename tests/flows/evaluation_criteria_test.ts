@@ -422,14 +422,9 @@ Deno.test("buildEvaluationPrompt: forbids the <thought>/<content> wrapper explic
 });
 
 Deno.test("buildEvaluationPrompt (multi): example JSON shows every criterion name, not a fixed 2-criterion sample", () => {
-  // Live-observed bug: GOAL_ALIGNED_REVIEW has 5 criteria (goal_alignment, task_fulfillment,
-  // request_understanding, code_correctness, code_completeness), but the multi-criteria
-  // example JSON only ever showed 2 fixed criteria names (code_correctness,
-  // code_completeness) with the required "passed" field. A real judge call, following the
-  // example literally, omitted "passed" for the other 3 criteria — CriterionResultSchema
-  // requires it (no default) — and the whole response failed schema validation. The example
-  // must be built from the ACTUAL criteria list so every real criterion name appears with a
-  // "passed" field modeled for it.
+  // Live-observed bug: the example JSON only ever showed 2 fixed criterion names, so a real
+  // judge call following it literally omitted the required "passed" field for other criteria
+  // and failed schema validation. The example must be built from the actual criteria list.
   const criteria: EvaluationCriterion[] = [
     CRITERIA.CODE_CORRECTNESS,
     CRITERIA.CODE_COMPLETENESS,
@@ -497,7 +492,7 @@ Deno.test("EvaluationCriterionSchema: applies default weight", () => {
   assertEquals(result.weight, 1.0);
 });
 
-// Phase 48 — Step 1: New goal-aligned built-in criteria
+// New goal-aligned built-in criteria
 
 Deno.test("[EvaluationCriteria] GOAL_ALIGNMENT has correct weight and category", () => {
   assertExists(CRITERIA.GOAL_ALIGNMENT);
@@ -548,14 +543,14 @@ Deno.test("[EvaluationCriteria] CRITERION_SETS.FULL_QUALITY_GATE contains 7 crit
 });
 
 Deno.test("[EvaluationCriteria] existing criteria remain unchanged", () => {
-  // Spot-check a handful of pre-Phase-48 criteria to confirm backward compat
+  // Spot-check a handful of pre-existing criteria to confirm backward compat
   assertEquals(CRITERIA.CODE_CORRECTNESS.weight, 2.0);
   assertEquals(CRITERIA.NO_SECURITY_ISSUES.required, true);
   assertEquals(CRITERIA.ACCURACY.category, EvaluationCategory.CORRECTNESS);
   assertEquals(CRITERION_SETS.CODE_REVIEW.length, 5);
 });
 
-// Phase 48 — Step 2: RequirementFulfillmentSchema
+// RequirementFulfillmentSchema
 
 Deno.test("[EvaluationCriteria] RequirementFulfillmentSchema validates MET status", () => {
   const result = RequirementFulfillmentSchema.parse({

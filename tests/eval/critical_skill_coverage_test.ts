@@ -24,15 +24,9 @@ const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const SEEDS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 const RUNTIME_DIRS = ["global", "core", "learned", join("project", "Exaix")];
 
-/**
- * Skills whose content must survive compaction.
- *
- * The `response-contract*` family defines the mandatory response format and the per-domain
- * `<content>` JSON templates — dropping one leaves the agent with no output contract.
- * `verdict-rubric` carries the scoring criteria and thresholds a judge must apply; losing it
- * under budget pressure means the judge still emits a well-shaped verdict but scores without
- * criteria, which is a silent correctness loss rather than a visible format break.
- */
+// Skills whose content must survive compaction: `response-contract*` defines the mandatory
+// response format and per-domain `<content>` templates (dropping one leaves no output contract);
+// `verdict-rubric` carries scoring criteria whose loss is a silent correctness loss, not a visible break.
 function mustBeCritical(skillId: string): boolean {
   return skillId.startsWith("response-contract") || skillId === "verdict-rubric";
 }

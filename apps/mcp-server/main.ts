@@ -75,11 +75,9 @@ function createDisplayServiceStub(): IDisplayService {
   };
 }
 
-/**
- * Provider, git, and display services are stubs by design — this server exercises
- * transport, discovery, permissions, and filesystem tools, not LLM or git behaviour.
- * ToolRegistry is NOT optional: SearchFilesTool/RunCommandTool fail without it.
- */
+// Provider, git, and display services are stubs by design — this server exercises transport,
+// discovery, permissions, and filesystem tools, not LLM or git behaviour. ToolRegistry is NOT
+// optional: SearchFilesTool/RunCommandTool fail without it.
 export function buildServerContext(
   configService: ConfigService,
 ): { context: ICliApplicationContext; dispose: () => void } {

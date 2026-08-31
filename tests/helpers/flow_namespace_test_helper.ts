@@ -12,10 +12,7 @@ import type { JSONValue } from "@exaix/core/types";
 import type { IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, FlowInputSource } from "@exaix/core";
 
-/**
- * Steps shared by the parallel-group integration flows: a start step fanned out
- * to two writer steps in the "writers" parallel group.
- */
+/** Steps shared by the parallel-group integration flows: a start step fanned out to two writer steps in the "writers" parallel group. */
 export function makeStartAndWritersSteps(): IFlowInput["steps"] {
   return [
     {

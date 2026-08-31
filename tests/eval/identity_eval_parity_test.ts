@@ -15,24 +15,14 @@ import { dirname, fromFileUrl, join, resolve } from "@std/path";
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
 
-/**
- * Files in `Blueprints/Identities/` that are not identities.
- *
- * `README.md` documents the directory. It used to sit in `parity_exclusions.json`, which made the
- * exclusion list read as though a real identity had been deliberately left uncovered — and the
- * entry was inert anyway, because the catalog it excluded from was a hardcoded array that never
- * contained it. Dropping non-identity files belongs in the reader; the exclusion list is for
- * identities somebody chose not to evaluate.
- */
+// Files in `Blueprints/Identities/` that are not identities. `README.md` used to sit in
+// `parity_exclusions.json`, misleadingly reading as a deliberately-uncovered identity (and was
+// inert, since the catalog it excluded from never contained it). Non-identity filtering belongs here.
 const NON_IDENTITY_FILES = new Set(["README"]);
 
-/**
- * The shipped identity catalog, read from disk.
- *
- * This was a hardcoded list of fourteen names, so the gate could not see an identity added to the
- * directory — the one thing a parity gate exists to catch. Reading the directory is what makes the
- * exclusion list mean anything, since both entries named files the hardcoded list omitted.
- */
+// The shipped identity catalog, read from disk — previously a hardcoded list of fourteen names,
+// so the gate could not see an identity added to the directory. Reading the directory is what
+// makes the exclusion list mean anything, since both entries named files the hardcoded list omitted.
 function readIdentityCatalog(): string[] {
   const names: string[] = [];
   for (const entry of Deno.readDirSync(IDENTITIES_DIR)) {
@@ -50,12 +40,9 @@ const identityExclusions: string[] = (parityExclusions.identities ?? []).map(
   (e: { id: string }) => e.id,
 );
 
-// The two checks that used to sit here — one passing an EMPTY scenario list and asserting every
-// identity was missing, the other building the scenario list from the identity names themselves —
-// were tautologies: adding an identity changed both sides at once. They also duplicated
-// `catalog_parity_harness_test.ts`, which covers `assertCatalogCovered` against synthetic input in
-// five cases. Removed rather than repaired; the real comparison is against the shipped catalog,
-// below.
+// Two checks that used to sit here were tautologies (one used an empty scenario list, the other
+// built the scenario list from the identity names themselves) and duplicated
+// `catalog_parity_harness_test.ts`. Removed rather than repaired; the real comparison is below.
 
 Deno.test("identity_eval_parity — the catalog is read from disk, not restated here", async () => {
   // The list was hardcoded, so the gate could not see an identity someone added to the directory —
@@ -86,7 +73,7 @@ Deno.test("identity_eval_parity — README.md is filtered by the reader, not exc
 
 Deno.test("identity_eval_parity — mock-agent remains a real, reasoned exclusion", () => {
   // The distinction the fix depends on: mock-agent IS an identity file, deliberately uncovered.
-  // dogfood-coder + code-reviewer are Phase 150 meta-workflow identities exercised by live scenarios.
+  // dogfood-coder + code-reviewer are meta-workflow identities exercised by live scenarios.
   assertEquals(
     [...identityExclusions].sort(),
     ["code-reviewer", "dogfood-coder", "mock-agent"],
@@ -94,9 +81,8 @@ Deno.test("identity_eval_parity — mock-agent remains a real, reasoned exclusio
 });
 
 Deno.test("identity_eval_parity — every shipped identity has a real scenario, or a reasoned exclusion", async () => {
-  // The gate's actual job, and it was not being done. The two tests above compare the catalog
-  // against a SYNTHETIC scenario list — one empty, one built from the identity names themselves —
-  // so both are tautologies: adding an identity changes both sides at once. Verified by canary:
+  // The two tests above compare the catalog against a SYNTHETIC scenario list — one empty, one
+  // built from the identity names themselves — so both are tautologies. Verified by canary:
   // dropping a new identity file into Blueprints/Identities/ left the suite green.
   const catalog = await loadScenarioCatalog({
     frameworkHome: join(REPO_ROOT, "tests", "scenario_framework"),

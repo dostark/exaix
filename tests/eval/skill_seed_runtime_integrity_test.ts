@@ -31,13 +31,9 @@ import { type IRuntimeSkillDocument, readRuntimeSkills } from "./runtime_skill_s
 const BLUEPRINTS_SKILLS = resolve(Deno.cwd(), "Blueprints", "Skills");
 const MEMORY_SKILLS = resolve(Deno.cwd(), "Memory", "Skills");
 
-/**
- * Seed frontmatter fields the generator copies to the runtime document unchanged.
- *
- * `instructions` is asserted separately because it comes from the markdown body rather than the
- * frontmatter, and the managed fields (`id`, `created_at`, `usage_count`, …) are excluded because
- * the generator owns them.
- */
+// Seed frontmatter fields the generator copies to the runtime document unchanged. `instructions`
+// is asserted separately because it comes from the markdown body rather than the frontmatter,
+// and managed fields (`id`, `created_at`, `usage_count`, …) are excluded because the generator owns them.
 const MAPPED_FIELDS: readonly string[] = [
   "skill_id",
   "name",

@@ -68,7 +68,7 @@ export function registerTeamModelRegistry(
 /** Fallback adapter timeout when model_registry.refresh_timeout_ms is unset. */
 const DEFAULT_ADAPTER_TIMEOUT_MS = 15_000;
 
-/** Per-provider host root (adapters append their own path) + credential env (§6.3). */
+/** Per-provider host root (adapters append their own path) + credential env. */
 interface IProviderCatalogDescriptor {
   baseUrl: string;
   keyEnv?: string;
@@ -82,7 +82,7 @@ const PROVIDER_CATALOG_DESCRIPTORS: Record<string, IProviderCatalogDescriptor> =
   ollama: { baseUrl: "http://localhost:11434" }, // local, no credential
 };
 
-/** Register all five provider catalog adapters (OpenRouter + the four natives, §6.3). */
+/** Register all five provider catalog adapters (OpenRouter + the four natives). */
 function createTeamAdapterRegistry(): AdapterRegistry {
   const adapters = new AdapterRegistry();
   adapters.register(new OpenRouterCatalogAdapter());
@@ -169,7 +169,7 @@ export function buildTeamResolutionStrategy(
   });
 }
 
-/** Route-policy defaults mirroring the ModelRegistryConfigSchema fallbacks (§5.7). */
+/** Route-policy defaults mirroring the ModelRegistryConfigSchema fallbacks. */
 const DEFAULT_ROUTE_POLICY: IRouteReason = "cheapest";
 const DEFAULT_ROUTE_PRICE_TOLERANCE = 0.05;
 

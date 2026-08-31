@@ -11,21 +11,6 @@ import { initActivityTableSchema, initTestDbService } from "@exaix/testing";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "@exaix/testing";
 
-/**
- * Tests for DatabaseService (Activity Journal Storage)
- *
- * Success Criteria:
- * - Test 1: Initializes SQLite database with correct schema
- * - Test 2: Logs single activity with all required fields
- * - Test 3: Batches multiple activities for efficient writes
- * - Test 4: Flushes batch when max size reached
- * - Test 5: Prevents logging when database is closing
- * - Test 6: Query methods return filtered/limited results
- * - Test 7: Handles null fields (identity_id, target) gracefully
- * - Test 8: Auto-generates trace_id if not provided
- * - Test 9: Data persists across database connections
- */
-
 Deno.test("DatabaseService: initializes with configuration", async () => {
   const { db, cleanup } = await initTestDbService();
   try {

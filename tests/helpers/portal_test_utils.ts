@@ -21,6 +21,7 @@ import type { TestEnvironment } from "../integration/helpers/test_environment.ts
 import { type IReviewStatus, ReviewStatus } from "@exaix/core/status";
 import { createMockConfig } from "@exaix/testing";
 import type { DatabaseService } from "@exaix/storage-sqlite";
+import type { Opt, Reason } from "@exaix/core/types";
 import { withCliProcessMutex } from "./cli_process_mutex.ts";
 
 export type { IPortalGitRepoSetup } from "@exaix/git/testing";
@@ -39,7 +40,7 @@ export interface IPortalTestSetup {
 export async function setupPortalTest(
   tempDir: string,
   portalAlias: string = "write-portal",
-  options?: { branch?: string; withSrcDir?: boolean },
+  options?: Opt<{ branch?: string; withSrcDir?: boolean }, Reason.TestOverride>,
 ): Promise<IPortalTestSetup> {
   const { branch = TEST_DEFAULT_BRANCH, withSrcDir = true } = options || {};
   const portalTargetPath = join(tempDir, "portal-write-target");
@@ -223,7 +224,7 @@ export async function executePlanForReview<TConfig extends Config>(
   env: TestEnvironment,
   config: TConfig,
   activePlanPath: string,
-  reviewRegistry?: ReviewRegistry,
+  reviewRegistry?: Opt<ReviewRegistry, Reason.OptionalDependency>,
 ): Promise<{ success: boolean; traceId: string | undefined; error?: string }> {
   const { provider } = env.createRequestProcessor();
   const logger = new EventLogger({ db: env.db });
@@ -327,10 +328,7 @@ export function withSingleWorktreePortal<TConfig extends Config>(
   };
 }
 
-/**
- * Higher-level helper to create request, plan, and execute it.
- * Reduces the massive boilerplate in e2e tests.
- */
+/** Higher-level helper to create request, plan, and execute it — reduces e2e test boilerplate. */
 export async function createAndRunReviewWorkflow<TConfig extends Config>(
   env: TestEnvironment,
   config: TConfig,
@@ -396,7 +394,7 @@ export async function assertFileInBranch(
   repoPath: string,
   branch: string,
   filePath: string,
-  expectedContent?: string,
+  expectedContent?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
   const out = await gitStdout(repoPath, ["show", `${branch}:${filePath}`]);
   if (expectedContent) {

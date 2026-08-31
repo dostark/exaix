@@ -34,13 +34,9 @@ const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
 /** The suffix a flow's entity tag carries, distinguishing it from an identity or tool of that name. */
 const FLOW_ENTITY_SUFFIX = ".flow";
 
-/**
- * The shipped flow catalog, read from each file's declared `id` rather than its filename.
- *
- * The id is what `assertFlowExists` resolves and what a request's `flow:` frontmatter must match,
- * so it is the only name that means anything. Deriving ids from filenames is how the previous list
- * acquired thirteen wrong entries.
- */
+// The shipped flow catalog, read from each file's declared `id` rather than its filename. The id
+// is what `assertFlowExists` resolves and what a request's `flow:` frontmatter must match, so it
+// is the only name that means anything — deriving ids from filenames produced wrong entries before.
 async function readFlowCatalog(): Promise<string[]> {
   const ids: string[] = [];
   for await (const entry of Deno.readDir(FLOWS_DIR)) {

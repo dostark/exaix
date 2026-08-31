@@ -21,11 +21,9 @@ async function runMigrate(
   args: string[],
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const scriptPath = join(REPO_ROOT, "scripts", "migrate_db.ts");
-  // NOTE: no `--reload`. This test exercises migration behaviour, not module freshness.
-  // `--reload` forced a full re-download of the module graph on every invocation, and
-  // under the parallel test runner those concurrent downloads raced — occasionally
-  // yielding a partial `@exaix/core` module (missing `DEFAULT_AI_MODEL`) and a spurious
-  // failure. Using the warm cache removes the race without changing what is tested.
+  // No `--reload`: it forced a full module-graph re-download on every invocation, and under
+  // the parallel test runner those concurrent downloads raced — occasionally yielding a partial
+  // `@exaix/core` module (missing `DEFAULT_AI_MODEL`) and a spurious failure.
   const cmd = new Deno.Command("deno", {
     args: [
       "run",
@@ -162,7 +160,7 @@ Deno.test("[phase135] migrate_db.ts up creates the registry tables, cost_source 
     const migrations = await queryDb(dbPath, "SELECT version FROM schema_migrations ORDER BY id;");
     assertStringIncludes(migrations, "001_init.sql");
 
-    // All six §5.2/§5.8.2 registry tables exist.
+    // All six registry tables exist.
     const tables = await queryDb(
       dbPath,
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;",

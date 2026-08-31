@@ -26,11 +26,9 @@ function ctx(): IConditionContext {
   };
 }
 
-// Each malicious condition must (a) NOT execute (no side effect / no host access)
-// and (b) fail closed: shouldExecute === false.
-// The dynamic-module-load payload is assembled at runtime so this test source
-// does not itself contain a literal module-load expression (forbidden by the
-// style gate). It exercises the evaluator's rejection of that construct.
+// Each malicious condition must (a) NOT execute (no side effect / no host access) and (b)
+// fail closed: shouldExecute === false. The dynamic-module-load payload is assembled at
+// runtime so this test source itself contains no literal module-load expression (forbidden by the style gate).
 const DYNAMIC_IMPORT_PAYLOAD = "imp" + "ort('node:fs')";
 
 const HOST_ACCESS_PAYLOADS: ReadonlyArray<readonly [string, string]> = [

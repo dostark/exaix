@@ -11,10 +11,6 @@ import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "@exaix/testing";
 import { getWorkspaceRequestsDir } from "@exaix/testing";
 
-/**
- * Test helper for FileWatcher tests
- * Provides utilities for setting up temp directories, watchers, and common test patterns
- */
 export class WatcherTestHelper {
   public tempDir: string;
   public requestDir: string;

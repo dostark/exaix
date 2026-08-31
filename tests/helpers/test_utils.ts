@@ -42,10 +42,7 @@ export interface ITestSkillFixture {
   description: string;
 }
 
-/**
- * Generic test data factory that creates objects with default values and overrides
- * Type parameter T is explicitly specified at usage sites (e.g., TestDataFactory<TestRequestFixture>)
- */
+/** Generic test data factory that creates objects with default values and overrides. */
 export class TestDataFactory<T> {
   private readonly defaultsFactory: () => T;
 

@@ -9,15 +9,9 @@
 
 import { levenshteinDistance } from "@std/text/levenshtein-distance";
 
-/**
- * Best-effort normalized similarity (0..1, higher = closer) between `needle` and the
- * best-matching substring of `haystack`, tolerant of paraphrase-driven length changes.
- * `needle` is expected to appear embedded in a longer response (e.g. after a preamble)
- * and possibly reworded, so both a fixed comparison window (dominated by length mismatch)
- * and a whole-string distance (dominated by unrelated preamble/prefix text) would misjudge
- * it — this slides windows across a 0.6x-1.4x length range of `needle` across `haystack`
- * and keeps the best-scoring one.
- */
+// Best-effort normalized similarity (0..1) between `needle` and the best substring match in
+// `haystack`. A fixed window or whole-string distance misjudges a reworded `needle` after a
+// preamble, so this slides 0.6x-1.4x-length windows and keeps the best-scoring one.
 export function bestSubstringSimilarity(haystack: string, needle: string): number {
   const normalizedNeedle = needle.toLowerCase();
   const normalizedHaystack = haystack.toLowerCase();

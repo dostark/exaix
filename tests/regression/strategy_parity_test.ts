@@ -33,10 +33,7 @@ import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 import { setupStrategyExecutor, TEST_BLUEPRINT, TEST_OPTIONS } from "../helpers/agent_strategy_test_helpers.ts";
 
-/**
- * Assertions the schema cannot make. `z.string()` accepts "", so a strategy that returns a blank
- * branch or description parses cleanly while being useless to every downstream consumer.
- */
+/** Assertions the schema cannot make: `z.string()` accepts "", so a blank branch or description parses cleanly while being useless downstream. */
 function assertSemanticallyUsable(result: IChangesetResult, strategy: string): void {
   assert(result.branch.length > 0, `${strategy}: branch must not be blank`);
   assert(result.description.length > 0, `${strategy}: description must not be blank`);

@@ -14,10 +14,7 @@ import { ProviderFactory } from "@exaix/ai";
 import { ExecutionLoop } from "@exaix/execution";
 import type { ProviderType } from "@exaix/core";
 
-/**
- * Reproduces the zombie-plan lifecycle: when a manually parsed/executed plan's execution
- * fails, it stays in Workspace/Active (never cleaned up) and no failure report is written.
- */
+/** Reproduces the zombie-plan lifecycle: a failed manually-executed plan stays in Workspace/Active (never cleaned up) and writes no failure report. */
 Deno.test("Reproduction: Zombie Plan Lifecycle in Manual Execution Mode", async () => {
   // 1. Setup Environment
   const testRoot = await Deno.makeTempDir({ prefix: "exa_test_zombie_" });

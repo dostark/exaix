@@ -62,11 +62,9 @@ const skillExclusions: string[] = (parityExclusions.skills ?? []).map(
 );
 
 Deno.test("skill_eval_parity — the batches cover every skill that ships", async () => {
-  // This asserted `ALL_SKILLS.length === 27` against a list declared in this same file, so it
-  // could only fail if someone edited the list and forgot to edit the number — while a skill
-  // added to `Blueprints/Skills/` and to no batch left the catalog uncovered and the test
-  // green. Both halves are now checked against the shipped catalog, which is the thing parity
-  // is supposed to be parity WITH; the count is whatever the catalog says it is.
+  // Previously asserted `ALL_SKILLS.length === 27` against a list in this same file — could only
+  // fail on an edited-list/forgotten-number mismatch, while a skill added to `Blueprints/Skills/`
+  // but to no batch left the catalog uncovered and the test green. Both halves now check the shipped catalog.
   const shipped = await readShippedSkillIds();
   const batched = new Set(ALL_SKILLS);
 
@@ -78,11 +76,9 @@ Deno.test("skill_eval_parity — the batches cover every skill that ships", asyn
 });
 
 Deno.test("skill_eval_parity — every shipped skill has a real scenario, or a reasoned exclusion", async () => {
-  // This replaces a check that built its scenario catalog FROM the batch lists — a circle in which
-  // adding a skill to a batch also created the scenario that covered it. Measured against the real
-  // catalog, the skill scenarios carried **no `entity:` tags at all**, so entity-level coverage for
-  // this subsystem was zero while the gate reported green. The tags now come from each scenario's
-  // request fixture, which is where the pinned skills are actually declared.
+  // Previously built its scenario catalog FROM the batch lists — a circle where adding a skill
+  // to a batch also created the scenario covering it. Measured against the real catalog, skill
+  // scenarios carried no `entity:` tags at all, so entity coverage was zero while the gate reported green.
   const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const shipped = await readShippedSkillIds();
 

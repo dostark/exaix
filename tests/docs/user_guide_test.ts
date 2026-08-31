@@ -148,8 +148,6 @@ Deno.test("User Guide documents deno task commands", async () => {
   assertStringIncludes(guide, "deno task");
 });
 
-// File Watcher Documentation Tests (Step 5.4)
-
 Deno.test("User Guide documents file watcher configuration", async () => {
   const guide = await readUserGuide();
   const lower = guide.toLowerCase();

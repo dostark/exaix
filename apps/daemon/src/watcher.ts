@@ -77,8 +77,8 @@ export class FileWatcher {
     let watcher: Deno.FsWatcher;
     try {
       // Hand-rolled consume-loop below already debounces (per-path timers) + dedups (processingFiles
-      // set) + isolates errors, so it is safe. Adopt @exaix/core/fs `consumeFsEvents` (CODE_STYLE §7
-      // Filesystem Watching) when this watcher is next refactored, to converge on the shared pattern.
+      // set) + isolates errors, so it is safe. Adopt @exaix/core/fs `consumeFsEvents` when this
+      // watcher is next refactored, to converge on the shared pattern.
       watcher = Deno.watchFs(this.watchPath, { recursive: false });
     } catch (error) {
       await this.logger.error(DomainEventType.WatcherError, this.watchPath, {

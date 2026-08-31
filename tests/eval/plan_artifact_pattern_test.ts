@@ -58,10 +58,9 @@ Deno.test("plan_artifact_pattern — no scenario waits on a plan suffix nothing 
 });
 
 Deno.test("plan_artifact_pattern — a plan glob must be able to match a real filename", async () => {
-  // Phase 142 Step 7. Step 11 caught the wrong SUFFIX (`_plan.yaml`); this catches the wrong STEM.
-  // Two scenarios waited on `**/_plan.md`, missing the `*` — and `PlanWriter` emits
-  // `${requestId}_plan.md`, never a bare `_plan.md`, so those steps could only ever time out.
-  // Found by the first full six-subsystem run, because both were in packs no earlier step ran.
+  // This catches the wrong glob STEM (a separate check elsewhere catches the wrong SUFFIX). Two
+  // scenarios waited on `**/_plan.md`, missing the `*` — `PlanWriter` emits `${requestId}_plan.md`,
+  // never a bare `_plan.md`, so those scenarios could only ever time out.
   const offenders: string[] = [];
 
   for await (const entry of walk(SCENARIOS_DIR, { exts: [".yaml"], includeDirs: false })) {
