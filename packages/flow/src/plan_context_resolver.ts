@@ -31,11 +31,8 @@ function isInsideRoot(physical: string, realRoot: string): boolean {
   return physical === realRoot || physical.startsWith(realRoot + SEPARATOR);
 }
 
-/**
- * Resolves `target` to its physical location, following symlinks. For a path that does
- * not exist yet, resolves the nearest existing ancestor and re-appends the remainder, so
- * a symlinked ancestor directory is still caught.
- */
+/** For a path that does not exist yet, resolves the nearest existing ancestor and
+ *  re-appends the remainder, so a symlinked ancestor directory is still caught. */
 async function resolvePhysicalPath(target: string): Promise<string> {
   try {
     return await Deno.realPath(target);

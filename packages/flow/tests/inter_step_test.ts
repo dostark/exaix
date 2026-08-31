@@ -9,12 +9,6 @@ import { assertEquals } from "@std/assert";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "@exaix/core/func";
 import { jsonExtract } from "@exaix/core/types";
 
-/**
- * Integration tests for inter-step communication transforms
- *
- * Tests the transform functions that enable data flow between flow steps
- */
-
 Deno.test("Transform Functions", async (t) => {
   await t.step("passthrough should return input unchanged", () => {
     const input = "test input";

@@ -18,15 +18,9 @@ import type { Opt, Reason } from "@exaix/core/types";
 export interface IConditionContext {
   /** Results from previously executed steps, keyed by step id for direct access. */
   results: Record<string, IStepResultContext>;
-  /**
-   * The same results as an array, so aggregate conditions are expressible.
-   *
-   * The sandbox permits array methods only on real arrays and does not allowlist
-   * `Object.values`, so `results.every(...)` and `Object.values(results).every(...)` are both
-   * rejected — and the rejection fails CLOSED, silently skipping the guarded step. Without this
-   * view, "all previous steps succeeded" — the commonest condition a flow author writes — could
-   * not be expressed at all.
-   */
+  /** The same results as an array, so aggregate conditions are expressible: the sandbox
+   *  permits array methods only on real arrays and doesn't allowlist `Object.values`, so
+   *  "all previous steps succeeded" could not be expressed via `results` alone. */
   steps: (IStepResultContext & { id: string })[];
   /** Original flow request */
   request: {
@@ -92,13 +86,6 @@ export class ConditionEvaluationError extends Error {
  * ConditionEvaluator class for evaluating step conditions
  */
 export class ConditionEvaluator {
-  /**
-   * Evaluate a condition expression
-   *
-   * @param condition - JavaScript expression to evaluate
-   * @param context - Context containing results, request, and flow info
-   * @returns IConditionResult with shouldExecute boolean
-   */
   evaluate(condition: string, context: IConditionContext): IConditionResult {
     const startTime = performance.now();
 
@@ -130,15 +117,6 @@ export class ConditionEvaluator {
     }
   }
 
-  /**
-   * Evaluate a condition for a specific step
-   *
-   * @param step - IFlow step with optional condition
-   * @param stepResults - Map of completed step results
-   * @param request - Original flow request
-   * @param flow - IFlow definition
-   * @returns IConditionResult
-   */
   evaluateStepCondition(
     step: IFlowStep,
     stepResults: Map<string, IStepResult>,
@@ -195,15 +173,9 @@ export class ConditionEvaluator {
     };
   }
 
-  /**
-   * Safely evaluate a condition expression.
-   *
-   * Conditions are treated as DATA: they are parsed against a restricted
-   * boolean-expression grammar and evaluated against an allowlisted context
-   * (results / request / flow) by {@link evaluateExpression}. They can never
-   * reach host globals (Deno, globalThis, fetch, import), call arbitrary
-   * functions, perform assignments, or trigger side effects.
-   */
+  /** Conditions are treated as DATA: parsed against a restricted boolean-expression
+   *  grammar and evaluated against an allowlisted context — never host globals, arbitrary
+   *  function calls, assignments, or side effects. */
   private safeEvaluate(condition: string, context: IConditionContext): boolean {
     // Project the context to a plain JSON structure: conditions only ever read
     // JSON-shaped step data, and this yields an ExpressionContext without casts.
@@ -226,10 +198,6 @@ export class ConditionEvaluator {
     }
   }
 
-  /**
-   * Validate a condition expression without executing it
-   * Returns any syntax errors found
-   */
   validateCondition(condition: string): { valid: boolean; error?: string } {
     if (!condition || condition.trim() === "") {
       return { valid: true };

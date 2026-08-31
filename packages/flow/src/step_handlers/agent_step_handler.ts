@@ -84,11 +84,9 @@ export class AgentStepHandler implements IFlowStepHandler {
     return await this.#agentExecutor.run(step.identity, stepRequest as IFlowStepRequest);
   }
 
-  /**
-   * Routes a DECLARED step that declares `strategy` (Phase 159) through
-   * `IAgentExecutor.runWithStrategy`, bypassing the single-shot `run()` path. Fails fast
-   * when the configured executor does not support it, rather than silently falling back.
-   */
+  /** Routes a DECLARED step that declares `strategy` through `IAgentExecutor.runWithStrategy`,
+   *  bypassing the single-shot `run()` path. Fails fast when unsupported, rather than
+   *  silently falling back. */
   async #executeWithStrategy(
     step: IStepExecutionContext["step"],
     stepRequest: IStepExecutionContext["stepRequest"],

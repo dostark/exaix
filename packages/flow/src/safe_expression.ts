@@ -55,9 +55,7 @@ export class ExpressionError extends Error {
   }
 }
 
-// ============================================================================
 // AST
-// ============================================================================
 
 enum NodeKind {
   Literal = "literal",
@@ -84,9 +82,7 @@ type Node =
   | { kind: NodeKind.Member; object: Node; property: Node; computed: boolean; optional: boolean }
   | { kind: NodeKind.Call; callee: Node; args: Node[] };
 
-// ============================================================================
 // Tokenizer
-// ============================================================================
 
 enum TokenType {
   Num = "num",
@@ -206,9 +202,7 @@ function tokenize(input: string): Token[] {
   return tokens;
 }
 
-// ============================================================================
 // Parser (recursive descent, lowest precedence first)
-// ============================================================================
 
 class Parser {
   private pos = 0;
@@ -424,9 +418,7 @@ class Parser {
   }
 }
 
-// ============================================================================
 // Static analysis — reject host globals / disallowed constructs before eval
-// ============================================================================
 
 /** Static name of a non-computed member access, if it is a string literal key. */
 function staticMemberKey(node: Extract<Node, { kind: NodeKind.Member }>): string | undefined {
@@ -494,9 +486,7 @@ function staticCheck(node: Node, bound: Set<string>): void {
   }
 }
 
-// ============================================================================
 // Evaluator
-// ============================================================================
 
 function readMember(object: EvalValue, key: string | number): EvalValue {
   if (object === null || object === undefined) {
@@ -652,9 +642,7 @@ class Evaluator {
   }
 }
 
-// ============================================================================
 // Public API
-// ============================================================================
 
 /** Parse + statically validate a condition. Throws ExpressionError on any disallowed construct. */
 export function parseCondition(condition: string): Node {
@@ -673,10 +661,7 @@ export function validateExpression(condition: string): { valid: boolean; error?:
   }
 }
 
-/**
- * Evaluate a flow condition against an allowlisted context and return its truthiness.
- * Never reaches host globals, performs no I/O, and produces no side effects.
- */
+/** Never reaches host globals, performs no I/O, and produces no side effects. */
 export function evaluateExpression(condition: string, context: ExpressionContext): boolean {
   const ast = parseCondition(condition);
   return Boolean(new Evaluator(context).run(ast));

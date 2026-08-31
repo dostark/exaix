@@ -90,9 +90,7 @@ Deno.test("DefaultStepReplayPolicy: denies replay for MIXED side effect class", 
   assertEquals(typeof result.reason, "string");
 });
 
-// ---------------------------------------------------------------------------
 // Store-level toolPolicyHash discrimination
-// ---------------------------------------------------------------------------
 
 class ToolPolicyAwareStore implements IStepDurabilityStore {
   private records: IStepExecutionRecord[] = [];

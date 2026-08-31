@@ -29,9 +29,7 @@ import {
   FlowOutputFormat,
 } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Test doubles
-// ---------------------------------------------------------------------------
 
 class TrackingDurabilityStore implements IStepDurabilityStore {
   saveCalls: Array<{ record: IStepExecutionRecord }> = [];
@@ -165,9 +163,7 @@ function buildMockCheckpointService(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "StepDurabilityCheckpointMigration: populates store with one record per restored step",

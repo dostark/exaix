@@ -15,9 +15,7 @@ import {
   UnknownFlowStepError,
 } from "@exaix/flow";
 
-// ============================================================
 // Test doubles
-// ============================================================
 
 class StubHandler implements IFlowStepHandler {
   readonly stepType: string;
@@ -35,9 +33,7 @@ class StubHandler implements IFlowStepHandler {
   }
 }
 
-// ============================================================
 // IFlowStepHandlerRegistry contract
-// ============================================================
 
 Deno.test("[flow] FlowStepHandlerRegistry — register and get a handler", () => {
   const registry: IFlowStepHandlerRegistry = new FlowStepHandlerRegistry();
@@ -132,9 +128,7 @@ Deno.test("[flow] StubHandler.execute produces expected result", async () => {
   assertEquals(handler.lastCtx, ctx);
 });
 
-// ============================================================
 // UnknownFlowStepError
-// ============================================================
 
 Deno.test("[flow] UnknownFlowStepError — message includes step type and id", () => {
   const error = new UnknownFlowStepError("voting_group", "step-42");

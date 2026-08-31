@@ -34,9 +34,7 @@ import {
   StepSideEffectClass,
 } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
 // Test doubles
-// ---------------------------------------------------------------------------
 
 /** Captures all emitted events for assertion. */
 class TrackingEventLogger implements IFlowEventLogger {
@@ -106,9 +104,7 @@ class SilentAgentRunner implements IAgentExecutor {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Flow and record builders
-// ---------------------------------------------------------------------------
 
 function buildTwoStepFlow(): IFlowInput {
   return {
@@ -190,9 +186,7 @@ function buildStaleCheckpointService(traceId: string): IFlowCheckpointService {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 Deno.test(
   "StepDurabilityEventEmission: emits FLOW_EVENT_STEP_SKIPPED_BY_REUSE when prior reusable record exists",

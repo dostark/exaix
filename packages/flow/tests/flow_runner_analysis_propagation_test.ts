@@ -19,9 +19,7 @@ import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } fro
 import { AnalysisMode } from "@exaix/core/types";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 
-// ============================================================
 // Mock infrastructure
-// ============================================================
 
 class StubAgentExecutor implements IAgentExecutor {
   async run(
@@ -43,10 +41,7 @@ class TrackingEventLogger implements IFlowEventLogger {
   }
 }
 
-/**
- * Captures the requestAnalysis passed to evaluate() — useful for verifying
- * that plan-frontmatter analysis propagates all the way to the gate evaluator.
- */
+/** Captures the requestAnalysis passed to evaluate(). */
 class CapturingGateEvaluator extends GateEvaluator {
   capturedAnalysis?: IRequestAnalysis;
 
@@ -68,9 +63,7 @@ class CapturingGateEvaluator extends GateEvaluator {
   }
 }
 
-// ============================================================
 // Helpers
-// ============================================================
 
 function makeRawAnalysis(): IRequestAnalysis {
   return {
@@ -122,9 +115,7 @@ function makeGateFlow(): IFlow {
   return flow as IFlow;
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test(
   "[FlowRunner] receives requestAnalysis from plan frontmatter on execution",

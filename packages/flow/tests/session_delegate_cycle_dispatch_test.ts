@@ -167,9 +167,8 @@ Deno.test("[restart] omitted traceId normalizes to one stable parent trace for t
       });
     }
 
-    // Phase 174 Step 4: the durable checkpoint makes the second dispatch for the same
-    // (stable) parent trace an idempotent replay, not a second full run — this is the
-    // "accepted work is not executed twice" success criterion, not a bug in trace reuse.
+    // The durable checkpoint makes the second dispatch for the same parent trace an
+    // idempotent replay, not a second full run — "accepted work is not executed twice".
     assertEquals(coordinator.requests.length, 1, "a completed checkpoint replays without relaunching");
     assertEquals(coordinator.requests[0].parentTraceId, await flowTraceStore.getOrCreate("req-cycle-restart"));
   } finally {
@@ -200,15 +199,9 @@ Deno.test("[restart] a cycle request with neither traceId nor requestId fails be
   assertEquals(coordinator.requests.length, 0, "the coordinator must never be invoked without a stable trace");
 });
 
-// ─── GAP-2 remediation (Phase 174 Step 8): disabled/misconfigured session_delegate ───────
-//
-// `apps/daemon/main.ts:main()` only constructs a `SessionDelegationCoordinator` (and only
-// then passes a `planContextResolver`) when `config.session_delegate.enabled` is true AND
-// `config.session_delegate.gates` includes `code_changes` — both misconfigurations collapse
-// to the identical production state: `FlowRunner` receives neither, so it never registers
-// `SessionDelegateCycleStepHandler` at all. Since no coordinator or launcher is ever
-// constructed for either case, there is no "zero calls" object to inspect after the fact —
-// the absence of the coordinator itself is the proof the launcher can never be reached.
+// Disabled/misconfigured session_delegate: main.ts only constructs a
+// SessionDelegationCoordinator when enabled=true AND gates includes code_changes — both
+// misconfigurations leave FlowRunner without one, so it never registers the step handler.
 
 Deno.test("[security] session_delegate.enabled=false fails a session_delegate_cycle request before any launch", async () => {
   // Mirrors the exact FlowRunner state main.ts produces when `session_delegate.enabled` is
@@ -233,10 +226,9 @@ Deno.test("[security] session_delegate.enabled=false fails a session_delegate_cy
 });
 
 Deno.test("[security] session_delegate.gates omitting code_changes fails a session_delegate_cycle request before any launch", async () => {
-  // Mirrors the exact FlowRunner state main.ts produces when `session_delegate.gates` omits
-  // `code_changes`: the daemon's own conditional coordinator construction skips it, so
-  // `sessionDelegationCoordinator`/`planContextResolver` both stay undefined here too — the
-  // same fail-closed state as the disabled case above, reached via a different config path.
+  // Mirrors the FlowRunner state main.ts produces when gates omits code_changes: both
+  // coordinator fields stay undefined — the same fail-closed state as the disabled case
+  // above, reached via a different config path.
   const runner = new FlowRunner({
     agentExecutor: new NoOpAgentExecutor(),
     eventLogger: new NoOpEventLogger(),

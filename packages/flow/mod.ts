@@ -72,7 +72,7 @@ export { AgentOrchestratorAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "./src/ag
 export { GateConfigSchema, GateEvaluator, MockJudgeInvoker } from "./src/gate_evaluator.ts";
 export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 
-// Step 3 — Flow step-handler registry
+// Flow step-handler registry
 export { FlowStepHandlerRegistry } from "./src/step_handlers/step_handler_registry.ts";
 export { AgentStepHandler } from "./src/step_handlers/agent_step_handler.ts";
 export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";

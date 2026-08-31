@@ -10,15 +10,6 @@ import { join } from "@std/path";
 import { FlowStepExecutionMode, ToolName } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
-/**
- * Tests for Phase 56 Step 2: FlowLoader Validation Layer
- *
- * Success Criteria:
- * - Flow YAML with write tool in dynamic step permitted_tools fails validation
- * - Flow YAML with tool not in identity's permitted_tools fails validation
- * - Valid declared and dynamic steps both pass validation
- */
-
 async function createTempFlowFile(content: string): Promise<{ path: string; cleanup: () => Promise<void> }> {
   const tempDir = await Deno.makeTempDir({ prefix: "flow-loader-test-" });
   const filePath = join(tempDir, "test.flow.yaml");
@@ -81,11 +72,8 @@ steps:
   }
 });
 
-// Note: Identity-level permitted_tools validation requires IBlueprintLoader integration.
-// This is tracked as a future enhancement. The current implementation validates:
-// 1. Write tools are not allowed in dynamic step permitted_tools
-// 2. Read-only tools are allowed in dynamic step permitted_tools
-// 3. Empty permitted_tools arrays are allowed
+// Identity-level permitted_tools validation requires IBlueprintLoader integration —
+// not yet implemented; only step-level tool-kind validation runs today.
 
 Deno.test("FlowLoader: skips identity validation (requires IBlueprintLoader)", () => {
   // Identity-level validation requires loading the identity blueprint

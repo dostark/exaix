@@ -72,24 +72,16 @@ export interface IDynamicStepExecutorOptions {
   config?: { tools?: { confirmation_timeout_s?: number } };
 }
 
+/** For audit logging. */
 export interface IActivityJournal {
   log(entry: JournalEntry): Promise<void>;
 }
 
 const DEFAULT_MAX_ITERATIONS = 10;
 
-/**
- * Activity journal interface for audit logging
- */
-/**
- * Executes a single flow step in dynamic (ReAct) mode.
- * The model iteratively selects tools from step.permitted_tools,
- * observes results, and continues until the objective is met.
- *
- * Invariant: only tools in DYNAMIC_MODE_TOOLS (derived from the canonical manifest)
- * may appear in the effective permitted_tools.
- * This is enforced at load time by FlowLoader and validated here defensively.
- */
+/** Invariant: only tools in DYNAMIC_MODE_TOOLS (derived from the canonical manifest) may
+ *  appear in the effective permitted_tools — enforced at load time by FlowLoader and
+ *  validated here defensively. */
 export class DynamicStepExecutor {
   private emitMilestoneFn?: (milestone: IExecutionMilestone) => Promise<void>;
 
@@ -102,7 +94,7 @@ export class DynamicStepExecutor {
     private readonly hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>,
     private readonly dynamicModeTools: ReadonlySet<string> = new Set(),
     private readonly dynamicModeApprovalTools: ReadonlySet<string> = new Set(),
-    /** Per-call model options (thinking/effort/max_tokens) forwarded on every ReAct generate (Phase 132 GAP-9). */
+    /** Per-call model options (thinking/effort/max_tokens) forwarded on every ReAct generate. */
     private readonly callOptions?: Opt<IModelCallOptions, Reason.OptionalInput>,
   ) {
     this.emitMilestoneFn = milestoneEmitter?.emit.bind(milestoneEmitter);
@@ -159,8 +151,7 @@ export class DynamicStepExecutor {
         availableTools: toolsMetadata,
         iteration: iterations,
         maxIterations,
-        // Phase 132 (GAP-9): forward the resolver's per-call options (thinking/effort);
-        // undefined is backward compatible with the no-options signature.
+        // Forward the resolver's per-call options; undefined is backward compatible.
         options: this.callOptions,
       });
 
@@ -302,12 +293,8 @@ export class DynamicStepExecutor {
     };
   }
 
-  /**
-   * Resolves the effective permitted_tools for a step:
-   * 1. Start with identity blueprint's permitted_tools
-   * 2. Narrow to step's permitted_tools if specified
-   * 3. Filter to READ_ONLY_TOOLS only (defensive runtime enforcement)
-   */
+  /** Identity's permitted_tools, narrowed to the step's if specified, then filtered to
+   *  READ_ONLY_TOOLS (defensive runtime enforcement). */
   protected resolvePermittedTools(
     step: IFlowStep,
     identity: IBlueprintFrontmatter,

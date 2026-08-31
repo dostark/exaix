@@ -140,7 +140,7 @@ Deno.test("[step132.4][dynamic-model] FlowRunner without modelResolver completes
   }
 });
 
-// ── Phase 163 Step 6: lazy-executor propagation to the step handler ───────────
+// Lazy-executor propagation to the step handler
 
 /** ReAct completion fixture whose prompt preview matches the dynamic step's ReAct prompt. */
 const REACT_COMPLETE_FIXTURE = {
@@ -285,7 +285,7 @@ Deno.test(
   },
 );
 
-// ── Phase 132 GAP-9: per-call options reach the dynamic ReAct generate() ──────────
+// Per-call options reach the dynamic ReAct generate()
 
 class CapturingLlm implements ILlmClient {
   lastOptions: IModelCallOptions | undefined;

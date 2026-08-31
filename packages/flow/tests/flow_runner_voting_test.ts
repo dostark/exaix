@@ -24,9 +24,7 @@ function toSeamPlaceholder(registry: FlowStepHandlerRegistry): ISeamRegistryPlac
   return registry;
 }
 
-// ============================================================
 // Test doubles
-// ============================================================
 
 class StubAgentExecutor implements IAgentExecutor {
   callCount = 0;
@@ -60,9 +58,7 @@ class ScriptedExecutor implements IExecutor {
   }
 }
 
-// ============================================================
 // Flow factories
-// ============================================================
 
 function makeVotingFlow(): IFlow {
   const flow: IFlowInput = {
@@ -156,9 +152,7 @@ function makeAgentFlow(stepId = "step1"): IFlow {
   return flow as IFlow;
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test("[FlowRunner] voting_group routes to VotingStepHandler via capability module", async () => {
   const agentExecutor = new StubAgentExecutor();

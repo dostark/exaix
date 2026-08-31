@@ -103,7 +103,7 @@ function createFlow(
   return flow;
 }
 
-// ===== Tests for flow.output validation =====
+// Tests for flow.output validation
 
 Deno.test("FlowValidatorImpl: validates flow without output configuration", async () => {
   const loader = new MockFlowLoader();
@@ -146,7 +146,7 @@ Deno.test("FlowValidatorImpl: fails for flow with missing output.from", async ()
   assertStringIncludes(result.error ?? "", "invalid output configuration");
 });
 
-// ===== Tests for agent field validation =====
+// Tests for agent field validation
 
 Deno.test("FlowValidatorImpl: fails for step with non-string agent", async () => {
   const loader = new MockFlowLoader();
@@ -190,7 +190,7 @@ Deno.test("FlowValidatorImpl: fails for step with undefined agent", async () => 
   assertStringIncludes(result.error ?? "", "invalid identity");
 });
 
-// ===== Tests for error handling =====
+// Tests for error handling
 
 Deno.test("FlowValidatorImpl: handles loader error with Error instance", async () => {
   const loader = new MockFlowLoader();
@@ -231,7 +231,7 @@ Deno.test("FlowValidatorImpl: handles loader error with 'Agent reference cannot 
   assertEquals(result.error, "IFlow 'empty-agent-error' has invalid agent");
 });
 
-// ===== Tests for steps array edge cases =====
+// Tests for steps array edge cases
 
 Deno.test("FlowValidatorImpl: fails for flow with null steps", async () => {
   const loader = new MockFlowLoader();
@@ -259,7 +259,7 @@ Deno.test("FlowValidatorImpl: fails for flow with undefined steps", async () => 
   assertStringIncludes(result.error ?? "", "at least one step");
 });
 
-// ===== Tests for multiple steps =====
+// Tests for multiple steps
 
 Deno.test("FlowValidatorImpl: validates flow with multiple valid steps", async () => {
   const loader = new MockFlowLoader();
@@ -295,7 +295,7 @@ Deno.test("FlowValidatorImpl: fails when second step has invalid agent", async (
   assertStringIncludes(result.error ?? "", "invalid identity");
 });
 
-// ===== Tests for dependency validation edge cases =====
+// Tests for dependency validation edge cases
 
 Deno.test("FlowValidatorImpl: handles dependency resolver throwing non-Error", async () => {
   const loader = new MockFlowLoader();
@@ -312,7 +312,7 @@ Deno.test("FlowValidatorImpl: handles dependency resolver throwing non-Error", a
   assertStringIncludes(result.error ?? "", "invalid dependencies");
 });
 
-// ===== Tests for output.from references =====
+// Tests for output.from references
 
 Deno.test("FlowValidatorImpl: validates flow with output.from referencing last step", async () => {
   const loader = new MockFlowLoader();
@@ -342,7 +342,7 @@ Deno.test("FlowValidatorImpl: validates flow with output.from referencing first 
   assertEquals(result.valid, true);
 });
 
-// ===== Test for complete error path coverage =====
+// Test for complete error path coverage
 
 Deno.test("FlowValidatorImpl: outer catch handles unexpected errors", async () => {
   const brokenLoader = new MockFlowLoader();

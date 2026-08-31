@@ -141,11 +141,8 @@ export class FlowValidatorImpl implements IFlowValidator {
     return null;
   }
 
-  /**
-   * Enforces that every step's identity resolves to a blueprint in the deployed catalog.
-   * Gated on the catalog directory existing: a validator built without a real catalog path
-   * (e.g. in-memory tests) only enforces the schema-level non-empty check above.
-   */
+  /** Gated on the catalog directory existing: a validator built without a real catalog
+   *  path (e.g. in-memory tests) only enforces the schema-level non-empty check above. */
   private async validateStepIdentitiesExist(flowId: string, steps: IFlowStep[]): Promise<string | null> {
     if (!(await exists(this.blueprintsPath))) return null;
     for (const step of steps) {

@@ -90,13 +90,8 @@ export class FlowRuntimeValidator {
     return null;
   }
 
-  /**
-   * Belt-and-suspenders runtime check mirroring the `FlowStepSchema` refine (Phase 159
-   * Step 1): a step declaring `strategy` while `execution_mode` is DYNAMIC, or on a
-   * non-agent step type, is rejected before any wave is scheduled. The schema is the
-   * single source of truth for allowed values; this catches a flow loaded from a source
-   * that bypassed schema validation.
-   */
+  /** Belt-and-suspenders runtime check mirroring the `FlowStepSchema` refine — catches a
+   *  flow loaded from a source that bypassed schema validation. */
   validateStepStrategy(flow: IFlow): string | null {
     for (const step of flow.steps) {
       if (step.strategy === undefined) continue;
@@ -110,12 +105,8 @@ export class FlowRuntimeValidator {
     return null;
   }
 
-  /**
-   * Validates that every step's identity resolves to a real blueprint before any wave is
-   * scheduled. Covers the hand-off target of every dependency edge as well, since the whole
-   * step list is checked — a flow whose next step references a missing identity is rejected
-   * up front instead of failing mid-execution with "Blueprint not found".
-   */
+  /** The whole step list is checked, so a flow whose next step references a missing
+   *  identity is rejected up front instead of failing mid-execution. */
   async validateStepIdentities(
     flow: IFlow,
     hasBlueprint: (identityId: string) => Promise<boolean>,

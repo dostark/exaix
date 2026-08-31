@@ -9,11 +9,6 @@ import { FlowOutputFormat, FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
-/**
- * FlowRunner routes execution_mode: dynamic steps to DynamicStepExecutor and declared steps
- * through the existing path; legacy flows without execution_mode see no behavior change.
- */
-
 Deno.test("FlowRunner: step with execution_mode dynamic identified", () => {
   // This test verifies step identification
   const dynamicStep: IFlowStepInput = {

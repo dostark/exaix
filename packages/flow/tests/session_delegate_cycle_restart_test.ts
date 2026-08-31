@@ -154,7 +154,7 @@ function makeHandler(opts: {
   });
 }
 
-// ─── Restart integration: four crash points ────────────────────────────────
+// Restart integration: four crash points
 
 Deno.test("[restart integration] crash before claim recovers with a single fresh launch", async () => {
   const traceId = crypto.randomUUID();
@@ -300,7 +300,7 @@ Deno.test("[restart integration] crash after return/before review reviews the st
   assertEquals(finalCheckpoint?.status, "completed");
 });
 
-// ─── Race: duplicate handler entry ─────────────────────────────────────────
+// Race: duplicate handler entry
 
 Deno.test("[race] duplicate handler entry for the same idempotency tuple launches at most one delegate", async () => {
   const traceId = crypto.randomUUID();
@@ -323,7 +323,7 @@ Deno.test("[race] duplicate handler entry for the same idempotency tuple launche
   assertEquals(typeof resultB.raw, "string");
 });
 
-// ─── Security: forged/changed checkpoint identity ──────────────────────────
+// Security: forged/changed checkpoint identity
 
 Deno.test("[security] a changed plan digest cannot reuse the persisted checkpoint", async () => {
   const traceId = crypto.randomUUID();
@@ -371,7 +371,7 @@ Deno.test("[security] cycle lifecycle events carry no prompt text or absolute ho
   assertEquals(serialized.includes("do 1"), false, "no plan section prose in any cycle event payload");
 });
 
-// ─── Negative: cancellation/expiry/rejection persists failure, never advances ──
+// Negative: cancellation/expiry/rejection persists failure, never advances
 
 for (
   const status of ["cancelled", "expired", "rejected"] as const

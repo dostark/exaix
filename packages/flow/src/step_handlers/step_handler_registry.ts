@@ -8,10 +8,7 @@
 
 import type { IFlowStepHandler, IFlowStepHandlerRegistry } from "./step_handler.ts";
 
-/**
- * Map-based registry for flow step handlers.
- * Thread-safe for reads after all registration is complete (registration happens at init).
- */
+/** Thread-safe for reads after all registration is complete (registration happens at init). */
 export class FlowStepHandlerRegistry implements IFlowStepHandlerRegistry {
   readonly #handlers = new Map<string, IFlowStepHandler>();
 
@@ -19,10 +16,7 @@ export class FlowStepHandlerRegistry implements IFlowStepHandlerRegistry {
     this.#handlers.set(handler.stepType, handler);
   }
 
-  /**
-   * Register a handler under a specific key, overriding its stepType.
-   * Useful for aliasing (e.g. AgentStepHandler for BRANCH and CONSENSUS).
-   */
+  /** Useful for aliasing (e.g. AgentStepHandler for BRANCH and CONSENSUS). */
   registerWithKey(key: string, handler: IFlowStepHandler): void {
     this.#handlers.set(key, handler);
   }

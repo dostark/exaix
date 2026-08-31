@@ -158,7 +158,7 @@ function makeCtx(): IStepExecutionContext {
   } as IStepExecutionContext;
 }
 
-// ─── Sequencing ─────────────────────────────────────────────────────────────
+// Sequencing
 
 Deno.test("[unit] a three-step plan produces exactly three non-overlapping coordinator calls in order", async () => {
   const coordinator = new RecordingCoordinator(
@@ -212,7 +212,7 @@ Deno.test("[unit] step N+1 is not invoked until step N's review promise resolves
   await resultPromise;
 });
 
-// ─── Negative: every halt class stops before N+1 ───────────────────────────
+// Negative: every halt class stops before N+1
 
 async function assertHaltsBeforeNextStep(
   outcomeForStepOne: ISessionDelegationOutcome,
@@ -259,7 +259,7 @@ Deno.test("[negative] a failed-review outcome halts before step 2", async () => 
   await assertHaltsBeforeNextStep(completedOutcome(1), gateEvaluator);
 });
 
-// ─── Security: plan ceilings fail before the first launch ─────────────────
+// Security: plan ceilings fail before the first launch
 
 Deno.test("[security] an oversized plan fails before the first launch", async () => {
   const coordinator = new RecordingCoordinator((sequence) => completedOutcome(sequence));

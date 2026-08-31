@@ -16,9 +16,7 @@ import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } fro
 import { AnalysisMode } from "@exaix/core/types";
 import { ANALYZER_VERSION } from "@exaix/core";
 
-// ============================================================
 // Mock infrastructure
-// ============================================================
 
 class TrackingAgentExecutor implements IAgentExecutor {
   invoked = false;
@@ -112,9 +110,7 @@ function makeGateFlow(includeRequestCriteria = false): IFlow {
   return flow as IFlow;
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test("[FlowRunner] dispatches gate steps to GateEvaluator", async () => {
   const mockJudge = new MockJudgeInvoker();

@@ -33,12 +33,8 @@ class NoOpReplayPolicy implements IStepReplayPolicy {
   }
 }
 
-// `save resolves without error` sat here, constructing a fifteen-field durability record in order
-// to call a NO-OP store's save() and assert nothing. A method defined to do nothing doing nothing
-// is not a fact worth a test, and the record shape had to be maintained in step with the interface
-// for no return. `invalidate resolves without error` was the same shape and is also gone. What
-// remains below is the behaviour that can actually differ: what the no-op store RETURNS, and that
-// it satisfies the interface.
+// Only what can actually differ is tested here: what the no-op store RETURNS, and that it
+// satisfies the interface — not that a no-op method does nothing.
 Deno.test("NoOpDurabilityStore: findReplayCandidate returns null", async () => {
   const store = new NoOpDurabilityStore();
   const result = await store.findReplayCandidate({

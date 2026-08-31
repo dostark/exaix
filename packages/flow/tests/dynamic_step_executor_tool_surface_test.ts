@@ -18,7 +18,7 @@ import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 
-// ── Minimal stubs ──────────────────────────────────────────────────────────────
+// Minimal stubs
 
 class CapturingMcpClient implements IMcpClient, IToolManifestResolver {
   capturedTools: McpToolName[] = [];
@@ -67,7 +67,7 @@ class NoopJournal implements IActivityJournal {
 // All McpToolName values the identity says it can use
 const allToolNames = Object.values(McpToolName) as McpToolName[];
 
-// ── Constant tests ─────────────────────────────────────────────────────────────
+// Constant tests
 
 Deno.test("DYNAMIC_MODE_TOOLS derives exactly from manifest dynamic_mode_allowed entries", () => {
   const manifestDerivedDynamic = new Set(
@@ -99,7 +99,7 @@ Deno.test("DYNAMIC_MODE_TOOLS excludes write and git mutation tools", () => {
   assertFalse(DYNAMIC_MODE_TOOLS.has(McpToolName.RUN_COMMAND));
 });
 
-// ── DynamicStepExecutor behavioural tests ─────────────────────────────────────
+// DynamicStepExecutor behavioural tests
 
 Deno.test(
   "DynamicStepExecutor resolves permitted tools from canonical manifest set, not arbitrary identity list",

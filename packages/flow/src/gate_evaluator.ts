@@ -56,21 +56,12 @@ export class GateEvaluator implements IGateEvaluator {
     private criteriaGenerator: ICriteriaGeneratorService = new CriteriaGenerator(),
   ) {}
 
-  /**
-   * Evaluate a gate step
-   *
-   * @param config - Gate configuration
-   * @param contentToEvaluate - Content to evaluate from previous step
-   * @param context - Original request context
-   * @param previousAttempts - Number of previous evaluation attempts
-   * @param requestAnalysis - Optional analysis used to generate dynamic criteria
-   */
   async evaluate(
     config: IGateConfig,
     contentToEvaluate: string,
-    context?: string,
+    context?: Opt<string, Reason.OptionalContext>,
     previousAttempts: number = 0,
-    requestAnalysis?: IRequestAnalysis,
+    requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<IGateResult> {
     const startTime = performance.now();
 
@@ -276,7 +267,7 @@ export class MockJudgeInvoker implements IJudgeInvoker {
     identityId: string,
     _content: string,
     criteria: EvaluationCriterion[],
-    _context?: string,
+    _context?: Opt<string, Reason.AbstractBoundary>,
   ): Promise<EvaluationResult> {
     // Check for specific mock result
     const mockResult = this.mockResults.get(identityId);

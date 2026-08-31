@@ -107,10 +107,6 @@ class MockActivityJournal implements IActivityJournal {
   }
 }
 
-/**
- * Tests for Phase 56 Step 3: DynamicStepExecutor
- */
-
 Deno.test("DynamicStepExecutor: successful execution with tool calls", async () => {
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();

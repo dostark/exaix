@@ -49,11 +49,8 @@ function applyMergeAsContextTransform(input: string, transformArgs: Opt<JSONValu
     // Not JSON at all — the text path below handles it, like every other non-array shape.
   }
 
-  // Everything else is treated as text: paragraphs of prose, but also a JSON OBJECT, which is
-  // what an agent step actually emits. That case used to throw
-  // "mergeAsContext requires an array of strings" while unparseable prose was accepted — so
-  // valid JSON was worse input than arbitrary text, and every flow whose second step used this
-  // transform died on its predecessor's own output.
+  // Everything else is treated as text, including a JSON OBJECT (what an agent step
+  // actually emits) — that case used to throw while unparseable prose was accepted.
   return mergeAsContext(input.split("\n\n").filter((section) => section.trim()));
 }
 

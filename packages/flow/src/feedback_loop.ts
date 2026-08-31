@@ -102,28 +102,14 @@ export const FeedbackLoopConfigSchema = z.object({
 
 export type FeedbackLoopConfig = z.infer<typeof FeedbackLoopConfigSchema>;
 
-/**
- * FeedbackLoop - Implements iterative improvement through evaluation
- *
- * The Reflexion pattern:
- * 1. Generate initial response
- * 2. Evaluate against criteria
- * 3. If below target, generate improvement based on feedback
- * 4. Repeat until target reached or max iterations
- */
+/** The Reflexion pattern: generate, evaluate, improve on feedback, repeat until target
+ *  reached or max iterations. */
 export class FeedbackLoop {
   constructor(
     private gateEvaluator: GateEvaluator,
     private improvementAgent: IImprovementAgent,
   ) {}
 
-  /**
-   * Run feedback loop
-   *
-   * @param config - Loop configuration
-   * @param initialContent - Initial content to improve
-   * @param originalRequest - Original user request for context
-   */
   async run(
     config: FeedbackLoopConfig,
     initialContent: string,
@@ -386,13 +372,8 @@ export function createFeedbackLoop(
   return new FeedbackLoop(gateEvaluator, improvementAgent);
 }
 
-/**
- * Run a self-correcting agent pattern
- *
- * This is a convenience function that:
- * 1. Generates initial response
- * 2. Runs feedback loop until target or max iterations
- */
+/** Convenience function: generates an initial response, then runs the feedback loop
+ *  until target or max iterations. */
 export async function runSelfCorrectingAgent(
   config: ISelfCorrectingConfig,
   agentRunner: {

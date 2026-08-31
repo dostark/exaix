@@ -161,13 +161,8 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: extracts the <content> bloc
     const permissions = new PortalPermissionsService(config.portals!);
     await writeBlueprint(dbService.tempDir, "test-agent");
 
-    // Reproduces the Phase 159 Step 8 live finding: CliDelegateStrategy.execute() sets
-    // description: parsed.lastText — the model's RAW, unparsed response, thought/content
-    // wrapper included (it never calls OutputParser, unlike ReActLoopStrategy's
-    // createFinalResult). A flow's final step output is expected (flowStepOutputInstruction,
-    // flow_runner.ts) to have its <content> block extracted and parsed as plan JSON — feeding
-    // the whole raw thought+content text downstream fails with "Invalid JSON: Unexpected
-    // token '<'". The bridge must extract just the <content> body when present.
+    // Regression: CliDelegateStrategy sets description to the model's RAW response, but a
+    // flow's final step output expects the <content> block extracted and parsed as JSON.
     const rawThoughtContent = "<thought>\nSome reasoning about the task.\n</thought>\n\n" +
       '<content>\n{"subject": "Flow Step Output", "steps": []}\n</content>';
     const strategyRegistry = new StrategyRegistry();
@@ -348,13 +343,13 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId
     );
 
     const traceId = crypto.randomUUID();
-    // Step 1 writes and leaves its file uncommitted, mirroring a real CliDelegateStrategy run.
+    // First call writes and leaves its file uncommitted, mirroring a real CliDelegateStrategy run.
     await adapter.runWithStrategy!(
       "test-agent",
       makeStepRequest({ portal: "portal", traceId }),
       ExecutionStrategyName.REACT,
     );
-    // Step 2 (a fresh AgentOrchestrator, same traceId) must not see step 1's still-dirty file as unauthorized.
+    // A second call (fresh AgentOrchestrator, same traceId) must not see the earlier still-dirty file as unauthorized.
     const result = await adapter.runWithStrategy!(
       "test-agent",
       makeStepRequest({ portal: "portal", traceId }),
@@ -443,10 +438,9 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-t
     await writeBlueprint(dbService.tempDir, "test-agent");
 
     const strategyRegistry = new StrategyRegistry();
-    // The evictable trace writes a real, uncommitted file (observable eviction proof — see
-    // below). Filler traces target a SEPARATE, always-clean portal with a no-op spy — they
-    // must never touch the "portal" alias, or they'd immediately trip the (correct, pre-
-    // existing) cross-trace isolation check themselves, independent of eviction.
+    // The evictable trace writes a real, uncommitted file (observable eviction proof).
+    // Filler traces target a SEPARATE, always-clean portal with a no-op spy — they must
+    // never touch the "portal" alias, or they'd trip cross-trace isolation themselves.
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/evictable.ts");
     const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
@@ -477,10 +471,8 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-t
     }
 
     // A later call under the SAME evictedTraceId should now see src/evictable.ts (still
-    // physically uncommitted from the first call) as unauthorized, because its planWrittenFiles
-    // entry was evicted — a fresh, empty Set no longer records that file as legitimate. This is
-    // the same "Security violation" mechanism the cross-trace-isolation test above uses to prove
-    // isolation; here it proves eviction happened.
+    // physically uncommitted) as unauthorized, because its planWrittenFiles entry was
+    // evicted — proving eviction happened via the same mechanism cross-trace isolation uses.
     await assertRejects(
       () =>
         adapter.runWithStrategy!(
@@ -540,10 +532,8 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's
       ExecutionStrategyName.REACT,
     );
 
-    // Interleave more than PLAN_WRITTEN_FILES_TRACE_MAX filler trace_ids (clean portal) with a
-    // re-touch of activeTraceId (dirty portal, still authorized) after every filler call, so
-    // activeTraceId is always the most-recently-used entry and must never become the eviction
-    // candidate.
+    // Interleave filler trace_ids with a re-touch of activeTraceId after every filler call,
+    // so activeTraceId stays most-recently-used and must never become the eviction candidate.
     for (let i = 0; i < PLAN_WRITTEN_FILES_TRACE_MAX * 2; i++) {
       await adapter.runWithStrategy!(
         "test-agent",

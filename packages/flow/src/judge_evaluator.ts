@@ -55,10 +55,8 @@ export interface IAgentRunner {
   ): Promise<{ content: string }>;
 }
 
-/**
- * Wraps an agent runner to implement JudgeInvoker: builds evaluation prompts, invokes judge
- * agents, and parses/validates the JSON response (recovering from malformed JSON).
- */
+/** Builds evaluation prompts, invokes judge agents, and parses/validates the JSON
+ *  response (recovering from malformed JSON). */
 export class JudgeEvaluator implements IJudgeInvoker {
   constructor(private agentRunner: IAgentRunner) {}
 

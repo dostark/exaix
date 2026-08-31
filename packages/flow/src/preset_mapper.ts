@@ -10,13 +10,6 @@
 
 import type { ModelSize } from "@exaix/schemas";
 
-/**
- * Map a dynamicModel preset string to a ModelSize literal.
- * Returns undefined for unknown presets or undefined input.
- *
- * @param preset - The preset name ("small", "medium", "large", "xl", or undefined)
- * @returns The corresponding ModelSize, or undefined
- */
 export function mapPresetToSize(preset: string): ModelSize | undefined {
   switch (preset) {
     case "small":

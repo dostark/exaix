@@ -15,10 +15,7 @@ async function setupTestDir() {
   return await Deno.makeTempDir({ prefix: "exa-flow-" });
 }
 
-/**
- * Create a YAML flow fixture for testing.
- * Accepts partial flow content to test various valid/invalid scenarios.
- */
+/** Accepts partial flow content to test various valid/invalid scenarios. */
 function yamlFlowContent(overrides: {
   id?: string;
   name?: string;

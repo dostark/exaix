@@ -68,10 +68,8 @@ export interface IRunner {
   ): Promise<IAgentExecutionResult>;
 }
 
-/**
- * Dependencies for constructing a fresh, per-call `AgentOrchestrator` — never a shared
- * instance, since it carries mutable state (`planWrittenFiles`) that must not survive past one call.
- */
+/** For constructing a fresh, per-call `AgentOrchestrator` — never a shared instance, since
+ *  it carries mutable state (`planWrittenFiles`) that must not survive past one call. */
 export interface IAgentOrchestratorConstructionDeps {
   config: Config;
   db: IDatabaseService;
@@ -79,10 +77,8 @@ export interface IAgentOrchestratorConstructionDeps {
   permissions: PortalPermissionsService;
   provider?: IModelProvider;
   modelResolver?: ModelResolver;
-  /**
-   * Test-only escape hatch: inject a custom `StrategyRegistry` (e.g. spy strategies) to avoid
-   * a live provider/subprocess; production never sets this, so the default registry applies.
-   */
+  /** Test-only escape hatch: inject a custom `StrategyRegistry` (e.g. spy strategies) to
+   *  avoid a live provider/subprocess; production never sets this. */
   strategyRegistry?: StrategyRegistry;
 }
 

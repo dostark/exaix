@@ -16,9 +16,7 @@ import type { IStepExecutionContext } from "@exaix/flow";
 import { createMockLogger, initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 
-// ============================================================
 // Test doubles
-// ============================================================
 
 class SpyVotingService implements IVotingConsensusService {
   lastConfig?: VotingGroupConfig;
@@ -92,9 +90,7 @@ function makeMinimalCtx(step: IFlowStep = makeStep()): IStepExecutionContext {
   } as IStepExecutionContext;
 }
 
-// ============================================================
 // Tests
-// ============================================================
 
 Deno.test("[flow] VotingStepHandler invokes voting service with step config", async () => {
   const votingService = new SpyVotingService();

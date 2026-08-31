@@ -1825,7 +1825,7 @@ Deno.test("FlowRunner: handles aggregate output with concat format", async () =>
   assertEquals(result.output, "Output 1\nOutput 2");
 });
 
-// Condition evaluation tests (Phase 15.1)
+// Condition evaluation tests
 Deno.test("FlowRunner: executes step when condition evaluates to true", async () => {
   const steps: IFlowStepInput[] = [
     {
@@ -2049,9 +2049,7 @@ Deno.test("FlowRunner: handles condition syntax errors gracefully", async () => 
   );
 });
 
-// ============================================================================
-// Phase 17: Flow Skills Integration Tests
-// ============================================================================
+// Flow Skills Integration Tests
 
 // Mock IAgentRunner that captures requests to verify skills are passed
 class CapturingMockAgentRunner implements IAgentExecutor {
