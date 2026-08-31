@@ -44,10 +44,7 @@ export class GuardrailRunner implements IGuardrailRunner {
     this.#logger = logger;
   }
 
-  /**
-   * Screens agent output every Nth iteration (check_interval_iterations); final-output
-   * calls pass a large iteration sentinel to force screen_final_output handling.
-   */
+  /** Final-output calls pass a large iteration sentinel to force screen_final_output. */
   async screen(
     agentOutput: string,
     traceId: string,
