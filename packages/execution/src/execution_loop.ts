@@ -73,37 +73,28 @@ export interface IExecutionLoopConfig {
   llmProvider?: IModelProvider;
   amendmentService?: IPlanAmendmentService;
   amendmentGate?: IPlanAmendmentGate;
-  /**
-   * Phase 135 Step 9 (GAP-C9): threaded into PlanExecutor's IPlanExecutorOptions so
-   * AgentOrchestrator.resolveModelFromBlueprint's ModelResolver.resolve() branch is
-   * reachable during real plan execution.
-   */
+  /** Threaded into PlanExecutor's IPlanExecutorOptions so
+   *  AgentOrchestrator.resolveModelFromBlueprint's ModelResolver.resolve() branch is
+   *  reachable during real plan execution. */
   modelResolver?: ModelResolver;
-  /**
-   * Phase 135 Step 11 (GAP-10, context-window half): threaded into PlanExecutor's
-   * IPlanExecutorOptions so AgentOrchestrator's internally-constructed
-   * PromptBudgetAllocator resolves a step's real context window instead of always
-   * falling back to the hardcoded 128K default.
-   */
+  /** Threaded into PlanExecutor's IPlanExecutorOptions so AgentOrchestrator's internally-constructed
+   *  PromptBudgetAllocator resolves a step's real context window instead of always falling back to the
+   *  hardcoded 128K default. */
   modelRegistry?: IModelRegistry;
   reviewRegistry?: ReviewRegistry;
   context?: IApplicationContext;
   sessionMemory?: SessionMemoryService;
-  /** Optional guardrail runner for PlanExecutor (Phase 107). */
+  /** Optional guardrail runner for PlanExecutor. */
   guardrailRunner?: IGuardrailRunner;
-  /** Phase 118: Per-action HITL policy evaluator for ToolRegistry pipeline. */
+  /** Per-action HITL policy evaluator for ToolRegistry pipeline. */
   hitlPolicyEvaluator?: IHitlPolicyEvaluator;
-  /** Phase 118: Confirmation interceptor for HITL approval flow. */
+  /** Confirmation interceptor for HITL approval flow. */
   confirmationInterceptor?: IToolConfirmationInterceptor;
-  /** Phase 118: Blueprint-level HITL rules passed to ToolRegistry. */
+  /** Blueprint-level HITL rules passed to ToolRegistry. */
   hitlBlueprintRules?: HitlRule[];
-  /**
-   * Optional callback invoked when a code-changes delegation result is
-   * reconciled. Wired at daemon construction from HeadlessSessionLauncher;
-   * PlanExecutor calls this to delegate code-change steps to a foreign
-   * agent without importing the concrete launcher (layer-boundary seam).
-   * Phase 111 Step 8 wires the actual invocation.
-   */
+  /** Optional callback invoked when a code-changes delegation result is reconciled. Wired at daemon construction
+   *  from HeadlessSessionLauncher; PlanExecutor calls this to delegate code-change steps to a foreign agent
+   *  without importing the concrete launcher (layer-boundary seam). */
   onCodeChangesDelegate?: (
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
@@ -607,11 +598,9 @@ export class ExecutionLoop {
     return result;
   }
 
-  /**
-   * Phase 132 (GAP-4): extract the request's model intent from the plan frontmatter
-   * passthrough (PlanWriter writes it there), so native plan execution applies the same
-   * request overrides the delegation path resolves.
-   */
+  /** Extracts the request's model intent from the plan frontmatter passthrough
+   *  (PlanWriter writes it there), so native plan execution applies the same request
+   *  overrides the delegation path resolves. */
   private requestIntentFromPlanFrontmatter(frontmatter: PlanFrontmatter): Partial<IModelIntent> {
     const raw = this.toSafeFrontmatter(frontmatter);
     const intent: Partial<IModelIntent> = {};
@@ -624,10 +613,7 @@ export class ExecutionLoop {
     return intent;
   }
 
-  /**
-   * Parse action blocks from plan content
-   * Looks for code blocks with tool invocations in TOML format
-   */
+  /** Parses action blocks from plan content: code blocks with tool invocations in TOML format. */
   private parsePlanActions(planContent: string): IPlanAction[] {
     const actions: IPlanAction[] = [];
 

@@ -101,10 +101,8 @@ interface GeneratedOptions {
   tools?: IToolDefinition[];
   toolChoice?: { type: string; name?: string; disable_parallel_tool_use: boolean };
   priorTurn?: IProviderTurn;
-  /**
-   * "forced" means the preferred-tool branch chose this iteration's tool choice;
-   * "any" means the unconstrained fallback. Non-wire: ignored by provider request builders.
-   */
+  /** "forced" means the preferred-tool branch chose this iteration's tool choice; "any"
+   *  means the unconstrained fallback. Non-wire: ignored by provider request builders. */
   nativeToolChoiceMode?: NativeToolChoiceMode;
 }
 
@@ -321,10 +319,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     if (typeof path === "string" && path.length > 0) writtenFiles.add(path);
   }
 
-  /**
-   * Parse a native tool-use response into actions. Returns empty actions and
-   * isComplete=true when the model chose not to use any tool.
-   */
+  /** Parses a native tool-use response into actions. Returns empty actions and
+   *  isComplete=true when the model chose not to use any tool. */
   private parseNativeToolResponse(response: IGenerateResult): {
     toolCalls: IProviderToolCall[] | undefined;
     actions: IReActAction[];
@@ -341,11 +337,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return { toolCalls: undefined, actions: [], isComplete: true };
   }
 
-  /**
-   * Build the options object for provider.generate() when native tools are active.
-   * Includes tools, toolChoice (any + disable_parallel_tool_use), and priorTurn on
-   * iterations after the first. Returns base options when native tools are inactive.
-   */
+  /** Builds the options object for provider.generate() when native tools are active:
+   *  tools, toolChoice (any + disable_parallel_tool_use), and priorTurn on iterations
+   *  after the first. Returns base options when native tools are inactive. */
   private buildNativeGenerateOptions(
     nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>,
     nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
@@ -401,10 +395,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     );
   }
 
-  /**
-   * Journals the prompt_assembled event immediately before the provider-bound call —
-   * exactly one event per enabled iteration, none on the disabled path.
-   */
+  /** Journals the prompt_assembled event immediately before the provider-bound call —
+   *  exactly one event per enabled iteration, none on the disabled path. */
   private async emitPromptAssembledEvent(
     context: IExecutionContext,
     iteration: number,
@@ -648,10 +640,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     };
   }
 
-  /**
-   * Parse the provider response into thought, actions, and completion state.
-   * Dispatches to either the native-tools branch or the TOML-block branch.
-   */
+  /** Parses the provider response into thought, actions, and completion state.
+   *  Dispatches to either the native-tools branch or the TOML-block branch. */
   private parseIterationResponse(
     response: IGenerateResult,
     nativeToolsUsed: boolean,
@@ -707,11 +697,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     ) as IToolExecutionResult;
   }
 
-  /**
-   * Wraps an async operation with a heartbeat timer.
-   * Emits STREAMING_EVENT_HEARTBEAT every EXECUTION_HEARTBEAT_INTERVAL_MS
-   * while the operation is in flight. Timer is always cleared in finally.
-   */
+  /** Wraps an async operation with a heartbeat timer, emitting STREAMING_EVENT_HEARTBEAT
+   *  every EXECUTION_HEARTBEAT_INTERVAL_MS while in flight. Timer always cleared in finally. */
   private async withHeartbeat<T>(
     context: IExecutionContext,
     operation: () => Promise<T>,
@@ -746,11 +733,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }
   }
 
-  /**
-   * Applies IContextBudgetManager to the current iteration's history.
-   * Returns filtered history when the manager is configured, or the
-   * original history unchanged when it is absent (backward-compatible).
-   */
+  /** Applies IContextBudgetManager to the current iteration's history. Returns filtered
+   *  history when the manager is configured, or the original history unchanged when it
+   *  is absent (backward-compatible). */
   private async applyContextBudget(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
@@ -763,7 +748,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     const segments: IContextSegment[] = [];
 
-    // Per-segment cap for tool_result kind in dynamic mode (GAP-5).
+    // Per-segment cap for tool_result kind in dynamic mode.
     const toolResultCap = Math.floor(
       promptBudget.sections.loopHistory * REACT_TOOL_RESULT_BUDGET_RATIO,
     );
@@ -842,20 +827,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return history.filter((_, idx) => keptHistoryIds.has(`hist-${idx}-${context.trace_id}`));
   }
 
-  /**
-   * Tools visible to this iteration: `options.permitted_tools` when declared (an explicit
-   * empty array stays empty), else the default five — deduplicated. Computed once and
-   * reused for both the AVAILABLE TOOLS line and ACI rendering (Phase 112 Step 3).
-   */
+  /** Tools visible to this iteration: `options.permitted_tools` when declared (an explicit
+   *  empty array stays empty), else the default five — deduplicated. Computed once and
+   *  reused for both the AVAILABLE TOOLS line and ACI rendering. */
   private deriveVisibleToolIds(options: IAgentExecutionOptions): string[] {
     const requested = options.permitted_tools ?? DEFAULT_REACT_VISIBLE_TOOLS;
     return [...new Set(requested)];
   }
 
-  /**
-   * Renders this iteration's ACI guidance, or undefined when disabled. Pure with respect
-   * to this call: reads the executor's registry/budget getters, never mutates state.
-   */
+  /** Renders this iteration's ACI guidance, or undefined when disabled. Pure with respect
+   *  to this call: reads the executor's registry/budget getters, never mutates state. */
   private renderAciSection(visibleToolIds: string[]): { result: IAciRenderResult; budgetChars: number } | undefined {
     if (!this.executor.aciDocsEnabled) return undefined;
     const tools = this.executor.toolRegistry?.getTools() ?? [];
@@ -901,7 +882,7 @@ AVAILABLE TOOLS:
 ${visibleToolIds.join(", ")}`;
 
     // Segment 1.5: ACI tool guidance — appended in both prose and skipToolProse (native-tools)
-    // modes when enabled and at least one complete fragment was allocated (Phase 112 Step 3).
+    // modes when enabled and at least one complete fragment was allocated.
     if (aciSection && aciSection.fragmentCount > 0) {
       prompt += `
 
