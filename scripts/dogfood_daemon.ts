@@ -83,12 +83,9 @@ function getPidPath(): string {
   return join(getRuntimeDir(), "daemon.pid");
 }
 
-/**
- * Resolve the `--allow-net` flag from the dogfood config's `[system].allow_net`,
- * mirroring DaemonCommands.buildSpawnFlags (Phase 124 Step 2). Returns `null`
- * when outbound should be blocked (no flag emitted). GAP-2: an explicit empty
- * array blocks; a config-read error falls back to the open default list.
- */
+// Resolves the `--allow-net` flag from the dogfood config's `[system].allow_net`, mirroring
+// DaemonCommands.buildSpawnFlags. Returns `null` when outbound should be blocked: an
+// explicit empty array blocks, but a config-read error falls back to the open default list.
 /** Loosely-typed view of the `[system]` table we read for `allow_net`. */
 interface IParsedSystemTable {
   system?: { allow_net?: string[] };
@@ -105,7 +102,7 @@ export function resolveDogfoodNetFlag(configPath: string): string | null {
     return defaultFlag;
   }
   if (raw === undefined) return defaultFlag;
-  // GAP-12: validate the shape at runtime rather than trusting the cast. A
+  // Validate the shape at runtime rather than trusting the cast. A
   // malformed value (not an array, or non-string entries) falls back to default.
   if (!Array.isArray(raw) || !raw.every((h): h is string => typeof h === "string")) {
     return defaultFlag;
@@ -123,16 +120,14 @@ async function cmdStart(): Promise<void> {
   const configPath = getConfigPath();
   const logPath = join(runtimeDir, "daemon.log");
 
-  // GAP-6: single source of truth for the run allowlist — shared with
+  // Single source of truth for the run allowlist — shared with
   // DaemonCommands.buildSpawnFlags() so the two launch paths cannot drift.
   const allowRunBinaries = DAEMON_SPAWN_RUN_BINARIES.join(",");
   const netFlag = resolveDogfoodNetFlag(configPath);
 
-  // Phase 124 Step 2/5: the least-privilege flag set (never blanket --allow-all).
-  // Write scope is the daemon's data root (where it writes the journal, logs, and
-  // Workspace) AND the repo root (for any in-repo artifacts). Scoping to REPO_ROOT
-  // alone denies all writes when the daemon root is an out-of-repo sandbox (e.g.
-  // DOGFOOD_ROOT under /tmp) — caught by the Step 5 cutover.
+  // The least-privilege flag set (never blanket --allow-all). Write scope is the daemon's
+  // data root (journal, logs, Workspace) AND the repo root (in-repo artifacts) — scoping to
+  // REPO_ROOT alone denies all writes when the daemon root is an out-of-repo sandbox.
   const dataRoot = resolveRoot();
   const spawnFlags = [
     "--allow-read",

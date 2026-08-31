@@ -143,12 +143,9 @@ export function classifyShellStep(command: Opt<string, Reason.OptionalInput>, ar
   return "inline-script";
 }
 
-/** Analyze one scenario YAML document: every `type: shell` step is a declarative violation, and
- *  so is a `journal-assert` step carrying a raw SQL string in `args` (the step's declarative
- *  filter/projection/assertion fields are the sanctioned form). `run-script` may only invoke a
- *  framework helper via `deno` or `exactl` — a relabeled `bash`/`sh` is a hidden shell step. A
- *  hardcoded `.exa/worktrees/...` glob anywhere in a step is a portability violation: the
- *  framework-owned `$WORKTREE` token / relative globs are the sanctioned form. */
+// Analyze one scenario YAML document for declarative violations: `type: shell` steps, a
+// `journal-assert` with a raw SQL string in `args`, a `run-script` not invoking
+// `deno`/`exactl`, and a hardcoded `.exa/worktrees/...` glob (use `$WORKTREE` instead).
 export function analyzeScenarioYaml(text: string): IScenarioProceduralViolation[] {
   const scenario = parseYaml(text) as IScenarioShape;
   const lines = text.split("\n");

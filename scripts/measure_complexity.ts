@@ -20,7 +20,7 @@
  */
 import { walk } from "@std/fs";
 import { parse } from "@std/flags";
-import type { JSONObject } from "@exaix/core/types";
+import type { JSONObject, Opt, Reason } from "@exaix/core/types";
 // Import all parser candidates at the top-level (see CODE_STYLE.md for rationale)
 // Only use local or npm imports that are available and versioned
 import * as BabelParser1 from "@babel/parser";
@@ -82,13 +82,6 @@ export function getBabelParse(): BabelParseFn {
   throw babelParseError ?? new Error("Babel parser not loaded");
 }
 
-/**
- * Script to measure code complexity
- *
- * Usage:
- * deno run --allow-run --allow-read scripts/measure_complexity.ts [--threshold <num>]
- */
-
 const flags = parse(Deno.args, {
   string: ["threshold", "topFiles", "topFns"],
   boolean: ["json", "fail"],
@@ -101,12 +94,9 @@ const TOP_FNS = parseInt(String(flags.topFns || "5"), 10) || 5;
 const OUTPUT_JSON = !!flags.json;
 const SHOULD_FAIL = !!flags.fail;
 
-// AST-based cyclomatic complexity per-function using Babel parser.
-// Cyclomatic complexity heuristic:
-// - Start at 1 per function
-// - +1 for each: IfStatement, For/While/DoWhile/ForIn/ForOf, SwitchCase (with test), CatchClause,
-//   ConditionalExpression (ternary), LogicalExpression (||, &&)
-// We parse TypeScript/JS with @babel/parser and walk the AST.
+// AST-based cyclomatic complexity per function via @babel/parser: start at 1, +1 for each
+// IfStatement, For/While/DoWhile/ForIn/ForOf, SwitchCase (with test), CatchClause,
+// ConditionalExpression (ternary), or LogicalExpression (||, &&).
 
 type Node = IAstNode;
 type NodeValue = string | number | boolean | null | object;
@@ -129,7 +119,11 @@ export function computeFileComplexityMetrics(
   return { fileComplexity, fileComplexitySum, maxFnComplexity, topLevelComplexity };
 }
 
-export function traverse(node: Node, cb: (n: Node, parent?: Node) => void, parent?: Node): void {
+export function traverse(
+  node: Node,
+  cb: (n: Node, parent?: Node) => void,
+  parent?: Opt<Node, Reason.OptionalContext>,
+): void {
   if (!node || typeof node !== "object") return;
   cb(node, parent);
 

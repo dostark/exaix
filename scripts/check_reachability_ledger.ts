@@ -52,10 +52,9 @@ export interface IUnverifiedLedgerSymbol {
   reason: string;
 }
 
-/** A Reachability Ledger table row that does not match the canonical 5-column shape
- *  (`Symbol | Added in | Wiring step | Production call-site | Status`). Reported by
- *  `detectLedgerShapeWarnings` so a malformed table is surfaced instead of silently
- *  skipped by `parseReachabilityLedgerRows`. */
+// A Reachability Ledger table row that does not match the canonical 5-column shape
+// (`Symbol | Added in | Wiring step | Production call-site | Status`). Reported by
+// `detectLedgerShapeWarnings` instead of being silently skipped by `parseReachabilityLedgerRows`.
 export interface ILedgerShapeWarning {
   docPath: string;
   line: number;
@@ -69,13 +68,9 @@ const TABLE_ROW_PATTERN = /^\|.*\|$/;
 const CLOSED_STATUS = "✅";
 const TEST_FILE_PATTERN = /_test\.ts$/;
 
-/** A ledger row's Status cell counts as closed when it starts with the checkmark, not only
- *  when it is the bare checkmark alone — the repo's own established convention (`#next-steps`
- *  skill's own "Do" list) labels closed rows `✅ WIRED`/`✅ CORE <detail>`, and an exact-equality
- *  check silently treats every such row as still-open, auditing zero of them (Phase 154
- *  self-improvement-retro finding, discovered running `check:reachability-ledger` for real
- *  during the phase's own Phase Completion Gate — confirmed also affecting phase-111 and
- *  phase-121's own ledgers, not specific to one doc). */
+// A ledger row's Status cell counts as closed when it starts with the checkmark, not only
+// when it is the bare checkmark alone — established convention labels closed rows
+// `✅ WIRED`/`✅ CORE <detail>`, and exact-equality would treat all of them as still-open.
 export function isClosedStatus(status: string): boolean {
   return status.trim().startsWith(CLOSED_STATUS);
 }
@@ -87,12 +82,9 @@ function splitTableRow(line: string): string[] {
   return parts.slice(1, -1).map((cell) => cell.trim());
 }
 
-/**
- * Parses every "Reachability Ledger" table in a phase plan doc into rows. A doc may carry
- * more than one such table (e.g. a frozen historical snapshot alongside the live one) —
- * every table is parsed; callers only act on ✅ rows, and a frozen snapshot's rows are
- * conventionally left ⏳, so this does not double-count a closure.
- */
+// Parses every "Reachability Ledger" table in a phase plan doc into rows. A doc may carry
+// more than one such table (e.g. a frozen historical snapshot alongside the live one) —
+// every table is parsed; frozen-snapshot rows are conventionally left ⏳, so this never double-counts a closure.
 export function parseReachabilityLedgerRows(content: string, docPath: string): IReachabilityLedgerRow[] {
   const lines = content.split("\n");
   const rows: IReachabilityLedgerRow[] = [];
@@ -130,13 +122,9 @@ export function parseReachabilityLedgerRows(content: string, docPath: string): I
   return rows;
 }
 
-/**
- * Shape-check every Reachability Ledger table in a doc against the canonical 5-column
- * contract (`Symbol | Added in | Wiring step | Production call-site | Status`). A table
- * whose data rows do not parse to 5 cells is silently skipped by `parseReachabilityLedgerRows`
- * (phase-165's ledger was authored 3-column and the audit reported "0 closed rows" with no
- * warning), so this returns the offending doc/line to surface the format drift instead.
- */
+// Shape-check every Reachability Ledger table against the canonical 5-column contract
+// (`Symbol | Added in | Wiring step | Production call-site | Status`). A table whose data
+// rows don't parse to 5 cells is silently skipped elsewhere with no warning — this surfaces the offending doc/line.
 export function detectLedgerShapeWarnings(content: string, docPath: string): ILedgerShapeWarning[] {
   const lines = content.split("\n");
   const warnings: ILedgerShapeWarning[] = [];
@@ -205,13 +193,9 @@ export function extractCandidateFilenames(cellText: string): string[] {
 
 const EXPORT_DEFINITION_KEYWORDS = "function|const|class|interface|type|enum|abstract class";
 
-/**
- * Strips `/* ... *\/` block comments (including JSDoc module headers) and `//` line
- * comments so a symbol name merely *mentioned* in a comment — e.g. this very script's own
- * `@description` naming the functions it audits — never counts as a usage or a
- * definition. The `//` strip requires the preceding character not be `:`, a crude but
- * sufficient guard against truncating `https://` URLs inside string literals.
- */
+// Strips block comments and `//` line comments so a symbol merely *mentioned* in a comment
+// never counts as a usage or a definition. The `//` strip requires the preceding character
+// not be `:`, a crude but sufficient guard against truncating `https://` URLs in string literals.
 function stripComments(content: string): string {
   const withoutBlocks = content.replace(/\/\*[\s\S]*?\*\//g, "");
   return withoutBlocks.replace(/(^|[^:])\/\/[^\n]*/g, "$1");
@@ -258,10 +242,9 @@ export function findFilenameReferences(
     .map((f) => f.path);
 }
 
-/** True when any of the given files' (comment-stripped) content declares an
- *  `import.meta.main` entrypoint guard — such a file is invoked directly via `deno run`,
- *  not imported by another module, so "never imported elsewhere" is not a meaningful
- *  reachability signal for it. */
+// True when any of the given files' (comment-stripped) content declares an
+// `import.meta.main` entrypoint guard — such a file is invoked directly via `deno run`, so
+// "never imported elsewhere" is not a meaningful reachability signal for it.
 function isEntrypointScript(definitionFiles: string[], files: IFileRecord[]): boolean {
   const byPath = new Map(files.map((f) => [f.path, f.content]));
   return definitionFiles.some((path) => {
@@ -270,19 +253,9 @@ function isEntrypointScript(definitionFiles: string[], files: IFileRecord[]): bo
   });
 }
 
-/**
- * True when `identifier` is both defined in, and referenced a second time within, a file
- * that is itself an `import.meta.main` entrypoint — the common shape of every script this
- * repo already ships (`check_blueprint_integrity.ts`, `check_artefact_decision_coverage.ts`,
- * `run_value_comparison_report.ts`): a small exported helper called only from that same
- * file's entrypoint block. A single occurrence is just the `export` declaration; a second
- * occurrence is a real call from the file's own reachable entrypoint, even though no
- * _other_ file ever imports the symbol. Known imprecision, same class as the rest of this
- * tool: the second "occurrence" is a raw text match, so an identifier that happens to
- * appear inside a string literal (e.g. a log message) would also count — narrow and
- * unlikely, but a false negative, not a false positive, so it under- rather than
- * over-reports.
- */
+// True when `identifier` is both defined in, and referenced a second time within, a file
+// that is itself an `import.meta.main` entrypoint (a helper called only from its own
+// entrypoint block). The second "occurrence" is a raw text match, so this under- rather than over-reports.
 function isCalledFromOwnEntrypoint(identifier: string, definitionFiles: string[], files: IFileRecord[]): boolean {
   const byPath = new Map(files.map((f) => [f.path, f.content]));
   const pattern = new RegExp(`\\b${identifier}\\b`, "g");
@@ -294,14 +267,9 @@ function isCalledFromOwnEntrypoint(identifier: string, definitionFiles: string[]
   });
 }
 
-/**
- * Audits every ✅ row for candidate identifiers with no verifiable call-site. A candidate
- * that resolves to no `export` declaration anywhere is skipped, not flagged — it is most
- * likely a ledger label, a commit SHA, or prose, not a real code symbol this check can
- * verify. Test files never count as a usage site, regardless of whether `files` already
- * excludes them — filtered here so this function's guarantee does not depend on caller
- * discipline (`readTsFiles` also excludes them, for I/O efficiency, not correctness).
- */
+// Audits every ✅ row for candidate identifiers with no verifiable call-site. A candidate
+// with no `export` declaration anywhere is skipped, not flagged (likely a ledger label,
+// SHA, or prose). Test files never count as a usage site, regardless of caller filtering.
 export function auditLedgerRows(rows: IReachabilityLedgerRow[], files: IFileRecord[]): IUnverifiedLedgerSymbol[] {
   const findings: IUnverifiedLedgerSymbol[] = [];
   const productionFiles = files.filter((f) => !TEST_FILE_PATTERN.test(f.path));

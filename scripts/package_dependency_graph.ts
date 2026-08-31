@@ -35,6 +35,7 @@
 
 import { parse } from "@std/flags";
 import { dirname, extname, fromFileUrl, join, normalize, relative } from "@std/path";
+import type { Opt, Reason } from "@exaix/core/types";
 
 type PackageDependencyFormat = "text" | "json" | "dot";
 
@@ -105,10 +106,7 @@ export interface IBoundaryReport {
   transitiveGroups: IBoundaryGroup[];
   /** External (jsr:, npm:, https:) specifiers directly imported by the target. */
   externalDirect: string[];
-  /**
-   * True when every dependency (direct and transitive) is either package-owned
-   * or external — no retired src/ composition-layer modules appear in the fan-out.
-   */
+  /** True when every dependency (direct and transitive) is either package-owned or external — no retired src/ composition-layer modules appear in the fan-out. */
   extractable: boolean;
   /** Total count of retired src/ modules in the full transitive fan-out. */
   srcDepsCount: number;
@@ -616,7 +614,10 @@ function findCanonicalPackageAlias(root: string, aliasMap: Record<string, string
   return undefined;
 }
 
-export function toRepoPath(specifier: string, baseModulePath?: string): string | undefined {
+export function toRepoPath(
+  specifier: string,
+  baseModulePath?: Opt<string, Reason.OptionalContext>,
+): string | undefined {
   if (specifier.startsWith("file://")) {
     try {
       const localPath = fromFileUrl(new URL(specifier));
@@ -744,7 +745,7 @@ export function renderBoundaryReport(report: IBoundaryReport): string {
     "",
   ];
 
-  function renderGroups(groups: IBoundaryGroup[], label: string, extra?: string[]) {
+  function renderGroups(groups: IBoundaryGroup[], label: string, extra?: Opt<string[], Reason.OptionalInput>) {
     lines.push(`${label}:`);
     if (groups.length === 0 && (!extra || extra.length === 0)) {
       lines.push("  (none)");

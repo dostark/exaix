@@ -51,12 +51,7 @@ export interface IMdPathViolation {
   reference: string;
   /** Repo-relative (or MD-relative, for links) path the basename resolves to — if unique. */
   suggestion?: string;
-  /**
-   * True when the reference is a navigational LINK (a markdown `[text](path)` target
-   * or a `./`/`../` relative path). Only link-style refs are eligible for --fix, since
-   * bare-prose/backtick example paths are frequently illustrative placeholders whose
-   * single-basename match is not a reliable rename target.
-   */
+  /** True for a navigational LINK (`[text](path)` or `./`/`../`); only link-style refs are --fix-eligible, since bare-prose paths are often illustrative placeholders and an unreliable rename target. */
   isLink: boolean;
 }
 
@@ -97,11 +92,7 @@ export interface IMdPathResult {
 export interface ICheckOptions {
   /** Skip the exaix-dev-docs submodule (used by the parent-repo pre-commit gate). */
   parentOnly?: boolean;
-  /**
-   * Restrict violations to this set of repo-relative markdown files. Used by the
-   * pre-commit "ratchet" so only staged/changed docs block; pre-existing drift in
-   * untouched files is not enforced. The basename index still spans the whole repo.
-   */
+  /** Used by the pre-commit "ratchet" so only staged/changed docs block; pre-existing drift in untouched files is not enforced. The basename index still spans the whole repo. */
   onlyFiles?: Set<string>;
 }
 
@@ -162,12 +153,7 @@ function cleanTarget(ref: string): string {
   return ref.trim().split("#")[0].split(" ")[0];
 }
 
-/**
- * A minimal CommonMark fenced-code-block tracker for line-oriented markdown scans.
- * Shared by `extractHeadings` here and by `scripts/check_doc_section_refs.ts`, so a
- * `# step-manifest` (or any heading-shaped) line inside a yaml fence is never mistaken
- * for a real heading in either checker.
- */
+/** Shared by `extractHeadings` here and by `scripts/check_doc_section_refs.ts`, so a heading-shaped line inside a yaml fence is never mistaken for a real heading in either checker. */
 export class FenceTracker {
   #marker = "";
 
@@ -218,13 +204,7 @@ export function slugify(headingText: string): string {
 
 const HEADING_OVERRIDE_RE = /\s*\{#([a-zA-Z0-9_-]+)\}\s*$/;
 
-/**
- * Extract ATX headings (`#` … `######`) from markdown text, honoring an explicit
- * `{#custom-id}` anchor override — a convention already used throughout this repo
- * (e.g. CODE_STYLE.md's `## 2. No Magic Numbers or Strings {#no-magic-values}`) — and
- * GitHub's duplicate-slug disambiguation (`-1`, `-2`, …). Fenced code blocks are
- * skipped so a heading-shaped line inside a fence is never captured.
- */
+/** Honors an explicit `{#custom-id}` anchor override and GitHub's duplicate-slug disambiguation (`-1`, `-2`, …); fenced code blocks are skipped so a heading-shaped line inside one is never captured. */
 export function extractHeadings(text: string): IHeading[] {
   const headings: IHeading[] = [];
   const seenSlugs: Record<string, number> = {};
@@ -269,11 +249,7 @@ function looksLikeRepoPath(token: string): boolean {
   return hasReferableExt(token);
 }
 
-/**
- * True when a line looks like an (unfenced) shell command, where a bare path is part
- * of the command and must NOT be flagged/wrapped — backticks would change its meaning
- * (in shells backticks are command substitution) and break copy-paste.
- */
+/** A bare path here must NOT be flagged/wrapped — backticks are shell command substitution and would break copy-paste. */
 function looksLikeShellCommandLine(line: string): boolean {
   const t = line.trim();
   return (
@@ -297,11 +273,7 @@ function pathTokensFromSpan(span: string): string[] {
   return tokens;
 }
 
-/**
- * Markdown files that are NOT documentation cross-references and must be skipped:
- * scenario-framework request fixtures are agent task PROMPTS that legitimately name
- * files which may not exist in this repo.
- */
+/** Scenario-framework request fixtures are agent task PROMPTS that legitimately name files which may not exist in this repo. */
 function isNonDocMarkdown(relPath: string): boolean {
   return (
     relPath.includes("scenario_framework/fixtures/") ||
@@ -455,13 +427,7 @@ function referenceResolves(root: string, mdFileAbs: string, refWithAnchor: strin
   return false;
 }
 
-/**
- * Validate one anchor-bearing link target against its target file's real headings.
- * Returns `null` when the anchor resolves, when the target file itself is stale
- * (already reported separately by the stale-path check — avoid double-reporting),
- * or when the target is not a markdown file (a `#fragment` on a `.ts`/`.json` target
- * is a different concept, out of scope here).
- */
+/** Returns `null` when the anchor resolves, when the target file is already stale (reported separately, to avoid double-reporting), or when the target isn't markdown. */
 async function checkAnchorRef(
   absRoot: string,
   mdFileAbs: string,
@@ -536,12 +502,7 @@ function isRelativeReference(ref: string): boolean {
   return ref.startsWith("./") || ref.startsWith("../");
 }
 
-/**
- * Compute the single unambiguous replacement path for a stale reference, if any.
- * The suggestion preserves the reference's STYLE: a relative link (`../x`) is
- * suggested relative to the MD file's own directory (so the link still renders
- * correctly), while a repo-root-style reference stays repo-root-relative.
- */
+/** Preserves the reference's STYLE: a relative link (`../x`) is suggested relative to the MD file's own directory so it still renders; a repo-root-style reference stays repo-root-relative. */
 function suggestFor(
   ref: string,
   mdFileRel: string,
@@ -629,11 +590,7 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
   };
 }
 
-/**
- * Wrap each resolvable bare prose path in backticks. Returns the number wrapped.
- * Only touches the exact bare-token occurrence (not already-backticked or linked
- * ones, which are never emitted as style violations).
- */
+/** Only touches the exact bare-token occurrence — already-backticked or linked paths are never emitted as style violations, so they're untouched. */
 export async function applyBacktickFix(root: string, styleViolations: IMdStyleViolation[]): Promise<number> {
   const absRoot = resolve(root);
   const byFile = new Map<string, IMdStyleViolation[]>();
@@ -663,10 +620,7 @@ export async function applyBacktickFix(root: string, styleViolations: IMdStyleVi
   return wrapped;
 }
 
-/**
- * Rewrite each violation that has an unambiguous single-match suggestion.
- * Returns the number of references rewritten.
- */
+/** Only rewrites violations with an unambiguous single-match suggestion. */
 export async function applyFix(root: string, violations: IMdPathViolation[]): Promise<number> {
   const absRoot = resolve(root);
   // Group by file so each file is read/written once. Only LINK-style refs with an

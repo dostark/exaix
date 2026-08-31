@@ -17,15 +17,9 @@ import { ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { copy, type CopyOptions } from "@std/fs/copy";
 
-/**
- * Source directories a **Solo** deploy copies into a standalone workspace. `packages-team/`
- * is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in an MIT Solo
- * deployment (edition separation). This is safe because the app entry points load
- * `@exaix-team/*` dynamically only inside the `editionType !== "solo"` branch, so a Solo run
- * never references Team modules (see apps/daemon/main.ts, apps/exactl/src/init.ts). The
- * deployed deno.json's `workspace[]` is rewritten to drop packages-team members (see
- * `stripTeamWorkspaceMembers`).
- */
+// Source directories a **Solo** deploy copies into a standalone workspace. `packages-team/`
+// is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in an MIT Solo
+// deployment. Safe because app entry points load `@exaix-team/*` only when editionType !== "solo".
 /** Minimal shape of a deno.json config the deploy rewrites (only `workspace` is touched). */
 export interface IDenoConfigShape {
   workspace?: string[];
@@ -37,11 +31,9 @@ export const WORKSPACE_COPY_DIRS: readonly string[] = [
   "migrations",
 ];
 
-/**
- * Remove `packages-team/*` entries from a deployed deno.json's `workspace` array so a Solo
- * deploy (which excludes packages-team/ source) does not reference absent workspace members.
- * Other config fields are preserved unchanged. Returns the rewritten config object.
- */
+// Remove `packages-team/*` entries from a deployed deno.json's `workspace` array so a Solo
+// deploy (which excludes packages-team/ source) does not reference absent workspace members.
+// Other config fields are preserved unchanged.
 export function stripTeamWorkspaceMembers<T extends IDenoConfigShape>(denoConfig: T): T {
   if (!Array.isArray(denoConfig.workspace)) return denoConfig;
   return {

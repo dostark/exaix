@@ -126,7 +126,7 @@ function parseSteps(content: string): ParsedStep[] {
 function extractManifest(sectionText: string): ManifestRecord | null {
   // Scan ALL yaml fences in the section and select the one carrying the
   // `# step-manifest` marker, so an illustrative yaml fence appearing before the
-  // real manifest does not shadow it (GAP-20).
+  // real manifest does not shadow it.
   const fenceRegex = /```yaml\s*\n([\s\S]*?)```/g;
   let m: RegExpExecArray | null;
   while ((m = fenceRegex.exec(sectionText)) !== null) {

@@ -12,18 +12,15 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { MigrationDirection } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Env override letting a caller point migrations at the repo while CWD stays the workspace. */
 const ENV_MIGRATIONS_DIR = "EXA_MIGRATIONS_DIR";
 
-/**
- * Resolve the migrations source directory. The DB always lands in `<cwd>/.exa` (so the
- * daemon finds it in the workspace), but the migrations *source* may differ: a deployable
- * workspace has no `migrations/` dir, so `EXA_MIGRATIONS_DIR` lets the scenario framework
- * point at the repo's migrations. An unset/empty override falls back to `<cwd>/migrations`
- * (backward-compatible with the original contract).
- */
-export function resolveMigrationsDir(cwd: string, override: string | undefined): string {
+// Resolve the migrations source directory. The DB always lands in `<cwd>/.exa`, but the
+// migrations *source* may differ: a deployable workspace has no `migrations/` dir, so
+// `EXA_MIGRATIONS_DIR` lets the scenario framework point at the repo's migrations instead.
+export function resolveMigrationsDir(cwd: string, override: Opt<string, Reason.OptionalContext>): string {
   if (override && override.length > 0) return override;
   return join(cwd, "migrations");
 }

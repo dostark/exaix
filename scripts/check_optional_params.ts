@@ -124,16 +124,9 @@ export function isOptType(param: ts.ParameterDeclaration): boolean {
   return typeName === "Opt";
 }
 
-/**
- * Check if a parameter declares optionality "bare" — i.e. WITHOUT the Opt<T, Reason>
- * wrapper — in either of the two semantically-equivalent forms:
- *   1. a `?` token:            `param?: T`
- *   2. a `| undefined` union:  `param: T | undefined` (incl. `T | null | undefined`)
- * Both mean "optional, no codified reason" and must be rewritten as `param?: Opt<T, Reason.*>`.
- * Opt-wrapped params (even `param?: Opt<T, R>` or an Opt whose inner type contains `undefined`)
- * are compliant and never flagged. A default-valued param (`param = x`) is a distinct,
- * intentional form and is out of scope here.
- */
+// Check if a parameter declares optionality "bare" — i.e. without the Opt<T, Reason>
+// wrapper — via a `?` token or a `| undefined` union; both must be rewritten as
+// `param?: Opt<T, Reason.*>`. A default-valued param (`param = x`) is out of scope here.
 export function hasBareOptional(param: ts.ParameterDeclaration): boolean {
   if (isOptType(param)) return false;
   if (param.questionToken) return true;
@@ -143,11 +136,9 @@ export function hasBareOptional(param: ts.ParameterDeclaration): boolean {
   return false;
 }
 
-/**
- * Build the BARE_OPTIONAL hint for a param, showing the exact Opt<T, Reason> rewrite for
- * whichever bare form it uses (`?` or `| undefined`). `typeText` is the rendered annotation
- * ("" when a `?`-param has no explicit type, e.g. `param?`).
- */
+// Build the BARE_OPTIONAL hint for a param, showing the exact Opt<T, Reason> rewrite for
+// whichever bare form it uses (`?` or `| undefined`). `typeText` is the rendered annotation
+// ("" when a `?`-param has no explicit type, e.g. `param?`).
 function bareOptionalMessage(p: { name: string; typeText: string; hasQuestionToken: boolean }): string {
   const inner = p.typeText.replace(/\s*\|\s*undefined\b/, "").trim();
   const q = p.hasQuestionToken ? "?" : "";
@@ -195,10 +186,8 @@ export function collectFunctions(
         ts.isConstructorDeclaration(node) || ts.isFunctionExpression(node))
     ) {
       // Named functions/methods keep their identifier so call-sites can match them.
-      // Constructors and anonymous function-expressions have no matchable call-name; give
-      // them a unique synthetic name so the caller-dependent rules (REDUNDANT/UNUSED) see
-      // zero callers and skip, while the caller-independent type-shape rules
-      // (BARE_OPTIONAL, MARKED_NOT_OPTIONAL) still run on their params.
+      // Constructors and anonymous function-expressions get a unique synthetic name so the
+      // caller-dependent rules (REDUNDANT/UNUSED) see zero callers and skip, while type-shape rules still run.
       const declaredName = node.name && ts.isIdentifier(node.name) ? node.name.text : null;
       const line = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
       const name = declaredName ?? `__anon@${sourceFile.fileName}:${line}`;
@@ -322,22 +311,16 @@ function matchCallsToFuncs(
   return matched;
 }
 
-/**
- * Caller-INDEPENDENT type-shape rules, run once over EVERY collected declaration (not the
- * call-matched representative). This matters because `matchCallsToFuncs` keeps only one decl
- * per function name; iterating that deduped set would silently miss same-named methods across
- * classes. These rules only inspect a param's own type shape, so they need no call sites.
- *   BARE_OPTIONAL — optional via a bare `?` or a bare `| undefined` union, not Opt<T, Reason>.
- *   MARKED_NOT_OPTIONAL — an Opt<T, Reason> wrapper on a param that is not actually optional.
- */
+// Caller-INDEPENDENT type-shape rules (BARE_OPTIONAL, MARKED_NOT_OPTIONAL), run once over
+// EVERY collected declaration rather than `matchCallsToFuncs`'s deduped-by-name set — that
+// dedup would silently miss same-named methods across classes.
 export function collectTypeShapeViolations(funcs: Map<string, IFuncDecl[]>): Violation[] {
   const violations: Violation[] = [];
   for (const decls of funcs.values()) {
     for (const decl of decls) {
-      // A param is "non-trailing" if any later param in the same signature is required
-      // (no `?`, no default). TypeScript forbids a `?` before a required param, so an
-      // Opt<T, Reason> in that position CANNOT carry a `?` — it is written bare and is the
-      // only valid form. Such params are exempt from MARKED_NOT_OPTIONAL below.
+      // A param is "non-trailing" if any later param in the same signature is required.
+      // TypeScript forbids a `?` before a required param, so an Opt<T, Reason> there cannot
+      // carry a `?` — it is written bare, and such params are exempt from MARKED_NOT_OPTIONAL below.
       const lastRequiredIndex = decl.params.reduce((acc, p, i) => (p.isOptional ? acc : i), -1);
       for (const p of decl.params) {
         if (p.bareOptional) {
@@ -523,15 +506,9 @@ async function stagedTsFiles(): Promise<string[]> {
     .map((l) => join(REPO_ROOT, l));
 }
 
-/**
- * Enforce ONLY the BARE_OPTIONAL rule on the staged file set — a FILE-level ratchet.
- * Whenever a `.ts` file is staged (added or modified), every bare-optional param in it must
- * adopt Opt<T, Reason> — where "bare-optional" is a `?` token OR a `| undefined` union (the two
- * are semantically equivalent), including ones that pre-date this change. This deliberately
- * drives cleanup of the grandfathered set: touching a file obliges converting its bare optionals.
- * The full-repo run reports them all as advisory (never fails), so untouched files are not
- * forced; only files you are already editing are held to the rule.
- */
+// Enforce ONLY the BARE_OPTIONAL rule on the staged file set — a FILE-level ratchet.
+// Whenever a `.ts` file is staged, every bare-optional param in it must adopt
+// Opt<T, Reason>, including pre-existing ones; the full-repo run reports them as advisory only.
 async function runStaged(): Promise<void> {
   const files = await stagedTsFiles();
   const funcs = new Map<string, IFuncDecl[]>();

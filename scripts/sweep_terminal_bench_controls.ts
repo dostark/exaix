@@ -35,12 +35,9 @@ const DEFAULT_CONCURRENCY = 4;
 const SWEEP_GIT_EMAIL = "external-bench-ingest@exaix.dev";
 const SWEEP_GIT_NAME = "external-bench-ingest";
 
-/** Runs `bin` with `args`, killed at `timeoutMs` (default matching
- *  `DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS` — the same bound the dockerless oracle-solution apply
- *  uses for the identical class of risk) — GAP-2: this is used for the jailed `docker run`
- *  verify invocation against externally-sourced, untrusted task content, which previously had
- *  no timeout at all and could hang the sweep indefinitely. Never throws on timeout: returns a
- *  non-zero, diagnosable result so callers can record a normal control failure. */
+// Runs `bin` with `args`, killed at `timeoutMs` (default matches
+// `DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS`, the same bound the dockerless oracle-solution apply
+// uses). Never throws on timeout: returns a non-zero, diagnosable result instead.
 export async function runCommand(
   bin: string,
   args: string[],
@@ -71,13 +68,9 @@ export async function runCommand(
   }
 }
 
-/**
- * Runs one control (null or reference) for a task: copies the vendored portal into a fresh
- * temp dir, optionally applies `reference.patch` via a synthetic base commit, then runs the
- * task's own `scoped_test_cmd` inside the eval-jail container (verify-only launch shape,
- * identical to `renderExternalBenchTaskTemplate`'s verify step) against a read-only
- * `oracle_tests` mount. Returns whether the verify command exited 0.
- */
+// Runs one control (null or reference) for a task, using the same verify-only launch shape
+// as `renderExternalBenchTaskTemplate`'s verify step. Returns whether the verify command
+// exited 0.
 async function runControl(
   options: {
     taskId: string;
@@ -139,11 +132,9 @@ async function runControl(
   }
 }
 
-/** One supported task's full null+reference control outcome. Contains any thrown error
- *  (malformed/missing task.json, a read failure, etc.) as a `sweep-error` result instead of
- *  propagating it — GAP-3: mirrors `ingestOneBatchTask`'s own per-task containment in the
- *  sibling ingest script, so one corrupted task never discards the rest of the sweep's
- *  already-completed results. */
+// One supported task's full null+reference control outcome. Contains any thrown error as a
+// `sweep-error` result instead of propagating it, mirroring `ingestOneBatchTask`'s per-task
+// containment so one corrupted task never discards the rest of the sweep's results.
 export async function sweepTask(
   entry: IManifestTaskEntry,
   fixturesDir: string,
@@ -236,8 +227,7 @@ function parseArgs(argv: string[]): ISweepCliArgs {
     manifestPath: resolve(manifestPath),
     // docker --mount requires an absolute src path — a relative --fixtures-dir/--portals-dir
     // (the natural way to invoke this script from the repo root) otherwise fails at the
-    // daemon with "invalid mount path ... must be absolute" (found via a real sweep run,
-    // Phase 144 Step 5).
+    // daemon with "invalid mount path ... must be absolute".
     fixturesDir: resolve(fixturesDir),
     portalsDir: resolve(portalsDir),
     concurrency: flags["concurrency"] ? Number.parseInt(flags["concurrency"], 10) : DEFAULT_CONCURRENCY,

@@ -65,17 +65,9 @@ async function runParallel(tasks: Array<{ cmd: string[]; desc: string }>): Promi
   return results.every((r) => r === true);
 }
 
-/**
- * The full static-analysis gate list, kept as ONE shared source so `checkCommand` and
- * `allCommand`'s Phase 1 cannot silently drift apart from each other or from the real
- * pre-commit hook (`scripts/setup_hooks.ts`'s `PRE_COMMIT_CONTENT`) — see
- * `tests/scripts/ci_wiring_test.ts` for the parity regression tests that enforce this
- * (Phase 168 self-improvement-retro finding: 9 gates the hook enforced — check:magic,
- * check:runtime-artifacts, check:complexity, check:arch, docs-agent-validate, docs-bench,
- * check:event-strings, check:doc-section-refs:staged, check:event-coverage:staged:visible —
- * had never been added here, so a hook-clean commit could still fail `scripts/ci.ts all`'s
- * documented "run before completion" promise silently).
- */
+// The full static-analysis gate list, kept as ONE shared source so `checkCommand` and
+// `allCommand` cannot silently drift from each other or from the real pre-commit hook
+// (`scripts/setup_hooks.ts`) — see `tests/scripts/ci_wiring_test.ts` for the parity regression tests.
 const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "fmt:check"], desc: "Formatting Check" },
   { cmd: ["deno", "task", "lint"], desc: "Linting" },
@@ -184,10 +176,9 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
   const binDir = "dist/bin";
   await Deno.mkdir(binDir, { recursive: true });
 
-  // Edition determines the entry point and binary name prefix.
-  // Solo excludes packages-team/ + exaix-enterprise (not imported).
-  // Team includes packages-team/ but excludes exaix-enterprise.
-  // Enterprise builds the empty submodule scaffold.
+  // Edition determines the entry point and binary name prefix. Solo excludes packages-team/ +
+  // exaix-enterprise; Team includes packages-team/ but excludes exaix-enterprise; Enterprise
+  // builds the empty submodule scaffold.
   const editionConfigs: Record<string, { entry: string; prefix: string }> = {
     [EDITION_SOLO]: { entry: "apps/daemon/main.ts", prefix: "exaix" },
     [EDITION_TEAM]: { entry: "apps/daemon/main.ts", prefix: "exaix-team" },
@@ -363,27 +354,6 @@ async function verifyCoverage(edition: EditionType = EDITION_SOLO): Promise<bool
 
   const relevantStderr = filterCoverageWarnings(stderrText);
 
-  // Deno coverage output ends with "Covered 95.00% of lines ..." or similar?
-  // Actually standard deno coverage just lists files.
-  // We need to match lines like: "Covered 100.00% of ..."
-  // or summing it up manually?
-  // Let's rely on a regex for the summary line if it exists.
-  // Actually, recent Deno versions might not output a total summary line by default without lcov.
-  // Let's use lcov output and a simple regex for "LH:<found>,<hit>" lines? No that's complex.
-
-  // Alternative: Using a regex on the standard output for "Covered X%".
-  // Note: Deno's default text reporter prints per-file coverage.
-  // We might not get a global total easily without `deno coverage --lcov`.
-  // Let's implement a simplified check: Ensure NO file is below threshold? Or average?
-  // The requirement was "branch coverage drops below 80%". Deno coverage reports LINE coverage mostly.
-  // Let's stick to Line coverage for now as a proxy, and simply fail if ANY file is < 50% (start low) or if we can compute total.
-
-  // For now, let's just run the coverage command and print it,
-  // and maybe fail if we detect a specific failure string if we were using a tool.
-  // Since we don't have a robust parser yet, I will run the command and mark it as 'Manual Check'
-  // but explicitly fail if `test:coverage` fails.
-  // Use `deno coverage` output to show the user.
-
   if (covOutput.code !== 0) {
     if (relevantStderr.length > 0) {
       console.error(relevantStderr);
@@ -485,17 +455,9 @@ const allCommand = new Command()
     console.log(`\n🎉 CI Pipeline Completed Successfully in ${Date.now() - start}ms`);
   });
 
-/**
- * Fix unused named imports identified by `deno lint` (rule: no-unused-vars).
- *
- * Strategy:
- *  1. Run `deno lint --json` across all target paths.
- *  2. Collect every `no-unused-vars` diagnostic whose message matches
- *     "`<Name>` is never used" on an import line.
- *  3. For each affected file, remove the unused name(s) from the import
- *     statement(s), cleaning up trailing commas and empty braces.
- *  4. Optionally run `deno fmt` on changed files to normalise spacing.
- */
+// Fix unused named imports identified by `deno lint` (rule: no-unused-vars): run
+// `deno lint --json`, collect every `no-unused-vars` diagnostic on an import line, then
+// remove the unused name(s) from the import statement(s) (optionally running `deno fmt` after).
 async function fixUnusedImports(paths: string[], fmt: boolean): Promise<boolean> {
   console.log(`\n⏳ Scanning for unused imports in: ${paths.join(", ")}...`);
 

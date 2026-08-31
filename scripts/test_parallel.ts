@@ -27,37 +27,17 @@ const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
 
-/**
- * Batch 1 worker count: reuses an explicit `DENO_JOBS` the caller already exported,
- * otherwise matches `deno test --parallel`'s own built-in default (hardwareConcurrency).
- * A hardcoded worker count that exceeds the host's actual core count oversubscribes the
- * machine — Batch 1's CLI-integration tests each spawn `git`/`deno`/`bash` children, and
- * once concurrent spawn pressure from an oversubscribed worker pool outstrips what the OS
- * can service, subprocess creation fails transiently with
- * `NotFound: Failed to spawn '<bin>': entity not found` (observed on a 4-core WSL2 host
- * with the previous hardcoded DENO_JOBS=8 — 2x the available cores).
- */
+// Matches deno test --parallel's own default (hardwareConcurrency) rather than a
+// hardcoded value: oversubscribing the host's core count causes concurrent CLI-heavy
+// tests to fail spawning subprocesses transiently (observed on a 4-core WSL2 host).
 const BATCH1_WORKER_COUNT = Deno.env.get("DENO_JOBS") ?? String(navigator.hardwareConcurrency);
 
-/**
- * PIDs of currently-running `deno test` batch children, spawned `detached` (their own
- * process group) so a group-wide SIGTERM reaches every subprocess they spawn — including
- * daemon subprocesses booted by individual test files (bootRealDaemon, dogfood_e2e_test.ts,
- * etc.) three levels down. Without this, killing test_parallel.ts itself (Ctrl-C, an
- * external timeout) only ever reaches the immediate `deno test` child on Linux — a child
- * process's own children are never signaled when its parent is killed — leaving any daemon
- * subprocess already spawned by that child orphaned indefinitely with no supervisor left to
- * reap it (observed live: daemons with already-deleted tempdirs still running minutes later).
- */
+// PIDs of running `deno test` batch children, spawned `detached` so a group-wide
+// SIGTERM also reaches subprocesses they spawn (e.g. daemons booted by individual
+// test files) — a child's own children are not signaled when only the child is killed.
 const activeChildPids = new Set<number>();
 
-/**
- * Best-effort group-wide SIGTERM for every PID in `pids` (each treated as a process-group
- * leader, per `detached: true` at spawn time); never throws. Both `pids` and `kill` are
- * injectable — defaulting to the real tracked set and `Deno.kill` — so the "signal every
- * tracked PID, a throw from one doesn't stop the rest" logic is unit-testable without
- * spawning real processes.
- */
+/** `pids`/`kill` are injectable (default: real tracked set, `Deno.kill`) so this is unit-testable without spawning real processes. */
 export function killActiveChildGroups(
   pids: Iterable<number> = activeChildPids,
   kill: (pid: number) => void = (pid) => Deno.kill(pid, "SIGTERM"),
@@ -73,10 +53,7 @@ export function killActiveChildGroups(
 
 type TestReporter = typeof SUPPORTED_REPORTERS[number];
 
-/**
- * Test files that must be executed sequentially because they spawn CLI
- * sub-processes that are sensitive to environment variable cross-contamination.
- */
+/** Sequential because they spawn CLI sub-processes sensitive to environment-variable cross-contamination. */
 const SEQUENTIAL_FILES: string[] = [
   // Tests that launch daemon subprocesses or heavy I/O — these do not
   // parallelize safely due to Deno cache races on direct `deno run` calls
@@ -110,28 +87,20 @@ const SEQUENTIAL_FILES: string[] = [
   // DB migration test — runs migrate_db.ts via deno run subprocess; races on
   // the Deno module cache under parallel, yielding partial @exaix/core exports.
   "tests/migrations/migrate_db_test.ts",
-  // Phases 141/167 env-leak follow-up: test_mode_schema_test.ts and subprocess_env
-  // use withEnv()/Deno.env mutation to delete global env vars; this leaks across tests
-  // under DENO_JOBS parallelism. child_env_test.ts's scrubProcessEnv case does the same —
-  // it writes and then deletes LD_LIBRARY_PATH etc. from the PROCESS-global Deno.env
-  // while parallel workers are snapshotting parent env for subprocess spawns, which
-  // surfaced as `NotFound: Failed to spawn 'deno': entity not found` in unrelated
-  // test files (scaffold/daemon/eval) whenever the batch overlapped. Run sequentially.
+  // scrubProcessEnv here deletes process-global vars like LD_LIBRARY_PATH while
+  // parallel workers are snapshotting parent env for subprocess spawns, which
+  // surfaced as transient "Failed to spawn 'deno'" errors in unrelated test files.
   "packages/core/tests/child_env_test.ts",
   // Test-mode schema test — uses withEnv() to delete EXA_TEST_MODE from the
   // global Deno.env; this leaks across tests under DENO_JOBS parallelism.
   "packages/storage-sqlite/tests/test_mode_schema_test.ts",
   // Rewrites the real .copilot/manifest.json in place (buildIndex() has no
-  // output-path override); races with every test that reads that same file
-  // (google/claude/openai_enhancements_test.ts, agent_retrieval_smoke_test.ts,
-  // etc.) under DENO_JOBS parallelism, producing truncated-JSON reads.
+  // output-path override); races with other tests reading that same file under
+  // DENO_JOBS parallelism, producing truncated-JSON reads.
   "tests/agents/build_agents_index_test.ts",
-  // Blueprint commands — 30 tests, each calling setupTest() → TestEnvironment.create(),
-  // i.e. its own full git-repo init/config spawn per test (the highest git-subprocess
-  // density of any file in the corpus). Still reliably hits transient
-  // `NotFound: Failed to spawn 'git': entity not found` under Batch 1's parallel worker
-  // pool even after DENO_JOBS was scaled to hardwareConcurrency — this file alone
-  // oversubscribes spawn capacity regardless of overall worker count.
+  // Blueprint commands — 30 tests, each doing a full git-repo init/config spawn
+  // (the highest git-subprocess density in the corpus); this file alone oversubscribes
+  // spawn capacity and hits transient "Failed to spawn 'git'" even at hardwareConcurrency.
   "apps/exactl/tests/blueprint_commands_test.ts",
   // The hardened delegation test probes the real OpenCode binary. Under Batch 1 spawn
   // pressure, that probe can fail before writing its per-test permission config.
@@ -139,24 +108,13 @@ const SEQUENTIAL_FILES: string[] = [
   // Sequencing assertions advance promise-controlled steps with zero-delay timers. Heavy
   // Batch 1 event-loop pressure can delay the first dispatch past the assertion boundary.
   "packages/flow/tests/session_delegate_cycle_sequencing_test.ts",
-  // DiskSpaceHealthCheck shells out to `df` per check; under Batch 1's worker
-  // pool the subprocess spawn intermittently errors (same spawn-contention class
-  // as blueprint_commands_test.ts above), and DiskSpaceHealthCheck.critical=true
-  // turns that transient spawn failure into a hard FAIL, dragging overall status
-  // to "unhealthy" and breaking assertions that expect "pass"/"warn"/"degraded".
+  // DiskSpaceHealthCheck shells out to `df` per check; under Batch 1's spawn
+  // contention that intermittently errors, and critical=true turns the transient
+  // failure into a hard FAIL, breaking assertions expecting "pass"/"warn"/"degraded".
   "apps/daemon/tests/health_check_service_test.ts",
 ];
 
-/**
- * Non-test paths that Batch 1's directory walk must skip. `deno test --parallel
- * tests/ …` type-checks every `.ts` it finds — including fixture portal sources
- * that are broken *on purpose* (e.g. the swe_tasks null-guard fixture, whose bug
- * is the very thing a scenario fixes). The `deno.json` top-level `exclude` covers
- * these, but passing an explicit `--ignore` on the CLI overrides that config
- * exclude for the walk, so the fixture leaks back in and the whole parallel batch
- * aborts at type-check before a single test runs. Re-list them here so Batch 1's
- * `--ignore` keeps them out.
- */
+/** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
 const PARALLEL_IGNORE_PATHS: string[] = [
   "tests/scenario_framework/fixtures/",
 ];
@@ -238,11 +196,7 @@ interface ITapFailure {
   message: string;
 }
 
-/**
- * Parse TAP output to count passed/failed/ignored tests.
- * TAP format: "ok N - testname" or "not ok N - testname"
- * Last line: "1..N"
- */
+/** TAP has no "ignored" marker, so `ignored` is always 0 for this format. */
 export function parseTapOutput(output: string, durationSec: number): TestCounts {
   const clean = stripAnsi(output);
   const lines = clean.split("\n");
@@ -261,14 +215,7 @@ export function parseTapOutput(output: string, durationSec: number): TestCounts 
   return { passed, failed, ignored: 0, durationSec };
 }
 
-/**
- * Extract failure names and messages from TAP output.
- * TAP failure format:
- *   not ok N - testname
- *   ---
- *   {"message":"error text",...}
- *   ...
- */
+/** Parses the TAP failure YAML fence (`not ok N - name` / `---` / `{"message":...}` / `...`), extracting only the message field. */
 export function extractTapFailures(output: string): ITapFailure[] {
   const clean = stripAnsi(output);
   const lines = clean.split("\n");
@@ -376,13 +323,7 @@ export function flushDotReporterState(state: IDotReporterState): string {
   return output;
 }
 
-/**
- * Convert TAP output lines to compact dot-like symbols for terminal display.
- * - "ok N - name" → "."
- * - "not ok N - name" → "!"
- * - "ok N # SKIP name" → ","
- * - YAML blocks, TAP version, plan lines → suppressed
- */
+/** Maps TAP lines to compact symbols: "ok" → ".", "not ok" → "!", "ok ... # SKIP" → ","; everything else (YAML/version/plan lines) is suppressed. */
 export function compactTapReporterChunk(text: string, state: IDotReporterState): string {
   const lines = text.split(/\r?\n/);
   let output = "";
@@ -426,12 +367,9 @@ function getTerminalWidth(_dest: typeof Deno.stdout): number {
   }
 }
 
-/**
- * Parse the Deno test runner summary line in two formats:
- *   ok | 4213 passed (981 steps) | 0 failed | 57 ignored (59s)
- *   ok |    8 passed              | 0 failed            (3s)
- *   ok |   50 passed              | 0 failed | 1 ignored (696ms)
- */
+// Parses the Deno test runner summary line; ignored/step counts are optional, e.g.:
+//   ok | 4213 passed (981 steps) | 0 failed | 57 ignored (59s)
+//   ok |    8 passed              | 0 failed            (3s)
 export function parseSummaryLine(output: string): TestCounts {
   const clean = stripAnsi(output);
   const msMatch = clean.match(SUMMARY_LINE_MS_PATTERN);
@@ -480,13 +418,7 @@ function parseDotReporterCounts(output: string, durationSec: number): TestCounts
   return { passed, failed, ignored, durationSec };
 }
 
-/**
- * Run `deno test --allow-all ...extraArgs` directly, tee both stdout and stderr
- * to the terminal in real time, and capture output for summary parsing.
- *
- * Note: `deno test` is invoked directly (not via `deno task`) so that the
- * piped-stdout capture is not obscured by the deno task shell wrapper.
- */
+/** Invokes `deno test` directly (not via `deno task`) so piped-stdout capture isn't obscured by the task shell wrapper. */
 async function runAndCapture(
   extraArgs: string[],
   label: string,
@@ -710,22 +642,18 @@ export async function main(args: string[]): Promise<number> {
     "tap",
   );
 
-  // Batch 2: sequential files, one per Deno.Command, no DENO_JOBS set
-  //
-  // Kill any daemon processes left behind by the parallel batch. Parallel
-  // tests that spawn daemons may leak them on timeout/abort; a leftover
-  // daemon occupies the default CLI port and causes sequential daemon tests
-  // to fail with "Daemon died during startup" or missing journal events.
+  // Batch 2: sequential files, one per Deno.Command, no DENO_JOBS set.
+  // Kill any daemon left behind by the parallel batch — it occupies the default
+  // CLI port and causes sequential daemon tests to fail with "Daemon died during startup".
   try {
     const cleanup = new Deno.Command("pkill", { args: ["-f", "daemon/main.ts"] }).outputSync();
     if (cleanup.code === 0) {
       await new Promise((r) => setTimeout(r, 500));
     }
   } catch { /* pkill not available */ }
-  //
-  // Pre-warm the daemon module cache after the parallel batch. Parallel
-  // compilation can leave partial/corrupted cache entries; this forces a
-  // clean cache build before any daemon subprocess touches it.
+  // Pre-warm the daemon module cache: parallel compilation from the earlier batch
+  // can leave partial/corrupted cache entries, so force a clean build before any
+  // daemon subprocess touches it.
   if (SEQUENTIAL_FILES.some((f) => f.includes("daemon") || f.includes("dogfood"))) {
     const warmup = new Deno.Command("deno", { args: ["cache", "apps/daemon/main.ts"] }).spawn();
     await warmup.status;

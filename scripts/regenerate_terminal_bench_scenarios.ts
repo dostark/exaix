@@ -24,7 +24,7 @@ import { type ITaskJson, TaskJsonSchema } from "../tests/scenario_framework/sche
 
 const DEFAULT_FIXTURES_DIR = "tests/scenario_framework/fixtures/external/terminal_bench";
 const DEFAULT_SCENARIOS_DIR = "tests/scenario_framework/scenarios/external_terminal_bench";
-/** Every currently-vendored task was (re-)ingested pinned to this tool (Phase 144 Step 5) —
+/** Every currently-vendored task was (re-)ingested pinned to this tool —
  *  overridable via --tool for a future re-pin, but never silently guessed per task. */
 const DEFAULT_TOOL = "opencode-go";
 
@@ -72,11 +72,9 @@ async function loadTaskTemplateOptions(
   };
 }
 
-/**
- * Regenerates the scenario YAML for every `<task-id>.yaml` already present in `scenariosDir`
- * (the set of already-ingested, already-vendored tasks — never adds or removes a task).
- * Returns the regenerated task ids in the order processed.
- */
+// Regenerates the scenario YAML for every `<task-id>.yaml` already present in `scenariosDir`
+// (the set of already-ingested, already-vendored tasks — never adds or removes a task).
+// Returns the regenerated task ids in the order processed.
 export async function regenerateTerminalBenchScenarios(options: IRegenerateOptions): Promise<string[]> {
   const taskIds: string[] = [];
   for await (const entry of Deno.readDir(options.scenariosDir)) {

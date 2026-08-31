@@ -205,14 +205,6 @@ async function runCoverageCheck() {
     );
   }
 
-  // Basic parsing of LCOV to total percentage (very rough approximation)
-  // Logic: Sum of (DA:line,hits) / Total Lines
-  // A better approach in a real CI would be to pipe this to a tool like lcov-parse or codecov
-  // For this script, we'll try to extract the summary if available or just check command success.
-
-  // Since deno coverage --lcov doesn't output summary stats easily, we will run without lcov for human readable
-  // and parse that.
-
   const limit = Number.parseInt(flags.limit ?? "15", 10);
   const listLimit = Number.isFinite(limit) && limit > 0 ? limit : 15;
 

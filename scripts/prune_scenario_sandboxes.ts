@@ -64,29 +64,18 @@ export function defaultSandboxRoot(): string {
   return join(resolve(base), SANDBOX_DIR_NAME);
 }
 
-/**
- * Entries whose presence at a directory's top level identifies it as a scenario sandbox.
- *
- * `exa.config.toml` and `.exa/` are written by every run; `output/` is what survives cleanup, and
- * a reclaimed sandbox holding only that is exactly what a backlog sweep should still collect.
- */
+// Entries whose presence at a directory's top level identifies it as a scenario sandbox.
+// `exa.config.toml` and `.exa/` are written by every run; `output/` is what survives
+// cleanup, so a reclaimed sandbox holding only that is still a valid prune candidate.
 const SANDBOX_MARKERS = ["exa.config.toml", ".exa", "output"] as const;
 
 async function hasEntry(path: string, name: string): Promise<boolean> {
   return await Deno.stat(join(path, name)).then(() => true).catch(() => false);
 }
 
-/**
- * Positively identify a sandbox, rather than excluding things that are obviously not one.
- *
- * `--root` is operator input driving a recursive delete. Pointed one level too high — at the parent
- * of the repo, which is the default sandbox base's own parent — every directory there becomes a
- * candidate. Excluding git checkouts alone was not enough: measured against a real `~/git`, four
- * ordinary directories were still selected purely because they were not repositories. Requiring a
- * marker the runner itself writes makes a mistyped `--root` inert instead of merely less bad.
- *
- * The git check stays as well, since a checkout could in principle contain an `output/` directory.
- */
+// Positively identify a sandbox rather than excluding things that are obviously not one:
+// `--root` drives a recursive delete, so requiring a marker the runner itself writes makes
+// a mistyped `--root` inert. The git check stays too, since a checkout could hold `output/`.
 async function isPrunableSandbox(path: string): Promise<boolean> {
   if (await hasEntry(path, ".git")) return false;
   for (const marker of SANDBOX_MARKERS) {
@@ -120,12 +109,9 @@ async function directoryBytes(path: string): Promise<number> {
   return total;
 }
 
-/**
- * Compute what would be removed. Never removes anything — that is `applySandboxPrune`'s job.
- *
- * A missing root is an empty plan rather than an error: a machine that has never run a scenario
- * has no sandbox root, and the periodic CI invocation must not fail there.
- */
+// Compute what would be removed. Never removes anything — that is `applySandboxPrune`'s job.
+// A missing root is an empty plan rather than an error: a machine that has never run a
+// scenario has no sandbox root, and the periodic CI invocation must not fail there.
 export async function planSandboxPrune(options: IPlanSandboxPruneOptions): Promise<ISandboxPrunePlan> {
   const root = resolve(options.root);
   const cutoff = Date.now() - options.retentionDays * MS_PER_DAY;

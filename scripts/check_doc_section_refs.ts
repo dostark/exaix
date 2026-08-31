@@ -45,13 +45,13 @@ import { walk } from "@std/fs";
 import { dirname, isAbsolute, relative, resolve } from "@std/path";
 import { extractHeadings, FenceTracker, IGNORE_DIRS, type IHeading, stagedMarkdownFiles } from "./check_md_paths.ts";
 
-/** A quoted §-citation whose title does not match any heading in its target file. */
+/** A quoted section-citation whose title does not match any heading in its target file. */
 export interface ISectionRefViolation {
   /** Repo-relative path of the markdown file containing the citation. */
   file: string;
   /** 1-based line number of the citation. */
   line: number;
-  /** The exact matched citation text, e.g. `ARCHITECTURE.md §"Foo"`. */
+  /** The exact matched citation text, e.g. `ARCHITECTURE.md` with its quoted section title. */
   reference: string;
   /** Repo-relative path of the file the citation names (== `file` for self-references). */
   targetFile: string;

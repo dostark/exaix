@@ -28,7 +28,7 @@ interface FrontmatterFields {
   plan_context_ref?: string;
 }
 
-/** Diagnostics that abort generation before any request file is written (Phase 174 Step 2). */
+/** Diagnostics that abort generation before any request file is written. */
 const FATAL_DIAGNOSTIC_CODES = new Set<PhaseStepDiagnosticCode>(["no_steps", "duplicate_step_number"]);
 /** Diagnostics surfaced as a non-fatal warning — matches the script's pre-Phase-174 behavior
  *  exactly; `missing_manifest`, `non_contiguous_step_number`, and `missing_step_heading` are
@@ -82,7 +82,7 @@ function extractSection(text: string, heading: string): string {
   return match ? match[1].trim() : "";
 }
 
-// PlanContext sandbox copy (Phase 173 Step 2, GAP-2/GAP-3)
+// PlanContext sandbox copy
 
 /** Repo-ignored runtime directory inside the delegate worktree. */
 const PLAN_CONTEXT_RELATIVE_DIR = ".exa/PlanContext";
@@ -110,15 +110,9 @@ async function assertNotSymbolicLink(path: string, label: string): Promise<void>
   }
 }
 
-/**
- * Copies exactly ONE file — the current phase doc — into
- * `<plan-context-root>/.exa/PlanContext/<slug>.md`, enforcing GAP-2's containment rules:
- * the slug must be separator/`..`-free, both destination paths are resolved and
- * asserted inside the root before any write, and no glob/tree traversal ever runs.
- * Uses the repository-wide .exa/ ignore rule so intended-diff
- * judging stays clean without mutating shared .git metadata.
- * Throws Error on any violation; returns the written destination path.
- */
+// Copies exactly ONE file into `<plan-context-root>/.exa/PlanContext/<slug>.md`. The slug must be
+// separator/`..`-free, and both destination paths are resolved and asserted inside the root before
+// any write — uses the repo-wide .exa/ ignore rule so intended-diff judging stays clean.
 export async function copyDocIntoPlanContext(
   sourcePath: string,
   planSlug: string,
@@ -145,18 +139,16 @@ export async function copyDocIntoPlanContext(
   return destFile;
 }
 
-// Phase-level context extraction (Phase 173 Step 1)
-// Real phase docs carry their why/why-not context under real markdown headings
-// (`## Executive Summary`, `### Constraints`, `### Design Decisions`) which the
-// bold-label `extractSection` above cannot match — hence these heading-based
-// slice boundaries are a separate extractor family (GAP-1).
+// Phase-level context extraction: real phase docs carry why/why-not context under
+// markdown headings (`## Executive Summary`, `### Constraints`, `### Design Decisions`),
+// which the bold-label `extractSection` above cannot match — a separate extractor family.
 
-/** Minimum normalized-token length considered specific enough to match on
- *  (GAP-4) — shorter tokens like `ts` or `main` blanket-match every step. */
+/** Minimum normalized-token length considered specific enough to match on —
+ *  shorter tokens like `ts` or `main` blanket-match every step. */
 const MIN_OVERLAP_TOKEN_LENGTH = 5;
-/** Per-source-block cap on included bullets (GAP-4) — keeps requests bounded. */
+/** Per-source-block cap on included bullets — keeps requests bounded. */
 const MAX_RELEVANT_BULLETS = 8;
-/** Universal tokens that appear in every step slice and must never match (GAP-4). */
+/** Universal tokens that appear in every step slice and must never match. */
 const DEGENERATE_TOKENS = new Set(["step", "actions", "request"]);
 const BACKTICK_TOKEN_REGEX = /`([^`\n]+)`/g;
 const PATH_TOKEN_REGEX = /[A-Za-z0-9_][A-Za-z0-9_\-./]*\.(?:ts|md|json|toml|yaml|yml|sh)/g;

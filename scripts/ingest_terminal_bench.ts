@@ -30,7 +30,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { type ITaskJson, TaskJsonSchema } from "../tests/scenario_framework/schema/task_schema.ts";
 import { renderExternalBenchTaskTemplate } from "../tests/scenario_framework/runner/scenario_templates.ts";
 
-/** The 5 permissive, redistribution-safe licenses accepted for vendoring external benchmark content (GAP-10). */
+/** The 5 permissive, redistribution-safe licenses accepted for vendoring external benchmark content. */
 export type LicenseIdentifier = "MIT" | "Apache-2.0" | "BSD-2-Clause" | "BSD-3-Clause" | "ISC";
 
 export interface ILicenseEligibility {
@@ -62,7 +62,7 @@ export interface IIngestResult {
   reason?: string;
 }
 
-/** Reasons classifyTerminalBenchTask can disqualify a task from the supported subset (Phase 144 Step 3's classifier table: `supported` = file-oriented, solvable/verifiable by editing/creating files in the working dir; everything else is `unsupported`). Every branch is a structural or content signal the bind-mount + single `docker run` substrate (GAP-1) cannot faithfully represent. */
+/** Reasons classifyTerminalBenchTask can disqualify a task from the supported subset (`supported` = file-oriented, solvable/verifiable by editing/creating files in the working dir; everything else is `unsupported`). Every branch is a structural or content signal the bind-mount + single `docker run` substrate cannot faithfully represent. */
 export type UnsupportedReason =
   | "multi-container"
   | "custom-network-config"
@@ -89,7 +89,7 @@ export interface IClassificationResult {
 
 /** A batch-ingested task's final disposition in the coverage manifest. */
 export type TaskClass = "supported" | "unsupported" | "license-ineligible";
-/** Docker-gated controls-sweep outcome (Step 3 Actions); ingest itself never runs docker,
+/** Docker-gated controls-sweep outcome; ingest itself never runs docker,
  *  so every freshly-ingested task starts "pending" until the separate sweep updates it. */
 export type ControlsStatus = "pending" | "pass" | "fail" | "docker-unavailable";
 
@@ -101,7 +101,7 @@ export interface IManifestTaskEntry {
   controls_status: ControlsStatus;
 }
 
-/** Published per-release coverage manifest (Phase 144 Step 3). */
+/** Published per-release coverage manifest. */
 export interface IManifest {
   generated_at: string;
   benchmark_version: string;
@@ -142,7 +142,7 @@ interface ICliArgs {
   outRequests: string;
 }
 
-/** Canonical order of LICENSE_ALLOWLIST — GAP-10's fixed permissive allowlist. */
+/** Canonical, fixed order of the permissive license allowlist. */
 export const LICENSE_ALLOWLIST: readonly LicenseIdentifier[] = [
   "MIT",
   "Apache-2.0",
@@ -160,7 +160,7 @@ const LICENSE_SIGNATURES: Record<LicenseIdentifier, string> = {
   "ISC": "ISC License",
 };
 
-/** Deterministic substring match of a license text's canonical opening signature (GAP-10 matcher). */
+/** Deterministic substring match of a license text's canonical opening signature. */
 export function matchLicense(licenseText: string): LicenseIdentifier | null {
   for (const identifier of LICENSE_ALLOWLIST) {
     if (licenseText.includes(LICENSE_SIGNATURES[identifier])) return identifier;
@@ -168,7 +168,7 @@ export function matchLicense(licenseText: string): LicenseIdentifier | null {
   return null;
 }
 
-/** Checks the repo-root license plus an optional task-local override (GAP-10 abort/skip semantics). Both must match the allowlist for a task to be eligible. */
+/** Checks the repo-root license plus an optional task-local override. Both must match the allowlist for a task to be eligible. */
 export function checkLicenseEligibility(
   rootLicenseText: string,
   taskLocalLicenseText: Opt<string, Reason.OptionalInput>,
@@ -213,7 +213,7 @@ const INTERACTIVE_TERMINAL_PATTERN = /\btmux\b|\bpexpect\b|\bpty\.(spawn|openpty
 /** Dockerfile content signals a GPU/CUDA base image or runtime requirement. */
 const GPU_PATTERN = /\bnvidia\b|\bcuda\b/i;
 
-/** Classifies an upstream Terminal-Bench task as `supported` (runs faithfully inside the bind-mount single-container substrate) or `unsupported` with a machine-readable reason (Phase 144 Step 3). Conservative: any ambiguous or unparseable signal is `unsupported`, never silently defaulted to `supported` — matching the plan's classifier disposition table ("ambiguous ⇒ unsupported with reason recorded"). */
+/** Classifies an upstream Terminal-Bench task as `supported` (runs faithfully inside the bind-mount single-container substrate) or `unsupported` with a machine-readable reason. Conservative: any ambiguous or unparseable signal is `unsupported`, never silently defaulted to `supported` — matching the plan's classifier disposition table ("ambiguous ⇒ unsupported with reason recorded"). */
 export function classifyTerminalBenchTask(input: IClassifierInput): IClassificationResult {
   let compose: z.infer<typeof ComposeSchema>;
   try {
@@ -253,7 +253,7 @@ const DIFFICULTY_MAP: Record<string, ITaskJson["difficulty"]> = {
   "hard": "M",
 };
 
-/** Maps a Terminal-Bench difficulty rating onto Phase 141's S/M scale (M absorbs "hard"). */
+/** Maps a Terminal-Bench difficulty rating onto Exaix's S/M scale (M absorbs "hard"). */
 export function mapDifficulty(upstreamDifficulty: string): ITaskJson["difficulty"] {
   const mapped = DIFFICULTY_MAP[upstreamDifficulty.toLowerCase()];
   if (!mapped) {
@@ -296,15 +296,15 @@ const DEFAULT_OUT_FIXTURES_DIR = "tests/scenario_framework/fixtures/external/ter
 const DEFAULT_OUT_PORTALS_DIR = "tests/scenario_framework/fixtures/portals/external/terminal_bench";
 const DEFAULT_OUT_SCENARIOS_DIR = "tests/scenario_framework/scenarios/external_terminal_bench";
 const DEFAULT_OUT_REQUESTS_DIR = "tests/scenario_framework/fixtures/requests/external/terminal_bench";
-/** Delegate tool used to render batch-generated scenarios (Phase 143's BARE_DELEGATE_LAUNCH_SHAPES key). */
+/** Delegate tool used to render batch-generated scenarios (the BARE_DELEGATE_LAUNCH_SHAPES key). */
 const DEFAULT_SCENARIO_TOOL = "claude-code";
-/** Minimum supported-subset coverage (Risks R4): below this, reassess the subset choice before spending on a live run — declared locally per this module's own convention (no shared "framework evaluation constants" file exists, matching DEFAULT_BARE_DELEGATE_TIMEOUT_SEC in scenario_templates.ts, GAP-9). */
+/** Minimum supported-subset coverage (Risks R4): below this, reassess the subset choice before spending on a live run — declared locally per this module's own convention (no shared "framework evaluation constants" file exists, matching DEFAULT_BARE_DELEGATE_TIMEOUT_SEC in scenario_templates.ts). */
 export const MIN_SUPPORTED_COVERAGE_PCT = 30;
-/** Default bound for a single oracle solution.sh run (Phase 144 Step 5) — a batch ingest
+/** Default bound for a single oracle solution.sh run — a batch ingest
  *  must never let one hung or pathologically slow upstream task (e.g. a real kernel build)
  *  block the whole release; the task is simply recorded `ingest-error` and the batch continues. */
 export const DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS = 180_000;
-/** Cap on bytes retained from a continuously-drained oracle-solution stdout/stderr stream (Phase 144 post-gap remediation, GAP-4) — the pipe must be drained WHILE awaiting the child's exit (never only after) to avoid the OS pipe-buffer deadlock a verbose script can otherwise trigger; this bound stops a pathologically chatty script from growing the in-memory buffer unboundedly while still draining (and discarding) everything past it. */
+/** Cap on bytes retained from a continuously-drained oracle-solution stdout/stderr stream — the pipe must be drained WHILE awaiting the child's exit (never only after) to avoid the OS pipe-buffer deadlock a verbose script can otherwise trigger; this bound stops a pathologically chatty script from growing the in-memory buffer unboundedly while still draining (and discarding) everything past it. */
 export const MAX_DRAINED_STREAM_BYTES = 65_536;
 
 async function runGit(
@@ -320,7 +320,7 @@ async function runGit(
   return new TextDecoder().decode(output.stdout).trim();
 }
 
-/** Runs `git diff` and returns its RAW output with exactly one trailing newline appended only if missing — never `.trim()`ed. `runGit`'s blanket `.trim()` is safe for plumbing output (rev-parse, status) but corrupts a `--binary` diff: a binary hunk's "literal <n>" block is terminated by a blank line, and `.trim()` strips exactly that trailing blank line when the binary hunk is the diff's last line, producing a patch `git apply` rejects with "corrupt binary patch" (found via a real controls-sweep run across the pinned Terminal-Bench release, Phase 144 Step 5). */
+/** Runs `git diff` and returns its RAW output with exactly one trailing newline appended only if missing — never `.trim()`ed. `runGit`'s blanket `.trim()` is safe for plumbing output (rev-parse, status) but corrupts a `--binary` diff: a binary hunk's "literal <n>" block is terminated by a blank line, and `.trim()` strips exactly that trailing blank line when the binary hunk is the diff's last line, producing a patch `git apply` rejects with "corrupt binary patch" (found via a real controls-sweep run across the pinned Terminal-Bench release). */
 async function runGitDiff(args: string[], cwd: string): Promise<string> {
   const command = new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" });
   const output = await command.output();
@@ -358,7 +358,7 @@ async function drainCapped(reader: ReadableStreamDefaultReader<Uint8Array>, capB
   return new TextDecoder().decode(merged);
 }
 
-/** Applies the upstream oracle solution against a dockerless temp working directory. The solution's hardcoded container WORKDIR (`/app`) is rewritten to the real temp path first — Step 1 has no container to provide `/app`; Step 2 will run the unmodified upstream script inside the real container. */
+/** Applies the upstream oracle solution against a dockerless temp working directory. The solution's hardcoded container WORKDIR (`/app`) is rewritten to the real temp path first — this dockerless pass has no container to provide `/app`; a later containerized pass will run the unmodified upstream script inside the real container. */
 async function applyOracleSolutionDockerless(
   solutionPath: string,
   workDir: string,
@@ -370,7 +370,7 @@ async function applyOracleSolutionDockerless(
   await Deno.writeTextFile(adaptedPath, adaptedScript);
   const command = new Deno.Command("bash", { args: [adaptedPath], cwd: workDir, stdout: "piped", stderr: "piped" });
   const child = command.spawn();
-  // GAP-4: drain stdout/stderr CONCURRENTLY with awaiting the child's exit, not only after — otherwise a script writing more than the OS pipe buffer capacity (~64KiB) blocks on its own write() with nothing reading the other end, deadlocking until the timeout kills it (a false timeout on a verbose-but-correct solution).
+  // Drain stdout/stderr CONCURRENTLY with awaiting the child's exit, not only after — otherwise a script writing more than the OS pipe buffer capacity (~64KiB) blocks on its own write() with nothing reading the other end, deadlocking until the timeout kills it (a false timeout on a verbose-but-correct solution).
   const stdoutReader = child.stdout.getReader();
   const stderrReader = child.stderr.getReader();
   const stdoutPromise = drainCapped(stdoutReader, MAX_DRAINED_STREAM_BYTES);
@@ -410,7 +410,7 @@ function humanizeTaskId(taskId: string): string {
   return taskId.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 
-/** Reads a task-local LICENSE/NOTICE override if present in the upstream source dir. A real I/O error on a file that DOES exist (permission denied, an unreadable directory in its place, etc.) must never be silently treated as "no override present" — GAP-7: it fails closed and propagates, matching `readOptionalFile`'s already-correct pattern below. */
+/** Reads a task-local LICENSE/NOTICE override if present in the upstream source dir. A real I/O error on a file that DOES exist (permission denied, an unreadable directory in its place, etc.) must never be silently treated as "no override present" — it fails closed and propagates, matching `readOptionalFile`'s already-correct pattern below. */
 export async function readTaskLocalLicense(sourceDir: string): Promise<string | undefined> {
   for (const name of ["LICENSE", "NOTICE"]) {
     try {
@@ -436,14 +436,14 @@ async function copyEnvironmentEntries(sourceDir: string, destDir: string): Promi
 const UV_INSTALLER_VERSION = "0.7.13";
 /** Fallback pip package spec when the upstream run-tests.sh names none explicitly. */
 const DEFAULT_TEST_PACKAGES = "pytest==8.4.1";
-/** Conservative PyPI package-spec allowlist (GAP-1): names, version operators/specifiers, extras brackets, and comma/space separators only — no shell metacharacters. `run-tests.sh` is upstream, externally-authored content; this is the last line of defense before its `uv pip install` argument is spliced into a shell command executed inside the jail. */
+/** Conservative PyPI package-spec allowlist: names, version operators/specifiers, extras brackets, and comma/space separators only — no shell metacharacters. `run-tests.sh` is upstream, externally-authored content; this is the last line of defense before its `uv pip install` argument is spliced into a shell command executed inside the jail. */
 const PACKAGE_SPEC_PATTERN = /^[A-Za-z0-9_.\-\[\]<>=!, ]+$/;
 
 /** Derives a self-contained, dockerless-safe scoped_test_cmd from the upstream run-tests.sh: every observed Terminal-Bench task's run-tests.sh installs uv + the task's pytest package set, then runs `pytest $TEST_DIR/test_outputs.py`. The eval-jail image already ships curl/python3 but not uv/pytest, so this derivation extracts ONLY the task-specific `uv pip install` package list and rebuilds a minimal, non-root-safe bootstrap around it — dropping the upstream script's `apt-get` lines (root-only; curl is already present) and pointing at the hidden oracle-tests mount (/oracle_tests) instead of $TEST_DIR (an env var Exaix's harness does not set). */
 export function deriveScopedTestCmd(runTestsShText: string): string {
   // Normalize backslash-newline shell line continuations first so a single wrapped
   // `uv pip install` invocation reads as one logical line, then join every distinct
-  // `uv pip install` invocation's package list (not just the first) — see GAP-1.
+  // `uv pip install` invocation's package list (not just the first).
   const normalized = runTestsShText.replace(/\\\r?\n[ \t]*/g, " ");
   const pipInstallMatches = [...normalized.matchAll(/uv pip install\s+([^\n]+)/g)];
   const packages =
@@ -454,7 +454,7 @@ export function deriveScopedTestCmd(runTestsShText: string): string {
       `deriveScopedTestCmd: rejected upstream package spec containing disallowed characters: ${packages}`,
     );
   }
-  // Invoke uv by its full, known container path (`HOME=/tmp` is hardcoded onto every jailed launch — see buildJailLaunch) rather than `export PATH="$HOME/.local/bin:$PATH"`: this whole command is embedded as ONE persisted scenario-YAML args element, which passes through the scenario framework's expandInString — a generic pass that substitutes any `$HOME`/`$PATH`-shaped token with the HOST's own environment value, not the container's runtime one, silently rewriting the uv bin path to a host path that doesn't exist inside the container ("uv: command not found") — found via a real scenario-driven live run (Phase 144 Step 5; the controls-sweep script bypasses expandInString, so it never hit this). `. /tmp/.venv/bin/activate` still safely prepends the venv's own bin dir to PATH via bash's OWN runtime variable expansion inside the container — never text baked in here.
+  // Invoke uv by its full, known container path (`HOME=/tmp` is hardcoded onto every jailed launch — see buildJailLaunch) rather than `export PATH="$HOME/.local/bin:$PATH"`: this whole command is embedded as ONE persisted scenario-YAML args element, which passes through the scenario framework's expandInString — a generic pass that substitutes any `$HOME`/`$PATH`-shaped token with the HOST's own environment value, not the container's runtime one, silently rewriting the uv bin path to a host path that doesn't exist inside the container ("uv: command not found") — found via a real scenario-driven live run (the controls-sweep script bypasses expandInString, so it never hit this). `. /tmp/.venv/bin/activate` still safely prepends the venv's own bin dir to PATH via bash's OWN runtime variable expansion inside the container — never text baked in here.
   const uvBin = "/tmp/.local/bin/uv";
   return [
     `curl -LsSf https://astral.sh/uv/${UV_INSTALLER_VERSION}/install.sh | sh -s -- -q`,
@@ -639,7 +639,7 @@ async function ingestOneBatchTask(taskId: string, options: IBatchIngestOptions):
   }
 }
 
-/** Batch-ingests every task subdirectory of `options.upstreamRoot` (Phase 144 Step 3): classifies each task, ingests the supported+license-eligible subset through the exact same `ingestTerminalBenchTask` mapping/license/portal logic Step 1 established (no duplication — Architecture Notes), generates one scenario + request fixture per ingested task, and publishes a coverage manifest. 100% dockerless — classification is pure file inspection, matching the Constraints ("CI is docker-free"); the controls sweep that validates the supported subset live is a separate, explicitly docker-gated concern. */
+/** Batch-ingests every task subdirectory of `options.upstreamRoot`: classifies each task, ingests the supported+license-eligible subset through the exact same `ingestTerminalBenchTask` mapping/license/portal logic already established (no duplication), generates one scenario + request fixture per ingested task, and publishes a coverage manifest. 100% dockerless — classification is pure file inspection, matching the constraint that CI stays docker-free; the controls sweep that validates the supported subset live is a separate, explicitly docker-gated concern. */
 export async function batchIngestTerminalBench(options: IBatchIngestOptions): Promise<IManifest> {
   const taskIds = (await Array.fromAsync(Deno.readDir(options.upstreamRoot)))
     .filter((entry) => entry.isDirectory)

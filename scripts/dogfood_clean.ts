@@ -59,10 +59,7 @@ function resolveConfiguredRoot(): string {
   fail("could not determine dogfood root from config");
 }
 
-/**
- * GAP-4 guard. Returns the realpath of the configured root only if `target`
- * realpath-equals it and is not a symlink. Refuses everything else.
- */
+/** Returns the realpath of the configured root only if `target` realpath-equals it and is not a symlink. */
 async function assertRemovableRoot(configuredRoot: string, target: string): Promise<string> {
   let expectedReal: string;
   let targetReal: string;

@@ -28,11 +28,9 @@ import { parse as parseYaml } from "@std/yaml";
 import { type ISkillEnvelope, SkillEnvelopeSchema } from "@exaix/schemas/skill_envelope.ts";
 import { type ISkill, SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Dynamic data extracted from SKILL.md YAML (frontmatter or exaix block).
- * Field names are validated by SkillEnvelopeSchema at runtime.
- */
+/** Field names are validated by SkillEnvelopeSchema at runtime, not by this interface. */
 export interface ISkillMdData {
   [key: string]: string | number | boolean | ISkillMdData | string[] | ISkillMdData[];
 }
@@ -53,10 +51,6 @@ export interface IParsedCliArgs {
   check: boolean;
 }
 
-/**
- * Resolves the real path of a path that may not exist yet by walking up
- * to the nearest existing ancestor.
- */
 async function resolveRealPathAncestor(path: string): Promise<string> {
   try {
     return await Deno.realPath(path);
@@ -69,10 +63,7 @@ async function resolveRealPathAncestor(path: string): Promise<string> {
   }
 }
 
-/**
- * Validates that targetDir is inside sandboxRoot by resolving both
- * through real paths (or their nearest existing ancestors).
- */
+/** Resolves both paths to real paths first, so a symlink cannot be used to escape the sandbox check. */
 async function validateTargetInsideSandbox(targetDir: string, sandboxRoot: string): Promise<void> {
   const realTarget = await resolveRealPathAncestor(targetDir);
   const realSandbox = await resolveRealPathAncestor(sandboxRoot);
@@ -83,14 +74,7 @@ async function validateTargetInsideSandbox(targetDir: string, sandboxRoot: strin
   }
 }
 
-/**
- * Parses a SKILL.md file and returns frontmatter, body, and exaix block.
- *
- * `exaixError` is set when an `exaix:` fence is present but cannot be parsed
- * (GAP-19): the caller must treat that as a hard error rather than silently
- * skipping the skill. `exaixBlock: null` with no `exaixError` means the skill
- * legitimately has no `exaix:` block (a benign skip).
- */
+/** `exaixError` signals a malformed `exaix:` fence (hard error); `exaixBlock: null` with no `exaixError` means the skill has no `exaix:` block (benign skip). */
 function parseSkillMd(content: string): {
   frontmatter: ISkillMdData;
   body: string;
@@ -120,7 +104,7 @@ function parseSkillMd(content: string): {
   const exaixMatch = afterFm.match(/\n---\nexaix:\n([\s\S]*?)\n---/);
 
   // Detect a present-but-malformed exaix fence: an `exaix:` marker exists in a
-  // trailing block but the strict shape above did not match (GAP-19).
+  // trailing block but the strict shape above did not match.
   if (!exaixMatch) {
     const hasExaixMarker = /\n---\s*\nexaix\s*:/.test(afterFm);
     return {
@@ -154,11 +138,7 @@ function parseSkillMd(content: string): {
   }
 }
 
-/**
- * Reads an existing skill JSON if present (for preserving id/created_at/usage_count).
- * Returns a parsed ISkill if the file exists and validates, else null. A present
- * but invalid file is treated as absent (fresh identity will be minted).
- */
+/** A present but invalid file is treated as absent, so a corrupt JSON silently gets a fresh identity minted. */
 function readExistingSkill(path: string): ISkill | null {
   try {
     const parsed = SkillSchema.safeParse(JSON.parse(Deno.readTextFileSync(path)));
@@ -168,14 +148,11 @@ function readExistingSkill(path: string): ISkill | null {
   }
 }
 
-/**
- * Composes a full runtime SkillSchema object from envelope + body + managed fields.
- * Preserves id/created_at/usage_count from an existing skill if provided.
- */
+/** Preserves id/created_at/usage_count from `existing` when provided, so re-generation doesn't mint a new identity. */
 function composeSkillSchema(
   envelope: ISkillEnvelope,
   body: string,
-  existing?: ISkill | null,
+  existing?: Opt<ISkill | null, Reason.OptionalContext>,
 ): ISkill {
   return {
     id: existing?.id ?? crypto.randomUUID(),
@@ -199,19 +176,11 @@ function composeSkillSchema(
   };
 }
 
-/**
- * Generates skill JSON files from .copilot/skills/ source SKILL.md files.
- *
- * @param skillsDir - Path to the .copilot/skills/ directory
- * @param targetDir - Output directory (e.g., <sandbox>/Memory/Skills)
- * @param sandboxRoot - Sandbox root for path traversal validation
- * @param options - Optional flags (check = dry-run mode)
- */
 export async function generateSkillJson(
   skillsDir: string,
   targetDir: string,
   sandboxRoot: string,
-  options?: { check?: boolean },
+  options?: Opt<{ check?: boolean }, Reason.ExecutionConfig>,
 ): Promise<IGenerateSkillJsonResult> {
   const result: IGenerateSkillJsonResult = {
     success: true,
@@ -343,13 +312,7 @@ export async function generateSkillJson(
 /**
  * Parsed CLI arguments. Returns null when the required positionals are absent.
  */
-/**
- * Parses CLI args, requiring exactly two positional arguments
- * (<target-skills-dir> <sandbox-root>) regardless of flag presence.
- * Flags (those starting with "--") are excluded from the positional count, so
- * `<dir> --check` is rejected (one positional) rather than treating "--check"
- * as the sandbox root (GAP-16). Returns null when fewer than two positionals.
- */
+/** Flags (args starting with "--") are excluded from the positional count, so `<dir> --check` is rejected (one positional) rather than treating "--check" as the sandbox root. */
 export function parseCliArgs(args: string[]): IParsedCliArgs | null {
   const positionals = args.filter((a) => !a.startsWith("--"));
   if (positionals.length < 2) return null;

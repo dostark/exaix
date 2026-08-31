@@ -81,12 +81,9 @@ function printHelp(): void {
   );
 }
 
-/** Vendored task-environment portals (`fixtures/portals/**`) are materialized, arbitrary
- *  externally-sourced content (Phase 144: a Terminal-Bench/SWE-bench task's own working-dir
- *  files, bind-mounted verbatim) — never Exaix-authored documentation prose. A `.md`
- *  extension there is incidental to the vendored task, not a doc; linting (or "fixing") it
- *  would mutate byte-for-byte vendored fixtures the reference.patch/oracle controls were
- *  computed against. Excluded from both the directory walk and explicit file-path args. */
+// Vendored task-environment portals (`fixtures/portals/**`) are externally-sourced content,
+// not Exaix documentation; linting or "fixing" them would mutate byte-for-byte vendored
+// fixtures that reference.patch/oracle controls were computed against.
 const VENDORED_PORTAL_MARKER = "/fixtures/portals/";
 
 function isVendoredPortalContent(path: string): boolean {
@@ -145,13 +142,9 @@ function splitLines(text: string): string[] {
   return text.split("\n");
 }
 
-/**
- * Applies `fn` only to the segments of `line` OUTSIDE backtick inline code spans, leaving
- * code-span content (delimiters included) byte-for-byte untouched. Used by fixers whose
- * rewrite regex (e.g. MD049's underscore-to-asterisk emphasis conversion) would otherwise
- * misparse underscores inside identifiers like `` `CI_EXCLUDED_TAGS` `` as emphasis markup —
- * the 2026-08-10 corruption incident this guards against.
- */
+// Applies `fn` only to the segments of `line` outside backtick inline code spans, leaving
+// code-span content byte-for-byte untouched. Used by fixers whose rewrite regex (e.g.
+// MD049's emphasis conversion) would otherwise misparse underscores inside identifiers as emphasis markup.
 function applyOutsideCodeSpans(line: string, fn: (segment: string) => string): string {
   let result = "";
   let cursor = 0;
@@ -616,9 +609,8 @@ export function applySpecificFixes(content: string, findings: IFinding[]): { fix
   }
 
   // Fix MD049: emphasis style (convert underscores to asterisks). Fenced code blocks are
-  // skipped entirely and inline backtick code spans are protected via applyOutsideCodeSpans —
-  // an identifier like `CI_EXCLUDED_TAGS` must never be misparsed as emphasis markup (2026-08-10
-  // corruption incident: this exact bug turned it into `CI*EXCLUDED*TAGS`).
+  // skipped and inline backtick code spans are protected via applyOutsideCodeSpans — an
+  // identifier like `CI_EXCLUDED_TAGS` must never be misparsed into `CI*EXCLUDED*TAGS`.
   const md049Fixes = findings.filter((f) => f.rule === "MD049/emphasis-style");
   if (md049Fixes.length > 0) {
     const lines = splitLines(text);

@@ -50,12 +50,9 @@ export interface IAciDocsValidationResult {
   checkedTools: number;
 }
 
-/**
- * Validates every tool's `aciDoc`: present, schema-valid (`AciDocSchema`), its worked
- * example is compatible with the tool's own `parameters` schema, and its anti-example
- * genuinely violates a named constraint of that same schema. Pure — no I/O, no Git,
- * no network. Issues are sorted by tool name for deterministic output.
- */
+// Validates every tool's `aciDoc`: present, schema-valid, its worked example compatible
+// with the tool's own `parameters` schema, and its anti-example genuinely violates a named
+// constraint of that schema. Pure — no I/O, no Git, no network.
 export function validateAciDocs(tools: ITool[]): IAciDocsValidationResult {
   const issues: IAciDocIssue[] = [];
   const sortedTools = [...tools].sort((a, b) => a.name.localeCompare(b.name));
@@ -91,12 +88,9 @@ export function validateAciDocs(tools: ITool[]): IAciDocsValidationResult {
   return { issues, checkedTools: tools.length };
 }
 
-/**
- * Runs the validator against tools produced by `loadTools` and returns the process exit
- * code the CLI entrypoint should use, printing WARN/ERROR lines as a side effect.
- * `loadTools` is injectable so a catalog-load failure is testable without Git or a real
- * broken catalog. Does not call `Deno.exit()` itself, so it stays directly testable.
- */
+// Runs the validator against tools from `loadTools` and returns the exit code the CLI
+// entrypoint should use, printing WARN/ERROR as a side effect. `loadTools` is injectable
+// and this never calls `Deno.exit()` itself, so it stays directly testable.
 export function runCli(loadTools: () => ITool[], strict: boolean): number {
   let tools: ITool[];
   try {

@@ -67,13 +67,9 @@ async function resolve(planRef: IPlanRef): Promise<IResolved | { error: string }
   return { planRef, repo, stagedPlanLines };
 }
 
-/**
- * Pre-flight the plan-step commit before touching git. The authoritative validation is the
- * parent commit-msg hook (which runs the full gate via check_commit_msg.ts, including the
- * staged ∪ last-commit diff facet); this pre-flight just fails fast on the obvious
- * commit-together violation — the plan doc's ✅/deferred lines are not staged in its owning
- * repo — so we never commit the submodule and then get blocked at the parent.
- */
+// Pre-flight the plan-step commit before touching git. The authoritative validation is the
+// parent commit-msg hook (check_commit_msg.ts); this just fails fast when the plan doc's
+// ✅/deferred lines aren't staged, so we never commit the submodule and then get blocked at the parent.
 function preflightErrors(r: IResolved): string[] {
   if (r.stagedPlanLines.length === 0) {
     return [
@@ -133,10 +129,9 @@ if (import.meta.main) {
     Deno.exit(1);
   }
 
-  // Fail fast on the commit-together violation before touching git. The FULL plan-step
-  // gate (paths + ledger + backticks + no [ ] + diff-lines + sync) runs authoritatively in
-  // the parent commit-msg hook (check_commit_msg.ts) — this pre-flight just avoids
-  // committing the submodule and then getting blocked at the parent.
+  // Fail fast on the commit-together violation before touching git. The FULL plan-step gate
+  // runs authoritatively in the parent commit-msg hook (check_commit_msg.ts) — this pre-flight
+  // just avoids committing the submodule and then getting blocked at the parent.
   const errors = preflightErrors(r);
   if (errors.length > 0) {
     console.error("\n❌ Plan-step commit blocked:");

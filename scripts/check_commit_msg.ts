@@ -96,7 +96,7 @@ const VALID_MODELS = [
 ];
 
 /** Extracts the `plan:` field (e.g. `plan: docs/plan.md#6`) naming the plan doc + step this
- *  commit implements; accepts `#6`, `#step-6`, or `#step 6` (case-insensitive). Returns
+ *  commit implements; accepts `#<n>`, `#step-<n>`, or `#step <n>` (case-insensitive). Returns
  *  undefined when absent. */
 export function parsePlanField(text: string): IPlanRef | undefined {
   const match = text.match(/^plan:\s*(.+?)#\s*(?:step[-\s]*)?(\d+)\s*$/im);
