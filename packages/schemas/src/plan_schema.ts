@@ -14,15 +14,11 @@ import { PlanStatus } from "@exaix/core/status";
 import { RequestAnalysisSchema } from "./request_analysis.ts";
 import { zodToJsonSchema } from "./json_schema_adapter.ts";
 
-/**
- * Zod schema for plan frontmatter to ensure type safety during parsing.
- * Supports both strict execution loop needs and enriched CLI metadata needs.
- */
-// YAML's parseYaml() converts ISO-formatted date strings to Date objects automatically.
-// We coerce them back to ISO strings so validation doesn't fail with
-// "Expected string, received date".
+// YAML's parseYaml() converts ISO-formatted date strings to Date objects; coerce them
+// back to ISO strings so validation doesn't fail with "Expected string, received date".
 const DateOrStringSchema = z.union([z.string(), z.date()]).transform((v) => v instanceof Date ? v.toISOString() : v);
 
+/** Supports both strict execution loop needs and enriched CLI metadata needs. */
 export const PlanFrontmatterSchema = z.object({
   trace_id: z.string().optional().default(() => crypto.randomUUID()),
   request_id: z.string().optional().default("unknown"),
@@ -50,7 +46,7 @@ export const PlanFrontmatterSchema = z.object({
   skills: z.array(z.string()).optional(),
   request_analysis: RequestAnalysisSchema.optional(),
   subject: z.string().optional(),
-  // Amendment fields (Phase 66)
+  // Amendment fields
   amendment_id: z.string().uuid().optional(),
   amendment_proposed_at: z.string().optional(),
 }).passthrough();
@@ -136,19 +132,10 @@ const QAE2ECaseSchema = z.object({
 // Plan Schema
 // ============================================================================
 
-/**
- * Zod schema for complete execution plans
- * Enhanced to support specialized agent outputs (analysis, security, QA, performance)
- */
+/** Also supports specialized agent outputs (analysis, security, QA, performance). */
 export const PlanSchema = z.object({
-  /**
-   * Plan name. `title` is the canonical, industry-standard, LLM-native field (every blueprint
-   * instructs it, and models emit it naturally). `subject` is accepted as a legacy alias and is
-   * surfaced onto `title` by the transform below ONLY when `title` is absent. Both are fully
-   * optional and NEITHER is required: a plan candidate may omit a name entirely, and the
-   * plan-writer supplies the originating request's subject onto the plan downstream
-   * (plan_writer.ts), independent of the candidate. (max 80 chars)
-   */
+  /** Canonical, LLM-native plan name; `subject` is a legacy alias surfaced onto this by
+   *  the transform below when `title` is absent. Both fully optional — neither required. */
   title: z.string().min(1).max(200).optional(),
   subject: z.string().min(1).max(200).optional(),
 
@@ -298,12 +285,7 @@ export const PlanSchema = z.object({
   message:
     "Plan must contain either 'steps' for execution plans or at least one specialized field (analysis, security, qa, performance) for analysis reports",
 }).transform((data) => {
-  // `title` is the plan candidate's own name (what agents emit, industry-standard); `subject` is
-  // a legacy alias. BOTH are optional — neither is required, because the plan-writer supplies the
-  // originating request's subject onto the plan downstream (plan_writer.ts), independent of what
-  // the candidate carries. As a convenience, when only the legacy `subject` was supplied as the
-  // name, surface it as `title` too so consumers that read the canonical name get a value —
-  // WITHOUT clobbering the distinct `subject`. When both are absent, both stay undefined.
+  // Surface a legacy `subject`-only name onto `title` too, without clobbering `subject`.
   return data.title === undefined && data.subject !== undefined ? { ...data, title: data.subject } : data;
 });
 
@@ -313,11 +295,7 @@ export type Plan = z.infer<typeof PlanSchema>;
 // Specialized Types
 // ============================================================================
 
-/**
- * Produce a JSON Schema object derived from PlanSchema for use with
- * CLI --json-schema flags (e.g. claude-code's --json-schema). Returns a
- * plain object, not cached, so a schema change at runtime is never stale.
- */
+/** Not cached, so a schema change at runtime is never stale. */
 export function getPlanJsonSchema(): Record<string, JSONValue> {
   return zodToJsonSchema(PlanSchema);
 }

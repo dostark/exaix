@@ -136,13 +136,13 @@ const RoutingConfigSchema = z.object({
   enable_dynamic_routing: z.boolean().default(false),
 }).optional().prefault({});
 
-/** §5.8 benchmark ingest fetch timeout — models.dev is larger than a catalog GET. */
+/** Benchmark ingest fetch timeout — models.dev is larger than a catalog GET. */
 const DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS = 30_000;
-/** Canonical tracked-benchmark names (§5.8), shared across the defaults below. */
+/** Canonical tracked-benchmark names, shared across the defaults below. */
 const SWE_BENCH_VERIFIED = "swe_bench_verified";
 const SWE_BENCH_PRO = "swe_bench_pro";
 const GPQA = "gpqa";
-/** §5.8.4 (GAP-B) default task-type → ranking-benchmark(s) map the `best` scorer reads. */
+/** Default task-type → ranking-benchmark(s) map the `best` scorer reads. */
 const DEFAULT_BENCHMARK_MAP: Record<string, string[]> = {
   [TaskType.FEATURE]: [SWE_BENCH_VERIFIED],
   [TaskType.BUGFIX]: [SWE_BENCH_VERIFIED],
@@ -179,19 +179,20 @@ export const ModelRegistryConfigSchema = z.object({
     refresh_cron: z.string().default("0 5 * * 0"), // weekly
     fetch_timeout_ms: z.number().int().positive().default(DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS),
   }).prefault({}),
-  // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
-  // divergence before emitting model.cost.divergence.
+  // Tolerance (percent) for reported-vs-computed cost divergence before emitting
+  // model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),
   // Task-type → ranking benchmark(s), canonical TaskType keys only (G7).
   // Read by IResolutionStrategy.scoreBest.
   benchmark_map: z.record(z.nativeEnum(TaskType), z.array(z.string())).default(DEFAULT_BENCHMARK_MAP),
-  // §5.8.8 — entity name → TaskType soft-match fallback for task-type derivation.
-  // Never shadows an entity's own declaration (anti-drift). Canonical values only (G7).
+  // Entity name → TaskType soft-match fallback for task-type derivation. Never shadows
+  // an entity's own declaration (anti-drift). Canonical values only.
   task_type_map: z.record(z.string(), z.nativeEnum(TaskType)).default({}),
   // F8 opt-in — last-resort MFU/MRU usage tiebreak (IResolutionStrategy.rankUsage).
   usage_tiebreak: z.boolean().default(false),
-  // GAP-C9 per-provider catalog-adapter base URL override, read by apps/daemon/src/bootstrap_team.ts:createBuildContext.
-  // Test-only seam for pointing adapters at local stub servers instead of vendor hosts; empty by default in production.
+  // Per-provider catalog-adapter base URL override, read by
+  // apps/daemon/src/bootstrap_team.ts:createBuildContext. Test-only seam for pointing
+  // adapters at local stub servers instead of vendor hosts; empty by default in production.
   adapter_base_urls: z.record(z.string(), z.string()).default({}),
 }).optional();
 

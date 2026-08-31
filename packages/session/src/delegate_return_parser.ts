@@ -20,37 +20,27 @@ export interface IDelegateParsedReturn {
     input: number;
     output: number;
     total: number;
-    /** Prompt-cache read tokens. undefined when caching wasn't used on this turn —
-     *  never 0 for "unknown". Field shape (part.tokens.cache.read) is best-effort per
-     *  opencode's documented step_finish shape — Ledger:LIVE_CACHE_TOKEN_VERIFICATION
-     *  pending a live probe with active prompt caching. */
+    /** undefined when caching wasn't used on this turn — never 0 for "unknown". */
     cacheRead?: number;
     /** Prompt-cache write (creation) tokens, one-time per cache segment. */
     cacheCreation?: number;
-    /** Reasoning/thinking tokens (Codex turn.completed.usage.reasoning_output_tokens,
-     *  Claude CLI's forwarded output_tokens_details.thinking_tokens). A SUBSET of `output`
-     *  (billed as output, not additional) — never 0 for "no reasoning happened"; undefined
-     *  when the tool doesn't report a breakdown at all. */
+    /** A SUBSET of `output` (billed as output, not additional) — never 0 for "no
+     *  reasoning happened"; undefined when the tool reports no breakdown at all. */
     reasoning?: number;
   };
   costUsd: number | undefined;
   toolPaths: string[];
 }
 
-/**
- * Shape of a parsed opencode JSONL event line, as actually emitted by
- * `opencode run --format json` (verified via a live CLI probe, 2026-07-20).
- * The tool name is `part.tool` and the write target is
- * `part.state.input.filePath` — not the `part.tool_use.name` /
- * `part.tool_use.input.file_path` shape this previously assumed.
- */
+/** Shape of a parsed opencode JSONL event line, as actually emitted by `opencode run
+ *  --format json`: the tool name is `part.tool` and the write target is
+ *  `part.state.input.filePath`. */
 interface IOpencodeEvent {
   type: string;
   part?: {
     text?: string;
-    /** cache: best-effort per opencode's documented step_finish shape — not yet
-     *  confirmed against a live probe with active prompt caching
-     *  (Ledger:LIVE_CACHE_TOKEN_VERIFICATION). */
+    /** cache: best-effort per opencode's documented step_finish shape, not yet
+     *  confirmed against a live probe with active prompt caching. */
     tokens?: { input?: number; output?: number; total?: number; cache?: { read?: number; write?: number } };
     cost?: number;
     tool?: string;
@@ -63,12 +53,9 @@ interface ICodexFileChange {
   kind?: string;
 }
 
-/**
- * Shape of a parsed `codex exec --json` JSONL event line (OpenAI docs; upstream source
- * codex-rs/exec/src/exec_events.rs re-verified 2026-08-21 during Phase 167 post-gap
- * remediation — GAP-26). JSONL like opencode's stream, but with Codex's own event/field
- * names.
- */
+/** Shape of a parsed `codex exec --json` JSONL event line (see upstream source
+ *  codex-rs/exec/src/exec_events.rs). JSONL like opencode's stream, but with Codex's
+ *  own event/field names. */
 interface ICodexEvent {
   type:
     | "thread.started"
@@ -115,11 +102,8 @@ const CODEX_EVENT_TURN_COMPLETED = "turn.completed";
 const CODEX_ITEM_TYPE_AGENT_MESSAGE = "agent_message";
 const CODEX_ITEM_TYPE_FILE_CHANGE = "file_change";
 
-/**
- * Parse a delegate tool's complete stdout and extract structured fields for
- * return synthesis. Supports opencode (newline-delimited JSON events) and
- * claude-code (single JSON result object).
- */
+/** Supports opencode (newline-delimited JSON events) and claude-code (single JSON
+ *  result object). */
 export function parseDelegateStdout(stdout: string, tool: SessionTool): IDelegateParsedReturn {
   if (!stdout.trim()) {
     return { lastText: "", tokenStats: { input: 0, output: 0, total: 0 }, costUsd: undefined, toolPaths: [] };
