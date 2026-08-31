@@ -1,0 +1,126 @@
+/**
+ * @module InternalImportGraphBuilderTest
+ * @path packages/portal/knowledge/tests/internal_import_graph_test.ts
+ * @related-files []
+ * @architectural-layer Portal
+ * @description Tests for InternalImportGraphBuilder (Phase 175 Step 1): resolves
+ * relative-import edges between portal files via `deno info --json`, dropping any
+ * specifier that resolves outside the portal root. Uses real temporary directories
+ * and a real `deno info` subprocess call to exercise actual resolution behaviour.
+ */
+
+import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
+import { InternalImportGraphBuilder } from "../internal_import_graph.ts";
+
+async function makeTempDir(): Promise<string> {
+  return await Deno.makeTempDir({ prefix: "exa_internal_import_graph_test_" });
+}
+
+async function writeFile(dir: string, relPath: string, content: string): Promise<void> {
+  const full = join(dir, relPath);
+  const lastSlash = full.lastIndexOf("/");
+  if (lastSlash !== -1) {
+    await Deno.mkdir(full.substring(0, lastSlash), { recursive: true });
+  }
+  await Deno.writeTextFile(full, content);
+}
+
+async function withPortalFixture(
+  files: Record<string, string>,
+  fn: (root: string) => Promise<void>,
+): Promise<void> {
+  const root = await makeTempDir();
+  try {
+    for (const [path, content] of Object.entries(files)) {
+      await writeFile(root, path, content);
+    }
+    await fn(root);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+}
+
+Deno.test("InternalImportGraphBuilder: returns empty edges for empty entrypoints", async () => {
+  const builder = new InternalImportGraphBuilder();
+
+  const result = await builder.build("/tmp", []);
+
+  assertEquals(result, { edges: [], droppedOutOfBounds: [] });
+});
+
+Deno.test("InternalImportGraphBuilder: resolves a relative import into an internal edge", async () => {
+  await withPortalFixture(
+    {
+      "main.ts": `import { util } from "./util.ts";\nutil();\n`,
+      "util.ts": `export function util() {}\n`,
+    },
+    async (root) => {
+      const builder = new InternalImportGraphBuilder();
+      const result = await builder.build(root, ["main.ts"]);
+
+      assertEquals(result.edges, [
+        { from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" },
+      ]);
+      assertEquals(result.droppedOutOfBounds, []);
+    },
+  );
+});
+
+Deno.test("InternalImportGraphBuilder: does not include bare/external specifiers as edges", async () => {
+  await withPortalFixture(
+    {
+      "main.ts": `import { join } from "jsr:@std/path";\nimport { util } from "./util.ts";\njoin(); util();\n`,
+      "util.ts": `export function util() {}\n`,
+    },
+    async (root) => {
+      const builder = new InternalImportGraphBuilder();
+      const result = await builder.build(root, ["main.ts"]);
+
+      assertEquals(result.edges, [
+        { from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" },
+      ]);
+    },
+  );
+});
+
+Deno.test("InternalImportGraphBuilder: drops a specifier resolving outside the portal root", async () => {
+  const parent = await Deno.makeTempDir({ prefix: "exa_internal_import_graph_test_parent_" });
+  try {
+    const outsideFile = join(parent, "outside.ts");
+    await Deno.writeTextFile(outsideFile, `export function outside() {}\n`);
+
+    const root = join(parent, "portal");
+    await Deno.mkdir(root, { recursive: true });
+    await Deno.writeTextFile(
+      join(root, "main.ts"),
+      `import { outside } from "../outside.ts";\noutside();\n`,
+    );
+
+    const builder = new InternalImportGraphBuilder();
+    const result = await builder.build(root, ["main.ts"]);
+
+    assertEquals(result.edges, []);
+    assertEquals(result.droppedOutOfBounds.length, 1);
+    assertEquals(result.droppedOutOfBounds[0].from, "main.ts");
+  } finally {
+    await Deno.remove(parent, { recursive: true });
+  }
+});
+
+Deno.test("InternalImportGraphBuilder: handles missing directory gracefully", async () => {
+  const builder = new InternalImportGraphBuilder();
+
+  const result = await builder.build("/nonexistent/portal/path", ["main.ts"]);
+
+  assertEquals(result, { edges: [], droppedOutOfBounds: [] });
+});
+
+Deno.test("InternalImportGraphBuilder: handles a nonexistent entrypoint gracefully", async () => {
+  await withPortalFixture({}, async (root) => {
+    const builder = new InternalImportGraphBuilder();
+    const result = await builder.build(root, ["nonexistent.ts"]);
+
+    assertEquals(result, { edges: [], droppedOutOfBounds: [] });
+  });
+});

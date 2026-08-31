@@ -38,6 +38,8 @@ export { GitHeadResolver } from "./git_head_resolver.ts";
 export type { IGitHeadResolver } from "./git_head_resolver.ts";
 export { AstAnalyzer } from "./ast_analyzer.ts";
 export type { IAstDiagnostics } from "./ast_analyzer.ts";
+export { InternalImportGraphBuilder } from "./internal_import_graph.ts";
+export type { IDroppedInternalImport, IInternalImportGraphResult } from "./internal_import_graph.ts";
 export { ArchitectureInferrer, buildFallbackOverview } from "./architecture_inferrer.ts";
 export type { IArchitectureInferrerInput, IArchitectureValidator } from "./architecture_inferrer.ts";
 export { GitHistoryAnalyzer } from "./git_history_analyzer.ts";

@@ -144,6 +144,19 @@ export const MonorepoPackageSchema = z.object({
 
 export type IMonorepoPackage = z.infer<typeof MonorepoPackageSchema>;
 
+/** A directed edge between two portal files. `layer_contains_file` edges are computed
+ *  on demand instead (see `deriveLayerContainsFileEdges`), never persisted here. */
+export const PortalKnowledgeRelationshipSchema = z.object({
+  /** Source file path, relative to the portal root */
+  from: z.string().min(1),
+  /** Target file path, relative to the portal root */
+  to: z.string().min(1),
+  /** Edge kind — a single, persisted kind today; see the module doc above. */
+  kind: z.literal("file_imports_file_internal"),
+});
+
+export type IPortalKnowledgeRelationship = z.infer<typeof PortalKnowledgeRelationshipSchema>;
+
 // Root schema
 
 /**
@@ -271,6 +284,9 @@ export const PortalKnowledgeSchema = z.object({
       commitCount: z.number().int().min(0),
     })).optional(),
   }).optional(),
+
+  /** Internal (relative-import) file-to-file edges, derived via `deno info`. */
+  relationships: z.array(PortalKnowledgeRelationshipSchema).optional(),
 });
 
 export type IPortalKnowledge = z.infer<typeof PortalKnowledgeSchema>;

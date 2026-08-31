@@ -2020,6 +2020,17 @@ export const AST_ANALYZER_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Subprocess timeout for deno info --json in InternalImportGraphBuilder (ms). */
+export const INTERNAL_IMPORT_GRAPH_TIMEOUT_MS: number = configurable({
+  key: "tools.internal_import_graph_timeout_ms",
+  default: 30_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for deno info subprocess calls building the internal import graph",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.RESTART,
+});
+
 /** Subprocess timeout for deno test --dry-run in TestRunner (ms). */
 export const TEST_RUNNER_TIMEOUT_MS: number = configurable({
   key: "tools.test_runner_timeout_ms",
@@ -2157,6 +2168,9 @@ export const DENO_SUBCOMMAND_CHECK = "check";
 
 /** deno CLI subcommand for auditing dependencies (deno audit). */
 export const DENO_SUBCOMMAND_AUDIT = "audit";
+
+/** deno CLI subcommand for resolving a module graph (deno info). */
+export const DENO_SUBCOMMAND_INFO = "info";
 
 /** File/directory name patterns skipped during portal traversal by default. */
 export const DEFAULT_IGNORE_PATTERNS: string[] = [
