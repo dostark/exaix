@@ -444,7 +444,7 @@ export interface IFlowEventPayloadMap {
     flowRunId: string;
     stepId: string;
     identityId: string;
-    /** The step's declared strategy (Phase 159), when set. */
+    /** The step's declared strategy, when set. */
     strategy?: string;
   };
   "flow.step.retry": IFlowEventRequestContext & {
@@ -503,7 +503,7 @@ export interface IFlowEventPayloadMap {
     duration: number;
     outputLength: number;
     hasThought: boolean;
-    /** The step's declared strategy (Phase 159), when set. */
+    /** The step's declared strategy, when set. */
     strategy?: string;
   };
   [DomainEventType.FlowStepFailed]: IFlowEventRequestContext & {
@@ -645,7 +645,7 @@ export interface IFlowResult {
   startedAt: Date;
   /** When the flow completed */
   completedAt: Date;
-  /** Absolute path to the persisted namespace artifact; undefined when namespace is disabled (Phase 64) */
+  /** Absolute path to the persisted namespace artifact; undefined when namespace is disabled */
   namespaceArtifactPath?: string;
   /** Optional token usage summary for the flow */
   tokenSummary?: {
@@ -691,10 +691,8 @@ export class FlowAbortError extends Error {
   }
 }
 
-/**
- * Convert an IGateEvaluate (YAML-facing gate config) to a GateConfig (evaluator
- * input), preserving all fields including `includeRequestCriteria`.
- */
+/** Converts an IGateEvaluate (YAML-facing gate config) to a GateConfig (evaluator input),
+ *  preserving all fields including `includeRequestCriteria`. */
 export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
   return {
     identity: evaluate.identity,
@@ -706,38 +704,17 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
   };
 }
 
-/**
- * FlowRunner - Orchestrates multi-agent flow execution
- * Implements Step 7.4 of the Exaix Implementation Plan
- */
-/**
- * The steps an `aggregate` input draws from: an explicit `from`, else the step's `dependsOn`.
- *
- * `dependsOn` already names the steps a step consumes, so requiring them restated in `from` is
- * redundant — and three of the four flows using `aggregate` omitted it, each failing at its
- * final step with the flow aggregating nothing and the request dying several layers later on
- * `Invalid JSON: Unexpected end of JSON input`. An explicit `from` still wins, so a step may
- * legitimately depend on more than it consumes. Returns empty when neither is specified, which
- * the caller treats as an error rather than silently aggregating nothing.
- */
+/** The steps an `aggregate` input draws from: an explicit `from`, else the step's `dependsOn`. An explicit `from`
+ *  still wins, so a step may legitimately depend on more than it consumes. Returns empty when neither is
+ *  specified, which the caller treats as an error rather than silently aggregating nothing. */
 export function resolveAggregateSources(step: { input: { from?: string[] }; dependsOn?: string[] }): string[] {
   if (step.input.from?.length) return step.input.from;
   return step.dependsOn ?? [];
 }
 
-/**
- * Output-shape instruction appended to every AGENT step prompt (Phase 157 live capture).
- *
- * Without it a real model answers a flow step in prose, which fails BOTH the capture
- * contract (a flow-step response's <content> block must be valid JSON) and — for the
- * final step — plan validation downstream, since the aggregated flow output is parsed
- * as a plan JSON envelope by PlanAdapter. The mock provider already answers flow steps
- * in this dialect; this instruction makes a live model reproduce the same shape the
- * mock and the capture contract expect.
- *
- * Exported (not private) so durability tests can seed replay records with the exact
- * prompt the runner will hash — the instruction is part of the content address.
- */
+/** Output-shape instruction appended to every AGENT step prompt. Without it a real model answers in prose, which
+ *  fails both the capture contract (a flow-step response's <content> block must be valid JSON) and, for the final
+ *  step, plan validation downstream. Exported so durability tests can seed replay records with the exact prompt hash. */
 export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string {
   const planShape = `{"subject": "Flow Step Output", "description": "Structured output for this step", ` +
     `"steps": [{"step": 1, "title": "Step title", "description": "What this step produced"}]}`;
@@ -756,6 +733,7 @@ export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string 
     `fences inside it.`;
 }
 
+/** Orchestrates multi-agent flow execution: step dispatch, gate evaluation, aggregation. */
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   protected dynamicStepExecutor?: DynamicStepExecutor;
@@ -876,11 +854,9 @@ export class FlowRunner implements IFlowRunner {
     }
   }
 
-  /**
-   * Resolves the stable parent trace id a session_delegate_cycle flow requires. Reuses a
-   * valid supplied UUID; otherwise mints/reuses one durably keyed by requestId so retry and
-   * restart correlate to the same lineage (Phase 174 Step 2 GAP-4).
-   */
+  /** Resolves the stable parent trace id a session_delegate_cycle flow requires. Reuses a
+   *  valid supplied UUID; otherwise mints/reuses one durably keyed by requestId so retry
+   *  and restart correlate to the same lineage. */
   private async normalizeCycleParentTraceId(
     request: { traceId?: string; requestId?: string },
     flowRunId: string,
@@ -977,11 +953,9 @@ export class FlowRunner implements IFlowRunner {
     };
   }
 
-  /**
-   * Lazily initialise the dynamic step executor when a modelResolver is configured.
-   * Called at the start of execute() — not in the constructor — because model
-   * resolution is async.
-   */
+  /** Lazily initialises the dynamic step executor when a modelResolver is configured.
+   *  Called at the start of execute() — not in the constructor — because model
+   *  resolution is async. */
   private async ensureDynamicExecutor(
     _flow: IFlow,
     _flowRunId: string,
@@ -1030,15 +1004,12 @@ export class FlowRunner implements IFlowRunner {
       this.options.hitlPolicyEvaluator,
       this.options.dynamicModeTools,
       this.options.dynamicModeApprovalTools,
-      // Phase 132 (GAP-9): forward the resolver's per-call options (thinking/effort) to
-      // every ReAct generate() call in dynamic steps.
+      // Forward the resolver's per-call options (thinking/effort) to every ReAct
+      // generate() call in dynamic steps.
       resolved.options,
     );
-    // The agent step handler was registered during construction (constructor ~L803), when the
-    // lazy modelResolver path had not built the executor yet — so the handler captured
-    // `dynamicStepExecutor: undefined` and dynamic-mode steps silently fell through to the
-    // static/declared path. Re-register the handler now that the executor exists (Phase 163
-    // Step 6: the daemon always has a modelResolver, so this path was production-dead).
+    // The agent step handler was registered during construction, before the lazy executor
+    // existed, so it captured `dynamicStepExecutor: undefined`. Re-register it now.
     const agentHandler = new AgentStepHandler({
       agentExecutor: this.agentExecutor,
       dynamicStepExecutor: this.dynamicStepExecutor,
@@ -1049,10 +1020,8 @@ export class FlowRunner implements IFlowRunner {
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
   }
 
-  /**
-   * Expose the step-handler registry for external extension.
-   * Paid-edition handlers register additional step types here at bootstrap.
-   */
+  /** Exposes the step-handler registry for external extension; paid-edition handlers
+   *  register additional step types here at bootstrap. */
   getStepHandlerRegistry(): FlowStepHandlerRegistry {
     return this.stepHandlerRegistry;
   }
@@ -1893,7 +1862,7 @@ export class FlowRunner implements IFlowRunner {
     const inputData = this.collectStepInputData(step, originalRequest, stepResults);
     const userPrompt = await this.buildStepUserPrompt(flowRunId, step, flow, originalRequest, inputData);
 
-    // Merge skills: step-level skills override flow-level defaults (Phase 17)
+    // Merge skills: step-level skills override flow-level defaults
     const skills = step.skills ?? flow.defaultSkills;
 
     // Log input.prepared event for test visibility
@@ -2019,14 +1988,9 @@ export class FlowRunner implements IFlowRunner {
       });
     }
 
-    // A strategy-declared execution step (react/cli_delegate/mcp) gets its output-format
-    // instruction from the strategy's own prompt (e.g. ReAct's toml tool-call contract),
-    // NOT from the flow step's <content> plan-envelope instruction. Injecting the latter
-    // text into a forced strategy step makes a live model believe it is in the PLANNING
-    // phase and respond with a JSON plan in <content>, so a react step returns zero tool
-    // actions and ReAct fails with "No actions generated in ReAct iteration" (Phase 167
-    // Step 3 live finding). Plain no-strategy agent steps keep the envelope, since the
-    // flow's next-step / aggregated-output parsing depends on it.
+    // A strategy-declared step (react/cli_delegate/mcp) gets its output-format instruction from the strategy's own
+    // prompt, NOT the flow step's <content> plan-envelope instruction — injecting the latter makes a live model
+    // respond with a JSON plan instead of tool actions. Plain no-strategy agent steps keep the envelope.
     const userPrompt = step.type === FlowStepType.GATE || step.strategy
       ? basePrompt
       : `${basePrompt}${flowStepOutputInstruction(step, flow)}`;
@@ -2034,10 +1998,8 @@ export class FlowRunner implements IFlowRunner {
     return userPrompt;
   }
 
-  /**
-   * Safe wrapper around `executeStep` to ensure unexpected throws
-   * are converted into a `IStepResult` and do not propagate.
-   */
+  /** Safe wrapper around `executeStep` to ensure unexpected throws are converted into an
+   *  `IStepResult` and do not propagate. */
   private async executeStepSafe(
     flowRunId: string,
     stepId: string,
