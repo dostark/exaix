@@ -253,12 +253,9 @@ function checkType(
   return null;
 }
 
-/**
- * Whether a concrete key matches a registered pattern key. A pattern key
- * contains the wildcard segment (`*`) which matches exactly one dot-delimited
- * segment — e.g. `models.*.model` matches `models.default.model` but not
- * `models.default.foo.model`.
- */
+/** Whether a concrete key matches a registered pattern key. A pattern key contains the
+ *  wildcard segment (`*`) which matches exactly one dot-delimited segment — e.g.
+ *  `models.*.model` matches `models.default.model` but not `models.default.foo.model`. */
 function matchesPatternKey(patternKey: string, key: string): boolean {
   const patternParts = patternKey.split(".");
   const keyParts = key.split(".");
@@ -322,10 +319,8 @@ function validateAgainstMetadata(
   return { valid: issues.length === 0, issues };
 }
 
-/**
- * DirectConfigAdapter — reads/writes Config DB directly (offline mode).
- * Opens its own @db/sqlite connection to .exa/config.db.
- */
+/** DirectConfigAdapter — reads/writes Config DB directly (offline mode); opens its own
+ *  @db/sqlite connection to .exa/config.db. */
 export class DirectConfigAdapter implements IConfigAdapter {
   protected db: Database;
   protected daemonLogger?: IEventLogger;
@@ -337,11 +332,9 @@ export class DirectConfigAdapter implements IConfigAdapter {
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.db = new Database(dbPath);
-    // The daemon migrates the Config DB at boot, but external callers (notably
-    // `exactl config get|diff|validate`) may open a root the daemon has never touched.
-    // migrateConfigDb is CREATE TABLE IF NOT EXISTS throughout, so applying it here is
-    // idempotent and turns a raw `no such table: config_overrides` into the intended
-    // registry-default fallback.
+    // The daemon migrates the Config DB at boot, but external callers (e.g. `exactl config
+    // get|diff|validate`) may open a root it never touched. Idempotent (CREATE TABLE IF NOT
+    // EXISTS), so this turns a raw "no such table" error into the registry-default fallback.
     migrateConfigDb(this.db);
     this.adapterMode = mode ?? ConfigAdapterMode.DIRECT;
     this.daemonLogger = logger;
@@ -385,10 +378,9 @@ export class DirectConfigAdapter implements IConfigAdapter {
       throw new ConfigKeyNotFoundError(key);
     }
 
-    // Phase 139 Step 4 (GAP-1/GAP-2): refuse writes to a locked key. Shared
-    // guard — no blocklist dependency. Use the resolved validation key so a
-    // lock on the base key also covers profile-scoped and pattern-keyed writes
-    // (post-gap analysis GAP-1).
+    // Refuse writes to a locked key (shared guard, no blocklist dependency). Uses the
+    // resolved validation key so a lock on the base key also covers profile-scoped and
+    // pattern-keyed writes.
     this.assertWritable(validationKey);
 
     // Validate value against the resolved key's metadata.
@@ -411,14 +403,9 @@ export class DirectConfigAdapter implements IConfigAdapter {
     });
   }
 
-  /**
-   * Resolve the registry key whose metadata governs validation of `key`:
-   * 1. Exact registered key → itself.
-   * 2. `profile.<name>.<base>` → `<base>` if registered.
-   * 3. A concrete key matching a registered pattern key (`a.*.b` / `a.*`) →
-   *    that pattern key.
-   * 4. Otherwise `undefined` (caller rejects with ConfigKeyNotFoundError).
-   */
+  /** Resolves the registry key whose metadata governs validation of `key`: an exact
+   *  registered key maps to itself; `profile.<name>.<base>` maps to `<base>` if
+   *  registered; a key matching a registered pattern key (`a.*.b`/`a.*`) maps to that pattern key; otherwise `undefined` (caller rejects with ConfigKeyNotFoundError). */
   resolveValidationKey(key: string): string | undefined {
     const registry = getRegisteredDefaults();
 
@@ -464,7 +451,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     const allValues = getAllEffectiveValues(this.db);
     const result: IOverrideEntry[] = [];
     for (const [key, rawValue] of allValues) {
-      // The synthetic integrity checksum is never a user override (Step 5, GAP-4).
+      // The synthetic integrity checksum is never a user override.
       if (key === CONFIG_CHECKSUM_KEY) continue;
       if (rawValue !== null) {
         const registered = getRegisteredDefaults().get(key);
@@ -530,8 +517,8 @@ export class DirectConfigAdapter implements IConfigAdapter {
     const added: Array<{ path: string; value: ConfigValue }> = [];
     const missing: Array<{ path: string; default: ConfigValue }> = [];
 
-    // Iterates registered keys only; the synthetic `_checksum` is unregistered
-    // so it is structurally excluded from diff (Step 5, GAP-4) — no filter needed.
+    // Iterates registered keys only; the synthetic `_checksum` is unregistered so it is
+    // structurally excluded from diff — no filter needed.
     for (const [key, registered] of getRegisteredDefaults()) {
       const effective = this.get(key);
       const defaultValue = registered.opts.default;
@@ -602,12 +589,9 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return row.value;
   }
 
-  /**
-   * Shared pre-write guard (Phase 139 Step 4, GAP-1). Called at the top of BOTH
-   * DirectConfigAdapter.set() and the DaemonConfigAdapter.set() override so a
-   * locked key is un-writable through every surface — CLI, MCP (which builds a
-   * DirectConfigAdapter), and the live daemon. Throws ConfigKeyLockedError.
-   */
+  /** Shared pre-write guard, called at the top of BOTH DirectConfigAdapter.set() and the
+   *  DaemonConfigAdapter.set() override so a locked key is un-writable through every
+   *  surface — CLI, MCP, and the live daemon. Throws ConfigKeyLockedError. */
   protected assertWritable(key: string): void {
     if (dbIsKeyLocked(this.db, key)) {
       throw new ConfigKeyLockedError(key);
@@ -632,16 +616,11 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return listLockedKeys(this.db);
   }
 
-  // ── Phase 139 Step 5: integrity checksum (§11.7) ──────────────────────────
+  // ── Integrity checksum ─────────────────────────────────────────────────────
 
-  /**
-   * SHA-256 over the sorted effective config. DB-sourced via
-   * getAllEffectiveValues(this.db) — never the in-memory store, so on a
-   * DaemonConfigAdapter (whose get() is store-backed) the checksum still
-   * reflects the persisted DB an out-of-band edit mutates (GAP-6). The
-   * synthetic `_checksum` key is excluded so the checksum never hashes its own
-   * previous value (a fixed-point/instability bug if omitted).
-   */
+  /** SHA-256 over the sorted effective config. DB-sourced via getAllEffectiveValues, never the in-memory store, so
+   *  on a DaemonConfigAdapter the checksum still reflects the persisted DB an out-of-band edit mutates. The synthetic
+   *  `_checksum` key is excluded so the checksum never hashes its own previous value (a fixed-point/instability bug). */
   computeIntegrityChecksum(): string {
     const effective = getAllEffectiveValues(this.db);
     const keys = [...effective.keys()].filter((k) => k !== CONFIG_CHECKSUM_KEY).sort();
@@ -655,10 +634,8 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return encodeHex(crypto.subtle.digestSync("SHA-256", data));
   }
 
-  /**
-   * Refresh the stored `_checksum` row from the current DB state. Called at the
-   * end of every adapter write path so legitimate writes never trip a mismatch.
-   */
+  /** Refreshes the stored `_checksum` row from the current DB state. Called at the end of
+   *  every adapter write path so legitimate writes never trip a mismatch. */
   protected persistChecksum(): void {
     insertOverride(
       this.db,
@@ -732,10 +709,8 @@ export class DirectConfigAdapter implements IConfigAdapter {
   }
 }
 
-/**
- * Read a PID from a file. Returns undefined if the file does not exist or
- * contains an invalid number.
- */
+/** Reads a PID from a file. Returns undefined if the file does not exist or contains an
+ *  invalid number. */
 export function readPidFile(pidPath: string): number | undefined {
   try {
     const content = Deno.readTextFileSync(pidPath);
@@ -746,14 +721,9 @@ export function readPidFile(pidPath: string): number | undefined {
   }
 }
 
-/**
- * DaemonConfigAdapter — reads from InMemoryConfigStore (daemon's live cache)
- * and writes through to the Config DB. For hot-swappable keys the in-memory
- * store is updated immediately; restart-required keys are persisted to DB only.
- *
- * Construct with an existing @db/sqlite Database handle (the same one opened
- * by the daemon boot in Step 3) so all db.ts helpers share the connection.
- */
+/** DaemonConfigAdapter — reads from InMemoryConfigStore (daemon's live cache) and writes through to the Config DB.
+ *  For hot-swappable keys the in-memory store is updated immediately; restart-required keys are persisted to DB
+ *  only. Construct with an existing @db/sqlite Database handle (the one opened at daemon boot) so db.ts helpers share it. */
 export class DaemonConfigAdapter extends DirectConfigAdapter {
   constructor(
     private configStore: InMemoryConfigStore,
@@ -790,10 +760,9 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
       throw new ConfigKeyNotFoundError(key);
     }
 
-    // Phase 139 Step 4 (GAP-1): the daemon's set() is a full override, so the
-    // shared lock guard must run here too — inheriting DirectConfigAdapter.set()
-    // does NOT cover this path. Use validationKey so profile-scoped writes are
-    // also covered (post-gap analysis GAP-1).
+    // The daemon's set() is a full override, so the shared lock guard must run here too —
+    // inheriting DirectConfigAdapter.set() does NOT cover this path. Use validationKey so
+    // profile-scoped writes are also covered.
     this.assertWritable(validationKey);
 
     const report = this.validateAtPath(key, value);
@@ -847,20 +816,16 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     return ConfigAdapterMode.DAEMON;
   }
 
-  /**
-   * Access the underlying in-memory config store for direct manipulation
-   * (e.g. population at daemon boot).
-   */
+  /** Access the underlying in-memory config store for direct manipulation (e.g.
+   *  population at daemon boot). */
   get store(): InMemoryConfigStore {
     return this.configStore;
   }
 }
 
-/**
- * Check whether a process is alive via `kill -0` (sends no signal, only checks
- * existence/permission). Core-local so the config layer does not depend on the
- * CLI package. Returns false on any error (dead pid, no permission, no `kill`).
- */
+/** Checks whether a process is alive via `kill -0` (sends no signal, only checks
+ *  existence/permission). Core-local so the config layer does not depend on the CLI
+ *  package. Returns false on any error (dead pid, no permission, no `kill`). */
 export async function isPidAlive(pid: number): Promise<boolean> {
   try {
     const result = await new Deno.Command("kill", {
@@ -876,19 +841,9 @@ export async function isPidAlive(pid: number): Promise<boolean> {
 
 const DEFAULT_DAEMON_PID_PATH = ".exa/daemon.pid";
 
-/**
- * Factory — creates a DirectConfigAdapter or DaemonConfigAdapter.
- *
- * SYNCHRONOUS contract (this function): the daemon branch is selected only when
- * the caller explicitly supplies both `store` and `db` AND a PID file EXISTS.
- * It does NOT verify the PID is alive (liveness needs an async `kill -0`); a stale
- * PID file therefore still selects the daemon adapter. Callers that need true
- * liveness (e.g. a CLI attaching to a possibly-dead daemon) must use the async
- * {@link createConfigAdapterAsync}. When `store`/`db` are omitted or no PID file
- * exists, a DirectConfigAdapter is returned. NOTE: the daemon process itself does
- * NOT use this factory for self-detection — it constructs DaemonConfigAdapter
- * directly at boot (apps/daemon/main.ts), so this path only serves external callers.
- */
+/** Factory — creates a DirectConfigAdapter or DaemonConfigAdapter. SYNCHRONOUS: the daemon branch is selected only
+ *  when the caller supplies both `store` and `db` AND a PID file EXISTS — it does NOT verify the PID is alive, so a
+ *  stale PID file still selects it. Callers needing true liveness must use the async {@link createConfigAdapterAsync}. */
 export function createConfigAdapter(
   configDbPath: string,
   mode: Opt<ConfigAdapterMode, Reason.SensibleDefault> = ConfigAdapterMode.DIRECT,
@@ -908,12 +863,9 @@ export function createConfigAdapter(
   return new DirectConfigAdapter(configDbPath, mode, logger);
 }
 
-/**
- * Async factory — like {@link createConfigAdapter} but VERIFIES the PID is a live
- * process (`kill -0`) before selecting the daemon adapter. A stale PID file falls
- * back to DirectConfigAdapter. Use this from external callers (CLI/MCP) that may be
- * attaching to a daemon that has since exited.
- */
+/** Async factory — like {@link createConfigAdapter} but VERIFIES the PID is a live process (`kill -0`) before
+ *  selecting the daemon adapter. A stale PID file falls back to DirectConfigAdapter. Use this from external
+ *  callers (CLI/MCP) that may be attaching to a daemon that has since exited. */
 export async function createConfigAdapterAsync(
   configDbPath: string,
   options?: Opt<{
