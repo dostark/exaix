@@ -607,10 +607,7 @@ export class EvalSqliteStore {
     return totalDeleted;
   }
 
-  /**
-   * Summarize runs grouped by a tag prefix (e.g. "task:" matches "task:feature", "task:bug-fix").
-   * Returns per-family aggregates: count, mean score, pass@1, reconcile rate, mean duration.
-   */
+  /** Groups runs by tag prefix (e.g. "task:" matches "task:feature", "task:bug-fix"). */
   summarizeByTag(
     tagPrefix: string,
     options: { pack?: string; cellId?: string; lastPerScenario?: boolean },
@@ -683,21 +680,9 @@ export class EvalSqliteStore {
     return count;
   }
 
-  /**
-   * Deduplicate runs keeping only the latest per scenario.
-   */
-  /**
-   * Change in this family's mean since the previous observation of the same scenarios.
-   *
-   * `delta` was declared and hardcoded `null`, and no report rendered it — so "trend deltas after
-   * the second run" could not be true of any output. Defined here as: the latest score per
-   * scenario (which is what the row's mean is over) minus the mean of each scenario's
-   * SECOND-latest score. `null` when no scenario in the family has been seen twice, because a
-   * first run has nothing to be a trend against.
-   *
-   * Compared per scenario rather than per run so a family whose membership changed between runs
-   * does not report a delta that is really a change of denominator.
-   */
+  /** Latest score per scenario minus the mean of each scenario's SECOND-latest score;
+   *  `null` when no scenario in the family has been seen twice. Compared per scenario
+   *  rather than per run so a changed family membership doesn't skew the denominator. */
   private previousMeanForFamily(
     rows: Array<{ scenario_id: string; tags: string | null; suite_score: number }>,
     family: string,
@@ -729,6 +714,7 @@ export class EvalSqliteStore {
     }
   }
 
+  /** Keeps only the latest run per scenario. */
   private deduplicateRuns(
     rows: Array<
       {
