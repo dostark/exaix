@@ -11,18 +11,11 @@
 
 import type { GuardrailIncident } from "@exaix/schemas";
 
-/**
- * Optional post-output screening seam for the ReAct loop. No-op in Solo (no runner injected).
- * Team edition injects a concurrent GuardrailRunner (P107) that screens agent output against
- * configurable policies. Never throws — policy errors are journaled and non-blocking.
- */
+/** No-op in Solo (no runner injected). Never throws — policy errors are journaled and
+ *  non-blocking. */
 export interface IGuardrailRunner {
-  /**
-   * Screen one agent-output string against all configured policies.
-   * Fire-and-forget from the caller's perspective: resolves when policies settle,
-   * but the ReAct loop does NOT await it on the critical path. Never throws —
-   * policy errors are journaled as guardrail.screen.error and are not violations.
-   */
+  /** Fire-and-forget from the caller's perspective: resolves when policies settle, but
+   *  the ReAct loop does NOT await it on the critical path. */
   screen(
     agentOutput: string,
     traceId: string,

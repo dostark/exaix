@@ -69,7 +69,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     });
     const costUsd = registryCostUsd ?? result.cost_usd ?? 0;
 
-    // Log individual generation metrics (Phase 69)
+    // Log individual generation metrics
     await this.executor.logGeneration(
       context.trace_id,
       options.identity_id ?? "",
@@ -104,10 +104,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     return this.executor.validateReviewResult(parsedResult);
   }
 
-  /**
-   * Parse and execute all TOML action blocks from the LLM response.
-   * Returns the total tool call count and set of changed files.
-   */
+  /** Returns the total tool call count and set of changed files. */
   private async executeTomlActions(
     response: string,
     options: IAgentExecutionOptions,

@@ -111,12 +111,9 @@ Deno.test("IAgentRunner labels the user request with a distinct marker so it can
   const runner = new AgentRunner(mockProvider);
   await runner.run(sampleBlueprint, sampleRequest, undefined);
 
-  // Skills render under their own "### HEADING" markers (prompt_formatter.ts); the user's
-  // actual request must be equally distinguishable, not bare text concatenated after them —
-  // otherwise a real model reading the assembled prompt cannot tell where instructional/example
-  // content ends and the task to actually perform begins. An hr-delimited marker (not a markdown
-  // heading) is used deliberately: request bodies routinely start with their own "#"/"##"
-  // heading, which would outrank a fixed heading level.
+  // The user's request must be distinguishable from skill content the same way skills are
+  // (### HEADING markers), not bare text appended after them. An hr-delimited marker (not
+  // a markdown heading) is used since request bodies often start with their own "#"/"##".
   const markerIndex = capturedPrompt.indexOf("YOUR TASK");
   const userIndex = capturedPrompt.indexOf(sampleRequest.userPrompt);
 
@@ -809,9 +806,7 @@ Deno.test("IAgentRunner handles very long user prompt", async () => {
   assertExists(result);
 });
 
-// ============================================================================
-// Phase 17: Skills Integration Tests
-// ============================================================================
+// Skills Integration Tests
 
 /**
  * Mock SkillsService for testing
@@ -1141,7 +1136,7 @@ Deno.test("IAgentRunner: uses blueprint defaultSkills when no trigger matches", 
 
   assertExists(result);
   assertEquals(result.skillsApplied, ["default-skill-1", "default-skill-2"]);
-  // Verify skills were requested (Phase 70 hydration)
+  // Verify skills were requested
   assertEquals(mockSkills.contextBuiltForSkills, ["default-skill-1", "default-skill-2"]);
 });
 
@@ -1169,8 +1164,7 @@ Deno.test("IAgentRunner: trigger matches are concatenated with blueprint default
   const result = await runner.run(blueprintWithDefaults, sampleRequest, undefined);
 
   assertExists(result);
-  // Phase 142 Step 17: matches no longer OVERRIDE defaults — the resulting set is
-  // matched ∪ defaults, so both appear. One rule replaced three branch-specific ones.
+  // Matches no longer OVERRIDE defaults — the resulting set is matched ∪ defaults.
   assertEquals(result.skillsApplied, ["matched-skill", "default-skill-1"]);
 });
 
@@ -1204,9 +1198,7 @@ Deno.test("IAgentRunner: request-level skills override trigger matches", async (
   assertEquals(mockSkills.matchCallCount, 0);
 });
 
-// ============================================================================
-// GAP-6 Remediation: EventLogger Integration Tests
-// ============================================================================
+// EventLogger Integration Tests
 
 Deno.test("[IAgentRunner] routes prompt_assembled through IEventLogger when provided", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -1230,9 +1222,7 @@ Deno.test("[IAgentRunner] routes prompt_assembled through IEventLogger when prov
   assertEquals(actions.includes("agent.prompt_assembled"), true);
 });
 
-// ============================================================================
-// Phase 140: conversationId threading for session-continuity providers
-// ============================================================================
+// conversationId threading for session-continuity providers
 
 Deno.test("[IAgentRunner] passes request.traceId as options.conversationId to provider.generate()", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);

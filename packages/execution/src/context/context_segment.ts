@@ -34,17 +34,11 @@ export interface IContextSegment {
   kind: IContextSegmentKind;
   /** Raw text content of this segment. */
   content: string;
-  /**
-   * Protection priority (0–100, higher = more protected).
-   * Use CONTEXT_PRIORITY_* constants from @exaix/core.
-   * Tie-break: insertion order (FIFO).
-   */
+  /** 0–100, higher = more protected. Use CONTEXT_PRIORITY_* constants from @exaix/core.
+   *  Tie-break: insertion order (FIFO). */
   priority: number;
-  /**
-   * Estimated token count for this segment.
-   * Callers must populate this using ITokenizer.countTokens(content, model)
-   * from packages/core/src/func/tokenizer.ts — do not introduce a new estimator.
-   */
+  /** Callers must populate this using ITokenizer.countTokens(content, model) from
+   *  packages/core/src/func/tokenizer.ts — do not introduce a new estimator. */
   tokenEstimate: number;
   /** Optional named metadata — always use a named interface, not an anonymous map. */
   metadata: IContextSegmentMetadata;

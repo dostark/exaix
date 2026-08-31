@@ -70,10 +70,8 @@ Deno.test("[ReActLoopAdapter] logPromptAssembled propagates a logger rejection r
   const { config, cleanup } = await initTestDbService();
   try {
     const loggerFailure = new Error("logger unavailable");
-    // A fake IEventLogger whose .info() always rejects — no try/catch anywhere in
-    // logPromptAssembled (or any sibling ReActLoopAdapter log method) means this
-    // rejection must propagate to the caller, matching the class's existing,
-    // uniform error-propagation shape rather than being silently swallowed.
+    // No try/catch in logPromptAssembled (or any sibling log method), so a rejection
+    // must propagate to the caller rather than being silently swallowed.
     const rejectingLogger: IEventLogger = {
       log: () => Promise.reject(loggerFailure),
       info: () => Promise.reject(loggerFailure),

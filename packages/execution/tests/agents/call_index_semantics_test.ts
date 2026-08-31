@@ -127,10 +127,9 @@ Deno.test("[call_index_semantics] concurrent calls for different flow steps do n
     id: "steady",
     async generate(_prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
       capturedCallSites.push(options?.callSite);
-      // Simulate step-a's real network call staying in flight while step-b's call — started
-      // right after, in the same parallel wave — races ahead and completes first. Under the
-      // pre-fix scheme (no flowStepId in the key) both would read callIndex 0 from the same
-      // unconsumed counter; the fix must keep them distinct regardless of resolution order.
+      // step-a stays in flight while step-b, started right after, races ahead and completes
+      // first. Without flowStepId in the key both would read callIndex 0 from the same
+      // counter; the fix must keep them distinct regardless of resolution order.
       if (options?.callSite?.flowStepId === "step-a") {
         await gateA;
       }

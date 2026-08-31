@@ -60,12 +60,9 @@ export class GitExecutionSetupService {
       );
     }
 
-    // The portal's default_branch is only a config fallback (schema default "main"),
-    // which a repo created on "master" (or any other branch) will not have — insisting
-    // on it would make `git worktree add` fail with "invalid reference" even though the
-    // caller never asked for that specific branch. Honor it when it exists, otherwise
-    // fall back to the repo's own default branch (Exaix did not choose this branch, so
-    // there is nothing to fail loudly about).
+    // The portal's default_branch is only a config fallback (schema default "main"); a
+    // repo created on "master" won't have it. Honor it when it exists, otherwise fall
+    // back to the repo's own default branch.
     if (frontmatter.portal) {
       const portalCfg = this.config.portals.find((p) => p.alias === frontmatter.portal);
       const fromPortal = portalCfg?.default_branch?.trim();

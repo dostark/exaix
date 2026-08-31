@@ -668,14 +668,9 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      // Reproduces a real Phase 159 Step 8 finding: runWithStrategy (agent_executor_adapter.ts)
-      // constructs a FRESH AgentOrchestrator per flow step (GAP-2 — never a shared, long-lived
-      // instance across unrelated flows). But within ONE multi-step flow run using
-      // strategy: cli_delegate, each step's fresh orchestrator had an empty, unshared
-      // planWrittenFiles Set, so a prior step's own (uncommitted) writes looked "unauthorized"
-      // to the next step's audit and were reverted. The fix: an optional, externally-owned
-      // planWrittenFiles Set can be injected and shared across orchestrator instances for the
-      // same flow run (by traceId), while remaining isolated across different flow runs.
+      // Regression: a fresh AgentOrchestrator per flow step flagged a prior step's own
+      // uncommitted writes as "unauthorized". Fix: an externally-owned planWrittenFiles Set
+      // can be shared across orchestrator instances for the same flow run (by traceId).
       const sharedWrittenFiles = new Set<string>();
 
       const step1WrittenPath = "src/step1-output.ts";
@@ -736,10 +731,9 @@ Deno.test({
       assertEquals(step1Result.files_changed, [step1WrittenPath]);
       step1Executor.dispose();
 
-      // step1-output.ts is still dirty on disk (never committed). A SECOND, freshly
-      // constructed orchestrator — sharing the SAME Set instance, as runWithStrategy will for
-      // the same traceId — must not flag it, even though step 2's own files_changed only
-      // reports its own new file.
+      // step1-output.ts is still dirty on disk. A second orchestrator sharing the SAME Set
+      // must not flag it, even though the second executor's own files_changed only reports
+      // its own new file.
       const step2WrittenPath = "src/step2-output.ts";
       const step2Registry = new StrategyRegistry();
       step2Registry.register({
@@ -855,7 +849,7 @@ Deno.test({
         },
       });
       // No planWrittenFiles injected — a fresh, empty Set (today's default). Reproduces the
-      // live bug: step 1's still-uncommitted file is invisible to step 2's audit.
+      // live bug: the earlier executor's still-uncommitted file is invisible to this audit.
       const step2Executor = new AgentOrchestrator({
         config: testConfig,
         db,
@@ -887,15 +881,9 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      // Reproduces the Phase 159 Step 8 live finding: runWithStrategy builds a FRESH
-      // AgentOrchestrator per flow step (GAP-2 cross-flow isolation), so a multi-step
-      // cli_delegate flow's step N+1 has no memory of step N's own (uncommitted)
-      // writes. git status --porcelain still shows step N's file dirty when step N+1's
-      // audit runs, and since a brand-new orchestrator's planWrittenFiles starts empty,
-      // step N's file gets flagged "unauthorized" and reverted — destroying real work.
-      // The fix: construct with a shared `planWrittenFiles` Set (same object reference
-      // across both instances here, mirroring the per-traceId Set the adapter now
-      // threads through sequential runWithStrategy calls of the same flow run).
+      // Regression: a fresh AgentOrchestrator per flow step has no memory of an earlier
+      // one's uncommitted writes, so its empty planWrittenFiles flags them "unauthorized"
+      // and reverts them. Fix: share the same `planWrittenFiles` Set across instances.
       const sharedWrittenFiles = new Set<string>();
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
@@ -1007,7 +995,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
 
       // Documents the bug this fix addresses: two independently-constructed instances
-      // (no shared planWrittenFiles) reproduce the live Phase 159 Step 8 failure.
+      // (no shared planWrittenFiles) reproduce the live regression.
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
       await Deno.writeTextFile(
@@ -1118,15 +1106,9 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      // Mirrors PortalExecutionStrategy.WORKTREE (forced whenever a plan's frontmatter
-      // carries a portal): CliDelegateStrategy.resolvePortalPath prefers
-      // _toolRegistry?.getBaseDir() (the worktree) over portal.target_path (the mounted
-      // portal) so the headless CLI runs in the right directory. The security audit must
-      // resolve the SAME worktree-aware path — auditing portal.target_path instead audits
-      // a directory with zero diff (the write never happened there), silently passing
-      // regardless of what files_changed says, or flagging a real write as unauthorized
-      // once files_changed starts reporting real (non-empty) paths — see
-      // CliDelegateStrategy's opencode parsing fix, phase-140.
+      // CliDelegateStrategy.resolvePortalPath prefers the worktree over portal.target_path.
+      // The security audit must resolve the SAME path, or it audits an unrelated directory
+      // with zero diff — silently passing, or flagging a real write as unauthorized.
       const worktreePath = join(testDir, "worktree-checkout");
       const addWorktree = new Deno.Command(PortalOperation.GIT, {
         args: ["worktree", "add", "-b", "feat/worktree-step", worktreePath, "HEAD"],
@@ -1225,13 +1207,9 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      // Mirrors McpAgentStrategy/legacy callers that construct `new ToolRegistry({config,
-      // logger, pathResolver})` with no `baseDir` — ToolRegistry.getBaseDir() then falls
-      // back to config.system.root (the daemon root), which is NEVER a valid audit
-      // directory (it usually has no git repo at all, or an unrelated one). Only a
-      // ToolRegistry explicitly scoped to a worktree (baseDir passed at construction,
-      // as PlanExecutor.createAgentExecutor does for a WORKTREE-strategy plan) should
-      // override portal.target_path — an unset/default baseDir must not.
+      // With no `baseDir`, ToolRegistry.getBaseDir() falls back to config.system.root (the
+      // daemon root), which is NEVER a valid audit directory. Only a ToolRegistry explicitly
+      // scoped to a worktree should override portal.target_path — an unset baseDir must not.
       const fakeToolRegistry: IToolRegistry = {
         getTools: () => [],
         execute: () => Promise.resolve({ success: true }),
@@ -1319,10 +1297,9 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      // Step 1 writes src/earlier.ts and reports it. Step 2 (same orchestrator instance,
-      // as in a real plan) writes nothing — a read-only verification step. Step 1's change
-      // is still uncommitted in the worktree when step 2's audit runs, so authorization
-      // must accumulate across steps: step 1's write stays authorized through step 2.
+      // The first executeStep writes src/earlier.ts; the second (same orchestrator instance)
+      // writes nothing — a read-only verification. The first change is still uncommitted
+      // when the second's audit runs, so authorization must accumulate across calls.
       const earlierPath = "src/earlier.ts";
       let stepIndex = 0;
       const strategyRegistry = new StrategyRegistry();
@@ -1370,7 +1347,7 @@ Deno.test({
         audit_enabled: true,
       };
 
-      // Step 1: writes the file. Authorized by its own files_changed.
+      // Writes the file. Authorized by its own files_changed.
       await executor.executeStep({
         trace_id: crypto.randomUUID(),
         request_id: "cross-step-1",
@@ -1379,8 +1356,8 @@ Deno.test({
         portal: "TestPortal",
       }, options);
 
-      // Step 2: read-only (files_changed empty). The earlier file is still uncommitted;
-      // it must NOT be flagged, because step 1 legitimately wrote it in this same plan.
+      // Read-only (files_changed empty). The earlier file is still uncommitted; it must
+      // NOT be flagged, because it was legitimately written earlier in this same plan.
       const secondResult = await executor.executeStep({
         trace_id: crypto.randomUUID(),
         request_id: "cross-step-2",

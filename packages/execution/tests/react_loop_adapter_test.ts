@@ -20,12 +20,8 @@ import { ReActLoopAdapter } from "../src/react_loop_adapter.ts";
 import { OutputParser } from "../src/output_parser.ts";
 import { ExecutionContextService } from "../src/execution_context_service.ts";
 
-/**
- * logAgentOutput/logDynamicToolCall only touch `this.logger` — outputParser/ctx are
- * structurally required by the constructor but never exercised by either method. Both
- * have fully-optional-or-defaulted constructors, so real instances are constructed
- * directly rather than stubbed/cast.
- */
+/** logAgentOutput/logDynamicToolCall only touch `this.logger` — outputParser/ctx are
+ *  structurally required but never exercised by either method. */
 function createAdapter(config: Config, logger: EventLogger): ReActLoopAdapter {
   return new ReActLoopAdapter(
     new OutputParser(),

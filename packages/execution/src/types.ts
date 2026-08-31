@@ -27,10 +27,7 @@ export const CritiqueSchema = z.object({
 
 export type ICritique = z.infer<typeof CritiqueSchema>;
 
-/**
- * Entry for a completed execution step in loop history.
- * Each step records its outcome for potential summarization.
- */
+/** Each step records its outcome for potential summarization. */
 export interface ILoopHistoryEntry {
   type: "step";
   stepId: string;
@@ -40,10 +37,7 @@ export interface ILoopHistoryEntry {
   timestamp: number;
 }
 
-/**
- * Compacted summary of multiple completed steps.
- * Replaces individual step entries when budget pressure triggers summarization.
- */
+/** Replaces individual step entries when budget pressure triggers summarization. */
 export interface ICompactedEntry {
   type: "compacted";
   summary: string;

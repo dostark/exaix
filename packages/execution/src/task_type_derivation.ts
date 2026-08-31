@@ -41,7 +41,8 @@ export interface ITaskTypeDerivationResult {
   source: TaskTypeSource;
 }
 
-/** Derive a TaskType by walking the §5.8.8 precedence chain. */
+/** Derive a TaskType by walking the precedence chain: frontmatter → identity → skill →
+ *  static map → analyzer → unknown. */
 export function deriveTaskType(ctx: ITaskTypeDerivationContext): ITaskTypeDerivationResult {
   if (ctx.frontmatterTaskType) {
     return { taskType: ctx.frontmatterTaskType, source: "frontmatter" };
@@ -62,11 +63,8 @@ export function deriveTaskType(ctx: ITaskTypeDerivationContext): ITaskTypeDeriva
   return { taskType: TaskType.UNKNOWN, source: "unknown" };
 }
 
-/**
- * Soft-match `identityId` against `taskTypeMap` keys: exact match first, then the
- * longest key that is a normalised (hyphen-insensitive) prefix of identityId — so
- * "senior-coder-v2" and "senior-coder-v3" both fall through to a "senior-coder" entry.
- */
+/** Exact match first, then the longest normalised (hyphen-insensitive) prefix, so
+ *  "senior-coder-v2"/"v3" both fall through to a "senior-coder" entry. */
 function softMatchTaskTypeMap(
   identityId: Opt<string, Reason.OptionalInput>,
   taskTypeMap: Opt<Record<string, TaskType>, Reason.OptionalInput>,

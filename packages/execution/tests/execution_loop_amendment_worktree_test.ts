@@ -41,13 +41,9 @@ Deno.test(
 
     const { db, cleanup } = await initTestDbService();
     try {
-      // Non-JSON generate() responses fall through OutputParser.defaultResult(), whose
-      // description is the step's own plan text (task title + content) — so a step whose
-      // content carries hedging/uncertain language drives ConfidenceScorer.assessQuick()
-      // below the threshold and triggers a real PlanAmendmentPendingError, the same
-      // low_confidence path the plan-amendment-lifecycle scenario exercises. The amendment
-      // proposal call (PlanAmendmentService.proposeAmendment) uses the same provider, so it
-      // is distinguished by its own distinctive prompt text and answered with a valid patch.
+      // Non-JSON generate() responses fall through to the step's own plan text, so hedging
+      // language in it drives ConfidenceScorer below threshold, triggering a real
+      // PlanAmendmentPendingError (the amendment-proposal call reuses the same provider).
       const uncertainLlm: IModelProvider = {
         id: "uncertain-mock",
         generate: (prompt: string): Promise<IGenerateResult> =>
@@ -141,10 +137,9 @@ Finish the task.
 
       const worktreePath = join(rootDir, ".exa", "worktrees", "my-portal", traceId);
 
-      // First pass: the low-confidence step 1 triggers PlanAmendmentPendingError.
-      // The plan is marked amendment_pending in place (handleAmendmentPending) and the
-      // run reports success (the loop pauses, it did not fail) — but the worktree it
-      // created for this traceId must NOT be left behind.
+      // First pass: the low-confidence step triggers PlanAmendmentPendingError. The plan is
+      // marked amendment_pending and the run reports success (paused, not failed) — but
+      // the worktree it created for this traceId must NOT be left behind.
       const firstResult = await loop.processTask(planPath);
       assertEquals(firstResult.success, true, "Amendment-pending pause should report success: " + firstResult.error);
 
@@ -172,11 +167,9 @@ Finish the task.
           "`git worktree add` collides with the orphaned directory",
       );
 
-      // Second pass: simulate the resumed run after amendment approval — status flips
-      // back to approved (what PlanCommands.approveAmendment does to the on-disk plan,
-      // which handleAmendmentPending already rewrote to amendment_pending above) and the
-      // loop picks the plan up again. It must be able to create the worktree again, not
-      // fail with "already exists".
+      // Second pass: simulate the resumed run after amendment approval — status flips back
+      // to approved and the loop picks the plan up again. It must be able to create the
+      // worktree again, not fail with "already exists".
       const pausedContent = await Deno.readTextFile(planPath);
       const resumedContent = pausedContent.replace(
         `status: ${PlanStatus.AMENDMENT_PENDING}`,

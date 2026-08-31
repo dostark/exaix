@@ -17,13 +17,6 @@ import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ToolName } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
-/**
- * TDD Tests for Agent Capability Differentiation
- * Task 4.1: Read-Only Agent Optimization
- *
- * Tests that AgentOrchestrator can differentiate between read-only and write-capable agents
- */
-
 describe("AgentOrchestrator Capability Differentiation", () => {
   let config: Config;
   let executor: AgentOrchestrator;
@@ -182,11 +175,8 @@ describe("AgentOrchestrator Capability Differentiation", () => {
     });
   });
 
-  // Real authored blueprints (Blueprints/Identities/*.md) carry behavioural tags in
-  // `capabilities` (e.g. "code_generation", "react") and declare tool grants in
-  // `permitted_tools`. The classifier must consult permitted_tools, or every real
-  // write-capable coder (senior-coder, test-engineer, ...) is misclassified read-only
-  // and routed to the git-untracked read-only execution path.
+  // The classifier must consult permitted_tools, or every real write-capable coder
+  // (senior-coder, test-engineer, ...) is misclassified read-only.
   describe("permitted_tools as the write-capability source", () => {
     it("requiresGitTracking is true when write_file is in permitted_tools (senior-coder shape)", () => {
       const blueprint: IAgentFileBlueprint = {

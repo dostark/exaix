@@ -25,13 +25,9 @@ const TOKENS_PER_MTOK = 1_000_000;
  *  input price. https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching */
 const CACHE_READ_PRICE_MULTIPLIER = 0.1;
 
-/**
- * Computes a predicted cost figure from real, already-measured token counts against
- * static_overlay.ts's per-model split input/output price. Cache-creation tokens are priced at
- * the standard input rate (a real per-tier cache-write multiplier is not yet in the overlay
- * table); cache-read tokens are discounted per Anthropic's documented 0.1x multiplier. Returns
- * undefined (never a fabricated figure) when the model has no overlay entry.
- */
+/** Cache-creation tokens are priced at the standard input rate (no per-tier cache-write
+ *  multiplier in the overlay table yet); cache-read tokens get the 0.1x discount. Returns
+ *  undefined (never a fabricated figure) when the model has no overlay entry. */
 export function computeRegistryPredictedCost(
   provider: string,
   model: string,

@@ -38,10 +38,8 @@ export class SecurityError extends Error {
 const VALID_TRACE_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
 const VALID_STEP_ID_RE = /^[a-zA-Z0-9_-]{1,256}$/;
 
-/**
- * Writes snapshots to Memory/Execution/{traceId}/{stepId}_snapshot.json via atomic
- * write (temp file + rename); PathResolver confines the resolved path to the workspace root.
- */
+/** Atomic write (temp file + rename); PathResolver confines the resolved path to the
+ *  workspace root. */
 export class FileSnapshotStore implements ISnapshotStore {
   constructor(private readonly pathResolver: ISnapshotPathResolver) {}
 

@@ -27,10 +27,8 @@ import type { Opt, Reason } from "@exaix/core/types";
 /** Interface the ReAct loop strategy requires from its executor, decoupled from AgentOrchestrator's internal types. */
 export interface IReActLoopExecutor {
   logAgentOutput(traceId: string, output: string): Promise<void>;
-  /**
-   * Journals an executed tool call as a dynamic_tool_call event, matching DynamicStepExecutor
-   * so tool-call auditing works for the ReAct loop; optional since test doubles need not implement it.
-   */
+  /** Journals a dynamic_tool_call event, matching DynamicStepExecutor; optional since test
+   *  doubles need not implement it. */
   logDynamicToolCall?(
     traceId: string,
     tool: string,
@@ -63,10 +61,7 @@ export interface IReActLoopExecutor {
   readonly aciDocsEnabled?: boolean;
   /** The configured aggregate ACI prompt-injection character budget. */
   readonly aciDocPromptMaxChars?: number;
-  /**
-   * Journals the ReAct producer's agent.prompt_assembled event; `target` is
-   * `context.request_id`. Optional since test doubles need not implement it.
-   */
+  /** `target` is `context.request_id`. Optional since test doubles need not implement it. */
   logPromptAssembled?(
     traceId: string,
     target: string,

@@ -30,19 +30,6 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
 import { readFixtureTextSync } from "@exaix/testing";
 
-/**
- * Tests for Step 4.3: Execution Loop (Resilient)
- *
- * Success Criteria:
- * - Monitor Workspace/Active for approved plans
- * - Acquire lease to prevent concurrent execution
- * - Execute plan using Tool Registry and Git Service
- * - Handle success path = commit changes, generate report, archive plan
- * - Handle failure path = rollback git, generate failure report, move plan back
- * - Release lease even on failure
- * - Log all execution steps to IActivity Journal with trace_id and identity_id
- */
-
 function getTestPaths(root: string) {
   const paths = getDefaultPaths(root);
   return {
@@ -262,11 +249,8 @@ Deno.test("ExecutionLoop: handles tool execution failure gracefully", async () =
   });
 });
 
-/**
- * Regression test for read-only plan execution producing analysis output.
- * Root cause: read-only structured plans were skipped, so no analysis was generated.
- * Fix: execute read-only structured plans with tool actions and generate analysis report.
- */
+/** Regression: read-only structured plans were skipped entirely, so no analysis was
+ *  generated. */
 Deno.test("[regression] ExecutionLoop: read-only structured plan writes analysis report", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exec-test-readonly-report-" });
   const { db, cleanup } = await initTestDbService();

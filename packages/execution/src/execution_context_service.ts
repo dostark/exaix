@@ -30,12 +30,9 @@ export interface IPromptBudgetAllocator {
   allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
 }
 
-/**
- * Bundles budget allocation, context cache, token counting, context budget manager,
- * and snapshot store into a single injectable service. Reduces AgentOrchestrator's
- * constructor parameter count and encapsulates the context/budget subsystem.
- * @visible
- */
+/** Reduces AgentOrchestrator's constructor parameter count and encapsulates the
+ *  context/budget subsystem.
+ * @visible */
 export class ExecutionContextService {
   private _currentPromptBudget?: IPromptBudget;
   private promptBudgetAllocator?: IPromptBudgetAllocator;
@@ -147,10 +144,7 @@ export class ExecutionContextService {
     });
   }
 
-  /**
-   * Estimate tokens for the given input, using BPE tokenizer if available,
-   * falling back to character-heuristic estimation.
-   */
+  /** Uses BPE tokenizer if available, falling back to character-heuristic estimation. */
   async estimateTokens(input: string, modelId?: Opt<string, Reason.ExecutionConfig>): Promise<number> {
     if (this._tokenizer && modelId) {
       return await this._tokenizer.countTokens(input, modelId);
@@ -168,11 +162,8 @@ export class ExecutionContextService {
     return tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
   }
 
-  /**
-   * Sync character-heuristic token estimation.
-   * Injects `TOKEN_ESTIMATION_CHARS_PER_TOKEN` internally so callers
-   * (e.g. AgentOrchestrator) don't import the constant directly.
-   */
+  /** Injects `TOKEN_ESTIMATION_CHARS_PER_TOKEN` internally so callers don't import the
+   *  constant directly. */
   estimateTokensSync(input: string): number {
     return Math.ceil(input.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
   }

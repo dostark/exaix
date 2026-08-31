@@ -75,8 +75,8 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
   });
 
   await t.step("Agent implements feature", async () => {
-    // Patch file — two sequential flat search/replace calls (Phase 154 Step 4: patch_file
-    // no longer accepts a {patches: [...]} array; each edit is its own call).
+    // Patch file — two sequential flat search/replace calls; patch_file does not accept a
+    // {patches: [...]} array, each edit is its own call.
     const patch1 = await registry.execute(ToolName.PATCH_FILE, {
       path: "main.ts",
       search: 'console.log("...");',

@@ -48,11 +48,8 @@ export interface IContextBudgetManagerInput {
   promptBudget: IPromptBudget;
   /** Segments to evaluate — may be empty; prepare() never throws on missing kinds. */
   segments: IContextSegment[];
-  /**
-   * Model provider for async LLM summarization.
-   * When absent, compactor.summarize() is skipped — snapshot save and event
-   * emission still occur.
-   */
+  /** When absent, compactor.summarize() is skipped — snapshot save and event emission
+   *  still occur. */
   provider?: IModelProvider;
 }
 
@@ -63,11 +60,8 @@ export interface IContextBudgetManagerOutput {
   snapshot: IContextBudgetSnapshot;
 }
 
-/**
- * Stateless contract for segment-level budget management.
- * prepare() takes all inputs by value and returns results — no mutable instance state.
- * Safe for concurrent use in parallel flow waves without locking.
- */
+/** Stateless: prepare() takes all inputs by value and returns results — safe for
+ *  concurrent use in parallel flow waves without locking. */
 export interface IContextBudgetManager {
   prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput>;
 }
@@ -86,11 +80,8 @@ function isProtected(segment: IContextSegment): boolean {
     segment.priority >= CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA;
 }
 
-/**
- * Map a segment kind to its canonical section name in IPromptBudget.sections.
- * All kinds that share a section return the same key, ensuring their consumed
- * tokens are summed against a single counter.
- */
+/** All kinds that share a section return the same key, ensuring their consumed tokens
+ *  are summed against a single counter. */
 function sectionNameFor(kind: IContextSegment["kind"]): string {
   const k = ContextSegmentKindSchema.enum;
   switch (kind) {
@@ -122,23 +113,16 @@ function sectionBudgetFor(
   return sections[sectionKey as keyof typeof sections];
 }
 
-/**
- * Segment kinds that are eligible for async LLM summarization when dropped.
- * System/request/acceptance_criteria are protected and never reach this path.
- */
+/** System/request/acceptance_criteria are protected and never reach this path. */
 const ASYNC_COMPACTABLE_KINDS = new Set<IContextSegment["kind"]>([
   ContextSegmentKindSchema.enum.tool_result,
   ContextSegmentKindSchema.enum.portal_knowledge,
   ContextSegmentKindSchema.enum.reflection,
 ]);
 
-/**
- * Default ContextBudgetManager implementation.
- * Synchronous tier: sort by priority descending, greedy-keep within section budgets.
- * No LLM calls in this tier — must complete within CONTEXT_BUDGET_OVERHEAD_TARGET_MS.
- * Async tier: schedules summarization for compactable dropped segments via queueMicrotask.
- * @visible
- */
+/** Sync tier: greedy-keep by priority within section budgets, no LLM calls. Async tier:
+ *  schedules summarization for dropped segments via queueMicrotask.
+ * @visible */
 export class ContextBudgetManager implements IContextBudgetManager {
   constructor(
     private readonly _tokenizer?: Opt<ITokenizer, Reason.OptionalDependency>,

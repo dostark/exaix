@@ -23,14 +23,9 @@
 import { assertEquals } from "@std/assert";
 
 Deno.test("[regression] AgentOrchestrator constructor no longer accepts a pricingLookup argument (structural — TS2554 too-many-arguments at compile time if reintroduced)", () => {
-  // AgentOrchestrator's constructor signature ends at `modelResolver` — there is no
-  // 16th `pricingLookup` slot to pass. This is a structural/compile-time proof:
-  // if the removed pricingLookup param or estimateExecutionUsage method were ever
-  // reintroduced, this file (and the many call sites across the codebase that
-  // construct AgentOrchestrator with exactly the parameters below) would need
-  // updating, and `deno check` on this file is the actual gate. Checks for the
-  // actual declarations, not any textual mention (a comment elsewhere in the
-  // file legitimately references the removed method's name for context).
+  // Structural/compile-time proof: `deno check` on this file is the actual gate if
+  // pricingLookup or estimateExecutionUsage were ever reintroduced. Checks for the actual
+  // declarations, not any textual mention (a comment below legitimately names it).
   const source = Deno.readTextFileSync(
     new URL("../src/agent_orchestrator.ts", import.meta.url),
   );

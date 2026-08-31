@@ -14,14 +14,8 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 
-/**
- * Union every matched skill's `tools` (deduplicated), then intersect with the identity's
- * `permitted_tools`. When `permittedTools` is undefined, the identity has no MCP-tool
- * restriction declared at all — every union member passes through unfiltered. When
- * `permittedTools` is an empty array, the identity permits no tools — the result is always
- * empty regardless of what skills declare, matching `resolvePermittedTools`'s fail-closed
- * behaviour for an identity with no tool grants.
- */
+/** `permittedTools` undefined → no restriction, everything passes; `[]` → no tools permitted,
+ *  result is always empty (fail-closed, matching `resolvePermittedTools`). */
 export function resolveEffectiveSkillTools(
   matchedSkillTools: Array<string[] | undefined>,
   permittedTools: Opt<string[], Reason.OptionalInput>,

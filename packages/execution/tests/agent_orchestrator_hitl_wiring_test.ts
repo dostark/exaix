@@ -73,10 +73,8 @@ Deno.test("AgentOrchestrator.executeStep: forwards the loaded blueprint's hitl.r
     strategyRegistry.register({
       name: ExecutionStrategyName.REACT,
       execute: async () => {
-        // Mirrors what ReActLoopStrategy/LegacyAgentStrategy/McpAgentStrategy actually do:
-        // call the SAME toolRegistry instance AgentOrchestrator holds (this closes over the
-        // standalone `toolRegistry` variable, which is the identical instance injected into
-        // AgentOrchestrator below — the effect is the same as going through `this.executor`).
+        // Closes over the standalone `toolRegistry` variable, the same instance injected
+        // into AgentOrchestrator below — equivalent to going through `this.executor`.
         await toolRegistry.execute("write_file", { path: "x.txt", content: "y" });
         const result: IChangesetResult = {
           branch: "feat/spy",

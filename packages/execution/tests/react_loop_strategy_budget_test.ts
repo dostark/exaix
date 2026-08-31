@@ -319,7 +319,7 @@ Deno.test(
       },
     };
 
-    // Step 1: return a tool call action; Step 2: return COMPLETE
+    // First call returns a tool call action; second returns COMPLETE.
     let callCount = 0;
     const twoStepProvider: IModelProvider = {
       generate(_prompt: string) {

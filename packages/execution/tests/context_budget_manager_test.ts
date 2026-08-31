@@ -242,13 +242,11 @@ Deno.test("[ContextBudgetManager] snapshot.durationMs is a non-negative integer"
   assertLessOrEqual(0, snapshot.durationMs!);
 });
 
-// ─── Step 2 extensions ────────────────────────────────────────────────────────
+// Extensions
 
 Deno.test("[ContextBudgetManager] drops low-priority tool_result before portal_knowledge at same budget", async () => {
-  // Both loopHistory (tool_result) and portalKnowledge are set to 0 so both would be dropped.
-  // Verify that tool_result (lower priority) IS dropped while the decision record
-  // shows portal_knowledge was also dropped — the decisions must include the
-  // lower-priority segment.
+  // Both loopHistory and portalKnowledge budgets are 0, so both would be dropped; the
+  // decision record must include the lower-priority tool_result segment too.
   const manager: IContextBudgetManager = new ContextBudgetManager();
 
   const tool = makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 20 });
@@ -410,15 +408,13 @@ Deno.test(
   },
 );
 
-// ─── Step 5: section-key bug regression tests ─────────────────────────────────
+// Section-key bug regression tests
 
 Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan respect combined budget", async () => {
   const manager: IContextBudgetManager = new ContextBudgetManager();
 
-  // sections.plan = 100 tokens.
-  // acceptance_criteria (60 tokens) is protected — always kept, consumes plan budget.
-  // plan_step (70 tokens) must compete against the remaining 40 tokens of sections.plan,
-  // not against its own fresh counter.
+  // sections.plan = 100 tokens; acceptance_criteria (60, protected) consumes plan budget,
+  // so plan_step (70) must compete against the remaining 40, not its own fresh counter.
   const tightBudget = {
     ...makePromptBudget(),
     sections: {
@@ -462,7 +458,7 @@ Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan resp
   assertLessOrEqual(snapshot.usedInputTokens, 100);
 });
 
-// ─── Step 8: provider wiring for async compaction (GAP-4) ────────────────────
+// Provider wiring for async compaction
 
 Deno.test(
   "[ContextBudgetManager] async compaction calls compactor.summarize with real provider when provider is supplied",
@@ -566,7 +562,7 @@ Deno.test("[ContextBudgetManager] tool_result + summary share sections.loopHisto
   assertEquals(summaryDecision?.action !== "keep", true);
 });
 
-// ─── Step 6: orphaned event wiring (ContextBudgetAllocated / ContextBudgetConsumed / ContextSectionTruncated) ─
+// Event wiring (ContextBudgetAllocated / ContextBudgetConsumed / ContextSectionTruncated)
 
 interface ICapturedBudgetEvent {
   action: string;

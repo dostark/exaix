@@ -28,10 +28,7 @@ export interface IContextCompactor {
   ): Promise<IContextSegment>;
 }
 
-/**
- * Calls the LLM provider to produce a compact summary of the segment.
- * On provider failure, returns the original segment unchanged (fail-open).
- */
+/** On provider failure, returns the original segment unchanged (fail-open). */
 export class LlmContextCompactor implements IContextCompactor {
   async summarize(
     segment: IContextSegment,
@@ -55,10 +52,7 @@ export class LlmContextCompactor implements IContextCompactor {
   }
 }
 
-/**
- * No-op compactor — returns the segment unchanged.
- * Used in dry-run mode and tests to isolate budget manager behavior.
- */
+/** Used in dry-run mode and tests to isolate budget manager behavior. */
 export class NoopContextCompactor implements IContextCompactor {
   summarize(
     segment: IContextSegment,

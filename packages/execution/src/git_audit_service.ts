@@ -25,17 +25,11 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { AgentExecutionError } from "@exaix/execution";
 
-/**
- * Git audit, file path validation, and unauthorized change reversion.
- * All git operations use SafeSubprocess with timeout guards.
- */
+/** All git operations use SafeSubprocess with timeout guards. */
 export class GitAuditService {
   constructor(private logger: IEventLogger) {}
 
-  /**
-   * Audit git changes to detect unauthorized modifications.
-   * Returns list of file paths that were changed without authorization.
-   */
+  /** Returns file paths that were changed without authorization. */
   async auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
     try {
       const checkRepo = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "--is-inside-work-tree"], {
@@ -104,10 +98,7 @@ export class GitAuditService {
     }
   }
 
-  /**
-   * Validate file path for security — prevents path traversal and injection.
-   * Returns the validated path or null if invalid.
-   */
+  /** Prevents path traversal and injection; returns the validated path or null. */
   validateFilePath(filePath: string, portalPath: string): string | null {
     const normalizedPath = this.normalizeAndPreValidateFilePath(filePath);
     if (!normalizedPath) return null;
@@ -222,10 +213,8 @@ export class GitAuditService {
     return chunks;
   }
 
-  /**
-   * Atomic audit and revert operation to prevent TOCTOU race conditions.
-   * Performs git status check and file reversion in a single locked operation.
-   */
+  /** Atomic — performs git status check and file reversion in a single locked operation
+   *  to prevent TOCTOU race conditions. */
   async auditAndRevertChanges(
     portalPath: string,
     authorizedFiles: string[],

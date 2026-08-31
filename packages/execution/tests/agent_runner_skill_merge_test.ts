@@ -111,13 +111,9 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
 });
 
 Deno.test("fix(agent-runner): a critical default skill survives a successful dynamic match", async () => {
-  // Regression for: matchAndApplySkills's dynamic-matching branch (no explicit
-  // request.skills) never unioned in blueprint.defaultSkills at all, so a
-  // critical:true skill like response-contract was silently dropped from the
-  // prompt whenever dynamic matching found any match — previously masked only
-  // because dynamic matching always returned zero matches (a separate, now-fixed
-  // bug in SkillsService.scoreKeywordTriggers), which made the all-defaults
-  // fallback branch fire on every real request.
+  // Regression: matchAndApplySkills's dynamic-matching branch never unioned in
+  // blueprint.defaultSkills, so a critical:true skill like response-contract was
+  // silently dropped from the prompt whenever dynamic matching found any match.
   const provider = makeMockProvider();
   const skillsSvc = makeMockSkillsServiceWithDynamicMatch(
     "tdd-methodology",
@@ -149,22 +145,17 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
   // The critical default skill must survive even though it wasn't dynamically matched.
   assertEquals(resolved.includes("response-contract"), true, "critical default skill must not be dropped");
 
-  // SUPERSEDED by Phase 142 Step 17: non-critical defaults ARE now pulled in. The
-  // critical-only union was an anti-bloat measure that made the resulting set depend on a
-  // flag only 2 of 27 skills set, so nobody could predict it. Bloat is now controlled by
-  // keeping identity default_skills short instead, and every default is concatenated.
+  // Non-critical defaults ARE now pulled in — the old critical-only union made the result
+  // depend on a flag only 2 of 27 skills set. Bloat is now controlled by keeping identity
+  // default_skills short instead, and every default is concatenated.
   assertEquals(resolved.includes("error-handling"), true);
   assertEquals(resolved.includes("portal-grounding"), true);
   assertEquals(resolved.includes("blueprint-best-practices"), true);
 });
 
-// ---------------------------------------------------------------------------
-// Phase 142 Step 17 — always-concatenate. Skill resolution used three different
-// merge rules depending on branch (explicit pin unioned ALL defaults, a dynamic
-// hit unioned only `critical` ones, a dynamic miss took ALL defaults), so nobody
-// could predict the resulting set. One rule now applies everywhere:
+// Always-concatenate: skill resolution used three different merge rules depending on
+// branch, so nobody could predict the resulting set. One rule now applies everywhere:
 // pinned ∪ matched ∪ defaults.
-// ---------------------------------------------------------------------------
 
 Deno.test("[step17] explicit pin concatenates with every identity default", async () => {
   const runner = createMinimalRunner();
@@ -195,11 +186,9 @@ Deno.test("[step17] the resulting set has no duplicates when a pin repeats a def
 });
 
 Deno.test("[step17] a successful dynamic match concatenates ALL defaults, not just critical ones", async () => {
-  // Reverses the earlier "critical-only union" rule deliberately. That rule existed to avoid
-  // prompt bloat, but it made the resulting set unpredictable — whether a default survived
-  // depended on a `critical` flag only 2 of 27 skills set. Bloat is now controlled at the
-  // source instead: identity default_skills lists are kept short (Step 17 task D), and
-  // `critical` reverts to its other, load-bearing job — surviving context compaction.
+  // Reverses the earlier "critical-only union" rule: it made the resulting set unpredictable
+  // since survival depended on a `critical` flag only 2 of 27 skills set. Bloat is now
+  // controlled at the source (short identity default_skills lists) instead.
   const provider = makeMockProvider();
   const skillsSvc = makeMockSkillsServiceWithDynamicMatch("tdd-methodology", new Set(["response-contract"]));
   const runner = new AgentRunner(provider as any, { skillsService: skillsSvc, disableSkills: false } as any);

@@ -131,11 +131,8 @@ function lastTextFrom(event: IStreamAssistantEvent, current: string): string {
   return current;
 }
 
-/**
- * Parses one cold-spawned `claude -p ... --output-format stream-json` call up to its
- * `result` event. Unterminated input (no `result` line) returns an empty turn with
- * isError=false -- callers must treat a missing result as a distinct failure, not infer it here.
- */
+/** Unterminated input (no `result` line) returns an empty turn with isError=false —
+ *  callers must treat a missing result as a distinct failure, not infer it here. */
 export function parseCliDelegateStreamTurn(lines: string[]): ICliDelegateTurnResult {
   let lastText = "";
   let sessionId: string | undefined;
