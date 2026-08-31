@@ -60,10 +60,8 @@ Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts tokenStats fr
   assertEquals(result.tokenStats.output, 60);
   assertEquals(result.tokenStats.total, 180);
   assertEquals(result.tokenStats.cacheRead, 40);
-  // Phase 167 Step 12 (GAP found while answering a delegation-observability question):
-  // reasoning_output_tokens was previously dropped entirely, not folded into output/total
-  // (it already IS included in output_tokens per codex-rs's own upstream accounting), so this
-  // asserts pure breakdown visibility, not a total-count change.
+  // reasoning_output_tokens is already included in output_tokens per codex-rs's own
+  // upstream accounting, so this asserts breakdown visibility, not a total-count change.
   assertEquals(result.tokenStats.reasoning, 10);
   // Codex's usage payload has no write-side cache field.
   assertEquals(result.tokenStats.cacheCreation, undefined);
@@ -114,8 +112,8 @@ Deno.test("[delegate_return_parser] codex parseDelegateStdout dispatches to pars
   assertEquals(result.tokenStats.total, 290);
   assertEquals(result.tokenStats.cacheRead, 75);
   assertEquals(result.tokenStats.reasoning, 15);
-  // Codex's usage payload carries no cost data; the caller (CliDelegateModelProvider,
-  // Step 2) sets cost_usd: 0 downstream since the subscription bills flat-rate.
+  // Codex's usage payload carries no cost data; the caller sets cost_usd: 0 downstream
+  // since the subscription bills flat-rate.
   assertEquals(result.costUsd, undefined);
 });
 

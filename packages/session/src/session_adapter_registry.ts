@@ -56,7 +56,7 @@ function stripProviderPrefix(model: string): string {
   return model.slice(model.indexOf(":") + 1);
 }
 
-/** A single configurable adapter covering every built-in tool. `supportsSupervised` also selects the argv shape: CLI tools pass the brief + budget flags, IDE tools open the workspace folder. The brief's free-text fields are never placed on the command line (GAP-4) — only the brief file path, numeric budget, and cwd. */
+/** A single configurable adapter covering every built-in tool. `supportsSupervised` also selects the argv shape: CLI tools pass the brief + budget flags, IDE tools open the workspace folder. The brief's free-text fields are never placed on the command line — only the brief file path, numeric budget, and cwd. */
 export class BuiltinSessionAdapter implements ISessionAdapter {
   constructor(
     readonly tool: SessionTool,
@@ -90,7 +90,9 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       }
       if (this.tool === "codex") {
         const codexModelFlag = brief.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(brief.model)] : [];
-        // GAP-16 (Phase 167 post-gap-analysis): the base launch is never fully sandbox-unconstrained, independent of harden_permissions — resolveHardenedLaunch widens this to workspace-write only for the code_changes gate when harden_permissions=true (see SessionDelegateService.resolveHardenedLaunch).
+        // The base launch is never fully sandbox-unconstrained, independent of harden_permissions
+        // — resolveHardenedLaunch widens this to workspace-write only for the code_changes gate
+        // when harden_permissions=true (see SessionDelegateService.resolveHardenedLaunch).
         return {
           command: this.bin,
           args: [
@@ -105,7 +107,9 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
           env: budgetEnv(brief),
         };
       }
-      // opencode headless — opencode run supports --format json, not --output-format Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) but opencode --model uses provider/model (slash). Convert here. Also pass --dir so opencode resolves relative paths against the worktree, not the project's git root (which is the portal checkout).
+      // opencode run supports --format json, not --output-format. prepareBrief requires
+      // provider:model (colon) but opencode --model uses provider/model (slash); convert here.
+      // --dir resolves relative paths against the worktree, not the portal's git root.
       const opencodeWorkDir = brief.worktree_path ?? dirname(briefPath);
       const opencodeModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.replace(":", "/")] : [];
       const opencodeDirFlag = ["--dir", opencodeWorkDir];

@@ -20,10 +20,7 @@ export interface ISessionDelegateScopes {
   request?: SessionDelegateConfig;
 }
 
-/**
- * Resolve the effective session-delegate config (most specific scope wins).
- * Precedence: request → blueprint → portal → global.
- */
+/** Most specific scope wins: request → blueprint → portal → global. */
 export function resolveSessionDelegateConfig(scopes: ISessionDelegateScopes): SessionDelegateConfig | undefined {
   return scopes.request ?? scopes.blueprint ?? scopes.portal ?? scopes.global;
 }

@@ -34,11 +34,11 @@ export interface IReconcileInput {
 export interface IReconcileResult {
   /** True only when the token is valid, the decision is gate-legal, and scope holds. */
   accepted: boolean;
-  /** Constant-time resume_token + trace_id match against the brief (GAP-2). */
+  /** Constant-time resume_token + trace_id match against the brief. */
   tokenValid: boolean;
   /** Decision verb reported by the tool (authoritative only when accepted). */
   decision: SessionDecision;
-  /** Touched paths outside permitted_paths (GAP-3); non-empty hard-blocks. */
+  /** Touched paths outside permitted_paths; non-empty hard-blocks. */
   scopeViolations: string[];
   tokenStats: SessionTokenStats;
   /** token_stats.total_tokens > brief budget (Risk R7); non-blocking. */
@@ -47,12 +47,8 @@ export interface IReconcileResult {
   rejection?: SessionReconcileRejection;
 }
 
-/**
- * Reconcile a delegated return against its brief. Callers read return.json from
- * disk (rejecting absent/invalid at the schema boundary) and pass the parsed
- * value here. Evaluation order: token → gate/decision → scope; budget is
- * computed regardless and never blocks.
- */
+/** Evaluation order: token → gate/decision → scope; budget is computed regardless and
+ *  never blocks. */
 export function reconcile(input: IReconcileInput): IReconcileResult {
   const { brief, sessionReturn, worktreeRoot } = input;
   const tokenStats = sessionReturn.token_stats;

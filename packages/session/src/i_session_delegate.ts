@@ -73,20 +73,16 @@ export interface ISessionDelegateService {
   prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief>;
   /** Resolve the per-tool adapter and build a launch for the brief. */
   resolveLaunch(brief: SessionBrief, mode: SessionLaunchMode): ISessionLaunch;
-  /**
-   * Resolves a hardened launch with permission hardening. Only supported for headless mode;
-   * uses the version probe + per-tool permission generator for opencode/claude-code tools.
-   */
+  /** Only supported for headless mode; uses the version probe + per-tool permission
+   *  generator for opencode/claude-code tools. */
   resolveHardenedLaunch(
     brief: SessionBrief,
     mode: SessionLaunchMode,
     config: SessionDelegateConfig,
     pathResolver: PathResolver,
   ): Promise<IHardenedLaunchResult>;
-  /**
-   * Resolves the delegate provider env for a config+tool combo. Package-pure — reads no env
-   * vars itself; the caller (main.ts) resolves key_env and passes the value in.
-   */
+  /** Package-pure — reads no env vars itself; the caller (main.ts) resolves key_env and
+   *  passes the value in. */
   resolveDelegateEnv(
     config: SessionDelegateConfig,
     tool: SessionTool,

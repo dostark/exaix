@@ -219,10 +219,8 @@ Deno.test("[session_adapter] opencode headless emits --model <model> when the br
   assertEquals(launch.args[launch.args.length - 1], "Implement feature X", "objective stays the trailing positional");
 });
 
-// Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) form, and
-// ModelResolver produces it. OpenCode's `--model` flag uses provider/model (slash).
-// The adapter must convert the colon to a slash for opencode, analogously to how
-// claude-code's adapter strips the prefix entirely.
+// prepareBrief requires provider:model (colon); opencode's --model flag uses
+// provider/model (slash), so the adapter must convert.
 Deno.test("[session_adapter] opencode headless converts provider:model to provider/model for --model", () => {
   const registry = createDefaultSessionAdapterRegistry();
   const brief = makeBrief({
@@ -270,11 +268,8 @@ Deno.test("[session_adapter] synthesizeReturn builds a schema-valid, gate-legal 
   assertEquals(parsed.data.paths_touched, ["src/feature.ts"]);
 });
 
-// Phase 150 LIVE-RT: the daemon resolves models to `provider:model`
-// (apps/daemon/main.ts resolveRequestModel) and prepareBrief REQUIRES that colon
-// form. The claude CLI rejects a provider-prefixed id ("It may not exist or you
-// may not have access to it"), so the adapter must strip the prefix when building
-// --model. Verified against claude CLI 2.1.217.
+// The claude CLI rejects a provider-prefixed model id ("It may not exist or you may
+// not have access to it"), so the adapter must strip the prefix when building --model.
 Deno.test("[session_adapter] claude-code headless strips the provider prefix from --model", () => {
   const registry = createDefaultSessionAdapterRegistry();
   const brief = makeBrief({

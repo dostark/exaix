@@ -87,7 +87,7 @@ export class SessionReturnProcessor {
     const brief = await readParsed(join(dir, BRIEF_FILE), (raw) => SessionBriefSchema.parse(JSON.parse(raw)));
     if (!brief) return NOT_PROCESSED;
 
-    // GAP-10: a missing or half-written return.json fails schema parse → no-op.
+    // A missing or half-written return.json fails schema parse → no-op.
     const sessionReturn = await readParsed(join(dir, RETURN_FILE), (raw) => SessionReturnSchema.parse(JSON.parse(raw)));
     if (!sessionReturn) return NOT_PROCESSED;
 

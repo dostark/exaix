@@ -29,10 +29,7 @@ export interface IDelegateVersionProbeDeps {
 
 const VERSION_SEMVER_PATTERN = /(\d+\.\d+\.\d+)/;
 
-/**
- * Parse a semver string into its numeric components. Returns [0, 0, 0] on
- * failure so the comparison naturally reports "unsupported".
- */
+/** Returns [0, 0, 0] on failure so the comparison naturally reports "unsupported". */
 function parseSemver(raw: string): [number, number, number] {
   const trimmed = raw.trim();
   const match = trimmed.match(VERSION_SEMVER_PATTERN);
@@ -53,13 +50,6 @@ function semverGte(actual: [number, number, number], minimum: [number, number, n
   return true; // exact match
 }
 
-/**
- * Probe a delegate binary for its version.
- *
- * @param bin — binary name (e.g. "opencode", "claude")
- * @param minimumVersion — minimum semver string (e.g. "1.0.0")
- * @param deps — optional dependency overrides for testing
- */
 export async function probeDelegateVersion(
   bin: string,
   minimumVersion: string,

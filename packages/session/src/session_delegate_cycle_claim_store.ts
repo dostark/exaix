@@ -187,12 +187,8 @@ function claimKeyString(key: ISessionDelegateCycleClaimKey): string {
   return `${key.parentTraceId} ${key.parentStepId} ${key.sequence} ${key.planDigest}`;
 }
 
-/**
- * Process-local reference implementation. Correct within one process (a real unique-key
- * guard against duplicate launches) but not crash-durable — production wiring
- * (apps/daemon/main.ts) supplies SessionDelegateCycleClaimStore instead. Also used by
- * FlowRunner as the fallback when no durable store is configured, and by tests.
- */
+/** Correct within one process but not crash-durable — production wiring
+ *  (apps/daemon/main.ts) supplies SessionDelegateCycleClaimStore instead. */
 export function createInMemorySessionDelegateCycleClaimStore(): ISessionDelegateCycleClaimStore {
   const claims = new Map<string, ISessionDelegateCycleClaim>();
   return {

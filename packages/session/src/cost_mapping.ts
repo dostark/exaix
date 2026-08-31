@@ -32,8 +32,7 @@ export interface ISessionCostInput {
   timestamp: Date;
 }
 
-/** Map a delegated return's token_stats to an IProviderCostRecord (GAP-6).
- *  Uses `input.costUsd` when provided; falls back to `input.sessionReturn.cost_usd`;
+/** Uses `input.costUsd` when provided; falls back to `input.sessionReturn.cost_usd`;
  *  defaults to 0 (external/unmetered sentinel) when absent. */
 export function sessionReturnToCostRecord(input: ISessionCostInput): IProviderCostRecord {
   const stats = input.sessionReturn.token_stats;
