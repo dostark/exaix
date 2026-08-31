@@ -939,6 +939,7 @@ const EPHEMERAL_COMMENT_PATTERNS: { pattern: RegExp; hint: string }[] = [
   { pattern: /\bgap\s+(?:analysis|remediation|finding|decision)\b/i, hint: "gap analysis/remediation details" },
   { pattern: /\btried\b/i, hint: "a narration of a prior attempt" },
   { pattern: /\b(?:didn't|did not)\s+work\b/i, hint: "what didn't work" },
+  { pattern: /§/, hint: "a document-section reference (§)" },
 ];
 
 function reportCommentViolation(

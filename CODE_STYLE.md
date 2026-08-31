@@ -1232,6 +1232,12 @@ the next line already says.
   only a record of _what it does now_. This does not apply to the module's
   own header comment, whose Implementation Plan reference is a distinct,
   mandatory field under §7.
+- **No document-section references.** A comment must not cite a section
+  number via the `§` symbol — neither a phase-plan/spec section (e.g. `§5.9`,
+  `(§6.1, F12)`) nor a section of this file or another project doc (e.g.
+  `CODE_STYLE.md §15`). Restate the rule or rationale in the comment's own
+  words instead of pointing at a section number, which drifts silently as
+  documents are restructured.
 - **Long or stale comments must be cut, not kept.** When a comment grows
   past what these rules allow, either delete it — most code is clear
   without it — or rewrite it as a short, concrete statement of the one
@@ -1242,10 +1248,10 @@ the next line already says.
 `scripts/check_code_style.ts` scans every comment past a module's own
 header block:
 
-| Tag                   | Detects                                                                                  |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| `[long-comment]`      | A block comment or line-comment run longer than three physical lines                     |
-| `[ephemeral-comment]` | A comment mentioning a phase/step number, GAP identifier, pre/post-gap, or prior attempt |
+| Tag                   | Detects                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `[long-comment]`      | A block comment or line-comment run longer than three physical lines                                            |
+| `[ephemeral-comment]` | A comment mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
 
 Both are warnings by default (visible, non-blocking) and escalate to errors
 under `--convert-warnings-to-errors`.

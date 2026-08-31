@@ -567,6 +567,29 @@ export function run(): number {
   assertStringIncludes(result.output, "[ephemeral-comment]");
 });
 
+Deno.test("check_code_style flags a comment referencing a document section via §", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const filePath = join(tempDir, "ephemeral_section_comment.ts");
+  await Deno.writeTextFile(
+    filePath,
+    `/**
+ * @module TempEphemeralSectionComment
+ * @path ephemeral_section_comment.ts
+ * @description Temporary regression file for ephemeral §-reference enforcement.
+ */
+
+export function run(): number {
+  // Read-only tools skip re-validation here (§5.9).
+  return 1;
+}
+`,
+  );
+
+  const result = await runCheckCodeStyle(filePath);
+
+  assertStringIncludes(result.output, "[ephemeral-comment]");
+});
+
 Deno.test("check_code_style allows natural language usage of the word gap", async () => {
   const tempDir = await Deno.makeTempDir();
   const filePath = join(tempDir, "natural_gap_comment.ts");
