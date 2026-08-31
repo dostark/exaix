@@ -44,10 +44,7 @@ export interface IMemoryEmbeddingService {
    */
   getStats(): Promise<{ total: number; generated_at: string }>;
 
-  /**
-   * Flush any deferred (debounced) cache writes to disk.
-   * Optional: only implemented by services that use a disk-backed cache.
-   * Call after a batch of embedLearning() calls to guarantee persistence.
-   */
+  /** Only implemented by services with a disk-backed cache; call after a batch of
+   *  embedLearning() calls to guarantee persistence. */
   flush?(): Promise<void>;
 }

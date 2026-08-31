@@ -17,18 +17,6 @@ import { DomainEventType } from "@exaix/core/events";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
-/**
- * Tests for CostTracker service.
- *
- * Success Criteria:
- * - Tracks individual requests with token counts and cost estimates
- * - Calculates daily costs accurately
- * - Enforces budget limits correctly
- * - Provides cost summaries for date ranges
- * - Handles multiple providers independently
- * - Uses correct cost rates for different providers
- */
-
 const COST_PER_TOKEN_OPENAI = COST_RATE_OPENAI / TOKENS_PER_COST_UNIT;
 const COST_PER_TOKEN_ANTHROPIC = COST_RATE_ANTHROPIC / TOKENS_PER_COST_UNIT;
 

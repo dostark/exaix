@@ -8,10 +8,7 @@
 
 import type { Actor, ActorType, AgentKind } from "@exaix/core";
 
-/**
- * Common service context for middleware.
- * Subinterfaces extend this with their own typed properties.
- */
+/** Subinterfaces extend this with their own typed properties. */
 export interface IServiceContext {
   traceId?: string;
   /** Who initiated the enclosing request */

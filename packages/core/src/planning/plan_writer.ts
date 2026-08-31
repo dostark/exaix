@@ -39,10 +39,8 @@ export interface IRequestMetadata {
   targetBranch?: string;
   subject?: string;
   requestAnalysis?: IRequestAnalysis;
-  /**
-   * Request-level model intent (CLI flags) forwarded onto the plan frontmatter so native
-   * plan execution applies the same overrides the delegation path resolves.
-   */
+  /** Forwarded onto the plan frontmatter so native plan execution applies the same CLI-flag
+   *  overrides the delegation path resolves. */
   requestIntent?: Partial<IModelIntent>;
 }
 
@@ -313,10 +311,8 @@ export class PlanWriter {
     return `---\n${yamlContent}---\n\n`;
   }
 
-  /**
-   * Carries the request's model intent onto the plan frontmatter so native plan execution
-   * (ExecutionLoop → PlanExecutor → BlueprintService) applies the same overrides the delegation path resolves.
-   */
+  /** So native plan execution (ExecutionLoop → PlanExecutor → BlueprintService) applies the
+   *  same overrides the delegation path resolves. */
   private applyRequestIntentToFrontmatter(frontmatter: PlanFrontmatter, requestIntent: Partial<IModelIntent>): void {
     const passthrough = frontmatter as PlanFrontmatter & Record<string, JSONValue | undefined>;
     if (requestIntent.model_size !== undefined) passthrough.model_size = requestIntent.model_size;

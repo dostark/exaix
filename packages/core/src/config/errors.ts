@@ -50,10 +50,8 @@ export class ConfigRateLimitedError extends Error {
   }
 }
 
-/**
- * Thrown by adapter.set() (via assertWritable) for a write to a key in config_locked_keys.
- * A locked key is refused by every write surface — CLI, MCP, daemon — until `config unlock`.
- */
+/** A locked key is refused by every write surface — CLI, MCP, daemon — until
+ *  `config unlock`. */
 export class ConfigKeyLockedError extends Error {
   constructor(key: string, reason?: Opt<string, Reason.OptionalContext>) {
     super(`Config key "${key}" is locked${reason ? `: ${reason}` : ""}`);

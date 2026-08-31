@@ -310,12 +310,12 @@ export const CONFIG_DB_OVERRIDE_WARN_THRESHOLD = 100_000;
 export const CONFIG_DB_OVERRIDE_HARD_LIMIT = 1_000_000;
 
 // ============================================================================
-// Config Integrity Checksum (§11.7)
+// Config Integrity Checksum
 // ============================================================================
 
 /** Synthetic config_overrides key for the Config-DB integrity checksum; excluded from the checksum computation, listOverrides/diff, and the DB watcher so it never surfaces as a user override. */
 export const CONFIG_CHECKSUM_KEY = "_checksum";
-/** How often (ms) the daemon re-verifies the Config-DB integrity checksum on its existing DB-watcher poll loop (§11.7). */
+/** How often (ms) the daemon re-verifies the Config-DB integrity checksum on its existing DB-watcher poll loop. */
 export const CONFIG_INTEGRITY_POLL_INTERVAL_MS: number = configurable({
   key: "config.integrity.poll_interval_ms",
   default: 60_000,

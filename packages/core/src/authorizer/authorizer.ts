@@ -12,10 +12,7 @@
 
 import type { Opt, Reason } from "../types/optional_marker.ts";
 
-/**
- * An action a caller wants to perform.
- * Concrete values are edition-specific; the interface is intentionally generic.
- */
+/** Concrete values are edition-specific; the interface is intentionally generic. */
 export type AuthorizationAction = string;
 
 /** Concrete values are edition-specific; the interface is intentionally generic. */
@@ -39,11 +36,9 @@ export interface IAuthorizationDecision {
   reason?: string;
 }
 
-/**
- * Authorization seam — the single attach point for entitlement logic. Solo ships
- * AllowAllAuthorizer; Enterprise editions register policy-driven authorizers via
- * ICapabilityModule.registerEntitlement().
- */
+/** The single attach point for entitlement logic. Solo ships AllowAllAuthorizer;
+ *  Enterprise editions register policy-driven authorizers via
+ *  ICapabilityModule.registerEntitlement(). */
 export interface IAuthorizer {
   /** Checks whether an action on a resource is authorized. */
   authorize(
@@ -53,10 +48,8 @@ export interface IAuthorizer {
   ): IAuthorizationDecision;
 }
 
-/**
- * Default Solo authorizer — permits every action unconditionally. Enterprise
- * editions replace this via registerCapabilityModule on the composer.
- */
+/** Permits every action unconditionally. Enterprise editions replace this via
+ *  registerCapabilityModule on the composer. */
 export class AllowAllAuthorizer implements IAuthorizer {
   authorize(
     _action: AuthorizationAction,

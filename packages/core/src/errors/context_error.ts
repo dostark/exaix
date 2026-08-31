@@ -7,6 +7,8 @@
  * @related-files ["packages/core/src/errors/context_error.ts", "packages/core/src/logger/event_logger.ts"]
  */
 
+import type { Opt, Reason } from "../types/optional_marker.ts";
+
 /**
  * Context data attached to errors for debugging
  */
@@ -21,7 +23,7 @@ export class ContextError extends Error {
   constructor(
     message: string,
     context: IErrorContext,
-    cause?: Error,
+    cause?: Opt<Error, Reason.OptionalInput>,
   ) {
     super(message);
     this.name = "ContextError";
@@ -37,10 +39,7 @@ export class ContextError extends Error {
     }
   }
 
-  /**
-   * JSON serialization for logging and debugging
-   * Includes all error context while safely handling cause
-   */
+  /** For logging and debugging; includes all error context while safely handling cause. */
   toJSON(): {
     name: string;
     message: string;

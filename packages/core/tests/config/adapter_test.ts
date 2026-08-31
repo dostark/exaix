@@ -77,8 +77,7 @@ configurable({
   type: ConfigValueType.NUMBER,
   description: "Adapter test port",
 });
-// Pattern key for namespaced-validation tests (GAP-11/12): matches
-// `adapter_test.models.<name>.model`.
+// Pattern key for namespaced-validation tests: matches `adapter_test.models.<name>.model`.
 configurable({
   key: "adapter_test.models.*.model",
   default: "",
@@ -302,7 +301,7 @@ Deno.test("[configuring] createConfigAdapter returns a working adapter", () => {
   }
 });
 
-// --- GAP-9: ConfigUpdated audit-event emission ---
+// ConfigUpdated audit-event emission
 
 function setupAdapterWithLogger(): {
   adapter: DirectConfigAdapter;
@@ -359,7 +358,7 @@ Deno.test("[configuring] DirectConfigAdapter.set without logger does not throw",
   }
 });
 
-// --- GAP-13: getProvenance returns coerced native-type value ---
+// getProvenance returns coerced native-type value
 
 Deno.test(
   "[configuring] DirectConfigAdapter.getProvenance returns coerced numeric value for overridden numeric key",
@@ -377,7 +376,7 @@ Deno.test(
   },
 );
 
-// --- GAP-14: unset enforces registry existence check ---
+// unset enforces registry existence check
 
 Deno.test(
   "[configuring] DirectConfigAdapter.unset throws ConfigKeyNotFoundError for unknown key",
@@ -408,7 +407,7 @@ Deno.test(
   },
 );
 
-// --- Step 1 (GAP-11/GAP-12): namespaced dynamic-key validation ---
+// Namespaced dynamic-key validation
 
 Deno.test(
   "[configuring] resolveValidationKey returns exact key for a registered key",
@@ -526,7 +525,7 @@ Deno.test(
   },
 );
 
-// ── Phase 138 Step 2: adapter blocklist delegation ──────────────────────────
+// adapter blocklist delegation
 
 Deno.test("[configuring] adapter.isPathBlocked delegates to DAO", () => {
   const { adapter, dir } = setupAdapter();
@@ -551,7 +550,7 @@ Deno.test("[configuring] adapter.isPathBlocked delegates to DAO", () => {
   }
 });
 
-// ── Phase 138 Step 3: adapter rate-limit delegation + error ─────────────────
+// adapter rate-limit delegation + error
 
 Deno.test("[configuring] adapter.countRecentWrites delegates to DAO", async () => {
   const { adapter, dir } = setupAdapter();
@@ -586,7 +585,7 @@ Deno.test("[configuring] ConfigRateLimitedError has correct surface and limit fi
   assertEquals(err.message.includes("max 10 writes per 5s"), true);
 });
 
-// ── Phase 139 Step 3: config rollback (append restoring a historical value) ──
+// config rollback (append restoring a historical value)
 // Reuses the existing setupAdapterWithLogger() helper (spy logger).
 
 Deno.test("[configuring] adapter.rollback appends a row restoring the historical value with source=rollback", async () => {
@@ -638,7 +637,7 @@ Deno.test("[configuring] adapter.rollback emits ConfigRolledBack with to_id + re
   }
 });
 
-// ── Phase 139 Step 4: key locking enforced in DirectConfigAdapter.set() ──────
+// key locking enforced in DirectConfigAdapter.set()
 
 Deno.test("[configuring] adapter.lock/unlock round-trip + isLocked/listLocks", () => {
   const { adapter, dir } = setupAdapter();
@@ -729,7 +728,7 @@ Deno.test("[configuring] adapter.unlock emits ConfigKeyUnlocked with the caller-
   }
 });
 
-// ── Phase 139 Step 5: integrity checksum ────────────────────────────────────
+// integrity checksum
 
 Deno.test("[configuring] computeIntegrityChecksum is stable across calls on unchanged config", () => {
   const { adapter, dir } = setupAdapter();

@@ -27,11 +27,8 @@ function renderSkillBlock(heading: string, intro: string, skills: ISkillMatchEnt
   return output;
 }
 
-/**
- * Renders the **ordinary** (non-critical) applicable skills (Phase 131 W16).
- * Critical skills are rendered separately by {@link renderCriticalSkillsSection}
- * so the prompt assembler can place them in a protected, non-droppable segment.
- */
+/** Critical skills are rendered separately by {@link renderCriticalSkillsSection} so the
+ *  prompt assembler can place them in a protected, non-droppable segment. */
 export function renderSkillsSection(context: ISkillsContext | null): string {
   if (!context || context.matched.length === 0) return "";
 
@@ -51,12 +48,8 @@ export function renderSkillsSection(context: ISkillsContext | null): string {
   return output.trim();
 }
 
-/**
- * Renders the **critical** applicable skills (Phase 131 W16). The prompt
- * assembler places this block in a protected, non-compactable segment so the
- * output contract and hard constraints survive context-budget pressure. Returns
- * an empty string when no matched skill is critical.
- */
+/** The prompt assembler places this in a protected, non-compactable segment so the
+ *  output contract and hard constraints survive context-budget pressure. */
 export function renderCriticalSkillsSection(context: ISkillsContext | null): string {
   if (!context || context.matched.length === 0) return "";
   return renderSkillBlock(

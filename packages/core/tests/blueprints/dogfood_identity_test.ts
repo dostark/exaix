@@ -25,18 +25,9 @@ Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader",
   assertEquals(blueprint.identityId, "dogfood-developer");
 });
 
-/**
- * Skills this identity cannot do its job without, whatever else it carries.
- *
- * Deliberately a SUBSET, not the whole list. Phase 142 Step 17 rewrote this test twice: it
- * first asserted a fixed count of 8, then the exact pruned array — both of which fail on any
- * legitimate curation of the list and neither of which says what the identity actually needs.
- * A count cannot tell a deliberate prune from an accidental one; an exact list re-declares
- * policy that `tests/blueprints/test_helpers.ts:ROLE_REQUIRED_SKILLS` already owns, and
- * implicitly pins the complement too. The catalog-wide invariants — every entry resolves,
- * nobody exceeds the budget, nobody carries two output contracts — belong to
- * `tests/eval/identity_default_skills_test.ts` and are not restated here.
- */
+/** Skills this identity cannot do its job without, whatever else it carries — deliberately
+ *  a SUBSET, not an exact list or count, both of which break on any legitimate curation
+ *  without saying what the identity actually needs. */
 const DOGFOOD_REQUIRED_SKILLS = ["response-contract", "exaix-conventions", "tdd-methodology"];
 
 Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requires", async () => {

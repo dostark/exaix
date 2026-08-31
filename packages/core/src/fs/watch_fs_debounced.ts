@@ -26,27 +26,18 @@ export interface IWatchFsDebouncedOptions {
   debounceMs?: number;
   /** Which event kinds to act on. Defaults to FS_WRITE_EVENT_KINDS (create/modify/rename). */
   eventKinds?: ReadonlySet<string>;
-  /**
-   * Optional per-path guard evaluated after debounce, before the handler. Return false to suppress
-   * (the dedup/content-comparison seam — e.g. "HEAD hash unchanged" or "already processed").
-   */
+  /** Evaluated after debounce, before the handler; return false to suppress (the
+   *  dedup/content-comparison seam — e.g. "HEAD hash unchanged"). */
   shouldProcess?: (path: string) => boolean | Promise<boolean>;
-  /**
-   * Called when the handler (or shouldProcess) throws. The error is ISOLATED — the watch loop
-   * continues. A non-Error throw is coerced to an Error before this is called. Defaults to a no-op;
-   * production callers should journal it.
-   */
+  /** The error is ISOLATED — the watch loop continues. Defaults to a no-op; production
+   *  callers should journal it. */
   onError?: (error: Error, path: string) => void | Promise<void>;
   /** Abort signal; when aborted the loop stops draining events. */
   signal?: AbortSignal;
 }
 
-/**
- * Drain an async iterable of FsEvents with debounce + dedup + per-event error isolation. Accepts any
- * `AsyncIterable<IFsEventLike>` (Deno.FsWatcher satisfies it) so it is unit-testable without a real
- * filesystem. Resolves when the iterable is exhausted or `signal` aborts; pending debounced handlers
- * are flushed before returning.
- */
+/** Accepts any `AsyncIterable<IFsEventLike>` (Deno.FsWatcher satisfies it) so it is
+ *  unit-testable without a real filesystem. */
 export async function consumeFsEvents(
   source: AsyncIterable<IFsEventLike>,
   handler: (path: string) => void | Promise<void>,
@@ -97,11 +88,7 @@ export async function consumeFsEvents(
   }
 }
 
-/**
- * Convenience wrapper: open a `Deno.watchFs` on `path` and consume it via {@link consumeFsEvents}.
- * Returns the live `Deno.FsWatcher` (close it to stop) and the consume promise. Use this for new
- * watchers instead of hand-rolling a `for await` loop.
- */
+/** Use this for new watchers instead of hand-rolling a `for await` loop. */
 export function watchFsDebounced(
   path: string | string[],
   handler: (path: string) => void | Promise<void>,

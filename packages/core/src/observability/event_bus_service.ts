@@ -27,12 +27,8 @@ export interface IEventBusService {
   close(): void;
 }
 
-/**
- * In-memory event bus that routes events to subscribers by traceId.
- * Supports wildcard (`*`) subscriptions for daemon-wide monitoring.
- * Implements backpressure by dropping events when a subscriber's queue
- * exceeds EVENT_BUS_MAX_SUBSCRIBER_QUEUE entries.
- */
+/** Supports wildcard (`*`) subscriptions for daemon-wide monitoring. Backpressure drops
+ *  events once a subscriber's queue exceeds EVENT_BUS_MAX_SUBSCRIBER_QUEUE entries. */
 export class EventBusService implements IEventBusService {
   private static instance: EventBusService | null = null;
 

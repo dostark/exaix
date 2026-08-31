@@ -10,17 +10,6 @@ import { assertEquals, assertNotEquals } from "@std/assert";
 import { DatabaseActivityRepository, type ILogActivityRequest } from "@exaix/core/repositories";
 import { initTestDbService } from "@exaix/testing";
 
-/**
- * Tests for Step 55.2: IActivityRepository field persistence
- *
- * Success Criteria:
- * - Test 1: Writes and reads back all separation fields correctly
- * - Test 2: Stores null when separation fields are omitted
- * - Test 3: agentKind stores runtime agent category, distinct from identityId
- * - Test 4: Indexes on identity_id are queryable
- * - Test 5: Indexes on actor_type are queryable
- */
-
 Deno.test("IActivityRepository: writes and reads back all separation fields", async () => {
   const { db, cleanup } = await initTestDbService();
   try {

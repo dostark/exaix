@@ -53,21 +53,7 @@ export enum Reason {
   ShapeValidation = "shape_validation",
 }
 
-/**
- * Wrapper type that marks a parameter as intentionally optional/undefined-
- * accepting, with a codified reason proving the decision was deliberate.
- *
- * `T | undefined` at runtime. The second type parameter forces every usage to
- * embed a reason from Reason, preventing mechanical bypasses.
- *
- * The optional-params checker (scripts/check_optional_params.ts) detects this
- * wrapper and suppresses UNUSED/REDUNDANT violations. It also flags usages
- * where the marker is applied to a non-optional parameter (no `?`, no default)
- * as MARKED_NOT_OPTIONAL.
- *
- * Usage:
- *   function foo(param?: Opt<string, Reason.AbstractBoundary>)
- *   function bar(param: Opt<number, Reason.SensibleDefault> = 10)
- *   function baz(db: Opt<IDatabaseService, Reason.OptionalDependency>)
- */
+/** `T | undefined` at runtime — the Reason type parameter forces every usage to embed a
+ *  reason, preventing mechanical bypasses. scripts/check_optional_params.ts detects this
+ *  wrapper and flags it as MARKED_NOT_OPTIONAL if applied to a non-optional parameter. */
 export type Opt<T, R extends Reason> = T | undefined;

@@ -32,10 +32,8 @@ export interface IAuditLoggerConfig {
 // Implementation
 // ============================================================================
 
-/**
- * Security-critical audit logger: primary event transport goes through IEventLogger;
- * a tamper-evident JSONL file is a secondary append-only sink for alerting-critical events.
- */
+/** Primary event transport goes through IEventLogger; a tamper-evident JSONL file is a
+ *  secondary append-only sink for alerting-critical events. */
 export class AuditLogger implements IAuditLogger {
   private readonly logger?: IEventLogger;
   private readonly config: IAuditLoggerConfig;

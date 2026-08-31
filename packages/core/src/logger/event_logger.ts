@@ -58,20 +58,15 @@ export interface IEventLoggerConfig {
   /** Whether to include timestamps in console output */
   showTimestamp?: boolean;
 
-  /**
-   * Default actor identity. For CLI commands, this should be the user identity
-   * obtained from git config (user.email) or OS username.
-   */
+  /** For CLI commands, this should be the user identity from git config (user.email)
+   *  or OS username. */
   defaultActor?: Actor;
 
   /** Optional output sinks for structured log formatting (console, file, etc.) */
   outputs?: IEventLoggerOutput[];
 }
 
-/**
- * Output sink interface for structured log formatting.
- * Implementations can write to console, file, or other destinations.
- */
+/** Implementations can write to console, file, or other destinations. */
 export interface IEventLoggerOutput {
   write(event: ILogEvent): void | Promise<void>;
 }
@@ -232,21 +227,7 @@ class _ObservableOutput implements IEventLoggerOutput {
   }
 }
 
-/**
- * Unified logging service that writes to both console and IActivity Journal.
- *
- * @example
- * ```typescript
- * const logger = new EventLogger({ db: dbService, prefix: "[Exaix]" });
- *
- * // Basic usage
- * logger.info("config.loaded", "", { checksum: "abc123" });
- *
- * // Create child logger for a service
- * const serviceLogger = logger.child({ actor: "system", traceId });
- * serviceLogger.warn("context.truncated", "loader", { files_skipped: 3 });
- * ```
- */
+/** Unified logging service that writes to both console and IActivity Journal. */
 export class EventLogger implements IEventLogger {
   private readonly activityRepo?: IActivityRepository;
   private readonly db?: IDatabaseService; // DEPRECATED
@@ -278,12 +259,12 @@ export class EventLogger implements IEventLogger {
   async log(
     action: string,
     targetOrPayload: string | LogMetadata,
-    payload?: LogMetadata,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
   ): Promise<void>;
   async log(
     eventOrAction: ILogEvent | string,
-    targetOrPayload?: string | LogMetadata,
-    payload?: LogMetadata,
+    targetOrPayload?: Opt<string | LogMetadata, Reason.OptionalInput>,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
   ): Promise<void> {
     let event: ILogEvent;
 
@@ -356,8 +337,8 @@ export class EventLogger implements IEventLogger {
   async info(
     action: string,
     target: string,
-    payload?: LogMetadata,
-    traceId?: string,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.logWithLevel(LogLevel.INFO, action, target, payload, traceId);
   }
@@ -368,8 +349,8 @@ export class EventLogger implements IEventLogger {
   async warn(
     action: string,
     target: string,
-    payload?: LogMetadata,
-    traceId?: string,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.logWithLevel(LogLevel.WARN, action, target, payload, traceId);
   }
@@ -380,8 +361,8 @@ export class EventLogger implements IEventLogger {
   async error(
     action: string,
     target: string,
-    payload?: LogMetadata,
-    traceId?: string,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.logWithLevel(LogLevel.ERROR, action, target, payload, traceId);
   }
@@ -392,8 +373,8 @@ export class EventLogger implements IEventLogger {
   async debug(
     action: string,
     target: string,
-    payload?: LogMetadata,
-    traceId?: string,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.logWithLevel(LogLevel.DEBUG, action, target, payload, traceId);
   }
@@ -404,8 +385,8 @@ export class EventLogger implements IEventLogger {
   async fatal(
     action: string,
     target: string,
-    payload?: LogMetadata,
-    traceId?: string,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.logWithLevel(LogLevel.FATAL, action, target, payload, traceId);
   }
@@ -415,7 +396,7 @@ export class EventLogger implements IEventLogger {
     action: string,
     target: string,
     payload?: Opt<LogMetadata, Reason.OptionalContext>,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.log({
       action,
@@ -447,10 +428,7 @@ export class EventLogger implements IEventLogger {
     return new EventLogger(childConfig, mergedDefaults);
   }
 
-  /**
-   * Get user identity from git config or OS username.
-   * Results are cached after first call.
-   */
+  /** Results are cached after first call. */
   static async getUserIdentity(): Promise<string> {
     if (cachedUserIdentity) {
       return cachedUserIdentity;
@@ -591,10 +569,7 @@ export class EventLogger implements IEventLogger {
     return now.toISOString().slice(11, 19); // HH:MM:SS
   }
 
-  /**
-   * Map an ILogEvent action to a streaming event type.
-   * Uses heuristics based on action name patterns.
-   */
+  /** Uses heuristics based on action name patterns. */
   private resolveStreamingEventType(action: string): IStreamingEvent["type"] {
     const lower = action.toLowerCase();
     if (lower.includes("heartbeat") || lower.includes("alive")) {

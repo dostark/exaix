@@ -20,12 +20,8 @@ import { dirname, join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
 import type { IEventLoggerOutput } from "./event_logger.ts";
 
-/**
- * Converts ILogEvent → IStructuredLogEntry for TUI StructuredLogViewer consumption.
- * Writes JSONL files with size-based rotation and supports live subscribers.
- *
- * Add to EventLogger's `outputs` config to produce viewer-compatible files.
- */
+/** Writes JSONL files with size-based rotation; add to EventLogger's `outputs` config to
+ *  produce viewer-compatible files. */
 export class EventLoggerStructuredOutput implements IEventLoggerOutput {
   private currentFileSize = 0;
   private dirEnsured = false;

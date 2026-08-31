@@ -35,9 +35,8 @@ export type PayloadMapper<Args extends unknown[], Return> = (args: Args, result?
 export type TraceIdMapper<Args extends unknown[]> = (args: Args) => string | undefined;
 
 /** Per-lifecycle-phase registered actions, for an operation whose started/completed/failed
- *  events must remain independently taxonomy-distinguishable rather than sharing one action
- *  disambiguated only by the `target` field (e.g. `TracedProvider`'s `LlmCallStarted`/
- *  `LlmStreamCompleted`/`LlmStreamFailed` triad). */
+ *  events must stay independently taxonomy-distinguishable rather than sharing one action
+ *  disambiguated only by `target` (e.g. `TracedProvider`'s Llm{Call,Stream}* triad). */
 export interface ILifecycleActions {
   started: TDomainEventType;
   completed: TDomainEventType;
@@ -58,10 +57,8 @@ export interface ILogMethodOptions<Args extends unknown[], Return> {
   traceIdMapper?: Opt<TraceIdMapper<Args>, Reason.OptionalContext>;
 }
 
-/** Shapes a `LogGeneratorMethod` `completed` event's payload from the call's arguments, the
- *  number of values yielded, and the elapsed duration — a generator has no single `result`
- *  the way an async function does, so this receives `yieldCount`/`durationMs` instead of
- *  `PayloadMapper`'s `result`. */
+/** A generator has no single `result` the way an async function does, so this receives
+ *  `yieldCount`/`durationMs` instead of `PayloadMapper`'s `result`. */
 export type GeneratorPayloadMapper<Args extends unknown[]> = (
   args: Args,
   yieldCount: number,
@@ -71,10 +68,8 @@ export type GeneratorPayloadMapper<Args extends unknown[]> = (
 export interface ILogGeneratorMethodOptions<Args extends unknown[]> {
   /** Registered taxonomy member(s); the object form must also cover `cancelled`. */
   action: TDomainEventType | IGeneratorLifecycleActions;
-  /** Shapes the `started` event's payload; defaults to `{ args: toSafeJson(args) }` (the
-   *  raw call arguments, JSON-safe-serialized) when omitted. Override when the raw
-   *  arguments are unsuitable for the audit journal — e.g. a large prompt string that
-   *  should be summarized (its length), not logged in full. */
+  /** Defaults to `{ args: toSafeJson(args) }`. Override when the raw arguments are
+   *  unsuitable for the audit journal — e.g. a large prompt summarized to its length. */
   startedPayloadMapper?: Opt<(args: Args) => IMethodLogPayload, Reason.OptionalContext>;
   payloadMapper?: Opt<GeneratorPayloadMapper<Args>, Reason.OptionalContext>;
 }
@@ -88,10 +83,8 @@ const PHASE_COMPLETED = "completed";
 const PHASE_FAILED = "failed";
 const PHASE_CANCELLED = "cancelled";
 
-/** Resolves the registered action for one lifecycle `phase`: `action` is either a single
- *  `TDomainEventType` applied to every phase (the target field distinguishes them), or an
- *  `ILifecycleActions`/`IGeneratorLifecycleActions` object giving each phase its own
- *  registered action. */
+/** `action` is either a single `TDomainEventType` applied to every phase (the target
+ *  field distinguishes them), or a per-phase `ILifecycleActions` object. */
 function actionFor<A extends ILifecycleActions>(action: TDomainEventType | A, phase: keyof A): TDomainEventType {
   return typeof action === "string" ? action : action[phase] as TDomainEventType;
 }

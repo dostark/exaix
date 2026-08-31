@@ -8,15 +8,6 @@ import { assert, assertEquals, assertFalse } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName, READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 
-/**
- * Tests for Phase 56 Step 1.1-1.4: Schema and Enum Updates
- *
- * Backward compatibility criteria:
- * - FlowStepExecutionMode enum has DECLARED and DYNAMIC values
- * - Tool classification remains mutually exclusive
- * - Every public McpToolName remains classified as read-only or write
- */
-
 Deno.test("FlowStepExecutionMode enum has correct values", () => {
   assertEquals(FlowStepExecutionMode.DECLARED, "declared");
   assertEquals(FlowStepExecutionMode.DYNAMIC, "dynamic");

@@ -15,6 +15,7 @@ import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
 import type { IConfigService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export class PlanService {
   private workspacePlansDir: string;
@@ -40,8 +41,7 @@ export class PlanService {
   }
 
   // -------------------------------------------------------------------------
-  // Private helpers (extracted to eliminate repeated frontmatter parsing,
-  // file-location, and serialization patterns)
+  // Private helpers
   // -------------------------------------------------------------------------
 
   /** Parse YAML frontmatter and body from plan file content. Returns null when absent. */
@@ -66,10 +66,7 @@ export class PlanService {
     return `---\n${newFm}\n---\n${body}`;
   }
 
-  /**
-   * Locate a plan file by ID across all workspace subdirectories.
-   * Throws if the plan cannot be found.
-   */
+  /** Throws if the plan cannot be found. */
   private async locatePlanFile(planId: string): Promise<string> {
     const searchDirs = [
       this.workspacePlansDir,
@@ -89,7 +86,7 @@ export class PlanService {
   // Public API
   // -------------------------------------------------------------------------
 
-  async approve(planId: string, skills?: string[]): Promise<void> {
+  async approve(planId: string, skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
     const sourcePath = join(this.workspacePlansDir, `${planId}.md`);
     const targetPath = join(this.workspaceActiveDir, `${planId}.md`);
 
@@ -162,7 +159,7 @@ export class PlanService {
     }, fm.trace_id);
   }
 
-  async list(statusFilter?: PlanStatusType): Promise<IPlanMetadata[]> {
+  async list(statusFilter?: Opt<PlanStatusType, Reason.QueryFilter>): Promise<IPlanMetadata[]> {
     const plans: IPlanMetadata[] = [];
     const dirsToScan = statusFilter
       ? []

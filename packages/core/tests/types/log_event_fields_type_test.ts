@@ -53,39 +53,11 @@ const _undefinedEvent: ILogEvent = {
   identityId: undefined,
 };
 
-// ============================================================================
-// Compile-Time Error Guards (commented out - uncomment to verify type errors)
-// ============================================================================
+// Compile-Time Error Guards — each line MUST be a TypeScript error if
+// uncommented into an ILogEvent literal.
 
-// The following MUST be a TypeScript error if uncommented:
-// agentId must hold runtime agent names only, NOT blueprint slugs
-// const _bad: ILogEvent = {
-//   action: "test",
-//   target: "portal",
-//   agentId: "senior-coder",   // ← ERROR: this is a blueprint slug, NOT a runtime agent name
-//                               //   agentId must hold runtime agent names only
-// };
+// agentId: "senior-coder",                       // blueprint slug, not a runtime agent name
+// identityKind: AgentKind.AGENT_EXECUTOR,         // field is named agentKind, not identityKind
 
-// The following MUST also be a TypeScript error if uncommented:
-// field is named agentKind, not identityKind for AgentKind type
-// const _misnamed: ILogEvent = {
-//   action: "test",
-//   target: "portal",
-//   identityKind: AgentKind.AGENT_EXECUTOR,  // ← ERROR: field is named agentKind, not identityKind
-// };
-
-// The following MUST be a TypeScript error if uncommented:
-// actorType must be from ActorType enum, not arbitrary string
-// const _wrongActorType: ILogEvent = {
-//   action: "test",
-//   target: "portal",
-//   actorType: "invalid-actor-type" as ActorType, // ← ERROR: not a valid ActorType
-// };
-
-// The following MUST be a TypeScript error if uncommented:
-// agentKind must be from AgentKind enum, not arbitrary string
-// const _wrongAgentKind: ILogEvent = {
-//   action: "test",
-//   target: "portal",
-//   agentKind: "invalid-agent-kind" as AgentKind, // ← ERROR: not a valid AgentKind
-// };
+// actorType: "invalid-actor-type" as ActorType,   // not a valid ActorType
+// agentKind: "invalid-agent-kind" as AgentKind,   // not a valid AgentKind

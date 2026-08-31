@@ -250,7 +250,7 @@ Deno.test("[PromptBudgetAllocator] enabled:true overrides local:false sub-field"
 });
 
 // ============================================================================
-// Step 103.5: Request-Adaptive Weight Reallocation tests
+// Request-Adaptive Weight Reallocation tests
 // ============================================================================
 
 function makeAnalysis(overrides: Partial<{
@@ -370,7 +370,7 @@ Deno.test("[PromptBudgetAllocator] ratio floors keep plan >= 0.30 after adjustme
 });
 
 // ============================================================================
-// Step 103.9: Budget event emission tests
+// Budget event emission tests
 // ============================================================================
 
 interface CapturedEvent {
@@ -477,7 +477,7 @@ Deno.test("[PromptBudgetAllocator] budget events include tokenSource field", asy
 });
 
 // ============================================================================
-// Tokenizer integration tests (Step 103.13)
+// Tokenizer integration tests
 // ============================================================================
 
 Deno.test("[PromptBudgetAllocator] uses injected ITokenizer when provided", async () => {

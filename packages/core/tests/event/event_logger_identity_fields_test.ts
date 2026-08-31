@@ -11,15 +11,6 @@ import { EventLogger } from "@exaix/core/logger";
 import type { IActivityRepository, ILogActivityRequest } from "@exaix/core/repositories";
 import { ActorType, AgentKind } from "@exaix/core";
 
-/**
- * Tests for Step 55.1: EventLogger field forwarding
- *
- * Success Criteria:
- * - Test 1: EventLogger passes actorType, agentKind, identityId through to logActivity
- * - Test 2: EventLogger passes null for optional fields when not provided
- * - Test 3: EventLogger does NOT put blueprint slug (identity) into agentKind field
- */
-
 Deno.test("EventLogger: passes all separation fields through to logActivity", async () => {
   // Arrange
   const capturedRequests: ILogActivityRequest[] = [];

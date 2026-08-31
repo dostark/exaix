@@ -213,11 +213,7 @@ export class HealthCheckService {
     };
   }
 
-  /**
-   * Check the health of a specific provider by name with caching.
-   * @param providerName The name of the provider to check
-   * @returns True if the provider is healthy, false otherwise
-   */
+  /** Cached. */
   @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), { action: DomainEventType.HealthCheckProvider })
   async checkProvider(providerName: string): Promise<boolean> {
     // ... existing implementation ...

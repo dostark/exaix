@@ -68,11 +68,8 @@ export interface IModelRegistry {
   getModelPricing(provider: string, model: string): Promise<IModelPricing>;
 }
 
-/**
- * Phase 135 Step 8 (§5.8.5) — the advisory benchmark-score reader `exactl models list
- * --benchmark` uses. `ModelRegistryService` (Team) satisfies this with its
- * `getBenchmark` method; Solo/no-reader degrades to "-" for every row.
- */
+/** The advisory benchmark-score reader `exactl models list --benchmark` uses.
+ *  `ModelRegistryService` (Team) satisfies this; Solo/no-reader degrades to "-". */
 export interface IBenchmarkReader {
   getBenchmark(provider: string, model: string, benchmark: string): Promise<number | undefined>;
 }

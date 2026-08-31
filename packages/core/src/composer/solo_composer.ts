@@ -18,17 +18,9 @@ import type { ICapabilityModule, IEditionComposer, IModelRegistryProvider } from
 import type { IAuthorizer } from "../authorizer/authorizer.ts";
 import { AllowAllAuthorizer } from "../authorizer/authorizer.ts";
 
-/**
- * Default Solo edition composer.
- * Accepts capability modules but applies no hooks (Solo has no paid features).
- * Holds a concrete AllowAllAuthorizer as the default entitlement seam.
- * Team/Enterprise composers will iterate registered modules and invoke each
- * hook with concrete registries.
- *
- * D8 seam: Solo stores a registry provider but always returns undefined from
- * getModelRegistryProvider. The Team composer (Phase 135) returns the provider
- * registered via registerModelRegistryProvider.
- */
+/** Accepts capability modules but applies no hooks (Solo has no paid features). D8 seam:
+ *  Solo stores a registry provider but always returns undefined from
+ *  getModelRegistryProvider; the Team composer returns the registered provider. */
 export class SoloComposer implements IEditionComposer {
   private readonly modules: ICapabilityModule[] = [];
   private modelRegistryProvider?: IModelRegistryProvider;
@@ -39,10 +31,7 @@ export class SoloComposer implements IEditionComposer {
     this.modules.push(module);
   }
 
-  /**
-   * Return the list of registered modules.
-   * Useful for assertion tests and for the Team composer to delegate to.
-   */
+  /** Useful for assertion tests and for the Team composer to delegate to. */
   getModules(): readonly ICapabilityModule[] {
     return this.modules;
   }

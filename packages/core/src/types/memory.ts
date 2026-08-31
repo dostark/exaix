@@ -18,10 +18,7 @@ export interface IEmbeddingSearchResult {
   similarity: number;
 }
 
-/**
- * Tiered memory entry for hierarchical promotion.
- * Tracks a learning's tier, access patterns, and promotion eligibility.
- */
+/** Tracks a learning's tier, access patterns, and promotion eligibility. */
 export interface ITieredMemoryEntry {
   /** Unique identifier, matching the corresponding ILearning.id. */
   id: string;

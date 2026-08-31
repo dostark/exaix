@@ -15,16 +15,6 @@ import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 
-/**
- * Tests for Step 2.4: Context Card Generator
- *
- * Success Criteria:
- * - Test 1: Generate new card → Creates file with Header, Path, Tech Stack, and empty Notes section.
- * - Test 2: Update existing card → Updates Path/Stack but preserves existing user notes.
- * - Test 3: Handle special characters in alias → Sanitizes filename.
- * - Test 4: Logs activity to database.
- */
-
 Deno.test("ContextCardGenerator: creates new card", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "card-test-new-" });
   try {
@@ -104,12 +94,6 @@ Deno.test("ContextCardGenerator: sanitizes alias", async () => {
       path: "/path",
       techStack: [],
     });
-
-    // Should probably replace spaces with underscores or dashes, and remove special chars
-    // Let's assume simple sanitization: spaces to underscores, remove non-alphanumeric
-    // Or maybe just keep it simple. The requirement says "Sanitizes filename".
-    // Let's expect "My_Cool_App_.md" or similar.
-    // Actually, let's verify what file was created.
 
     const entries = [];
     for await (const entry of Deno.readDir(join(tempDir, ExaPathDefaults.memoryProjects))) {

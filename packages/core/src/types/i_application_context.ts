@@ -58,12 +58,8 @@ export interface IApplicationContext {
   /** Optional tool registry for MCP/tool execution */
   toolRegistry?: IToolRegistry;
 
-  /**
-   * Optional git service factory for per-portal GitService construction.
-   * Set by composition roots (daemon, MCP server) that need per-call git
-   * instances. Handlers access git through this factory, never `context.git`
-   * directly. A missing factory produces a detectable error.
-   */
+  /** Handlers access git through this factory, never `context.git` directly — a missing
+   *  factory produces a detectable error. */
   gitServiceFactory?: IGitServiceFactory;
 
   /** Optional memory service for knowledge management */
@@ -127,11 +123,8 @@ export interface IApplicationContext {
   /** Optional model registry (Solo floor) for CLI model display + curation commands */
   modelRegistry?: IModelRegistry;
 
-  /**
-   * Phase 135 Step 8 (§5.8.5) — optional advisory benchmark-score reader for
-   * `exactl models list --benchmark`. Wired only for Team editions (init.ts
-   * constructs a ModelRegistryService); absent in Solo (the CLI renders "-").
-   */
+  /** Wired only for Team editions (init.ts constructs a ModelRegistryService); absent in
+   *  Solo (the CLI renders "-"). */
   benchmarkReader?: IBenchmarkReader;
 }
 

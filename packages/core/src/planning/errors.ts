@@ -21,10 +21,7 @@ export class PlanAmendmentPendingError extends Error {
   }
 }
 
-/**
- * Thrown when a guardrail runner detects a block-severity violation during execution.
- * Caught by PlanExecutor to trigger an amendment with source "guardrail_violation".
- */
+/** Caught by PlanExecutor to trigger an amendment with source "guardrail_violation". */
 export class GuardrailBlockedError extends Error {
   constructor(
     public readonly traceId: string,

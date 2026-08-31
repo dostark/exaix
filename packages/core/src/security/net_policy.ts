@@ -35,10 +35,8 @@ export interface INetPolicyResult {
   readonly reason?: string;
 }
 
-/**
- * Flags a violation only when `allow_net=[]` (strict block) but net was granted anyway;
- * other policies are enforced by the launcher's `--allow-net` flag and treated as compliant.
- */
+/** Flags a violation only when `allow_net=[]` (strict block) but net was granted anyway;
+ *  other policies are enforced by the launcher's `--allow-net` flag. */
 export function evaluateNetPolicy(input: INetPolicyInput): INetPolicyResult {
   const isStrictBlock = input.allowNet !== undefined && input.allowNet.length === 0;
   if (isStrictBlock && input.grantedNet) {

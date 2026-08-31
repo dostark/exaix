@@ -44,10 +44,8 @@ Deno.test("[JSONRepair] plain JSON with no fence is unaffected", () => {
 });
 
 Deno.test("[JSONRepair] well-formed multi-line, multi-key JSON is never corrupted by newlines_in_strings", () => {
-  // Regression: newlines_in_strings' /"[^"]*\n[^"]*"/g pattern previously matched from one
-  // value's closing quote, across the structural ",\n  " between two keys, to the NEXT key's
-  // opening quote — treating "status": "analyzing",\n  "findings" as if the newline were inside
-  // one string. This corrupts virtually any well-formed multi-line JSON object.
+  // Regression: newlines_in_strings' pattern previously matched across the structural
+  // ",\n  " between two keys, treating it as a newline inside one string.
   // style-exclude:SMALL_FIXTURE_OK - fixture shape (multi-key, multi-line JSON) is the regression itself
   const input = `{
   "status": "analyzing",
@@ -76,9 +74,7 @@ Deno.test("[JSONRepair] a genuine literal newline inside one string value is sti
 
 Deno.test("[JSONRepair] real Anthropic response shape: multi-paragraph prose with bash fences before the JSON fence", () => {
   // Regression: newlines_in_strings previously ran before the JSON object was isolated from
-  // surrounding prose, and its /"[^"]*\n[^"]*"/g pattern matched ACROSS unrelated quoted JSON
-  // key/value pairs separated by a real newline (not inside one string value) — inserting a
-  // literal "\n" between them and corrupting otherwise-valid JSON into unparseable text.
+  // surrounding prose, matching ACROSS unrelated key/value pairs and corrupting the JSON.
   const input = `I need to clarify the issue with my previous response. The error indicated
 markdown code blocks broke JSON validity.
 

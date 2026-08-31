@@ -231,7 +231,7 @@ Content
 });
 
 // ============================================================================
-// Phase 16.4+ Extension Fields Tests
+// Extension Fields Tests
 // ============================================================================
 
 Deno.test("[IBlueprintLoader] parses reflexive agent configuration", async () => {
@@ -384,11 +384,8 @@ System prompt content.
 });
 
 Deno.test("[IBlueprintLoader] toLegacyBlueprint carries default_skills through as defaultSkills", async () => {
-  // Regression: frontmatter.default_skills (e.g. ["response-contract", "error-handling"]) was
-  // parsed and preserved on ILoadedBlueprint.frontmatter, but toLegacyBlueprint's mapping to
-  // IBlueprint dropped it entirely — so AgentRunner.run() never received defaultSkills for a
-  // plain analysis-phase request, meaning skills like response-contract (the <thought>/<content>
-  // format contract) were never actually attached despite being configured on the identity.
+  // Regression: frontmatter.default_skills was parsed onto ILoadedBlueprint.frontmatter, but
+  // toLegacyBlueprint's mapping to IBlueprint dropped it, so AgentRunner.run() never received it.
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -485,7 +482,7 @@ Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () =>
 });
 
 // ============================================================================
-// Phase 53: Identities Path Tests
+// Identities Path Tests
 // ============================================================================
 
 Deno.test("[IBlueprintLoader] loads from Identities path (canonical)", async () => {

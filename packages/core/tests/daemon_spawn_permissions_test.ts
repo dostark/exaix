@@ -17,7 +17,7 @@ import {
 } from "@exaix/core/types";
 
 Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS includes net, read, write, run, env, import", () => {
-  // Structured typed permission set — not a flat string array (GAP-7).
+  // Structured typed permission set — not a flat string array.
   assertEquals(Array.isArray(DAEMON_SPAWN_PERMISSIONS.read), true);
   assertEquals(Array.isArray(DAEMON_SPAWN_PERMISSIONS.write), true);
   assertEquals(Array.isArray(DAEMON_SPAWN_PERMISSIONS.run), true);
@@ -41,9 +41,8 @@ Deno.test("[daemon_perms][security] run allowlist includes Codex and excludes ar
 });
 
 Deno.test("[daemon_perms] run allowlist names the real exactl binary, not the phantom 'exoctl'", () => {
-  // The Exaix CLI binary is `exactl`. A historical typo (`exoctl`) leaked into
-  // the daemon --allow-run set, so the daemon could never spawn the real CLI and
-  // any attempt produced an 'unknown command' failure (Phase 131 Step 8 e2e).
+  // Regression: a historical typo (`exoctl`) leaked into the daemon --allow-run set, so
+  // the daemon could never spawn the real `exactl` CLI.
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exactl"), true, "must allow the real `exactl` binary");
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exoctl"), false, "must not list the non-existent `exoctl`");
 });

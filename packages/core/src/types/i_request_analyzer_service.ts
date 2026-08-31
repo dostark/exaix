@@ -16,10 +16,8 @@ import type { EnhancedRequest } from "@exaix/core/types";
 
 /** Configuration for the RequestAnalyzer service; all fields are optional with implementation defaults. */
 export interface IRequestAnalyzerConfig {
-  /**
-   * Analysis strategy: `HEURISTIC` (fast, zero-cost, default in CI/sandboxed mode), `LLM`
-   * (full LLM-powered), or `HYBRID` (heuristic first, escalates to LLM below `actionabilityThreshold`).
-   */
+  /** `HEURISTIC` (fast, zero-cost, default in CI/sandboxed mode), `LLM` (full LLM-powered),
+   *  or `HYBRID` (heuristic first, escalates to LLM below `actionabilityThreshold`). */
   mode: AnalysisMode;
 
   /** Actionability score (0–100) below which hybrid mode escalates to LLM; defaults to

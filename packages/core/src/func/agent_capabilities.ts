@@ -17,11 +17,8 @@ export const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
 
 export type WriteCapabilityRequiringGitTracking = typeof WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING[number];
 
-/**
- * Write-capable if EITHER the legacy `capabilities` list (tool names authored as
- * behavioural tags) OR `permitted_tools` grants a write tool -- some blueprints only
- * declare write tools via `permitted_tools`.
- */
+/** Write-capable if EITHER the legacy `capabilities` list OR `permitted_tools` grants a
+ *  write tool — some blueprints only declare write tools via `permitted_tools`. */
 export function requiresGitTracking(
   capabilities: readonly string[],
   permittedTools?: Opt<readonly string[], Reason.OptionalInput>,

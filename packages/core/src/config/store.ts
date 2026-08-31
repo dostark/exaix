@@ -11,11 +11,8 @@
 import { SwapClass } from "../types/enums.ts";
 import type { ConfigValue } from "./db.ts";
 
-/**
- * In-memory config store held by the daemon. Values are the effective config
- * values (post-override) keyed by config key; each key carries its SwapClass so
- * the watcher knows whether a change may be hot-applied.
- */
+/** Each key carries its SwapClass so the watcher knows whether a change may be
+ *  hot-applied. */
 export class InMemoryConfigStore {
   private store = new Map<string, ConfigValue>();
   private swapClasses = new Map<string, SwapClass>();

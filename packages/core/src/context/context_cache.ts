@@ -21,11 +21,8 @@ export interface ICachedSection {
 /** Default max entries in the context cache before LRU eviction. */
 export const DEFAULT_CONTEXT_CACHE_MAX_ENTRIES = 100;
 
-/**
- * LRU context section cache.
- * Stores stable sections (system prompt, portal context) that are reused
- * across multiple execution steps, enabling cache_control for Anthropic API.
- */
+/** Stores stable sections (system prompt, portal context) reused across multiple
+ *  execution steps, enabling cache_control for Anthropic API. */
 export class ContextCache {
   private readonly _maxEntries: number;
   private readonly _cache: Map<string, ICachedSection> = new Map();
@@ -35,10 +32,7 @@ export class ContextCache {
     this._maxEntries = maxEntries;
   }
 
-  /**
-   * Mark a content section as stable by storing/updating it in the cache.
-   * Touches the LRU timestamp on re-mark so frequently-used sections survive eviction.
-   */
+  /** Touches the LRU timestamp on re-mark so frequently-used sections survive eviction. */
   markStable(key: string, content: string, tokens: number): void {
     const entry: ICachedSection = {
       key,

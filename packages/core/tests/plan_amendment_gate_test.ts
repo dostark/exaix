@@ -271,14 +271,14 @@ Deno.test("full audit trail - PROPOSED -> APPROVED -> APPLIED with structured pa
     logger,
   );
 
-  // Step 1: process amendment -> PROPOSED + APPROVED
+  // process amendment -> PROPOSED + APPROVED
   const _decision = await gate.processAmendment({
     planId: "plan-audit",
     stepLabel: "1",
     trigger: makeTrigger(),
   });
 
-  // Step 2: apply approved amendment -> APPLIED
+  // apply approved amendment -> APPLIED
   await gate.applyApprovedAmendment(
     "original-plan",
     makePatch({

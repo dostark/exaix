@@ -11,11 +11,7 @@ import type { ICostFilter, ILogEvent, IProviderCostRecord, LogMetadata } from "@
 import { MemoryCostRouter } from "../src/cost/memory_cost_router.ts";
 import { MemoryStorageTier } from "../src/types/enums.ts";
 
-/**
- * Stub cost tracker for testing.
- *
- * Implements the full ICostTracker but keeps state in-memory.
- */
+/** Implements the full ICostTracker but keeps state in-memory. */
 class StubCostTracker implements ICostTracker {
   dailyCost = 0;
 

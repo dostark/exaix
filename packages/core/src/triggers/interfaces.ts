@@ -20,10 +20,8 @@ export interface ITriggerAdapter<TRawInput = never> {
 }
 
 export interface ITriggerIngestionService {
-  /**
-   * Returns ITriggerDispatchResult; never throws on validation errors (those produce accepted: false).
-   * Throws only on runtime/system errors (DB failure, config error).
-   */
+  /** Never throws on validation errors (those produce accepted: false) — only on
+   *  runtime/system errors (DB failure, config error). */
   ingest(trigger: ExecutionTriggerEnvelope): Promise<ITriggerDispatchResult>;
 }
 

@@ -12,8 +12,5 @@
 /** SemVer of the exactl binary and Exaix daemon. */
 export const BINARY_VERSION = "1.0.8";
 
-/**
- * SemVer of the deployed workspace structure (config schema, SQLite tables, folder layout).
- * A MINOR or MAJOR bump means workspace migration is required before this binary runs.
- */
+/** SemVer of the deployed workspace structure (config schema, SQLite tables, folder layout). */
 export const WORKSPACE_SCHEMA_VERSION = "1.5.0";

@@ -52,10 +52,7 @@ interface IXmlPlanParams {
 
 const XML_TAG_TOOL = "tool";
 
-/**
- * Parses an XML plan string into a PlanSchema-compatible JSON object; validate the
- * returned plan with PlanSchema.safeParse().
- */
+/** Validate the returned plan with PlanSchema.safeParse(). */
 export function tryParseXmlPlan(input: string): IXmlPlanParseResult {
   const trimmed = input.trim();
   if (!trimmed) {

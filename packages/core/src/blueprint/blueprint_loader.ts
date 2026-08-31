@@ -52,10 +52,7 @@ export interface ILoadedBlueprint {
   path: string;
 }
 
-/**
- * Legacy Blueprint interface for backward compatibility
- * Used by agent_runner.ts
- */
+/** Legacy interface kept for backward compatibility — used by agent_runner.ts. */
 export interface IBlueprint {
   systemPrompt: string;
   identityId?: string;

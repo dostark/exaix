@@ -51,10 +51,8 @@ async function withSkillsService(
 ): Promise<void> {
   const { db, cleanup } = await initTestDbService();
   const captured: ICapturedEvent[] = [];
-  // Copy the shipped skill catalog into a temp Memory dir rather than pointing at the repo's
-  // own: SkillsService.initialize() rebuilds Skills/index.json, and running against the repo
-  // tree would regenerate a file a previous commit deliberately deleted. The catalog content
-  // is still the real one, so triggers match exactly as they do in the scenario pack.
+  // Copy the shipped skill catalog into a temp dir rather than pointing at the repo's own:
+  // SkillsService.initialize() rebuilds Skills/index.json, which the repo tree deliberately omits.
   const memoryDir = await Deno.makeTempDir({ prefix: "skills-match-event-" });
   try {
     await copy(join(REPO_ROOT, "Memory", "Skills"), join(memoryDir, "Skills"), { overwrite: true });
