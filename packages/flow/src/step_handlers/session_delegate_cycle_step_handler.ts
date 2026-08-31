@@ -94,15 +94,9 @@ class SessionDelegateCycleHaltError extends Error {
   }
 }
 
-/**
- * Sequential per-plan-step session-delegation orchestration handler. Emits the full
- * cycle_started/cycle_resumed/cycle_step_completed/cycle_step_rejected/cycle_completed
- * lifecycle through its injected IFlowEventLogger (proven trace-correlated by a Tier A
- * test), but is not marked for the repo's mandatory-observability enforcement tag: that
- * checker's audit-logger allowlist recognizes IEventLogger/EventLogger/IEventRegistry/
- * EventRegistry only, not the flow package's own IFlowEventLogger, so tagging would be a
- * permanent false positive rather than a real gap.
- */
+/** Sequential per-plan-step session-delegation orchestration handler. Not marked for the
+ *  repo's mandatory-observability tag: that checker's audit-logger allowlist doesn't
+ *  recognize the flow package's own IFlowEventLogger, so tagging would be a false positive. */
 export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
   readonly stepType = FlowStepType.SESSION_DELEGATE_CYCLE;
 
@@ -148,10 +142,9 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
       checkpoint = init.checkpoint;
       const completed: ICompletedCycleStep[] = init.completed;
 
-      // A "replay" (an already-completed checkpoint reused for the same trace/step/
-      // digest) is a deliberate idempotent no-op — the loop below naturally does
-      // nothing, since nextSequence already exceeds every parsed step — and gets
-      // neither a started nor a resumed lifecycle event of its own.
+      // A "replay" is a deliberate idempotent no-op — the loop below naturally does
+      // nothing since nextSequence already exceeds every parsed step — and gets neither
+      // a started nor a resumed lifecycle event of its own.
       if (init.mode !== "replay") {
         this.deps.eventLogger.log(
           init.mode === "resume"
@@ -254,11 +247,8 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     return steps;
   }
 
-  /**
-   * Loads a persisted checkpoint for (parentTraceId, flowStepId) or initializes a fresh
-   * one. Rejects a checkpoint whose identity/digest no longer matches this attempt, or
-   * that is already terminal — the caller must never silently overwrite that evidence.
-   */
+  /** Loads a persisted checkpoint for (parentTraceId, flowStepId) or initializes a fresh one. Rejects a checkpoint
+   *  whose identity/digest no longer matches this attempt — the caller must never silently overwrite that evidence. */
   private async loadOrInitCheckpoint(
     parentTraceId: string,
     flowStepId: string,
@@ -285,10 +275,9 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
         mode: "fresh",
       };
     }
-    // A persisted terminal failure is immutable evidence (Safety Gates): it must never
-    // be silently retried. An identity/digest mismatch means either a forged checkpoint
-    // or an operator editing the hardened plan mid-cycle — both fail closed. A
-    // completed checkpoint is not a mismatch: it is a legitimate idempotent replay.
+    // A persisted terminal failure must never be silently retried. An identity/digest
+    // mismatch means either a forged checkpoint or an operator editing the hardened plan
+    // mid-cycle — both fail closed. A completed checkpoint is a legitimate replay, not a mismatch.
     if (
       existing.status === SessionDelegateCycleCheckpointStatusSchema.enum.failed ||
       existing.parentTraceId !== parentTraceId ||
@@ -313,10 +302,8 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     };
   }
 
-  /**
-   * Acquires (or reclaims/awaits) the durable claim for one plan step and drives it to a
-   * reviewed or failed terminal state, checkpointing `inFlight` after each transition.
-   */
+  /** Acquires (or reclaims/awaits) the durable claim for one plan step and drives it to
+   *  a terminal state, checkpointing `inFlight` after each transition. */
   private async runStep(
     step: IStepDelegationContext,
     checkpoint: ISessionDelegateCycleCheckpoint,
@@ -365,12 +352,8 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     return { result: this.claimToCompletedStep(finalClaim, parsedStep.stepNumber), checkpoint: latestCheckpoint };
   }
 
-  /**
-   * Drives one claim from wherever its state currently is to reviewed or failed,
-   * never launching unless this call owns the claim (fresh acquire or a pre-launch
-   * reclaim). A claim owned elsewhere (live duplicate entry, or a resumed launched/
-   * returned claim with no local ownership) is awaited via poll rather than relaunched.
-   */
+  /** Drives one claim from wherever its state currently is to reviewed or failed, never launching unless this call
+   *  owns the claim; a claim owned elsewhere is awaited via poll rather than relaunched. */
   private async driveClaim(
     step: IStepDelegationContext,
     claim: ISessionDelegateCycleClaim,
@@ -420,11 +403,9 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
       outcome = settled.outcome;
     }
 
-    // A claim reaching the returned state through any path other than this call's own
-    // launch (a live duplicate entry, or a resumed claim someone else launched) may
-    // already be under review elsewhere. Give that owner a bounded window before this
-    // call takes over the review itself — the self-heal path a crash between returning
-    // and reviewing requires, since no one else will ever revisit that claim.
+    // A claim returned by a path other than this call's own launch may already be under
+    // review elsewhere. Give that owner a bounded window before taking over — the
+    // self-heal path a crash between returning and reviewing requires.
     if (state === claimState.returned && !ownsReturnedTransition) {
       const settled = await this.pollUntilSettledOrTimeout(
         key,
