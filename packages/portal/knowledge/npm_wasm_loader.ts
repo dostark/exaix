@@ -31,10 +31,8 @@ export function resolveNpmPackageFile(
   return npmCachePath(packageName) + `/${version}/${filename}`;
 }
 
-/**
- * Derive the npm global cache root from a known-good reference
- * (web-tree-sitter.wasm resolves to file:// even when others don't).
- */
+/** web-tree-sitter.wasm resolves to file:// even when others don't — used as the
+ *  known-good reference for the npm global cache root. */
 function npmCachePath(packageName: string): string {
   const refUrl = import.meta.resolve(
     "npm:web-tree-sitter/web-tree-sitter.wasm",

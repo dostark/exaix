@@ -67,23 +67,12 @@ Deno.test("[portal] a stub extractor registers and is selected for a non-TS lang
   assertEquals(ruby, []);
 });
 
-// ---------------------------------------------------------------------------
-// Phase 119 Step 4 — Default-registry Python registration (Solo)
-// ---------------------------------------------------------------------------
+// Default-registry Python registration (Solo)
 
-Deno.test("[portal] createDefaultSymbolExtractorRegistry includes Python (Phase 119 Step 4)", () => {
+Deno.test("[portal] createDefaultSymbolExtractorRegistry includes Python", () => {
   const registry = createDefaultSymbolExtractorRegistry();
   const pyExtractor = registry.getForLanguage("python");
-  // The Python extractor should be registered and not the no-op.
-  // Verify by checking it's not the EMPTY_SYMBOL_EXTRACTOR singleton.
-  // Both return Promise<ISymbolEntry[]>, but the Python extractor is a PythonSymbolExtractor
-  // instance, not EMPTY_SYMBOL_EXTRACTOR. We check identity via a behavioral difference:
-  // PythonSymbolExtractor returns [] for non-"python" primaryLanguage.
-  // (We can't compare references since they're different instances.)
-  // Check that the extractor for "python" is indeed not the same reference as one we know
-  // is the no-op. Since we can't get a direct reference to EMPTY_SYMBOL_EXTRACTOR from here,
-  // we verify by behavioral contract: a registered extractor has a different identity than
-  // the unregistered fallback.
+  // Can't compare references to EMPTY_SYMBOL_EXTRACTOR directly, so verify by class name.
   assertEquals(
     pyExtractor.constructor.name === "PythonSymbolExtractor",
     true,

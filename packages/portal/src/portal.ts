@@ -75,11 +75,9 @@ export class PortalService {
     const symlinkPath = join(this.portalsDir, alias);
     try {
       await Deno.lstat(symlinkPath);
-      // Mounting the same path under the same alias asks for a state that already holds, so it
-      // is a no-op rather than an error. Rejecting it made the operation order-dependent:
-      // scenarios sharing a sandbox each mount the same fixture portal, and every one after the
-      // first failed at its opening step. A DIFFERENT target under an existing alias is still a
-      // conflict and still refused.
+      // Mounting the same path under the same alias is a no-op, not an error — scenarios
+      // sharing a sandbox each mount the same fixture portal. A DIFFERENT target under an
+      // existing alias is still a conflict and still refused.
       const existingTarget = await Deno.readLink(symlinkPath).catch(() => null);
       if (existingTarget === absoluteTarget) return;
       throw new Error(`Portal '${alias}' already exists`);
@@ -393,10 +391,7 @@ export class PortalService {
     }
   }
 
-  /**
-   * Load persisted portal knowledge (knowledge.json) for the given alias.
-   * Returns `null` when no analysis has been run yet.
-   */
+  /** Returns `null` when no analysis has been run yet. */
   async getKnowledge(portalAlias: string): Promise<IPortalKnowledge | null> {
     const symlinkPath = join(this.portalsDir, portalAlias);
     try {

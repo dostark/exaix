@@ -23,20 +23,8 @@ const MISSION_REPORTED_SENTINEL = "<!-- mission-reported -->";
 
 const KNOWLEDGE_FILE = "knowledge.json";
 
-/**
- * Persist an `IPortalKnowledge` snapshot for a portal.
- *
- * 1. Writes `knowledge.json` atomically under `{projectsDir}/{portalAlias}/`.
- * 2. Conditionally updates `overview.md` and `patterns.md` through
- *    `memoryBank` — skipped when the `<!-- mission-reported -->` sentinel is
- *    present, so MissionReporter-authored content is never overwritten.
- *    `references.md` and `decisions.md` are never touched.
- *
- * @param portalAlias - Portal alias (used as directory name).
- * @param knowledge   - The knowledge snapshot to persist.
- * @param memoryBank  - MemoryBankService for Markdown file updates.
- * @param projectsDir - Absolute path to `Memory/Projects/` directory.
- */
+/** Markdown updates are skipped when the mission-reported sentinel is present, so
+ *  MissionReporter-authored content is never overwritten. */
 export async function saveKnowledge(
   portalAlias: string,
   knowledge: IPortalKnowledge,
@@ -87,13 +75,7 @@ export async function saveKnowledge(
   }
 }
 
-/**
- * Load and validate a previously persisted `IPortalKnowledge` snapshot.
- *
- * @param portalAlias - Portal alias.
- * @param projectsDir - Absolute path to `Memory/Projects/` directory.
- * @returns The validated snapshot, or `null` if missing or invalid.
- */
+/** Returns `null` if missing or invalid. */
 export async function loadKnowledge(
   portalAlias: string,
   projectsDir: string,

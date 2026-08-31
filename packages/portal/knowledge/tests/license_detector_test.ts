@@ -111,9 +111,7 @@ Deno.test("LicenseDetector: detects SPDX headers in source files", async () => {
   }
 });
 
-// ============================================================================
-// Step 105.14 — package.json license detection (Layer 2)
-// ============================================================================
+// package.json license detection (Layer 2)
 
 Deno.test("LicenseDetector: detects license from package.json license field", async () => {
   const tempDir = await Deno.makeTempDir();

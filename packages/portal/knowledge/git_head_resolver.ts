@@ -23,7 +23,7 @@ export interface IGitHeadResolver {
 const DEFAULT_DEBOUNCE_MS = 100;
 
 export class GitHeadResolver implements IGitHeadResolver {
-  constructor(private readonly gitServiceFactory?: IGitServiceFactory) {}
+  constructor(private readonly gitServiceFactory?: Opt<IGitServiceFactory, Reason.OptionalDependency>) {}
   private _watcher: Deno.FsWatcher | null = null;
   private _abortController: AbortController | null = null;
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -73,8 +73,8 @@ export class GitHeadResolver implements IGitHeadResolver {
     const headPath = join(portalPath, ".git", "HEAD");
     try {
       // Hand-rolled loop below already debounces + compares HEAD hashes (idempotent by content) +
-      // isolates errors, so it is safe. Adopt @exaix/core/fs `consumeFsEvents` (CODE_STYLE §7
-      // Filesystem Watching) when next refactored, to converge on the shared pattern.
+      // isolates errors, so it is safe. Adopt @exaix/core/fs `consumeFsEvents` when next
+      // refactored, to converge on the shared pattern.
       this._watcher = Deno.watchFs(headPath);
       this._watchLoop(portalPath, onHeadChange, this._abortController.signal);
     } catch {

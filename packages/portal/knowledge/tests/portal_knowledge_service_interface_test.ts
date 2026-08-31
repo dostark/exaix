@@ -14,11 +14,8 @@ import { PortalAnalysisMode } from "@exaix/core/types";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
-// ---------------------------------------------------------------------------
-// Minimal stub that must satisfy the full IPortalKnowledgeService contract.
-// If any method is missing or has the wrong signature, this file fails to
-// type-check — which is the RED/GREEN signal for this interface step.
-// ---------------------------------------------------------------------------
+// Minimal stub that must satisfy the full IPortalKnowledgeService contract — a missing
+// method or wrong signature fails `deno check` right here.
 
 class StubPortalKnowledgeService implements IPortalKnowledgeService {
   analyze(

@@ -98,11 +98,8 @@ Deno.test(
       { primaryLanguage: "python", allFilePaths: files },
     );
 
-    // utils.py imports from main.py — pageRank is file-level per §3a.
-    // Symbols in main.py → 1 importer / 2 files = 0.5.
-    // Symbols in utils.py → 0 importers / 2 files = 0.
-    //
-    // Therefore any symbol in main.py ranks above any symbol in utils.py.
+    // utils.py imports from main.py — pageRank is file-level, so any symbol in main.py
+    // (1 importer / 2 files = 0.5) outranks any symbol in utils.py (0 / 2 files = 0).
 
     const greet = result.find((s) => s.name === "greet");
     const double = result.find((s) => s.name === "double");

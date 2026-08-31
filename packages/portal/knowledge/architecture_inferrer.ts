@@ -94,11 +94,8 @@ export class ArchitectureInferrer {
     this._logger = logger;
   }
 
-  /**
-   * Generate a Markdown architecture overview.
-   * Retries up to ARCHITECTURE_INFERRER_MAX_RETRIES times with exponential backoff.
-   * Returns a heuristic fallback overview when all retries fail.
-   */
+  /** Retries with exponential backoff; returns a heuristic fallback overview when all
+   *  retries fail. */
   async infer(input: IArchitectureInferrerInput): Promise<string> {
     const prompt = this._buildPrompt(input);
     const options: IModelOptions = { temperature: TEMPERATURE_ZERO };
@@ -194,11 +191,8 @@ export class ArchitectureInferrer {
     return prompt;
   }
 
-  /**
-   * Sort file paths so that high-significance files (in keyFiles) come first
-   * and low-significance files come last. This ensures the budget-cap drops
-   * the least important files.
-   */
+  /** High-significance files (in keyFiles) come first, so the budget-cap in
+   *  _buildPrompt drops the least important files. */
   private _sortFilesBySignificance(
     files: string[],
     keyFiles: IFileSignificance[],
@@ -210,10 +204,7 @@ export class ArchitectureInferrer {
   }
 }
 
-/**
- * Build a heuristic architecture overview from available input data.
- * Used as fallback when all LLM retry attempts fail.
- */
+/** Fallback used when all LLM retry attempts fail. */
 export function buildFallbackOverview(input: IArchitectureInferrerInput): string {
   const lines: string[] = [];
 

@@ -14,6 +14,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IPathResolverConfig {
   /** Optional: Event logger for activity and security event routing */
@@ -28,16 +29,14 @@ export class PathResolver {
   private logger?: IEventLogger;
   private traceId?: string;
 
-  constructor(config: Config, options?: IPathResolverConfig) {
+  constructor(config: Config, options?: Opt<IPathResolverConfig, Reason.OptionalContext>) {
     this.config = config;
     this.logger = options?.logger;
     this.traceId = options?.traceId;
   }
 
-  /**
-   * Resolves a portal alias path (e.g., "@Blueprints/agent.md") to an absolute system path.
-   * Enforces security boundaries to prevent path traversal.
-   */
+  /** e.g. "@Blueprints/agent.md" → an absolute system path. Enforces security boundaries
+   *  to prevent path traversal. */
   async resolve(aliasPath: string): Promise<string> {
     const startTime = Date.now();
 
@@ -110,15 +109,8 @@ export class PathResolver {
     }
   }
 
-  /**
-   * Validates that a path is within allowed roots.
-   *
-   * Security (Finding 8): resolves symlinks on BOTH the root and the target before
-   * the within-root check. The physical target is `Deno.realPath` of the path (or, for
-   * a not-yet-existing path, the realpath of its nearest existing ancestor). A string
-   * prefix check is insufficient because an in-portal symlink pointing outside the
-   * portal would otherwise pass.
-   */
+  /** Resolves symlinks on BOTH the root and the target before the within-root check —
+   *  a string prefix check alone would let an in-portal symlink escape the portal. */
   private async validatePath(path: string, allowedRoots: string[]): Promise<string> {
     const normalizedPath = join(path);
     const physicalPath = await this.resolvePhysicalPath(normalizedPath);
@@ -142,11 +134,8 @@ export class PathResolver {
     throw new Error("Access denied: path is outside the allowed portal roots.");
   }
 
-  /**
-   * Resolves a path to its physical location, following symlinks. For a path that does
-   * not exist yet, resolves the nearest existing ancestor and re-appends the remainder,
-   * so a symlinked ancestor is still detected.
-   */
+  /** For a path that does not exist yet, resolves the nearest existing ancestor and
+   *  re-appends the remainder, so a symlinked ancestor is still detected. */
   private async resolvePhysicalPath(target: string): Promise<string> {
     try {
       return await Deno.realPath(target);

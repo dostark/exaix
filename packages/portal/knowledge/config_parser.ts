@@ -321,14 +321,7 @@ async function parseGitignore(
   result.ignorePatterns = [...(result.ignorePatterns ?? []), ...patterns];
 }
 
-/**
- * Parse recognised config files in the portal root to extract dependency
- * information, tech-stack identifiers, and gitignore patterns.
- *
- * @param portalPath - Absolute path to the portal root directory.
- * @param fileList   - List of relative file paths discovered by DirectoryAnalyzer.
- * @returns          Partial portal knowledge: dependencies, techStack, ignorePatterns.
- */
+/** Returns partial portal knowledge: dependencies, techStack, ignorePatterns. */
 export async function parseConfigFiles(
   portalPath: string,
   fileList: string[],

@@ -14,6 +14,7 @@
 import { LANG_JAVASCRIPT, LANG_PYTHON, LANG_TYPESCRIPT } from "@exaix/core";
 import { type IDocCommandRunner, type ISymbolExtractor, SymbolExtractor } from "./symbol_extractor.ts";
 import { PythonSymbolExtractor } from "./python_symbol_extractor.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Selects an ISymbolExtractor by language; lets paid editions register more extractors. */
 export interface ISymbolExtractorRegistry {
@@ -41,17 +42,15 @@ export class SymbolExtractorRegistry implements ISymbolExtractorRegistry {
   }
 }
 
-/**
- * Build the default Solo registry: the deno-doc {@link SymbolExtractor} registered for
- * TypeScript and JavaScript. `runner` is forwarded for test injection, matching the historical
- * `new SymbolExtractor(runner)` construction.
- */
-export function createDefaultSymbolExtractorRegistry(runner?: IDocCommandRunner): SymbolExtractorRegistry {
+/** `runner` is forwarded for test injection, matching `new SymbolExtractor(runner)`. */
+export function createDefaultSymbolExtractorRegistry(
+  runner?: Opt<IDocCommandRunner, Reason.TestOverride>,
+): SymbolExtractorRegistry {
   const registry = new SymbolExtractorRegistry();
   const tsExtractor = runner ? new SymbolExtractor(runner) : new SymbolExtractor();
   registry.register(LANG_TYPESCRIPT, tsExtractor);
   registry.register(LANG_JAVASCRIPT, tsExtractor);
-  // Phase 119: Python tree-sitter extractor ships in Solo (MIT) alongside TS/JS.
+  // Python tree-sitter extractor ships in Solo (MIT) alongside TS/JS.
   registry.register(LANG_PYTHON, new PythonSymbolExtractor());
   return registry;
 }

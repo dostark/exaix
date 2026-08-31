@@ -213,13 +213,9 @@ Deno.test("PortalService: add rejects non-directory target", async () => {
   }
 });
 
-// REVISED by Phase 142 Step 13: re-adding an alias that already points at the SAME target is
-// now a no-op rather than an error. Scenarios in a pack share one sandbox, so the first to
-// mount `test-project` succeeded and every later one failed at its first step — five
-// agent_flows scenarios scored 0.000 for that reason alone, while passing in isolation.
-// Mounting the same path under the same alias is a request for a state that already holds;
-// rejecting it makes the operation order-dependent for no gain. A DIFFERENT target under an
-// existing alias is still an error, because that is a genuine conflict.
+// Mounting the same path under the same alias is a request for a state that already
+// holds; rejecting it makes the operation order-dependent for no gain. A DIFFERENT
+// target under an existing alias is still an error, because that is a genuine conflict.
 
 Deno.test("PortalService: re-adding the same target under an existing alias is a no-op", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();

@@ -114,9 +114,7 @@ async function makeTempPortal(): Promise<string> {
   return dir;
 }
 
-// ---------------------------------------------------------------------------
-// Phase 119 Step 2: language-aware file-selection helpers
-// ---------------------------------------------------------------------------
+// language-aware file-selection helpers
 
 /** Capturing extractor records the filePaths passed to extractSymbols(). */
 class CapturingExtractor implements ISymbolExtractor {
@@ -689,9 +687,7 @@ Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader 
   }
 });
 
-// ============================================================================
-// Phase 119 Step 2 — language-aware source-file selection
-// ============================================================================
+// language-aware source-file selection
 
 Deno.test(
   "[PortalKnowledgeService] selects .py files for a python portal (language-aware filter)",
@@ -763,9 +759,7 @@ Deno.test(
   },
 );
 
-// ============================================================================
-// Step 105.11 — Strategy 6 all-TS-files wiring + symbolSourceFilesScanned
-// ============================================================================
+// Strategy 6 all-TS-files wiring + symbolSourceFilesScanned
 
 /** Tracking runner records every entrypoint passed to run(). */
 function makeTrackingDocRunner(): IDocCommandRunner & { calls: string[] } {
@@ -822,9 +816,7 @@ Deno.test(
   },
 );
 
-// ============================================================================
-// GAP-6 Remediation: EventLogger Integration Tests
-// ============================================================================
+// EventLogger Integration Tests
 
 type IEventLoggerSpy = IEventLogger & { actions: string[] };
 
@@ -886,9 +878,7 @@ Deno.test("[PortalKnowledgeService] metadata.symbolSourceFilesScanned equals TS/
   }
 });
 
-// ============================================================================
-// Step 105.12 — Incremental re-analysis merge semantics
-// ============================================================================
+// Incremental re-analysis merge semantics
 
 Deno.test(
   "[PortalKnowledgeService] incremental re-analysis preserves gitHistory from prior full analysis",
@@ -984,9 +974,7 @@ Deno.test(
   },
 );
 
-// ============================================================================
-// Step 105.16 — Mode-gating tests for strategies 7–11
-// ============================================================================
+// Mode-gating tests for strategies 7-11
 
 Deno.test("[PortalKnowledgeService] quick mode produces no new strategy fields", async () => {
   const tempDir = await makeTempPortal();

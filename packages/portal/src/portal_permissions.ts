@@ -35,7 +35,7 @@ export class PortalPermissionsService {
   private portals: Map<string, IPortalPermissions>;
   private auditLogger?: IAuditLogger;
 
-  constructor(portals: IPortalPermissions[], auditLogger?: IAuditLogger) {
+  constructor(portals: IPortalPermissions[], auditLogger?: Opt<IAuditLogger, Reason.OptionalDependency>) {
     this.portals = new Map();
     for (const portal of portals) {
       this.portals.set(portal.alias, portal);
@@ -188,10 +188,6 @@ export class PortalPermissionsService {
     return Array.from(this.portals.keys());
   }
 
-  /**
-   * Validate portal has git repository
-   * Checks for .git directory in portal's target path
-   */
   validateGitRepo(portalAlias: string): boolean {
     const portal = this.getPortal(portalAlias);
 
@@ -209,10 +205,6 @@ export class PortalPermissionsService {
     }
   }
 
-  /**
-   * List portals with git support
-   * Returns only portals that have a .git directory
-   */
   listGitEnabledPortals(): IPortalPermissions[] {
     const allPortals = Array.from(this.portals.values());
     return allPortals.filter((portal) => {
@@ -233,7 +225,7 @@ export class PortalPermissionsService {
     identityId: string,
     action: PermissionAction,
     resource: string,
-    context?: { timestamp?: Date; ip?: string },
+    context?: Opt<{ timestamp?: Date; ip?: string }, Reason.OptionalContext>,
   ): IRBACPermissionCheckResult {
     const portal = this.portals.get(portalAlias);
 
