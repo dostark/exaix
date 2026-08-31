@@ -149,7 +149,7 @@ export const ExecutionMemorySchema = z.object({
 export type IChanges = z.infer<typeof ChangesSchema>;
 export type IExecutionMemory = z.infer<typeof ExecutionMemorySchema>;
 
-// ===== Learning Schemas (Phase 12.8: Global Memory) =====
+// ===== Learning Schemas (Global Memory) =====
 
 /**
  * Learning reference - links to supporting evidence
@@ -159,12 +159,8 @@ export const LearningReferenceSchema = z.object({
   path: z.string(),
 });
 
-/**
- * Learning schema - represents a learned insight, pattern, or decision
- *
- * Learnings can be project-scoped or global, and flow through
- * a pending → approved workflow for quality control.
- */
+/** Learning schema - represents a learned insight, pattern, or decision. Learnings can
+ *  be project-scoped or global, and flow through a pending → approved workflow. */
 export const LearningSchema = z.object({
   id: z.string().uuid(),
   created_at: z.string().datetime(),
@@ -225,12 +221,8 @@ export const GlobalMemoryStatsSchema = z.object({
   last_activity: z.string().datetime(),
 });
 
-/**
- * Global memory - cross-project learnings and patterns
- *
- * Stored in Memory/Global/ and contains learnings that apply
- * across all projects in the workspace.
- */
+/** Global memory - cross-project learnings and patterns. Stored in Memory/Global/ and
+ *  contains learnings that apply across all projects in the workspace. */
 export const GlobalMemorySchema = z.object({
   version: z.string().describe("Schema version"),
   updated_at: z.string().datetime(),
@@ -249,12 +241,10 @@ export type IGlobalAntiPattern = z.infer<typeof GlobalAntiPatternSchema>;
 export type IGlobalMemoryStats = z.infer<typeof GlobalMemoryStatsSchema>;
 export type IGlobalMemory = z.infer<typeof GlobalMemorySchema>;
 
-// ===== Memory Update Proposal Schema (Phase 12.9: Agent Memory Updates) =====
+// ===== Memory Update Proposal Schema (Agent Memory Updates) =====
 
-/**
- * Partial learning schema for proposals (without status/approved_at fields)
- * These fields are managed by the proposal workflow, not the learning itself.
- */
+/** Partial learning schema for proposals (without status/approved_at fields) — those
+ *  fields are managed by the proposal workflow, not the learning itself. */
 export const ProposalLearningSchema = z.object({
   id: z.string().uuid(),
   created_at: z.string().datetime(),
@@ -271,12 +261,8 @@ export const ProposalLearningSchema = z.object({
   references: z.array(LearningReferenceSchema).optional(),
 });
 
-/**
- * Memory Update Proposal - represents a proposed memory change
- *
- * Proposals are written to Memory/Pending/ and flow through
- * a review workflow: pending → approved/rejected
- */
+/** Memory Update Proposal - represents a proposed memory change. Proposals are written
+ *  to Memory/Pending/ and flow through a review workflow: pending → approved/rejected. */
 export const MemoryUpdateProposalSchema = z.object({
   id: z.string().uuid(),
   created_at: z.string().datetime(),
@@ -303,7 +289,7 @@ export const MemoryUpdateProposalSchema = z.object({
 export type IProposalLearning = z.infer<typeof ProposalLearningSchema>;
 export type IMemoryUpdateProposal = z.infer<typeof MemoryUpdateProposalSchema>;
 
-// ===== Skill Schemas (Phase 17: Skills Architecture) =====
+// ===== Skill Schemas (Skills Architecture) =====
 
 /**
  * Skill trigger conditions - determines when a skill should be activated
@@ -338,15 +324,9 @@ export const SkillCompatibilitySchema = z.object({
   flows: z.array(z.string()).optional(),
 });
 
-/**
- * Skill - Procedural memory for how to accomplish tasks
- *
- * Unlike Learnings (observations) or Patterns (structures),
- * Skills are actionable instructions that agents apply.
- *
- * Skills encode domain expertise, procedures, and best practices
- * as reusable instruction modules.
- */
+/** Skill - Procedural memory for how to accomplish tasks. Unlike Learnings
+ *  (observations) or Patterns (structures), Skills are actionable instructions that
+ *  encode domain expertise, procedures, and best practices as reusable modules. */
 export const SkillSchema = z.object({
   // === Memory Bank Standard Fields ===
   id: z.string().uuid(),
@@ -376,22 +356,16 @@ export const SkillSchema = z.object({
   output_requirements: z.array(z.string()).optional().describe("Expected output format/content"),
   quality_criteria: z.array(SkillQualityCriterionSchema).optional().describe("Evaluation criteria"),
 
-  /**
-   * Criticality (Phase 131 W16). When true, the skill is rendered as a PROTECTED,
-   * non-compactable prompt segment that survives context-budget pressure (the same
-   * `isProtected` guarantee the system prompt gets). Reserve for the output
-   * contract and a few hard constraints; ordinary methodology stays droppable.
-   */
+  /** Criticality. When true, the skill is rendered as a PROTECTED, non-compactable prompt segment that survives
+   *  context-budget pressure (the same `isProtected` guarantee the system prompt gets). Reserve for the output
+   *  contract and a few hard constraints; ordinary methodology stays droppable. */
   critical: z.boolean().optional().describe(
     "Render as a protected, non-droppable prompt segment (treated as false when absent)",
   ),
 
-  /**
-   * Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit,
-   * git_create_branch). When a skill is matched onto a request, these tools are unioned
-   * with every other matched skill's tools, then intersected with the identity's
-   * permitted_tools — a skill can never grant a tool the identity doesn't already permit.
-   */
+  /** Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit, git_create_branch). When
+   *  matched onto a request, unioned with every other matched skill's tools, then intersected with the identity's
+   *  permitted_tools — a skill can never grant a tool the identity doesn't already permit. */
   tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional().describe(
     "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the identity's permitted_tools",
   ),

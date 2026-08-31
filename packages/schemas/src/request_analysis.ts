@@ -46,10 +46,7 @@ export const RequestGoalSchema = z.object({
   description: z.string().min(1),
   /** True if the goal was stated explicitly; false if inferred. */
   explicit: z.boolean(),
-  /**
-   * Priority rank (1 = highest). Used to weight evaluation criteria.
-   * Must be a positive integer.
-   */
+  /** Priority rank (1 = highest), a positive integer used to weight evaluation criteria. */
   priority: z.number().int().min(1),
 });
 
@@ -61,26 +58,17 @@ export type IRequestGoal = z.infer<typeof RequestGoalSchema>;
 export const RequirementSchema = z.object({
   /** Human-readable requirement description. */
   description: z.string().min(1),
-  /**
-   * Analyzer confidence that this is a genuine requirement (0.0–1.0).
-   * Lower values indicate inferred or ambiguous requirements.
-   */
+  /** Analyzer confidence that this is a genuine requirement (0.0–1.0); lower values
+   *  indicate inferred or ambiguous requirements. */
   confidence: z.number().min(0).max(1),
-  /**
-   * Requirement classification.
-   * - functional: describes what the system must do
-   * - non-functional: describes quality attributes (perf, security, …)
-   * - constraint: an external restriction the solution must respect
-   */
+  /** Requirement classification: functional (what the system must do), non-functional
+   *  (quality attributes like perf/security), or constraint (an external restriction). */
   type: z.union([
     z.literal("functional"),
     z.literal("non-functional"),
     z.literal("constraint"),
   ]).default("functional"),
-  /**
-   * Whether this requirement was stated explicitly in the request text,
-   * or inferred by the analyzer.
-   */
+  /** Whether this requirement was stated explicitly in the request text, or inferred. */
   explicit: z.boolean().default(true),
 });
 
@@ -94,15 +82,10 @@ export const AmbiguitySchema = z.object({
   description: z.string().min(1),
   /** Estimated impact if this ambiguity is not resolved. */
   impact: z.nativeEnum(AmbiguityImpact),
-  /**
-   * Possible interpretations of the ambiguous element.
-   * Empty array means no distinct interpretations have been identified yet.
-   */
+  /** Possible interpretations of the ambiguous element; empty means none identified yet. */
   interpretations: z.array(z.string()).default([]),
-  /**
-   * A clarifying question the requester could answer to resolve this ambiguity.
-   * Absent when no specific question has been formulated.
-   */
+  /** A clarifying question the requester could answer to resolve this ambiguity; absent
+   *  when no specific question has been formulated. */
   clarificationQuestion: z.string().optional(),
 });
 
@@ -138,25 +121,18 @@ export const RequestAnalysisSchema = z.object({
   /** Concrete requirements inferred or stated in the request. */
   requirements: z.array(RequirementSchema),
 
-  /**
-   * Constraints imposed by the request (e.g., "no new dependencies",
-   * "must work on Node 18").
-   */
+  /** Constraints imposed by the request (e.g., "no new dependencies", "must work on Node 18"). */
   constraints: z.array(z.string()),
 
-  /**
-   * Explicit acceptance criteria extracted from the request body or
-   * frontmatter. Each item is a plain-text condition that must be satisfied.
-   */
+  /** Explicit acceptance criteria extracted from the request body or frontmatter; each
+   *  item is a plain-text condition that must be satisfied. */
   acceptanceCriteria: z.array(z.string()),
 
   /** Identified ambiguities or underspecified areas. */
   ambiguities: z.array(AmbiguitySchema),
 
-  /**
-   * Overall actionability score (0–100).
-   * 0 = completely vague/unactionable; 100 = fully specified, ready to execute.
-   */
+  /** Overall actionability score (0–100): 0 = completely vague/unactionable, 100 = fully
+   *  specified, ready to execute. */
   actionabilityScore: z.number().int().min(0).max(100),
 
   /** Estimated implementation complexity. */
@@ -179,10 +155,8 @@ export type IRequestAnalysis = z.infer<typeof RequestAnalysisSchema>;
 
 export { AnalysisMode };
 
-/**
- * Produce a JSON Schema object derived from RequestAnalysisSchema for use with
- * CLI --json-schema flags (e.g. claude-code's --json-schema).
- */
+/** Produces a JSON Schema object derived from RequestAnalysisSchema for use with CLI
+ *  --json-schema flags (e.g. claude-code's --json-schema). */
 export function getRequestAnalysisJsonSchema(): Record<string, JSONValue> {
   return zodToJsonSchema(RequestAnalysisSchema);
 }
