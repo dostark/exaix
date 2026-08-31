@@ -25,10 +25,7 @@ function findManifestEntry(toolName: string) {
   return TOOL_MANIFEST.find((entry) => entry.name === toolName);
 }
 
-/**
- * Looks up the remediation policy for a named tool from TOOL_MANIFEST.
- * Returns null when no manifest entry exists for the given tool name.
- */
+/** Returns null when no manifest entry exists for the given tool name. */
 export function lookupRemediationPolicy(toolName: string): IToolResultRemediationPolicy | null {
   const manifestEntry = findManifestEntry(toolName);
   if (!manifestEntry) {
@@ -58,11 +55,7 @@ export function lookupRemediationToolMetadata(toolName: string): IRemediationToo
   };
 }
 
-/**
- * Builds a ToolResultSchemaDescriptor for the given tool name, derived from
- * the canonical TOOL_MANIFEST entry and TOOL_RESULT_SCHEMA_REGISTRY.
- * Returns null when the tool is unknown or has no manifest entry.
- */
+/** Returns null when the tool is unknown or has no manifest entry. */
 export function buildToolResultSchemaDescriptor(
   toolName: string,
 ): IToolResultSchemaDescriptor | null {

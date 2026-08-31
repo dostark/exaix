@@ -20,10 +20,7 @@ import type { LogMetadata } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IGitService } from "@exaix/core/types";
 
-/**
- * Base class for all MCP tool handlers; provides common validation and logging.
- * @visible
- */
+/** @visible */
 export abstract class ToolHandler {
   protected context: ICliApplicationContext;
   protected config: Config;
@@ -87,10 +84,8 @@ export abstract class ToolHandler {
     }
   }
 
-  /**
-   * Resolves a portal-relative path to an absolute path confined to the portal, via realpath-based
-   * resolution ({@link PathSecurity.resolveWithinRoots}) so an in-portal symlink escaping the portal is rejected.
-   */
+  /** Realpath-based resolution ({@link PathSecurity.resolveWithinRoots}) so an in-portal
+   *  symlink escaping the portal is rejected. */
   protected async resolvePortalPath(portalPath: string, relativePath: string): Promise<string> {
     this.validatePathSafety(relativePath);
     // Resolve the portal root through any symlinks so legitimate in-portal paths
@@ -124,10 +119,8 @@ export abstract class ToolHandler {
     return { content };
   }
 
-  /**
-   * Returns a structured tool-logic error response with isError:true (does not throw); use for
-   * tool-logic failures. Reserve throws for unrecoverable protocol-level server errors.
-   */
+  /** Returns isError:true (does not throw); reserve throws for unrecoverable
+   *  protocol-level server errors. */
   protected formatToolError(
     toolName: string,
     portal: string,
@@ -176,10 +169,8 @@ export abstract class ToolHandler {
     }
   }
 
-  /**
-   * Returns a per-portal IGitService instance from context.gitServiceFactory; throws an
-   * explicit error when the factory is absent, rather than failing implicitly downstream.
-   */
+  /** Throws an explicit error when gitServiceFactory is absent, rather than failing
+   *  implicitly downstream. */
   protected resolveGitService(portalPath: string): IGitService {
     const factory = this.context.gitServiceFactory;
     if (!factory) {

@@ -24,11 +24,8 @@ export interface IAuthenticatedServerHandle {
 /** Reused by tests asserting on the exact authenticated identity string. */
 export const WHOAMI_TOOL_IDENTITY = "authenticated-caller";
 
-/**
- * Starts a real, bearer-token-gated MCP server on an ephemeral local port (or
- * the given `port`), requiring `Authorization: Bearer <requiredToken>` on
- * every request. Registers one `whoami` tool once authorized.
- */
+/** Requires `Authorization: Bearer <requiredToken>` on every request; registers one
+ *  `whoami` tool once authorized. */
 export function startAuthenticatedReferenceServer(
   requiredToken: string,
   port: number = 0,

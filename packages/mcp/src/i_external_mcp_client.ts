@@ -30,12 +30,8 @@ export interface IExternalMcpCallResult {
 }
 
 export interface IExternalMcpConnectOptions {
-  /**
-   * Bearer token attached via the SDK's `AuthProvider` primitive (`{ token: () =>
-   * Promise<string | undefined> }`, `docs/clients/machine-auth.md`'s "bring your own
-   * bearer token" pattern) — the only auth mode this phase supports. No interactive
-   * OAuth (`OAuthClientProvider`) or `client_credentials`/JWT-assertion grants.
-   */
+  /** Attached via the SDK's `AuthProvider` primitive — the only auth mode supported. No
+   *  interactive OAuth or client_credentials/JWT-assertion grants. */
   bearerToken?: string;
 }
 

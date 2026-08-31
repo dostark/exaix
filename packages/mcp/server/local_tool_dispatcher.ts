@@ -13,10 +13,8 @@ import type { ToolHandler } from "./tool_handler.ts";
 import type { IApplicationContext, IToolManifestResolver } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Not an MCP protocol client — dispatches locally to Exaix's own tool handlers.
- * For a real outbound MCP connection, see `packages/mcp/src/external_mcp_client.ts` (Phase 162).
- */
+/** Not an MCP protocol client — dispatches locally to Exaix's own tool handlers. For a
+ *  real outbound MCP connection, see `packages/mcp/src/external_mcp_client.ts`. */
 export class LocalToolDispatcher implements IMcpClient, IToolManifestResolver {
   private readonly tools: Map<string, ToolHandler>;
 

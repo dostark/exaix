@@ -13,13 +13,8 @@ import type { MCPToolResponse } from "@exaix/schemas";
 import { MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
 import type { IToolResult } from "@exaix/core/types";
 
-/**
- * Maps an IToolResult to an MCPToolResponse using the canonical content model:
- * - error results → isError: true with text content block
- * - success with string data → text content block
- * - success with object/array data → exaix_structured_data content block
- * - success with no data → empty text content block
- */
+/** Object/array data maps to an exaix_structured_data content block; string data maps
+ *  to a plain text block. */
 export function toolResultToMcpResponse(result: IToolResult): MCPToolResponse {
   if (!result.success) {
     return {

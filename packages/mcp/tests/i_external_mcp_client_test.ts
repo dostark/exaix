@@ -23,14 +23,8 @@ import type {
   IExternalMcpToolDefinition,
 } from "@exaix/mcp";
 
-/**
- * A minimal object literal type-checked against `IExternalMcpClient` via the
- * `satisfies` operator — the repo's real compile-time-assertion convention
- * (see e.g. `packages/core/src/observability/milestone_emitter.ts` and
- * `packages/execution/tests/agents/react_loop_strategy_test.ts`). A missing
- * method, wrong signature, or wrong property type fails `deno check` right
- * here — the compiler is the assertion, no runtime check needed for that part.
- */
+/** `satisfies IExternalMcpClient` is the assertion — a missing method, wrong signature,
+ *  or wrong property type fails `deno check` right here. */
 const minimalImplementation = {
   activeTransport: undefined as ExternalMcpTransportKind | undefined,
   connect: (_endpoint: URL): Promise<void> => Promise.resolve(),
@@ -53,12 +47,8 @@ Deno.test("IExternalMcpClient - a minimal implementation object literal satisfie
   await minimalImplementation.close();
 });
 
-/**
- * `IExternalMcpConnectOptions` compile-time-checked as importable from the
- * package's public barrel (`@exaix/mcp`), not just the deep
- * `@exaix/mcp/i_external_mcp_client.ts` path — matches how its sibling types
- * above are already surfaced (Post-Gap Analysis GAP-4).
- */
+/** Checks `IExternalMcpConnectOptions` is importable from the public barrel
+ *  (`@exaix/mcp`), not just the deep `i_external_mcp_client.ts` path. */
 const minimalConnectOptions = { bearerToken: "token" } satisfies IExternalMcpConnectOptions;
 
 Deno.test("@exaix/mcp barrel - IExternalMcpConnectOptions is importable from the package's public surface", () => {

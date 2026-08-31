@@ -125,7 +125,7 @@ Deno.test("LocalToolDispatcher - getAvailableToolNames returns empty for empty c
   assertEquals(client.getAvailableToolNames(), []);
 });
 
-// ── IToolManifestResolver (Phase 79) ─────────────────────────────────────────
+// ── IToolManifestResolver ────────────────────────────────────────────────────
 
 Deno.test("LocalToolDispatcher - requiresHumanApproval returns true for exaix_create_request", () => {
   const client = new LocalToolDispatcher(mockContext, []);

@@ -17,10 +17,7 @@ import type {
 
 import type { PortalOperation } from "@exaix/core";
 
-/**
- * Explicit permissive test fixture for MCP handlers and server tests.
- * This must never be imported from production runtime code.
- */
+/** Explicit permissive test fixture — must never be imported from production runtime code. */
 export class AllowAllPermissionsService implements IPortalPermissionsChecker {
   checkAgentAllowed(portalAlias: string, identityId: string): IAgentWhitelistResult {
     return {

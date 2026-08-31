@@ -31,13 +31,8 @@ import type {
   IExternalMcpToolDefinition,
 } from "./i_external_mcp_client.ts";
 
-/**
- * Injectable transport/client constructors — mirrors the existing DI pattern in
- * `apps/exactl/src/commands/daemon_commands.ts` (`context.Command ?? Deno.Command`) —
- * so unit tests can substitute the classes (e.g. to spy on construction order)
- * without changing real connection behavior; the cutover step still exercises
- * the real, unsubstituted classes end-to-end.
- */
+/** Injectable transport/client constructors, so unit tests can substitute the classes
+ *  (e.g. to spy on construction order) without changing real connection behavior. */
 export interface IExternalMcpClientDeps {
   ClientCtor?: typeof Client;
   StreamableHTTPTransportCtor?: typeof StreamableHTTPClientTransport;
@@ -119,10 +114,8 @@ export class ExternalMcpClient implements IExternalMcpClient {
 
   async close(): Promise<void> {
     await this.client?.close();
-    // Clear the reference so a subsequent call observably fails instead of
-    // silently succeeding against a closed transport (the SDK's own
-    // `listTools()`/`callTool()` degrade gracefully post-close rather than
-    // rejecting, which would otherwise hide a real "torn down" bug).
+    // Clear the reference so a subsequent call observably fails instead of silently
+    // succeeding — the SDK's listTools()/callTool() degrade gracefully post-close.
     this.client = undefined;
     this._activeTransport = undefined;
   }

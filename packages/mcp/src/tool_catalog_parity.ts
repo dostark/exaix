@@ -23,15 +23,9 @@ export interface IToolCatalogParityResult {
   checkedTools: number;
 }
 
-/**
- * MCP-protocol auth/routing parameters present on every MCP_HANDLER-kind
- * tool's advertised input_schema but absent from ToolRegistry's schemas —
- * ToolRegistry executes within an already-resolved single-portal,
- * single-identity context (see DynamicStepExecutor/ReActLoopStrategy), so it
- * never accepts them. Excluded from comparison: including them would flag
- * every overlapping tool as a "divergence", drowning out genuine per-tool
- * parameter differences.
- */
+/** ToolRegistry executes within an already-resolved single-portal, single-identity
+ *  context, so it never accepts these — excluded from comparison so they don't flag
+ *  every overlapping tool as a "divergence". */
 const MCP_AUTH_ONLY_PARAMS: ReadonlySet<string> = new Set(["portal", "identity_id"]);
 
 function withoutAuthParams(keys: Iterable<string>): Set<string> {
@@ -46,19 +40,9 @@ function formatKeys(keys: Set<string>): string {
   return [...keys].sort().join(", ");
 }
 
-/**
- * Runs the parity comparison and returns a structured result (does NOT exit
- * or throw). For each ToolRegistry tool with a name-matching TOOL_MANIFEST
- * entry that has `input_schema` populated:
- *   - a required-param set mismatch (after excluding MCP auth-only params) is
- *     an `errors` entry (blocking);
- *   - an optional-param (full property set) mismatch is a `warnings` entry.
- * A ToolRegistry tool with no name-matching manifest entry is a `warnings`
- * entry (expected for internal-only tools with no MCP handler, e.g.
- * `deno_task`/`git_info`). Manifest entries with no name-matching
- * ToolRegistry tool, and manifest entries without `input_schema` populated
- * yet, are not visited — the comparison is driven from `registryTools`.
- */
+/** A required-param mismatch is blocking (`errors`); an optional-param mismatch or a
+ *  missing manifest entry is only a `warnings` entry. Driven from `registryTools`, so
+ *  manifest-only entries are never visited. */
 export function checkToolCatalogParity(
   registryTools: ITool[],
   manifestEntries: IToolManifestEntry[],
@@ -77,9 +61,8 @@ export function checkToolCatalogParity(
       continue;
     }
 
-    // Phase 112 Step 4: compare regardless of input_schema presence — side_effect_scope is a
-    // non-optional TOOL_MANIFEST field, so input_schema-less internal-only tools (fetch_url,
-    // grep_search, copy_file) must not be silently exempted from this check.
+    // Compare regardless of input_schema presence — side_effect_scope is a non-optional
+    // TOOL_MANIFEST field, so input_schema-less internal-only tools must not be exempted.
     if (
       registryTool.sideEffectScope !== undefined &&
       registryTool.sideEffectScope !== manifestEntry.side_effect_scope

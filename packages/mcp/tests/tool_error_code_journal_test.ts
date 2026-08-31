@@ -28,10 +28,8 @@ interface ILoggedCall {
   metadata: LogMetadata;
 }
 
-/**
- * A handler that does nothing but surface the two protected formatters, so the base-class
- * behaviour is exercised directly rather than through one arbitrary concrete tool.
- */
+/** Surfaces the two protected formatters, so base-class behaviour is exercised directly
+ *  rather than through one arbitrary concrete tool. */
 class ProbeTool extends ToolHandler {
   execute(): Promise<MCPToolResponse> {
     return Promise.resolve({ content: [] });

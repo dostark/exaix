@@ -123,10 +123,7 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
   if (initGit) {
     const resolvedPortalPath = await Deno.realPath(portalPath);
     await setupGitRepo(resolvedPortalPath);
-    // When the test creates a real git repo, enable real GitService so
-    // handlers route through actual git commands (not the stub). This
-    // makes format-variant tests (status --short, commit --signoff,
-    // worktree add/list, etc.) exercise real git behaviour.
+    // Real git repo → real GitService, so format-variant tests exercise real git behaviour.
     Deno.env.set("EXA_MCP_REAL_GIT", "1");
   }
 
@@ -163,11 +160,8 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
   return { tempDir, portalPath, config, db, cleanup };
 }
 
-/**
- * Git service factory for test contexts. Returns real GitService instances when
- * EXA_MCP_REAL_GIT=1 (set by initGit tests) so format-variant tests exercise
- * real git behaviour; otherwise a stub emulating common git subcommands.
- */
+/** Returns real GitService when EXA_MCP_REAL_GIT=1 (set by initGit tests); otherwise a
+ *  stub emulating common git subcommands. */
 function createGitServiceFactory(config: Config): IGitServiceFactory {
   const stubGit = createStubGit();
   const useRealGit = Deno.env.get("EXA_MCP_REAL_GIT") === "1";
@@ -516,10 +510,7 @@ export function assertMCPContentIncludes(response: IMCPResponseShape<IMCPContent
   }
 }
 
-/**
- * Create a test portal with git initialization
- * @deprecated Use setupGitRepo instead
- */
+/** @deprecated Use setupGitRepo instead. */
 export async function createGitPortal(
   tempDir: string,
   portalName: string = "TestPortal",

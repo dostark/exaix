@@ -28,11 +28,8 @@ export const ECHO_TOOL_TEXT_PREFIX = "echo: ";
 /** Reused by tests asserting on the exact structuredContent shape. */
 export const STRUCTURED_TOOL_CURRENCY = "USD";
 
-/**
- * Starts a real, official-SDK-backed MCP server on an ephemeral local port
- * (or the given `port`), registering `echo`/`fail`/`totals`. Returns the
- * connectable URL and a `stop()` that tears the server down cleanly.
- */
+/** Real, official-SDK-backed MCP server registering `echo`/`fail`/`totals`, on an
+ *  ephemeral local port unless `port` is given. */
 export function startReferenceServer(port: number = 0): Promise<IReferenceServerHandle> {
   const handler = createMcpHandler(() => {
     const server = new McpServer({ name: "exaix-mcp-reference-server", version: "1.0.0" });
