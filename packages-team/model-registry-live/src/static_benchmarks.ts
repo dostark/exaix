@@ -17,23 +17,19 @@ import type { BenchmarkProvenance, IBenchmarkEntry } from "./model_registry_serv
 const SWE_BENCH_VERIFIED = "swe_bench_verified";
 const SWE_BENCH_PRO = "swe_bench_pro";
 const GPQA = "gpqa";
-/** Every curated floor row is provenance "static" (§5.10). */
+/** Every curated floor row is provenance "static". */
 const STATIC_PROVENANCE: BenchmarkProvenance = "static";
 // Epoch-ms floor timestamp for the curated set (2025-06-01); a fixed value keeps the
 // upsert idempotent across re-applies rather than stamping Date.now() each load.
 const CURATED_MEASURED_AT = 1_748_736_000_000;
-// Each row cites the VENDOR's own model-card/announcement — the "public, citable
-// publication" the design's Tier-2 curation requires (§5.8.1). Leaderboard products
+// Each row cites the VENDOR's own model-card/announcement. Leaderboard products
 // (swebench.com, llm-stats, …) are human references only, NOT eligible data sources.
 const ANTHROPIC_MODELS_URL = "https://www.anthropic.com/news";
 const OPENAI_MODELS_URL = "https://openai.com/index/";
 const GOOGLE_MODELS_URL = "https://blog.google/technology/google-deepmind/";
 
-/**
- * Curated SWE-bench Verified pass-rates normalised to [0,1], cited from each vendor's own
- * published announcement. NOTE: placeholders pending per-model verification against the
- * cited source before treating as authoritative.
- */
+/** Placeholders pending per-model verification against the cited source before treating
+ *  as authoritative. */
 export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
   {
     provider: PROVIDER_ANTHROPIC,

@@ -35,7 +35,7 @@ const EXCLUDED_SOURCE_DOMAINS = [
   "artificialanalysis.ai",
 ];
 
-/** Benchmark name normalisation: models.dev human-readable → Exaix snake_case; maps only tracked benchmarks (§5.8). */
+/** models.dev human-readable name → Exaix snake_case; maps only tracked benchmarks. */
 const BENCHMARK_NAME_MAP: Record<string, string> = {
   "SWE-Bench Verified": "swe_bench_verified",
   "SWE-Bench Pro": "swe_bench_pro",
@@ -98,11 +98,8 @@ function normaliseBenchmarkName(name: string): string | undefined {
   return BENCHMARK_NAME_MAP[name];
 }
 
-/**
- * Fetches models.dev/models.json and upserts tracked-benchmark scores via applyBenchmarks().
- * On network/HTTP/parse failure, emits a benchmark-refreshed event and returns 0 without
- * touching prior scores.
- */
+/** On network/HTTP/parse failure, emits a benchmark-refreshed event and returns 0 without
+ *  touching prior scores. */
 export async function fetchModelsDevBenchmarks(
   service: ModelRegistryService,
   opts: IModelsDevIngestOptions,

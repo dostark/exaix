@@ -33,7 +33,7 @@ const AnthropicResponseSchema = z.object({ data: z.array(AnthropicModelSchema) }
 
 type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
-/** 0 or absent → unknown; leave undefined so the overlay fills it (§9 caveat). */
+/** 0 or absent → unknown; leave undefined so the overlay fills it. */
 function positiveOrUndefined(value: Opt<number | null, Reason.OptionalInput>): number | undefined {
   return value != null && value > 0 ? value : undefined;
 }

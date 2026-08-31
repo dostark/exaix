@@ -45,7 +45,7 @@ const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_WEEK = 7 * HOURS_PER_DAY * MS_PER_HOUR;
 const CRON_FIELDS = 5;
 
-/** Map a thrown catalog error to its audit outcome (§7 exact values). */
+/** Map a thrown catalog error to its audit outcome. */
 function outcomeFor(err: Error): RegistryRefreshOutcome {
   if (err instanceof CatalogAuthError) return "auth_error";
   if (err instanceof CatalogParseError) return "parse_error";
@@ -53,10 +53,8 @@ function outcomeFor(err: Error): RegistryRefreshOutcome {
   return "http_error";
 }
 
-/**
- * Coarse cron→interval for the back-off cap and timer cadence; not a full cron engine,
- * it recognises only the standard catalog/pricing/benchmark crons and falls back to 6h.
- */
+/** Not a full cron engine — recognises only the standard catalog/pricing/benchmark crons
+ *  and falls back to 6h. */
 export function cronIntervalMs(expr: string): number {
   const parts = expr.trim().split(/\s+/);
   if (parts.length !== CRON_FIELDS) return DEFAULT_CRON_INTERVAL_MS;
@@ -93,10 +91,7 @@ export class RegistryRefreshScheduler {
     return this.timer !== undefined;
   }
 
-  /**
-   * Validate the configured crons, honour refresh_on_start (one immediate pass), and
-   * schedule the repeating timer; under DENO_TEST=1 the real timer is skipped.
-   */
+  /** Under DENO_TEST=1 the real timer is skipped. */
   start(): void {
     // Reuse the canonical 5-field validator — throws on an invalid/injecting cron.
     validateCronExpression(this.catalogCron);
@@ -127,10 +122,8 @@ export class RegistryRefreshScheduler {
     return Math.min(raw, cronIntervalMsValue);
   }
 
-  /**
-   * One full refresh pass over every registered adapter. Each provider is independent:
-   * a failure audits + emits refresh.failed + arms back-off, never rolling back a sibling.
-   */
+  /** Each provider is independent: a failure audits + emits refresh.failed + arms
+   *  back-off, never rolling back a sibling. */
   async refreshOnce(): Promise<void> {
     const now = Date.now();
     const cronMs = cronIntervalMs(this.catalogCron);
@@ -213,7 +206,7 @@ export class RegistryRefreshScheduler {
     cronMs: number,
   ): Promise<void> {
     const outcome = outcomeFor(err);
-    // The detail is the error message only — adapters never embed the API key (§8.2).
+    // The detail is the error message only — adapters never embed the API key.
     const detail = err.message;
     const failures = (this.failureCounts.get(provider) ?? 0) + 1;
     this.failureCounts.set(provider, failures);
@@ -266,10 +259,8 @@ export class RegistryRefreshScheduler {
   }
 }
 
-/**
- * Construct the scheduler ONLY when model_registry.enabled === true — the opt-in gate.
- * Returns undefined otherwise, so a disabled/Solo daemon makes zero outbound calls.
- */
+/** Opt-in gate: undefined unless model_registry.enabled === true, so a disabled/Solo
+ *  daemon makes zero outbound calls. */
 export function maybeCreateRefreshScheduler(
   service: ModelRegistryService,
   adapters: AdapterRegistry,

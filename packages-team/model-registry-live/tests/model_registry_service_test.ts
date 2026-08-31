@@ -174,7 +174,7 @@ Deno.test("getProviderHealth delegates to the injected checker and persists noth
   }
 });
 
-// ── Edge cases (test-development §Edge case coverage) ────────────────────────
+// ── Edge cases ─────────────────────────────────────────────────────────────
 
 Deno.test("[edge][malformed] partial pricing row (input NULL, output set): getModelCost falls to floor, getModelPricing returns the row", async () => {
   const { db, config, cleanup } = await initTestDbService();

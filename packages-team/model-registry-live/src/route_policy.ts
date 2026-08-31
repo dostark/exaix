@@ -19,7 +19,7 @@ import type { IRouteReason } from "@exaix/schemas";
 import { isCostExempt } from "@exaix/model-registry";
 import type { ModelRegistryService } from "./model_registry_service.ts";
 
-/** The §5.7.3 sub-signals available for one route (absent fields renormalise). */
+/** Sub-signals available for one route; absent fields renormalise. */
 export interface IRouteHealthSignals {
   /** Circuit state mapped to [0,1]: CLOSED=1, HALF_OPEN=0.5, OPEN=0. */
   circuitState?: number;
@@ -43,11 +43,8 @@ export interface IRoutePolicyDeps {
   isAggregator(provider: string): boolean;
   /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE tier) — $0, no lookup. */
   costExempt(provider: string): boolean;
-  /**
-   * D7 fallback signal: the provider's cost metadata, for the post-pricing-lookup
-   * isCostExempt(metadata, pricing) check (endpoint $0 price — costExempt(provider)
-   * alone only catches LOCAL/FREE tier, not a $0 endpoint price on a nominally-paid tier).
-   */
+  /** Fallback for isCostExempt(metadata, pricing): catches a $0 endpoint price on a
+   *  nominally-paid tier, which costExempt(provider) alone (LOCAL/FREE tier only) misses. */
   providerCostMetadata(provider: string): IProviderCostMetadata | undefined;
 }
 
@@ -73,11 +70,8 @@ export interface IRouteSelectOptions {
   routeOrder: Record<string, string[]>;
 }
 
-/**
- * Composite route_health_score ∈ [0,1] over the sub-signals that have data:
- * Σ(wᵢ·sᵢ)/Σ(wᵢ). A sub-signal with no value drops out; if none are present the score
- * is a neutral 1 (nothing is known against the route).
- */
+/** Weighted mean of the available sub-signals ∈ [0,1]; a neutral 1 when none are present
+ *  (nothing is known against the route). */
 export function routeHealthScore(signals: IRouteHealthSignals): number {
   let weighted = 0;
   let weightSum = 0;
@@ -100,16 +94,12 @@ export class RoutePolicy {
     private readonly deps: IRoutePolicyDeps,
   ) {}
 
-  /** All providers offering `model` in the live catalog (§5.7.5 route inventory). */
+  /** All providers offering `model` in the live catalog. */
   routesFor(model: string): Promise<Array<{ provider: string; model: string }>> {
     return this.registry.getModelRoutes(model);
   }
 
-  /**
-   * Choose a route for `model` under `policy`. Returns the chosen route, the deciding
-   * reason, and every weighed candidate (for the trace payload). A model with 0 or 1
-   * routes short-circuits (the caller maps 1 route to `single_route`).
-   */
+  /** A model with 0 or 1 routes short-circuits (the caller maps 1 route to `single_route`). */
   async select(model: string, policy: IRouteReason, opts: IRouteSelectOptions): Promise<IRouteSelection> {
     const routes = await this.routesFor(model);
     const candidates = await Promise.all(routes.map((r) => this.toCandidate(r.provider, model)));

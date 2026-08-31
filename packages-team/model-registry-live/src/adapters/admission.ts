@@ -14,7 +14,7 @@
  */
 import type { ICatalogEntry } from "@exaix/model-registry";
 
-/** Reason a model cleared the admission bar (§5.9 union of paths). */
+/** Reason a model cleared the admission bar. */
 export type AdmissionReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
 
 /** Inputs the registry supplies to the admission filter for one provider refresh. */
@@ -39,10 +39,8 @@ export interface IAdmittedEntry {
   reason: AdmissionReason;
 }
 
-/**
- * Applies the §5.9 admission union to a catalog; curation/prior-use win over the native
- * path so the reported reason reflects the user's explicit trust first.
- */
+/** Curation/prior-use win over the native path, so the reported reason reflects the
+ *  user's explicit trust first. */
 export function admit(entries: ICatalogEntry[], inputs: IAdmissionInputs): IAdmittedEntry[] {
   const admitted: IAdmittedEntry[] = [];
   for (const entry of entries) {

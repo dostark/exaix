@@ -31,9 +31,9 @@ import type { ModelRegistryService } from "./model_registry_service.ts";
 export interface ITeamStrategyDeps {
   getAdapter(provider: string): IProviderCatalogAdapter | undefined;
   buildContext(provider: string): IAdapterContext;
-  /** True when the provider is an aggregator reseller (§5.7.2 isAggregator metadata). */
+  /** True when the provider is an aggregator reseller. */
   isAggregator(provider: string): boolean;
-  /** Per-route health sub-signals for the §5.7 route policy. */
+  /** Per-route health sub-signals for the route policy. */
   routeHealth(provider: string): IRouteHealthSignals;
   /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE). */
   costExempt(provider: string): boolean;
@@ -45,7 +45,7 @@ export interface ITeamStrategyDeps {
   routePriceTolerance: number;
   /** Configured per-model provider order for user_order (G4). */
   routeOrder: Record<string, string[]>;
-  /** §5.8.4 task-type → ranking benchmark(s), canonical TaskType keys. */
+  /** Task-type → ranking benchmark(s), canonical TaskType keys. */
   benchmarkMap?: Partial<Record<TaskType, string[]>>;
   /** F8 opt-in — the strategy's own config gate for rankUsage. Default false. */
   usageTiebreak?: boolean;
@@ -79,8 +79,8 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     }
 
     // Real but unadmitted → auto-admit on first use without evicting the already-
-    // admitted rows (§5.9): re-present the existing catalog plus the new model, and
-    // admit exactly that union (existing rows stay curated, the new one is explicit_use).
+    // admitted rows: re-present the existing catalog plus the new model, and admit
+    // exactly that union (existing rows stay curated, the new one is explicit_use).
     const existingEntries: ICatalogEntry[] = admittedModels.map((m) => ({
       model: m.model,
       contextWindow: m.contextWindow,
@@ -99,7 +99,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     return { provider, model };
   }
 
-  /** Route policy sub-step (§5.7): single-route models short-circuit with `single_route` (no event); multi-route selection emits model.route.selected with the considered routes. */
+  /** Single-route models short-circuit with `single_route` (no event); multi-route selection emits model.route.selected with the considered routes. */
   async selectRoute(resolved: IResolvedRoute): Promise<IRouteSelectionResult> {
     const policy = new RoutePolicy(this.registry, { routeHealth: (p) => this.deps.routeHealth(p) }, {
       isAggregator: (p) => this.deps.isAggregator(p),
@@ -143,7 +143,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     };
   }
 
-  /** `best` characteristic (§5.8.3): ranks candidates by the first `benchmarkMap[taskType]` benchmark with a score. Candidates with no score on any benchmark are omitted from the returned map (not zeroed) and emit model.benchmark.missing. */
+  /** Ranks candidates by the first `benchmarkMap[taskType]` benchmark with a score. Candidates with no score on any benchmark are omitted from the returned map (not zeroed) and emit model.benchmark.missing. */
   async scoreBest(
     candidates: IResolvedRoute[],
     taskType: TaskType,
