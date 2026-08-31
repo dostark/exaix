@@ -12,10 +12,8 @@ import type { RequestStatusType } from "@exaix/core/status";
 
 import type { IRequestAnalysis } from "@exaix/schemas";
 
-/**
- * AnalysisMode enum for triggering request analysis.
- * Exported here to maintain shared type hierarchy.
- */
+/** AnalysisMode enum for triggering request analysis; exported here to maintain shared
+ *  type hierarchy. */
 export enum AnalysisMode {
   HEURISTIC = "heuristic",
   LLM = "llm",
@@ -38,32 +36,32 @@ export interface IRequestSkills {
 export interface IRequestOptions {
   /** @deprecated Use identity instead */
   agent?: string;
-  /** Identity blueprint to use (Phase 53 canonical field) */
+  /** Identity blueprint to use (canonical field) */
   identity?: string;
   priority?: RequestPriority;
   portal?: string;
   target_branch?: string;
   model?: string;
-  /** Model size intent: S|M|L|XL (Phase 132) */
+  /** Model size intent: S|M|L|XL */
   model_size?: string;
-  /** Provider preference hint (Phase 132) */
+  /** Provider preference hint */
   preferred_provider?: string;
-  /** Enable extended thinking (Phase 132) */
+  /** Enable extended thinking */
   thinking?: boolean;
-  /** Reasoning effort tier: low|medium|high (Phase 132) */
+  /** Reasoning effort tier: low|medium|high */
   effort?: string;
-  /** Soft hints: cheapest|fastest, repeatable (Phase 132) */
+  /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
   flow?: string;
   skills?: string[];
-  /** Tags the skill matcher scores against a skill's declared trigger tags (Phase 142). */
+  /** Tags the skill matcher scores against a skill's declared trigger tags. */
   tags?: string[];
   subject?: string;
   analyze?: boolean;
   analysis_engine?: AnalysisMode;
-  /** Explicit acceptance criteria passed via CLI --acceptance-criteria flag (Phase 49). */
+  /** Explicit acceptance criteria passed via CLI --acceptance-criteria flag. */
   acceptanceCriteria?: string[];
-  /** Expected outcomes passed via CLI --expected-outcome flag (Phase 49). */
+  /** Expected outcomes passed via CLI --expected-outcome flag. */
   expectedOutcomes?: string[];
 }
 
@@ -84,15 +82,15 @@ export interface IRequestMetadata {
   portal?: string;
   target_branch?: string;
   model?: string;
-  /** Model size intent: S|M|L|XL (Phase 132) */
+  /** Model size intent: S|M|L|XL */
   model_size?: string;
-  /** Provider preference hint (Phase 132) */
+  /** Provider preference hint */
   preferred_provider?: string;
-  /** Enable extended thinking (Phase 132) */
+  /** Enable extended thinking */
   thinking?: boolean;
-  /** Reasoning effort tier: low|medium|high (Phase 132) */
+  /** Reasoning effort tier: low|medium|high */
   effort?: string;
-  /** Soft hints: cheapest|fastest, repeatable (Phase 132) */
+  /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
   flow?: string;
   skills?: string[] | IRequestSkills;
