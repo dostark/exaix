@@ -577,7 +577,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     portalAlias: string,
     knowledge: IPortalKnowledge,
   ): Promise<void> {
-    if (!this._embeddingProvider || !this._projectsDir) return;
+    if (!this._config.relevanceSearchEmbeddingEnabled || !this._embeddingProvider || !this._projectsDir) return;
 
     const chunked = this._chunkKnowledge(knowledge);
     if (chunked.length === 0) return;

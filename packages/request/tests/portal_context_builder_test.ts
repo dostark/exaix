@@ -110,3 +110,31 @@ Deno.test("[PortalContextBuilder.resolveKnowledgeContext] uses relevance-based r
     await Deno.remove(testDir, { recursive: true });
   }
 });
+
+Deno.test("[PortalContextBuilder.resolveKnowledgeContext] falls back to summary when getRelevantContext returns undefined", async () => {
+  const { testDir, config } = await makePortalTestSetup();
+  const knowledgeService = makeMockKnowledgeService({ relevanceEnabled: false });
+  const builder = new PortalContextBuilder({ config, portalKnowledgeService: knowledgeService });
+  const knowledge = makeKnowledge();
+  try {
+    const result = await builder.resolveKnowledgeContext("body text", "test-portal", knowledge);
+    assertEquals(result, buildPortalKnowledgeSummary(knowledge));
+    assertEquals(knowledgeService.relevanceCalls.length, 1);
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
+
+Deno.test("[PortalContextBuilder.resolveKnowledgeContext] falls back to summary when getRelevantContext throws", async () => {
+  const { testDir, config } = await makePortalTestSetup();
+  const knowledgeService = makeMockKnowledgeService({ throwOnRelevance: true });
+  const builder = new PortalContextBuilder({ config, portalKnowledgeService: knowledgeService });
+  const knowledge = makeKnowledge();
+  try {
+    const result = await builder.resolveKnowledgeContext("body text", "test-portal", knowledge);
+    assertEquals(result, buildPortalKnowledgeSummary(knowledge));
+    assertEquals(knowledgeService.relevanceCalls.length, 1);
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});

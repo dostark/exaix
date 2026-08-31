@@ -215,7 +215,12 @@ export function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPorta
 }
 
 export function makeMockKnowledgeService(
-  opts: { fail?: boolean; knowledge?: IPortalKnowledge; relevanceEnabled?: boolean } = {},
+  opts: {
+    fail?: boolean;
+    knowledge?: IPortalKnowledge;
+    relevanceEnabled?: boolean;
+    throwOnRelevance?: boolean;
+  } = {},
 ): IPortalKnowledgeService & {
   callCount: number;
   relevanceCalls: Array<{ text: string; path: string; maxTokens: number }>;
@@ -244,6 +249,9 @@ export function makeMockKnowledgeService(
     updateKnowledge: (_alias: string, _path: string) => Promise.resolve(knowledge),
     getRelevantContext: (requestText: string, portalPath: string, maxTokens: number) => {
       relevanceCalls.push({ text: requestText, path: portalPath, maxTokens });
+      if (opts.throwOnRelevance) {
+        return Promise.reject(new Error("embedding search failed"));
+      }
       if (opts.relevanceEnabled) {
         return Promise.resolve("Relevant: TypeScript service with I-prefix interfaces");
       }
