@@ -76,11 +76,8 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Human-readable agent name */
   name: z.string().min(1).max(100),
 
-  /**
-   * Model in provider:model format.
-   * Optional — use model_size + characteristics for routing-based model resolution.
-   * Empty string or absent means "resolve via ModelResolver".
-   */
+  /** Model in provider:model format. Optional — use model_size + characteristics for
+   *  routing-based resolution; empty string or absent means "resolve via ModelResolver". */
   model: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.string()
@@ -89,31 +86,27 @@ export const BlueprintFrontmatterSchema = z.object({
       .optional(),
   ),
 
-  /** Size tier mapped onto task complexity for provider selection (Phase 132). */
+  /** Size tier mapped onto task complexity for provider selection. */
   model_size: z.enum(["S", "M", "L", "XL"]).optional(),
 
-  /** Soft ranking hints: cheapest, fastest (Phase 132). */
+  /** Soft ranking hints: cheapest, fastest. */
   characteristics: z.array(z.string()).optional(),
 
-  /** Extended-thinking hint (Phase 132). */
+  /** Extended-thinking hint. */
   thinking: z.boolean().optional(),
 
-  /** Reasoning-effort hint (Phase 132). */
+  /** Reasoning-effort hint. */
   effort: z.string().optional(),
 
-  /** Preferred provider hint (Phase 131). */
+  /** Preferred provider hint. */
   preferred_provider: z.string().optional(),
 
   /** Agent capabilities */
   capabilities: z.array(z.string()).optional().default([]),
 
-  /**
-   * Deprecation flag (Phase 93 Solo salvage). When true, routing/capability
-   * matching excludes the blueprint from selection (see
-   * `packages/routing/src/capability_matcher.ts`). Optional; absent means active.
-   * This is the single source of truth for lifecycle; the derived `status` view
-   * on `IBlueprintMetadata` projects it to `active` | `deprecated`.
-   */
+  /** Deprecation flag. When true, routing/capability matching excludes the blueprint from selection. Optional;
+   *  absent means active. Single source of truth for lifecycle; `IBlueprintMetadata.status` projects it to
+   *  `active` | `deprecated`. */
   deprecated: z.boolean().optional(),
 
   /** ISO 8601 timestamp */
@@ -128,24 +121,20 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Optional description */
   description: z.string().optional(),
 
-  /** Routing hint for NL task matching (Phase 131 Step 8) — short action-oriented phrase consumed by routing policy */
+  /** Routing hint for NL task matching — short action-oriented phrase consumed by routing policy. */
   routing_hint: z.string().optional(),
 
-  /** Default skills to apply to all requests for this agent (Phase 17) */
+  /** Default skills to apply to all requests for this agent. */
   default_skills: z.array(z.string()).optional(),
 
-  /**
-   * Tools this identity is permitted to use in dynamic execution steps (Phase 56).
-   * Flow steps may narrow but not expand this set.
-   * Omitting this field means the identity has no dynamic tool permissions.
-   */
-  /** Tools this identity is permitted to use (from McpToolName or ToolName). */
+  /** Tools this identity is permitted to use in dynamic execution steps (from McpToolName or ToolName). Flow
+   *  steps may narrow but not expand this set. Omitting this field means no dynamic tool permissions. */
   permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
 
-  /** Per-action HITL governance rules (Phase 118). Optional; absent means no per-action HITL policy. */
+  /** Per-action HITL governance rules. Optional; absent means no per-action HITL policy. */
   hitl: HitlPolicySchema.optional(),
 
-  /** Session delegation configuration (Phase 111). Overrides portal/global settings. */
+  /** Session delegation configuration. Overrides portal/global settings. */
   session_delegate: SessionDelegateConfigSchema.optional(),
 });
 

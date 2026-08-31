@@ -171,11 +171,9 @@ export const ConsensusConfigSchema = z.object({
   weights: z.record(z.string(), z.number()).optional(),
 });
 
-/**
- * Agent strategies a flow step may force on a DECLARED step, bypassing the strategy
- * registry's capability-based dispatch. Reuses `ExecutionStrategyName`, excluding the
- * internal `legacy` fallback — that value is never a deliberate author choice.
- */
+/** Agent strategies a flow step may force on a DECLARED step, bypassing the strategy
+ *  registry's capability-based dispatch. Reuses `ExecutionStrategyName`, excluding the
+ *  internal `legacy` fallback — that value is never a deliberate author choice. */
 export const FlowStepStrategySchema = z.enum([
   ExecutionStrategyName.REACT,
   ExecutionStrategyName.MCP,
@@ -225,7 +223,7 @@ const FlowStepSchemaBase = z.object({
   consensus: ConsensusConfigSchema.optional(),
   /** Voting group config (for type: "voting_group") */
   voting: VotingGroupConfigSchema.optional(),
-  /** Skills to apply for this step (Phase 17) */
+  /** Skills to apply for this step */
   skills: z.array(z.string()).optional(),
   /** Cost tier annotation for provider routing (Gap UF-3) */
   tier: z.nativeEnum(ProviderCostTier).optional(),
@@ -233,27 +231,22 @@ const FlowStepSchemaBase = z.object({
   parallel: ZFlowParallelConfig.optional(),
   mergeFromGroups: z.array(z.string()).optional(),
   mergeMode: ZParallelMergeMode.optional(),
-  /**
-   * Forces this DECLARED agent step through the agent strategy registry with the
-   * given strategy, bypassing capability-based dispatch. Invalid on a DYNAMIC step
-   * (which already has its own tool-selection loop) or a non-agent step type.
-   */
+  /** Forces this DECLARED agent step through the agent strategy registry with the given
+   *  strategy, bypassing capability-based dispatch. Invalid on a DYNAMIC step (which
+   *  already has its own tool-selection loop) or a non-agent step type. */
   strategy: FlowStepStrategySchema.optional(),
 });
 
-/**
- * Configuration for a `session_delegate_cycle` flow step (Phase 174 Step 2). The plan
- * itself is request provenance (`plan_context_ref`), not flow configuration — this
- * schema carries only the review gate and the non-empty-touched-paths requirement.
- */
+/** Configuration for a `session_delegate_cycle` flow step. The plan itself is request
+ *  provenance (`plan_context_ref`), not flow configuration — this schema carries only
+ *  the review gate and the non-empty-touched-paths requirement. */
 export const SessionDelegateCycleConfigSchema = z.object({
   requireChangedPaths: z.literal(true).default(true),
   review: GateEvaluateSchema,
 }).superRefine((config, ctx) => {
-  // GAP-4 remediation (Phase 174 Step 10): SessionDelegateCycleStepHandler halts
-  // unconditionally on any failed review — it never honors onFail: retry or
-  // continue-with-warning, so accepting them here would silently promise behavior
-  // this step type cannot deliver.
+  // SessionDelegateCycleStepHandler halts unconditionally on any failed review — it
+  // never honors onFail: retry or continue-with-warning, so accepting them here would
+  // silently promise behavior this step type cannot deliver.
   if (config.review.onFail !== FlowGateOnFail.HALT) {
     ctx.addIssue({
       code: "custom",
@@ -267,12 +260,9 @@ export const SessionDelegateCycleConfigSchema = z.object({
 
 export type ISessionDelegateCycleConfig = z.infer<typeof SessionDelegateCycleConfigSchema>;
 
-/**
- * Categorical halt reason for a rejected cycle step (Phase 174 Step 3). Deliberately
- * excludes free-text error messages, review feedback, or paths — the
- * `session.delegate.cycle_step_rejected` event journals this reason, and raw failure
- * text could carry prompt content or host paths.
- */
+/** Categorical halt reason for a rejected cycle step. Deliberately excludes free-text
+ *  error messages, review feedback, or paths — the `session.delegate.cycle_step_rejected`
+ *  event journals this reason, and raw failure text could carry prompt content or host paths. */
 export const SessionDelegateCycleRejectionReasonSchema = z.enum([
   "plan_too_large",
   "too_many_steps",
@@ -280,9 +270,8 @@ export const SessionDelegateCycleRejectionReasonSchema = z.enum([
   "non_completed_status",
   "empty_paths_touched",
   "review_failed",
-  // Phase 174 Step 4: a persisted checkpoint's identity (parentTraceId/flowStepId) or
-  // planDigest no longer matches the current attempt, or the checkpoint is already
-  // terminal (completed/failed) and cannot be resumed.
+  // A persisted checkpoint's identity (parentTraceId/flowStepId) or planDigest no longer
+  // matches the current attempt, or the checkpoint is already terminal and cannot be resumed.
   "checkpoint_mismatch",
 ]);
 
@@ -371,7 +360,7 @@ export const FlowSchema = z.object({
     /** Flow-wide default: include dynamic criteria from request analysis in all gate steps */
     includeRequestCriteria: z.boolean().default(false),
   }).prefault({}),
-  /** Default skills to apply to all steps (Phase 17) */
+  /** Default skills to apply to all steps */
   defaultSkills: z.array(z.string()).optional(),
   namespace: ZFlowNamespaceConfig.optional(),
 });
@@ -402,7 +391,7 @@ export type IBranchCondition = z.infer<typeof BranchConditionSchema>;
 export type IConsensusConfig = z.infer<typeof ConsensusConfigSchema>;
 
 // ============================================================================
-// Step Execution Durability Schemas (Phase 82)
+// Step Execution Durability Schemas
 // ============================================================================
 
 export const StepExecutionDispositionSchema = z.nativeEnum(StepExecutionDisposition);
@@ -411,10 +400,8 @@ export const StepSideEffectClassSchema = z.nativeEnum(StepSideEffectClass);
 
 export const StepAttemptClassSchema = z.nativeEnum(StepAttemptClass);
 
-/**
- * Idempotency key uniquely identifying a step execution attempt.
- * Used for replay detection and result reuse.
- */
+/** Idempotency key uniquely identifying a step execution attempt. Used for replay
+ *  detection and result reuse. */
 export const StepIdempotencyKeySchema = z.object({
   traceId: z.string().min(1),
   flowId: z.string().min(1),

@@ -28,12 +28,9 @@ export const SessionToolSchema = z.enum([
 ]);
 export type SessionTool = z.infer<typeof SessionToolSchema>;
 
-/**
- * Launch coupling mode for an adapter.
- *  - advisory: Exaix prints the command; the human runs the tool out-of-band.
- *  - supervised: interactive `exactl` spawns the tool on the caller's TTY.
- *  - headless: non-interactive launch via `claude -p` or `opencode run` (Phase 111).
- */
+/** Launch coupling mode for an adapter: advisory prints the command for the human to run
+ *  out-of-band; supervised spawns the tool on the caller's TTY; headless launches
+ *  non-interactively via `claude -p` or `opencode run`. */
 export const SessionLaunchModeSchema = z.enum(["advisory", "supervised", "headless"]);
 export type SessionLaunchMode = z.infer<typeof SessionLaunchModeSchema>;
 
@@ -141,13 +138,9 @@ export const SessionWaitStateSchema = z.object({
 });
 export type SessionWaitState = z.infer<typeof SessionWaitStateSchema>;
 
-/**
- * Decision-verb-per-gate compatibility matrix. A delegated `return.json`
- * decision is only legal for the gate its brief was bound to. `abandoned` is
- * universally permitted (the human gave up at any gate). Reconciliation
- * (Phase 106 Step 4) rejects a return whose decision is not listed here for
- * the brief's gate.
- */
+/** Decision-verb-per-gate compatibility matrix. A delegated `return.json` decision is only legal for the gate its
+ *  brief was bound to. `abandoned` is universally permitted (the human gave up at any gate). Reconciliation rejects
+ *  a return whose decision is not listed here for the brief's gate. */
 export const SESSION_GATE_DECISIONS: Record<SessionGate, readonly SessionDecision[]> = {
   [SessionGateSchema.enum.refinement]: [
     SessionDecisionSchema.enum.enriched,
@@ -175,11 +168,9 @@ export function isDecisionValidForGate(gate: SessionGate, decision: SessionDecis
   return SESSION_GATE_DECISIONS[gate].includes(decision);
 }
 
-/**
- * Why reconciliation rejected a delegated return. Distinct from the legitimate
- * `abandoned` decision verb — a rejection means the return is untrusted and the
- * gate must NOT be resumed with it.
- */
+/** Why reconciliation rejected a delegated return. Distinct from the legitimate
+ *  `abandoned` decision verb — a rejection means the return is untrusted and the gate
+ *  must NOT be resumed with it. */
 export const SessionReconcileRejectionSchema = z.enum([
   "forged_token", // resume_token / trace_id mismatch (GAP-2)
   "decision_gate_mismatch", // decision verb is illegal for the brief's gate
@@ -187,7 +178,7 @@ export const SessionReconcileRejectionSchema = z.enum([
 ]);
 export type SessionReconcileRejection = z.infer<typeof SessionReconcileRejectionSchema>;
 
-/** Provider resolution for a delegate tool (Phase 123 R9). */
+/** Provider resolution for a delegate tool. */
 export const SessionDelegateProviderSchema = z.object({
   name: z.string().min(1),
   key_env: z.string().min(1),
@@ -202,40 +193,27 @@ export const SessionDelegateConfigSchema = z.object({
   /** Model the delegate tool should use (headless `--model <model>`). Optional; tool default when absent. */
   model: z.string().min(1).optional(),
   gates: z.array(SessionGateSchema).min(1),
-  /** "advisory" (Mode 1), "supervised" (Mode 2), or "headless" (Mode 3, Phase 111). */
+  /** "advisory" (Mode 1), "supervised" (Mode 2), or "headless" (Mode 3). */
   launch_mode: SessionLaunchModeSchema.default("advisory"),
   token_budget: SessionTokenBudgetSchema.optional(),
-  /** Absolute paths to additional binaries allowed for headless launch (Phase 111). */
+  /** Absolute paths to additional binaries allowed for headless launch. */
   bin_overrides: z.array(z.string()).optional(),
-  /**
-   * Worktree-relative globs the delegate may touch at the code_changes gate
-   * (Phase 150 LIVE-RT). `paths_touched` are worktree-relative, so a portal code
-   * change reports `src/main.ts` — the previous hardcoded `Workspace/**` could
-   * never match it and rejected every live return as a scope violation. Declaring
-   * the scope per config preset keeps Risk R1's "acceptance names the scope"
-   * property: a preset opts into exactly the tree its tasks may edit, and paths
-   * outside it (`.env`, CI config) still fail the check.
-   */
+  /** Worktree-relative globs the delegate may touch at the code_changes gate. `paths_touched` are
+   *  worktree-relative, so a portal code change reports `src/main.ts` — a hardcoded `Workspace/**` pattern would
+   *  never match it. A preset opts into exactly the tree its tasks may edit; paths outside it still fail the check. */
   permitted_paths: z.array(z.string().min(1)).min(1).optional(),
   /** Declarative delegate provider block: routes the tool through a specific API gateway. */
   provider: SessionDelegateProviderSchema.optional(),
-  /**
-   * Enable delegate permission hardening (Phase 128 R3). When true:
-   * - OpenCode: generates a confined opencode.jsonc agent permission block
-   * - Claude Code: derives --permission-mode + --allowedTools flags
-   * - Version probe warns on unsupported tool versions
-   * Default false (opt-in). Feature is gated behind this flag.
-   */
+  /** Enable delegate permission hardening. When true: OpenCode generates a confined opencode.jsonc agent
+   *  permission block, Claude Code derives --permission-mode + --allowedTools flags, and the version probe warns
+   *  on unsupported tool versions. Default false (opt-in). */
   harden_permissions: z.boolean().default(false),
 });
 export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;
 
-/**
- * TOML config block: [cli_delegate] — per-step execution via a headless CLI tool
- * (claude/opencode) as an alternative to direct IModelProvider API calls. Distinct
- * from [session_delegate]: this selects the execution strategy for a single agent
- * step (Strategy dispatch via IAgentFileBlueprint.capabilities), not a whole gate.
- */
+/** TOML config block: [cli_delegate] — per-step execution via a headless CLI tool (claude/opencode) as an
+ *  alternative to direct IModelProvider API calls. Distinct from [session_delegate]: this selects the execution
+ *  strategy for a single agent step, not a whole gate. */
 export const CliDelegateConfigSchema = z.object({
   enabled: z.boolean().default(false),
   tool: SessionToolSchema,
