@@ -112,12 +112,17 @@ enumerates `packages/tool-runtime`'s catalog alongside the Team MCP one.
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
 | `query_relationships` | Lists relationship edges leading forward from a layer name or file path in the current portal's knowledge graph — combines persisted `file_imports_file_internal` edges with on-demand `layer_contains_file` edges. Optional `kind` filter. | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
 | `who_depends_on`      | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
+| `remember_fact`       | Persists a lightweight, execution-scoped "worth remembering" note (content + optional tags) into the current execution's scratchpad (`Memory/Execution/{trace_id}/scratchpad.jsonl`), captured raw for later extraction passes.             | `system`          | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
 
 Both require a portal-knowledge service to be wired into the `ToolRegistry`'s
 `IApplicationContext` (present in the daemon's real execution `ToolRegistryFactory`) and the
 current execution root to match a configured portal's `target_path` — otherwise they return a
 structured error, never a throw. No Team-tier MCP equivalent exists for either tool; they are
 new Solo-only surface, not a port of `exaix_portal_symbols`.
+
+`remember_fact` instead requires a scratchpad service on the same `IApplicationContext` (wired
+in the daemon's context; the trace is always the registry's own `traceId` — a `trace_id` value
+in the tool-call parameters is never honoured) and is scoped per execution, not per portal.
 
 **Why use these instead of reading imports directly:** the underlying graph is built from
 `deno info`'s resolved module graph, not text pattern matching, so it correctly follows import-map

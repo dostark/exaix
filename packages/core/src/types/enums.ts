@@ -141,6 +141,7 @@ export enum ToolName {
   GIT_STASH = "git_stash",
   QUERY_RELATIONSHIPS = "query_relationships",
   WHO_DEPENDS_ON = "who_depends_on",
+  REMEMBER_FACT = "remember_fact",
 }
 
 /** Structured error codes for MCP tool-logic failures, shared by MCP handlers and ToolRegistry without creating an import cycle. */

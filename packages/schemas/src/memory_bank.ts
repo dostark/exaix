@@ -452,3 +452,14 @@ export type ISkillIndexEntry = z.infer<typeof SkillIndexEntrySchema>;
 export type ISkillIndex = z.infer<typeof SkillIndexSchema>;
 
 // Helper Types
+
+/** Scratchpad entry schema - a lightweight ephemeral "worth remembering" note captured by an agent during execution (remember_fact). */
+export const ScratchpadEntrySchema = z.object({
+  id: z.string().describe("Unique entry id"),
+  trace_id: z.string().describe("Execution trace this entry is scoped to"),
+  content: z.string().describe("The captured note text"),
+  tags: z.array(z.string()).optional().describe("Optional free-form tags"),
+  created_at: z.string().describe("ISO timestamp of capture"),
+});
+
+export type IScratchpadEntry = z.infer<typeof ScratchpadEntrySchema>;

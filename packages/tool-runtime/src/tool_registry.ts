@@ -490,6 +490,10 @@ export class ToolRegistry implements IToolRegistry {
       (p) => this.queryRelationshipsTool(str(p.from), optStr(p.kind) as RelationshipEdgeKind | undefined),
     );
     this.executors.set(ToolName.WHO_DEPENDS_ON, (p) => this.whoDependsOnTool(str(p.path)));
+    this.executors.set(
+      ToolName.REMEMBER_FACT,
+      (p) => this.rememberFactTool(str(p.content), p.tags ? strArr(p.tags) : undefined),
+    );
   }
 
   /**
@@ -665,6 +669,18 @@ export class ToolRegistry implements IToolRegistry {
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
     return this.formatSuccess(queryRelationships(knowledge, from, kind) as unknown as JSONValue);
+  }
+
+  /** Captures a lightweight execution-scoped note into the per-trace scratchpad; traceId is the registry's own, never agent-supplied. */
+  private rememberFactTool(content: string, tags?: string[]): Promise<IToolResult> {
+    const scratchpad = this.applicationContext?.scratchpad;
+    if (!scratchpad) {
+      return Promise.resolve({
+        success: false,
+        error: "remember_fact requires a scratchpad service, none is configured",
+      });
+    }
+    return scratchpad.append(this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID, content, tags);
   }
 
   private async whoDependsOnTool(path: string): Promise<IToolResult> {

@@ -614,5 +614,45 @@ export function createCoreToolSchemas(
         },
       },
     },
+    {
+      name: ToolName.REMEMBER_FACT,
+      description:
+        "Persist a lightweight, execution-scoped 'worth remembering' note into the current execution's scratchpad so it survives beyond the current reasoning step. Use the moment you notice something useful (a gotcha, a constraint, a user preference, a debugging insight). Notes are captured raw — no scoring, no embedding — and are reviewed by later extraction passes, so keep each note self-contained and specific. Returns data.entry_id on success.",
+      parameters: {
+        type: "object",
+        properties: {
+          content: {
+            type: "string",
+            description: "The note text — self-contained, specific, and complete (never truncated)",
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional free-form tags, e.g. ['perf', 'gotcha']",
+          },
+        },
+        required: ["content"],
+      },
+      sideEffectScope: ToolSideEffectScope.SYSTEM,
+      aciDoc: {
+        summary: "Persists a lightweight execution-scoped note into the run's scratchpad.",
+        when_to_use:
+          "Use the moment you notice something worth remembering later in the run (a gotcha, constraint, preference, or debugging insight) — capture in the moment beats reconstruction afterwards.",
+        when_not_to_use:
+          "Do not use for facts already recorded elsewhere (files, memory learnings) or for transient reasoning state — the scratchpad is for durable 'worth remembering' notes, not working scratch space.",
+        example: {
+          input: {
+            content: "Rate limiter resets on full restart, not per-request — backoff must be process-lifetime aware",
+            tags: ["gotcha"],
+          },
+          output: '{"entry_id":"3f9c…","created_at":"2026-09-01T10:00:00.000Z"}',
+          rationale: "Captured in the moment so the later extraction pass can curate it into durable memory.",
+        },
+        anti_example: {
+          input: {},
+          why_wrong: "remember_fact requires 'content' — an empty call records nothing.",
+        },
+      },
+    },
   ];
 }

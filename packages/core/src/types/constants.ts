@@ -1197,6 +1197,19 @@ export const MEMORY_TIER_SEMANTIC_PROMOTION_QUALITY_ACCESS_FLOOR = 2;
 /** Score factor applied to a learning reached by one-hop link expansion during retrieval (half the linking item's relevance). */
 export const MEMORY_LINK_EXPANSION_SCORE_FACTOR = 0.5;
 
+/** Per-entry byte cap for scratchpad notes; over-cap entries are rejected, never silently truncated. */
+export const DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES = 8_192;
+
+export const DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION: number = configurable({
+  key: "memory.scratchpad.max_entries_per_execution",
+  default: 200,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum remember_fact scratchpad entries a single execution may append",
+  min: 1,
+  max: 10_000,
+  swap: SwapClass.RESTART,
+});
+
 /** Initial promotion score for high-confidence tiered memory entries. */
 export const MEMORY_TIER_PROMOTION_SCORE_HIGH = 80;
 

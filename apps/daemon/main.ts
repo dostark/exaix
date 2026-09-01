@@ -72,6 +72,7 @@ import {
   MemoryExtractorService,
   MemoryReflectionService,
   ProviderEmbeddingService,
+  ScratchpadService,
   SessionMemoryService,
 } from "@exaix/memory";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
@@ -613,6 +614,7 @@ if (import.meta.main) {
       memoryBank,
       extractor: memoryExtractor,
       portalKnowledge,
+      scratchpad: new ScratchpadService(config, logger),
       embeddings: providerEmbedding,
     };
 
