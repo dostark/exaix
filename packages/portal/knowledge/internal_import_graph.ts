@@ -25,6 +25,7 @@ import type { IPortalKnowledgeRelationship } from "@exaix/schemas";
 interface IDenoInfoDependency {
   specifier: string;
   code?: { specifier: string };
+  type?: { specifier: string };
 }
 
 interface IDenoInfoModule {
@@ -93,7 +94,9 @@ export class InternalImportGraphBuilder {
 
         for (const dep of module.dependencies ?? []) {
           if (!isRelativeSpecifier(dep.specifier)) continue;
-          const resolvedSpecifier = dep.code?.specifier;
+          // "import type" specifiers report only a `type` key, never `code`; prefer
+          // `code` when both are present so a mixed value+type import isn't double-counted.
+          const resolvedSpecifier = dep.code?.specifier ?? dep.type?.specifier;
           if (!resolvedSpecifier) continue;
 
           const toPath = toPortalRelativePath(resolvedSpecifier, resolvedPortalPath);

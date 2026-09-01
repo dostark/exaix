@@ -165,6 +165,41 @@ Deno.test("InternalImportGraphBuilder: truncates and reports when entrypoints ex
   });
 });
 
+Deno.test("InternalImportGraphBuilder: captures an edge for a relative import statement that uses 'import type'", async () => {
+  await withPortalFixture(
+    {
+      "main.ts": `import type { Config } from "./config.ts";\nexport function use(c: Config): void {}\n`,
+      "config.ts": `export interface Config { name: string }\n`,
+    },
+    async (root) => {
+      const builder = new InternalImportGraphBuilder();
+      const result = await builder.build(root, ["main.ts"]);
+
+      assertEquals(result.edges, [
+        { from: "main.ts", to: "config.ts", kind: "file_imports_file_internal" },
+      ]);
+      assertEquals(result.droppedOutOfBounds, []);
+    },
+  );
+});
+
+Deno.test("InternalImportGraphBuilder: does not produce a duplicate edge for a mixed value+type import of the same specifier", async () => {
+  await withPortalFixture(
+    {
+      "main.ts": `import { util, type Config } from "./util.ts";\nutil();\n`,
+      "util.ts": `export function util() {}\nexport interface Config { name: string }\n`,
+    },
+    async (root) => {
+      const builder = new InternalImportGraphBuilder();
+      const result = await builder.build(root, ["main.ts"]);
+
+      assertEquals(result.edges, [
+        { from: "main.ts", to: "util.ts", kind: "file_imports_file_internal" },
+      ]);
+    },
+  );
+});
+
 Deno.test("InternalImportGraphBuilder: resolves edges when portalPath is a symlink to the real directory (the standard portal-mount shape)", async () => {
   await withPortalFixture({
     "mod.ts": "import { helper } from './services/helper.ts';\nexport function start(): void { helper(); }\n",
