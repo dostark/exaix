@@ -13,14 +13,21 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddingSearchResult, IMemoryCostRouter } from "@exaix/core/types";
+import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult, IMemoryCostRouter } from "@exaix/core/types";
 import type { IEmbeddingProvider } from "@exaix/ai";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
+import {
+  chunkEmbeddingId,
+  embeddableId,
+  embeddableTextChunks,
+  embeddableTitle,
+  LEGACY_EMBEDDING_KIND,
+} from "./embeddable_entry.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { MemoryCostOperation } from "@exaix/core";
+import { MemoryCostOperation, MemoryType } from "@exaix/core";
 
 const EMBEDDING_CACHE_MAX_ENTRIES = 512;
 
@@ -33,6 +40,7 @@ interface IEmbeddingFile {
   text: string;
   vector: number[];
   created_at: string;
+  kind?: MemoryType;
 }
 
 interface IManifestEntry {
@@ -80,35 +88,51 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   }
 
   async embedLearning(learning: ILearning): Promise<void> {
+    await this.embed({ kind: MemoryType.LEARNING, learning });
+  }
+
+  async embed(entry: IEmbeddableMemoryEntry): Promise<void> {
     await this.initializeManifest();
 
     // Skip embedding if remote operations are disallowed by budget exhausted state.
     const remoteAllowed = this.costRouter ? await this.costRouter.isRemoteAllowed() : true;
     if (!remoteAllowed) return;
 
-    const text = `${learning.title} ${learning.description}`;
-    const vector = await this.embedText(text);
+    const chunks = embeddableTextChunks(entry);
+    if (chunks.length === 0) return;
 
-    // Record the estimated cost of this embedding operation
-    if (this.costRouter) {
-      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD, MemoryCostOperation.EMBEDDING);
+    const baseId = embeddableId(entry);
+    const title = embeddableTitle(entry);
+
+    for (let index = 0; index < chunks.length; index++) {
+      const id = chunkEmbeddingId(baseId, index);
+      const vector = await this.embedText(chunks[index]);
+
+      // Record the estimated cost of this embedding operation
+      if (this.costRouter) {
+        await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD, MemoryCostOperation.EMBEDDING);
+      }
+
+      const embeddingFile: IEmbeddingFile = {
+        id,
+        title,
+        text: chunks[index],
+        vector,
+        created_at: new Date().toISOString(),
+        kind: entry.kind,
+      };
+
+      const embeddingPath = join(this.embeddingsDir, `${id}.json`);
+      await Deno.writeTextFile(embeddingPath, JSON.stringify(embeddingFile, null, 2));
+
+      await this.upsertManifest(id, title, embeddingPath);
+
+      this.hnsw.insert(id, vector);
+      this.indexBuilt = true;
     }
 
-    const embeddingFile: IEmbeddingFile = {
-      id: learning.id,
-      title: learning.title,
-      text,
-      vector,
-      created_at: new Date().toISOString(),
-    };
-
-    const embeddingPath = join(this.embeddingsDir, `${learning.id}.json`);
-    await Deno.writeTextFile(embeddingPath, JSON.stringify(embeddingFile, null, 2));
-
-    await this.updateManifest(learning.id, learning.title, embeddingPath);
-
-    this.hnsw.insert(learning.id, vector);
-    this.indexBuilt = true;
+    // A re-embed with fewer chunks (e.g. a shrunken overview) must not leave stale entries behind.
+    await this.deleteChunkEntriesBeyond(baseId, chunks.length);
   }
 
   async searchByEmbedding(
@@ -152,6 +176,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
           title: embedding.title,
           summary: embedding.text.substring(0, 200),
           similarity: ir.similarity,
+          kind: embedding.kind ?? LEGACY_EMBEDDING_KIND,
         });
       } catch {
         continue;
@@ -241,11 +266,32 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     await Deno.writeTextFile(this.manifestPath, JSON.stringify(manifest, null, 2));
   }
 
-  private async updateManifest(id: string, title: string, embeddingFile: string): Promise<void> {
+  /** Insert-or-replace a manifest entry so re-embedding the same identity never duplicates it. */
+  private async upsertManifest(id: string, title: string, embeddingFile: string): Promise<void> {
     const manifest = await this.loadManifest();
-    manifest.index.push({ id, title, embeddingFile });
+    const existingIndex = manifest.index.findIndex((entry) => entry.id === id);
+    if (existingIndex !== -1) {
+      manifest.index[existingIndex] = { id, title, embeddingFile };
+    } else {
+      manifest.index.push({ id, title, embeddingFile });
+    }
     manifest.generated_at = new Date().toISOString();
     await this.saveManifest(manifest);
+  }
+
+  /** Delete indexed chunk entries `<baseId>:<n>` with n >= keepCount (stale overview chunks). */
+  private async deleteChunkEntriesBeyond(baseId: string, keepCount: number): Promise<void> {
+    const manifest = await this.loadManifest();
+    const staleIds = manifest.index
+      .map((entry) => entry.id)
+      .filter((id) => {
+        if (!id.startsWith(`${baseId}:`)) return false;
+        const suffix = id.slice(baseId.length + 1);
+        return /^\d+$/.test(suffix) && Number(suffix) >= keepCount;
+      });
+    for (const id of staleIds) {
+      await this.deleteEmbedding(id);
+    }
   }
 
   private async ensureIndex(manifest: IEmbeddingManifest): Promise<void> {

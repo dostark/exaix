@@ -7,7 +7,7 @@
  * @related-files ["packages/memory/src/embedding/memory_embedding.ts", "packages/core/src/types/i_memory_embedding_service.ts"]
  */
 
-import type { IMemoryEmbeddingService } from "@exaix/core/types";
+import type { IEmbeddableMemoryEntry, IMemoryEmbeddingService, Opt, Reason } from "@exaix/core/types";
 import type { MemoryEmbeddingService } from "@exaix/memory";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import type { IEmbeddingSearchResult } from "@exaix/core/types";
@@ -23,9 +23,13 @@ export class MemoryEmbeddingAdapter implements IMemoryEmbeddingService {
     return await this.inner.embedLearning(learning);
   }
 
+  async embed(entry: IEmbeddableMemoryEntry): Promise<void> {
+    return await this.inner.embed(entry);
+  }
+
   async searchByEmbedding(
     query: string,
-    options?: { limit?: number; threshold?: number },
+    options?: Opt<{ limit?: number; threshold?: number }, Reason.ExecutionConfig>,
   ): Promise<IEmbeddingSearchResult[]> {
     return await this.inner.searchByEmbedding(query, options);
   }

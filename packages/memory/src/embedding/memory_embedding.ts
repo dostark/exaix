@@ -10,8 +10,16 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IEmbeddableMemoryEntry, Opt, Reason } from "@exaix/core/types";
+import { MemoryType } from "@exaix/core";
 import { HnswVectorIndex } from "./vector_index.ts";
+import {
+  chunkEmbeddingId,
+  embeddableId,
+  embeddableTextChunks,
+  embeddableTitle,
+  LEGACY_EMBEDDING_KIND,
+} from "./embeddable_entry.ts";
 
 /**
  * Embedding search result
@@ -21,12 +29,15 @@ export interface IEmbeddingSearchResult {
   title: string;
   summary: string;
   similarity: number;
+  /** Which memory kind the embedding was created from; absent on legacy index entries (treated as learning). */
+  kind?: MemoryType;
 }
 
 /** 64-dimensional mock embedding vector interface. */
 export interface IMemoryEmbeddingService {
   initializeManifest(): Promise<void>;
   embedLearning(learning: ILearning): Promise<void>;
+  embed(entry: IEmbeddableMemoryEntry): Promise<void>;
   searchByEmbedding(
     query: string,
     options?: Opt<{ limit?: number; threshold?: number }, Reason.QueryFilter>,
@@ -45,6 +56,7 @@ interface EmbeddingFile {
   text: string;
   vector: number[];
   created_at: string;
+  kind?: MemoryType;
 }
 
 /** Manifest entry for an embedding. */
@@ -159,30 +171,41 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
   /** Embed a learning and save to file. */
   async embedLearning(learning: ILearning): Promise<void> {
+    await this.embed({ kind: MemoryType.LEARNING, learning });
+  }
+
+  /** Embed any embeddable memory entry (mock vectors; idempotent per identity). */
+  async embed(entry: IEmbeddableMemoryEntry): Promise<void> {
     await this.initializeManifest();
 
-    // Generate text for embedding (title + description)
-    const text = `${learning.title} ${learning.description}`;
-    const vector = generateMockEmbedding(text);
+    const chunks = embeddableTextChunks(entry);
+    if (chunks.length === 0) return;
 
-    // Create embedding file
-    const embeddingFile: EmbeddingFile = {
-      id: learning.id,
-      title: learning.title,
-      text: text,
-      vector: vector,
-      created_at: new Date().toISOString(),
-    };
+    const baseId = embeddableId(entry);
+    const title = embeddableTitle(entry);
 
-    const embeddingPath = join(this.embeddingsDir, `${learning.id}.json`);
-    await Deno.writeTextFile(embeddingPath, JSON.stringify(embeddingFile, null, 2));
+    for (let index = 0; index < chunks.length; index++) {
+      const id = chunkEmbeddingId(baseId, index);
+      const vector = generateMockEmbedding(chunks[index]);
 
-    // Update manifest
-    await this.updateManifest(learning.id, learning.title, embeddingPath);
+      const embeddingFile: EmbeddingFile = {
+        id,
+        title,
+        text: chunks[index],
+        vector,
+        created_at: new Date().toISOString(),
+        kind: entry.kind,
+      };
 
-    // Update HNSW index
-    this.hnsw.insert(learning.id, vector);
-    this.indexBuilt = true;
+      const embeddingPath = join(this.embeddingsDir, `${id}.json`);
+      await Deno.writeTextFile(embeddingPath, JSON.stringify(embeddingFile, null, 2));
+
+      await this.updateManifest(id, title, embeddingPath);
+      this.hnsw.insert(id, vector);
+      this.indexBuilt = true;
+    }
+
+    await this.deleteChunkEntriesBeyond(baseId, chunks.length);
   }
 
   /** Update the manifest with a new or updated embedding. */
@@ -262,6 +285,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
           title: embedding.title,
           summary: embedding.text.substring(0, 200),
           similarity: ir.similarity,
+          kind: embedding.kind ?? LEGACY_EMBEDDING_KIND,
         });
       } catch {
         continue;
@@ -309,6 +333,24 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
 
     // Update HNSW index
     this.hnsw.delete(id);
+  }
+
+  /** Delete indexed chunk entries `<baseId>:<n>` with n >= keepCount (stale overview chunks). */
+  private async deleteChunkEntriesBeyond(baseId: string, keepCount: number): Promise<void> {
+    await this.initializeManifest();
+    if (!await exists(this.manifestPath)) return;
+    const content = await Deno.readTextFile(this.manifestPath);
+    const manifest: EmbeddingManifest = JSON.parse(content);
+    const staleIds = manifest.index
+      .map((entry) => entry.id)
+      .filter((id) => {
+        if (!id.startsWith(`${baseId}:`)) return false;
+        const suffix = id.slice(baseId.length + 1);
+        return /^\d+$/.test(suffix) && Number(suffix) >= keepCount;
+      });
+    for (const id of staleIds) {
+      await this.deleteEmbedding(id);
+    }
   }
 
   /** Get statistics about embeddings. */

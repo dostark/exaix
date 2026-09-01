@@ -35,6 +35,15 @@ export { findDedupMatch, mergeLearnings } from "./src/dedup/semantic_dedup.ts";
 export type { IDedupCandidate } from "./src/dedup/semantic_dedup.ts";
 export { computeRecencyFactor, rankByTemporalRelevance } from "./src/temporal/temporal_scoring.ts";
 export type { ITemporalCandidate, ITemporalScoringOptions } from "./src/temporal/temporal_scoring.ts";
+export { fuseHybridScores } from "./src/hybrid/hybrid_fusion.ts";
+export {
+  chunkEmbeddingId,
+  embeddableId,
+  embeddableTextChunks,
+  embeddableTitle,
+  LEGACY_EMBEDDING_KIND,
+  overviewEmbeddingId,
+} from "./src/embedding/embeddable_entry.ts";
 
 export {
   DEFAULT_SESSION_MEMORY_CONFIG,

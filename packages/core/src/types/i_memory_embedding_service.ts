@@ -8,7 +8,7 @@
 
 import type { ILearning } from "@exaix/schemas";
 
-import type { IEmbeddingSearchResult } from "@exaix/core/types";
+import type { IEmbeddableMemoryEntry, IEmbeddingSearchResult } from "@exaix/core/types";
 
 export interface IMemoryEmbeddingService {
   /**
@@ -20,6 +20,9 @@ export interface IMemoryEmbeddingService {
    * Generate and store an embedding for a learning entry.
    */
   embedLearning(learning: ILearning): Promise<void>;
+
+  /** Embed any embeddable memory entry, keyed by its identity (id / trace_id / `${portal}:overview`); cost-gated and idempotent per identity. */
+  embed(entry: IEmbeddableMemoryEntry): Promise<void>;
 
   /**
    * Search for similar learnings using embedding similarity.

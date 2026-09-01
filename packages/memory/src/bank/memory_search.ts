@@ -98,6 +98,7 @@ function buildProjectQueryResults(
         title: pattern.name,
         summary: pattern.description,
         relevance_score: 0.8,
+        id: pattern.id,
       });
     }
   }
@@ -110,6 +111,7 @@ function buildProjectQueryResults(
         title: `Decision: ${decision.date}`,
         summary: decision.decision.substring(0, 200),
         relevance_score: 0.7,
+        id: decision.id,
       });
     }
   }

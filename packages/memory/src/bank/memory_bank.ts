@@ -24,7 +24,7 @@ import {
   MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
-  type MemoryType,
+  MemoryType,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { DEFAULT_AI_TIMEOUT_MS, MEMORY_DEDUP_SIMILARITY_THRESHOLD } from "@exaix/core";
@@ -64,7 +64,7 @@ import type {
 } from "@exaix/schemas/memory_bank.ts";
 
 import { findDedupMatch, type IDedupCandidate, mergeLearnings } from "../dedup/semantic_dedup.ts";
-import { parseDecisions, parsePatterns } from "./parsers.ts";
+import { ID_MARKER_PREFIX, parseDecisions, parsePatterns } from "./parsers.ts";
 import { formatExecutionSummary } from "./formatters.ts";
 import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./index_builder.ts";
 import type {
@@ -274,6 +274,13 @@ export class MemoryBankService implements IMemoryBankService {
       this.formatReferences(projectMem.references),
     );
 
+    // Embed the project overview under its synthetic `${portal}:overview` key (skipped when empty)
+    await this.embeddingService?.embed({
+      kind: MemoryType.PROJECT,
+      portal: projectMem.portal,
+      overview: projectMem.overview,
+    });
+
     // Log to IActivity Journal
     this.logActivity({
       event_type: DomainEventType.MemoryProjectCreated,
@@ -324,6 +331,7 @@ export class MemoryBankService implements IMemoryBankService {
   async addPattern(portal: string, pattern: IPattern): Promise<void> {
     const projectDir = join(this.projectsDir, portal);
     const lockPath = join(projectDir, "patterns.lock");
+    let storedPattern: IPattern | undefined;
 
     await ensureDir(projectDir);
 
@@ -344,9 +352,16 @@ export class MemoryBankService implements IMemoryBankService {
         throw new Error(`Could not create project memory for portal: ${portal}`);
       }
 
-      existing.patterns.push(pattern);
+      // Backfill the pattern's embedding-index id before storing so the stored
+      // marker and the embedded entry share one stable identity.
+      const normalized: IPattern = { ...pattern, id: pattern.id ?? crypto.randomUUID() };
+      existing.patterns.push(normalized);
       await this.updateProjectMemory(portal, { patterns: existing.patterns });
+      storedPattern = normalized;
     });
+
+    // Embed the stored pattern under its own UUID id (cost-gated inside the service)
+    await this.embeddingService?.embed({ kind: MemoryType.PATTERN, portal, pattern: storedPattern! });
 
     // Log pattern addition
     this.logActivity({
@@ -363,6 +378,7 @@ export class MemoryBankService implements IMemoryBankService {
   async addDecision(portal: string, decision: IDecision): Promise<void> {
     const projectDir = join(this.projectsDir, portal);
     const lockPath = join(projectDir, "decisions.lock");
+    let storedDecision: IDecision | undefined;
 
     await this.withFileLock(lockPath, async () => {
       const existing = await this.getProjectMemory(portal);
@@ -370,9 +386,16 @@ export class MemoryBankService implements IMemoryBankService {
         throw new Error(`Project memory not found for portal: ${portal}`);
       }
 
-      existing.decisions.push(decision);
+      // Backfill the decision's embedding-index id before storing so the stored
+      // marker and the embedded entry share one stable identity.
+      const normalized: IDecision = { ...decision, id: decision.id ?? crypto.randomUUID() };
+      existing.decisions.push(normalized);
       await this.updateProjectMemory(portal, { decisions: existing.decisions });
+      storedDecision = normalized;
     });
+
+    // Embed the stored decision under its own UUID id (cost-gated inside the service)
+    await this.embeddingService?.embed({ kind: MemoryType.DECISION, portal, decision: storedDecision! });
 
     // Log decision addition
     this.logActivity({
@@ -405,6 +428,9 @@ export class MemoryBankService implements IMemoryBankService {
       join(execDir, "context.json"),
       JSON.stringify(execution, null, 2),
     );
+
+    // Embed the execution under its trace_id (cost-gated inside the service)
+    await this.embeddingService?.embed({ kind: MemoryType.EXECUTION, execution });
 
     // Log to IActivity Journal
     this.logActivity({
@@ -1049,23 +1075,82 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Embed all approved learnings
     const learnings = await this.loadLearningsFromFile();
+    let learningCount = 0;
     for (const learning of learnings) {
       if (learning.status === MemoryStatus.APPROVED) {
         await embeddingService.embedLearning(learning);
+        learningCount++;
       }
     }
+
+    // Embed project-level memories (overview, patterns, decisions) and execution history,
+    // persisting lazily-backfilled pattern/decision ids first so embedded ids stay stable.
+    let patternCount = 0;
+    let decisionCount = 0;
+    let overviewCount = 0;
+    for (const portal of await this.getProjects()) {
+      await this.persistBackfilledIds(portal);
+      const projectMem = await this.getProjectMemory(portal);
+      if (!projectMem) continue;
+      if (projectMem.overview) {
+        await embeddingService.embed({ kind: MemoryType.PROJECT, portal, overview: projectMem.overview });
+        overviewCount++;
+      }
+      for (const pattern of projectMem.patterns) {
+        await embeddingService.embed({ kind: MemoryType.PATTERN, portal, pattern });
+        patternCount++;
+      }
+      for (const decision of projectMem.decisions) {
+        await embeddingService.embed({ kind: MemoryType.DECISION, portal, decision });
+        decisionCount++;
+      }
+    }
+
+    // Embed all execution history (limit above the default 100 so nothing is missed)
+    const executions = await this.getExecutionHistory(undefined, Number.MAX_SAFE_INTEGER);
+    for (const execution of executions) {
+      await embeddingService.embed({ kind: MemoryType.EXECUTION, execution });
+    }
+
     // Flush debounced cache writes after the batch
     await embeddingService.flush?.();
 
     // Log embedding rebuild
-    const approvedCount = learnings.filter((l) => l.status === MemoryStatus.APPROVED).length;
     this.logActivity({
       event_type: DomainEventType.MemoryEmbeddingsRebuilt,
       target: ActivityActor.SYSTEM,
       metadata: {
-        learnings_embedded: approvedCount,
+        learnings_embedded: learningCount,
+        patterns_embedded: patternCount,
+        decisions_embedded: decisionCount,
+        overviews_embedded: overviewCount,
+        executions_embedded: executions.length,
       },
     });
+  }
+
+  /** Rewrites a project's patterns/decisions markdown when entries lack persisted id markers, so lazy-backfilled ids become stable across runs. */
+  private async persistBackfilledIds(portal: string): Promise<void> {
+    const projectDir = join(this.projectsDir, portal);
+
+    const patternsPath = join(projectDir, "patterns.md");
+    const patternsContent = await this.readMarkdownFile(patternsPath);
+    const patterns = parsePatterns(patternsContent);
+    if (patterns.length > this.countIdMarkers(patternsContent)) {
+      await this.writeMarkdownFile(patternsPath, this.formatPatterns(patterns));
+    }
+
+    const decisionsPath = join(projectDir, "decisions.md");
+    const decisionsContent = await this.readMarkdownFile(decisionsPath);
+    const decisions = parseDecisions(decisionsContent);
+    if (decisions.length > this.countIdMarkers(decisionsContent)) {
+      await this.writeMarkdownFile(decisionsPath, this.formatDecisions(decisions));
+    }
+  }
+
+  /** Counts persisted id markers in raw markdown. */
+  private countIdMarkers(content: string): number {
+    return content.split(ID_MARKER_PREFIX).length - 1;
   }
 
   // Helper Methods
@@ -1114,11 +1199,15 @@ export class MemoryBankService implements IMemoryBankService {
   }
 
   /**
-   * Format patterns to markdown
+   * Format patterns to markdown, persisting each entry's stable embedding-index id as a marker
    */
   private formatPatterns(patterns: IPattern[]): string {
     return patterns.map((p) => {
-      let md = `## ${p.name}\n\n${p.description}\n`;
+      let md = `## ${p.name}\n`;
+      if (p.id) {
+        md += `${ID_MARKER_PREFIX} ${p.id} -->\n`;
+      }
+      md += `\n${p.description}\n`;
       if (p.examples && p.examples.length > 0) {
         md += `\n**Examples:**\n${p.examples.map((e) => `- ${e}`).join("\n")}\n`;
       }
@@ -1130,11 +1219,15 @@ export class MemoryBankService implements IMemoryBankService {
   }
 
   /**
-   * Format decisions to markdown
+   * Format decisions to markdown, persisting each entry's stable embedding-index id as a marker
    */
   private formatDecisions(decisions: IDecision[]): string {
     return decisions.map((d) => {
-      let md = `## ${d.date}: ${d.decision}\n\n${d.rationale}\n`;
+      let md = `## ${d.date}: ${d.decision}\n`;
+      if (d.id) {
+        md += `${ID_MARKER_PREFIX} ${d.id} -->\n`;
+      }
+      md += `\n${d.rationale}\n`;
       if (d.alternatives && d.alternatives.length > 0) {
         md += `\n**Alternatives considered:** ${d.alternatives.join(", ")}\n`;
       }

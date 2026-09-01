@@ -12,6 +12,7 @@ import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../../../../tests/
 import type { MemoryBankService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult } from "@exaix/memory";
+import type { IEmbeddableMemoryEntry } from "@exaix/core/types";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import type {
   IActivitySummary,
@@ -140,6 +141,9 @@ export class NullEmbeddingStub implements IMemoryEmbeddingService {
     return Promise.resolve();
   }
   embedLearning(_learning: ILearning): Promise<void> {
+    return Promise.resolve();
+  }
+  embed(_entry: IEmbeddableMemoryEntry): Promise<void> {
     return Promise.resolve();
   }
   searchByEmbedding(

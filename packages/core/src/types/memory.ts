@@ -6,7 +6,8 @@
  * @related-files [packages/schemas/src/memory_bank.ts]
  */
 
-import type { MemoryTier } from "./enums.ts";
+import type { MemoryTier, MemoryType } from "./enums.ts";
+import type { IDecision, IExecutionMemory, ILearning, IPattern } from "@exaix/schemas";
 
 /**
  * Result of a semantic embedding search.
@@ -16,7 +17,17 @@ export interface IEmbeddingSearchResult {
   title: string;
   summary: string;
   similarity: number;
+  /** Which memory kind the embedding was created from; absent on legacy index entries (treated as learning). */
+  kind?: MemoryType;
 }
+
+/** A memory entry of any embeddable kind, normalized for the embedding index; `kind` is the MemoryType the entry indexes under (project overviews index as MemoryType.PROJECT). */
+export type IEmbeddableMemoryEntry =
+  | { kind: MemoryType.LEARNING; learning: ILearning }
+  | { kind: MemoryType.PATTERN; portal: string; pattern: IPattern }
+  | { kind: MemoryType.DECISION; portal: string; decision: IDecision }
+  | { kind: MemoryType.EXECUTION; execution: IExecutionMemory }
+  | { kind: MemoryType.PROJECT; portal: string; overview: string };
 
 /** Tracks a learning's tier, access patterns, and promotion eligibility. */
 export interface ITieredMemoryEntry {

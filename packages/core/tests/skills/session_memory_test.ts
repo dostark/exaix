@@ -12,8 +12,9 @@ import { type Insight, SessionMemoryService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult } from "@exaix/memory";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
-import type { IExecutionMemory, ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
+import type { IExecutionMemory, IGlobalMemory, ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import {
+  ConfidenceAssessmentLevel,
   ConfidenceLevel,
   ExecutionStatus,
   LearningCategory,
@@ -58,6 +59,24 @@ class MockMemoryBankService extends NullMemoryBankStub {
     this.learnings.push(_learning);
     return Promise.resolve();
   }
+
+  override getGlobalMemory(): Promise<IGlobalMemory | null> {
+    if (this.learnings.length === 0) return Promise.resolve(null);
+    const now = new Date().toISOString();
+    return Promise.resolve({
+      version: "1.0.0",
+      updated_at: now,
+      learnings: this.learnings,
+      patterns: [],
+      anti_patterns: [],
+      statistics: {
+        total_learnings: this.learnings.length,
+        by_category: {},
+        by_project: {},
+        last_activity: now,
+      },
+    });
+  }
 }
 
 function createMockMemoryBank(
@@ -91,6 +110,22 @@ function createMockEmbeddingService(
   searchResults: IEmbeddingSearchResult[] = [],
 ): IMemoryEmbeddingService {
   return new MockEmbeddingService(searchResults);
+}
+
+/** Builds an APPROVED ILearning record matching an embedding result, so the mock bank can verify the vector candidate. */
+function sampleLearningForEmbedding(result: IEmbeddingSearchResult): ILearning {
+  return {
+    id: result.id,
+    created_at: new Date().toISOString(),
+    source: MemoryBankSource.EXECUTION,
+    scope: MemoryScope.GLOBAL,
+    title: result.title,
+    description: result.summary,
+    category: LearningCategory.PATTERN,
+    tags: [],
+    confidence: ConfidenceAssessmentLevel.HIGH,
+    status: MemoryStatus.APPROVED,
+  };
 }
 
 // Test Data
@@ -254,7 +289,10 @@ Deno.test("SessionMemoryService - lookupMemories combines embedding and keyword 
 });
 
 Deno.test("SessionMemoryService - lookupMemories respects threshold", async () => {
-  const memoryBank = createMockMemoryBank([]);
+  // Vector candidates are verified against the bank's learning records, so the
+  // mock bank must serve the learnings the embedding results reference.
+  const learnings: ILearning[] = sampleEmbeddingResults.map((result) => sampleLearningForEmbedding(result));
+  const memoryBank = createMockMemoryBank([], learnings);
   const embeddingService = createMockEmbeddingService(sampleEmbeddingResults);
 
   // High threshold should filter out low similarity results

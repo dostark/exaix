@@ -10,6 +10,27 @@ import type { IDecision, IPattern } from "@exaix/schemas/memory_bank.ts";
 
 const TAGS_SECTION_HEADER = "**Tags:";
 
+/** Machine-readable marker carrying an entry's stable embedding-index id; written by the formatters on rewrite. */
+const ID_MARKER_PATTERN = /^<!-- id: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}) -->$/;
+
+/** Prefix of the persisted id marker, for callers that count markers in raw markdown. */
+export const ID_MARKER_PREFIX = "<!-- id:";
+
+/** Extracts a persisted `<!-- id: ... -->` marker from the section lines (if any) and returns the remaining content lines with the marker removed. */
+function splitOutIdMarker(lines: string[]): { id: string | undefined; contentLines: string[] } {
+  let id: string | undefined;
+  const contentLines: string[] = [];
+  for (const line of lines) {
+    const match = line.trim().match(ID_MARKER_PATTERN);
+    if (match && id === undefined) {
+      id = match[1];
+      continue;
+    }
+    contentLines.push(line);
+  }
+  return { id, contentLines };
+}
+
 function parseTags(lines: string[]): string[] | undefined {
   const tagsLine = lines.find((line) => line.startsWith(TAGS_SECTION_HEADER));
   if (!tagsLine) return undefined;
@@ -17,16 +38,17 @@ function parseTags(lines: string[]): string[] | undefined {
   return tagsMatch ? tagsMatch[1].split(", ").map((t) => t.trim()) : undefined;
 }
 
-/**
- * Parse patterns from markdown content
- */
+/** Parse patterns from markdown; marker-less legacy entries are lazily backfilled with a fresh UUID (persisted as a marker on next rewrite). */
 export function parsePatterns(content: string): IPattern[] {
   const patterns: IPattern[] = [];
   const sections = content.split(/^## /m).filter((s) => s.trim());
 
   for (const section of sections) {
-    const lines = section.split("\n");
-    const name = lines[0].trim();
+    const rawLines = section.split("\n");
+    const name = rawLines[0].trim();
+    const { id: markerId, contentLines } = splitOutIdMarker(rawLines.slice(1));
+    const id = markerId ?? crypto.randomUUID();
+    const lines = [rawLines[0], ...contentLines];
 
     // Find the description (everything until **Examples** or **Tags**)
     let descriptionEnd = lines.length;
@@ -56,6 +78,7 @@ export function parsePatterns(content: string): IPattern[] {
 
     if (name && description) {
       patterns.push({
+        id,
         name,
         description,
         examples,
@@ -67,20 +90,21 @@ export function parsePatterns(content: string): IPattern[] {
   return patterns;
 }
 
-/**
- * Parse decisions from markdown content
- */
+/** Parse decisions from markdown; marker-less legacy entries are lazily backfilled with a fresh UUID (persisted as a marker on next rewrite). */
 export function parseDecisions(content: string): IDecision[] {
   const decisions: IDecision[] = [];
   const sections = content.split(/^## /m).filter((s) => s.trim());
 
   for (const section of sections) {
-    const lines = section.split("\n");
-    const match = lines[0].match(/^(\d{4}-\d{2}-\d{2}): (.+)$/);
+    const rawLines = section.split("\n");
+    const match = rawLines[0].match(/^(\d{4}-\d{2}-\d{2}): (.+)$/);
 
     if (match) {
       const date = match[1];
       const decision = match[2];
+      const { id: markerId, contentLines } = splitOutIdMarker(rawLines.slice(1));
+      const id = markerId ?? crypto.randomUUID();
+      const lines = [rawLines[0], ...contentLines];
 
       // Find the rationale (everything until **Alternatives** or **Tags**)
       let rationaleEnd = lines.length;
@@ -106,6 +130,7 @@ export function parseDecisions(content: string): IDecision[] {
       const tags = parseTags(lines);
 
       decisions.push({
+        id,
         date,
         decision,
         rationale,

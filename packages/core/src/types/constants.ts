@@ -566,6 +566,26 @@ export const MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS: number = configurable({
   max: 3650,
   swap: SwapClass.RESTART,
 });
+/** Character budget per chunk when embedding a project overview; longer overviews split into multiple index entries (`${portal}:overview`, `${portal}:overview:1`, ...). */
+export const MEMORY_OVERVIEW_EMBED_CHAR_BUDGET: number = configurable({
+  key: "memory.embedding.overview_char_budget",
+  default: 2000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters per chunk when embedding a project overview",
+  min: 200,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
+/** Vector-signal weight in hybrid retrieval fusion; the keyword signal weighs 1 − this. Both signals are bounded [0,1], so fused scores stay in [0,1]. */
+export const MEMORY_HYBRID_VECTOR_WEIGHT: number = configurable({
+  key: "memory.retrieval.vector_weight",
+  default: 0.6,
+  type: ConfigValueType.NUMBER,
+  description: "Weight of the embedding-similarity signal in hybrid retrieval fusion (keyword weighs 1 minus this)",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 
 /** Example execution time used in AgentOrchestrator response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS: number = configurable({

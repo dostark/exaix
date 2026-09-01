@@ -77,6 +77,9 @@ export interface IActivitySummary {
 }
 
 export const PatternSchema = z.object({
+  id: z.string().uuid().optional().describe(
+    "Stable identity for the embedding index; lazily backfilled for legacy markdown entries on first parse",
+  ),
   name: z.string().describe("Pattern name (e.g., 'Repository Pattern')"),
   description: z.string().describe("What the pattern does and why it's used"),
   examples: z.array(z.string()).describe("File paths demonstrating this pattern"),
@@ -84,6 +87,9 @@ export const PatternSchema = z.object({
 });
 
 export const DecisionSchema = z.object({
+  id: z.string().uuid().optional().describe(
+    "Stable identity for the embedding index; lazily backfilled for legacy markdown entries on first parse",
+  ),
   date: z.string().describe("ISO date when decision was made (YYYY-MM-DD)"),
   decision: z.string().describe("What was decided"),
   rationale: z.string().describe("Why this decision was made"),

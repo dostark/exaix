@@ -263,11 +263,12 @@ Deno.test("MemoryBankService: rebuildIndicesWithEmbeddings handles no learnings"
     const embeddingsDir = join(getMemoryIndexDir(config.system.root), "embeddings");
     assertEquals(await exists(embeddingsDir), true);
 
-    // Manifest should exist with empty index
+    // Manifest should exist with only the project overview embedded (no learnings/patterns/decisions)
     const manifestPath = join(embeddingsDir, "manifest.json");
     assertEquals(await exists(manifestPath), true);
     const manifest = JSON.parse(await Deno.readTextFile(manifestPath));
-    assertEquals(manifest.index.length, 0);
+    assertEquals(manifest.index.length, 1);
+    assertEquals(manifest.index[0].id, "empty-test-project:overview");
   } finally {
     await cleanup();
   }

@@ -12,10 +12,13 @@ import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult } from "@exaix/core/types";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { type ITemporalCandidate, rankByTemporalRelevance } from "../temporal/temporal_scoring.ts";
+import { fuseHybridScores } from "../hybrid/hybrid_fusion.ts";
+import { overviewEmbeddingId } from "../embedding/embeddable_entry.ts";
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import {
   DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
+  MEMORY_HYBRID_VECTOR_WEIGHT,
   MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
@@ -194,49 +197,23 @@ export class SessionMemoryService {
       return [];
     }
 
+    // Hybrid retrieval: collect both signals keyed by candidate identity, then fuse.
+    const itemsByIdentity = new Map<string, MemoryItem>();
+    const vectorScores = new Map<string, number>();
+    const keywordScores = new Map<string, number>();
+
+    await this.collectVectorSignal(query, cfg, itemsByIdentity, vectorScores);
+    await this.collectKeywordSignal(query, cfg, itemsByIdentity, keywordScores);
+
+    // Fuse: items surfaced by both signals accumulate score and outrank single-signal items;
+    // when embeddings are unavailable the keyword signal alone still populates results (floor).
+    const keywordWeight = 1 - MEMORY_HYBRID_VECTOR_WEIGHT;
+    const fused = fuseHybridScores(vectorScores, keywordScores, MEMORY_HYBRID_VECTOR_WEIGHT, keywordWeight);
+
     const memories: MemoryItem[] = [];
-
-    // Perform embedding-based semantic search on learnings
-    if (cfg.includeLearnings) {
-      const embeddingResults = await this.embeddingService.searchByEmbedding(query, {
-        limit: cfg.topK,
-        threshold: cfg.threshold,
-      });
-
-      for (const result of await this.temporallyRank(embeddingResults)) {
-        memories.push({
-          type: MemoryType.LEARNING,
-          title: result.title,
-          content: result.summary,
-          relevance: result.similarity,
-          source: `learning:${result.id}`,
-        });
-      }
-    }
-
-    // Perform keyword search on memory bank
-    const searchResults = await this.memoryBank.searchMemory(query, {
-      limit: cfg.topK * 2, // Get more to filter
-    });
-
-    for (const result of searchResults) {
-      // Skip if we already have this from embedding search
-      if (memories.some((m) => m.source === `${result.type}:${result.trace_id || result.title}`)) {
-        continue;
-      }
-
-      if (!this.shouldIncludeSearchResult(result.type, cfg)) {
-        continue;
-      }
-
-      memories.push({
-        type: this.mapResultType(result.type),
-        title: result.title,
-        content: result.summary,
-        relevance: result.relevance_score || 0.5,
-        source: result.trace_id ? `execution:${result.trace_id}` : `${result.type}:${result.title}`,
-        tags: result.tags,
-      });
+    for (const [identity, item] of itemsByIdentity) {
+      item.relevance = fused.get(identity) ?? item.relevance;
+      memories.push(item);
     }
 
     // Apply tier-based relevance boost for hierarchical memory prioritization
@@ -260,6 +237,76 @@ export class SessionMemoryService {
     return memories.slice(0, cfg.topK);
   }
 
+  /** Collects the vector signal over the embedding index (all embedded kinds; learning-kind candidates are APPROVED-filtered and temporally ranked before fusion). */
+  private async collectVectorSignal(
+    query: string,
+    cfg: SessionMemoryConfig,
+    itemsByIdentity: Map<string, MemoryItem>,
+    vectorScores: Map<string, number>,
+  ): Promise<void> {
+    if (!cfg.includeLearnings && !cfg.includePatterns && !cfg.includeExecutions) {
+      return;
+    }
+    const embeddingResults = await this.embeddingService.searchByEmbedding(query, {
+      limit: cfg.topK,
+      threshold: cfg.threshold,
+    });
+    const learningLike = embeddingResults.filter((r) => r.kind === undefined || r.kind === MemoryType.LEARNING);
+    const nonLearning = embeddingResults.filter((r) => r.kind !== undefined && r.kind !== MemoryType.LEARNING);
+
+    for (const result of await this.temporallyRank(learningLike)) {
+      const identity = `${MemoryType.LEARNING}:${result.id}`;
+      itemsByIdentity.set(identity, {
+        type: MemoryType.LEARNING,
+        title: result.title,
+        content: result.summary,
+        relevance: result.similarity,
+        source: `learning:${result.id}`,
+      });
+      vectorScores.set(identity, result.similarity);
+    }
+    for (const result of nonLearning) {
+      if (!result.kind || !this.shouldIncludeVectorKind(result.kind, cfg)) continue;
+      const { identity, item } = this.vectorResultToItem(result);
+      itemsByIdentity.set(identity, item);
+      vectorScores.set(identity, result.similarity);
+    }
+  }
+
+  /** Collects the keyword signal over the memory bank, joining vector-shared candidates by identity. */
+  private async collectKeywordSignal(
+    query: string,
+    cfg: SessionMemoryConfig,
+    itemsByIdentity: Map<string, MemoryItem>,
+    keywordScores: Map<string, number>,
+  ): Promise<void> {
+    const searchResults = await this.memoryBank.searchMemory(query, {
+      limit: cfg.topK * 2, // Get more to filter
+    });
+
+    for (const result of searchResults) {
+      if (!this.shouldIncludeSearchResult(result.type, cfg)) {
+        continue;
+      }
+      const identity = this.keywordResultIdentity(result);
+      if (!itemsByIdentity.has(identity)) {
+        itemsByIdentity.set(identity, {
+          type: this.mapResultType(result.type),
+          title: result.title,
+          content: result.summary,
+          relevance: result.relevance_score || 0.5,
+          source: result.trace_id
+            ? `execution:${result.trace_id}`
+            : result.id
+            ? `${result.type}:${result.id}`
+            : `${result.type}:${result.title}`,
+          tags: result.tags,
+        });
+      }
+      keywordScores.set(identity, result.relevance_score || 0.5);
+    }
+  }
+
   /**
    * Determine if a search result should be included based on configuration
    */
@@ -274,6 +321,90 @@ export class SessionMemoryService {
       return false;
     }
     return true;
+  }
+
+  /** Include-flag gate for non-learning vector candidates; decisions and overviews have no flag. */
+  private shouldIncludeVectorKind(kind: MemoryType, cfg: SessionMemoryConfig): boolean {
+    if (kind === MemoryType.PATTERN) return cfg.includePatterns;
+    if (kind === MemoryType.EXECUTION) return cfg.includeExecutions;
+    return true;
+  }
+
+  /** Maps a non-learning embedding result to its fusion identity (joined against the keyword signal) and MemoryItem. */
+  private vectorResultToItem(
+    result: IEmbeddingSearchResult,
+  ): { identity: string; item: MemoryItem } {
+    switch (result.kind) {
+      case MemoryType.PATTERN:
+        return {
+          identity: `${MemoryType.PATTERN}:${result.id}`,
+          item: {
+            type: MemoryType.PATTERN,
+            title: result.title,
+            content: result.summary,
+            relevance: result.similarity,
+            source: `${MemoryType.PATTERN}:${result.id}`,
+          },
+        };
+      case MemoryType.DECISION:
+        return {
+          identity: `${MemoryType.DECISION}:${result.id}`,
+          item: {
+            type: MemoryType.DECISION,
+            title: result.title,
+            content: result.summary,
+            relevance: result.similarity,
+            source: `${MemoryType.DECISION}:${result.id}`,
+          },
+        };
+      case MemoryType.EXECUTION:
+        return {
+          identity: `${MemoryType.EXECUTION}:${result.id}`,
+          item: {
+            type: MemoryType.EXECUTION,
+            title: result.title,
+            content: result.summary,
+            relevance: result.similarity,
+            source: `${MemoryType.EXECUTION}:${result.id}`,
+          },
+        };
+      case MemoryType.PROJECT:
+        return {
+          identity: result.id,
+          item: {
+            type: MemoryType.PROJECT,
+            title: result.title,
+            content: result.summary,
+            relevance: result.similarity,
+            source: `${MemoryType.PROJECT}:${result.title}`,
+          },
+        };
+      default:
+        return {
+          identity: `insight:${result.id}`,
+          item: {
+            type: MemoryType.INSIGHT,
+            title: result.title,
+            content: result.summary,
+            relevance: result.similarity,
+            source: `${MemoryType.INSIGHT}:${result.id}`,
+          },
+        };
+    }
+  }
+
+  /** Fusion identity for a keyword-search result: stamped ids join pattern/decision vector hits, trace_id joins executions, and project overviews join via their synthetic key. */
+  private keywordResultIdentity(result: IMemorySearchResult): string {
+    if (result.id) {
+      return `${result.type}:${result.id}`;
+    }
+    if (result.type === MemoryType.EXECUTION && result.trace_id) {
+      return `${MemoryType.EXECUTION}:${result.trace_id}`;
+    }
+    if (result.type === MemoryType.PROJECT && result.portal) {
+      return overviewEmbeddingId(result.portal);
+    }
+    return `keyword:${result.type}:${result.title}`;
   }
 
   /**
