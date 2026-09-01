@@ -18,6 +18,23 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 175 (Portal Knowledge Maturation)
+
+### Added
+
+- Portal knowledge now includes an explicit relationship graph — which files import which
+  other files internally, and which files belong to which architecture layer — covering
+  every entrypoint in a portal by default. Query it mid-task via two new Solo-tier ReAct
+  tools, `query_relationships` and `who_depends_on` (grant them to an identity's
+  `permitted_tools`; see `Exaix_User_Guide.md` §5.8, "Portal Knowledge Gathering").
+
+### Fixed
+
+- The embedding-backed relevance search for portal knowledge
+  (`relevanceSearchEmbeddingEnabled`) now actually fires when enabled — previously the
+  retrieval index was never populated by either the daemon or `exactl`, so the flag
+  silently had no effect.
+
 ## Unreleased — Phase 174 (Governed Session-Delegated Step Cycling)
 
 ### Added
