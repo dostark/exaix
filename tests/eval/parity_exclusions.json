@@ -14,7 +14,12 @@
       "reason": "dogfood meta-workflow identity (Phase 150) — exercised by the live session_delegate_outcome scenario"
     }
   ],
-  "skills": [],
+  "skills": [
+    {
+      "id": "memory-extraction-content-policy",
+      "reason": "Phase 147 Step 1 policy artifact; Step 2 adds the extractor treatment/control scenario and removes this bounded exclusion"
+    }
+  ],
   "flows": [
     {
       "id": "dogfood-meta-workflow.flow",

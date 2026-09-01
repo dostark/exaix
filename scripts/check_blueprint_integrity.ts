@@ -18,7 +18,7 @@
  *        exempt: they are invoked directly (global fallback / CI fixture / CLI
  *        `--identity`), not via flows.
  *     4. orphan-skill      — every skill is referenced by >=1 identity's
- *        default_skills.
+ *        default_skills, trigger-matched, or explicitly programmatic.
  * @architectural-layer Script
  * @dependencies [@std/path, @std/yaml]
  * @related-files [scripts/build_skills_index.ts, tests/blueprints/flow_agent_resolution_test.ts]
@@ -48,6 +48,11 @@ const TRIGGER_MATCHED_SKILLS: string[] = [
   "code-review",
   "error-handling",
 ];
+
+/** Skills loaded directly by background services rather than through identity defaults or request matching. */
+const PROGRAMMATIC_SKILLS: ReadonlySet<string> = new Set([
+  "memory-extraction-content-policy",
+]);
 
 /** Identities exempt from the orphan-identity rule (invoked directly, not via flows). */
 const EXEMPT_IDENTITY_IDS: ReadonlySet<string> = new Set(["default", "dogfood-developer"]);
@@ -169,14 +174,13 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
     }
   }
 
-  // 4. orphan-skill: every skill must be referenced by >=1 identity (or be trigger-matched).
+  // 4. orphan-skill: every skill must be identity-referenced, trigger-matched, or programmatic.
   for (const id of skillIds) {
-    if (TRIGGER_MATCHED_SKILLS.includes(id)) continue;
+    if (TRIGGER_MATCHED_SKILLS.includes(id) || PROGRAMMATIC_SKILLS.has(id)) continue;
     if (!usedSkills.has(id)) {
       violations.push({
         kind: "orphan-skill",
-        detail:
-          `skill "${id}" is not referenced by any identity's default_skills (attach it to an identity or remove it)`,
+        detail: `skill "${id}" is not referenced by identity defaults, trigger matching, or a programmatic consumer`,
       });
     }
   }

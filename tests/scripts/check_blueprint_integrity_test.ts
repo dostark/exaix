@@ -184,6 +184,20 @@ Deno.test("[integrity] a skill used by no identity FAILS (orphan skill)", async 
   }
 });
 
+Deno.test("[integrity] an explicitly programmatic skill is exempt from identity-default reachability", async () => {
+  const root = await buildCatalog({
+    identities: [{ id: "coder", skills: ["review"] }],
+    skills: ["review", "memory-extraction-content-policy"],
+    flows: [{ id: "f", identities: ["coder"] }],
+  });
+  try {
+    const r = checkBlueprintIntegrity(root);
+    assertEquals(r.ok, true, JSON.stringify(r.violations));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("[integrity] a dangling identity ref in a SUBDIRECTORY flow FAILS (recursive walk)", async () => {
   const root = await buildCatalog({
     identities: [{ id: "coder", skills: ["review"] }],

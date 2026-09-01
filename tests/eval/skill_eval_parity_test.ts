@@ -54,8 +54,16 @@ const BATCH_SKILLS_5 = [
   "response-contract-security-analysis",
   "conversational-dialogue",
 ];
+const BATCH_SKILLS_6 = ["memory-extraction-content-policy"];
 
-const ALL_SKILLS = [...BATCH_SKILLS_1, ...BATCH_SKILLS_2, ...BATCH_SKILLS_3, ...BATCH_SKILLS_4, ...BATCH_SKILLS_5];
+const ALL_SKILLS = [
+  ...BATCH_SKILLS_1,
+  ...BATCH_SKILLS_2,
+  ...BATCH_SKILLS_3,
+  ...BATCH_SKILLS_4,
+  ...BATCH_SKILLS_5,
+  ...BATCH_SKILLS_6,
+];
 
 const skillExclusions: string[] = (parityExclusions.skills ?? []).map(
   (e: { id: string }) => e.id,

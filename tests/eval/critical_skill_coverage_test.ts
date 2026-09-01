@@ -28,7 +28,9 @@ const RUNTIME_DIRS = ["global", "core", "learned", join("project", "Exaix")];
 // response format and per-domain `<content>` templates (dropping one leaves no output contract);
 // `verdict-rubric` carries scoring criteria whose loss is a silent correctness loss, not a visible break.
 function mustBeCritical(skillId: string): boolean {
-  return skillId.startsWith("response-contract") || skillId === "verdict-rubric";
+  return skillId.startsWith("response-contract") ||
+    skillId === "verdict-rubric" ||
+    skillId === "memory-extraction-content-policy";
 }
 
 /** The seed frontmatter fields this test reads. */
