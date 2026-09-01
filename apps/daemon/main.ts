@@ -65,6 +65,7 @@ import {
 } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
+  LlmLearningExtractor,
   MemoryAutoApprovalService,
   MemoryBankService,
   MemoryExtractorService,
@@ -519,16 +520,31 @@ if (import.meta.main) {
 
     const notificationService = new NotificationService(config, dbService);
 
+    // Extraction loads the content policy by explicit skill_id, so the shared skills
+    // service must be ready before memory services are composed.
+    const skillsService = new SkillsService(
+      { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
+      dbService,
+      undefined,
+      logger,
+    );
+    await skillsService.initialize();
+
     // Initialize Memory Services (needed for context and request processing)
     const memoryBank = new MemoryBankService(config, logger);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
+    const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
     const memoryExtractor = new MemoryExtractorService(
       config,
       dbService,
       memoryAdapter,
+      logger,
+      {
+        costRouter: memoryCostRouter,
+        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter),
+      },
     );
     const embeddingProvider = createMemoryEmbeddingProvider(config);
-    const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
     const providerEmbedding = new ProviderEmbeddingService(
       config,
       embeddingProvider,
@@ -793,16 +809,6 @@ if (import.meta.main) {
       DEFAULT_IDENTITIES_PATH,
     );
     // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the identity's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
-    const skillsService = new SkillsService(
-      { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
-      dbService,
-      undefined,
-      // Without a logger every skills event (match_completed, skill.used, skill.created)
-      // is silently dropped — `this.logger?.` short-circuits — so skill selection left no
-      // trace in the Activity Journal at all.
-      logger,
-    );
-    await skillsService.initialize();
     const agentRunner = new AgentRunner(llmProvider, {
       milestoneEmitter: buildMilestoneEmitterFromConfig(config),
       skillsService,

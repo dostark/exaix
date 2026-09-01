@@ -12,7 +12,7 @@ export interface IMemoryExtractorService {
   /**
    * Analyze an execution and extract potential learnings.
    */
-  analyzeExecution(execution: IExecutionMemory): IProposalLearning[];
+  analyzeExecution(execution: IExecutionMemory): Promise<IProposalLearning[]>;
 
   /**
    * Create a proposal from a learning and write to Pending directory.

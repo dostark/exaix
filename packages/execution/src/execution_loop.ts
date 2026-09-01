@@ -1271,7 +1271,7 @@ export class ExecutionLoop {
       const executionMemory = await this.memoryBank.getExecutionByTraceId(traceId);
       if (!executionMemory) return;
 
-      const learnings = this.context.extractor.analyzeExecution(executionMemory);
+      const learnings = await this.context.extractor.analyzeExecution(executionMemory);
       for (const learning of learnings) {
         await this.context.extractor.createProposal(learning, executionMemory, this.identityId);
         if (this.sessionMemory) {

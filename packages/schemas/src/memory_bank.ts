@@ -178,6 +178,7 @@ export const LearningSchema = z.object({
   tags: z.array(z.string()).max(10).describe("Searchable tags"),
 
   confidence: z.nativeEnum(ConfidenceAssessmentLevel).describe("Confidence level in this learning"),
+  quality_score: z.number().min(0).max(1).optional().describe("Model-assessed reusable-learning quality"),
 
   references: z.array(LearningReferenceSchema).optional().describe("Supporting evidence"),
 
@@ -257,6 +258,7 @@ export const ProposalLearningSchema = z.object({
   category: z.nativeEnum(LearningCategory),
   tags: z.array(z.string()).max(10).optional().default([]),
   confidence: z.nativeEnum(ConfidenceAssessmentLevel),
+  quality_score: z.number().min(0).max(1).optional(),
   extracted_at: z.string().datetime().optional().describe("ISO timestamp when this learning was extracted"),
   references: z.array(LearningReferenceSchema).optional(),
 });

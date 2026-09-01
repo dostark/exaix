@@ -374,6 +374,8 @@ export const DomainEventType = {
   MemoryGlobalLearningAdded: "memory.global.learning.added",
   MemoryLearningPromoted: "memory.learning.promoted",
   MemoryLearningDemoted: "memory.learning.demoted",
+  MemoryLearningExtracted: "memory.learning.extracted",
+  MemoryCostRecorded: "memory.cost.recorded",
   MemoryIndicesRebuilt: "memory.indices.rebuilt",
   MemoryEmbeddingsRebuilt: "memory.embeddings.rebuilt",
   MemoryEmbeddingServiceSet: "memory.embedding_service.set",

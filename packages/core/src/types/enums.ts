@@ -944,6 +944,18 @@ export enum MemoryOperation {
   DELETE = "delete",
 }
 
+/** Paid operation kinds recorded by the memory cost router. */
+export enum MemoryCostOperation {
+  EMBEDDING = "embedding",
+  EXTRACTION = "extraction",
+}
+
+/** Extraction implementation selected by the memory cost gate. */
+export enum MemoryExtractionMethod {
+  HEURISTIC = "heuristic",
+  LLM = "llm",
+}
+
 /**
  * Sources for review and approval actions.
  */

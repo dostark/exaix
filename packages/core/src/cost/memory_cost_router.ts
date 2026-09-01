@@ -13,6 +13,8 @@ import type { ICostTracker } from "../types/mod.ts";
 import type { IMemoryBudgetStatus, IMemoryCostRouter } from "../types/mod.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import { MemoryStorageTier } from "../types/enums.ts";
+import type { MemoryCostOperation } from "../types/enums.ts";
+import { DomainEventType } from "../events/domain_event_types.ts";
 import { DEFAULT_MEMORY_REMOTE_BUDGET_USD, MEMORY_EVENT_TIER_SELECTED } from "../types/constants.ts";
 
 const REMOTE_COST_PROVIDER_NAME = "memory_remote";
@@ -80,18 +82,23 @@ export class MemoryCostRouter implements IMemoryCostRouter {
   /** Persists cost under the synthetic `"memory_remote"` provider; silently dropped when
    *  no tracker is configured. Tokens are reported as 0 — embedding APIs don't expose
    *  per-request token counts, so `costUsd` is an approximation. */
-  async recordOperation(costUsd: number): Promise<void> {
+  async recordOperation(costUsd: number, operation: MemoryCostOperation): Promise<void> {
     if (!this.costTracker) return;
 
     await this.costTracker.persistEntry({
       id: crypto.randomUUID(),
       provider: REMOTE_COST_PROVIDER_NAME,
-      model: "embedding",
+      model: operation,
       tokens: 0,
       promptTokens: 0,
       completionTokens: 0,
       estimatedCostUsd: costUsd,
       timestamp: new Date(),
+    });
+
+    await this.logger?.info(DomainEventType.MemoryCostRecorded, REMOTE_COST_PROVIDER_NAME, {
+      costUsd,
+      operation,
     });
   }
 

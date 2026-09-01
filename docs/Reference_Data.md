@@ -549,6 +549,8 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `MemoryGlobalLearningAdded`              | `memory.global.learning.added`                | Memory                          |
 | `MemoryLearningPromoted`                 | `memory.learning.promoted`                    | Memory                          |
 | `MemoryLearningDemoted`                  | `memory.learning.demoted`                     | Memory                          |
+| `MemoryLearningExtracted`                | `memory.learning.extracted`                   | Memory                          |
+| `MemoryCostRecorded`                     | `memory.cost.recorded`                        | Memory                          |
 | `MemoryIndicesRebuilt`                   | `memory.indices.rebuilt`                      | Memory                          |
 | `MemoryEmbeddingsRebuilt`                | `memory.embeddings.rebuilt`                   | Memory                          |
 | `MemoryPendingDigest`                    | `memory.pending_digest`                       | Memory                          |

@@ -7,7 +7,7 @@
  * @architectural-layer Core
  * @related-files [packages/core/src/types/i_cost_tracker.ts, packages/core/src/cost/memory_cost_router.ts, packages/core/src/cost/cost_tracker.ts]
  */
-import type { MemoryStorageTier } from "./enums.ts";
+import type { MemoryCostOperation, MemoryStorageTier } from "./enums.ts";
 
 export interface IMemoryBudgetStatus {
   /** Maximum daily spend allowed for remote memory operations in USD. */
@@ -27,7 +27,7 @@ export interface IMemoryCostRouter {
 
   /** Accumulates toward the daily budget so subsequent `isRemoteAllowed()` calls reflect
    *  the updated spend. `costUsd` e.g. 0.001 for 1/10 of a cent. */
-  recordOperation(costUsd: number): Promise<void>;
+  recordOperation(costUsd: number, operation: MemoryCostOperation): Promise<void>;
 
   getBudgetStatus(): Promise<IMemoryBudgetStatus>;
 

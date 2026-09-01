@@ -49,7 +49,8 @@ status: active
 
       // Spy extractor that records calls
       const spyExtractor: IMemoryExtractorService = {
-        analyzeExecution(execution: IExecutionMemory): IProposalLearning[] {
+        async analyzeExecution(execution: IExecutionMemory): Promise<IProposalLearning[]> {
+          await Promise.resolve();
           analyzedExecutions.push(execution);
           return [{
             id: crypto.randomUUID(),
@@ -183,7 +184,8 @@ status: active
       };
 
       const spyExtractor: IMemoryExtractorService = {
-        analyzeExecution(): IProposalLearning[] {
+        async analyzeExecution(): Promise<IProposalLearning[]> {
+          await Promise.resolve();
           return [{
             id: crypto.randomUUID(),
             created_at: new Date().toISOString(),

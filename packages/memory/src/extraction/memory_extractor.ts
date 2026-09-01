@@ -6,14 +6,20 @@
  * @related-files [packages/memory/src/bank/memory_bank.ts, packages/core/src/types/i_database_service.ts]
  */
 
-import { DEFAULT_TITLE_PLACEHOLDER, MemoryOperation, MemoryReferenceType, MemoryScope } from "@exaix/core";
+import {
+  DEFAULT_TITLE_PLACEHOLDER,
+  MemoryExtractionMethod,
+  MemoryOperation,
+  MemoryReferenceType,
+  MemoryScope,
+} from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { MemoryStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core";
-import type { IMemoryBankService, Opt, Reason } from "@exaix/core/types";
+import type { IExtractionStrategy, IMemoryBankService, IMemoryCostRouter, Opt, Reason } from "@exaix/core/types";
 import type {
   IExecutionMemory,
   ILearning,
@@ -22,8 +28,14 @@ import type {
   IProposalLearning,
 } from "@exaix/schemas/memory_bank.ts";
 import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
-import { LearningExtractor } from "./learning_extractor.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { HeuristicExtractionStrategy } from "./heuristic_extraction_strategy.ts";
+
+export interface IMemoryExtractorOptions {
+  costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>;
+  llmStrategy?: Opt<IExtractionStrategy, Reason.OptionalDependency>;
+  heuristicStrategy?: Opt<IExtractionStrategy, Reason.SensibleDefault>;
+}
 
 export class MemoryExtractorService {
   private pendingDir: string;
@@ -33,6 +45,7 @@ export class MemoryExtractorService {
     private db: IDatabaseService,
     private memoryBank: IMemoryBankService,
     private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    private options: IMemoryExtractorOptions = {},
   ) {
     this.pendingDir = join(config.system?.root || Deno.cwd(), config.paths?.memory || "Memory", "Pending");
   }
@@ -41,8 +54,23 @@ export class MemoryExtractorService {
 
   // Extraction Operations
 
-  analyzeExecution(execution: IExecutionMemory): IProposalLearning[] {
-    return LearningExtractor.extract(execution);
+  async analyzeExecution(execution: IExecutionMemory): Promise<IProposalLearning[]> {
+    const remoteAllowed = this.options.costRouter && this.options.llmStrategy
+      ? await this.options.costRouter.isRemoteAllowed()
+      : false;
+    const method = remoteAllowed ? MemoryExtractionMethod.LLM : MemoryExtractionMethod.HEURISTIC;
+    const strategy = remoteAllowed
+      ? this.options.llmStrategy!
+      : this.options.heuristicStrategy ?? new HeuristicExtractionStrategy();
+    const learnings = await strategy.extract(execution);
+    for (const learning of learnings) {
+      await this.logger?.info(DomainEventType.MemoryLearningExtracted, learning.project ?? MemoryScope.GLOBAL, {
+        extraction_method: method,
+        quality_score: learning.quality_score,
+        learning_id: learning.id,
+      });
+    }
+    return learnings;
   }
   // Proposal Operations
 

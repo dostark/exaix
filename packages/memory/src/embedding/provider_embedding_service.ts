@@ -20,6 +20,7 @@ import { HnswVectorIndex } from "./vector_index.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { MemoryCostOperation } from "@exaix/core";
 
 const EMBEDDING_CACHE_MAX_ENTRIES = 512;
 
@@ -90,7 +91,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
 
     // Record the estimated cost of this embedding operation
     if (this.costRouter) {
-      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD);
+      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD, MemoryCostOperation.EMBEDDING);
     }
 
     const embeddingFile: IEmbeddingFile = {
@@ -129,7 +130,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
 
     // Record the estimated cost of this embedding query
     if (this.costRouter) {
-      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD);
+      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD, MemoryCostOperation.EMBEDDING);
     }
 
     // Ensure HNSW index is built from stored embeddings

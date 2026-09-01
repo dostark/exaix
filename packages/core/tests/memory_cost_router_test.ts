@@ -9,7 +9,7 @@ import type { ICostTracker } from "../src/types/i_cost_tracker.ts";
 import type { IEventLogger } from "../src/logger/event_logger.ts";
 import type { ICostFilter, ILogEvent, IProviderCostRecord, LogMetadata } from "@exaix/core/types";
 import { MemoryCostRouter } from "../src/cost/memory_cost_router.ts";
-import { MemoryStorageTier } from "../src/types/enums.ts";
+import { MemoryCostOperation, MemoryStorageTier } from "../src/types/enums.ts";
 
 /** Implements the full ICostTracker but keeps state in-memory. */
 class StubCostTracker implements ICostTracker {
@@ -108,8 +108,8 @@ Deno.test("MemoryCostRouter: recordOperation accumulates daily cost", async () =
   const tracker = new StubCostTracker();
   const router = new MemoryCostRouter(tracker);
 
-  await router.recordOperation(0.001);
-  await router.recordOperation(0.002);
+  await router.recordOperation(0.001, MemoryCostOperation.EMBEDDING);
+  await router.recordOperation(0.002, MemoryCostOperation.EMBEDDING);
 
   const status = await router.getBudgetStatus();
   assertGreaterOrEqual(status.dailyCost, 0.0029);
@@ -169,7 +169,18 @@ Deno.test("MemoryCostRouter: no event emitted when no logger configured", async 
 
 Deno.test("MemoryCostRouter: recordOperation no-ops when no cost tracker", async () => {
   const router = new MemoryCostRouter();
-  await router.recordOperation(0.001);
+  await router.recordOperation(0.001, MemoryCostOperation.EMBEDDING);
   const status = await router.getBudgetStatus();
   assertEquals(status.dailyCost, 0);
+});
+
+Deno.test("MemoryCostRouter: recordOperation emits operation and cost metadata", async () => {
+  const tracker = new StubCostTracker();
+  const logger = new StubLogger();
+  const router = new MemoryCostRouter(tracker, logger);
+
+  await router.recordOperation(0.004, MemoryCostOperation.EXTRACTION);
+
+  assertEquals(logger.lastAction, "memory.cost.recorded");
+  assertEquals(logger.lastPayload, { costUsd: 0.004, operation: "extraction" });
 });

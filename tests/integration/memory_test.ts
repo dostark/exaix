@@ -68,7 +68,7 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
     };
     await memoryBank.createExecutionRecord(execution);
 
-    const extractedLearnings = extractor.analyzeExecution(execution);
+    const extractedLearnings = await extractor.analyzeExecution(execution);
     assertGreaterOrEqual(extractedLearnings.length, 1);
 
     const proposalId = await extractor.createProposal(extractedLearnings[0], execution, "test-identity");
@@ -129,7 +129,7 @@ Deno.test("Integration: execution failure extracts troubleshooting learning", as
     await memoryBank.createExecutionRecord(execution);
 
     // Extract learnings from failure using analyzeExecution
-    const learnings = extractor.analyzeExecution(execution);
+    const learnings = await extractor.analyzeExecution(execution);
 
     // Should extract troubleshooting learning
     assertGreaterOrEqual(learnings.length, 1);
@@ -396,7 +396,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     await memoryBank.createExecutionRecord(execution);
 
     // Extract learnings and create proposal
-    const learnings = extractor.analyzeExecution(execution);
+    const learnings = await extractor.analyzeExecution(execution);
     assertGreaterOrEqual(learnings.length, 1);
     await extractor.createProposal(learnings[0], execution, execution.identity_id);
 

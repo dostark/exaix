@@ -13,8 +13,8 @@ import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from 
 export class MemoryExtractorAdapter implements IMemoryExtractorService {
   constructor(private inner: MemoryExtractorService) {}
 
-  analyzeExecution(execution: IExecutionMemory): IProposalLearning[] {
-    return this.inner.analyzeExecution(execution);
+  async analyzeExecution(execution: IExecutionMemory): Promise<IProposalLearning[]> {
+    return await this.inner.analyzeExecution(execution);
   }
 
   async createProposal(
