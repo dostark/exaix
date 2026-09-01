@@ -2031,6 +2031,19 @@ export const INTERNAL_IMPORT_GRAPH_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Max entrypoints InternalImportGraphBuilder traces per analysis, each via its own
+ * `deno info` subprocess call — bounds worst-case cost on pathologically large portals
+ * while covering any realistic monorepo (this repo itself has 50). */
+export const DEFAULT_MAX_INTERNAL_GRAPH_ENTRYPOINTS: number = configurable({
+  key: "tools.max_internal_graph_entrypoints",
+  default: 500,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of portal entrypoints InternalImportGraphBuilder traces via deno info per analysis",
+  min: 1,
+  max: 5000,
+  swap: SwapClass.RESTART,
+});
+
 /** Subprocess timeout for deno test --dry-run in TestRunner (ms). */
 export const TEST_RUNNER_TIMEOUT_MS: number = configurable({
   key: "tools.test_runner_timeout_ms",

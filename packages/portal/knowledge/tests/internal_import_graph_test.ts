@@ -46,7 +46,7 @@ Deno.test("InternalImportGraphBuilder: returns empty edges for empty entrypoints
 
   const result = await builder.build("/tmp", []);
 
-  assertEquals(result, { edges: [], droppedOutOfBounds: [] });
+  assertEquals(result, { edges: [], droppedOutOfBounds: [], truncatedEntrypointCount: 0 });
 });
 
 Deno.test("InternalImportGraphBuilder: resolves a relative import into an internal edge", async () => {
@@ -113,7 +113,7 @@ Deno.test("InternalImportGraphBuilder: handles missing directory gracefully", as
 
   const result = await builder.build("/nonexistent/portal/path", ["main.ts"]);
 
-  assertEquals(result, { edges: [], droppedOutOfBounds: [] });
+  assertEquals(result, { edges: [], droppedOutOfBounds: [], truncatedEntrypointCount: 0 });
 });
 
 Deno.test("InternalImportGraphBuilder: handles a nonexistent entrypoint gracefully", async () => {
@@ -121,7 +121,47 @@ Deno.test("InternalImportGraphBuilder: handles a nonexistent entrypoint graceful
     const builder = new InternalImportGraphBuilder();
     const result = await builder.build(root, ["nonexistent.ts"]);
 
-    assertEquals(result, { edges: [], droppedOutOfBounds: [] });
+    assertEquals(result, { edges: [], droppedOutOfBounds: [], truncatedEntrypointCount: 0 });
+  });
+});
+
+Deno.test("InternalImportGraphBuilder: captures edges from an entrypoint beyond the historical 5-entrypoint position", async () => {
+  const files: Record<string, string> = {};
+  for (let i = 1; i <= 7; i++) {
+    files[`pkg${i}/mod.ts`] = `import { util } from "./util.ts";\nutil();\n`;
+    files[`pkg${i}/util.ts`] = `export function util() {}\n`;
+  }
+
+  await withPortalFixture(files, async (root) => {
+    const builder = new InternalImportGraphBuilder();
+    const entrypoints = [1, 2, 3, 4, 5, 6, 7].map((i) => `pkg${i}/mod.ts`);
+    const result = await builder.build(root, entrypoints);
+
+    for (const i of [6, 7]) {
+      assertEquals(
+        result.edges.some((e) => e.from === `pkg${i}/mod.ts` && e.to === `pkg${i}/util.ts`),
+        true,
+        `expected an edge from pkg${i}/mod.ts, which is beyond the historical 5-entrypoint cap`,
+      );
+    }
+    assertEquals(result.edges.length, 7);
+  });
+});
+
+Deno.test("InternalImportGraphBuilder: truncates and reports when entrypoints exceed an injected limit", async () => {
+  const files: Record<string, string> = {};
+  for (let i = 1; i <= 3; i++) {
+    files[`pkg${i}/mod.ts`] = `import { util } from "./util.ts";\nutil();\n`;
+    files[`pkg${i}/util.ts`] = `export function util() {}\n`;
+  }
+
+  await withPortalFixture(files, async (root) => {
+    const builder = new InternalImportGraphBuilder(2);
+    const entrypoints = [1, 2, 3].map((i) => `pkg${i}/mod.ts`);
+    const result = await builder.build(root, entrypoints);
+
+    assertEquals(result.edges.length, 2);
+    assertEquals(result.truncatedEntrypointCount, 1);
   });
 });
 

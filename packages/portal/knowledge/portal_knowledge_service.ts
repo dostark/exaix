@@ -333,6 +333,13 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
           `[PortalKnowledgeService] dropped ${internalGraphResult.droppedOutOfBounds.length} internal-import specifier(s) resolving outside the portal root for ${portalAlias}`,
         );
       }
+      if (internalGraphResult.truncatedEntrypointCount > 0) {
+        console.warn(
+          `[PortalKnowledgeService] traced only the first ${
+            internalGraphEntrypoints.length - internalGraphResult.truncatedEntrypointCount
+          } of ${internalGraphEntrypoints.length} entrypoint(s) for ${portalAlias}; relationships is incomplete for the remaining ${internalGraphResult.truncatedEntrypointCount}`,
+        );
+      }
     }
 
     // Strategy 8: test execution (deep mode + enableTestExecution)
