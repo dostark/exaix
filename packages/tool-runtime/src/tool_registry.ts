@@ -672,7 +672,7 @@ export class ToolRegistry implements IToolRegistry {
   }
 
   /** Captures a lightweight execution-scoped note into the per-trace scratchpad; traceId is the registry's own, never agent-supplied. */
-  private rememberFactTool(content: string, tags?: string[]): Promise<IToolResult> {
+  private rememberFactTool(content: string, tags?: Opt<string[], Reason.OptionalInput>): Promise<IToolResult> {
     const scratchpad = this.applicationContext?.scratchpad;
     if (!scratchpad) {
       return Promise.resolve({
