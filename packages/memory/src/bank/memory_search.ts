@@ -7,8 +7,15 @@
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/schemas/src/memory_bank.ts"]
  */
 import type { IExecutionMemory, ILearning, IMemorySearchResult, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
-import { DEFAULT_QUERY_LIMIT, DEFAULT_TITLE_PLACEHOLDER, MemoryType } from "@exaix/core";
+import {
+  DEFAULT_QUERY_LIMIT,
+  DEFAULT_TITLE_PLACEHOLDER,
+  MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS,
+  MemoryType,
+} from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
+import { computeRecencyFactor } from "../temporal/temporal_scoring.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ISearchDeps {
   projectsDir: string;
@@ -17,7 +24,7 @@ export interface ISearchDeps {
   loadLearningsFromFile: () => Promise<ILearning[]>;
 }
 
-export function calculateFrequency(text: string | undefined, keywordLower: string): number {
+export function calculateFrequency(text: Opt<string, Reason.OptionalInput>, keywordLower: string): number {
   if (!text) return 0;
   const matches = text.toLowerCase().match(new RegExp(keywordLower, "gi"));
   return matches ? matches.length : 0;
@@ -31,8 +38,14 @@ function matchesAnyLower(texts: string[], queryLower: string): boolean {
   return texts.some((text) => text.toLowerCase().includes(queryLower));
 }
 
-function normalizeTags(tags: string[] | undefined): string[] {
+function normalizeTags(tags: Opt<string[], Reason.OptionalInput>): string[] {
   return (tags ?? []).map((t) => t.toLowerCase());
+}
+
+/** Recency-weighted relevance for an approved learning: base score × exponential half-life decay from `created_at`. */
+function temporalRelevance(learning: ILearning, baseScore: number): number {
+  return baseScore *
+    computeRecencyFactor(learning.created_at, new Date(), MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS);
 }
 
 function includesAllTags(candidateTags: string[], requiredTags: string[]): boolean {
@@ -42,7 +55,7 @@ function includesAllTags(candidateTags: string[], requiredTags: string[]): boole
 
 async function collectProjectResults(
   deps: ISearchDeps,
-  portal: string | undefined,
+  portal: Opt<string, Reason.QueryFilter>,
   collect: (portalName: string, projectMem: IProjectMemory) => IMemorySearchResult[],
 ): Promise<IMemorySearchResult[]> {
   const results: IMemorySearchResult[] = [];
@@ -106,7 +119,7 @@ function buildProjectQueryResults(
 
 async function collectExecutionQueryResults(
   deps: ISearchDeps,
-  portal: string | undefined,
+  portal: Opt<string, Reason.QueryFilter>,
   limit: number,
   queryLower: string,
 ): Promise<IMemorySearchResult[]> {
@@ -136,7 +149,7 @@ function sortAndLimit(results: IMemorySearchResult[], limit: number): IMemorySea
 
 export async function searchMemory(
   query: string,
-  options: { portal?: string; limit?: number } | undefined,
+  options: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
   deps: ISearchDeps,
 ): Promise<IMemorySearchResult[]> {
   const queryLower = query.toLowerCase();
@@ -156,7 +169,7 @@ export async function searchMemory(
 
 export async function searchByTags(
   tags: string[],
-  options: { portal?: string; limit?: number } | undefined,
+  options: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
   deps: ISearchDeps,
 ): Promise<IMemorySearchResult[]> {
   const limit = options?.limit || DEFAULT_QUERY_LIMIT;
@@ -201,7 +214,7 @@ export async function searchByTags(
         type: MemoryType.LEARNING,
         title: learning.title || DEFAULT_TITLE_PLACEHOLDER,
         summary: learning.description || "",
-        relevance_score: 0.95,
+        relevance_score: temporalRelevance(learning, 0.95),
         tags: learning.tags,
         id: learning.id,
       });
@@ -213,7 +226,7 @@ export async function searchByTags(
 
 export async function searchByKeyword(
   keyword: string,
-  options: { portal?: string; limit?: number } | undefined,
+  options: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
   deps: ISearchDeps,
 ): Promise<IMemorySearchResult[]> {
   const limit = options?.limit || DEFAULT_QUERY_LIMIT;
@@ -278,7 +291,7 @@ export async function searchByKeyword(
       type: MemoryType.LEARNING,
       title: learning.title || DEFAULT_TITLE_PLACEHOLDER,
       summary: learning.description || "",
-      relevance_score: calculateRelevance(titleFreq, descFreq),
+      relevance_score: temporalRelevance(learning, calculateRelevance(titleFreq, descFreq)),
       tags: learning.tags,
       id: learning.id,
     });

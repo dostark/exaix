@@ -33,6 +33,8 @@ export { LlmLearningExtractor } from "./src/extraction/llm_learning_extractor.ts
 export { LearningContradictionResolver } from "./src/contradiction/learning_contradiction_resolver.ts";
 export { findDedupMatch, mergeLearnings } from "./src/dedup/semantic_dedup.ts";
 export type { IDedupCandidate } from "./src/dedup/semantic_dedup.ts";
+export { computeRecencyFactor, rankByTemporalRelevance } from "./src/temporal/temporal_scoring.ts";
+export type { ITemporalCandidate, ITemporalScoringOptions } from "./src/temporal/temporal_scoring.ts";
 
 export {
   DEFAULT_SESSION_MEMORY_CONFIG,

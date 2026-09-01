@@ -556,6 +556,16 @@ export const MEMORY_DEDUP_SIMILARITY_THRESHOLD: number = configurable({
   max: 1,
   swap: SwapClass.RESTART,
 });
+/** Half-life (days) for temporal-aware learning retrieval: a learning halfLifeDays old weighs half its base relevance. Superseded/deleted learnings are excluded outright — supersession is the strong signal, age the soft one. */
+export const MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS: number = configurable({
+  key: "memory.temporal.recency_half_life_days",
+  default: 180,
+  type: ConfigValueType.NUMBER,
+  description: "Half-life in days for recency-weighted learning retrieval ranking",
+  min: 1,
+  max: 3650,
+  swap: SwapClass.RESTART,
+});
 
 /** Example execution time used in AgentOrchestrator response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS: number = configurable({

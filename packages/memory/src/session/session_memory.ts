@@ -9,11 +9,14 @@
 import { z } from "zod";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
+import type { IEmbeddingSearchResult } from "@exaix/core/types";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
+import { type ITemporalCandidate, rankByTemporalRelevance } from "../temporal/temporal_scoring.ts";
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import {
   DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
+  MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
@@ -200,7 +203,7 @@ export class SessionMemoryService {
         threshold: cfg.threshold,
       });
 
-      for (const result of embeddingResults) {
+      for (const result of await this.temporallyRank(embeddingResults)) {
         memories.push({
           type: MemoryType.LEARNING,
           title: result.title,
@@ -490,6 +493,27 @@ export class SessionMemoryService {
   }
 
   // Private Helper Methods
+
+  /** Re-ranks embedding-index candidates against bank records: only APPROVED learnings rank (the index is status-blind), re-weighted by recency half-life; candidates with no bank record are excluded; title/content stay as the index reported them. */
+  private async temporallyRank(results: IEmbeddingSearchResult[]): Promise<IEmbeddingSearchResult[]> {
+    const globalMem = await this.memoryBank.getGlobalMemory();
+    const learningById = new Map<string, ILearning>(
+      (globalMem?.learnings ?? []).map((learning) => [learning.id, learning]),
+    );
+    const candidates: ITemporalCandidate[] = [];
+    for (const result of results) {
+      const learning = learningById.get(result.id);
+      if (learning) {
+        candidates.push({ id: result.id, baseScore: result.similarity, learning });
+      }
+    }
+    const ranked = rankByTemporalRelevance(candidates, {
+      now: new Date(),
+      halfLifeDays: MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS,
+    });
+    const resultById = new Map(results.map((result) => [result.id, result]));
+    return ranked.map((candidate) => ({ ...resultById.get(candidate.id)!, similarity: candidate.baseScore }));
+  }
 
   /**
    * Extract key terms from a query for better search
