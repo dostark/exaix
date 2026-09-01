@@ -30,6 +30,7 @@ import {
   MEMORY_REFLECTION_RELATED_SIMILARITY_THRESHOLD,
   MemoryBankSource,
   MemoryCostOperation,
+  MemoryLinkType,
   MemoryReflectionActionType,
   MemoryScope,
 } from "@exaix/core";
@@ -100,21 +101,23 @@ export class MemoryReflectionService {
     const runAt = new Date().toISOString();
     const approved = await this.loadApprovedLearnings();
 
-    const merged = await this.mergePhase(approved);
-    const remaining = approved.filter((learning) => !merged.consumedIds.has(learning.id));
-
+    // The LLM synthesis pass runs first: source pairs it compares above the dedup
+    // threshold are topically linked instead of merged outright (synthesis precedence).
     let synthesised = 0;
     let pruned = 0;
+    const synthesisSourceIds = new Set<string>();
     if (await this.llmAllowed()) {
       const skill = await this.deps.skillsService.getSkill(REFLECTION_SKILL_ID);
       if (!skill) {
         throw new Error(`Required content policy skill not found: ${REFLECTION_SKILL_ID}`);
       }
-      const proposals = await this.proposeActions(remaining, skill.instructions);
-      const applied = await this.applyActions(proposals.actions, remaining, runAt);
+      const proposals = await this.proposeActions(approved, skill.instructions);
+      const applied = await this.applyActions(proposals.actions, approved, runAt, synthesisSourceIds);
       synthesised = applied.synthesised;
       pruned = applied.pruned;
     }
+
+    const merged = await this.mergePhase(approved, synthesisSourceIds);
 
     const result: IReflectionCycleResult = {
       run_at: runAt,
@@ -135,14 +138,18 @@ export class MemoryReflectionService {
     return (globalMem?.learnings ?? []).filter((learning) => learning.status === MemoryStatus.APPROVED);
   }
 
-  /** Near-duplicate pairs are merged deterministically without the LLM. */
-  private async mergePhase(approved: ILearning[]): Promise<{ count: number; consumedIds: Set<string> }> {
+  /** Near-duplicate pairs are merged deterministically without the LLM; synthesis-covered pairs are skipped (they are topically linked instead). */
+  private async mergePhase(
+    approved: ILearning[],
+    synthesisSourceIds: Set<string>,
+  ): Promise<{ count: number; consumedIds: Set<string> }> {
     const consumedIds = new Set<string>();
     let count = 0;
     const pairs = await this.findSimilarPairs(approved, MEMORY_DEDUP_SIMILARITY_THRESHOLD);
 
     for (const [first, second] of pairs) {
       if (consumedIds.has(first.id) || consumedIds.has(second.id)) continue;
+      if (synthesisSourceIds.has(first.id) || synthesisSourceIds.has(second.id)) continue;
       const keep = this.strongerOf(first, second);
       const drop = keep === first ? second : first;
       // A fresh identity: both source ids already exist in the store.
@@ -154,6 +161,7 @@ export class MemoryReflectionService {
       await this.deps.memoryBank.updateLearning(keep.id, {
         status: MemoryStatus.SUPERSEDED,
         superseded_by: merged.id,
+        links: [...(keep.links ?? []), { target_id: merged.id, type: MemoryLinkType.SUPERSEDED_BY }],
       });
       consumedIds.add(first.id);
       consumedIds.add(second.id);
@@ -254,6 +262,7 @@ ${JSON.stringify({ learnings: groups, related_pairs: related })}
     actions: z.infer<typeof ReflectionResponseSchema>["actions"],
     approved: ILearning[],
     runAt: string,
+    synthesisSourceIds: Set<string>,
   ): Promise<{ synthesised: number; pruned: number }> {
     const approvedIds = new Set(approved.map((learning) => learning.id));
     let synthesised = 0;
@@ -281,6 +290,10 @@ ${JSON.stringify({ learnings: groups, related_pairs: related })}
           } satisfies IProposalLearning,
         );
         await this.deps.proposalWriter.createProposal(learning, this.reflectionRun(runAt), REFLECTION_IDENTITY_ID);
+        for (const sourceId of action.source_ids) {
+          synthesisSourceIds.add(sourceId);
+        }
+        await this.writeTopicalLinks(action.source_ids, approved);
         synthesised++;
       } else {
         if (!approvedIds.has(action.target_id)) continue;
@@ -290,6 +303,37 @@ ${JSON.stringify({ learnings: groups, related_pairs: related })}
       }
     }
     return { synthesised, pruned };
+  }
+
+  /** Pairs of synthesis sources compared above the dedup threshold are topically linked on both sides — synthesis replaced their merge for this cycle. */
+  private async writeTopicalLinks(sourceIds: string[], approved: ILearning[]): Promise<void> {
+    const byId = new Map(approved.map((learning) => [learning.id, learning]));
+    const sourceSet = new Set(sourceIds);
+    for (const id of sourceIds) {
+      const learning = byId.get(id);
+      if (!learning) continue;
+      const matches = await this.deps.embeddingService.searchByEmbedding(
+        `${learning.title} ${learning.description}`,
+        { limit: 10, threshold: MEMORY_DEDUP_SIMILARITY_THRESHOLD },
+      );
+      for (const match of matches) {
+        if (match.similarity < MEMORY_DEDUP_SIMILARITY_THRESHOLD) continue;
+        if (match.id === id || !sourceSet.has(match.id)) continue;
+        await this.addLink(id, match.id);
+        await this.addLink(match.id, id);
+      }
+    }
+  }
+
+  /** Appends a topical link to a learning's link list if not already present (idempotent). */
+  private async addLink(sourceId: string, targetId: string): Promise<void> {
+    const globalMem = await this.deps.memoryBank.getGlobalMemory();
+    const learning = globalMem?.learnings.find((entry) => entry.id === sourceId);
+    if (!learning) return;
+    if (learning.links?.some((link) => link.target_id === targetId && link.type === MemoryLinkType.TOPICAL)) return;
+    await this.deps.memoryBank.updateLearning(sourceId, {
+      links: [...(learning.links ?? []), { target_id: targetId, type: MemoryLinkType.TOPICAL }],
+    });
   }
 
   /** Idempotency: skip when a synthesis from the same source group already exists (pending or banked). */

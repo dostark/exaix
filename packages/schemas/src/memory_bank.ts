@@ -165,6 +165,14 @@ export const LearningReferenceSchema = z.object({
   path: z.string(),
 });
 
+/** Typed inter-memory link: an edge record over the flat store enabling multi-hop retrieval (no graph engine). */
+export const LearningLinkSchema = z.object({
+  target_id: z.string().describe("Learning id this entry is linked to"),
+  type: z.string().describe("Link type, e.g. 'supersedes' | 'superseded_by' | 'topical'"),
+});
+
+export type ILearningLink = z.infer<typeof LearningLinkSchema>;
+
 /** Learning schema - represents a learned insight, pattern, or decision. Learnings can
  *  be project-scoped or global, and flow through a pending → approved workflow. */
 export const LearningSchema = z.object({
@@ -193,6 +201,7 @@ export const LearningSchema = z.object({
   archived_at: z.string().datetime().optional(),
   supersedes: z.string().uuid().optional(),
   superseded_by: z.string().uuid().optional(),
+  links: z.array(LearningLinkSchema).optional().describe("Typed edges to related learnings for multi-hop retrieval"),
 });
 
 export type ILearningReference = z.infer<typeof LearningReferenceSchema>;

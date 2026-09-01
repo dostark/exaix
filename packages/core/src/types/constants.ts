@@ -1194,6 +1194,9 @@ export const MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT = 3;
 /** Access count at which a high-quality (high promotion score) entry may promote EPISODIC → SEMANTIC — the value-based complement to the pure access counter. */
 export const MEMORY_TIER_SEMANTIC_PROMOTION_QUALITY_ACCESS_FLOOR = 2;
 
+/** Score factor applied to a learning reached by one-hop link expansion during retrieval (half the linking item's relevance). */
+export const MEMORY_LINK_EXPANSION_SCORE_FACTOR = 0.5;
+
 /** Initial promotion score for high-confidence tiered memory entries. */
 export const MEMORY_TIER_PROMOTION_SCORE_HIGH = 80;
 

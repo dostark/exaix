@@ -951,6 +951,13 @@ export enum MemoryReflectionActionType {
   PRUNE = "prune",
 }
 
+/** Typed inter-memory link kinds written by the supersession and reflection flows. */
+export enum MemoryLinkType {
+  SUPERSEDES = "supersedes",
+  SUPERSEDED_BY = "superseded_by",
+  TOPICAL = "topical",
+}
+
 /** Paid operation kinds recorded by the memory cost router. */
 export enum MemoryCostOperation {
   EMBEDDING = "embedding",

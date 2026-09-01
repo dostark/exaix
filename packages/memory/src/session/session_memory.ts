@@ -19,6 +19,7 @@ import { join } from "@std/path";
 import {
   DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
   MEMORY_HYBRID_VECTOR_WEIGHT,
+  MEMORY_LINK_EXPANSION_SCORE_FACTOR,
   MEMORY_TEMPORAL_RECENCY_HALF_LIFE_DAYS,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
@@ -72,6 +73,9 @@ export const SessionMemoryConfigSchema = z.object({
   includePatterns: z.boolean().default(true).describe("Include patterns in search"),
   maxContextLength: z.number().default(DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT).describe(
     "Maximum characters for memory context",
+  ),
+  expandLinks: z.boolean().default(false).describe(
+    "Expand the selected results by one hop along learning links, re-scored and deduped",
   ),
 });
 
@@ -144,6 +148,7 @@ export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
   includeLearnings: true,
   includePatterns: true,
   maxContextLength: DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
+  expandLinks: false,
 };
 
 // Session Memory Service
@@ -231,11 +236,46 @@ export class SessionMemoryService {
     // Sort by relevance and limit
     memories.sort((a, b) => b.relevance - a.relevance);
 
+    const selected = memories.slice(0, cfg.topK);
+    const expanded = cfg.expandLinks ? await this.expandByLinks(selected) : selected;
+
     if (tokenCap !== undefined) {
-      return this.applyTokenCap(memories, tokenCap);
+      return this.applyTokenCap(expanded, tokenCap);
     }
 
-    return memories.slice(0, cfg.topK);
+    return expanded;
+  }
+
+  /** Expands the selected results by one hop along learning links: linked APPROVED learnings are appended re-scored and deduplicated (cycle-safe — one hop, no recursion). */
+  private async expandByLinks(selected: MemoryItem[]): Promise<MemoryItem[]> {
+    const result = [...selected];
+    const seenSources = new Set(selected.map((item) => item.source));
+    const globalMem = await this.memoryBank.getGlobalMemory();
+    const learningById = new Map(
+      (globalMem?.learnings ?? []).map((learning) => [learning.id, learning]),
+    );
+
+    for (const item of selected) {
+      const learningId = this._extractLearningId(item);
+      if (!learningId) continue;
+      const source = learningById.get(learningId);
+      for (const link of source?.links ?? []) {
+        const target = learningById.get(link.target_id);
+        if (!target || target.status !== MemoryStatus.APPROVED) continue;
+        const targetSource = `${MemoryType.LEARNING}:${target.id}`;
+        if (seenSources.has(targetSource)) continue;
+        seenSources.add(targetSource);
+        result.push({
+          type: MemoryType.LEARNING,
+          title: target.title,
+          content: target.description,
+          relevance: Math.min(1, item.relevance * MEMORY_LINK_EXPANSION_SCORE_FACTOR),
+          source: targetSource,
+          tags: target.tags,
+        });
+      }
+    }
+    return result;
   }
 
   /** Collects the vector signal over the embedding index (all embedded kinds; learning-kind candidates are APPROVED-filtered and temporally ranked before fusion). */

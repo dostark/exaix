@@ -21,6 +21,7 @@ import {
   ActivityType,
   type JSONValue,
   MemoryBankSource,
+  MemoryLinkType,
   MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
@@ -706,7 +707,25 @@ export class MemoryBankService implements IMemoryBankService {
       }
       oldLearning.status = MemoryStatus.SUPERSEDED;
       oldLearning.superseded_by = newLearning.id;
-      globalMem.learnings.push(LearningSchema.parse({ ...newLearning, supersedes: oldId }));
+      // Typed supersession-chain links on both sides, written regardless of caller.
+      oldLearning.links = [
+        ...(oldLearning.links ?? []).filter((link) =>
+          !(link.target_id === newLearning.id && link.type === MemoryLinkType.SUPERSEDED_BY)
+        ),
+        { target_id: newLearning.id, type: MemoryLinkType.SUPERSEDED_BY },
+      ];
+      globalMem.learnings.push(
+        LearningSchema.parse({
+          ...newLearning,
+          supersedes: oldId,
+          links: [
+            ...(newLearning.links ?? []).filter((link) =>
+              !(link.target_id === oldId && link.type === MemoryLinkType.SUPERSEDES)
+            ),
+            { target_id: oldId, type: MemoryLinkType.SUPERSEDES },
+          ],
+        }),
+      );
       globalMem.statistics.total_learnings = globalMem.learnings.length;
       globalMem.statistics.by_category[newLearning.category] =
         (globalMem.statistics.by_category[newLearning.category] as number || 0) + 1;
