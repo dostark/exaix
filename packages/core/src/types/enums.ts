@@ -139,6 +139,8 @@ export enum ToolName {
   GIT_PUSH = "git_push",
   GIT_PULL = "git_pull",
   GIT_STASH = "git_stash",
+  QUERY_RELATIONSHIPS = "query_relationships",
+  WHO_DEPENDS_ON = "who_depends_on",
 }
 
 /** Structured error codes for MCP tool-logic failures, shared by MCP handlers and ToolRegistry without creating an import cycle. */

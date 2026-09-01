@@ -38,3 +38,69 @@ steps:
         score_weight: 0.5
         kind: "file-found"
         path_pattern: "Memory/Projects/*/knowledge.json"
+
+  # Phase 175 Step 3: exercises PortalContextBuilder.resolveKnowledgeContext against the
+  # portal just analyzed above — the request→plan flow this fallback logic actually runs in.
+  # The mock provider never enables relevanceSearchEmbeddingEnabled, so this proves the
+  # try/catch-to-buildPortalKnowledgeSummary fallback path completes a real request end to
+  # end without failing the pipeline.
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-sample-app", "--identity", "senior-coder", "--plan-only"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.4
+        kind: "command-exit-code"
+        equals: 0
+
+  # Waits on the event resolveKnowledgeContext's fallback runs just before — the mock LLM
+  # call itself has no recorded fixture for this scenario and is expected to fail after
+  # this point, so the wait targets prompt assembly rather than a produced plan.
+  - id: "wait-for-prompt-assembled"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.prompt_assembled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-prompt-assembled"
+    type: "journal-assert"
+    name: "resolveKnowledgeContext's fallback ran without aborting request processing"
+    action_type: "agent.prompt_assembled"
+    trace_scoped: true
+    payload_equals:
+      - path: "prompt_kind"
+        value: "planning"
+    expect_count: 1
+    output_criteria:
+      - id: "prompt-assembled-once"
+        score_weight: 0.5
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        score_weight: 0.2
+        kind: "command-exit-code"
+        equals: 0

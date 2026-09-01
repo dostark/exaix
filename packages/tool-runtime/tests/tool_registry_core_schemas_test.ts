@@ -29,6 +29,8 @@ const EXPECTED_CORE_TOOL_NAMES = [
   "git_info",
   "deno_task",
   "patch_file",
+  "query_relationships",
+  "who_depends_on",
 ].sort();
 
 function registryTools() {

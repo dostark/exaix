@@ -545,5 +545,74 @@ export function createCoreToolSchemas(
         },
       },
     },
+    {
+      name: ToolName.QUERY_RELATIONSHIPS,
+      description:
+        "List relationship edges leading forward from a layer name or file path in the current portal's knowledge graph (populated by 'portal analyze' standard/deep mode). Combines persisted file-import edges with layer-membership edges computed on demand. Use when you need to discover which files a layer contains or which files a given file imports internally; for the reverse direction (who imports a file) use who_depends_on. Optionally filter by edge kind. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
+      parameters: {
+        type: "object",
+        properties: {
+          from: {
+            type: "string",
+            description: "A layer name or portal-relative file path to list outgoing edges from",
+          },
+          kind: {
+            type: "string",
+            enum: ["layer_contains_file", "file_imports_file_internal"],
+            description: "Optional edge-kind filter",
+          },
+        },
+        required: ["from"],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary:
+          "Lists relationship edges leading forward from a layer name or file path in the portal's knowledge graph.",
+        when_to_use:
+          "Use to discover which files belong to an architecture layer, or which files a given file imports internally, when navigating an unfamiliar codebase.",
+        when_not_to_use:
+          "Do not use to find who imports a given file — that's the reverse direction, use who_depends_on instead.",
+        example: {
+          input: { from: "services" },
+          output: '[{"from":"services","to":"services/main.ts","kind":"layer_contains_file"}]',
+          rationale: "Lists every file the 'services' layer contains, without reading any files directly.",
+        },
+        anti_example: {
+          input: {},
+          why_wrong: "query_relationships requires 'from' — there is no default starting point to list edges from.",
+        },
+      },
+    },
+    {
+      name: ToolName.WHO_DEPENDS_ON,
+      description:
+        "List relationship edges pointing INTO a file path in the current portal's knowledge graph — the reverse of query_relationships. Use before changing or removing a file's exports, to find every file that imports it internally. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: {
+            type: "string",
+            description: "A portal-relative file path to find dependents of",
+          },
+        },
+        required: ["path"],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Lists relationship edges pointing into a file path — the files that depend on it.",
+        when_to_use: "Use before changing or removing a file's exports, to find every file that imports it internally.",
+        when_not_to_use:
+          "Do not use to list what a file itself imports — that's the forward direction, use query_relationships instead.",
+        example: {
+          input: { path: "util.ts" },
+          output: '[{"from":"main.ts","to":"util.ts","kind":"file_imports_file_internal"}]',
+          rationale: "Finds every file that imports util.ts before changing its exported signature.",
+        },
+        anti_example: {
+          input: {},
+          why_wrong: "who_depends_on requires 'path' — there is no default target to find dependents of.",
+        },
+      },
+    },
   ];
 }

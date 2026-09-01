@@ -18,6 +18,7 @@ import { identifyKeyFiles } from "./key_file_identifier.ts";
 import { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "./pattern_detector.ts";
 import { ArchitectureInferrer, type IArchitectureValidator } from "./architecture_inferrer.ts";
 import { AstAnalyzer } from "./ast_analyzer.ts";
+import { InternalImportGraphBuilder } from "./internal_import_graph.ts";
 import type { IDocCommandRunner } from "./symbol_extractor.ts";
 import { createDefaultSymbolExtractorRegistry, type ISymbolExtractorRegistry } from "./symbol_extractor_registry.ts";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
@@ -126,6 +127,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _projectsDir: string;
   private readonly _logger?: ILogger;
   private readonly _astAnalyzer: AstAnalyzer;
+  private readonly _internalImportGraphBuilder: InternalImportGraphBuilder;
   private readonly _testRunner: TestRunner;
   private readonly _licenseDetector: LicenseDetector;
   private readonly _vulnerabilityScanner: VulnerabilityScanner;
@@ -168,6 +170,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     this._projectsDir = options.projectsDir ?? "";
     this._logger = options.logger;
     this._astAnalyzer = new AstAnalyzer();
+    this._internalImportGraphBuilder = new InternalImportGraphBuilder();
     this._testRunner = new TestRunner();
     this._licenseDetector = new LicenseDetector();
     this._vulnerabilityScanner = new VulnerabilityScanner();
@@ -313,6 +316,32 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       );
     }
 
+    // Internal (relative-import) file graph — gated like strategy 9, not tied to
+    // enableAstAnalysis since this is a logically separate pass.
+    let relationships: IPortalKnowledge["relationships"];
+    if (resolvedMode !== PortalAnalysisMode.QUICK) {
+      const internalGraphEntrypoints = keyFiles
+        .filter((kf) => kf.role === "entrypoint")
+        .map((kf) => kf.path);
+      const internalGraphResult = await this._internalImportGraphBuilder.build(
+        portalPath,
+        internalGraphEntrypoints,
+      );
+      relationships = internalGraphResult.edges;
+      if (internalGraphResult.droppedOutOfBounds.length > 0) {
+        console.warn(
+          `[PortalKnowledgeService] dropped ${internalGraphResult.droppedOutOfBounds.length} internal-import specifier(s) resolving outside the portal root for ${portalAlias}`,
+        );
+      }
+      if (internalGraphResult.truncatedEntrypointCount > 0) {
+        console.warn(
+          `[PortalKnowledgeService] traced only the first ${
+            internalGraphEntrypoints.length - internalGraphResult.truncatedEntrypointCount
+          } of ${internalGraphEntrypoints.length} entrypoint(s) for ${portalAlias}; relationships is incomplete for the remaining ${internalGraphResult.truncatedEntrypointCount}`,
+        );
+      }
+    }
+
     // Strategy 8: test execution (deep mode + enableTestExecution)
     let testInfo: IPortalKnowledge["testInfo"];
     if (
@@ -380,6 +409,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       ...(licenses !== undefined ? { licenses } : {}),
       ...(vulnerabilities !== undefined ? { vulnerabilities } : {}),
       ...(gitHistory !== undefined ? { gitHistory } : {}),
+      ...(relationships !== undefined ? { relationships } : {}),
       stats: dirResult.stats ?? {
         totalFiles: fileList.length,
         totalDirectories: 0,
@@ -484,6 +514,9 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
           licenses: fresh.licenses ?? previousCache.licenses,
           vulnerabilities: fresh.vulnerabilities ?? previousCache.vulnerabilities,
           gitHistory: fresh.gitHistory ?? previousCache.gitHistory,
+          // relationships follows the identical merge pattern as strategies 7-11
+          // above — carried forward, not left absent.
+          relationships: fresh.relationships ?? previousCache.relationships,
         };
         this._cache.set(portalAlias, merged);
       }
@@ -551,7 +584,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     portalAlias: string,
     knowledge: IPortalKnowledge,
   ): Promise<void> {
-    if (!this._embeddingProvider || !this._projectsDir) return;
+    if (!this._config.relevanceSearchEmbeddingEnabled || !this._embeddingProvider || !this._projectsDir) return;
 
     const chunked = this._chunkKnowledge(knowledge);
     if (chunked.length === 0) return;

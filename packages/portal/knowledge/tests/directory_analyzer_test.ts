@@ -146,6 +146,7 @@ Deno.test("[DirectoryAnalyzer] detects monorepo structure and populates packages
     // Sub-package 1
     await writeFile(root, "packages/api/deno.json", '{"name": "api"}');
     await writeFile(root, "packages/api/src/main.ts");
+    await writeFile(root, "packages/api/services/user_service.ts");
     // Sub-package 2
     await writeFile(root, "packages/web/package.json", '{"name": "web"}');
     await writeFile(root, "packages/web/src/index.ts");
@@ -156,6 +157,14 @@ Deno.test("[DirectoryAnalyzer] detects monorepo structure and populates packages
     assertEquals(result.packages!.length >= 2, true);
     const packageNames = result.packages!.map((p) => p.name);
     assertEquals(packageNames.includes("api") || packageNames.includes("packages/api"), true);
+    const apiPackage = result.packages!.find((pkg) => pkg.name === "api");
+    assertExists(apiPackage);
+    assertEquals(apiPackage.layers, [{
+      name: "services",
+      paths: ["services/"],
+      responsibility: "Core business logic and service implementations",
+      keyFiles: ["packages/api/services/user_service.ts"],
+    }]);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

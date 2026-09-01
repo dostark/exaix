@@ -3462,7 +3462,12 @@ context about the project without reading every file on each request.
 **When does analysis run?**
 
 - Automatically on `portal add` and `portal refresh` (when `auto_analyze_on_mount = true`).
-- Automatically before each request execution if the snapshot is stale (default: > 168 hours).
+- Automatically before each request execution, invalidated primarily by comparing the portal's
+  live git commit SHA against the SHA stored at last analysis — an unchanged SHA skips
+  re-analysis entirely, regardless of elapsed time. On a SHA mismatch, a small number of changed
+  files triggers a cheaper incremental re-analysis; a large number triggers a full one.
+  `staleness_hours` (below) is a time-based fallback used only when the portal isn't a git repo
+  or its `HEAD` can't be resolved.
 - Manually on demand with `exactl portal analyze <alias>`.
 
 **Modes:**
@@ -3497,7 +3502,7 @@ auto_analyze_on_mount = false     # Analyze on portal add/refresh (opt-in)
 default_mode          = "quick"   # quick | standard | deep
 quick_scan_limit      = 200       # Max files read in quick mode
 max_files_to_read     = 50        # Hard cap across all strategies
-staleness_hours       = 168       # Re-analyze after this many hours (default: 1 week)
+staleness_hours       = 168       # Fallback TTL for non-git portals or when HEAD can't be resolved (default: 1 week)
 use_llm_inference     = true      # Allow LLM calls in deep mode
 ignore_patterns       = ["node_modules", ".git", "dist", "build"]
 ```
@@ -3522,6 +3527,36 @@ Python extraction uses a local tree-sitter WASM grammar — no network access, n
 native code (`--allow-ffi` not required). Extended-language extractors (Team)
 follow the same pattern. Symbol extraction is primary-language-scoped: only the
 dominant language's symbols are mapped in mixed-language portals.
+
+**Why analyze once instead of reading the codebase every request?** The gathered
+knowledge is computed once and queried cheaply on every subsequent request instead
+of re-reading files each time. Relationship data (imports, layer membership) is
+built from a resolved module graph rather than text search, so it correctly follows
+import aliases and re-exports, and supports reverse-dependency questions ("what
+depends on this file?") that would otherwise require opening every file in the
+portal. Architecture and convention summaries reach the agent automatically as part
+of its request context, without it needing to ask for them.
+
+**Known limitations:**
+
+- The background re-analysis triggered when a cached snapshot turns out to be stale
+  does not block or update the request that triggered it — that request still sees
+  the stale snapshot; only a later request benefits from the refresh.
+- Staleness detection compares against the portal's last committed `HEAD`, so
+  uncommitted working-tree changes are not detected as staleness.
+- `symbolMap` entries currently store an absolute file path while every other path
+  field in the knowledge snapshot is portal-relative — an inconsistency, not yet fixed.
+- `architectureOverview` can come back empty when analysis ran in `quick` mode; use
+  `standard` or `deep` mode if you need it populated.
+- Most gathered categories (dependencies, tech stack, directory stats, git history,
+  licenses, vulnerabilities) can only be inspected via `exactl portal knowledge
+  <alias>` or by reading `knowledge.json` directly — they have no dedicated
+  on-demand query surface for an agent today. Only exported symbols and file
+  relationships do.
+- **Fixed history:** earlier versions of the relationship-graph builder traced only
+  a portal's first 5 entrypoints, severely undercounting large monorepos. This is
+  fixed — the limit is now a much higher, configurable default (500), with a
+  visible warning logged if a portal's entrypoint count ever exceeds it.
 
 ---
 

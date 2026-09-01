@@ -100,7 +100,11 @@ steps:
     command: "deno"
     args:
       - "eval"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
       - |
+          import { queryRelationships, whoDependsOn } from "@exaix/portal/knowledge";
+
           const path = "Memory/Projects/portal-exaix/knowledge.json";
           const raw = Deno.readTextFileSync(path);
           const k = JSON.parse(raw);
@@ -201,6 +205,44 @@ steps:
             errs.push(`metadata.durationMs: expected ≥2000ms, got ${k.metadata?.durationMs}`);
           }
 
+          // Phase 175 Step 6: pin real relationship derivation/querying against this repo.
+          if (!Array.isArray(k.relationships) || k.relationships.length < 100) {
+            errs.push(`relationships: expected ≥100 real internal-import edges, got ${k.relationships?.length ?? 0}`);
+          }
+
+          const expectedImport = {
+            from: "packages/ai-ollama/mod.ts",
+            to: "packages/ai-ollama/src/ollama_provider.ts",
+            kind: "file_imports_file_internal",
+          };
+          const persistedMatch = k.relationships?.some((edge) =>
+            edge.from === expectedImport.from && edge.to === expectedImport.to && edge.kind === expectedImport.kind
+          );
+          if (!persistedMatch) {
+            errs.push(`relationships: missing known real edge ${expectedImport.from} -> ${expectedImport.to}`);
+          }
+
+          const forward = queryRelationships(k, expectedImport.from, expectedImport.kind);
+          if (!forward.some((edge) => edge.to === expectedImport.to)) {
+            errs.push(`queryRelationships: missing known target ${expectedImport.to}`);
+          }
+
+          const reverse = whoDependsOn(k, expectedImport.to);
+          if (!reverse.some((edge) => edge.from === expectedImport.from)) {
+            errs.push(`whoDependsOn: missing known importer ${expectedImport.from}`);
+          }
+
+          const aiLayer = queryRelationships(k, "ai", "layer_contains_file");
+          if (!aiLayer.some((edge) => edge.to === "packages/ai/mod.ts")) {
+            errs.push("queryRelationships: missing top-level ai -> packages/ai/mod.ts layer edge");
+          }
+
+          const serviceEdges = queryRelationships(k, "services", "layer_contains_file")
+            .filter((edge) => edge.to === "packages/triggers/services/idempotency_ledger.ts");
+          if (serviceEdges.length !== 2) {
+            errs.push(`queryRelationships: expected duplicate top-level + package-local services edge, got ${serviceEdges.length}`);
+          }
+
           if (errs.length > 0) {
             console.error("FAILED validations:");
             errs.forEach(e => console.error("  - " + e));
@@ -217,7 +259,35 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # ── Step 7: deep mode works ─────────────────────────────────────────────
+  # ── Step 7: a real Solo ReAct turn calls the relationship tool ──────────
+  - id: "solo-agent-relationship-query"
+    type: "run-script"
+    name: "A real code-analyst ReAct turn calls query_relationships mid-task"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_solo_relationship_agent.ts"
+      - "$WORKSPACE_ROOT"
+      - "portal-exaix"
+      - "$WORKSPACE_ROOT/Portals/portal-exaix"
+    output_criteria:
+      - id: "solo-agent-called-query-relationships"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["\"tool\":\"query_relationships\""]
+      - id: "solo-agent-observed-real-answer"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["packages/ai-ollama/src/ollama_provider.ts"]
+      - id: "solo-agent-completed-one-tool-call"
+        score_weight: 0.2
+        kind: "command-output-contains"
+        contains: ["\"tool_calls\":1"]
+
+  # ── Step 8: deep mode works ─────────────────────────────────────────────
   - id: "analyze-deep-mode"
     type: "exactl"
     command: "portal analyze portal-exaix --mode deep --force"

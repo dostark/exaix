@@ -115,6 +115,7 @@ function detectLayers(
 /** Detect monorepo packages by locating nested package.json/deno.json files. */
 function detectMonorepoPackages(
   files: string[],
+  directories: Set<string>,
 ): IMonorepoPackage[] {
   const packages: IMonorepoPackage[] = [];
   const seen = new Set<string>();
@@ -134,11 +135,17 @@ function detectMonorepoPackages(
     seen.add(packageDir);
 
     const dirName = parts[parts.length - 2];
+    const packageFiles = files.filter((candidate) => candidate.startsWith(`${packageDir}/`));
+    const packageDirectories = new Set(
+      [...directories]
+        .filter((candidate) => candidate.startsWith(`${packageDir}/`))
+        .map((candidate) => candidate.slice(packageDir.length + 1)),
+    );
     packages.push({
       name: dirName,
       path: packageDir,
       primaryLanguage: LANG_TYPESCRIPT,
-      layers: [],
+      layers: detectLayers(packageDirectories, packageFiles),
       conventions: [],
     });
   }
@@ -247,7 +254,7 @@ export async function analyzeDirectory(
 
   const primaryLanguage = detectPrimaryLanguage(walked.extensionDistribution);
   const layers = detectLayers(walked.directories, walked.files);
-  const packages = detectMonorepoPackages(walked.files);
+  const packages = detectMonorepoPackages(walked.files, walked.directories);
 
   return {
     layers,

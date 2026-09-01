@@ -90,6 +90,44 @@ Run `deno task docs-sync-schemas` to regenerate after manifest changes.
 
 <!-- AGENT_TOOLS_END -->
 
+## 🧰 Solo-Only ReAct Tools (`ToolRegistry`)
+
+The table above is generated exclusively from `packages/mcp/src/manifest.ts`'s `TOOL_MANIFEST`
+(Team-tier MCP-facing tools). `docs-sync-schemas` has no visibility into
+`packages/tool-runtime/src/tool_registry.ts` — Solo's separate in-process ReAct tool catalog
+(`ReActLoopStrategy`/`LegacyAgentStrategy`/`McpAgentStrategy`; see ARCHITECTURE.md's "Tool
+Catalog Parity" section) — so any manual entry placed inside the markers above would be
+silently discarded on the next sync. This section is intentionally outside those markers and
+is **not** kept in sync automatically; update it by hand when the tools below change.
+
+**Scope note (phase-175 Step 5):** this section documents only the two Solo-tier tools that
+phase added. `ToolRegistry`'s other 14 tools (`read_file`, `write_file`, `list_directory`,
+`search_files`, `create_directory`, `run_command`, `fetch_url`, `grep_search`, `move_file`,
+`copy_file`, `delete_file`, `git_info`, `deno_task`, `patch_file`) have no representation here
+at all — a real gap, deliberately not fixed by this phase (see phase-175's Step 5 Actions).
+It is worth its own scoped phase, or a `docs-sync-schemas`/`TOOL_MANIFEST` extension that
+enumerates `packages/tool-runtime`'s catalog alongside the Team MCP one.
+
+| Tool                  | Description                                                                                                                                                                                                                                 | Side-effect scope | Source                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
+| `query_relationships` | Lists relationship edges leading forward from a layer name or file path in the current portal's knowledge graph — combines persisted `file_imports_file_internal` edges with on-demand `layer_contains_file` edges. Optional `kind` filter. | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
+| `who_depends_on`      | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
+
+Both require a portal-knowledge service to be wired into the `ToolRegistry`'s
+`IApplicationContext` (present in the daemon's real execution `ToolRegistryFactory`) and the
+current execution root to match a configured portal's `target_path` — otherwise they return a
+structured error, never a throw. No Team-tier MCP equivalent exists for either tool; they are
+new Solo-only surface, not a port of `exaix_portal_symbols`.
+
+**Why use these instead of reading imports directly:** the underlying graph is built from
+`deno info`'s resolved module graph, not text pattern matching, so it correctly follows import-map
+aliases and barrel re-exports that a naive `import .* from` grep would miss. `who_depends_on`
+(reverse dependency lookup — "what imports this file") has no efficient text-grep equivalent at
+all; answering it by reading files would mean opening every file in the portal. `layer_contains_file`
+edges are synthesized from the portal's `layers` config and are not derivable from import
+statements in the first place — no amount of reading source files reveals which architectural
+layer a file belongs to.
+
 ## ACI (Agent-Computer Interface) Authoring Guide
 
 Distinct from the MCP tool index above: an `aciDoc` block is structured, ReAct-only

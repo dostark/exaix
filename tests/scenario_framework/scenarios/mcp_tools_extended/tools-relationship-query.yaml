@@ -1,0 +1,95 @@
+schema_version: "1.0.0"
+# Asserts query_relationships/who_depends_on end to end: a real `portal analyze` populates a
+# real layer_contains_file edge (Step 2, derived on demand) and a real file_imports_file_internal
+# edge (Step 1, persisted), then a real ToolRegistry — the Solo-tier in-process ReAct catalog,
+# a separate catalog from packages/mcp/src/manifest.ts's TOOL_MANIFEST (see ARCHITECTURE.md's
+# "Tool Catalog Parity") — serves both directions of the query. Mirrors
+# tools-portal-symbols.yaml's directness, swapping the MCP stdio call for a direct
+# ToolRegistry.execute() call (call_tool_registry_tool.ts) since there is no MCP handler for
+# either Solo-only tool.
+id: "tools-relationship-query"
+title: "Solo tool — query_relationships/who_depends_on serve a portal's relationship graph"
+pack: "mcp_tools_extended"
+tags: ["domain", "subsystem:tools", "entity:query_relationships", "entity:who_depends_on"]
+request_fixture: "fixtures/requests/mcp_tools_extended/tools_relationship_query.md"
+mode_support: ["auto"]
+portals:
+  - alias: "rel-fixture"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/relationship_query_fixture"
+steps:
+  - id: "portal-analyzed"
+    type: "exactl"
+    command: "portal analyze rel-fixture"
+    input_criteria:
+      - id: "portal-available"
+        score_weight: 0.2
+        kind: "portal-mounted"
+        alias: "rel-fixture"
+    output_criteria:
+      - id: "analyze-exit-code"
+        score_weight: 0.2
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "knowledge-artifact"
+    type: "wait-for-file"
+    args: ["**/Memory/Projects/*/knowledge.json"]
+    timeout_sec: 60
+    input_criteria: []
+    output_criteria:
+      - id: "knowledge-json-found"
+        score_weight: 0.2
+        kind: "file-found"
+        path_pattern: "Memory/Projects/*/knowledge.json"
+
+  - id: "query-relationships-forward"
+    type: "run-script"
+    name: "query_relationships lists the services layer's real key file"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_tool_registry_tool.ts"
+      - "$WORKSPACE_ROOT"
+      - "rel-fixture"
+      - "$WORKSPACE_ROOT/Portals/rel-fixture"
+      - "query_relationships"
+      - '{"from":"services"}'
+    output_criteria:
+      - id: "forward-edge-present"
+        kind: "command-output-contains"
+        contains: [
+          '"from": "services"',
+          '"to": "services/greeter.ts"',
+          '"kind": "layer_contains_file"',
+          '"success": true',
+        ]
+        score_weight: 0.8
+
+  - id: "who-depends-on-reverse"
+    type: "run-script"
+    name: "who_depends_on lists the real internal importer of services/greeter.ts"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_tool_registry_tool.ts"
+      - "$WORKSPACE_ROOT"
+      - "rel-fixture"
+      - "$WORKSPACE_ROOT/Portals/rel-fixture"
+      - "who_depends_on"
+      - '{"path":"services/greeter.ts"}'
+    output_criteria:
+      - id: "reverse-edge-present"
+        kind: "command-output-contains"
+        contains: [
+          '"from": "mod.ts"',
+          '"to": "services/greeter.ts"',
+          '"kind": "file_imports_file_internal"',
+          '"success": true',
+        ]
+        score_weight: 0.8

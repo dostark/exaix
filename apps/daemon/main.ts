@@ -13,6 +13,7 @@ import {
   DAEMON_IDENTITY_ID,
   DaemonStatus,
   DEFAULT_IDENTITIES_PATH,
+  DEFAULT_PROJECTS_MEMORY_PATH,
   EDITION_SOLO,
   EDITION_TEAM,
   ProviderType,
@@ -71,8 +72,7 @@ import {
   SessionMemoryService,
 } from "@exaix/memory";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
-import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
-import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
+import { createMemoryEmbeddingProvider } from "../common/embedding_provider_bootstrap.ts";
 import { NotificationService } from "@exaix/core/notification";
 import { SkillsService } from "@exaix/core/skills";
 import { FlowLoaderAdapter } from "../../apps/common/adapters/flow_loader_adapter.ts";
@@ -527,35 +527,7 @@ if (import.meta.main) {
       dbService,
       memoryAdapter,
     );
-    const embCfg = config.memory?.embedding;
-    const providerType = embCfg?.provider ?? "ollama";
-    let providerConfig: IEmbeddingProviderConfig;
-    switch (providerType) {
-      case ProviderType.OPENAI:
-        providerConfig = {
-          provider: ProviderType.OPENAI,
-          apiKey: embCfg?.apiKey ?? "",
-          model: embCfg?.model,
-        };
-        break;
-      case ProviderType.LLAMACPP:
-        providerConfig = {
-          provider: ProviderType.LLAMACPP,
-          model: embCfg?.model,
-          baseUrl: embCfg?.baseUrl,
-          chunkSize: embCfg?.chunkSize,
-        };
-        break;
-      default:
-        providerConfig = {
-          provider: ProviderType.OLLAMA,
-          model: embCfg?.model,
-          baseUrl: embCfg?.baseUrl,
-          chunkSize: embCfg?.chunkSize,
-          timeoutMs: embCfg?.timeoutMs,
-        };
-    }
-    const embeddingProvider = createEmbeddingProvider(providerConfig);
+    const embeddingProvider = createMemoryEmbeddingProvider(config);
     const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
     const providerEmbedding = new ProviderEmbeddingService(
       config,
@@ -606,6 +578,7 @@ if (import.meta.main) {
       embeddingProvider,
       createVectorIndex: () => new HnswVectorIndex(),
       symbolExtractorRegistry: symbolRegistry,
+      projectsDir: join(config.system.root, config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH),
     });
 
     // Create central application context

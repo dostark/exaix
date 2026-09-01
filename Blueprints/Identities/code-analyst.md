@@ -17,6 +17,8 @@ permitted_tools:
   - read_file
   - list_directory
   - grep_search
+  - query_relationships
+  - who_depends_on
   - fetch_url
   - git_info
 ---

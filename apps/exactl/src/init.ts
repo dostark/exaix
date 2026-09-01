@@ -12,7 +12,7 @@ import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
-import { ActivityActor, EDITION_SOLO, EDITION_TEAM, ExaPathDefaults } from "@exaix/core";
+import { ActivityActor, DEFAULT_PROJECTS_MEMORY_PATH, EDITION_SOLO, EDITION_TEAM, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IBenchmarkReader, IDatabaseService, Opt, Reason } from "@exaix/core/types";
@@ -22,7 +22,8 @@ import type { ICliApplicationContext, IPortalKnowledgeConfig } from "@exaix/cli/
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 
 // Concrete services for adapters
-import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
+import { HnswVectorIndex, MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
+import { createMemoryEmbeddingProvider } from "../../common/embedding_provider_bootstrap.ts";
 import { SkillsService } from "@exaix/core/skills";
 import { ArchiveService } from "@exaix/core/artifact";
 import { FlowValidatorImpl } from "@exaix/flow";
@@ -224,6 +225,9 @@ export async function initializeServices(
           return new GitService({ config: cfg, repoPath, traceId });
         },
       },
+      embeddingProvider: createMemoryEmbeddingProvider(cfg),
+      createVectorIndex: () => new HnswVectorIndex(),
+      projectsDir: join(cfg.system.root!, cfg.paths.memory!, DEFAULT_PROJECTS_MEMORY_PATH),
     });
 
     // Create HITL policy evaluator if Team/Enterprise edition. Dynamic import keeps

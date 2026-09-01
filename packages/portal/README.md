@@ -93,10 +93,24 @@ auto_analyze_on_mount = true
 default_mode          = "quick"
 quick_scan_limit      = 200
 max_files_to_read     = 50
-staleness_hours       = 168
+staleness_hours       = 168       # non-git fallback TTL only — see Cache Invalidation below
 use_llm_inference     = true
 ignore_patterns       = ["node_modules", ".git", "dist", "build", ".next"]
 ```
+
+### Cache Invalidation
+
+Re-analysis is primarily triggered by comparing the portal's live git `HEAD` SHA against the SHA
+stored in `knowledge.json` at last analysis (`KnowledgeInvalidationStrategy`/`GitHeadResolver`).
+An unchanged SHA skips re-analysis entirely, regardless of elapsed time. On a SHA mismatch, the
+number of files changed since that SHA selects an incremental (quick-mode, merging forward the
+expensive strategies from the prior analysis) or full re-analysis. `staleness_hours` is a
+time-based fallback used only when the portal isn't a git repo or `HEAD` resolution fails.
+
+Two known limitations: `getOrAnalyze()` returns the cached snapshot immediately and revalidates
+in a background task, so the call that triggers revalidation does not itself see the refreshed
+result; and SHA comparison is against `HEAD`, so uncommitted working-tree changes are not
+detected as staleness.
 
 ## CLI Commands
 

@@ -579,6 +579,82 @@ Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext
   }
 });
 
+Deno.test("[PortalKnowledgeService] analyze() indexes for retrieval automatically, with no manual indexPortalKnowledge call", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const projectsDir = join(tempDir, "Memory/Projects");
+    await ensureDir(projectsDir);
+
+    const mockEmbedder: IEmbeddingProvider = {
+      providerId: "test-mock",
+      dimension: 2,
+      embed: (texts: string[]) => Promise.resolve(texts.map((t, i) => [i + 1, t.length])),
+    };
+
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
+      memoryBank: makeMockMemoryBank(),
+      runner: makeMockDocRunner(),
+      embeddingProvider: mockEmbedder,
+      createVectorIndex: () => new HnswVectorIndex(),
+      projectsDir,
+    });
+
+    const portalDir = await makeTempPortal();
+    try {
+      // Only analyze() is called — indexPortalKnowledge must fire as a side effect of it.
+      await svc.analyze("auto-index-portal", portalDir, PortalAnalysisMode.QUICK);
+
+      const result = await svc.getRelevantContext("Entry point start function", portalDir, 5000);
+      assertExists(result, "analyze() must index the knowledge so getRelevantContext finds it");
+    } finally {
+      await Deno.remove(portalDir, { recursive: true });
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] indexPortalKnowledge does not call the embedding provider when relevanceSearchEmbeddingEnabled is false", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const projectsDir = join(tempDir, "Memory/Projects");
+    await ensureDir(projectsDir);
+
+    let embedCalls = 0;
+    const mockEmbedder: IEmbeddingProvider = {
+      providerId: "test-mock",
+      dimension: 2,
+      embed: (texts: string[]) => {
+        embedCalls++;
+        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
+      },
+    };
+
+    const svc = new PortalKnowledgeService({
+      // relevanceSearchEmbeddingEnabled defaults to false in makeConfig() — a provider
+      // being configured must not be enough to trigger embedding calls on its own,
+      // otherwise the opt-in flag (cost/privacy-motivated) has no effect.
+      config: makeConfig(),
+      memoryBank: makeMockMemoryBank(),
+      runner: makeMockDocRunner(),
+      embeddingProvider: mockEmbedder,
+      createVectorIndex: () => new HnswVectorIndex(),
+      projectsDir,
+    });
+
+    const portalDir = await makeTempPortal();
+    try {
+      await svc.analyze("no-embed-portal", portalDir, PortalAnalysisMode.QUICK);
+      assertEquals(embedCalls, 0, "embedding provider must not be called while the flag is off");
+    } finally {
+      await Deno.remove(portalDir, { recursive: true });
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
 Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
