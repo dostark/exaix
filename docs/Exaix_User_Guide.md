@@ -3553,6 +3553,10 @@ of its request context, without it needing to ask for them.
   <alias>` or by reading `knowledge.json` directly — they have no dedicated
   on-demand query surface for an agent today. Only exported symbols and file
   relationships do.
+- **Fixed history:** earlier versions of the relationship-graph builder traced only
+  a portal's first 5 entrypoints, severely undercounting large monorepos. This is
+  fixed — the limit is now a much higher, configurable default (500), with a
+  visible warning logged if a portal's entrypoint count ever exceeds it.
 
 ---
 
