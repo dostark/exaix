@@ -68,3 +68,8 @@ export type {
   IEligibleMemoryUpdateProposal,
 } from "./src/approval/memory_auto_approval_service.ts";
 export { initializeMemoryAutoApprovalMaintenance } from "./src/approval/auto_approval_daemon.ts";
+export { MemoryReflectionService } from "./src/reflection/memory_reflection_service.ts";
+export type {
+  IMemoryReflectionServiceDeps,
+  IReflectionCycleResult,
+} from "./src/reflection/memory_reflection_service.ts";

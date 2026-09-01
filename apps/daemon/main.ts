@@ -70,6 +70,7 @@ import {
   MemoryAutoApprovalService,
   MemoryBankService,
   MemoryExtractorService,
+  MemoryReflectionService,
   ProviderEmbeddingService,
   SessionMemoryService,
 } from "@exaix/memory";
@@ -1109,6 +1110,18 @@ if (import.meta.main) {
       memoryExtractor,
     );
 
+    // Reflection loads the content policy by explicit skill_id and consolidates the
+    // approved store (synthesise via Memory/Pending proposals, deterministic merge, prune).
+    const reflectionService = new MemoryReflectionService({
+      provider: llmProvider,
+      skillsService,
+      memoryBank,
+      embeddingService: providerEmbedding,
+      proposalWriter: memoryExtractor,
+      logger,
+      costRouter: memoryCostRouter,
+    });
+
     const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance({
       notificationService,
       memoryExtractor,
@@ -1117,6 +1130,7 @@ if (import.meta.main) {
       intervalMs: 60 * 60 * 1000,
       sessionMemory,
       memoryBank,
+      reflectionService,
     });
 
     // Start file watcher for approved plans (Workspace/Active)

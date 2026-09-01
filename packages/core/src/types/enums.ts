@@ -934,9 +934,7 @@ export enum LearningCategory {
   TROUBLESHOOTING = "troubleshooting",
 }
 
-/**
- * Operations that can be performed on memory bank entries.
- */
+/** Operations that can be performed on memory bank entries. */
 export enum MemoryOperation {
   ADD = "add",
   UPDATE = "update",
@@ -945,6 +943,12 @@ export enum MemoryOperation {
   ARCHIVE = "archive",
   DELETE = "delete",
   SUPERSEDE = "supersede",
+}
+
+/** Consolidation actions the reflection pass may apply to approved learnings. */
+export enum MemoryReflectionActionType {
+  SYNTHESISE = "synthesise",
+  PRUNE = "prune",
 }
 
 /** Paid operation kinds recorded by the memory cost router. */

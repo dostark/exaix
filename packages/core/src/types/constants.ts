@@ -586,6 +586,16 @@ export const MEMORY_HYBRID_VECTOR_WEIGHT: number = configurable({
   max: 1,
   swap: SwapClass.RESTART,
 });
+/** Cosine similarity above which two APPROVED learnings count as related candidates for reflection synthesis (near-duplicate merging uses the stricter dedup threshold). */
+export const MEMORY_REFLECTION_RELATED_SIMILARITY_THRESHOLD: number = configurable({
+  key: "memory.reflection.related_similarity_threshold",
+  default: 0.75,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum cosine similarity for approved learnings to be grouped as reflection synthesis candidates",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 
 /** Example execution time used in AgentOrchestrator response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS: number = configurable({
@@ -1180,6 +1190,9 @@ export const MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD = 50;
 
 /** Access count threshold for EPISODIC → SEMANTIC memory tier promotion. */
 export const MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT = 3;
+
+/** Access count at which a high-quality (high promotion score) entry may promote EPISODIC → SEMANTIC — the value-based complement to the pure access counter. */
+export const MEMORY_TIER_SEMANTIC_PROMOTION_QUALITY_ACCESS_FLOOR = 2;
 
 /** Initial promotion score for high-confidence tiered memory entries. */
 export const MEMORY_TIER_PROMOTION_SCORE_HIGH = 80;

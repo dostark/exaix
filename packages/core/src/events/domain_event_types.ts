@@ -389,6 +389,8 @@ export const DomainEventType = {
   MemoryTierPromotion: "memory.tier_promotion",
   MemoryTierPromotionFailed: "memory.tier_promotion_failed",
   MemoryIndexRebuildFailed: "memory.index_rebuild_failed",
+  MemoryReflectionCycleCompleted: "memory.reflection.cycle_completed",
+  MemoryReflectionCycleFailed: "memory.reflection.cycle_failed",
 
   // Memory notification / proposal events (notification.ts, memory_extractor.ts)
   MemoryUpdatePending: "memory.update.pending",

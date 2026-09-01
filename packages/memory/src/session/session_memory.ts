@@ -39,6 +39,7 @@ import {
   MEMORY_TIER_PROMOTION_SCORE_LOW,
   MEMORY_TIER_PROMOTION_SCORE_MEDIUM,
   MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT,
+  MEMORY_TIER_SEMANTIC_PROMOTION_QUALITY_ACCESS_FLOOR,
   MemoryTier,
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -541,7 +542,10 @@ export class SessionMemoryService {
         promotedCount++;
       } else if (
         entry.tier === MemoryTier.EPISODIC &&
-        entry.accessCount >= MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT
+        (entry.accessCount >= MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT ||
+          // Value-based complement: high-quality entries promote on fewer accesses.
+          (entry.promotionScore >= MEMORY_TIER_PROMOTION_SCORE_HIGH &&
+            entry.accessCount >= MEMORY_TIER_SEMANTIC_PROMOTION_QUALITY_ACCESS_FLOOR))
       ) {
         entry.tier = MemoryTier.SEMANTIC;
         promotedCount++;

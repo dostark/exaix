@@ -11,6 +11,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { MemoryAutoApprovalService } from "./memory_auto_approval_service.ts";
 import type { MemoryExtractorService } from "../extraction/memory_extractor.ts";
+import type { MemoryReflectionService } from "../reflection/memory_reflection_service.ts";
 import type { INotificationService } from "@exaix/core/types";
 import type { SessionMemoryService } from "../session/session_memory.ts";
 import type { MemoryBankService } from "../bank/memory_bank.ts";
@@ -23,6 +24,7 @@ export interface IMemoryMaintenanceOptions {
   intervalMs?: number;
   sessionMemory?: Pick<SessionMemoryService, "promoteMemories">;
   memoryBank?: Pick<MemoryBankService, "rebuildIndices">;
+  reflectionService?: Pick<MemoryReflectionService, "runReflectionCycle">;
 }
 
 export async function initializeMemoryAutoApprovalMaintenance(
@@ -36,6 +38,7 @@ export async function initializeMemoryAutoApprovalMaintenance(
     intervalMs = 60 * 60 * 1000,
     sessionMemory,
     memoryBank,
+    reflectionService,
   } = options;
 
   try {
@@ -95,6 +98,16 @@ export async function initializeMemoryAutoApprovalMaintenance(
       }
     } catch (error) {
       await logger.error(DomainEventType.MemoryIndexRebuildFailed, "Memory index rebuild cycle failed", {
+        error: String(error),
+      });
+    }
+
+    try {
+      if (reflectionService) {
+        await reflectionService.runReflectionCycle();
+      }
+    } catch (error) {
+      await logger.error(DomainEventType.MemoryReflectionCycleFailed, "Memory reflection cycle failed", {
         error: String(error),
       });
     }
