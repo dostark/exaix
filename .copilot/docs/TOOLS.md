@@ -119,6 +119,15 @@ current execution root to match a configured portal's `target_path` — otherwis
 structured error, never a throw. No Team-tier MCP equivalent exists for either tool; they are
 new Solo-only surface, not a port of `exaix_portal_symbols`.
 
+**Why use these instead of reading imports directly:** the underlying graph is built from
+`deno info`'s resolved module graph, not text pattern matching, so it correctly follows import-map
+aliases and barrel re-exports that a naive `import .* from` grep would miss. `who_depends_on`
+(reverse dependency lookup — "what imports this file") has no efficient text-grep equivalent at
+all; answering it by reading files would mean opening every file in the portal. `layer_contains_file`
+edges are synthesized from the portal's `layers` config and are not derivable from import
+statements in the first place — no amount of reading source files reveals which architectural
+layer a file belongs to.
+
 ## ACI (Agent-Computer Interface) Authoring Guide
 
 Distinct from the MCP tool index above: an `aciDoc` block is structured, ReAct-only
