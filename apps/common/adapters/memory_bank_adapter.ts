@@ -6,7 +6,7 @@
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/core/src/types/i_memory_bank_service.ts"]
  */
 
-import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
+import type { IMemoryBankService, IMemoryEmbeddingService, Opt, Reason } from "@exaix/core/types";
 import type { MemoryBankService } from "@exaix/memory";
 import type { MemoryType } from "@exaix/core";
 import type {
@@ -51,7 +51,10 @@ export class MemoryBankAdapter implements IMemoryBankService {
     return await this.inner.getExecutionByTraceId(traceId);
   }
 
-  async getExecutionHistory(portal?: string, limit?: number): Promise<IExecutionMemory[]> {
+  async getExecutionHistory(
+    portal?: Opt<string, Reason.QueryFilter>,
+    limit?: Opt<number, Reason.QueryFilter>,
+  ): Promise<IExecutionMemory[]> {
     return await this.inner.getExecutionHistory(portal, limit);
   }
 
@@ -71,11 +74,15 @@ export class MemoryBankAdapter implements IMemoryBankService {
     return await this.inner.updateLearning(id, patch);
   }
 
-  async deleteLearning(id: string, reason?: string): Promise<void> {
+  async deleteLearning(id: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
     return await this.inner.deleteLearning(id, reason);
   }
 
-  async supersedeLearning(oldId: string, newLearning: ILearning, reason?: string): Promise<void> {
+  async supersedeLearning(
+    oldId: string,
+    newLearning: ILearning,
+    reason?: Opt<string, Reason.OptionalInput>,
+  ): Promise<void> {
     return await this.inner.supersedeLearning(oldId, newLearning, reason);
   }
 
@@ -98,17 +105,23 @@ export class MemoryBankAdapter implements IMemoryBankService {
     return await this.inner.demoteLearning(learningId, targetPortal);
   }
 
-  async searchMemory(query: string, options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  async searchMemory(
+    query: string,
+    options?: Opt<{ portal?: string; limit?: number }, Reason.QueryFilter>,
+  ): Promise<IMemorySearchResult[]> {
     return await this.inner.searchMemory(query, options);
   }
 
-  async searchByTags(tags: string[], options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
+  async searchByTags(
+    tags: string[],
+    options?: Opt<{ portal?: string; limit?: number }, Reason.QueryFilter>,
+  ): Promise<IMemorySearchResult[]> {
     return await this.inner.searchByTags(tags, options);
   }
 
   async searchByKeyword(
     keyword: string,
-    options?: { portal?: string; limit?: number },
+    options?: Opt<{ portal?: string; limit?: number }, Reason.QueryFilter>,
   ): Promise<IMemorySearchResult[]> {
     return await this.inner.searchByKeyword(keyword, options);
   }
@@ -124,7 +137,7 @@ export class MemoryBankAdapter implements IMemoryBankService {
     return await this.inner.searchMemoryAdvanced(options);
   }
 
-  async getRecentActivity(limit?: number): Promise<IActivitySummary[]> {
+  async getRecentActivity(limit?: Opt<number, Reason.QueryFilter>): Promise<IActivitySummary[]> {
     return await this.inner.getRecentActivity(limit);
   }
 

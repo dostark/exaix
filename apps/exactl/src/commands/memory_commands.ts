@@ -358,7 +358,7 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
-  async deleteLearning(learningId: string, reason?: string): Promise<string> {
+  async deleteLearning(learningId: string, reason?: Opt<string, Reason.OptionalInput>): Promise<string> {
     try {
       await this.memoryBank.deleteLearning(learningId, reason);
       return `ILearning deleted successfully.\nID: ${learningId}`;

@@ -70,10 +70,14 @@ export class NullMemoryBankStub implements IMemoryBankService {
   updateLearning(_id: string, _patch: ILearningPatch): Promise<void> {
     return Promise.resolve();
   }
-  deleteLearning(_id: string, _reason?: string): Promise<void> {
+  deleteLearning(_id: string, _reason?: Opt<string, Reason.AbstractBoundary>): Promise<void> {
     return Promise.resolve();
   }
-  supersedeLearning(_oldId: string, _newLearning: ILearning, _reason?: string): Promise<void> {
+  supersedeLearning(
+    _oldId: string,
+    _newLearning: ILearning,
+    _reason?: Opt<string, Reason.AbstractBoundary>,
+  ): Promise<void> {
     return Promise.resolve();
   }
   promoteLearning(

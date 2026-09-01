@@ -567,10 +567,10 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
   updateLearning(_id: string, _patch: ILearningPatch): Promise<void> {
     return Promise.resolve();
   }
-  deleteLearning(_id: string, _reason?: string): Promise<void> {
+  deleteLearning(_id: string, _reason?: Opt<string, Reason.TestStub>): Promise<void> {
     return Promise.resolve();
   }
-  supersedeLearning(_oldId: string, _newLearning: ILearning, _reason?: string): Promise<void> {
+  supersedeLearning(_oldId: string, _newLearning: ILearning, _reason?: Opt<string, Reason.TestStub>): Promise<void> {
     return Promise.resolve();
   }
 
