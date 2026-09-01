@@ -547,6 +547,15 @@ export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH: number = configurable({
   max: 1000,
   swap: SwapClass.RESTART,
 });
+export const MEMORY_DEDUP_SIMILARITY_THRESHOLD: number = configurable({
+  key: "memory.dedup.similarity_threshold",
+  default: 0.92,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum cosine similarity for two approved learnings to be merged as duplicates",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 
 /** Example execution time used in AgentOrchestrator response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS: number = configurable({

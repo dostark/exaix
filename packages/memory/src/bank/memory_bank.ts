@@ -27,7 +27,7 @@ import {
   type MemoryType,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/core";
+import { DEFAULT_AI_TIMEOUT_MS, MEMORY_DEDUP_SIMILARITY_THRESHOLD } from "@exaix/core";
 import {
   DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_GLOBAL_MEMORY_PATH,
@@ -63,6 +63,7 @@ import type {
   IReference,
 } from "@exaix/schemas/memory_bank.ts";
 
+import { findDedupMatch, type IDedupCandidate, mergeLearnings } from "../dedup/semantic_dedup.ts";
 import { parseDecisions, parsePatterns } from "./parsers.ts";
 import { formatExecutionSummary } from "./formatters.ts";
 import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./index_builder.ts";
@@ -87,8 +88,10 @@ export class MemoryBankService implements IMemoryBankService {
 
   private static readonly CONTRADICTION_CANDIDATE_LIMIT = 5;
   private static readonly CONTRADICTION_SIMILARITY_THRESHOLD = 0.75;
+  private static readonly DEDUP_CANDIDATE_LIMIT = 5;
   private static readonly DEFAULT_DELETE_REASON = "soft_delete_requested";
   private static readonly DEFAULT_SUPERSEDE_REASON = "replacement_learning_provided";
+  private static readonly DEDUP_MERGE_REASON = "semantic_duplicate_merged";
 
   /** Create a new Memory Bank Service instance @param config - Exaix configuration @param db - Database service for IActivity Journal integration */
   constructor(
@@ -553,6 +556,14 @@ export class MemoryBankService implements IMemoryBankService {
       return;
     }
 
+    // No LLM-informed UPDATE/SUPERSEDE — fall back to LLM-free cosine-similarity dedup.
+    const dedupMatch = await this.resolveDedupMatch(learning);
+    if (dedupMatch) {
+      const merged = mergeLearnings(learning, dedupMatch.learning);
+      await this.supersedeLearning(dedupMatch.learning.id, merged, MemoryBankService.DEDUP_MERGE_REASON);
+      return;
+    }
+
     // Ensure global directory exists before locking
     await ensureDir(this.globalDir);
 
@@ -701,6 +712,21 @@ export class MemoryBankService implements IMemoryBankService {
       globalMem?.learnings.filter((candidate) => ids.has(candidate.id) && candidate.status === MemoryStatus.APPROVED) ??
         [];
     return await this.contradictionResolver.resolve(learning, candidates);
+  }
+
+  /** Strongest approved near-duplicate for `learning`, if any clears `MEMORY_DEDUP_SIMILARITY_THRESHOLD`; called only as an ADD-fallback so an LLM-informed contradiction decision always takes precedence. */
+  private async resolveDedupMatch(learning: ILearning): Promise<IDedupCandidate | undefined> {
+    if (learning.status !== MemoryStatus.APPROVED || !this.embeddingService) return undefined;
+    const matches = await this.embeddingService.searchByEmbedding(`${learning.title} ${learning.description}`, {
+      limit: MemoryBankService.DEDUP_CANDIDATE_LIMIT,
+      threshold: MEMORY_DEDUP_SIMILARITY_THRESHOLD,
+    });
+    const similarityById = new Map(matches.map((match) => [match.id, match.similarity]));
+    const globalMem = await this.getGlobalMemory();
+    const candidates: IDedupCandidate[] = (globalMem?.learnings ?? [])
+      .filter((candidate) => similarityById.has(candidate.id) && candidate.status === MemoryStatus.APPROVED)
+      .map((candidate) => ({ learning: candidate, similarity: similarityById.get(candidate.id)! }));
+    return findDedupMatch(candidates, MEMORY_DEDUP_SIMILARITY_THRESHOLD);
   }
 
   private learningPatch(learning: ILearning): ILearningPatch {
