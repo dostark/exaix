@@ -65,6 +65,7 @@ import {
 } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
+  LearningContradictionResolver,
   LlmLearningExtractor,
   MemoryAutoApprovalService,
   MemoryBankService,
@@ -531,9 +532,11 @@ if (import.meta.main) {
     await skillsService.initialize();
 
     // Initialize Memory Services (needed for context and request processing)
-    const memoryBank = new MemoryBankService(config, logger);
-    const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
+    const memoryBank = new MemoryBankService(config, logger, {
+      contradictionResolver: new LearningContradictionResolver(llmProvider, memoryCostRouter),
+    });
+    const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryExtractor = new MemoryExtractorService(
       config,
       dbService,

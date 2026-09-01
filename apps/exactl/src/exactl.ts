@@ -2350,6 +2350,17 @@ export const __test_command = new Command()
           }),
       )
       .command(
+        "delete-learning <learningId:string>",
+        new Command()
+          .description("Soft-delete a global learning (status → deleted, retained for audit)")
+          .option(CLI_OPTION_REASON, "Deletion reason")
+          .action(async (options, ...args: string[]) => {
+            const learningId = args[0];
+            const result = await memoryCommands.deleteLearning(learningId, options.reason);
+            console.log(result);
+          }),
+      )
+      .command(
         GeneralStatus.PENDING,
         new Command()
           .description("Manage pending memory update proposals")

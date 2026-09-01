@@ -19,6 +19,7 @@ import type {
   IExecutionMemory,
   IGlobalMemory,
   ILearning,
+  ILearningPatch,
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
@@ -64,6 +65,15 @@ export class NullMemoryBankStub implements IMemoryBankService {
     return Promise.resolve();
   }
   addGlobalLearning(_learning: ILearning): Promise<void> {
+    return Promise.resolve();
+  }
+  updateLearning(_id: string, _patch: ILearningPatch): Promise<void> {
+    return Promise.resolve();
+  }
+  deleteLearning(_id: string, _reason?: string): Promise<void> {
+    return Promise.resolve();
+  }
+  supersedeLearning(_oldId: string, _newLearning: ILearning, _reason?: string): Promise<void> {
     return Promise.resolve();
   }
   promoteLearning(

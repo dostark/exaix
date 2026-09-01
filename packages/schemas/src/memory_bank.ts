@@ -185,10 +185,14 @@ export const LearningSchema = z.object({
   status: z.enum(MEMORY_STATUS_VALUES).describe("Approval status"),
   approved_at: z.string().datetime().optional(),
   archived_at: z.string().datetime().optional(),
+  supersedes: z.string().uuid().optional(),
+  superseded_by: z.string().uuid().optional(),
 });
 
 export type ILearningReference = z.infer<typeof LearningReferenceSchema>;
 export type ILearning = z.infer<typeof LearningSchema>;
+/** Mutable fields accepted by `updateLearning`/`learningPatch` — excludes the immutable identity fields. */
+export type ILearningPatch = Partial<Omit<ILearning, "id" | "created_at">>;
 
 /**
  * Global pattern - a code pattern that applies across projects

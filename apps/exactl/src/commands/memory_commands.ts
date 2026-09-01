@@ -358,6 +358,15 @@ export class MemoryCommands extends BaseCommand {
     }
   }
 
+  async deleteLearning(learningId: string, reason?: string): Promise<string> {
+    try {
+      await this.memoryBank.deleteLearning(learningId, reason);
+      return `ILearning deleted successfully.\nID: ${learningId}`;
+    } catch (error) {
+      return `Error: ${(error as Error).message}`;
+    }
+  }
+
   // Pending Proposals Commands
 
   async pendingList(eligible = false, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {

@@ -13,6 +13,7 @@ import type {
   IExecutionMemory,
   IGlobalMemory,
   ILearning,
+  ILearningPatch,
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
@@ -75,6 +76,12 @@ export interface IMemoryBankService {
    * Add a learning to the global memory bank.
    */
   addGlobalLearning(learning: ILearning): Promise<void>;
+
+  updateLearning(id: string, patch: ILearningPatch): Promise<void>;
+
+  deleteLearning(id: string, reason?: string): Promise<void>;
+
+  supersedeLearning(oldId: string, newLearning: ILearning, reason?: string): Promise<void>;
 
   /**
    * Promote a project-specific learning to the global bank.

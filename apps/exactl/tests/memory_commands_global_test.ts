@@ -8,6 +8,7 @@
  */
 
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope, MemoryType } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { UIOutputFormat } from "@exaix/tui";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
@@ -304,6 +305,41 @@ Deno.test("MemoryCommands: demote to non-existent project returns error", async 
     await memoryBank.addGlobalLearning(learning);
 
     const result = await commands.demote(learning.id, "non-existent-project");
+
+    assertStringIncludes(result, "Error:");
+  } finally {
+    await cleanup();
+  }
+});
+
+// Delete Command Tests
+
+Deno.test("MemoryCommands: deleteLearning soft-deletes a global learning", async () => {
+  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  try {
+    await memoryBank.initGlobalMemory();
+
+    const learning = new LearningBuilder().withTitle("ILearning to Delete").build();
+    await memoryBank.addGlobalLearning(learning);
+
+    const result = await commands.deleteLearning(learning.id);
+
+    assertStringIncludes(result, "deleted");
+
+    const globalMem = await memoryBank.getGlobalMemory();
+    const stored = globalMem?.learnings.find((item) => item.id === learning.id);
+    assertEquals(stored?.status, MemoryStatus.DELETED);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryCommands: deleteLearning non-existent learning returns error", async () => {
+  const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
+  try {
+    await memoryBank.initGlobalMemory();
+
+    const result = await commands.deleteLearning("non-existent-id");
 
     assertStringIncludes(result, "Error:");
   } finally {

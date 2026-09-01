@@ -21,6 +21,7 @@ import {
   ActivityType,
   type JSONValue,
   MemoryBankSource,
+  MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
   type MemoryType,
@@ -55,6 +56,7 @@ import type {
   IExecutionMemory,
   IGlobalMemory,
   ILearning,
+  ILearningPatch,
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
@@ -64,7 +66,12 @@ import type {
 import { parseDecisions, parsePatterns } from "./parsers.ts";
 import { formatExecutionSummary } from "./formatters.ts";
 import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./index_builder.ts";
-import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
+import type {
+  ILearningContradictionDecision,
+  ILearningContradictionResolver,
+  IMemoryBankService,
+  IMemoryEmbeddingService,
+} from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 /** @visible */
 export class MemoryBankService implements IMemoryBankService {
@@ -76,8 +83,20 @@ export class MemoryBankService implements IMemoryBankService {
   private globalDir!: string;
   private embeddingService?: IMemoryEmbeddingService;
 
+  private contradictionResolver?: ILearningContradictionResolver;
+
+  private static readonly CONTRADICTION_CANDIDATE_LIMIT = 5;
+  private static readonly CONTRADICTION_SIMILARITY_THRESHOLD = 0.75;
+  private static readonly DEFAULT_DELETE_REASON = "soft_delete_requested";
+  private static readonly DEFAULT_SUPERSEDE_REASON = "replacement_learning_provided";
+
   /** Create a new Memory Bank Service instance @param config - Exaix configuration @param db - Database service for IActivity Journal integration */
-  constructor(private config: Config, private logger?: Opt<IEventLogger, Reason.OptionalDependency>) {
+  constructor(
+    private config: Config,
+    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    options: { contradictionResolver?: Opt<ILearningContradictionResolver, Reason.OptionalDependency> } = {},
+  ) {
+    this.contradictionResolver = options.contradictionResolver;
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
     this.projectsDir = join(this.memoryRoot, DEFAULT_PROJECTS_MEMORY_PATH);
@@ -524,6 +543,16 @@ export class MemoryBankService implements IMemoryBankService {
     // Validate learning schema
     LearningSchema.parse(learning);
 
+    const decision = await this.resolveContradiction(learning);
+    if (decision.operation === MemoryOperation.UPDATE && decision.candidateId) {
+      await this.updateLearning(decision.candidateId, this.learningPatch(learning));
+      return;
+    }
+    if (decision.operation === MemoryOperation.SUPERSEDE && decision.candidateId) {
+      await this.supersedeLearning(decision.candidateId, learning, decision.reason);
+      return;
+    }
+
     // Ensure global directory exists before locking
     await ensureDir(this.globalDir);
 
@@ -587,6 +616,110 @@ export class MemoryBankService implements IMemoryBankService {
         category: learning.category,
         confidence: learning.confidence,
       },
+    });
+  }
+
+  async updateLearning(
+    id: string,
+    patch: ILearningPatch,
+  ): Promise<void> {
+    const updatedFields = Object.keys(patch);
+    await this.mutateGlobalLearnings((globalMem) => {
+      const index = globalMem.learnings.findIndex((learning) => learning.id === id);
+      if (index === -1) throw new Error(`Learning not found: ${id}`);
+      const updated = {
+        ...globalMem.learnings[index],
+        ...patch,
+        id,
+        created_at: globalMem.learnings[index].created_at,
+      };
+      globalMem.learnings[index] = LearningSchema.parse(updated);
+    });
+    this.logActivity({
+      event_type: DomainEventType.MemoryLearningUpdated,
+      target: MemoryScope.GLOBAL,
+      metadata: { learning_id: id, updated_fields: updatedFields },
+    });
+  }
+
+  async deleteLearning(id: string, reason: string = MemoryBankService.DEFAULT_DELETE_REASON): Promise<void> {
+    await this.mutateGlobalLearnings((globalMem) => {
+      const learning = globalMem.learnings.find((item) => item.id === id);
+      if (!learning) throw new Error(`Learning not found: ${id}`);
+      learning.status = MemoryStatus.DELETED;
+    });
+    this.logActivity({
+      event_type: DomainEventType.MemoryLearningDeleted,
+      target: MemoryScope.GLOBAL,
+      metadata: { learning_id: id, reason },
+    });
+  }
+
+  async supersedeLearning(
+    oldId: string,
+    newLearning: ILearning,
+    reason: string = MemoryBankService.DEFAULT_SUPERSEDE_REASON,
+  ): Promise<void> {
+    LearningSchema.parse(newLearning);
+    await this.mutateGlobalLearnings((globalMem) => {
+      const oldLearning = globalMem.learnings.find((learning) => learning.id === oldId);
+      if (!oldLearning) throw new Error(`Learning not found: ${oldId}`);
+      if (globalMem.learnings.some((learning) => learning.id === newLearning.id)) {
+        throw new Error(`Learning with ID '${newLearning.id}' already exists`);
+      }
+      oldLearning.status = MemoryStatus.SUPERSEDED;
+      oldLearning.superseded_by = newLearning.id;
+      globalMem.learnings.push(LearningSchema.parse({ ...newLearning, supersedes: oldId }));
+      globalMem.statistics.total_learnings = globalMem.learnings.length;
+      globalMem.statistics.by_category[newLearning.category] =
+        (globalMem.statistics.by_category[newLearning.category] as number || 0) + 1;
+      if (newLearning.project) {
+        globalMem.statistics.by_project[newLearning.project] =
+          (globalMem.statistics.by_project[newLearning.project] as number || 0) + 1;
+      }
+    });
+    this.logActivity({
+      event_type: DomainEventType.MemoryLearningSuperseded,
+      target: MemoryScope.GLOBAL,
+      metadata: { learning_id: oldId, superseded_by: newLearning.id, reason },
+    });
+  }
+
+  private async resolveContradiction(learning: ILearning): Promise<ILearningContradictionDecision> {
+    if (
+      learning.status !== MemoryStatus.APPROVED || !this.embeddingService || !this.contradictionResolver
+    ) {
+      return { operation: MemoryOperation.ADD, reason: "contradiction_resolution_unavailable" };
+    }
+    const matches = await this.embeddingService.searchByEmbedding(`${learning.title} ${learning.description}`, {
+      limit: MemoryBankService.CONTRADICTION_CANDIDATE_LIMIT,
+      threshold: MemoryBankService.CONTRADICTION_SIMILARITY_THRESHOLD,
+    });
+    const ids = new Set(matches.map((match) => match.id));
+    const globalMem = await this.getGlobalMemory();
+    const candidates =
+      globalMem?.learnings.filter((candidate) => ids.has(candidate.id) && candidate.status === MemoryStatus.APPROVED) ??
+        [];
+    return await this.contradictionResolver.resolve(learning, candidates);
+  }
+
+  private learningPatch(learning: ILearning): ILearningPatch {
+    const { id: _id, created_at: _createdAt, ...patch } = learning;
+    return patch;
+  }
+
+  private async mutateGlobalLearnings(operation: (globalMem: IGlobalMemory) => void): Promise<void> {
+    await ensureDir(this.globalDir);
+    const lockPath = join(this.globalDir, "learnings.lock");
+    await this.withFileLock(lockPath, async () => {
+      const globalMem = await this.getGlobalMemory();
+      if (!globalMem) throw new Error("Global memory not initialized");
+      operation(globalMem);
+      globalMem.statistics.last_activity = new Date().toISOString();
+      globalMem.updated_at = new Date().toISOString();
+      GlobalMemorySchema.parse(globalMem);
+      await Deno.writeTextFile(join(this.globalDir, "learnings.json"), JSON.stringify(globalMem, null, 2));
+      await this.rewriteLearningsMarkdown(globalMem);
     });
   }
 

@@ -15,6 +15,7 @@ import type {
   IExecutionMemory,
   IGlobalMemory,
   ILearning,
+  ILearningPatch,
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
@@ -64,6 +65,18 @@ export class MemoryBankAdapter implements IMemoryBankService {
 
   async addGlobalLearning(learning: ILearning): Promise<void> {
     return await this.inner.addGlobalLearning(learning);
+  }
+
+  async updateLearning(id: string, patch: ILearningPatch): Promise<void> {
+    return await this.inner.updateLearning(id, patch);
+  }
+
+  async deleteLearning(id: string, reason?: string): Promise<void> {
+    return await this.inner.deleteLearning(id, reason);
+  }
+
+  async supersedeLearning(oldId: string, newLearning: ILearning, reason?: string): Promise<void> {
+    return await this.inner.supersedeLearning(oldId, newLearning, reason);
   }
 
   async promoteLearning(

@@ -13,6 +13,8 @@ export const MemoryStatus = {
   APPROVED: MemoryRecordStatus.APPROVED,
   REJECTED: MemoryRecordStatus.REJECTED,
   ARCHIVED: MemoryRecordStatus.ARCHIVED,
+  SUPERSEDED: MemoryRecordStatus.SUPERSEDED,
+  DELETED: MemoryRecordStatus.DELETED,
 } as const;
 
 export type MemoryStatus = `${typeof MemoryStatus[keyof typeof MemoryStatus]}`;
@@ -23,6 +25,8 @@ export const MEMORY_STATUS_VALUES = [
   MemoryStatus.APPROVED,
   MemoryStatus.REJECTED,
   MemoryStatus.ARCHIVED,
+  MemoryStatus.SUPERSEDED,
+  MemoryStatus.DELETED,
 ] as const;
 
 export function isMemoryStatus(value: JSONValue): value is MemoryStatus {

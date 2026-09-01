@@ -418,6 +418,8 @@ export enum MemoryRecordStatus {
   APPROVED = "approved",
   REJECTED = "rejected",
   ARCHIVED = "archived",
+  SUPERSEDED = "superseded",
+  DELETED = "deleted",
 }
 
 /**
@@ -942,12 +944,14 @@ export enum MemoryOperation {
   DEMOTE = "demote",
   ARCHIVE = "archive",
   DELETE = "delete",
+  SUPERSEDE = "supersede",
 }
 
 /** Paid operation kinds recorded by the memory cost router. */
 export enum MemoryCostOperation {
   EMBEDDING = "embedding",
   EXTRACTION = "extraction",
+  CONTRADICTION = "contradiction",
 }
 
 /** Extraction implementation selected by the memory cost gate. */

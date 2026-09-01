@@ -30,6 +30,7 @@ export { MemoryExtractorService } from "./src/extraction/memory_extractor.ts";
 export { LearningExtractor } from "./src/extraction/learning_extractor.ts";
 export { HeuristicExtractionStrategy } from "./src/extraction/heuristic_extraction_strategy.ts";
 export { LlmLearningExtractor } from "./src/extraction/llm_learning_extractor.ts";
+export { LearningContradictionResolver } from "./src/contradiction/learning_contradiction_resolver.ts";
 
 export {
   DEFAULT_SESSION_MEMORY_CONFIG,

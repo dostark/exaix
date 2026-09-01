@@ -35,6 +35,7 @@ export * from "./i_gate_evaluator.ts";
 export * from "./i_git_service.ts";
 export * from "./i_git_service_factory.ts";
 export * from "./i_journal_service.ts";
+export * from "./i_learning_contradiction_resolver.ts";
 export * from "./i_log_service.ts";
 export * from "./i_memory_bank_service.ts";
 export * from "./i_memory_embedding_service.ts";
