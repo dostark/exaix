@@ -1,6 +1,6 @@
 # Exaix Memory Guide
 
-- **Version:** 1.3.0
+- **Version:** 1.4.0
 - **Date:** 2026-09-02
 - **Status:** Current — covers the memory system as matured in Phase 147
 - **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](Exaix_User_Guide.md#32-memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
@@ -93,7 +93,9 @@ is **not** trivially re-derivable.
 **No fast path.** Scratchpad notes go through exactly the same extraction,
 curation, and review pipeline as any other candidate. There is no
 direct-to-global shortcut — a captured note can never bypass human or
-auto-approval review.
+auto-approval review. The session memory's tiered feed is approval-gated too:
+only approved learnings enter tiered working memory, and capture-time tags on
+`remember_fact` notes flow through into the extracted candidate's tags.
 
 ### 2.2 Reviewed — the Pending workflow
 
