@@ -117,7 +117,7 @@ Deno.test("[ArtefactCatalog] flow templates under Flows/templates/ are not enume
   }
 });
 
-Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts (16/27/20)", async () => {
+Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts (16/28/20)", async () => {
   const repoRoot = join(new URL("../../../../", import.meta.url).pathname);
   const catalog = await loadArtefactCatalog(join(repoRoot, "Blueprints"));
 
@@ -126,7 +126,8 @@ Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts 
   // Blueprints/Identities/aci-react.md (a real-daemon scenario fixture identity) is included,
   // bringing the curated count to 16.
   assertEquals(byKind(ArtefactKind.IDENTITY), 16, "curated identities (excluding README, mock-agent, default)");
-  assertEquals(byKind(ArtefactKind.SKILL), 27, "skills");
+  // memory-extraction-content-policy.skill.md is included, bringing the count to 28.
+  assertEquals(byKind(ArtefactKind.SKILL), 28, "skills");
   // Includes 3 mechanism-proof fixture flows (strategy-comparison-cli-delegate,
   // strategy-comparison-react, strategy-routing-smoke), each with NON_COVERAGE entries in
   // scripts/check_artefact_decision_coverage.ts's FLOW_DECISIONS.

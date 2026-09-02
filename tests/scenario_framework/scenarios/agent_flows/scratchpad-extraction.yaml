@@ -7,7 +7,7 @@ schema_version: "1.0.0"
 id: "scratchpad-extraction"
 title: "Agent flow — remember_fact capture reaches Pending via scratchpad-informed extraction"
 pack: "agent_flows"
-tags: ["domain", "subsystem:memory", "entity:remember_fact", "entity:scratchpad"]
+tags: ["smoke", "domain", "subsystem:memory", "entity:remember_fact", "entity:scratchpad"]
 request_fixture: "fixtures/requests/agent_flows/scratchpad_extraction.md"
 mode_support: ["auto"]
 portals: []

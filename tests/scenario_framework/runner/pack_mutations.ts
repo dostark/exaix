@@ -28,7 +28,8 @@ export type SubsystemTag =
   | "subsystem:mcp-client"
   | "subsystem:identities"
   | "subsystem:skills"
-  | "subsystem:flows";
+  | "subsystem:flows"
+  | "subsystem:memory";
 
 export interface IPackMutation {
   /** The subsystem whose pack this mutation must turn red. */
@@ -54,6 +55,7 @@ export const SUBSYSTEM_TAGS: readonly SubsystemTag[] = [
   "subsystem:identities",
   "subsystem:skills",
   "subsystem:flows",
+  "subsystem:memory",
 ] as const;
 
 export const PACK_MUTATIONS: readonly IPackMutation[] = [
@@ -102,6 +104,14 @@ export const PACK_MUTATIONS: readonly IPackMutation[] = [
     find: "export abstract class ToolHandler {",
     replace: "export abstract class ToolHandler_MUTATED {",
     breaks: "MCP tool dispatch — the external-client contract the mcp-server pack asserts over stdio",
+  },
+  {
+    subsystem: "subsystem:memory",
+    file: "packages/tool-runtime/src/tool_registry.ts",
+    find: "return store.appendNote(this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID, content, tags);",
+    replace: "return Promise.resolve({ success: true });",
+    breaks:
+      "remember_fact capture — the tool reports success but never appends a note, so scratchpad_entries stays 0 and every downstream memory-full-loop/scratchpad-extraction criterion (extraction, approval, retrieval, reflection) fails with nothing to act on",
   },
 ] as const;
 
