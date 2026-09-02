@@ -1,6 +1,6 @@
 # Exaix Memory Guide
 
-- **Version:** 1.1.0
+- **Version:** 1.2.0
 - **Date:** 2026-09-02
 - **Status:** Current — covers the memory system as matured in Phase 147
 - **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](Exaix_User_Guide.md#32-memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
@@ -174,6 +174,11 @@ Retirement is reversible-by-audit, not amnesia:
   events).
 - Learnings can also be removed explicitly:
   `exactl memory delete-learning <learningId>`.
+
+> **Operator note (one-time sweep):** installations that ran earlier builds may hold
+> orphaned pending entries in the global learnings store, left behind by the old
+> insight feed. They are excluded from retrieval and review; sweep them by deleting
+> entries whose status is "pending" (keep a backup first).
 
 ## 3. The Self-Learning Loop
 

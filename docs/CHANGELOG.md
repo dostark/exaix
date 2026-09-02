@@ -40,6 +40,9 @@
 - Opt-in automatic approval (`memory.auto_approve.enabled`) closes the review loop
   without human action, bounded by a confidence threshold, allowed-source list, and
   quiet period.
+- In-the-moment agent notes no longer bypass review: insights enter tiered working
+  memory only after their learning is approved, keeping unreviewed content out of the
+  durable banks.
 - New end-user guide [Exaix_Memory.md](Exaix_Memory.md) explains the memory lifecycle,
   the self-learning loop, and the CLI inspection and approval flow.
 

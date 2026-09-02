@@ -35,6 +35,9 @@ export interface IMemoryExtractorOptions {
   costRouter?: Opt<IMemoryCostRouter, Reason.OptionalDependency>;
   llmStrategy?: Opt<IExtractionStrategy, Reason.OptionalDependency>;
   heuristicStrategy?: Opt<IExtractionStrategy, Reason.SensibleDefault>;
+  /** Invoked after a proposal is approved (manual or auto) with the APPROVED learning —
+   *  the single seam feeding session/tiered memory, gated behind review. */
+  onApproved?: Opt<(learning: ILearning) => Promise<void> | void, Reason.OptionalDependency>;
 }
 
 export class MemoryExtractorService {
@@ -195,6 +198,9 @@ export class MemoryExtractorService {
     // Remove proposal file
     const proposalPath = join(this.pendingDir, `${proposalId}.json`);
     await Deno.remove(proposalPath);
+
+    // Tiered-memory feed: reviewed content only — invoked after the durable write.
+    await this.options.onApproved?.(learning);
 
     // Log approval
     this.logger?.info(

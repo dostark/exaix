@@ -151,7 +151,7 @@ No actions — will succeed immediately
 );
 
 Deno.test(
-  "ExecutionLoop: calls sessionMemory.saveInsight() after successful execution when config.sessionMemory is set",
+  "ExecutionLoop: does NOT call sessionMemory.saveInsight() during extraction - tiered feed is approval-gated",
   async () => {
     const tempDir = await Deno.makeTempDir({ prefix: "exec-insight-" });
     const { db, cleanup } = await initTestDbService();
@@ -255,12 +255,7 @@ No actions — will succeed immediately
 
       assertEquals(result.success, true, `Execution should succeed: ${result.error}`);
 
-      assertEquals(
-        savedInsights.length >= 1,
-        true,
-        "saveInsight should be called at least once for extracted learnings",
-      );
-      assertEquals(savedInsights[0].title, "Test learning from execution");
+      assertEquals(savedInsights.length, 0, "saveInsight must not be called during extraction");
     } finally {
       await cleanup();
       await Deno.remove(tempDir, { recursive: true });

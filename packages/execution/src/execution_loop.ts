@@ -54,7 +54,6 @@ import {
   EXECUTION_REPORT_FILENAME,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Represents raw YAML frontmatter before validation */
@@ -1263,7 +1262,13 @@ export class ExecutionLoop {
    * Auto-extract learnings from execution using the configured MemoryExtractorService.
    * Loads the persisted execution record and delegates to analyzeExecution + createProposal.
    */
-  private async extractExecutionLearnings(traceId: string): Promise<void> {
+  /**
+   * Extract learnings from the persisted execution record into Pending proposals.
+   * Public so the memory no-fast-path guarantee (GAP-1) is testable at the loop boundary:
+   * this method writes proposals only — global bank, embedding index, and tiered memory
+   * are fed exclusively by the approval pipeline.
+   */
+  async extractExecutionLearnings(traceId: string): Promise<void> {
     if (!this.context?.extractor) return;
 
     try {
@@ -1273,16 +1278,9 @@ export class ExecutionLoop {
 
       const learnings = await this.context.extractor.analyzeExecution(executionMemory);
       for (const learning of learnings) {
+        // Proposals only: the tiered-memory feed is gated behind approval (GAP-1) — the
+        // extractor options' onApproved hook is the single seam that feeds session memory.
         await this.context.extractor.createProposal(learning, executionMemory, this.identityId);
-        if (this.sessionMemory) {
-          await this.sessionMemory.saveInsight({
-            title: learning.title,
-            description: learning.description,
-            category: learning.category,
-            tags: learning.tags,
-            confidence: mapToConfidenceLevel(learning.confidence),
-          });
-        }
       }
     } catch (error) {
       console.error("[ExecutionLoop] Failed to extract memory learnings:", error);
@@ -1482,21 +1480,4 @@ function missingFactory(name: string, context: string): never {
   throw new Error(
     `ExecutionLoop: ${name} factory is required for ${context}. Provide \`${name}\` in IExecutionLoopConfig.`,
   );
-}
-
-function mapToConfidenceLevel(
-  level: string,
-): ConfidenceLevel {
-  switch (level) {
-    case ConfidenceAssessmentLevel.VERY_LOW:
-    case ConfidenceAssessmentLevel.LOW:
-      return ConfidenceLevel.LOW;
-    case ConfidenceAssessmentLevel.MEDIUM:
-      return ConfidenceLevel.MEDIUM;
-    case ConfidenceAssessmentLevel.HIGH:
-    case ConfidenceAssessmentLevel.VERY_HIGH:
-      return ConfidenceLevel.HIGH;
-    default:
-      return ConfidenceLevel.LOW;
-  }
 }

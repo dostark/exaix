@@ -24,14 +24,7 @@ import {
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import {
-  ConfidenceAssessmentLevel,
-  ConfidenceLevel,
-  LearningCategory,
-  MemoryBankSource,
-  MemoryScope,
-  MemoryType,
-} from "@exaix/core";
+import { ConfidenceLevel, LearningCategory, MemoryType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import type { ITieredMemoryEntry } from "@exaix/core/types";
 import {
@@ -44,20 +37,6 @@ import {
   MemoryTier,
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-
-function mapConfidenceLevelToAssessment(
-  confidence: ConfidenceLevel,
-): ConfidenceAssessmentLevel {
-  switch (confidence) {
-    case ConfidenceLevel.HIGH:
-      return ConfidenceAssessmentLevel.HIGH;
-    case ConfidenceLevel.MEDIUM:
-      return ConfidenceAssessmentLevel.MEDIUM;
-    case ConfidenceLevel.LOW:
-    default:
-      return ConfidenceAssessmentLevel.LOW;
-  }
-}
 
 // Configuration Schema
 
@@ -123,6 +102,8 @@ export const InsightSchema = z.object({
   tags: z.array(z.string()).max(10),
   confidence: z.nativeEnum(ConfidenceLevel),
   portal: z.string().optional().describe("Project scope, if any"),
+  /** Identity of the APPROVED learning this insight mirrors (approval-fed tiered entries). */
+  learning_id: z.string().optional(),
 });
 
 export type Insight = z.infer<typeof InsightSchema>;
@@ -510,44 +491,26 @@ export class SessionMemoryService {
     };
   }
 
+  /** Adds an insight to tiered working memory for promotion tracking only: no global-bank
+   *  write and no embedding — the durable copy and embedding of reviewed learnings are
+   *  owned by the approval pipeline. */
   async saveInsight(insight: Insight): Promise<SaveInsightResult> {
     await this.ensureTieredEntriesLoaded();
     try {
       InsightSchema.parse(insight);
 
-      // Create learning entry
-      const learning: ILearning = {
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        source: MemoryBankSource.IDENTITY,
-        scope: insight.portal ? MemoryScope.PROJECT : MemoryScope.GLOBAL,
-        project: insight.portal,
-        title: insight.title,
-        description: insight.description,
-        category: insight.category,
-        tags: insight.tags,
-        confidence: mapConfidenceLevelToAssessment(insight.confidence),
-        status: MemoryStatus.PENDING, // Start as pending for review
-      };
-
-      // Save to memory bank
-      await this.memoryBank.addGlobalLearning(learning);
-
-      // Generate embedding for semantic search
-      await this.embeddingService.embedLearning(learning);
-
-      // Create tiered memory entry for promotion tracking
-      this._tieredEntries.set(learning.id, {
-        id: learning.id,
-        content: learning.description || learning.title,
+      const entryId = insight.learning_id ?? crypto.randomUUID();
+      this._tieredEntries.set(entryId, {
+        id: entryId,
+        content: insight.description || insight.title,
         tier: MemoryTier.WORKING,
         source: { planId: "", stepId: "" },
         createdAt: Date.now(),
         lastAccessedAt: Date.now(),
         accessCount: 1,
-        promotionScore: learning.confidence === ConfidenceAssessmentLevel.HIGH
+        promotionScore: insight.confidence === ConfidenceLevel.HIGH
           ? MEMORY_TIER_PROMOTION_SCORE_HIGH
-          : learning.confidence === ConfidenceAssessmentLevel.MEDIUM
+          : insight.confidence === ConfidenceLevel.MEDIUM
           ? MEMORY_TIER_PROMOTION_SCORE_MEDIUM
           : MEMORY_TIER_PROMOTION_SCORE_LOW,
       });
@@ -556,8 +519,8 @@ export class SessionMemoryService {
 
       return {
         success: true,
-        learningId: learning.id,
-        message: `Insight saved with ID ${learning.id} (pending approval)`,
+        learningId: entryId,
+        message: `Insight added to tiered working memory with ID ${entryId}`,
       };
     } catch (error) {
       return {

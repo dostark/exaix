@@ -88,7 +88,7 @@ Deno.test("after a SUPERSEDE, retrieval returns the new fact, not the old (stale
   }
 });
 
-Deno.test("a PENDING insight never outranks an APPROVED learning regardless of recency (saveInsight path)", async () => {
+Deno.test("a saveInsight insight enters tiered memory only - no global write, no embedding (GAP-1 contract)", async () => {
   const { config, cleanup } = await initTestDbService();
   const now = new Date();
   const approvedOld = createSampleLearning({
@@ -106,7 +106,7 @@ Deno.test("a PENDING insight never outranks an APPROVED learning regardless of r
     const embedding = indexingEmbeddingService({ [approvedOld.id]: 0.6 });
     const sessionMemory = new SessionMemoryService(bank, embedding);
 
-    // saveInsight creates a PENDING learning and embeds it unconditionally (known pre-existing behaviour).
+    // saveInsight is tiered-only: no global-bank write, no embedding.
     const result = await sessionMemory.saveInsight({
       title: "Prefer short test names",
       description: "Test names should describe behaviour in one short sentence.",
@@ -115,6 +115,13 @@ Deno.test("a PENDING insight never outranks an APPROVED learning regardless of r
       confidence: ConfidenceLevel.MEDIUM,
     });
     assertEquals(result.success, true);
+
+    const globalAfter = await bank.getGlobalMemory();
+    assertEquals(
+      globalAfter?.learnings.filter((l) => l.title === "Prefer short test names").length ?? 0,
+      0,
+      "saveInsight must not write to the global bank",
+    );
 
     const memories = await sessionMemory.lookupMemories("retries backoff");
     assertEquals(memories.length, 1);

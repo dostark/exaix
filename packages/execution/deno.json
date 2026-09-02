@@ -9,6 +9,7 @@
     "@std/toml": "jsr:@std/toml@^1.0.2",
     "@std/yaml": "jsr:@std/yaml@^1.0.2",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/execution-memory": "../core/src/execution-memory/mod.ts",
     "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",

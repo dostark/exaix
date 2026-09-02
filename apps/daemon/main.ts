@@ -76,6 +76,7 @@ import {
   SessionMemoryService,
 } from "@exaix/memory";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
 import { createMemoryEmbeddingProvider } from "../common/embedding_provider_bootstrap.ts";
 import { NotificationService } from "@exaix/core/notification";
@@ -541,17 +542,6 @@ if (import.meta.main) {
     });
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const executionMemoryStore = new ExecutionMemoryStore(config, logger);
-    const memoryExtractor = new MemoryExtractorService(
-      config,
-      dbService,
-      memoryAdapter,
-      logger,
-      {
-        costRouter: memoryCostRouter,
-        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter, executionMemoryStore),
-        heuristicStrategy: new HeuristicExtractionStrategy(executionMemoryStore),
-      },
-    );
     const embeddingProvider = createMemoryEmbeddingProvider(config);
     const providerEmbedding = new ProviderEmbeddingService(
       config,
@@ -572,6 +562,30 @@ if (import.meta.main) {
     );
 
     memoryBank.setEmbeddingService(providerEmbedding);
+
+    const memoryExtractor = new MemoryExtractorService(
+      config,
+      dbService,
+      memoryAdapter,
+      logger,
+      {
+        costRouter: memoryCostRouter,
+        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter, executionMemoryStore),
+        heuristicStrategy: new HeuristicExtractionStrategy(executionMemoryStore),
+        // Tiered-memory feed: approval is the single gate — reviewed content only.
+        onApproved: async (learning) => {
+          await sessionMemory.saveInsight({
+            title: learning.title,
+            description: learning.description ?? "",
+            category: learning.category,
+            tags: learning.tags,
+            confidence: mapAssessmentToConfidence(learning.confidence),
+            portal: learning.project,
+            learning_id: learning.id,
+          });
+        },
+      },
+    );
 
     // Initialize Portal Knowledge Service
     const pkCfg = config.portal_knowledge;
@@ -1246,5 +1260,18 @@ if (import.meta.main) {
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     Deno.exit(1);
+  }
+}
+
+/** Maps a learning's ConfidenceAssessmentLevel to the tiered feed's ConfidenceLevel. */
+function mapAssessmentToConfidence(level: string): ConfidenceLevel {
+  switch (level) {
+    case ConfidenceAssessmentLevel.VERY_HIGH:
+    case ConfidenceAssessmentLevel.HIGH:
+      return ConfidenceLevel.HIGH;
+    case ConfidenceAssessmentLevel.MEDIUM:
+      return ConfidenceLevel.MEDIUM;
+    default:
+      return ConfidenceLevel.LOW;
   }
 }
