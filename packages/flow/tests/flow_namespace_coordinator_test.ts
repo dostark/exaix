@@ -33,15 +33,15 @@ class FakeExecutionMemoryStore implements IExecutionMemoryStore {
     await this.readKeys(traceId, []);
   }
 
-  async appendNote(_traceId: string, _content: string, _tags?: string[]): Promise<IToolResult> {
-    return { success: true, data: {} };
+  appendNote(_traceId: string, _content: string, _tags?: string[]): Promise<IToolResult> {
+    return Promise.resolve({ success: true, data: {} });
   }
 
-  async readNotes(_traceId: string): Promise<never[]> {
-    return [];
+  readNotes(_traceId: string): Promise<never[]> {
+    return Promise.resolve([]);
   }
 
-  async readKeys(traceId: string, keys: string[]): Promise<Record<string, string | undefined>> {
+  readKeys(traceId: string, keys: string[]): Promise<Record<string, string | undefined>> {
     // Initialize == first-touch hydration (empty-key read); keeps the pre-migration assertion meaning.
     if (keys.length === 0) {
       this.initializeCalls.push(traceId);
@@ -54,7 +54,7 @@ class FakeExecutionMemoryStore implements IExecutionMemoryStore {
     return Promise.resolve(result);
   }
 
-  async writeNamespaceEntries(
+  writeNamespaceEntries(
     traceId: string,
     stepId: string,
     writes: IFlowNamespaceWrite[],
@@ -66,6 +66,7 @@ class FakeExecutionMemoryStore implements IExecutionMemoryStore {
       entries[write.key] = stepOutput;
     }
     this.store.set(traceId, entries);
+    return Promise.resolve();
   }
 }
 
