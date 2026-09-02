@@ -5,8 +5,9 @@
  *   trace serving both the runtime scratchpad's free-text notes (kind "note", soft-degrade on
  *   caps, rejected never truncated) and flow-orchestration namespace variables (kind
  *   "namespace", three-tier skip/truncate/throw failure model ported from the retired
- *   FlowNamespaceService). Read indexes hydrate from the durable log on first touch per
- *   trace_id, so a resumed flow's first read sees prior state (GAP-16).
+ *   FlowNamespaceService). Reads fingerprint-check the durable log (mtime:size) on every
+ *   call, so memoized indexes stay correct across instances and a resumed flow's first
+ *   read sees prior state.
  * @architectural-layer Services
  * @related-files ["packages/core/src/types/i_execution_memory_store.ts", "packages/schemas/src/memory_bank.ts", "packages/schemas/src/flow.ts"]
  *
@@ -34,6 +35,9 @@ import type { JSONValue } from "../types/json.ts";
 
 const LOG_FILE_NAME = "scratchpad.jsonl";
 const VALID_NAMESPACE_KEY_PATTERN = /^[a-zA-Z0-9._-]+$/;
+const LOCK_FILE_NAME = "scratchpad.lock";
+const LOCK_ACQUIRE_TIMEOUT_MS = 10_000;
+const LOCK_MAX_RETRIES = 3;
 
 type INamespacePathObject = { [key: string]: JSONValue };
 
@@ -52,6 +56,12 @@ export class NamespaceQuotaExceededError extends Error {
 
 /** Unified per-execution memory store over one shared JSONL log per trace, isolated by entry kind. */
 export class ExecutionMemoryStore implements IExecutionMemoryStore {
+  /** Per-trace in-process write mutex: serializes namespace read-modify-writes across
+   *  instances living in the same process (the daemon context vs FlowRunner's own store). */
+  private static readonly traceWriteMutexes = new Map<string, Promise<void>>();
+
+  /** Log fingerprint (mtime:size) per trace — lets memoized reads detect other instances' writes. */
+  private readonly logFingerprintByTrace = new Map<string, string>();
   private readonly executionDir: string;
   private readonly logger?: IEventLogger;
   private readonly encoder = new TextEncoder();
@@ -82,7 +92,7 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
   /** Appends one note-kind entry; rejects over-cap content and exhausted entry budgets with a clear error (never truncates). */
   async appendNote(traceId: string, content: string, tags?: Opt<string[], Reason.OptionalInput>): Promise<IToolResult> {
     this.assertValidTraceId(traceId);
-    await this.ensureHydrated(traceId);
+    await this.ensureFreshRead(traceId);
     const index = this.indexByTrace.get(traceId)!;
     const contentBytes = this.encoder.encode(content).length;
     if (contentBytes > DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES) {
@@ -118,6 +128,7 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
       file.close();
     }
     index.notes.push(entry);
+    this.logFingerprintByTrace.delete(traceId);
 
     this.logger?.info(
       DomainEventType.MemoryScratchpadEntryAdded,
@@ -135,15 +146,14 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
   /** Reads all note-kind entries for traceId (empty when the execution wrote nothing). */
   async readNotes(traceId: string): Promise<IScratchpadEntry[]> {
     this.assertValidTraceId(traceId);
-    await this.ensureHydrated(traceId);
-    return [...this.indexByTrace.get(traceId)!.notes];
+    const index = await this.ensureFreshRead(traceId);
+    return [...index.notes];
   }
 
   /** Reads the requested namespace keys for traceId; missing keys resolve to undefined. */
   async readKeys(traceId: string, keys: string[]): Promise<Record<string, string | undefined>> {
     this.assertValidTraceId(traceId);
-    await this.ensureHydrated(traceId);
-    const namespace = this.indexByTrace.get(traceId)!.namespace;
+    const namespace = (await this.ensureFreshRead(traceId)).namespace;
     return Object.fromEntries(keys.map((key) => [key, namespace.get(key)?.content]));
   }
 
@@ -155,8 +165,28 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
     stepOutput: string,
   ): Promise<void> {
     this.assertValidTraceId(traceId);
-    await this.ensureHydrated(traceId);
-    const index = this.indexByTrace.get(traceId)!;
+    const traceDir = join(this.executionDir, traceId);
+    await ensureDir(traceDir);
+    // Two instances share one trace directory, so the read-modify-write serializes on a
+    // per-trace in-process mutex plus a cross-process file lock, then re-reads from disk.
+    await this.withTraceMutex(
+      traceId,
+      () =>
+        this.withFileLock(
+          join(traceDir, LOCK_FILE_NAME),
+          () => this.writeNamespaceEntriesLocked(traceId, stepId, writes, stepOutput),
+        ),
+    );
+  }
+
+  /** Applies the batch against a fresh disk re-read inside the per-trace lock, then persists. */
+  private async writeNamespaceEntriesLocked(
+    traceId: string,
+    stepId: string,
+    writes: IFlowNamespaceWrite[],
+    stepOutput: string,
+  ): Promise<void> {
+    const index = await this.replayLog(traceId);
     let changed = false;
 
     for (const write of writes) {
@@ -203,6 +233,57 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
     }
 
     await this.persistIndex(traceId, index);
+    this.indexByTrace.set(traceId, index);
+  }
+
+  /** Chains the operation onto the per-trace write mutex so same-process instances serialize. */
+  private withTraceMutex<T>(traceId: string, operation: () => Promise<T>): Promise<T> {
+    const previous = ExecutionMemoryStore.traceWriteMutexes.get(traceId) ?? Promise.resolve();
+    const result = previous.then(operation, operation);
+    const tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    ExecutionMemoryStore.traceWriteMutexes.set(traceId, tail);
+    return result;
+  }
+
+  /** Exclusive-create lock file around a read-modify-write, ported from MemoryBankService's pattern. */
+  private async withFileLock<T>(
+    lockPath: string,
+    operation: () => Promise<T>,
+    timeoutMs: Opt<number, Reason.SensibleDefault> = LOCK_ACQUIRE_TIMEOUT_MS,
+    maxRetries: Opt<number, Reason.SensibleDefault> = LOCK_MAX_RETRIES,
+  ): Promise<T> {
+    const deadline = Date.now() + timeoutMs;
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const lockFile = await Deno.open(lockPath, { createNew: true, write: true });
+        try {
+          return await operation();
+        } finally {
+          try {
+            lockFile.close();
+          } catch {
+            // ignore close errors
+          }
+          try {
+            await Deno.remove(lockPath);
+          } catch {
+            // ignore removal errors
+          }
+        }
+      } catch (error) {
+        if (!(error instanceof Deno.errors.AlreadyExists)) {
+          throw error;
+        }
+        lastError = error instanceof Error ? error : new Error(String(error));
+      }
+      if (Date.now() >= deadline) break;
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+    throw new Error(`Failed to acquire scratchpad lock after ${timeoutMs}ms: ${String(lastError)}`);
   }
 
   private async persistIndex(traceId: string, index: ITraceIndex): Promise<void> {
@@ -215,11 +296,34 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
     await Deno.writeTextFile(logPath, lines.map((line) => line + "\n").join(""));
   }
 
-  /** Hydrate-on-first-touch: replays the trace's durable log into the in-memory index before the first read/write in this instance. */
-  private async ensureHydrated(traceId: string): Promise<void> {
-    if (this.indexByTrace.has(traceId)) {
-      return;
+  /** Fresh-on-read: memoized index unless the durable log's fingerprint (mtime:size) changed — another instance may have appended or rewritten it. */
+  private async ensureFreshRead(traceId: string): Promise<ITraceIndex> {
+    const fingerprint = await this.currentLogFingerprint(traceId);
+    const memoized = this.indexByTrace.get(traceId);
+    if (memoized && this.logFingerprintByTrace.get(traceId) === fingerprint) {
+      return memoized;
     }
+    const fresh = await this.replayLog(traceId);
+    this.indexByTrace.set(traceId, fresh);
+    this.logFingerprintByTrace.set(traceId, fingerprint);
+    return fresh;
+  }
+
+  private async currentLogFingerprint(traceId: string): Promise<string> {
+    try {
+      const stat = await Deno.stat(this.getNamespacePath(traceId));
+      return `${stat.mtime?.getTime() ?? 0}:${stat.size}`;
+    } catch {
+      return "absent";
+    }
+  }
+
+  private async recordLogFingerprint(traceId: string): Promise<void> {
+    this.logFingerprintByTrace.set(traceId, await this.currentLogFingerprint(traceId));
+  }
+
+  /** Replays the durable log from disk into a fresh index — used for hydration and for the locked re-read inside namespace writes. */
+  private async replayLog(traceId: string): Promise<ITraceIndex> {
     const index: ITraceIndex = { notes: [], namespace: new Map() };
     const logPath = this.getNamespacePath(traceId);
     if (await exists(logPath)) {
@@ -239,7 +343,7 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
         }
       }
     }
-    this.indexByTrace.set(traceId, index);
+    return index;
   }
 
   private extractWriteValue(write: IFlowNamespaceWrite, stepOutput: string): string {
