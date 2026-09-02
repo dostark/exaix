@@ -1,6 +1,6 @@
 # Exaix Memory Guide
 
-- **Version:** 1.0.0
+- **Version:** 1.1.0
 - **Date:** 2026-09-02
 - **Status:** Current — covers the memory system as matured in Phase 147
 - **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](Exaix_User_Guide.md#32-memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
@@ -48,8 +48,9 @@ flowchart LR
 
 Knowledge enters the system two ways:
 
-1. **Post-run extraction.** When an execution completes, the extractor reads its
-   `lessons_learned`, summary, and errors, and proposes reusable learnings.
+1. **Post-run extraction.** When an execution completes, the extractor reads the
+   execution record's `lessons_learned`, `summary`, and `error_message`, and proposes
+   reusable learnings.
 2. **In-the-moment capture.** While the agent works, it can call the
    `remember_fact` tool to jot down a "worth remembering" note the moment it
    notices something — instead of relying on reconstructing it in the final
@@ -58,6 +59,28 @@ Knowledge enters the system two ways:
 
 Both sources are read together in one pass, so an insight the agent jotted
 mid-run and restated in its summary is extracted **once**, not twice.
+
+#### What exactly does the extractor read?
+
+The extraction input is the **execution record** — a compact digest written when the
+run finishes, **not** the session transcript. Concretely, per run:
+
+- **`lessons_learned`** — up to 5 short "lesson" sentences mined from the run's own
+  reasoning and summary text (sentences like "learned that …", "discovered …",
+  "found that …", "realized …", "important to …"). It is _not_ a session log: model
+  reasoning traces, individual tool calls, and user answers are never fed to the
+  extractor. A known limitation (tracked as the phase's GAP-9, remediation Step 21):
+  in the plan-execution path this digest is currently built from placeholder strings,
+  so `lessons_learned` is often empty and the `summary` is boilerplate — until the
+  agent's real completion output is wired into the record.
+- **`summary`** — the run's completion summary text.
+- **`error_message`** — set when the run failed; drives troubleshooting extraction.
+- **Scratchpad notes** — everything the agent captured via `remember_fact` during the
+  run (often the richest real content today).
+
+If you want reliably rich extraction today, encourage `remember_fact` capture during
+runs — the scratchpad is the one source that always carries genuine in-the-moment
+content.
 
 **The content-curation gate.** Extraction and consolidation are guided by a
 content-curation policy skill (`memory-extraction-content-policy`). It tells the
