@@ -133,6 +133,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
       cost_per_1k_tokens: 0.01,
     },
     memory: {
+      session: { expand_links: false },
       auto_approve: {
         enabled: false,
         confidence_threshold: ConfidenceAssessmentLevel.HIGH,

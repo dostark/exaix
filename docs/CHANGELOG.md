@@ -35,8 +35,8 @@
   superseded with a full audit trail, and a reflection pass synthesises related
   learnings into new proposals for review.
 - Memory retrieval now ranks results by keyword, embedding similarity, and recency, and
-  can follow connections between related learnings when session memory's `expandLinks`
-  option is enabled.
+  can follow connections between related learnings when you enable the new
+  `memory.session.expand_links` configuration option (default off).
 - Opt-in automatic approval (`memory.auto_approve.enabled`) closes the review loop
   without human action, bounded by a confidence threshold, allowed-source list, and
   quiet period.

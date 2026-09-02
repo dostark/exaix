@@ -120,7 +120,10 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
       models: {},
       portals: [],
       mcp: {},
-      memory: { auto_approve: { enabled: true, delay_hours: 1 } },
+      memory: {
+        session: { expand_links: false },
+        auto_approve: { enabled: true, delay_hours: 1 },
+      },
     });
     const logger = new EventLogger({ db });
     const providerOptions = {

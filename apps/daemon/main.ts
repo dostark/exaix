@@ -557,7 +557,7 @@ if (import.meta.main) {
     const sessionMemory = new SessionMemoryService(
       memoryBank,
       providerEmbedding,
-      undefined,
+      { expandLinks: config.memory.session.expand_links },
       tieredEntriesPath,
     );
 

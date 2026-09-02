@@ -111,7 +111,10 @@ if (import.meta.main) {
     models: {},
     portals: [],
     mcp: {},
-    memory: { auto_approve: { enabled: true, delay_hours: 1, confidence_threshold: "medium" } },
+    memory: {
+      session: { expand_links: false },
+      auto_approve: { enabled: true, delay_hours: 1, confidence_threshold: "medium" },
+    },
   });
 
   const { db, cleanup } = await initTestDbService();

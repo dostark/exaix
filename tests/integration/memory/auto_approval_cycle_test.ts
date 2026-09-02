@@ -24,6 +24,7 @@ Deno.test("Phase 71 Integration: End-to-end memory auto-approval cycle", async (
     initGit: false,
     configOverrides: {
       memory: {
+        session: { expand_links: false },
         auto_approve: {
           enabled: true,
           confidence_threshold: ConfidenceAssessmentLevel.HIGH,

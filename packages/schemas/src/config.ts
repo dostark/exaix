@@ -353,6 +353,11 @@ export const ConfigSchema = z.object({
       sources_allowed: z.array(AutoApproveSourceSchema).default(["AGENT"]),
       max_batch_size: z.number().int().min(1).max(100).default(20),
     }).prefault({}),
+    session: z.object({
+      expand_links: z.boolean().default(false).describe(
+        "Opt-in: request-time memory retrieval follows one hop of inter-memory links",
+      ),
+    }).prefault({}),
     embedding: z.object({
       provider: z.nativeEnum(ProviderType).default(ProviderType.OLLAMA),
       model: z.string().default("nomic-embed-text"),

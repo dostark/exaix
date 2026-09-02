@@ -56,6 +56,7 @@ function createMockProposal(
 function createAutoApproveConfig(overrides: Partial<Config["memory"]["auto_approve"]> = {}) {
   return createMockConfig(".", {
     memory: {
+      session: { expand_links: false },
       auto_approve: {
         enabled: true,
         confidence_threshold: ConfidenceAssessmentLevel.HIGH,

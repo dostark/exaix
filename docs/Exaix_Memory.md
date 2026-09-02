@@ -1,6 +1,6 @@
 # Exaix Memory Guide
 
-- **Version:** 1.2.0
+- **Version:** 1.3.0
 - **Date:** 2026-09-02
 - **Status:** Current — covers the memory system as matured in Phase 147
 - **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](Exaix_User_Guide.md#32-memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
@@ -211,16 +211,17 @@ reflection against the real service graph.
 
 ## 4. Configuration Reference
 
-| Config key                                    | Default      | What it controls                               |
-| --------------------------------------------- | ------------ | ---------------------------------------------- |
-| `memory.auto_approve.enabled`                 | `false`      | Opt into closing the loop without human review |
-| `memory.auto_approve.confidence_threshold`    | `high`       | Minimum confidence for auto-approval           |
-| `memory.auto_approve.delay_hours`             | `24`         | Quiet period before a proposal is eligible     |
-| `memory.auto_approve.sources_allowed`         | `["AGENT"]`  | Which extraction sources may auto-approve      |
-| `memory.dedup.similarity_threshold`           | `0.92`       | Similarity above which learnings merge         |
-| `memory.temporal.recency_half_life_days`      | (see config) | How fast old learnings down-rank               |
-| `memory.retrieval.vector_weight`              | (see config) | Embedding-signal weight in hybrid retrieval    |
-| `memory.scratchpad.max_entries_per_execution` | `200`        | Cap on `remember_fact` notes per run           |
+| Config key                                    | Default      | What it controls                                                                                   |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------- |
+| `memory.auto_approve.enabled`                 | `false`      | Opt into closing the loop without human review                                                     |
+| `memory.auto_approve.confidence_threshold`    | `high`       | Minimum confidence for auto-approval                                                               |
+| `memory.auto_approve.delay_hours`             | `24`         | Quiet period before a proposal is eligible                                                         |
+| `memory.auto_approve.sources_allowed`         | `["AGENT"]`  | Which extraction sources may auto-approve                                                          |
+| `memory.dedup.similarity_threshold`           | `0.92`       | Similarity above which learnings merge                                                             |
+| `memory.temporal.recency_half_life_days`      | (see config) | How fast old learnings down-rank                                                                   |
+| `memory.retrieval.vector_weight`              | (see config) | Embedding-signal weight in hybrid retrieval                                                        |
+| `memory.scratchpad.max_entries_per_execution` | `200`        | Cap on `remember_fact` notes per run                                                               |
+| `memory.session.expand_links`                 | `false`      | Opt-in: retrieval follows one hop of inter-memory links (multi-hop surfacing of related learnings) |
 
 ## 5. Deterministic Fallbacks
 

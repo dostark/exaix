@@ -724,6 +724,14 @@ insight), instead of reconstructing it in the final summary:
 - **Every scratchpad-derived candidate goes through the same Pending → approval workflow
   as any other learning.** There is no direct-to-global shortcut.
 
+#### Multi-Hop Link Expansion
+
+Related learnings are connected with typed links (topical/supersession). Request-time
+retrieval follows one hop of these links only when you opt in via
+`memory.session.expand_links = true` (default `false`); linked learnings surface at a
+reduced relevance score and never displace directly-matched ones. See
+[Exaix_Memory.md](Exaix_Memory.md) §2.3.
+
 #### Memory Lifecycle
 
 Memory moves through a full lifecycle — born (capture + extraction), reviewed (Pending →
