@@ -559,6 +559,7 @@ if (import.meta.main) {
       providerEmbedding,
       { expandLinks: config.memory.session.expand_links },
       tieredEntriesPath,
+      logger,
     );
 
     memoryBank.setEmbeddingService(providerEmbedding);

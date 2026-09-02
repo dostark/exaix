@@ -133,7 +133,7 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
     this.logger?.info(
       DomainEventType.MemoryScratchpadEntryAdded,
       traceId,
-      { trace_id: traceId, entry_id: entry.id, content_length: contentBytes },
+      { trace_id: traceId, entry_id: entry.id, content_bytes: contentBytes },
       traceId,
     );
 

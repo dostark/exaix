@@ -2,7 +2,7 @@
  * @module ExecutionMemoryStoreEventTest
  * @path packages/memory/tests/scratchpad/execution_memory_store_event_test.ts
  * @description Verifies that a successful ExecutionMemoryStore.appendNote emits MemoryScratchpadEntryAdded
- * through a real EventLogger with trace_id/entry_id/content_length metadata and no raw content.
+ * through a real EventLogger with trace_id/entry_id/content_bytes metadata and no raw content.
  */
 
 import { assertEquals } from "@std/assert";
@@ -16,14 +16,15 @@ import { initTestDbService } from "@exaix/testing";
 interface ScratchpadEventPayload {
   trace_id: string;
   entry_id: string;
-  content_length: number;
+  content_bytes: number;
 }
 
 Deno.test("ExecutionMemoryStore: a successful appendNote emits MemoryScratchpadEntryAdded without raw content", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     const service = new ExecutionMemoryStore(config, new EventLogger({ db }));
-    const result = await service.appendNote("trace-event", "sensitive agent-authored note");
+    const note = "sensitive note with multibyte 文字 content";
+    const result = await service.appendNote("trace-event", note);
     assertEquals(result.success, true);
     const entryId = (result.data as { entry_id: string }).entry_id;
 
@@ -34,7 +35,11 @@ Deno.test("ExecutionMemoryStore: a successful appendNote emits MemoryScratchpadE
     const payload: ScratchpadEventPayload = JSON.parse(rows[0].payload);
     assertEquals(payload.trace_id, "trace-event");
     assertEquals(payload.entry_id, entryId);
-    assertEquals(payload.content_length, "sensitive agent-authored note".length);
+    assertEquals(
+      payload.content_bytes,
+      new TextEncoder().encode(note).length,
+      "content_bytes must be the UTF-8 byte length (differs from char count for multibyte notes)",
+    );
     assertEquals(
       "content" in payload,
       false,

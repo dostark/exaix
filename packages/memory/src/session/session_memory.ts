@@ -26,6 +26,8 @@ import {
 } from "@exaix/core";
 import { ConfidenceLevel, LearningCategory, MemoryType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { ITieredMemoryEntry } from "@exaix/core/types";
 import {
   MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD,
@@ -144,6 +146,7 @@ export class SessionMemoryService {
     private embeddingService: IMemoryEmbeddingService,
     config?: Opt<Partial<SessionMemoryConfig>, Reason.FactoryPreset>,
     private tieredEntriesPath?: Opt<string, Reason.ExecutionConfig>,
+    private readonly logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.config = { ...DEFAULT_SESSION_MEMORY_CONFIG, ...config };
   }
@@ -557,6 +560,11 @@ export class SessionMemoryService {
 
     if (promotedCount > 0) {
       await this.persistTieredEntries();
+      this.logger?.info(
+        DomainEventType.MemoryTierPromotion,
+        MemoryTier.SEMANTIC,
+        { promoted: promotedCount },
+      );
     }
 
     return promotedCount;
