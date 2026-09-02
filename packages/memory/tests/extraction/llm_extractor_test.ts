@@ -86,6 +86,45 @@ Deno.test("LlmLearningExtractor: loads policy and returns schema-valid varied qu
   assertEquals(recorded, [{ cost: 0.004, operation: MemoryCostOperation.EXTRACTION }]);
 });
 
+Deno.test("LlmLearningExtractor: tolerates a real model declining to score (null quality_score)", async () => {
+  const provider = new StubProvider(
+    `{"learnings":[{"title":"Unscored extraction","description":"The model omitted the score.","category":"insight","tags":[],"quality_score":null}]}`,
+  );
+  const extractor = new LlmLearningExtractor(provider, skillsService(), costRouter([]));
+
+  const learnings = await extractor.extract(createMinimalExecutionMemory());
+
+  assertEquals(learnings.length, 1);
+  assertEquals(learnings[0].quality_score, 0.5, "an unscored learning falls back to the heuristic-baseline score");
+});
+
+Deno.test("LlmLearningExtractor: normalizes string quality scores from real models", async () => {
+  const provider = new StubProvider(
+    `{"learnings":[{"title":"String-scored extraction","description":"The model quoted the score.","category":"insight","tags":[],"quality_score":"0.85"}]}`,
+  );
+  const extractor = new LlmLearningExtractor(provider, skillsService(), costRouter([]));
+
+  const learnings = await extractor.extract(createMinimalExecutionMemory());
+
+  assertEquals(learnings.length, 1);
+  assertEquals(learnings[0].quality_score, 0.85);
+});
+
+Deno.test("LlmLearningExtractor: extracts the JSON object when a real model wraps it in prose", async () => {
+  const provider = new StubProvider(`Here is the extraction you asked for.
+
+{"learnings":[{"title":"Prose-wrapped extraction","description":"The model prefixed and suffixed the JSON with sentences.","category":"insight","tags":[],"quality_score":0.8}]}
+
+Let me know if you need anything else.`);
+  const extractor = new LlmLearningExtractor(provider, skillsService(), costRouter([]));
+
+  const learnings = await extractor.extract(createMinimalExecutionMemory());
+
+  assertEquals(learnings.length, 1);
+  assertEquals(learnings[0].title, "Prose-wrapped extraction");
+  ProposalLearningSchema.parse(learnings[0]);
+});
+
 Deno.test("LlmLearningExtractor: repairs fenced JSON with a trailing comma", async () => {
   const provider = new StubProvider(`\`\`\`json
 {"learnings":[{"title":"Reusable validation","description":"Validate structured model output before storing it.","category":"pattern","tags":["validation"],"quality_score":0.7,},],}
@@ -99,7 +138,9 @@ Deno.test("LlmLearningExtractor: repairs fenced JSON with a trailing comma", asy
 });
 
 Deno.test("LlmLearningExtractor: rejects output that cannot satisfy the proposal schema", async () => {
-  const provider = new StubProvider('{"learnings":[{"title":"Bad","quality_score":4}]}');
+  const provider = new StubProvider(
+    '{"learnings":[{"title":"Bad","description":"x","category":"nonsense","tags":[],"quality_score":4}]}',
+  );
   const extractor = new LlmLearningExtractor(provider, skillsService(), costRouter([]));
 
   await assertRejects(() => extractor.extract(createMinimalExecutionMemory()));

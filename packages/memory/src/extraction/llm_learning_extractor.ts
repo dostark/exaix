@@ -29,12 +29,30 @@ import { ProposalLearningSchema } from "@exaix/schemas/memory_bank.ts";
 
 const EXTRACTION_POLICY_SKILL_ID = "memory-extraction-content-policy";
 const DEFAULT_EXTRACTION_COST_USD = 0;
+const UNSCORED_QUALITY_FALLBACK = 0.5;
+/** Real local models often emit null, omitted, string-quoted, or percent-scale scores;
+ * normalize all of those to a number in [0,1] (unscored -> the heuristic-baseline default)
+ * instead of discarding the learning outright. */
+/** Raw score shapes observed from real providers: numbers, quoted numbers, null, omitted. */
+type RawQualityScore = number | string | null | undefined;
+
+function normalizeQualityScore(raw: RawQualityScore): number {
+  if (raw === null || raw === undefined || raw === "") return UNSCORED_QUALITY_FALLBACK;
+  const parsed = typeof raw === "number" ? raw : Number.parseFloat(String(raw));
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) return UNSCORED_QUALITY_FALLBACK;
+  return parsed > 1 ? parsed / 100 : parsed;
+}
+const qualityScoreSchema = z.preprocess(
+  (raw) => normalizeQualityScore(raw as RawQualityScore),
+  z.number().min(0).max(1),
+);
+
 const LlmLearningSchema = z.object({
   title: z.string().max(100),
   description: z.string().max(2000),
   category: z.nativeEnum(LearningCategory),
   tags: z.array(z.string()).max(10).default([]),
-  quality_score: z.number().min(0).max(1),
+  quality_score: qualityScoreSchema,
 });
 const LlmExtractionSchema = z.object({ learnings: z.array(LlmLearningSchema) });
 
@@ -119,7 +137,17 @@ ${JSON.stringify(execution)}
 
   private parseJson(content: string): JSONValue {
     const unfenced = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-    return JSON.parse(unfenced.replace(/,\s*([}\]])/g, "$1"));
+    const repaired = unfenced.replace(/,\s*([}\]])/g, "$1");
+    // Real small local models (the Ollama default posture) routinely wrap the JSON in prose;
+    // fall back to the outermost brace-delimited slice before giving up.
+    const firstBrace = repaired.indexOf("{");
+    const lastBrace = repaired.lastIndexOf("}");
+    const candidate = firstBrace >= 0 && lastBrace > firstBrace ? repaired.slice(firstBrace, lastBrace + 1) : repaired;
+    try {
+      return JSON.parse(candidate) as JSONValue;
+    } catch (error) {
+      throw new SyntaxError(`extraction response contained no parseable JSON object: ${String(error)}`);
+    }
   }
 
   private confidenceFor(score: number): ConfidenceAssessmentLevel {

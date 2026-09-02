@@ -3,8 +3,7 @@
  * @path apps/daemon/tests/phase147_cutover_live_test.ts
  * @description [live, operator-run] Phase 147 Step 12: the same memory-maturation chain as
  *   phase147_cutover_test.ts, against a real Ollama provider instead of MockProviderFactory.
- *   Not CI-run: gated on EXA_PHASE147_LIVE=1 (operator opt-in), matching this phase's Steps
- *   1/2 [live, operator-run] convention. Model is selectable via EXA_TEST_LLM_MODEL.
+ *   Not CI-run: live-provider convention (EXA_TEST_LLM_PROVIDER / EXA_TEST_LLM_MODEL).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
  *   behavior end-to-end (capture → extract → pending → approval attempt → retrieval), not
@@ -17,6 +16,9 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 
 import { OllamaProvider } from "@exaix/ai-ollama";
+import { AnthropicProvider } from "@exaix/ai-anthropic";
+import { OpenAIProvider } from "@exaix/ai-openai";
+import { GoogleProvider } from "@exaix/ai-google";
 import type { IModelProvider } from "@exaix/ai";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
@@ -35,11 +37,48 @@ import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
+import {
+  castAny,
+  createMinimalExecutionMemory,
+  ENV_ANTHROPIC_API_KEY,
+  ENV_GOOGLE_API_KEY,
+  ENV_OPENAI_API_KEY,
+  getTestLlmModel,
+  getTestLlmProvider,
+  initTestDbService,
+} from "@exaix/testing";
+import { ProviderType } from "@exaix/core";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
-const LIVE_GATE_ENV = "EXA_PHASE147_LIVE";
+
+const testProvider = getTestLlmProvider();
+const testModel = getTestLlmModel();
+
+/** The env var name carrying the real API key for a given provider's own factory/tests. */
+const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+  [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
+  [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
+  [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
+};
+
+function buildTestProvider(provider: string, model: string): IModelProvider {
+  if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
+  const apiKey = provider === ProviderType.OPENAI
+    ? Deno.env.get(ENV_OPENAI_API_KEY)
+    : provider === ProviderType.GOOGLE
+    ? Deno.env.get(ENV_GOOGLE_API_KEY)
+    : Deno.env.get(ENV_ANTHROPIC_API_KEY);
+  switch (provider as ProviderType) {
+    case ProviderType.OPENAI:
+      return new OpenAIProvider({ apiKey: apiKey ?? "", model });
+    case ProviderType.GOOGLE:
+      return new GoogleProvider({ apiKey: apiKey ?? "", model });
+    case ProviderType.ANTHROPIC:
+    default:
+      return new AnthropicProvider({ apiKey: apiKey ?? "", model });
+  }
+}
 
 function loadPolicyInstructions(): string {
   const skillPath = join(
@@ -57,10 +96,13 @@ function loadPolicyInstructions(): string {
   return skill.instructions;
 }
 
+const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
+
 Deno.test({
-  name: "[live][phase-147 cutover] the full memory chain runs against a real Ollama provider",
-  // Operator-run only: requires a reachable Ollama instance and explicit opt-in.
-  ignore: Deno.env.get(LIVE_GATE_ENV) !== "1",
+  name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
+  // Live-provider convention: keyed providers require their API key; the local ollama
+  // provider requires EXA_TEST_LLM_PROVIDER=ollama explicitly.
+  ignore: !(testProvider === ProviderType.OLLAMA || Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
@@ -78,8 +120,7 @@ Deno.test({
         memory: { auto_approve: { enabled: true, delay_hours: 1 } },
       });
       const logger = new EventLogger({ db });
-      const model = Deno.env.get("EXA_TEST_LLM_MODEL") ?? "llama3.1";
-      const provider: IModelProvider = new OllamaProvider({ model, timeoutMs: 300_000 });
+      const provider = buildTestProvider(testProvider, testModel);
 
       // The real cost router decides remotely-gated operations from real budget state; the
       // extraction strategy gate below is forced open so the live path is exercised even on
@@ -161,9 +202,25 @@ Deno.test({
 
       const global = await memoryBank.getGlobalMemory();
       const promoted = global?.learnings.filter((l) => l.status === MemoryStatus.APPROVED) ?? [];
-      const drained = (await memoryExtractor.listPending()).length === 0;
+      const remaining = await memoryExtractor.listPending();
+      // A proposal is honestly pending when the real model scored it below the approval
+      // threshold (default HIGH = 4 on the very_low..very_high scale).
+      const confidenceScores: Record<string, number> = {
+        very_low: 1,
+        low: 2,
+        medium: 3,
+        high: 4,
+        very_high: 5,
+      };
+      const allRemainingBelowThreshold = remaining.every(
+        (p) => (confidenceScores[p.learning.confidence] ?? 0) < 4,
+      );
+      console.log(
+        `live cutover: promoted=${promoted.length} remaining=${remaining.length} ` +
+          `confidences=${JSON.stringify(remaining.map((p) => p.learning.confidence))}`,
+      );
       assertEquals(
-        promoted.length > 0 || drained,
+        promoted.length > 0 || allRemainingBelowThreshold,
         true,
         "each proposal must either be auto-approved into global memory or remain honestly pending below the threshold",
       );
