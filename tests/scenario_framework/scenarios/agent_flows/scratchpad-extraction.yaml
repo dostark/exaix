@@ -1,0 +1,42 @@
+schema_version: "1.0.0"
+# Asserts the Step 10 loop end to end: a real Solo ReAct loop calls remember_fact through a
+# real, context-wired ToolRegistry (the tool result must reach the agent's next turn, mirroring
+# the run_solo_relationship_agent.ts precedent from phase-175), the entry lands in the trace's
+# scratchpad.jsonl, and scratchpad-informed extraction files the insight through the normal
+# Pending -> approval pipeline — never directly into global memory (the GAP-3 constraint).
+id: "scratchpad-extraction"
+title: "Agent flow — remember_fact capture reaches Pending via scratchpad-informed extraction"
+pack: "agent_flows"
+tags: ["domain", "subsystem:memory", "entity:remember_fact", "entity:scratchpad"]
+request_fixture: "fixtures/requests/agent_flows/scratchpad_extraction.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "remember-fact-and-extract"
+    type: "run-script"
+    name: "real ReAct loop calls remember_fact; scratchpad-informed extraction files the learning as Pending"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_solo_scratchpad_extraction.ts"
+      - "$WORKSPACE_ROOT"
+    output_criteria:
+      - id: "scratchpad-captured"
+        kind: "command-output-contains"
+        contains: ['"scratchpad_entries":1']
+        score_weight: 0.25
+      - id: "extraction-candidate-pending"
+        kind: "command-output-contains"
+        contains: ['"pending_count":1']
+        score_weight: 0.25
+      - id: "no-direct-global-write"
+        kind: "command-output-contains"
+        contains: ['"global_learnings":0']
+        score_weight: 0.25
+      - id: "react-tool-call-observed"
+        kind: "command-output-contains"
+        contains: ['"tool_calls":1']
+        score_weight: 0.25

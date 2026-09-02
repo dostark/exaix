@@ -5,19 +5,20 @@
  * @architectural-layer Services
  * @related-files [packages/memory/src/extraction/learning_extractor.ts, packages/core/src/types/i_extraction_strategy.ts]
  */
-import type { IExtractionStrategy } from "@exaix/core/types";
+import type { IExtractionStrategy, IScratchpadService, Opt, Reason } from "@exaix/core/types";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { LearningExtractor } from "./learning_extractor.ts";
 
 const HEURISTIC_QUALITY_SCORE = 0.5;
 
 export class HeuristicExtractionStrategy implements IExtractionStrategy {
-  extract(execution: IExecutionMemory): Promise<IProposalLearning[]> {
-    return Promise.resolve(
-      LearningExtractor.extract(execution).map((learning) => ({
-        ...learning,
-        quality_score: HEURISTIC_QUALITY_SCORE,
-      })),
-    );
+  constructor(private scratchpad?: Opt<IScratchpadService, Reason.OptionalDependency>) {}
+
+  async extract(execution: IExecutionMemory): Promise<IProposalLearning[]> {
+    const scratchpadEntries = this.scratchpad ? await this.scratchpad.read(execution.trace_id) : [];
+    return LearningExtractor.extract(execution, scratchpadEntries).map((learning) => ({
+      ...learning,
+      quality_score: HEURISTIC_QUALITY_SCORE,
+    }));
   }
 }

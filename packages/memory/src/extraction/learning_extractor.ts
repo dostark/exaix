@@ -5,7 +5,7 @@
  * @architectural-layer Services
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/schemas/src/memory_bank.ts"]
  */
-import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
+import type { IExecutionMemory, IProposalLearning, IScratchpadEntry } from "@exaix/schemas/memory_bank.ts";
 import { ExecutionStatus, LANG_TYPESCRIPT, MemoryReferenceType } from "@exaix/core";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 
@@ -14,11 +14,11 @@ export class LearningExtractor {
   /**
    * Analyze an execution and extract potential learnings
    */
-  static extract(execution: IExecutionMemory): IProposalLearning[] {
+  static extract(execution: IExecutionMemory, scratchpadEntries: IScratchpadEntry[] = []): IProposalLearning[] {
     const learnings: IProposalLearning[] = [];
 
-    // Skip trivial executions (no changes, no lessons)
-    if (this.isTrivialExecution(execution)) {
+    // Skip trivial executions (no changes, no lessons, no scratchpad notes)
+    if (scratchpadEntries.length === 0 && this.isTrivialExecution(execution)) {
       return learnings;
     }
 
@@ -29,6 +29,14 @@ export class LearningExtractor {
         if (learning) {
           learnings.push(learning);
         }
+      }
+    }
+
+    // Extract from scratchpad entries (in-the-moment agent notes) with the same heuristics
+    for (const entry of scratchpadEntries) {
+      const learning = this.extractFromLesson(entry.content, execution);
+      if (learning) {
+        learnings.push(learning);
       }
     }
 

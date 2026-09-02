@@ -64,6 +64,7 @@ import {
   PlanContextResolver,
 } from "@exaix/flow";
 import {
+  HeuristicExtractionStrategy,
   initializeMemoryAutoApprovalMaintenance,
   LearningContradictionResolver,
   LlmLearningExtractor,
@@ -539,6 +540,7 @@ if (import.meta.main) {
       contradictionResolver: new LearningContradictionResolver(llmProvider, memoryCostRouter),
     });
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
+    const scratchpadService = new ScratchpadService(config, logger);
     const memoryExtractor = new MemoryExtractorService(
       config,
       dbService,
@@ -546,7 +548,8 @@ if (import.meta.main) {
       logger,
       {
         costRouter: memoryCostRouter,
-        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter),
+        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter, scratchpadService),
+        heuristicStrategy: new HeuristicExtractionStrategy(scratchpadService),
       },
     );
     const embeddingProvider = createMemoryEmbeddingProvider(config);
@@ -614,7 +617,7 @@ if (import.meta.main) {
       memoryBank,
       extractor: memoryExtractor,
       portalKnowledge,
-      scratchpad: new ScratchpadService(config, logger),
+      scratchpad: scratchpadService,
       embeddings: providerEmbedding,
     };
 
