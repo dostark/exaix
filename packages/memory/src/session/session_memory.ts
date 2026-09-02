@@ -309,7 +309,14 @@ export class SessionMemoryService {
       limit: cfg.topK * 2, // Get more to filter
     });
 
-    for (const result of searchResults) {
+    // searchMemory omits global learnings; searchByKeyword covers them (APPROVED-filtered),
+    // so keep just its learning results (its project/decision hits duplicate the above).
+    const globalLearningResults = cfg.includeLearnings
+      ? (await this.memoryBank.searchByKeyword(query, { limit: cfg.topK * 2 }))
+        .filter((result) => result.type === MemoryType.LEARNING)
+      : [];
+
+    for (const result of [...searchResults, ...globalLearningResults]) {
       if (!this.shouldIncludeSearchResult(result.type, cfg)) {
         continue;
       }

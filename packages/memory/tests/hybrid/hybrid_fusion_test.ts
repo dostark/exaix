@@ -164,6 +164,57 @@ Deno.test("learning-type hybrid candidates are filtered to APPROVED (PENDING exc
   }
 });
 
+Deno.test("GAP-10: a promoted global learning with zero embedding match still surfaces via the keyword signal", async () => {
+  const { config, cleanup } = await initTestDbService();
+  try {
+    const bank = new MemoryBankService(config);
+    const approved: ILearning = createSampleLearning({
+      id: crypto.randomUUID(),
+      title: "Rate limiter resets on full restart",
+      description: "Process-lifetime state needs explicit invalidation hooks.",
+      status: MemoryStatus.APPROVED,
+    });
+    await bank.initGlobalMemory();
+    await bank.addGlobalLearning(approved);
+
+    const embedding = kindStubEmbedding([]); // no vector signal at all
+    const sessionMemory = new SessionMemoryService(bank, embedding);
+
+    const memories = await sessionMemory.lookupMemories("rate limiter", undefined);
+
+    const learningItem = memories.find((m) => m.source === `learning:${approved.id}`);
+    assertEquals(learningItem !== undefined, true, "the keyword-only global learning must surface");
+    assertEquals(learningItem!.type, MemoryType.LEARNING);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("GAP-10: a global learning matched by both signals is not double-counted", async () => {
+  const { config, cleanup } = await initTestDbService();
+  try {
+    const bank = new MemoryBankService(config);
+    const both: ILearning = createSampleLearning({
+      id: crypto.randomUUID(),
+      title: "Backoff jitter prevents thundering herd",
+      description: "Backoff jitter prevents thundering herd on retry storms.",
+      status: MemoryStatus.APPROVED,
+    });
+    await bank.initGlobalMemory();
+    await bank.addGlobalLearning(both);
+
+    const embedding = kindStubEmbedding([{ id: both.id, kind: MemoryType.LEARNING, similarity: 0.8 }]);
+    const sessionMemory = new SessionMemoryService(bank, embedding);
+
+    const memories = await sessionMemory.lookupMemories("thundering herd", undefined);
+    const matches = memories.filter((m) => m.source === `learning:${both.id}`);
+
+    assertEquals(matches.length, 1, "a learning surfaced by both signals must appear exactly once");
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("embedded overviews and executions surface with their MemoryType", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
