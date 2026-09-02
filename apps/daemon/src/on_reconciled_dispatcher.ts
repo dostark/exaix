@@ -3,16 +3,20 @@
  * @path apps/daemon/src/on_reconciled_dispatcher.ts
  * @description Phase 111 Step 6 — gate-based dispatch for the onReconciled callback
  *   on SessionReturnWatcher. Reads the brief to determine the gate, then maps
- *   the delegated return to the correct artifact via the gate mappers.
+ *   the delegated return to the correct artifact via the gate mappers. Also mints
+ *   an execution record from the reconciled outcome and the brief, then runs the
+ *   same curated extraction as the plan path, so delegated sessions feed the
+ *   identical Pending → approval workflow.
  * @architectural-layer Application
  * @dependencies [@exaix/schemas, @exaix/session, @exaix/core]
- * @related-files [apps/daemon/main.ts, packages/session/src/gate_mappers.ts]
+ * @related-files [apps/daemon/main.ts, packages/session/src/gate_mappers.ts, packages/core/src/artifact/mission_reporter.ts]
  */
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { DomainEventType } from "@exaix/core/events";
-import type { CostSource } from "@exaix/core/types";
+import { DEFAULT_PORTALS_PATH, DEFAULT_UNKNOWN_LABEL, ExecutionStatus } from "@exaix/core/types";
+import type { CostSource, Opt, Reason } from "@exaix/core/types";
 import { SessionGateSchema } from "@exaix/schemas/session_delegate.ts";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { ISessionBriefReader } from "@exaix/session/session_brief_reader.ts";
@@ -23,6 +27,7 @@ import {
   buildReviewDecisionPatch,
 } from "@exaix/session/gate_mappers.ts";
 import { sessionReturnToCostRecord } from "@exaix/session/cost_mapping.ts";
+import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 
 /** Shape of a structural-log payload (avoids bare generic object). */
 export interface ILogPayload {
@@ -57,6 +62,28 @@ export interface IOnReconciledDeps {
     ): Promise<number>;
   };
   logger: IReconciledLogger;
+  /** Mints the delegated session's execution record; optional so existing callers
+   *  without a memory lifecycle keep working unchanged. */
+  memoryBank?: {
+    createExecutionRecord(execution: IExecutionMemory): Promise<void>;
+  };
+  /** Runs the same curated extraction pipeline used on the plan path. */
+  extractor?: {
+    analyzeExecution(execution: IExecutionMemory): Promise<IProposalLearning[]>;
+    createProposal(learning: IProposalLearning, execution: IExecutionMemory, identityId: string): Promise<string>;
+  };
+}
+
+/** Portal name embedded in `worktreePath` as `.../Portals/<name>/...`; falls back to
+ *  the shared "unknown" sentinel when no Portals segment is present. */
+function portalFromWorktreePath(worktreePath?: Opt<string, Reason.SensibleDefault>): string {
+  if (!worktreePath) return DEFAULT_UNKNOWN_LABEL;
+  const parts = worktreePath.split("/");
+  const portalIndex = parts.indexOf(DEFAULT_PORTALS_PATH);
+  if (portalIndex >= 0 && portalIndex + 1 < parts.length) {
+    return parts[portalIndex + 1];
+  }
+  return DEFAULT_UNKNOWN_LABEL;
 }
 
 /** @returns An onReconciled callback suitable for SessionReturnWatcher. */
@@ -180,6 +207,34 @@ async function dispatchReconciledOutcome(
           },
           costRecord.traceId,
         );
+      }
+
+      // Mint the execution record from the return's own validated fields plus the
+      // brief's identity_id/worktree_path; transcript_ref stays opaque and unparsed.
+      if (deps.memoryBank && deps.extractor) {
+        const now = new Date().toISOString();
+        const executionMemory: IExecutionMemory = {
+          trace_id: traceId,
+          request_id: outcome.parentTraceId,
+          started_at: now,
+          completed_at: now,
+          status: ExecutionStatus.COMPLETED,
+          portal: portalFromWorktreePath(brief.worktree_path),
+          identity_id: brief.identity_id,
+          summary: outcome.summary,
+          context_files: [],
+          context_portals: [portalFromWorktreePath(brief.worktree_path)],
+          changes: {
+            files_created: [],
+            files_modified: outcome.pathsTouched,
+            files_deleted: [],
+          },
+        };
+        await deps.memoryBank.createExecutionRecord(executionMemory);
+        const candidates = await deps.extractor.analyzeExecution(executionMemory);
+        for (const candidate of candidates) {
+          await deps.extractor.createProposal(candidate, executionMemory, brief.identity_id);
+        }
       }
     } catch {
       deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {

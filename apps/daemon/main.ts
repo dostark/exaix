@@ -757,6 +757,8 @@ if (import.meta.main) {
             costTracker.trackGeneration(provider, model, usage, traceId),
         },
         logger,
+        memoryBank,
+        extractor: memoryExtractor,
       });
       sessionReturnWatcher = new SessionReturnWatcher({
         sessionDir,

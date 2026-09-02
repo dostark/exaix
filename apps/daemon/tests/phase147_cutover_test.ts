@@ -213,18 +213,27 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
       "capture must be journalled",
     );
 
-    // --- EXECUTION RECORD: the execution completes with lessons_learned populated.
+    // --- EXECUTION RECORD: the execution completes with lessons_learned populated. The
+    // summary carries the scripted agent's own completion line, not a test-authored
+    // constant unrelated to what the agent actually said.
+    assertExists(reactResult.description, "the ReAct loop must produce a completion summary");
     await memoryBank.createExecutionRecord(createMinimalExecutionMemory({
       trace_id: traceId,
-      summary: "Execution captured a rate-limiter insight via remember_fact and finished cleanly.",
+      summary: reactResult.description,
       lessons_learned: ["Process-lifetime state needs explicit invalidation hooks"],
     }));
-    assertExists(await memoryBank.getExecutionByTraceId(traceId), "the execution record must persist");
+    const persistedExecution = await memoryBank.getExecutionByTraceId(traceId);
+    assertExists(persistedExecution, "the execution record must persist");
+    assertEquals(
+      persistedExecution.summary,
+      reactResult.description,
+      "the record's summary must carry the scripted agent's own completion text, not a constant",
+    );
 
     // --- EXTRACTION: the real post-execution path (analyzeExecution + createProposal — the
     // exact body of ExecutionLoop.extractExecutionLearnings) reads lessons_learned AND the
     // scratchpad through LlmLearningExtractor, guided by the content-curation skill.
-    const executionMemory = (await memoryBank.getExecutionByTraceId(traceId))!;
+    const executionMemory = persistedExecution;
     const candidates = await memoryExtractor.analyzeExecution(executionMemory);
     assertEquals(candidates.length >= 1, true, "extraction must produce candidates from both sources");
     // LlmLearningExtractor hardcodes PROJECT scope; the proposal is elevated to GLOBAL so

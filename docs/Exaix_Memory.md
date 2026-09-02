@@ -65,18 +65,24 @@ mid-run and restated in its summary is extracted **once**, not twice.
 The extraction input is the **execution record** — a compact digest written when the
 run finishes, **not** the session transcript. Concretely, per run:
 
-- **`lessons_learned`** — up to 5 short "lesson" sentences mined from the run's own
-  reasoning and summary text (sentences like "learned that …", "discovered …",
-  "found that …", "realized …", "important to …"). It is _not_ a session log: model
-  reasoning traces, individual tool calls, and user answers are never fed to the
-  extractor. A known limitation (tracked as the phase's GAP-9, remediation Step 21):
-  in the plan-execution path this digest is currently built from placeholder strings,
-  so `lessons_learned` is often empty and the `summary` is boilerplate — until the
-  agent's real completion output is wired into the record.
-- **`summary`** — the run's completion summary text.
+- **`lessons_learned`** — derived by the extractor itself (the skill-guided LLM pass,
+  with a heuristic fallback) from the record's real `summary` content; it is _not_
+  a session log. Model reasoning traces, individual tool calls, and user answers are
+  never fed to the extractor.
+- **`summary`** — the run's real completion text: the agent's own completion content
+  on the plan path, and the delegate's own reported summary on the session-delegation
+  path — never a placeholder string.
 - **`error_message`** — set when the run failed; drives troubleshooting extraction.
 - **Scratchpad notes** — everything the agent captured via `remember_fact` during the
   run (often the richest real content today).
+
+Delegated sessions (a human coding tool run via `[session_delegate]`) participate in
+this same lifecycle: once the daemon accepts a session's return, it mints an
+execution record from the return's own validated fields (`summary`, `paths_touched`,
+the brief's `identity_id`/`worktree_path`) and runs it through the identical
+extraction and Pending → approval pipeline as a plan execution. The return's
+`transcript_ref` stays audit-only — it is never parsed as extraction input; richer
+transcript-aware extraction is a deliberate future decision, not granted silently.
 
 If you want reliably rich extraction today, encourage `remember_fact` capture during
 runs — the scratchpad is the one source that always carries genuine in-the-moment
