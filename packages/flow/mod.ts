@@ -7,7 +7,6 @@
  */
 
 export type { IFlowCheckpointService } from "./src/checkpoint_service.ts";
-export type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "./src/namespace_service.ts";
 export type { IFlowReportConfig, IFlowReportResult } from "./src/reporter.ts";
 export type { IConditionContext } from "./src/condition_evaluator.ts";
 export type { FeedbackLoopConfig } from "./src/feedback_loop.ts";
@@ -41,7 +40,6 @@ export { DefaultStepReplayPolicy } from "./src/contracts/step_durability.ts";
 export * from "./src/wait_states/mod.ts";
 export { mapPresetToSize } from "./src/preset_mapper.ts";
 export { FlowCheckpointService } from "./src/checkpoint_service.ts";
-export { FlowNamespaceService, NamespaceQuotaExceededError } from "./src/namespace_service.ts";
 export { FlowReporter } from "./src/reporter.ts";
 export { FlowValidatorImpl } from "./src/validator.ts";
 export { FlowLoader, validateDynamicStepTools } from "./src/flow_loader.ts";

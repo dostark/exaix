@@ -8,9 +8,9 @@
 import { z } from "zod";
 import type { IModelProvider } from "@exaix/ai";
 import type {
+  IExecutionMemoryStore,
   IExtractionStrategy,
   IMemoryCostRouter,
-  IScratchpadService,
   ISkillsService,
   Opt,
   Reason,
@@ -43,14 +43,16 @@ export class LlmLearningExtractor implements IExtractionStrategy {
     private provider: IModelProvider,
     private skillsService: ISkillsService,
     private costRouter: IMemoryCostRouter,
-    private scratchpad?: Opt<IScratchpadService, Reason.OptionalDependency>,
+    private executionMemoryStore?: Opt<IExecutionMemoryStore, Reason.OptionalDependency>,
   ) {}
 
   async extract(execution: IExecutionMemory): Promise<IProposalLearning[]> {
     const policy = await this.skillsService.getSkill(EXTRACTION_POLICY_SKILL_ID);
     if (!policy) throw new Error(`Required extraction policy skill not found: ${EXTRACTION_POLICY_SKILL_ID}`);
 
-    const scratchpadEntries = this.scratchpad ? await this.scratchpad.read(execution.trace_id) : [];
+    const scratchpadEntries = this.executionMemoryStore
+      ? await this.executionMemoryStore.readNotes(execution.trace_id)
+      : [];
     const result = await this.provider.generate(
       this.buildPrompt(execution, policy.instructions, scratchpadEntries),
       {

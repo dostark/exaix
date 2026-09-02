@@ -38,7 +38,7 @@ export * from "./i_journal_service.ts";
 export * from "./i_learning_contradiction_resolver.ts";
 export * from "./i_log_service.ts";
 export * from "./i_memory_bank_service.ts";
-export * from "./i_scratchpad_service.ts";
+export * from "./i_execution_memory_store.ts";
 export * from "./i_memory_embedding_service.ts";
 export * from "./i_model_registry.ts";
 export * from "./i_model_pricing_lookup.ts";

@@ -457,8 +457,13 @@ export type ISkillIndex = z.infer<typeof SkillIndexSchema>;
 export const ScratchpadEntrySchema = z.object({
   id: z.string().describe("Unique entry id"),
   trace_id: z.string().describe("Execution trace this entry is scoped to"),
-  content: z.string().describe("The captured note text"),
+  content: z.string().describe("The captured note text or namespace value"),
   tags: z.array(z.string()).optional().describe("Optional free-form tags"),
+  kind: z.enum(["note", "namespace"]).default("note").describe(
+    "Entry kind: free-form agent note or flow-namespace variable",
+  ),
+  key: z.string().optional().describe("Namespace key (namespace-kind entries only)"),
+  author_step_id: z.string().optional().describe("Writing flow step id (namespace-kind entries only)"),
   created_at: z.string().describe("ISO timestamp of capture"),
 });
 

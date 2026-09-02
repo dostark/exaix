@@ -13,7 +13,7 @@
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { FLOW_EVENT_NAMESPACE_INITIALIZED, FLOW_EVENT_NAMESPACE_READ, FLOW_EVENT_NAMESPACE_WRITE } from "@exaix/core";
-import type { IFlowNamespaceService } from "./namespace_service.ts";
+import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
 import type { IFlowEventLogger, IFlowStepRequest, IStepResult } from "./flow_runner.ts";
 
 export interface IFlowNamespaceOriginalRequest {
@@ -24,7 +24,7 @@ export interface IFlowNamespaceOriginalRequest {
 }
 
 export interface IFlowNamespaceCoordinatorDeps {
-  namespaceService?: IFlowNamespaceService;
+  namespaceService?: IExecutionMemoryStore;
   eventLogger: IFlowEventLogger;
 }
 
@@ -48,7 +48,7 @@ export interface IFlowNamespaceCoordinator {
 }
 
 export class FlowNamespaceCoordinator implements IFlowNamespaceCoordinator {
-  private readonly namespaceService?: IFlowNamespaceService;
+  private readonly namespaceService?: IExecutionMemoryStore;
   private readonly eventLogger: IFlowEventLogger;
 
   constructor(deps: IFlowNamespaceCoordinatorDeps) {
@@ -65,7 +65,9 @@ export class FlowNamespaceCoordinator implements IFlowNamespaceCoordinator {
       return;
     }
 
-    await this.namespaceService.initialize(namespaceId);
+    // Hydration-on-first-touch replaces the retired initialize() contract: this empty-key
+    // read replays the trace's durable log so resumed flows see prior state.
+    await this.namespaceService.readKeys(namespaceId, []);
     await this.eventLogger.log(FLOW_EVENT_NAMESPACE_INITIALIZED, {
       namespaceId,
       flowId: flow.id,
@@ -124,7 +126,7 @@ export class FlowNamespaceCoordinator implements IFlowNamespaceCoordinator {
       return;
     }
 
-    await this.namespaceService.writeEntries(
+    await this.namespaceService.writeNamespaceEntries(
       namespaceId,
       stepId,
       result.namespaceWrites.writes,

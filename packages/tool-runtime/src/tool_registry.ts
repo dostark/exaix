@@ -671,16 +671,16 @@ export class ToolRegistry implements IToolRegistry {
     return this.formatSuccess(queryRelationships(knowledge, from, kind) as unknown as JSONValue);
   }
 
-  /** Captures a lightweight execution-scoped note into the per-trace scratchpad; traceId is the registry's own, never agent-supplied. */
+  /** Captures a lightweight execution-scoped note into the per-trace execution memory store; traceId is the registry's own, never agent-supplied. */
   private rememberFactTool(content: string, tags?: Opt<string[], Reason.OptionalInput>): Promise<IToolResult> {
-    const scratchpad = this.applicationContext?.scratchpad;
-    if (!scratchpad) {
+    const store = this.applicationContext?.executionMemoryStore;
+    if (!store) {
       return Promise.resolve({
         success: false,
-        error: "remember_fact requires a scratchpad service, none is configured",
+        error: "remember_fact requires an execution memory store, none is configured",
       });
     }
-    return scratchpad.append(this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID, content, tags);
+    return store.appendNote(this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID, content, tags);
   }
 
   private async whoDependsOnTool(path: string): Promise<IToolResult> {

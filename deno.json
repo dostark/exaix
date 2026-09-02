@@ -239,6 +239,7 @@
     "@exaix/core/repositories": "./packages/core/src/repositories/mod.ts",
     "@exaix/core/logger": "./packages/core/src/logger/mod.ts",
     "@exaix/core/config": "./packages/core/src/config/mod.ts",
+    "@exaix/core/execution-memory": "./packages/core/src/execution-memory/mod.ts",
     "@exaix/core/cost": "./packages/core/src/cost/mod.ts",
     "@exaix/core/events": "./packages/core/src/events/mod.ts",
     "@exaix/core/triggers": "./packages/core/src/triggers/mod.ts",

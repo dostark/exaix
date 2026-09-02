@@ -1,7 +1,7 @@
 /**
- * @module ScratchpadEventTest
- * @path packages/memory/tests/scratchpad/scratchpad_event_test.ts
- * @description Verifies that a successful scratchpad append emits MemoryScratchpadEntryAdded
+ * @module ExecutionMemoryStoreEventTest
+ * @path packages/memory/tests/scratchpad/execution_memory_store_event_test.ts
+ * @description Verifies that a successful ExecutionMemoryStore.appendNote emits MemoryScratchpadEntryAdded
  * through a real EventLogger with trace_id/entry_id/content_length metadata and no raw content.
  */
 
@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
-import { ScratchpadService } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { initTestDbService } from "@exaix/testing";
 
 /** Expected metadata payload of a MemoryScratchpadEntryAdded journal row. */
@@ -19,11 +19,11 @@ interface ScratchpadEventPayload {
   content_length: number;
 }
 
-Deno.test("ScratchpadService: a successful append emits MemoryScratchpadEntryAdded without raw content", async () => {
+Deno.test("ExecutionMemoryStore: a successful appendNote emits MemoryScratchpadEntryAdded without raw content", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
-    const service = new ScratchpadService(config, new EventLogger({ db }));
-    const result = await service.append("trace-event", "sensitive agent-authored note");
+    const service = new ExecutionMemoryStore(config, new EventLogger({ db }));
+    const result = await service.appendNote("trace-event", "sensitive agent-authored note");
     assertEquals(result.success, true);
     const entryId = (result.data as { entry_id: string }).entry_id;
 

@@ -10,7 +10,8 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 
-import { LlmLearningExtractor, ScratchpadService } from "@exaix/memory";
+import { LlmLearningExtractor } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
@@ -47,10 +48,10 @@ class PolicyObeyingStubProvider implements IModelProvider {
 Deno.test("scratchpad candidates pass Step 1's content-curation skill identically to any other candidate", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
-    const scratchpad = new ScratchpadService(config);
+    const scratchpad = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
-    await scratchpad.append(traceId, "File main.ts imports util.ts internally");
-    await scratchpad.append(traceId, "Config reload needs an explicit invalidation hook");
+    await scratchpad.appendNote(traceId, "File main.ts imports util.ts internally");
+    await scratchpad.appendNote(traceId, "Config reload needs an explicit invalidation hook");
     const execution = createMinimalExecutionMemory({ trace_id: traceId });
 
     const provider = new PolicyObeyingStubProvider();

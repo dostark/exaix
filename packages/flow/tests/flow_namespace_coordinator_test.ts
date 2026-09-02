@@ -10,14 +10,15 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowNamespaceCoordinator, type IFlowEventLogger } from "@exaix/flow";
-import type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "@exaix/flow";
+import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
 import type { IFlow, IFlowNamespaceWrite, IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IFlowStepRequest } from "@exaix/flow";
 import type { JSONValue } from "@exaix/core";
+import type { IToolResult } from "@exaix/core/types";
 import { DEFAULT_FLOW_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 
-class FakeNamespaceService implements IFlowNamespaceService {
+class FakeExecutionMemoryStore implements IExecutionMemoryStore {
   initializeCalls: string[] = [];
   writeCalls: Array<{ traceId: string; stepId: string }> = [];
   store = new Map<string, Record<string, string>>();
@@ -26,17 +27,25 @@ class FakeNamespaceService implements IFlowNamespaceService {
     return `/tmp/${traceId}.json`;
   }
 
-  initialize(traceId: string): Promise<IFlowNamespaceSnapshot> {
+  async initialize(traceId: string): Promise<void> {
     this.initializeCalls.push(traceId);
-    this.store.set(traceId, {});
-    return this.snapshot(traceId);
+    if (!this.store.has(traceId)) this.store.set(traceId, {});
+    await this.readKeys(traceId, []);
   }
 
-  load(traceId: string): Promise<IFlowNamespaceSnapshot> {
-    return this.snapshot(traceId);
+  async appendNote(_traceId: string, _content: string, _tags?: string[]): Promise<IToolResult> {
+    return { success: true, data: {} };
   }
 
-  readKeys(traceId: string, keys: string[]): Promise<Record<string, string | undefined>> {
+  async readNotes(_traceId: string): Promise<never[]> {
+    return [];
+  }
+
+  async readKeys(traceId: string, keys: string[]): Promise<Record<string, string | undefined>> {
+    // Initialize == first-touch hydration (empty-key read); keeps the pre-migration assertion meaning.
+    if (keys.length === 0) {
+      this.initializeCalls.push(traceId);
+    }
     const entries = this.store.get(traceId) ?? {};
     const result: Record<string, string | undefined> = {};
     for (const key of keys) {
@@ -45,38 +54,18 @@ class FakeNamespaceService implements IFlowNamespaceService {
     return Promise.resolve(result);
   }
 
-  writeEntries(
+  async writeNamespaceEntries(
     traceId: string,
     stepId: string,
     writes: IFlowNamespaceWrite[],
     stepOutput: string,
-  ): Promise<IFlowNamespaceSnapshot> {
+  ): Promise<void> {
     this.writeCalls.push({ traceId, stepId });
     const entries = this.store.get(traceId) ?? {};
     for (const write of writes) {
       entries[write.key] = stepOutput;
     }
     this.store.set(traceId, entries);
-    return this.snapshot(traceId);
-  }
-
-  delete(traceId: string): Promise<void> {
-    this.store.delete(traceId);
-    return Promise.resolve();
-  }
-
-  snapshot(traceId: string): Promise<IFlowNamespaceSnapshot> {
-    return Promise.resolve({
-      traceId,
-      path: this.getNamespacePath(traceId),
-      entries: this.store.get(traceId) ?? {},
-      updatedAt: new Date().toISOString(),
-    });
-  }
-
-  restore(traceId: string, snapshot: IFlowNamespaceSnapshot): Promise<void> {
-    this.store.set(traceId, snapshot.entries);
-    return Promise.resolve();
   }
 }
 
@@ -138,7 +127,7 @@ function makeStepRequest(): IFlowStepRequest {
 
 function makeCoordinator() {
   const eventLogger = new MockEventLogger();
-  const namespaceService = new FakeNamespaceService();
+  const namespaceService = new FakeExecutionMemoryStore();
   const coordinator = new FlowNamespaceCoordinator({ namespaceService, eventLogger });
   return { coordinator, eventLogger, namespaceService };
 }
@@ -173,7 +162,7 @@ Deno.test("[FlowNamespaceCoordinator.attachSharedNamespace] attaches resolved re
   const { coordinator, namespaceService } = makeCoordinator();
   const flow = buildFlow(true);
   await namespaceService.initialize("run-3");
-  await namespaceService.writeEntries("run-3", "step-0", [{ key: "greeting", mode: "write" }], "hello");
+  await namespaceService.writeNamespaceEntries("run-3", "step-0", [{ key: "greeting", mode: "write" }], "hello");
 
   const step = buildStep({ namespace: { reads: [{ key: "greeting" }] } });
   const stepRequest = makeStepRequest();

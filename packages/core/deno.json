@@ -22,6 +22,7 @@
     "@exaix/core/repositories": "./src/repositories/mod.ts",
     "@exaix/core/logger": "./src/logger/mod.ts",
     "@exaix/core/config": "./src/config/mod.ts",
+    "@exaix/core/execution-memory": "./src/execution-memory/mod.ts",
     "@exaix/core/cost": "./src/cost/mod.ts",
     "@exaix/core/func": "./src/func/mod.ts",
     "@exaix/core/skills": "./src/skills/mod.ts",

@@ -1200,6 +1200,9 @@ export const MEMORY_LINK_EXPANSION_SCORE_FACTOR = 0.5;
 /** Per-entry byte cap for scratchpad notes; over-cap entries are rejected, never silently truncated. */
 export const DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES = 8_192;
 
+/** Per-entry byte cap for flow-namespace values; oversized values are silently truncated (unlike notes). */
+export const DEFAULT_NAMESPACE_ENTRY_MAX_BYTES = 8_192;
+
 export const DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION: number = configurable({
   key: "memory.scratchpad.max_entries_per_execution",
   default: 200,

@@ -12,7 +12,7 @@ import { exists } from "@std/fs";
 
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION, ToolName } from "@exaix/core";
-import { ScratchpadService } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { createMockConfig, getMemoryExecutionDir, initTestDbService } from "@exaix/testing";
 import type { IApplicationContext, IDatabaseService, IDisplayService } from "@exaix/core/types";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
@@ -23,14 +23,14 @@ function scratchpadPath(tempDir: string, traceId: string): string {
   return join(getMemoryExecutionDir(tempDir), traceId, "scratchpad.jsonl");
 }
 
-/** Only `scratchpad`/`config` are read by remember_fact; the rest of IApplicationContext is
+/** Only .executionMemoryStore./.config. are read by remember_fact; the rest of IApplicationContext is
  *  stubbed to satisfy the interface, matching flow_runner.ts's established stubbing idiom. */
 function makeContext(
   config: ReturnType<typeof createMockConfig>,
-  scratchpad: ScratchpadService,
+  executionMemoryStore: ExecutionMemoryStore,
 ): IApplicationContext {
   return {
-    scratchpad,
+    executionMemoryStore,
     config: {
       get: () => config,
       getAll: () => config,
@@ -52,12 +52,12 @@ function makeContext(
 Deno.test("remember_fact through a real ToolRegistry writes to the registry traceId, ignoring a params trace_id", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
-    const scratchpad = new ScratchpadService(config);
+    const executionMemoryStore = new ExecutionMemoryStore(config);
     const toolConfig = createMockConfig(config.system.root);
     const registry = new ToolRegistry({
       config: toolConfig,
       baseDir: config.system.root,
-      context: makeContext(toolConfig, scratchpad),
+      context: makeContext(toolConfig, executionMemoryStore),
     });
 
     const result = await registry.execute(ToolName.REMEMBER_FACT, {
@@ -69,7 +69,7 @@ Deno.test("remember_fact through a real ToolRegistry writes to the registry trac
     const entryId = (result.data as { entry_id: string }).entry_id;
     assertExists(entryId);
 
-    const entries = await scratchpad.read(REGISTRY_DEFAULT_TRACE_ID);
+    const entries = await executionMemoryStore.readNotes(REGISTRY_DEFAULT_TRACE_ID);
     assertEquals(entries.length, 1);
     assertEquals(entries[0].content, "agent noticed a flaky retry path");
 
@@ -87,12 +87,12 @@ Deno.test("remember_fact through a real ToolRegistry writes to the registry trac
 Deno.test("remember_fact forwards tags through the registry to the scratchpad entry", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
-    const scratchpad = new ScratchpadService(config);
+    const executionMemoryStore = new ExecutionMemoryStore(config);
     const toolConfig = createMockConfig(config.system.root);
     const registry = new ToolRegistry({
       config: toolConfig,
       baseDir: config.system.root,
-      context: makeContext(toolConfig, scratchpad),
+      context: makeContext(toolConfig, executionMemoryStore),
     });
 
     const result = await registry.execute(ToolName.REMEMBER_FACT, {
@@ -101,7 +101,7 @@ Deno.test("remember_fact forwards tags through the registry to the scratchpad en
     });
 
     assertEquals(result.success, true);
-    const entries = await scratchpad.read(REGISTRY_DEFAULT_TRACE_ID);
+    const entries = await executionMemoryStore.readNotes(REGISTRY_DEFAULT_TRACE_ID);
     assertEquals(entries.length, 1);
     assertEquals(entries[0].tags, ["perf", "flaky"]);
   } finally {
@@ -112,16 +112,16 @@ Deno.test("remember_fact forwards tags through the registry to the scratchpad en
 Deno.test("remember_fact enforces the per-execution entry-count cap with a clear IToolResult error", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
-    const scratchpad = new ScratchpadService(config);
+    const executionMemoryStore = new ExecutionMemoryStore(config);
     const toolConfig = createMockConfig(config.system.root);
     const registry = new ToolRegistry({
       config: toolConfig,
       baseDir: config.system.root,
-      context: makeContext(toolConfig, scratchpad),
+      context: makeContext(toolConfig, executionMemoryStore),
     });
 
     for (let i = 0; i < DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION; i++) {
-      const fill = await scratchpad.append(REGISTRY_DEFAULT_TRACE_ID, `filler ${i}`);
+      const fill = await executionMemoryStore.appendNote(REGISTRY_DEFAULT_TRACE_ID, `filler ${i}`);
       assertEquals(fill.success, true);
     }
 
@@ -134,7 +134,7 @@ Deno.test("remember_fact enforces the per-execution entry-count cap with a clear
       result.error,
       `scratchpad full: max ${DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION} entries reached for this execution`,
     );
-    const entries = await scratchpad.read(REGISTRY_DEFAULT_TRACE_ID);
+    const entries = await executionMemoryStore.readNotes(REGISTRY_DEFAULT_TRACE_ID);
     assertEquals(entries.length, DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION, "over-cap call must not append");
   } finally {
     await cleanup();

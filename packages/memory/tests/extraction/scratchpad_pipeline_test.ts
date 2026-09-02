@@ -10,12 +10,8 @@
 import { assertEquals } from "@std/assert";
 
 import { EventLogger } from "@exaix/core/logger";
-import {
-  HeuristicExtractionStrategy,
-  MemoryBankService,
-  MemoryExtractorService,
-  ScratchpadService,
-} from "@exaix/memory";
+import { HeuristicExtractionStrategy, MemoryBankService, MemoryExtractorService } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
 import type { IMemoryCostRouter } from "@exaix/core/types";
 
@@ -23,7 +19,7 @@ Deno.test("[integration] scratchpad appends reach the normal Pending -> approval
   const { db, config, cleanup } = await initTestDbService();
   try {
     const traceId = crypto.randomUUID();
-    const scratchpad = new ScratchpadService(config, new EventLogger({ db }));
+    const scratchpad = new ExecutionMemoryStore(config, new EventLogger({ db }));
     const memoryBank = new MemoryBankService(config, new EventLogger({ db }));
     const router = castAny<IMemoryCostRouter>({
       isRemoteAllowed: () => Promise.resolve(false),
@@ -34,10 +30,10 @@ Deno.test("[integration] scratchpad appends reach the normal Pending -> approval
       heuristicStrategy: new HeuristicExtractionStrategy(scratchpad),
     });
 
-    // Two remember_fact-equivalent appends (ScratchpadService.append is what the tool delegates to);
+    // Two remember_fact-equivalent appends (ExecutionMemoryStore.appendNote is what the tool delegates to);
     // the second restates the lessons_learned entry below and must be deduplicated, not double-extracted.
-    await scratchpad.append(traceId, "Rate limiter resets on full restart, not per request");
-    await scratchpad.append(traceId, "Always validate portal mount paths before file writes");
+    await scratchpad.appendNote(traceId, "Rate limiter resets on full restart, not per request");
+    await scratchpad.appendNote(traceId, "Always validate portal mount paths before file writes");
 
     const execution = createMinimalExecutionMemory({
       trace_id: traceId,

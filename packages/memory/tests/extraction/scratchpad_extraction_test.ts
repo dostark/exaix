@@ -8,7 +8,8 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 
-import { LlmLearningExtractor, ScratchpadService } from "@exaix/memory";
+import { LlmLearningExtractor } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { castAny, createMinimalExecutionMemory, initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
@@ -50,9 +51,9 @@ function makeRouter() {
 Deno.test("LlmLearningExtractor: a scratchpad entry not mentioned in lessons_learned is captured as a learning", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
-    const scratchpad = new ScratchpadService(config);
+    const scratchpad = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
-    await scratchpad.append(traceId, "Rate limiter resets on full restart, not per request", ["gotcha"]);
+    await scratchpad.appendNote(traceId, "Rate limiter resets on full restart, not per request", ["gotcha"]);
     const execution = createMinimalExecutionMemory({
       trace_id: traceId,
       lessons_learned: ["An unrelated post-run lesson"],
@@ -82,10 +83,10 @@ Deno.test("LlmLearningExtractor: a scratchpad entry not mentioned in lessons_lea
 Deno.test("LlmLearningExtractor: an insight present in both scratchpad and lessons_learned is not double-extracted", async () => {
   const { config, cleanup } = await initTestDbService();
   try {
-    const scratchpad = new ScratchpadService(config);
+    const scratchpad = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
     const shared = "Avoid caching stale portal config between runs";
-    await scratchpad.append(traceId, shared);
+    await scratchpad.appendNote(traceId, shared);
     const execution = createMinimalExecutionMemory({
       trace_id: traceId,
       lessons_learned: [shared],

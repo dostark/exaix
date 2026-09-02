@@ -71,12 +71,9 @@ import {
   createInMemorySessionDelegateCycleStore,
   type ISessionDelegateCycleStore,
 } from "@exaix/session/session_delegate_cycle_store.ts";
-import {
-  FlowCheckpointService,
-  FlowNamespaceService,
-  type IFlowCheckpointService,
-  type IFlowNamespaceService,
-} from "@exaix/flow";
+import { FlowCheckpointService, type IFlowCheckpointService } from "@exaix/flow";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import type { IExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { FlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";
 import { StepOutputFormatter } from "./step_output_formatter.ts";
 import { FlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
@@ -744,7 +741,7 @@ export class FlowRunner implements IFlowRunner {
   private gateEvaluator?: IGateEvaluator;
   private config?: Config;
   private checkpointService?: IFlowCheckpointService;
-  private namespaceService?: IFlowNamespaceService;
+  private namespaceService?: IExecutionMemoryStore;
   private stepDurabilityStore: IStepDurabilityStore;
   private stepReplayPolicy: IStepReplayPolicy;
   private checkpointCoordinator!: FlowCheckpointCoordinator;
@@ -881,7 +878,7 @@ export class FlowRunner implements IFlowRunner {
       this.checkpointService = new FlowCheckpointService(this.config);
     }
     if (this.config) {
-      this.namespaceService = new FlowNamespaceService(this.config);
+      this.namespaceService = new ExecutionMemoryStore(this.config);
     }
   }
 

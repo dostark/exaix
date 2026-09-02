@@ -73,9 +73,9 @@ import {
   MemoryExtractorService,
   MemoryReflectionService,
   ProviderEmbeddingService,
-  ScratchpadService,
   SessionMemoryService,
 } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
 import { createMemoryEmbeddingProvider } from "../common/embedding_provider_bootstrap.ts";
 import { NotificationService } from "@exaix/core/notification";
@@ -540,7 +540,7 @@ if (import.meta.main) {
       contradictionResolver: new LearningContradictionResolver(llmProvider, memoryCostRouter),
     });
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
-    const scratchpadService = new ScratchpadService(config, logger);
+    const executionMemoryStore = new ExecutionMemoryStore(config, logger);
     const memoryExtractor = new MemoryExtractorService(
       config,
       dbService,
@@ -548,8 +548,8 @@ if (import.meta.main) {
       logger,
       {
         costRouter: memoryCostRouter,
-        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter, scratchpadService),
-        heuristicStrategy: new HeuristicExtractionStrategy(scratchpadService),
+        llmStrategy: new LlmLearningExtractor(llmProvider, skillsService, memoryCostRouter, executionMemoryStore),
+        heuristicStrategy: new HeuristicExtractionStrategy(executionMemoryStore),
       },
     );
     const embeddingProvider = createMemoryEmbeddingProvider(config);
@@ -617,7 +617,7 @@ if (import.meta.main) {
       memoryBank,
       extractor: memoryExtractor,
       portalKnowledge,
-      scratchpad: scratchpadService,
+      executionMemoryStore: executionMemoryStore,
       embeddings: providerEmbedding,
     };
 

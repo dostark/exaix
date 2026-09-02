@@ -15,6 +15,7 @@
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/execution-memory": "../core/src/execution-memory/mod.ts",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/testing": "../testing/mod.ts",

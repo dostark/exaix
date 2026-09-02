@@ -31,6 +31,7 @@ const EXPECTED_CORE_TOOL_NAMES = [
   "patch_file",
   "query_relationships",
   "who_depends_on",
+  "remember_fact",
 ].sort();
 
 function registryTools() {

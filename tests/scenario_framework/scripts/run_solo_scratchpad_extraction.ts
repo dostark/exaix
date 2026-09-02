@@ -18,12 +18,8 @@ import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IApplicationContext } from "@exaix/core/types";
 import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrategy } from "@exaix/execution";
-import {
-  HeuristicExtractionStrategy,
-  MemoryBankService,
-  MemoryExtractorService,
-  ScratchpadService,
-} from "@exaix/memory";
+import { HeuristicExtractionStrategy, MemoryBankService, MemoryExtractorService } from "@exaix/memory";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -102,14 +98,14 @@ if (import.meta.main) {
   try {
     const logger = new EventLogger({ db });
     const provider = new RememberFactProvider();
-    const scratchpad = new ScratchpadService(config, logger);
+    const executionMemoryStore = new ExecutionMemoryStore(config, logger);
     const context: IApplicationContext = {
       config: createStubConfig(config),
       db,
       provider,
       git: createStubGit(),
       display: createStubDisplay(db),
-      scratchpad,
+      executionMemoryStore,
     } as IApplicationContext;
     const traceId = crypto.randomUUID();
     const registry = new ToolRegistry({ config, traceId, baseDir: workspaceRoot, context });
@@ -147,14 +143,14 @@ if (import.meta.main) {
       .find((activity) => activity.action_type === DomainEventType.AgentDynamicToolCall);
     if (!event) throw new Error("real ReAct execution emitted no dynamic_tool_call event");
 
-    const entries = await scratchpad.read(traceId);
+    const entries = await executionMemoryStore.readNotes(traceId);
     if (entries.length !== 1 || entries[0].content !== CAPTURED_CONTENT) {
       throw new Error(`expected exactly the captured note in the trace scratchpad, got ${JSON.stringify(entries)}`);
     }
 
     const memoryBank = new MemoryBankService(config, logger);
     const extractor = new MemoryExtractorService(config, db, memoryBank, logger, {
-      heuristicStrategy: new HeuristicExtractionStrategy(scratchpad),
+      heuristicStrategy: new HeuristicExtractionStrategy(executionMemoryStore),
     });
     const execution = createMinimalExecutionMemory({
       trace_id: traceId,

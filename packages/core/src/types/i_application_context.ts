@@ -32,7 +32,7 @@ import type { IToolRegistry } from "./i_tool_registry.ts";
 import type { IGateEvaluator } from "./i_gate_evaluator.ts";
 import type { IConfigAdapter } from "./i_config_adapter.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
-import type { IScratchpadService } from "./i_scratchpad_service.ts";
+import type { IExecutionMemoryStore } from "./i_execution_memory_store.ts";
 import type { ICostTracker } from "./i_cost_tracker.ts";
 import type { INotificationService } from "./i_notification_service.ts";
 import type { IBenchmarkReader, IModelRegistry } from "./i_model_registry.ts";
@@ -109,8 +109,8 @@ export interface IApplicationContext {
   /** Optional portal knowledge analysis service */
   portalKnowledge?: IPortalKnowledgeService;
 
-  /** Optional per-execution scratchpad store for remember_fact capture */
-  scratchpad?: IScratchpadService;
+  /** Optional per-execution memory store (notes + flow namespace) behind remember_fact and flow orchestration */
+  executionMemoryStore?: IExecutionMemoryStore;
 
   /** Configuration for portal knowledge analysis */
   portalKnowledgeConfig?: IPortalKnowledgeConfig;
