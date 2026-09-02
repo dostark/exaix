@@ -45,6 +45,22 @@
   durable banks.
 - New end-user guide [Exaix_Memory.md](Exaix_Memory.md) explains the memory lifecycle,
   the self-learning loop, and the CLI inspection and approval flow.
+- Delegated sessions ([session_delegate](Exaix_User_Guide.md#258-memory-participation))
+  now participate in the memory lifecycle too: an accepted session mints an execution
+  record and runs through the same extraction and approval pipeline as a plan
+  execution, instead of contributing nothing.
+
+### Fixed
+
+- Post-run learning extraction now reads the agent's own real completion summary
+  instead of a placeholder string, so extracted learnings reflect what a run actually
+  did.
+- Memory retrieval's keyword signal now finds promoted global learnings even with no
+  embedding match, matching what the semantic-similarity signal already found —
+  previously a promoted learning was only reachable via embedding similarity.
+- Tags you attach to a `remember_fact` note now carry through onto the learning
+  extracted from it — previously they were captured and journalled but silently
+  dropped during extraction.
 
 Defaults are unchanged: memory runs local-first with deterministic fallbacks when no
 cloud model is available, and automatic approval stays off until you enable it.

@@ -1151,7 +1151,12 @@ on-disk memory state:
   call the `remember_fact` Solo ReAct tool to jot "worth remembering" notes in the
   moment. Notes land in a unified per-execution store and are read as a second,
   equally-cited input by the same extraction pass that reads the run summary — an
-  insight captured mid-run and restated post-run is extracted once.
+  insight captured mid-run and restated post-run is extracted once. A third source
+  feeds the identical pipeline: an accepted `session_delegate` return (`apps/daemon/src/on_reconciled_dispatcher.ts`)
+  mints an execution record from the return's own validated `summary`/`paths_touched`
+  and the brief's `identity_id`, so delegated-tool work is captured the same way a
+  plan execution is — a rejected return never mints one, and the return's
+  `transcript_ref` stays opaque, never parsed as extraction input.
 - **Curation.** Extraction and reflection load a dedicated content-curation policy skill
   by explicit id. It biases extraction toward actionable, non-derivable insights
   (patterns, decisions, do/don't guidance tied to concrete context) and away from

@@ -526,6 +526,17 @@ permitted_paths = ["src/**", "tests/**"]
 harden_permissions = true
 ```
 
+#### 2.5.8 Memory Participation
+
+An accepted delegated session — any gate — feeds Exaix's memory lifecycle exactly
+like a plan execution: the daemon mints an execution record from the return's own
+`summary`/`paths_touched` and the brief's `identity_id`, then runs the same
+skill-guided extraction and Pending → approval pipeline. A rejected or expired
+return never does. The delegate's `transcript_ref` (the full session transcript)
+stays audit-only — extraction never reads it. See
+[Exaix_Memory.md §2.1](Exaix_Memory.md#21-born--capture-and-extraction) for how
+this fits the wider capture story.
+
 ### 2.5a Per-Step CLI Delegate Execution — the Cost-Preferred Path for Live/Eval Runs
 
 `[cli_delegate]` is a **different, narrower** mechanism than `[session_delegate]` above: it
