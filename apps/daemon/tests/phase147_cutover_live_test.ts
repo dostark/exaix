@@ -15,6 +15,10 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 
+import { ExecutionContextService, OutputParser, ReActLoopAdapter, ReActLoopStrategy } from "@exaix/execution";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { SecurityMode, ToolName } from "@exaix/core";
+import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
@@ -48,7 +52,7 @@ import {
   initTestDbService,
 } from "@exaix/testing";
 import { ProviderType } from "@exaix/core";
-import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
+import type { IApplicationContext, IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
@@ -147,14 +151,56 @@ Deno.test({
       });
       const sessionMemory = new SessionMemoryService(memoryBank, embeddingService);
 
-      // (1) CAPTURE: the same tool + store path the ReAct loop uses.
+      // (1) CAPTURE: a real ReAct loop with the real model calls remember_fact through a
+      // real context-wired ToolRegistry — the live scratchpad-capture criterion, closed.
       const traceId = crypto.randomUUID();
-      const appendResult = await executionMemoryStore.appendNote(
-        traceId,
-        "Rate limiter resets on full restart, not per request",
-        ["reliability"],
+      const context: IApplicationContext = {
+        db,
+        provider,
+        git: createStubGit(),
+        display: createStubDisplay(db),
+        config: createStubConfig(config),
+        executionMemoryStore,
+      };
+      const registry = new ToolRegistry({ config, traceId, baseDir: tempDir, context });
+      const adapter = new ReActLoopAdapter(
+        new OutputParser(),
+        new ExecutionContextService(config, logger, {}),
+        logger,
+        registry,
       );
-      assertEquals(appendResult.success, true);
+      const reactStrategy = new ReActLoopStrategy(adapter, provider);
+      const reactResult = await reactStrategy.execute(
+        { name: "live-cutover-agent", capabilities: ["memory-capture"], model: testModel } as never,
+        {
+          trace_id: traceId,
+          request_id: `live-cutover-${traceId}`,
+          request:
+            'First, call the remember_fact tool to capture this fact: "Rate limiter resets on full restart, not per request". Then finish.',
+          plan: "Capture the in-the-moment insight with remember_fact, then complete.",
+          portal: "none",
+        },
+        {
+          identity_id: "live-cutover-agent",
+          portal: "none",
+          permitted_tools: [ToolName.REMEMBER_FACT],
+          security_mode: SecurityMode.SANDBOXED,
+          timeout_ms: 300_000,
+          max_tool_calls: 4,
+          audit_enabled: true,
+        },
+      );
+      const notes = await executionMemoryStore.readNotes(traceId);
+      assertEquals(
+        notes.length >= 1,
+        true,
+        `a real agent run must call remember_fact and land at least one entry in scratchpad.jsonl (got ${notes.length}; tool_calls=${
+          reactResult.tool_calls ?? 0
+        })`,
+      );
+      console.log(
+        `live capture: notes=${notes.length} tool_calls=${reactResult.tool_calls ?? 0}`,
+      );
 
       // (2) EXECUTION RECORD.
       await memoryBank.createExecutionRecord(createMinimalExecutionMemory({
