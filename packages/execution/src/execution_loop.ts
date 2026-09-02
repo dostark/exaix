@@ -374,7 +374,7 @@ export class ExecutionLoop {
         planAgentId: prepared.planAgentId,
         portal: frontmatter.portal,
         targetBranch: frontmatter.target_branch,
-      });
+      }, workResult.completionSummary);
 
       return { success: true, traceId };
     } catch (error) {
@@ -450,7 +450,7 @@ export class ExecutionLoop {
     executionRoot: string;
     executionGitService: IGitService;
     frontmatter: PlanFrontmatter;
-  }): Promise<{ didExecuteWork: boolean; didMutateRepo: boolean; report?: string }> {
+  }): Promise<{ didExecuteWork: boolean; didMutateRepo: boolean; report?: string; completionSummary?: string }> {
     if (args.structuredPlan) {
       if (args.isReadOnly && (!this.llmProvider || !this.db)) {
         this.logActivity(DomainEventType.ExecutionReadonlyPlanSkipped, args.traceId, {
@@ -479,6 +479,7 @@ export class ExecutionLoop {
         didExecuteWork: true,
         didMutateRepo: !args.isReadOnly,
         report: structuredPlanResult.report,
+        completionSummary: structuredPlanResult.report,
       };
     }
 
@@ -852,9 +853,10 @@ export class ExecutionLoop {
     requestId: string,
     frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
     artifactContext?: Opt<ISuccessArtifactContext, Reason.OptionalContext>,
+    completionSummary?: Opt<string, Reason.ExecutionConfig>,
   ): Promise<void> {
     // Generate mission report
-    await this.generateMissionReport(traceId, requestId, frontmatter);
+    await this.generateMissionReport(traceId, requestId, frontmatter, completionSummary);
 
     // Auto-extract learnings from execution if extractor is configured
     await this.extractExecutionLearnings(traceId);
@@ -1325,6 +1327,7 @@ export class ExecutionLoop {
     traceId: string,
     requestId: string,
     frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
+    completionSummary?: Opt<string, Reason.ExecutionConfig>,
   ): Promise<void> {
     try {
       const reporter = this.createMissionReporter();
@@ -1343,8 +1346,8 @@ export class ExecutionLoop {
         branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
         completedAt: new Date(),
         contextFiles,
-        reasoning: "Plan execution completed successfully",
-        summary: `Successfully executed plan for request: ${requestId}`,
+        reasoning: completionSummary ?? "Plan execution completed successfully",
+        summary: completionSummary ?? `Successfully executed plan for request: ${requestId}`,
       };
 
       await reporter.generate(traceData);

@@ -245,30 +245,11 @@ export class MissionReporter {
   /**
    * Extract lessons learned from reasoning and summary text
    */
-  private extractLessonsLearned(reasoning: string, summary: string): string[] {
-    const lessons: string[] = [];
-    const text = `${reasoning} ${summary}`.toLowerCase();
-
-    // Look for common lesson patterns
-    const patterns = [
-      /learned that (.+?)[\\.!\\?]/g,
-      /discovered (.+?)[\\.!\\?]/g,
-      /found that (.+?)[\\.!\\?]/g,
-      /realized (.+?)[\\.!\\?]/g,
-      /important to (.+?)[\\.!\\?]/g,
-    ];
-
-    for (const pattern of patterns) {
-      let match;
-      while ((match = pattern.exec(text)) !== null) {
-        const lesson = match[1].trim();
-        if (lesson.length > 10 && lesson.length < 200) {
-          lessons.push(lesson.charAt(0).toUpperCase() + lesson.slice(1));
-        }
-      }
-    }
-
-    return lessons.slice(0, 5); // Limit to 5 lessons
+  /** Retired: lesson derivation is the extractor's job (the skill-guided LLM pass with
+   *  heuristic fallback). The record's `lessons_learned` is intentionally left empty for
+   *  the extractor to fill from the real summary content. */
+  private extractLessonsLearned(_reasoning: string, _summary: string): string[] {
+    return [];
   }
 
   /**
