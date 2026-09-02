@@ -18,6 +18,34 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 147 (Memory Capability Maturation)
+
+### Added
+
+- Executions now feed a self-learning memory loop: learnings are extracted from run
+  outcomes plus in-the-moment agent notes, reviewed through the existing Pending →
+  approval workflow, retrieved into future requests via hybrid keyword-and-embedding
+  search with recency ranking, and consolidated automatically.
+- Solo-tier agents gain a `remember_fact` tool to capture a "worth remembering" note
+  mid-run; captured notes always pass through the same review pipeline as every other
+  learning.
+- Extraction and consolidation follow a content-curation policy that prefers actionable
+  insights and deprioritizes structural facts answerable from portal knowledge.
+- Approved memory self-consolidates: near-duplicates merge, contradicted guidance is
+  superseded with a full audit trail, and a reflection pass synthesises related
+  learnings into new proposals for review.
+- Memory retrieval now ranks results by keyword, embedding similarity, and recency, and
+  can follow connections between related learnings when session memory's `expandLinks`
+  option is enabled.
+- Opt-in automatic approval (`memory.auto_approve.enabled`) closes the review loop
+  without human action, bounded by a confidence threshold, allowed-source list, and
+  quiet period.
+- New end-user guide [Exaix_Memory.md](Exaix_Memory.md) explains the memory lifecycle,
+  the self-learning loop, and the CLI inspection and approval flow.
+
+Defaults are unchanged: memory runs local-first with deterministic fallbacks when no
+cloud model is available, and automatic approval stays off until you enable it.
+
 ## Unreleased — Phase 175 (Portal Knowledge Maturation)
 
 ### Added

@@ -1140,6 +1140,54 @@ The Memory Banks system provides persistent knowledge storage for project contex
 
 For the bank-type-to-service mapping table, directory structure mermaid, update workflow sequence diagram, CLI command tree, and key components table, see `docs/Reference_Data.md#memory-banks`.
 
+### The Self-Learning Memory Loop
+
+Memory has matured into a closed, self-learning loop — capture → extract → approve →
+retrieve → reflect — verified end-to-end by an integration cutover that drives a single
+real run through the full chain and observes every stage via the activity journal and
+on-disk memory state:
+
+- **Capture.** Beyond post-run extraction from `lessons_learned` and summaries, agents
+  call the `remember_fact` Solo ReAct tool to jot "worth remembering" notes in the
+  moment. Notes land in a unified per-execution store and are read as a second,
+  equally-cited input by the same extraction pass that reads the run summary — an
+  insight captured mid-run and restated post-run is extracted once.
+- **Curation.** Extraction and reflection load a dedicated content-curation policy skill
+  by explicit id. It biases extraction toward actionable, non-derivable insights
+  (patterns, decisions, do/don't guidance tied to concrete context) and away from
+  structural facts that portal-knowledge analysis already answers on demand — keeping
+  Memory and Portal Knowledge complementary rather than duplicative.
+- **Approval.** Every candidate — however captured — enters the Pending review
+  workflow. Auto-approval exists but is strictly opt-in (`memory.auto_approve`,
+  default disabled) with a confidence threshold, allowed-source list, and quiet period;
+  defaults keep the human in the loop.
+- **Consolidation.** Approved memory stays clean: cosine-similarity deduplication
+  merges near-duplicates, contradiction adjudication can update or supersede (a
+  reversible, audit-retaining retirement with typed supersession links on both sides),
+  and a periodic reflection pass merges duplicates, synthesises related learnings into
+  new PENDING proposals (never bypassing approval), prunes low-value entries, and links
+  compared-but-distinct learnings for multi-hop retrieval.
+- **Retrieval.** Future requests draw on a hybrid of keyword, embedding, and temporal
+  signals — recency-weighted, supersession-aware, with one-hop expansion along
+  inter-memory links (opt-in via the session-memory `expandLinks` option).
+
+Every LLM-driven step degrades to a deterministic, offline-safe fallback (heuristic
+extraction, similarity-only dedup, hash-based local vectors), and remote calls are
+cost-gated. The end-user view of this lifecycle — including the CLI inspection and
+approval flow — lives in `docs/Exaix_Memory.md`.
+
+### Per-Execution Memory Store
+
+Flow orchestration and the agent scratchpad share one unified per-execution memory
+store: a single append-oriented log per execution trace serving both free-text agent
+notes (soft-degrade capture, rejected-never-truncated size caps, a per-run entry
+budget) and flow-namespace variables (batched keyed writes with skip-on-invalid-key,
+truncate-on-oversized-value, and a total-size quota that hard-fails). Reads hydrate an
+in-memory index from the durable log on first touch, so a flow resumed after a
+checkpoint sees its prior state. The two guarantees are different method contracts on
+one service, not two competing implementations — the former flow-namespace-only service
+was retired in favor of this consolidation.
+
 ### Skill Stores
 
 Skills exist in three distinct stores, each with a different origin and lifecycle:

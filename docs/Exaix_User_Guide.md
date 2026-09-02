@@ -701,11 +701,37 @@ exactl memory rebuild-index
 
 When an agent execution completes, Exaix automatically extracts learnings:
 
-1. **Extract**: Insights from `lessons_learned` and execution patterns
+1. **Extract**: Insights from `lessons_learned`, the execution summary, and the run's
+   scratchpad notes (see `remember_fact` below)
 
 1. **Approve**: Approved learnings are moved to their respective Global or Project banks.
 
-This ensures quality control over what enters the knowledge base.
+This ensures quality control over what enters the knowledge base. Extraction and
+consolidation are guided by a content-curation policy that deprioritizes structural
+facts (import graphs and the like) in favor of actionable, non-derivable insights — so
+Memory stays distinct from Portal Knowledge.
+
+#### In-the-Moment Capture (`remember_fact`)
+
+Solo-tier agents can call the `remember_fact` tool mid-execution to capture a
+"worth remembering" note the moment they notice it (a gotcha, a constraint, a debugging
+insight), instead of reconstructing it in the final summary:
+
+- Notes land in the run's execution scratchpad (`memory.scratchpad.max_entries_per_execution`
+  bounds the count per run; over-cap notes are rejected, never truncated).
+- Scratchpad notes feed the same extraction pass as `lessons_learned` — an insight jotted
+  mid-run and restated in the summary is extracted once, not twice.
+- **Every scratchpad-derived candidate goes through the same Pending → approval workflow
+  as any other learning.** There is no direct-to-global shortcut.
+
+#### Memory Lifecycle
+
+Memory moves through a full lifecycle — born (capture + extraction), reviewed (Pending →
+approval, manual or opt-in auto-approval), retrieved (hybrid keyword + embedding search,
+temporally ranked), consolidated (dedup, supersession, reflection), and retired
+(superseded with audit trail). The closed self-learning loop, the local-first/cost-gated
+posture, deterministic fallbacks, and the full configuration reference are covered in
+the dedicated guide: [Exaix_Memory.md](Exaix_Memory.md).
 
 ### 3.3 Procedural Skills
 
