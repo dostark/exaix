@@ -6,13 +6,14 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_NAMESPACE_READ } from "@exaix/core";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "@exaix/testing";
@@ -23,7 +24,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
   try {
     const traceId = "trace-flow-namespace-resume";
     const requestId = "req-flow-namespace-resume";
-    const namespacePath = join(getMemoryExecutionDir(tempDir), traceId, "namespace.md");
+    const namespacePath = join(getMemoryExecutionDir(tempDir), traceId, "scratchpad.jsonl");
     const flow: IFlowInput = {
       id: "namespace-resume-flow",
       name: "Namespace Resume Flow",
@@ -77,9 +78,10 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
     );
 
     assertEquals(await exists(namespacePath), true);
-    const failedRunArtifact = await Deno.readTextFile(namespacePath);
-    assertStringIncludes(failedRunArtifact, "persisted-summary");
-    assertEquals(failedRunArtifact.includes("should.not.persist"), false);
+    const failedRunStore = new ExecutionMemoryStore(config);
+    const failedRunState = await failedRunStore.readKeys(traceId, ["summary", "should.not.persist"]);
+    assertEquals(failedRunState.summary, "persisted-summary");
+    assertEquals(failedRunState["should.not.persist"], undefined);
 
     const resumedExecutor = new ScriptedAgentExecutor({
       agent1: [new Error("writer should not rerun")],

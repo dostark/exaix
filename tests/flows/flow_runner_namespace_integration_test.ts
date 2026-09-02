@@ -85,7 +85,7 @@ Deno.test("[Step64.3] FlowRunner hydrates sharedNamespace and reports namespace 
     assertEquals(result.output, "reader:shared finding");
     assertEquals(
       result.namespaceArtifactPath,
-      join(getMemoryExecutionDir(tempDir), traceId, "namespace.md"),
+      join(getMemoryExecutionDir(tempDir), traceId, "scratchpad.jsonl"),
     );
     assertEquals(logger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_INITIALIZED), true);
     assertEquals(logger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_READ), true);

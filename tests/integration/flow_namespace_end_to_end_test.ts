@@ -6,13 +6,14 @@
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "@exaix/testing";
@@ -88,17 +89,16 @@ Deno.test("[Step64.3] FlowRunner persists namespace artifact and preserves same-
       requestId,
     });
 
-    const namespacePath = join(getMemoryExecutionDir(tempDir), traceId, "namespace.md");
+    const namespacePath = join(getMemoryExecutionDir(tempDir), traceId, "scratchpad.jsonl");
     const readerRequest = executor.capturedRequests.find((entry) => entry.identityId === "agent3");
     assertExists(readerRequest);
     assertEquals(readerRequest.request.sharedNamespace, { alpha: "alpha-value", beta: "beta-value" });
     assertEquals(result.namespaceArtifactPath, namespacePath);
     assertEquals(await exists(namespacePath), true);
-    const artifact = await Deno.readTextFile(namespacePath);
-    assertStringIncludes(artifact, "## alpha");
-    assertStringIncludes(artifact, "alpha-value");
-    assertStringIncludes(artifact, "## beta");
-    assertStringIncludes(artifact, "beta-value");
+    const store = new ExecutionMemoryStore(config);
+    const persisted = await store.readKeys(traceId, ["alpha", "beta"]);
+    assertEquals(persisted.alpha, "alpha-value");
+    assertEquals(persisted.beta, "beta-value");
   } finally {
     await cleanup();
   }
