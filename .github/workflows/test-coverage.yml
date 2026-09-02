@@ -18,8 +18,9 @@ name: "Tests & Coverage"
 # best-effort placement, not a guaranteed-lowest-load slot.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 3 * * *"
+  # Disabled: automatic daily run turned off. Uncomment to re-enable.
+  # schedule:
+  #   - cron: "17 3 * * *"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
