@@ -25,6 +25,7 @@ import {
   DEFAULT_NAMESPACE_MAX_BYTES,
   DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION,
   DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES,
+  VALID_EXECUTION_TRACE_ID_PATTERN,
 } from "../types/constants.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
@@ -63,11 +64,24 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
 
   /** Resolves the per-trace log path (the retired FlowNamespaceService's getNamespacePath contract, now over the unified log). */
   getNamespacePath(traceId: string): string {
+    this.assertValidTraceId(traceId);
     return join(this.executionDir, traceId, LOG_FILE_NAME);
+  }
+
+  /** Fail-closed containment: trace ids become directory names, so malformed ids are rejected before any path or I/O operation. */
+  private assertValidTraceId(traceId: string): void {
+    if (!VALID_EXECUTION_TRACE_ID_PATTERN.test(traceId)) {
+      throw new Error(
+        `Invalid execution trace id: ${
+          JSON.stringify(traceId)
+        } — must match ${VALID_EXECUTION_TRACE_ID_PATTERN.source}`,
+      );
+    }
   }
 
   /** Appends one note-kind entry; rejects over-cap content and exhausted entry budgets with a clear error (never truncates). */
   async appendNote(traceId: string, content: string, tags?: Opt<string[], Reason.OptionalInput>): Promise<IToolResult> {
+    this.assertValidTraceId(traceId);
     await this.ensureHydrated(traceId);
     const index = this.indexByTrace.get(traceId)!;
     const contentBytes = this.encoder.encode(content).length;
@@ -120,12 +134,14 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
 
   /** Reads all note-kind entries for traceId (empty when the execution wrote nothing). */
   async readNotes(traceId: string): Promise<IScratchpadEntry[]> {
+    this.assertValidTraceId(traceId);
     await this.ensureHydrated(traceId);
     return [...this.indexByTrace.get(traceId)!.notes];
   }
 
   /** Reads the requested namespace keys for traceId; missing keys resolve to undefined. */
   async readKeys(traceId: string, keys: string[]): Promise<Record<string, string | undefined>> {
+    this.assertValidTraceId(traceId);
     await this.ensureHydrated(traceId);
     const namespace = this.indexByTrace.get(traceId)!.namespace;
     return Object.fromEntries(keys.map((key) => [key, namespace.get(key)?.content]));
@@ -138,6 +154,7 @@ export class ExecutionMemoryStore implements IExecutionMemoryStore {
     writes: IFlowNamespaceWrite[],
     stepOutput: string,
   ): Promise<void> {
+    this.assertValidTraceId(traceId);
     await this.ensureHydrated(traceId);
     const index = this.indexByTrace.get(traceId)!;
     let changed = false;

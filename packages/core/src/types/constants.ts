@@ -1203,6 +1203,9 @@ export const DEFAULT_SCRATCHPAD_MAX_ENTRY_BYTES = 8_192;
 /** Per-entry byte cap for flow-namespace values; oversized values are silently truncated (unlike notes). */
 export const DEFAULT_NAMESPACE_ENTRY_MAX_BYTES = 8_192;
 
+/** Strict shape for execution trace ids used as per-execution directory names: no path separators, no whitespace (fail-closed containment for the per-execution store). */
+export const VALID_EXECUTION_TRACE_ID_PATTERN = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
+
 export const DEFAULT_SCRATCHPAD_MAX_ENTRIES_PER_EXECUTION: number = configurable({
   key: "memory.scratchpad.max_entries_per_execution",
   default: 200,
