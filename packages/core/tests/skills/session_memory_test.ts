@@ -21,6 +21,7 @@ import {
   MemoryBankSource,
   MemoryScope,
   MemoryType,
+  SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { NullEmbeddingStub, NullMemoryBankStub } from "@exaix/testing";
@@ -395,7 +396,7 @@ Deno.test("SessionMemoryService - enhanceRequest respects maxContextLength", asy
 
 // Insight Saving Tests
 
-Deno.test("SessionMemoryService - saveInsight creates learning entry", async () => {
+Deno.test("SessionMemoryService - saveInsight adds a tiered working-memory entry, never a global learning (GAP-1 contract)", async () => {
   const savedLearnings: ILearning[] = [];
   const memoryBank = createMockMemoryBank([], savedLearnings);
   const embeddingService = createMockEmbeddingService();
@@ -414,16 +415,13 @@ Deno.test("SessionMemoryService - saveInsight creates learning entry", async () 
 
   assertEquals(result.success, true);
   assertExists(result.learningId);
-  assertStringIncludes(result.message, "pending approval");
+  assertStringIncludes(result.message, "tiered working memory");
 
-  // Check that learning was saved
-  assertEquals(savedLearnings.length, 1);
-  assertEquals(savedLearnings[0].title, "Test Insight");
-  assertEquals(savedLearnings[0].status, MemoryStatus.PENDING);
-  assertEquals(savedLearnings[0].source, MemoryBankSource.IDENTITY);
+  // saveInsight is tiered-only: no global-bank write.
+  assertEquals(savedLearnings.length, 0);
 });
 
-Deno.test("SessionMemoryService - saveInsight with portal creates project-scoped learning", async () => {
+Deno.test("SessionMemoryService - saveInsight accepts an optional portal without writing to the global bank", async () => {
   const savedLearnings: ILearning[] = [];
   const memoryBank = createMockMemoryBank([], savedLearnings);
   const embeddingService = createMockEmbeddingService();
@@ -442,22 +440,19 @@ Deno.test("SessionMemoryService - saveInsight with portal creates project-scoped
   const result = await service.saveInsight(insight);
 
   assertEquals(result.success, true);
-  assertEquals(savedLearnings[0].scope, MemoryScope.PROJECT);
-  assertEquals(savedLearnings[0].project, "my-project");
+  assertEquals(savedLearnings.length, 0);
 });
 
 Deno.test("SessionMemoryService - saveInsight handles errors gracefully", async () => {
   const memoryBank = new MockMemoryBankService(undefined, undefined, undefined);
-  memoryBank.addGlobalLearning = () => {
-    return Promise.reject(new Error("Database error"));
-  };
   const embeddingService = createMockEmbeddingService();
 
   const service = new SessionMemoryService(memoryBank, embeddingService);
 
+  // A description over InsightSchema's max length fails validation before any store write.
   const insight: Insight = {
     title: "Test",
-    description: "Test",
+    description: "x".repeat(SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS + 1),
     category: LearningCategory.INSIGHT,
     tags: [],
     confidence: ConfidenceLevel.LOW,
@@ -469,7 +464,7 @@ Deno.test("SessionMemoryService - saveInsight handles errors gracefully", async 
   assertStringIncludes(result.message, "Failed to save insight");
 });
 
-Deno.test("SessionMemoryService - saveInsights saves multiple", async () => {
+Deno.test("SessionMemoryService - saveInsights saves multiple, none as a global learning", async () => {
   const savedLearnings: ILearning[] = [];
   const memoryBank = createMockMemoryBank([], savedLearnings);
   const embeddingService = createMockEmbeddingService();
@@ -498,7 +493,7 @@ Deno.test("SessionMemoryService - saveInsights saves multiple", async () => {
   assertEquals(results.length, 2);
   assertEquals(results[0].success, true);
   assertEquals(results[1].success, true);
-  assertEquals(savedLearnings.length, 2);
+  assertEquals(savedLearnings.length, 0);
 });
 
 // Tag-based Search Tests

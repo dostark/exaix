@@ -182,7 +182,7 @@ Deno.test("MissionReporter: emits ReportExecutionRecorded after memoryBank.creat
   });
 });
 
-Deno.test("MissionReporter: creates structured execution memory with lessons learned", async () => {
+Deno.test("MissionReporter: creates structured execution memory with the real summary, no regex-mined lessons", async () => {
   await withMissionReporter(async ({ memoryBank, reporter }) => {
     const traceData = createTestTraceData({
       reasoning:
@@ -195,17 +195,12 @@ Deno.test("MissionReporter: creates structured execution memory with lessons lea
     // Verify result is successful
     assert(result.success);
 
-    // Read the execution memory to verify lessons learned extraction
     const executionMemory = await memoryBank.getExecutionByTraceId(traceData.traceId);
     assertExists(executionMemory);
 
-    // Should have extracted lessons from reasoning text
-    assert(executionMemory.lessons_learned && executionMemory.lessons_learned.length > 0);
-    assert(
-      executionMemory.lessons_learned.some((lesson: string) =>
-        lesson.toLowerCase().includes("jwt") || lesson.toLowerCase().includes("redis")
-      ),
-    );
+    // lessons_learned is no longer regex-mined here; lesson derivation is the extractor's job.
+    assertEquals(executionMemory.lessons_learned?.length ?? 0, 0, "no regex-mined placeholder lessons");
+    assertEquals(executionMemory.summary, traceData.summary);
   });
 });
 
