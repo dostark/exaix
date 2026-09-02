@@ -18,7 +18,7 @@ Deno.test("HeuristicExtractionStrategy extracts categorised learnings from scrat
   try {
     const scratchpad = new ExecutionMemoryStore(config);
     const traceId = crypto.randomUUID();
-    await scratchpad.appendNote(traceId, "Avoid holding the file lock across await points");
+    await scratchpad.appendNote(traceId, "Avoid holding the file lock across await points", ["flaky"]);
     await scratchpad.appendNote(traceId, "Debug: the retry loop double-counts failures after a timeout fix");
 
     const strategy = new HeuristicExtractionStrategy(scratchpad);
@@ -28,6 +28,11 @@ Deno.test("HeuristicExtractionStrategy extracts categorised learnings from scrat
     assertEquals(learnings[0].category, LearningCategory.ANTI_PATTERN);
     assertEquals(learnings[1].category, LearningCategory.TROUBLESHOOTING);
     assertEquals(learnings.every((l) => l.source_id === traceId), true);
+    assertEquals(
+      learnings[0].tags?.includes("flaky") ?? false,
+      true,
+      "the entry's own tags must seed the candidate tags (GAP-8)",
+    );
   } finally {
     await cleanup();
   }

@@ -32,11 +32,15 @@ export class LearningExtractor {
       }
     }
 
-    // Extract from scratchpad entries (in-the-moment agent notes) with the same heuristics
+    // Extract from scratchpad entries (in-the-moment agent notes) with the same heuristics,
+    // seeding candidates with the entry's own capture-time tags.
     for (const entry of scratchpadEntries) {
       const learning = this.extractFromLesson(entry.content, execution);
       if (learning) {
-        learnings.push(learning);
+        learnings.push({
+          ...learning,
+          tags: [...new Set([...(learning.tags ?? []), ...(entry.tags ?? [])])].slice(0, 5),
+        });
       }
     }
 
