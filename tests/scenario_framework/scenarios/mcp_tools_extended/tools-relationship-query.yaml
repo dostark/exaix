@@ -19,7 +19,8 @@ portals:
 steps:
   - id: "portal-analyzed"
     type: "exactl"
-    command: "portal analyze rel-fixture"
+    command: "portal"
+    args: ["analyze", "rel-fixture"]
     input_criteria:
       - id: "portal-available"
         score_weight: 0.2

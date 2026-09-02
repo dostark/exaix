@@ -18,6 +18,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { TOOL_MANIFEST } from "@exaix/mcp";
+import { ToolName } from "@exaix/core";
 import { assertCatalogCovered } from "./catalog_parity.ts";
 import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catalog.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
@@ -50,8 +51,9 @@ Deno.test("tool_eval_parity — every docs-visible tool has a real scenario, or 
 Deno.test("tool_eval_parity — every tool entity tag names a tool that exists", async () => {
   // The other direction: a tag naming no manifest entry becomes a phantom row in
   // `eval report --group-by entity`. Flow tags carried exactly this defect for thirteen entries.
+  // A valid name is either an MCP-manifest tool or a Solo-only ReAct tool (ToolName).
   const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
-  const known = new Set(TOOL_MANIFEST.map((e) => e.name));
+  const known = new Set([...TOOL_MANIFEST.map((e) => e.name), ...Object.values(ToolName)]);
 
   const phantom: string[] = [];
   for (const scenario of catalog) {
