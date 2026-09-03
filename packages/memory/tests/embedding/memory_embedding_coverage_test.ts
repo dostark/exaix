@@ -23,7 +23,7 @@ import { getMemoryIndexDir } from "@exaix/testing";
 const testLearning: ILearning = {
   id: "ffffffff-1111-4000-8000-000000000001",
   created_at: new Date().toISOString(),
-  source: MemoryBankSource.IDENTITY,
+  source: MemoryBankSource.USER,
   scope: MemoryScope.GLOBAL,
   title: "Coverage test learning",
   description: "This is a test learning for coverage testing of embedding service",

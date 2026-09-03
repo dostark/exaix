@@ -51,7 +51,7 @@ async function runAgentTest(
 ) {
   const agent = createReflexiveAgent(createMockProvider(mockResponses), options);
   const result = await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Help", context: {} },
     requestAnalysis,
   );
@@ -332,11 +332,11 @@ Deno.test("[ReflexiveAgent] accumulates metrics across executions", async () => 
   const agent = createReflexiveAgent(provider);
 
   await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Help 1", context: {} },
   );
   await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Help 2", context: {} },
   );
 
@@ -377,7 +377,7 @@ Deno.test("[createCodeReviewReflexiveAgent] creates code review optimized agent"
   const agent = createCodeReviewReflexiveAgent(createMockProvider(mockResponses));
 
   const result = await agent.run(
-    { systemPrompt: "Review code", identityId: "code-reviewer" },
+    { systemPrompt: "Review code", agentRole: "code-reviewer" },
     { userPrompt: "Review this function", context: {} },
   );
 

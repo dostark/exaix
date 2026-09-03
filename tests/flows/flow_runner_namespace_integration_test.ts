@@ -79,7 +79,7 @@ Deno.test("[Step64.3] FlowRunner hydrates sharedNamespace and reports namespace 
       requestId,
     });
 
-    const readerRequest = executor.capturedRequests.find((entry) => entry.identityId === "agent2");
+    const readerRequest = executor.capturedRequests.find((entry) => entry.agentRole === "agent2");
     assertExists(readerRequest);
     assertEquals(readerRequest.request.sharedNamespace, { "analysis.summary": "shared finding" });
     assertEquals(result.output, "reader:shared finding");

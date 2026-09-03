@@ -70,7 +70,7 @@ export interface IOnReconciledDeps {
   /** Runs the same curated extraction pipeline used on the plan path. */
   extractor?: {
     analyzeExecution(execution: IExecutionMemory): Promise<IProposalLearning[]>;
-    createProposal(learning: IProposalLearning, execution: IExecutionMemory, identityId: string): Promise<string>;
+    createProposal(learning: IProposalLearning, execution: IExecutionMemory, agentRole: string): Promise<string>;
   };
 }
 
@@ -210,7 +210,7 @@ async function dispatchReconciledOutcome(
       }
 
       // Mint the execution record from the return's own validated fields plus the
-      // brief's identity_id/worktree_path; transcript_ref stays opaque and unparsed.
+      // brief's agent_role/worktree_path; transcript_ref stays opaque and unparsed.
       if (deps.memoryBank && deps.extractor) {
         const now = new Date().toISOString();
         const executionMemory: IExecutionMemory = {
@@ -220,7 +220,7 @@ async function dispatchReconciledOutcome(
           completed_at: now,
           status: ExecutionStatus.COMPLETED,
           portal: portalFromWorktreePath(brief.worktree_path),
-          agent_role: brief.identity_id,
+          agent_role: brief.agent_role,
           summary: outcome.summary,
           context_files: [],
           context_portals: [portalFromWorktreePath(brief.worktree_path)],
@@ -233,7 +233,7 @@ async function dispatchReconciledOutcome(
         await deps.memoryBank.createExecutionRecord(executionMemory);
         const candidates = await deps.extractor.analyzeExecution(executionMemory);
         for (const candidate of candidates) {
-          await deps.extractor.createProposal(candidate, executionMemory, brief.identity_id);
+          await deps.extractor.createProposal(candidate, executionMemory, brief.agent_role);
         }
       }
     } catch {

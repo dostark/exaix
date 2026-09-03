@@ -91,14 +91,14 @@ Deno.test('[step135.8][integration] a feature-task ["best"] request resolves to 
     const result = await resolver.resolve({
       characteristics: ["best"],
       task_type: TaskType.FEATURE,
-      task_type_source: "identity",
+      task_type_source: "agent_role",
     });
 
     assertEquals(result.provider, "anthropic");
 
     const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
     assertEquals(resolvedEvents[0]?.payload?.reason, "best_ranked");
-    assertEquals(resolvedEvents[0]?.payload?.task_type_source, "identity");
+    assertEquals(resolvedEvents[0]?.payload?.task_type_source, "agent_role");
   } finally {
     ProviderRegistry.clear();
     await cleanup();

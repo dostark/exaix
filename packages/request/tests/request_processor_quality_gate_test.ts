@@ -52,10 +52,10 @@ async function makeEnv() {
 
 function makeRequestFile(requestsDir: string, body: string, overrides: {
   requestId?: string;
-  identity?: string;
+  agent_role?: string;
 } = {}): string {
   const requestId = overrides.requestId ?? "req-qg-001";
-  const agent = overrides.identity ?? "nonexistent-agent";
+  const agent = overrides.agent_role ?? "nonexistent-agent";
   const filePath = join(requestsDir, `${requestId}.md`);
 
   Deno.writeTextFileSync(

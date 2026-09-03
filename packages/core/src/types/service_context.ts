@@ -6,7 +6,7 @@
  * @related-files ["packages/core/src/types/service_context.ts", "packages/core/src/types/mod.ts"]
  */
 
-import type { Actor, ActorType, AgentKind } from "@exaix/core";
+import type { Actor, ActorType, RuntimeKind } from "@exaix/core";
 
 /** Subinterfaces extend this with their own typed properties. */
 export interface IServiceContext {
@@ -18,7 +18,7 @@ export interface IServiceContext {
   /** Runtime agent handling this service call — NOT an identity id */
   agentId?: string;
   /** Category of runtime agent */
-  agentKind?: AgentKind | null;
+  agentKind?: RuntimeKind | null;
   /** LLM identity blueprint being executed */
   agentRole?: string;
 }

@@ -317,7 +317,7 @@ export class ToolReflector {
     const blueprint = {
       systemPrompt:
         "You are a tool result evaluator. Assess whether tool calls achieved their purpose. Provide structured JSON output.",
-      identityId: "tool-reflector",
+      agentRole: "tool-reflector",
     };
 
     const request = {

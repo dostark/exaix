@@ -321,7 +321,7 @@ export class RequestRouter {
     const result = await this.agentRunner.run(blueprint, parsedRequest);
 
     return {
-      type: RequestKind.IDENTITY,
+      type: RequestKind.AGENT_ROLE,
       agentRole: selectedAgentRole,
       result,
     };
@@ -387,7 +387,7 @@ export class RequestRouter {
     const result = await this.agentRunner.run(blueprint, parsedRequest);
 
     return {
-      type: RequestKind.IDENTITY,
+      type: RequestKind.AGENT_ROLE,
       agentRole: selectedAgentRole,
       result,
     };
@@ -456,7 +456,9 @@ export class RequestRouter {
       const frontmatter = request.frontmatter as RouterRequestFrontmatterMap;
       const decision = await this.routingPolicyService.selectAgentRole({
         explicitAgentRole,
-        explicitVersion: typeof frontmatter.identity_version === "string" ? frontmatter.identity_version : undefined,
+        explicitVersion: typeof frontmatter.agent_role_version === "string"
+          ? frontmatter.agent_role_version
+          : undefined,
         requestText: routingContext.requestText,
         requestAnalysis: routingContext.requestAnalysis,
         portalName: routingContext.portalName,

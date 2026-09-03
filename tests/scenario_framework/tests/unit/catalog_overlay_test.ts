@@ -19,7 +19,7 @@ import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
-import { BlueprintResolver, EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
+import { BlueprintResolver, EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
 
 /** Runs `fn` with an env var set, always restoring the prior value. */
 async function withEnv<T>(name: string, value: string | undefined, fn: () => Promise<T>): Promise<T> {
@@ -135,10 +135,10 @@ Deno.test("[CatalogOverlay] an identity overlay shadows the shipped identity's c
 
     const resolver = new BlueprintResolver({ blueprintsPath });
 
-    await withEnv(EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR, overlayDir, async () => {
+    await withEnv(EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR, overlayDir, async () => {
       const loaded = await resolver.resolve("test-agent", mockLogger);
       assertExists(loaded);
-      assertEquals(loaded.identityId, "test-agent");
+      assertEquals(loaded.agentRole, "test-agent");
       assertEquals(
         loaded.name,
         "Test Agent (overlay)",
@@ -172,10 +172,10 @@ Deno.test("[CatalogOverlay] an identity with no overlay file falls back to the s
 
     const resolver = new BlueprintResolver({ blueprintsPath });
 
-    await withEnv(EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR, overlayDir, async () => {
+    await withEnv(EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR, overlayDir, async () => {
       const loaded = await resolver.resolve("test-agent", mockLogger);
       assertExists(loaded);
-      assertEquals(loaded.identityId, "test-agent");
+      assertEquals(loaded.agentRole, "test-agent");
       assertEquals(loaded.name, "Test Agent");
     });
   } finally {

@@ -41,7 +41,7 @@ export class TaskComplexityClassifier implements ITaskComplexityClassifier {
     const bodySignals = this.checkContentHeuristics(request.userPrompt);
     if (bodySignals) return bodySignals;
 
-    return this.classifyByAgentId(blueprint.identityId);
+    return this.classifyByAgentId(blueprint.agentRole);
   }
 
   private mapAnalysisComplexity(complexity: RequestAnalysisComplexity): TaskComplexity {
@@ -71,9 +71,9 @@ export class TaskComplexityClassifier implements ITaskComplexityClassifier {
   }
 
   private classifyByAgentId(
-    identityId?: Opt<string, Reason.OptionalContext>,
+    agentRole?: Opt<string, Reason.OptionalContext>,
   ): TaskComplexity {
-    const id = identityId || "";
+    const id = agentRole || "";
     if (id.includes("analyzer") || id.includes("summarizer")) return TaskComplexity.SIMPLE;
     if (id.includes("coder") || id.includes("planner") || id.includes("architect")) {
       return TaskComplexity.COMPLEX;

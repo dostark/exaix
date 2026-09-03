@@ -259,7 +259,7 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     const frontmatter = await parsePlanFrontmatter(planPath);
     assertEquals(frontmatter.trace_id, traceId);
     assertEquals(frontmatter.status, ReviewStatus.APPROVED);
-    assertEquals(frontmatter.identity, "mock-agent");
+    assertEquals(frontmatter.agent_role, "mock-agent");
     assertEquals(frontmatter.portal, TEST_PORTAL_NAME);
 
     // In real execution, AgentOrchestrator would create branch and commit

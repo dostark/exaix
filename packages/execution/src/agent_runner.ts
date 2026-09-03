@@ -60,7 +60,7 @@ export interface IBlueprint {
   systemPrompt: string;
 
   /** Optional: Agent identifier for logging */
-  identityId?: string;
+  agentRole?: string;
 
   /** Optional: Default skills to apply for all requests */
   defaultSkills?: string[];
@@ -301,15 +301,15 @@ export class AgentRunner implements IAgentRunner {
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<IAgentExecutionResult> {
     const startTime = Date.now();
-    const identityId = blueprint.identityId || "unknown";
+    const agentRole = blueprint.agentRole || "unknown";
     const traceId = request.traceId;
     const requestId = request.requestId;
 
     // Match skills based on request context
-    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, identityId);
+    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole);
 
     // Log agent execution start
-    this.logExecutionStart(request, identityId, traceId, requestId, skillIds);
+    this.logExecutionStart(request, agentRole, traceId, requestId, skillIds);
 
     // Construct the combined prompt (with skill context). Critical skills render into a
     // separate, protected segment so the output contract and hard constraints survive
@@ -330,21 +330,21 @@ export class AgentRunner implements IAgentRunner {
       requestId || null,
       {
         prompt_kind: "planning",
-        agent_role: identityId,
+        agent_role: agentRole,
         prompt_length: combinedPrompt.length,
         skillIdsUsed: skillIds,
         skillsCount: skillIds.length,
         retrievalLatencyMs: skillsContext?.retrievalLatencyMs || 0,
       },
       traceId,
-      identityId,
+      agentRole,
     );
 
     // Debug-level dump of the actual assembled prompt text — lets a dry-run diagnosis
     // (no LLM call needed) confirm the prompt is complete and not truncated, independent
     // of whatever the model returns. Left in for future debugging, not just this one.
     this.logActivityDebug(AGENT_EVENT_PROMPT_DEBUG_DUMP, requestId || null, {
-      agent_role: identityId,
+      agent_role: agentRole,
       prompt_length: combinedPrompt.length,
       system_prompt_length: blueprint.systemPrompt.length,
       skill_context_length: skillContextString.length,
@@ -354,23 +354,23 @@ export class AgentRunner implements IAgentRunner {
 
     // Execute via the model provider (with retry if enabled)
     const callSite = this.resolveCallSite(request);
-    await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
+    await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId, jsonSchema, callSite);
 
     const duration = Date.now() - startTime;
 
     // Handle retry failure
     if (!retryResult.success) {
-      this.handleExecutionFailure(retryResult, requestId, identityId, traceId, duration);
+      this.handleExecutionFailure(retryResult, requestId, agentRole, traceId, duration);
     }
     this.markCallSiteConsumed(callSite);
 
     // Parse the response to extract thought and content
     const generateResult = retryResult.value;
-    await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${identityId}`);
+    await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${agentRole}`);
     const rawResponse = generateResult?.content || "";
     this.logActivityDebug(AGENT_EVENT_LLM_RESPONSE_RECEIVED, requestId || null, {
-      agent_role: identityId,
+      agent_role: agentRole,
       response_length: rawResponse.length,
       full_response: rawResponse,
       stop_reason: generateResult?.stop_reason ?? null,
@@ -382,7 +382,7 @@ export class AgentRunner implements IAgentRunner {
     // truncation, not treated as a mysteriously malformed model response.
     if (generateResult?.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS && this.logger) {
       void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
-        agent_role: identityId,
+        agent_role: agentRole,
         stop_reason: generateResult.stop_reason,
         response_length: rawResponse.length,
         completion_tokens: generateResult?.usage?.completionTokens ?? null,
@@ -396,7 +396,7 @@ export class AgentRunner implements IAgentRunner {
       rawResponse,
       retryResult,
       requestId,
-      identityId,
+      agentRole,
       traceId,
       duration,
       skillsApplied: skillIds,
@@ -414,7 +414,7 @@ export class AgentRunner implements IAgentRunner {
   private async matchAndApplySkills(
     blueprint: IBlueprint,
     request: IParsedRequest,
-    identityId: string,
+    agentRole: string,
   ): Promise<{ skillIds: string[]; skillsContext: ISkillsContext | null }> {
     if (!this.skillsService || this.disableSkills) {
       return { skillIds: [], skillsContext: null };
@@ -441,13 +441,13 @@ export class AgentRunner implements IAgentRunner {
       const matched: string[] = [];
       if (!pinned.length) {
         try {
-          const result = await this.performDynamicSkillMatching(request, identityId);
+          const result = await this.performDynamicSkillMatching(request, agentRole);
           for (const match of result.matches) {
             matched.push(match.skillId);
             add(match.skillId, match.confidence);
           }
         } catch (error: unknown) {
-          this.logSkillRetrievalFailure(error instanceof Error ? error.message : String(error), identityId);
+          this.logSkillRetrievalFailure(error instanceof Error ? error.message : String(error), agentRole);
         }
       }
 
@@ -464,7 +464,7 @@ export class AgentRunner implements IAgentRunner {
         matchScores.delete(id);
       }
 
-      this.logSkillResolution(identityId, skillIds, pinned, matched, defaults, suppressedPresent);
+      this.logSkillResolution(agentRole, skillIds, pinned, matched, defaults, suppressedPresent);
 
       const totalAvailable = skillIds.length;
 
@@ -491,7 +491,7 @@ export class AgentRunner implements IAgentRunner {
   /** Performs dynamic skill matching with a 500ms timeout guard. */
   private async performDynamicSkillMatching(
     request: IParsedRequest,
-    identityId: string,
+    agentRole: string,
   ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     const skillsConfig = this.config?.context?.config.get().skills;
 
@@ -501,7 +501,7 @@ export class AgentRunner implements IAgentRunner {
       taskType: request.taskType,
       filePaths: request.filePaths,
       tags: request.tags,
-      identityId,
+      agentRole,
       contextBudgetChars: skillsConfig?.context_budget_chars,
     });
 
@@ -556,7 +556,7 @@ export class AgentRunner implements IAgentRunner {
    */
   private logExecutionStart(
     request: IParsedRequest,
-    identityId: string,
+    agentRole: string,
     traceId: Opt<string, Reason.TraceAbsent>,
     requestId: Opt<string, Reason.TraceAbsent>,
     skillsApplied: string[],
@@ -566,7 +566,7 @@ export class AgentRunner implements IAgentRunner {
       AGENT_EVENT_EXECUTION_STARTED,
       requestId || null,
       {
-        agent_role: identityId,
+        agent_role: agentRole,
         prompt_length: request.userPrompt.length,
         has_context: Object.keys(request.context).length > 0,
         retry_enabled: !this.disableRetry,
@@ -575,7 +575,7 @@ export class AgentRunner implements IAgentRunner {
         skills_applied: skillsApplied,
       },
       traceId,
-      identityId,
+      agentRole,
     );
   }
 
@@ -666,7 +666,7 @@ export class AgentRunner implements IAgentRunner {
   private handleExecutionFailure(
     retryResult: IRetryResult<IGenerateResult>,
     requestId: Opt<string, Reason.TraceAbsent>,
-    identityId: string,
+    agentRole: string,
     traceId: Opt<string, Reason.TraceAbsent>,
     duration: number,
   ): never {
@@ -675,7 +675,7 @@ export class AgentRunner implements IAgentRunner {
       "agent.execution_failed",
       requestId || null,
       {
-        agent_role: identityId,
+        agent_role: agentRole,
         duration_ms: duration,
         total_attempts: retryResult.totalAttempts,
         retry_history: toSafeJson(retryResult.retryHistory),
@@ -683,7 +683,7 @@ export class AgentRunner implements IAgentRunner {
         error_message: retryResult.error?.message || DEFAULT_UNKNOWN_ERROR_MESSAGE,
       },
       traceId,
-      identityId,
+      agentRole,
     );
 
     throw retryResult.error || new Error("Agent execution failed after retries");
@@ -697,7 +697,7 @@ export class AgentRunner implements IAgentRunner {
     rawResponse: string;
     retryResult: IRetryResult<IGenerateResult>;
     requestId: string | undefined;
-    identityId: string;
+    agentRole: string;
     traceId: string | undefined;
     duration: number;
     skillsApplied: string[];
@@ -707,7 +707,7 @@ export class AgentRunner implements IAgentRunner {
       rawResponse,
       retryResult,
       requestId,
-      identityId,
+      agentRole,
       traceId,
       duration,
       skillsApplied,
@@ -717,7 +717,7 @@ export class AgentRunner implements IAgentRunner {
       AGENT_EVENT_EXECUTION_COMPLETED,
       requestId || null,
       {
-        agent_role: identityId,
+        agent_role: agentRole,
         duration_ms: duration,
         total_attempts: retryResult.totalAttempts,
         retry_history: retryResult.retryHistory.length > 0 ? toSafeJson(retryResult.retryHistory) : null,
@@ -727,7 +727,7 @@ export class AgentRunner implements IAgentRunner {
         skills_applied: skillsApplied.length > 0 ? toSafeJson(skillsApplied) : null,
       },
       traceId,
-      identityId,
+      agentRole,
     );
   }
 
@@ -848,12 +848,12 @@ export class AgentRunner implements IAgentRunner {
   /** Journals a dynamic skill-match that timed out or threw — this path silently
    *  degrades the agent (proceeds with NO skills at all), so the Activity Journal must
    *  record it. The 500ms timeout is distinguished from a genuine failure. */
-  private logSkillRetrievalFailure(message: string, identityId: string): void {
+  private logSkillRetrievalFailure(message: string, agentRole: string): void {
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
       message.includes("timed out") ? SKILL_EVENT_RETRIEVAL_TIMEOUT : SKILL_EVENT_RETRIEVAL_FAILED,
-      identityId,
-      { agent_role: identityId, error: message },
+      agentRole,
+      { agent_role: agentRole, error: message },
     );
     console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", message);
   }
@@ -862,15 +862,15 @@ export class AgentRunner implements IAgentRunner {
    *  `skills.match_completed` alone is skipped entirely for a pinned request, so this
    *  breakdown is what makes the union auditable without re-deriving the merge. */
   private logSkillResolution(
-    identityId: string,
+    agentRole: string,
     skillIds: string[],
     pinned: string[],
     matched: string[],
     defaults: string[],
     suppressed: string[],
   ): void {
-    this.logActivity(ACTIVITY_ACTOR_AGENT, SKILL_EVENT_RESOLVED, identityId, {
-      agent_role: identityId,
+    this.logActivity(ACTIVITY_ACTOR_AGENT, SKILL_EVENT_RESOLVED, agentRole, {
+      agent_role: agentRole,
       skill_ids: skillIds,
       skill_count: skillIds.length,
       pinned_skill_ids: pinned,
@@ -886,7 +886,7 @@ export class AgentRunner implements IAgentRunner {
     target: string | null,
     payload: Record<string, JSONValue>,
     traceId?: Opt<string, Reason.TraceAbsent>,
-    _identityId?: Opt<string | null, Reason.OptionalContext>,
+    _agentRole?: Opt<string | null, Reason.OptionalContext>,
   ): void {
     if (!this.logger) return;
     void this.logger.info(actionType, target, payload, traceId);

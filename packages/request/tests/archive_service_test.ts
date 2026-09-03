@@ -13,7 +13,7 @@ function createSampleEntry(overrides: Partial<ReturnType<typeof ArchiveEntrySche
   return ArchiveEntrySchema.parse({
     trace_id: overrides.trace_id ?? crypto.randomUUID(),
     request_id: overrides.request_id ?? "req-1",
-    agent_role: overrides.identity_id ?? "agent-1",
+    agent_role: overrides.agent_role ?? "agent-1",
     archived_at: overrides.archived_at ?? new Date().toISOString(),
     completed_at: overrides.completed_at ?? new Date().toISOString(),
     status: overrides.status ?? ArchiveStatus.COMPLETED,
@@ -84,7 +84,7 @@ Deno.test("ArchiveService: getByTraceId returns matching entry", async () => {
 
     const result = await service.getByTraceId(entry2.trace_id);
     assertEquals(result !== undefined, true);
-    assertEquals(result?.identity_id, "beta");
+    assertEquals(result?.agent_role, "beta");
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }
@@ -115,7 +115,7 @@ Deno.test("ArchiveService: getByTraceId returns undefined when no index", async 
   }
 });
 
-Deno.test("ArchiveService: searchByAgent filters by identity_id", async () => {
+Deno.test("ArchiveService: searchByAgent filters by.agent_role", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "archive-svc-agent-" });
   try {
     const service = new ArchiveService(tempDir);
@@ -125,7 +125,7 @@ Deno.test("ArchiveService: searchByAgent filters by identity_id", async () => {
 
     const results = await service.searchByAgent("alpha");
     assertEquals(results.length, 2);
-    results.forEach((e) => assertEquals(e.identity_id, "alpha"));
+    results.forEach((e) => assertEquals(e.agent_role, "alpha"));
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

@@ -14,7 +14,7 @@ export interface IActivityJournal {
 
 export interface IToolAgentExecutor {
   run(
-    blueprint: { systemPrompt: string; identityId: string },
+    blueprint: { systemPrompt: string; agentRole: string },
     request: { userPrompt: string; context: object; traceId?: string },
   ): Promise<{ content: string }>;
 }

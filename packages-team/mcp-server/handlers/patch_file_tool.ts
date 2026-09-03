@@ -23,10 +23,10 @@ export class PatchFileTool extends ToolHandler {
       replace: string;
       agent_role: string;
     };
-    const { portal, path, search, replace, identity_id } = validatedArgs;
+    const { portal, path, search, replace, agent_role } = validatedArgs;
 
     try {
-      this.validatePermission(portal, identity_id, PortalOperation.WRITE);
+      this.validatePermission(portal, agent_role, PortalOperation.WRITE);
 
       const portalPath = this.validatePortalExists(portal);
       const absolutePath = await this.resolvePortalPath(portalPath, path);
@@ -63,7 +63,7 @@ export class PatchFileTool extends ToolHandler {
       const patched = segments.join(replace);
       await Deno.writeTextFile(absolutePath, patched);
 
-      this.logToolExecution(McpToolName.PATCH_FILE, portal, identity_id, {
+      this.logToolExecution(McpToolName.PATCH_FILE, portal, agent_role, {
         path,
         search_length: search.length,
         replace_length: replace.length,
@@ -85,7 +85,7 @@ export class PatchFileTool extends ToolHandler {
       let code = ToolErrorCode.EXECUTION_FAILED;
       if (message.startsWith("File not found")) code = ToolErrorCode.NOT_FOUND;
       if (message.includes("not found in") || message.includes("times in")) code = ToolErrorCode.INVALID_ARGS;
-      return this.formatToolError(McpToolName.PATCH_FILE, portal, identity_id, code, message, { path });
+      return this.formatToolError(McpToolName.PATCH_FILE, portal, agent_role, code, message, { path });
     }
   }
 

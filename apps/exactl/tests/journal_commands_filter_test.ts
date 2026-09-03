@@ -17,15 +17,15 @@ import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils
 import { expectExitWithLogs } from "./helpers/test_utils.ts";
 import {
   JOURNAL_ACTOR_USER,
+  JOURNAL_AGENT_ROLE_ID,
   JOURNAL_CAPTURE_COUNT_ONE,
   JOURNAL_DISTINCT_FIELD_ACTION,
   JOURNAL_FILTER_ACTION,
-  JOURNAL_FILTER_IDENTITY,
+  JOURNAL_FILTER_AGENT_ROLE,
   JOURNAL_FILTER_INVALID,
   JOURNAL_FILTER_SINCE,
   JOURNAL_FILTER_TRACE,
   JOURNAL_FILTER_UNKNOWN,
-  JOURNAL_IDENTITY_ID,
   JOURNAL_INVALID_FILTER_PREFIX,
   JOURNAL_PAYLOAD,
   JOURNAL_SINCE_VALUE,
@@ -88,7 +88,7 @@ Deno.test("JournalCommands maps filter strings to query filters", async () => {
         filter: [
           JOURNAL_FILTER_TRACE,
           JOURNAL_FILTER_ACTION,
-          JOURNAL_FILTER_IDENTITY,
+          JOURNAL_FILTER_AGENT_ROLE,
           JOURNAL_FILTER_SINCE,
         ],
         format: UIOutputFormat.JSON,
@@ -98,7 +98,7 @@ Deno.test("JournalCommands maps filter strings to query filters", async () => {
     assertEquals(captured.length, JOURNAL_CAPTURE_COUNT_ONE);
     assertEquals(captured[0].traceId, JOURNAL_TRACE_ID_ONE);
     assertEquals(captured[0].actionType, JournalAction.Generic);
-    assertEquals(captured[0].identityId, JOURNAL_IDENTITY_ID);
+    assertEquals(captured[0].agentRole, JOURNAL_AGENT_ROLE_ID);
     assertEquals(captured[0].since, JOURNAL_SINCE_VALUE);
   } finally {
     db.queryActivity = originalQuery;

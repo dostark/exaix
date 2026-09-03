@@ -63,7 +63,7 @@ export enum MonitorViewAction {
   BOOKMARK = "bookmark",
   EXPORT = "export",
   SEARCH = "search",
-  FILTER_IDENTITY = "filter-identity",
+  FILTER_AGENT_ROLE = "filter-agent-role",
   FILTER_TIME = "filter-time",
   FILTER_TRACE = "filter-trace",
   FILTER_ACTION = "filter-action",
@@ -137,8 +137,8 @@ export class MonitorViewBindings extends KeyBindingsBase<MonitorViewAction, KeyB
     { key: KEYS.S, action: MonitorViewAction.SEARCH, description: "Search logs", category: KeyBindingCategory.ACTIONS },
     {
       key: KEYS.F,
-      action: MonitorViewAction.FILTER_IDENTITY,
-      description: "Filter by identity",
+      action: MonitorViewAction.FILTER_AGENT_ROLE,
+      description: "Filter by agent role",
       category: KeyBindingCategory.ACTIONS,
     },
     {
@@ -377,7 +377,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
   protected logViewExtensions: ILogViewExtensions;
   public autoRefreshTimer: number | null = null;
   // Track what dialog is pending
-  public pendingDialogType: "search" | "filter-identity" | "filter-time" | "filter-trace" | "filter-action" | null =
+  public pendingDialogType: "search" | "filter-agent-role" | "filter-time" | "filter-trace" | "filter-action" | null =
     null;
 
   constructor(monitorView: MonitorView, useColors = true) {
@@ -448,27 +448,27 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
         const label = `${icon} ${this.formatTimestamp(log.timestamp)} ${log.action_type}`;
         return createNode<ILogEntry>(log.id, label, "log", { expanded: true });
       });
-    } else if (this.logViewExtensions.groupBy === GroupingMode.IDENTITY) {
-      // Group by identity
-      const byIdentity = new Map<string, ILogEntry[]>();
+    } else if (this.logViewExtensions.groupBy === GroupingMode.AGENT_ROLE) {
+      // Group by agent role
+      const byAgentRole = new Map<string, ILogEntry[]>();
       for (const log of logs) {
-        const identity = log.agent_role || "unknown";
-        if (!byIdentity.has(identity)) {
-          byIdentity.set(identity, []);
+        const agentRole = log.agent_role || "unknown";
+        if (!byAgentRole.has(agentRole)) {
+          byAgentRole.set(agentRole, []);
         }
-        byIdentity.get(identity)!.push(log);
+        byAgentRole.get(agentRole)!.push(log);
       }
 
-      this.state.tree = Array.from(byIdentity.entries()).map(([identity, identityLogs]) => {
-        const children = identityLogs.map((log) => {
+      this.state.tree = Array.from(byAgentRole.entries()).map(([agentRole, agentRoleLogs]) => {
+        const children = agentRoleLogs.map((log) => {
           const icon = LOG_ICONS[log.action_type as keyof typeof LOG_ICONS] || LOG_ICONS["default"];
           const label = `${icon} ${this.formatTimestamp(log.timestamp)} ${log.action_type}`;
           return createNode<ILogEntry>(log.id, label, "log", { expanded: true });
         });
         return createGroupNode<ILogEntry>(
-          `identity-${identity}`,
-          `🤖 ${identity} (${identityLogs.length})`,
-          "identity-group",
+          `agent_role-${agentRole}`,
+          `🤖 ${agentRole} (${agentRoleLogs.length})`,
+          "agent_role-group",
           children,
         );
       });
@@ -562,7 +562,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
           { key: "b", description: "Bookmark entry" },
           { key: "e", description: "Export logs" },
           { key: "s", description: "Search logs" },
-          { key: "f", description: "Filter by identity" },
+          { key: "f", description: "Filter by agent role" },
           { key: "t", description: "Filter by time" },
           { key: "T", description: "Filter by Trace ID" },
           { key: "A", description: "Filter by Action Type" },
@@ -659,7 +659,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     if (!selectedId) return;
 
     // Skip group nodes
-    if (selectedId.startsWith("identity-") || selectedId.startsWith("action-")) {
+    if (selectedId.startsWith("agent_role-") || selectedId.startsWith("action-")) {
       return;
     }
 
@@ -678,8 +678,8 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
 
   toggleGrouping(): void {
     if (this.logViewExtensions.groupBy === GroupingMode.NONE) {
-      this.logViewExtensions.groupBy = GroupingMode.IDENTITY;
-    } else if (this.logViewExtensions.groupBy === GroupingMode.IDENTITY) {
+      this.logViewExtensions.groupBy = GroupingMode.AGENT_ROLE;
+    } else if (this.logViewExtensions.groupBy === GroupingMode.AGENT_ROLE) {
       this.logViewExtensions.groupBy = GroupingMode.ACTION;
     } else {
       this.logViewExtensions.groupBy = GroupingMode.NONE;
@@ -748,7 +748,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     const identities = [...new Set(logs.map((l) => l.agent_role).filter(Boolean))];
     const identityList = identities.length > 0 ? identities.join(", ") : "(no identities)";
 
-    this.pendingDialogType = "filter-identity";
+    this.pendingDialogType = "filter-agent-role";
     this.showInputDialog({
       title: "Filter by Identity",
       label: `Available identities: ${identityList}\nEnter identity ID (empty to clear):`,
@@ -866,7 +866,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
       case TUI_ACTION_SEARCH:
         this.handleSearchResult(value);
         break;
-      case "filter-identity":
+      case "filter-agent-role":
         this.handleIdentityFilterResult(value);
         break;
       case "filter-time":
@@ -936,7 +936,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
       case KEYS.S:
         this.showSearchDialog();
         return true;
-      case MonitorViewAction.FILTER_IDENTITY:
+      case MonitorViewAction.FILTER_AGENT_ROLE:
         this.showFilterByIdentityDialog();
         return true;
       case KEYS.T:

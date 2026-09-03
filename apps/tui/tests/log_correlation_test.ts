@@ -24,7 +24,7 @@ function createLogEntry(
   context: {
     correlation_id?: string;
     trace_id?: string;
-    identity_id?: string;
+    agent_role?: string;
     operation?: string;
   } = {},
   performance?: { duration_ms: number },

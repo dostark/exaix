@@ -70,7 +70,7 @@ interface IMCPContentResult {
 export interface IToolPermissionOptions {
   portalAlias?: string;
   operations?: PortalOperation[];
-  identityId?: string;
+  agentRole?: string;
   fileContent?: Record<string, string>;
   initGit?: boolean;
 }
@@ -277,7 +277,7 @@ export async function initToolPermissionTest(
   const {
     portalAlias = "TestPortal",
     operations = [PortalOperation.READ],
-    identityId = "test-agent",
+    agentRole = "test-agent",
     fileContent = {},
     initGit = false,
   } = options;
@@ -287,7 +287,7 @@ export async function initToolPermissionTest(
     fileContent,
     initGit,
     permissions: {
-      agents_allowed: [identityId],
+      agents_allowed: [agentRole],
       operations,
     },
     prefix: "mcp-perm-test-",
@@ -297,7 +297,7 @@ export async function initToolPermissionTest(
     alias: portalAlias,
     target_path: env.portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    agents_allowed: [identityId],
+    agents_allowed: [agentRole],
     operations,
   };
 

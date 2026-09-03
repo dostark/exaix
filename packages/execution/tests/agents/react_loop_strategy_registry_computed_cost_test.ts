@@ -63,7 +63,7 @@ Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is
     }),
     logGeneration: async (
       _traceId: string,
-      _identityId: string,
+      _agentRole: string,
       _model: string,
       _provider: string,
       usage: { costUsd: number },
@@ -120,7 +120,7 @@ Deno.test("[ReActLoopStrategyRegistryComputedCost] an unknown model falls back t
     }),
     logGeneration: async (
       _traceId: string,
-      _identityId: string,
+      _agentRole: string,
       _model: string,
       _provider: string,
       usage: { costUsd: number },

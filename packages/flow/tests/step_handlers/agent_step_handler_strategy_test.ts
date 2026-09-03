@@ -15,27 +15,27 @@ import { AgentStepHandler } from "@exaix/flow";
 import type { IAgentExecutor, IFlowStepRequest, IStepExecutionContext } from "@exaix/flow";
 
 class SpyAgentExecutor implements IAgentExecutor {
-  runCalls: Array<{ identityId: string; request: IFlowStepRequest }> = [];
-  runWithStrategyCalls: Array<{ identityId: string; request: IFlowStepRequest; strategy: string }> = [];
+  runCalls: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
+  runWithStrategyCalls: Array<{ agentRole: string; request: IFlowStepRequest; strategy: string }> = [];
 
-  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.runCalls.push({ identityId, request });
+  run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.runCalls.push({ agentRole, request });
     return Promise.resolve({ thought: "t", content: "declared-run", raw: "r" });
   }
 
   runWithStrategy(
-    identityId: string,
+    agentRole: string,
     request: IFlowStepRequest,
     strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
   ): Promise<IAgentExecutionResult> {
-    this.runWithStrategyCalls.push({ identityId, request, strategy });
+    this.runWithStrategyCalls.push({ agentRole, request, strategy });
     return Promise.resolve({ thought: "t", content: "strategy-run", raw: "r" });
   }
 }
 
 class NoStrategyAgentExecutor implements IAgentExecutor {
-  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    return Promise.resolve({ thought: "t", content: `ran ${identityId} ${request.userPrompt}`, raw: "r" });
+  run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    return Promise.resolve({ thought: "t", content: `ran ${agentRole} ${request.userPrompt}`, raw: "r" });
   }
 }
 
@@ -75,7 +75,7 @@ Deno.test("AgentStepHandler: a DECLARED step with strategy routes to runWithStra
 
   assertEquals(agentExecutor.runWithStrategyCalls.length, 1);
   assertEquals(agentExecutor.runCalls.length, 0);
-  assertEquals(agentExecutor.runWithStrategyCalls[0].identityId, "senior-coder");
+  assertEquals(agentExecutor.runWithStrategyCalls[0].agentRole, "senior-coder");
   assertEquals(agentExecutor.runWithStrategyCalls[0].strategy, ExecutionStrategyName.CLI_DELEGATE);
   assertEquals(result.content, "strategy-run");
 });

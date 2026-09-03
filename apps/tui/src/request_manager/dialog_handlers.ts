@@ -42,7 +42,7 @@ export async function processDialogCompletion(
         case RequestDialogType.FILTER_STATUS:
           handlers.handleFilterStatusResult(result.value);
           break;
-        case RequestDialogType.FILTER_IDENTITY:
+        case RequestDialogType.FILTER_AGENT_ROLE:
           handlers.handleFilterIdentityResult(result.value);
           break;
         case RequestDialogType.CREATE:

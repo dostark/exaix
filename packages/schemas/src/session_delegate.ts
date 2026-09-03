@@ -49,7 +49,7 @@ export const SessionBriefSchema = z.object({
   parent_trace_id: z.string().uuid().optional(),
   parent_step_id: z.string().min(1).optional(),
   sequence: z.number().int().positive().optional(),
-  /** The blueprint identity_id actually delegating this session. */
+  /** The blueprint agent_role actually delegating this session. */
   agent_role: z.string().min(1),
   gate: SessionGateSchema,
   tool: SessionToolSchema,

@@ -9,7 +9,7 @@
  * Success Criteria (Step 61.7 + 61.11):
  * - executeStep() throws AgentExecutionError with type SECURITY_VIOLATION
  * - logger.error() is called with action AGENT_EVENT_SECURITY_VIOLATION
- * - payload contains portal, unauthorized_files, and identity fields
+ * - payload contains portal, unauthorized_files, and agent_role fields
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
@@ -187,9 +187,9 @@ Deno.test({
         "violation payload must include at least one unauthorized file",
       );
       assertEquals(
-        violationLog!.payload?.["identity"],
+        violationLog!.payload?.["agent_role"],
         "audit-agent",
-        "violation payload must include identity",
+        "violation payload must include agent_role",
       );
     } finally {
       await dbService.cleanup();

@@ -12,18 +12,18 @@ import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { withSyntheticTestEnv, writeSyntheticScenario } from "./synthetic_test_helpers.ts";
 
-const SCENARIO_ID = "dynamic-identity-routing";
-const SCRIPT_TEMPLATE_NAME = "dynamic_identity_routing.ts.template";
-const GENERATED_SCRIPT_NAME = "dynamic_identity_routing.ts";
+const SCENARIO_ID = "dynamic-agent-role-routing";
+const SCRIPT_TEMPLATE_NAME = "dynamic_agent_role_routing.ts.template";
+const GENERATED_SCRIPT_NAME = "dynamic_agent_role_routing.ts";
 const BLUEPRINTS_SUBDIR = "Blueprints/Agents";
 const ROUTING_POLICY_FILE_NAME = ".exa/routing.policy.yaml";
 const RESULT_FILE_PATH = "artifacts/result.json";
-const SELECTED_IDENTITY = "senior-coder";
+const SELECTED_AGENT_ROLE = "senior-coder";
 const DEFAULT_AGENT_ID = "default-agent";
 const DYNAMIC_ROUTING_STEP_ID = "execute-dynamic-routing";
 const SCENARIO_TAGS = ["routing", "dynamic"] as const;
 const FIXTURE_ROOT =
-  new URL("../../../../tests/scenario_framework/fixtures/dynamic_identity_routing/", import.meta.url).pathname;
+  new URL("../../../../tests/scenario_framework/fixtures/dynamic_agent_role_routing/", import.meta.url).pathname;
 const REPO_ROOT_FILE_URL = new URL("../../../../", import.meta.url).href;
 const DENO_CONFIG_FILE = new URL("../../../../deno.json", import.meta.url).pathname;
 const REPO_ROOT_PLACEHOLDER = "{{REPO_ROOT}}";
@@ -45,13 +45,13 @@ Deno.test(
             command: Deno.execPath(),
             args: ["run", "--config", DENO_CONFIG_FILE, "--no-check", "--allow-all", scriptPath],
             outputCriteriaLines: [
-              `    - id: "${SELECTED_IDENTITY}-file-created"`,
+              `    - id: "${SELECTED_AGENT_ROLE}-file-created"`,
               `      kind: "file-exists"`,
               `      path: "${RESULT_FILE_PATH}"`,
-              `    - id: "selected-identity-${SELECTED_IDENTITY}"`,
+              `    - id: "selected-identity-${SELECTED_AGENT_ROLE}"`,
               `      kind: "json-path-equals"`,
-              `      path: "$.selected_identity_id"`,
-              `      equals: "${SELECTED_IDENTITY}"`,
+              `      path: "$.selected_agent_role"`,
+              `      equals: "${SELECTED_AGENT_ROLE}"`,
               `      target_file: "${RESULT_FILE_PATH}"`,
             ],
           },
@@ -75,8 +75,8 @@ Deno.test(
 
 async function prepareWorkspaceFixtures(workspaceRoot: string): Promise<string> {
   await copyFixture(
-    join(FIXTURE_ROOT, "blueprints", `${SELECTED_IDENTITY}.md`),
-    join(workspaceRoot, BLUEPRINTS_SUBDIR, `${SELECTED_IDENTITY}.md`),
+    join(FIXTURE_ROOT, "blueprints", `${SELECTED_AGENT_ROLE}.md`),
+    join(workspaceRoot, BLUEPRINTS_SUBDIR, `${SELECTED_AGENT_ROLE}.md`),
   );
   await copyFixture(
     join(FIXTURE_ROOT, "blueprints", `${DEFAULT_AGENT_ID}.md`),

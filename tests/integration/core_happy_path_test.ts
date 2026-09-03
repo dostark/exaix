@@ -28,7 +28,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       const result = await env.createRequest(
         "Implement a simple hello world function in TypeScript",
         {
-          identityId: "senior-coder",
+          agentRole: "senior-coder",
           priority: 7,
           tags: ["feature", "typescript"],
         },
@@ -167,7 +167,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       const reportResult = await reporter.generate({
         traceId,
         requestId: "implement-hello",
-        identityId: "senior-coder",
+        agentRole: "senior-coder",
         status: ExecutionStatus.COMPLETED,
         branch: `feat/implement-hello-${traceId.substring(0, 8)}`,
         completedAt: new Date(),

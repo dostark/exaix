@@ -40,7 +40,7 @@ export interface ISkillReachabilityResult {
  *  under measurement selected that identity — lets a non-coverage reason distinguish "absent
  *  from every identity's defaults" from "outside this run's identity coverage". */
 export interface IIdentityDefaultSkills {
-  identityId: string;
+  agentRole: string;
   defaultSkillIds: string[];
 }
 
@@ -78,7 +78,7 @@ export function computeSkillReachability(
       reason: wiredElsewhere.length > 0
         ? `not matched by any of the ${corpusMatches.length} corpus tasks and not this run's active ` +
           `identity default; still the declared default_skills of ` +
-          `${wiredElsewhere.map((identity) => `"${identity.identityId}"`).join(", ")} — outside this run's ` +
+          `${wiredElsewhere.map((identity) => `"${identity.agentRole}"`).join(", ")} — outside this run's ` +
           `identity coverage, not evidence the skill is unused`
         : `not in the evaluated identity's default_skills and matched by none of the ${corpusMatches.length} corpus tasks`,
     });

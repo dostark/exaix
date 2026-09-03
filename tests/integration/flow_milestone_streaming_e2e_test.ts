@@ -42,7 +42,7 @@ Deno.test({
 
       const requestResult = await env.createRequest(
         "Implement a simple hello world function in TypeScript",
-        { identityId: "senior-coder" },
+        { agentRole: "senior-coder" },
       );
 
       const { processor } = env.createRequestProcessor();

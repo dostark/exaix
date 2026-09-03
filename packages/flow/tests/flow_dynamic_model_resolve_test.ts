@@ -33,7 +33,7 @@ import { FlowStepSchema } from "@exaix/schemas";
 import type { ILlmClient } from "@exaix/ai";
 
 class MockAgentRunner implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return Promise.resolve({ thought: "", content: "mock-result", raw: "mock-result" });
   }
 }

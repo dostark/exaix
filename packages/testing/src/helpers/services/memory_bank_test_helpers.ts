@@ -21,7 +21,7 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { TEST_IDENTITY_ID, TEST_PORTAL_NAME, TEST_SAMPLE_PREFIX, TEST_TIMESTAMP } from "../constants.ts";
+import { TEST_AGENT_ROLE_ID, TEST_PORTAL_NAME, TEST_SAMPLE_PREFIX, TEST_TIMESTAMP } from "../constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /**
@@ -73,7 +73,7 @@ export function createMinimalExecutionMemory(overrides: Partial<IExecutionMemory
     completed_at: overrides.completed_at ?? "2026-01-04T10:30:00Z",
     status: overrides.status ?? ExecutionStatus.COMPLETED,
     portal: overrides.portal ?? TEST_PORTAL_NAME,
-    agent_role: overrides.agent_role ?? TEST_IDENTITY_ID,
+    agent_role: overrides.agent_role ?? TEST_AGENT_ROLE_ID,
     summary: overrides.summary ?? "Test execution summary",
     context_files: overrides.context_files ?? [],
     context_portals: overrides.context_portals ?? [],

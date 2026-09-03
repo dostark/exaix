@@ -22,8 +22,8 @@ export type AuthorizationResource = string;
  * Contextual information for an authorization decision.
  */
 export interface IAuthorizationContext {
-  /** Identity performing the action (user, agent, system). */
-  identity?: string;
+  /** Agent role performing the action (user, agent, system). */
+  agent_role?: string;
   /** Additional key-value attributes (role, tenant, scope, etc.). */
   attributes?: { [key: string]: boolean | number | string };
 }

@@ -190,7 +190,7 @@ Deno.test("EventLogger: child should inherit parent defaults", async () => {
 
     const child = parent.child({
       traceId: parentTraceId,
-      actor: "agent_role:processor",
+      actor: "agent:processor",
     });
 
     child.info("child.event", "target", { inherited: true });
@@ -199,7 +199,7 @@ Deno.test("EventLogger: child should inherit parent defaults", async () => {
 
     const activities = db.getActivitiesByTrace(parentTraceId);
     assertEquals(activities.length, 1);
-    assertEquals(activities[0].actor, "agent_role:processor");
+    assertEquals(activities[0].actor, "agent:processor");
   });
 });
 
@@ -212,7 +212,7 @@ Deno.test("EventLogger: child should override parent defaults when specified", a
     });
 
     const child = parent.child({
-      actor: "agent_role:watcher",
+      actor: "agent:watcher",
       traceId,
     });
 
@@ -223,7 +223,7 @@ Deno.test("EventLogger: child should override parent defaults when specified", a
 
     const activities = db.getActivitiesByTrace(traceId);
     assertEquals(activities.length, 1);
-    assertEquals(activities[0].actor, "agent_role:watcher");
+    assertEquals(activities[0].actor, "agent:watcher");
   });
 });
 

@@ -4,7 +4,7 @@
  * @description Phase 131 Step 2 — verifies the unified blueprint frontmatter
  *   schema and the finished TOML→YAML migration. Asserts: (1) all existing
  *   identities + examples parse under the unified schema; (2) GAP-1 field
- *   optionality (identity_id required; created/created_by optional-with-default
+ *   optionality (agent_role required; created/created_by optional-with-default
  *   at load); (3) session_delegate survives a load round-trip (was dropped by the
  *   runtime fork); (4) GAP-2 unknown fields WARN (not reject) and legacy runtime
  *   fields stay accepted; (5) the loader no longer throws on / writes TOML.
@@ -61,7 +61,7 @@ Deno.test("[step2] unified schema accepts every active identity (pre-strict)", a
   }
 });
 
-Deno.test("[step2][GAP-1] identity_id required; created/created_by optional-with-default at load", () => {
+Deno.test("[step2][GAP-1] agent_role required; created/created_by optional-with-default at load", () => {
   // Missing created/created_by must still load (loader tolerates legacy/minimal).
   const minimal = RuntimeBlueprintFrontmatterSchema.safeParse({
     agent_role: "x",
@@ -70,14 +70,14 @@ Deno.test("[step2][GAP-1] identity_id required; created/created_by optional-with
   });
   assert(minimal.success, "blueprint without created/created_by must load");
 
-  // identity_id is the one required identity field on the authoring (CLI) schema.
+  // agent_role is the one required identity field on the authoring (CLI) schema.
   const noId = BlueprintFrontmatterSchema.safeParse({
     name: "X",
     model: "mock:test-model",
     created: "2026-01-01T00:00:00.000Z",
     created_by: "tester",
   });
-  assertEquals(noId.success, false, "CLI schema must require identity_id");
+  assertEquals(noId.success, false, "CLI schema must require agent_role");
 });
 
 Deno.test("[step2] session_delegate survives a runtime load round-trip (was dropped by the fork)", () => {
@@ -115,7 +115,7 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
     const loader = new IBlueprintLoader({ blueprintsPath: identitiesDir });
     const loaded = await loader.load("round-trip-agent");
     assertExists(loaded, "CLI-format YAML blueprint must load");
-    assertEquals(loaded!.identityId, "round-trip-agent");
+    assertEquals(loaded!.agentRole, "round-trip-agent");
     assertEquals(loaded!.model, "mock:test-model");
     assertExists(loaded!.frontmatter.session_delegate, "session_delegate must survive the round-trip (W4)");
   } finally {
@@ -130,7 +130,7 @@ Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an act
     await ensureDir(identitiesDir);
     await Deno.writeTextFile(
       join(identitiesDir, "legacy-toml.md"),
-      `+++\nidentity_id = "legacy-toml"\nname = "Legacy"\nmodel = "mock:test-model"\n+++\n\nBody.\n`,
+      `+++\nagent_role = "legacy-toml"\nname = "Legacy"\nmodel = "mock:test-model"\n+++\n\nBody.\n`,
     );
     const loader = new IBlueprintLoader({ blueprintsPath: identitiesDir });
     let threw = false;

@@ -67,7 +67,7 @@ Deno.test("[SkillCorpusReachability] a default_skills entry not present in the c
 
 Deno.test("[SkillCorpusReachability] a non-covered skill still declared in another identity's default_skills gets an enriched reason naming that identity", () => {
   const identities: IIdentityDefaultSkills[] = [
-    { identityId: "qa-engineer", defaultSkillIds: ["response-contract-qa", "tdd-methodology"] },
+    { agentRole: "qa-engineer", defaultSkillIds: ["response-contract-qa", "tdd-methodology"] },
   ];
   const result = computeSkillReachability(
     catalog("response-contract-qa"),
@@ -83,8 +83,8 @@ Deno.test("[SkillCorpusReachability] a non-covered skill still declared in anoth
 
 Deno.test("[SkillCorpusReachability] a non-covered skill declared by multiple identities names all of them", () => {
   const identities: IIdentityDefaultSkills[] = [
-    { identityId: "quality-judge", defaultSkillIds: ["response-contract-judge", "verdict-rubric"] },
-    { identityId: "voting-judge", defaultSkillIds: ["response-contract-judge", "verdict-rubric"] },
+    { agentRole: "quality-judge", defaultSkillIds: ["response-contract-judge", "verdict-rubric"] },
+    { agentRole: "voting-judge", defaultSkillIds: ["response-contract-judge", "verdict-rubric"] },
   ];
   const result = computeSkillReachability(
     catalog("response-contract-judge"),
@@ -98,7 +98,7 @@ Deno.test("[SkillCorpusReachability] a non-covered skill declared by multiple id
 
 Deno.test("[SkillCorpusReachability] a skill genuinely absent from every identity's default_skills keeps the original, narrower reason", () => {
   const identities: IIdentityDefaultSkills[] = [
-    { identityId: "senior-coder", defaultSkillIds: ["tdd-methodology"] },
+    { agentRole: "senior-coder", defaultSkillIds: ["tdd-methodology"] },
   ];
   const result = computeSkillReachability(
     catalog("truly-orphaned-skill"),

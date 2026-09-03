@@ -90,7 +90,7 @@ Deno.test("[Step64.3] FlowRunner persists namespace artifact and preserves same-
     });
 
     const namespacePath = join(getMemoryExecutionDir(tempDir), traceId, "scratchpad.jsonl");
-    const readerRequest = executor.capturedRequests.find((entry) => entry.identityId === "agent3");
+    const readerRequest = executor.capturedRequests.find((entry) => entry.agentRole === "agent3");
     assertExists(readerRequest);
     assertEquals(readerRequest.request.sharedNamespace, { alpha: "alpha-value", beta: "beta-value" });
     assertEquals(result.namespaceArtifactPath, namespacePath);

@@ -229,7 +229,7 @@ Deno.test("MemoryExtractorAdapter: delegates all methods", async () => {
   });
   const execution = cast<Parameters<MemoryExtractorAdapter["createProposal"]>[1]>({ trace_id: "t" });
   await adapter.analyzeExecution(execution);
-  await adapter.createProposal(learning, execution, "identityId");
+  await adapter.createProposal(learning, execution, "agentRole");
   await adapter.approvePending("1");
   await adapter.rejectPending("2", "Reason");
   assertEquals(await adapter.approveAll(), 5);

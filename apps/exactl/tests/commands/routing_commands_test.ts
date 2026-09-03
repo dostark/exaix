@@ -23,7 +23,7 @@ rules:
   - match:
       capability: code_generation
     prefer:
-      identityId: ""
+      agentRole: ""
 `;
     await Deno.writeTextFile(policyPath, invalidPolicy);
 
@@ -71,7 +71,7 @@ Please generate code for the new feature.
     const commands = new RoutingCommands(context);
     const result = await commands.explainRequest(requestPath);
 
-    assertEquals(result.selectedIdentityId, "senior-coder");
+    assertEquals(result.selectedAgentRole, "senior-coder");
     assertEquals(result.strategy, "explicit");
     assertEquals(result.candidates.length, 2);
   } finally {

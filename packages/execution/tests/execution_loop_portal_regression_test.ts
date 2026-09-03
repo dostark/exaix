@@ -72,16 +72,16 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
     const loop = new ExecutionLoop({
       config,
       db,
-      identityId: "test-agent",
+      agentRole: "test-agent",
       reviewRegistry,
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
-          return new GitService({ config, traceId, identityId: "test-agent", repoPath });
+          return new GitService({ config, traceId, agentRole: "test-agent", repoPath });
         },
       },
       toolRegistryFactory: {
         createToolRegistry(traceId: string, baseDir: string) {
-          return new ToolRegistry({ config, traceId, identityId: "test-agent", baseDir });
+          return new ToolRegistry({ config, traceId, agentRole: "test-agent", baseDir });
         },
       },
       memoryBank: new MemoryBankService(config, logger),

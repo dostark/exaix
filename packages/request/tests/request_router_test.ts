@@ -14,7 +14,7 @@ import { RoutingError } from "@exaix/request";
 import { createMockConfig, createRouterTestContext, sampleRouterRequest } from "@exaix/testing";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 type RoutingContext = {
-  explicitIdentityId?: string;
+  explicitAgentRole?: string;
   explicitVersion?: string;
   requestText?: string;
   requestAnalysis?: any;
@@ -62,11 +62,11 @@ Deno.test("RequestRouter: routes agent requests to IAgentRunner", async () => {
 
   const result = await router.route(request);
 
-  assertEquals(result.type, RequestKind.IDENTITY);
-  assertEquals(result.identityId, "senior-coder");
+  assertEquals(result.type, RequestKind.AGENT_ROLE);
+  assertEquals(result.agentRole, "senior-coder");
   assertEquals(mockAgentRunner.executedAgents.length, 1);
-  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "senior-coder");
-  assertEquals(mockLogger.events[0].action, "request.routing.identity_id");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.agentRole, "senior-coder");
+  assertEquals(mockLogger.events[0].action, "request.routing.agent_role");
 });
 
 Deno.test("RequestRouter: routes requests without flow/agent to default agent", async () => {
@@ -76,10 +76,10 @@ Deno.test("RequestRouter: routes requests without flow/agent to default agent", 
 
   const result = await router.route(request);
 
-  assertEquals(result.type, RequestKind.IDENTITY);
-  assertEquals(result.identityId, "default-agent");
+  assertEquals(result.type, RequestKind.AGENT_ROLE);
+  assertEquals(result.agentRole, "default-agent");
   assertEquals(mockAgentRunner.executedAgents.length, 1);
-  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "default-agent");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.agentRole, "default-agent");
   assertEquals(mockLogger.events[0].action, "request.routing.default");
 });
 
@@ -120,13 +120,13 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
   router.route = async function (request: Parameters<typeof router.route>[0]) {
     // Skip the conflicting fields check for this test
     const flowId = request.frontmatter.flow;
-    const identityId = request.frontmatter.identity_id;
+    const agentRole = request.frontmatter.agent_role;
 
     if (flowId) {
       return await router.routeToFlow(flowId, request);
     }
-    if (identityId) {
-      return await router.routeToAgent(identityId, request);
+    if (agentRole) {
+      return await router.routeToAgent(agentRole, request);
     }
     return await router.routeToDefaultAgent(request);
   };
@@ -143,9 +143,9 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
 
 Deno.test("RequestRouter: applies routing policy service for explicit identity when dynamic routing is enabled", async () => {
   const routingPolicyService = {
-    selectIdentity: () =>
+    selectAgentRole: () =>
       Promise.resolve({
-        selectedIdentityId: "default-agent",
+        selectedAgentRole: "default-agent",
         selectedVersion: "1.0.0",
         strategy: "policy" as const,
         candidates: [],
@@ -164,18 +164,18 @@ Deno.test("RequestRouter: applies routing policy service for explicit identity w
 
   const result = await router.route(request);
 
-  assertEquals(result.type, RequestKind.IDENTITY);
-  assertEquals(result.identityId, "default-agent");
-  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "default-agent");
+  assertEquals(result.type, RequestKind.AGENT_ROLE);
+  assertEquals(result.agentRole, "default-agent");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.agentRole, "default-agent");
   assertEquals(mockLogger.events.some((event) => event.action === "routing.decision"), true);
   const decisionEvent = mockLogger.events.find((event) => event.action === "routing.decision");
-  assertEquals(decisionEvent?.payload?.selected_identity_id, "default-agent");
+  assertEquals(decisionEvent?.payload?.selected_agent_role, "default-agent");
   assertEquals(decisionEvent?.payload?.allow_dynamic_routing, true);
 });
 
 Deno.test("RequestRouter: logs fallback_used when routing policy service fails", async () => {
   const routingPolicyService = {
-    selectIdentity: () => Promise.reject(new Error("policy service unavailable")),
+    selectAgentRole: () => Promise.reject(new Error("policy service unavailable")),
   };
 
   const { mockAgentRunner, mockLogger, router } = createRouterTestContext({
@@ -188,22 +188,22 @@ Deno.test("RequestRouter: logs fallback_used when routing policy service fails",
 
   const result = await router.route(request);
 
-  assertEquals(result.type, RequestKind.IDENTITY);
-  assertEquals(result.identityId, "senior-coder");
-  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "senior-coder");
+  assertEquals(result.type, RequestKind.AGENT_ROLE);
+  assertEquals(result.agentRole, "senior-coder");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.agentRole, "senior-coder");
   assertEquals(mockLogger.events.some((event) => event.action === "routing.fallback_used"), true);
   const fallbackEvent = mockLogger.events.find((event) => event.action === "routing.fallback_used");
-  assertEquals(fallbackEvent?.payload?.fallback_identity_id, "senior-coder");
+  assertEquals(fallbackEvent?.payload?.fallback_agent_role, "senior-coder");
   assertEquals(fallbackEvent?.payload?.reason, "policy service unavailable");
 });
 
 Deno.test("RequestRouter: logs fallback_used when routing policy returns a fallback decision", async () => {
   let receivedContext: RoutingContext | null = null;
   const routingPolicyService = {
-    selectIdentity: (context: RoutingContext) => {
+    selectAgentRole: (context: RoutingContext) => {
       receivedContext = context;
       return Promise.resolve({
-        selectedIdentityId: "default-agent",
+        selectedAgentRole: "default-agent",
         selectedVersion: "1.0.0",
         strategy: "capability_fallback" as const,
         candidates: [],
@@ -223,19 +223,19 @@ Deno.test("RequestRouter: logs fallback_used when routing policy returns a fallb
 
   const result = await router.route(request);
 
-  assertEquals(result.identityId, "default-agent");
+  assertEquals(result.agentRole, "default-agent");
   assertEquals(mockLogger.events.some((event) => event.action === "routing.fallback_used"), true);
   const fallbackEvent = mockLogger.events.find((event) => event.action === "routing.fallback_used");
-  assertEquals(fallbackEvent?.payload?.fallback_identity_id, "default-agent");
+  assertEquals(fallbackEvent?.payload?.fallback_agent_role, "default-agent");
   const fallbackContext = receivedContext as RoutingContext | null;
   assertEquals(fallbackContext?.matchCriteria !== undefined, true);
 });
 
 Deno.test("RequestRouter: logs experiment_applied when routing policy returns an experiment decision", async () => {
   const routingPolicyService = {
-    selectIdentity: () =>
+    selectAgentRole: () =>
       Promise.resolve({
-        selectedIdentityId: "default-agent",
+        selectedAgentRole: "default-agent",
         selectedVersion: "1.0.0",
         strategy: "policy" as const,
         experimentApplied: true,
@@ -256,10 +256,10 @@ Deno.test("RequestRouter: logs experiment_applied when routing policy returns an
 
   const result = await router.route(request);
 
-  assertEquals(result.identityId, "default-agent");
+  assertEquals(result.agentRole, "default-agent");
   assertEquals(mockLogger.events.some((event) => event.action === "routing.experiment_applied"), true);
   const experimentEvent = mockLogger.events.find((event) => event.action === "routing.experiment_applied");
-  assertEquals(experimentEvent?.payload?.selected_identity_id, "default-agent");
+  assertEquals(experimentEvent?.payload?.selected_agent_role, "default-agent");
   assertEquals(experimentEvent?.payload?.experiment_bucket, 0.32);
 });
 
@@ -267,10 +267,10 @@ Deno.test("RequestRouter: forwards full routing context to routing policy servic
   let receivedContext: RoutingContext | null = null;
 
   const routingPolicyService = {
-    selectIdentity: (context: RoutingContext) => {
+    selectAgentRole: (context: RoutingContext) => {
       receivedContext = context;
       return Promise.resolve({
-        selectedIdentityId: "default-agent",
+        selectedAgentRole: "default-agent",
         selectedVersion: "1.0.0",
         strategy: "policy" as const,
         candidates: [],
@@ -310,9 +310,9 @@ Deno.test("RequestRouter: forwards full routing context to routing policy servic
 
 Deno.test("RequestRouter: applies routing policy service for default routing when global dynamic routing is enabled", async () => {
   const routingPolicyService = {
-    selectIdentity: () =>
+    selectAgentRole: () =>
       Promise.resolve({
-        selectedIdentityId: "senior-coder",
+        selectedAgentRole: "senior-coder",
         selectedVersion: "1.0.0",
         strategy: "policy" as const,
         candidates: [],
@@ -338,12 +338,12 @@ Deno.test("RequestRouter: applies routing policy service for default routing whe
 
   const result = await router.route(request);
 
-  assertEquals(result.type, RequestKind.IDENTITY);
-  assertEquals(result.identityId, "senior-coder");
-  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "senior-coder");
+  assertEquals(result.type, RequestKind.AGENT_ROLE);
+  assertEquals(result.agentRole, "senior-coder");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.agentRole, "senior-coder");
   assertEquals(mockLogger.events.some((event) => event.action === "routing.decision"), true);
   const decisionEvent = mockLogger.events.find((event) => event.action === "routing.decision");
-  assertEquals(decisionEvent?.payload?.selected_identity_id, "senior-coder");
+  assertEquals(decisionEvent?.payload?.selected_agent_role, "senior-coder");
   assertEquals(decisionEvent?.payload?.allow_dynamic_routing, true);
 });
 

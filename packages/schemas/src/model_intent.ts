@@ -49,7 +49,7 @@ export interface IModelIntent {
 }
 
 /** The precedence source that decided the derived task_type. */
-export type TaskTypeSource = "frontmatter" | "identity" | "skill" | "static_map" | "analyzer" | "unknown";
+export type TaskTypeSource = "frontmatter" | "agent_role" | "skill" | "static_map" | "analyzer" | "unknown";
 
 /** @deprecated Use IModelIntent instead. Backward-compat alias. */
 export type IModelPreferences = IModelIntent;

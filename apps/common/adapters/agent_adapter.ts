@@ -70,7 +70,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
   /**
    * Get health data for a specific agent.
    */
-  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
+  getAgentHealth(_agentRole: string): Promise<IAgentHealthData> {
     return Promise.resolve({
       status: AgentHealth.HEALTHY,
       issues: [],
@@ -81,7 +81,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
   /**
    * Get logs for a specific agent.
    */
-  getAgentLogs(_identityId: string, _limit: number = 50): Promise<IAgentLogEntry[]> {
+  getAgentLogs(_agentRole: string, _limit: number = 50): Promise<IAgentLogEntry[]> {
     // Agent-specific log files are not yet standardized in core.
     return Promise.resolve([]);
   }

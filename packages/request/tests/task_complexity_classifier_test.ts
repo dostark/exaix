@@ -26,8 +26,8 @@ function makeRequest(userPrompt: string): IParsedRequest {
   return { userPrompt, context: {} };
 }
 
-function makeBlueprint(identityId?: string): IBlueprint {
-  return { identityId, systemPrompt: "test" };
+function makeBlueprint(agentRole?: string): IBlueprint {
+  return { agentRole, systemPrompt: "test" };
 }
 
 Deno.test("[TaskComplexityClassifier.classify] structured analysis: maps SIMPLE correctly", () => {

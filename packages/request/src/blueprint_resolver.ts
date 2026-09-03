@@ -23,51 +23,51 @@ export interface IBlueprintResolverConfig {
 }
 
 export interface IBlueprintResolver {
-  resolve(identityId: string, traceLogger: IEventLogger): Promise<ILoadedBlueprint | null>;
+  resolve(agentRole: string, traceLogger: IEventLogger): Promise<ILoadedBlueprint | null>;
 }
 
 /** Directory checked ahead of the shipped `Blueprints/Agents/` catalog. Callers MUST validate this path via `PathResolver` before setting it — this resolver trusts it as-is. */
-export const EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_IDENTITY_OVERLAY_DIR";
+export const EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_AGENT_ROLE_OVERLAY_DIR";
 
 export class BlueprintResolver implements IBlueprintResolver {
   constructor(private readonly config: IBlueprintResolverConfig) {}
 
-  async resolve(identityId: string, traceLogger: IEventLogger): Promise<ILoadedBlueprint | null> {
-    const overlayDir = Deno.env.get(EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR);
+  async resolve(agentRole: string, traceLogger: IEventLogger): Promise<ILoadedBlueprint | null> {
+    const overlayDir = Deno.env.get(EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR);
     if (overlayDir) {
       const overlayLoader = new IBlueprintLoader({ blueprintsPath: overlayDir });
-      const overlaidBlueprint = await overlayLoader.load(identityId);
+      const overlaidBlueprint = await overlayLoader.load(agentRole);
       if (overlaidBlueprint) return overlaidBlueprint;
     }
 
     const blueprintLoader = new IBlueprintLoader({ blueprintsPath: this.config.blueprintsPath });
-    let loadedBlueprint = await blueprintLoader.load(identityId);
+    let loadedBlueprint = await blueprintLoader.load(agentRole);
 
     if (!loadedBlueprint) {
-      loadedBlueprint = await this.findInWorktree(identityId, traceLogger);
+      loadedBlueprint = await this.findInWorktree(agentRole, traceLogger);
     }
     if (!loadedBlueprint) {
-      loadedBlueprint = await this.findInRepoRoots(identityId, traceLogger);
+      loadedBlueprint = await this.findInRepoRoots(agentRole, traceLogger);
     }
     return loadedBlueprint;
   }
 
   private async findInWorktree(
-    identityId: string,
+    agentRole: string,
     traceLogger: IEventLogger,
   ): Promise<ILoadedBlueprint | null> {
     let dir = Deno.cwd();
     while (true) {
       const candidatePath = join(dir, "Blueprints", DEFAULT_AGENTS_PATH);
       try {
-        const candidateFile = join(candidatePath, `${identityId}.md`);
+        const candidateFile = join(candidatePath, `${agentRole}.md`);
         try {
           const stat = await Deno.stat(candidateFile);
           if (stat && stat.isFile) {
             const fallbackLoader = new IBlueprintLoader({ blueprintsPath: candidatePath });
-            const loadedBlueprint = await fallbackLoader.load(identityId);
+            const loadedBlueprint = await fallbackLoader.load(agentRole);
             if (loadedBlueprint) {
-              traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: candidatePath });
+              traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: candidatePath });
               return loadedBlueprint;
             }
           }
@@ -86,15 +86,15 @@ export class BlueprintResolver implements IBlueprintResolver {
   }
 
   private async findInRepoRoots(
-    identityId: string,
+    agentRole: string,
     traceLogger: IEventLogger,
   ): Promise<ILoadedBlueprint | null> {
     // Try the repository root (cwd) directly
     const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_AGENTS_PATH);
     const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoIdentitiesPath });
-    const loadedBlueprint = await fallbackLoader.load(identityId);
+    const loadedBlueprint = await fallbackLoader.load(agentRole);
     if (loadedBlueprint) {
-      traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoIdentitiesPath });
+      traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: repoIdentitiesPath });
       return loadedBlueprint;
     }
 
@@ -103,9 +103,9 @@ export class BlueprintResolver implements IBlueprintResolver {
       const repoRoot = join(dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname)))));
       const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_AGENTS_PATH);
       const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleIdentities });
-      const moduleLoaded = await moduleLoader.load(identityId);
+      const moduleLoaded = await moduleLoader.load(agentRole);
       if (moduleLoaded) {
-        traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoModuleIdentities });
+        traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: repoModuleIdentities });
         return moduleLoaded;
       }
     } catch {

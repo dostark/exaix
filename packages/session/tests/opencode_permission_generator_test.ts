@@ -18,13 +18,13 @@ import type { IOpencodePermissionConfig } from "@exaix/session/opencode_permissi
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 
-const TEST_IDENTITY = "dogfood-coder";
+const TEST_AGENT_ROLE = "dogfood-coder";
 
 Deno.test(
   "[opencode_perm] generator allows each permitted_paths glob under edit, denies '*'",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**", "tests/**"], TEST_IDENTITY);
-    const agent = config.agent[TEST_IDENTITY];
+    const config = buildOpencodePermissionConfig(["src/**", "tests/**"], TEST_AGENT_ROLE);
+    const agent = config.agent[TEST_AGENT_ROLE];
     assertEquals(agent.edit["*"], "deny");
     assertEquals(agent.edit["src/**"], "allow");
     assertEquals(agent.edit["tests/**"], "allow");
@@ -34,9 +34,9 @@ Deno.test(
 Deno.test(
   "[opencode_perm] generator denies external_directory by default",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**"], TEST_IDENTITY);
+    const config = buildOpencodePermissionConfig(["src/**"], TEST_AGENT_ROLE);
     assertEquals(
-      config.agent[TEST_IDENTITY].external_directory["**"],
+      config.agent[TEST_AGENT_ROLE].external_directory["**"],
       "deny",
     );
   },
@@ -45,15 +45,15 @@ Deno.test(
 Deno.test(
   "[opencode_perm] generator sets bash to deny by default",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**"], TEST_IDENTITY);
-    assertEquals(config.agent[TEST_IDENTITY].bash["*"], "deny");
+    const config = buildOpencodePermissionConfig(["src/**"], TEST_AGENT_ROLE);
+    assertEquals(config.agent[TEST_AGENT_ROLE].bash["*"], "deny");
   },
 );
 
 Deno.test(
   "[opencode_perm] generated config validates against the permission Zod schema",
   () => {
-    const config = buildOpencodePermissionConfig(["src/**", "tests/**", "*.md"], TEST_IDENTITY);
+    const config = buildOpencodePermissionConfig(["src/**", "tests/**", "*.md"], TEST_AGENT_ROLE);
     const result = OpencodeConfigSchema.safeParse(config);
     assertEquals(result.success, true);
   },
@@ -113,12 +113,12 @@ Deno.test(
         tmpDir,
         resolver,
         "test-trace-01",
-        TEST_IDENTITY,
+        TEST_AGENT_ROLE,
       );
 
-      assertEquals(result.agentKey, TEST_IDENTITY);
-      assertEquals(result.config.agent[TEST_IDENTITY].edit["*"], "deny");
-      assertEquals(result.config.agent[TEST_IDENTITY].edit["src/**"], "allow");
+      assertEquals(result.agentKey, TEST_AGENT_ROLE);
+      assertEquals(result.config.agent[TEST_AGENT_ROLE].edit["*"], "deny");
+      assertEquals(result.config.agent[TEST_AGENT_ROLE].edit["src/**"], "allow");
       assertEquals(result.configPath.length > 0, true);
 
       const stat = await Deno.stat(result.configPath);

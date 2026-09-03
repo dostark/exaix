@@ -182,7 +182,7 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
       parentTraceId: input.parentTraceId,
       parentStepId: input.parentStepId,
       sequence: input.sequence,
-      identityId: input.identityId,
+      agentRole: input.agentRole,
       gate: SessionGateSchema.enum.code_changes,
       tool: config.tool,
       objective: input.objective,
@@ -330,13 +330,13 @@ export function createCodeChangesDelegateAdapter(
   traceId: string,
   step: IDelegatedPlanStep,
   worktreePath: string,
-  identityId: string,
+  agentRole: string,
 ) => Promise<string> {
   return async (
     traceId: string,
     step: IDelegatedPlanStep,
     worktreePath: string,
-    identityId: string,
+    agentRole: string,
   ): Promise<string> => {
     if (isContentlessBrief(step.content)) {
       await Promise.resolve(deps.logger.warn(
@@ -356,7 +356,7 @@ export function createCodeChangesDelegateAdapter(
       parentTraceId: traceId,
       parentStepId: String(step.number),
       sequence: step.number,
-      identityId,
+      agentRole: agentRole,
       objective: brief.objective,
       acceptanceCriteria: brief.acceptanceCriteria ?? [],
       artifactRef: `trace:${traceId}/step:${step.number}`,

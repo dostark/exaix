@@ -66,7 +66,7 @@ This blueprint uses multi-line YAML array format.
     const blueprints = await blueprintCommands.list();
 
     assertEquals(blueprints.length, 1, "Should find multi-line blueprint");
-    assertEquals(blueprints[0].identity_id, AGENT_ID);
+    assertEquals(blueprints[0].agent_role, AGENT_ID);
 
     // CRITICAL: capabilities should be an array, not a string
     assertEquals(Array.isArray(blueprints[0].capabilities), true, "capabilities should be an array");

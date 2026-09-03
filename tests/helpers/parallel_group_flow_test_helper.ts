@@ -20,7 +20,7 @@ import {
 interface IParallelGroupMemberStep {
   stepId: string;
   stepName: string;
-  identityId: string;
+  agentRole: string;
 }
 
 interface ICreateParallelGroupFlowOptions {
@@ -62,7 +62,7 @@ export function createParallelGroupFlow(options: ICreateParallelGroupFlowOptions
       ...options.memberSteps.map((step) => ({
         id: step.stepId,
         name: step.stepName,
-        agent_role: step.identityId,
+        agent_role: step.agentRole,
         dependsOn: ["start"],
         input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

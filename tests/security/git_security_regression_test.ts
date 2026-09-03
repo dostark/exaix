@@ -151,7 +151,7 @@ Deno.test("[security] Git Security: prevents system root taint during Portal exe
   const loop = new ExecutionLoop({
     config,
     db,
-    identityId: "test-daemon",
+    agentRole: "test-daemon",
   });
 
   // Create a plan that fails

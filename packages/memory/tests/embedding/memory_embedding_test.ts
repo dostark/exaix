@@ -28,7 +28,7 @@ import { getMemoryIndexDir } from "@exaix/testing";
 const testLearning: ILearning = {
   id: "bbbbbbbb-2222-4000-8000-000000000001",
   created_at: new Date().toISOString(),
-  source: MemoryBankSource.IDENTITY,
+  source: MemoryBankSource.USER,
   scope: MemoryScope.GLOBAL,
   title: "Test learning for embedding",
   description: "This is a test learning about error handling best practices in TypeScript",

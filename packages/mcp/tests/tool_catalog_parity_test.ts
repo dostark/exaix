@@ -98,7 +98,7 @@ Deno.test("[checkToolCatalogParity] matching required-param sets produce zero er
   assertEquals(result.errors, []);
 });
 
-Deno.test("[checkToolCatalogParity] MCP-only auth params (portal, identity_id) are excluded from comparison", () => {
+Deno.test("[checkToolCatalogParity] MCP-only auth params (portal, agent_role) are excluded from comparison", () => {
   const registryTools = [
     registryTool({
       name: "example_tool",

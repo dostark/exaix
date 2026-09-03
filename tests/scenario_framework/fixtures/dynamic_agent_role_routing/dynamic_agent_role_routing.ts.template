@@ -4,7 +4,7 @@ import { RoutingPolicyService, RoutingPolicyLoader, CandidateDiscovery } from "@
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const root = Deno.cwd();
-const selectedIdentity = "senior-coder";
+const selectedAgentRole = "senior-coder";
 const defaultAgent = "default-agent";
 const request = {
   traceId: "scenario-trace-1",
@@ -74,12 +74,12 @@ const router = new RequestRouter({
 });
 
 const result = await router.route(request as any);
-if (result.identityId !== selectedIdentity) {
-  throw new Error(`Unexpected selected agent_role: ${result.identityId}`);
+if (result.agentRole !== selectedAgentRole) {
+  throw new Error(`Unexpected selected agent_role: ${result.agentRole}`);
 }
 
 await Deno.mkdir(join(root, "artifacts"), { recursive: true });
 await Deno.writeTextFile(
   join(root, "artifacts", "result.json"),
-  JSON.stringify({ selected_agent_role: result.identityId }),
+  JSON.stringify({ selected_agent_role: result.agentRole }),
 );

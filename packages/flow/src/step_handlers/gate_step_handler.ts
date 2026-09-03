@@ -94,7 +94,7 @@ export class GateStepHandler implements IFlowStepHandler {
           traceId: request.traceId,
           artifactPath: `Workspace/WaitStates/${request.traceId}/${step.id}.json`,
           resumeToken: crypto.randomUUID(),
-          requestedBy: step.identity,
+          requestedBy: step.agent_role,
           deadlineAt: undefined,
         });
         this.#pendingWaitStateRef.current = ws.waitStateId;

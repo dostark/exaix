@@ -66,7 +66,7 @@ class RecordingDelegateService implements ISessionDelegateService {
       parent_trace_id: input.parentTraceId,
       parent_step_id: input.parentStepId,
       sequence: input.sequence,
-      agent_role: input.identityId,
+      agent_role: input.agentRole,
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,
@@ -186,7 +186,7 @@ function request(): ISessionDelegationRequest {
     parentTraceId: PARENT_TRACE_ID,
     parentStepId: "1",
     sequence: 1,
-    identityId: "test-identity",
+    agentRole: "test-identity",
     objective: "Implement the coordinator.",
     acceptanceCriteria: ["The coordinator is wired."],
     artifactRef: ".exa/PlanContext/phase-174.md",
@@ -368,7 +368,7 @@ function realDelegateService(sessionDir: string): SessionDelegateService {
   });
 }
 
-Deno.test("[session_delegation_coordinator][security] harden_permissions=true keys the generated permission config on the caller-supplied identityId, not a default", async () => {
+Deno.test("[session_delegation_coordinator][security] harden_permissions=true keys the generated permission config on the caller-supplied agentRole, not a default", async () => {
   const sessionDir = await Deno.makeTempDir();
   try {
     const waitStore = new RecordingWaitStore();
@@ -384,18 +384,18 @@ Deno.test("[session_delegation_coordinator][security] harden_permissions=true ke
       logger,
     );
 
-    for (const identityId of ["dogfood-coder", "some-other-identity"]) {
+    for (const agentRole of ["dogfood-coder", "some-other-identity"]) {
       const delegationTraceId = crypto.randomUUID();
-      resultStore.request = { ...request(), identityId, delegationTraceId };
-      const outcome = await coordinator.delegate({ ...request(), identityId, delegationTraceId });
+      resultStore.request = { ...request(), agentRole: agentRole, delegationTraceId };
+      const outcome = await coordinator.delegate({ ...request(), agentRole: agentRole, delegationTraceId });
 
       const configPath = `${sessionDir}/${outcome.delegationTraceId}/opencode_config.json`;
       const config = JSON.parse(await Deno.readTextFile(configPath));
-      assertExists(config.agent[identityId], `config must key the agent block on '${identityId}'`);
+      assertExists(config.agent[agentRole], `config must key the agent block on '${agentRole}'`);
       assertEquals(
         Object.keys(config.agent),
-        [identityId],
-        `config must not carry any identity key other than '${identityId}'`,
+        [agentRole],
+        `config must not carry any identity key other than '${agentRole}'`,
       );
     }
   } finally {

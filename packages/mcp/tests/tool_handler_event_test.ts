@@ -25,10 +25,10 @@ class ProbeToolHandler extends ToolHandler {
   callFormatSuccess(
     toolName: string,
     portal: string,
-    identityId: string,
+    agentRole: string,
     metadata: LogMetadata,
   ): MCPToolResponse {
-    return this.formatSuccess(toolName, portal, identityId, [], metadata);
+    return this.formatSuccess(toolName, portal, agentRole, [], metadata);
   }
 
   execute(_args: Record<string, JSONValue>): Promise<MCPToolResponse> {

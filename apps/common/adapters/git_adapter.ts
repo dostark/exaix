@@ -15,7 +15,7 @@ export interface IGitServiceOptions {
   db: IDatabaseService;
   repoPath: string;
   traceId: string;
-  identityId: string;
+  agentRole: string;
 }
 
 /**

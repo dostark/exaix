@@ -18,25 +18,25 @@ import type { JSONObject } from "@exaix/core/types";
  */
 class MockAgentRunner {
   responses: Map<string, string> = new Map();
-  lastRequest: { identityId: string; prompt: string; context?: JSONObject } | null = null;
+  lastRequest: { agentRole: string; prompt: string; context?: JSONObject } | null = null;
 
-  setResponse(identityId: string, response: string): void {
-    this.responses.set(identityId, response);
+  setResponse(agentRole: string, response: string): void {
+    this.responses.set(agentRole, response);
   }
 
   async run(
-    identityId: string,
+    agentRole: string,
     request: { userPrompt: string; context?: JSONObject },
   ): Promise<{ content: string }> {
     this.lastRequest = {
-      identityId,
+      agentRole,
       prompt: request.userPrompt,
       context: request.context,
     };
 
-    const response = await this.responses.get(identityId);
+    const response = await this.responses.get(agentRole);
     if (!response) {
-      throw new Error(`No mock response for agent_role: ${identityId}`);
+      throw new Error(`No mock response for agent_role: ${agentRole}`);
     }
 
     return { content: response };

@@ -62,7 +62,7 @@ Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downst
     });
 
     assertEquals(result.success, true);
-    const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
+    const mergeRequest = executor.capturedRequests.find((entry) => entry.agentRole === "merger");
     assertExists(mergeRequest);
     assertExists(mergeRequest.request.parallelGroupResults);
     assertEquals(typeof mergeRequest.request.parallelGroupResults.writers.completedAt, "string");

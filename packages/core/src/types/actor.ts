@@ -14,7 +14,6 @@ export enum ActorType {
   USER = "user",
   SERVICE = "service",
   MCP_CLIENT = "mcp-client",
-  IDENTITY = "identity",
   SYSTEM = "system",
   AGENT = "agent",
 }

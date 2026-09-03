@@ -292,9 +292,9 @@ export class SessionMemoryService {
     }
     for (const result of nonLearning) {
       if (!result.kind || !this.shouldIncludeVectorKind(result.kind, cfg)) continue;
-      const { identity, item } = this.vectorResultToItem(result);
-      itemsByIdentity.set(identity, item);
-      vectorScores.set(identity, result.similarity);
+      const { agent_role, item } = this.vectorResultToItem(result);
+      itemsByIdentity.set(agent_role, item);
+      vectorScores.set(agent_role, result.similarity);
     }
   }
 

@@ -60,7 +60,7 @@ describe("RequestCommands", () => {
       assertEquals(result.trace_id.length, 36); // UUID format
       assertEquals(result.status, RequestStatus.PENDING);
       assertEquals(result.priority, "normal");
-      assertEquals(result.identity, "default");
+      assertEquals(result.agent_role, "default");
 
       // Verify file exists
       if (!result.path) throw new Error("Path should be defined");
@@ -85,7 +85,7 @@ describe("RequestCommands", () => {
 
     it("should accept custom agent", async () => {
       const result = await requestCommands.create("Write tests", { agent_role: "test_writer" });
-      assertEquals(result.identity, "test_writer");
+      assertEquals(result.agent_role, "test_writer");
 
       if (!result.path) throw new Error("Path should be defined");
       const content = await Deno.readTextFile(result.path);
@@ -314,7 +314,7 @@ describe("RequestCommands", () => {
         priority: RequestPriority.HIGH,
       });
 
-      assertEquals(result.identity, "custom_agent");
+      assertEquals(result.agent_role, "custom_agent");
       assertEquals(result.priority, RequestPriority.HIGH);
     });
 
@@ -423,7 +423,7 @@ describe("RequestCommands", () => {
       const requests = await requestCommands.list();
       assertEquals(requests.length, 1);
       assertEquals(requests[0].priority, RequestPriority.HIGH);
-      assertEquals(requests[0].identity, "architect");
+      assertEquals(requests[0].agent_role, "architect");
       assertEquals(requests[0].status, RequestStatus.PENDING);
     });
   });
@@ -554,7 +554,7 @@ Minimal content for show
       const requests = await requestCommands.list();
       assertEquals(requests.length, 1);
       assertEquals(requests[0].priority, "normal"); // Default when missing
-      assertEquals(requests[0].identity, "default"); // Default when missing
+      assertEquals(requests[0].agent_role, "default"); // Default when missing
       assertEquals(requests[0].created_by, "unknown"); // Default when missing
       assertEquals(requests[0].source, "unknown"); // Default when missing
     });
@@ -756,8 +756,8 @@ Minimal content for show
       assertExists(activity.payload);
       const payload = JSON.parse(activity.payload);
       assertEquals(payload.priority, "high");
-      assertEquals(payload.identity, "special_agent");
-      assertEquals(payload.identity, "special_agent");
+      assertEquals(payload.agent_role, "special_agent");
+      assertEquals(payload.agent_role, "special_agent");
       assertEquals(payload.portal, "TestPortal");
       assertEquals(payload.source, RequestSource.CLI);
       assertEquals(typeof payload.description_length, "number");

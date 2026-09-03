@@ -112,7 +112,7 @@ Requests are routed as either **Flow** (multi-agent, with quality gates) or **Ag
     "strategy": "policy_match",
     "candidateCount": 4,
     "candidates": [
-      { "identityId": "senior-coder", "score": 0.92 }
+      { "agentRole": "senior-coder", "score": 0.92 }
     ]
   }
 }

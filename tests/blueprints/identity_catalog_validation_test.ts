@@ -64,8 +64,8 @@ function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }>
     if (!m) throw new Error(`malformed identity ${e.name}`);
     const fm = parseYaml(m[1]) as IIdentityFrontmatter;
     const id = e.name.replace(/\.md$/, "");
-    if (fm.identity_id && fm.identity_id !== id) {
-      throw new Error(`identity_id mismatch in ${e.name}: frontmatter says "${fm.identity_id}"`);
+    if (fm.agent_role && fm.agent_role !== id) {
+      throw new Error(`agent_role mismatch in ${e.name}: frontmatter says "${fm.agent_role}"`);
     }
     out.push({ id, fm });
   }

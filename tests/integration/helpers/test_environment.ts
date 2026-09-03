@@ -62,7 +62,7 @@ export interface IActionParams {
 
 interface IRequestCreationOptions {
   traceId?: string;
-  identityId?: string;
+  agentRole?: string;
   priority?: number;
   tags?: string[];
   portal?: string;
@@ -258,7 +258,7 @@ default_model = "claude-3-7-sonnet-20250219"
 max_tokens_default = 4096
 
 [mcp_defaults]
-identity_id = "default"
+agent_role = "default"
 
 [git]
 branch_prefix_pattern = "feature/"
@@ -330,7 +330,7 @@ retry_backoff_base_ms = 1000
     flowId?: string;
     status?: string;
     priority?: number;
-    identityId?: string;
+    agentRole?: string;
     portal?: string;
     tags?: string[];
     targetBranch?: string;
@@ -342,7 +342,7 @@ retry_backoff_base_ms = 1000
       `status: ${options.status ?? "pending"}`,
       `priority: ${options.priority ?? 5}`,
       options.flowId ? `flow: ${options.flowId}` : null,
-      options.identityId ? `agent_role: ${options.identityId}` : (options.flowId ? null : `agent_role: senior-coder`),
+      options.agentRole ? `agent_role: ${options.agentRole}` : (options.flowId ? null : `agent_role: senior-coder`),
       `source: test`,
       `created_by: test_environment`,
       options.portal ? `portal: "${options.portal}"` : null,
@@ -405,7 +405,7 @@ retry_backoff_base_ms = 1000
       traceId,
       flowId: options.flowId,
       priority: options.priority,
-      identityId: options.identityId,
+      agentRole: options.agentRole,
       tags: options.tags,
       portal: options.portal,
       targetBranch: options.targetBranch,
@@ -425,7 +425,7 @@ retry_backoff_base_ms = 1000
     requestId: string,
     options: {
       status?: string;
-      identityId?: string;
+      agentRole?: string;
       portal?: string;
       targetBranch?: string;
       actions?: Array<{ tool: string; params: IActionParams }>;
@@ -446,7 +446,7 @@ retry_backoff_base_ms = 1000
       "---",
       `trace_id: "${traceId}"`,
       `request_id: "${requestId}"`,
-      `agent_role: ${options.identityId ?? "senior-coder"}`,
+      `agent_role: ${options.agentRole ?? "senior-coder"}`,
       `status: ${options.status ?? "review"}`,
       `created_at: "${new Date().toISOString()}"`,
       options.portal ? `portal: "${options.portal}"` : null,
@@ -713,23 +713,23 @@ This plan will accomplish the requested task.
   /**
    * Create an ExecutionLoop instance for testing
    */
-  createExecutionLoop(identityId: string = "test-agent"): ExecutionLoop {
+  createExecutionLoop(agentRole: string = "test-agent"): ExecutionLoop {
     const logger = new EventLogger({ db: this.db });
     const config = this.config;
     return new ExecutionLoop({
       config,
       db: this.db,
       logger,
-      identityId,
+      agentRole,
       memoryBank: new MemoryBankService(config, logger),
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
-          return new GitService({ config, traceId, identityId, repoPath });
+          return new GitService({ config, traceId, agentRole, repoPath });
         },
       },
       toolRegistryFactory: {
         createToolRegistry(traceId: string, baseDir: string) {
-          return new ToolRegistry({ config, traceId, identityId, baseDir });
+          return new ToolRegistry({ config, traceId, agentRole, baseDir });
         },
       },
     });
@@ -772,13 +772,13 @@ This plan will accomplish the requested task.
    * Create a blueprint agent file
    */
   async createBlueprint(
-    identityId: string,
+    agentRole: string,
     content?: Opt<string, Reason.TestStub>,
   ): Promise<string> {
     const blueprintsPath = join(this.tempDir, "Blueprints", "Agents");
     await ensureDir(blueprintsPath);
 
-    const defaultContent = `# ${identityId} Blueprint
+    const defaultContent = `# ${agentRole} Blueprint
 
 You are an expert software developer with deep knowledge of multiple programming languages and frameworks.
 
@@ -786,7 +786,7 @@ You are an expert software developer with deep knowledge of multiple programming
 
 Always respond with valid JSON containing a plan with actionable steps.`;
 
-    const blueprintPath = join(blueprintsPath, `${identityId}.md`);
+    const blueprintPath = join(blueprintsPath, `${agentRole}.md`);
     await Deno.writeTextFile(blueprintPath, content ?? defaultContent);
 
     return blueprintPath;

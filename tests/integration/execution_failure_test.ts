@@ -25,7 +25,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
     await t.step("Setup: Create and approve plan with failing action", async () => {
       const result = await env.createRequest(
         "Read from non-existent file",
-        { identityId: "senior-coder" },
+        { agentRole: "senior-coder" },
       );
       traceId = result.traceId;
       _requestPath = result.filePath;

@@ -29,7 +29,7 @@ function toSeamPlaceholder(registry: FlowStepHandlerRegistry): ISeamRegistryPlac
 class StubAgentExecutor implements IAgentExecutor {
   callCount = 0;
 
-  run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.callCount++;
     return Promise.resolve({ thought: "", content: `agent-step-${this.callCount}`, raw: "" });
   }

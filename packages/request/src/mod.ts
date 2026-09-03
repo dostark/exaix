@@ -37,7 +37,7 @@ export { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task
 
 export {
   BlueprintResolver,
-  EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR,
+  EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR,
   type IBlueprintResolver,
   type IBlueprintResolverConfig,
 } from "./blueprint_resolver.ts";

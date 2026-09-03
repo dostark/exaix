@@ -74,7 +74,7 @@ Deno.test("[ReActLoopGenerationDuration] each provider.generate() call in a mult
     }),
     logGeneration: async (
       _traceId: string,
-      _identityId: string,
+      _agentRole: string,
       _model: string,
       _provider: string,
       usage: {

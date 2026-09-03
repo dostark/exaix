@@ -18,7 +18,7 @@ import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_AGENTS_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
+import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { IAgentFileBlueprint, IAgentOrchestratorOptions } from "./agent_orchestrator.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { deriveTaskType } from "./task_type_derivation.ts";
@@ -94,7 +94,7 @@ export class BlueprintService {
 
       return {
         blueprint: {
-          name: validatedFrontmatter.name || validatedFrontmatter.identity_id || agentName,
+          name: validatedFrontmatter.name || validatedFrontmatter.agent_role || agentName,
           model,
           provider,
           capabilities: validatedFrontmatter.capabilities,
@@ -136,9 +136,9 @@ export class BlueprintService {
       const requestIntent = this.options?.requestIntent;
       const derivedTaskType = deriveTaskType({
         frontmatterTaskType: requestIntent?.task_type,
-        identityTaskType: extras.task_type,
+        agentRoleTaskType: extras.task_type,
         topSkillTaskTypes: this.options?.topSkillTaskTypes,
-        identityId: validatedFrontmatter.identity_id,
+        agentRole: validatedFrontmatter.agent_role,
         taskTypeMap: this.config.model_registry?.task_type_map,
       });
       const intent: IModelIntent = {
@@ -166,7 +166,7 @@ export class BlueprintService {
       }
     }
     if (!provider) {
-      provider = DEFAULT_MCP_IDENTITY_ID;
+      provider = DEFAULT_MCP_AGENT_ROLE_ID;
     }
     return { model, provider, resolvedCallOptions };
   }

@@ -38,7 +38,7 @@ export async function setupToolTestContext(): Promise<IToolTestContext> {
   const registry = new ToolRegistry({
     config,
     traceId: "test-trace",
-    identityId: "test-agent",
+    agentRole: "test-agent",
   });
 
   return {

@@ -17,7 +17,7 @@ import { getWorkspaceActiveDir } from "@exaix/testing";
 interface Frontmatter {
   trace_id?: string;
   request_id?: string;
-  identity_id?: string;
+  agent_role?: string;
   status?: string;
   created_at?: string;
   [key: string]: any;

@@ -23,10 +23,10 @@ export class MoveFileTool extends ToolHandler {
       to: string;
       agent_role: string;
     };
-    const { portal, from, to, identity_id } = validatedArgs;
+    const { portal, from, to, agent_role } = validatedArgs;
 
     try {
-      this.validatePermission(portal, identity_id, PortalOperation.WRITE);
+      this.validatePermission(portal, agent_role, PortalOperation.WRITE);
 
       const portalPath = this.validatePortalExists(portal);
 
@@ -69,7 +69,7 @@ export class MoveFileTool extends ToolHandler {
       // Perform the move
       await Deno.rename(absoluteFrom, absoluteTo);
 
-      this.logToolExecution(McpToolName.MOVE_FILE, portal, identity_id, {
+      this.logToolExecution(McpToolName.MOVE_FILE, portal, agent_role, {
         from,
         to,
         bytes: stat.size,
@@ -91,7 +91,7 @@ export class MoveFileTool extends ToolHandler {
       if (message.startsWith("Destination already exists") || message.includes("is a directory")) {
         code = ToolErrorCode.INVALID_ARGS;
       }
-      return this.formatToolError(McpToolName.MOVE_FILE, portal, identity_id, code, message, { from, to });
+      return this.formatToolError(McpToolName.MOVE_FILE, portal, agent_role, code, message, { from, to });
     }
   }
 

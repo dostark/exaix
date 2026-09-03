@@ -23,7 +23,7 @@ import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
-import { BlueprintResolver, EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
+import { BlueprintResolver, EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
 
 async function withEnv<T>(name: string, value: string | undefined, fn: () => Promise<T>): Promise<T> {
   const previous = Deno.env.get(name);
@@ -123,7 +123,7 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-
     assertEquals(overlaidSkill.instructions, "overlay instructions");
 
     const overlaidIdentity = await withEnv(
-      EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR,
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR,
       identityOverlayDir,
       () => resolver.resolve("test-agent", mockLogger),
     );

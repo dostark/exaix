@@ -239,7 +239,7 @@ export class FlowReporter {
 
     for (const step of flow.steps) {
       const stepName = step.id;
-      const agent = step.identity;
+      const agent = step.agent_role;
       graph += `    ${stepName}["${stepName}<br/>(${agent})"]\n`;
     }
 

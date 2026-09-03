@@ -17,11 +17,11 @@ const GIT_SUBCOMMAND_STATUS = "status";
 export class GitStatusTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = GitStatusToolArgsSchema.parse(args);
-    const { portal, format, include_untracked, identity_id } = validatedArgs;
+    const { portal, format, include_untracked, agent_role } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
-      this.validatePermission(portal, identity_id, PortalOperation.GIT);
+      this.validatePermission(portal, agent_role, PortalOperation.GIT);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -50,10 +50,10 @@ export class GitStatusTool extends ToolHandler {
       return this.formatSuccess(
         "git_status",
         portal,
-        identity_id,
+        agent_role,
         [{ type: "text", text: statusText }],
         {
-          identity_id,
+          agent_role,
           format: format ?? GitStatusFormat.PORCELAIN,
           include_untracked: include_untracked !== false,
           has_changes: rawOutput.trim().length > 0,
@@ -63,11 +63,11 @@ export class GitStatusTool extends ToolHandler {
       return this.formatToolError(
         "git_status",
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
         {
-          identity_id,
+          agent_role,
           format: format ?? GitStatusFormat.PORCELAIN,
           include_untracked: include_untracked !== false,
         },

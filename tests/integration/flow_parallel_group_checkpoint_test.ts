@@ -28,8 +28,8 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
       description: "Verify checkpoint captures individual group members and resume skips completed",
       groupId: "reviewers",
       memberSteps: [
-        { stepId: "review-a", stepName: "Review A", identityId: "reviewerA" },
-        { stepId: "review-b", stepName: "Review B", identityId: "reviewerB" },
+        { stepId: "review-a", stepName: "Review A", agentRole: "reviewerA" },
+        { stepId: "review-b", stepName: "Review B", agentRole: "reviewerB" },
       ],
     });
 

@@ -130,7 +130,7 @@ export class FeedbackLoop {
       // Evaluate current content
       const gateResult = await this.gateEvaluator.evaluate(
         {
-          agent_role: config.evaluator,
+          agentRole: config.evaluator,
           criteria: config.criteria,
           threshold: config.targetScore,
           onFail: FlowGateOnFail.CONTINUE_WITH_WARNING,
@@ -309,7 +309,7 @@ export class SimpleImprovementAgent implements IImprovementAgent {
   constructor(
     private agentRunner: {
       run(
-        identityId: string,
+        agentRole: string,
         request: { userPrompt: string; context?: IAgentRequestContext },
       ): Promise<{ content: string }>;
     },
@@ -359,7 +359,7 @@ export function createFeedbackLoop(
   gateEvaluator: GateEvaluator,
   agentRunner: {
     run(
-      identityId: string,
+      agentRole: string,
       request: { userPrompt: string; context?: IAgentRequestContext },
     ): Promise<{ content: string }>;
   },
@@ -378,7 +378,7 @@ export async function runSelfCorrectingAgent(
   config: ISelfCorrectingConfig,
   agentRunner: {
     run(
-      identityId: string,
+      agentRole: string,
       request: { userPrompt: string; context?: IAgentRequestContext },
     ): Promise<{ content: string }>;
   },

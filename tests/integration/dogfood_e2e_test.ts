@@ -125,7 +125,7 @@ Deno.test({
         await t.step("request → plan", async () => {
           const requestResult = await env.createRequest(
             "Add a health endpoint to src/api/health.ts returning { status: 'ok' }",
-            { identityId: "senior-coder", priority: 5 },
+            { agentRole: "senior-coder", priority: 5 },
           );
           requestTraceId = requestResult.traceId;
 

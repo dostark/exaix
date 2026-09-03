@@ -18,7 +18,7 @@ interface IActivity {
   id: string;
   traceId: string;
   actor: string | null;
-  identityId: string | null;
+  agentRole: string | null;
   actionType: string;
   target: string | null;
   payload: ActivityPayload;
@@ -70,7 +70,7 @@ Deno.test("DatabaseActivityRepository: logs activities through abstraction", asy
     payload: { key: "value" },
     traceId: "test-trace-123",
     actorType: null,
-    identityId: "test-agent-456",
+    agentRole: "test-agent-456",
   };
 
   await repo.logActivity(activity);
@@ -83,7 +83,7 @@ Deno.test("DatabaseActivityRepository: logs activities through abstraction", asy
   assertEquals(capturedArgs[3], { key: "value" });
   assertEquals(capturedArgs[4], "test-trace-123");
   assertEquals(capturedArgs[5], null); // actorType
-  assertEquals(capturedArgs[6], "test-agent-456"); // identityId
+  assertEquals(capturedArgs[6], "test-agent-456"); // agentRole
 });
 
 Deno.test("DatabaseActivityRepository: retrieves activities by trace ID", async () => {
@@ -222,7 +222,7 @@ Deno.test("DatabaseActivityRepository: maps database records to domain objects",
   assertEquals(activity.id, "test-id");
   assertEquals(activity.traceId, "test-trace");
   assertEquals(activity.actor, "test-actor");
-  assertEquals(activity.identityId, "test-agent");
+  assertEquals(activity.agentRole, "test-agent");
   assertEquals(activity.actionType, "test.action");
   assertEquals(activity.target, "test-target");
   assertEquals(activity.payload, { key: "value", number: 42 });
@@ -254,7 +254,7 @@ Deno.test("DatabaseActivityRepository: handles null values correctly", async () 
   assertEquals(activities.length, 1);
   const activity = activities[0];
   assertEquals(activity.actor, null);
-  assertEquals(activity.identityId, "test-agent");
+  assertEquals(activity.agentRole, "test-agent");
   assertEquals(activity.target, null);
   assertEquals(activity.payload, {});
 });

@@ -101,7 +101,7 @@ Deno.test("processDialogCompletion: confirmed InputDialog routes filter and prio
     defaultValue: "default",
   });
   confirmInputDialog(filterIdentityDialog);
-  await processDialogCompletion(filterIdentityDialog, RequestDialogType.FILTER_IDENTITY, handlers);
+  await processDialogCompletion(filterIdentityDialog, RequestDialogType.FILTER_AGENT_ROLE, handlers);
 
   const priorityDialog = new InputDialog({
     title: "Priority",

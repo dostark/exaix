@@ -32,7 +32,7 @@ async function runExecutionTest(
     loop: ExecutionLoop;
     activeDir: string;
   }) => Promise<void>,
-  options: { noDb?: boolean; createActiveDir?: boolean; identityId?: string } = {},
+  options: { noDb?: boolean; createActiveDir?: boolean; agentRole?: string } = {},
 ) {
   const tempDir = await Deno.makeTempDir({ prefix: `exec-ext-${prefix}-` });
   let db: DatabaseService | undefined;
@@ -56,13 +56,13 @@ async function runExecutionTest(
     const loop = new ExecutionLoop({
       config,
       db,
-      identityId: options.identityId ?? "test-agent",
+      agentRole: options.agentRole ?? "test-agent",
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
           return new GitService({
             config,
             traceId,
-            identityId: options.identityId ?? "test-agent",
+            agentRole: options.agentRole ?? "test-agent",
             repoPath,
           });
         },
@@ -72,7 +72,7 @@ async function runExecutionTest(
           return new ToolRegistry({
             config,
             traceId,
-            identityId: options.identityId ?? "test-agent",
+            agentRole: options.agentRole ?? "test-agent",
             baseDir,
           });
         },

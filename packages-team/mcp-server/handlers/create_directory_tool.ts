@@ -20,16 +20,16 @@ export class CreateDirectoryTool extends ToolHandler {
       path: string;
       agent_role: string;
     };
-    const { portal, path, identity_id } = validatedArgs;
+    const { portal, path, agent_role } = validatedArgs;
 
-    this.validatePermission(portal, identity_id, PortalOperation.WRITE);
+    this.validatePermission(portal, agent_role, PortalOperation.WRITE);
 
     const portalPath = this.validatePortalExists(portal);
     const absolutePath = await this.resolvePortalPath(portalPath, path);
 
     await Deno.mkdir(absolutePath, { recursive: true });
 
-    this.logToolExecution(McpToolName.CREATE_DIRECTORY, portal, identity_id, {
+    this.logToolExecution(McpToolName.CREATE_DIRECTORY, portal, agent_role, {
       path,
       success: true,
     });

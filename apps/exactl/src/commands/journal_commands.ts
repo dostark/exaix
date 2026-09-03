@@ -168,7 +168,7 @@ export class JournalCommands extends BaseCommand {
           filterOptions.actionType = value;
         },
         agent_role: (value) => {
-          filterOptions.identityId = value;
+          filterOptions.agentRole = value;
         },
         time: (value) => {
           filterOptions.since = value;
@@ -200,7 +200,7 @@ export class JournalCommands extends BaseCommand {
         if (!apply) {
           console.error(
             colors.yellow(
-              `Unknown filter key: ${key}. Supported: trace_id, action_type, identity_id, since, payload, actor, target.`,
+              `Unknown filter key: ${key}. Supported: trace_id, action_type, agent_role, since, payload, actor, target.`,
             ),
           );
           continue;

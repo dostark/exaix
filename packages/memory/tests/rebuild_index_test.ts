@@ -64,7 +64,7 @@ async function setupTestData(
     {
       id: "cccccccc-3333-4000-8000-000000000001",
       created_at: new Date().toISOString(),
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.GLOBAL,
       title: "Code review checklist",
       description: "Always check for proper error handling and edge cases",

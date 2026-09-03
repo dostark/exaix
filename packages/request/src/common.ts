@@ -14,14 +14,14 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Load an agent blueprint file from a blueprints directory. */
-export async function loadBlueprint(blueprintsPath: string, identityId: string): Promise<IBlueprint | null> {
-  const blueprintPath = join(blueprintsPath, `${identityId}.md`);
+export async function loadBlueprint(blueprintsPath: string, agentRole: string): Promise<IBlueprint | null> {
+  const blueprintPath = join(blueprintsPath, `${agentRole}.md`);
   if (!await exists(blueprintPath)) return null;
   try {
     const content = await Deno.readTextFile(blueprintPath);
-    return { systemPrompt: content, identityId };
+    return { systemPrompt: content, agentRole: agentRole };
   } catch (err) {
-    console.error(`Failed to load blueprint ${identityId}:`, err);
+    console.error(`Failed to load blueprint ${agentRole}:`, err);
     return null;
   }
 }

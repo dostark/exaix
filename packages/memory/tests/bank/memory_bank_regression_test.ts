@@ -81,7 +81,7 @@ Deno.test("[regression] searchByKeyword finds patterns, decisions and overview",
           category: LearningCategory.INSIGHT,
           confidence: ConfidenceAssessmentLevel.HIGH,
           scope: MemoryScope.GLOBAL,
-          source: MemoryBankSource.IDENTITY,
+          source: MemoryBankSource.USER,
         }),
       ]),
   };

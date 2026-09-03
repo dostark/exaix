@@ -264,18 +264,18 @@ export class AgentStatusView {
   }
 
   /** Get detailed health for an agent. */
-  async getAgentHealth(identityId: string): Promise<IAgentHealthData> {
-    return await this.agentService.getAgentHealth(identityId);
+  async getAgentHealth(agentRole: string): Promise<IAgentHealthData> {
+    return await this.agentService.getAgentHealth(agentRole);
   }
 
   /** Get logs for an agent. */
-  async getAgentLogs(identityId: string, limit = DEFAULT_QUERY_LIMIT): Promise<IAgentLogEntry[]> {
-    return await this.agentService.getAgentLogs(identityId, limit);
+  async getAgentLogs(agentRole: string, limit = DEFAULT_QUERY_LIMIT): Promise<IAgentLogEntry[]> {
+    return await this.agentService.getAgentLogs(agentRole, limit);
   }
 
   /** Select an agent for detailed view. */
-  selectAgent(identityId: string): void {
-    this.selectedAgentId = identityId;
+  selectAgent(agentRole: string): void {
+    this.selectedAgentId = agentRole;
   }
 
   /** Get currently selected agent. */
@@ -373,7 +373,7 @@ export class MinimalAgentServiceMock implements IAgentService {
     return Promise.resolve([...this.agents]);
   }
 
-  getAgentLogs(_identityId: string, _limit = TUI_LIMIT_MEDIUM): Promise<IAgentLogEntry[]> {
+  getAgentLogs(_agentRole: string, _limit = TUI_LIMIT_MEDIUM): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       {
         timestamp: new Date().toISOString(),
@@ -383,7 +383,7 @@ export class MinimalAgentServiceMock implements IAgentService {
     ]);
   }
 
-  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
+  getAgentHealth(_agentRole: string): Promise<IAgentHealthData> {
     // Mock health data
     return Promise.resolve({
       status: AgentHealth.HEALTHY,

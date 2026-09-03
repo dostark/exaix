@@ -108,7 +108,7 @@ You are an expert developer. Provide detailed technical analysis and implementat
       // First request: simple analysis (should use free provider)
       const _simpleRequest = await env.createRequest(
         "Analyze this simple text: 'Hello world'",
-        { identityId: "analyzer", priority: 5 },
+        { agentRole: "analyzer", priority: 5 },
       );
 
       // Manually track a free provider request to simulate usage
@@ -131,7 +131,7 @@ You are an expert developer. Provide detailed technical analysis and implementat
       // Second request: complex coding task (should switch to paid provider)
       const _complexRequest = await env.createRequest(
         "Implement a complex microservices architecture with 10 services, database sharding, and load balancing",
-        { identityId: "coder", priority: 8 },
+        { agentRole: "coder", priority: 8 },
       );
 
       // Select provider for complex task
@@ -207,7 +207,7 @@ Deno.test("Provider Strategy: Free-to-paid fallback scenarios", async (t) => {
       await env.createBlueprint("analyzer");
       const _request = await env.createRequest(
         "Simple analysis task",
-        { identityId: "analyzer", priority: 5 },
+        { agentRole: "analyzer", priority: 5 },
       );
 
       // Select provider - should fallback due to health check failure
@@ -240,10 +240,10 @@ Deno.test("Provider Strategy: Multi-provider concurrent requests", async (t) => 
 
       // Create multiple concurrent requests
       const _requests = await Promise.all([
-        env.createRequest("Simple analysis 1", { identityId: "analyzer", priority: 3 }),
-        env.createRequest("Simple analysis 2", { identityId: "analyzer", priority: 4 }),
-        env.createRequest("Complex coding task", { identityId: "coder", priority: 8 }),
-        env.createRequest("Simple analysis 3", { identityId: "analyzer", priority: 2 }),
+        env.createRequest("Simple analysis 1", { agentRole: "analyzer", priority: 3 }),
+        env.createRequest("Simple analysis 2", { agentRole: "analyzer", priority: 4 }),
+        env.createRequest("Complex coding task", { agentRole: "coder", priority: 8 }),
+        env.createRequest("Simple analysis 3", { agentRole: "analyzer", priority: 2 }),
       ]);
 
       // Select providers for each request concurrently

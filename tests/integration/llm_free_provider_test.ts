@@ -75,7 +75,7 @@ Deno.test(
       // End-to-end: create request and process
       const requestResult = await env.createRequest(
         "Implement user authentication with JWT tokens",
-        { identityId: "senior-coder", priority: 7, tags: ["feature", EvaluationCategory.SECURITY] },
+        { agentRole: "senior-coder", priority: 7, tags: ["feature", EvaluationCategory.SECURITY] },
       );
 
       const planPath = await processor.process(requestResult.filePath);

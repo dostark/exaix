@@ -31,7 +31,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
     await t.step("Setup: Create request and plan", async () => {
       const result = await env.createRequest(
         "Implement callback-based file reader",
-        { identityId: "senior-coder", priority: 5 },
+        { agentRole: "senior-coder", priority: 5 },
       );
       traceId = result.traceId;
       requestPath = result.filePath;

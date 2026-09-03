@@ -11,7 +11,7 @@
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, DEFAULT_MCP_IDENTITY_ID } from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RuntimeKind } from "@exaix/core";
 import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
@@ -41,7 +41,7 @@ export interface IReActLoopExecutor {
   toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>;
   logGeneration(
     traceId: string,
-    identityId: string,
+    agentRole: string,
     model: string,
     providerStr: string,
     usage: {
@@ -152,7 +152,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
 
   async logGeneration(
     traceId: string,
-    identityId: string,
+    agentRole: string,
     model: string,
     providerStr: string,
     usage: {
@@ -166,12 +166,12 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     await this.logger.log({
       action: AGENT_GENERATION_COMPLETED,
       target: model,
-      actor: DEFAULT_MCP_IDENTITY_ID,
+      actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId,
       agentId: "agent-executor",
-      agentKind: AgentKind.AGENT_EXECUTOR,
-      identityId,
+      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
       costUsd: usage.costUsd,

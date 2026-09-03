@@ -25,7 +25,7 @@ import { createCliTestContext } from "./helpers/test_setup.ts";
 
 /** The created request file's frontmatter fields these tests assert on. */
 interface ICreatedFrontmatter {
-  identity_id?: string;
+  agent_role?: string;
   priority?: string;
   /** The CLI writes these JSON-encoded; unquoted JSON is also valid YAML, so a reader
    * may see either the raw string or an already-parsed array. */
@@ -98,7 +98,7 @@ Evaluate the pinned skills.
 
   it("carries agent_role: and priority: through", async () => {
     const { frontmatter } = await submit(PINNED);
-    assertEquals(frontmatter.identity_id, "senior-coder");
+    assertEquals(frontmatter.agent_role, "senior-coder");
     assertEquals(frontmatter.priority, "high");
   });
 
@@ -129,13 +129,13 @@ Evaluate the pinned skills.
     const result = await requestCommands.createFromFile(inputFile, { agent_role: "researcher" });
     assert(result.path);
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
-    assertEquals(frontmatter.identity_id, "researcher", "the flag stated at invocation is the more explicit intent");
+    assertEquals(frontmatter.agent_role, "researcher", "the flag stated at invocation is the more explicit intent");
   });
 
   it("accepts a file whose frontmatter declares a flow, without an identity conflict", async () => {
     // A flow declared in file frontmatter bypasses the CLI's flow/identity exclusion guard
     // (that guard only fires on the `--flow` flag), so it must not conflict with the
-    // default identity that options.identity always carries.
+    // default identity that options.agent_role always carries.
     await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
     await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
 
@@ -153,7 +153,7 @@ Evaluate the pinned skills.
 
   it("omits identity from a flow request's frontmatter, which the daemon requires", async () => {
     // A flow request's frontmatter must omit `identity` entirely: `create()` always
-    // populates `agent` from options.identity as a fallback, but the daemon rejects
+    // populates `agent` from options.agent_role as a fallback, but the daemon rejects
     // any request carrying both `flow` and `agent`/`identity` fields.
     await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
     await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
@@ -169,7 +169,7 @@ Evaluate the pinned skills.
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
 
     assertEquals((frontmatter as { flow?: string }).flow, "api-design");
-    assertEquals(frontmatter.identity_id, undefined, "a flow request must carry no identity");
+    assertEquals(frontmatter.agent_role, undefined, "a flow request must carry no identity");
   });
 
   it("still accepts a plain file with no frontmatter at all", async () => {

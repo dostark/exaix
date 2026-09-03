@@ -957,7 +957,7 @@ describe("IActivity Logging with Database", () => {
         logger: new EventLogger({ db }),
         traceId: "test-context-trace",
         requestId: "test-request",
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const loader = new ContextLoader(config);
@@ -993,7 +993,7 @@ describe("IActivity Logging with Database", () => {
         logger: new EventLogger({ db }),
         traceId: "test-error-trace",
         requestId: "test-request",
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const loader = new ContextLoader(config);

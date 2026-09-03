@@ -23,7 +23,7 @@ import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, LogLevel } from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, LogLevel, RuntimeKind } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -36,7 +36,7 @@ import {
   AGENT_EVENT_SECURITY_VIOLATION,
   AGENT_EXECUTOR_ID,
 } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID, SESSION_BIN_CLAUDE_CODE, SESSION_BIN_OPENCODE } from "@exaix/core/types";
+import { DEFAULT_MCP_AGENT_ROLE_ID, SESSION_BIN_CLAUDE_CODE, SESSION_BIN_OPENCODE } from "@exaix/core/types";
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,
@@ -748,11 +748,11 @@ export class AgentOrchestrator {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_STARTED,
       target: portal,
-      actor: DEFAULT_MCP_IDENTITY_ID,
+      actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: AGENT_EXECUTOR_ID,
-      agentKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: RuntimeKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       payload: {
         portal,
@@ -799,11 +799,11 @@ export class AgentOrchestrator {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_COMPLETED,
       target: result.branch,
-      actor: DEFAULT_MCP_IDENTITY_ID,
+      actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
-      agentKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: RuntimeKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
       completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
@@ -832,11 +832,11 @@ export class AgentOrchestrator {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_FAILED,
       target: agentRole,
-      actor: DEFAULT_MCP_IDENTITY_ID,
+      actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
-      agentKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: RuntimeKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       level: LogLevel.ERROR,
       payload: {
@@ -878,11 +878,11 @@ export class AgentOrchestrator {
     await this.logger.log({
       action: AGENT_GENERATION_COMPLETED,
       target: model,
-      actor: DEFAULT_MCP_IDENTITY_ID,
+      actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
-      agentKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: RuntimeKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,

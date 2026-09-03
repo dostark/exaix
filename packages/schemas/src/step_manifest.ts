@@ -3,7 +3,7 @@
  * @path packages/schemas/src/step_manifest.ts
  * @description Zod schema for phase plan step-manifests (fenced YAML blocks within
  *   phase-NN-*.md documents). Validates authoring fields: step number, title,
- *   identity, skills, portal, target_branch, depends_on, and acceptance criteria.
+ *   agent_role, skills, portal, target_branch, depends_on, and acceptance criteria.
  * @architectural-layer Shared
  * @dependencies [zod]
  * @related-files [packages/schemas/src/request.ts]
@@ -11,8 +11,8 @@
 
 import { z } from "zod";
 
-/** Distinct from RequestSchema — shares only the `skills` field. Maps to request
- *  frontmatter via the generator's identity → identity_id, etc. */
+/** Distinct from RequestSchema — shares only the `skills` field. Maps directly to
+ *  the generated request's `agent_role` frontmatter field. */
 export const StepManifestSchema = z.object({
   /** 1-based step number (must be positive integer) */
   step: z.number().int().positive(),
@@ -20,7 +20,7 @@ export const StepManifestSchema = z.object({
   /** Short step title (1–200 chars) */
   title: z.string().min(1).max(200),
 
-  /** Identity ID to route the step request (defaults to senior-coder) */
+  /** Agent role to route the step request (defaults to senior-coder) */
   agent_role: z.string().min(1).default("senior-coder"),
 
   /** Explicit skills to inject (merged with identity default_skills by agent_runner) */

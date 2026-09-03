@@ -6,7 +6,7 @@
  * A green pack means something only if it is known to go red. Nothing enforced that property, and
  * this phase repeatedly found packs that could not fail for the right reason: the skills pack sat
  * at mean 0.714 with three "green" scenarios while asserting nothing at all (Step 17), and the
- * identity smokes asserted `frontmatter-field-exists: identity_id` — a field `PlanWriter` stamps
+ * identity smokes asserted `frontmatter-field-exists: agent_role` — a field `PlanWriter` stamps
  * unconditionally — so all fourteen would have passed with the WRONG identity (Step 11).
  *
  * Each entry names a real source edit that breaks the mechanism the pack exists to test. Declaring
@@ -87,7 +87,7 @@ export const PACK_MUTATIONS: readonly IPackMutation[] = [
     subsystem: "subsystem:identities",
     file: "packages/core/src/planning/plan_writer.ts",
     find: "agent_role",
-    replace: "identity_id_MUTATED",
+    replace: "agent_role_MUTATED",
     breaks:
       "the identity stamped onto a written plan — the `frontmatter-field-equals` assertion Step 11 introduced after finding the previous check passed with the wrong identity",
   },

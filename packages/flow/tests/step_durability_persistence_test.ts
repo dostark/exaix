@@ -62,10 +62,10 @@ class MockAgentRunner implements IAgentExecutor {
     }
   }
 
-  async run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    const result = this.results.get(_identityId);
+  async run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    const result = this.results.get(_agentRole);
     if (!result) {
-      throw new Error(`No mock result for agent ${_identityId}`);
+      throw new Error(`No mock result for agent ${_agentRole}`);
     }
     return await Promise.resolve(result);
   }
@@ -88,7 +88,7 @@ function buildSimpleFlow(steps: Array<{ id: string; agent_role: string; dependsO
     steps: steps.map((s) => ({
       id: s.id,
       name: s.id,
-      agent_role: s.identity,
+      agent_role: s.agent_role,
       dependsOn: s.dependsOn ?? [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

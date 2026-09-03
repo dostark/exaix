@@ -41,7 +41,7 @@ Deno.test("ActivityJournal - exposes typed payloads for known flow events", () =
   const retryPayload: IFlowEventPayloadMap["flow.step.retry"] = {
     flowRunId: "run-1",
     stepId: "step-1",
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     attempt: 1,
     maxRetries: 2,
     error: "temporary failure",

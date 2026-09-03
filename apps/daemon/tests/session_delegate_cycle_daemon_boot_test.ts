@@ -66,7 +66,7 @@ class FakeDelegateService implements ISessionDelegateService {
       parent_trace_id: input.parentTraceId,
       parent_step_id: input.parentStepId,
       sequence: input.sequence,
-      agent_role: input.identityId,
+      agent_role: input.agentRole,
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,

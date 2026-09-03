@@ -50,7 +50,7 @@ export function createStubDb(
       _target: string | null,
       _payload: JSONObject,
       _traceId?: Opt<string, Reason.AbstractBoundary>,
-      _identityId?: Opt<string | null, Reason.AbstractBoundary>,
+      _agentRole?: Opt<string | null, Reason.AbstractBoundary>,
     ) => {
       /* noop */
     },

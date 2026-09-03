@@ -153,13 +153,13 @@ Deno.test("defineFlow: accepts custom configurations", () => {
   assertEquals(flow.settings.timeout, 60000);
 });
 
-Deno.test("defineFlow: rejects step config without identity field (Phase 54)", () => {
-  // TypeScript should not accept step without identity field
-  // This test verifies the type system requires identity field
+Deno.test("defineFlow: rejects step config without agent_role field (Phase 54)", () => {
+  // TypeScript should not accept step without agent_role field
+  // This test verifies the type system requires agent_role field
   let thrown = false;
   try {
     // Using cast to bypass TypeScript check - runtime should still work
-    // but the type system should require identity field
+    // but the type system should require agent_role field
     defineFlow(cast({
       id: "test",
       name: "Test",
@@ -167,22 +167,22 @@ Deno.test("defineFlow: rejects step config without identity field (Phase 54)", (
       steps: [{
         id: "s1",
         name: "S1",
-        // missing identity field - should fail
+        // missing agent_role field - should fail
       }],
       output: { from: "s1" },
     }));
-    // If we reach here, missing identity was accepted (should not happen)
+    // If we reach here, missing agent_role was accepted (should not happen)
     thrown = false;
   } catch (err) {
-    // Expected: FlowSchema validation should reject steps without identity
+    // Expected: FlowSchema validation should reject steps without agent_role
     thrown = true;
-    assertEquals((err as Error).message.includes("identity"), true);
+    assertEquals((err as Error).message.includes("agent_role"), true);
   }
   assertEquals(thrown, true);
 });
 
 Deno.test("defineFlow: requires 'agent_role' field in step config (Phase 54)", () => {
-  // Verify that identity field is required and works correctly
+  // Verify that agent_role field is required and works correctly
   let thrown = false;
   try {
     defineFlow(cast({
@@ -192,14 +192,14 @@ Deno.test("defineFlow: requires 'agent_role' field in step config (Phase 54)", (
       steps: [{
         id: "s1",
         name: "S1",
-        // missing identity field
+        // missing agent_role field
       }],
       output: { from: "s1" },
     }));
   } catch (err) {
     thrown = true;
-    // Should fail validation due to missing identity
-    assertEquals((err as Error).message.includes("identity"), true);
+    // Should fail validation due to missing agent_role
+    assertEquals((err as Error).message.includes("agent_role"), true);
   }
   assertEquals(thrown, true);
 });

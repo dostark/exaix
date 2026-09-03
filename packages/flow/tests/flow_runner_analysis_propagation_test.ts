@@ -23,7 +23,7 @@ import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 
 class StubAgentExecutor implements IAgentExecutor {
   async run(
-    _identityId: string,
+    _agentRole: string,
     _req: IFlowStepRequest,
   ): Promise<IAgentExecutionResult> {
     return await Promise.resolve({

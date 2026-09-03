@@ -25,12 +25,12 @@ import { ExecutionStrategyName } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 
-async function writeBlueprint(root: string, identityId: string): Promise<void> {
+async function writeBlueprint(root: string, agentRole: string): Promise<void> {
   const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
-    join(dir, `${identityId}.md`),
-    `---\nname: ${identityId}\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.`,
+    join(dir, `${agentRole}.md`),
+    `---\nname: ${agentRole}\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.`,
   );
 }
 
@@ -141,7 +141,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: dispatches through the forc
     assertEquals(calls[0].context.request, "do the task");
     assertEquals(calls[0].context.plan, "do the task");
     assertEquals(calls[0].context.portal, portalAlias);
-    assertEquals(calls[0].options.identity_id, "test-agent");
+    assertEquals(calls[0].options.agent_role, "test-agent");
     assertEquals(calls[0].options.portal, portalAlias);
     assertEquals(calls[0].options.strategy, ExecutionStrategyName.REACT);
 

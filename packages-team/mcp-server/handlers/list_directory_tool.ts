@@ -19,11 +19,11 @@ export class ListDirectoryTool extends ToolHandler {
       path?: string;
       agent_role: string;
     };
-    const { portal, path, identity_id } = validatedArgs;
+    const { portal, path, agent_role } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
-      this.validatePermission(portal, identity_id, PortalOperation.READ);
+      this.validatePermission(portal, agent_role, PortalOperation.READ);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -52,9 +52,9 @@ export class ListDirectoryTool extends ToolHandler {
       const listing = entries.length > 0 ? entries.join("\n") : "(Directory is empty)";
 
       // Log successful execution
-      this.logToolExecution(McpToolName.LIST_DIRECTORY, portal, identity_id, {
+      this.logToolExecution(McpToolName.LIST_DIRECTORY, portal, agent_role, {
         path: listPath || "/",
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
         success: true,
         entry_count: entries.length,
       });
@@ -73,9 +73,9 @@ export class ListDirectoryTool extends ToolHandler {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return this.formatToolError(McpToolName.LIST_DIRECTORY, portal, identity_id, ToolErrorCode.NOT_FOUND, message, {
+      return this.formatToolError(McpToolName.LIST_DIRECTORY, portal, agent_role, ToolErrorCode.NOT_FOUND, message, {
         path: path || "/",
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
       });
     }
   }

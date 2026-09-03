@@ -38,8 +38,8 @@ export interface IPrepareBriefInput {
   parentTraceId?: string;
   parentStepId?: string;
   sequence?: number;
-  /** The blueprint identity_id actually delegating this session. */
-  identityId: string;
+  /** The blueprint.agent_role actually delegating this session. */
+  agentRole: string;
   gate: SessionGate;
   tool: SessionTool;
   objective: string;
@@ -61,7 +61,7 @@ export interface IPrepareBriefInput {
 /** Result of a hardened-launch resolution. */
 export interface IHardenedLaunchResult {
   launch: ISessionLaunch;
-  /** If true, the generated agent.<identity_id> key mismatches brief.identity_id. */
+  /** If true, the generated agent.<agent_role> key mismatches brief.agent_role. */
   agentNameMismatch: boolean;
   /** Warning from the version probe when the binary is below minimum version; undefined when the probe is clean. */
   versionWarning?: string;

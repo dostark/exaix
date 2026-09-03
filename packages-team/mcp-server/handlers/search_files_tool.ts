@@ -18,11 +18,11 @@ import type { JSONValue } from "@exaix/core";
 export class SearchFilesTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = SearchFilesToolArgsSchema.parse(args);
-    const { portal, pattern, path, identity_id } = validatedArgs;
+    const { portal, pattern, path, agent_role } = validatedArgs;
 
     try {
       // Validate permissions
-      this.validatePermission(portal, identity_id, PortalOperation.READ);
+      this.validatePermission(portal, agent_role, PortalOperation.READ);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -46,7 +46,7 @@ export class SearchFilesTool extends ToolHandler {
         return this.formatToolError(
           McpToolName.SEARCH_FILES,
           portal,
-          identity_id,
+          agent_role,
           ToolErrorCode.EXECUTION_FAILED,
           result.error || "Search failed",
           { pattern, path },
@@ -55,7 +55,7 @@ export class SearchFilesTool extends ToolHandler {
 
       const files = result.data as { files: string[] };
       const relativeFiles = files.files.map((f) => f.replace(portalPath, "").replace(/^\//, ""));
-      this.logToolExecution(McpToolName.SEARCH_FILES, portal, identity_id, {
+      this.logToolExecution(McpToolName.SEARCH_FILES, portal, agent_role, {
         pattern,
         path,
         count: relativeFiles.length,
@@ -66,7 +66,7 @@ export class SearchFilesTool extends ToolHandler {
       return this.formatToolError(
         McpToolName.SEARCH_FILES,
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
         { pattern, path },

@@ -182,7 +182,7 @@ Deno.test("request show prints content when request exists", async () => {
           trace_id: id,
           status: MemoryStatus.PENDING,
           priority: RequestPriority.NORMAL,
-          agent_role: MemoryBankSource.IDENTITY,
+          agent_role: MemoryBankSource.USER,
           created_by: "tester",
           created: "time",
           filename: "/tmp/req.md",

@@ -99,8 +99,8 @@ class TrackingInvalidationStore implements IStepDurabilityStore {
 }
 
 class SilentAgentRunner implements IAgentExecutor {
-  run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    return Promise.resolve({ thought: "ok", content: `result-${identityId}`, raw: `raw-${identityId}` });
+  run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    return Promise.resolve({ thought: "ok", content: `result-${agentRole}`, raw: `raw-${agentRole}` });
   }
 }
 

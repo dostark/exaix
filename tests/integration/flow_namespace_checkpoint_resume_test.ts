@@ -100,7 +100,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
       requestId,
     });
 
-    const readerRequest = resumedExecutor.capturedRequests.find((entry) => entry.identityId === "agent2");
+    const readerRequest = resumedExecutor.capturedRequests.find((entry) => entry.agentRole === "agent2");
     assertExists(readerRequest);
     assertEquals(readerRequest.request.sharedNamespace, { summary: "persisted-summary" });
     assertEquals(resumedResult.success, true);

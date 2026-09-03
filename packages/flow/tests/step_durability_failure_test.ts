@@ -49,7 +49,7 @@ class RecordingDurabilityStore implements IStepDurabilityStore {
 }
 
 class FailingAgentRunner implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return Promise.reject(new Error("Step execution failed"));
   }
 }

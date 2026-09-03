@@ -51,7 +51,7 @@ function createTestRequestPath(tempDir: string): { traceId: string; requestPath:
  */
 function createRequestContent(opts: {
   traceId: string;
-  identity?: string;
+  agent_role?: string;
   flow?: string;
   status?: string;
   priority?: string;
@@ -62,7 +62,7 @@ function createRequestContent(opts: {
     `created: "${new Date().toISOString()}"`,
     `status: ${opts.status || MemoryStatus.PENDING}`,
     `priority: ${opts.priority || "normal"}`,
-    opts.flow ? null : `agent_role: ${opts.identity || "default"}`, // Only include identity if no flow
+    opts.flow ? null : `agent_role: ${opts.agent_role || "default"}`, // Only include identity if no flow
     opts.flow ? `flow: ${opts.flow}` : null,
     `source: cli`,
     `created_by: "test@example.com"`,

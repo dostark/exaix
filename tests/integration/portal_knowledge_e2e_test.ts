@@ -297,7 +297,7 @@ Deno.test(
 
       const { filePath } = await env.createRequest(
         "Analyze the portal codebase",
-        { identityId: "code-analyst", portal: portalAlias },
+        { agentRole: "code-analyst", portal: portalAlias },
       );
 
       try {

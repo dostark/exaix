@@ -48,7 +48,7 @@ Deno.test("queries.findTraceLogs filters by trace_id", () => {
   assertEquals(result.map((e) => e.message), ["m-2"]);
 });
 
-Deno.test("queries.findAgentLogs filters by identity_id", () => {
+Deno.test("queries.findAgentLogs filters by agent_role", () => {
   const entries = [
     createLogEntry(1, { agent_role: "a1" }),
     createLogEntry(2, { agent_role: "a2" }),

@@ -15,7 +15,7 @@ import { ANALYZER_VERSION, FlowGateOnFail } from "@exaix/core";
 import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
 
 const BASE_CONFIG: GateConfig = {
-  agent_role: "judge-agent",
+  agentRole: "judge-agent",
   criteria: ["CODE_CORRECTNESS"],
   threshold: 0.05,
   onFail: FlowGateOnFail.HALT,
@@ -63,7 +63,7 @@ class CapturingJudgeInvoker implements IJudgeInvoker {
   lastCriteria: EvaluationCriterion[] = [];
 
   evaluate(
-    _identityId: string,
+    _agentRole: string,
     _content: string,
     criteria: EvaluationCriterion[],
     _context?: string,

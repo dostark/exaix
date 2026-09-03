@@ -312,7 +312,7 @@ export class ReflexiveAgent {
       }
     });
 
-    const context: ReflexiveAgentContext = { traceId: request.traceId, identityId: blueprint.identityId };
+    const context: ReflexiveAgentContext = { traceId: request.traceId, agentRole: blueprint.agentRole };
 
     let finalResult: IReflexiveExecutionResult;
 
@@ -495,7 +495,7 @@ export class ReflexiveAgent {
     const critiqueBlueprint: IBlueprint = {
       systemPrompt:
         "You are a quality assurance expert. Evaluate responses critically and provide structured JSON feedback.",
-      identityId: "critique-evaluator",
+      agentRole: "critique-evaluator",
     };
 
     const critiqueRequest: IParsedRequest = {

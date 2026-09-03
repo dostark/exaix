@@ -248,12 +248,12 @@ export function renderLogSummary(entries: IStructuredLogEntry[], options: Partia
   }
 
   const contextStats = analyzeContext(entries);
-  if (contextStats.correlationIds > 0 || contextStats.traceIds > 0 || contextStats.identityIds > 0) {
+  if (contextStats.correlationIds > 0 || contextStats.traceIds > 0 || contextStats.agentRoles > 0) {
     lines.push("");
     lines.push("Context Summary:");
     if (contextStats.correlationIds > 0) lines.push(`  Correlations: ${contextStats.correlationIds}`);
     if (contextStats.traceIds > 0) lines.push(`  Traces: ${contextStats.traceIds}`);
-    if (contextStats.identityIds > 0) lines.push(`  Agents: ${contextStats.identityIds}`);
+    if (contextStats.agentRoles > 0) lines.push(`  Agents: ${contextStats.agentRoles}`);
   }
 
   return lines;
@@ -319,9 +319,9 @@ function formatDuration(ms: number): string {
 
 function analyzeContext(
   entries: IStructuredLogEntry[],
-): { correlationIds: number; traceIds: number; identityIds: number } {
+): { correlationIds: number; traceIds: number; agentRoles: number } {
   const correlationIds = new Set(entries.map((entry) => entry.context.correlation_id).filter(Boolean));
   const traceIds = new Set(entries.map((entry) => entry.context.trace_id).filter(Boolean));
-  const identityIds = new Set(entries.map((entry) => entry.context.agent_role).filter(Boolean));
-  return { correlationIds: correlationIds.size, traceIds: traceIds.size, identityIds: identityIds.size };
+  const agentRoles = new Set(entries.map((entry) => entry.context.agent_role).filter(Boolean));
+  return { correlationIds: correlationIds.size, traceIds: traceIds.size, agentRoles: agentRoles.size };
 }

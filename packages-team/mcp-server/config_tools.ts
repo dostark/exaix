@@ -20,7 +20,7 @@ import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permission
 import type { IEventLogger } from "@exaix/core/logger";
 import { ConfigPathBlockedError, ConfigRateLimitedError, createConfigAdapter, resolveTier } from "@exaix/core/config";
 import type { ConfigValue, IConfigAdapter } from "@exaix/core/config";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/mcp";
 import { join } from "@std/path";
 
 function serializeStructuredData(value: object): JSONValue {
@@ -114,8 +114,8 @@ export class ConfigGetTool extends ToolHandler {
     if (!key) {
       return Promise.resolve(this.formatToolError(
         "config_get",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         ToolErrorCode.INVALID_ARGS,
         "Missing required argument: key",
         {},
@@ -127,8 +127,8 @@ export class ConfigGetTool extends ToolHandler {
       if (value === undefined) {
         return Promise.resolve(this.formatToolError(
           "config_get",
-          DEFAULT_MCP_IDENTITY_ID,
-          DEFAULT_MCP_IDENTITY_ID,
+          DEFAULT_MCP_AGENT_ROLE_ID,
+          DEFAULT_MCP_AGENT_ROLE_ID,
           ToolErrorCode.NOT_FOUND,
           `Config key not found: ${key}`,
           { key },
@@ -145,8 +145,8 @@ export class ConfigGetTool extends ToolHandler {
       const msg = error instanceof Error ? error.message : String(error);
       return Promise.resolve(this.formatToolError(
         "config_get",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         { key },
@@ -216,8 +216,8 @@ export class ConfigValidateTool extends ToolHandler {
       const msg = error instanceof Error ? error.message : String(error);
       return Promise.resolve(this.formatToolError(
         "config_validate",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         {},
@@ -274,8 +274,8 @@ export class ConfigDiffTool extends ToolHandler {
       const msg = error instanceof Error ? error.message : String(error);
       return Promise.resolve(this.formatToolError(
         "config_diff",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         {},
@@ -324,8 +324,8 @@ export class ConfigSetTool extends ToolHandler {
     if (!key) {
       return this.formatToolError(
         CONFIG_SET_TOOL_NAME,
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         ToolErrorCode.INVALID_ARGS,
         "Missing required argument: key",
         {},
@@ -338,8 +338,8 @@ export class ConfigSetTool extends ToolHandler {
       if (validationKey === undefined) {
         return this.formatToolError(
           CONFIG_SET_TOOL_NAME,
-          DEFAULT_MCP_IDENTITY_ID,
-          DEFAULT_MCP_IDENTITY_ID,
+          DEFAULT_MCP_AGENT_ROLE_ID,
+          DEFAULT_MCP_AGENT_ROLE_ID,
           ToolErrorCode.INVALID_ARGS,
           `Unknown config key: ${key}`,
           { key },
@@ -351,8 +351,8 @@ export class ConfigSetTool extends ToolHandler {
         const reason = this.getAdapter().getBlockReason(key);
         return this.formatToolError(
           CONFIG_SET_TOOL_NAME,
-          DEFAULT_MCP_IDENTITY_ID,
-          DEFAULT_MCP_IDENTITY_ID,
+          DEFAULT_MCP_AGENT_ROLE_ID,
+          DEFAULT_MCP_AGENT_ROLE_ID,
           ToolErrorCode.PERMISSION_DENIED,
           new ConfigPathBlockedError(key, reason).message,
           { key },
@@ -392,8 +392,8 @@ export class ConfigSetTool extends ToolHandler {
       const msg = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
         CONFIG_SET_TOOL_NAME,
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         { key },
@@ -480,8 +480,8 @@ export class ConfigApplyTool extends ToolHandler {
       const msg = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
         "config_apply",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         {},
@@ -530,8 +530,8 @@ export class ConfigGetProvenanceTool extends ToolHandler {
     if (!key) {
       return Promise.resolve(this.formatToolError(
         "config_get_provenance",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         ToolErrorCode.INVALID_ARGS,
         "Missing required argument: key",
         {},
@@ -558,8 +558,8 @@ export class ConfigGetProvenanceTool extends ToolHandler {
       const msg = error instanceof Error ? error.message : String(error);
       return Promise.resolve(this.formatToolError(
         "config_get_provenance",
-        DEFAULT_MCP_IDENTITY_ID,
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         { key },

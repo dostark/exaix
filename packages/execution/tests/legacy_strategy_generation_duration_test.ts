@@ -56,7 +56,7 @@ Deno.test("[LegacyStrategyGenerationDuration] logGeneration is called with a rea
     },
     logGeneration: async (
       _traceId: string,
-      _identityId: string,
+      _agentRole: string,
       _model: string,
       _provider: string,
       usage: {

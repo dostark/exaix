@@ -26,7 +26,7 @@ function createTestTraceData(overrides: Partial<ITraceData> = {}): ITraceData {
   return {
     traceId: overrides.traceId ?? "550e8400-e29b-41d4-a716-446655440000",
     requestId: overrides.requestId ?? "implement-auth",
-    identityId: overrides.identityId ?? "senior-coder",
+    agentRole: overrides.agentRole ?? "senior-coder",
     status: overrides.status ?? ExecutionStatus.COMPLETED,
     branch: overrides.branch ?? "feat/implement-auth-550e8400",
     completedAt: overrides.completedAt ?? new Date(),
@@ -160,7 +160,7 @@ Deno.test("MissionReporter: generates execution memory record after successful e
     const generated = activities.filter((a) => a.action_type === DomainEventType.ReportGenerated);
     assertEquals(generated.length, 1, "report.generated must be logged exactly once");
     const payload = JSON.parse(generated[0].payload ?? "{}");
-    assertEquals(payload.identity_id, traceData.identityId);
+    assertEquals(payload.agent_role, traceData.agentRole);
     assertEquals(payload.status, traceData.status);
     assertEquals(payload.context_files_count, traceData.contextFiles.length);
   });

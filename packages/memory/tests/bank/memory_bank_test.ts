@@ -685,7 +685,7 @@ Deno.test("MemoryBankService: file locking serializes global learning updates", 
       const learning: ILearning = {
         id: generateTestUUID(),
         created_at: new Date().toISOString(),
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         title: `Sequential ILearning ${i}`,
         description: `ILearning added sequentially ${i}`,
@@ -721,7 +721,7 @@ Deno.test("MemoryBankService: lock timeout prevents indefinite blocking", async 
     await service.addGlobalLearning({
       id: generateTestUUID(),
       created_at: new Date().toISOString(),
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.GLOBAL,
       title: "First ILearning",
       description: "Testing lock acquisition",
@@ -736,7 +736,7 @@ Deno.test("MemoryBankService: lock timeout prevents indefinite blocking", async 
     await service.addGlobalLearning({
       id: generateTestUUID(),
       created_at: new Date().toISOString(),
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.GLOBAL,
       title: "Second ILearning",
       description: "Testing lock release",
@@ -766,7 +766,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on success", async () =>
     await service.addGlobalLearning({
       id: generateTestUUID(),
       created_at: new Date().toISOString(),
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.GLOBAL,
       title: "Cleanup Test",
       description: "Testing lock file cleanup",
@@ -799,7 +799,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on failure", async () =>
       await service.addGlobalLearning({
         id: duplicateId,
         created_at: new Date().toISOString(),
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         title: "Duplicate Test",
         description: "First instance",
@@ -814,7 +814,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on failure", async () =>
       await service.addGlobalLearning({
         id: duplicateId, // Same ID
         created_at: new Date().toISOString(),
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         title: "Duplicate Test",
         description: "Second instance - should fail",

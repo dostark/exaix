@@ -87,7 +87,7 @@ class MockRequestService implements IRequestService {
       subject: description,
       status: RequestStatus.PENDING,
       priority: options?.priority || RequestPriority.NORMAL,
-      agent_role: options?.identity || "default",
+      agent_role: options?.agent_role || "default",
       created: new Date().toISOString(),
       created_by: "user1",
       source: RequestSource.CLI,

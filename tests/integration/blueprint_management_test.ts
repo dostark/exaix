@@ -182,7 +182,7 @@ Invalid blueprint without.agent_role field
     await t.step("Test 8: Blueprint referenced in request creation", async () => {
       const { filePath } = await env.createRequest(
         "Test request using custom agent",
-        { identityId: testAgentId },
+        { agentRole: testAgentId },
       );
 
       const content = await Deno.readTextFile(filePath);
@@ -200,10 +200,10 @@ Invalid blueprint without.agent_role field
 
       assert(blueprints.length >= 3, "Should have at least 3 blueprints");
 
-      const identityIds = blueprints.map((b: IBlueprintMetadata) => b.agent_role);
-      assert(identityIds.includes(testAgentId), "Should include test agent");
-      assert(identityIds.includes(coderAgentId), "Should include coder agent");
-      assert(identityIds.includes(customAgentId), "Should include custom agent");
+      const agentRoles = blueprints.map((b: IBlueprintMetadata) => b.agent_role);
+      assert(agentRoles.includes(testAgentId), "Should include test agent");
+      assert(agentRoles.includes(coderAgentId), "Should include coder agent");
+      assert(agentRoles.includes(customAgentId), "Should include custom agent");
     });
 
     // Test 10: Show Blueprint Details

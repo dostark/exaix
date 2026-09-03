@@ -51,9 +51,9 @@ class SimpleAgentRunner implements IAgentExecutor {
     }
   }
 
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  async run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.callCount++;
-    const content = this.results.get(identityId) ?? `result-${identityId}`;
+    const content = this.results.get(agentRole) ?? `result-${agentRole}`;
     return await Promise.resolve({ thought: "edge", content, raw: content });
   }
 }
@@ -89,7 +89,7 @@ function buildFlow(steps: Array<{ id: string; agent_role: string; dependsOn?: st
     steps: steps.map((s) => ({
       id: s.id,
       name: s.id,
-      agent_role: s.identity,
+      agent_role: s.agent_role,
       dependsOn: s.dependsOn ?? [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

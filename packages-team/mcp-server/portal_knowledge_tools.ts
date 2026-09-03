@@ -37,10 +37,10 @@ function classifyPortalKnowledgeToolError(message: string): ToolErrorCode {
 export class PortalSymbolsTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = PortalSymbolsToolArgsSchema.parse(args);
-    const { portal, query, kind, limit, identity_id } = validatedArgs;
+    const { portal, query, kind, limit, agent_role } = validatedArgs;
 
     try {
-      this.validatePermission(portal, identity_id, PortalOperation.READ);
+      this.validatePermission(portal, agent_role, PortalOperation.READ);
       this.validatePortalExists(portal);
 
       const projectsDir = join(
@@ -64,11 +64,11 @@ export class PortalSymbolsTool extends ToolHandler {
         .sort((a, b) => (b.pageRankScore ?? 0) - (a.pageRankScore ?? 0))
         .slice(0, limit);
 
-      this.logToolExecution(McpToolName.PORTAL_SYMBOLS, portal, identity_id, {
+      this.logToolExecution(McpToolName.PORTAL_SYMBOLS, portal, agent_role, {
         query: query ?? null,
         kind: kind ?? null,
         limit,
-        identity_id,
+        agent_role,
         matched: symbols.length,
         total: knowledge.symbolMap.length,
         success: true,
@@ -85,13 +85,13 @@ export class PortalSymbolsTool extends ToolHandler {
       return this.formatToolError(
         McpToolName.PORTAL_SYMBOLS,
         portal,
-        identity_id,
+        agent_role,
         classifyPortalKnowledgeToolError(message),
         message,
         {
           query: query ?? null,
           kind: kind ?? null,
-          identity_id,
+          agent_role,
         },
       );
     }

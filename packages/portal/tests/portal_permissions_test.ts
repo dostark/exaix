@@ -49,7 +49,7 @@ Deno.test("IPortalPermissions: allows whitelisted agent", () => {
 
   assertEquals(result.allowed, true);
   assertEquals(result.portal, "TestPortal");
-  assertEquals(result.identity_id, "agent-1");
+  assertEquals(result.agent_role, "agent-1");
 });
 
 Deno.test("IPortalPermissions: rejects non-whitelisted agent", () => {

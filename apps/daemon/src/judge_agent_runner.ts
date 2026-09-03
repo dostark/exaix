@@ -16,7 +16,7 @@ export class JudgeAgentRunner implements IAgentRunner {
   constructor(private readonly provider: IModelProvider) {}
 
   async run(
-    _identityId: string,
+    _agentRole: string,
     request: { userPrompt: string; context?: IAgentContext },
   ): Promise<{ content: string }> {
     const result = await this.provider.generate(request.userPrompt);

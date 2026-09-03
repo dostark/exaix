@@ -99,16 +99,16 @@ export class BlueprintCommands extends BaseCommand {
     return join(this.config.system.root, this.config.paths.blueprints, this.config.paths.agents);
   }
 
-  private blueprintNotFoundError(identityId: string): Error {
+  private blueprintNotFoundError(agentRole: string): Error {
     return new Error(
-      `Blueprint '${identityId}' not found\nUse 'exactl blueprint list' to see available blueprints`,
+      `Blueprint '${agentRole}' not found\nUse 'exactl blueprint list' to see available blueprints`,
     );
   }
 
-  private async getExistingBlueprintPath(identityId: string): Promise<string> {
-    const blueprintPath = join(this.getBlueprintsDir(), `${identityId}.md`);
+  private async getExistingBlueprintPath(agentRole: string): Promise<string> {
+    const blueprintPath = join(this.getBlueprintsDir(), `${agentRole}.md`);
     if (!await exists(blueprintPath)) {
-      throw this.blueprintNotFoundError(identityId);
+      throw this.blueprintNotFoundError(agentRole);
     }
     return blueprintPath;
   }
@@ -275,13 +275,13 @@ export class BlueprintCommands extends BaseCommand {
   }
 
   private blueprintMetadataFromFrontmatter(frontmatter: IBlueprintFrontmatterData): IBlueprintMetadata | null {
-    const identityId = frontmatter.identity_id;
-    if (typeof identityId !== "string" || identityId.trim().length === 0) {
+    const agentRole = frontmatter.agent_role;
+    if (typeof agentRole !== "string" || agentRole.trim().length === 0) {
       return null;
     }
 
     return {
-      agent_role: identityId,
+      agent_role: agentRole,
       name: frontmatter.name as string,
       model: frontmatter.model as string,
       capabilities: frontmatter.capabilities as string[] | undefined,
@@ -303,17 +303,17 @@ export class BlueprintCommands extends BaseCommand {
   /**
    * Validate blueprint creation inputs
    */
-  private validateCreateInputs(identityId: string, options: IBlueprintCreateOptions): void {
+  private validateCreateInputs(agentRole: string, options: IBlueprintCreateOptions): void {
     const validation = new ValidationChain()
-      .addRule("identityId", ValidationChain.required())
+      .addRule("agentRole", ValidationChain.required())
       .addRule(
-        "identityId",
+        "agentRole",
         (val) => /^[a-z0-9-]+$/.test(String(val)) ? null : "must be lowercase alphanumeric with hyphens only",
       )
-      .addRule("identityId", (val) => isReservedAgentId(String(val)) ? `reserved name: ${val}` : null)
+      .addRule("agentRole", (val) => isReservedAgentId(String(val)) ? `reserved name: ${val}` : null)
       .addRule("name", (_val) => (!options.name) ? "--name is required" : null)
       .addRule("model", (_val) => (!options.model && !options.from) ? "--model is required" : null)
-      .validate({ identityId, ...options });
+      .validate({ agentRole, ...options });
 
     if (!validation.isValid) {
       throw new Error(CommandUtils.formatValidationErrors(validation));
@@ -323,11 +323,11 @@ export class BlueprintCommands extends BaseCommand {
   /**
    * Check if blueprint already exists
    */
-  private async checkBlueprintExists(identityId: string): Promise<string> {
-    const blueprintPath = join(this.getBlueprintsDir(), `${identityId}.md`);
+  private async checkBlueprintExists(agentRole: string): Promise<string> {
+    const blueprintPath = join(this.getBlueprintsDir(), `${agentRole}.md`);
     if (await exists(blueprintPath)) {
       throw new Error(
-        `Blueprint '${identityId}' already exists\nUse 'exactl blueprint edit ${identityId}' to modify`,
+        `Blueprint '${agentRole}' already exists\nUse 'exactl blueprint edit ${agentRole}' to modify`,
       );
     }
     return blueprintPath;
@@ -336,8 +336,8 @@ export class BlueprintCommands extends BaseCommand {
   // Loads an existing identity by id as a `--from` creation prototype (a concrete
   // identity, not a separate template library) — returns its model, capabilities,
   // and body, or null if the identity does not exist.
-  private loadPrototype(identityId: string): { model: string; capabilities: string[]; systemPrompt: string } | null {
-    const filePath = join(this.getBlueprintsDir(), `${identityId}.md`);
+  private loadPrototype(agentRole: string): { model: string; capabilities: string[]; systemPrompt: string } | null {
+    const filePath = join(this.getBlueprintsDir(), `${agentRole}.md`);
     try {
       const content = Deno.readTextFileSync(filePath);
       const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -430,13 +430,13 @@ export class BlueprintCommands extends BaseCommand {
    * Create and validate blueprint frontmatter
    */
   private async createFrontmatter(
-    identityId: string,
+    agentRole: string,
     options: IBlueprintCreateOptions,
     model: string,
     capabilities: string[],
   ): Promise<IBlueprintFrontmatterData> {
     const frontmatter: IBlueprintFrontmatterData = {
-      agent_role: identityId,
+      agent_role: agentRole,
       name: options.name,
       model: model,
       capabilities: capabilities,
@@ -461,7 +461,7 @@ export class BlueprintCommands extends BaseCommand {
     blueprintPath: string,
     frontmatter: IBlueprintFrontmatterData,
     systemPrompt: string,
-    identityId: string,
+    agentRole: string,
     model: string,
     options: IBlueprintCreateOptions,
   ): Promise<void> {
@@ -475,7 +475,7 @@ ${systemPrompt}
     await ensureDir(this.getBlueprintsDir());
     await Deno.writeTextFile(blueprintPath, content);
 
-    await this.display.info("blueprint.created", identityId, {
+    await this.display.info("blueprint.created", agentRole, {
       model,
       from: options.from ?? null,
       via: "cli",
@@ -486,15 +486,15 @@ ${systemPrompt}
    * Create a new blueprint
    */
   async create(
-    identityId: string,
+    agentRole: string,
     options: IBlueprintCreateOptions,
   ): Promise<IBlueprintCreateResult> {
     try {
       // Validate inputs
-      this.validateCreateInputs(identityId, options);
+      this.validateCreateInputs(agentRole, options);
 
       // Check if blueprint already exists
-      const blueprintPath = await this.checkBlueprintExists(identityId);
+      const blueprintPath = await this.checkBlueprintExists(agentRole);
 
       // Resolve model/capabilities/prompt, seeding from --from prototype if given
       const { model, capabilities, systemPrompt } = this.applyPrototype(options);
@@ -506,13 +506,13 @@ ${systemPrompt}
       const finalSystemPrompt = await this.loadSystemPrompt(options, systemPrompt);
 
       // Create and validate frontmatter
-      const frontmatter = await this.createFrontmatter(identityId, options, model, capabilities);
+      const frontmatter = await this.createFrontmatter(agentRole, options, model, capabilities);
 
       // Write blueprint file and log activity
-      await this.writeBlueprintFile(blueprintPath, frontmatter, finalSystemPrompt, identityId, model, options);
+      await this.writeBlueprintFile(blueprintPath, frontmatter, finalSystemPrompt, agentRole, model, options);
 
       return {
-        agent_role: identityId,
+        agent_role: agentRole,
         name: options.name as string,
         model: model,
         capabilities,
@@ -524,7 +524,7 @@ ${systemPrompt}
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.create",
-        args: { identityId, options },
+        args: { agentRole, options },
         error: error as Error | string | object | null | undefined,
       });
       throw error;
@@ -563,7 +563,7 @@ ${systemPrompt}
       throw error;
     }
 
-    return results.sort((a, b) => (a.identity_id ?? "").localeCompare(b.identity_id ?? ""));
+    return results.sort((a, b) => (a.agent_role ?? "").localeCompare(b.agent_role ?? ""));
   }
 
   private matchesListFilters(metadata: IBlueprintMetadata, options: IBlueprintListOptions): boolean {
@@ -579,22 +579,22 @@ ${systemPrompt}
   // Sets the `deprecated` frontmatter flag, which capability_matcher.ts reads to exclude
   // a blueprint from selection. Rewrites the flag in place via an atomic write, preserving
   // format, field order, and comments; the file itself is not deleted.
-  async deprecate(identityId: string): Promise<void> {
+  async deprecate(agentRole: string): Promise<void> {
     try {
-      const blueprintPath = await this.getExistingBlueprintPath(identityId);
+      const blueprintPath = await this.getExistingBlueprintPath(agentRole);
       const content = await Deno.readTextFile(blueprintPath);
-      const updated = this.setFrontmatterDeprecated(content, identityId);
+      const updated = this.setFrontmatterDeprecated(content, agentRole);
 
       // Atomic write: temp file + rename, to avoid partial-write corruption.
       const tmpPath = `${blueprintPath}.${crypto.randomUUID()}.tmp`;
       await Deno.writeTextFile(tmpPath, updated);
       await Deno.rename(tmpPath, blueprintPath);
 
-      await this.display.info("blueprint.deprecated", identityId, { via: "cli" });
+      await this.display.info("blueprint.deprecated", agentRole, { via: "cli" });
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.deprecate",
-        args: { identityId },
+        args: { agentRole },
         error: error as Error | string | object | null | undefined,
       });
       throw error;
@@ -603,17 +603,17 @@ ${systemPrompt}
 
   // Sets `deprecated = true` inside a blueprint's frontmatter block, preserving the
   // original delimiter style (TOML `+++` or YAML `---`) and all other lines.
-  private setFrontmatterDeprecated(content: string, identityId: string): string {
+  private setFrontmatterDeprecated(content: string, agentRole: string): string {
     const isToml = /^\+\+\+\n/.test(content);
     const isYaml = /^---\n/.test(content);
     if (!isToml && !isYaml) {
-      throw new Error(`Invalid blueprint format: ${identityId}`);
+      throw new Error(`Invalid blueprint format: ${agentRole}`);
     }
 
     const fmPattern = isToml ? /^(\+\+\+\n)([\s\S]*?)(\n\+\+\+\n?)/ : /^(---\n)([\s\S]*?)(\n---\n?)/;
     const match = content.match(fmPattern);
     if (!match) {
-      throw new Error(`Invalid blueprint format: ${identityId}`);
+      throw new Error(`Invalid blueprint format: ${agentRole}`);
     }
 
     const deprecatedLine = isToml ? "deprecated = true" : "deprecated: true";
@@ -631,19 +631,19 @@ ${systemPrompt}
   /**
    * Show blueprint details
    */
-  async show(identityId: string): Promise<IBlueprintDetails> {
-    const blueprintPath = await this.getExistingBlueprintPath(identityId);
+  async show(agentRole: string): Promise<IBlueprintDetails> {
+    const blueprintPath = await this.getExistingBlueprintPath(agentRole);
 
     const content = await Deno.readTextFile(blueprintPath);
     const { frontmatter } = this.extractTomlFrontmatter(content);
 
     if (!frontmatter) {
-      throw new Error(`Invalid blueprint format: ${identityId}`);
+      throw new Error(`Invalid blueprint format: ${agentRole}`);
     }
 
     const metadata = this.blueprintMetadataFromFrontmatter(frontmatter);
     if (!metadata) {
-      throw new Error(`Invalid blueprint format: ${identityId}`);
+      throw new Error(`Invalid blueprint format: ${agentRole}`);
     }
 
     return {
@@ -655,15 +655,15 @@ ${systemPrompt}
   /**
    * Validate blueprint format
    */
-  async validate(identityId: string): Promise<IBlueprintValidationResult> {
+  async validate(agentRole: string): Promise<IBlueprintValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     try {
-      const blueprintPath = join(this.getBlueprintsDir(), `${identityId}.md`);
+      const blueprintPath = join(this.getBlueprintsDir(), `${agentRole}.md`);
 
       if (!await exists(blueprintPath)) {
-        throw new Error(`Blueprint file not found: ${identityId}.md`);
+        throw new Error(`Blueprint file not found: ${agentRole}.md`);
       }
 
       const content = await Deno.readTextFile(blueprintPath);
@@ -759,9 +759,9 @@ ${systemPrompt}
   /**
    * Edit a blueprint in user's $EDITOR
    */
-  async edit(identityId: string): Promise<void> {
+  async edit(agentRole: string): Promise<void> {
     try {
-      const blueprintPath = await this.getExistingBlueprintPath(identityId);
+      const blueprintPath = await this.getExistingBlueprintPath(agentRole);
 
       // Get editor from environment or use default
       const editor = Deno.env.get("EDITOR") || Deno.env.get("VISUAL") || "vi";
@@ -781,7 +781,7 @@ ${systemPrompt}
       }
 
       // Validate after editing
-      const validation = await this.validate(identityId);
+      const validation = await this.validate(agentRole);
       if (validation.errors.length > 0) {
         const msg = `Blueprint has validation errors after editing:\n${
           validation.errors.map((e: string) => `  - ${e}`).join("\n")
@@ -792,12 +792,12 @@ ${systemPrompt}
       // Display warnings if any (but allow save to proceed)
       if (validation.warnings && validation.warnings.length > 0) {
         for (const warning of validation.warnings) {
-          await this.display.warn("blueprint.edit.warning", identityId, { warning });
+          await this.display.warn("blueprint.edit.warning", agentRole, { warning });
         }
       }
 
       // Log activity
-      await this.display.info("blueprint.edited", identityId, {
+      await this.display.info("blueprint.edited", agentRole, {
         via: "cli",
         editor,
         valid: validation.valid,
@@ -805,7 +805,7 @@ ${systemPrompt}
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.edit",
-        args: { identityId },
+        args: { agentRole },
         error: error as Error | string | object | null | undefined,
       });
     }
@@ -814,22 +814,22 @@ ${systemPrompt}
   /**
    * Remove a blueprint
    */
-  async remove(identityId: string, options: IBlueprintRemoveOptions = {}): Promise<void> {
+  async remove(agentRole: string, options: IBlueprintRemoveOptions = {}): Promise<void> {
     try {
-      const blueprintPath = await this.getExistingBlueprintPath(identityId);
+      const blueprintPath = await this.getExistingBlueprintPath(agentRole);
 
       // Remove the file
       await Deno.remove(blueprintPath);
 
       // Log activity
-      await this.display.info("blueprint.removed", identityId, {
+      await this.display.info("blueprint.removed", agentRole, {
         via: "cli",
         forced: options.force || false,
       });
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.remove",
-        args: { identityId, options },
+        args: { agentRole, options },
         error: error as Error | string | object | null | undefined,
       });
     }

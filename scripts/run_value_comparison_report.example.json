@@ -39,7 +39,12 @@
     "defaultSkillIds": ["demo-skill-a"],
     "corpusMatches": [{ "taskId": "demo-task", "matchedSkillIds": [] }],
     "identityDefaultSkills": [
-      { "identityId": "demo-other-identity", "defaultSkillIds": ["demo-skill-b"] }
+      {
+        "agentRole": "demo-other-identity",
+        "defaultSkillIds": [
+          "demo-skill-b"
+        ]
+      }
     ]
   },
   "skillFullTrialPlan": {

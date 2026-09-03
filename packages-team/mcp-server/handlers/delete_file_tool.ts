@@ -21,9 +21,9 @@ export class DeleteFileTool extends ToolHandler {
       path: string;
       agent_role: string;
     };
-    const { portal, path, identity_id } = validatedArgs;
+    const { portal, path, agent_role } = validatedArgs;
 
-    this.validatePermission(portal, identity_id, PortalOperation.WRITE);
+    this.validatePermission(portal, agent_role, PortalOperation.WRITE);
 
     const portalPath = this.validatePortalExists(portal);
     const absolutePath = await this.resolvePortalPath(portalPath, path);
@@ -36,7 +36,7 @@ export class DeleteFileTool extends ToolHandler {
       return this.formatToolError(
         McpToolName.DELETE_FILE,
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.NOT_FOUND,
         `File not found: ${path}`,
         { path },
@@ -47,7 +47,7 @@ export class DeleteFileTool extends ToolHandler {
       return this.formatToolError(
         McpToolName.DELETE_FILE,
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.INVALID_ARGS,
         `"${path}" is a directory, not a file. Use delete_directory to remove directories (when available).`,
         { path },
@@ -56,7 +56,7 @@ export class DeleteFileTool extends ToolHandler {
 
     await Deno.remove(absolutePath);
 
-    this.logToolExecution(McpToolName.DELETE_FILE, portal, identity_id, {
+    this.logToolExecution(McpToolName.DELETE_FILE, portal, agent_role, {
       path,
       bytes_deleted: stat.size,
       success: true,

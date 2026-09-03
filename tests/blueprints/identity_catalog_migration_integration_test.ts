@@ -59,7 +59,7 @@ const METHODOLOGY_KEYWORDS = [
 ];
 
 interface LoadResult {
-  identityId: string;
+  agentRole: string;
   blueprint: Awaited<ReturnType<IBlueprintLoader["load"]>>;
   loadError: Error | null;
 }
@@ -68,12 +68,12 @@ async function tryLoadAll(
   loader: IBlueprintLoader,
 ): Promise<LoadResult[]> {
   const results: LoadResult[] = [];
-  for (const identityId of ACTIVE_IDENTITY_IDS) {
+  for (const agentRole of ACTIVE_IDENTITY_IDS) {
     try {
-      const blueprint = await loader.load(identityId);
-      results.push({ identityId, blueprint, loadError: null });
+      const blueprint = await loader.load(agentRole);
+      results.push({ agentRole, blueprint, loadError: null });
     } catch (e) {
-      results.push({ identityId, blueprint: null, loadError: e as Error });
+      results.push({ agentRole, blueprint: null, loadError: e as Error });
     }
   }
   return results;
@@ -91,27 +91,27 @@ const PRE_EXISTING_SCHEMA_ISSUES = new Set([
 ]);
 
 interface ILoadedIdentityView {
-  identityId: string;
+  agentRole: string;
   frontmatter: { default_skills?: string[] };
   systemPrompt: string;
 }
 
 /** Runs an assertion callback for each loaded identity that passes the PRE_EXISTING_SCHEMA_ISSUES gate. */
 async function forEachLoadedIdentity(
-  fn: (identityId: string, blueprint: ILoadedIdentityView) => void | Promise<void>,
+  fn: (agentRole: string, blueprint: ILoadedIdentityView) => void | Promise<void>,
 ): Promise<void> {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const results = await tryLoadAll(loader);
 
-  for (const { identityId, blueprint, loadError } of results) {
-    if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) {
+  for (const { agentRole, blueprint, loadError } of results) {
+    if (PRE_EXISTING_SCHEMA_ISSUES.has(agentRole)) {
       console.log(
-        `[SKIP] ${identityId}: pre-existing permitted_tools schema issue (${loadError?.message.slice(0, 60)}...)`,
+        `[SKIP] ${agentRole}: pre-existing permitted_tools schema issue (${loadError?.message.slice(0, 60)}...)`,
       );
       continue;
     }
-    assertExists(blueprint, `${identityId} must load`);
-    await fn(identityId, blueprint!);
+    assertExists(blueprint, `${agentRole} must load`);
+    await fn(agentRole, blueprint!);
   }
 }
 
@@ -121,18 +121,18 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    await forEachLoadedIdentity((identityId, blueprint) => {
+    await forEachLoadedIdentity((agentRole, blueprint) => {
       assertEquals(
-        blueprint.identityId,
-        identityId,
-        `${identityId}: identityId mismatch`,
+        blueprint.agentRole,
+        agentRole,
+        `${agentRole}: agentRole mismatch`,
       );
 
       const skills = blueprint.frontmatter.default_skills ?? [];
       assertEquals(
         skills.includes("response-contract") || skills.includes("response-contract-judge"),
         true,
-        `${identityId}: default_skills must include "response-contract" or "response-contract-judge"`,
+        `${agentRole}: default_skills must include "response-contract" or "response-contract-judge"`,
       );
     });
   },
@@ -143,12 +143,12 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    await forEachLoadedIdentity((identityId, blueprint) => {
+    await forEachLoadedIdentity((agentRole, blueprint) => {
       const hasInclude = blueprint.systemPrompt.includes("{{include:");
       assertEquals(
         hasInclude,
         false,
-        `${identityId}: systemPrompt must not contain unresolved {{include:}}`,
+        `${agentRole}: systemPrompt must not contain unresolved {{include:}}`,
       );
     });
   },
@@ -159,13 +159,13 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    await forEachLoadedIdentity((identityId, blueprint) => {
+    await forEachLoadedIdentity((agentRole, blueprint) => {
       for (const keyword of METHODOLOGY_KEYWORDS) {
         const hasKeyword = blueprint.systemPrompt.includes(keyword);
         assertEquals(
           hasKeyword,
           false,
-          `${identityId}: systemPrompt must not contain "${keyword}" methodology section`,
+          `${agentRole}: systemPrompt must not contain "${keyword}" methodology section`,
         );
       }
     });
@@ -179,8 +179,8 @@ async function collectReferencedSkills(): Promise<Set<string>> {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const results = await tryLoadAll(loader);
   const allReferenced = new Set<string>();
-  for (const { identityId, blueprint } of results) {
-    if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) continue;
+  for (const { agentRole, blueprint } of results) {
+    if (PRE_EXISTING_SCHEMA_ISSUES.has(agentRole)) continue;
     if (!blueprint) continue;
     const skills = blueprint.frontmatter.default_skills ?? [];
     for (const s of skills) allReferenced.add(s);

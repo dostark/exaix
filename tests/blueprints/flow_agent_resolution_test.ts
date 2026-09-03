@@ -29,7 +29,7 @@ function parseFrontmatter(content: string): BlueprintFrontmatter | null {
  * Get all agent IDs from blueprints
  */
 async function getAllAgentIds(): Promise<Set<string>> {
-  const identityIds = new Set<string>();
+  const agentRoles = new Set<string>();
 
   const dirs = [BLUEPRINTS_DIR];
 
@@ -39,8 +39,8 @@ async function getAllAgentIds(): Promise<Set<string>> {
         if (entry.isFile && entry.name.endsWith(".md") && entry.name !== "README.md") {
           const content = await Deno.readTextFile(join(dir, entry.name));
           const frontmatter = parseFrontmatter(content);
-          if (frontmatter?.identity_id) {
-            identityIds.add(frontmatter.identity_id);
+          if (frontmatter?.agent_role) {
+            agentRoles.add(frontmatter.agent_role);
           }
         }
       }
@@ -49,7 +49,7 @@ async function getAllAgentIds(): Promise<Set<string>> {
     }
   }
 
-  return identityIds;
+  return agentRoles;
 }
 
 /**
@@ -100,7 +100,7 @@ Deno.test("Flow validation: no flow loses its defaultSkills", async () => {
 // Comprehensive Agent Coverage Test
 
 Deno.test("Flow validation: all flow-referenced agents exist", async () => {
-  const identityIds = await getAllAgentIds();
+  const agentRoles = await getAllAgentIds();
 
   const flowFiles = [];
   for await (const entry of Deno.readDir(FLOWS_DIR)) {
@@ -114,7 +114,7 @@ Deno.test("Flow validation: all flow-referenced agents exist", async () => {
   for (const flowPath of flowFiles) {
     const flowAgents = await getFlowAgentRefs(flowPath);
     for (const agent of flowAgents) {
-      if (!identityIds.has(agent)) {
+      if (!agentRoles.has(agent)) {
         missingAgents.push({ flow: flowPath, agent_role: agent });
       }
     }

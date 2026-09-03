@@ -225,13 +225,13 @@ export class GitExecutionSetupService {
     gitService: IGitService,
     requestId: string,
     traceId: string,
-    identityId: string,
+    agentRole: string,
     onNoChanges: (traceId: string, requestId: string) => void,
   ): Promise<string | null> {
     try {
       return await gitService.commit({
         message: `Execute plan: ${requestId}`,
-        description: `Executed by agent ${identityId}`,
+        description: `Executed by agent ${agentRole}`,
         traceId,
       });
     } catch (error) {

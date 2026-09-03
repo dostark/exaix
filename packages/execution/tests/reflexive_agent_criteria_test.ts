@@ -95,7 +95,7 @@ Deno.test("[ReflexiveAgent] accepts optional requestAnalysis as third parameter 
 
   // This should compile and run without error (3rd param is new)
   const result = await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Build auth system", context: {} },
     SAMPLE_ANALYSIS,
   );
@@ -114,7 +114,7 @@ Deno.test("[ReflexiveAgent] includes goals in critique when analysis available",
   agent.critiqueRunner = capturingRunner;
 
   await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Build auth system", context: {} },
     SAMPLE_ANALYSIS,
   );
@@ -135,7 +135,7 @@ Deno.test("[ReflexiveAgent] includes acceptance criteria in critique prompt", as
   agent.critiqueRunner = capturingRunner;
 
   await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Build auth system", context: {} },
     SAMPLE_ANALYSIS,
   );
@@ -156,7 +156,7 @@ Deno.test("[ReflexiveAgent] critique output includes requirementsFulfillment", a
   agent.critiqueRunner = capturingRunner;
 
   const result = await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Build auth system", context: {} },
     SAMPLE_ANALYSIS,
   );
@@ -177,7 +177,7 @@ Deno.test("[ReflexiveAgent] generic critique works without analysis", async () =
 
   // Old 2-argument call style (backward compatible)
   const result = await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Build auth system", context: {} },
   );
 
@@ -193,7 +193,7 @@ Deno.test("[ReflexiveAgent] goals show explicit/inferred markers", async () => {
   agent.critiqueRunner = capturingRunner;
 
   await agent.run(
-    { systemPrompt: "Test", identityId: "test" },
+    { systemPrompt: "Test", agentRole: "test" },
     { userPrompt: "Build auth system", context: {} },
     SAMPLE_ANALYSIS,
   );

@@ -122,7 +122,7 @@ Deno.test("MockRequestService: all methods", async () => {
     portal: "main",
     model: TEST_MODEL_OPENAI,
   });
-  if (typeof newReq !== "object" || newReq.priority !== RequestPriority.HIGH || newReq.identity !== "test") {
+  if (typeof newReq !== "object" || newReq.priority !== RequestPriority.HIGH || newReq.agent_role !== "test") {
     throw new Error("createRequest failed");
   }
   if (await service.updateRequestStatus("id", "planned") !== true) throw new Error("updateRequestStatus failed");

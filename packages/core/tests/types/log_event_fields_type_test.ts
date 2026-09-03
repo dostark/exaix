@@ -10,7 +10,7 @@
  * If any field is renamed or removed, `deno check` will fail.
  */
 
-import { ActorType, AgentKind } from "@exaix/core";
+import { ActorType, RuntimeKind } from "@exaix/core";
 import type { ILogEvent } from "@exaix/core";
 import type { IServiceContext } from "@exaix/core/types";
 // Type Contract Verification
@@ -22,8 +22,8 @@ const _logEvent: ILogEvent = {
   actor: "user:test",
   actorType: ActorType.USER,
   agentId: "agent-executor", // runtime agent — NOT a blueprint slug
-  agentKind: AgentKind.AGENT_EXECUTOR, // category of runtime agent
-  identityId: "senior-coder", // LLM identity blueprint slug
+  agentKind: RuntimeKind.AGENT_EXECUTOR, // category of runtime agent
+  agentRole: "senior-coder", // LLM agent role blueprint slug
 };
 
 // Verify IServiceContext has the same three separation fields
@@ -31,15 +31,15 @@ const _ctx: IServiceContext = {
   actor: "user:test",
   actorType: ActorType.USER,
   agentId: "agent-executor",
-  agentKind: AgentKind.AGENT_EXECUTOR,
-  identityId: "senior-coder",
+  agentKind: RuntimeKind.AGENT_EXECUTOR,
+  agentRole: "senior-coder",
 };
 
 // Verify partial usage is allowed (optional fields)
 const _partialEvent: ILogEvent = {
   action: "test",
   target: "portal",
-  // actorType, agentId, agentKind, identityId are all optional
+  // actorType, agentId, agentKind, agentRole are all optional
 };
 
 // Verify undefined is acceptable for optional fields
@@ -48,14 +48,14 @@ const _undefinedEvent: ILogEvent = {
   target: "portal",
   actorType: undefined,
   agentKind: undefined,
-  identityId: undefined,
+  agentRole: undefined,
 };
 
 // Compile-Time Error Guards — each line MUST be a TypeScript error if
 // uncommented into an ILogEvent literal.
 
 // agentId: "senior-coder",                       // blueprint slug, not a runtime agent name
-// identityKind: AgentKind.AGENT_EXECUTOR,         // field is named agentKind, not identityKind
+// identityKind: RuntimeKind.AGENT_EXECUTOR,       // field is named agentKind, not identityKind
 
 // actorType: "invalid-actor-type" as ActorType,   // not a valid ActorType
-// agentKind: "invalid-agent-kind" as AgentKind,   // not a valid AgentKind
+// agentKind: "invalid-agent-kind" as RuntimeKind, // not a valid RuntimeKind

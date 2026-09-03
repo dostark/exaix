@@ -9,8 +9,8 @@
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import {
+  DAEMON_AGENT_ROLE_ID,
   DAEMON_DEFAULT_NET_HOSTS,
-  DAEMON_IDENTITY_ID,
   DaemonStatus,
   DEFAULT_AGENTS_PATH,
   DEFAULT_PROJECTS_MEMORY_PATH,
@@ -110,7 +110,7 @@ import { HnswVectorIndex } from "@exaix/memory";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
-import { DEFAULT_MCP_IDENTITY_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
+import { DEFAULT_MCP_AGENT_ROLE_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
 import type { LocalToolDispatcher } from "@exaix/mcp/server";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
@@ -264,7 +264,7 @@ if (import.meta.main) {
     const logger = new EventLogger({
       db: dbService,
       prefix: "",
-      defaultActor: DEFAULT_MCP_IDENTITY_ID,
+      defaultActor: DEFAULT_MCP_AGENT_ROLE_ID,
       outputs: [viewerOutput],
       minLevel: config.system.log_level,
     });
@@ -965,7 +965,7 @@ if (import.meta.main) {
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
-            identityId: DAEMON_IDENTITY_ID,
+            agentRole: DAEMON_AGENT_ROLE_ID,
             gate: GATE_REFINEMENT,
             tool: sd.tool,
             objective: body,
@@ -1047,7 +1047,7 @@ if (import.meta.main) {
     );
 
     // Create child logger for watcher events
-    const watcherLogger = logger.child({ actor: DEFAULT_MCP_IDENTITY_ID });
+    const watcherLogger = logger.child({ actor: DEFAULT_MCP_AGENT_ROLE_ID });
 
     // Start file watcher for new requests (Workspace/Requests)
     const requestWatcher = new FileWatcher(config, async (event) => {
@@ -1083,7 +1083,7 @@ if (import.meta.main) {
 
     const gitServiceFactory = {
       createGitService(repoPath: string, traceId: string) {
-        return new GitService({ config, traceId, identityId: DAEMON_IDENTITY_ID, repoPath, context });
+        return new GitService({ config, traceId, agentRole: DAEMON_AGENT_ROLE_ID, repoPath, context });
       },
     };
 
@@ -1094,7 +1094,7 @@ if (import.meta.main) {
       context,
       config,
       db: dbService,
-      identityId: DAEMON_IDENTITY_ID,
+      agentRole: DAEMON_AGENT_ROLE_ID,
       llmProvider,
       amendmentService,
       amendmentGate,
@@ -1110,7 +1110,7 @@ if (import.meta.main) {
           return new ToolRegistry({
             config,
             traceId,
-            identityId: DAEMON_IDENTITY_ID,
+            agentRole: DAEMON_AGENT_ROLE_ID,
             baseDir,
             context,
             hitlPolicyEvaluator,

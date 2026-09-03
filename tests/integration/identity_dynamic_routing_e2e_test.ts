@@ -21,7 +21,7 @@ type DynamicRoutingFrontmatter = {
   portal_type?: string;
 };
 
-const FIXTURE_ROOT = join(Deno.cwd(), "tests", "fixtures", "dynamic_identity_routing");
+const FIXTURE_ROOT = join(Deno.cwd(), "tests", "fixtures", "dynamic_agent_role_routing");
 const SELECTED_IDENTITY = "senior-coder";
 const DEFAULT_AGENT_ID = "default-agent";
 
@@ -83,8 +83,8 @@ Deno.test("Integration: dynamic identity routing uses routing policy rules and l
 
     const result = await router.route(request);
 
-    assertEquals(result.type, RequestKind.IDENTITY);
-    assertEquals(result.identityId, "senior-coder");
+    assertEquals(result.type, RequestKind.AGENT_ROLE);
+    assertEquals(result.agentRole, "senior-coder");
     assertExists(mockAgentRunner.executedAgents[0]);
     assertEquals(
       mockLogger.events.some((event: { action: string }) => event.action === "routing.decision"),
@@ -96,7 +96,7 @@ Deno.test("Integration: dynamic identity routing uses routing policy rules and l
     );
 
     const decisionEvent = mockLogger.events.find((event: { action: string }) => event.action === "routing.decision");
-    assertEquals(decisionEvent?.payload?.selected_identity_id, SELECTED_IDENTITY);
+    assertEquals(decisionEvent?.payload?.selected_agent_role, SELECTED_IDENTITY);
   } finally {
     await env.cleanup();
   }

@@ -27,7 +27,7 @@ import type {
 } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryType } from "@exaix/core";
 import { MemoryReferenceType } from "@exaix/core";
-import { TEST_IDENTITY_ID } from "./constants.ts";
+import { TEST_AGENT_ROLE_ID } from "./constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** No-op `IMemoryBankService` stub — extend and override only what a test needs. */
@@ -208,13 +208,13 @@ export async function createTestExecution(
   traceId: string,
   portal: string,
   opts: {
-    identity?: string;
+    agent_role?: string;
     summary?: string;
   } = {},
 ): Promise<void> {
   const builder = new ExecutionMemoryBuilder(portal, traceId);
 
-  builder.withIdentity(opts.identity || TEST_IDENTITY_ID);
+  builder.withIdentity(opts.agent_role || TEST_AGENT_ROLE_ID);
   builder.withSummary(opts.summary || `Test execution for ${portal}`);
   builder.addContextFile("src/main.ts");
   builder.withChanges({

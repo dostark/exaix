@@ -231,7 +231,7 @@ Deno.test("Integration: search workflow - tag + keyword + embedding combined", a
       {
         id: "11111111-aaaa-4000-8000-000000000001",
         created_at: new Date().toISOString(),
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         title: "Database indexing strategy",
         description: "Create indexes on frequently queried columns for optimal database performance",
@@ -470,7 +470,7 @@ Deno.test("Integration: performance - embedding search completes under 500ms", a
     const learnings: ILearning[] = Array.from({ length: 20 }, (_, i) => ({
       id: `33333333-cccc-4000-8000-00000000000${i.toString().padStart(2, "0")}`,
       created_at: new Date().toISOString(),
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.GLOBAL,
       title: `ILearning ${i}`,
       description: `Description for learning ${i} with some searchable content`,

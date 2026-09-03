@@ -274,7 +274,7 @@ Deno.test("RequestManagerTuiSession: toggleGrouping cycles through modes", () =>
   assertEquals(session.getState().groupBy, "priority");
 
   session.toggleGrouping();
-  assertEquals(session.getState().groupBy, RequestGroupingMode.IDENTITY);
+  assertEquals(session.getState().groupBy, RequestGroupingMode.AGENT_ROLE);
 
   session.toggleGrouping();
   assertEquals(session.getState().groupBy, "none");

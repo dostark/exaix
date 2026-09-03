@@ -2,7 +2,7 @@
  * @module AgentOrchestratorAdapter
  * @path packages/flow/src/agent_executor_adapter.ts
  * @description Bridges IAgentRunner into FlowRunner's IAgentExecutor interface.
- * Loads blueprints by identityId and converts IFlowStepRequest to IParsedRequest
+ * Loads blueprints by agentRole and converts IFlowStepRequest to IParsedRequest
  * before delegating to IAgentRunner.run(). Also implements the strategy-routed seam
  * (Phase 159): `runWithStrategy` constructs a fresh, per-call `AgentOrchestrator` from
  * injected construction dependencies (never a stored, long-lived instance — see GAP-2)
@@ -109,18 +109,18 @@ export class AgentOrchestratorAdapter {
     this.loader = new IBlueprintLoader({ blueprintsPath });
   }
 
-  async hasBlueprint(identityId: string): Promise<boolean> {
-    return await this.loader.exists(identityId);
+  async hasBlueprint(agentRole: string): Promise<boolean> {
+    return await this.loader.exists(agentRole);
   }
 
-  async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    const loaded = await this.loader.load(identityId);
+  async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    const loaded = await this.loader.load(agentRole);
     if (!loaded) {
-      throw new Error(`Blueprint not found for agent_role: ${identityId}`);
+      throw new Error(`Blueprint not found for agent_role: ${agentRole}`);
     }
     const blueprint: IBlueprint = {
       systemPrompt: loaded.systemPrompt,
-      identityId: loaded.identityId,
+      agentRole: loaded.agentRole,
     };
     const parsedRequest: IParsedRequest = {
       userPrompt: request.userPrompt,
@@ -137,18 +137,18 @@ export class AgentOrchestratorAdapter {
 
   /** Strategy-routed step execution: builds a fresh per-call PathResolver/ToolRegistry/AgentOrchestrator (mirroring PlanExecutor.createAgentExecutor) and bridges the result into IAgentExecutionResult.content. */
   async runWithStrategy(
-    identityId: string,
+    agentRole: string,
     request: IFlowStepRequest,
     strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
   ): Promise<IAgentExecutionResult> {
     if (!this.orchestratorDeps) {
       throw new Error(
-        `runWithStrategy requires AgentOrchestrator construction dependencies, none were provided (agent_role: ${identityId}, strategy: ${strategy})`,
+        `runWithStrategy requires AgentOrchestrator construction dependencies, none were provided (agent_role: ${agentRole}, strategy: ${strategy})`,
       );
     }
     if (!request.portal) {
       throw new Error(
-        `runWithStrategy requires a portal on the flow step request — the flow was invoked with no portal (agent_role: ${identityId}, strategy: ${strategy})`,
+        `runWithStrategy requires a portal on the flow step request — the flow was invoked with no portal (agent_role: ${agentRole}, strategy: ${strategy})`,
       );
     }
 
@@ -199,7 +199,7 @@ export class AgentOrchestratorAdapter {
         portal: request.portal,
       };
       const options: IAgentExecutionOptionsInput = {
-        agent_role: identityId,
+        agent_role: agentRole,
         portal: request.portal,
         strategy,
       };

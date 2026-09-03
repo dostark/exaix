@@ -1520,7 +1520,7 @@ Deno.test({
       assert(activities.length > 0);
       const startActivity = activities.find((a) => a.action_type === "agent.execution_started");
       assertExists(startActivity);
-      assertEquals(startActivity.identity_id, "test-agent");
+      assertEquals(startActivity.agent_role, "test-agent");
     } finally {
       await cleanup();
     }
@@ -1556,7 +1556,7 @@ Deno.test({
       assert(activities.length > 0);
       const completeActivity = activities.find((a) => a.action_type === "agent.execution_completed");
       assertExists(completeActivity);
-      assertEquals(completeActivity.identity_id, "test-agent");
+      assertEquals(completeActivity.agent_role, "test-agent");
     } finally {
       await cleanup();
     }
@@ -1589,7 +1589,7 @@ Deno.test({
       assert(activities.length > 0);
       const errorActivity = activities.find((a) => a.action_type === "agent.execution_failed");
       assertExists(errorActivity);
-      assertEquals(errorActivity.identity_id, "test-agent");
+      assertEquals(errorActivity.agent_role, "test-agent");
       assertStringIncludes(
         errorActivity.payload,
         "timeout",

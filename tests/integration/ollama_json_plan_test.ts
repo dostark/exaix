@@ -45,7 +45,7 @@ async function isOllamaAvailable(): Promise<boolean> {
  */
 function createJSONPlanBlueprint() {
   return {
-    identityId: "ollama-test",
+    agentRole: "ollama-test",
     name: "Ollama Test",
     model: `ollama:${OLLAMA_MODEL}`,
     systemPrompt: `You are a coding assistant. When I ask for a plan, respond ONLY with valid JSON in this exact format:

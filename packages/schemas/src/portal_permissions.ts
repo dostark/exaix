@@ -61,7 +61,7 @@ export interface IAgentWhitelistResult {
 export interface IPortalPermissionsChecker {
   checkOperationAllowed(
     portalAlias: string,
-    identityId: string,
+    agentRole: string,
     operation: PortalOperation,
   ): IPermissionCheckResult;
 }

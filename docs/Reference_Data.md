@@ -565,8 +565,8 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `ReviewRejected`                         | `review.rejected`                             | Review                          |
 | `GitCheck`                               | `git.check`                                   | Git                             |
 | `GitInit`                                | `git.init`                                    | Git                             |
-| `GitIdentityCheck`                       | `git.identity_check`                          | Git                             |
-| `GitIdentityConfigured`                  | `git.identity_configured`                     | Git                             |
+| `GitIdentityCheck`                       | `git.agent_role_check`                        | Git                             |
+| `GitIdentityConfigured`                  | `git.agent_role_configured`                   | Git                             |
 | `GitBranchCreated`                       | `git.branch_created`                          | Git                             |
 | `GitCommitted`                           | `git.committed`                               | Git                             |
 | `GitCheckout`                            | `git.checkout`                                | Git                             |

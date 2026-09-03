@@ -124,7 +124,7 @@ Deno.test("RequestManagerView - creates new request", async () => {
   assert(newIRequest.trace_id);
   assertEquals(newIRequest.status, RequestStatus.PENDING);
   assertEquals(newIRequest.priority, RequestPriority.HIGH);
-  assertEquals(newIRequest.identity, "test-agent");
+  assertEquals(newIRequest.agent_role, "test-agent");
 });
 
 Deno.test("RequestManagerView - gets request content", async () => {
@@ -343,7 +343,7 @@ Deno.test("Phase 13.6: Tree grouping by status", () => {
 
   // Toggle to identity grouping
   tui.toggleGrouping();
-  assertEquals(tui.getState().groupBy, RequestGroupingMode.IDENTITY);
+  assertEquals(tui.getState().groupBy, RequestGroupingMode.AGENT_ROLE);
 
   // Toggle back to none
   tui.toggleGrouping();
@@ -431,7 +431,7 @@ Deno.test("Phase 13.6: Filter by identity", () => {
   tui.buildTree();
 
   assertEquals(tui.getFilteredRequests().length, 1);
-  assertEquals(tui.getFilteredRequests()[0].identity, "developer");
+  assertEquals(tui.getFilteredRequests()[0].agent_role, "developer");
 });
 
 Deno.test("Phase 13.6: Help sections", () => {

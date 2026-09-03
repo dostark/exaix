@@ -89,7 +89,7 @@ function writeStructuredPlan(
   fileName: string,
   traceId: string,
   requestId: string,
-  identityId: string,
+  agentRole: string,
 ): void {
   const dir = join(root, "Workspace", "Active");
   Deno.mkdirSync(dir, { recursive: true });
@@ -97,7 +97,7 @@ function writeStructuredPlan(
     "---",
     `trace_id: "${traceId}"`,
     `request_id: "${requestId}"`,
-    `agent_role: ${identityId}`,
+    `agent_role: ${agentRole}`,
     'portal: "workspace"',
     "status: approved",
     `created_at: "${new Date().toISOString()}"`,

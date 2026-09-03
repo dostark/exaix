@@ -123,7 +123,7 @@ export class FlowCommands extends BaseCommand {
       for (const step of flow.steps) {
         stepsTable.push([
           step.id,
-          step.identity,
+          step.agent_role,
           step.dependsOn.length > 0 ? step.dependsOn.join(", ") : DEFAULT_NONE_LABEL,
           step.name,
         ]);
@@ -196,8 +196,8 @@ export class FlowCommands extends BaseCommand {
         errors.push(`IFlow '${flowId}' must contain at least one step`);
       } else {
         for (const step of flow.steps) {
-          if (!step.identity || typeof step.identity !== "string" || step.identity.trim() === "") {
-            errors.push(`IFlow '${flowId}' step '${step.id}' has invalid agent: ${step.identity}`);
+          if (!step.agent_role || typeof step.agent_role !== "string" || step.agent_role.trim() === "") {
+            errors.push(`IFlow '${flowId}' step '${step.id}' has invalid agent: ${step.agent_role}`);
             break;
           }
         }
@@ -234,7 +234,7 @@ export class FlowCommands extends BaseCommand {
     // Simple text-based dependency graph
     const lines: string[] = [];
     for (const step of flow.steps) {
-      lines.push(`${step.id} (${step.identity})`);
+      lines.push(`${step.id} (${step.agent_role})`);
       if (step.dependsOn.length > 0) {
         lines.push(`  ← ${step.dependsOn.join(", ")}`);
       }

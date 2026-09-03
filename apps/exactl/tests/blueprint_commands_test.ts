@@ -51,15 +51,15 @@ async function teardownTest() {
 Deno.test("[blueprint] create - generates valid blueprint file", async () => {
   await setupTest();
   try {
-    const identityId = `test-agent-${Date.now()}`;
-    const result = await commands.create(identityId, {
+    const agentRole = `test-agent-${Date.now()}`;
+    const result = await commands.create(agentRole, {
       name: "Test Agent",
       model: "ollama:codellama:13b",
     });
 
     // Verify result structure
     assertExists(result);
-    assertEquals(result.identity_id, identityId);
+    assertEquals(result.agent_role, agentRole);
     assertEquals(result.name, "Test Agent");
     assertEquals(result.model, "ollama:codellama:13b");
 
@@ -68,14 +68,14 @@ Deno.test("[blueprint] create - generates valid blueprint file", async () => {
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
       "Agents",
-      `${identityId}.md`,
+      `${agentRole}.md`,
     );
     assertEquals(await exists(blueprintPath), true);
 
     // Verify file content (YAML frontmatter; the writer emits `---` blocks).
     const content = await Deno.readTextFile(blueprintPath);
     assertStringIncludes(content, "---");
-    assertStringIncludes(content, `agent_role: ${identityId}`);
+    assertStringIncludes(content, `agent_role: ${agentRole}`);
     assertStringIncludes(content, "name: Test Agent");
     assertStringIncludes(content, "model: 'ollama:codellama:13b'");
   } finally {
@@ -92,7 +92,7 @@ Deno.test("[blueprint] create - validates against schema", async () => {
     });
 
     // Verify all required fields present
-    assertExists(result.identity_id);
+    assertExists(result.agent_role);
     assertExists(result.name);
     assertExists(result.model);
     assertExists(result.created);
@@ -287,9 +287,9 @@ Deno.test("[blueprint] list - shows all blueprints", async () => {
     const blueprints = await commands.list();
 
     assertEquals(blueprints.length >= 3, true);
-    assertEquals(blueprints.some((b) => b.identity_id === "agent-1"), true);
-    assertEquals(blueprints.some((b) => b.identity_id === "agent-2"), true);
-    assertEquals(blueprints.some((b) => b.identity_id === "agent-3"), true);
+    assertEquals(blueprints.some((b) => b.agent_role === "agent-1"), true);
+    assertEquals(blueprints.some((b) => b.agent_role === "agent-2"), true);
+    assertEquals(blueprints.some((b) => b.agent_role === "agent-3"), true);
   } finally {
     await teardownTest();
   }
@@ -304,11 +304,11 @@ Deno.test("[blueprint] list - returns metadata", async () => {
     });
 
     const blueprints = await commands.list();
-    const blueprint = blueprints.find((b) => b.identity_id === "meta-test");
+    const blueprint = blueprints.find((b) => b.agent_role === "meta-test");
 
     assertExists(blueprint);
     if (!blueprint) throw new Error("Blueprint not found");
-    assertEquals(blueprint.identity_id, "meta-test");
+    assertEquals(blueprint.agent_role, "meta-test");
     assertEquals(blueprint.name, "Meta Test Agent");
     assertEquals(blueprint.model, "anthropic:claude-sonnet");
     assertExists(blueprint.created);
@@ -342,7 +342,7 @@ Inline YAML array test
     await Deno.writeTextFile(blueprintPath, yamlContent);
 
     const blueprints = await commands.list();
-    const blueprint = blueprints.find((b) => b.identity_id === TEST_BLUEPRINT_YAML_AGENT_ID);
+    const blueprint = blueprints.find((b) => b.agent_role === TEST_BLUEPRINT_YAML_AGENT_ID);
 
     assertExists(blueprint);
     if (!blueprint) throw new Error("Blueprint not found");
@@ -394,7 +394,7 @@ Deno.test("[blueprint] show - displays full blueprint", async () => {
     const details = await commands.show("show-test");
 
     assertExists(details);
-    assertEquals(details.identity_id, "show-test");
+    assertEquals(details.agent_role, "show-test");
     assertExists(details.content);
     assertStringIncludes(details.content, "---");
     assertStringIncludes(details.content, "agent_role: show-test");
@@ -783,7 +783,7 @@ Deno.test("[blueprint] create - handles empty description gracefully", async () 
     });
 
     assertExists(result.path);
-    assertEquals(result.identity_id, "no-desc");
+    assertEquals(result.agent_role, "no-desc");
   } finally {
     await teardownTest();
   }
@@ -911,11 +911,11 @@ Deno.test("[blueprint] list - filters by status", async () => {
 
     const deprecated = await commands.list({ status: BlueprintStatus.DEPRECATED });
     assertEquals(deprecated.length, 1);
-    assertEquals(deprecated[0].identity_id, "gets-deprecated");
+    assertEquals(deprecated[0].agent_role, "gets-deprecated");
 
     const active = await commands.list({ status: BlueprintStatus.ACTIVE });
     assertEquals(active.length, 1);
-    assertEquals(active[0].identity_id, "stays-active");
+    assertEquals(active[0].agent_role, "stays-active");
   } finally {
     await teardownTest();
   }
@@ -937,7 +937,7 @@ Deno.test("[blueprint] list - filters by capability", async () => {
 
     const pushers = await commands.list({ capability: "git_push" });
     assertEquals(pushers.length, 1);
-    assertEquals(pushers[0].identity_id, "can-push");
+    assertEquals(pushers[0].agent_role, "can-push");
   } finally {
     await teardownTest();
   }

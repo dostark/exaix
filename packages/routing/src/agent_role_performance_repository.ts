@@ -149,7 +149,7 @@ export class AgentRolePerformanceRepository implements IAgentRolePerformanceRepo
 
   private extractVersion(payload: JsonPayload | null): string {
     if (typeof payload?.version === "string") return payload.version;
-    if (typeof payload?.identityVersion === "string") return payload.identityVersion;
+    if (typeof payload?.agentRoleVersion === "string") return payload.agentRoleVersion;
     return "unknown";
   }
 

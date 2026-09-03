@@ -39,7 +39,7 @@ Deno.test("[headless_session_launcher] a Codex reasoning-token breakdown reaches
     const service = new SessionDelegateService({ registry, clock, sessionDir });
     const brief = await service.prepareBrief({
       traceId: crypto.randomUUID(),
-      identityId: "test-identity",
+      agentRole: "test-identity",
       gate: "code_changes",
       tool: "codex",
       objective: "Implement the permitted source change.",

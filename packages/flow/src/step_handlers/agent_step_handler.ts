@@ -57,10 +57,10 @@ export class AgentStepHandler implements IFlowStepHandler {
       ? join(this.#config.system.root, this.#config.paths.blueprints, this.#config.paths.agents)
       : "";
     const loader = new IBlueprintLoader({ blueprintsPath });
-    const loaded = await loader.load(step.identity);
+    const loaded = await loader.load(step.agent_role);
 
     if (!loaded) {
-      throw new Error(`Blueprint not found for dynamic step: ${step.identity}`);
+      throw new Error(`Blueprint not found for dynamic step: ${step.agent_role}`);
     }
 
     const dynamicResult = await this.#dynamicStepExecutor!.execute(
@@ -81,7 +81,7 @@ export class AgentStepHandler implements IFlowStepHandler {
     step: IStepExecutionContext["step"],
     stepRequest: IStepExecutionContext["stepRequest"],
   ): Promise<IAgentExecutionResult> {
-    return await this.#agentExecutor.run(step.identity, stepRequest as IFlowStepRequest);
+    return await this.#agentExecutor.run(step.agent_role, stepRequest as IFlowStepRequest);
   }
 
   /** Routes a DECLARED step that declares `strategy` through `IAgentExecutor.runWithStrategy`,
@@ -97,7 +97,7 @@ export class AgentStepHandler implements IFlowStepHandler {
       );
     }
     return await this.#agentExecutor.runWithStrategy(
-      step.identity,
+      step.agent_role,
       stepRequest as IFlowStepRequest,
       step.strategy!,
     );

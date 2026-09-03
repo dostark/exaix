@@ -73,10 +73,10 @@ class TrackingAgentRunner implements IAgentExecutor {
   callCount = 0;
   calledIdentities: string[] = [];
 
-  run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.callCount++;
-    this.calledIdentities.push(identityId);
-    return Promise.resolve({ thought: "executed", content: `result-from-${identityId}`, raw: `raw-${identityId}` });
+    this.calledIdentities.push(agentRole);
+    return Promise.resolve({ thought: "executed", content: `result-from-${agentRole}`, raw: `raw-${agentRole}` });
   }
 }
 

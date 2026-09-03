@@ -136,7 +136,7 @@ Do flow work.
   }
 });
 
-Deno.test("RequestProcessor: rejected draft carries identity_id for attribution (parity with accepted plans)", async () => {
+Deno.test("RequestProcessor: rejected draft carries.agent_role for attribution (parity with accepted plans)", async () => {
   const env = await setupPlanValidationEnv(
     `---
 trace_id: "{traceId}"
@@ -176,7 +176,7 @@ Audit this code.
     const frontmatter = parseFrontmatter(content);
     // The identity that produced the rejected output must be recorded, so the
     // identity e2e (and any reviewer) can attribute the draft to its persona.
-    assertEquals(frontmatter.identity_id, "security-expert");
+    assertEquals(frontmatter.agent_role, "security-expert");
   } finally {
     await env.cleanup();
   }

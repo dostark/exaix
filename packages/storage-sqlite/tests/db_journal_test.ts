@@ -2,7 +2,7 @@
  * @module DBJournalTest
  * @path packages/storage-sqlite/tests/db_journal_test.ts
  * @description Specialized tests for DatabaseService's activity journaling, verifying complex
- * query filters (trace_id,.agent_role, action_type), sort ordering, and asynchronous flush behavior.
+ * query filters (trace_id, agent_role, action_type), sort ordering, and asynchronous flush behavior.
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
@@ -39,8 +39,8 @@ describe("DatabaseService - Journal Queries", () => {
     await cleanup();
   });
 
-  async function seedActivity(db: ITestDb, actor: string, actionType: string, identityId: string, traceId: string) {
-    await db.logActivity(actor, actionType, "target", { foo: "bar" }, traceId, null, identityId);
+  async function seedActivity(db: ITestDb, actor: string, actionType: string, agentRole: string, traceId: string) {
+    await db.logActivity(actor, actionType, "target", { foo: "bar" }, traceId, null, agentRole);
   }
 
   it("should query all activities with default limit", async () => {
@@ -73,7 +73,7 @@ describe("DatabaseService - Journal Queries", () => {
     assertEquals(results[1].agent_role, "agent-1"); // trace-1 (older)
   });
 
-  it("should filter by.agent_role", async () => {
+  it("should filter by agent_role", async () => {
     const results = await db.queryActivity({ agentRole: "agent-1" });
     assertEquals(results.length, 3); // trace-1: request, plan.created; trace-3: error
     // Filter out user actions
@@ -83,7 +83,7 @@ describe("DatabaseService - Journal Queries", () => {
 
   it("should combine filters (AND logic)", async () => {
     const results = await db.queryActivity({
-      identityId: "agent-1",
+      agentRole: "agent-1",
       actionType: "request.created",
     });
     assertEquals(results.length, 1);

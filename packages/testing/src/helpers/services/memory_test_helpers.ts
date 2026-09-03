@@ -23,8 +23,8 @@ import type { MemoryExtractorService } from "@exaix/memory";
 import type { JSONObject, Opt, Reason } from "@exaix/core/types";
 import {
   TEST_AGENT_NAME,
+  TEST_AGENT_ROLE_ID,
   TEST_ID,
-  TEST_IDENTITY_ID,
   TEST_PROJECT_NAME,
   TEST_TIMESTAMP,
   TEST_TOPIC_LABEL,
@@ -154,7 +154,7 @@ export function createGlobalProposal(overrides: Partial<IMemoryUpdateProposal> =
     target_scope: overrides.target_scope ?? MemoryScope.GLOBAL,
     learning: createBaseLearning({
       id: "550e8400-e29b-41d4-a716-446655440003",
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.GLOBAL,
       title: "Always validate input",
       description: "Input validation prevents security issues",
@@ -274,7 +274,7 @@ function createBaseProposal(overrides: Partial<IMemoryUpdateProposal> = {}): IMe
     target_project: overrides.target_project ?? TEST_PROJECT_NAME,
     learning: overrides.learning ?? createBaseLearning(),
     reason: overrides.reason ?? "Test proposal",
-    agent_role: overrides.agent_role ?? TEST_IDENTITY_ID,
+    agent_role: overrides.agent_role ?? TEST_AGENT_ROLE_ID,
     execution_id: overrides.execution_id ?? "trace-123",
     status: overrides.status ?? MemoryStatus.PENDING,
     ...overrides,

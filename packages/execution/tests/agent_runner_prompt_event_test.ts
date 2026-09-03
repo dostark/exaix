@@ -18,7 +18,7 @@ import type { LogMetadata } from "@exaix/core/types";
 
 const sampleBlueprint: IBlueprint = {
   systemPrompt: "You are a helpful coding assistant.",
-  identityId: "senior-coder",
+  agentRole: "senior-coder",
 };
 
 const sampleRequest: IParsedRequest = {
@@ -73,7 +73,7 @@ Deno.test("[AgentRunner] the planning producer's payload preserves every legacy 
   const events = captured.filter((event) => event.action === DomainEventType.AgentPromptAssembled);
   const payload = events[0].payload;
   assertEquals(payload?.prompt_kind, "planning");
-  assertEquals(payload?.identity_id, "senior-coder");
+  assertEquals(payload?.agent_role, "senior-coder");
   assertEquals(typeof payload?.prompt_length, "number");
   assertEquals(Array.isArray(payload?.skillIdsUsed), true);
   assertEquals(typeof payload?.skillsCount, "number");

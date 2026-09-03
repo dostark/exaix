@@ -22,11 +22,11 @@ export class GitCreateBranchTool extends ToolHandler {
       force?: boolean;
       agent_role: string;
     };
-    const { portal, branch, track, force, identity_id } = validatedArgs;
+    const { portal, branch, track, force, agent_role } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
-      this.validatePermission(portal, identity_id, PortalOperation.GIT);
+      this.validatePermission(portal, agent_role, PortalOperation.GIT);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -54,18 +54,18 @@ export class GitCreateBranchTool extends ToolHandler {
       return this.formatSuccess(
         "git_create_branch",
         portal,
-        identity_id,
+        agent_role,
         [{ type: "text", text: `Branch '${branch}' created and checked out successfully in portal '${portal}'` }],
-        { branch, track: track ?? null, force: !!force, identity_id },
+        { branch, track: track ?? null, force: !!force, agent_role },
       );
     } catch (error) {
       return this.formatToolError(
         "git_create_branch",
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
-        { branch, identity_id },
+        { branch, agent_role },
       );
     }
   }

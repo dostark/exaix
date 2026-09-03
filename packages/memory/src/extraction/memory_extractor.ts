@@ -80,7 +80,7 @@ export class MemoryExtractorService {
   async createProposal(
     learning: IProposalLearning,
     execution: IExecutionMemory,
-    identityId: string,
+    agentRole: string,
   ): Promise<string> {
     await ensureDir(this.pendingDir);
 
@@ -95,7 +95,7 @@ export class MemoryExtractorService {
         extracted_at: learning.extracted_at || new Date().toISOString(),
       },
       reason: `Extracted from execution ${execution.trace_id}`,
-      agent_role: identityId,
+      agent_role: agentRole,
       execution_id: execution.trace_id,
       status: MemoryStatus.PENDING,
     };
@@ -115,7 +115,7 @@ export class MemoryExtractorService {
         proposal_id: proposal.id,
         learning_title: learning.title,
         category: learning.category,
-        agent_role: identityId,
+        agent_role: agentRole,
       },
     );
 

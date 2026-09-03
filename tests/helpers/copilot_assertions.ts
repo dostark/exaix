@@ -38,7 +38,7 @@ export async function assertFrontmatterSchemaAndShortSummary(
     const fm = parse(fmMatch[1]) as Frontmatter;
 
     // Support both 'agent_role' (current) and 'agent' (legacy) field names
-    assert(fm.identity || fm.agent, `${filePath} should have 'agent_role' or 'agent' field`);
+    assert(fm.agent_role || fm.agent, `${filePath} should have 'agent_role' or 'agent' field`);
     assert(fm.scope, `${filePath} should have scope`);
     assert(fm.title, `${filePath} should have title`);
     assert(fm.short_summary, `${filePath} should have short_summary`);

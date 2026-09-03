@@ -19,23 +19,23 @@ import type { PortalOperation } from "@exaix/core";
 
 /** Explicit permissive test fixture — must never be imported from production runtime code. */
 export class AllowAllPermissionsService implements IPortalPermissionsChecker {
-  checkAgentAllowed(portalAlias: string, identityId: string): IAgentWhitelistResult {
+  checkAgentAllowed(portalAlias: string, agentRole: string): IAgentWhitelistResult {
     return {
       allowed: true,
       portal: portalAlias,
-      agent_role: identityId,
+      agent_role: agentRole,
     };
   }
 
   checkOperationAllowed(
     portalAlias: string,
-    identityId: string,
+    agentRole: string,
     operation: PortalOperation,
   ): IPermissionCheckResult {
     return {
       allowed: true,
       portal: portalAlias,
-      agent_role: identityId,
+      agent_role: agentRole,
       operation,
     };
   }

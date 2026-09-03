@@ -56,7 +56,7 @@ import {
   BINARY_VERSION,
   type BlueprintStatus,
   ConfigOutputFormat,
-  DAEMON_IDENTITY_ID,
+  DAEMON_AGENT_ROLE_ID,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   PORTAL_LABEL,
   WORKSPACE_SCHEMA_VERSION,
@@ -247,7 +247,7 @@ function logReviewListItem(cs: IReviewMetadata) {
   const statusEmoji = getReviewStatusEmoji(cs.status);
   const requestTitle = cs.request_subject ? `"${cs.request_subject}"` : cs.request_id;
   const planInfo = cs.plan_id ? `plan: ${cs.plan_id} (${cs.plan_status})` : undefined;
-  const agentInfo = cs.request_identity || cs.identity_id;
+  const agentInfo = cs.request_identity || cs.agent_role;
   const portalInfo = cs.request_portal || cs.portal || "workspace";
   const typeInfo = cs.type || "code";
   const trace = formatTraceShort(cs.trace_id);
@@ -322,7 +322,7 @@ function renderReviewShowSummary(cs: IReviewDetails) {
   const statusEmoji = getReviewStatusEmoji(cs.status);
   const requestTitle = cs.request_subject ? `"${cs.request_subject}"` : "Untitled Request";
   const planInfo = cs.plan_id ? `${cs.plan_id} (${cs.plan_status})` : "unknown";
-  const agentInfo = cs.request_identity || cs.identity_id;
+  const agentInfo = cs.request_identity || cs.agent_role;
   const portalInfo = cs.request_portal || cs.portal || "workspace";
 
   display.info(`${statusEmoji} review.show`, cs.request_id, {
@@ -1014,7 +1014,7 @@ export const __test_command = new Command()
                 }));
                 return;
               }
-              display.info("daemon.status", DAEMON_IDENTITY_ID, {
+              display.info("daemon.status", DAEMON_AGENT_ROLE_ID, {
                 status: status.running ? "Running ✓" : "Stopped ✗",
                 pid: status.pid ?? null,
                 uptime: status.uptime ?? null,
@@ -1711,9 +1711,9 @@ export const __test_command = new Command()
             "Clone an existing identity as a prototype (seeds model, capabilities, and body)",
           )
           .action(async (options, ...args: string[]) => {
-            const identityId = args[0];
+            const agentRole = args[0];
             try {
-              const result = await blueprintCommands.create(identityId, {
+              const result = await blueprintCommands.create(agentRole, {
                 name: options.name,
                 model: options.model,
                 description: options.description,
@@ -1722,7 +1722,7 @@ export const __test_command = new Command()
                 systemPromptFile: options.systemPromptFile,
                 from: options.from,
               });
-              display.info("blueprint.created", result.identity_id, {
+              display.info("blueprint.created", result.agent_role, {
                 name: result.name,
                 model: result.model,
                 path: result.path,
@@ -1757,7 +1757,7 @@ export const __test_command = new Command()
               }
               display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
               for (const blueprint of blueprints) {
-                display.info(blueprint.identity_id, blueprint.name, {
+                display.info(blueprint.agent_role, blueprint.name, {
                   model: blueprint.model,
                   capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
                   status: blueprint.status,
@@ -1777,10 +1777,10 @@ export const __test_command = new Command()
         new Command()
           .description("Show blueprint details")
           .action(async (_options, ...args: string[]) => {
-            const identityId = args[0];
+            const agentRole = args[0];
             try {
-              const blueprint = await blueprintCommands.show(identityId);
-              display.info("blueprint.show", blueprint.identity_id, {
+              const blueprint = await blueprintCommands.show(agentRole);
+              display.info("blueprint.show", blueprint.agent_role, {
                 name: blueprint.name,
                 model: blueprint.model,
                 capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
@@ -1820,18 +1820,18 @@ export const __test_command = new Command()
                   Deno.exit(1);
                 }
               } else {
-                const identityId = args[0];
-                if (!identityId) {
+                const agentRole = args[0];
+                if (!agentRole) {
                   throw new Error("Either <agent-id> or --file <path> is required");
                 }
-                const result = await blueprintCommands.validate(identityId);
+                const result = await blueprintCommands.validate(agentRole);
                 if (result.valid) {
-                  display.info("blueprint.valid", identityId, {
+                  display.info("blueprint.valid", agentRole, {
                     status: "Valid ✓",
                     warnings: result.warnings?.length || 0,
                   });
                 } else {
-                  display.error("blueprint.invalid", identityId, {
+                  display.error("blueprint.invalid", agentRole, {
                     status: "Invalid ✗",
                     errors: result.errors,
                   });
@@ -1851,9 +1851,9 @@ export const __test_command = new Command()
         new Command()
           .description("Edit blueprint in $EDITOR")
           .action(async (_options, ...args: string[]) => {
-            const identityId = args[0];
+            const agentRole = args[0];
             try {
-              await blueprintCommands.edit(identityId);
+              await blueprintCommands.edit(agentRole);
             } catch (error) {
               display.error("cli.error", "blueprint edit", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -1868,10 +1868,10 @@ export const __test_command = new Command()
           .description("Remove a blueprint")
           .option("--force", "Skip confirmation")
           .action(async (options, ...args: string[]) => {
-            const identityId = args[0];
+            const agentRole = args[0];
             try {
-              await blueprintCommands.remove(identityId, { force: options.force });
-              display.info("blueprint.removed", identityId, { status: "Removed ✓" });
+              await blueprintCommands.remove(agentRole, { force: options.force });
+              display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
             } catch (error) {
               display.error("cli.error", "blueprint remove", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -1885,10 +1885,10 @@ export const __test_command = new Command()
         new Command()
           .description("Mark a blueprint as deprecated (retires it without deleting the file)")
           .action(async (_options, ...args: string[]) => {
-            const identityId = args[0];
+            const agentRole = args[0];
             try {
-              await blueprintCommands.deprecate(identityId);
-              display.info("blueprint.deprecated", identityId, { status: "Deprecated ✓" });
+              await blueprintCommands.deprecate(agentRole);
+              display.info("blueprint.deprecated", agentRole, { status: "Deprecated ✓" });
             } catch (error) {
               display.error("cli.error", "blueprint deprecate", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -1907,7 +1907,7 @@ export const __test_command = new Command()
           }
           display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
           for (const blueprint of blueprints) {
-            display.info(blueprint.identity_id, blueprint.name, {
+            display.info(blueprint.agent_role, blueprint.name, {
               model: blueprint.model,
               capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
             });
@@ -1918,9 +1918,9 @@ export const __test_command = new Command()
         "rm <agent-id>",
         new Command().description("Alias for 'remove'").option("--force", "Skip confirmation").action(
           async (options, ...args: string[]) => {
-            const identityId = args[0];
-            await blueprintCommands.remove(identityId, { force: options.force });
-            display.info("blueprint.removed", identityId, { status: "Removed ✓" });
+            const agentRole = args[0];
+            await blueprintCommands.remove(agentRole, { force: options.force });
+            display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
           },
         ),
       )
@@ -1944,9 +1944,9 @@ export const __test_command = new Command()
                 "Clone an existing identity as a prototype (seeds model, capabilities, and body)",
               )
               .action(async (options, ...args: string[]) => {
-                const identityId = args[0];
+                const agentRole = args[0];
                 try {
-                  const result = await blueprintCommands.create(identityId, {
+                  const result = await blueprintCommands.create(agentRole, {
                     name: options.name,
                     model: options.model,
                     description: options.description,
@@ -1955,7 +1955,7 @@ export const __test_command = new Command()
                     systemPromptFile: options.systemPromptFile,
                     from: options.from,
                   });
-                  display.info("blueprint.created", result.identity_id, {
+                  display.info("blueprint.created", result.agent_role, {
                     name: result.name,
                     model: result.model,
                     path: result.path,
@@ -1993,7 +1993,7 @@ export const __test_command = new Command()
                   }
                   display.info("blueprint.list", "identities", { count: blueprints.length });
                   for (const blueprint of blueprints) {
-                    display.info(blueprint.identity_id, blueprint.name, {
+                    display.info(blueprint.agent_role, blueprint.name, {
                       model: blueprint.model,
                       capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
                       status: blueprint.status,
@@ -2013,10 +2013,10 @@ export const __test_command = new Command()
             new Command()
               .description("Show identity blueprint details")
               .action(async (_options, ...args: string[]) => {
-                const identityId = args[0];
+                const agentRole = args[0];
                 try {
-                  const blueprint = await blueprintCommands.show(identityId);
-                  display.info("blueprint.show", blueprint.identity_id, {
+                  const blueprint = await blueprintCommands.show(agentRole);
+                  display.info("blueprint.show", blueprint.agent_role, {
                     name: blueprint.name,
                     model: blueprint.model,
                     capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
@@ -2038,16 +2038,16 @@ export const __test_command = new Command()
             new Command()
               .description("Validate identity blueprint format")
               .action(async (_options, ...args: string[]) => {
-                const identityId = args[0];
+                const agentRole = args[0];
                 try {
-                  const result = await blueprintCommands.validate(identityId);
+                  const result = await blueprintCommands.validate(agentRole);
                   if (result.valid) {
-                    display.info("blueprint.valid", identityId, {
+                    display.info("blueprint.valid", agentRole, {
                       status: "Valid ✓",
                       warnings: result.warnings?.length || 0,
                     });
                   } else {
-                    display.error("blueprint.invalid", identityId, {
+                    display.error("blueprint.invalid", agentRole, {
                       status: "Invalid ✗",
                       errors: result.errors,
                     });
@@ -2066,9 +2066,9 @@ export const __test_command = new Command()
             new Command()
               .description("Edit identity blueprint in $EDITOR")
               .action(async (_options, ...args: string[]) => {
-                const identityId = args[0];
+                const agentRole = args[0];
                 try {
-                  await blueprintCommands.edit(identityId);
+                  await blueprintCommands.edit(agentRole);
                 } catch (error) {
                   display.error("cli.error", "blueprint edit", {
                     message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -2083,10 +2083,10 @@ export const __test_command = new Command()
               .description("Remove an identity blueprint")
               .option("--force", "Skip confirmation")
               .action(async (options, ...args: string[]) => {
-                const identityId = args[0];
+                const agentRole = args[0];
                 try {
-                  await blueprintCommands.remove(identityId, { force: options.force });
-                  display.info("blueprint.removed", identityId, { status: "Removed ✓" });
+                  await blueprintCommands.remove(agentRole, { force: options.force });
+                  display.info("blueprint.removed", agentRole, { status: "Removed ✓" });
                 } catch (error) {
                   display.error("cli.error", "blueprint remove", {
                     message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -2100,10 +2100,10 @@ export const __test_command = new Command()
             new Command()
               .description("Mark an identity blueprint as deprecated (retires it without deleting the file)")
               .action(async (_options, ...args: string[]) => {
-                const identityId = args[0];
+                const agentRole = args[0];
                 try {
-                  await blueprintCommands.deprecate(identityId);
-                  display.info("blueprint.deprecated", identityId, { status: "Deprecated ✓" });
+                  await blueprintCommands.deprecate(agentRole);
+                  display.info("blueprint.deprecated", agentRole, { status: "Deprecated ✓" });
                 } catch (error) {
                   display.error("cli.error", "blueprint deprecate", {
                     message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -2135,14 +2135,14 @@ export const __test_command = new Command()
             try {
               const result = await routingCommands.explainRequest(requestFile);
               display.info("routing.explain", requestFile, {
-                selected_agent_role: result.selectedIdentityId,
+                selected_agent_role: result.selectedAgentRole,
                 selected_version: result.selectedVersion,
                 strategy: result.strategy,
                 matched_rule_id: result.matchedRuleId ?? null,
                 candidate_count: result.candidates.length,
               });
               for (const candidate of result.candidates.slice(0, 5)) {
-                console.log(`${candidate.identityId}@${candidate.version} score=${candidate.score.toFixed(2)}`);
+                console.log(`${candidate.agentRole}@${candidate.version} score=${candidate.score.toFixed(2)}`);
               }
             } catch (error) {
               display.error("cli.error", "routing explain", {

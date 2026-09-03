@@ -26,8 +26,8 @@ export function findTraceLogs(entries: IStructuredLogEntry[], traceId: string): 
 /**
  * Find logs by agent ID
  */
-export function findAgentLogs(entries: IStructuredLogEntry[], identityId: string): IStructuredLogEntry[] {
-  return entries.filter((entry) => entry.context.identity_id === identityId);
+export function findAgentLogs(entries: IStructuredLogEntry[], agentRole: string): IStructuredLogEntry[] {
+  return entries.filter((entry) => entry.context.agent_role === agentRole);
 }
 
 /**

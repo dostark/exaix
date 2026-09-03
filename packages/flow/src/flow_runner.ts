@@ -107,13 +107,13 @@ import type { Opt, Reason } from "@exaix/core/types";
  * Interface for agent executors (IAgentRunner or similar)
  */
 export interface IAgentExecutor {
-  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
+  run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
   /** Optional blueprint-existence probe; absent executors (e.g. test doubles) skip the identity check. */
-  hasBlueprint?(identityId: string): Promise<boolean>;
-  /** Strategy-routed step execution: forces `identityId` through the agent strategy registry,
+  hasBlueprint?(agentRole: string): Promise<boolean>;
+  /** Strategy-routed step execution: forces `agentRole` through the agent strategy registry,
    * bypassing `run()`'s single generate call. Absent executors fail fast rather than falling back. */
   runWithStrategy?(
-    identityId: string,
+    agentRole: string,
     request: IFlowStepRequest,
     strategy: NonNullable<IFlowStep["strategy"]>,
   ): Promise<IAgentExecutionResult>;
@@ -433,21 +433,21 @@ export interface IFlowEventPayloadMap {
   [DomainEventType.FlowStepQueued]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    identityId: string;
+    agentRole: string;
     dependencies: string[];
     inputSource: IFlowStep["input"]["source"];
   };
   [DomainEventType.FlowStepStarted]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    identityId: string;
+    agentRole: string;
     /** The step's declared strategy, when set. */
     strategy?: string;
   };
   "flow.step.retry": IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    identityId: string;
+    agentRole: string;
     attempt: number;
     maxRetries: number;
     error: string;
@@ -455,7 +455,7 @@ export interface IFlowEventPayloadMap {
   "flow.step.fallback": IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    identityId: string;
+    agentRole: string;
     fallbackStepId: string;
     fallbackIdentityId: string;
     error: string;
@@ -495,7 +495,7 @@ export interface IFlowEventPayloadMap {
   [DomainEventType.FlowStepCompleted]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    identityId: string;
+    agentRole: string;
     success: true;
     duration: number;
     outputLength: number;
@@ -506,7 +506,7 @@ export interface IFlowEventPayloadMap {
   [DomainEventType.FlowStepFailed]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
-    identityId: string;
+    agentRole: string;
     error: string;
     errorType: string;
     duration: number;
@@ -692,7 +692,7 @@ export class FlowAbortError extends Error {
  *  preserving all fields including `includeRequestCriteria`. */
 export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
   return {
-    agent_role: evaluate.identity,
+    agentRole: evaluate.agent_role,
     criteria: evaluate.criteria,
     threshold: evaluate.threshold,
     onFail: evaluate.onFail,
@@ -1189,7 +1189,7 @@ export class FlowRunner implements IFlowRunner {
     if (this.agentExecutor.hasBlueprint) {
       const identityValidationError = await this.runtimeValidator.validateStepIdentities(
         flow,
-        (identityId) => this.agentExecutor.hasBlueprint!(identityId),
+        (agentRole) => this.agentExecutor.hasBlueprint!(agentRole),
       );
       if (identityValidationError) {
         await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
@@ -1362,7 +1362,7 @@ export class FlowRunner implements IFlowRunner {
     await this.eventLogger.log(DomainEventType.FlowStepQueued, {
       flowRunId,
       stepId,
-      identityId: step.identity,
+      agentRole: step.agent_role,
       dependencies: step.dependsOn,
       inputSource: step.input.source,
       traceId: request.traceId,
@@ -1373,7 +1373,7 @@ export class FlowRunner implements IFlowRunner {
     await this.eventLogger.log(DomainEventType.FlowStepStarted, {
       flowRunId,
       stepId,
-      identityId: step.identity,
+      agentRole: step.agent_role,
       strategy: step.strategy,
       traceId: request.traceId,
       requestId: request.requestId,
@@ -1532,7 +1532,7 @@ export class FlowRunner implements IFlowRunner {
         await this.eventLogger.log(FLOW_EVENT_STEP_RETRY, {
           flowRunId,
           stepId: step.id,
-          identityId: step.identity,
+          agentRole: step.agent_role,
           attempt: retryAttempt,
           maxRetries,
           error: lastError instanceof Error ? lastError.message : String(lastError),
@@ -1571,9 +1571,9 @@ export class FlowRunner implements IFlowRunner {
         await this.eventLogger.log(FLOW_EVENT_STEP_FALLBACK, {
           flowRunId,
           stepId: step.id,
-          identityId: step.identity,
+          agentRole: step.agent_role,
           fallbackStepId: fallbackStep.id,
-          fallbackIdentityId: fallbackStep.identity,
+          fallbackIdentityId: fallbackStep.agent_role,
           error: lastError instanceof Error ? lastError.message : String(lastError),
           traceId: request.traceId,
           requestId: request.requestId,
@@ -1627,7 +1627,7 @@ export class FlowRunner implements IFlowRunner {
     if (!fallbackResult.success) {
       return this.formatStepFailure(
         flowRunId,
-        { ...step, agent_role: fallbackStep.identity },
+        { ...step, agent_role: fallbackStep.agent_role },
         request,
         fallbackResult.error ?? DEFAULT_UNKNOWN_ERROR_MESSAGE,
         startedAt,
@@ -1643,7 +1643,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return this.formatStepSuccess(
-      { flowRunId, step: { ...step, agent_role: fallbackStep.identity }, request, startedAt },
+      { flowRunId, step: { ...step, agent_role: fallbackStep.agent_role }, request, startedAt },
       fallbackResult.result,
       {
         fallbackUsed: true,
@@ -1780,7 +1780,7 @@ export class FlowRunner implements IFlowRunner {
     this.eventLogger.log(DomainEventType.FlowStepCompleted, {
       flowRunId,
       stepId: step.id,
-      identityId: step.identity,
+      agentRole: step.agent_role,
       success: true,
       duration,
       outputLength: result.content.length,
@@ -1828,7 +1828,7 @@ export class FlowRunner implements IFlowRunner {
     this.eventLogger.log(DomainEventType.FlowStepFailed, {
       flowRunId,
       stepId: step.id,
-      identityId: step.identity,
+      agentRole: step.agent_role,
       error: errorMessage,
       errorType,
       duration,

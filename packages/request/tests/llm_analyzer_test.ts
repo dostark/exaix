@@ -130,7 +130,7 @@ Deno.test("[LlmAnalyzer] passes optional context in prompt when provided", async
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  await analyzer.analyze("Fix the bug.", { identityId: "coder-agent", priority: "high" });
+  await analyzer.analyze("Fix the bug.", { agentRole: "coder-agent", priority: "high" });
 
   assertStringIncludes(capturedPrompt(), "coder-agent");
 });

@@ -121,7 +121,7 @@ Deno.test("renderPendingPanel: limits display to 10 items", () => {
         description: "Test",
         confidence: ConfidenceAssessmentLevel.HIGH,
         tags: [],
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         created_at: new Date().toISOString(),
       },

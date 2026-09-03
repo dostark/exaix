@@ -34,10 +34,10 @@ type AgentStepHandler = () => Promise<IAgentExecutionResult>;
 class FunctionalAgentExecutor implements IAgentExecutor {
   constructor(private readonly handlers: Record<string, AgentStepHandler>) {}
 
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    const handler = this.handlers[identityId];
+  async run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    const handler = this.handlers[agentRole];
     if (!handler) {
-      throw new Error(`No handler configured for ${identityId}`);
+      throw new Error(`No handler configured for ${agentRole}`);
     }
 
     return await handler();

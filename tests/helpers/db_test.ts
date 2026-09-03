@@ -238,7 +238,7 @@ Deno.test("DatabaseService: getRecentActivity flushes pending logs", async () =>
   }
 });
 
-Deno.test("DatabaseService: handles null identity_id", async () => {
+Deno.test("DatabaseService: handles null.agent_role", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const traceId = crypto.randomUUID();
@@ -250,7 +250,7 @@ Deno.test("DatabaseService: handles null identity_id", async () => {
 
     const activities = db.getActivitiesByTrace(traceId);
     assertEquals(activities.length, 1);
-    assertEquals(activities[0].identity_id, null);
+    assertEquals(activities[0].agent_role, null);
 
     await db.close();
   } finally {

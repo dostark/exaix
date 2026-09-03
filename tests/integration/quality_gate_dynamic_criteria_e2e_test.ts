@@ -92,18 +92,18 @@ class CapturingJudgeInvoker extends MockJudgeInvoker {
   capturedCriteria: EvaluationCriterion[] = [];
 
   override evaluate(
-    identityId: string,
+    agentRole: string,
     content: string,
     criteria: EvaluationCriterion[],
     context?: string,
   ): Promise<EvaluationResult> {
     this.capturedCriteria = [...criteria];
-    return super.evaluate(identityId, content, criteria, context);
+    return super.evaluate(agentRole, content, criteria, context);
   }
 }
 
 class StubAgentExecutor implements IAgentExecutor {
-  async run(_identityId: string, _req: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  async run(_agentRole: string, _req: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return await Promise.resolve({ thought: "", content: "stub", raw: "stub" });
   }
 }
@@ -240,7 +240,7 @@ Deno.test(
     const analysis = makeAnalysisWithGoals();
 
     await agent.run(
-      { systemPrompt: "You are a developer", identityId: "dev-agent" },
+      { systemPrompt: "You are a developer", agentRole: "dev-agent" },
       { userPrompt: "Add OAuth2 login", context: {} },
       analysis,
     );

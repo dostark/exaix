@@ -374,7 +374,7 @@ production mechanism behind `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:ne
 steps:
   - id: next-steps
     type: session_delegate_cycle
-    agent_role: dogfood-coder # the identity_id threaded through to the delegate's hardened launch
+    agent_role: dogfood-coder # the agent_role threaded through to the delegate's hardened launch
     input:
       source: request
       transform: passthrough # request must carry plan_context_ref; no static plan path

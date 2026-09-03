@@ -237,7 +237,7 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
 
     const { filePath: requestPath, traceId } = await env.createRequest(
       "Analyze the portal repo and summarize what you find",
-      { identityId: "code-analyst", portal: portalConfig.alias },
+      { agentRole: "code-analyst", portal: portalConfig.alias },
     );
 
     const requestId = requestPath.split("/").pop()!.replace(/\.md$/, "");
@@ -270,14 +270,14 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     const artifacts = await env.db.preparedAll<
       { id: string; status: string; agent_role: string; portal: string | null; request_id: string; file_path: string }
     >(
-      "SELECT id, status, identity, portal, request_id, file_path FROM artifacts WHERE request_id = ?",
+      "SELECT id, status, agent_role, portal, request_id, file_path FROM artifacts WHERE request_id = ?",
       [requestId],
     );
 
     assertEquals(artifacts.length, 1, "Exactly one artifact should be created");
     assertExists(artifacts[0].id);
     assertEquals(artifacts[0].status, ReviewStatus.PENDING);
-    assertEquals(artifacts[0].identity, "code-analyst");
+    assertEquals(artifacts[0].agent_role, "code-analyst");
     assertEquals(artifacts[0].portal, portalConfig.alias);
 
     const artifactAbsPath = join(env.tempDir, artifacts[0].file_path);

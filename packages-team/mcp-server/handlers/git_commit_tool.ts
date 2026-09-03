@@ -24,11 +24,11 @@ export class GitCommitTool extends ToolHandler {
       signoff?: boolean;
       agent_role: string;
     };
-    const { portal, message, files, amend, signoff, identity_id } = validatedArgs;
+    const { portal, message, files, amend, signoff, agent_role } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
-      this.validatePermission(portal, identity_id, PortalOperation.GIT);
+      this.validatePermission(portal, agent_role, PortalOperation.GIT);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -73,14 +73,14 @@ export class GitCommitTool extends ToolHandler {
       return this.formatSuccess(
         "git_commit",
         portal,
-        identity_id,
+        agent_role,
         [{ type: "text", text: commitHash }],
         {
           message,
           files: files?.length || "all",
           amend: !!amend,
           signoff: !!signoff,
-          identity_id,
+          agent_role,
           commit_sha: commitHash,
         },
       );
@@ -90,12 +90,12 @@ export class GitCommitTool extends ToolHandler {
         ? ToolErrorCode.PERMISSION_DENIED
         : ToolErrorCode.EXECUTION_FAILED;
 
-      return this.formatToolError("git_commit", portal, identity_id, code, message, {
+      return this.formatToolError("git_commit", portal, agent_role, code, message, {
         message,
         files: files?.length || "all",
         amend: !!amend,
         signoff: !!signoff,
-        identity_id,
+        agent_role,
       });
     }
   }

@@ -21,7 +21,7 @@ import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core"
 import type { JSONValue } from "@exaix/core/types";
 
 class StubAgentExecutor implements IAgentExecutor {
-  async run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  async run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return await Promise.resolve({ thought: "", content: "ok", raw: "ok" });
   }
 }

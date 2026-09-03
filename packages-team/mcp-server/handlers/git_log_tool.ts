@@ -34,11 +34,11 @@ export class GitLogTool extends ToolHandler {
       decorate,
       format,
       custom_format,
-      identity_id,
+      agent_role,
     } = validatedArgs;
 
     try {
-      this.validatePermission(portal, identity_id, PortalOperation.GIT);
+      this.validatePermission(portal, agent_role, PortalOperation.GIT);
       const portalPath = this.validatePortalExists(portal);
       await this.validateGitRepository(portalPath, portal);
 
@@ -100,24 +100,24 @@ export class GitLogTool extends ToolHandler {
       return this.formatSuccess(
         "git_log",
         portal,
-        identity_id,
+        agent_role,
         [{ type: "text", text: logText }],
         {
           ref: ref ?? "HEAD",
           max_count: max_count ?? 50,
           path: path ?? null,
           format: format ?? GitLogFormat.ONELINE,
-          identity_id,
+          agent_role,
         },
       );
     } catch (error) {
       return this.formatToolError(
         "git_log",
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
-        { identity_id },
+        { agent_role },
       );
     }
   }

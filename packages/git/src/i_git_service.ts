@@ -65,7 +65,7 @@ export interface IGitDatabaseService {
     payload: Record<string, JsonValue>,
     traceId?: string,
     actorType?: string | null,
-    identityId?: string | null,
+    agentRole?: string | null,
     agentKind?: string | null,
     promptTokens?: number,
     completionTokens?: number,
@@ -81,7 +81,7 @@ export interface IGitServiceConfig {
   config: Config;
   logger?: IEventLogger;
   traceId?: string;
-  identityId?: string;
+  agentRole?: string;
   repoPath?: string;
   context?: IGitServiceContext;
 }

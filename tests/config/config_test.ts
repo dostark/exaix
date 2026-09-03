@@ -214,7 +214,7 @@ Deno.test("ConfigSchema applies defaults for missing paths section", () => {
   assertEquals(result.paths.runtime, ExaPathDefaults.runtime);
   assertEquals(result.paths.memory, ExaPathDefaults.memory);
   assertEquals(result.paths.blueprints, ExaPathDefaults.blueprints);
-  assertEquals(result.paths.identities, ExaPathDefaults.identities);
+  assertEquals(result.paths.agents, ExaPathDefaults.agents);
 });
 
 Deno.test("ConfigSchema applies defaults for missing routing section", () => {

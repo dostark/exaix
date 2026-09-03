@@ -21,7 +21,7 @@ import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
-import { BlueprintResolver, EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
+import { BlueprintResolver, EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
 import { AgentRunner, EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR } from "@exaix/execution";
 import type { IBlueprint } from "@exaix/execution";
 
@@ -153,7 +153,7 @@ Deno.test("[ArmIsolation] two sequential agent role overlays each see only their
     const resolver = new BlueprintResolver({ blueprintsPath: identitiesDir });
 
     const armA = await withEnv(
-      EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR,
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR,
       overlayA,
       () => resolver.resolve("test-agent", mockLogger),
     );
@@ -161,7 +161,7 @@ Deno.test("[ArmIsolation] two sequential agent role overlays each see only their
     assertEquals(armA.name, "Arm A");
 
     const armB = await withEnv(
-      EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR,
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR,
       overlayB,
       () => resolver.resolve("test-agent", mockLogger),
     );

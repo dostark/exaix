@@ -24,7 +24,7 @@ const mockContext: IApplicationContext = createStubContext({
       _target: string | null,
       _payload: Record<string, JSONValue>,
       _traceId?: string,
-      _identityId?: string | null,
+      _agentRole?: string | null,
     ) => {},
     waitForFlush: () => Promise.resolve(),
     queryActivity: () => Promise.resolve([]),

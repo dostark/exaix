@@ -114,7 +114,7 @@ Deno.test("[regression] Blueprint list works with TOML frontmatter (+++)", async
 
     // Create blueprint with TOML frontmatter (+++ delimiters)
     const tomlBlueprint = `+++
-identity_id = "${AGENT_ID_TOML}"
+agent_role = "${AGENT_ID_TOML}"
 name = "${AGENT_NAME_TOML}"
 model = "${AGENT_MODEL_MOCK}"
 capabilities = ["${AGENT_CAP_TESTING}"]
@@ -246,7 +246,7 @@ YAML content.
 
     // Create TOML blueprint
     const tomlBlueprint = `+++
-identity_id = "${AGENT_ID_MIXED_TOML}"
+agent_role = "${AGENT_ID_MIXED_TOML}"
 name = "Mixed TOML Agent"
 model = "mock:toml"
 version = "${AGENT_VERSION_V1}"

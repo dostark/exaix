@@ -46,7 +46,7 @@ model: "mock:test"
   try {
     const fakeRunner: IRunner = {
       run(blueprint: IBlueprint): Promise<IAgentExecutionResult> {
-        assertEquals(blueprint.identityId, "test-agent");
+        assertEquals(blueprint.agentRole, "test-agent");
         assertEquals(blueprint.systemPrompt, "Test system prompt");
         return Promise.resolve({ thought: "thinking", content: "result", raw: "raw result" });
       },

@@ -71,9 +71,9 @@ class TrackingDurabilityStore implements IStepDurabilityStore {
 class SilentAgentRunner implements IAgentExecutor {
   callCount = 0;
 
-  run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.callCount++;
-    return Promise.resolve({ thought: "ok", content: `result-${identityId}`, raw: `raw-${identityId}` });
+    return Promise.resolve({ thought: "ok", content: `result-${agentRole}`, raw: `raw-${agentRole}` });
   }
 }
 

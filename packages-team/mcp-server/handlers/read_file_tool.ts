@@ -17,11 +17,11 @@ export class ReadFileTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     // Validate arguments with Zod schema
     const validatedArgs = ReadFileToolArgsSchema.parse(args);
-    const { portal, path, identity_id } = validatedArgs;
+    const { portal, path, agent_role } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
-      this.validatePermission(portal, identity_id, PortalOperation.READ);
+      this.validatePermission(portal, agent_role, PortalOperation.READ);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -41,9 +41,9 @@ export class ReadFileTool extends ToolHandler {
       }
 
       // Log successful execution
-      this.logToolExecution(McpToolName.READ_FILE, portal, identity_id, {
+      this.logToolExecution(McpToolName.READ_FILE, portal, agent_role, {
         path,
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
         success: true,
         bytes: content.length,
       });
@@ -59,9 +59,9 @@ export class ReadFileTool extends ToolHandler {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const code = message.startsWith("File not found") ? ToolErrorCode.NOT_FOUND : ToolErrorCode.EXECUTION_FAILED;
-      return this.formatToolError(McpToolName.READ_FILE, portal, identity_id, code, message, {
+      return this.formatToolError(McpToolName.READ_FILE, portal, agent_role, code, message, {
         path,
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
       });
     }
   }

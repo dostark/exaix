@@ -198,7 +198,7 @@ export class PlanExecutor {
           config: this.config,
           repoPath: this.repoPath,
           traceId,
-          identityId: context.agent_role,
+          agentRole: context.agent_role,
         })
         : null;
 

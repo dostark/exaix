@@ -179,7 +179,7 @@ describe("ReviewCommands Targeted Coverage", () => {
     it("list: respects type filters", async () => {
       // Add artifact
       await db.preparedRun(
-        `INSERT INTO artifacts (id, request_id, type, identity, status, created, file_path)
+        `INSERT INTO artifacts (id, request_id, type, agent_role, status, created, file_path)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         ["artifact-1", "req-1", "analysis", "identity", "pending", new Date().toISOString(), "path/to/art.md"],
       );
@@ -267,7 +267,7 @@ branch refs/heads/other
       await Deno.writeTextFile(artPath, "No frontmatter here");
 
       await db.preparedRun(
-        `INSERT INTO artifacts (id, request_id, type, identity, status, created, file_path)
+        `INSERT INTO artifacts (id, request_id, type, agent_role, status, created, file_path)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         ["artifact-bad", "req-bad", "analysis", "identity", "pending", new Date().toISOString(), "bad-art.md"],
       );

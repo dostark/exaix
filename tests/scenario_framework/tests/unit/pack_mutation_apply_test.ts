@@ -103,7 +103,7 @@ Deno.test("[mutation] only the first occurrence is replaced, matching the covera
     const mutation: IPackMutation = {
       subsystem: "subsystem:identities",
       file,
-      find: "agent_role",
+      find: "identity_id",
       replace: "identity_id_MUTATED",
       breaks: "the identity stamped onto a written plan, which the smokes assert per-scenario",
     };

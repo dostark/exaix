@@ -65,7 +65,7 @@ Deno.test("[artifact] createArtifact() stores artifact in database", async () =>
 
     assertEquals(artifact.id, artifactId, "Should match artifact ID");
     assertEquals(artifact.status, ReviewStatus.PENDING, "Should be pending");
-    assertEquals(artifact.identity, "quality-judge", "Should have agent");
+    assertEquals(artifact.agent_role, "quality-judge", "Should have agent");
     assertEquals(artifact.request_id, "request-456", "Should have request_id");
     assertExists(artifact.file_path, "Should have file path");
   } finally {

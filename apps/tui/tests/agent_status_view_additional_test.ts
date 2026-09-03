@@ -40,13 +40,13 @@ class DetailedAgentService implements IAgentService {
       },
     ]);
   }
-  getAgentLogs(_identityId: string, _limit = 50): Promise<IAgentLogEntry[]> {
+  getAgentLogs(_agentRole: string, _limit = 50): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       { timestamp: new Date().toISOString(), level: LogLevel.ERROR, message: "Boom", traceId: "t1" },
       { timestamp: new Date().toISOString(), level: LogLevel.INFO, message: "Recovered" },
     ]);
   }
-  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
+  getAgentHealth(_agentRole: string): Promise<IAgentHealthData> {
     return Promise.resolve({ status: AgentHealth.CRITICAL, issues: ["OOM", "Crash loop"], uptime: 3600 * 5 });
   }
 }

@@ -19,25 +19,25 @@ import {
 import type { JSONValue } from "@exaix/core/types";
 
 class CapturingExecutor implements IAgentExecutor {
-  readonly capturedRequests: Array<{ identityId: string; request: IFlowStepRequest }> = [];
+  readonly capturedRequests: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
   private readonly responses = new Map<string, string | Error>();
 
   constructor(responses: Record<string, string | Error>) {
-    for (const [identityId, response] of Object.entries(responses)) {
-      this.responses.set(identityId, response);
+    for (const [agentRole, response] of Object.entries(responses)) {
+      this.responses.set(agentRole, response);
     }
   }
 
-  async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.capturedRequests.push({ identityId, request });
-    const response = this.responses.get(identityId);
+  async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.capturedRequests.push({ agentRole, request });
+    const response = this.responses.get(agentRole);
     if (!response) {
-      throw new Error(`No response configured for ${identityId}`);
+      throw new Error(`No response configured for ${agentRole}`);
     }
     if (response instanceof Error) {
       throw response;
     }
-    return await Promise.resolve({ thought: `processed ${identityId}`, content: response, raw: response });
+    return await Promise.resolve({ thought: `processed ${agentRole}`, content: response, raw: response });
   }
 }
 
@@ -78,7 +78,7 @@ function createParallelStep(step: IParallelStepDefinition, parallelOrder?: strin
   return {
     id: step.id,
     name: step.name,
-    agent_role: step.identity,
+    agent_role: step.agent_role,
     dependsOn: ["start"],
     input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
     retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -126,7 +126,7 @@ function createParallelFlowHarness(definition: IParallelFlowDefinition) {
 }
 
 function getWritersGroupResult(executor: CapturingExecutor) {
-  const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
+  const mergeRequest = executor.capturedRequests.find((entry) => entry.agentRole === "merger");
   assertExists(mergeRequest);
   assertExists(mergeRequest.request.parallelGroupResults);
   return mergeRequest.request.parallelGroupResults.writers;

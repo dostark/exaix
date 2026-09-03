@@ -121,7 +121,7 @@ Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-
   );
 });
 
-Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-only 'identity_id' parameter", () => {
+Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-only 'agent_role' parameter", () => {
   const readFile = createCoreToolSchemas().find((t) => t.name === "read_file");
   assert(readFile !== undefined, "read_file must exist in the real catalog");
 
@@ -132,7 +132,7 @@ Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-
 
   assertEquals(result.compatible, false);
   assert(
-    result.violations.some((v) => v.includes("unknown parameter 'identity_id'")),
-    `expected a violation naming 'identity_id', got: ${result.violations.join("; ")}`,
+    result.violations.some((v) => v.includes("unknown parameter 'agent_role'")),
+    `expected a violation naming 'agent_role', got: ${result.violations.join("; ")}`,
   );
 });

@@ -79,7 +79,7 @@ export interface ILogEntryOverrides {
   id?: string;
   trace_id?: string;
   actor?: string;
-  identity_id?: string;
+  agent_role?: string;
   action_type?: string;
   target?: string;
   payload?: ILogEntryPayload | string;
@@ -161,7 +161,7 @@ export function createMockRequestService(initial: IRequest[] = []): IRequestServ
         subject: description,
         status: RequestStatus.PENDING,
         priority: options?.priority || RequestPriority.NORMAL,
-        agent_role: options?.identity || "default",
+        agent_role: options?.agent_role || "default",
         portal: options?.portal,
         model: options?.model,
         created: new Date().toISOString(),
@@ -234,8 +234,8 @@ export function sampleLogEntry(overrides: ILogEntryOverrides = {}): ILogEntry {
   return {
     id,
     trace_id: overrides.trace_id ?? `trace-${id}`,
-    actor: overrides.actor ?? MemoryBankSource.IDENTITY,
-    agent_role: overrides.identity_id ?? "default",
+    actor: overrides.actor ?? MemoryBankSource.USER,
+    agent_role: overrides.agent_role ?? "default",
     action_type: overrides.action_type ?? "request_created",
     target: overrides.target ?? "Workspace/Requests/test.md",
     payload: payloadObj,
@@ -459,8 +459,8 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   }
   query(filter: IJournalFilterOptions): Promise<IActivityRecord[]> {
     let filtered = this._activityRecords;
-    if (filter.identityId) {
-      filtered = filtered.filter((l) => l.identity_id === filter.identityId);
+    if (filter.agentRole) {
+      filtered = filtered.filter((l) => l.agent_role === filter.agentRole);
     }
     if (filter.actionType) {
       filtered = filtered.filter((l) => l.action_type === filter.actionType);
@@ -539,7 +539,7 @@ function createMockRequestMetadata(overrides: Partial<IRequest> = {}): IRequest 
     path: overrides.path ?? "request-test.md",
     status: overrides.status ?? RequestStatus.PENDING,
     priority: overrides.priority ?? RequestPriority.NORMAL,
-    agent_role: overrides.identity ?? "default",
+    agent_role: overrides.agent_role ?? "default",
     created: overrides.created ?? new Date().toISOString(),
     created_by: overrides.created_by ?? "test-user",
     source: overrides.source ?? RequestSource.CLI,
@@ -563,7 +563,7 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
     trace_id: String(a.trace_id ?? `trace-${a.id ?? Math.floor(Math.random() * 1e6)}`),
     actor: (a.actor as string | null) ?? null,
     actor_type: null,
-    agent_role: (a.identity_id as string | null) ?? null,
+    agent_role: (a.agent_role as string | null) ?? null,
     agent_kind: null,
     action_type: String(a.action_type ?? "unknown"),
     target: (a.target as string | null) ?? null,
@@ -581,7 +581,7 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
       id: log.id,
       trace_id: log.trace_id,
       actor: log.actor,
-      agent_role: log.identity_id,
+      agent_role: log.agent_role,
       action_type: log.action_type,
       target: log.target,
       payload: JSON.parse(log.payload),
@@ -605,7 +605,7 @@ export function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverride
         id: log.id,
         trace_id: log.trace_id,
         actor: log.actor ?? undefined,
-        agent_role: log.identity_id ?? undefined,
+        agent_role: log.agent_role ?? undefined,
         action_type: log.action_type,
         target: log.target ?? undefined,
         payload: typeof log.payload === "string" ? log.payload : JSON.stringify(log.payload),
@@ -1019,7 +1019,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
       learning: {
         id: "729b8001-0000-4000-8000-000000000001",
         created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.PROJECT,
         title: "Error Handling Pattern",
         description: "Use try-catch for all async functions",
@@ -1041,7 +1041,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
       learning: {
         id: "729b8001-0000-4000-8000-000000000002",
         created_at: new Date(Date.now() - 18000000).toISOString(), // 5 hours ago
-        source: MemoryBankSource.IDENTITY,
+        source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         title: "API Rate Limiting",
         description: "Implement rate limiting for all API endpoints",

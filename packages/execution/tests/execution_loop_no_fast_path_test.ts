@@ -56,7 +56,7 @@ Deno.test("extraction loop: proposals land, but global bank, embedding index, an
     const loop = new ExecutionLoop({
       config,
       db,
-      identityId: "gap1-test",
+      agentRole: "gap1-test",
       memoryBank,
       sessionMemory,
       context: castAny({ extractor, config: { get: () => config } }),

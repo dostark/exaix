@@ -26,7 +26,7 @@ async function withToolPermission(
     operations?: PortalOperation[];
     fileContent?: Record<string, string>;
     initGit?: boolean;
-    identityId?: string;
+    agentRole?: string;
   },
   fn: (ctx: { context: IApplicationContext; permissions: PortalPermissionsService }) => Promise<void>,
 ) {
@@ -176,7 +176,7 @@ Deno.test("MCP Tools: git_status rejects when git permission denied", async () =
 Deno.test("MCP Tools: rejects non-whitelisted agent", async () => {
   await withToolPermission(
     {
-      identityId: "allowed-agent",
+      agentRole: "allowed-agent",
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
       fileContent: { "test.txt": "content" },
     },
@@ -196,7 +196,7 @@ Deno.test("MCP Tools: rejects non-whitelisted agent", async () => {
 Deno.test("MCP Tools: allows wildcard agent access", async () => {
   await withToolPermission(
     {
-      identityId: "*",
+      agentRole: "*",
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
       fileContent: { "test.txt": "content" },
     },

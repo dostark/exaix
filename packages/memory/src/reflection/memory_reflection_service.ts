@@ -63,7 +63,7 @@ export interface IMemoryReflectionServiceDeps {
 }
 
 const REFLECTION_SKILL_ID = "memory-extraction-content-policy";
-const REFLECTION_IDENTITY_ID = "memory-reflection";
+const REFLECTION_AGENT_ROLE_ID = "memory-reflection";
 const REFLECTION_PORTAL = "exaix-self";
 const DEFAULT_REFLECTION_COST_USD = 0;
 const FINGERPRINT_PREFIX = "reflection:";
@@ -289,7 +289,7 @@ ${JSON.stringify({ learnings: groups, related_pairs: related })}
             extracted_at: runAt,
           } satisfies IProposalLearning,
         );
-        await this.deps.proposalWriter.createProposal(learning, this.reflectionRun(runAt), REFLECTION_IDENTITY_ID);
+        await this.deps.proposalWriter.createProposal(learning, this.reflectionRun(runAt), REFLECTION_AGENT_ROLE_ID);
         for (const sourceId of action.source_ids) {
           synthesisSourceIds.add(sourceId);
         }
@@ -363,7 +363,7 @@ ${JSON.stringify({ learnings: groups, related_pairs: related })}
       completed_at: runAt,
       status: "completed",
       portal: REFLECTION_PORTAL,
-      agent_role: REFLECTION_IDENTITY_ID,
+      agent_role: REFLECTION_AGENT_ROLE_ID,
       summary: "Memory reflection synthesis run",
       context_files: [],
       context_portals: [],

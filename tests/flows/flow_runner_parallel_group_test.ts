@@ -40,46 +40,46 @@ class ControlledParallelExecutor implements IAgentExecutor {
   private readonly gates = new Map<string, { promise: Promise<void>; resolve: () => void }>();
 
   constructor(blockedIdentityIds: string[]) {
-    for (const identityId of blockedIdentityIds) {
-      this.gates.set(identityId, createDeferred());
+    for (const agentRole of blockedIdentityIds) {
+      this.gates.set(agentRole, createDeferred());
     }
   }
 
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.calls.push(identityId);
-    this.started.add(identityId);
+  async run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.calls.push(agentRole);
+    this.started.add(agentRole);
     this.resolveSatisfiedWaiters();
 
-    const gate = this.gates.get(identityId);
+    const gate = this.gates.get(agentRole);
     if (gate) {
       await gate.promise;
     }
 
     return {
-      thought: `processed ${identityId}`,
-      content: `${identityId} result`,
-      raw: `${identityId} raw`,
+      thought: `processed ${agentRole}`,
+      content: `${agentRole} result`,
+      raw: `${agentRole} raw`,
     };
   }
 
-  async waitForStarts(identityIds: string[]): Promise<void> {
-    if (identityIds.every((identityId) => this.started.has(identityId))) {
+  async waitForStarts(agentRoles: string[]): Promise<void> {
+    if (agentRoles.every((agentRole) => this.started.has(agentRole))) {
       return;
     }
 
     await new Promise<void>((resolve) => {
-      this.startWaiters.push({ ids: [...identityIds], resolve });
+      this.startWaiters.push({ ids: [...agentRoles], resolve });
     });
   }
 
-  release(identityId: string): void {
-    this.gates.get(identityId)?.resolve();
+  release(agentRole: string): void {
+    this.gates.get(agentRole)?.resolve();
   }
 
   private resolveSatisfiedWaiters(): void {
     for (let index = this.startWaiters.length - 1; index >= 0; index--) {
       const waiter = this.startWaiters[index];
-      if (!waiter.ids.every((identityId) => this.started.has(identityId))) {
+      if (!waiter.ids.every((agentRole) => this.started.has(agentRole))) {
         continue;
       }
 

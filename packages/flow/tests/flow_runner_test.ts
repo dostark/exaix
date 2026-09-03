@@ -61,13 +61,13 @@ class MockAgentRunner implements IAgentExecutor {
     }
   }
 
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    if (this.failures.has(identityId)) {
-      throw new Error(`Mock failure for agent ${identityId}`);
+  async run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    if (this.failures.has(agentRole)) {
+      throw new Error(`Mock failure for agent ${agentRole}`);
     }
-    const result = this.results.get(identityId);
+    const result = this.results.get(agentRole);
     if (!result) {
-      throw new Error(`No mock result for agent ${identityId}`);
+      throw new Error(`No mock result for agent ${agentRole}`);
     }
     return await Promise.resolve(result);
   }
@@ -86,9 +86,9 @@ class SequencedMockAgentRunner implements IAgentExecutor {
   calls: string[] = [];
 
   constructor(sequences: Record<string, Array<IAgentExecutionResult | Error | string>>) {
-    for (const [identityId, results] of Object.entries(sequences)) {
+    for (const [agentRole, results] of Object.entries(sequences)) {
       this.sequences.set(
-        identityId,
+        agentRole,
         results.map((result) => {
           if (typeof result === "string") {
             return { thought: "Mock thought", content: result, raw: result };
@@ -99,11 +99,11 @@ class SequencedMockAgentRunner implements IAgentExecutor {
     }
   }
 
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.calls.push(identityId);
-    const sequence = this.sequences.get(identityId);
+  async run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.calls.push(agentRole);
+    const sequence = this.sequences.get(agentRole);
     if (!sequence || sequence.length === 0) {
-      throw new Error(`No mock sequence result for agent ${identityId}`);
+      throw new Error(`No mock sequence result for agent ${agentRole}`);
     }
 
     const next = sequence.shift()!;
@@ -139,7 +139,7 @@ Deno.test("FlowRunner: appends an output-shape instruction to agent step prompts
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
-    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    run(_agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
       received.push(request);
       return Promise.resolve({ thought: "Thinking", content: "Result", raw: "raw" });
     },
@@ -193,7 +193,7 @@ Deno.test("FlowRunner: an intermediate agent step gets the envelope instruction 
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
-    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    run(_agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
       received.push(request);
       return Promise.resolve({ thought: "Thinking", content: "Result", raw: "raw" });
     },
@@ -243,7 +243,7 @@ Deno.test("FlowRunner: threads scenarioId/stepId from the execute request into a
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
-    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    run(_agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
       received.push(request);
       return Promise.resolve({ thought: "Thinking 1", content: "Result 1", raw: "raw result 1" });
     },
@@ -295,7 +295,7 @@ Deno.test("FlowRunner: each flow-internal step gets its own flow step id as flow
 
   const received: IFlowStepRequest[] = [];
   const capturingExecutor: IAgentExecutor = {
-    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    run(_agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
       received.push(request);
       return Promise.resolve({ thought: "Thinking", content: "Result", raw: "raw result" });
     },
@@ -1261,11 +1261,11 @@ Deno.test("FlowRunner: handles agent execution throwing non-Error", async () => 
 
   // Mock agent runner that throws a string
   class ThrowingAgentRunner extends MockAgentRunner {
-    override async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-      if (identityId === "throwing-agent") {
+    override async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+      if (agentRole === "throwing-agent") {
         throw "String error"; // Throw a string, not an Error
       }
-      return await super.run(identityId, request);
+      return await super.run(agentRole, request);
     }
   }
 
@@ -2053,14 +2053,14 @@ Deno.test("FlowRunner: handles condition syntax errors gracefully", async () => 
 
 // Mock IAgentRunner that captures requests to verify skills are passed
 class CapturingMockAgentRunner implements IAgentExecutor {
-  capturedRequests: Array<{ identityId: string; request: IFlowStepRequest }> = [];
+  capturedRequests: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
 
-  async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.capturedRequests.push({ identityId, request });
+  async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.capturedRequests.push({ agentRole, request });
     return await Promise.resolve({
-      thought: `Processing ${identityId}`,
-      content: `Result from ${identityId}`,
-      raw: `Raw from ${identityId}`,
+      thought: `Processing ${agentRole}`,
+      content: `Result from ${agentRole}`,
+      raw: `Raw from ${agentRole}`,
     });
   }
 }
@@ -2212,15 +2212,15 @@ Deno.test("FlowRunner: multi-step flow with mixed skills", async () => {
   await runner.execute(flow as IFlow, { userPrompt: "test request" });
 
   // Step1: uses flow defaults
-  assertEquals(mockAgentRunner.capturedRequests[0].identityId, "agent1");
+  assertEquals(mockAgentRunner.capturedRequests[0].agentRole, "agent1");
   assertEquals(mockAgentRunner.capturedRequests[0].request.skills, ["flow-default"]);
 
   // Step2: uses its own skills (override)
-  assertEquals(mockAgentRunner.capturedRequests[1].identityId, "agent2");
+  assertEquals(mockAgentRunner.capturedRequests[1].agentRole, "agent2");
   assertEquals(mockAgentRunner.capturedRequests[1].request.skills, ["custom-skill"]);
 
   // Step3: uses flow defaults
-  assertEquals(mockAgentRunner.capturedRequests[2].identityId, "agent3");
+  assertEquals(mockAgentRunner.capturedRequests[2].agentRole, "agent3");
   assertEquals(mockAgentRunner.capturedRequests[2].request.skills, ["flow-default"]);
 });
 
@@ -2344,7 +2344,7 @@ class MockDatabaseService {
     _payload: Record<string, JSONValue>,
     _traceId?: string,
     _actorType?: string | null,
-    _identityId?: string | null,
+    _agentRole?: string | null,
     _agentKind?: string | null,
   ): void {}
   waitForFlush(): Promise<void> {

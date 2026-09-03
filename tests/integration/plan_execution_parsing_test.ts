@@ -121,7 +121,7 @@ Protect routes with authentication checks.
 
       assertEquals(typeof frontmatter.trace_id, "string");
       assertEquals(typeof frontmatter.request_id, "string");
-      assertEquals(frontmatter.identity, "mock-agent");
+      assertEquals(frontmatter.agent_role, "mock-agent");
       assertEquals(frontmatter.status, MemoryStatus.APPROVED);
 
       // Extract body
@@ -272,7 +272,7 @@ Initial setup
       // Validate all context fields
       assertEquals(frontmatter.trace_id, traceId);
       assertEquals(frontmatter.request_id, requestId);
-      assertEquals(frontmatter.identity, "mock-agent");
+      assertEquals(frontmatter.agent_role, "mock-agent");
       assertEquals(frontmatter.status, MemoryStatus.APPROVED);
       assertEquals(frontmatter.priority, "high");
       // YAML parser converts ISO strings to Date objects

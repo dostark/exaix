@@ -847,7 +847,7 @@ export const DEFAULT_MCP_SERVER_NAME: string = configurable({
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_MCP_VERSION = "1.0.0";
-export const DEFAULT_MCP_IDENTITY_ID = "system";
+export const DEFAULT_MCP_AGENT_ROLE_ID = "system";
 export const DEFAULT_MCP_HTTP_PORT: number = configurable({
   key: "mcp.http_port",
   default: 3000,
@@ -1631,7 +1631,7 @@ export const DAEMON_STOP_TIMEOUT_MS: number = configurable({
 });
 
 /** Identity ID used for the daemon actor in logs and permission checks */
-export const DAEMON_IDENTITY_ID = "daemon";
+export const DAEMON_AGENT_ROLE_ID = "daemon";
 
 /** Max delay for database retries */
 export const DB_MAX_RETRY_DELAY_MS: number = configurable({

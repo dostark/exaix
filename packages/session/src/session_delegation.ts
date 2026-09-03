@@ -21,8 +21,8 @@ export interface ISessionDelegationRequest {
   parentTraceId: string;
   parentStepId: string;
   sequence: number;
-  /** The blueprint identity_id actually delegating this session. */
-  identityId: string;
+  /** The blueprint agent_role actually delegating this session. */
+  agentRole: string;
   objective: string;
   acceptanceCriteria: string[];
   artifactRef: string;

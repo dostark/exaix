@@ -402,7 +402,7 @@ export class ReviewCommands extends BaseCommand {
       db: this.db,
       repoPath,
       traceId,
-      identityId: await this.getUserIdentity(),
+      agentRole: await this.getUserIdentity(),
     });
 
     return {
@@ -424,7 +424,7 @@ export class ReviewCommands extends BaseCommand {
       file_path: string;
       rejection_reason: string | null;
     }>(
-      `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
+      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
        FROM artifacts WHERE id = ?`,
       [artifactId],
     );
@@ -440,7 +440,7 @@ export class ReviewCommands extends BaseCommand {
       id: row.id,
       status,
       type: row.type as ArtifactSubtype,
-      agent_role: row.identity,
+      agent_role: row.agent_role,
       portal: row.portal,
       target_branch: row.target_branch,
       created: row.created,
@@ -453,7 +453,7 @@ export class ReviewCommands extends BaseCommand {
 
   private async listArtifacts(filters?: Opt<IArtifactFilters, Reason.QueryFilter>): Promise<IArtifact[]> {
     let query =
-      `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
+      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
        FROM artifacts WHERE 1=1`;
     const params: (string | null)[] = [];
 
@@ -462,9 +462,9 @@ export class ReviewCommands extends BaseCommand {
       params.push(filters.status);
     }
 
-    if (filters?.identity) {
-      query += ` AND identity = ?`;
-      params.push(filters.identity);
+    if (filters?.agent_role) {
+      query += ` AND agent_role = ?`;
+      params.push(filters.agent_role);
     }
 
     if (filters?.portal !== undefined) {
@@ -497,7 +497,7 @@ export class ReviewCommands extends BaseCommand {
       id: row.id,
       status: isReviewStatus(row.status) ? row.status : ReviewStatus.PENDING,
       type: row.type as ArtifactSubtype,
-      agent_role: row.identity,
+      agent_role: row.agent_role,
       portal: row.portal,
       target_branch: row.target_branch,
       created: row.created,
@@ -704,7 +704,7 @@ export class ReviewCommands extends BaseCommand {
         request_id: artifact.request_id,
         files_changed: 0,
         created_at: artifact.created,
-        agent_role: artifact.identity,
+        agent_role: artifact.agent_role,
         file_path: artifact.file_path,
         portal: artifact.portal ?? undefined,
         status: artifact.status,
@@ -954,7 +954,7 @@ export class ReviewCommands extends BaseCommand {
       worktree_path: storedWorktreePath ?? undefined,
       files_changed: filesChanged,
       created_at: logInfo.timestamp,
-      agent_role: logInfo.identity_id,
+      agent_role: logInfo.agent_role,
       status,
       anomalySummary:
         anomalySummary.high > 0 || anomalySummary.medium > 0 || anomalySummary.low > 0 || anomalySummary.recovered > 0
@@ -997,7 +997,7 @@ export class ReviewCommands extends BaseCommand {
         request_id: artifact.request_id,
         files_changed: 0,
         created_at: artifact.created,
-        agent_role: artifact.identity,
+        agent_role: artifact.agent_role,
         portal: artifact.portal ?? undefined,
         status: artifact.status,
         rejection_reason: artifact.rejection_reason ?? undefined,
@@ -1028,7 +1028,7 @@ export class ReviewCommands extends BaseCommand {
             request_id: artifact.request_id,
             files_changed: 0,
             created_at: artifact.created,
-            agent_role: artifact.identity,
+            agent_role: artifact.agent_role,
             file_path: artifact.file_path,
             portal: artifact.portal ?? undefined,
             status: artifact.status,

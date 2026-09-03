@@ -34,12 +34,12 @@ function makeService(sessionDir: string, overrides: Partial<ISessionDelegateServ
   });
 }
 
-const TEST_IDENTITY = "dogfood-coder";
+const TEST_AGENT_ROLE = "dogfood-coder";
 
 function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
-    agent_role: TEST_IDENTITY,
+    agent_role: TEST_AGENT_ROLE,
     gate: "code_changes" as const,
     tool: "opencode",
     objective: "Execute step test",
@@ -58,7 +58,7 @@ function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInp
 function claudeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
-    agent_role: TEST_IDENTITY,
+    agent_role: TEST_AGENT_ROLE,
     gate: "code_changes" as const,
     tool: "claude-code",
     objective: "Execute step test",
@@ -140,7 +140,7 @@ Deno.test("[delegate_hardening] resolveHardenedLaunch appends permission flags f
   assertMatch(argsJoined, /--allowedTools/);
 });
 
-Deno.test("[delegate_hardening] agentNameMismatch is false when the brief's identity_id round-trips through the generator", async () => {
+Deno.test("[delegate_hardening] agentNameMismatch is false when the brief's agent_role round-trips through the generator", async () => {
   const sessionDir = await Deno.makeTempDir();
   const svc = makeService(sessionDir);
   const brief = opencodeBrief({ agent_role: "dogfood-coder" });
@@ -151,7 +151,7 @@ Deno.test("[delegate_hardening] agentNameMismatch is false when the brief's iden
   assertEquals(result.agentNameMismatch, false);
 });
 
-Deno.test("[delegate_hardening] the generator keys the agent config on whichever identity_id it is given", () => {
+Deno.test("[delegate_hardening] the generator keys the agent config on whichever agent_role it is given", () => {
   const config = buildOpencodePermissionConfig(["src/**"], "dogfood-coder");
   assertExists(config.agent["dogfood-coder"]);
   assertEquals(config.agent["dogfood-coder"].edit, { "*": "deny", "src/**": "allow" });

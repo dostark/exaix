@@ -23,7 +23,7 @@ Deno.test("[FlowEventLoggerAdapter] forwards payload.traceId as the explicit tra
   flowLogger.log("flow.step.started", {
     flowRunId: "run-1",
     stepId: "react-step",
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     strategy: "react",
     traceId: "trace-abc",
     requestId: "request-abc",
@@ -61,7 +61,7 @@ Deno.test("[FlowEventLoggerAdapter] still forwards the full payload object (not 
   flowLogger.log("flow.step.started", {
     flowRunId: "run-3",
     stepId: "react-step",
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     strategy: "react",
     traceId: "trace-def",
     requestId: "request-def",

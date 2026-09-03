@@ -4,7 +4,7 @@
  * @description GAP-9 (session-delegation surface, Step 22) — an accepted session
  *   return dispatched through the onReconciled handler mints an IExecutionMemory
  *   from the return's own validated fields (summary, paths_touched, decision) plus
- *   the brief's identity_id, then runs the same curated extraction as the plan
+ *   the brief's agent_role, then runs the same curated extraction as the plan
  *   path. A rejected return never reaches onReconciled, so it mints nothing.
  */
 
@@ -41,12 +41,12 @@ function makeMockMemoryBank() {
 }
 
 function makeMockExtractor(candidates: IProposalLearning[]) {
-  const proposals: Array<{ learning: IProposalLearning; execution: IExecutionMemory; identityId: string }> = [];
+  const proposals: Array<{ learning: IProposalLearning; execution: IExecutionMemory; agentRole: string }> = [];
   return {
     proposals,
     analyzeExecution: (_execution: IExecutionMemory) => Promise.resolve(candidates),
-    createProposal: (learning: IProposalLearning, execution: IExecutionMemory, identityId: string) => {
-      proposals.push({ learning, execution, identityId });
+    createProposal: (learning: IProposalLearning, execution: IExecutionMemory, agentRole: string) => {
+      proposals.push({ learning, execution, agentRole });
       return Promise.resolve(crypto.randomUUID());
     },
   };
@@ -87,7 +87,7 @@ async function makeRig(gate: SessionBrief["gate"] = "code_changes") {
 
   await service.prepareBrief({
     traceId,
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     gate,
     tool: "claude-code",
     objective: "Fix the rate limiter.",
@@ -162,7 +162,7 @@ Deno.test("GAP-9: an accepted session return mints an execution record with real
       ["src/main.ts", "src/rate_limiter.ts"],
       "paths_touched from the return populates the changes record",
     );
-    assertEquals(execution.identity_id, "senior-coder", "identity_id comes from the delegating brief");
+    assertEquals(execution.agent_role, "senior-coder", "agent_role comes from the delegating brief");
     assertEquals(execution.portal, "portal-under-test", "portal is derived from the brief's worktree_path");
 
     assertEquals(extractor.proposals.length, 1, "extraction must produce a Pending proposal from the record");

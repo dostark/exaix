@@ -85,7 +85,7 @@ export function createMockAgentRunner(): IMockAgentRunner {
       this.executedAgents.push({ blueprint, request });
       return Promise.resolve({
         thought: "thought",
-        content: `Agent ${blueprint.identityId} executed`,
+        content: `Agent ${blueprint.agentRole} executed`,
         raw: "raw",
       });
     }
@@ -244,12 +244,12 @@ export function createTestRequestRouter(
         config,
         routingPolicyService,
       });
-      this.mockBlueprints.set(TEST_AGENT_NAME, { identityId: TEST_AGENT_NAME, systemPrompt: "Senior Coder" });
-      this.mockBlueprints.set(TEST_DEFAULT_AGENT, { identityId: TEST_DEFAULT_AGENT, systemPrompt: "Default Agent" });
+      this.mockBlueprints.set(TEST_AGENT_NAME, { agentRole: TEST_AGENT_NAME, systemPrompt: "Senior Coder" });
+      this.mockBlueprints.set(TEST_DEFAULT_AGENT, { agentRole: TEST_DEFAULT_AGENT, systemPrompt: "Default Agent" });
     }
 
-    protected override loadBlueprint(identityId: string): Promise<IBlueprint | null> {
-      return Promise.resolve(this.mockBlueprints.get(identityId) || null);
+    protected override loadBlueprint(agentRole: string): Promise<IBlueprint | null> {
+      return Promise.resolve(this.mockBlueprints.get(agentRole) || null);
     }
   }
 

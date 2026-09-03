@@ -261,7 +261,7 @@ function buildRequestFile(
   contextPointer?: Opt<string, Reason.OptionalInput>,
   planContextRef?: Opt<string, Reason.OptionalInput>,
 ): string {
-  const identityId = manifest?.agent_role ?? "senior-coder";
+  const agentRole = manifest?.agent_role ?? "senior-coder";
   const skills = manifest?.skills;
   const portal = manifest?.portal ?? "exaix-self";
   const targetBranch = manifest?.target_branch ?? `feat/${planSlug}-step-${stepNumber}`;
@@ -304,7 +304,7 @@ function buildRequestFile(
 
   const frontmatter: FrontmatterFields = {
     trace_id: crypto.randomUUID(),
-    agent_role: identityId,
+    agent_role: agentRole,
     status: "pending",
     priority,
     tags,

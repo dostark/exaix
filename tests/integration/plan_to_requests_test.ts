@@ -705,7 +705,7 @@ Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFai
     const kind = await admissionKindOf(fm);
     assertEquals(
       kind,
-      RequestKind.IDENTITY,
+      RequestKind.AGENT_ROLE,
       "generated requests must be admitted as identity-kind, not marked FAILED for missing agent field",
     );
   } finally {

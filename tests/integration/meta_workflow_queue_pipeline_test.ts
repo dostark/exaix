@@ -53,7 +53,7 @@ async function generateQueue(
 }
 
 interface IRequestFrontmatter {
-  identity_id?: string;
+  agent_role?: string;
   title?: string;
   tags?: string[];
   trace_id?: string;
@@ -95,10 +95,10 @@ Deno.test("[meta-workflow-queue] plan_to_requests generates queue with correct i
 
     for (const file of files) {
       const fm = parseRequestFrontmatter(file);
-      assertExists(fm.identity_id, `request ${file} is missing identity_id`);
-      const blueprint = await loader.load(fm.identity_id!);
-      assertExists(blueprint, `identity '${fm.identity_id}' from ${file} must resolve through IBlueprintLoader`);
-      assertEquals(blueprint.identityId, fm.identity_id, `identity_id mismatch`);
+      assertExists(fm.agent_role, `request ${file} is missing agent_role`);
+      const blueprint = await loader.load(fm.agent_role!);
+      assertExists(blueprint, `identity '${fm.agent_role}' from ${file} must resolve through IBlueprintLoader`);
+      assertEquals(blueprint.agentRole, fm.agent_role, `agent_role mismatch`);
     }
   } finally {
     await Deno.remove(tmpDir, { recursive: true });

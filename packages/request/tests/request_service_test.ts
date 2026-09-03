@@ -40,7 +40,7 @@ Deno.test("RequestService.create: creates a request file with correct frontmatte
 
     assertEquals(metadata.status, RequestStatus.PENDING);
     assertEquals(metadata.priority, RequestPriority.NORMAL);
-    assertEquals(metadata.identity, "default");
+    assertEquals(metadata.agent_role, "default");
     assertEquals(metadata.source, RequestSource.CLI);
     assertEquals(metadata.created_by, "tester");
     assertEquals(metadata.subject, "Build the login page");
@@ -48,7 +48,7 @@ Deno.test("RequestService.create: creates a request file with correct frontmatte
     // Verify the file was actually written
     const content = await Deno.readTextFile(metadata.path!);
     assertEquals(content.includes("agent_role: default"), true);
-    assertEquals(content.includes("\nagent_role: default"), false);
+    assertEquals(content.includes("\nidentity_id: default"), false);
     assertEquals(content.includes("trace_id:"), true);
     assertEquals(content.includes("Build the login page"), true);
   } finally {
@@ -91,7 +91,7 @@ Deno.test("RequestService.create: uses provided options", async () => {
     }, RequestSource.TUI);
 
     assertEquals(metadata.priority, RequestPriority.HIGH);
-    assertEquals(metadata.identity, "coder");
+    assertEquals(metadata.agent_role, "coder");
     assertEquals(metadata.portal, "myportal");
     assertEquals(metadata.target_branch, "feature/test");
     assertEquals(metadata.model, "gpt-5");
@@ -340,7 +340,7 @@ Deno.test("RequestService.show: returns default metadata for file without frontm
     assertEquals(shown.metadata.trace_id, "");
     assertEquals(shown.metadata.status, RequestStatus.PENDING);
     assertEquals(shown.metadata.priority, RequestPriority.NORMAL);
-    assertEquals(shown.metadata.identity, "default");
+    assertEquals(shown.metadata.agent_role, "default");
     assertEquals(shown.metadata.created_by, "unknown");
     assertEquals(shown.content.includes("Just markdown"), true);
   } finally {

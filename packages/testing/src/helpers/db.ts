@@ -15,7 +15,7 @@ export interface ILoggedActivity {
   payload: Record<string, JSONValue>;
   traceId?: string;
   actorType?: string | null;
-  identityId?: string | null;
+  agentRole?: string | null;
   agentKind?: string | null;
   promptTokens?: number;
   completionTokens?: number;
@@ -30,7 +30,7 @@ export interface ITestDatabaseService {
     payload: Record<string, JSONValue>,
     traceId?: string,
     actorType?: string | null,
-    identityId?: string | null,
+    agentRole?: string | null,
     agentKind?: string | null,
     promptTokens?: number,
     completionTokens?: number,
@@ -54,7 +54,7 @@ export function createLoggingTestDb(): ILoggingTestDb {
       payload,
       traceId,
       actorType,
-      identityId,
+      agentRole,
       agentKind,
       promptTokens,
       completionTokens,
@@ -67,7 +67,7 @@ export function createLoggingTestDb(): ILoggingTestDb {
         payload,
         traceId,
         actorType,
-        identityId,
+        agentRole,
         agentKind,
         promptTokens,
         completionTokens,

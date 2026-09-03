@@ -10,6 +10,7 @@
 import { MEMORY_COMMAND_DEFAULTS } from "../config.ts";
 import type { IMemoryBankSummary } from "../types/memory_types.ts";
 import { MemoryScope } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -337,7 +338,7 @@ export class MemoryFormatter {
     for (const exec of executions) {
       const traceId = exec.trace_id.substring(0, CLI_TRUNCATE_ID_SHORT);
       lines.push(
-        `| ${traceId}... | ${exec.status} | ${exec.portal} | ${exec.identity_id} | ${exec.started_at} |`,
+        `| ${traceId}... | ${exec.status} | ${exec.portal} | ${exec.agent_role} | ${exec.started_at} |`,
       );
     }
 
@@ -356,7 +357,7 @@ export class MemoryFormatter {
       `Request ID:  ${exec.request_id}`,
       `Status:      ${exec.status}`,
       `Portal:      ${exec.portal}`,
-      `Identity:     ${exec.identity_id}`,
+      `Identity:     ${exec.agent_role}`,
       `Started:     ${exec.started_at}`,
       `Completed:   ${exec.completed_at || "In progress"}`,
       "",
@@ -393,7 +394,7 @@ export class MemoryFormatter {
       `| Request ID | \`${exec.request_id}\` |`,
       `| Status | ${exec.status} |`,
       `| Portal | ${exec.portal} |`,
-      `| Identity | ${exec.identity_id} |`,
+      `| Identity | ${exec.agent_role} |`,
       `| Started | ${exec.started_at} |`,
       `| Completed | ${exec.completed_at || "In progress"} |`,
       "",
@@ -687,7 +688,7 @@ export class MemoryFormatter {
       `ID:          ${proposal.id}`,
       `Status:      ${proposal.status}`,
       `Created:     ${proposal.created_at}`,
-      `Identity:     ${proposal.identity_id}`,
+      `Identity:     ${proposal.agent_role}`,
       `Execution:   ${proposal.execution_id}`,
       "",
       "─".repeat(60),
@@ -720,7 +721,7 @@ export class MemoryFormatter {
       `| ID | ${proposal.id} |`,
       `| Status | ${proposal.status} |`,
       `| Created | ${proposal.created_at} |`,
-      `| Identity | ${proposal.identity_id} |`,
+      `| Identity | ${proposal.agent_role} |`,
       `| Execution | ${proposal.execution_id} |`,
       "",
       "## ILearning",
@@ -944,7 +945,7 @@ export class MemoryFormatter {
     lines: string[],
     label: string,
     count: number,
-    files: string[] | undefined,
+    files: Opt<string[], Reason.OptionalInput>,
     symbol: string,
   ): void {
     if (count > 0 && files) {

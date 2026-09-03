@@ -15,14 +15,14 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
 export interface IIdentityFrontmatter {
-  identity_id?: string;
+  agent_role?: string;
   capabilities?: string[];
   default_skills?: string[];
   permitted_tools?: string[];
 }
 
 export interface IRawFrontmatter {
-  identity_id?: string;
+  agent_role?: string;
   name?: string;
   model?: string;
   capabilities?: string[];
@@ -49,7 +49,7 @@ export const DESTRUCTIVE_TOOLS = new Set([
   "create_directory",
 ]);
 
-/** Identity-role matrix: maps identity_id → role-required default_skills (beyond the universal
+/** Identity-role matrix: maps agent_role → role-required default_skills (beyond the universal
  * response-contract). Every default is unconditional prompt weight on every request, so only
  * skills an identity needs EVERY time belong here; situational skills use trigger matching instead. */
 export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {

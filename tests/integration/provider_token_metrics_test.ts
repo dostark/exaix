@@ -121,7 +121,7 @@ async function queryTokenEvents(env: TestEnvironment): Promise<ActivityRow[]> {
 
   // Query all llm.usage events from the activity table
   const stmt = env.db["db"].prepare(
-    `SELECT id, trace_id, actor, identity_id, action_type, target, payload, timestamp
+    `SELECT id, trace_id, actor, agent_role, action_type, target, payload, timestamp
      FROM activity
      WHERE action_type = '${TEST_CONST.ACTION_TYPE_LLM_USAGE}'
      ORDER BY timestamp DESC

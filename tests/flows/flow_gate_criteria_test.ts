@@ -18,7 +18,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 // Mock infrastructure
 
 class StubAgentExecutor implements IAgentExecutor {
-  async run(_identityId: string, _req: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  async run(_agentRole: string, _req: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return await Promise.resolve({ thought: "", content: "agent-result", raw: "agent-result" });
   }
 }

@@ -95,7 +95,7 @@ Deno.test({
     if (missingSkills.length > 0) {
       console.log("\nDefault skills that do not resolve to a .skill.md file:");
       for (const m of missingSkills) {
-        console.log(`  ${m.identity}: → ${m.skill}`);
+        console.log(`  ${m.agent_role}: → ${m.skill}`);
       }
     }
 
@@ -129,7 +129,7 @@ Deno.test({
     if (violations.length > 0) {
       console.log("\nCapabilities that are tool names (should be behavioral-only):");
       for (const v of violations) {
-        console.log(`  ${v.identity}: capability "${v.capability}" is an McpToolName`);
+        console.log(`  ${v.agent_role}: capability "${v.capability}" is an McpToolName`);
       }
     }
 
@@ -198,7 +198,7 @@ Deno.test({
     if (invalid.length > 0) {
       console.log("\npermitted_tools values not in McpToolName or ToolName enum:");
       for (const v of invalid) {
-        console.log(`  ${v.identity}: "${v.tool}" is not a valid tool name`);
+        console.log(`  ${v.agent_role}: "${v.tool}" is not a valid tool name`);
       }
     }
 
@@ -236,7 +236,7 @@ Deno.test({
     if (unresolved.length > 0) {
       console.log("\nIdentities with unresolved {{include:}} in systemPrompt:");
       for (const u of unresolved) {
-        console.log(`  ${u.identity}`);
+        console.log(`  ${u.agent_role}`);
       }
     }
 

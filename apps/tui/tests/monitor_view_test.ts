@@ -8,7 +8,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { DaemonStatus, DialogStatus } from "@exaix/core";
+import { DaemonStatus, DialogStatus, MemoryBankSource } from "@exaix/core";
 import { GroupingMode, LogGroupingMode } from "@exaix/tui";
 import { LOG_COLORS, LOG_ICONS } from "@exaix/tui/config.ts";
 import { MONITOR_KEY_BINDINGS, MonitorView } from "../src/monitor_view.ts";
@@ -79,7 +79,7 @@ Deno.test("MonitorView - renderLogs outputs ANSI and handles empty", () => {
     {
       id: "1",
       trace_id: "t1",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "a1",
       action_type: "error",
       target: "target.md",
@@ -89,7 +89,7 @@ Deno.test("MonitorView - renderLogs outputs ANSI and handles empty", () => {
     {
       id: "2",
       trace_id: "t2",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "a2",
       action_type: "unknown_type",
       target: "target2.md",
@@ -115,13 +115,13 @@ Deno.test("MonitorView - should display real-time log streaming", async () => {
   // Test that it can retrieve logs
   const logs = await monitorView.getLogs();
   assertEquals(logs.length, 1);
-  assertEquals(logs[0].actor, LogGroupingMode.IDENTITY);
+  assertEquals(logs[0].actor, MemoryBankSource.USER);
   assertEquals(logs[0].action_type, "request_created");
 });
 
 Deno.test("MonitorView - should filter logs by agent", async () => {
-  await verifyFilter(createTwoAgentLogs(), { identityId: "researcher" }, 1, (filteredLogs) => {
-    assertEquals(filteredLogs[0].identity_id, "researcher");
+  await verifyFilter(createTwoAgentLogs(), { agentRole: "researcher" }, 1, (filteredLogs) => {
+    assertEquals(filteredLogs[0].agent_role, "researcher");
   });
 });
 
@@ -156,7 +156,7 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
         trace_id: String(a.trace_id ?? `trace-${a.id ?? Math.floor(Math.random() * 1e6)}`),
         actor: (a.actor as string | null) ?? null,
         actor_type: null,
-        agent_role: (a.identity_id as string | null) ?? null,
+        agent_role: (a.agent_role as string | null) ?? null,
         agent_kind: null,
         action_type: String(a.action_type ?? "unknown"),
         target: (a.target as string | null) ?? null,
@@ -188,7 +188,7 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
     {
       id: "1",
       trace_id: "trace-1",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "dev",
       action_type: "plan.approved",
       target: "Workspace/Plans/test.md",
@@ -221,7 +221,7 @@ Deno.test("MonitorView - should export logs to file", () => {
     {
       id: "1",
       trace_id: "trace-1",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "researcher",
       action_type: "request_created",
       target: "Workspace/Requests/test.md",
@@ -241,7 +241,7 @@ Deno.test("MonitorView - should handle large log volumes without crashing", asyn
   const largeLogs = Array.from({ length: 1000 }, (_, i) => ({
     id: `${i + 1}`,
     trace_id: `trace-${i + 1}`,
-    actor: LogGroupingMode.IDENTITY,
+    actor: LogGroupingMode.AGENT_ROLE,
     agent_role: i % 2 === 0 ? "researcher" : "architect",
     action_type: i % 3 === 0 ? "request_created" : "plan_approved",
     target: `Workspace/Requests/test${i}.md`,
@@ -256,11 +256,11 @@ Deno.test("MonitorView - should handle large log volumes without crashing", asyn
   assertEquals(logs.length, 1000);
 
   // Filtering should still work
-  monitorView.setFilter({ identityId: "researcher" });
+  monitorView.setFilter({ agentRole: "researcher" });
   await monitorView.refreshLogs();
   const filteredLogs = monitorView.getFilteredLogs();
   assert(filteredLogs.length > 0);
-  assert(filteredLogs.every((log: ILogEntry) => log.identity_id === "researcher"));
+  assert(filteredLogs.every((log: ILogEntry) => log.agent_role === "researcher"));
 });
 
 Deno.test("MonitorView - should handle empty logs gracefully", async () => {
@@ -285,7 +285,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
     {
       id: "1",
       trace_id: "trace-1",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "researcher",
       action_type: "request_created",
       target: "Workspace/Requests/test.md",
@@ -295,7 +295,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
     {
       id: "2",
       trace_id: "trace-2",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "architect",
       action_type: "plan_approved",
       target: "Workspace/Plans/test.md",
@@ -336,7 +336,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - toggle grouping", async () => {
   assertEquals(session.getGroupBy(), "none");
 
   await session.handleKey(KEYS.G);
-  assertEquals(session.getGroupBy(), GroupingMode.IDENTITY);
+  assertEquals(session.getGroupBy(), GroupingMode.AGENT_ROLE);
 
   await session.handleKey(KEYS.G);
   assertEquals(session.getGroupBy(), "action");
@@ -413,7 +413,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - detail view", async () => {
     {
       id: "1",
       trace_id: "t1",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "a1",
       action_type: "request_created",
       target: "target.md",
@@ -439,7 +439,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - render methods", () => {
     {
       id: "1",
       trace_id: "t1",
-      actor: LogGroupingMode.IDENTITY,
+      actor: LogGroupingMode.AGENT_ROLE,
       agent_role: "a1",
       action_type: "request_created",
       target: "target.md",
@@ -533,16 +533,16 @@ Deno.test("Phase 13.5: MonitorTuiSession - onDialogClosed applies search", () =>
 
 Deno.test("Phase 13.5: MonitorTuiSession - onDialogClosed filters and clears agent", async () => {
   const { session, monitorView } = createMonitorSession(createTwoAgentLogs());
-  session.pendingDialogType = "filter-identity";
+  session.pendingDialogType = "filter-agent-role";
   session.onDialogClosed({
     getResult: () => ({ type: DialogStatus.CONFIRMED, value: "researcher" }),
   } as Partial<DialogBase> as DialogBase);
 
   await new Promise((res) => setTimeout(res, 0));
   assertEquals(monitorView.getFilteredLogs().length, 1);
-  assertEquals(monitorView.getFilteredLogs()[0].identity_id, "researcher");
+  assertEquals(monitorView.getFilteredLogs()[0].agent_role, "researcher");
 
-  session.pendingDialogType = "filter-identity";
+  session.pendingDialogType = "filter-agent-role";
   session.onDialogClosed({
     getResult: () => ({ type: DialogStatus.CONFIRMED, value: "" }),
   } as Partial<DialogBase> as DialogBase);

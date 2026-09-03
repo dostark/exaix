@@ -85,7 +85,7 @@ export class JournalFormatter {
           return [
             colors.gray(timestamp),
             action,
-            a.identity_id || a.actor || "-",
+            a.agent_role || a.actor || "-",
             colors.gray(a.trace_id.slice(0, 8)),
             this.truncateText(a.target || "-", 30),
             this.formatCostDisplay(a.cost_usd),
@@ -111,7 +111,7 @@ export class JournalFormatter {
     for (const activity of activities) {
       const timestamp = new Date(activity.timestamp).toLocaleString();
       const traceId = activity.trace_id.slice(0, 8);
-      const agent = activity.identity_id || activity.actor || "-";
+      const agent = activity.agent_role || activity.actor || "-";
 
       const action = this.styleAction(activity.action_type);
       const costText = this.formatCostDisplay(activity.cost_usd);

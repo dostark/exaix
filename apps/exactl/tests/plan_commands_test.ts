@@ -107,7 +107,7 @@ describe("PlanCommands", () => {
       const approval = activities.find((a) => a.action_type === "plan.approved" && a.target === planId);
       assertExists(approval, "Approval should be logged");
       assertExists(approval?.actor);
-      assertEquals(approval?.identity_id, null);
+      assertEquals(approval?.agent_role, null);
       const approvalPayload = JSON.parse(approval?.payload || "{}");
       assertEquals(approvalPayload?.via, RequestSource.CLI);
       assertEquals(approval?.trace_id, "trace-123");

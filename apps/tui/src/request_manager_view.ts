@@ -119,7 +119,7 @@ export enum RequestAction {
   PRIORITY = "priority",
   SEARCH = "search",
   FILTER_STATUS = "filter-status",
-  FILTER_IDENTITY = "filter-identity",
+  FILTER_AGENT_ROLE = "filter-agent-role",
   TOGGLE_GROUPING = "toggle-grouping",
   TOGGLE_ARCHIVED = "toggle-archived",
   REFRESH = "refresh",
@@ -196,8 +196,8 @@ export class RequestKeyBindings extends KeyBindingsBase<RequestAction, KeyBindin
     },
     {
       key: KEYS.A,
-      description: "Filter by identity",
-      action: RequestAction.FILTER_IDENTITY,
+      description: "Filter by agent role",
+      action: RequestAction.FILTER_AGENT_ROLE,
       category: KeyBindingCategory.ACTIONS,
     },
     {
@@ -275,7 +275,7 @@ export class MinimalRequestServiceMock implements IRequestService {
       subject: description,
       status: RequestStatus.PENDING,
       priority: options?.priority || RequestPriority.NORMAL,
-      agent_role: options?.identity || options?.agent || "default",
+      agent_role: options?.agent_role || options?.agent || "default",
       created: new Date().toISOString(),
       filename: "request-1.md",
       source: RequestSource.TUI,
@@ -386,7 +386,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       case RequestGroupingMode.PRIORITY:
         this.state.requestTree = this.buildGroupedByPriority(filtered);
         break;
-      case RequestGroupingMode.IDENTITY:
+      case RequestGroupingMode.AGENT_ROLE:
         this.state.requestTree = this.buildGroupedByIdentity(filtered);
         break;
       default:
@@ -457,7 +457,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   private buildGroupedByIdentity(requests: IRequest[]): ITreeNode[] {
     const groups = new Map<string, IRequest[]>();
     for (const req of requests) {
-      const identity = req.identity || "unassigned";
+      const identity = req.agent_role || "unassigned";
       if (!groups.has(identity)) groups.set(identity, []);
       groups.get(identity)!.push(req);
     }
@@ -477,7 +477,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     const statusIcon = STATUS_ICONS[request.status] || "❓";
     const priorityIcon = PRIORITY_ICONS[request.priority] || "⚪";
     const date = new Date(request.created).toLocaleString();
-    const label = `${statusIcon} ${priorityIcon} ${request.subject} - ${request.identity} - ${date}`;
+    const label = `${statusIcon} ${priorityIcon} ${request.subject} - ${request.agent_role} - ${date}`;
 
     return createNode(request.trace_id, label, "item");
   }
@@ -500,7 +500,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     // Apply identity filter
     if (this.state.filterIdentity) {
       const query = this.state.filterIdentity.toLowerCase();
-      filtered = filtered.filter((r) => r.identity.toLowerCase().includes(query));
+      filtered = filtered.filter((r) => r.agent_role.toLowerCase().includes(query));
     }
 
     // Apply search query
@@ -509,7 +509,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       filtered = filtered.filter((r) =>
         (r.subject && r.subject.toLowerCase().includes(query)) ||
         (r.trace_id && r.trace_id.toLowerCase().includes(query)) ||
-        (r.identity && r.identity.toLowerCase().includes(query)) ||
+        (r.agent_role && r.agent_role.toLowerCase().includes(query)) ||
         (r.created_by && r.created_by.toLowerCase().includes(query))
       );
     }
@@ -524,7 +524,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       RequestGroupingMode.NONE,
       RequestGroupingMode.STATUS,
       RequestGroupingMode.PRIORITY,
-      RequestGroupingMode.IDENTITY,
+      RequestGroupingMode.AGENT_ROLE,
     ];
     const currentIdx = modes.indexOf(this.state.groupBy);
     this.state.groupBy = modes[(currentIdx + 1) % modes.length];
@@ -634,7 +634,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       placeholder: "identity name...",
       defaultValue: this.state.filterIdentity || "",
     });
-    this.pendingDialogType = RequestDialogType.FILTER_IDENTITY; // Reuse enum if needed, or update enum
+    this.pendingDialogType = RequestDialogType.FILTER_AGENT_ROLE;
   }
 
   showCreateDialog(): void {
@@ -1195,7 +1195,7 @@ export class RequestManagerView implements IRequestService {
         : "❓";
 
       lines.push(
-        `${statusIcon} ${priorityIcon} ${request.subject} - ${request.identity} - ${
+        `${statusIcon} ${priorityIcon} ${request.subject} - ${request.agent_role} - ${
           new Date(request.created).toLocaleString()
         }`,
       );

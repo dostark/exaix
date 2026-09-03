@@ -228,7 +228,7 @@ function createMockProposal(
       category,
       confidence: ConfidenceAssessmentLevel.HIGH,
       tags: [category, "test"],
-      source: MemoryBankSource.IDENTITY,
+      source: MemoryBankSource.USER,
       scope: MemoryScope.PROJECT,
       created_at: new Date().toISOString(),
     },

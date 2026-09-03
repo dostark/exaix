@@ -56,7 +56,7 @@ Deno.test(
 
       const { filePath } = await env.createRequest(
         "Implement user authentication with JWT tokens and refresh token support",
-        { identityId: "senior-coder" },
+        { agentRole: "senior-coder" },
       );
 
       // Analysis is written before plan generation, so it succeeds regardless
@@ -121,7 +121,7 @@ Deno.test(
         async () => {
           const { filePath, traceId } = await env.createRequest(
             "Implement an OAuth2 login flow with Google and GitHub providers",
-            { identityId: "senior-coder" },
+            { agentRole: "senior-coder" },
           );
           requestTraceId = traceId;
           planPath = await processor.process(filePath);

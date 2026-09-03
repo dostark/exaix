@@ -18,7 +18,7 @@ import type { JSONValue } from "@exaix/core/types";
 class CapturingAgentExecutor implements IAgentExecutor {
   capturedRequests: IFlowStepRequest[] = [];
 
-  run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(_agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.capturedRequests.push(request);
     return Promise.resolve({ thought: "ok", content: "done", raw: "done" });
   }

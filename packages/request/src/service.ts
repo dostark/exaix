@@ -299,7 +299,7 @@ export class RequestService {
     );
 
     const analysis = await analyzer.analyze(body, {
-      agentRole: metadata.identity || DEFAULT_AGENT_ROLE,
+      agentRole: metadata.agent_role || DEFAULT_AGENT_ROLE,
       priority: metadata.priority,
       requestFilePath: path,
       traceId: metadata.trace_id,

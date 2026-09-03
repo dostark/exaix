@@ -15,9 +15,9 @@ import type { ITaskTypeDerivationContext } from "../src/task_type_derivation.ts"
 Deno.test("[step135.8] frontmatter task_type wins over every other source", () => {
   const ctx: ITaskTypeDerivationContext = {
     frontmatterTaskType: TaskType.BUGFIX,
-    identityTaskType: TaskType.FEATURE,
+    agentRoleTaskType: TaskType.FEATURE,
     topSkillTaskTypes: [TaskType.TEST],
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
     analyzerTaskType: TaskType.DOCS,
   };
@@ -26,23 +26,23 @@ Deno.test("[step135.8] frontmatter task_type wins over every other source", () =
   assertEquals(result.source, "frontmatter");
 });
 
-Deno.test("[step135.8] identity blueprint declaration wins over skill/static-map/analyzer", () => {
+Deno.test("[step135.8] agent role blueprint declaration wins over skill/static-map/analyzer", () => {
   const ctx: ITaskTypeDerivationContext = {
-    identityTaskType: TaskType.FEATURE,
+    agentRoleTaskType: TaskType.FEATURE,
     topSkillTaskTypes: [TaskType.TEST],
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
     analyzerTaskType: TaskType.DOCS,
   };
   const result = deriveTaskType(ctx);
   assertEquals(result.taskType, TaskType.FEATURE);
-  assertEquals(result.source, "identity");
+  assertEquals(result.source, "agent_role");
 });
 
 Deno.test("[step135.8] highest-confidence skill trigger wins over static-map/analyzer", () => {
   const ctx: ITaskTypeDerivationContext = {
     topSkillTaskTypes: [TaskType.TEST],
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
     analyzerTaskType: TaskType.DOCS,
   };
@@ -53,7 +53,7 @@ Deno.test("[step135.8] highest-confidence skill trigger wins over static-map/ana
 
 Deno.test("[step135.8] static task_type_map soft-matches senior-coder-v2 → senior-coder; wins over analyzer", () => {
   const ctx: ITaskTypeDerivationContext = {
-    identityId: "senior-coder-v2",
+    agentRole: "senior-coder-v2",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
     analyzerTaskType: TaskType.DOCS,
   };
@@ -64,7 +64,7 @@ Deno.test("[step135.8] static task_type_map soft-matches senior-coder-v2 → sen
 
 Deno.test("[step135.8] unmatched static map identity falls through to analyzer", () => {
   const ctx: ITaskTypeDerivationContext = {
-    identityId: "totally-unrelated-name",
+    agentRole: "totally-unrelated-name",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
     analyzerTaskType: TaskType.DOCS,
   };
@@ -82,7 +82,7 @@ Deno.test("[step135.8] no source matches at all → UNKNOWN", () => {
 
 Deno.test("[step135.8][edge] static map exact match takes priority over normalised-prefix match", () => {
   const ctx: ITaskTypeDerivationContext = {
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     taskTypeMap: {
       "senior-coder": TaskType.FEATURE,
       "senior": TaskType.BUGFIX,
@@ -95,7 +95,7 @@ Deno.test("[step135.8][edge] static map exact match takes priority over normalis
 
 Deno.test("[step135.8][edge] static map normalised-prefix match: senior-coder-v3 falls back to senior-coder prefix entry", () => {
   const ctx: ITaskTypeDerivationContext = {
-    identityId: "senior-coder-v3",
+    agentRole: "senior-coder-v3",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
   };
   const result = deriveTaskType(ctx);
@@ -105,13 +105,13 @@ Deno.test("[step135.8][edge] static map normalised-prefix match: senior-coder-v3
 
 Deno.test("[step135.8] identity declaration never shadowed by a static_map entry for the same identity (anti-drift)", () => {
   const ctx: ITaskTypeDerivationContext = {
-    identityId: "senior-coder",
-    identityTaskType: TaskType.FEATURE,
+    agentRole: "senior-coder",
+    agentRoleTaskType: TaskType.FEATURE,
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
   };
   const result = deriveTaskType(ctx);
   assertEquals(result.taskType, TaskType.FEATURE);
-  assertEquals(result.source, "identity");
+  assertEquals(result.source, "agent_role");
 });
 
 Deno.test("[step135.8] topSkillTaskTypes takes the first (highest-confidence) entry only", () => {

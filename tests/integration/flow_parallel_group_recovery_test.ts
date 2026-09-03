@@ -25,9 +25,9 @@ Deno.test("[Step65.4] FlowRunner recovery preserves successful sibling results w
       description: "Recovery should preserve successful sibling results",
       groupId: "workers",
       memberSteps: [
-        { stepId: "task-a", stepName: "Task A", identityId: "workerA" },
-        { stepId: "task-b", stepName: "Task B", identityId: "workerB" },
-        { stepId: "task-c", stepName: "Task C", identityId: "workerC" },
+        { stepId: "task-a", stepName: "Task A", agentRole: "workerA" },
+        { stepId: "task-b", stepName: "Task B", agentRole: "workerB" },
+        { stepId: "task-c", stepName: "Task C", agentRole: "workerC" },
       ],
     });
 

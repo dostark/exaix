@@ -463,7 +463,7 @@ export class RequestProcessor {
       return null;
     }
 
-    return hasFlow ? RequestKind.FLOW : RequestKind.IDENTITY;
+    return hasFlow ? RequestKind.FLOW : RequestKind.AGENT_ROLE;
   }
 
   private createRequestProcessingPipeline(): MiddlewarePipeline<IRequestProcessingContext> {

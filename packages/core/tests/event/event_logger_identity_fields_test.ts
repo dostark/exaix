@@ -9,7 +9,7 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
 import type { IActivityRepository, ILogActivityRequest } from "@exaix/core/repositories";
-import { ActorType, AgentKind } from "@exaix/core";
+import { ActorType, RuntimeKind } from "@exaix/core";
 
 Deno.test("EventLogger: passes all separation fields through to logActivity", async () => {
   // Arrange
@@ -31,7 +31,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
     target: "some-portal",
     actor: "user:test@example.com",
     actorType: ActorType.USER,
-    agentKind: AgentKind.AGENT_EXECUTOR,
+    agentKind: RuntimeKind.AGENT_EXECUTOR,
     agentRole: "senior-coder",
     traceId: "trace-abc-123",
   });
@@ -41,7 +41,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
   const req = capturedRequests[0];
   assertEquals(req.actor, "user:test@example.com");
   assertEquals(req.actorType, ActorType.USER);
-  assertEquals(req.agentKind, AgentKind.AGENT_EXECUTOR);
+  assertEquals(req.agentKind, RuntimeKind.AGENT_EXECUTOR);
   assertEquals(req.agentRole, "senior-coder");
   assertEquals(req.traceId, "trace-abc-123");
 });
@@ -94,7 +94,7 @@ Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async
     action: "test.event",
     target: "some-portal",
     actor: "system",
-    agentKind: AgentKind.AGENT_EXECUTOR,
+    agentKind: RuntimeKind.AGENT_EXECUTOR,
     agentRole: "senior-coder",
   });
 
@@ -103,5 +103,5 @@ Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async
   assertNotEquals(req.agentKind, "senior-coder");
   assertNotEquals(req.agentKind, req.agentRole);
   assertEquals(req.agentRole, "senior-coder");
-  assertEquals(req.agentKind, AgentKind.AGENT_EXECUTOR);
+  assertEquals(req.agentKind, RuntimeKind.AGENT_EXECUTOR);
 });

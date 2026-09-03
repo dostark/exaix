@@ -43,7 +43,7 @@ interface IIdentityFrontmatter {
 }
 
 interface IIdentityDefaults {
-  identityId: string;
+  agentRole: string;
   defaults: string[];
 }
 
@@ -62,11 +62,11 @@ async function readIdentityDefaults(): Promise<IIdentityDefaults[]> {
     const match = text.match(/^---\n([\s\S]*?)\n---/);
     const frontmatter = match ? parseYaml(match[1]) as IIdentityFrontmatter : {};
     rows.push({
-      identityId: entry.name.replace(/\.md$/, ""),
+      agentRole: entry.name.replace(/\.md$/, ""),
       defaults: frontmatter.default_skills ?? [],
     });
   }
-  rows.sort((a, b) => a.identityId.localeCompare(b.identityId));
+  rows.sort((a, b) => a.agentRole.localeCompare(b.agentRole));
   return rows;
 }
 
@@ -75,7 +75,7 @@ Deno.test("identity_default_skills — every declared default resolves in the ru
   const dangling: string[] = [];
   for (const identity of await readIdentityDefaults()) {
     for (const skillId of identity.defaults) {
-      if (!catalog.has(skillId)) dangling.push(`${identity.identityId} -> ${skillId}`);
+      if (!catalog.has(skillId)) dangling.push(`${identity.agentRole} -> ${skillId}`);
     }
   }
   assertEquals(dangling.sort(), [], `default_skills entries with no catalog skill:\n${dangling.join("\n")}`);
@@ -84,7 +84,7 @@ Deno.test("identity_default_skills — every declared default resolves in the ru
 Deno.test("identity_default_skills — no identity exceeds the default-skills budget", async () => {
   const overCap = (await readIdentityDefaults())
     .filter((identity) => identity.defaults.length > MAX_DEFAULT_SKILLS)
-    .map((identity) => `${identity.identityId} (${identity.defaults.length})`);
+    .map((identity) => `${identity.agentRole} (${identity.defaults.length})`);
   assertEquals(
     overCap,
     [],
@@ -98,7 +98,7 @@ Deno.test("identity_default_skills — no identity carries both the generic and 
   for (const identity of await readIdentityDefaults()) {
     const contracts = identity.defaults.filter((id) => id.startsWith("response-contract"));
     if (contracts.includes("response-contract") && contracts.length > 1) {
-      doubled.push(`${identity.identityId}: ${contracts.join(" + ")}`);
+      doubled.push(`${identity.agentRole}: ${contracts.join(" + ")}`);
     }
   }
   assertEquals(

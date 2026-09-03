@@ -57,8 +57,8 @@ export class StructuredLoggerService implements ILogService {
         entries = entries.filter((entry) => entry.context.trace_id === options.traceId);
       }
 
-      if (options.identityId) {
-        entries = entries.filter((entry) => entry.context.identity_id === options.identityId);
+      if (options.agentRole) {
+        entries = entries.filter((entry) => entry.context.agent_role === options.agentRole);
       }
 
       if (options.timeRange) {
@@ -101,8 +101,8 @@ export class StructuredLoggerService implements ILogService {
     return await this.getStructuredLogs({ traceId });
   }
 
-  async getLogsByAgentId(identityId: string): Promise<IStructuredLogEntry[]> {
-    return await this.getStructuredLogs({ identityId });
+  async getLogsByAgentId(agentRole: string): Promise<IStructuredLogEntry[]> {
+    return await this.getStructuredLogs({ agentRole: agentRole });
   }
 
   async exportLogs(filename: string, entries: IStructuredLogEntry[]): Promise<void> {

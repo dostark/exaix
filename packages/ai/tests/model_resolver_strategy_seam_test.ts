@@ -430,9 +430,13 @@ Deno.test("[step135.8][GAP-9][edge][roundtrip] task_type_source round-trips thro
     registerProvider("anthropic");
     const logger = createMockEventLogger();
     const resolver = makeResolver(undefined, logger);
-    await resolver.resolve({ model: "anthropic:claude-x", task_type: TaskType.FEATURE, task_type_source: "identity" });
+    await resolver.resolve({
+      model: "anthropic:claude-x",
+      task_type: TaskType.FEATURE,
+      task_type_source: "agent_role",
+    });
     const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
-    assertEquals(resolvedEvents[0]?.payload?.task_type_source, "identity");
+    assertEquals(resolvedEvents[0]?.payload?.task_type_source, "agent_role");
   } finally {
     ProviderRegistry.clear();
     await cleanup();

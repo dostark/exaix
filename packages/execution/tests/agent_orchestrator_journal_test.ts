@@ -9,7 +9,7 @@ import { AgentOrchestrator } from "@exaix/execution";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
-import { ActorType, AgentKind, LogLevel } from "@exaix/core";
+import { ActorType, LogLevel, RuntimeKind } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
@@ -74,12 +74,12 @@ Deno.test("AgentOrchestrator: logExecutionStart writes correct field separation"
   const event = loggedEvents[0];
   assertEquals(event.action, AGENT_EVENT_EXECUTION_STARTED);
   assertEquals(event.agentId, "agent-executor"); // constant — the runtime agent
-  assertEquals(event.agentKind, AgentKind.AGENT_EXECUTOR);
-  assertEquals(event.identityId, "senior-coder"); // the blueprint slug
+  assertEquals(event.agentKind, RuntimeKind.AGENT_EXECUTOR);
+  assertEquals(event.agentRole, "senior-coder"); // the blueprint slug
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
-  // KEY: agentId must differ from identityId
-  assertNotEquals(event.agentId, event.identityId);
+  // KEY: agentId must differ from agentRole
+  assertNotEquals(event.agentId, event.agentRole);
 
   executor.dispose();
 });
@@ -104,11 +104,11 @@ Deno.test("AgentOrchestrator: logExecutionComplete writes correct field separati
   const event = loggedEvents[0];
   assertEquals(event.action, AGENT_EVENT_EXECUTION_COMPLETED);
   assertEquals(event.agentId, "agent-executor");
-  assertEquals(event.agentKind, AgentKind.AGENT_EXECUTOR);
-  assertEquals(event.identityId, "code-reviewer");
+  assertEquals(event.agentKind, RuntimeKind.AGENT_EXECUTOR);
+  assertEquals(event.agentRole, "code-reviewer");
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
-  assertNotEquals(event.agentId, event.identityId);
+  assertNotEquals(event.agentId, event.agentRole);
   assertExists(event.payload);
   type CompletionPayload = { usage?: { tokens?: number; cost_usd_estimate?: number } };
   const usage = (event.payload as CompletionPayload).usage;
@@ -134,13 +134,13 @@ Deno.test("AgentOrchestrator: logExecutionError writes correct field separation"
   assertEquals(loggedEvents.length, 1);
   const event = loggedEvents[0];
   assertEquals(event.agentId, "agent-executor");
-  assertEquals(event.agentKind, AgentKind.AGENT_EXECUTOR);
-  assertEquals(event.identityId, "test-agent");
+  assertEquals(event.agentKind, RuntimeKind.AGENT_EXECUTOR);
+  assertEquals(event.agentRole, "test-agent");
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
   // target should be the identity that failed
   assertEquals(event.target, "test-agent");
-  assertNotEquals(event.agentId, event.identityId);
+  assertNotEquals(event.agentId, event.agentRole);
 
   executor.dispose();
 });
@@ -148,14 +148,14 @@ Deno.test("AgentOrchestrator: logExecutionError writes correct field separation"
 Deno.test("AgentOrchestrator: REGRESSION - agentId must never be identity blueprint slug", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
-  // Act - log with identityId = "senior-coder"
+  // Act - log with agentRole = "senior-coder"
   await executor.logExecutionStart("trace-999", "senior-coder", "test-portal");
 
   // Assert - most important regression guard
   const event = loggedEvents[0];
   assertNotEquals(event.agentId, "senior-coder");
   assertEquals(event.agentId, "agent-executor");
-  assertEquals(event.identityId, "senior-coder");
+  assertEquals(event.agentRole, "senior-coder");
 
   executor.dispose();
 });

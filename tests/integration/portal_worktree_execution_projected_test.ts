@@ -37,16 +37,16 @@ async function setupPortalWorktreeExecutionLoop(env: TestEnvironment) {
   const loop = new ExecutionLoop({
     config,
     db: env.db,
-    identityId: "daemon",
+    agentRole: "daemon",
     reviewRegistry,
     gitServiceFactory: {
       createGitService(repoPath: string, traceId: string) {
-        return new GitService({ config, traceId, identityId: "daemon", repoPath });
+        return new GitService({ config, traceId, agentRole: "daemon", repoPath });
       },
     },
     toolRegistryFactory: {
       createToolRegistry(traceId: string, baseDir: string) {
-        return new ToolRegistry({ config, traceId, identityId: "daemon", baseDir });
+        return new ToolRegistry({ config, traceId, agentRole: "daemon", baseDir });
       },
     },
   });
@@ -66,7 +66,7 @@ Deno.test(
       const requestA = `request-${traceA.substring(0, 8)}`;
       const planA = await env.createPlan(traceA, requestA, {
         status: "review",
-        identityId: "senior-coder",
+        agentRole: "senior-coder",
         portal: portalAlias,
         targetBranch,
         actions: [
@@ -84,7 +84,7 @@ Deno.test(
       const requestB = `request-${traceB.substring(0, 8)}`;
       const planB = await env.createPlan(traceB, requestB, {
         status: "review",
-        identityId: "senior-coder",
+        agentRole: "senior-coder",
         portal: portalAlias,
         targetBranch,
         actions: [
@@ -166,7 +166,7 @@ Deno.test(
 
       const planPath = await env.createPlan(traceId, requestId, {
         status: "review",
-        identityId: "senior-coder",
+        agentRole: "senior-coder",
         portal: portalAlias,
         targetBranch: badBaseBranch,
         actions: [

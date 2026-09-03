@@ -20,7 +20,7 @@ Deno.test("dogfood smoke: request → plan via RequestProcessor.process()", asyn
     await t.step("creates request and generates plan", async () => {
       const requestResult = await env.createRequest(
         "Add a health endpoint to src/api/health.ts returning { status: 'ok' }",
-        { identityId: "senior-coder", priority: 5, tags: ["feature"] },
+        { agentRole: "senior-coder", priority: 5, tags: ["feature"] },
       );
 
       const processorResult = await processor.process(requestResult.filePath);

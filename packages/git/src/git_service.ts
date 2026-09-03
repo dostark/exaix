@@ -51,7 +51,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 type GitServiceError = Error | string | Record<string, JsonValue>;
 
-const DAEMON_IDENTITY_ID = "daemon";
+const DAEMON_AGENT_ROLE_ID = "daemon";
 
 function getRandomString(length: number): string {
   const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -119,7 +119,7 @@ export class GitService implements IGitService {
   private config: Config;
   private logger?: IEventLogger;
   private traceId?: string;
-  private identityId?: string;
+  private agentRole?: string;
   private repoPath: string;
 
   constructor(options: IGitServiceConfig) {
@@ -128,11 +128,11 @@ export class GitService implements IGitService {
     this.config = configSource && typeof (configSource as { get?: () => Config }).get === "function"
       ? (configSource as { get(): Config }).get()
       : options.config;
-    this.logger = options.logger && options.identityId
-      ? options.logger.child({ identityId: options.identityId })
+    this.logger = options.logger && options.agentRole
+      ? options.logger.child({ agentRole: options.agentRole })
       : options.logger;
     this.traceId = options.traceId;
-    this.identityId = options.identityId;
+    this.agentRole = options.agentRole;
     this.repoPath = options.repoPath || this.config.system.root;
   }
 
@@ -444,7 +444,7 @@ export class GitService implements IGitService {
     ];
     if (
       !options?.allowProtected && protectedBranches.includes(branchName.toLowerCase()) &&
-      this.identityId !== DAEMON_IDENTITY_ID
+      this.agentRole !== DAEMON_AGENT_ROLE_ID
     ) {
       throw new GitSecurityError(`Switching to protected branch '${branchName}' is prohibited for agents.`);
     }

@@ -95,7 +95,7 @@ export async function makeRequestProcessorEnv(): Promise<{
 export function makeAgentRequestFileSync(requestsDir: string, options: {
   requestId?: string;
   body?: string;
-  identity?: string;
+  agent_role?: string;
   traceId?: string;
   status?: string;
   source?: string;
@@ -103,7 +103,7 @@ export function makeAgentRequestFileSync(requestsDir: string, options: {
 } = {}): string {
   const requestId = options.requestId ?? "req-001";
   const body = options.body ?? "Fix the login bug in the auth module";
-  const identity = options.identity ?? "nonexistent-agent";
+  const identity = options.agent_role ?? "nonexistent-agent";
   const filePath = join(requestsDir, `${requestId}.md`);
 
   const fields = [

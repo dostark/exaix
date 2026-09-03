@@ -113,7 +113,7 @@ export class LogServiceAdapter implements ILogService {
     if (options.level && !options.level.includes(entry.level)) return false;
     if (options.traceId && entry.context.trace_id !== options.traceId) return false;
     if (options.correlationId && entry.context.correlation_id !== options.correlationId) return false;
-    if (options.identityId && entry.context.identity_id !== options.identityId) return false;
+    if (options.agentRole && entry.context.agent_role !== options.agentRole) return false;
     return true;
   }
 
@@ -136,8 +136,8 @@ export class LogServiceAdapter implements ILogService {
     return await this.getStructuredLogs({ traceId });
   }
 
-  async getLogsByAgentId(identityId: string): Promise<IStructuredLogEntry[]> {
-    return await this.getStructuredLogs({ identityId });
+  async getLogsByAgentId(agentRole: string): Promise<IStructuredLogEntry[]> {
+    return await this.getStructuredLogs({ agentRole });
   }
 
   async exportLogs(filename: string, entries: IStructuredLogEntry[]): Promise<void> {

@@ -88,7 +88,7 @@ import type { IDatabaseService } from "@exaix/core/types";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 
 /** Default identity ID used across all mock service implementations */
-const MOCK_IDENTITY_ID = "test-agent";
+const MOCK_AGENT_ROLE_ID = "test-agent";
 /** Placeholder project name used in mock project lists */
 const MOCK_PROJECT_NAME = "test";
 
@@ -237,7 +237,7 @@ export class MockLogService implements IDatabaseService, IJournalService {
     _target: string | null,
     _payload: Record<string, _JSONValue>,
     _traceId?: Opt<string, Reason.TestStub>,
-    _identityId?: Opt<string | null, Reason.TestStub>,
+    _agentRole?: Opt<string | null, Reason.TestStub>,
   ): void {}
 
   waitForFlush(): Promise<void> {
@@ -348,7 +348,7 @@ export class MockRequestService implements IRequestService {
       path: "/mock/request.md",
       status: RequestStatus.PENDING,
       priority: options?.priority ?? RequestPriority.NORMAL,
-      agent_role: options?.identity ?? MOCK_IDENTITY_ID,
+      agent_role: options?.agent_role ?? MOCK_AGENT_ROLE_ID,
       source: source,
       created: new Date().toISOString(),
       created_by: "test-user",
@@ -382,7 +382,7 @@ export class MockRequestService implements IRequestService {
         path: "/mock/request.md",
         status: RequestStatus.PENDING,
         priority: RequestPriority.NORMAL,
-        agent_role: MOCK_IDENTITY_ID,
+        agent_role: MOCK_AGENT_ROLE_ID,
         source: "tui" as RequestSource,
         created: new Date().toISOString(),
         created_by: "test-user",
@@ -437,8 +437,8 @@ export class MockAgentService implements IAgentService {
     ]);
   }
 
-  getAgentHealth(identityId: string): Promise<IAgentHealthData> {
-    if (identityId === "agent-2") {
+  getAgentHealth(agentRole: string): Promise<IAgentHealthData> {
+    if (agentRole === "agent-2") {
       return Promise.resolve({
         status: AgentHealth.WARNING,
         issues: ["Mock warning"],
@@ -452,17 +452,17 @@ export class MockAgentService implements IAgentService {
     });
   }
 
-  getAgentLogs(identityId: string, _limit = 50): Promise<IAgentLogEntry[]> {
+  getAgentLogs(agentRole: string, _limit = 50): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       {
         timestamp: new Date().toISOString(),
         level: LogLevel.INFO,
-        message: `Agent ${identityId} ready`,
+        message: `Agent ${agentRole} ready`,
       },
       {
         timestamp: new Date().toISOString(),
         level: LogLevel.DEBUG,
-        message: `Agent ${identityId} heartbeating`,
+        message: `Agent ${agentRole} heartbeating`,
       },
     ]);
   }
@@ -505,7 +505,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
       request_id: "request-1",
       portal: GitBranchName.MAIN,
       status: ExecutionStatus.COMPLETED,
-      agent_role: MOCK_IDENTITY_ID,
+      agent_role: MOCK_AGENT_ROLE_ID,
       started_at: new Date().toISOString(),
       summary: "Mock execution",
       steps: [],
@@ -528,7 +528,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
         request_id: "request-1",
         portal: GitBranchName.MAIN,
         status: ExecutionStatus.COMPLETED,
-        agent_role: MOCK_IDENTITY_ID,
+        agent_role: MOCK_AGENT_ROLE_ID,
         started_at: new Date().toISOString(),
         summary: "Mock history item",
         steps: [],
@@ -703,7 +703,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     return Promise.resolve([]);
   }
 
-  getMemoryByAgent(_identityId: string): Promise<IMemorySearchResult[]> {
+  getMemoryByAgent(_agentRole: string): Promise<IMemorySearchResult[]> {
     return Promise.resolve([]);
   }
 
@@ -846,7 +846,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
           tags: [],
         },
         reason: "Testing",
-        agent_role: MOCK_IDENTITY_ID,
+        agent_role: MOCK_AGENT_ROLE_ID,
         status: MemoryRecordStatus.PENDING,
         created_at: new Date().toISOString(),
       },
@@ -872,7 +872,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
         tags: [],
       },
       reason: "Testing",
-      agent_role: MOCK_IDENTITY_ID,
+      agent_role: MOCK_AGENT_ROLE_ID,
       status: MemoryRecordStatus.PENDING,
       created_at: new Date().toISOString(),
     });
@@ -1030,7 +1030,7 @@ export class MockStructuredLoggerService implements ILogService {
     return Promise.resolve([]);
   }
 
-  getLogsByAgentId(_identityId: string): Promise<IStructuredLogEntry[]> {
+  getLogsByAgentId(_agentRole: string): Promise<IStructuredLogEntry[]> {
     return Promise.resolve([]);
   }
   exportLogs(_filename: string, _entries: IStructuredLogEntry[]): Promise<void> {

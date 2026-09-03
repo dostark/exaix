@@ -27,7 +27,7 @@ import { createStubConfig, createStubContext, createStubDb } from "@exaix/testin
 
 const TEST_DESCRIPTION = "test request";
 const TEST_TRACE_ID = "trace-1";
-const TEST_IDENTITY_ID = "agent-1";
+const TEST_AGENT_ROLE_ID = "agent-1";
 
 const toPromise = <T>(value: T): Promise<T> => Promise.resolve(value);
 
@@ -38,7 +38,7 @@ function createRequestMetadata() {
     path: "Workspace/Requests/request.md",
     status: RequestStatus.PENDING,
     priority: RequestPriority.NORMAL,
-    agent_role: TEST_IDENTITY_ID,
+    agent_role: TEST_AGENT_ROLE_ID,
     created: new Date().toISOString(),
     created_by: "tester",
     source: RequestSource.CLI as const,
@@ -139,7 +139,7 @@ Deno.test("JournalServiceAdapter query and distinct-values handling", async () =
     trace_id: TEST_TRACE_ID,
     actor: "cli",
     actor_type: null,
-    agent_role: TEST_IDENTITY_ID,
+    agent_role: TEST_AGENT_ROLE_ID,
     agent_kind: null,
     action_type: "run",
     target: "target",
@@ -214,7 +214,7 @@ Deno.test("LogServiceAdapter handles filtering, subscriptions, and export", asyn
     action: "a",
     target: "t1",
     traceId: "t1",
-    identityId: "ag1",
+    agentRole: "ag1",
     level: LogLevel.INFO,
     payload: { correlation_id: "c1" },
   };
@@ -222,7 +222,7 @@ Deno.test("LogServiceAdapter handles filtering, subscriptions, and export", asyn
     action: "b",
     target: "t2",
     traceId: "t2",
-    identityId: "ag2",
+    agentRole: "ag2",
     level: LogLevel.ERROR,
     payload: { correlation_id: "c2" },
   };

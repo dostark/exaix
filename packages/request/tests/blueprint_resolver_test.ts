@@ -36,7 +36,7 @@ Deno.test("[BlueprintResolver.resolve] loads blueprint directly from configured 
     const loaded = await resolver.resolve("test-agent", mockLogger);
 
     assertExists(loaded);
-    assertEquals(loaded.identityId, "test-agent");
+    assertEquals(loaded.agentRole, "test-agent");
   } finally {
     await Deno.remove(testDir, { recursive: true });
   }
@@ -70,7 +70,7 @@ Deno.test("[BlueprintResolver.resolve] falls back to the repo-root Blueprints/Ag
     const loaded = await resolver.resolve("default", mockLogger);
 
     assertExists(loaded);
-    assertEquals(loaded.identityId, "default");
+    assertEquals(loaded.agentRole, "default");
   } finally {
     Deno.chdir(originalCwd);
     await Deno.remove(testDir, { recursive: true });

@@ -43,13 +43,13 @@ import type { IGateConfig, IGateEvaluator, IGateResult, JSONValue } from "@exaix
 import type { IAgentExecutor } from "@exaix/flow";
 
 class MockAgentRunner implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     return Promise.resolve({ thought: "Mock", content: "Result", raw: "raw" });
   }
 }
 
 class ThrowingAgentRunner implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  run(_agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     throw new Error("Simulated execution failure");
   }
 }

@@ -25,7 +25,7 @@ import { initTestDbService } from "@exaix/testing";
 const noopLogger: IFlowEventLogger = { log: () => {} };
 
 class JsonAgentRunner implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest): Promise<{ thought: string; content: string; raw: string }> {
+  run(_agentRole: string, _request: IFlowStepRequest): Promise<{ thought: string; content: string; raw: string }> {
     return Promise.resolve({
       thought: "",
       content: JSON.stringify({ summary: "wave one" }),

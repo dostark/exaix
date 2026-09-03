@@ -32,7 +32,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  */
 export const GateConfigSchema = z.object({
   /** Judge identity to use for evaluation */
-  agent_role: z.string(),
+  agentRole: z.string(),
   /** Criteria names or objects to evaluate against */
   criteria: z.array(z.union([z.string(), EvaluationCriterionSchema])),
   /** Score threshold for passing (0.0 - 1.0) */
@@ -84,7 +84,7 @@ export class GateEvaluator implements IGateEvaluator {
 
       // Invoke judge identity
       const evaluation = await this.judgeInvoker.evaluate(
-        config.identity,
+        config.agentRole,
         contentToEvaluate,
         allCriteria,
         context,
@@ -255,8 +255,8 @@ export class MockJudgeInvoker implements IJudgeInvoker {
   private mockResults: Map<string, EvaluationResult> = new Map();
   private defaultScore: number = 0.85;
 
-  setMockResult(identityId: string, result: EvaluationResult): void {
-    this.mockResults.set(identityId, result);
+  setMockResult(agentRole: string, result: EvaluationResult): void {
+    this.mockResults.set(agentRole, result);
   }
 
   setDefaultScore(score: number): void {
@@ -264,13 +264,13 @@ export class MockJudgeInvoker implements IJudgeInvoker {
   }
 
   evaluate(
-    identityId: string,
+    agentRole: string,
     _content: string,
     criteria: EvaluationCriterion[],
     _context?: Opt<string, Reason.AbstractBoundary>,
   ): Promise<EvaluationResult> {
     // Check for specific mock result
-    const mockResult = this.mockResults.get(identityId);
+    const mockResult = this.mockResults.get(agentRole);
     if (mockResult) {
       return Promise.resolve(mockResult);
     }
@@ -295,7 +295,7 @@ export class MockJudgeInvoker implements IJudgeInvoker {
       suggestions: [],
       metadata: {
         evaluatedAt: new Date().toISOString(),
-        evaluatorAgent: identityId,
+        evaluatorAgent: agentRole,
       },
     });
   }

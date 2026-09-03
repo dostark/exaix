@@ -73,7 +73,7 @@ async function dropReturn(rig: ITestRig, traceId: string, body: string | object)
 async function briefFor(rig: ITestRig, gate: SessionBrief["gate"], permitted: string[]): Promise<SessionBrief> {
   return await rig.service.prepareBrief({
     traceId: crypto.randomUUID(),
-    identityId: "test-identity",
+    agentRole: "test-identity",
     gate,
     tool: "claude-code",
     objective: "Do the work.",

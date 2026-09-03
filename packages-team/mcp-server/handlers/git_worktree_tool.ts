@@ -32,11 +32,11 @@ export class GitWorktreeTool extends ToolHandler {
       dry_run,
       verbose,
       expire,
-      identity_id,
+      agent_role,
     } = validatedArgs;
 
     try {
-      this.validatePermission(portal, identity_id, PortalOperation.GIT);
+      this.validatePermission(portal, agent_role, PortalOperation.GIT);
       const portalPath = this.validatePortalExists(portal);
       await this.validateGitRepository(portalPath, portal);
 
@@ -132,7 +132,7 @@ export class GitWorktreeTool extends ToolHandler {
       return this.formatSuccess(
         "git_worktree",
         portal,
-        identity_id,
+        agent_role,
         [{ type: "text", text }],
         {
           action,
@@ -140,20 +140,20 @@ export class GitWorktreeTool extends ToolHandler {
           branch: branch ?? null,
           ref: ref ?? null,
           force: !!force,
-          identity_id,
+          agent_role,
         },
       );
     } catch (error) {
       return this.formatToolError(
         "git_worktree",
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
         {
           action,
           path: path ?? null,
-          identity_id,
+          agent_role,
         },
       );
     }

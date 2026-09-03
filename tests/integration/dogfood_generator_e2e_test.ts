@@ -33,7 +33,7 @@ Deno.test("[dogfood-e2e] dogfood-developer identity loads through IBlueprintLoad
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer must load");
-  assertEquals(blueprint.identityId, "dogfood-developer");
+  assertEquals(blueprint.agentRole, "dogfood-developer");
   // This test covers the GENERATOR flow, so it only needs the identity to load and carry the
   // skill that flow depends on. It used to assert `skills.length === 8`, which broke when the
   // list was legitimately curated and told a reader nothing; skill defaults are `dogfood_identity_test.ts`'s concern.

@@ -545,17 +545,17 @@
                 "type": "string",
                 "description": "Detailed description of the request"
               },
-              "identity": {
+              "assigned_agent_role": {
                 "type": "string",
-                "description": "Identity to assign (default: default)"
+                "description": "Agent role to assign (default: default)"
               },
               "agent": {
                 "type": "string",
-                "description": "Deprecated: use identity instead"
+                "description": "Deprecated: use assigned_agent_role instead"
               },
               "agent_role": {
                 "type": "string",
-                "description": "Identity identifier for permission checks"
+                "description": "Agent role identifier for permission checks"
               }
             },
             "required": [

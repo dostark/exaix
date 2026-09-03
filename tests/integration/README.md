@@ -134,9 +134,9 @@ const found = await env.waitFor(
 
 ### Execution Loop
 
-| Method                                | Purpose                         |
-| ------------------------------------- | ------------------------------- |
-| `env.createExecutionLoop(identityId)` | Build `ExecutionLoop` for tests |
+| Method                               | Purpose                         |
+| ------------------------------------ | ------------------------------- |
+| `env.createExecutionLoop(agentRole)` | Build `ExecutionLoop` for tests |
 
 ### Portal
 
@@ -157,7 +157,7 @@ Deno.test("my feature: request generates plan", async (t) => {
 
     const { filePath, traceId } = await env.createRequest(
       "Add a health endpoint",
-      { identityId: "senior-coder", priority: 5 },
+      { agentRole: "senior-coder", priority: 5 },
     );
 
     const planPath = await processor.process(filePath);

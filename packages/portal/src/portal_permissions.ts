@@ -46,7 +46,7 @@ export class PortalPermissionsService {
   /**
    * Check if an agent is allowed to access a portal
    */
-  checkAgentAllowed(portalAlias: string, identityId: string): IAgentWhitelistResult {
+  checkAgentAllowed(portalAlias: string, agentRole: string): IAgentWhitelistResult {
     const portal = this.portals.get(portalAlias);
 
     if (!portal) {
@@ -54,7 +54,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Portal '${portalAlias}' not found`,
         portal: portalAlias,
-        agent_role: identityId,
+        agent_role: agentRole,
       };
     }
 
@@ -66,24 +66,24 @@ export class PortalPermissionsService {
       return {
         allowed: true,
         portal: portalAlias,
-        agent_role: identityId,
+        agent_role: agentRole,
       };
     }
 
     // Check explicit whitelist
-    if (identitiesAllowed.includes(identityId)) {
+    if (identitiesAllowed.includes(agentRole)) {
       return {
         allowed: true,
         portal: portalAlias,
-        agent_role: identityId,
+        agent_role: agentRole,
       };
     }
 
     return {
       allowed: false,
-      reason: `Agent '${identityId}' is not allowed to access portal '${portalAlias}'`,
+      reason: `Agent '${agentRole}' is not allowed to access portal '${portalAlias}'`,
       portal: portalAlias,
-      agent_role: identityId,
+      agent_role: agentRole,
     };
   }
 
@@ -92,17 +92,17 @@ export class PortalPermissionsService {
    */
   checkOperationAllowed(
     portalAlias: string,
-    identityId: string,
+    agentRole: string,
     operation: PortalOperation,
   ): IPermissionCheckResult {
     // First check if agent is allowed
-    const agentCheck = this.checkAgentAllowed(portalAlias, identityId);
+    const agentCheck = this.checkAgentAllowed(portalAlias, agentRole);
     if (!agentCheck.allowed) {
       return {
         allowed: false,
         reason: agentCheck.reason,
         portal: portalAlias,
-        agent_role: identityId,
+        agent_role: agentRole,
         operation,
       };
     }
@@ -116,7 +116,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Operation '${operation}' is not permitted on portal '${portalAlias}'`,
         portal: portalAlias,
-        agent_role: identityId,
+        agent_role: agentRole,
         operation,
       };
     }
@@ -124,7 +124,7 @@ export class PortalPermissionsService {
     return {
       allowed: true,
       portal: portalAlias,
-      agent_role: identityId,
+      agent_role: agentRole,
       operation,
     };
   }
@@ -168,11 +168,11 @@ export class PortalPermissionsService {
   /**
    * List all portals accessible by an agent
    */
-  listAccessiblePortals(identityId: string): IPortalPermissions[] {
+  listAccessiblePortals(agentRole: string): IPortalPermissions[] {
     const accessible: IPortalPermissions[] = [];
 
     for (const portal of this.portals.values()) {
-      const check = this.checkAgentAllowed(portal.alias, identityId);
+      const check = this.checkAgentAllowed(portal.alias, agentRole);
       if (check.allowed) {
         accessible.push(portal);
       }
@@ -222,7 +222,7 @@ export class PortalPermissionsService {
    */
   checkPermission(
     portalAlias: string,
-    identityId: string,
+    agentRole: string,
     action: PermissionAction,
     resource: string,
     context?: Opt<{ timestamp?: Date; ip?: string }, Reason.OptionalContext>,
@@ -234,7 +234,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Portal '${portalAlias}' not found`,
         portal: portalAlias,
-        agent_role: identityId,
+        agent_role: agentRole,
         action,
         resource,
       };
@@ -244,13 +244,13 @@ export class PortalPermissionsService {
 
     // If enhanced permissions are defined, use RBAC model
     if (portal.permissions && portal.permissions.length > 0) {
-      const result = this.checkRBACPermissions(portal, identityId, action, resource, context);
+      const result = this.checkRBACPermissions(portal, agentRole, action, resource, context);
       this.logPermissionCheck(result, context);
       return result;
     }
 
     // Fall back to legacy permission model for backward compatibility
-    const result = this.checkLegacyPermissions(portal, identityId, action, resource);
+    const result = this.checkLegacyPermissions(portal, agentRole, action, resource);
     this.logPermissionCheck(result, context);
     return result;
   }
@@ -276,7 +276,7 @@ export class PortalPermissionsService {
     await this.auditLogger.logSecurityEvent({
       type: SecurityEventType.PERMISSION,
       action: "portal_access_check",
-      actor: result.identity_id,
+      actor: result.agent_role,
       resource: `${result.portal}:${result.resource}`,
       result: result.allowed ? SecurityEventResult.SUCCESS : SecurityEventResult.DENIED,
       metadata,
@@ -289,7 +289,7 @@ export class PortalPermissionsService {
    */
   private checkRBACPermissions(
     portal: IPortalPermissions,
-    identityId: string,
+    agentRole: string,
     action: PermissionAction,
     resource: string,
     context?: Opt<{ timestamp?: Date; ip?: string }, Reason.OptionalContext>,
@@ -310,7 +310,7 @@ export class PortalPermissionsService {
             allowed: false,
             reason: conditionCheck.reason,
             portal: portal.alias,
-            agent_role: identityId,
+            agent_role: agentRole,
             action,
             resource,
             conditions: perm.conditions,
@@ -322,7 +322,7 @@ export class PortalPermissionsService {
       return {
         allowed: true,
         portal: portal.alias,
-        agent_role: identityId,
+        agent_role: agentRole,
         action,
         resource,
         conditions: perm.conditions,
@@ -334,7 +334,7 @@ export class PortalPermissionsService {
       allowed: false,
       reason: "No matching permission found",
       portal: portal.alias,
-      agent_role: identityId,
+      agent_role: agentRole,
       action,
       resource,
     };
@@ -345,7 +345,7 @@ export class PortalPermissionsService {
    */
   private checkLegacyPermissions(
     portal: IPortalPermissions,
-    identityId: string,
+    agentRole: string,
     action: PermissionAction,
     resource: string,
   ): IRBACPermissionCheckResult {
@@ -353,12 +353,12 @@ export class PortalPermissionsService {
 
     // Check agent whitelist
     const identitiesAllowed = portal.agents_allowed || ["*"];
-    if (!identitiesAllowed.includes("*") && !identitiesAllowed.includes(identityId)) {
+    if (!identitiesAllowed.includes("*") && !identitiesAllowed.includes(agentRole)) {
       return {
         allowed: false,
-        reason: `Agent '${identityId}' is not allowed to access portal '${portal.alias}'`,
+        reason: `Agent '${agentRole}' is not allowed to access portal '${portal.alias}'`,
         portal: portal.alias,
-        agent_role: identityId,
+        agent_role: agentRole,
         action,
         resource,
       };
@@ -379,7 +379,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Action '${action}' is not permitted on portal '${portal.alias}'`,
         portal: portal.alias,
-        agent_role: identityId,
+        agent_role: agentRole,
         action,
         resource,
       };
@@ -391,7 +391,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Execute action requires git operation permission`,
         portal: portal.alias,
-        agent_role: identityId,
+        agent_role: agentRole,
         action,
         resource,
       };
@@ -402,7 +402,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Delete action requires write operation permission`,
         portal: portal.alias,
-        agent_role: identityId,
+        agent_role: agentRole,
         action,
         resource,
       };
@@ -411,7 +411,7 @@ export class PortalPermissionsService {
     return {
       allowed: true,
       portal: portal.alias,
-      agent_role: identityId,
+      agent_role: agentRole,
       action,
       resource,
     };

@@ -7,7 +7,7 @@
  */
 
 export enum GroupingMode {
-  IDENTITY = "identity",
+  AGENT_ROLE = "agent_role",
   ACTION = "action",
   NONE = "none",
   STATUS = "status",
@@ -23,7 +23,7 @@ export enum RequestGroupingMode {
   NONE = "none",
   STATUS = "status",
   PRIORITY = "priority",
-  IDENTITY = "identity",
+  AGENT_ROLE = "agent_role",
 }
 
 export enum DialogPurpose {
@@ -93,7 +93,6 @@ export enum TuiNodeType {
   LEARNING = "learning",
   PATTERN = "pattern",
   DECISION = "decision",
-  IDENTITY = "identity",
   STATUS_GROUP = "status-group",
   MODEL_GROUP = "model-group",
   GROUP = "group",
@@ -108,7 +107,6 @@ export enum TuiGroupBy {
 }
 
 export enum TuiIcon {
-  IDENTITY = "🤖",
   LEARNING = "🎯",
   BRAIN = "🧠",
   SUCCESS = "✅",
@@ -125,7 +123,7 @@ export enum TuiIcon {
 export enum RequestDialogType {
   SEARCH = "search",
   FILTER_STATUS = "filter-status",
-  FILTER_IDENTITY = "filter-identity",
+  FILTER_AGENT_ROLE = "filter-agent-role",
   CREATE = "create",
   PRIORITY = "priority",
 }
@@ -158,7 +156,7 @@ export enum StatusIndicator {
 export enum LogGroupingMode {
   CORRELATION = "correlation",
   TRACE = "trace",
-  IDENTITY = "identity",
+  AGENT_ROLE = "agent_role",
   LEVEL = "level",
   TIME = "time",
   NONE = "none",

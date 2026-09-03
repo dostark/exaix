@@ -124,7 +124,7 @@ async function makeKnowledgeProcessorEnv(opts: {
 function makeAgentRequestFile(requestsDir: string, opts: {
   requestId?: string;
   body?: string;
-  identity?: string;
+  agent_role?: string;
   portal?: string;
 } = {}): string {
   const requestId = opts.requestId ?? "req-k-001";
@@ -134,7 +134,7 @@ trace_id: "trace-${requestId}"
 created: "${new Date().toISOString()}"
 status: "${RequestStatus.PENDING}"
 priority: "normal"
-agent_role: "${opts.identity ?? "test-agent"}"
+agent_role: "${opts.agent_role ?? "test-agent"}"
 assessed_at: "${new Date().toISOString()}"
 ${portalLine}
 created_by: "test-user"

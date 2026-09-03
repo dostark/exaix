@@ -20,7 +20,7 @@ Deno.test("generateMissionReport uses real completion content, not placeholders 
 
     const loop = new ExecutionLoop({
       config,
-      identityId: "gap9-test",
+      agentRole: "gap9-test",
       memoryBank: bank,
     });
 
@@ -66,7 +66,7 @@ Deno.test("generateMissionReport without completion content uses the documented 
 
     const loop = new ExecutionLoop({
       config,
-      identityId: "gap9-test",
+      agentRole: "gap9-test",
       memoryBank: bank,
     });
 

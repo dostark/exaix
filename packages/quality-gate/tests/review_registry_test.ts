@@ -110,7 +110,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/test",
       description: "Test",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 0,
     };
 
@@ -284,7 +284,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/trace-1",
       description: "Trace 1",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -294,7 +294,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/trace-2",
       description: "Trace 2",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -313,7 +313,7 @@ describe("ReviewRegistry", () => {
       portal: "Portal1",
       branch: "feat/portal-1",
       description: "Portal 1",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -323,7 +323,7 @@ describe("ReviewRegistry", () => {
       portal: "Portal2",
       branch: "feat/portal-2",
       description: "Portal 2",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -342,7 +342,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/status-pending",
       description: "Pending",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -352,7 +352,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/status-approved",
       description: "Approved",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -521,7 +521,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/trace-1",
       description: "Test 1",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -531,7 +531,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/trace-2",
       description: "Test 2",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 2,
     });
 
@@ -549,7 +549,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/pending-1",
       description: "Pending 1",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -559,7 +559,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/pending-2",
       description: "Pending 2",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -580,7 +580,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/count-1",
       description: "Count 1",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 
@@ -590,7 +590,7 @@ describe("ReviewRegistry", () => {
       portal: "TestPortal",
       branch: "feat/count-2",
       description: "Count 2",
-      created_by: MemoryBankSource.IDENTITY,
+      created_by: MemoryBankSource.USER,
       files_changed: 1,
     });
 

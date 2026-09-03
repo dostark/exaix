@@ -13,7 +13,7 @@ import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluati
 import type { IStepResult } from "@exaix/flow";
 
 const DEFAULT_CONFIG: IGateConfig = {
-  agent_role: "judge-agent",
+  agentRole: "judge-agent",
   criteria: ["CODE_CORRECTNESS"],
   threshold: 0.8,
   onFail: FlowGateOnFail.HALT,
@@ -148,7 +148,7 @@ Deno.test("GateEvaluator.evaluateStepResult: evaluates step result content", asy
 Deno.test("GateEvaluator: fails if required criteria fail even when overallScore meets threshold", async () => {
   const judgeInvoker = {
     evaluate: (
-      _identityId: string,
+      _agentRole: string,
       _content: string,
       _criteria: EvaluationCriterion[],
       _context?: string,
@@ -174,7 +174,7 @@ Deno.test("GateEvaluator: fails if required criteria fail even when overallScore
 
   const evaluator = new GateEvaluator(judgeInvoker);
   const config: IGateConfig = {
-    agent_role: "judge-agent",
+    agentRole: "judge-agent",
     criteria: ["CODE_CORRECTNESS"],
     threshold: 0.8,
     onFail: FlowGateOnFail.HALT,
@@ -199,7 +199,7 @@ Deno.test("GateEvaluator: supports criteria objects in config.criteria", async (
   };
 
   const config: IGateConfig = {
-    agent_role: "judge-agent",
+    agentRole: "judge-agent",
     criteria: [customCriterion],
     threshold: 0.8,
     onFail: FlowGateOnFail.HALT,
@@ -215,7 +215,7 @@ Deno.test("GateEvaluator: supports criteria objects in config.criteria", async (
 Deno.test("GateEvaluator: handles judge errors and returns halted by default", async () => {
   const judgeInvoker = {
     evaluate: (
-      _identityId: string,
+      _agentRole: string,
       _content: string,
       _criteria: EvaluationCriterion[],
       _context?: string,
@@ -226,7 +226,7 @@ Deno.test("GateEvaluator: handles judge errors and returns halted by default", a
 
   const evaluator = new GateEvaluator(judgeInvoker);
   const config: IGateConfig = {
-    agent_role: "judge-agent",
+    agentRole: "judge-agent",
     criteria: ["CODE_CORRECTNESS"],
     threshold: 0.8,
     onFail: FlowGateOnFail.HALT,

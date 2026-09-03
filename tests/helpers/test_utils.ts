@@ -158,7 +158,7 @@ export class MockRequestService extends BaseMockService<ITestRequestFixture> {
 
   createRequest(
     description: string,
-    options?: Opt<{ priority?: string; identity?: string; portal?: string; model?: string }, Reason.TestOverride>,
+    options?: Opt<{ priority?: string; agent_role?: string; portal?: string; model?: string }, Reason.TestOverride>,
   ): Promise<ITestRequestFixture> {
     return this.create({
       trace_id: `test-${Date.now()}`,
@@ -166,7 +166,7 @@ export class MockRequestService extends BaseMockService<ITestRequestFixture> {
       subject: description,
       status: RequestStatus.PENDING,
       priority: options?.priority || "normal",
-      agent_role: options?.identity || "default",
+      agent_role: options?.agent_role || "default",
       portal: options?.portal,
       model: options?.model,
       created: new Date().toISOString(),

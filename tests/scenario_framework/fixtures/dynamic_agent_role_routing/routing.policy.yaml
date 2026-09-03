@@ -9,6 +9,6 @@ rules:
       language: "typescript"
       portalType: "api"
     prefer:
-      identityId: "senior-coder"
+      agentRole: "senior-coder"
       trafficSplit: 1.0
       fallbackIdentityId: "default-agent"

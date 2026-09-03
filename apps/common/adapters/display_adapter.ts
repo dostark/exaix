@@ -8,7 +8,7 @@ import type { IDisplayService } from "@exaix/core/types";
 import type { EventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/mcp";
 
 export class DisplayAdapter implements IDisplayService {
   constructor(private logger: EventLogger) {}
@@ -19,7 +19,7 @@ export class DisplayAdapter implements IDisplayService {
     payload: LogMetadata = {},
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
-    return await this.logger.info(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
+    return await this.logger.info(action, target ?? DEFAULT_MCP_AGENT_ROLE_ID, payload, traceId);
   }
 
   async warn(
@@ -28,7 +28,7 @@ export class DisplayAdapter implements IDisplayService {
     payload: LogMetadata = {},
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
-    return await this.logger.warn(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
+    return await this.logger.warn(action, target ?? DEFAULT_MCP_AGENT_ROLE_ID, payload, traceId);
   }
 
   async error(
@@ -37,7 +37,7 @@ export class DisplayAdapter implements IDisplayService {
     payload: LogMetadata = {},
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
-    return await this.logger.error(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
+    return await this.logger.error(action, target ?? DEFAULT_MCP_AGENT_ROLE_ID, payload, traceId);
   }
 
   async debug(
@@ -46,7 +46,7 @@ export class DisplayAdapter implements IDisplayService {
     payload: LogMetadata = {},
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
-    return await this.logger.debug(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
+    return await this.logger.debug(action, target ?? DEFAULT_MCP_AGENT_ROLE_ID, payload, traceId);
   }
 
   async fatal(
@@ -55,6 +55,6 @@ export class DisplayAdapter implements IDisplayService {
     payload: LogMetadata = {},
     traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
-    return await this.logger.fatal(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
+    return await this.logger.fatal(action, target ?? DEFAULT_MCP_AGENT_ROLE_ID, payload, traceId);
   }
 }

@@ -18,7 +18,7 @@ function makeLog(overrides: Partial<ILogEntry> = {}): ILogEntry {
     trace_id: overrides.trace_id ?? "trace",
     actor: overrides.actor ?? "actor",
     actor_type: overrides.actor_type ?? null,
-    agent_role: overrides.identity_id ?? "agent",
+    agent_role: overrides.agent_role ?? "agent",
     agent_kind: overrides.agent_kind ?? null,
     action_type: overrides.action_type ?? "request_created",
     target: overrides.target ?? "t",
@@ -27,7 +27,7 @@ function makeLog(overrides: Partial<ILogEntry> = {}): ILogEntry {
   };
 }
 
-Deno.test("MonitorTuiSession: grouping cycles none -> identity -> action -> none", async () => {
+Deno.test("MonitorTuiSession: grouping cycles none -> agent_role -> action -> none", async () => {
   const logs = [
     makeLog({ id: "1", agent_role: "a1", action_type: "request_created" }),
     makeLog({ id: "2", agent_role: "a2", action_type: "plan_approved" }),
@@ -37,8 +37,8 @@ Deno.test("MonitorTuiSession: grouping cycles none -> identity -> action -> none
 
   assertEquals(session.getGroupBy(), "none");
   session.toggleGrouping();
-  assertEquals(session.getGroupBy(), "identity");
-  assertExists(session.getLogTree().find((n: ITreeNode) => n.id.startsWith("identity-")));
+  assertEquals(session.getGroupBy(), "agent_role");
+  assertExists(session.getLogTree().find((n: ITreeNode) => n.id.startsWith("agent_role-")));
 
   session.toggleGrouping();
   assertEquals(session.getGroupBy(), "action");

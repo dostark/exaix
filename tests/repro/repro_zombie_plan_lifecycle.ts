@@ -92,7 +92,7 @@ Description: Intentionally fail for test
     const executionLoop = new ExecutionLoop({
       config,
       db,
-      identityId: "daemon",
+      agentRole: "daemon",
     });
 
     const result = await executionLoop.processTask(planPath);

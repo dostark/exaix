@@ -18,7 +18,7 @@ const ACTIVITY_TABLE_SQL = `
     trace_id TEXT NOT NULL,
     actor TEXT NOT NULL,
     actor_type TEXT,
-    identity_id TEXT,
+    agent_role TEXT,
     agent_kind TEXT,
     action_type TEXT NOT NULL,
     target TEXT,

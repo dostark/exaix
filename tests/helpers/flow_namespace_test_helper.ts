@@ -62,22 +62,22 @@ export class RecordingFlowLogger implements IFlowEventLogger {
 
 export class ScriptedAgentExecutor implements IAgentExecutor {
   readonly calls: string[] = [];
-  readonly capturedRequests: Array<{ identityId: string; request: IFlowStepRequest }> = [];
+  readonly capturedRequests: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
   private readonly scripts = new Map<string, ScriptedExecutorResponse[]>();
 
   constructor(scripts: Record<string, ScriptedExecutorResponse[]>) {
-    for (const [identityId, entries] of Object.entries(scripts)) {
-      this.scripts.set(identityId, [...entries]);
+    for (const [agentRole, entries] of Object.entries(scripts)) {
+      this.scripts.set(agentRole, [...entries]);
     }
   }
 
-  async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.calls.push(identityId);
-    this.capturedRequests.push({ identityId, request });
+  async run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.calls.push(agentRole);
+    this.capturedRequests.push({ agentRole, request });
 
-    const queue = this.scripts.get(identityId);
+    const queue = this.scripts.get(agentRole);
     if (!queue || queue.length === 0) {
-      throw new Error(`No scripted response configured for ${identityId}`);
+      throw new Error(`No scripted response configured for ${agentRole}`);
     }
 
     const next = queue.shift()!;
@@ -89,7 +89,7 @@ export class ScriptedAgentExecutor implements IAgentExecutor {
 
     if (typeof resolved === "string") {
       return {
-        thought: `processed ${identityId}`,
+        thought: `processed ${agentRole}`,
         content: resolved,
         raw: resolved,
       };

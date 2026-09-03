@@ -15,8 +15,8 @@ Deno.test("Smoke: Plan approval concurrency", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create two simple requests
-    const r1 = await env.createRequest("Smoke Task A", { identityId: "agent-a" });
-    const r2 = await env.createRequest("Smoke Task B", { identityId: "agent-b" });
+    const r1 = await env.createRequest("Smoke Task A", { agentRole: "agent-a" });
+    const r2 = await env.createRequest("Smoke Task B", { agentRole: "agent-b" });
 
     // Create plans that write distinct output files
     const p1 = await env.createPlan(r1.traceId, "smoke-a", {
@@ -56,8 +56,8 @@ Deno.test("Smoke: Plan approval concurrency", async () => {
     );
 
     // Execute both plans concurrently (note: execution may remove/move active files)
-    const loop1 = new ExecutionLoop({ config: env.config, db: env.db, identityId: "smoke-1" });
-    const loop2 = new ExecutionLoop({ config: env.config, db: env.db, identityId: "smoke-2" });
+    const loop1 = new ExecutionLoop({ config: env.config, db: env.db, agentRole: "smoke-1" });
+    const loop2 = new ExecutionLoop({ config: env.config, db: env.db, agentRole: "smoke-2" });
 
     const results = await Promise.allSettled([
       loop1.processTask(active1),

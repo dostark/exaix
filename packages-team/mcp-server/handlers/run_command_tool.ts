@@ -18,12 +18,12 @@ import type { JSONValue } from "@exaix/core";
 export class RunCommandTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = RunCommandToolArgsSchema.parse(args);
-    const { portal, command, args: cmdArgs, identity_id } = validatedArgs;
+    const { portal, command, args: cmdArgs, agent_role } = validatedArgs;
 
     try {
       // Run command is considered a write/expensive operation requiring GIT or WRITE permissions
       // For safety, we'll check for GIT permission as it implies repository control
-      this.validatePermission(portal, identity_id, PortalOperation.GIT);
+      this.validatePermission(portal, agent_role, PortalOperation.GIT);
 
       // Validate portal exists and resolve its working directory.
       const portalPath = this.validatePortalExists(portal);
@@ -45,7 +45,7 @@ export class RunCommandTool extends ToolHandler {
         return this.formatToolError(
           McpToolName.RUN_COMMAND,
           portal,
-          identity_id,
+          agent_role,
           ToolErrorCode.EXECUTION_FAILED,
           result.error || "Command execution failed",
           { command, args: cmdArgs },
@@ -53,7 +53,7 @@ export class RunCommandTool extends ToolHandler {
       }
 
       const data = result.data as { output: string; exitCode: number };
-      this.logToolExecution(McpToolName.RUN_COMMAND, portal, identity_id, {
+      this.logToolExecution(McpToolName.RUN_COMMAND, portal, agent_role, {
         command,
         args: cmdArgs,
         exitCode: data.exitCode,
@@ -64,7 +64,7 @@ export class RunCommandTool extends ToolHandler {
       return this.formatToolError(
         McpToolName.RUN_COMMAND,
         portal,
-        identity_id,
+        agent_role,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
         { command },

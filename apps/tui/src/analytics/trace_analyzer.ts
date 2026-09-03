@@ -34,7 +34,7 @@ export function analyzeTrace(entries: IStructuredLogEntry[]): ITraceAnalysis | n
     operation: entry.context.operation || "unknown",
     timestamp: new Date(entry.timestamp),
     duration: entry.performance?.duration_ms,
-    identityId: entry.context.identity_id,
+    agentRole: entry.context.agent_role,
     level: entry.level,
     message: entry.message,
   }));

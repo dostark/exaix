@@ -92,19 +92,19 @@ Deno.test(
         config,
         db,
         logger,
-        identityId: "test-agent",
+        agentRole: "test-agent",
         llmProvider: uncertainLlm,
         reviewRegistry,
         amendmentService,
         amendmentGate,
         gitServiceFactory: {
           createGitService(repoPath: string, traceId: string) {
-            return new GitService({ config, traceId, identityId: "test-agent", repoPath });
+            return new GitService({ config, traceId, agentRole: "test-agent", repoPath });
           },
         },
         toolRegistryFactory: {
           createToolRegistry(traceId: string, baseDir: string) {
-            return new ToolRegistry({ config, traceId, identityId: "test-agent", baseDir });
+            return new ToolRegistry({ config, traceId, agentRole: "test-agent", baseDir });
           },
         },
         memoryBank: new MemoryBankService(config, logger),
@@ -222,7 +222,7 @@ Deno.test("ExecutionLoop routes an expired amendment rejection through IPlanAmen
       config,
       db,
       logger,
-      identityId: "test-agent",
+      agentRole: "test-agent",
       amendmentService,
       amendmentGate,
     });
@@ -272,7 +272,7 @@ Deno.test("ExecutionLoop routes an expired amendment approval through IPlanAmend
       config,
       db,
       logger,
-      identityId: "test-agent",
+      agentRole: "test-agent",
       amendmentService,
       amendmentGate,
     });

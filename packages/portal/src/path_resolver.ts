@@ -13,7 +13,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
+import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IPathResolverConfig {
@@ -60,7 +60,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log successful resolution
-      this.logActivity(DEFAULT_MCP_IDENTITY_ID, DomainEventType.PathResolved, aliasPath, {
+      this.logActivity(DEFAULT_MCP_AGENT_ROLE_ID, DomainEventType.PathResolved, aliasPath, {
         alias,
         resolved_path: resolvedPath,
         duration_ms: duration,
@@ -71,7 +71,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log resolution failure
-      this.logActivity(DEFAULT_MCP_IDENTITY_ID, DomainEventType.PathResolutionFailed, aliasPath, {
+      this.logActivity(DEFAULT_MCP_AGENT_ROLE_ID, DomainEventType.PathResolutionFailed, aliasPath, {
         duration_ms: duration,
         error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),

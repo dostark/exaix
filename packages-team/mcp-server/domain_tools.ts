@@ -17,7 +17,7 @@ import { RequestCommands } from "../../apps/exactl/src/commands/request_commands
 import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA, RequestSource, ToolErrorCode } from "@exaix/core";
 import { PlanStatus, type PlanStatusType } from "@exaix/core/status";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/mcp";
 
 function classifyDomainToolError(error: Error | string | JSONValue): ToolErrorCode {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
@@ -57,7 +57,7 @@ export class CreateRequestTool extends ToolHandler {
         RequestSource.MCP,
       );
 
-      this.logToolExecution("create_request", DEFAULT_MCP_IDENTITY_ID, agent_role, {
+      this.logToolExecution("create_request", DEFAULT_MCP_AGENT_ROLE_ID, agent_role, {
         description,
         assigned_agent_role: resolvedAgentRole,
         agent_role,
@@ -93,7 +93,7 @@ export class CreateRequestTool extends ToolHandler {
       const message = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
         "create_request",
-        DEFAULT_MCP_IDENTITY_ID,
+        DEFAULT_MCP_AGENT_ROLE_ID,
         agent_role,
         classifyDomainToolError(classifiedError),
         message,
@@ -142,7 +142,7 @@ export class CreateRequestTool extends ToolHandler {
 export class ListPlansTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = ListPlansToolArgsSchema.parse(args);
-    const { status, identity_id } = validatedArgs;
+    const { status, agent_role } = validatedArgs;
     const filterStatus: PlanStatusType = status ?? PlanStatus.PENDING;
 
     try {
@@ -150,9 +150,9 @@ export class ListPlansTool extends ToolHandler {
 
       const plans = await planCmd.list(filterStatus);
 
-      this.logToolExecution("list_plans", DEFAULT_MCP_IDENTITY_ID, identity_id, {
+      this.logToolExecution("list_plans", DEFAULT_MCP_AGENT_ROLE_ID, agent_role, {
         status: filterStatus,
-        identity_id,
+        agent_role,
         count: plans.length,
         success: true,
       });
@@ -174,13 +174,13 @@ export class ListPlansTool extends ToolHandler {
       const message = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
         "list_plans",
-        DEFAULT_MCP_IDENTITY_ID,
-        identity_id,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        agent_role,
         classifyDomainToolError(classifiedError),
         message,
         {
           status: status ?? null,
-          agent_role: identity_id ?? null,
+          agent_role: agent_role ?? null,
         },
       );
     }
@@ -216,7 +216,7 @@ export class ListPlansTool extends ToolHandler {
 export class ApprovePlanTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = ApprovePlanToolArgsSchema.parse(args);
-    const { plan_id, identity_id } = validatedArgs;
+    const { plan_id, agent_role } = validatedArgs;
 
     try {
       const planCmd = new PlanCommands(this.context);
@@ -224,9 +224,9 @@ export class ApprovePlanTool extends ToolHandler {
       // We don't check existence separately as approve() handles it (or throws)
       await planCmd.approve(plan_id);
 
-      this.logToolExecution("approve_plan", DEFAULT_MCP_IDENTITY_ID, identity_id, {
+      this.logToolExecution("approve_plan", DEFAULT_MCP_AGENT_ROLE_ID, agent_role, {
         plan_id,
-        identity_id,
+        agent_role,
         success: true,
       });
 
@@ -252,13 +252,13 @@ export class ApprovePlanTool extends ToolHandler {
       const message = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
         "approve_plan",
-        DEFAULT_MCP_IDENTITY_ID,
-        identity_id,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        agent_role,
         classifyDomainToolError(classifiedError),
         message,
         {
           plan_id,
-          agent_role: identity_id ?? null,
+          agent_role: agent_role ?? null,
         },
       );
     }
@@ -293,7 +293,7 @@ export class ApprovePlanTool extends ToolHandler {
 export class QueryJournalTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = QueryJournalToolArgsSchema.parse(args);
-    const { trace_id, limit, identity_id } = validatedArgs;
+    const { trace_id, limit, agent_role } = validatedArgs;
 
     try {
       const reader = this.getJournalReader();
@@ -304,10 +304,10 @@ export class QueryJournalTool extends ToolHandler {
         activities = await reader.getRecentActivity(limit);
       }
 
-      this.logToolExecution("query_journal", DEFAULT_MCP_IDENTITY_ID, identity_id, {
+      this.logToolExecution("query_journal", DEFAULT_MCP_AGENT_ROLE_ID, agent_role, {
         trace_id: trace_id ?? null,
         limit: limit ?? null,
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
         count: activities.length,
         success: true,
       });
@@ -329,14 +329,14 @@ export class QueryJournalTool extends ToolHandler {
       const message = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
         "query_journal",
-        DEFAULT_MCP_IDENTITY_ID,
-        identity_id,
+        DEFAULT_MCP_AGENT_ROLE_ID,
+        agent_role,
         classifyDomainToolError(classifiedError),
         message,
         {
           trace_id: trace_id ?? null,
           limit: limit ?? null,
-          agent_role: identity_id ?? null,
+          agent_role: agent_role ?? null,
         },
       );
     }

@@ -67,7 +67,7 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Unique agent identifier (lowercase alphanumeric + hyphens) */
   agent_role: z.string()
     .min(1)
-    .regex(/^[a-z0-9-]+$/, "identity_id must be lowercase alphanumeric with hyphens only"),
+    .regex(/^[a-z0-9-]+$/, "agent_role must be lowercase alphanumeric with hyphens only"),
 
   /** Human-readable agent name */
   name: z.string().min(1).max(100),
@@ -147,8 +147,8 @@ export const RESERVED_AGENT_IDS = new Set<string>([
 ]);
 
 /**
- * Check if identity_id is reserved
+ * Check if agent_role is reserved
  */
-export function isReservedAgentId(identityId: string): boolean {
-  return RESERVED_AGENT_IDS.has(identityId);
+export function isReservedAgentId(agentRole: string): boolean {
+  return RESERVED_AGENT_IDS.has(agentRole);
 }

@@ -68,7 +68,7 @@ export interface IExecutionLoopConfig {
   config: Config;
   db?: IDatabaseService;
   logger?: IEventLogger;
-  identityId: string;
+  agentRole: string;
   llmProvider?: IModelProvider;
   amendmentService?: IPlanAmendmentService;
   amendmentGate?: IPlanAmendmentGate;
@@ -98,7 +98,7 @@ export interface IExecutionLoopConfig {
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
-    identityId: string,
+    agentRole: string,
   ) => Promise<string>;
 
   /** Factory for creating per-execution IGitService instances. Required if portal/worktree execution is used. */
@@ -161,7 +161,7 @@ export class ExecutionLoop {
   private config: Config;
   private db?: IDatabaseService;
   private logger?: IEventLogger;
-  private identityId: string;
+  private agentRole: string;
   private plansDir: string;
   private leases = new Map<string, ITaskLease>();
   private blueprintLoader: IBlueprintLoader;
@@ -182,7 +182,7 @@ export class ExecutionLoop {
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
-    identityId: string,
+    agentRole: string,
   ) => Promise<string>;
   private gitServiceFactory?: IGitServiceFactory;
   private toolRegistryFactory?: IToolRegistryFactory;
@@ -196,7 +196,7 @@ export class ExecutionLoop {
     this.config = ctx?.config.get() || config.config;
     this.db = ctx?.db || config.db;
     this.logger = config.logger;
-    this.identityId = config.identityId;
+    this.agentRole = config.agentRole;
     this.llmProvider = ctx?.provider || config.llmProvider;
     this.amendmentService = config.amendmentService;
     this.amendmentGate = config.amendmentGate;
@@ -226,11 +226,11 @@ export class ExecutionLoop {
     }
   }
 
-  private async isReadOnlyAgentId(identityId: Opt<string, Reason.OptionalInput>): Promise<boolean> {
-    if (!identityId) return false;
+  private async isReadOnlyAgentId(agentRole: Opt<string, Reason.OptionalInput>): Promise<boolean> {
+    if (!agentRole) return false;
 
     try {
-      const blueprint = await this.blueprintLoader.load(identityId);
+      const blueprint = await this.blueprintLoader.load(agentRole);
       if (!blueprint) return false;
       return isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.frontmatter.permitted_tools);
     } catch {
@@ -343,7 +343,7 @@ export class ExecutionLoop {
           gitSetup.executionGitService,
           requestId!,
           traceId!,
-          this.identityId,
+          this.agentRole,
           (noChangesTraceId, noChangesRequestId) => {
             this.logActivity(DomainEventType.ExecutionNoChanges, noChangesTraceId, {
               request_id: noChangesRequestId,
@@ -421,14 +421,14 @@ export class ExecutionLoop {
     const structuredPlan = parseStructuredPlanFromMarkdown(planContent, {
       trace_id: frontmatter.trace_id,
       request_id: frontmatter.request_id,
-      agent_role: frontmatter.identity_id,
+      agent_role: frontmatter.agent_role,
     });
 
     const actions = structuredPlan ? [] : this.parsePlanActions(planContent);
-    const planAgentId = frontmatter.identity_id || structuredPlan?.agent;
-    if (!frontmatter.identity_id && structuredPlan && planAgentId) {
+    const planAgentId = frontmatter.agent_role || structuredPlan?.agent;
+    if (!frontmatter.agent_role && structuredPlan && planAgentId) {
       console.warn(
-        `[ExecutionLoop] plan ${structuredPlan.trace_id} carried no identity_id; ` +
+        `[ExecutionLoop] plan ${structuredPlan.trace_id} carried no.agent_role; ` +
           `falling back to default identity "${planAgentId}" for execution`,
       );
     }
@@ -756,7 +756,7 @@ export class ExecutionLoop {
     const context = {
       trace_id: plan.trace_id,
       request_id: plan.request_id,
-      agent_role: (plan as { identity?: string; agent?: string }).identity ?? plan.agent,
+      agent_role: (plan as { agent_role?: string; agent?: string }).agent_role ?? plan.agent,
       frontmatter: this.toSafeFrontmatter(frontmatter),
       steps: plan.steps,
     };
@@ -810,7 +810,7 @@ export class ExecutionLoop {
   private ensureLease(filePath: string, traceId: string): void {
     // Check if already leased
     const existingLease = this.leases.get(filePath);
-    if (existingLease && existingLease.holder !== this.identityId) {
+    if (existingLease && existingLease.holder !== this.agentRole) {
       throw new Error(
         `Task lease already held by ${existingLease.holder}`,
       );
@@ -819,13 +819,13 @@ export class ExecutionLoop {
     // Acquire lease
     this.leases.set(filePath, {
       filePath,
-      holder: this.identityId,
+      holder: this.agentRole,
       acquiredAt: new Date(),
     });
 
     this.logActivity(DomainEventType.ExecutionLeaseAcquired, traceId, {
       file_path: filePath,
-      holder: this.identityId,
+      holder: this.agentRole,
     });
   }
 
@@ -1282,7 +1282,7 @@ export class ExecutionLoop {
       for (const learning of learnings) {
         // Proposals only: the tiered-memory feed is gated behind approval (GAP-1) — the
         // extractor options' onApproved hook is the single seam that feeds session memory.
-        await this.context.extractor.createProposal(learning, executionMemory, this.identityId);
+        await this.context.extractor.createProposal(learning, executionMemory, this.agentRole);
       }
     } catch (error) {
       console.error("[ExecutionLoop] Failed to extract memory learnings:", error);
@@ -1309,7 +1309,7 @@ export class ExecutionLoop {
           description: `Execution for request ${requestId}`,
           commit_sha: commitSha,
           files_changed: 1, // Defaulting to 1 for now
-          created_by: this.identityId,
+          created_by: this.agentRole,
         });
         console.log(`[ExecutionLoop] Review registered successfully`);
       } else {
@@ -1341,7 +1341,7 @@ export class ExecutionLoop {
       const traceData = {
         traceId,
         requestId,
-        identityId: this.identityId,
+        agentRole: this.agentRole,
         status: ExecutionStatus.COMPLETED,
         branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
         completedAt: new Date(),
@@ -1386,7 +1386,7 @@ export class ExecutionLoop {
       const traceData = {
         traceId,
         requestId,
-        identityId: this.identityId,
+        agentRole: this.agentRole,
         status: ExecutionStatus.FAILED,
         branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
         completedAt: new Date(),
@@ -1407,7 +1407,7 @@ export class ExecutionLoop {
         );
         await Deno.mkdir(failureDir, { recursive: true });
         const failureContent =
-          `# Failure Report\n\n**Trace ID:** ${traceId}\n**Request ID:** ${requestId}\n**Agent:** ${this.identityId}\n**Error:** ${error}\n\n**Summary:** ${traceData.summary}\n**Reasoning:** ${traceData.reasoning}\n\nGenerated at ${
+          `# Failure Report\n\n**Trace ID:** ${traceId}\n**Request ID:** ${requestId}\n**Agent:** ${this.agentRole}\n**Error:** ${error}\n\n**Summary:** ${traceData.summary}\n**Reasoning:** ${traceData.reasoning}\n\nGenerated at ${
             new Date().toISOString()
           }`;
         await Deno.writeTextFile(join(failureDir, "failure.md"), failureContent);

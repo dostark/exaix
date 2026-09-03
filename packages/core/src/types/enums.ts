@@ -47,12 +47,9 @@ export enum CircuitState {
   HALF_OPEN = "half-open",
 }
 
-/** Agent kind categories per GLOSSARY.md — identifies which runtime agent implementation handled an action. */
-export enum AgentKind {
-  IDENTITY_RUNNER = "identity-runner",
+/** Runtime kind categories per GLOSSARY.md — identifies which runtime component handled an action. */
+export enum RuntimeKind {
   AGENT_EXECUTOR = "agent-executor",
-  FLOW_AGENT = "flow-agent",
-  TOOL_AGENT = "tool-agent",
   REQUEST_ROUTER = "request-router",
 }
 
@@ -446,7 +443,7 @@ export enum LogRotationInterval {
  */
 export enum RequestKind {
   FLOW = "flow",
-  IDENTITY = "identity",
+  AGENT_ROLE = "agent_role",
 }
 
 /**
@@ -905,7 +902,6 @@ export enum MemoryReferenceType {
 export enum MemoryBankSource {
   EXECUTION = "execution",
   USER = "user",
-  IDENTITY = "identity",
   AGENT = "agent",
   LEARNED = "learned",
   CORE = "core",
@@ -1111,7 +1107,6 @@ export enum ActivityType {
  */
 export enum ActivityActor {
   HUMAN = "human",
-  IDENTITY = "identity",
   SYSTEM = "system",
 }
 

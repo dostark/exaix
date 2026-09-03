@@ -52,11 +52,11 @@ describe("Example Flows - Step 7.9", {
 
     // Create mock agent executor
     mockAgentExecutor = {
-      run: (identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> => {
+      run: (agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> => {
         return Promise.resolve({
-          thought: `Mock response for ${identityId}`,
-          content: `Processed request for ${identityId}`,
-          raw: `Mock raw response for ${identityId}`,
+          thought: `Mock response for ${agentRole}`,
+          content: `Processed request for ${agentRole}`,
+          raw: `Mock raw response for ${agentRole}`,
         });
       },
     };

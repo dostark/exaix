@@ -51,7 +51,7 @@ interface IExecutionLoopTestContext {
 
 interface IExecutionLoopTestOptions {
   configOverrides?: Parameters<typeof createMockConfig>[1];
-  identityId?: string;
+  agentRole?: string;
   llmProvider?: IModelProvider;
   ensureActiveDir?: boolean;
 }
@@ -77,14 +77,14 @@ async function withExecutionLoopTestContext(
       config,
       db,
       logger,
-      identityId: options.identityId ?? "test-identity",
+      agentRole: options.agentRole ?? "test-identity",
       llmProvider: options.llmProvider,
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
           return new GitService({
             config,
             traceId,
-            identityId: options.identityId ?? "test-identity",
+            agentRole: options.agentRole ?? "test-identity",
             repoPath,
           });
         },
@@ -94,7 +94,7 @@ async function withExecutionLoopTestContext(
           return new ToolRegistry({
             config,
             traceId,
-            identityId: options.identityId ?? "test-identity",
+            agentRole: options.agentRole ?? "test-identity",
             baseDir,
           });
         },
@@ -165,8 +165,8 @@ Deno.test("ExecutionLoop: acquires lease to prevent concurrent execution", async
     const planPath = join(paths.activeDir, "lease-test.md");
     await Deno.writeTextFile(planPath, planContent);
 
-    const loop1 = new ExecutionLoop({ config, db, identityId: "identity-1" });
-    const loop2 = new ExecutionLoop({ config, db, identityId: "identity-2" });
+    const loop1 = new ExecutionLoop({ config, db, agentRole: "identity-1" });
+    const loop2 = new ExecutionLoop({ config, db, agentRole: "identity-2" });
 
     // Start first execution but don't await
     const exec1Promise = loop1.processTask(planPath);
@@ -318,16 +318,16 @@ path = "analysis-target.txt"
       config,
       db,
       logger,
-      identityId: "daemon",
+      agentRole: "daemon",
       llmProvider: new ReadOnlyReportProvider(),
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
-          return new GitService({ config, traceId, identityId: "daemon", repoPath });
+          return new GitService({ config, traceId, agentRole: "daemon", repoPath });
         },
       },
       toolRegistryFactory: {
         createToolRegistry(traceId: string, baseDir: string) {
-          return new ToolRegistry({ config, traceId, identityId: "daemon", baseDir });
+          return new ToolRegistry({ config, traceId, agentRole: "daemon", baseDir });
         },
       },
       memoryBank: new MemoryBankService(config, logger),
@@ -348,7 +348,7 @@ path = "analysis-target.txt"
     const artifacts = await db.preparedAll<
       { id: string; status: string; agent_role: string; portal: string | null; request_id: string; file_path: string }
     >(
-      "SELECT id, status, identity, portal, request_id, file_path FROM artifacts WHERE request_id = ?",
+      "SELECT id, status, agent_role, portal, request_id, file_path FROM artifacts WHERE request_id = ?",
       ["readonly-report"],
     );
     assertEquals(artifacts.length, 1, "Exactly one artifact should be created for a read-only execution");
@@ -377,15 +377,15 @@ path = "analysis-target.txt"
       config,
       db,
       logger,
-      identityId: "daemon",
+      agentRole: "daemon",
       gitServiceFactory: {
         createGitService(repoPath: string, eventTraceId: string) {
-          return new GitService({ config, traceId: eventTraceId, identityId: "daemon", repoPath });
+          return new GitService({ config, traceId: eventTraceId, agentRole: "daemon", repoPath });
         },
       },
       toolRegistryFactory: {
         createToolRegistry(eventTraceId: string, baseDir: string) {
-          return new ToolRegistry({ config, traceId: eventTraceId, identityId: "daemon", baseDir });
+          return new ToolRegistry({ config, traceId: eventTraceId, agentRole: "daemon", baseDir });
         },
       },
       memoryBank: new MemoryBankService(config, logger),
@@ -462,8 +462,8 @@ Deno.test("ExecutionLoop: releases lease even on failure", async () => {
     const planPath = join(paths.activeDir, "lease-release-test.md");
     await Deno.writeTextFile(planPath, planContent);
 
-    const loop1 = new ExecutionLoop({ config, db, identityId: "identity-1" });
-    const loop2 = new ExecutionLoop({ config, db, identityId: "identity-2" });
+    const loop1 = new ExecutionLoop({ config, db, agentRole: "identity-1" });
+    const loop2 = new ExecutionLoop({ config, db, agentRole: "identity-2" });
 
     // First execution fails
     const result1 = await loop1.processTask(planPath);
@@ -661,15 +661,15 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
       config,
       db,
       logger: new EventLogger({ db }),
-      identityId: "test-identity",
+      agentRole: "test-identity",
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
-          return new GitService({ config, traceId, identityId: "test-identity", repoPath });
+          return new GitService({ config, traceId, agentRole: "test-identity", repoPath });
         },
       },
       toolRegistryFactory: {
         createToolRegistry(traceId: string, baseDir: string) {
-          return new ToolRegistry({ config, traceId, identityId: "test-identity", baseDir });
+          return new ToolRegistry({ config, traceId, agentRole: "test-identity", baseDir });
         },
       },
       memoryBank: new MemoryBankService(config, new EventLogger({ db })),
@@ -813,7 +813,7 @@ Deno.test("ExecutionLoop: onCodeChangesDelegate is accepted in config without er
       config,
       db,
       logger,
-      identityId: "test-identity",
+      agentRole: "test-identity",
       onCodeChangesDelegate: (
         _traceId: string,
         _step: { title: string; content: string; successCriteria?: string[] },

@@ -21,11 +21,11 @@ export class WriteFileTool extends ToolHandler {
       content: string;
       agent_role: string;
     };
-    const { portal, path, content, identity_id } = validatedArgs;
+    const { portal, path, content, agent_role } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
-      this.validatePermission(portal, identity_id, PortalOperation.WRITE);
+      this.validatePermission(portal, agent_role, PortalOperation.WRITE);
 
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
@@ -41,9 +41,9 @@ export class WriteFileTool extends ToolHandler {
       await Deno.writeTextFile(absolutePath, content);
 
       // Log successful execution
-      this.logToolExecution(McpToolName.WRITE_FILE, portal, identity_id, {
+      this.logToolExecution(McpToolName.WRITE_FILE, portal, agent_role, {
         path,
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
         success: true,
         bytes: content.length,
       });
@@ -58,9 +58,9 @@ export class WriteFileTool extends ToolHandler {
       };
     } catch (error) {
       // Log failed execution
-      this.logToolExecution(McpToolName.WRITE_FILE, portal, identity_id, {
+      this.logToolExecution(McpToolName.WRITE_FILE, portal, agent_role, {
         path,
-        agent_role: identity_id ?? null,
+        agent_role: agent_role ?? null,
         success: false,
         error: error instanceof Error ? error.message : String(error),
       });

@@ -45,7 +45,7 @@ status: active
 
       const traceId = crypto.randomUUID();
       const analyzedExecutions: IExecutionMemory[] = [];
-      const createdProposals: Array<{ learning: IProposalLearning; identityId: string }> = [];
+      const createdProposals: Array<{ learning: IProposalLearning; agentRole: string }> = [];
 
       // Spy extractor that records calls
       const spyExtractor: IMemoryExtractorService = {
@@ -67,9 +67,9 @@ status: active
         createProposal(
           learning: IProposalLearning,
           _execution: IExecutionMemory,
-          identityId: string,
+          agentRole: string,
         ): Promise<string> {
-          createdProposals.push({ learning, identityId });
+          createdProposals.push({ learning, agentRole });
           return Promise.resolve(crypto.randomUUID());
         },
         listPending: () => Promise.resolve([]),
@@ -93,17 +93,17 @@ status: active
       const loop = new ExecutionLoop({
         config,
         db,
-        identityId: "test-identity",
+        agentRole: "test-identity",
         context,
         memoryBank: new MemoryBankService(config, logger),
         gitServiceFactory: {
           createGitService(repoPath: string, traceId: string) {
-            return new GitService({ config, traceId, identityId: "test-identity", repoPath });
+            return new GitService({ config, traceId, agentRole: "test-identity", repoPath });
           },
         },
         toolRegistryFactory: {
           createToolRegistry(traceId: string, baseDir: string) {
-            return new ToolRegistry({ config, traceId, identityId: "test-identity", baseDir });
+            return new ToolRegistry({ config, traceId, agentRole: "test-identity", baseDir });
           },
         },
       });
@@ -142,7 +142,7 @@ No actions — will succeed immediately
         true,
         "createProposal should be called at least once",
       );
-      assertEquals(createdProposals[0].identityId, "test-identity");
+      assertEquals(createdProposals[0].agentRole, "test-identity");
     } finally {
       await cleanup();
       await Deno.remove(tempDir, { recursive: true });
@@ -222,18 +222,18 @@ status: active
       const loop = new ExecutionLoop({
         config,
         db,
-        identityId: "test-identity",
+        agentRole: "test-identity",
         context,
         sessionMemory: spySessionMemory as SessionMemoryService,
         memoryBank: new MemoryBankService(config, logger),
         gitServiceFactory: {
           createGitService(repoPath: string, traceId: string) {
-            return new GitService({ config, traceId, identityId: "test-identity", repoPath });
+            return new GitService({ config, traceId, agentRole: "test-identity", repoPath });
           },
         },
         toolRegistryFactory: {
           createToolRegistry(traceId: string, baseDir: string) {
-            return new ToolRegistry({ config, traceId, identityId: "test-identity", baseDir });
+            return new ToolRegistry({ config, traceId, agentRole: "test-identity", baseDir });
           },
         },
       });

@@ -72,7 +72,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     // Log individual generation metrics
     await this.executor.logGeneration(
       context.trace_id,
-      options.identity_id ?? "",
+      options.agent_role ?? "",
       result.model,
       result.provider,
       { ...result.usage, costUsd, durationMs: generateDurationMs },

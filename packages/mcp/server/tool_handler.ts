@@ -61,14 +61,14 @@ export abstract class ToolHandler {
   /** Validates that an agent has permission for an operation on a portal; throws if denied. */
   protected validatePermission(
     portalName: string,
-    identityId: string,
+    agentRole: string,
     operation: PortalOperation,
   ): void {
     if (!this.permissions) {
       throw new Error("Permission denied: permissions service not configured");
     }
 
-    const result = this.permissions.checkOperationAllowed(portalName, identityId, operation);
+    const result = this.permissions.checkOperationAllowed(portalName, agentRole, operation);
     if (!result.allowed) {
       throw new Error(
         result.reason || `Permission denied for ${operation} on portal ${portalName}`,
@@ -100,7 +100,7 @@ export abstract class ToolHandler {
   protected logToolExecution(
     toolName: string,
     portal: string,
-    _identityId: string,
+    _agentRole: string,
     metadata: LogMetadata,
   ): void {
     if (!this.logger) return;
@@ -111,11 +111,11 @@ export abstract class ToolHandler {
   protected formatSuccess(
     toolName: string,
     portal: string,
-    identityId: string,
+    agentRole: string,
     content: MCPContent[],
     metadata: LogMetadata,
   ): MCPToolResponse {
-    this.logToolExecution(toolName, portal, identityId, { ...metadata, success: true });
+    this.logToolExecution(toolName, portal, agentRole, { ...metadata, success: true });
     return { content };
   }
 
@@ -124,7 +124,7 @@ export abstract class ToolHandler {
   protected formatToolError(
     toolName: string,
     portal: string,
-    identityId: string,
+    agentRole: string,
     code: ToolErrorCode,
     message: string,
     metadata: LogMetadata,
@@ -132,7 +132,7 @@ export abstract class ToolHandler {
     // The code is journalled, not returned: the agent-facing text stays the raw message so
     // handler tests and scenario assertions keep matching on it, while the journal gains the
     // classification each handler already computes.
-    this.logToolExecution(toolName, portal, identityId, {
+    this.logToolExecution(toolName, portal, agentRole, {
       ...metadata,
       success: false,
       error: message,
@@ -148,11 +148,11 @@ export abstract class ToolHandler {
   protected formatError(
     toolName: string,
     portal: string,
-    identityId: string,
+    agentRole: string,
     error: Error | string | unknown,
     metadata: LogMetadata,
   ): never {
-    this.logToolExecution(toolName, portal, identityId, {
+    this.logToolExecution(toolName, portal, agentRole, {
       ...metadata,
       success: false,
       error: error instanceof Error ? error.message : String(error),

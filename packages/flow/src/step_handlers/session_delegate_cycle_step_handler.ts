@@ -70,7 +70,7 @@ interface IStepDelegationContext {
   cycleConfig: ISessionDelegateCycleConfig;
   parentTraceId: string;
   parentStepId: string;
-  identityId: string;
+  agentRole: string;
   worktreePath: string;
   artifactRef: string;
 }
@@ -164,7 +164,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
             cycleConfig,
             parentTraceId: traceId,
             parentStepId: ctx.step.id,
-            identityId: ctx.step.identity,
+            agentRole: ctx.step.agent_role,
             worktreePath: executionRoot,
             artifactRef: planContextRef,
           },
@@ -361,7 +361,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     key: ISessionDelegateCycleClaimKey,
     persist: (claim: ISessionDelegateCycleClaim) => Promise<void>,
   ): Promise<ISessionDelegateCycleClaim> {
-    const { parsedStep, cycleConfig, parentTraceId, parentStepId, identityId, worktreePath, artifactRef } = step;
+    const { parsedStep, cycleConfig, parentTraceId, parentStepId, agentRole, worktreePath, artifactRef } = step;
     let state = claim.state;
     let outcome = claim.outcome;
     const delegationTraceId = claim.delegationTraceId;
@@ -379,7 +379,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
         outcome = await this.deps.coordinator.delegate({
           parentTraceId,
           parentStepId,
-          identityId,
+          agentRole: agentRole,
           sequence: parsedStep.stepNumber,
           objective: parsedStep.sectionText,
           acceptanceCriteria: [

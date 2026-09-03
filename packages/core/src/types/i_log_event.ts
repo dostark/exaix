@@ -7,7 +7,7 @@
  */
 
 import type { Actor, ActorType } from "./actor.ts";
-import type { AgentKind, LogLevel } from "./enums.ts";
+import type { LogLevel, RuntimeKind } from "./enums.ts";
 import type { JSONValue } from "./json.ts";
 
 export interface ILogEvent {
@@ -33,7 +33,7 @@ export interface ILogEvent {
   agentId?: string;
 
   /** Category of runtime agent */
-  agentKind?: AgentKind | null;
+  agentKind?: RuntimeKind | null;
 
   /** LLM identity blueprint used for this event, e.g. "senior-coder" */
   agentRole?: string;

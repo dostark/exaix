@@ -416,8 +416,8 @@ export const DomainEventType = {
   // Git events (git_service.ts)
   GitCheck: "git.check",
   GitInit: "git.init",
-  GitIdentityCheck: "git.identity_check",
-  GitIdentityConfigured: "git.identity_configured",
+  GitIdentityCheck: "git.agent_role_check",
+  GitIdentityConfigured: "git.agent_role_configured",
   GitBranchCreated: "git.branch_created",
   GitCommitted: "git.committed",
   GitCheckout: "git.checkout",

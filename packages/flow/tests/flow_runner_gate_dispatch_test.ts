@@ -22,7 +22,7 @@ class TrackingAgentExecutor implements IAgentExecutor {
   invoked = false;
   lastRequest?: IFlowStepRequest;
 
-  async run(_identityId: string, req: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  async run(_agentRole: string, req: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.invoked = true;
     this.lastRequest = req;
     return await Promise.resolve({ thought: "", content: "agent-result", raw: "agent-result" });

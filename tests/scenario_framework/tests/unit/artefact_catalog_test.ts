@@ -80,8 +80,8 @@ Deno.test("[ArtefactCatalog] mock-agent and default are excluded (non-curated id
   try {
     await writeFixtureBlueprints(root);
     const catalog = await loadArtefactCatalog(root);
-    const identityIds = catalog.filter((r) => r.kind === ArtefactKind.IDENTITY).map((r) => r.artefactId);
-    assertEquals(identityIds, ["senior-coder"]);
+    const agentRoles = catalog.filter((r) => r.kind === ArtefactKind.IDENTITY).map((r) => r.artefactId);
+    assertEquals(agentRoles, ["senior-coder"]);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

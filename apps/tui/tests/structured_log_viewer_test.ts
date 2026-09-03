@@ -43,8 +43,8 @@ class MockLogService implements ILogService {
     return Promise.resolve(this.logs.filter((l) => l.context.trace_id === traceId));
   }
 
-  getLogsByAgentId(identityId: string): Promise<IStructuredLogEntry[]> {
-    return Promise.resolve(this.logs.filter((l) => l.context.identity_id === identityId));
+  getLogsByAgentId(agentRole: string): Promise<IStructuredLogEntry[]> {
+    return Promise.resolve(this.logs.filter((l) => l.context.agent_role === agentRole));
   }
 
   exportLogs(_filename: string, _entries: IStructuredLogEntry[]): Promise<void> {

@@ -9,18 +9,18 @@
  * It exists solely to verify the TypeScript contract at compile time.
  */
 
-import { ActorType, AgentKind } from "@exaix/core";
+import { ActorType, RuntimeKind } from "@exaix/core";
 import type { IServiceContext } from "@exaix/core";
 
 const _ctx: IServiceContext = {
   actor: "user:test",
   actorType: ActorType.USER,
   agentId: "agent-executor",
-  agentKind: AgentKind.AGENT_EXECUTOR,
-  identityId: "senior-coder",
+  agentKind: RuntimeKind.AGENT_EXECUTOR,
+  agentRole: "senior-coder",
   traceId: crypto.randomUUID(),
 };
 
 const _partialContext: IServiceContext = {
-  identityId: "reviewer",
+  agentRole: "reviewer",
 };

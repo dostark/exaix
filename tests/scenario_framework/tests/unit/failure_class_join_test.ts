@@ -75,7 +75,7 @@ Deno.test("[FailureClassJoin] loadTraceActivities recovers the run trace via req
   db.exec(`
     CREATE TABLE activity (
       rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-      id TEXT, trace_id TEXT, actor TEXT, actor_type TEXT, identity_id TEXT,
+      id TEXT, trace_id TEXT, actor TEXT, actor_type TEXT, agent_role TEXT,
       agent_kind TEXT, action_type TEXT, target TEXT, payload TEXT,
       prompt_tokens INTEGER, completion_tokens INTEGER, cost_usd REAL, timestamp TEXT
     )
@@ -105,7 +105,7 @@ Deno.test("[FailureClassJoin] computeRunFailureClasses joins journal trace to cl
   db.exec(`
     CREATE TABLE activity (
       rowid INTEGER PRIMARY KEY AUTOINCREMENT,
-      id TEXT, trace_id TEXT, actor TEXT, actor_type TEXT, identity_id TEXT,
+      id TEXT, trace_id TEXT, actor TEXT, actor_type TEXT, agent_role TEXT,
       agent_kind TEXT, action_type TEXT, target TEXT, payload TEXT,
       prompt_tokens INTEGER, completion_tokens INTEGER, cost_usd REAL, timestamp TEXT
     )

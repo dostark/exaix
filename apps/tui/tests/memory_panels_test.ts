@@ -507,7 +507,7 @@ Deno.test("renderPendingPanel: renders multiple proposals", () => {
       ][i % 3],
     },
     reason: `Reason ${i}`,
-    agent_role: MemoryBankSource.IDENTITY,
+    agent_role: MemoryBankSource.USER,
     status: MemoryStatus.PENDING,
   });
 
@@ -534,7 +534,7 @@ Deno.test("renderPendingPanel: handles selection", () => {
       confidence: ConfidenceAssessmentLevel.MEDIUM,
     },
     reason: "Reason",
-    agent_role: MemoryBankSource.IDENTITY,
+    agent_role: MemoryBankSource.USER,
     status: MemoryStatus.PENDING,
   }));
 

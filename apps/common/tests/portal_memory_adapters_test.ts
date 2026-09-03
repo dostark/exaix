@@ -416,8 +416,8 @@ Deno.test("ArchiveAdapter: searchByDateRange delegates", async () => {
 Deno.test("ArchiveAdapter: searchByAgent delegates", async () => {
   let capturedAgentId = "";
   const service = createMockArchiveService({
-    searchByAgent: (identityId: string) => {
-      capturedAgentId = identityId;
+    searchByAgent: (agentRole: string) => {
+      capturedAgentId = agentRole;
       return Promise.resolve([]);
     },
   });

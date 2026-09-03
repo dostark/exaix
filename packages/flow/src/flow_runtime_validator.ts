@@ -109,7 +109,7 @@ export class FlowRuntimeValidator {
    *  identity is rejected up front instead of failing mid-execution. */
   async validateStepIdentities(
     flow: IFlow,
-    hasBlueprint: (identityId: string) => Promise<boolean>,
+    hasBlueprint: (agentRole: string) => Promise<boolean>,
   ): Promise<string | null> {
     for (const step of flow.steps) {
       if (!step.agent_role) {

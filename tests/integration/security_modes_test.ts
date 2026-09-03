@@ -221,7 +221,7 @@ Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", as
 
     const event = permissionEvents[0];
     const payload = JSON.parse(event.payload);
-    assertEquals(payload.identity, unauthorizedAgent);
+    assertEquals(payload.agent_role, unauthorizedAgent);
     assertEquals(payload.portal, "RestrictedPortal");
 
     console.log("✅ Permission Validation - Agent Not Allowed - All checks passed");

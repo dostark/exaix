@@ -31,9 +31,9 @@ import {
 } from "@exaix/core";
 import { resolveConfigurableBounds } from "@exaix/core/config";
 import {
+  DEFAULT_MCP_AGENT_ROLE_ID,
   DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
   DEFAULT_MCP_ENABLED,
-  DEFAULT_MCP_IDENTITY_ID,
   DEFAULT_MCP_REQUIRE_AUTH,
   DEFAULT_MCP_SERVER_NAME,
   DEFAULT_MCP_TRANSPORT,
@@ -506,9 +506,9 @@ export const ConfigSchema = z.object({
   }),
   /** MCP defaults */
   mcp_defaults: z.object({
-    agent_role: z.string().default(DEFAULT_MCP_IDENTITY_ID),
+    agent_role: z.string().default(DEFAULT_MCP_AGENT_ROLE_ID),
   }).optional().default({
-    agent_role: DEFAULT_MCP_IDENTITY_ID,
+    agent_role: DEFAULT_MCP_AGENT_ROLE_ID,
   }),
   /** Request quality gate configuration */
   quality_gate: z.object({

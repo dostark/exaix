@@ -917,7 +917,7 @@ Deno.test("request create with all options", async () => {
       _source?: RequestSource,
     ) => {
       assertEquals(desc, "Do task");
-      assertEquals(opts?.identity, "custom-agent");
+      assertEquals(opts?.agent_role, "custom-agent");
       assertEquals(opts?.priority, "high" as IRequestOptions["priority"]);
       assertEquals(opts?.portal, "my-portal");
       assertEquals(opts?.model, TEST_MODEL_OPENAI);

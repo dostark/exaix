@@ -31,7 +31,7 @@ export interface IRequestActionContext {
 
 export interface IRequestCreateOptions {
   file?: string;
-  identity?: string;
+  agent_role?: string;
   priority?: string | RequestPriority;
   portal?: string;
   targetBranch?: string;
@@ -118,10 +118,10 @@ export async function handleRequestCreate(
   const { requestCommands, display } = context;
 
   try {
-    const identityId = options.identity;
+    const agentRole = options.agent_role;
 
     const createOptions = {
-      agent_role: options.flow ? undefined : identityId,
+      agent_role: options.flow ? undefined : agentRole,
       priority: options.priority as RequestPriority,
       portal: options.portal,
       target_branch: options.targetBranch,
@@ -207,7 +207,7 @@ export async function handleRequestList(
           toSafeJson({
             status: req.status,
             subject: req.subject,
-            agent_role: req.flow ? undefined : req.identity,
+            agent_role: req.flow ? undefined : req.agent_role,
             flow: req.flow,
             target_branch: req.target_branch,
             created: `${req.created_by} @ ${req.created}`,
@@ -239,7 +239,7 @@ export async function handleRequestShow(
       status: metadata.status,
       subject: metadata.subject,
       priority: metadata.priority,
-      agent_role: metadata.flow ? undefined : metadata.identity,
+      agent_role: metadata.flow ? undefined : metadata.agent_role,
       flow: metadata.flow,
       target_branch: metadata.target_branch,
       created: `${metadata.created_by} @ ${metadata.created}`,
@@ -290,7 +290,7 @@ function printRequestResult(
     priority: RequestPriority;
     trace_id: string;
     filename: string;
-    identity?: string;
+    agent_role?: string;
     flow?: string;
     status: string;
     subject?: string;
@@ -323,7 +323,7 @@ function printRequestResult(
         effort: result.effort,
         characteristics: result.characteristics,
         preferred_provider: result.preferred_provider,
-        agent_role: result.flow ? undefined : result.identity,
+        agent_role: result.flow ? undefined : result.agent_role,
         flow: result.flow,
         status: result.status,
       }) as Record<string, JSONValue>,

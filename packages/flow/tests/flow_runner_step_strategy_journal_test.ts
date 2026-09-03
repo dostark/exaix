@@ -28,17 +28,17 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
 
 class StubAgentExecutor implements IAgentExecutor {
-  received: Array<{ identityId: string; request: IFlowStepRequest }> = [];
-  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.received.push({ identityId, request });
+  received: Array<{ agentRole: string; request: IFlowStepRequest }> = [];
+  run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.received.push({ agentRole, request });
     return Promise.resolve({ thought: "ok", content: "done", raw: "done" });
   }
   runWithStrategy(
-    identityId: string,
+    agentRole: string,
     request: IFlowStepRequest,
     _strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
   ): Promise<IAgentExecutionResult> {
-    this.received.push({ identityId, request });
+    this.received.push({ agentRole, request });
     return Promise.resolve({ thought: "ok", content: "strategy-done", raw: "strategy-done" });
   }
 }

@@ -19,7 +19,7 @@ function makeBlueprint(
   if (overrides.routing_hint) fm.routing_hint = overrides.routing_hint;
 
   return {
-    identityId: overrides.identityId ?? "test-agent",
+    agentRole: overrides.agentRole ?? "test-agent",
     version: overrides.version ?? "1.0.0",
     capabilities: overrides.capabilities ?? ["general"],
     frontmatter: fm,
@@ -33,17 +33,17 @@ Deno.test({
 
     const blueprints: ILoadedBlueprint[] = [
       makeBlueprint({
-        identityId: "general-agent",
+        agentRole: "general-agent",
         capabilities: ["general"],
         description: "General purpose assistant",
       }),
       makeBlueprint({
-        identityId: "code-expert",
+        agentRole: "code-expert",
         capabilities: ["code_review"],
         description: "Expert in TypeScript code review, refactoring, and best practices",
       }),
       makeBlueprint({
-        identityId: "data-analyst",
+        agentRole: "data-analyst",
         capabilities: ["data_analysis"],
         description: "Specialist in data analysis and visualization",
       }),
@@ -56,9 +56,9 @@ Deno.test({
 
     assertExists(result, "fallback should return a candidate");
     assertEquals(
-      result.identityId,
+      result.agentRole,
       "code-expert",
-      `Expected code-expert (description matches request), got ${result.identityId}`,
+      `Expected code-expert (description matches request), got ${result.agentRole}`,
     );
   },
 });
@@ -70,12 +70,12 @@ Deno.test({
 
     const blueprints: ILoadedBlueprint[] = [
       makeBlueprint({
-        identityId: "general-agent",
+        agentRole: "general-agent",
         capabilities: ["general"],
         routing_hint: "general_purpose",
       }),
       makeBlueprint({
-        identityId: "ts-expert",
+        agentRole: "ts-expert",
         capabilities: ["code_review"],
         routing_hint: "typescript_refactoring_expert",
       }),
@@ -88,9 +88,9 @@ Deno.test({
 
     assertExists(result, "fallback should return a candidate");
     assertEquals(
-      result.identityId,
+      result.agentRole,
       "ts-expert",
-      `Expected ts-expert (routing_hint matches request), got ${result.identityId}`,
+      `Expected ts-expert (routing_hint matches request), got ${result.agentRole}`,
     );
   },
 });
@@ -102,12 +102,12 @@ Deno.test({
 
     const blueprints: ILoadedBlueprint[] = [
       makeBlueprint({
-        identityId: "general-agent",
+        agentRole: "general-agent",
         capabilities: ["general"],
         description: "General purpose assistant",
       }),
       makeBlueprint({
-        identityId: "code-expert",
+        agentRole: "code-expert",
         capabilities: ["code_review"],
         description: "TypeScript code review expert",
       }),
@@ -117,7 +117,7 @@ Deno.test({
 
     assertExists(result, "fallback should return a candidate");
     assertEquals(
-      result.identityId,
+      result.agentRole,
       "general-agent",
       "Without requestText, first blueprint by score should win",
     );

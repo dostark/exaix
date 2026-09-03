@@ -3,7 +3,7 @@
  * @path packages/session/src/opencode_permission_generator.ts
  * @description Phase 128 Step 2 — builds the OpenCode opencode.jsonc permission
  *   config from a brief's permitted_paths. Pure builder + async disk writer. The
- *   agent key is the caller's real delegating identity_id, not a hardcoded stand-in.
+ *   agent key is the caller's real delegating agent_role, not a hardcoded stand-in.
  * @architectural-layer Services
  * @related-files [packages/schemas/src/opencode_config.ts, packages/session/src/scope_checker.ts, packages/session/src/mod.ts]
  */
@@ -35,7 +35,7 @@ export function assertPathsWithinWorktree(permittedPaths: string[], worktreeRoot
 
 export function buildOpencodePermissionConfig(
   permittedPaths: string[],
-  identityId: string,
+  agentRole: string,
 ): OpencodeConfig {
   const editPermissions: Record<string, OpencodePermissionValue> = { "*": "deny" };
   for (const p of permittedPaths) {
@@ -44,7 +44,7 @@ export function buildOpencodePermissionConfig(
 
   return {
     agent: {
-      [identityId]: {
+      [agentRole]: {
         edit: editPermissions,
         external_directory: { "**": "deny" },
         bash: { "*": "deny" },
@@ -58,10 +58,10 @@ export async function generateOpencodePermissionConfig(
   worktreeRoot: string,
   pathResolver: PathResolver,
   traceId: string,
-  identityId: string,
+  agentRole: string,
 ): Promise<IOpencodePermissionConfig> {
   assertPathsWithinWorktree(permittedPaths, worktreeRoot);
-  const config = buildOpencodePermissionConfig(permittedPaths, identityId);
+  const config = buildOpencodePermissionConfig(permittedPaths, agentRole);
 
   const parsed = OpencodeConfigSchema.safeParse(config);
   if (!parsed.success) {
@@ -77,5 +77,5 @@ export async function generateOpencodePermissionConfig(
   await Deno.writeTextFile(tmpPath, JSON.stringify(config, null, 2));
   await Deno.rename(tmpPath, resolvedPath);
 
-  return { config, configPath: resolvedPath, agentKey: identityId };
+  return { config, configPath: resolvedPath, agentKey: agentRole };
 }

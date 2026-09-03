@@ -11,7 +11,7 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { BYTES_PER_KB, LogLevel, PORTAL_PREFIX_PATTERN, SystemCommand, ToolName } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID, type IGitServiceFactory } from "@exaix/core/types";
+import { DEFAULT_MCP_AGENT_ROLE_ID, type IGitServiceFactory } from "@exaix/core/types";
 import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
 import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
@@ -51,7 +51,7 @@ export interface IToolRegistryConfig {
   config: Config;
   logger?: IEventLogger;
   traceId?: string;
-  identityId?: string;
+  agentRole?: string;
   baseDir?: string;
   context?: IApplicationContext;
   resultValidator?: IToolResultValidator;
@@ -238,7 +238,7 @@ export class ToolRegistry implements IToolRegistry {
   private config: Config;
   private logger?: IEventLogger;
   private traceId?: string;
-  private identityId?: string;
+  private agentRole?: string;
   private pathResolver: { resolve(path: string): Promise<string> } | undefined;
   private gitServiceFactory: IGitServiceFactory | undefined;
   private applicationContext: IApplicationContext | undefined;
@@ -292,7 +292,7 @@ export class ToolRegistry implements IToolRegistry {
     this.logger = resolvedOptions?.logger;
 
     this.traceId = resolvedOptions?.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID;
-    this.identityId = resolvedOptions?.identityId ?? DEFAULT_MCP_IDENTITY_ID;
+    this.agentRole = resolvedOptions?.agentRole ?? DEFAULT_MCP_AGENT_ROLE_ID;
     this.baseDir = resolvedOptions?.baseDir ? resolve(resolvedOptions.baseDir) : resolve(this.config.system.root);
 
     this.pathResolver = resolvedOptions?.pathResolver;
@@ -535,7 +535,7 @@ export class ToolRegistry implements IToolRegistry {
       params,
       toolRegistry: this,
       traceId: this.traceId,
-      identityId: this.identityId,
+      agentRole: this.agentRole,
     };
 
     await this.pipeline.execute(context, async () => {
@@ -863,7 +863,7 @@ export class ToolRegistry implements IToolRegistry {
           attempted_path: path,
           error: error.message,
           trace_id: this.traceId ?? null,
-          agent_role: this.identityId ?? null,
+          agent_role: this.agentRole ?? null,
         };
         if (this.logger) {
           void this.logger.warn(DomainEventType.SecurityPathTraversalAttempted, path, payload, this.traceId);
@@ -881,7 +881,7 @@ export class ToolRegistry implements IToolRegistry {
           allowed_roots: allowedRoots.join(", "),
           error: error.message,
           trace_id: this.traceId ?? null,
-          agent_role: this.identityId ?? null,
+          agent_role: this.agentRole ?? null,
         };
         if (this.logger) {
           void this.logger.warn(DomainEventType.SecurityPathAccessDenied, path, payload, this.traceId);
@@ -895,7 +895,7 @@ export class ToolRegistry implements IToolRegistry {
         input_path: path,
         error: error instanceof Error ? error.message : String(error),
         trace_id: this.traceId ?? null,
-        agent_role: this.identityId ?? null,
+        agent_role: this.agentRole ?? null,
       };
       if (this.logger) {
         void this.logger.warn(DomainEventType.PathResolutionError, path, payload, this.traceId);

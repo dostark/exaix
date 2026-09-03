@@ -34,7 +34,7 @@ class NoopEventLogger implements IFlowEventLogger {
 }
 
 class FailingAgentExecutor implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest) {
+  run(_agentRole: string, _request: IFlowStepRequest) {
     return Promise.reject(new Error("Dynamic step should not fall back to declared agent execution"));
   }
 }

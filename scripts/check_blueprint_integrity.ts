@@ -55,7 +55,7 @@ const PROGRAMMATIC_SKILLS: ReadonlySet<string> = new Set([
 ]);
 
 /** Identities exempt from the orphan-identity rule (invoked directly, not via flows). */
-const EXEMPT_IDENTITY_IDS: ReadonlySet<string> = new Set(["default", "dogfood-developer"]);
+const EXEMPT_AGENT_ROLE_IDS: ReadonlySet<string> = new Set(["default", "dogfood-developer"]);
 
 interface IIdentityRecord {
   id: string;
@@ -127,7 +127,7 @@ function loadFlowIdentityRefs(flowsDir: string): Set<string> {
 
 /** A system identity is invoked directly, not via flows, so it is orphan-exempt. */
 function isExemptIdentity(rec: IIdentityRecord): boolean {
-  return EXEMPT_IDENTITY_IDS.has(rec.id) || rec.model.startsWith("mock:");
+  return EXEMPT_AGENT_ROLE_IDS.has(rec.id) || rec.model.startsWith("mock:");
 }
 
 /**
@@ -137,13 +137,13 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
   const identities = loadIdentities(join(blueprintsDir, "Agents"));
   const skillIds = loadSkillIds(join(blueprintsDir, "Skills"));
   const flowRefs = loadFlowIdentityRefs(join(blueprintsDir, "Flows"));
-  const identityIds = new Set(identities.map((i) => i.id));
+  const agentRoles = new Set(identities.map((i) => i.id));
 
   const violations: IIntegrityViolation[] = [];
 
   // 1. dangling-agent_role: flow → identity must exist.
   for (const ref of flowRefs) {
-    if (!identityIds.has(ref)) {
+    if (!agentRoles.has(ref)) {
       violations.push({ kind: "dangling-identity", detail: `flow references identity "${ref}" which has no .md file` });
     }
   }

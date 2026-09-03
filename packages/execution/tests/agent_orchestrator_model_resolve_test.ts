@@ -244,7 +244,7 @@ Deno.test("[step135.8] blueprint frontmatter task_type field derives with source
     await executor.loadBlueprint("test-agent");
 
     assertEquals(captured[0]?.task_type, TaskType.FEATURE);
-    assertEquals(captured[0]?.task_type_source, "identity");
+    assertEquals(captured[0]?.task_type_source, "agent_role");
 
     executor.dispose();
     await Deno.remove(testDir, { recursive: true });
@@ -278,7 +278,7 @@ Deno.test("[step135.8] caller-supplied topSkillTaskTypes derives with source 'sk
   }
 });
 
-Deno.test("[step135.8] config task_type_map soft-matches the identity_id when no other source present", async () => {
+Deno.test("[step135.8] config task_type_map soft-matches the agent_role when no other source present", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();

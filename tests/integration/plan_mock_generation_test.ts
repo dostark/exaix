@@ -34,7 +34,7 @@ Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
     await t.step("End-to-end: Request file to plan generation", async () => {
       const requestResult = await env.createRequest(
         "Implement user authentication with JWT tokens",
-        { identityId: "senior-coder", priority: 7, tags: ["feature", EvaluationCategory.SECURITY] },
+        { agentRole: "senior-coder", priority: 7, tags: ["feature", EvaluationCategory.SECURITY] },
       );
 
       requestPath = requestResult.filePath;
@@ -176,7 +176,7 @@ Deno.test("[regression] RequestProcessor copies target_branch into plan frontmat
 
     const requestResult = await env.createRequest(
       "Implement branch-targeted change",
-      { identityId: "senior-coder", targetBranch },
+      { agentRole: "senior-coder", targetBranch },
     );
 
     const planPath = await processor.process(requestResult.filePath);

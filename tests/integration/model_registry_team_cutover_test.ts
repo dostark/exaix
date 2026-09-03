@@ -182,8 +182,8 @@ Deno.test({
       );
       assertEquals(
         payload.task_type_source,
-        "identity",
-        "task_type must derive from the identity blueprint's own task_type field (5-tier precedence, Step 8)",
+        "agent_role",
+        "task_type must derive from the agent role blueprint's own task_type field (5-tier precedence, Step 8)",
       );
     } finally {
       await shutdownAll(stubs);
