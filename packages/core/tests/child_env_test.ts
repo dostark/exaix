@@ -158,6 +158,7 @@ Deno.test("[child-env] scrubProcessEnv removes injection-class vars from the pro
   const originalNode = Deno.env.get("NODE_OPTIONS");
   const originalGitKey = Deno.env.get("GIT_CONFIG_KEY_0");
   const originalProxy = Deno.env.get("HTTP_PROXY");
+  const originalPath = Deno.env.get("PATH");
   Deno.env.set("LD_LIBRARY_PATH", "/opt/klee/lib");
   Deno.env.set("NODE_OPTIONS", "--require /tmp/evil.js");
   Deno.env.set("GIT_CONFIG_KEY_0", "core.sshCommand");
@@ -180,5 +181,7 @@ Deno.test("[child-env] scrubProcessEnv removes injection-class vars from the pro
     else Deno.env.set("GIT_CONFIG_KEY_0", originalGitKey);
     if (originalProxy === undefined) Deno.env.delete("HTTP_PROXY");
     else Deno.env.set("HTTP_PROXY", originalProxy);
+    if (originalPath === undefined) Deno.env.delete("PATH");
+    else Deno.env.set("PATH", originalPath);
   }
 });
