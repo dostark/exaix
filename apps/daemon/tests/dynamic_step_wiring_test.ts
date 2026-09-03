@@ -131,10 +131,10 @@ function writeWiringProbeFlow(root: string): void {
 }
 
 function writeSeniorCoderIdentity(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
-    join(REPO_ROOT, "Blueprints", "Identities", "senior-coder.md"),
+    join(REPO_ROOT, "Blueprints", "Agents", "senior-coder.md"),
     join(dir, "senior-coder.md"),
   );
 }

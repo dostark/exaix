@@ -3,7 +3,7 @@
  * @path packages/request/tests/blueprint_resolver_test.ts
  * @architectural-layer Services
  * @description Verifies BlueprintResolver resolves an identity's blueprint from
- * the configured blueprintsPath, falling back to a Blueprints/Identities
+ * the configured blueprintsPath, falling back to a Blueprints/Agents
  * directory walked upward from the current working directory when the primary
  * path has no match. Direct unit coverage for the extracted resolver (god-object
  * decomposition of RequestProcessor).
@@ -21,7 +21,7 @@ const SAMPLE_BLUEPRINT = await Deno.readTextFile(
 
 async function makeBlueprintsDir(): Promise<{ testDir: string; blueprintsPath: string }> {
   const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_test_" });
-  const blueprintsPath = join(testDir, "Blueprints", "Identities");
+  const blueprintsPath = join(testDir, "Blueprints", "Agents");
   await Deno.mkdir(blueprintsPath, { recursive: true });
   return { testDir, blueprintsPath };
 }
@@ -56,7 +56,7 @@ Deno.test("[BlueprintResolver.resolve] returns null when identity is not found a
   }
 });
 
-Deno.test("[BlueprintResolver.resolve] falls back to the repo-root Blueprints/Identities when cwd is outside the repo (e.g. a sandbox)", async () => {
+Deno.test("[BlueprintResolver.resolve] falls back to the repo-root Blueprints/Agents when cwd is outside the repo (e.g. a sandbox)", async () => {
   const { testDir, blueprintsPath } = await makeBlueprintsDir();
   const mockLogger = createMockEventLogger();
   const originalCwd = Deno.cwd();

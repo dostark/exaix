@@ -41,7 +41,7 @@ rules:
 Deno.test("RoutingCommands: explainRequest returns explicit routing decision for request file", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext();
   try {
-    const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
 
     const fixture_1 = readFixtureTextSync(import.meta.url, "cli", "commands", "routing_commands_test", "fixture_1.md");

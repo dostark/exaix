@@ -70,7 +70,7 @@ export {
   NullMemoryBankStub,
 } from "./src/helpers/memory_test_helper.ts";
 export {
-  getBlueprintsIdentitiesDir,
+  getBlueprintsAgentsDir as getBlueprintsAgentsDir,
   getMemoryDir,
   getMemoryExecutionDir,
   getMemoryGlobalDir,

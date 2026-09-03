@@ -53,7 +53,7 @@ Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the identity and
   const ws = await Deno.makeTempDir({ prefix: "seed-rest-" });
   try {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
-    assert(await exists(join(ws, "Blueprints", "Identities", "senior-coder.md")), "identities must be seeded");
+    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "identities must be seeded");
     assert(await exists(join(ws, "Memory", "Skills")), "the skill catalog must be seeded");
   } finally {
     await Deno.remove(ws, { recursive: true });
@@ -66,7 +66,7 @@ Deno.test("[workspace_catalog_seeding] seeding never overwrites a catalog alread
   // scenario's seeding pass over the shared workspace.
   const ws = await Deno.makeTempDir({ prefix: "seed-nooverwrite-" });
   try {
-    const identities = join(ws, "Blueprints", "Identities");
+    const identities = join(ws, "Blueprints", "Agents");
     await Deno.mkdir(identities, { recursive: true });
     await Deno.writeTextFile(join(identities, "senior-coder.md"), "PATCHED BY SCENARIO");
 
@@ -223,7 +223,7 @@ Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed,
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-" });
   try {
     // What a scenario's own `cp -r`/`mkdir` leaves behind: the directory exists, the files do not.
-    await Deno.mkdir(join(ws, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(ws, "Blueprints", "Agents"), { recursive: true });
     await Deno.mkdir(join(ws, "Blueprints", "Flows"), { recursive: true });
 
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
@@ -232,7 +232,7 @@ Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed,
       await exists(join(ws, "Blueprints", "Flows", "analyze-codebase.flow.yaml")),
       "the shipped flow catalog must be seeded even though Blueprints/ already existed",
     );
-    assert(await exists(join(ws, "Blueprints", "Identities", "senior-coder.md")), "identities too");
+    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "identities too");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
@@ -243,7 +243,7 @@ Deno.test("[workspace_catalog_seeding] completing a partial catalog still never 
   // the shared sandbox keeps its patch.
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-nooverwrite-" });
   try {
-    const identities = join(ws, "Blueprints", "Identities");
+    const identities = join(ws, "Blueprints", "Agents");
     await Deno.mkdir(identities, { recursive: true });
     await Deno.writeTextFile(join(identities, "senior-coder.md"), "PATCHED BY SCENARIO");
 

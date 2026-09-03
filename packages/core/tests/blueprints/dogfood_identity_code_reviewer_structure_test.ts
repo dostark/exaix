@@ -9,7 +9,7 @@ import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const READ_ONLY_TOOLS = [
   "read_file",

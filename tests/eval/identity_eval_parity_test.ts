@@ -1,9 +1,9 @@
 /**
  * @module IdentityEvalParityTest
  * @path tests/eval/identity_eval_parity_test.ts
- * @description Parity test asserting every Blueprints/Identities/*.md entry has
+ * @description Parity test asserting every Blueprints/Agents/*.md entry has
  *   at least one eval scenario tagged entity:<identity>, minus an explicit
- *   exclusion list (mock-agent). The catalog is read from `Blueprints/Identities/` rather than
+ *   exclusion list (mock-agent). The catalog is read from `Blueprints/Agents/` rather than
  *   restated, and `README.md` is dropped by the reader as a non-identity file.
  */
 import { assertEquals } from "@std/assert";
@@ -13,9 +13,9 @@ import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 
-// Files in `Blueprints/Identities/` that are not identities. `README.md` used to sit in
+// Files in `Blueprints/Agents/` that are not identities. `README.md` used to sit in
 // `parity_exclusions.json`, misleadingly reading as a deliberately-uncovered identity (and was
 // inert, since the catalog it excluded from never contained it). Non-identity filtering belongs here.
 const NON_IDENTITY_FILES = new Set(["README"]);
@@ -83,7 +83,7 @@ Deno.test("identity_eval_parity — mock-agent remains a real, reasoned exclusio
 Deno.test("identity_eval_parity — every shipped identity has a real scenario, or a reasoned exclusion", async () => {
   // The two tests above compare the catalog against a SYNTHETIC scenario list — one empty, one
   // built from the identity names themselves — so both are tautologies. Verified by canary:
-  // dropping a new identity file into Blueprints/Identities/ left the suite green.
+  // dropping a new identity file into Blueprints/Agents/ left the suite green.
   const catalog = await loadScenarioCatalog({
     frameworkHome: join(REPO_ROOT, "tests", "scenario_framework"),
   });

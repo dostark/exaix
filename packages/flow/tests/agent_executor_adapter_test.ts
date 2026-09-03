@@ -32,7 +32,7 @@ function makeFakeRunner(): IRunner {
 
 Deno.test("AgentOrchestratorAdapter runs an agent and returns IAgentExecutionResult", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
-  const identitiesDir = `${tmpDir}/Blueprints/Identities`;
+  const identitiesDir = `${tmpDir}/Blueprints/Agents`;
   await Deno.mkdir(identitiesDir, { recursive: true });
   await Deno.writeTextFile(
     `${identitiesDir}/test-agent.md`,
@@ -71,7 +71,7 @@ model: "mock:test"
 
 Deno.test("AgentOrchestratorAdapter threads scenarioId/stepId/flowStepId into the runner's request (Phase 157)", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
-  const identitiesDir = `${tmpDir}/Blueprints/Identities`;
+  const identitiesDir = `${tmpDir}/Blueprints/Agents`;
   await Deno.mkdir(identitiesDir, { recursive: true });
   await Deno.writeTextFile(
     `${identitiesDir}/test-agent.md`,

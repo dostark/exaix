@@ -12,7 +12,7 @@ import {
   DAEMON_DEFAULT_NET_HOSTS,
   DAEMON_IDENTITY_ID,
   DaemonStatus,
-  DEFAULT_IDENTITIES_PATH,
+  DEFAULT_AGENTS_PATH,
   DEFAULT_PROJECTS_MEMORY_PATH,
   EDITION_SOLO,
   EDITION_TEAM,
@@ -832,7 +832,7 @@ if (import.meta.main) {
     const blueprintsPath = join(
       config.system.root,
       config.paths.blueprints,
-      DEFAULT_IDENTITIES_PATH,
+      DEFAULT_AGENTS_PATH,
     );
     // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the identity's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
     const agentRunner = new AgentRunner(llmProvider, {
@@ -925,7 +925,7 @@ if (import.meta.main) {
       blueprintsPath: join(
         config.system.root,
         config.paths.blueprints,
-        DEFAULT_IDENTITIES_PATH,
+        DEFAULT_AGENTS_PATH,
       ),
       includeReasoning: true,
       context, // Support unified DI
@@ -1041,7 +1041,7 @@ if (import.meta.main) {
         blueprints: join(
           config.system.root,
           config.paths.blueprints,
-          DEFAULT_IDENTITIES_PATH,
+          DEFAULT_AGENTS_PATH,
         ),
       },
     );

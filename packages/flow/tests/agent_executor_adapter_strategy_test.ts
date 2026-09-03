@@ -26,7 +26,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 
 async function writeBlueprint(root: string, identityId: string): Promise<void> {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, `${identityId}.md`),
@@ -72,7 +72,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast when constructio
   try {
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
     );
 
     await assertRejects(
@@ -96,7 +96,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast with a distinct 
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions },
     );
 
@@ -124,7 +124,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: dispatches through the forc
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -181,7 +181,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: extracts the <content> bloc
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -212,7 +212,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: bridges the whole descripti
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -254,7 +254,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls for different por
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -338,7 +338,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -391,7 +391,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NO
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -447,7 +447,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-t
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -520,7 +520,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's
 
     const adapter = new AgentOrchestratorAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
     );
 
@@ -572,7 +572,7 @@ Deno.test("AgentOrchestratorAdapter.run: no-strategy path still calls the wrappe
           return Promise.resolve({ thought: "t", content: "c", raw: "r" });
         },
       },
-      join(dbService.tempDir, "Blueprints", "Identities"),
+      join(dbService.tempDir, "Blueprints", "Agents"),
     );
 
     const result = await adapter.run("test-agent", makeStepRequest({ portal: "workspace" }));

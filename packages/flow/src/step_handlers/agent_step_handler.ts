@@ -54,7 +54,7 @@ export class AgentStepHandler implements IFlowStepHandler {
     stepRequest: IStepExecutionContext["stepRequest"],
   ): Promise<IAgentExecutionResult> {
     const blueprintsPath = this.#config
-      ? join(this.#config.system.root, this.#config.paths.blueprints, this.#config.paths.identities)
+      ? join(this.#config.system.root, this.#config.paths.blueprints, this.#config.paths.agents)
       : "";
     const loader = new IBlueprintLoader({ blueprintsPath });
     const loaded = await loader.load(step.identity);

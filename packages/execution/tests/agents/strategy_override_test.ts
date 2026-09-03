@@ -31,7 +31,7 @@ async function writeBlueprint(
   capabilities: string[],
   extra: IBlueprintExtraFields = {},
 ): Promise<void> {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
   const extraLines = Object.entries(extra).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join("\n");
   await Deno.writeTextFile(

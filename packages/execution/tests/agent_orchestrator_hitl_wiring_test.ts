@@ -35,7 +35,7 @@ import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_o
 
 /** Writes a test blueprint with a `hitl.require_secondary_approval` block in its frontmatter. */
 async function writeBlueprintWithHitl(root: string, rules: HitlRule[]): Promise<void> {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
   const ruleLines = rules.map((r) => `    - tool: "${r.tool}"\n      reason: "${r.reason ?? ""}"`).join("\n");
   await Deno.writeTextFile(

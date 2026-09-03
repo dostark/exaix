@@ -186,7 +186,7 @@ Deno.test("AgentServiceAdapter list/health/log helpers", async () => {
   const existingDirRoot = await Deno.makeTempDir({ prefix: "agent-adapter-existing-" });
   try {
     const existingConfig = createMockConfig(existingDirRoot);
-    const identitiesDir = join(existingDirRoot, existingConfig.paths.workspace, existingConfig.paths.identities);
+    const identitiesDir = join(existingDirRoot, existingConfig.paths.workspace, existingConfig.paths.agents);
     await Deno.mkdir(identitiesDir, { recursive: true });
     await Deno.writeTextFile(join(identitiesDir, "alpha.json"), "{}");
     await Deno.mkdir(join(identitiesDir, "beta"), { recursive: true });

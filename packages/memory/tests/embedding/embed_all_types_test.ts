@@ -53,7 +53,7 @@ function testConfig(tempDir: string): Config {
       plans: "Plans",
       requests: "Requests",
       rejected: "Rejected",
-      identities: "Identities",
+      agents: "Agents",
       flows: "Blueprints/Flows",
       memoryProjects: "Projects",
       memoryExecution: "Execution",

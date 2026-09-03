@@ -5,8 +5,8 @@
  * a `skill-version` or `identity-config` arm shadows one shipped catalog entry for the
  * run without editing `Blueprints/`. Skills are resolved against `Memory/Skills/` (the
  * tree `SkillsService` actually reads, generated from `Blueprints/Skills/*.skill.md` by
- * `scripts/build_skills_index.ts`), not `Blueprints/Skills/` itself. Identities are
- * resolved directly against `Blueprints/Identities/`, since `BlueprintResolver` reads
+ * `scripts/build_skills_index.ts`), not `Blueprints/Skills/` itself. Agent roles are
+ * resolved directly against `Blueprints/Agents/`, since `BlueprintResolver` reads
  * that tree without an intermediate build step.
  * @architectural-layer Test
  * @related-files [packages/core/src/skills/skills.ts, packages/request/src/blueprint_resolver.ts]
@@ -117,14 +117,14 @@ Deno.test("[CatalogOverlay] a skill with no overlay file falls back to the shipp
 
 Deno.test("[CatalogOverlay] an identity overlay shadows the shipped identity's content for BlueprintResolver.resolve", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "identity-overlay-" });
-  // IBlueprintLoader.resolvePath treats a blueprintsPath NOT ending in "Identities" as a
-  // Blueprints root and appends "Identities" itself — so an overlay dir must end in
+  // IBlueprintLoader.resolvePath treats a blueprintsPath NOT ending in "Agents" as a
+  // Blueprints root and appends "Agents" itself — so an overlay dir must end in
   // "Identities" too, exactly like the shipped `blueprintsPath` already must.
   const overlayRoot = await Deno.makeTempDir({ prefix: "identity-overlay-dir-" });
-  const overlayDir = join(overlayRoot, "Identities");
+  const overlayDir = join(overlayRoot, "Agents");
   const mockLogger = createMockEventLogger();
   try {
-    const blueprintsPath = join(testDir, "Blueprints", "Identities");
+    const blueprintsPath = join(testDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsPath, { recursive: true });
     await Deno.mkdir(overlayDir, { recursive: true });
     const shippedBlueprint = await Deno.readTextFile(
@@ -162,10 +162,10 @@ Deno.test("[CatalogOverlay] an identity overlay shadows the shipped identity's c
 Deno.test("[CatalogOverlay] an identity with no overlay file falls back to the shipped catalog", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "identity-overlay-fallback-" });
   const overlayRoot = await Deno.makeTempDir({ prefix: "identity-overlay-dir-empty-" });
-  const overlayDir = join(overlayRoot, "Identities");
+  const overlayDir = join(overlayRoot, "Agents");
   const mockLogger = createMockEventLogger();
   try {
-    const blueprintsPath = join(testDir, "Blueprints", "Identities");
+    const blueprintsPath = join(testDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsPath, { recursive: true });
     await Deno.mkdir(overlayDir, { recursive: true });
     const shippedBlueprint = await Deno.readTextFile(

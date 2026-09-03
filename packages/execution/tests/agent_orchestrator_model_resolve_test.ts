@@ -46,7 +46,7 @@ function createCapturingResolver(
   };
 }
 
-const resolverDir = "Blueprints/Identities";
+const resolverDir = "Blueprints/Agents";
 
 async function writeBlueprint(root: string, name: string, frontmatter: Record<string, JSONValue>): Promise<string> {
   const dir = join(root, resolverDir);

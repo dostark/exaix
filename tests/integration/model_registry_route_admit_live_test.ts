@@ -50,7 +50,7 @@ const EXPLICIT_REQUEST_ID = "step135-ledger-explicit-req";
 // (not tryResolveCurated, which returns null with no model_presets.M.candidates configured).
 // resolveOnce's getModelsByCapability lookup swaps in the real catalog entry so routesFor finds 2 rows.
 function writeTwoRouteIdentity(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
@@ -68,7 +68,7 @@ function writeTwoRouteIdentity(root: string): void {
 }
 
 function writeExplicitIdentity(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",

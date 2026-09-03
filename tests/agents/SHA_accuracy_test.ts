@@ -44,8 +44,8 @@ Deno.test({
       await git(["add", "README.md"]);
       await git(["commit", "-m", "Initial commit"]);
 
-      // 2. Write blueprint file at <root>/Blueprints/Identities/test-agent.md
-      const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+      // 2. Write blueprint file at <root>/Blueprints/Agents/test-agent.md
+      const blueprintsDir = join(tempDir, "Blueprints", "Agents");
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, "test-agent.md"),

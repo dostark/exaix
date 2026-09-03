@@ -298,7 +298,7 @@ path = "analysis-target.txt"
     await Deno.mkdir(paths.activeDir, { recursive: true });
 
     // Provide a read-only blueprint so ExecutionLoop can detect capability mode.
-    const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
     await ensureDir(blueprintsDir);
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),

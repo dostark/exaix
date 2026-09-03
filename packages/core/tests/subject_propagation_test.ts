@@ -35,7 +35,7 @@ async function withSubjectPropagationEnv(
   const plansDir = join(workspaceDir, "Plans");
   const runtimeDir = join(tempDir, "Runtime");
   const blueprintsDir = join(tempDir, "Blueprints");
-  const identitiesDir = join(blueprintsDir, "Identities");
+  const identitiesDir = join(blueprintsDir, "Agents");
 
   await Deno.mkdir(requestsDir, { recursive: true });
   await Deno.mkdir(plansDir, { recursive: true });

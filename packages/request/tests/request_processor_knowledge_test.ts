@@ -71,7 +71,7 @@ async function makeKnowledgeProcessorEnv(opts: {
   const workspacePath = join(tempDir, config.paths.workspace);
   const requestsDir = join(workspacePath, config.paths.requests);
   const blueprintsPath = join(tempDir, config.paths.blueprints);
-  const identitiesPath = join(blueprintsPath, config.paths.identities);
+  const identitiesPath = join(blueprintsPath, config.paths.agents);
   await Deno.mkdir(identitiesPath, { recursive: true });
 
   // Inject a portal entry into the config when portal-bound testing is needed
@@ -185,7 +185,7 @@ Deno.test("[RequestProcessor] resolves portal knowledge before execution and inj
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -207,7 +207,7 @@ Deno.test("[RequestProcessor] passes injected knowledge to agent during prompt g
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal", identity: "know-agent" });
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Identities", "know-agent.md");
+    const blueprintPath = join(env.blueprintsPath, "Agents", "know-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# know-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -229,7 +229,7 @@ Deno.test("[RequestProcessor] handles knowledge resolution failure gracefully", 
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     // Should not throw
@@ -251,7 +251,7 @@ Deno.test("[RequestProcessor] skips knowledge resolution if request specifies no
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: undefined });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);
@@ -270,7 +270,7 @@ Deno.test("[RequestProcessor] calls getRelevantContext when portal knowledge res
     const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
 
     // Write a dummy blueprint
-    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
 
     await env.processor.process(filePath);

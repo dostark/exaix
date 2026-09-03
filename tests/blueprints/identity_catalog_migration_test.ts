@@ -6,7 +6,7 @@
  *   - every active identity has response-contract (or the judge-specialized
  *     response-contract-judge) in default_skills
  *   - no {{include:standard-response-format}} or {{include:plan-schema-full}}
- *     or {{include:blueprint-best-practices}} remains under Blueprints/Identities/**
+ *     or {{include:blueprint-best-practices}} remains under Blueprints/Agents/**
  *   - Blueprints/Fragments/ contains no contract/methodology fragments
  *     (only static boilerplate, if any; else the dir is retired)
  *   - every example and template declares default_skills incl. response-contract
@@ -57,7 +57,7 @@ function listActiveIdentityFiles(): string[] {
   return out;
 }
 
-/** Walk all files under Blueprints/Identities/** (recursive). */
+/** Walk all files under Blueprints/Agents/** (recursive). */
 function walkIdentitiesTree(): string[] {
   const out: string[] = [];
   function walk(dir: string) {
@@ -101,12 +101,12 @@ Deno.test({
   },
 });
 
-// Test 2: No file under Blueprints/Identities/** contains a contract-fragment include
+// Test 2: No file under Blueprints/Agents/** contains a contract-fragment include
 Deno.test({
   name: "[step7] no identity/example/template contains a contract-fragment {{include:}}",
   fn() {
     const files = walkIdentitiesTree();
-    assert(files.length > 0, "no files found under Blueprints/Identities");
+    assert(files.length > 0, "no files found under Blueprints/Agents");
     const offenders: string[] = [];
     for (const fp of files) {
       const content = Deno.readTextFileSync(fp);

@@ -156,7 +156,7 @@ const REACT_COMPLETE_FIXTURE = {
 };
 
 function writeAgentIdentity(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
     join(dir, "agent1.md"),

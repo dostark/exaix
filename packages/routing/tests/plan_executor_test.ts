@@ -48,7 +48,7 @@ async function withPlanExecutorTestContext(
   const testContext = await createGitTestContext(prefix);
   const { tempDir, repoDir, db, cleanup, config, git } = testContext;
   const helper = new GitTestHelper(repoDir);
-  const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
+  const blueprintsDir = join(config.system.root, config.paths.blueprints, "Agents");
 
   try {
     if (options.ensureGit !== false) {

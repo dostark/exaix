@@ -71,7 +71,7 @@ export const DEFAULT_REQUESTS_PATH = "Requests";
 export const DEFAULT_REJECTED_PATH = "Rejected";
 
 // Subfolder Defaults (relative to their parent domain)
-export const DEFAULT_IDENTITIES_PATH = "Identities";
+export const DEFAULT_AGENTS_PATH = "Agents";
 export const DEFAULT_FLOWS_PATH = "Flows";
 export const DEFAULT_WAIT_STATES_PATH = "WaitStates";
 export const DEFAULT_PROJECTS_MEMORY_PATH = "Projects";
@@ -95,7 +95,7 @@ export const ExaPathDefaults = {
   active: DEFAULT_ACTIVE_PATH,
   archive: DEFAULT_ARCHIVE_PATH,
   rejected: DEFAULT_REJECTED_PATH,
-  identities: DEFAULT_IDENTITIES_PATH,
+  agents: DEFAULT_AGENTS_PATH,
   memoryProjects: `${DEFAULT_MEMORY_PATH}/${DEFAULT_PROJECTS_MEMORY_PATH}`,
   memoryExecution: `${DEFAULT_MEMORY_PATH}/${DEFAULT_EXECUTION_MEMORY_PATH}`,
   memoryIndex: `${DEFAULT_MEMORY_PATH}/${DEFAULT_INDEX_MEMORY_PATH}`,

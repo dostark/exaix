@@ -2,14 +2,14 @@
  * @module FlowIdentityReferenceLintTest
  * @path tests/eval/flow_identity_reference_lint_test.ts
  * @description Asserts every identity: reference in every Blueprints/Flows/*.flow.yaml
- *   resolves against Blueprints/Identities/.
+ *   resolves against Blueprints/Agents/.
  */
 import { assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { resolve } from "@std/path";
 
 const FLOWS_DIR = resolve(Deno.cwd(), "Blueprints", "Flows");
-const IDENTITIES_DIR = resolve(Deno.cwd(), "Blueprints", "Identities");
+const IDENTITIES_DIR = resolve(Deno.cwd(), "Blueprints", "Agents");
 
 function loadIdentityNames(): Set<string> {
   const names = new Set<string>();

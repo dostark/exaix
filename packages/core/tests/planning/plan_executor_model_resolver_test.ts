@@ -82,9 +82,9 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Identities`, { recursive: true });
+      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
-        `${root}/Blueprints/Identities/senior-coder.md`,
+        `${root}/Blueprints/Agents/senior-coder.md`,
         '---\nidentity_id: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
       );
       const config = createMockConfig(root, {});
@@ -135,9 +135,9 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Identities`, { recursive: true });
+      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
-        `${root}/Blueprints/Identities/senior-coder.md`,
+        `${root}/Blueprints/Agents/senior-coder.md`,
         '---\nidentity_id: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub identity for testing.\n',
       );
       const config = createMockConfig(root, {});

@@ -39,7 +39,7 @@ async function buildCatalog(opts: {
   flows: IFixtureFlow[];
 }): Promise<string> {
   const root = await Deno.makeTempDir({ prefix: "bp_integrity_" });
-  const idDir = join(root, "Identities");
+  const idDir = join(root, "Agents");
   const skillDir = join(root, "Skills");
   const flowDir = join(root, "Flows");
   await ensureDir(idDir);

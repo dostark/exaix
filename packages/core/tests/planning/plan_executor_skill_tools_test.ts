@@ -93,11 +93,11 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Identities`, { recursive: true });
+      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       // Identity permits a BROAD set — list_directory is included here but no matched skill
       // declares it, so it must not survive the intersection.
       await Deno.writeTextFile(
-        `${root}/Blueprints/Identities/senior-coder.md`,
+        `${root}/Blueprints/Agents/senior-coder.md`,
         '---\nidentity_id: senior-coder\nmodel: ""\n' +
           'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\n\n' +
           "Stub identity for testing.\n",

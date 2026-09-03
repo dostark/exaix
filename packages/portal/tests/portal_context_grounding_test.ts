@@ -15,7 +15,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit, initTestDbService } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-const CODE_ANALYST_BLUEPRINT_PATH = new URL("../../../Blueprints/Identities/code-analyst.md", import.meta.url);
+const CODE_ANALYST_BLUEPRINT_PATH = new URL("../../../Blueprints/Agents/code-analyst.md", import.meta.url);
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();
@@ -38,7 +38,7 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     }];
 
     // 2. Setup agent blueprint
-    const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),

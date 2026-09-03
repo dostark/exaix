@@ -3,7 +3,7 @@
  * @path tests/scenario_framework/tests/unit/catalog_immutability_test.ts
  * @description Verifies Phase 158 Step 2's arm mechanisms never mutate the catalog trees
  * they read from — a run leaves `Blueprints/Skills/`, `Memory/Skills/` and
- * `Blueprints/Identities/` byte-identical, not `Blueprints/` alone (the trees an arm
+ * `Blueprints/Agents/` byte-identical, not `Blueprints/` alone (the trees an arm
  * could plausibly touch, per the corrected Design Decision — see Pre-Gap Analysis
  * GAP-1). Exercises skill overlay and identity overlay, the two mechanisms that
  * actually read from a catalog tree; skill suppression is excluded here because it is a
@@ -53,14 +53,14 @@ function assertTreesEqual(before: Map<string, string>, after: Map<string, string
   }
 }
 
-Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Identities/ are byte-identical after skill and identity overlays run", async () => {
+Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Agents/ are byte-identical after skill and identity overlays run", async () => {
   const { db, config, cleanup } = await initTestDbService();
   const skillsDir = join(config.system.root, config.paths.memory, "Skills");
   const identitiesRoot = await Deno.makeTempDir({ prefix: "immutability-identities-" });
-  const identitiesDir = join(identitiesRoot, "Identities");
+  const identitiesDir = join(identitiesRoot, "Agents");
   const skillOverlayDir = await Deno.makeTempDir({ prefix: "immutability-skill-overlay-" });
   const identityOverlayRoot = await Deno.makeTempDir({ prefix: "immutability-identity-overlay-" });
-  const identityOverlayDir = join(identityOverlayRoot, "Identities");
+  const identityOverlayDir = join(identityOverlayRoot, "Agents");
   const mockLogger = createMockEventLogger();
 
   try {
@@ -134,7 +134,7 @@ Deno.test("[CatalogImmutability] Memory/Skills/ and Blueprints/Identities/ are b
     const identitiesAfter = await snapshotTree(identitiesDir);
 
     assertTreesEqual(skillsBefore, skillsAfter, "Memory/Skills/");
-    assertTreesEqual(identitiesBefore, identitiesAfter, "Blueprints/Identities/");
+    assertTreesEqual(identitiesBefore, identitiesAfter, "Blueprints/Agents/");
   } finally {
     await Deno.remove(identitiesRoot, { recursive: true });
     await Deno.remove(skillOverlayDir, { recursive: true });

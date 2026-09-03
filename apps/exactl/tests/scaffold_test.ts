@@ -50,7 +50,7 @@ Deno.test("scaffold.ts creates required directory structure", async () => {
     // Verify all required directories exist
     const requiredDirs = [
       ExaPathDefaults.runtime,
-      join(ExaPathDefaults.blueprints, ExaPathDefaults.identities),
+      join(ExaPathDefaults.blueprints, ExaPathDefaults.agents),
       ExaPathDefaults.flows,
       join(ExaPathDefaults.workspace, ExaPathDefaults.requests),
       join(ExaPathDefaults.workspace, ExaPathDefaults.plans),
@@ -82,7 +82,7 @@ Deno.test("scaffold.ts creates .gitkeep files", async () => {
     // Verify .gitkeep files exist
     const gitkeepPaths = [
       join(ExaPathDefaults.runtime, ".gitkeep"),
-      join(ExaPathDefaults.blueprints, ExaPathDefaults.identities, ".gitkeep"),
+      join(ExaPathDefaults.blueprints, ExaPathDefaults.agents, ".gitkeep"),
       join(ExaPathDefaults.flows, ".gitkeep"),
       join(ExaPathDefaults.workspace, ExaPathDefaults.requests, ".gitkeep"),
       join(ExaPathDefaults.workspace, ExaPathDefaults.plans, ".gitkeep"),
@@ -201,7 +201,7 @@ Deno.test("scaffold.ts is idempotent", async () => {
     // Verify structure is still correct
     const requiredDirs = [
       ".exa",
-      "Blueprints/Identities",
+      "Blueprints/Agents",
       "Workspace/Requests",
       "Memory/Reports",
       "Portals",

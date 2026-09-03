@@ -90,11 +90,11 @@ Deno.test({
     registerLocalProvider("ollama");
     try {
       const root = await Deno.makeTempDir();
-      await Deno.mkdir(`${root}/Blueprints/Identities`, { recursive: true });
+      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       // No frontmatter task_type/characteristics on the identity — precedence must fall
       // through frontmatter/identity tiers to reach the skill-trigger tier.
       await Deno.writeTextFile(
-        `${root}/Blueprints/Identities/senior-coder.md`,
+        `${root}/Blueprints/Agents/senior-coder.md`,
         '---\nidentity_id: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
       );
       const config = createMockConfig(root, {});

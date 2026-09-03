@@ -170,7 +170,7 @@ Deno.test("[flow-fixture] every identity a fixture flow names exists in the cata
   // Now that fixture flows are staged and actually load, their `identity:` references resolve
   // at runtime — several of them named identities the catalog does not have.
   const catalog = new Set<string>();
-  for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Identities"))) {
+  for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Agents"))) {
     if (entry.isFile && entry.name.endsWith(".md")) catalog.add(entry.name.replace(/\.md$/, ""));
   }
   assert(catalog.size > 0, "expected identities to be shipped");

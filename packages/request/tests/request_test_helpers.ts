@@ -77,7 +77,7 @@ export async function makeRequestProcessorEnv(): Promise<{
   const plansDir = join(workspacePath, config.paths.plans);
   const blueprintsPath = join(tempDir, config.paths.blueprints);
 
-  const identitiesPath = join(blueprintsPath, config.paths.identities);
+  const identitiesPath = join(blueprintsPath, config.paths.agents);
   await Deno.mkdir(requestsDir, { recursive: true });
   await Deno.mkdir(plansDir, { recursive: true });
   await Deno.mkdir(identitiesPath, { recursive: true });
@@ -158,7 +158,7 @@ ${body}`;
 }
 
 export function makeBlueprintFileSync(blueprintsPath: string, identity: string): string {
-  const blueprintPath = join(blueprintsPath, "Identities", `${identity}.md`);
+  const blueprintPath = join(blueprintsPath, "Agents", `${identity}.md`);
   const content = `# Blueprint for ${identity}
 You are a helpful assistant.
 `;

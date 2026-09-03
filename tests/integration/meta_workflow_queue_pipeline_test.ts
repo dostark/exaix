@@ -14,7 +14,7 @@ import { isContentlessBrief } from "@exaix/core/planning";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const MINIMAL_PLAN = join(
   REPO_ROOT,

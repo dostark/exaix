@@ -67,7 +67,7 @@ Deno.test("[blueprint] create - generates valid blueprint file", async () => {
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       `${identityId}.md`,
     );
     assertEquals(await exists(blueprintPath), true);
@@ -180,7 +180,7 @@ Deno.test("[blueprint] create - loads system prompt from file", async () => {
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       "custom-agent.md",
     );
     const content = await Deno.readTextFile(blueprintPath);
@@ -324,7 +324,7 @@ Deno.test("[blueprint] list - parses YAML inline arrays with invalid JSON", asyn
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       `${TEST_BLUEPRINT_YAML_AGENT_ID}.md`,
     );
     const yamlContent = `---
@@ -359,7 +359,7 @@ Deno.test("[blueprint] list - skips YAML frontmatter missing identity_id", async
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       `${TEST_BLUEPRINT_MISSING_AGENT_ID}.md`,
     );
     const yamlContent = `---
@@ -441,7 +441,7 @@ Deno.test("[blueprint] validate - detects missing required fields", async () => 
   await setupTest();
   try {
     // Manually create invalid blueprint
-    const blueprintPath = join(testEnv.config.system.root, testEnv.config.paths.blueprints, "Identities", "invalid.md");
+    const blueprintPath = join(testEnv.config.system.root, testEnv.config.paths.blueprints, "Agents", "invalid.md");
     await Deno.writeTextFile(
       blueprintPath,
       `+++
@@ -466,7 +466,7 @@ Deno.test("[blueprint] validate - checks system prompt format", async () => {
   await setupTest();
   try {
     // Create blueprint with missing output format tags
-    const blueprintPath = join(testEnv.config.system.root, testEnv.config.paths.blueprints, "Identities", "no-tags.md");
+    const blueprintPath = join(testEnv.config.system.root, testEnv.config.paths.blueprints, "Agents", "no-tags.md");
     await Deno.writeTextFile(
       blueprintPath,
       `+++
@@ -507,7 +507,7 @@ Deno.test("[blueprint] remove - deletes blueprint file", async () => {
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       "remove-test.md",
     );
     assertEquals(await exists(blueprintPath), true);
@@ -624,7 +624,7 @@ Deno.test("[blueprint] edit - allows save when only warnings exist", async () =>
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       "warn-test.md",
     );
     const shortContent = `+++
@@ -676,7 +676,7 @@ Deno.test("[blueprint] edit - blocks save when validation errors exist", async (
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       "error-test.md",
     );
     const errorContent = `+++
@@ -805,7 +805,7 @@ Deno.test("[blueprint] validate - reports missing frontmatter", async () => {
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       `${TEST_BLUEPRINT_NO_FRONTMATTER_ID}.md`,
     );
     await Deno.writeTextFile(blueprintPath, TEST_BLUEPRINT_NO_FRONTMATTER_CONTENT);
@@ -824,7 +824,7 @@ Deno.test("[blueprint] show - throws on blueprint with invalid frontmatter", asy
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       "bad-format.md",
     );
     await Deno.writeTextFile(
@@ -955,7 +955,7 @@ Deno.test("[blueprint] deprecate - writes the `deprecated` flag that routing con
     const blueprintPath = join(
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
-      "Identities",
+      "Agents",
       "routing-deprecate.md",
     );
     const raw = await Deno.readTextFile(blueprintPath);

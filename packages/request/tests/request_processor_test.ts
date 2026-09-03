@@ -31,7 +31,7 @@ import {
   createStubDisplay,
   createStubGit,
   createStubProvider,
-  getBlueprintsIdentitiesDir,
+  getBlueprintsAgentsDir,
   getWorkspaceDir,
   getWorkspacePlansDir,
   getWorkspaceRequestsDir,
@@ -126,11 +126,11 @@ describe("RequestProcessor", () => {
     // Create additional required directories
     await Deno.mkdir(getWorkspaceRequestsDir(testDir), { recursive: true });
     await Deno.mkdir(getWorkspacePlansDir(testDir), { recursive: true });
-    await Deno.mkdir(join(testDir, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
 
     // Create default blueprint
     await Deno.writeTextFile(
-      join(testDir, "Blueprints", "Identities", "default.md"),
+      join(testDir, "Blueprints", "Agents", "default.md"),
       createBlueprintContent(),
     );
 
@@ -138,7 +138,7 @@ describe("RequestProcessor", () => {
     processorConfig = {
       workspacePath: getWorkspaceDir(testDir),
       requestsDir: getWorkspaceRequestsDir(testDir),
-      blueprintsPath: getBlueprintsIdentitiesDir(testDir),
+      blueprintsPath: getBlueprintsAgentsDir(testDir),
       includeReasoning: true,
     };
 
@@ -403,7 +403,7 @@ Do something
     it("should classify analyzer agents as simple tasks", async () => {
       // Create data-analyzer blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Identities", "data-analyzer.md"),
+        join(testDir, "Blueprints", "Agents", "data-analyzer.md"),
         createBlueprintContent(),
       );
 
@@ -427,7 +427,7 @@ Do something
     it("should classify coder agents as complex tasks", async () => {
       // Create senior-coder blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Identities", "senior-coder.md"),
+        join(testDir, "Blueprints", "Agents", "senior-coder.md"),
         createBlueprintContent(),
       );
 
@@ -451,7 +451,7 @@ Do something
     it("should classify general agents as medium tasks", async () => {
       // Create content-writer blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Identities", "content-writer.md"),
+        join(testDir, "Blueprints", "Agents", "content-writer.md"),
         createBlueprintContent(),
       );
 
@@ -477,7 +477,7 @@ Do something
     it("should load custom agent blueprint", async () => {
       // Create a custom blueprint
       await Deno.writeTextFile(
-        join(testDir, "Blueprints", "Identities", "code-reviewer.md"),
+        join(testDir, "Blueprints", "Agents", "code-reviewer.md"),
         `# Code Reviewer Blueprint
 
 You are an expert code reviewer. Analyze code changes and provide feedback.

@@ -34,7 +34,7 @@ skills/tools/model-size bundle it ships with?"
    (Phase 161 Step 1). If it hasn't landed yet, this arm cannot be authored — do not fall back
    to `identity-config` and call it a persona test; that arm never touches the persona body.
 1. **Author the three variant bodies** for the identity under test:
-   - **Shipped** — the real, unmodified markdown body from `Blueprints/Identities/<id>.md`.
+   - **Shipped** — the real, unmodified markdown body from `Blueprints/Agents/<id>.md`.
    - **Generic control** — a fixed, identity-neutral stand-in: `"You are a helpful assistant.
      Follow your skills for methodology and output format."` (the same string for every
      identity under test — it must not itself carry role-specific content, or the comparison

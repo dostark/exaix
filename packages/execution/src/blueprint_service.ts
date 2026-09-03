@@ -17,7 +17,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_IDENTITIES_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
+import { DEFAULT_AGENTS_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
 import type { IAgentFileBlueprint, IAgentOrchestratorOptions } from "./agent_orchestrator.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
@@ -176,7 +176,7 @@ export class BlueprintService {
     const blueprintsBase = isAbsolute(this.config.paths.blueprints)
       ? this.config.paths.blueprints
       : join(this.config.system.root, this.config.paths.blueprints);
-    return join(blueprintsBase, DEFAULT_IDENTITIES_PATH, `${agentName}.md`);
+    return join(blueprintsBase, DEFAULT_AGENTS_PATH, `${agentName}.md`);
   }
 
   resolveModelId(blueprint: IAgentFileBlueprint): string {

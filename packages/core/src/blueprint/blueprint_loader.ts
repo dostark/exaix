@@ -12,13 +12,7 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import {
-  DEFAULT_AI_MODEL,
-  DEFAULT_BLUEPRINT_VERSION,
-  DEFAULT_IDENTITIES_PATH,
-  McpToolName,
-  ToolName,
-} from "@exaix/core";
+import { DEFAULT_AGENTS_PATH, DEFAULT_AI_MODEL, DEFAULT_BLUEPRINT_VERSION, McpToolName, ToolName } from "@exaix/core";
 
 /**
  * Fully loaded and validated blueprint
@@ -276,7 +270,7 @@ export class IBlueprintLoader {
     if (!blueprint) {
       const path = this.resolvePath(identityId);
       throw new BlueprintLoadError(
-        `Identity '${identityId}' not found in Blueprints/Identities/. If you are migrating from a pre-Phase-53 workspace, move your blueprints from Blueprints/Identities/ to Blueprints/Identities/.`,
+        `Identity '${identityId}' not found in Blueprints/Agents/.`,
         identityId,
         path,
       );
@@ -382,7 +376,7 @@ export class IBlueprintLoader {
       }
 
       // Fragments are stored in Blueprints/Fragments/ relative to blueprintsPath
-      const fragmentsDir = this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)
+      const fragmentsDir = this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)
         ? join(this.options.blueprintsPath, "..", "Fragments")
         : join(this.options.blueprintsPath, "Fragments");
 
@@ -435,16 +429,16 @@ export class IBlueprintLoader {
       .join(" ");
   }
 
-  /** Resolves an agent ID to its blueprint file path: only Blueprints/Identities/{identityId}.md
+  /** Resolves an agent ID to its blueprint file path: only Blueprints/Agents/{identityId}.md
    * (canonical) is checked; the legacy path is no longer supported. */
   private resolvePath(identityId: string): string {
-    // If blueprintsPath already ends with 'Identities', use it directly
-    if (this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)) {
+    // If blueprintsPath already ends with 'Agents', use it directly
+    if (this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)) {
       return join(this.options.blueprintsPath, `${identityId}.md`);
     }
 
-    // Otherwise, assume it's the Blueprints root and use Identities subdirectory
-    return join(this.options.blueprintsPath, DEFAULT_IDENTITIES_PATH, `${identityId}.md`);
+    // Otherwise, assume it's the Blueprints root and use Agents subdirectory
+    return join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH, `${identityId}.md`);
   }
 
   /**
@@ -456,12 +450,12 @@ export class IBlueprintLoader {
   }
 
   /**
-   * List all blueprint files under Blueprints/Identities.
+   * List all blueprint files under Blueprints/Agents.
    */
   async listAll(): Promise<ILoadedBlueprint[]> {
-    const identitiesDir = this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)
+    const identitiesDir = this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)
       ? this.options.blueprintsPath
-      : join(this.options.blueprintsPath, DEFAULT_IDENTITIES_PATH);
+      : join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH);
 
     try {
       const stat = await Deno.stat(identitiesDir);

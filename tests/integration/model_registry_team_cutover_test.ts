@@ -36,7 +36,7 @@ const TRACE_ID = "12121212-1212-4121-8121-121212121212";
 const REQUEST_ID = "step135-9-cutover-req";
 
 function writeStubIdentity(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",

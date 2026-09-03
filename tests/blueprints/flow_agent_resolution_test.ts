@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
-const BLUEPRINTS_DIR = "./Blueprints/Identities";
+const BLUEPRINTS_DIR = "./Blueprints/Agents";
 const FLOWS_DIR = "./Blueprints/Flows";
 
 interface BlueprintFrontmatter {

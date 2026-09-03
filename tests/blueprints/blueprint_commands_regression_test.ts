@@ -49,7 +49,7 @@ const AGENT_ID_ARRAY = "array-test";
 
 // Helper to create test workspace structure
 async function createTestBlueprintsDir(baseDir: string): Promise<string> {
-  const blueprintsDir = join(baseDir, "Blueprints", "Identities");
+  const blueprintsDir = join(baseDir, "Blueprints", "Agents");
   await ensureDir(blueprintsDir);
   return blueprintsDir;
 }

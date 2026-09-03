@@ -216,7 +216,7 @@ export class ExecutionLoop {
     this.gitExecutionSetupService = new GitExecutionSetupService(this.config, this.gitServiceFactory);
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new IBlueprintLoader({
-      blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
+      blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.agents),
     });
 
     if (this.llmProvider) {

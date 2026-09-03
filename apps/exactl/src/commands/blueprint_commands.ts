@@ -93,10 +93,10 @@ export class BlueprintCommands extends BaseCommand {
   }
 
   /**
-   * Get absolute path to Blueprints/Identities directory
+   * Get absolute path to Blueprints/Agents directory
    */
   private getBlueprintsDir(): string {
-    return join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities);
+    return join(this.config.system.root, this.config.paths.blueprints, this.config.paths.agents);
   }
 
   private blueprintNotFoundError(identityId: string): Error {

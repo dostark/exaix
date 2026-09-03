@@ -23,7 +23,7 @@ function minimalConfig() {
       plans: "Plans",
       requests: "Requests",
       rejected: "Rejected",
-      identities: "Identities",
+      agents: "Agents",
       flows: "Blueprints/Flows",
       memoryProjects: "Memory/Projects",
       memoryExecution: "Memory/Execution",

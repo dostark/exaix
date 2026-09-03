@@ -40,7 +40,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
       plans: "Plans",
       requests: "Requests",
       rejected: "Rejected",
-      identities: "Identities",
+      agents: "Agents",
       flows: "Blueprints/Flows",
       memoryProjects: "Memory/Projects",
       memoryExecution: "Memory/Execution",

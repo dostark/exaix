@@ -30,7 +30,7 @@ const config = {
 const routingPolicyService = new RoutingPolicyService({
   policyLoader: new RoutingPolicyLoader({ config, root }),
   candidateDiscovery: new CandidateDiscovery(
-    new IBlueprintLoader({ blueprintsPath: join(root, "Blueprints", "Identities") }),
+    new IBlueprintLoader({ blueprintsPath: join(root, "Blueprints", "Agents") }),
   ),
   performanceRepository: { getPerformanceByCapability: async () => [] },
   experimentSalt: config.routing?.experiment_salt ?? "scenario-dynamic-routing",
@@ -68,7 +68,7 @@ const router = new RequestRouter({
   },
   eventLogger: logger,
   defaultAgentId: defaultAgent,
-  blueprintsPath: join(root, "Blueprints", "Identities"),
+  blueprintsPath: join(root, "Blueprints", "Agents"),
   config,
   routingPolicyService,
 });

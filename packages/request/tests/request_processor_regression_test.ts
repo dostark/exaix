@@ -27,7 +27,7 @@ Deno.test("[regression] RequestProcessor uses ProviderSelector when no testProvi
     // Setup minimal workspace
     const workspacePath = join(tmpDir, "Workspace");
     const requestsDir = join(workspacePath, "Requests");
-    const blueprintsPath = join(tmpDir, "Blueprints", "Identities");
+    const blueprintsPath = join(tmpDir, "Blueprints", "Agents");
     const migrationsPath = join(tmpDir, "migrations");
     await Deno.mkdir(requestsDir, { recursive: true });
     await Deno.mkdir(blueprintsPath, { recursive: true });

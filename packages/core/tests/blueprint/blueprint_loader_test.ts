@@ -24,7 +24,7 @@ let blueprintsPath: string;
 async function setup() {
   testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
   blueprintsPath = join(testDir, "Blueprints");
-  const identitiesDir = join(blueprintsPath, "Identities");
+  const identitiesDir = join(blueprintsPath, "Agents");
   await Deno.mkdir(identitiesDir, { recursive: true });
   return { testDir, blueprintsPath, identitiesDir };
 }
@@ -129,7 +129,7 @@ Deno.test("[IBlueprintLoader] returns null for non-existent blueprint", async ()
   }
 });
 
-Deno.test("[IBlueprintLoader] lists all blueprints in Identities path", async () => {
+Deno.test("[IBlueprintLoader] lists all blueprints in Agents path", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -148,7 +148,7 @@ Deno.test("[IBlueprintLoader] lists all blueprints in Identities path", async ()
   }
 });
 
-Deno.test("[IBlueprintLoader] returns empty list when Identities path is missing", async () => {
+Deno.test("[IBlueprintLoader] returns empty list when Agents path is missing", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
   const blueprintsPath = join(testDir, "Blueprints");
 
@@ -471,9 +471,9 @@ Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () =>
   }
 });
 
-// Identities Path Tests
+// Agents Path Tests
 
-Deno.test("[IBlueprintLoader] loads from Identities path (canonical)", async () => {
+Deno.test("[IBlueprintLoader] loads from Agents path (canonical)", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -496,7 +496,7 @@ Deno.test("[IBlueprintLoader] loads from Identities path (canonical)", async () 
   }
 });
 
-Deno.test("[IBlueprintLoader] returns null when identity not found in Identities path", async () => {
+Deno.test("[IBlueprintLoader] returns null when identity not found in Agents path", async () => {
   const { blueprintsPath, testDir } = await setup();
 
   try {
@@ -504,6 +504,49 @@ Deno.test("[IBlueprintLoader] returns null when identity not found in Identities
     const blueprint = await loader.load("non-existent");
 
     assertEquals(blueprint, null);
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[regression] BlueprintLoader.load() resolves Blueprints/Agents/{id}.md, not Blueprints/Identities/{id}.md", async () => {
+  const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
+  const blueprintsPath = join(testDir, "Blueprints");
+  const legacyIdentitiesDir = join(blueprintsPath, "Identities");
+
+  try {
+    // Persona placed ONLY under the pre-Phase-179 "Identities" directory — simulates a
+    // workspace that never moved its blueprints to the new "Agents" directory.
+    await Deno.mkdir(legacyIdentitiesDir, { recursive: true });
+    const content = readFixtureTextSync(import.meta.url, "blueprint", "content_3.md");
+    await Deno.writeTextFile(join(legacyIdentitiesDir, "senior-coder.md"), content);
+
+    const loader = new IBlueprintLoader({ blueprintsPath });
+    const blueprint = await loader.load("senior-coder");
+
+    assertEquals(blueprint, null);
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[regression] BlueprintLoader.exists() returns true for a persona under the new directory and false under the old one", async () => {
+  const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
+  const blueprintsPath = join(testDir, "Blueprints");
+  const agentsDir = join(blueprintsPath, "Agents");
+  const legacyIdentitiesDir = join(blueprintsPath, "Identities");
+
+  try {
+    await Deno.mkdir(agentsDir, { recursive: true });
+    await Deno.mkdir(legacyIdentitiesDir, { recursive: true });
+    const content = readFixtureTextSync(import.meta.url, "blueprint", "content_3.md");
+    await Deno.writeTextFile(join(agentsDir, "new-only.md"), content);
+    await Deno.writeTextFile(join(legacyIdentitiesDir, "legacy-only.md"), content);
+
+    const loader = new IBlueprintLoader({ blueprintsPath });
+
+    assertEquals(await loader.exists("new-only"), true);
+    assertEquals(await loader.exists("legacy-only"), false);
   } finally {
     await teardown(testDir);
   }

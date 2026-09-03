@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 
-const BLUEPRINTS_DIR = "./Blueprints/Identities";
+const BLUEPRINTS_DIR = "./Blueprints/Agents";
 
 interface BlueprintFrontmatter {
   identity_id: string;

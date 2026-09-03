@@ -33,7 +33,7 @@ Deno.test({
     });
 
     try {
-      const identitiesDir = join(tempDir, "Blueprints", "Identities");
+      const identitiesDir = join(tempDir, "Blueprints", "Agents");
       await Deno.mkdir(identitiesDir, { recursive: true });
 
       // Replicate daemon bootstrap sequence from apps/daemon/main.ts

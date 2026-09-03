@@ -66,7 +66,7 @@ Deno.test(
       const processor = new RequestProcessor({
         workspacePath: getWorkspaceDir(`${env.tempDir}`),
         requestsDir: getWorkspaceRequestsDir(`${env.tempDir}`),
-        blueprintsPath: `${env.tempDir}/Blueprints/Identities`,
+        blueprintsPath: `${env.tempDir}/Blueprints/Agents`,
         includeReasoning: true,
         context,
         testProvider: provider,

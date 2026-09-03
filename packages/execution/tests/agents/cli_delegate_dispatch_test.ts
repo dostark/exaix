@@ -22,7 +22,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 
 async function writeBlueprint(root: string, capabilities: string[]): Promise<void> {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   await Deno.mkdir(dir, { recursive: true });
   await Deno.writeTextFile(
     join(dir, "cli-delegate-agent.md"),

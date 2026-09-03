@@ -709,7 +709,7 @@ Deno.test("Integration Test 15.9: Agent Orchestration Errors", async () => {
     await eventLogger.error("agent.blueprint_not_found", "non-existent-agent", {
       trace_id: traceId,
       blueprint_name: "non-existent-agent",
-      search_path: "Blueprints/Identities/",
+      search_path: "Blueprints/Agents/",
     });
 
     // Test 2: Invalid blueprint format

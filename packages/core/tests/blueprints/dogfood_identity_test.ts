@@ -15,7 +15,7 @@ import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { McpToolName } from "@exaix/core/types";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });

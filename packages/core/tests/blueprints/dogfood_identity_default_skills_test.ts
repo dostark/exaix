@@ -9,7 +9,7 @@ import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const DOGFOOD_CODER_REQUIRED_SKILLS = [
   "response-contract",

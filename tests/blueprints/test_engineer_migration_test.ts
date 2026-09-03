@@ -20,7 +20,7 @@ import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { renderCriticalSkillsSection } from "@exaix/core/func";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const IDENTITIES = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES = join(REPO_ROOT, "Blueprints", "Agents");
 const SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
 const FIXTURES = join(REPO_ROOT, "tests", "fixtures", "identity_migration");
 

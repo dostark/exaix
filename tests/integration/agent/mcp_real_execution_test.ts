@@ -95,7 +95,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
   const blueprintsDir = helper.registry["config"].paths.blueprints;
   const systemRoot = helper.registry["config"].system.root;
   const blueprintsDirAbs = blueprintsDir.startsWith("/") ? blueprintsDir : join(systemRoot, blueprintsDir);
-  const identitiesDir = join(blueprintsDirAbs, "Identities");
+  const identitiesDir = join(blueprintsDirAbs, "Agents");
   await Deno.mkdir(identitiesDir, { recursive: true });
 
   // Create a blueprint that allows write_file but restricts paths

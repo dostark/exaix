@@ -299,7 +299,7 @@ function renderSweSetupSteps(
         `  - id: "patch-blueprint-capability"`,
         `    type: "shell"`,
         `    command: "sh"`,
-        `    args: ["-c", "sed -i 's/\\"react\\"/\\"react\\", \\"cli_delegate\\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md"]`,
+        `    args: ["-c", "sed -i 's/\\"react\\"/\\"react\\", \\"cli_delegate\\"/' $WORKSPACE_ROOT/Blueprints/Agents/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Agents/senior-coder.md"]`,
         `    output_criteria:`,
         `      - id: "capability-patched"`,
         `        kind: "command-exit-code"`,

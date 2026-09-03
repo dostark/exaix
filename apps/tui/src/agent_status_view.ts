@@ -9,7 +9,7 @@
 import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import {
   AgentHealth,
-  DEFAULT_IDENTITIES_PATH,
+  DEFAULT_AGENTS_PATH,
   DEFAULT_NONE_LABEL,
   DEFAULT_QUERY_LIMIT,
   DEFAULT_UNKNOWN_LABEL,
@@ -448,7 +448,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
   // State Accessors
 
   override getViewName(): string {
-    return DEFAULT_IDENTITIES_PATH;
+    return DEFAULT_AGENTS_PATH;
   }
 
   getAgentTree(): ITreeNode[] {

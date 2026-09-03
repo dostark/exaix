@@ -72,7 +72,7 @@ Deno.test("[check-hardcoded-models] .md blueprint with hardcoded model is flagge
     "description",
   ];
   const content = lines.join("\n");
-  const violations = findModelViolations(content, "Blueprints/Identities/test-agent.md", ALLOWLIST);
+  const violations = findModelViolations(content, "Blueprints/Agents/test-agent.md", ALLOWLIST);
   assertEquals(violations.length, 1);
   assertEquals(violations[0].model, "google:gemini-2.0-flash-exp");
 });
@@ -87,7 +87,7 @@ Deno.test("[check-hardcoded-models] .md blueprint with empty model is clean", ()
     "description",
   ];
   const content = lines.join("\n");
-  const violations = findModelViolations(content, "Blueprints/Identities/test-agent.md", ALLOWLIST);
+  const violations = findModelViolations(content, "Blueprints/Agents/test-agent.md", ALLOWLIST);
   assertEquals(violations, []);
 });
 
@@ -102,6 +102,6 @@ Deno.test("[check-hardcoded-models] .md blueprint with model_size only is clean"
     "description",
   ];
   const content = lines.join("\n");
-  const violations = findModelViolations(content, "Blueprints/Identities/test-agent.md", ALLOWLIST);
+  const violations = findModelViolations(content, "Blueprints/Agents/test-agent.md", ALLOWLIST);
   assertEquals(violations, []);
 });

@@ -48,7 +48,7 @@ Deno.test("[step132.3][per-call-options] AgentOrchestrator passes model_size and
     const config = createTestConfig();
     config.system.root = testDir;
 
-    const blueprintsDir = join(testDir, "Blueprints", "Identities");
+    const blueprintsDir = join(testDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(
@@ -97,7 +97,7 @@ Deno.test("[step132.3][per-call-options] AgentOrchestrator passes characteristic
     const config = createTestConfig();
     config.system.root = testDir;
 
-    const blueprintsDir = join(testDir, "Blueprints", "Identities");
+    const blueprintsDir = join(testDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(
@@ -141,7 +141,7 @@ Deno.test("[step132.3][per-call-options] AgentOrchestrator without ModelResolver
     const config = createTestConfig();
     config.system.root = testDir;
 
-    const blueprintsDir = join(testDir, "Blueprints", "Identities");
+    const blueprintsDir = join(testDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(

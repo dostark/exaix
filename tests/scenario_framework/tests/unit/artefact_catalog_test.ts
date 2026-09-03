@@ -18,7 +18,7 @@ import { loadArtefactCatalog } from "../../runner/artefact_catalog.ts";
 import { ArtefactKind } from "../../runner/artefact_decision_coverage.ts";
 
 async function writeFixtureBlueprints(root: string): Promise<void> {
-  const identitiesDir = join(root, "Identities");
+  const identitiesDir = join(root, "Agents");
   const skillsDir = join(root, "Skills");
   const flowsDir = join(root, "Flows");
   const templatesDir = join(flowsDir, "templates");
@@ -90,7 +90,7 @@ Deno.test("[ArtefactCatalog] mock-agent and default are excluded (non-curated id
 Deno.test("[ArtefactCatalog] a flow's id comes from its declared `id:` field, not the filename", async () => {
   const root = await Deno.makeTempDir();
   try {
-    await Deno.mkdir(join(root, "Identities"), { recursive: true });
+    await Deno.mkdir(join(root, "Agents"), { recursive: true });
     await Deno.mkdir(join(root, "Skills"), { recursive: true });
     await Deno.mkdir(join(root, "Flows"), { recursive: true });
     await Deno.writeTextFile(
@@ -123,7 +123,7 @@ Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts 
 
   const byKind = (kind: ArtefactKind) => catalog.filter((r) => r.kind === kind).length;
 
-  // Blueprints/Identities/aci-react.md (a real-daemon scenario fixture identity) is included,
+  // Blueprints/Agents/aci-react.md (a real-daemon scenario fixture identity) is included,
   // bringing the curated count to 16.
   assertEquals(byKind(ArtefactKind.IDENTITY), 16, "curated identities (excluding README, mock-agent, default)");
   // memory-extraction-content-policy.skill.md is included, bringing the count to 28.

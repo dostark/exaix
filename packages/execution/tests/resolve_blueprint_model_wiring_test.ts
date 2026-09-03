@@ -67,7 +67,7 @@ Deno.test("[step132.3] AgentOrchestrator with injected ModelResolver resolves pr
     config.system.root = testDir;
 
     // Write a test blueprint
-    const blueprintsDir = join(testDir, "Blueprints", "Identities");
+    const blueprintsDir = join(testDir, "Blueprints", "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const blueprintPath = join(blueprintsDir, "test-agent.md");
     await Deno.writeTextFile(

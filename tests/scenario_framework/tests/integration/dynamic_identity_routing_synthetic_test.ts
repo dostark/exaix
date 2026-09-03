@@ -15,7 +15,7 @@ import { withSyntheticTestEnv, writeSyntheticScenario } from "./synthetic_test_h
 const SCENARIO_ID = "dynamic-identity-routing";
 const SCRIPT_TEMPLATE_NAME = "dynamic_identity_routing.ts.template";
 const GENERATED_SCRIPT_NAME = "dynamic_identity_routing.ts";
-const BLUEPRINTS_SUBDIR = "Blueprints/Identities";
+const BLUEPRINTS_SUBDIR = "Blueprints/Agents";
 const ROUTING_POLICY_FILE_NAME = ".exa/routing.policy.yaml";
 const RESULT_FILE_PATH = "artifacts/result.json";
 const SELECTED_IDENTITY = "senior-coder";

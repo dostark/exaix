@@ -35,7 +35,7 @@ export interface IRawFrontmatter {
 }
 
 export const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-export const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
+export const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 export const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 export const FRAGMENTS_DIR = join(REPO_ROOT, "Blueprints", "Fragments");
 

@@ -273,7 +273,7 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { identity: "test-agent" });
     // Write a dummy blueprint
-    await Deno.writeTextFile(join(env.blueprintsPath, "Identities", "test-agent.md"), "Test prompt");
+    await Deno.writeTextFile(join(env.blueprintsPath, "Agents", "test-agent.md"), "Test prompt");
 
     const mockProvider = createMockProvider([
       '<thought>Analyze</thought><content>{"subject": "Fixed security bug", "description": "Fix bug", "steps": [{"step": 1, "title": "Check code", "description": "Verify security issue"}]}</content>',

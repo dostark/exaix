@@ -53,7 +53,7 @@ async function makePortalGateEnv(opts: {
   const workspacePath = join(tempDir, config.paths.workspace);
   const requestsDir = join(workspacePath, config.paths.requests);
   const blueprintsPath = join(tempDir, config.paths.blueprints);
-  const identitiesPath = join(blueprintsPath, config.paths.identities);
+  const identitiesPath = join(blueprintsPath, config.paths.agents);
   await Deno.mkdir(identitiesPath, { recursive: true });
 
   const portalTargetDir = await Deno.makeTempDir({ prefix: "portal-target-" });
@@ -121,8 +121,8 @@ created_by: "test-user"
 ---
 Test body`,
   );
-  const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
-  await Deno.mkdir(join(env.blueprintsPath, "Identities"), { recursive: true });
+  const blueprintPath = join(env.blueprintsPath, "Agents", "test-agent.md");
+  await Deno.mkdir(join(env.blueprintsPath, "Agents"), { recursive: true });
   Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
   await env.processor.process(filePath);
 }

@@ -14,7 +14,7 @@ import { readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("AgentOrchestrator Blueprint Loading - Mock Identity resolution", async () => {
   const tempDir = await Deno.makeTempDir();
-  const identityDir = join(tempDir, "Identities");
+  const identityDir = join(tempDir, "Agents");
   await Deno.mkdir(identityDir);
 
   const blueprintContent = readFixtureTextSync(

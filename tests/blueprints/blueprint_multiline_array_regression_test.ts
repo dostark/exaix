@@ -24,7 +24,7 @@ Deno.test("[regression] YAML multi-line array format parses correctly", async ()
   const tempDir = await Deno.makeTempDir({ prefix: "exa_multiline_regression_" });
 
   try {
-    const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+    const blueprintsDir = join(tempDir, "Blueprints", "Agents");
     await ensureDir(blueprintsDir);
 
     // Create blueprint with multi-line array format (like mock-agent.md)

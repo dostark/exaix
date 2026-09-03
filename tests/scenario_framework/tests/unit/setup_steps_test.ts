@@ -24,9 +24,9 @@ async function withWorkspace(fn: (ws: string) => Promise<void>): Promise<void> {
 
 Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blueprint", async () => {
   await withWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(ws, "Blueprints", "Agents"), { recursive: true });
     await Deno.writeTextFile(
-      join(ws, "Blueprints", "Identities", "senior-coder.md"),
+      join(ws, "Blueprints", "Agents", "senior-coder.md"),
       '---\nidentity_id: "senior-coder"\ncapabilities: ["react"]\n---\n',
     );
     const result = await executeScenarioStep({
@@ -42,16 +42,16 @@ Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blue
       cwd: ws,
     });
     assertEquals(result.exitCode, 0, `expected patch to succeed, got: ${result.stderr}`);
-    const updated = await Deno.readTextFile(join(ws, "Blueprints", "Identities", "senior-coder.md"));
+    const updated = await Deno.readTextFile(join(ws, "Blueprints", "Agents", "senior-coder.md"));
     assertEquals(updated.includes('"cli_delegate"'), true, "capability must be added");
   });
 });
 
 Deno.test("[setup_steps] patch-blueprint is idempotent (does not duplicate an existing capability)", async () => {
   await withWorkspace(async (ws) => {
-    await Deno.mkdir(join(ws, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(ws, "Blueprints", "Agents"), { recursive: true });
     await Deno.writeTextFile(
-      join(ws, "Blueprints", "Identities", "senior-coder.md"),
+      join(ws, "Blueprints", "Agents", "senior-coder.md"),
       '---\ncapabilities: ["react", "cli_delegate"]\n---\n',
     );
     await executeScenarioStep({
@@ -66,7 +66,7 @@ Deno.test("[setup_steps] patch-blueprint is idempotent (does not duplicate an ex
       } as never,
       cwd: ws,
     });
-    const updated = await Deno.readTextFile(join(ws, "Blueprints", "Identities", "senior-coder.md"));
+    const updated = await Deno.readTextFile(join(ws, "Blueprints", "Agents", "senior-coder.md"));
     const count = updated.match(/"cli_delegate"/g)?.length ?? 0;
     assertEquals(count, 1, "capability must not be duplicated");
   });

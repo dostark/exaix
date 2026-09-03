@@ -14,7 +14,7 @@ import { assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 
-const IDENTITIES_DIR = "Blueprints/Identities";
+const IDENTITIES_DIR = "Blueprints/Agents";
 
 /** Active identities are the top-level `*.md` files (no subdirectories remain). */
 function collectActiveIdentities(): string[] {

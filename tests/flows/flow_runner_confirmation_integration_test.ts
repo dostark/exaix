@@ -120,7 +120,7 @@ function installMockProvider(responses: string[]) {
 }
 
 async function writeBlueprint(tempDir: string): Promise<void> {
-  const identitiesDir = join(tempDir, "Blueprints", "Identities");
+  const identitiesDir = join(tempDir, "Blueprints", "Agents");
   await Deno.mkdir(identitiesDir, { recursive: true });
   await Deno.writeTextFile(
     join(identitiesDir, "senior-coder.md"),

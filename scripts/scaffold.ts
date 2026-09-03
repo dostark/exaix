@@ -19,7 +19,7 @@ async function main() {
 
   const dirs = [
     ".exa",
-    "Blueprints/Identities",
+    "Blueprints/Agents",
     "Blueprints/Flows",
     "Workspace/Requests",
     "Workspace/Plans",

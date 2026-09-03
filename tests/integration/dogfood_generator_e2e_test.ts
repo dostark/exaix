@@ -21,7 +21,7 @@ import { initTestDbService } from "@exaix/testing";
 import { MemoryScope } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
 const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-dogfooding-a-c.md");

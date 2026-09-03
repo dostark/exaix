@@ -75,11 +75,11 @@ function copyRealDogfoodFlow(root: string): void {
 
 /** Copies every identity the real dogfood-meta-workflow flow references. */
 function copyDogfoodFlowIdentities(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   for (const identity of ["dogfood-coder", "code-analyst", "code-reviewer"]) {
     Deno.copyFileSync(
-      join(REPO_ROOT, "Blueprints", "Identities", `${identity}.md`),
+      join(REPO_ROOT, "Blueprints", "Agents", `${identity}.md`),
       join(dir, `${identity}.md`),
     );
   }

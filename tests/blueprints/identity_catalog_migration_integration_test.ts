@@ -18,7 +18,7 @@ import { SkillsService } from "@exaix/core/skills";
 import { MemoryScope } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 
 const ACTIVE_IDENTITY_IDS = [

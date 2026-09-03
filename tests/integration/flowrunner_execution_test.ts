@@ -44,7 +44,7 @@ Deno.test({
     });
 
     try {
-      const identitiesDir = join(tempDir, "Blueprints", "Identities");
+      const identitiesDir = join(tempDir, "Blueprints", "Agents");
       const requestsDir = getWorkspaceRequestsDir(tempDir);
       await Deno.mkdir(identitiesDir, { recursive: true });
       await Deno.mkdir(requestsDir, { recursive: true });

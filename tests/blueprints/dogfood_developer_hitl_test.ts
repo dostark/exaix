@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
-const FILE_PATH = "Blueprints/Identities/dogfood-developer.md";
+const FILE_PATH = "Blueprints/Agents/dogfood-developer.md";
 
 interface ParsedHitlField {
   require_secondary_approval: Array<{

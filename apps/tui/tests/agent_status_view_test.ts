@@ -639,8 +639,8 @@ Deno.test("AgentStatusTuiSession: handleKey logs view", async () => {
 Deno.test("AgentStatusTuiSession: getViewName", () => {
   const session = createTestView().createTuiSession(false);
 
-  if (session.getViewName() !== "Identities") {
-    throw new Error(`Expected "Identities" but got "${session.getViewName()}"`);
+  if (session.getViewName() !== "Agents") {
+    throw new Error(`Expected "Agents" but got "${session.getViewName()}"`);
   }
 });
 

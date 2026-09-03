@@ -2,7 +2,7 @@
  * @module IdentityCatalogLoadTest
  * @path tests/blueprints/identity_catalog_load_test.ts
  * @description Phase 131 Step 9 — catalog-wide load+validate integration test.
- *   Walks every active identity under Blueprints/Identities/ (the separate
+ *   Walks every active identity under Blueprints/Agents/ (the separate
  *   examples/ and templates/ directories were retired in the catalog
  *   reconciliation), loads through IBlueprintLoader, and validates: schema passes,
  *   default_skills resolve, permitted_tools are valid McpToolName, capabilities

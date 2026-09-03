@@ -9,7 +9,7 @@
  *   every entry must resolve — a dangling id is a silently-missing skill, and an over-long
  *   list is prompt weight paid on every request for no return.
  * @architectural-layer Test
- * @dependencies [Blueprints/Identities/, Memory/Skills/]
+ * @dependencies [Blueprints/Agents/, Memory/Skills/]
  * @related-files [packages/execution/src/agent_runner.ts]
  */
 import { assert, assertEquals } from "@std/assert";
@@ -18,7 +18,7 @@ import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { readRuntimeSkillIds } from "./runtime_skill_scopes.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
 
 // Upper bound on an identity's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`

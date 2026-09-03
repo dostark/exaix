@@ -43,8 +43,8 @@ export function getMemoryDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memory);
 }
 
-export function getBlueprintsIdentitiesDir(argDir: string): string {
-  return join(argDir, ExaPathDefaults.blueprints, ExaPathDefaults.identities);
+export function getBlueprintsAgentsDir(argDir: string): string {
+  return join(argDir, ExaPathDefaults.blueprints, ExaPathDefaults.agents);
 }
 
 export function getMemoryExecutionDir(argDir: string): string {

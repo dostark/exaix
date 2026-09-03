@@ -626,7 +626,7 @@ async function executePatchBlueprintStep(
   const blueprint = options.step.blueprint ?? options.step.args?.[0] ?? "";
   const capabilities = options.step.add_capabilities ?? [];
   const workspaceRoot = options.cwd || Deno.cwd();
-  const blueprintPath = join(workspaceRoot, "Blueprints", "Identities", `${blueprint}.md`);
+  const blueprintPath = join(workspaceRoot, "Blueprints", "Agents", `${blueprint}.md`);
   let message = "";
   let ok = false;
   try {

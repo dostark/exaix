@@ -134,7 +134,7 @@ function isExemptIdentity(rec: IIdentityRecord): boolean {
  * Run the four-facet integrity check against a Blueprints directory.
  */
 export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult {
-  const identities = loadIdentities(join(blueprintsDir, "Identities"));
+  const identities = loadIdentities(join(blueprintsDir, "Agents"));
   const skillIds = loadSkillIds(join(blueprintsDir, "Skills"));
   const flowRefs = loadFlowIdentityRefs(join(blueprintsDir, "Flows"));
   const identityIds = new Set(identities.map((i) => i.id));

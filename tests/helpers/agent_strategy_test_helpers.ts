@@ -59,7 +59,7 @@ export async function setupStrategyExecutor(
     operations: [],
   }];
 
-  const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+  const blueprintsDir = join(tempDir, "Blueprints", "Agents");
   await Deno.mkdir(blueprintsDir, { recursive: true });
   const fixture = readFixtureTextSync(import.meta.url, fixturePath.group, fixturePath.file, "fixture_1.md");
   await Deno.writeTextFile(join(blueprintsDir, "strategy-agent.md"), fixture);

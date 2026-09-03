@@ -38,7 +38,7 @@ Deno.test("Integration: dynamic identity routing uses routing policy rules and l
   });
 
   try {
-    const blueprintsPath = join(env.tempDir, "Blueprints", "Identities");
+    const blueprintsPath = join(env.tempDir, "Blueprints", "Agents");
     await ensureDir(blueprintsPath);
 
     await copyFixture(

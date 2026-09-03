@@ -62,7 +62,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     costTracker = new CostTracker(db, config);
 
     await Deno.mkdir(getWorkspaceRequestsDir(testDir), { recursive: true });
-    await Deno.mkdir(join(testDir, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
 
     ProviderRegistry.clear();
     ProviderRegistry.registerWithMetadata("mock", new MockProviderFactory(), {
@@ -93,7 +93,7 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     return new RequestProcessor({
       workspacePath: getWorkspaceDir(testDir),
       requestsDir: getWorkspaceRequestsDir(testDir),
-      blueprintsPath: join(testDir, "Blueprints", "Identities"),
+      blueprintsPath: join(testDir, "Blueprints", "Agents"),
       includeReasoning: true,
       context,
       costTracker,

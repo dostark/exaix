@@ -218,7 +218,7 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     });
 
     // IBlueprint as Blueprint must include capabilities so ExecutionLoop can detect read-only mode.
-    const blueprintsDir = join(env.tempDir, "Blueprints", "Identities");
+    const blueprintsDir = join(env.tempDir, "Blueprints", "Agents");
     await ensureDir(blueprintsDir);
     const fixture_1 = readFixtureTextSync(
       import.meta.url,

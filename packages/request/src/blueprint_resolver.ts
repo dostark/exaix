@@ -2,7 +2,7 @@
  * @module BlueprintResolver
  * @path packages/request/src/blueprint_resolver.ts
  * @description Resolves an identity's blueprint from the configured
- * blueprintsPath, falling back to a Blueprints/Identities directory walked
+ * blueprintsPath, falling back to a Blueprints/Agents directory walked
  * upward from the current working directory, then to the repository root and
  * module-relative root. Extracted from RequestProcessor (god-object
  * decomposition, .copilot/skills/refactor/SKILL.md step d) since this logic
@@ -13,7 +13,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 import { dirname, join } from "@std/path";
-import { DEFAULT_IDENTITIES_PATH } from "@exaix/core";
+import { DEFAULT_AGENTS_PATH } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
@@ -26,7 +26,7 @@ export interface IBlueprintResolver {
   resolve(identityId: string, traceLogger: IEventLogger): Promise<ILoadedBlueprint | null>;
 }
 
-/** Directory checked ahead of the shipped `Blueprints/Identities/` catalog. Callers MUST validate this path via `PathResolver` before setting it — this resolver trusts it as-is. */
+/** Directory checked ahead of the shipped `Blueprints/Agents/` catalog. Callers MUST validate this path via `PathResolver` before setting it — this resolver trusts it as-is. */
 export const EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_IDENTITY_OVERLAY_DIR";
 
 export class BlueprintResolver implements IBlueprintResolver {
@@ -58,7 +58,7 @@ export class BlueprintResolver implements IBlueprintResolver {
   ): Promise<ILoadedBlueprint | null> {
     let dir = Deno.cwd();
     while (true) {
-      const candidatePath = join(dir, "Blueprints", DEFAULT_IDENTITIES_PATH);
+      const candidatePath = join(dir, "Blueprints", DEFAULT_AGENTS_PATH);
       try {
         const candidateFile = join(candidatePath, `${identityId}.md`);
         try {
@@ -90,7 +90,7 @@ export class BlueprintResolver implements IBlueprintResolver {
     traceLogger: IEventLogger,
   ): Promise<ILoadedBlueprint | null> {
     // Try the repository root (cwd) directly
-    const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_IDENTITIES_PATH);
+    const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_AGENTS_PATH);
     const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoIdentitiesPath });
     const loadedBlueprint = await fallbackLoader.load(identityId);
     if (loadedBlueprint) {
@@ -101,7 +101,7 @@ export class BlueprintResolver implements IBlueprintResolver {
     // Also try locating Blueprints relative to this module (repo root)
     try {
       const repoRoot = join(dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname)))));
-      const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_IDENTITIES_PATH);
+      const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_AGENTS_PATH);
       const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleIdentities });
       const moduleLoaded = await moduleLoader.load(identityId);
       if (moduleLoaded) {

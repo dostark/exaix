@@ -26,7 +26,7 @@ import {
 } from "@exaix/core/blueprint/blueprint_loader.ts";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 
 /** YAML-parsed frontmatter — validated by the schema, so structurally permissive. */
 interface IParsedFrontmatter {
@@ -96,7 +96,7 @@ Deno.test("[step2] session_delegate survives a runtime load round-trip (was drop
 Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through IBlueprintLoader (no TOML)", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_roundtrip_" });
   try {
-    const identitiesDir = join(dir, "Identities");
+    const identitiesDir = join(dir, "Agents");
     await ensureDir(identitiesDir);
     // Mirror the CLI writer format: `---\n<yaml>---\n\n<body>`.
     const fm = {
@@ -126,7 +126,7 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
 Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an actionable error", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_toml_" });
   try {
-    const identitiesDir = join(dir, "Identities");
+    const identitiesDir = join(dir, "Agents");
     await ensureDir(identitiesDir);
     await Deno.writeTextFile(
       join(identitiesDir, "legacy-toml.md"),

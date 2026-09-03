@@ -32,7 +32,7 @@ export async function setupAgentExecutorFixture(): Promise<IAgentExecutorFixture
   const { db, tempDir, cleanup } = await initTestDbService();
 
   const portalDir = join(tempDir, "TestPortal");
-  const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+  const blueprintsDir = join(tempDir, "Blueprints", "Agents");
   await Deno.mkdir(portalDir, { recursive: true });
   await Deno.mkdir(blueprintsDir, { recursive: true });
 

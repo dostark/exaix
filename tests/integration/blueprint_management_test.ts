@@ -36,7 +36,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       assertEquals(result.identity_id, testAgentId);
 
       // Verify file exists
-      const blueprintPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);
+      const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
       const fileExists = await exists(blueprintPath);
       assertEquals(fileExists, true, "Blueprint file should exist");
 
@@ -101,7 +101,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     // Test 4: Validation Detects Invalid Blueprints
     await t.step("Test 4: Validation detects missing fields", async () => {
       // Create invalid blueprint manually
-      const invalidPath = join(env.tempDir, "Blueprints", "Identities", "invalid-test.md");
+      const invalidPath = join(env.tempDir, "Blueprints", "Agents", "invalid-test.md");
       const invalidContent = `---
 name: Missing identity_id
 model: ollama:llama3.2
@@ -159,7 +159,7 @@ Invalid blueprint without identity_id field
 
     // Test 7: Edit Blueprint
     await t.step("Test 7: Edit modifies blueprint and re-validates", async () => {
-      const blueprintPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);
+      const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
       const originalContent = await Deno.readTextFile(blueprintPath);
 
       // Modify blueprint directly (simulating manual edit) — YAML frontmatter.
@@ -189,7 +189,7 @@ Invalid blueprint without identity_id field
       assertStringIncludes(content, `identity_id: ${testAgentId}`);
 
       // Verify request can be processed (blueprint exists and is valid)
-      const blueprintPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);
+      const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
       const blueprintExists = await exists(blueprintPath);
       assertEquals(blueprintExists, true, "Blueprint should exist for request processing");
     });
@@ -226,9 +226,9 @@ Invalid blueprint without identity_id field
       await blueprintCommands.remove(testAgentId, { force: true });
 
       // Verify files deleted
-      const testPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);
-      const coderPath = join(env.tempDir, "Blueprints", "Identities", `${coderAgentId}.md`);
-      const customPath = join(env.tempDir, "Blueprints", "Identities", `${customAgentId}.md`);
+      const testPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
+      const coderPath = join(env.tempDir, "Blueprints", "Agents", `${coderAgentId}.md`);
+      const customPath = join(env.tempDir, "Blueprints", "Agents", `${customAgentId}.md`);
 
       assertEquals(await exists(testPath), false, "Test agent blueprint should be deleted");
       assertEquals(await exists(coderPath), false, "Coder agent blueprint should be deleted");

@@ -77,7 +77,7 @@ Deno.test({
       await git(["add", "README.md"]);
       await git(["commit", "-m", "Initial commit"]);
 
-      const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+      const blueprintsDir = join(tempDir, "Blueprints", "Agents");
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, "audit-agent.md"),
@@ -223,7 +223,7 @@ Deno.test({
       await git(["add", "README.md"]);
       await git(["commit", "-m", "Initial commit"]);
 
-      const blueprintsDir = join(tempDir, "Blueprints", "Identities");
+      const blueprintsDir = join(tempDir, "Blueprints", "Agents");
       await Deno.mkdir(blueprintsDir, { recursive: true });
       await Deno.writeTextFile(
         join(blueprintsDir, "auth-agent.md"),

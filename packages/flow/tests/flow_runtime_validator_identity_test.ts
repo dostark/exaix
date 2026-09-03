@@ -93,9 +93,9 @@ Deno.test("FlowRuntimeValidator.validateStepIdentities covers hand-off targets (
 Deno.test("FlowValidatorImpl rejects a flow whose step identity is absent from a real blueprint catalog", async () => {
   const dir = await Deno.makeTempDir({ prefix: "exa-flow-id-" });
   try {
-    await Deno.mkdir(`${dir}/Identities`, { recursive: true });
+    await Deno.mkdir(`${dir}/Agents`, { recursive: true });
     await Deno.writeTextFile(
-      `${dir}/Identities/senior-coder.md`,
+      `${dir}/Agents/senior-coder.md`,
       `---\nidentity_id: "senior-coder"\nname: "Senior Coder"\ncapabilities: ["react"]\n---\n`,
     );
 
@@ -132,9 +132,9 @@ output: { from: "s1", format: "markdown" }
 Deno.test("FlowValidatorImpl accepts a flow whose step identities exist in the catalog", async () => {
   const dir = await Deno.makeTempDir({ prefix: "exa-flow-id-" });
   try {
-    await Deno.mkdir(`${dir}/Identities`, { recursive: true });
+    await Deno.mkdir(`${dir}/Agents`, { recursive: true });
     await Deno.writeTextFile(
-      `${dir}/Identities/senior-coder.md`,
+      `${dir}/Agents/senior-coder.md`,
       `---\nidentity_id: "senior-coder"\nname: "Senior Coder"\ncapabilities: ["react"]\n---\n`,
     );
 

@@ -3,7 +3,7 @@
  * @path packages/core/tests/blueprints/dogfood_identity_drift_test.ts
  * @description Phase 150 Step 4 / Step 16 — verifies every identity referenced in the
  *   meta-workflow queue (Exaix_Dogfooding_Analysis.md §7.5) and in the meta-workflow flow
- *   blueprint resolves to a real Blueprints/Identities/*.md file. The reference list is
+ *   blueprint resolves to a real Blueprints/Agents/*.md file. The reference list is
  *   EXTRACTED from those documents, not hardcoded — a hardcoded list cannot detect drift,
  *   which is the failure this test exists to prevent (GAP-K).
  */
@@ -12,7 +12,7 @@ import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
+const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 const ANALYSIS_DOC = join(REPO_ROOT, "exaix-dev-docs", "dev", "Exaix_Dogfooding_Analysis.md");
 const FLOW_BLUEPRINT = join(REPO_ROOT, "Blueprints", "Flows", "dogfood-meta-workflow.flow.yaml");
 
@@ -72,7 +72,7 @@ Deno.test({
       const blueprint = await loader.load(id);
       assertExists(
         blueprint,
-        `§7.5 references identity '${id}', which has no Blueprints/Identities/${id}.md`,
+        `§7.5 references identity '${id}', which has no Blueprints/Agents/${id}.md`,
       );
       assertEquals(blueprint.identityId, id, `identity_id must match the referenced name '${id}'`);
     }

@@ -47,7 +47,7 @@ Deno.test(
       const processor = new RequestProcessor({
         workspacePath: join(env.tempDir, "Workspace"),
         requestsDir: join(env.tempDir, "Workspace", "Requests"),
-        blueprintsPath: join(env.tempDir, "Blueprints", "Identities"),
+        blueprintsPath: join(env.tempDir, "Blueprints", "Agents"),
         includeReasoning: true,
         context,
         testProvider: provider,

@@ -26,7 +26,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import { MemoryBankService } from "@exaix/memory";
 import { EventLogger } from "@exaix/core/logger";
 import {
-  getBlueprintsIdentitiesDir,
+  getBlueprintsAgentsDir,
   getMemoryDir,
   getMemoryExecutionDir,
   getMemoryGlobalDir,
@@ -137,7 +137,7 @@ export class TestEnvironment {
     await ensureDir(getMemoryGlobalDir(tempDir));
     await ensureDir(getMemoryDir(tempDir));
     await ensureDir(getRuntimeDir(tempDir));
-    await ensureDir(getBlueprintsIdentitiesDir(tempDir));
+    await ensureDir(getBlueprintsAgentsDir(tempDir));
     await ensureDir(getPortalsDir(tempDir));
 
     // Copy flows for integration tests that need them
@@ -208,7 +208,7 @@ archive = "Archive"
 plans = "Plans"
 requests = "Requests"
 rejected = "Rejected"
-identities = "Identities"
+agents = "Agents"
 flows = "Blueprints/Flows"
 memoryProjects = "Projects"
 memoryExecution = "Execution"
@@ -775,7 +775,7 @@ This plan will accomplish the requested task.
     identityId: string,
     content?: Opt<string, Reason.TestStub>,
   ): Promise<string> {
-    const blueprintsPath = join(this.tempDir, "Blueprints", "Identities");
+    const blueprintsPath = join(this.tempDir, "Blueprints", "Agents");
     await ensureDir(blueprintsPath);
 
     const defaultContent = `# ${identityId} Blueprint
@@ -816,7 +816,7 @@ Always respond with valid JSON containing a plan with actionable steps.`;
       workspacePath: join(this.tempDir, "Workspace"),
       requestsDir: options?.requestsDir ?? getWorkspaceRequestsDir(this.tempDir),
       blueprintsPath: options?.blueprintsPath ??
-        join(this.tempDir, "Blueprints", "Identities"),
+        join(this.tempDir, "Blueprints", "Agents"),
       includeReasoning: options?.includeReasoning ?? true,
       context,
       testProvider: provider,

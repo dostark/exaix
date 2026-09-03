@@ -130,11 +130,11 @@ Deno.test("[ArmIsolation] two sequential identity overlays each see only their o
   // IBlueprintLoader.resolvePath treats a blueprintsPath NOT ending in "Identities" as a
   // Blueprints root and appends "Identities" itself — every path here must end in it.
   const identitiesRoot = await Deno.makeTempDir({ prefix: "isolation-identities-" });
-  const identitiesDir = join(identitiesRoot, "Identities");
+  const identitiesDir = join(identitiesRoot, "Agents");
   const overlayARoot = await Deno.makeTempDir({ prefix: "isolation-identity-overlay-a-" });
-  const overlayA = join(overlayARoot, "Identities");
+  const overlayA = join(overlayARoot, "Agents");
   const overlayBRoot = await Deno.makeTempDir({ prefix: "isolation-identity-overlay-b-" });
-  const overlayB = join(overlayBRoot, "Identities");
+  const overlayB = join(overlayBRoot, "Agents");
   const mockLogger = createMockEventLogger();
   try {
     await Deno.mkdir(identitiesDir, { recursive: true });

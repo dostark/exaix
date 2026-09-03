@@ -50,7 +50,7 @@ const REQUEST_MARKDOWN = [
 ].join("\n");
 
 function writeStubIdentity(root: string): void {
-  const dir = join(root, "Blueprints", "Identities");
+  const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(join(dir, "stub-agent.md"), "You are a stub agent for testing.\n");
 }

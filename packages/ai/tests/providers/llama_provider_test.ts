@@ -62,7 +62,7 @@ llamaTest("Ollama server connection check", async () => {
 llamaTest("LlamaProvider generates valid plan for simple prompt (with senior-coder blueprint)", async () => {
   // Read the system prompt from the blueprint file
   const decoder = new TextDecoder();
-  const blueprintRaw = Deno.readFileSync("Blueprints/Identities/senior-coder.md");
+  const blueprintRaw = Deno.readFileSync("Blueprints/Agents/senior-coder.md");
   const blueprint = decoder.decode(blueprintRaw);
   // Remove TOML frontmatter (between +++ ... +++)
   const promptStart = blueprint.indexOf("+++", 3);

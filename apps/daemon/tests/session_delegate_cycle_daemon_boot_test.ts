@@ -218,7 +218,7 @@ Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture
   const costTracker = new CostTracker(db, config);
   try {
     await Deno.mkdir(getWorkspaceRequestsDir(tempDir), { recursive: true });
-    await Deno.mkdir(join(tempDir, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
 
     const portalRoot = await Deno.makeTempDir({ prefix: "daemon-boot-portal-" });
     const planContextDir = join(portalRoot, ".exa", "PlanContext");
@@ -279,7 +279,7 @@ Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture
     const processor = new RequestProcessor({
       workspacePath: getWorkspaceDir(tempDir),
       requestsDir: getWorkspaceRequestsDir(tempDir),
-      blueprintsPath: join(tempDir, "Blueprints", "Identities"),
+      blueprintsPath: join(tempDir, "Blueprints", "Agents"),
       includeReasoning: true,
       context,
       costTracker,

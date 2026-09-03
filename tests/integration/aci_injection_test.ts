@@ -24,7 +24,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IPlanContext } from "@exaix/core/planning";
 import { PlanExecutor } from "@exaix/core/planning";
-import { getBlueprintsIdentitiesDir, initTestDbService, readFixtureTextSync } from "@exaix/testing";
+import { getBlueprintsAgentsDir, initTestDbService, readFixtureTextSync } from "@exaix/testing";
 
 const IDENTITY_ID = "aci-react-agent";
 
@@ -40,7 +40,7 @@ async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStr
   const { db, config, tempDir, cleanup } = await initTestDbService();
   config.agents.inject_aci_docs = aciDocsEnabled;
 
-  const identitiesDir = getBlueprintsIdentitiesDir(tempDir);
+  const identitiesDir = getBlueprintsAgentsDir(tempDir);
   await Deno.mkdir(identitiesDir, { recursive: true });
   await Deno.writeTextFile(join(identitiesDir, `${IDENTITY_ID}.md`), REACT_BLUEPRINT);
 
