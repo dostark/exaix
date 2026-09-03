@@ -15,10 +15,10 @@ import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import {
+  AGENTS_DIR,
   DESTRUCTIVE_TOOLS,
-  IDENTITIES_DIR,
   type IIdentityFrontmatter,
-  READ_ONLY_IDENTITIES,
+  READ_ONLY_AGENT_ROLES,
   ROLE_REQUIRED_SKILLS,
 } from "./test_helpers.ts";
 
@@ -55,11 +55,11 @@ const KNOWN_TOOL_NAMES = new Set([
 ]);
 
 /** Load all active identity files (non-example, non-template, non-README). */
-function loadActiveIdentities(): Array<{ id: string; fm: IIdentityFrontmatter }> {
+function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }> {
   const out: Array<{ id: string; fm: IIdentityFrontmatter }> = [];
-  for (const e of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const e of Deno.readDirSync(AGENTS_DIR)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
-    const content = Deno.readTextFileSync(join(IDENTITIES_DIR, e.name));
+    const content = Deno.readTextFileSync(join(AGENTS_DIR, e.name));
     const m = content.match(/^---\n([\s\S]*?)\n---\n/);
     if (!m) throw new Error(`malformed identity ${e.name}`);
     const fm = parseYaml(m[1]) as IIdentityFrontmatter;
@@ -75,7 +75,7 @@ function loadActiveIdentities(): Array<{ id: string; fm: IIdentityFrontmatter }>
 Deno.test({
   name: "[step6] every identity's capabilities are behavioral-only (no tool names)",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     for (const { id, fm } of identities) {
       const caps = fm.capabilities ?? [];
       for (const c of caps) {
@@ -91,7 +91,7 @@ Deno.test({
 Deno.test({
   name: "[step6] every identity declares its role-required default_skills",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     const required = ROLE_REQUIRED_SKILLS;
     for (const { id, fm } of identities) {
       const expected = required[id];
@@ -110,9 +110,9 @@ Deno.test({
 Deno.test({
   name: "[step6] read-only identities carry no destructive tools in permitted_tools",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     for (const { id, fm } of identities) {
-      if (!READ_ONLY_IDENTITIES.has(id)) continue;
+      if (!READ_ONLY_AGENT_ROLES.has(id)) continue;
       const tools = fm.permitted_tools ?? [];
       for (const t of tools) {
         assert(

@@ -9,7 +9,7 @@ import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const READ_ONLY_TOOLS = [
   "read_file",
@@ -38,14 +38,14 @@ const REQUIRED_SKILLS = [
 ];
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer loads successfully", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
   assertEquals(blueprint.identityId, "code-reviewer");
 });
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer carries review default_skills", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
   const skills = blueprint.frontmatter.default_skills ?? [];
@@ -54,7 +54,7 @@ Deno.test("[dogfood-identity-reviewer] code-reviewer carries review default_skil
 });
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer has no write tools in permitted_tools", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
   const tools = (blueprint.frontmatter.permitted_tools ?? []) as string[];
@@ -63,7 +63,7 @@ Deno.test("[dogfood-identity-reviewer] code-reviewer has no write tools in permi
 });
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer has all read-only tools", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
   const tools = (blueprint.frontmatter.permitted_tools ?? []) as string[];
@@ -72,14 +72,14 @@ Deno.test("[dogfood-identity-reviewer] code-reviewer has all read-only tools", a
 });
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer has no HITL requirement", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
   assertEquals(blueprint.frontmatter.hitl, undefined, "code-reviewer must not have a hitl section");
 });
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer has no session_delegate", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
   assertEquals(

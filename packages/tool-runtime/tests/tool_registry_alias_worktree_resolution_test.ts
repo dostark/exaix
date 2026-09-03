@@ -34,7 +34,7 @@ Deno.test("[ToolRegistryAliasWorktreeResolution] @<matching-portal>/path writes 
         alias: PORTAL_ALIAS,
         target_path: portalDir,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

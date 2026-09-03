@@ -12,7 +12,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 
 const ACTIVE_FILES = [
   "code-analyst.md",
@@ -106,7 +106,7 @@ function lintFile(filePath: string, label: string): LintIssue[] {
 }
 
 function filePath(...parts: string[]): string {
-  return join(IDENTITIES_DIR, ...parts);
+  return join(AGENTS_DIR, ...parts);
 }
 
 Deno.test({

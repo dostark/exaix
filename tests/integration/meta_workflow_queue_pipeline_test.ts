@@ -14,7 +14,7 @@ import { isContentlessBrief } from "@exaix/core/planning";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const MINIMAL_PLAN = join(
   REPO_ROOT,
@@ -91,7 +91,7 @@ Deno.test("[meta-workflow-queue] plan_to_requests generates queue with correct i
     const files = await generateQueue(MINIMAL_PLAN, tmpDir);
     assert(files.length >= 2, `expected at least 2 requests from minimal plan, got ${files.length}`);
 
-    const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+    const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
 
     for (const file of files) {
       const fm = parseRequestFrontmatter(file);

@@ -144,7 +144,7 @@ Deno.test("[security] Git Security: prevents system root taint during Portal exe
     alias: "test",
     target_path: portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [],
   }];
 

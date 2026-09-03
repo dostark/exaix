@@ -414,7 +414,7 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
         alias: "MyPortal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [_PortalOperation.READ, _PortalOperation.WRITE, _PortalOperation.GIT],
       }];
 

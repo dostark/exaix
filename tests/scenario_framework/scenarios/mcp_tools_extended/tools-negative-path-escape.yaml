@@ -88,7 +88,7 @@ steps:
 
   - id: "unauthorised-identity-refused"
     type: "run-script"
-    name: "[security] an identity absent from identities_allowed is refused"
+    name: "[security] an identity absent from agents_allowed is refused"
     command: "deno"
     args:
       - "run"

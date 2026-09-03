@@ -61,7 +61,7 @@ async function buildExecutor(tempDir: string, portalPath: string) {
       alias: "audit-portal",
       target_path: portalPath,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }],
   });
@@ -69,7 +69,7 @@ async function buildExecutor(tempDir: string, portalPath: string) {
     alias: "audit-portal",
     target_path: portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
   }]);
   const executor = new AgentOrchestrator({

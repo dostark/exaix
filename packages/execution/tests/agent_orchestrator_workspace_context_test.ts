@@ -43,7 +43,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -75,7 +75,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -100,7 +100,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "portal-1",
         target_path: portal1Dir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -108,7 +108,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "portal-2",
         target_path: portal2Dir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -126,7 +126,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -150,7 +150,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -169,7 +169,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -193,7 +193,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -217,7 +217,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -263,7 +263,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -296,7 +296,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "portal-a",
         target_path: portal1Dir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 
@@ -304,7 +304,7 @@ describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
         alias: "portal-b",
         target_path: portal2Dir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       };
 

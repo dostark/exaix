@@ -18,7 +18,7 @@ import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { readRuntimeSkillIds } from "./runtime_skill_scopes.ts";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
 
 // Upper bound on an identity's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`
@@ -56,9 +56,9 @@ function readCatalogSkillIds(): Promise<Set<string>> {
 
 async function readIdentityDefaults(): Promise<IIdentityDefaults[]> {
   const rows: IIdentityDefaults[] = [];
-  for await (const entry of Deno.readDir(IDENTITIES_DIR)) {
+  for await (const entry of Deno.readDir(AGENTS_DIR)) {
     if (!entry.isFile || !entry.name.endsWith(".md") || entry.name === "README.md") continue;
-    const text = await Deno.readTextFile(join(IDENTITIES_DIR, entry.name));
+    const text = await Deno.readTextFile(join(AGENTS_DIR, entry.name));
     const match = text.match(/^---\n([\s\S]*?)\n---/);
     const frontmatter = match ? parseYaml(match[1]) as IIdentityFrontmatter : {};
     rows.push({
@@ -112,7 +112,7 @@ Deno.test("identity_default_skills — the README's authoring example obeys the 
   // The README is where a contributor learns the shape, so a stale example reintroduces exactly
   // what a prior pruning removed. Its previous example carried `portal-grounding`, removed from all
   // identities because the skill declares triggers and is picked up dynamically — the cap test couldn't have caught it.
-  const readme = await Deno.readTextFile(join(IDENTITIES_DIR, "README.md"));
+  const readme = await Deno.readTextFile(join(AGENTS_DIR, "README.md"));
   const catalog = await readCatalogSkillIds();
 
   const examples = [...readme.matchAll(/default_skills:\s*\[([^\]]*)\]/g)]

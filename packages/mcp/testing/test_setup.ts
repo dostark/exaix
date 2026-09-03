@@ -88,7 +88,7 @@ export interface IPortalTestOptions {
   createFiles?: boolean;
   fileContent?: Record<string, string>;
   permissions?: {
-    identities_allowed?: string[];
+    agents_allowed?: string[];
     operations?: string[];
   };
   initGit?: boolean;
@@ -144,7 +144,7 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
     alias: portalAlias,
     target_path: portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: permissions.identities_allowed ?? ["*"],
+    agents_allowed: permissions.agents_allowed ?? ["*"],
     operations: (permissions.operations ?? []) as PortalOperation[],
   };
 
@@ -287,7 +287,7 @@ export async function initToolPermissionTest(
     fileContent,
     initGit,
     permissions: {
-      identities_allowed: [identityId],
+      agents_allowed: [identityId],
       operations,
     },
     prefix: "mcp-perm-test-",
@@ -297,7 +297,7 @@ export async function initToolPermissionTest(
     alias: portalAlias,
     target_path: env.portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: [identityId],
+    agents_allowed: [identityId],
     operations,
   };
 

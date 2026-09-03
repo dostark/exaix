@@ -73,7 +73,7 @@ Deno.test({
           alias: PORTAL_ALIAS,
           target_path: worktreeDir,
           default_branch: "main",
-          identities_allowed: ["*"],
+          agents_allowed: ["*"],
           operations: [],
         }],
       });

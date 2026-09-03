@@ -59,7 +59,7 @@ export class PortalPermissionsService {
     }
 
     // Check if agent is in whitelist
-    const identitiesAllowed = portal.identities_allowed || ["*"];
+    const identitiesAllowed = portal.agents_allowed || ["*"];
 
     // Wildcard allows all agents
     if (identitiesAllowed.includes("*")) {
@@ -352,7 +352,7 @@ export class PortalPermissionsService {
     // Convert legacy model to RBAC for consistent interface
 
     // Check agent whitelist
-    const identitiesAllowed = portal.identities_allowed || ["*"];
+    const identitiesAllowed = portal.agents_allowed || ["*"];
     if (!identitiesAllowed.includes("*") && !identitiesAllowed.includes(identityId)) {
       return {
         allowed: false,

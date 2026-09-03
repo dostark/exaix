@@ -33,7 +33,7 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
       alias: "test-portal",
       target_path: portalPath,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 

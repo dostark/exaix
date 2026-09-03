@@ -132,7 +132,7 @@ describe("ReviewCommands", () => {
             alias: "test-portal",
             target_path: portalDir,
             default_branch: TEST_DEFAULT_BRANCH,
-            identities_allowed: ["*"],
+            agents_allowed: ["*"],
             operations: [],
             created: new Date().toISOString(),
           }],

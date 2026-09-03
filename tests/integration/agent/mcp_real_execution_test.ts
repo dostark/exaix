@@ -64,7 +64,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
     alias: "test",
     target_path: portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [],
   };
   registryState.config.portals = [portalConfig];

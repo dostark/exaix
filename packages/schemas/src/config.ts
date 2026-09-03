@@ -64,7 +64,7 @@ export interface IPortalConfig {
   description?: string;
   default_branch?: string;
   execution_strategy?: string;
-  identities_allowed?: string[];
+  agents_allowed?: string[];
   operations?: PortalOperation[];
   created?: string;
 }

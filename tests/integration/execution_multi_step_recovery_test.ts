@@ -85,7 +85,7 @@ Deno.test("[Step63.4] FlowRunner compensates prior portal changes and leaves the
     });
     const portalPermissions = {
       ...env.permissions,
-      identities_allowed: ["agent1", "agent2", "agent3"],
+      agents_allowed: ["agent1", "agent2", "agent3"],
     };
     const deleteFileTool = new DeleteFileTool(context, new PortalPermissionsService([portalPermissions]));
 

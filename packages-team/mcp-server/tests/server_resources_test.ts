@@ -31,7 +31,7 @@ async function createTestServer(portals: Array<{ alias: string; files: Record<st
       alias: string;
       target_path: string;
       default_branch: string;
-      identities_allowed: string[];
+      agents_allowed: string[];
       operations: PortalOperation[];
     }
   > = [];
@@ -47,7 +47,7 @@ async function createTestServer(portals: Array<{ alias: string; files: Record<st
       alias,
       target_path: portalPath,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [],
     });
   }

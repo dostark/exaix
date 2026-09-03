@@ -13,7 +13,7 @@ import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 
 // Files in `Blueprints/Agents/` that are not identities. `README.md` used to sit in
 // `parity_exclusions.json`, misleadingly reading as a deliberately-uncovered identity (and was
@@ -25,7 +25,7 @@ const NON_IDENTITY_FILES = new Set(["README"]);
 // makes the exclusion list mean anything, since both entries named files the hardcoded list omitted.
 function readIdentityCatalog(): string[] {
   const names: string[] = [];
-  for (const entry of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const entry of Deno.readDirSync(AGENTS_DIR)) {
     if (!entry.isFile || !entry.name.endsWith(".md")) continue;
     const id = entry.name.replace(/\.md$/, "");
     if (NON_IDENTITY_FILES.has(id)) continue;
@@ -49,7 +49,7 @@ Deno.test("identity_eval_parity — the catalog is read from disk, not restated 
   // and the two exclusion entries were inert, because neither `mock-agent` nor `README.md` appeared
   // in the hardcoded list they were excluding from.
   const onDisk: string[] = [];
-  for await (const entry of Deno.readDir(IDENTITIES_DIR)) {
+  for await (const entry of Deno.readDir(AGENTS_DIR)) {
     if (entry.isFile && entry.name.endsWith(".md")) onDisk.push(entry.name.replace(/\.md$/, ""));
   }
 

@@ -39,7 +39,7 @@ Deno.test("[ToolRegistryAliasNonPortal] a non-portal alias (@Blueprints) still d
         alias: REGISTERED_PORTAL_ALIAS,
         target_path: join(systemRoot, "portal"),
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });
@@ -72,7 +72,7 @@ Deno.test("[ToolRegistryAliasNonPortal] a portal alias NOT registered on this To
         alias: REGISTERED_PORTAL_ALIAS,
         target_path: join(systemRoot, "portal"),
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

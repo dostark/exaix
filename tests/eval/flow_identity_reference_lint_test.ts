@@ -9,11 +9,11 @@ import { walk } from "@std/fs";
 import { resolve } from "@std/path";
 
 const FLOWS_DIR = resolve(Deno.cwd(), "Blueprints", "Flows");
-const IDENTITIES_DIR = resolve(Deno.cwd(), "Blueprints", "Agents");
+const AGENTS_DIR = resolve(Deno.cwd(), "Blueprints", "Agents");
 
-function loadIdentityNames(): Set<string> {
+function loadAgentRoleNames(): Set<string> {
   const names = new Set<string>();
-  for (const entry of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const entry of Deno.readDirSync(AGENTS_DIR)) {
     if (entry.isFile && entry.name.endsWith(".md") && entry.name !== "README.md") {
       names.add(entry.name.replace(/\.md$/, ""));
     }
@@ -34,7 +34,7 @@ function extractIdentityRefs(content: string): string[] {
 }
 
 Deno.test("flow_identity_reference_lint — all flow-step identities resolve", async () => {
-  const knownIdentities = loadIdentityNames();
+  const knownAgentRoles = loadAgentRoleNames();
 
   const failures: string[] = [];
   for await (const entry of walk(FLOWS_DIR, { includeDirs: false })) {
@@ -44,7 +44,7 @@ Deno.test("flow_identity_reference_lint — all flow-step identities resolve", a
     const refs = extractIdentityRefs(content);
 
     for (const ref of refs) {
-      if (!knownIdentities.has(ref)) {
+      if (!knownAgentRoles.has(ref)) {
         failures.push(`${entry.name}: references unknown identity "${ref}"`);
       }
     }

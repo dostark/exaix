@@ -44,7 +44,7 @@ skills/tools/model-size bundle it ships with?"
    (`EXA_EVAL_IDENTITY_OVERLAY_DIR`, `packages/request/src/blueprint_resolver.ts`) to swap only
    the markdown body while leaving the frontmatter (`model_size`, `capabilities`,
    `default_skills`, `permitted_tools`) byte-identical across all three variants. Never edit the
-   shipped `Blueprints/Identities/<id>.md` file itself.
+   shipped `Blueprints/Agents/<id>.md` file itself.
 1. **Pre-register** the comparison (arm id, `ArmKind.PERSONA_ISOLATION`, the three variant
    descriptions, the task set, `n=3` trial count, and the one metric) before any trial runs —
    `validatePreregistration` rejects anything outside the declared set, per the house discipline

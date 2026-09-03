@@ -12,7 +12,7 @@ steps:
   # --- Setup ---
   - id: "setup-best-identity"
     type: "write-file"
-    path: "Blueprints/Identities/stub-best.md"
+    path: "Blueprints/Agents/stub-best.md"
     content: |
       ---
       identity_id: "stub-best"

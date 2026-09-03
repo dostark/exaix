@@ -58,7 +58,7 @@ Deno.test({
           alias: "test-portal",
           target_path: portalDir,
           default_branch: TEST_DEFAULT_BRANCH,
-          identities_allowed: ["*"],
+          agents_allowed: ["*"],
           operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         }],
       });
@@ -89,7 +89,7 @@ Deno.test({
         alias: "test-portal",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
       }]);
       const pathResolver = new PathResolver(config);

@@ -240,8 +240,8 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls for different por
 
     const config: Config = createMockConfig(dbService.tempDir, {
       portals: [
-        { alias: "portal-a", target_path: portalA, default_branch: "main", identities_allowed: ["*"], operations: [] },
-        { alias: "portal-b", target_path: portalB, default_branch: "main", identities_allowed: ["*"], operations: [] },
+        { alias: "portal-a", target_path: portalA, default_branch: "main", agents_allowed: ["*"], operations: [] },
+        { alias: "portal-b", target_path: portalB, default_branch: "main", agents_allowed: ["*"], operations: [] },
       ],
     });
     const logger = new EventLogger({ db: dbService.db });
@@ -324,7 +324,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId
         alias: "portal",
         target_path: portalPath,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });
@@ -377,7 +377,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NO
         alias: "portal",
         target_path: portalPath,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });
@@ -423,12 +423,12 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-t
     await initGitPortal(fillerPortalPath);
     const config: Config = createMockConfig(dbService.tempDir, {
       portals: [
-        { alias: "portal", target_path: portalPath, default_branch: "main", identities_allowed: ["*"], operations: [] },
+        { alias: "portal", target_path: portalPath, default_branch: "main", agents_allowed: ["*"], operations: [] },
         {
           alias: "filler",
           target_path: fillerPortalPath,
           default_branch: "main",
-          identities_allowed: ["*"],
+          agents_allowed: ["*"],
           operations: [],
         },
       ],
@@ -497,12 +497,12 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's
     await initGitPortal(fillerPortalPath);
     const config: Config = createMockConfig(dbService.tempDir, {
       portals: [
-        { alias: "portal", target_path: portalPath, default_branch: "main", identities_allowed: ["*"], operations: [] },
+        { alias: "portal", target_path: portalPath, default_branch: "main", agents_allowed: ["*"], operations: [] },
         {
           alias: "filler",
           target_path: fillerPortalPath,
           default_branch: "main",
-          identities_allowed: ["*"],
+          agents_allowed: ["*"],
           operations: [],
         },
       ],

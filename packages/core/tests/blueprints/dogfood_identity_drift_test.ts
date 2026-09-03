@@ -12,7 +12,7 @@ import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 const ANALYSIS_DOC = join(REPO_ROOT, "exaix-dev-docs", "dev", "Exaix_Dogfooding_Analysis.md");
 const FLOW_BLUEPRINT = join(REPO_ROOT, "Blueprints", "Flows", "dogfood-meta-workflow.flow.yaml");
 
@@ -67,7 +67,7 @@ Deno.test({
       "extracted zero identity references from §7.5 — an empty extraction must fail, not pass vacuously",
     );
 
-    const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+    const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
     for (const id of refs) {
       const blueprint = await loader.load(id);
       assertExists(
@@ -84,7 +84,7 @@ Deno.test("[dogfood-identity-drift] every identity in the meta-workflow flow blu
   const refs = extractIdentityRefs(flow);
   assert(refs.size > 0, `extracted zero identity references from ${FLOW_BLUEPRINT}`);
 
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   for (const id of refs) {
     const blueprint = await loader.load(id);
     assertExists(
@@ -100,7 +100,7 @@ Deno.test("[dogfood-identity-drift] an unresolvable identity reference fails", a
   const refs = extractIdentityRefs(section);
   assertEquals([...refs], ["no-such-identity"], "extraction must find the dangling reference");
 
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("no-such-identity");
   assertEquals(blueprint, null, "a dangling identity reference must not resolve");
 });

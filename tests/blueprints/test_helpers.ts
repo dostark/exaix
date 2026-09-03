@@ -35,7 +35,7 @@ export interface IRawFrontmatter {
 }
 
 export const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-export const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+export const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 export const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 export const FRAGMENTS_DIR = join(REPO_ROOT, "Blueprints", "Fragments");
 
@@ -73,8 +73,8 @@ export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "code-reviewer": ["response-contract", "code-review"],
 };
 
-/** Identities whose role is analysis/evaluation — no destructive tools. */
-export const READ_ONLY_IDENTITIES = new Set([
+/** Agents whose role is analysis/evaluation — no destructive tools. */
+export const READ_ONLY_AGENT_ROLES = new Set([
   "code-analyst",
   "product-manager",
   "performance-engineer",

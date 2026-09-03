@@ -40,9 +40,9 @@ async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStr
   const { db, config, tempDir, cleanup } = await initTestDbService();
   config.agents.inject_aci_docs = aciDocsEnabled;
 
-  const identitiesDir = getBlueprintsAgentsDir(tempDir);
-  await Deno.mkdir(identitiesDir, { recursive: true });
-  await Deno.writeTextFile(join(identitiesDir, `${IDENTITY_ID}.md`), REACT_BLUEPRINT);
+  const agentsDir = getBlueprintsAgentsDir(tempDir);
+  await Deno.mkdir(agentsDir, { recursive: true });
+  await Deno.writeTextFile(join(agentsDir, `${IDENTITY_ID}.md`), REACT_BLUEPRINT);
 
   const logger = new EventLogger({ db });
   const provider = new MockLLMProvider(providerStrategy, { responses: [SCRIPTED_COMPLETE_RESPONSE] });

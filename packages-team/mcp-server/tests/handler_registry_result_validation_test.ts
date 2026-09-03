@@ -81,7 +81,7 @@ Deno.test("handler_registry_result_validation: read-only MCP tool recovers throu
         alias: portalAlias,
         target_path: portalPath,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

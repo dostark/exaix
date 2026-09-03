@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkArtefactCatalogTest
  * @path tests/scenario_framework/tests/unit/artefact_catalog_test.ts
  * @description Tests for Phase 158 Step 7's live-catalog reader: enumerates the real
- * `Blueprints/{Identities,Skills,Flows}` trees into the `IArtefactRef[]` shape
+ * `Blueprints/{Agents,Skills,Flows}` trees into the `IArtefactRef[]` shape
  * `assertArtefactDecisionCoverage` consumes, applying the same exclusions Phase 158
  * has used throughout (README files, the non-curated `mock-agent`/`default`
  * identities, flow ids read from each file's declared `id:` rather than its

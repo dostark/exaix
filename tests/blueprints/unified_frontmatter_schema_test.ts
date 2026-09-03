@@ -26,7 +26,7 @@ import {
 } from "@exaix/core/blueprint/blueprint_loader.ts";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 
 /** YAML-parsed frontmatter — validated by the schema, so structurally permissive. */
 interface IParsedFrontmatter {
@@ -42,8 +42,8 @@ function parseFrontmatter(content: string): IParsedFrontmatter | null {
 
 Deno.test("[step2] unified schema accepts every active identity (pre-strict)", async () => {
   const files: string[] = [];
-  for await (const e of Deno.readDir(IDENTITIES_DIR)) {
-    if (e.isFile && e.name.endsWith(".md") && e.name !== "README.md") files.push(join(IDENTITIES_DIR, e.name));
+  for await (const e of Deno.readDir(AGENTS_DIR)) {
+    if (e.isFile && e.name.endsWith(".md") && e.name !== "README.md") files.push(join(AGENTS_DIR, e.name));
   }
   assert(files.length >= 14, `expected the full identity catalog, found ${files.length}`);
 

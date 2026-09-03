@@ -18,7 +18,7 @@ import { SkillsService } from "@exaix/core/skills";
 import { MemoryScope } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 
 const ACTIVE_IDENTITY_IDS = [
@@ -100,7 +100,7 @@ interface ILoadedIdentityView {
 async function forEachLoadedIdentity(
   fn: (identityId: string, blueprint: ILoadedIdentityView) => void | Promise<void>,
 ): Promise<void> {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const results = await tryLoadAll(loader);
 
   for (const { identityId, blueprint, loadError } of results) {
@@ -176,7 +176,7 @@ const SKILL_MD_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 
 /** Collect default_skills from all loadable identity blueprints. */
 async function collectReferencedSkills(): Promise<Set<string>> {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const results = await tryLoadAll(loader);
   const allReferenced = new Set<string>();
   for (const { identityId, blueprint } of results) {

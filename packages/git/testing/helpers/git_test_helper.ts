@@ -89,7 +89,7 @@ export async function createGitTestContext(prefix = "git-test-"): Promise<IGitTe
       alias: "workspace",
       target_path: repoDir,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [],
     }],
   });

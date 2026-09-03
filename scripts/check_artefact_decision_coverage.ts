@@ -9,7 +9,7 @@
  *   [blueprints-dir]  Path to the Blueprints directory (default: ./Blueprints).
  *
  * @description Phase 158 Step 7's live-catalog wiring: reads the real
- *   `Blueprints/{Identities,Skills,Flows}` catalog and asserts every artefact carries
+ *   `Blueprints/{Agents,Skills,Flows}` catalog and asserts every artefact carries
  *   the decision recorded in `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s
  *   "Step 7 decisions" table (skills/identities: KEEP; the one flow this
  *   phase measured: AWAITING_REMEASUREMENT, since its only result is confounded by

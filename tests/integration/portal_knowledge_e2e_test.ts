@@ -270,7 +270,7 @@ Deno.test(
           alias: portalAlias,
           target_path: portalTargetPath,
           default_branch: "main",
-          identities_allowed: ["*"],
+          agents_allowed: ["*"],
           operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         }],
       };

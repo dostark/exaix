@@ -20,7 +20,7 @@ function createPortalConfig(alias: string, targetPath: string): IPortalConfig {
     alias,
     target_path: targetPath,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [],
   };
 }

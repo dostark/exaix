@@ -137,7 +137,7 @@ export const PortalPermissionsSchema = z.object({
   created: z.string().optional(),
 
   // Legacy permission controls (for backward compatibility)
-  identities_allowed: z.array(z.string()).default(["*"]), // "*" = all agents
+  agents_allowed: z.array(z.string()).default(["*"]), // "*" = all agents
   operations: z.array(PortalOperationSchema).default([
     PortalOperation.READ,
     PortalOperation.WRITE,

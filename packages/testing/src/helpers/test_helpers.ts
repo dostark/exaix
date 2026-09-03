@@ -116,7 +116,7 @@ export function createStubConfig(config: Config): ILocalConfigService {
       target_path: p.target_path,
       created: p.created,
       default_branch: p.default_branch ?? TEST_DEFAULT_BRANCH,
-      identities_allowed: p.identities_allowed ?? ["*"],
+      agents_allowed: p.agents_allowed ?? ["*"],
       operations: p.operations ?? [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     })),
   });
@@ -140,7 +140,7 @@ export function createStubConfig(config: Config): ILocalConfigService {
         target_path: targetPath,
         created: new Date().toISOString(),
         default_branch: options?.defaultBranch || TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         execution_strategy: options?.executionStrategy,
       };

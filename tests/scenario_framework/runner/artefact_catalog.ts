@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkArtefactCatalog
  * @path tests/scenario_framework/runner/artefact_catalog.ts
  * @description Phase 158 Step 7's live-catalog reader: enumerates
- * `Blueprints/{Identities,Skills,Flows}` into the `IArtefactRef[]` shape
+ * `Blueprints/{Agents,Skills,Flows}` into the `IArtefactRef[]` shape
  * `assertArtefactDecisionCoverage` consumes. Reuses the exclusions Phase 158 has used
  * throughout its live runs — README files are not artefacts, `mock-agent`/`default`
  * are non-curated identities excluded from every count in the phase doc, and a flow's

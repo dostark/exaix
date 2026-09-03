@@ -290,7 +290,7 @@ path = "analysis-target.txt"
         alias: "workspace",
         target_path: tempDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

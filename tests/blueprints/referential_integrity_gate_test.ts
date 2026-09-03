@@ -14,10 +14,10 @@ import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { McpToolName } from "@exaix/core";
 import {
+  AGENTS_DIR,
   DESTRUCTIVE_TOOLS,
-  IDENTITIES_DIR,
   type IIdentityFrontmatter,
-  READ_ONLY_IDENTITIES,
+  READ_ONLY_AGENT_ROLES,
   readRawFrontmatter,
   ROLE_REQUIRED_SKILLS,
   SKILLS_DIR,
@@ -34,17 +34,17 @@ const VALID_MCP_TOOL_NAMES = new Set(
 
 function listActiveIdentityIds(): string[] {
   const ids: string[] = [];
-  for (const e of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const e of Deno.readDirSync(AGENTS_DIR)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
     ids.push(e.name.replace(/\.md$/, ""));
   }
   return ids.sort();
 }
 
-function loadActiveIdentities(): Array<{ id: string; fm: IIdentityFrontmatter }> {
+function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }> {
   const out: Array<{ id: string; fm: IIdentityFrontmatter }> = [];
   for (const id of listActiveIdentityIds()) {
-    const fm = readRawFrontmatter(join(IDENTITIES_DIR, `${id}.md`));
+    const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
     assertExists(fm, `${id}: must have YAML frontmatter`);
     out.push({ id, fm: fm as IIdentityFrontmatter });
   }
@@ -56,7 +56,7 @@ function loadActiveIdentities(): Array<{ id: string; fm: IIdentityFrontmatter }>
 Deno.test({
   name: "[step9/integrity-gate] all default_skills references resolve to existent .skill.md files — FAILS CLOSED",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     const dangling: Array<{ id: string; skill: string }> = [];
 
     for (const { id, fm } of identities) {
@@ -127,7 +127,7 @@ Deno.test({
 Deno.test({
   name: "[step9/integrity-gate] every identity declares its role-required default_skills — FAILS CLOSED",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     const missing: Array<{ id: string; skill: string }> = [];
 
     for (const { id, fm } of identities) {
@@ -188,11 +188,11 @@ Deno.test({
 Deno.test({
   name: "[step9/integrity-gate] read-only identities carry no destructive permitted_tools — FAILS CLOSED",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     const violations: Array<{ id: string; tool: string }> = [];
 
     for (const { id, fm } of identities) {
-      if (!READ_ONLY_IDENTITIES.has(id)) continue;
+      if (!READ_ONLY_AGENT_ROLES.has(id)) continue;
       const tools = fm.permitted_tools ?? [];
       for (const t of tools) {
         if (DESTRUCTIVE_TOOLS.has(t)) {
@@ -238,7 +238,7 @@ Deno.test({
 Deno.test({
   name: "[step9/integrity-gate] no identity has McpToolName values in capabilities — FAILS CLOSED",
   fn() {
-    const identities = loadActiveIdentities();
+    const identities = loadActiveAgentRoles();
     const violations: Array<{ id: string; capability: string }> = [];
 
     for (const { id, fm } of identities) {

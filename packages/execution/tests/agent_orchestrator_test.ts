@@ -146,7 +146,7 @@ async function setup() {
       alias: "TestPortal",
       target_path: portalDir,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     },
   ];
@@ -181,7 +181,7 @@ function getServices() {
       alias: "TestPortal",
       target_path: portalDir,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["test-agent", "ollama-agent"],
+      agents_allowed: ["test-agent", "ollama-agent"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
       security: {
         mode: SecurityMode.SANDBOXED,
@@ -491,7 +491,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "unauthorized-agent", // Not in identities_allowed
+        identity_id: "unauthorized-agent", // Not in agents_allowed
         portal: "TestPortal",
         security_mode: SecurityMode.SANDBOXED,
         timeout_ms: 300000,

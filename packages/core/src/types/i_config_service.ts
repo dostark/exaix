@@ -14,7 +14,7 @@ export interface IPortalConfigEntry {
   target_path: string;
   created?: string;
   default_branch?: string;
-  identities_allowed?: string[];
+  agents_allowed?: string[];
   operations?: PortalOperation[];
   execution_strategy?: PortalExecutionStrategy;
 }

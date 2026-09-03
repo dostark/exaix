@@ -52,7 +52,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
       alias: portalConfig.alias,
       target_path: portalConfig.target_path,
       default_branch: portalConfig.default_branch,
-      identities_allowed: portalConfig.identities_allowed,
+      agents_allowed: portalConfig.agents_allowed,
       operations: portalConfig.operations,
     };
     config = createMockConfig(workspaceDir, {

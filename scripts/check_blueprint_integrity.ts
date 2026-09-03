@@ -9,12 +9,12 @@
  *   [blueprints-dir]  Path to the Blueprints directory (default: ./Blueprints).
  *
  * @description Catalog referential-integrity + anti-bloat gate. Validates four
- *   facets across Blueprints/{Identities,Skills,Flows}, all fail-closed:
+ *   facets across Blueprints/{Agents,Skills,Flows}, all fail-closed:
  *     1. dangling-identity — every flow `identity:` resolves to an identity file.
  *     2. dangling-skill    — every identity `default_skills` entry resolves to a
  *        `Blueprints/Skills/<id>.skill.md` file.
  *     3. orphan-identity   — every identity is referenced by >=1 flow. System
- *        identities (`default`, `dogfood-developer`, or any with a `mock:` model) are
+ *        agent roles (`default`, `dogfood-developer`, or any with a `mock:` model) are
  *        exempt: they are invoked directly (global fallback / CI fixture / CLI
  *        `--identity`), not via flows.
  *     4. orphan-skill      — every skill is referenced by >=1 identity's

@@ -20,7 +20,7 @@ import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { renderCriticalSkillsSection } from "@exaix/core/func";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const IDENTITIES = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS = join(REPO_ROOT, "Blueprints", "Agents");
 const SKILLS = join(REPO_ROOT, "Blueprints", "Skills");
 const FIXTURES = join(REPO_ROOT, "tests", "fixtures", "identity_migration");
 
@@ -37,7 +37,7 @@ Deno.test("[step4][GAP-5] a pre-migration golden fixture exists for test-enginee
 });
 
 Deno.test("[step4] test-engineer persona is slimmed: methodology lives in skills, not the body", async () => {
-  const md = await Deno.readTextFile(join(IDENTITIES, "test-engineer.md"));
+  const md = await Deno.readTextFile(join(AGENTS, "test-engineer.md"));
   const { fm, body } = parseFrontmatter(md);
 
   // default_skills carries the contract + methodology.

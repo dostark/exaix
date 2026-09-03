@@ -60,7 +60,7 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
       alias: "my-portal",
       target_path: portalDir,
       default_branch: "master",
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 

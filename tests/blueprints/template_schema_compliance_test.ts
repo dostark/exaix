@@ -14,14 +14,14 @@ import { assertEquals } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 
-const IDENTITIES_DIR = "Blueprints/Agents";
+const AGENTS_DIR = "Blueprints/Agents";
 
 /** Active identities are the top-level `*.md` files (no subdirectories remain). */
-function collectActiveIdentities(): string[] {
+function collectActiveAgentRoles(): string[] {
   const files: string[] = [];
-  for (const entry of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const entry of Deno.readDirSync(AGENTS_DIR)) {
     if (!entry.isFile || !entry.name.endsWith(".md") || entry.name === "README.md") continue;
-    files.push(`${IDENTITIES_DIR}/${entry.name}`);
+    files.push(`${AGENTS_DIR}/${entry.name}`);
   }
   return files.sort();
 }
@@ -56,7 +56,7 @@ const StrictBlueprintFrontmatterSchema = z.object({
 Deno.test({
   name: "[catalog/strict-schema] every active identity parses under .strict()",
   fn: () => {
-    const files = collectActiveIdentities();
+    const files = collectActiveAgentRoles();
     assertEquals(files.length > 0, true, "expected at least one identity file");
 
     const failures: string[] = [];

@@ -21,7 +21,7 @@ import { initTestDbService } from "@exaix/testing";
 import { MemoryScope } from "@exaix/core";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
 const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-dogfooding-a-c.md");
@@ -29,7 +29,7 @@ const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 
 Deno.test("[dogfood-e2e] dogfood-developer identity loads through IBlueprintLoader", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer must load");

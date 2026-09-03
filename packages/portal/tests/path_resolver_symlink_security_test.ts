@@ -32,7 +32,7 @@ Deno.test("security: PathResolver rejects an in-portal symlink that escapes the 
         alias: "Project",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       },
     ];
@@ -64,7 +64,7 @@ Deno.test("security: PathResolver error message does not leak absolute host path
         alias: "Project",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       },
     ];
@@ -96,7 +96,7 @@ Deno.test("security: PathResolver still resolves a legitimate in-portal path", a
         alias: "Project",
         target_path: portalDir,
         default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       },
     ];

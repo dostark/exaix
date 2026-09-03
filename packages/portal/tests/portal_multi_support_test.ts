@@ -40,7 +40,7 @@ Deno.test("[portal-multi] validateGitRepo() returns false for portal without .gi
       alias: "portal-without-git",
       target_path: noRepoPath,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [],
     };
 

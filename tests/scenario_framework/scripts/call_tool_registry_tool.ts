@@ -91,7 +91,7 @@ if (import.meta.main) {
       alias: portalAlias,
       target_path: portalPath,
       default_branch: "main",
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [],
     }],
     mcp: {},

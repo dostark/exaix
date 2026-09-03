@@ -71,7 +71,7 @@ Deno.test("[ToolRegistry] query_relationships and who_depends_on are registered"
         alias: PORTAL_ALIAS,
         target_path: dir,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });
@@ -93,7 +93,7 @@ Deno.test("[ToolRegistry] query_relationships returns edges from the current por
         alias: PORTAL_ALIAS,
         target_path: dir,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });
@@ -117,7 +117,7 @@ Deno.test("[ToolRegistry] who_depends_on returns reverse edges from the current 
         alias: PORTAL_ALIAS,
         target_path: dir,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });
@@ -140,7 +140,7 @@ Deno.test("[ToolRegistry] query_relationships errors gracefully when no portal-k
         alias: PORTAL_ALIAS,
         target_path: dir,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

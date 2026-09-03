@@ -126,9 +126,7 @@ Deno.test("[ArmIsolation] two sequential skill overlays each see only their own 
   }
 });
 
-Deno.test("[ArmIsolation] two sequential identity overlays each see only their own content", async () => {
-  // IBlueprintLoader.resolvePath treats a blueprintsPath NOT ending in "Identities" as a
-  // Blueprints root and appends "Identities" itself — every path here must end in it.
+Deno.test("[ArmIsolation] two sequential agent role overlays each see only their own content", async () => {
   const identitiesRoot = await Deno.makeTempDir({ prefix: "isolation-identities-" });
   const identitiesDir = join(identitiesRoot, "Agents");
   const overlayARoot = await Deno.makeTempDir({ prefix: "isolation-identity-overlay-a-" });

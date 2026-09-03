@@ -43,7 +43,7 @@ async function startValidationServer(
       alias: portalAlias,
       target_path: portalPath,
       default_branch: "main",
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [],
     }],
   });

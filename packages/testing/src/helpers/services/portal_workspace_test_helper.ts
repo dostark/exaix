@@ -33,7 +33,7 @@ export async function setupPortalWorkspaceTestDirs(tempDir: string): Promise<{
     target_path: portalDir,
     default_branch: TEST_DEFAULT_BRANCH,
     operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
   };
 
   return { portalDir, workspaceDir, portalConfig };

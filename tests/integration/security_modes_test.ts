@@ -195,18 +195,18 @@ Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", as
     // Simulate portal configuration
     const portalConfig = {
       name: "RestrictedPortal",
-      identities_allowed: ["senior-coder", "junior-coder"], // Specific agents only
+      agents_allowed: ["senior-coder", "junior-coder"], // Specific agents only
     };
 
     // Attempt execution by unauthorized agent
     const unauthorizedAgent = "malicious-agent";
 
-    if (!portalConfig.identities_allowed.includes(unauthorizedAgent)) {
+    if (!portalConfig.agents_allowed.includes(unauthorizedAgent)) {
       eventLogger.error("permission.agent_not_allowed", unauthorizedAgent, {
         trace_id: traceId,
         portal: portalConfig.name,
         identity: unauthorizedAgent,
-        allowed_agents: portalConfig.identities_allowed,
+        allowed_agents: portalConfig.agents_allowed,
         reason: "Agent not in portal's allowed list",
       }, traceId);
     }

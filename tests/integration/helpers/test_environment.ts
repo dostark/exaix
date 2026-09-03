@@ -311,7 +311,7 @@ retry_backoff_base_ms = 1000
       target_path: portalDir,
       default_branch: defaultBranch,
       operations,
-      identities_allowed: options.identitiesAllowed ?? ["*"],
+      agents_allowed: options.identitiesAllowed ?? ["*"],
     };
 
     return { portalDir, config };

@@ -158,7 +158,7 @@ export class RequestRouter {
         alias: portal.alias,
         target_path: portal.target_path,
         default_branch: portal.default_branch ?? GitBranchName.MAIN,
-        identities_allowed: portal.identities_allowed ?? ["*"],
+        agents_allowed: portal.agents_allowed ?? ["*"],
         operations: portal.operations ?? [],
         created: portal.created,
       };

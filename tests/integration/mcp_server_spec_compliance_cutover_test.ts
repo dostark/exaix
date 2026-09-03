@@ -84,7 +84,7 @@ function writeMcpServerConfig(configPath: string, root: string, portalPath: stri
     "[[portals]]",
     `alias = "${PORTAL_ALIAS}"`,
     `target_path = "${portalPath}"`,
-    'identities_allowed = ["*"]',
+    'agents_allowed = ["*"]',
     "",
     extraSections,
   ].join("\n");

@@ -29,7 +29,7 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
     alias: TEST_PORTAL_ALIAS,
     target_path: root,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [],
   }];
 

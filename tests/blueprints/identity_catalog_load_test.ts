@@ -15,7 +15,7 @@ import { assertEquals } from "@std/assert";
 import { basename, join } from "@std/path";
 import { McpToolName, ToolName } from "@exaix/core";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
-import { IDENTITIES_DIR, readRawFrontmatter, SKILLS_DIR } from "./test_helpers.ts";
+import { AGENTS_DIR, readRawFrontmatter, SKILLS_DIR } from "./test_helpers.ts";
 
 // Helpers
 
@@ -28,9 +28,9 @@ const VALID_TOOL_NAMES = new Set([
 /**
  * List active identity filenames (non-example, non-template, non-README .md files).
  */
-function listActiveIdentities(): string[] {
+function listActiveAgentRoles(): string[] {
   const ids: string[] = [];
-  for (const e of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const e of Deno.readDirSync(AGENTS_DIR)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
     ids.push(basename(e.name, ".md"));
   }
@@ -44,8 +44,8 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_DIR });
-    const activeIds = listActiveIdentities();
+    const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_DIR });
+    const activeIds = listActiveAgentRoles();
     const failures: Array<{ id: string; error: string }> = [];
 
     for (const id of activeIds) {
@@ -75,11 +75,11 @@ Deno.test({
 Deno.test({
   name: "[step9/catalog-load] all identity default_skills resolve to existing .skill.md files",
   fn() {
-    const activeIds = listActiveIdentities();
+    const activeIds = listActiveAgentRoles();
     const missingSkills: Array<{ identity: string; skill: string }> = [];
 
     for (const id of activeIds) {
-      const fm = readRawFrontmatter(join(IDENTITIES_DIR, `${id}.md`));
+      const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
       if (!fm) continue;
       const skills = (fm.default_skills ?? []) as string[];
       for (const s of skills) {
@@ -112,11 +112,11 @@ Deno.test({
 Deno.test({
   name: "[step9/catalog-load] every identity's capabilities are behavioral-only (no tool-name values)",
   fn() {
-    const activeIds = listActiveIdentities();
+    const activeIds = listActiveAgentRoles();
     const violations: Array<{ identity: string; capability: string }> = [];
 
     for (const id of activeIds) {
-      const fm = readRawFrontmatter(join(IDENTITIES_DIR, `${id}.md`));
+      const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
       if (!fm) continue;
       const caps = (fm.capabilities ?? []) as string[];
       for (const c of caps) {
@@ -140,18 +140,18 @@ Deno.test({
 // every active identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS)
 
 /** mock-agent declares no capabilities at all — test-only identity, not a real execution path. */
-const IDENTITIES_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
+const AGENST_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
 
 Deno.test({
   name:
     "fix(identity-catalog): every active identity (except mock-agent) declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
   fn() {
-    const activeIds = listActiveIdentities();
+    const activeIds = listActiveAgentRoles();
     const missing: string[] = [];
 
     for (const id of activeIds) {
-      if (IDENTITIES_EXEMPT_FROM_REACT.has(id)) continue;
-      const fm = readRawFrontmatter(join(IDENTITIES_DIR, `${id}.md`));
+      if (AGENST_EXEMPT_FROM_REACT.has(id)) continue;
+      const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
       const caps = fm?.capabilities ?? [];
       if (!caps.includes("react")) {
         missing.push(id);
@@ -181,11 +181,11 @@ Deno.test({
 Deno.test({
   name: "[step9/catalog-load] permitted_tools values are valid McpToolName or ToolName members",
   fn() {
-    const activeIds = listActiveIdentities();
+    const activeIds = listActiveAgentRoles();
     const invalid: Array<{ identity: string; tool: string }> = [];
 
     for (const id of activeIds) {
-      const fm = readRawFrontmatter(join(IDENTITIES_DIR, `${id}.md`));
+      const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
       if (!fm) continue;
       const tools = (fm.permitted_tools ?? []) as string[];
       for (const t of tools) {
@@ -218,8 +218,8 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_DIR });
-    const activeIds = listActiveIdentities();
+    const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_DIR });
+    const activeIds = listActiveAgentRoles();
     const unresolved: Array<{ identity: string }> = [];
 
     for (const id of activeIds) {

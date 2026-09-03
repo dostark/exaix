@@ -39,7 +39,7 @@ describe("GitExecutionSetupService.resolveBaseBranch", () => {
         alias: "portal-repo",
         target_path: repoDir,
         default_branch: portalDefaultBranch,
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

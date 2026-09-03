@@ -96,7 +96,7 @@ Deno.test("[integration] Portal context validation fails for missing git repo", 
       alias: "no-git-portal",
       target_path: noRepoPath,
       default_branch: TEST_DEFAULT_BRANCH,
-      identities_allowed: ["*"],
+      agents_allowed: ["*"],
       operations: [PortalOperation.READ],
     };
 

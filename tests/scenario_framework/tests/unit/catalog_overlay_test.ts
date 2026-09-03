@@ -117,9 +117,6 @@ Deno.test("[CatalogOverlay] a skill with no overlay file falls back to the shipp
 
 Deno.test("[CatalogOverlay] an identity overlay shadows the shipped identity's content for BlueprintResolver.resolve", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "identity-overlay-" });
-  // IBlueprintLoader.resolvePath treats a blueprintsPath NOT ending in "Agents" as a
-  // Blueprints root and appends "Agents" itself — so an overlay dir must end in
-  // "Identities" too, exactly like the shipped `blueprintsPath` already must.
   const overlayRoot = await Deno.makeTempDir({ prefix: "identity-overlay-dir-" });
   const overlayDir = join(overlayRoot, "Agents");
   const mockLogger = createMockEventLogger();

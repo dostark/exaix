@@ -55,7 +55,7 @@ export async function setupStrategyExecutor(
     alias: "workspace",
     target_path: tempDir,
     default_branch: "main",
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [],
   }];
 

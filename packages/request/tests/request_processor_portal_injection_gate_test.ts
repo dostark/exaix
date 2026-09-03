@@ -61,7 +61,7 @@ async function makePortalGateEnv(opts: {
     alias: "test-portal",
     target_path: portalTargetDir,
     default_branch: TEST_DEFAULT_BRANCH,
-    identities_allowed: ["*"],
+    agents_allowed: ["*"],
     operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
   }];
   if (opts.injectionEnabled !== undefined) {

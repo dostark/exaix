@@ -31,7 +31,7 @@ Deno.test("MCPServer: portal-affecting handlers execute when explicit allow-all 
         alias: "TestPortal",
         target_path: portalPath,
         default_branch: "main",
-        identities_allowed: ["*"],
+        agents_allowed: ["*"],
         operations: [],
       }],
     });

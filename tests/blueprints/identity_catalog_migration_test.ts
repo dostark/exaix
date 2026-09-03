@@ -18,7 +18,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { FRAGMENTS_DIR, IDENTITIES_DIR, SKILLS_DIR } from "./test_helpers.ts";
+import { AGENTS_DIR, FRAGMENTS_DIR, SKILLS_DIR } from "./test_helpers.ts";
 
 const CONTRACT_FRAGMENTS = new Set([
   "standard-response-format.md",
@@ -50,15 +50,15 @@ function parseFrontmatter(filePath: string): IFrontmatter {
 /** List all active identity files (non-example, non-template, non-README). */
 function listActiveIdentityFiles(): string[] {
   const out: string[] = [];
-  for (const e of Deno.readDirSync(IDENTITIES_DIR)) {
+  for (const e of Deno.readDirSync(AGENTS_DIR)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
-    out.push(join(IDENTITIES_DIR, e.name));
+    out.push(join(AGENTS_DIR, e.name));
   }
   return out;
 }
 
 /** Walk all files under Blueprints/Agents/** (recursive). */
-function walkIdentitiesTree(): string[] {
+function walkAgentsTree(): string[] {
   const out: string[] = [];
   function walk(dir: string) {
     for (const e of Deno.readDirSync(dir)) {
@@ -67,7 +67,7 @@ function walkIdentitiesTree(): string[] {
       else if (e.name.endsWith(".md") || e.name.endsWith(".template")) out.push(p);
     }
   }
-  walk(IDENTITIES_DIR);
+  walk(AGENTS_DIR);
   return out;
 }
 
@@ -105,7 +105,7 @@ Deno.test({
 Deno.test({
   name: "[step7] no identity/example/template contains a contract-fragment {{include:}}",
   fn() {
-    const files = walkIdentitiesTree();
+    const files = walkAgentsTree();
     assert(files.length > 0, "no files found under Blueprints/Agents");
     const offenders: string[] = [];
     for (const fp of files) {

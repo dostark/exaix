@@ -31,7 +31,7 @@ Deno.test("[security] MCPServer: denies unauthorized portal writes and logs perm
         alias: "SecurePortal",
         target_path: portalPath,
         default_branch: "main",
-        identities_allowed: ["agent-a"],
+        agents_allowed: ["agent-a"],
         operations: [PortalOperation.READ],
       }],
     });

@@ -9,7 +9,7 @@ import { fromFileUrl, join } from "@std/path";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const DOGFOOD_CODER_REQUIRED_SKILLS = [
   "response-contract",
@@ -18,7 +18,7 @@ const DOGFOOD_CODER_REQUIRED_SKILLS = [
 ];
 
 Deno.test("[dogfood-identity-skills] dogfood-coder carries the skills its role requires", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-coder");
 
   assertExists(blueprint);

@@ -15,10 +15,10 @@ import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { McpToolName } from "@exaix/core/types";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
-const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Agents");
+const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer identity must load");
@@ -31,7 +31,7 @@ Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader",
 const DOGFOOD_REQUIRED_SKILLS = ["response-contract", "exaix-conventions", "tdd-methodology"];
 
 Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requires", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -42,7 +42,7 @@ Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requ
 });
 
 Deno.test("[dogfood-identity] identity_id is dogfood-developer", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -50,7 +50,7 @@ Deno.test("[dogfood-identity] identity_id is dogfood-developer", async () => {
 });
 
 Deno.test("[dogfood-identity] permitted_tools contains file, command, and search tools", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -71,7 +71,7 @@ Deno.test("[dogfood-identity] permitted_tools contains file, command, and search
 });
 
 Deno.test("[dogfood-identity] every permitted_tool is a valid McpToolName", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -84,7 +84,7 @@ Deno.test("[dogfood-identity] every permitted_tool is a valid McpToolName", asyn
 });
 
 Deno.test("[dogfood-identity] loads without Zod error through IBlueprintLoader", async () => {
-  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "identity must load without error");
