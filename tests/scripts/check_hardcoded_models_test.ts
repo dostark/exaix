@@ -66,7 +66,7 @@ Deno.test("[check-hardcoded-models] test files are skipped", () => {
 Deno.test("[check-hardcoded-models] .md blueprint with hardcoded model is flagged", () => {
   const lines = [
     "---",
-    'identity_id: "test-agent"',
+    'agent_role: "test-agent"',
     'model: "google:gemini-2.0-flash-exp"',
     "---",
     "description",
@@ -80,7 +80,7 @@ Deno.test("[check-hardcoded-models] .md blueprint with hardcoded model is flagge
 Deno.test("[check-hardcoded-models] .md blueprint with empty model is clean", () => {
   const lines = [
     "---",
-    'identity_id: "test-agent"',
+    'agent_role: "test-agent"',
     "model:",
     "model_size: M",
     "---",
@@ -94,7 +94,7 @@ Deno.test("[check-hardcoded-models] .md blueprint with empty model is clean", ()
 Deno.test("[check-hardcoded-models] .md blueprint with model_size only is clean", () => {
   const lines = [
     "---",
-    'identity_id: "test-agent"',
+    'agent_role: "test-agent"',
     "model:",
     "model_size: L",
     "thinking: true",

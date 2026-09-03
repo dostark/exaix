@@ -1,5 +1,5 @@
 ---
-identity_id: "default"
+agent_role: "default"
 name: "Default Agent"
 model: ""
 model_size: M

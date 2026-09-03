@@ -125,7 +125,7 @@ async function writeBlueprint(tempDir: string): Promise<void> {
   await Deno.writeTextFile(
     join(agentsDir, "senior-coder.md"),
     `---
-identity_id: "senior-coder"
+agent_role: "senior-coder"
 name: "Senior Coder"
 model: "mock:test"
 description: "Handles dynamic approval-required tool calls"
@@ -145,7 +145,7 @@ function createDynamicApprovalFlow(): IFlow {
     {
       id: "dynamic-create-request",
       name: "Create request if needed",
-      identity: "senior-coder",
+      agent_role: "senior-coder",
       execution_mode: FlowStepExecutionMode.DYNAMIC,
       permitted_tools: [McpToolName.CREATE_REQUEST],
       dependsOn: [],

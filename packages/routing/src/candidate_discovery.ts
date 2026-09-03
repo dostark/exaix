@@ -24,13 +24,13 @@ export class CandidateDiscovery {
 
   async listCandidates(
     criteria: IRoutingMatchCriteria,
-    explicitIdentityId?: Opt<string, Reason.OptionalInput>,
+    explicitAgentRole?: Opt<string, Reason.OptionalInput>,
   ): Promise<IRoutingCandidate[]> {
     const blueprints = await this.blueprintLoader.listAll();
 
-    const explicit = explicitIdentityId ? blueprints.filter((bp) => bp.identityId === explicitIdentityId) : [];
+    const explicit = explicitAgentRole ? blueprints.filter((bp) => bp.agentRole === explicitAgentRole) : [];
 
-    const broad = blueprints.filter((bp) => bp.identityId !== explicitIdentityId);
+    const broad = blueprints.filter((bp) => bp.agentRole !== explicitAgentRole);
 
     let scored = [...explicit, ...broad]
       .map((bp, index) => {
@@ -48,7 +48,7 @@ export class CandidateDiscovery {
         if (a.isExplicit !== b.isExplicit) {
           return a.isExplicit ? -1 : 1;
         }
-        return b.candidate.score - a.candidate.score || a.candidate.identityId.localeCompare(b.candidate.identityId);
+        return b.candidate.score - a.candidate.score || a.candidate.agentRole.localeCompare(b.candidate.agentRole);
       })
       .map((entry) => entry.candidate);
 

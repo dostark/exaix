@@ -26,9 +26,9 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
         match: { tags: [], capability: "code_review" },
         prefer: {
           enabled: true,
-          identityId: "beta",
+          agentRole: "beta",
           version: "2.0.0",
-          fallbackIdentityId: "alpha",
+          fallbackAgentRole: "alpha",
           fallbackVersion: "1.0.0",
           trafficSplit: 0.5,
         },
@@ -37,13 +37,13 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
   };
   const candidates = [
     createRoutingCandidate({
-      identityId: "alpha",
+      agentRole: "alpha",
       version: "1.0.0",
       capabilities: ["code_review"],
       score: 0.5,
     }),
     createRoutingCandidate({
-      identityId: "beta",
+      agentRole: "beta",
       version: "2.0.0",
       capabilities: ["code_review"],
       score: 0.5,
@@ -53,13 +53,13 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
 
   const traceId = "trace-experiment-split-1";
   const bucket = await computeBucket(traceId, "test-salt");
-  const decision = await service.selectIdentity({ matchCriteria: { capability: "code_review", tags: [] }, traceId });
+  const decision = await service.selectAgentRole({ matchCriteria: { capability: "code_review", tags: [] }, traceId });
 
   if (bucket < 0.5) {
-    assertEquals(decision.selectedIdentityId, "beta");
+    assertEquals(decision.selectedAgentRole, "beta");
     assertEquals(decision.selectedVersion, "2.0.0");
   } else {
-    assertEquals(decision.selectedIdentityId, "alpha");
+    assertEquals(decision.selectedAgentRole, "alpha");
     assertEquals(decision.selectedVersion, "1.0.0");
   }
 
@@ -67,12 +67,12 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
   assertEquals(typeof decision.experimentBucket, "number");
   assertEquals(decision.experimentBucket, bucket);
 
-  const decisionRepeat = await service.selectIdentity({
+  const decisionRepeat = await service.selectAgentRole({
     matchCriteria: { capability: "code_review", tags: [] },
     traceId,
   });
 
-  assertEquals(decision.selectedIdentityId, decisionRepeat.selectedIdentityId);
+  assertEquals(decision.selectedAgentRole, decisionRepeat.selectedAgentRole);
   assertEquals(decision.selectedVersion, decisionRepeat.selectedVersion);
   assertEquals(decision.strategy, decisionRepeat.strategy);
   assertEquals(decision.matchedRuleId, decisionRepeat.matchedRuleId);

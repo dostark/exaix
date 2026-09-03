@@ -64,7 +64,7 @@ Deno.test("[step2] unified schema accepts every active identity (pre-strict)", a
 Deno.test("[step2][GAP-1] identity_id required; created/created_by optional-with-default at load", () => {
   // Missing created/created_by must still load (loader tolerates legacy/minimal).
   const minimal = RuntimeBlueprintFrontmatterSchema.safeParse({
-    identity_id: "x",
+    agent_role: "x",
     name: "X",
     model: "mock:test-model",
   });
@@ -82,7 +82,7 @@ Deno.test("[step2][GAP-1] identity_id required; created/created_by optional-with
 
 Deno.test("[step2] session_delegate survives a runtime load round-trip (was dropped by the fork)", () => {
   const fm = {
-    identity_id: "dogfood-developer",
+    agent_role: "dogfood-developer",
     name: "Dogfooding Engineer",
     model: "openrouter:deepseek/deepseek-chat",
     session_delegate: { enabled: true, tool: "opencode", gates: ["code_changes"], launch_mode: "headless" },
@@ -100,7 +100,7 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
     await ensureDir(identitiesDir);
     // Mirror the CLI writer format: `---\n<yaml>---\n\n<body>`.
     const fm = {
-      identity_id: "round-trip-agent",
+      agent_role: "round-trip-agent",
       name: "Round Trip Agent",
       model: "mock:test-model",
       capabilities: ["testing"],
@@ -152,7 +152,7 @@ Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an act
 Deno.test("[step2][GAP-2] unknown fields WARN (not reject); legacy runtime fields stay accepted", () => {
   // A genuinely unknown field is reported as a warning, not a hard rejection.
   const withUnknown = validateRuntimeFrontmatter({
-    identity_id: "x",
+    agent_role: "x",
     name: "X",
     model: "mock:test-model",
     totally_unknown_field: 42,
@@ -166,7 +166,7 @@ Deno.test("[step2][GAP-2] unknown fields WARN (not reject); legacy runtime field
 
   // Legacy runtime-only fields (provider/reflexive/memory_enabled) remain known.
   const legacy = validateRuntimeFrontmatter({
-    identity_id: "x",
+    agent_role: "x",
     name: "X",
     model: "mock:test-model",
     provider: "anthropic",

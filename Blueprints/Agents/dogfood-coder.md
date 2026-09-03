@@ -1,5 +1,5 @@
 ---
-identity_id: "dogfood-coder"
+agent_role: "dogfood-coder"
 name: "Dogfooding Coder"
 model: ""
 model_size: M

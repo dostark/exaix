@@ -22,7 +22,7 @@ const DateOrStringSchema = z.union([z.string(), z.date()]).transform((v) => v in
 export const PlanFrontmatterSchema = z.object({
   trace_id: z.string().optional().default(() => crypto.randomUUID()),
   request_id: z.string().optional().default("unknown"),
-  identity_id: z.string().optional(),
+  agent_role: z.string().optional(),
   status: z.nativeEnum(PlanStatus),
   created_at: DateOrStringSchema.optional().default(() => new Date().toISOString()),
   updated_at: DateOrStringSchema.optional(),

@@ -21,7 +21,7 @@ export const StepManifestSchema = z.object({
   title: z.string().min(1).max(200),
 
   /** Identity ID to route the step request (defaults to senior-coder) */
-  identity: z.string().min(1).default("senior-coder"),
+  agent_role: z.string().min(1).default("senior-coder"),
 
   /** Explicit skills to inject (merged with identity default_skills by agent_runner) */
   skills: z.array(z.string()).optional(),

@@ -35,7 +35,7 @@ Deno.test("PatchFileTool: replaces exactly one occurrence", async () => {
       path: targetPath,
       search: "function foo()",
       replace: "function bar()",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
@@ -60,7 +60,7 @@ Deno.test("PatchFileTool: returns isError when search string not found", async (
       path: targetPath,
       search: "function notHere()",
       replace: "function bar()",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
     assertStringIncludes(getFirstTextContent(result), "not found");
@@ -79,7 +79,7 @@ Deno.test("PatchFileTool: returns isError when search string matches multiple ti
       path: targetPath,
       search: "foo()",
       replace: "bar()",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
     assertStringIncludes(getFirstTextContent(result), "times");
@@ -98,7 +98,7 @@ Deno.test("PatchFileTool: supports empty replace string (deletion)", async () =>
       path: targetPath,
       search: "// TODO: remove this\n",
       replace: "",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const content = await Deno.readTextFile(join(env.portalPath, targetPath));
@@ -122,7 +122,7 @@ Deno.test("PatchFileTool: [regression] writes $-prefixed replacement text litera
       path: targetPath,
       search: "const target = 1;",
       replace,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const content = await Deno.readTextFile(join(env.portalPath, targetPath));

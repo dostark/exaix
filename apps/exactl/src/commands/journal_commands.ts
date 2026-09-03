@@ -167,7 +167,7 @@ export class JournalCommands extends BaseCommand {
         action_type: (value) => {
           filterOptions.actionType = value;
         },
-        identity_id: (value) => {
+        agent_role: (value) => {
           filterOptions.identityId = value;
         },
         time: (value) => {

@@ -32,7 +32,7 @@ export interface IVotingEventPayload {
 /** Planning-producer variant of agent.prompt_assembled — preserves every legacy field `AgentRunner.run` already emitted. */
 export interface IAgentPromptAssembledPlanningPayload {
   prompt_kind: "planning";
-  identity_id: string;
+  agent_role: string;
   prompt_length: number;
   skillIdsUsed: string[];
   skillsCount: number;

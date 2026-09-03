@@ -93,7 +93,7 @@ Deno.test("defineFlow: applies sensible defaults", () => {
     steps: [{
       id: "step1",
       name: "Step 1",
-      identity: "agent-1",
+      agent_role: "agent-1",
     }],
     output: { from: "step1" },
   });
@@ -118,7 +118,7 @@ Deno.test("defineFlow: accepts custom configurations", () => {
     steps: [{
       id: "s1",
       name: "S1",
-      identity: "ag1",
+      agent_role: "ag1",
       dependsOn: ["other"],
       input: {
         source: FlowInputSource.STEP,
@@ -181,7 +181,7 @@ Deno.test("defineFlow: rejects step config without identity field (Phase 54)", (
   assertEquals(thrown, true);
 });
 
-Deno.test("defineFlow: requires 'identity' field in step config (Phase 54)", () => {
+Deno.test("defineFlow: requires 'agent_role' field in step config (Phase 54)", () => {
   // Verify that identity field is required and works correctly
   let thrown = false;
   try {

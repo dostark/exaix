@@ -10,7 +10,7 @@ output:
 steps:
   - id: "search"
     name: "Search for files using search_files"
-    identity: "code-analyst"
+    agent_role: "code-analyst"
     execution_mode: "declared"
     tools:
       - search_files

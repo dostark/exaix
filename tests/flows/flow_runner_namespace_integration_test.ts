@@ -42,7 +42,7 @@ Deno.test("[Step64.3] FlowRunner hydrates sharedNamespace and reports namespace 
         {
           id: "writer",
           name: "Writer",
-          identity: "agent1",
+          agent_role: "agent1",
           dependsOn: [],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -53,7 +53,7 @@ Deno.test("[Step64.3] FlowRunner hydrates sharedNamespace and reports namespace 
         {
           id: "reader",
           name: "Reader",
-          identity: "agent2",
+          agent_role: "agent2",
           dependsOn: ["writer"],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

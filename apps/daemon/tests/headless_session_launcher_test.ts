@@ -243,7 +243,7 @@ Deno.test({
 
       const brief = SessionBriefSchema.parse({
         trace_id: traceId,
-        identity_id: "test-identity",
+        agent_role: "test-identity",
         gate,
         tool: "claude-code",
         objective: `E2E test for gate ${gate}`,

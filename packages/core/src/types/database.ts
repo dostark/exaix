@@ -14,7 +14,7 @@ import type { CostSource } from "./i_model_pricing_lookup.ts";
 export interface IJournalFilterOptions {
   traceId?: string;
   actionType?: string;
-  identityId?: string;
+  agentRole?: string;
   limit?: number;
   since?: string; // ISO date string
   payload?: string; // LIKE pattern
@@ -33,7 +33,7 @@ export interface IActivityRecord {
   trace_id: string;
   actor: string | null;
   actor_type: string | null;
-  identity_id: string | null;
+  agent_role: string | null;
   agent_kind?: string | null;
   action_type: string;
   target: string | null;

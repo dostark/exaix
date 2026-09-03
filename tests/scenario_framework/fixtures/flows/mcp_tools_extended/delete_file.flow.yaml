@@ -10,7 +10,7 @@ output:
 steps:
   - id: "cleanup"
     name: "Delete deprecated file using delete_file"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "declared"
     tools:
       - delete_file

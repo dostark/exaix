@@ -40,7 +40,7 @@ export type IExecutionContext = z.infer<typeof ExecutionContextSchema>;
  * Options for agent execution
  */
 export const AgentExecutionOptionsSchema = z.object({
-  identity_id: z.string().describe("Identity blueprint ID"),
+  agent_role: z.string().describe("Identity blueprint ID"),
   portal: z.string().describe("Portal name"),
   security_mode: SecurityModeSchema.default(SecurityMode.SANDBOXED),
   timeout_ms: z.number().int().positive().default(300000).describe(

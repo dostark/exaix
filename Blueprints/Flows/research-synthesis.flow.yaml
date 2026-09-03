@@ -8,7 +8,7 @@ steps:
   - id: synthesize
     name: Research and Synthesize
     type: agent
-    identity: research-synthesizer
+    agent_role: research-synthesizer
     dependsOn: []
     input:
       source: request
@@ -19,7 +19,7 @@ steps:
   - id: assess-quality
     name: Assess Synthesis Quality
     type: agent
-    identity: quality-judge
+    agent_role: quality-judge
     dependsOn:
       - synthesize
     input:

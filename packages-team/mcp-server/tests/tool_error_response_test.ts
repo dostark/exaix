@@ -49,7 +49,7 @@ Deno.test("RunCommandTool: execution failure returns isError:true response, not 
       portal: "TestPortal",
       command: "ls",
       args: [],
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(response.isError, true);
@@ -66,7 +66,7 @@ Deno.test("QueryJournalTool: execution failure returns isError:true response, no
   }));
 
   const response = await handler.execute({
-    identity_id: "test-agent",
+    agent_role: "test-agent",
   });
 
   assertEquals(response.isError, true);

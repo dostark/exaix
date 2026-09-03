@@ -13,7 +13,7 @@ const BLUEPRINTS_DIR = "./Blueprints/Agents";
 const FLOWS_DIR = "./Blueprints/Flows";
 
 interface BlueprintFrontmatter {
-  identity_id: string;
+  agent_role: string;
 }
 
 /**
@@ -58,9 +58,9 @@ async function getAllAgentIds(): Promise<Set<string>> {
 async function getFlowAgentRefs(flowPath: string): Promise<string[]> {
   const content = await Deno.readTextFile(flowPath);
 
-  // Match identity: "agent-name" patterns
+  // Match agent_role: "agent-name" patterns
   const agentRefs: string[] = [];
-  const regex = /identity:\s*["']([^"']+)["']/g;
+  const regex = /agent_role:\s*["']([^"']+)["']/g;
   let match;
 
   while ((match = regex.exec(content)) !== null) {
@@ -109,13 +109,13 @@ Deno.test("Flow validation: all flow-referenced agents exist", async () => {
     }
   }
 
-  const missingAgents: { flow: string; identity: string }[] = [];
+  const missingAgents: { flow: string; agent_role: string }[] = [];
 
   for (const flowPath of flowFiles) {
     const flowAgents = await getFlowAgentRefs(flowPath);
     for (const agent of flowAgents) {
       if (!identityIds.has(agent)) {
-        missingAgents.push({ flow: flowPath, identity: agent });
+        missingAgents.push({ flow: flowPath, agent_role: agent });
       }
     }
   }

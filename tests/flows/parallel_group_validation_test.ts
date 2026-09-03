@@ -48,7 +48,7 @@ Deno.test("FlowRunner: rejects mergeFromGroups reference to unknown parallel gro
       {
         id: "review-a",
         name: "Review A",
-        identity: "qa-engineer",
+        agent_role: "qa-engineer",
         input: { source: FlowInputSource.REQUEST },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
         parallel: { group: "reviewers" },
@@ -56,7 +56,7 @@ Deno.test("FlowRunner: rejects mergeFromGroups reference to unknown parallel gro
       {
         id: "merge",
         name: "Merge",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         dependsOn: ["review-a"],
         input: { source: FlowInputSource.REQUEST },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -89,7 +89,7 @@ Deno.test("FlowRunner: rejects unknown step IDs in parallel.order", async () => 
       {
         id: "review-a",
         name: "Review A",
-        identity: "qa-engineer",
+        agent_role: "qa-engineer",
         input: { source: FlowInputSource.REQUEST },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
         parallel: {
@@ -101,7 +101,7 @@ Deno.test("FlowRunner: rejects unknown step IDs in parallel.order", async () => 
       {
         id: "review-b",
         name: "Review B",
-        identity: "security-expert",
+        agent_role: "security-expert",
         input: { source: FlowInputSource.REQUEST },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
         parallel: {

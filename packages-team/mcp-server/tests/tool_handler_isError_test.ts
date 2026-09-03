@@ -83,7 +83,7 @@ Deno.test("ReadFileTool: file not found returns isError:true, not thrown excepti
       new ReadFileTool(createToolContext(env), createPermissionsService(env)).execute({
         portal: "TestPortal",
         path: "nonexistent-file.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "not found", message: "Error message should mention 'not found'" },
   );
@@ -98,7 +98,7 @@ Deno.test("DeleteFileTool: file not found returns isError:true, not thrown excep
       new DeleteFileTool(createToolContext(env), createPermissionsService(env)).execute({
         portal: "TestPortal",
         path: "nonexistent.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
   );
 });
@@ -113,7 +113,7 @@ Deno.test("DeleteFileTool: directory target returns isError:true, not thrown exc
     const response = await handler.execute({
       portal: "TestPortal",
       path: "subdir",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertIsErrorResponse(response);
@@ -134,7 +134,7 @@ Deno.test("MoveFileTool: source not found returns isError:true, not thrown excep
         portal: "TestPortal",
         from: "ghost.txt",
         to: "dest.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "not found", message: "Error message should mention 'not found'" },
   );
@@ -151,7 +151,7 @@ Deno.test("MoveFileTool: destination already exists returns isError:true, not th
         portal: "TestPortal",
         from: "src.txt",
         to: "dst.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "destination", message: "Error message should mention 'destination'" },
   );
@@ -168,7 +168,7 @@ Deno.test("PatchFileTool: file not found returns isError:true, not thrown except
         path: "ghost.ts",
         search: "old",
         replace: "new",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "not found", message: "Error message should mention 'not found'" },
   );
@@ -186,7 +186,7 @@ Deno.test("PatchFileTool: search string not found returns isError:true, not thro
         path: "hello.ts",
         search: "DOES_NOT_EXIST_IN_FILE",
         replace: "replacement",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "not found", message: "Error message should mention 'not found'" },
   );
@@ -204,7 +204,7 @@ Deno.test("PatchFileTool: ambiguous search returns isError:true, not thrown exce
         path: "dup.ts",
         search: "foo",
         replace: "bar",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "times", message: "Error message should mention occurrence count" },
   );
@@ -219,7 +219,7 @@ Deno.test("ListDirectoryTool: missing subdirectory returns isError:true, not thr
       new ListDirectoryTool(createToolContext(env), createPermissionsService(env)).execute({
         portal: "TestPortal",
         path: "does-not-exist/subdir",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
   );
 });
@@ -232,7 +232,7 @@ Deno.test("GitStatusTool: non-git portal returns isError:true, not thrown except
     (env) =>
       new GitStatusTool(createToolContext(env), createPermissionsService(env)).execute({
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "git", message: "Error message should mention 'git'" },
   );
@@ -247,7 +247,7 @@ Deno.test("GitCreateBranchTool: non-git portal returns isError:true, not thrown 
       new GitCreateBranchTool(createToolContext(env), createPermissionsService(env)).execute({
         portal: "TestPortal",
         branch: "feat/test-branch",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "git", message: "Error message should mention 'git'" },
   );
@@ -262,7 +262,7 @@ Deno.test("GitCommitTool: commit failure returns isError:true, not thrown except
       new GitCommitTool(createToolContext(env), createPermissionsService(env)).execute({
         portal: "TestPortal",
         message: "test commit",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     { fragment: "commit", message: "Error message should mention 'commit'" },
   );
@@ -281,7 +281,7 @@ Deno.test("CreateRequestTool: command failure returns isError:true, not thrown e
     const handler = new CreateRequestTool(createBaseToolContext());
     const response = await handler.execute({
       description: "broken request",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertIsErrorResponse(response);
@@ -300,7 +300,7 @@ Deno.test("ListPlansTool: command failure returns isError:true, not thrown excep
   try {
     const handler = new ListPlansTool(createBaseToolContext());
     const response = await handler.execute({
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertIsErrorResponse(response);
@@ -320,7 +320,7 @@ Deno.test("ApprovePlanTool: command failure returns isError:true, not thrown exc
     const handler = new ApprovePlanTool(createBaseToolContext());
     const response = await handler.execute({
       plan_id: "missing-plan",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertIsErrorResponse(response);
@@ -339,7 +339,7 @@ Deno.test("QueryJournalTool: database failure returns isError:true, not thrown e
   );
 
   const response = await handler.execute({
-    identity_id: "test-agent",
+    agent_role: "test-agent",
   });
 
   assertIsErrorResponse(response);

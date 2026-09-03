@@ -11,7 +11,7 @@ import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { IRequestEntry } from "@exaix/core/types";
 import { getWorkspaceArchiveDir, getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "./request_paths.ts";
-import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
+import { DEFAULT_AGENT_ROLE, PORTAL_LABEL } from "@exaix/core";
 import { RequestKind, RequestPriority } from "@exaix/core";
 import { coerceRequestStatus, type RequestStatusType } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -100,14 +100,14 @@ export class RequestListHandler extends BaseCommand {
     frontmatter: Record<string, string | boolean | number>,
     status: RequestStatusType,
   ): IRequestEntry {
-    const identityValue = String(frontmatter.identity_id || DEFAULT_IDENTITY_ID);
+    const identityValue = String(frontmatter.agent_role || DEFAULT_AGENT_ROLE);
     const entry: IRequestEntry & { agent: string } = {
       filename,
       path: filePath,
       status,
       trace_id: String(frontmatter.trace_id || ""),
       priority: String(frontmatter.priority || RequestPriority.NORMAL) as IRequestEntry["priority"],
-      identity: identityValue,
+      agent_role: identityValue,
       agent: identityValue,
       created: String(frontmatter.created || ""),
       created_by: String(frontmatter.created_by || "unknown"),

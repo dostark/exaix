@@ -73,7 +73,7 @@ export function createMinimalExecutionMemory(overrides: Partial<IExecutionMemory
     completed_at: overrides.completed_at ?? "2026-01-04T10:30:00Z",
     status: overrides.status ?? ExecutionStatus.COMPLETED,
     portal: overrides.portal ?? TEST_PORTAL_NAME,
-    identity_id: overrides.identity_id ?? TEST_IDENTITY_ID,
+    agent_role: overrides.agent_role ?? TEST_IDENTITY_ID,
     summary: overrides.summary ?? "Test execution summary",
     context_files: overrides.context_files ?? [],
     context_portals: overrides.context_portals ?? [],

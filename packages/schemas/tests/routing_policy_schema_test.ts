@@ -25,7 +25,7 @@ Deno.test("[RoutingPolicySchema] validates complete valid policy", () => {
           tags: ["api"],
         },
         prefer: {
-          identityId: "senior-coder",
+          agentRole: "senior-coder",
           version: "2.0",
           trafficSplit: 0.1,
         },
@@ -37,7 +37,7 @@ Deno.test("[RoutingPolicySchema] validates complete valid policy", () => {
   assertEquals(result.success, true);
   if (result.success) {
     assertEquals(result.data.rules.length, 1);
-    assertEquals(result.data.rules[0].prefer.identityId, "senior-coder");
+    assertEquals(result.data.rules[0].prefer.agentRole, "senior-coder");
   }
 });
 
@@ -51,7 +51,7 @@ Deno.test("[RoutingPolicySchema] rejects invalid policy values", () => {
         ruleId: "",
         priority: -5,
         match: { capability: "" },
-        prefer: { identityId: "" },
+        prefer: { agentRole: "" },
       },
     ],
   });
@@ -66,7 +66,7 @@ Deno.test("[RoutingPolicySchema] rejects invalid policy values", () => {
 
 Deno.test("[RoutingPolicyDecisionSchema] validates a minimal decision", () => {
   const result = ZRoutingPolicyDecision.safeParse({
-    selectedIdentityId: "default-agent",
+    selectedAgentRole: "default-agent",
     selectedVersion: "1.0.0",
     strategy: "explicit",
     candidates: [],

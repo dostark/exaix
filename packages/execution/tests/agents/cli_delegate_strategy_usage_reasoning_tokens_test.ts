@@ -42,7 +42,7 @@ function makeContext(): IExecutionContext {
 
 function makeOptions(): IAgentExecutionOptions {
   return {
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     portal: "main",
     security_mode: "sandboxed" as IAgentExecutionOptions["security_mode"],
     timeout_ms: 300000,

@@ -65,7 +65,7 @@ Deno.test("AgentOrchestrator: dispatches cli_delegate capability to CliDelegateS
       () =>
         executor.executeStep(context, {
           portal: portalAlias,
-          identity_id: "cli-delegate-agent",
+          agent_role: "cli-delegate-agent",
         }),
     );
     assertStringIncludes(String(err), "CLI delegate strategy could not run");
@@ -117,7 +117,7 @@ Deno.test("AgentOrchestrator: CliDelegateStrategy runs in ToolRegistry's baseDir
       () =>
         executor.executeStep(context, {
           portal: portalAlias,
-          identity_id: "cli-delegate-agent",
+          agent_role: "cli-delegate-agent",
         }),
     );
     assertStringIncludes(String(err), "CLI delegate strategy could not run");
@@ -154,7 +154,7 @@ Deno.test("AgentOrchestrator: cli_delegate capability without config enabled doe
       () =>
         executor.executeStep(context, {
           portal: portalAlias,
-          identity_id: "cli-delegate-agent",
+          agent_role: "cli-delegate-agent",
         }),
     );
     assertStringIncludes(String(err), "Execution strategy not found");

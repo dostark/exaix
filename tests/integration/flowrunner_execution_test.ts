@@ -52,7 +52,7 @@ Deno.test({
       await Deno.writeTextFile(
         join(identitiesDir, "default.md"),
         `---
-identity_id: "default"
+agent_role: "default"
 name: "Default Agent"
 model: "mock:gpt-5.2-pro"
 ---\nYou are a helpful assistant.`,
@@ -73,7 +73,7 @@ model: "mock:gpt-5.2-pro"
             steps: [{
               id: "review",
               name: "Review",
-              identity: "default",
+              agent_role: "default",
               input: { source: FlowInputSource.REQUEST },
               dependsOn: [],
             }],

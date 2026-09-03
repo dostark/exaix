@@ -1,5 +1,5 @@
 ---
-identity_id: "aci-react"
+agent_role: "aci-react"
 name: "ACI ReAct Scenario Agent"
 model: "mock:test-model"
 capabilities:

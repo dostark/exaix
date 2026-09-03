@@ -6,7 +6,7 @@ steps:
   - id: distribute
     name: Distribute Work
     type: agent
-    identity: "{{coordinator}}"
+    agent_role: "{{coordinator}}"
     dependsOn: []
     input:
       source: request
@@ -17,7 +17,7 @@ steps:
   - id: worker-1
     name: Worker 1 - First Perspective
     type: agent
-    identity: "{{specialist_1}}"
+    agent_role: "{{specialist_1}}"
     dependsOn:
       - distribute
     input:
@@ -30,7 +30,7 @@ steps:
   - id: worker-2
     name: Worker 2 - Second Perspective
     type: agent
-    identity: "{{specialist_2}}"
+    agent_role: "{{specialist_2}}"
     dependsOn:
       - distribute
     input:
@@ -43,7 +43,7 @@ steps:
   - id: worker-3
     name: Worker 3 - Third Perspective
     type: agent
-    identity: "{{specialist_3}}"
+    agent_role: "{{specialist_3}}"
     dependsOn:
       - distribute
     input:
@@ -56,7 +56,7 @@ steps:
   - id: aggregate
     name: Aggregate Results
     type: agent
-    identity: "{{synthesizer}}"
+    agent_role: "{{synthesizer}}"
     dependsOn:
       - worker-1
       - worker-2

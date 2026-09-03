@@ -111,7 +111,7 @@ export function makeAgentRequestFileSync(requestsDir: string, options: {
     `created: "${new Date().toISOString()}"`,
     `status: "${options.status ?? RequestStatus.PENDING}"`,
     `priority: "normal"`,
-    `identity_id: "${identity}"`,
+    `agent_role: "${identity}"`,
     `source: "${options.source ?? RequestSource.CLI}"`,
     options.portal ? `portal: "${options.portal}"` : null,
     `created_by: "test-user"`,
@@ -157,9 +157,9 @@ ${body}`;
   return filePath;
 }
 
-export function makeBlueprintFileSync(blueprintsPath: string, identity: string): string {
-  const blueprintPath = join(blueprintsPath, "Agents", `${identity}.md`);
-  const content = `# Blueprint for ${identity}
+export function makeBlueprintFileSync(blueprintsPath: string, agent_role: string): string {
+  const blueprintPath = join(blueprintsPath, "Agents", `${agent_role}.md`);
+  const content = `# Blueprint for ${agent_role}
 You are a helpful assistant.
 `;
   Deno.writeTextFileSync(blueprintPath, content);

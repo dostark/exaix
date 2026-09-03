@@ -1,7 +1,7 @@
 ---
 trace_id: "fixture-trace-list"
 request_id: "fixture-req-list"
-identity_id: "user-1"
+agent_role: "user-1"
 status: "pending"
 created_at: "2026-08-13T00:00:00Z"
 subject: "Fixture pending plan"

@@ -33,7 +33,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       });
 
       assertExists(result.path, "Blueprint path should be returned");
-      assertEquals(result.identity_id, testAgentId);
+      assertEquals(result.agent_role, testAgentId);
 
       // Verify file exists
       const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
@@ -43,7 +43,7 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       // Verify YAML frontmatter format.
       const content = await Deno.readTextFile(blueprintPath);
       assertStringIncludes(content, "---", "Should use YAML delimiters");
-      assertStringIncludes(content, `identity_id: ${testAgentId}`);
+      assertStringIncludes(content, `agent_role: ${testAgentId}`);
       assertStringIncludes(content, "name: Integration Test Agent");
       assertStringIncludes(content, "model: 'ollama:codellama:13b'");
       assertStringIncludes(content, "capabilities:");
@@ -103,11 +103,11 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       // Create invalid blueprint manually
       const invalidPath = join(env.tempDir, "Blueprints", "Agents", "invalid-test.md");
       const invalidContent = `---
-name: Missing identity_id
+name: Missing.agent_role
 model: ollama:llama3.2
 ---
 
-Invalid blueprint without identity_id field
+Invalid blueprint without.agent_role field
 `;
       await Deno.writeTextFile(invalidPath, invalidContent);
 
@@ -116,13 +116,13 @@ Invalid blueprint without identity_id field
       assertEquals(result.valid, false, "Validation should fail");
       assert(result.errors.length > 0, "Should have validation errors");
       assert(
-        result.errors.some((e: string) => e.includes("identity_id")),
-        "Should report missing identity_id",
+        result.errors.some((e: string) => e.includes("agent_role")),
+        "Should report missing.agent_role",
       );
     });
 
     // Test 5: Reserved Names Rejected
-    await t.step("Test 5: Reserved identity_id names rejected", async () => {
+    await t.step("Test 5: Reserved.agent_role names rejected", async () => {
       await assertRejects(
         async () =>
           await blueprintCommands.create("system", {
@@ -145,7 +145,7 @@ Invalid blueprint without identity_id field
     });
 
     // Test 6: Duplicate Names Rejected
-    await t.step("Test 6: Duplicate identity_id rejected", async () => {
+    await t.step("Test 6: Duplicate.agent_role rejected", async () => {
       await assertRejects(
         async () =>
           await blueprintCommands.create(testAgentId, {
@@ -186,7 +186,7 @@ Invalid blueprint without identity_id field
       );
 
       const content = await Deno.readTextFile(filePath);
-      assertStringIncludes(content, `identity_id: ${testAgentId}`);
+      assertStringIncludes(content, `agent_role: ${testAgentId}`);
 
       // Verify request can be processed (blueprint exists and is valid)
       const blueprintPath = join(env.tempDir, "Blueprints", "Agents", `${testAgentId}.md`);
@@ -200,7 +200,7 @@ Invalid blueprint without identity_id field
 
       assert(blueprints.length >= 3, "Should have at least 3 blueprints");
 
-      const identityIds = blueprints.map((b: IBlueprintMetadata) => b.identity_id);
+      const identityIds = blueprints.map((b: IBlueprintMetadata) => b.agent_role);
       assert(identityIds.includes(testAgentId), "Should include test agent");
       assert(identityIds.includes(coderAgentId), "Should include coder agent");
       assert(identityIds.includes(customAgentId), "Should include custom agent");
@@ -212,7 +212,7 @@ Invalid blueprint without identity_id field
 
       assertExists(result.content, "Should return content");
 
-      assertEquals(result.identity_id, testAgentId);
+      assertEquals(result.agent_role, testAgentId);
       assertEquals(result.name, "Integration Test Agent");
       assertStringIncludes(result.content, "<thought>");
       assertStringIncludes(result.content, "<content>");

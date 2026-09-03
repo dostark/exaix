@@ -13,7 +13,7 @@ import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluati
 import type { IStepResult } from "@exaix/flow";
 
 const DEFAULT_CONFIG: IGateConfig = {
-  identity: "judge-agent",
+  agent_role: "judge-agent",
   criteria: ["CODE_CORRECTNESS"],
   threshold: 0.8,
   onFail: FlowGateOnFail.HALT,
@@ -174,7 +174,7 @@ Deno.test("GateEvaluator: fails if required criteria fail even when overallScore
 
   const evaluator = new GateEvaluator(judgeInvoker);
   const config: IGateConfig = {
-    identity: "judge-agent",
+    agent_role: "judge-agent",
     criteria: ["CODE_CORRECTNESS"],
     threshold: 0.8,
     onFail: FlowGateOnFail.HALT,
@@ -199,7 +199,7 @@ Deno.test("GateEvaluator: supports criteria objects in config.criteria", async (
   };
 
   const config: IGateConfig = {
-    identity: "judge-agent",
+    agent_role: "judge-agent",
     criteria: [customCriterion],
     threshold: 0.8,
     onFail: FlowGateOnFail.HALT,
@@ -226,7 +226,7 @@ Deno.test("GateEvaluator: handles judge errors and returns halted by default", a
 
   const evaluator = new GateEvaluator(judgeInvoker);
   const config: IGateConfig = {
-    identity: "judge-agent",
+    agent_role: "judge-agent",
     criteria: ["CODE_CORRECTNESS"],
     threshold: 0.8,
     onFail: FlowGateOnFail.HALT,

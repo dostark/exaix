@@ -43,7 +43,7 @@ Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
   };
 
   const options: IAgentExecutionOptions = {
-    identity_id: "mcp-test",
+    agent_role: "mcp-test",
     portal: "main",
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 30000,
@@ -87,7 +87,7 @@ Deno.test("McpAgentStrategy - Parent Context Query", async () => {
   };
 
   const options: IAgentExecutionOptions = {
-    identity_id: "mcp-query-test",
+    agent_role: "mcp-query-test",
     portal: "main_portal",
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 30000,

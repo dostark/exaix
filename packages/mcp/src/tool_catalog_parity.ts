@@ -26,7 +26,7 @@ export interface IToolCatalogParityResult {
 /** ToolRegistry executes within an already-resolved single-portal, single-identity
  *  context, so it never accepts these — excluded from comparison so they don't flag
  *  every overlapping tool as a "divergence". */
-const MCP_AUTH_ONLY_PARAMS: ReadonlySet<string> = new Set(["portal", "identity_id"]);
+const MCP_AUTH_ONLY_PARAMS: ReadonlySet<string> = new Set(["portal", "agent_role"]);
 
 function withoutAuthParams(keys: Iterable<string>): Set<string> {
   return new Set([...keys].filter((key) => !MCP_AUTH_ONLY_PARAMS.has(key)));

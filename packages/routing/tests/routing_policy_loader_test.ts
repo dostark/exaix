@@ -32,7 +32,7 @@ Deno.test("RoutingPolicyLoader: valid YAML loads successfully", async () => {
     const policyPath = join(policyDir, "routing.policy.yaml");
     await Deno.writeTextFile(
       policyPath,
-      `version: "1.0"\nallowExperiments: true\nrules:\n  - ruleId: test\n    priority: 5\n    match:\n      capability: code_generation\n    prefer:\n      identityId: senior-coder\n`,
+      `version: "1.0"\nallowExperiments: true\nrules:\n  - ruleId: test\n    priority: 5\n    match:\n      capability: code_generation\n    prefer:\n      agentRole: senior-coder\n`,
     );
 
     const config = createMockConfig(tempDir);
@@ -55,7 +55,7 @@ Deno.test("RoutingPolicyLoader: invalid YAML returns validation errors", async (
     const policyPath = join(policyDir, "routing.policy.yaml");
     await Deno.writeTextFile(
       policyPath,
-      `version: 1.0\nallowExperiments: yes\nrules:\n  - ruleId: \n    priority: -1\n    match:\n      capability: \n    prefer:\n      identityId: \n`,
+      `version: 1.0\nallowExperiments: yes\nrules:\n  - ruleId: \n    priority: -1\n    match:\n      capability: \n    prefer:\n      agentRole: \n`,
     );
 
     const config = createMockConfig(tempDir);
@@ -101,7 +101,7 @@ Deno.test("RoutingPolicyLoader: malformed file preserves previous valid policy",
 
     await Deno.writeTextFile(
       policyPath,
-      `version: "1.0"\nallowExperiments: true\nrules:\n  - ruleId: test\n    priority: 5\n    match:\n      capability: code_generation\n    prefer:\n      identityId: senior-coder\n`,
+      `version: "1.0"\nallowExperiments: true\nrules:\n  - ruleId: test\n    priority: 5\n    match:\n      capability: code_generation\n    prefer:\n      agentRole: senior-coder\n`,
     );
 
     const config = createMockConfig(tempDir);

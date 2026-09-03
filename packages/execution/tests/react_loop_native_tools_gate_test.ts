@@ -20,7 +20,7 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
     buildPrompt(
       blueprint: { name: string; capabilities: string[] },
       context: { trace_id: string; request: string; plan: string; portal: string },
-      options: { identity_id: string; portal: string; permitted_tools?: string[] },
+      options: { agent_role: string; portal: string; permitted_tools?: string[] },
       history: Array<{ role: string; content: string }>,
       skipToolProse?: boolean,
     ): string;
@@ -29,7 +29,7 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
   const promptWithoutProse = typed.buildPrompt(
     { name: "test", capabilities: ["write"] },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
-    { identity_id: "i", portal: "p" },
+    { agent_role: "i", portal: "p" },
     [],
     true,
   );
@@ -37,7 +37,7 @@ Deno.test("buildPrompt with skipToolProse omits FORMAT and TOML but keeps AVAILA
   const promptWithProse = typed.buildPrompt(
     { name: "test", capabilities: ["write"] },
     { trace_id: "t1", request: "req", plan: "plan", portal: "p" },
-    { identity_id: "i", portal: "p" },
+    { agent_role: "i", portal: "p" },
     [],
     false,
   );

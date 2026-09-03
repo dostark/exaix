@@ -13,7 +13,7 @@ defaultSkills:
 steps:
   - id: react-step
     name: Implement the task via forced react strategy
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: declared
     strategy: react
     input:

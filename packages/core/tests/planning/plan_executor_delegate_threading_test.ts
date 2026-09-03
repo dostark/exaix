@@ -48,7 +48,7 @@ Deno.test("PlanExecutor: onCodeChangesDelegate receives step title, content, and
   await executor.execute("plan.md", {
     trace_id: "test-trace",
     request_id: "test-req",
-    identity: "test",
+    agent_role: "test",
     frontmatter: {},
     steps: [
       {
@@ -90,7 +90,7 @@ Deno.test("PlanExecutor: onCodeChangesDelegate sentinel returns unchanged (chang
   const result = await executor.execute("plan.md", {
     trace_id: "test-trace",
     request_id: "test-req",
-    identity: "test",
+    agent_role: "test",
     frontmatter: {},
     steps: [
       { number: 1, title: "Skip step", content: "This should be skipped" },

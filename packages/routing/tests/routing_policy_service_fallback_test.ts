@@ -11,13 +11,13 @@ Deno.test("RoutingPolicyService: returns explicit identity when requested even i
   const policy: IRoutingPolicy = { version: "1.0", allowExperiments: false, defaultMode: "policy_first", rules: [] };
   const candidates = [
     createRoutingCandidate({
-      identityId: "alpha",
+      agentRole: "alpha",
       version: "1.0.0",
       capabilities: ["documentation"],
       score: 0.7,
     }),
     createRoutingCandidate({
-      identityId: "beta",
+      agentRole: "beta",
       version: "2.0.0",
       capabilities: ["code_review"],
       score: 0.9,
@@ -25,13 +25,13 @@ Deno.test("RoutingPolicyService: returns explicit identity when requested even i
   ];
   const service = createRoutingPolicyService(policy, candidates);
 
-  const decision = await service.selectIdentity({
-    explicitIdentityId: "beta",
+  const decision = await service.selectAgentRole({
+    explicitAgentRole: "beta",
     matchCriteria: { capability: "code_review", tags: [] },
   });
 
   assertEquals(decision.strategy, "explicit");
-  assertEquals(decision.selectedIdentityId, "beta");
+  assertEquals(decision.selectedAgentRole, "beta");
   assertEquals(decision.selectedVersion, "2.0.0");
 });
 
@@ -39,13 +39,13 @@ Deno.test("RoutingPolicyService: falls back to best capability candidate when no
   const policy: IRoutingPolicy = { version: "1.0", allowExperiments: false, defaultMode: "policy_first", rules: [] };
   const candidates = [
     createRoutingCandidate({
-      identityId: "alpha",
+      agentRole: "alpha",
       version: "1.0.0",
       capabilities: ["code_review"],
       score: 0.55,
     }),
     createRoutingCandidate({
-      identityId: "beta",
+      agentRole: "beta",
       version: "2.0.0",
       capabilities: ["code_review"],
       score: 0.45,
@@ -53,9 +53,9 @@ Deno.test("RoutingPolicyService: falls back to best capability candidate when no
   ];
   const service = createRoutingPolicyService(policy, candidates);
 
-  const decision = await service.selectIdentity({ matchCriteria: { capability: "code_review", tags: [] } });
+  const decision = await service.selectAgentRole({ matchCriteria: { capability: "code_review", tags: [] } });
 
   assertEquals(decision.strategy, "capability_fallback");
-  assertEquals(decision.selectedIdentityId, "alpha");
+  assertEquals(decision.selectedAgentRole, "alpha");
   assertEquals(decision.selectedVersion, "1.0.0");
 });

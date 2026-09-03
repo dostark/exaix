@@ -33,7 +33,7 @@ export function createMockHandlers(
       calls.push(`filter_status:${value}`);
     },
     handleFilterIdentityResult: (value: string) => {
-      calls.push(`filter_identity:${value}`);
+      calls.push(`filter_agent_role:${value}`);
     },
     handleCreateResult: (value: string) => {
       calls.push(`create:${value}`);

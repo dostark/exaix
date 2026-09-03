@@ -472,14 +472,14 @@ export class AgentOrchestrator {
     }
 
     // Validate agent has permissions (check before loading blueprint)
-    if (!this.permissions.checkAgentAllowed(options.portal, options.identity_id ?? "").allowed) {
+    if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
       throw new Error(
-        `Identity not allowed to access portal: ${options.identity_id} -> ${options.portal}`,
+        `Identity not allowed to access portal: ${options.agent_role} -> ${options.portal}`,
       );
     }
 
     // Load blueprint — capabilities array drives strategy dispatch (MCP > ReAct > Legacy).
-    const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
+    const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
     const modelId = this.resolveModelId(_blueprint);
     await this.ctx.allocateBudget(
       modelId,
@@ -489,7 +489,7 @@ export class AgentOrchestrator {
     // Log execution start
     await this.logExecutionStart(
       context.trace_id,
-      options.identity_id ?? "",
+      options.agent_role ?? "",
       options.portal,
     );
 
@@ -552,7 +552,7 @@ export class AgentOrchestrator {
         await this.logger.error(AGENT_EVENT_SECURITY_VIOLATION, context.trace_id, {
           portal: options.portal,
           unauthorized_files: unauthorizedChanges,
-          identity: options.identity_id,
+          agent_role: options.agent_role,
         });
 
         throw new AgentExecutionError(
@@ -590,7 +590,7 @@ export class AgentOrchestrator {
       // Log completion
       await this.logExecutionComplete(
         context.trace_id,
-        options.identity_id || "unknown",
+        options.agent_role || "unknown",
         validated,
         usage,
         Date.now() - startTime,
@@ -599,7 +599,7 @@ export class AgentOrchestrator {
       return validated;
     } catch (error) {
       // Log error
-      await this.logExecutionError(context.trace_id, options.identity_id ?? "", {
+      await this.logExecutionError(context.trace_id, options.agent_role ?? "", {
         type: AgentExecutionErrorType.EXECUTION_ERROR,
         message: error instanceof Error ? error.message : String(error),
         trace_id: context.trace_id,
@@ -742,7 +742,7 @@ export class AgentOrchestrator {
    */
   async logExecutionStart(
     traceId: string,
-    identityId: string,
+    agentRole: string,
     portal: string,
   ): Promise<void> {
     await this.logger.log({
@@ -753,7 +753,7 @@ export class AgentOrchestrator {
       traceId: traceId,
       agentId: AGENT_EXECUTOR_ID,
       agentKind: AgentKind.AGENT_EXECUTOR,
-      identityId: identityId,
+      agentRole: agentRole,
       payload: {
         portal,
         started_at: new Date().toISOString(),
@@ -766,7 +766,7 @@ export class AgentOrchestrator {
    */
   async logExecutionComplete(
     traceId: string,
-    identityId: string,
+    agentRole: string,
     result: IChangesetResult,
     usage?: Opt<
       {
@@ -804,7 +804,7 @@ export class AgentOrchestrator {
       traceId: traceId,
       agentId: "agent-executor",
       agentKind: AgentKind.AGENT_EXECUTOR,
-      identityId: identityId,
+      agentRole: agentRole,
       promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
       completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
       costUsd: usagePayload.cost_usd_estimate,
@@ -826,18 +826,18 @@ export class AgentOrchestrator {
    */
   async logExecutionError(
     traceId: string,
-    identityId: string,
+    agentRole: string,
     error: { type: string; message: string; trace_id?: string },
   ): Promise<void> {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_FAILED,
-      target: identityId,
+      target: agentRole,
       actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
       agentKind: AgentKind.AGENT_EXECUTOR,
-      identityId: identityId,
+      agentRole: agentRole,
       level: LogLevel.ERROR,
       payload: {
         error_type: error.type,
@@ -863,7 +863,7 @@ export class AgentOrchestrator {
   }
   async logGeneration(
     traceId: string,
-    identityId: string,
+    agentRole: string,
     model: string,
     providerStr: string,
     usage: {
@@ -883,7 +883,7 @@ export class AgentOrchestrator {
       traceId: traceId,
       agentId: "agent-executor",
       agentKind: AgentKind.AGENT_EXECUTOR,
-      identityId: identityId,
+      agentRole: agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
       costUsd: usage.costUsd,

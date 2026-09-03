@@ -4,7 +4,7 @@
 # step-manifest
 step: 1
 title: Pre-gap analysis
-identity: code-analyst
+agent_role: code-analyst
 depends_on: []
 acceptance:
   tests:
@@ -23,7 +23,7 @@ Analyze the codebase for any gaps.
 # step-manifest
 step: 2
 title: Implement the feature
-identity: dogfood-coder
+agent_role: dogfood-coder
 depends_on: [1]
 acceptance:
   tests:
@@ -42,7 +42,7 @@ Build the feature described in the requirements.
 # step-manifest
 step: 3
 title: Post-gap review
-identity: code-reviewer
+agent_role: code-reviewer
 depends_on: [2]
 acceptance:
   tests:

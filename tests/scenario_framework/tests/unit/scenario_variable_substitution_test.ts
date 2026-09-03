@@ -167,7 +167,7 @@ Deno.test("[flow-fixture] staging names the file after the flow's own id, not th
 });
 
 Deno.test("[flow-fixture] every identity a fixture flow names exists in the catalog", async () => {
-  // Now that fixture flows are staged and actually load, their `identity:` references resolve
+  // Now that fixture flows are staged and actually load, their `agent_role:` references resolve
   // at runtime — several of them named identities the catalog does not have.
   const catalog = new Set<string>();
   for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Agents"))) {
@@ -178,7 +178,7 @@ Deno.test("[flow-fixture] every identity a fixture flow names exists in the cata
   const dangling: string[] = [];
   for await (const entry of walk(join(FRAMEWORK_HOME, "fixtures", "flows"), { exts: [".yaml"], includeDirs: false })) {
     const text = await Deno.readTextFile(entry.path);
-    for (const match of text.matchAll(/^\s*identity:\s*"?([\w-]+)"?\s*$/gm)) {
+    for (const match of text.matchAll(/^\s*agent_role:\s*"?([\w-]+)"?\s*$/gm)) {
       if (!catalog.has(match[1])) dangling.push(`${entry.path.slice(FRAMEWORK_HOME.length + 1)} -> ${match[1]}`);
     }
   }

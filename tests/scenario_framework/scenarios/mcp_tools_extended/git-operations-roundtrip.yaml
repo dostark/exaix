@@ -44,7 +44,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_status"
-      - '{"portal":"tools","identity_id":"tools-eval"}'
+      - '{"portal":"tools","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"
@@ -63,7 +63,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_create_branch"
-      - '{"portal":"tools","branch":"feat/test","identity_id":"tools-eval"}'
+      - '{"portal":"tools","branch":"feat/test","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"
@@ -94,7 +94,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_commit"
-      - '{"portal":"tools","message":"feat: add feature work","identity_id":"tools-eval"}'
+      - '{"portal":"tools","message":"feat: add feature work","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"
@@ -113,7 +113,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_log"
-      - '{"portal":"tools","format":"oneline","max_count":5,"identity_id":"tools-eval"}'
+      - '{"portal":"tools","format":"oneline","max_count":5,"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"
@@ -132,7 +132,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_worktree"
-      - '{"portal":"tools","action":"add","path":"wt-test","branch":"feat/wt-test","force":true,"identity_id":"tools-eval"}'
+      - '{"portal":"tools","action":"add","path":"wt-test","branch":"feat/wt-test","force":true,"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"
@@ -151,7 +151,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_worktree"
-      - '{"portal":"tools","action":"list","porcelain":true,"identity_id":"tools-eval"}'
+      - '{"portal":"tools","action":"list","porcelain":true,"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"
@@ -170,7 +170,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "git_worktree"
-      - '{"portal":"tools","action":"remove","path":"wt-test","force":true,"identity_id":"tools-eval"}'
+      - '{"portal":"tools","action":"remove","path":"wt-test","force":true,"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_MCP_REAL_GIT: "1"

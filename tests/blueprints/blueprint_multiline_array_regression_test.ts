@@ -29,7 +29,7 @@ Deno.test("[regression] YAML multi-line array format parses correctly", async ()
 
     // Create blueprint with multi-line array format (like mock-agent.md)
     const multilineBlueprint = `---
-identity_id: "${AGENT_ID}"
+agent_role: "${AGENT_ID}"
 name: "Multi-line Array Test"
 model: "mock:test-model"
 capabilities:

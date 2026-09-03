@@ -20,12 +20,12 @@ import { FlowValidatorImpl } from "@exaix/flow";
 import { FlowLoader } from "@exaix/flow";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 
-function makeStep(id: string, identity: string): IFlowStep {
+function makeStep(id: string, agent_role: string): IFlowStep {
   return {
     id,
     name: `Step ${id}`,
     type: FlowStepType.AGENT,
-    identity,
+    agent_role,
     execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],
     input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
@@ -96,7 +96,7 @@ Deno.test("FlowValidatorImpl rejects a flow whose step identity is absent from a
     await Deno.mkdir(`${dir}/Agents`, { recursive: true });
     await Deno.writeTextFile(
       `${dir}/Agents/senior-coder.md`,
-      `---\nidentity_id: "senior-coder"\nname: "Senior Coder"\ncapabilities: ["react"]\n---\n`,
+      `---\nagent_role: "senior-coder"\nname: "Senior Coder"\ncapabilities: ["react"]\n---\n`,
     );
 
     const loader = new FlowLoader(dir);
@@ -108,7 +108,7 @@ description: "bad"
 steps:
   - id: "s1"
     name: "S1"
-    identity: "typo-identity"
+    agent_role: "typo-identity"
     dependsOn: []
     input:
       source: "request"
@@ -135,7 +135,7 @@ Deno.test("FlowValidatorImpl accepts a flow whose step identities exist in the c
     await Deno.mkdir(`${dir}/Agents`, { recursive: true });
     await Deno.writeTextFile(
       `${dir}/Agents/senior-coder.md`,
-      `---\nidentity_id: "senior-coder"\nname: "Senior Coder"\ncapabilities: ["react"]\n---\n`,
+      `---\nagent_role: "senior-coder"\nname: "Senior Coder"\ncapabilities: ["react"]\n---\n`,
     );
 
     const loader = new FlowLoader(dir);
@@ -147,7 +147,7 @@ description: "good"
 steps:
   - id: "s1"
     name: "S1"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     dependsOn: []
     input:
       source: "request"

@@ -61,7 +61,7 @@ function buildNamespaceFlow(): IFlow {
       {
         id: "step-1",
         name: "Extract summary",
-        identity: "agent1",
+        agent_role: "agent1",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST },
         namespace: {
@@ -71,7 +71,7 @@ function buildNamespaceFlow(): IFlow {
       {
         id: "step-2",
         name: "Read then append",
-        identity: "agent1",
+        agent_role: "agent1",
         dependsOn: ["step-1"],
         input: { source: FlowInputSource.REQUEST },
         namespace: {

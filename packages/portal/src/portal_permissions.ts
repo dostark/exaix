@@ -54,7 +54,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Portal '${portalAlias}' not found`,
         portal: portalAlias,
-        identity_id: identityId,
+        agent_role: identityId,
       };
     }
 
@@ -66,7 +66,7 @@ export class PortalPermissionsService {
       return {
         allowed: true,
         portal: portalAlias,
-        identity_id: identityId,
+        agent_role: identityId,
       };
     }
 
@@ -75,7 +75,7 @@ export class PortalPermissionsService {
       return {
         allowed: true,
         portal: portalAlias,
-        identity_id: identityId,
+        agent_role: identityId,
       };
     }
 
@@ -83,7 +83,7 @@ export class PortalPermissionsService {
       allowed: false,
       reason: `Agent '${identityId}' is not allowed to access portal '${portalAlias}'`,
       portal: portalAlias,
-      identity_id: identityId,
+      agent_role: identityId,
     };
   }
 
@@ -102,7 +102,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: agentCheck.reason,
         portal: portalAlias,
-        identity_id: identityId,
+        agent_role: identityId,
         operation,
       };
     }
@@ -116,7 +116,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Operation '${operation}' is not permitted on portal '${portalAlias}'`,
         portal: portalAlias,
-        identity_id: identityId,
+        agent_role: identityId,
         operation,
       };
     }
@@ -124,7 +124,7 @@ export class PortalPermissionsService {
     return {
       allowed: true,
       portal: portalAlias,
-      identity_id: identityId,
+      agent_role: identityId,
       operation,
     };
   }
@@ -234,7 +234,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Portal '${portalAlias}' not found`,
         portal: portalAlias,
-        identity_id: identityId,
+        agent_role: identityId,
         action,
         resource,
       };
@@ -310,7 +310,7 @@ export class PortalPermissionsService {
             allowed: false,
             reason: conditionCheck.reason,
             portal: portal.alias,
-            identity_id: identityId,
+            agent_role: identityId,
             action,
             resource,
             conditions: perm.conditions,
@@ -322,7 +322,7 @@ export class PortalPermissionsService {
       return {
         allowed: true,
         portal: portal.alias,
-        identity_id: identityId,
+        agent_role: identityId,
         action,
         resource,
         conditions: perm.conditions,
@@ -334,7 +334,7 @@ export class PortalPermissionsService {
       allowed: false,
       reason: "No matching permission found",
       portal: portal.alias,
-      identity_id: identityId,
+      agent_role: identityId,
       action,
       resource,
     };
@@ -358,7 +358,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Agent '${identityId}' is not allowed to access portal '${portal.alias}'`,
         portal: portal.alias,
-        identity_id: identityId,
+        agent_role: identityId,
         action,
         resource,
       };
@@ -379,7 +379,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Action '${action}' is not permitted on portal '${portal.alias}'`,
         portal: portal.alias,
-        identity_id: identityId,
+        agent_role: identityId,
         action,
         resource,
       };
@@ -391,7 +391,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Execute action requires git operation permission`,
         portal: portal.alias,
-        identity_id: identityId,
+        agent_role: identityId,
         action,
         resource,
       };
@@ -402,7 +402,7 @@ export class PortalPermissionsService {
         allowed: false,
         reason: `Delete action requires write operation permission`,
         portal: portal.alias,
-        identity_id: identityId,
+        agent_role: identityId,
         action,
         resource,
       };
@@ -411,7 +411,7 @@ export class PortalPermissionsService {
     return {
       allowed: true,
       portal: portal.alias,
-      identity_id: identityId,
+      agent_role: identityId,
       action,
       resource,
     };

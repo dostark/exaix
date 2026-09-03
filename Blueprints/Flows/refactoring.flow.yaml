@@ -8,7 +8,7 @@ steps:
   - id: analyze-current-code
     name: Analyze Current Code
     type: agent
-    identity: code-analyst
+    agent_role: code-analyst
     strategy: cli_delegate
     dependsOn: []
     input:
@@ -20,7 +20,7 @@ steps:
   - id: identify-improvements
     name: Identify Improvement Opportunities
     type: agent
-    identity: software-architect
+    agent_role: software-architect
     strategy: cli_delegate
     dependsOn:
       - analyze-current-code
@@ -34,7 +34,7 @@ steps:
   - id: assess-risks
     name: Assess Refactoring Risks
     type: agent
-    identity: qa-engineer
+    agent_role: qa-engineer
     strategy: cli_delegate
     dependsOn:
       - identify-improvements
@@ -49,7 +49,7 @@ steps:
   - id: write-safety-tests
     name: Write Safety Tests
     type: agent
-    identity: test-engineer
+    agent_role: test-engineer
     strategy: cli_delegate
     dependsOn:
       - analyze-current-code
@@ -63,7 +63,7 @@ steps:
   - id: implement-refactoring
     name: Implement Refactoring
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     strategy: cli_delegate
     dependsOn:
       - identify-improvements
@@ -83,7 +83,7 @@ steps:
   - id: validate-refactoring
     name: Validate Refactoring
     type: agent
-    identity: qa-engineer
+    agent_role: qa-engineer
     strategy: cli_delegate
     dependsOn:
       - implement-refactoring
@@ -99,7 +99,7 @@ steps:
   - id: final-review
     name: Final Code Review
     type: agent
-    identity: quality-judge
+    agent_role: quality-judge
     strategy: cli_delegate
     dependsOn:
       - validate-refactoring

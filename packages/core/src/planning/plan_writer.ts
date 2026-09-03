@@ -29,7 +29,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRequestMetadata {
   requestId: string;
-  identityId?: string;
+  agentRole?: string;
   traceId: string;
   createdAt: Date;
   contextFiles: string[];
@@ -264,8 +264,8 @@ export class PlanWriter {
       created_at: metadata.createdAt.toISOString(),
     };
 
-    if (metadata.identityId) {
-      frontmatter.identity_id = metadata.identityId;
+    if (metadata.agentRole) {
+      frontmatter.agent_role = metadata.agentRole;
     }
 
     if (metadata.model) {

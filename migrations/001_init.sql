@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS activity (
   trace_id TEXT NOT NULL,
   actor TEXT NOT NULL,
   actor_type TEXT,
-  identity_id TEXT,
+  agent_role TEXT,
   agent_kind TEXT,
   action_type TEXT NOT NULL,
   target TEXT,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS activity (
 CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
 CREATE INDEX IF NOT EXISTS idx_activity_time ON activity(timestamp);
 CREATE INDEX IF NOT EXISTS idx_activity_actor ON activity(actor);
-CREATE INDEX IF NOT EXISTS idx_activity_identity ON activity(identity_id);
+CREATE INDEX IF NOT EXISTS idx_activity_agent_role ON activity(agent_role);
 CREATE INDEX IF NOT EXISTS idx_activity_actor_type ON activity(actor_type);
 CREATE INDEX IF NOT EXISTS idx_activity_agent_kind ON activity(agent_kind);
 
@@ -40,14 +40,14 @@ CREATE INDEX IF NOT EXISTS idx_activity_agent_kind ON activity(agent_kind);
 
 CREATE TABLE IF NOT EXISTS leases (
   file_path TEXT PRIMARY KEY,
-  identity_id TEXT NOT NULL,
+  agent_role TEXT NOT NULL,
   acquired_at DATETIME DEFAULT (datetime('now')),
   heartbeat_at DATETIME DEFAULT (datetime('now')),
   expires_at DATETIME NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_leases_expires ON leases(expires_at);
-CREATE INDEX IF NOT EXISTS idx_leases_identity ON leases(identity_id);
+CREATE INDEX IF NOT EXISTS idx_leases_agent_role ON leases(agent_role);
 
 -- ============================================================================
 -- Reviews (Git-based changes with approval workflow)
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS artifacts (
   id TEXT PRIMARY KEY,
   status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
   type TEXT NOT NULL CHECK (type IN ('analysis', 'report', 'diagram')),
-  identity TEXT NOT NULL,
+  agent_role TEXT NOT NULL,
   portal TEXT,
   target_branch TEXT,               -- Optional target/base branch context for portal artifacts
   created TEXT NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS artifacts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_artifacts_status ON artifacts(status);
-CREATE INDEX IF NOT EXISTS idx_artifacts_identity ON artifacts(identity);
+CREATE INDEX IF NOT EXISTS idx_artifacts_agent_role ON artifacts(agent_role);
 CREATE INDEX IF NOT EXISTS idx_artifacts_portal ON artifacts(portal);
 CREATE INDEX IF NOT EXISTS idx_artifacts_request_id ON artifacts(request_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created DESC);

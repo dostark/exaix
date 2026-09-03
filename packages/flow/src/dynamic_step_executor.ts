@@ -118,7 +118,7 @@ export class DynamicStepExecutor {
 
   async execute(
     step: IFlowStep,
-    identity: IBlueprintFrontmatter,
+    agent_role: IBlueprintFrontmatter,
     input: string,
     opts: IDynamicStepExecutorOptions,
   ): Promise<IDynamicStepResult> {
@@ -129,7 +129,7 @@ export class DynamicStepExecutor {
     }
 
     // Defensive: enforce read-only boundary at runtime even if loader validation passed
-    const effectiveTools = this.resolvePermittedTools(step, identity);
+    const effectiveTools = this.resolvePermittedTools(step, agent_role);
     const toolCallsLog: IDynamicToolCall[] = [];
 
     let context = input;
@@ -145,7 +145,7 @@ export class DynamicStepExecutor {
 
       // ReAct: model reasons about what tool to call next (or declares done)
       const decision = await this.llmClient.reasonNextAction({
-        identity,
+        agent_role,
         stepObjective: step.name,
         accumulatedContext: context,
         availableTools: toolsMetadata,
@@ -182,7 +182,7 @@ export class DynamicStepExecutor {
       }
 
       const policyMatch = this.hitlPolicyEvaluator?.evaluate(
-        identity.hitl?.require_secondary_approval ?? [],
+        agent_role.hitl?.require_secondary_approval ?? [],
         decision.tool,
         decision.args ?? {},
       );
@@ -297,9 +297,9 @@ export class DynamicStepExecutor {
    *  READ_ONLY_TOOLS (defensive runtime enforcement). */
   protected resolvePermittedTools(
     step: IFlowStep,
-    identity: IBlueprintFrontmatter,
+    agent_role: IBlueprintFrontmatter,
   ): McpToolName[] {
-    const identityTools = new Set(identity.permitted_tools ?? []);
+    const identityTools = new Set(agent_role.permitted_tools ?? []);
     const allowedDynamicTools = this.confirmationInterceptor
       ? new Set<McpToolName>([
         ...([...this.dynamicModeTools] as McpToolName[]),

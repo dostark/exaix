@@ -58,7 +58,7 @@ export class CapabilityMatcher {
     const score = this.computeOverallScore(capabilityScore, criteria, metadata);
 
     return ZRoutingCandidate.parse({
-      identityId: blueprint.identityId,
+      agentRole: blueprint.agentRole,
       version: blueprint.version,
       capabilities: blueprintCapabilities,
       score,
@@ -169,7 +169,7 @@ export class CapabilityMatcher {
       if (overallScore > bestScore) {
         bestScore = overallScore;
         best = ZRoutingCandidate.parse({
-          identityId: bp.identityId,
+          agentRole: bp.agentRole,
           version: bp.version,
           capabilities: blueprintCapabilities,
           score: overallScore,

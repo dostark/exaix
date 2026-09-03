@@ -83,9 +83,9 @@ export class RunCommandTool extends ToolHandler {
           portal: { type: "string", description: "Portal name" },
           command: { type: "string", description: "Command to execute (must be whitelisted)" },
           args: { type: JsonSchemaType.ARRAY, items: { type: "string" }, description: "Command arguments" },
-          identity_id: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Identity identifier for permission checks" },
         },
-        required: ["portal", "command", "identity_id"],
+        required: ["portal", "command", "agent_role"],
       },
     };
   }

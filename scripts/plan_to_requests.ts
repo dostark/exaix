@@ -20,7 +20,7 @@ import { parsePhaseStepManifests, type PhaseStepDiagnosticCode } from "@exaix/fl
 
 interface FrontmatterFields {
   trace_id: string;
-  identity_id: string;
+  agent_role: string;
   status: string;
   priority: number;
   tags: string[];
@@ -261,7 +261,7 @@ function buildRequestFile(
   contextPointer?: Opt<string, Reason.OptionalInput>,
   planContextRef?: Opt<string, Reason.OptionalInput>,
 ): string {
-  const identityId = manifest?.identity ?? "senior-coder";
+  const identityId = manifest?.agent_role ?? "senior-coder";
   const skills = manifest?.skills;
   const portal = manifest?.portal ?? "exaix-self";
   const targetBranch = manifest?.target_branch ?? `feat/${planSlug}-step-${stepNumber}`;
@@ -304,7 +304,7 @@ function buildRequestFile(
 
   const frontmatter: FrontmatterFields = {
     trace_id: crypto.randomUUID(),
-    identity_id: identityId,
+    agent_role: identityId,
     status: "pending",
     priority,
     tags,
@@ -416,7 +416,7 @@ async function main(): Promise<void> {
 
     if (dryRun) {
       console.log(
-        `Would write: ${filePath} (identity_id: ${manifest?.identity ?? "senior-coder"}, priority: ${
+        `Would write: ${filePath} (agent_role: ${manifest?.agent_role ?? "senior-coder"}, priority: ${
           Math.max(0, Math.min(10, 10 - step.stepNumber))
         })`,
       );

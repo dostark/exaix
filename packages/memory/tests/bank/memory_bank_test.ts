@@ -413,7 +413,7 @@ Deno.test("MemoryBankService: searchMemory finds matching content", async () => 
       started_at: "2026-01-03T10:00:00Z",
       status: ExecutionStatus.COMPLETED,
       portal: "auth-app",
-      identity_id: "senior-coder",
+      agent_role: "senior-coder",
       summary: "Implemented JWT authentication middleware",
       context_files: [],
       context_portals: [],
@@ -504,7 +504,7 @@ Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", 
       started_at: "2026-01-03T10:00:00Z",
       status: ExecutionStatus.COMPLETED,
       portal: "test-app",
-      identity_id: "senior-coder",
+      agent_role: "senior-coder",
       summary: "Test execution",
       context_files: [],
       context_portals: [],
@@ -522,7 +522,7 @@ Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", 
     assertEquals(activities[0].action_type, "memory.execution.recorded");
     const payload = JSON.parse(activities[0].payload);
     assertEquals(payload.status, ExecutionStatus.COMPLETED);
-    assertEquals(payload.identity_id, "senior-coder");
+    assertEquals(payload.agent_role, "senior-coder");
     assertEquals(payload.files_changed, 2);
   } finally {
     await cleanup();
@@ -609,7 +609,7 @@ Deno.test("MemoryBankService: getRecentActivity combines execution history", asy
       completed_at: "2026-01-03T10:10:00Z",
       status: ExecutionStatus.COMPLETED,
       portal: "my-app",
-      identity_id: "senior-coder",
+      agent_role: "senior-coder",
       summary: "Added feature",
       context_files: [],
       context_portals: [],

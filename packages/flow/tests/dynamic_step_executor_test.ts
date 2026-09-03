@@ -123,7 +123,7 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
   );
 
   const identity = BlueprintFrontmatterSchema.parse({
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
@@ -134,7 +134,7 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
   const step = FlowStepSchema.parse({
     id: "step-1",
     name: "Search for bugs",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE],
   });
@@ -176,7 +176,7 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
   );
 
   const identity = BlueprintFrontmatterSchema.parse({
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
@@ -187,7 +187,7 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
   const step = FlowStepSchema.parse({
     id: "step-1",
     name: "Infinite loop",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     timeout: 2000, // This will set maxIterations to 2 (Math.min(10, 2000/1000))
   });
@@ -225,7 +225,7 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
   );
 
   const identity = BlueprintFrontmatterSchema.parse({
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
@@ -236,7 +236,7 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
   const step = FlowStepSchema.parse({
     id: "step-1",
     name: "Illegal tool",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE],
   });
@@ -269,7 +269,7 @@ Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", asyn
   );
 
   const identity = BlueprintFrontmatterSchema.parse({
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
@@ -280,7 +280,7 @@ Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", asyn
   const step = FlowStepSchema.parse({
     id: "step-1",
     name: "Filtered tool",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
   });
 
@@ -313,12 +313,12 @@ Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
   const step = FlowStepSchema.parse({
     id: "id",
     name: "Standard",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DECLARED,
   });
 
   const identity = BlueprintFrontmatterSchema.parse({
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),

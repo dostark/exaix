@@ -47,8 +47,8 @@ Deno.test("RequestService.create: creates a request file with correct frontmatte
 
     // Verify the file was actually written
     const content = await Deno.readTextFile(metadata.path!);
-    assertEquals(content.includes("identity_id: default"), true);
-    assertEquals(content.includes("\nidentity: default"), false);
+    assertEquals(content.includes("agent_role: default"), true);
+    assertEquals(content.includes("\nagent_role: default"), false);
     assertEquals(content.includes("trace_id:"), true);
     assertEquals(content.includes("Build the login page"), true);
   } finally {
@@ -81,7 +81,7 @@ Deno.test("RequestService.create: uses provided options", async () => {
     const service = createTestRequestService(tempDir);
     const metadata = await service.create("Custom request", {
       priority: RequestPriority.HIGH,
-      identity: "coder",
+      agent_role: "coder",
       portal: "myportal",
       target_branch: "feature/test",
       model: "gpt-5",
@@ -265,7 +265,7 @@ trace_id: test-id
 created: ${new Date().toISOString()}
 status: pending
 priority: extreme
-identity_id: default
+agent_role: default
 source: cli
 created_by: tester
 subject: Test
@@ -297,7 +297,7 @@ trace_id: test-id
 created: ${new Date().toISOString()}
 status: pending
 priority: normal
-identity_id: default
+agent_role: default
 source: webhook
 created_by: tester
 subject: Test

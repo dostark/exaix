@@ -42,7 +42,7 @@ interface ICreatePlanAmendmentServiceOptions {
 interface IPlanExecutionContext {
   trace_id: string;
   request_id: string;
-  identity: string;
+  agent_role: string;
   frontmatter: {
     portal: string;
   };
@@ -93,7 +93,7 @@ export function createPlanExecutionContext(
   return {
     trace_id: traceId,
     request_id: requestId,
-    identity: "user-1",
+    agent_role: "user-1",
     frontmatter: { portal: "workspace" },
     steps,
   };

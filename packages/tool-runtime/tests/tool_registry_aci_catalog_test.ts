@@ -127,7 +127,7 @@ Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-
 
   const result = validateAciExampleAgainstSchema(readFile.parameters, {
     path: "src/example.ts",
-    identity_id: "some-identity",
+    agent_role: "some-identity",
   });
 
   assertEquals(result.compatible, false);

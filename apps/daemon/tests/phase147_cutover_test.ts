@@ -193,7 +193,7 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
         portal: "none",
       },
       {
-        identity_id: "cutover-agent",
+        agent_role: "cutover-agent",
         portal: "none",
         permitted_tools: [ToolName.REMEMBER_FACT],
         security_mode: SecurityMode.SANDBOXED,

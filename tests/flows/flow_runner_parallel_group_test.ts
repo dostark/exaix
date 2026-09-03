@@ -103,7 +103,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
       {
         id: "start",
         name: "Start",
-        identity: "starter",
+        agent_role: "starter",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -111,7 +111,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
       {
         id: "review-a",
         name: "Review A",
-        identity: "reviewer-a",
+        agent_role: "reviewer-a",
         dependsOn: ["start"],
         input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -120,7 +120,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
       {
         id: "review-b",
         name: "Review B",
-        identity: "reviewer-b",
+        agent_role: "reviewer-b",
         dependsOn: ["start"],
         input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -129,7 +129,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
       {
         id: "audit",
         name: "Audit",
-        identity: "auditor",
+        agent_role: "auditor",
         dependsOn: ["start"],
         input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

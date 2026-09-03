@@ -385,7 +385,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       AGENT_EVENT_RESPONSE_TRUNCATED,
       context.request_id ?? null,
       {
-        identity_id: options.identity_id ?? "",
+        agent_role: options.identity_id ?? "",
         iteration,
         stop_reason: response.stop_reason,
         response_length: response.content.length,

@@ -271,7 +271,7 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
   const fakeAnalyzer = makeFakeAnalyzer(testAnalysis);
 
   try {
-    const filePath = makeAgentRequestFile(env.requestsDir, { identity: "test-agent" });
+    const filePath = makeAgentRequestFile(env.requestsDir, { agent_role: "test-agent" });
     // Write a dummy blueprint
     await Deno.writeTextFile(join(env.blueprintsPath, "Agents", "test-agent.md"), "Test prompt");
 

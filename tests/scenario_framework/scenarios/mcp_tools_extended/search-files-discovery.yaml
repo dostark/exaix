@@ -41,7 +41,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "search_files"
-      - '{"portal":"tools","pattern":"**/*.ts","identity_id":"tools-eval"}'
+      - '{"portal":"tools","pattern":"**/*.ts","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -65,7 +65,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "search_files"
-      - '{"portal":"tools","pattern":"**/*.test.ts","identity_id":"tools-eval"}'
+      - '{"portal":"tools","pattern":"**/*.test.ts","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -85,7 +85,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "search_files"
-      - '{"portal":"tools","pattern":"**/*.nomatch","identity_id":"tools-eval"}'
+      - '{"portal":"tools","pattern":"**/*.nomatch","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

@@ -1,7 +1,7 @@
 ---
 request_id: req-001
 status: approved
-identity: test-agent
+agent_role: test-agent
 portal: TestPortal
 ---
 

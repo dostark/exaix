@@ -3,7 +3,7 @@
  * @path tests/scripts/check_blueprint_integrity_test.ts
  * @description Tests for scripts/check_blueprint_integrity.ts — the catalog
  *   referential-integrity + anti-bloat gate. Verifies all four facets:
- *   (1) every flow `identity:` resolves to an existing identity (no dangling),
+ *   (1) every flow `agent_role:` resolves to an existing identity (no dangling),
  *   (2) every identity `default_skills` entry resolves to an existing skill,
  *   (3) every identity is referenced by >=1 flow (orphan identities, with the
  *   `default`/`mock-agent` system identities exempt), and (4) every skill is
@@ -48,7 +48,7 @@ async function buildCatalog(opts: {
 
   for (const it of opts.identities) {
     const fm = [
-      `identity_id: "${it.id}"`,
+      `agent_role: "${it.id}"`,
       `name: "${it.id}"`,
       `model: "${it.model ?? "anthropic:claude"}"`,
       `default_skills: [${(it.skills ?? []).map((s) => `"${s}"`).join(", ")}]`,
@@ -60,7 +60,7 @@ async function buildCatalog(opts: {
   }
   for (const f of opts.flows) {
     const steps = f.identities
-      .map((id, i) => `  - id: step-${i}\n    type: agent\n    identity: ${id}`)
+      .map((id, i) => `  - id: step-${i}\n    type: agent\n    agent_role: ${id}`)
       .join("\n");
     const dir = f.subdir ? join(flowDir, f.subdir) : flowDir;
     await ensureDir(dir);

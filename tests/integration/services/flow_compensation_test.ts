@@ -73,14 +73,14 @@ function createRetryConfig() {
 function createCompensationStep(
   id: string,
   name: string,
-  identity: string,
+  agent_role: string,
   dependsOn: string[],
   compensationPaths: string[],
 ) {
   return {
     id,
     name,
-    identity,
+    agent_role,
     dependsOn,
     input: {
       source: dependsOn.length === 0 ? FlowInputSource.REQUEST : FlowInputSource.STEP,

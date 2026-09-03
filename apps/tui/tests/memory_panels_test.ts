@@ -73,7 +73,7 @@ function createExecutionMemory(overrides: Partial<IExecutionMemory> = {}): IExec
     started_at: new Date().toISOString(),
     status: ExecutionStatus.COMPLETED,
     portal: "test-portal",
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     summary: "Test execution summary",
     context_files: [],
     context_portals: [],
@@ -472,7 +472,7 @@ Deno.test("renderPendingPanel: renders single proposal", () => {
       confidence: ConfidenceAssessmentLevel.HIGH,
     },
     reason: "Good pattern to remember",
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     status: MemoryStatus.PENDING,
   }];
   const result = renderPendingPanel(proposals, 0, defaultOptions);
@@ -507,7 +507,7 @@ Deno.test("renderPendingPanel: renders multiple proposals", () => {
       ][i % 3],
     },
     reason: `Reason ${i}`,
-    identity_id: MemoryBankSource.IDENTITY,
+    agent_role: MemoryBankSource.IDENTITY,
     status: MemoryStatus.PENDING,
   });
 
@@ -534,7 +534,7 @@ Deno.test("renderPendingPanel: handles selection", () => {
       confidence: ConfidenceAssessmentLevel.MEDIUM,
     },
     reason: "Reason",
-    identity_id: MemoryBankSource.IDENTITY,
+    agent_role: MemoryBankSource.IDENTITY,
     status: MemoryStatus.PENDING,
   }));
 

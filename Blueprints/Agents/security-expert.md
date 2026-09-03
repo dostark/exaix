@@ -1,5 +1,5 @@
 ---
-identity_id: "security-expert"
+agent_role: "security-expert"
 name: "Security Expert"
 model: ""
 model_size: L

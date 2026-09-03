@@ -416,7 +416,7 @@ export const AGENT_MAX_ITERATIONS_MAX = 100;
 
 // Agent defaults
 export const DEFAULT_AGENT_MODEL = "default";
-export const DEFAULT_IDENTITY_ID = "default";
+export const DEFAULT_AGENT_ROLE = "default";
 export const DEFAULT_UNKNOWN_LABEL = "Unknown";
 export const DEFAULT_UNKNOWN_ERROR_MESSAGE = "Unknown error";
 export const DEFAULT_AGENT_TIMEOUT_SEC: number = configurable({

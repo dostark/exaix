@@ -1107,7 +1107,7 @@ control and corrupts the working tree on failure.
 | ----------------- | -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `skill-ablation`  | resolved skill set minus skill S | resolved set as normal                      | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids), read inside `AgentRunner`'s skill resolution |
 | `skill-version`   | skill S at version _a_           | skill S at version _b_                      | `EXA_EVAL_SKILL_OVERLAY_DIR`, a directory shadowing `Memory/Skills/` for the run                     |
-| `identity-swap`   | identity A handles the request   | identity B handles the request              | request frontmatter `identity:`, one value per arm                                                   |
+| `identity-swap`   | identity A handles the request   | identity B handles the request              | request frontmatter `agent_role:`, one value per arm                                                 |
 | `identity-config` | identity A as shipped            | identity A with a modified `default_skills` | `EXA_EVAL_IDENTITY_OVERLAY_DIR`, a directory shadowing `Blueprints/Identities/` for the run          |
 | `flow-ablation`   | request executed without a flow  | request executed under flow F               | request frontmatter `flow:`, present or absent                                                       |
 | `flow-swap`       | flow F                           | flow G                                      | request frontmatter `flow:`, one value per arm                                                       |
@@ -1218,7 +1218,7 @@ can only ever back an `awaiting-remeasurement` status, never a verdict.
 
 **Contributor rule:** a new identity, skill, or flow ships with either a value result or a stated
 reason it cannot be measured yet (see the "Contributor rule: value evidence" section in each of
-`Blueprints/Skills/README.md`, `Blueprints/Identities/README.md`, `Blueprints/Flows/README.md`).
+`Blueprints/Skills/README.md`, `Blueprints/Agents/README.md`, `Blueprints/Flows/README.md`).
 
 ### A worked example of a confounded result: `feature-development`
 

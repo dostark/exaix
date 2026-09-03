@@ -36,7 +36,7 @@ export interface ILogEvent {
   agentKind?: AgentKind | null;
 
   /** LLM identity blueprint used for this event, e.g. "senior-coder" */
-  identityId?: string;
+  agentRole?: string;
 
   /** Log level for console output */
   level?: LogLevel;

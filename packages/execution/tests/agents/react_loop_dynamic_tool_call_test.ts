@@ -61,7 +61,7 @@ const context = {
 } satisfies IExecutionContext;
 
 const options: IAgentExecutionOptions = {
-  identity_id: "dtc-test-agent",
+  agent_role: "dtc-test-agent",
   portal: "todo-app",
   security_mode: SecurityMode.HYBRID,
   timeout_ms: 300000,

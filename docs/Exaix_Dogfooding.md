@@ -60,7 +60,7 @@ trace_id: "$(uuidgen)"
 created: "$(date -Iseconds)"
 status: pending
 priority: 5
-identity: senior-coder
+agent_role: senior-coder
 skills: [tdd-methodology, exaix-conventions]
 portal: "exaix-self"
 target_branch: "feature/health-endpoint"
@@ -201,7 +201,7 @@ For multi-step features, chain requests so step N+1 starts only after N is appro
 ```yaml
 ---
 trace_id: "step-1-uuid"
-identity: "senior-coder"
+agent_role: "senior-coder"
 priority: 5
 tags: ["phase-121", "step-1"]
 portal: "exaix-self"
@@ -215,7 +215,7 @@ Add `HEALTH_ENDPOINT_PATH = "/health"` to `packages/core/src/types/constants.ts`
 ```yaml
 ---
 trace_id: "step-2-uuid"
-identity: "senior-coder"
+agent_role: "senior-coder"
 priority: 6
 tags: ["phase-121", "step-2"]
 portal: "exaix-self"
@@ -242,7 +242,7 @@ trace_id: "a-unique-uuid"           # Required. UUID linking all artifacts.
 created: "2026-06-18T12:00:00Z"     # Required. ISO timestamp.
 status: pending                      # Required. Must be "pending".
 priority: 5                          # Optional. 1–10 (default: 5).
-identity: senior-coder               # Required. Agent persona.
+agent_role: senior-coder               # Required. Agent persona.
 source: dogfood                      # Optional. Origin of request.
 created_by: developer                # Optional. Who created it.
 skills: [tdd-methodology]            # Optional. Skills to pin.
@@ -357,7 +357,7 @@ Output example:
 # step-manifest
 step: 3
 title: Wire health endpoint in daemon main
-identity: senior-coder
+agent_role: senior-coder
 skills: [tdd-methodology]
 portal: exaix-self
 target_branch: feature/health-endpoint

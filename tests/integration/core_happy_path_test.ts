@@ -46,7 +46,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       // Verify frontmatter
       const content = await Deno.readTextFile(requestPath);
       assertStringIncludes(content, `trace_id: "${traceId}"`);
-      assertStringIncludes(content, "identity_id: senior-coder");
+      assertStringIncludes(content, "agent_role: senior-coder");
       assertStringIncludes(content, "status: pending");
       assertStringIncludes(content, "priority: 7");
 

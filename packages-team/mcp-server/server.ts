@@ -586,7 +586,7 @@ export class MCPServer implements OAuthTokenVerifier {
             {
               tool_name: toolName,
               portal: typeof args.portal === "string" ? args.portal : null,
-              identity_id: typeof args.identity_id === "string" ? args.identity_id : null,
+              agent_role: typeof args.agent_role === "string" ? args.agent_role : null,
               error_message: classification.message,
             },
           );

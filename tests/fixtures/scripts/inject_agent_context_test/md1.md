@@ -1,5 +1,5 @@
 ---
-identity: copilot
+agent_role: copilot
 title: Low Score
 short_summary: low
 ---

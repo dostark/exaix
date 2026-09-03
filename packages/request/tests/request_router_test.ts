@@ -58,7 +58,7 @@ Deno.test("RequestRouter: routes flow requests to FlowRunner", async () => {
 Deno.test("RequestRouter: routes agent requests to IAgentRunner", async () => {
   const { mockAgentRunner, mockLogger, router } = createRouterTestContext();
 
-  const request = sampleRouterRequest({ frontmatter: { identity_id: "senior-coder" } });
+  const request = sampleRouterRequest({ frontmatter: { agent_role: "senior-coder" } });
 
   const result = await router.route(request);
 
@@ -101,13 +101,13 @@ Deno.test("RequestRouter: throws error for conflicting flow and agent fields", a
   const { router } = createRouterTestContext();
 
   const request = sampleRouterRequest({
-    frontmatter: { flow: "code-review", identity_id: "senior-coder" },
+    frontmatter: { flow: "code-review", agent_role: "senior-coder" },
   });
 
   await assertRejects(
     () => router.route(request),
     RoutingError,
-    "Request cannot specify both 'flow' and 'identity' fields",
+    "Request cannot specify both 'flow' and 'agent_role' fields",
   );
 });
 
@@ -131,7 +131,7 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
     return await router.routeToDefaultAgent(request);
   };
 
-  const request = sampleRouterRequest({ frontmatter: { flow: "code-review", identity_id: "senior-coder" } });
+  const request = sampleRouterRequest({ frontmatter: { flow: "code-review", agent_role: "senior-coder" } });
 
   const result = await router.route(request);
 
@@ -159,7 +159,7 @@ Deno.test("RequestRouter: applies routing policy service for explicit identity w
   });
 
   const request = sampleRouterRequest({
-    frontmatter: { identity_id: "senior-coder", allow_dynamic_routing: true },
+    frontmatter: { agent_role: "senior-coder", allow_dynamic_routing: true },
   });
 
   const result = await router.route(request);
@@ -183,7 +183,7 @@ Deno.test("RequestRouter: logs fallback_used when routing policy service fails",
   });
 
   const request = sampleRouterRequest({
-    frontmatter: { identity_id: "senior-coder", allow_dynamic_routing: true },
+    frontmatter: { agent_role: "senior-coder", allow_dynamic_routing: true },
   });
 
   const result = await router.route(request);

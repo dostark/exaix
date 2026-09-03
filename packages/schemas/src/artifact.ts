@@ -26,7 +26,7 @@ export type IArtifactStatusType = IReviewStatus;
 export const ArtifactFrontmatterSchema = z.object({
   status: z.enum(REVIEW_STATUS_VALUES),
   type: z.nativeEnum(ArtifactType),
-  identity: z.string(),
+  agent_role: z.string(),
   portal: z.string().nullable().optional(),
   target_branch: z.string().nullable().optional(),
   created: z.string(), // ISO 8601 timestamp
@@ -42,7 +42,7 @@ export const ArtifactSchema = z.object({
   id: z.string(),
   status: z.enum(REVIEW_STATUS_VALUES),
   type: z.nativeEnum(ArtifactType),
-  identity: z.string(),
+  agent_role: z.string(),
   portal: z.string().nullable().optional(),
   target_branch: z.string().nullable().optional(),
   created: z.string(), // ISO 8601 timestamp
@@ -67,7 +67,7 @@ export interface IArtifactWithContent extends IArtifact {
  */
 export const CreateArtifactInputSchema = z.object({
   request_id: z.string(),
-  identity: z.string(),
+  agent_role: z.string(),
   content: z.string(), // Markdown content (frontmatter will be added)
   portal: z.string().nullable().optional(),
   target_branch: z.string().nullable().optional(),
@@ -81,7 +81,7 @@ export type ICreateArtifactInput = z.infer<typeof CreateArtifactInputSchema>;
  */
 export const ArtifactFiltersSchema = z.object({
   status: z.enum(REVIEW_STATUS_VALUES).optional(),
-  identity: z.string().optional(),
+  agent_role: z.string().optional(),
   portal: z.string().nullable().optional(),
   type: z.nativeEnum(ArtifactType).optional(),
 }).partial();

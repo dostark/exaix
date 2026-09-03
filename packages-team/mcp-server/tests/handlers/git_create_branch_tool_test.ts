@@ -33,7 +33,7 @@ Deno.test("GitCreateBranchTool: creates branch successfully", async () => {
     const result = await handler.execute({
       portal: "TestPortal",
       branch: "feat/new-test-branch",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
@@ -58,14 +58,14 @@ Deno.test("GitCreateBranchTool: returns isError when branch already exists", asy
     await handler.execute({
       portal: "TestPortal",
       branch: "feat/existing-branch",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     // Try to create it again — should return isError:true
     const result = await handler.execute({
       portal: "TestPortal",
       branch: "feat/existing-branch",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
   });
@@ -80,7 +80,7 @@ Deno.test("GitCreateBranchTool: returns isError when access is denied", async ()
     const result = await handler.execute({
       portal: "TestPortal",
       branch: "feat/new-test-branch",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
     assertStringIncludes(getFirstTextContent(result), "not permitted");

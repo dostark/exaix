@@ -365,11 +365,11 @@ export class SessionMemoryService {
   /** Maps a non-learning embedding result to its fusion identity (joined against the keyword signal) and MemoryItem. */
   private vectorResultToItem(
     result: IEmbeddingSearchResult,
-  ): { identity: string; item: MemoryItem } {
+  ): { agent_role: string; item: MemoryItem } {
     switch (result.kind) {
       case MemoryType.PATTERN:
         return {
-          identity: `${MemoryType.PATTERN}:${result.id}`,
+          agent_role: `${MemoryType.PATTERN}:${result.id}`,
           item: {
             type: MemoryType.PATTERN,
             title: result.title,
@@ -380,7 +380,7 @@ export class SessionMemoryService {
         };
       case MemoryType.DECISION:
         return {
-          identity: `${MemoryType.DECISION}:${result.id}`,
+          agent_role: `${MemoryType.DECISION}:${result.id}`,
           item: {
             type: MemoryType.DECISION,
             title: result.title,
@@ -391,7 +391,7 @@ export class SessionMemoryService {
         };
       case MemoryType.EXECUTION:
         return {
-          identity: `${MemoryType.EXECUTION}:${result.id}`,
+          agent_role: `${MemoryType.EXECUTION}:${result.id}`,
           item: {
             type: MemoryType.EXECUTION,
             title: result.title,
@@ -402,7 +402,7 @@ export class SessionMemoryService {
         };
       case MemoryType.PROJECT:
         return {
-          identity: result.id,
+          agent_role: result.id,
           item: {
             type: MemoryType.PROJECT,
             title: result.title,
@@ -413,7 +413,7 @@ export class SessionMemoryService {
         };
       default:
         return {
-          identity: `insight:${result.id}`,
+          agent_role: `insight:${result.id}`,
           item: {
             type: MemoryType.INSIGHT,
             title: result.title,

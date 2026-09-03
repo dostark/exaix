@@ -50,9 +50,9 @@ Deno.test("queries.findTraceLogs filters by trace_id", () => {
 
 Deno.test("queries.findAgentLogs filters by identity_id", () => {
   const entries = [
-    createLogEntry(1, { identity_id: "a1" }),
-    createLogEntry(2, { identity_id: "a2" }),
-    createLogEntry(3, { identity_id: "a1" }),
+    createLogEntry(1, { agent_role: "a1" }),
+    createLogEntry(2, { agent_role: "a2" }),
+    createLogEntry(3, { agent_role: "a1" }),
   ];
 
   const result = findAgentLogs(entries, "a1");

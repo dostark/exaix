@@ -84,7 +84,7 @@ function makeProposal(overrides: Partial<IMemoryUpdateProposal> = {}): IMemoryUp
     target_project: undefined,
     learning: learning ?? makeProposalLearning(),
     reason: "r",
-    identity_id: "a",
+    agent_role: "a",
     execution_id: "e",
     status: MemoryStatus.PENDING,
     ...rest,

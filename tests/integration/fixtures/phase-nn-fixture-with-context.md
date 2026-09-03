@@ -47,7 +47,7 @@ A trailing sentence after the Goal paragraph is outside the bounded summary.
 # step-manifest
 step: 1
 title: Do the thing
-identity: senior-coder
+agent_role: senior-coder
 skills: [tdd-methodology]
 portal: exaix-self
 target_branch: feat/phase-nn-step-1
@@ -81,7 +81,7 @@ acceptance:
 # step-manifest
 step: 2
 title: Something unrelated
-identity: senior-coder
+agent_role: senior-coder
 portal: exaix-self
 target_branch: feat/phase-nn-step-2
 ```

@@ -13,7 +13,7 @@ interface TestBlueprintFrontmatter {
 }
 
 interface TestBlueprint {
-  identityId: string;
+  agentRole: string;
   version: string;
   capabilities: string[];
   frontmatter: TestBlueprintFrontmatter;
@@ -34,13 +34,13 @@ class TestBlueprintLoader {
 Deno.test("CandidateDiscovery: returns explicit identity candidates first", async () => {
   const loader = new TestBlueprintLoader();
   loader.addBlueprint({
-    identityId: "alpha",
+    agentRole: "alpha",
     version: "1.0.0",
     capabilities: ["code_review"],
     frontmatter: {},
   });
   loader.addBlueprint({
-    identityId: "beta",
+    agentRole: "beta",
     version: "2.0.0",
     capabilities: ["code_review"],
     frontmatter: {},
@@ -50,19 +50,19 @@ Deno.test("CandidateDiscovery: returns explicit identity candidates first", asyn
   const candidates = await discovery.listCandidates({ capability: "code_review", tags: [] }, "beta");
 
   assertEquals(candidates.length, 2);
-  assertEquals(candidates[0].identityId, "beta");
+  assertEquals(candidates[0].agentRole, "beta");
 });
 
 Deno.test("CandidateDiscovery: filters candidates by capability and excludes deprecated ones", async () => {
   const loader = new TestBlueprintLoader();
   loader.addBlueprint({
-    identityId: "alpha",
+    agentRole: "alpha",
     version: "1.0.0",
     capabilities: ["documentation"],
     frontmatter: {},
   });
   loader.addBlueprint({
-    identityId: "beta",
+    agentRole: "beta",
     version: "2.0.0",
     capabilities: ["code_review"],
     frontmatter: { deprecated: true },
@@ -77,5 +77,5 @@ Deno.test("CandidateDiscovery: filters candidates by capability and excludes dep
   const deprecatedCandidates = await discoveryWithDeprecated.listCandidates({ capability: "code_review", tags: [] });
 
   assertEquals(deprecatedCandidates.length, 1);
-  assertEquals(deprecatedCandidates[0].identityId, "beta");
+  assertEquals(deprecatedCandidates[0].agentRole, "beta");
 });

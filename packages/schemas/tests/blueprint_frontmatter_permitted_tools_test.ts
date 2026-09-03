@@ -13,7 +13,7 @@ import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 
 Deno.test("BlueprintFrontmatterSchema: accepts permitted_tools array", () => {
   const frontmatter = {
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-opus-4-5",
     created: new Date().toISOString(),
@@ -36,7 +36,7 @@ Deno.test("BlueprintFrontmatterSchema: accepts permitted_tools array", () => {
 
 Deno.test("BlueprintFrontmatterSchema: accepts empty permitted_tools", () => {
   const frontmatter = {
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-opus-4-5",
     created: new Date().toISOString(),
@@ -51,7 +51,7 @@ Deno.test("BlueprintFrontmatterSchema: accepts empty permitted_tools", () => {
 
 Deno.test("BlueprintFrontmatterSchema: accepts frontmatter without permitted_tools", () => {
   const frontmatter = {
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-opus-4-5",
     created: new Date().toISOString(),
@@ -67,7 +67,7 @@ Deno.test("BlueprintFrontmatterSchema: accepts frontmatter without permitted_too
 
 Deno.test("BlueprintFrontmatterSchema: rejects invalid tool in permitted_tools", () => {
   const frontmatter = {
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-opus-4-5",
     created: new Date().toISOString(),
@@ -80,7 +80,7 @@ Deno.test("BlueprintFrontmatterSchema: rejects invalid tool in permitted_tools",
 
 Deno.test("BlueprintFrontmatterSchema: strips unknown fields", () => {
   const frontmatter = {
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-opus-4-5",
     created: new Date().toISOString(),

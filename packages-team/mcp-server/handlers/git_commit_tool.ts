@@ -22,7 +22,7 @@ export class GitCommitTool extends ToolHandler {
       files?: string[];
       amend?: boolean;
       signoff?: boolean;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, message, files, amend, signoff, identity_id } = validatedArgs;
 
@@ -129,12 +129,12 @@ export class GitCommitTool extends ToolHandler {
             type: "boolean",
             description: "Optional: add Signed-off-by trailer to the commit message",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "message", "identity_id"],
+        required: ["portal", "message", "agent_role"],
       },
     };
   }

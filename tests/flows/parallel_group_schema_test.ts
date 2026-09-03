@@ -23,7 +23,7 @@ Deno.test("FlowStepSchema: parses parallel group and merge fields", () => {
   const parsed = FlowStepSchema.parse({
     id: "review-a",
     name: "Review A",
-    identity: "qa-engineer",
+    agent_role: "qa-engineer",
     input: {
       source: FlowInputSource.REQUEST,
     },
@@ -53,7 +53,7 @@ Deno.test("FlowSchema: existing flows parse without parallel metadata", () => {
       {
         id: "review",
         name: "Review",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
       },
     ],
     output: {

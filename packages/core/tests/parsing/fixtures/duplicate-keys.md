@@ -1,6 +1,6 @@
 ---
 trace_id: "first-value"
-identity_id: senior-coder
+agent_role: senior-coder
 trace_id: "second-value"
 status: pending
 ---

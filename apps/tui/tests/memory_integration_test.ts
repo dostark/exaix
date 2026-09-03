@@ -140,7 +140,7 @@ class MockMemoryServiceFull extends MinimalMemoryServiceMock implements IMemoryS
       portal: "my-app",
       trace_id: traceId,
       request_id: "req-123",
-      identity_id: "senior-coder",
+      agent_role: "senior-coder",
       status: ExecutionStatus.COMPLETED,
       started_at: "2026-01-04T10:00:00Z",
       completed_at: "2026-01-04T10:05:00Z",
@@ -162,7 +162,7 @@ class MockMemoryServiceFull extends MinimalMemoryServiceMock implements IMemoryS
         portal: "my-app",
         trace_id: "trace-001",
         request_id: "req-001",
-        identity_id: "senior-coder",
+        agent_role: "senior-coder",
         status: ExecutionStatus.COMPLETED,
         started_at: "2026-01-04T10:00:00Z",
         summary: "Task 1 completed",
@@ -174,7 +174,7 @@ class MockMemoryServiceFull extends MinimalMemoryServiceMock implements IMemoryS
         portal: "api-service",
         trace_id: "trace-002",
         request_id: "req-002",
-        identity_id: "code-reviewer",
+        agent_role: "code-reviewer",
         status: ExecutionStatus.FAILED,
         started_at: "2026-01-04T11:00:00Z",
         summary: "Task 2 failed",
@@ -218,7 +218,7 @@ function createMockProposal(
 ): IMemoryUpdateProposal {
   return {
     id,
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     operation: MemoryOperation.ADD,
     reason: `Extracted from execution for ${title}`,
     learning: {

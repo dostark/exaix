@@ -80,7 +80,7 @@ Deno.test("MonitorView - renderLogs outputs ANSI and handles empty", () => {
       id: "1",
       trace_id: "t1",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "a1",
+      agent_role: "a1",
       action_type: "error",
       target: "target.md",
       payload: {},
@@ -90,7 +90,7 @@ Deno.test("MonitorView - renderLogs outputs ANSI and handles empty", () => {
       id: "2",
       trace_id: "t2",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "a2",
+      agent_role: "a2",
       action_type: "unknown_type",
       target: "target2.md",
       payload: {},
@@ -109,7 +109,7 @@ Deno.test("MonitorView - renderLogs outputs ANSI and handles empty", () => {
 
 Deno.test("MonitorView - should display real-time log streaming", async () => {
   const { db: _db, monitorView } = createMonitorViewWithLogs([
-    sampleLogEntry({ identity_id: "researcher" }),
+    sampleLogEntry({ agent_role: "researcher" }),
   ]);
 
   // Test that it can retrieve logs
@@ -156,7 +156,7 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
         trace_id: String(a.trace_id ?? `trace-${a.id ?? Math.floor(Math.random() * 1e6)}`),
         actor: (a.actor as string | null) ?? null,
         actor_type: null,
-        identity_id: (a.identity_id as string | null) ?? null,
+        agent_role: (a.identity_id as string | null) ?? null,
         agent_kind: null,
         action_type: String(a.action_type ?? "unknown"),
         target: (a.target as string | null) ?? null,
@@ -189,7 +189,7 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
       id: "1",
       trace_id: "trace-1",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "dev",
+      agent_role: "dev",
       action_type: "plan.approved",
       target: "Workspace/Plans/test.md",
       payload: {},
@@ -222,7 +222,7 @@ Deno.test("MonitorView - should export logs to file", () => {
       id: "1",
       trace_id: "trace-1",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "researcher",
+      agent_role: "researcher",
       action_type: "request_created",
       target: "Workspace/Requests/test.md",
       payload: { description: "Test request" },
@@ -242,7 +242,7 @@ Deno.test("MonitorView - should handle large log volumes without crashing", asyn
     id: `${i + 1}`,
     trace_id: `trace-${i + 1}`,
     actor: LogGroupingMode.IDENTITY,
-    identity_id: i % 2 === 0 ? "researcher" : "architect",
+    agent_role: i % 2 === 0 ? "researcher" : "architect",
     action_type: i % 3 === 0 ? "request_created" : "plan_approved",
     target: `Workspace/Requests/test${i}.md`,
     payload: { description: `Test request ${i}` },
@@ -286,7 +286,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
       id: "1",
       trace_id: "trace-1",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "researcher",
+      agent_role: "researcher",
       action_type: "request_created",
       target: "Workspace/Requests/test.md",
       payload: { description: "Recent request" },
@@ -296,7 +296,7 @@ Deno.test("MonitorView - should filter logs by time window", async () => {
       id: "2",
       trace_id: "trace-2",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "architect",
+      agent_role: "architect",
       action_type: "plan_approved",
       target: "Workspace/Plans/test.md",
       payload: { plan: "Old plan" },
@@ -329,8 +329,8 @@ Deno.test("Phase 13.5: MonitorTuiSession - builds flat tree", () => {
 
 Deno.test("Phase 13.5: MonitorTuiSession - toggle grouping", async () => {
   const { session } = createMonitorSession(sampleLogEntries([
-    { identity_id: "a1" },
-    { identity_id: "a2" },
+    { agent_role: "a1" },
+    { agent_role: "a2" },
   ]));
 
   assertEquals(session.getGroupBy(), "none");
@@ -414,7 +414,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - detail view", async () => {
       id: "1",
       trace_id: "t1",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "a1",
+      agent_role: "a1",
       action_type: "request_created",
       target: "target.md",
       payload: { foo: "bar" },
@@ -440,7 +440,7 @@ Deno.test("Phase 13.5: MonitorTuiSession - render methods", () => {
       id: "1",
       trace_id: "t1",
       actor: LogGroupingMode.IDENTITY,
-      identity_id: "a1",
+      agent_role: "a1",
       action_type: "request_created",
       target: "target.md",
       payload: {},

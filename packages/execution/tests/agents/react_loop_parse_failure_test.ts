@@ -103,7 +103,7 @@ const context = {
 } satisfies IExecutionContext;
 
 const options: IAgentExecutionOptions = {
-  identity_id: "parse-test-agent",
+  agent_role: "parse-test-agent",
   portal: "test",
   security_mode: SecurityMode.SANDBOXED,
   timeout_ms: 300000,

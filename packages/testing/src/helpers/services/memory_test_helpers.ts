@@ -38,7 +38,7 @@ export function createSuccessfulExecutionMemory(portal: string, traceId: string)
     completed_at: "2026-01-04T10:30:00Z",
     status: ExecutionStatus.COMPLETED,
     portal,
-    identity_id: TEST_AGENT_NAME,
+    agent_role: TEST_AGENT_NAME,
     summary:
       "Implemented repository pattern for database access. Created UserRepository with CRUD operations. Added proper error handling with typed exceptions.",
     context_files: ["src/services/user.ts", "src/types/errors.ts"],
@@ -63,7 +63,7 @@ export function createFailedExecutionMemory(portal: string, traceId: string): IE
     completed_at: "2026-01-04T11:15:00Z",
     status: ExecutionStatus.FAILED,
     portal,
-    identity_id: TEST_AGENT_NAME,
+    agent_role: TEST_AGENT_NAME,
     summary: "Failed to implement feature due to missing dependency configuration.",
     context_files: ["src/config.ts"],
     context_portals: [portal],
@@ -138,7 +138,7 @@ export function createMinimalProposal(overrides: Partial<IMemoryUpdateProposal> 
   return createBaseProposal({
     learning: createBaseLearning(overrides.learning),
     reason: overrides.reason ?? "Extracted from successful execution",
-    identity_id: overrides.identity_id ?? TEST_AGENT_NAME,
+    agent_role: overrides.agent_role ?? TEST_AGENT_NAME,
     ...overrides,
   });
 }
@@ -166,7 +166,7 @@ export function createGlobalProposal(overrides: Partial<IMemoryUpdateProposal> =
     }),
     reason: overrides.reason ?? "IPattern observed across multiple projects",
 
-    identity_id: overrides.identity_id ?? "architect",
+    agent_role: overrides.agent_role ?? "architect",
 
     status: overrides.status ?? MemoryStatus.PENDING,
     ...overrides,
@@ -194,7 +194,7 @@ export function createApprovedProposal(overrides: Partial<IMemoryUpdateProposal>
       ...overrides.learning,
     }),
     reason: overrides.reason ?? "User requested",
-    identity_id: overrides.identity_id ?? "user-cli",
+    agent_role: overrides.agent_role ?? "user-cli",
     status: overrides.status ?? MemoryStatus.APPROVED,
     reviewed_at: overrides.reviewed_at ?? "2026-01-04T13:00:00Z",
     reviewed_by: overrides.reviewed_by ?? ReviewSource.USER,
@@ -211,7 +211,7 @@ export function createInvalidProposal(overrides: Partial<IMemoryUpdateProposal> 
     operation: MemoryOperation.ADD, // placeholder
     learning: createInvalidLearning(overrides.learning),
     reason: TEST_TOPIC_LABEL,
-    identity_id: TEST_ID,
+    agent_role: TEST_ID,
     status: MemoryStatus.PENDING,
   });
 
@@ -231,7 +231,7 @@ export function createInvalidStatusProposal(overrides: Partial<IMemoryUpdateProp
     operation: MemoryOperation.ADD,
     learning: createInvalidLearning(overrides.learning),
     reason: TEST_TOPIC_LABEL,
-    identity_id: TEST_ID,
+    agent_role: TEST_ID,
     status: MemoryStatus.PENDING,
   });
 
@@ -274,7 +274,7 @@ function createBaseProposal(overrides: Partial<IMemoryUpdateProposal> = {}): IMe
     target_project: overrides.target_project ?? TEST_PROJECT_NAME,
     learning: overrides.learning ?? createBaseLearning(),
     reason: overrides.reason ?? "Test proposal",
-    identity_id: overrides.identity_id ?? TEST_IDENTITY_ID,
+    agent_role: overrides.agent_role ?? TEST_IDENTITY_ID,
     execution_id: overrides.execution_id ?? "trace-123",
     status: overrides.status ?? MemoryStatus.PENDING,
     ...overrides,

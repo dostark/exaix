@@ -15,7 +15,7 @@ import { ANALYZER_VERSION, FlowGateOnFail } from "@exaix/core";
 import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
 
 const BASE_CONFIG: GateConfig = {
-  identity: "judge-agent",
+  agent_role: "judge-agent",
   criteria: ["CODE_CORRECTNESS"],
   threshold: 0.05,
   onFail: FlowGateOnFail.HALT,

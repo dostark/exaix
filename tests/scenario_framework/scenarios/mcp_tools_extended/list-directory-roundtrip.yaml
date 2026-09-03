@@ -38,7 +38,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "list_directory"
-      - '{"portal":"tools","path":"src","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

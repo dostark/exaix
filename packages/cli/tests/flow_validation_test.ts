@@ -21,7 +21,7 @@ function createStep(overrides: Partial<IFlowStep> = {}): IFlowStep {
   return {
     id: "test-step",
     name: "Test Step",
-    identity: "test-agent",
+    agent_role: "test-agent",
     type: FlowStepType.AGENT,
     execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],

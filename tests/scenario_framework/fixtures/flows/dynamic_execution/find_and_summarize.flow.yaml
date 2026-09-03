@@ -10,7 +10,7 @@ output:
 steps:
   - id: "analyze"
     name: "Analyze codebase and summarize exports"
-    identity: "code-analyst"
+    agent_role: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

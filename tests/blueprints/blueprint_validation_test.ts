@@ -13,7 +13,7 @@ import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 const BLUEPRINTS_DIR = "./Blueprints/Agents";
 
 interface BlueprintFrontmatter {
-  identity_id: string;
+  agent_role: string;
   name: string;
   model: string;
   capabilities?: string[];
@@ -59,7 +59,7 @@ Deno.test("Blueprint validation: default.md passes schema", async () => {
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "default");
+  assertEquals(frontmatter!.agent_role, "default");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -76,7 +76,7 @@ Deno.test("Blueprint validation: senior-coder.md passes schema", async () => {
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "senior-coder");
+  assertEquals(frontmatter!.agent_role, "senior-coder");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -93,7 +93,7 @@ Deno.test("Blueprint validation: quality-judge.md passes schema", async () => {
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "quality-judge");
+  assertEquals(frontmatter!.agent_role, "quality-judge");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -112,7 +112,7 @@ Deno.test("Blueprint validation: research-synthesizer.md (promoted from examples
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "research-synthesizer");
+  assertEquals(frontmatter!.agent_role, "research-synthesizer");
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
@@ -132,7 +132,7 @@ Deno.test("Blueprint validation: security-expert.md passes schema", async () => 
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "security-expert");
+  assertEquals(frontmatter!.agent_role, "security-expert");
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
@@ -150,7 +150,7 @@ Deno.test("Blueprint validation: performance-engineer.md passes schema", async (
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "performance-engineer");
+  assertEquals(frontmatter!.agent_role, "performance-engineer");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -167,7 +167,7 @@ Deno.test("Blueprint validation: technical-writer.md passes schema", async () =>
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "technical-writer");
+  assertEquals(frontmatter!.agent_role, "technical-writer");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -184,7 +184,7 @@ Deno.test("Blueprint validation: software-architect.md passes schema", async () 
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "software-architect");
+  assertEquals(frontmatter!.agent_role, "software-architect");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -201,7 +201,7 @@ Deno.test("Blueprint validation: test-engineer.md passes schema", async () => {
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "test-engineer");
+  assertEquals(frontmatter!.agent_role, "test-engineer");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
   assertEquals(
@@ -276,7 +276,7 @@ Deno.test("Blueprint validation: voting-judge.md passes schema", async () => {
     "voting-judge.md should have valid YAML frontmatter",
   );
   const parsed = BlueprintFrontmatterSchema.parse(frontmatter);
-  assertEquals(parsed.identity_id, "voting-judge");
+  assertEquals(parsed.agent_role, "voting-judge");
   assertEquals(parsed.name, "Voting Consensus Judge");
 });
 

@@ -1,6 +1,6 @@
 ---
 trace_id: "abc-123"
-identity_id: senior-coder
+agent_role: senior-coder
 status: pending
 priority: "high"
 tags: "not-an-array"

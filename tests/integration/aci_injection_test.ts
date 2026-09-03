@@ -55,7 +55,7 @@ async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStr
   const context: IPlanContext = {
     trace_id: traceId,
     request_id: requestId,
-    identity: IDENTITY_ID,
+    agent_role: IDENTITY_ID,
     frontmatter: {},
     steps: [{
       number: 1,

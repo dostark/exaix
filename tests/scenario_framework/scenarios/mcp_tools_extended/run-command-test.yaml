@@ -39,7 +39,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "run_command"
-      - '{"portal":"tools","command":"echo","args":["hello from run_command"],"identity_id":"tools-eval"}'
+      - '{"portal":"tools","command":"echo","args":["hello from run_command"],"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -67,7 +67,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "run_command"
-      - '{"portal":"tools","command":"curl","args":["https://example.com"],"identity_id":"tools-eval"}'
+      - '{"portal":"tools","command":"curl","args":["https://example.com"],"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

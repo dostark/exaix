@@ -80,7 +80,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       skills_context: "S".repeat(500),
     } as IExecutionContext & { skills_context: string };
     const options: IAgentExecutionOptions = {
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       portal: "TestPortal",
       security_mode: SecurityMode.HYBRID,
       timeout_ms: 30000,

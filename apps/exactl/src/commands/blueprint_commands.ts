@@ -32,7 +32,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  * Frontmatter data parsed from YAML/TOML
  */
 export interface IBlueprintFrontmatterData {
-  identity_id: string;
+  agent_role: string;
   name?: string;
   model?: string;
   capabilities?: string[];
@@ -150,7 +150,7 @@ export class BlueprintCommands extends BaseCommand {
    * Parse YAML content into frontmatter object
    */
   private parseYamlContent(yamlContent: string): IBlueprintFrontmatterData {
-    const frontmatter: IBlueprintFrontmatterData = { identity_id: "" };
+    const frontmatter: IBlueprintFrontmatterData = { agent_role: "" };
     const lines = yamlContent.split("\n");
 
     const state: { currentKey: string | null; currentArray: string[] } = {
@@ -281,7 +281,7 @@ export class BlueprintCommands extends BaseCommand {
     }
 
     return {
-      identity_id: identityId,
+      agent_role: identityId,
       name: frontmatter.name as string,
       model: frontmatter.model as string,
       capabilities: frontmatter.capabilities as string[] | undefined,
@@ -436,7 +436,7 @@ export class BlueprintCommands extends BaseCommand {
     capabilities: string[],
   ): Promise<IBlueprintFrontmatterData> {
     const frontmatter: IBlueprintFrontmatterData = {
-      identity_id: identityId,
+      agent_role: identityId,
       name: options.name,
       model: model,
       capabilities: capabilities,
@@ -512,7 +512,7 @@ ${systemPrompt}
       await this.writeBlueprintFile(blueprintPath, frontmatter, finalSystemPrompt, identityId, model, options);
 
       return {
-        identity_id: identityId,
+        agent_role: identityId,
         name: options.name as string,
         model: model,
         capabilities,

@@ -390,7 +390,7 @@ Deno.test("review show --diff prints diff only", async () => {
         request_id: "req-1",
         files_changed: 1,
         created_at: new Date().toISOString(),
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         commits: [],
         type: ReviewType.CODE,
       });
@@ -411,7 +411,7 @@ Deno.test("review show renders approved decision", async () => {
         branch: "feat/x",
         trace_id: "trace-1",
         created_at: new Date().toISOString(),
-        identity_id: "agent-1",
+        agent_role: "agent-1",
         files_changed: 1,
         status: ReviewStatus.APPROVED,
         commits: [{ sha: "abcd1234", message: "done", timestamp: new Date().toISOString() }],
@@ -436,7 +436,7 @@ Deno.test("review show renders rejected decision", async () => {
         branch: "feat/y",
         trace_id: "trace-2",
         created_at: new Date().toISOString(),
-        identity_id: "agent-2",
+        agent_role: "agent-2",
         files_changed: 2,
         status: ReviewStatus.REJECTED,
         commits: [{ sha: "deadbeef", message: "nope", timestamp: new Date().toISOString() }],
@@ -872,7 +872,7 @@ Deno.test("blueprint show displays content preview", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.blueprintCommands.show = (id: string) =>
       Promise.resolve({
-        identity_id: id,
+        agent_role: id,
         name: "Test Agent",
         model: "mock:test",
         capabilities: ["coding", "review"],
@@ -925,7 +925,7 @@ Deno.test("request create with all options", async () => {
         filename: "/tmp/req.md",
         trace_id: "t-all",
         priority: RequestPriority.HIGH,
-        identity: "custom-agent",
+        agent_role: "custom-agent",
         path: "/tmp",
         source: RequestSource.CLI as const,
         created_by: "tester",
@@ -970,7 +970,7 @@ Deno.test("request create with flow option", async () => {
         created_by: "tester",
         created: "now",
         status: RequestStatus.PENDING,
-        identity: "agent",
+        agent_role: "agent",
       });
     };
     await captureConsoleOutput(async () => {
@@ -1017,7 +1017,7 @@ Deno.test("request list shows different priority icons", async () => {
         {
           trace_id: "t1",
           priority: RequestPriority.CRITICAL,
-          identity: "a",
+          agent_role: "a",
           created_by: "u",
           created: "t",
           status: RequestStatus.PENDING,
@@ -1028,7 +1028,7 @@ Deno.test("request list shows different priority icons", async () => {
         {
           trace_id: "t2",
           priority: RequestPriority.HIGH,
-          identity: "a",
+          agent_role: "a",
           created_by: "u",
           created: "t",
           status: RequestStatus.PENDING,
@@ -1039,7 +1039,7 @@ Deno.test("request list shows different priority icons", async () => {
         {
           trace_id: "t3",
           priority: RequestPriority.LOW,
-          identity: "a",
+          agent_role: "a",
           created_by: "u",
           created: "t",
           status: RequestStatus.PENDING,
@@ -1078,7 +1078,7 @@ Deno.test("end-to-end flow request workflow", async () => {
         created_by: "tester",
         created: "now",
         status: RequestStatus.PENDING,
-        identity: "agent",
+        agent_role: "agent",
       });
     };
 
@@ -1088,7 +1088,7 @@ Deno.test("end-to-end flow request workflow", async () => {
         trace_id: "flow-test-123",
         priority: RequestPriority.NORMAL,
         flow: "web-dev-flow",
-        identity: "agent",
+        agent_role: "agent",
         status: RequestStatus.PENDING,
         created: new Date().toISOString(),
         filename: "flow-test-123.md",
@@ -1108,7 +1108,7 @@ Deno.test("end-to-end flow request workflow", async () => {
           path: "/tmp/flow-test-123.md",
           status: RequestStatus.PENDING,
           priority: RequestPriority.NORMAL,
-          identity: "default",
+          agent_role: "default",
           flow: "web-dev-flow",
           created: new Date().toISOString(),
           created_by: "test-user",

@@ -64,7 +64,7 @@ const testContext = {
 } satisfies IExecutionContext;
 
 const testOptions: IAgentExecutionOptions = {
-  identity_id: "history-test-agent",
+  agent_role: "history-test-agent",
   portal: "test",
   security_mode: SecurityMode.SANDBOXED,
   timeout_ms: 300000,

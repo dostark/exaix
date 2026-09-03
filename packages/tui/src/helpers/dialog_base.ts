@@ -726,8 +726,8 @@ export function renderProposalInfo(
   }
 
   // Agent and reason
-  if (proposal.identity_id) {
-    lines.push(renderBoxLine(`  Identity: ${proposal.identity_id}`, innerWidth, theme));
+  if (proposal.agent_role) {
+    lines.push(renderBoxLine(`  Identity: ${proposal.agent_role}`, innerWidth, theme));
   }
 
   if (proposal.reason) {

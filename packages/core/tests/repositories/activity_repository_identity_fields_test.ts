@@ -23,7 +23,7 @@ Deno.test("IActivityRepository: writes and reads back all separation fields", as
       payload: { key: "value" },
       traceId,
       agentKind: "agent-executor",
-      identityId: "senior-coder",
+      agentRole: "senior-coder",
     };
 
     // Act
@@ -37,7 +37,7 @@ Deno.test("IActivityRepository: writes and reads back all separation fields", as
     assertEquals(row.actorType, "user");
     assertEquals(row.agentId, null); // Legacy: no longer tracked this way per mapping
     assertEquals(row.agentKind, "agent-executor");
-    assertEquals(row.identityId, "senior-coder");
+    assertEquals(row.agentRole, "senior-coder");
     assertEquals(row.actionType, "test.action");
     assertEquals(row.target, "some-portal");
   } finally {
@@ -66,47 +66,47 @@ Deno.test("IActivityRepository: stores null when separation fields are omitted",
     const row = rows[0];
     assertEquals(row.actorType, null);
     assertEquals(row.agentKind, null);
-    assertEquals(row.identityId, null);
+    assertEquals(row.agentRole, null);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("IActivityRepository: agentKind stores runtime agent category, distinct from identityId", async () => {
+Deno.test("IActivityRepository: agentKind stores runtime agent category, distinct from agentRole", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
     const traceId = crypto.randomUUID();
 
-    // Act - write row with distinct agentKind and identityId
+    // Act - write row with distinct agentKind and agentRole
     await repo.logActivity({
       actor: "system",
       actionType: "flow.step.started",
       target: "test-portal",
       traceId,
       agentKind: "flow-runner",
-      identityId: "code-reviewer",
+      agentRole: "code-reviewer",
     });
 
     const rows = await repo.getActivitiesByTraceId(traceId);
 
-    // Assert - regression: agentKind must differ from identityId
+    // Assert - regression: agentKind must differ from agentRole
     assertEquals(rows.length, 1);
     const row = rows[0];
     assertEquals(row.agentKind, "flow-runner");
-    assertEquals(row.identityId, "code-reviewer");
-    assertNotEquals(row.agentKind, row.identityId);
+    assertEquals(row.agentRole, "code-reviewer");
+    assertNotEquals(row.agentKind, row.agentRole);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("IActivityRepository: indexes on identity_id are queryable", async () => {
+Deno.test("IActivityRepository: indexes on agent_role are queryable", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
 
-    // Act - write two rows with different identityId values
+    // Act - write two rows with different agentRole values
     const traceId1 = crypto.randomUUID();
     const traceId2 = crypto.randomUUID();
 
@@ -115,7 +115,7 @@ Deno.test("IActivityRepository: indexes on identity_id are queryable", async () 
       actionType: "test.action",
       target: "portal",
       traceId: traceId1,
-      identityId: "senior-coder",
+      agentRole: "senior-coder",
     });
 
     await repo.logActivity({
@@ -123,16 +123,16 @@ Deno.test("IActivityRepository: indexes on identity_id are queryable", async () 
       actionType: "test.action",
       target: "portal",
       traceId: traceId2,
-      identityId: "code-reviewer",
+      agentRole: "code-reviewer",
     });
 
-    // Query by identityId - verify index works
+    // Query by agentRole - verify index works
     const allActivities = await repo.getRecentActivities(100);
-    const seniorCoderActivities = allActivities.filter((a) => a.identityId === "senior-coder");
+    const seniorCoderActivities = allActivities.filter((a) => a.agentRole === "senior-coder");
 
     // Assert - only one row returned for senior-coder
     assertEquals(seniorCoderActivities.length, 1);
-    assertEquals(seniorCoderActivities[0].identityId, "senior-coder");
+    assertEquals(seniorCoderActivities[0].agentRole, "senior-coder");
   } finally {
     await cleanup();
   }

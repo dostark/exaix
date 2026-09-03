@@ -1,5 +1,5 @@
 ---
-identity_id: "test-engineer"
+agent_role: "test-engineer"
 name: "Test Engineer"
 model: ""
 model_size: M

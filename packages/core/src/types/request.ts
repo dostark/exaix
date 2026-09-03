@@ -37,7 +37,7 @@ export interface IRequestOptions {
   /** @deprecated Use identity instead */
   agent?: string;
   /** Identity blueprint to use (canonical field) */
-  identity?: string;
+  agent_role?: string;
   priority?: RequestPriority;
   portal?: string;
   target_branch?: string;
@@ -78,7 +78,7 @@ export interface IRequestMetadata {
   path?: string;
   status: RequestStatusType;
   priority: RequestPriority;
-  identity: string;
+  agent_role: string;
   portal?: string;
   target_branch?: string;
   model?: string;

@@ -50,20 +50,20 @@ const MCP_ERR_PATH_REQUIRED = "File path required";
 export const ReadFileToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const WriteFileToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
   content: z.string(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const ListDirectoryToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().optional().default(""),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitCreateBranchToolArgsSchema = z.object({
@@ -72,7 +72,7 @@ export const GitCreateBranchToolArgsSchema = z.object({
     .regex(/^(feat|fix|docs|chore|refactor|test)\//, "Branch must start with feat/, fix/, docs/, etc."),
   track: z.string().optional(),
   force: z.boolean().optional().default(false),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitCommitToolArgsSchema = z.object({
@@ -81,14 +81,14 @@ export const GitCommitToolArgsSchema = z.object({
   files: z.array(z.string()).optional(),
   amend: z.boolean().optional().default(false),
   signoff: z.boolean().optional().default(false),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitStatusToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   format: z.nativeEnum(GitStatusFormat).optional().default(GitStatusFormat.PORCELAIN),
   include_untracked: z.boolean().optional().default(true),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitLogToolArgsSchema = z.object({
@@ -106,7 +106,7 @@ export const GitLogToolArgsSchema = z.object({
   decorate: z.boolean().optional().default(false),
   format: z.nativeEnum(GitLogFormat).optional().default(GitLogFormat.ONELINE),
   custom_format: z.string().optional(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitWorktreeToolArgsSchema = z.object({
@@ -123,7 +123,7 @@ export const GitWorktreeToolArgsSchema = z.object({
   dry_run: z.boolean().optional().default(false),
   verbose: z.boolean().optional().default(false),
   expire: z.string().optional(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 }).superRefine((value, ctx) => {
   if (
     [GitWorktreeAction.ADD, GitWorktreeAction.REMOVE, GitWorktreeAction.LOCK, GitWorktreeAction.UNLOCK].includes(
@@ -146,66 +146,66 @@ export const PatchFileToolArgsSchema = z.object({
   search: z.string().min(1, "Search string required"),
   /** Replacement string. May be empty to delete the matched section. */
   replace: z.string(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const DeleteFileToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const MoveFileToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   from: z.string().min(1, "Source path required"),
   to: z.string().min(1, "Destination path required"),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const CreateDirectoryToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().min(1, "Directory path required"),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const CreateRequestToolArgsSchema = z.object({
   description: z.string().min(1, "Description required"),
-  /** @deprecated Use identity instead */
+  /** @deprecated Use assigned_agent_role instead */
   agent: z.string().default(DEFAULT_AGENT_MODEL),
-  /** Identity to assign — the canonical field. */
-  identity: z.string().default(DEFAULT_AGENT_MODEL),
+  /** Agent role to assign to the created request — the canonical field. */
+  assigned_agent_role: z.string().default(DEFAULT_AGENT_MODEL),
   context: z.array(z.string()).optional(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const ListPlansToolArgsSchema = z.object({
   status: z.enum(PLAN_STATUS_VALUES).optional(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const ApprovePlanToolArgsSchema = z.object({
   plan_id: z.string().min(1, "Plan ID required"),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const QueryJournalToolArgsSchema = z.object({
   trace_id: z.string().optional(),
   limit: z.number().int().positive().default(DEFAULT_QUERY_LIMIT),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const RunCommandToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   command: z.string().min(1, "Command required"),
   args: z.array(z.string()).optional(),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const SearchFilesToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   pattern: z.string().min(1, "Pattern required"),
   path: z.string().optional().default(""),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const PortalSymbolsToolArgsSchema = z.object({
@@ -213,7 +213,7 @@ export const PortalSymbolsToolArgsSchema = z.object({
   query: z.string().min(1).optional(),
   kind: SymbolEntrySchema.shape.kind.optional(),
   limit: z.number().int().positive().default(DEFAULT_QUERY_LIMIT),
-  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+  agent_role: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 // Union type for all tool arguments

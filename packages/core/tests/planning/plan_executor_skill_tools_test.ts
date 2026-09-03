@@ -98,7 +98,7 @@ Deno.test({
       // declares it, so it must not survive the intersection.
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        '---\nidentity_id: senior-coder\nmodel: ""\n' +
+        '---\nagent_role: senior-coder\nmodel: ""\n' +
           'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\n\n' +
           "Stub identity for testing.\n",
       );
@@ -167,7 +167,7 @@ Deno.test({
       await executor.execute(`${root}/plan.md`, {
         trace_id: crypto.randomUUID(),
         request_id: "test-req",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         frontmatter: { subject: "Fix the null-safety bug and commit" },
         steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
       });

@@ -83,7 +83,7 @@ Deno.test("PortalSymbolsTool: returns symbols ranked by pageRankScore descending
     await writeKnowledgeFixture(env.tempDir, "symbols-portal");
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "symbols-portal", identity_id: "test-agent" });
+    const response = await handler.execute({ portal: "symbols-portal", agent_role: "test-agent" });
 
     assertEquals(response.isError, undefined);
     const data = getFirstStructuredDataContent<ISymbolEntry[]>(response);
@@ -96,7 +96,7 @@ Deno.test("PortalSymbolsTool: filters by case-insensitive name substring", async
     await writeKnowledgeFixture(env.tempDir, "symbols-portal");
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "symbols-portal", identity_id: "test-agent", query: "helper" });
+    const response = await handler.execute({ portal: "symbols-portal", agent_role: "test-agent", query: "helper" });
 
     const data = getFirstStructuredDataContent<ISymbolEntry[]>(response);
     assertEquals(data.map((s) => s.name), ["HelperOptions"]);
@@ -108,7 +108,7 @@ Deno.test("PortalSymbolsTool: filters by symbol kind", async () => {
     await writeKnowledgeFixture(env.tempDir, "symbols-portal");
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "symbols-portal", identity_id: "test-agent", kind: "const" });
+    const response = await handler.execute({ portal: "symbols-portal", agent_role: "test-agent", kind: "const" });
 
     const data = getFirstStructuredDataContent<ISymbolEntry[]>(response);
     assertEquals(data.map((s) => s.name), ["MAX_RETRIES"]);
@@ -120,7 +120,7 @@ Deno.test("PortalSymbolsTool: limit caps the result count after ranking", async 
     await writeKnowledgeFixture(env.tempDir, "symbols-portal");
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "symbols-portal", identity_id: "test-agent", limit: 2 });
+    const response = await handler.execute({ portal: "symbols-portal", agent_role: "test-agent", limit: 2 });
 
     const data = getFirstStructuredDataContent<ISymbolEntry[]>(response);
     assertEquals(data.map((s) => s.name), ["greet", "Greeter"]);
@@ -131,7 +131,7 @@ Deno.test("PortalSymbolsTool: portal not yet analyzed returns isError:true, not 
   await withToolPermissionTest({ portalAlias: "unanalyzed-portal" }, async (env) => {
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "unanalyzed-portal", identity_id: "test-agent" });
+    const response = await handler.execute({ portal: "unanalyzed-portal", agent_role: "test-agent" });
 
     assertEquals(response.isError, true);
     assertEquals(getFirstTextContent(response).includes("has not been analyzed"), true);
@@ -142,7 +142,7 @@ Deno.test("PortalSymbolsTool: unknown portal returns isError:true, not thrown", 
   await withToolPermissionTest({ portalAlias: "symbols-portal" }, async (env) => {
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "does-not-exist", identity_id: "test-agent" });
+    const response = await handler.execute({ portal: "does-not-exist", agent_role: "test-agent" });
 
     assertEquals(response.isError, true);
     assertEquals(getFirstTextContent(response).includes("Portal 'does-not-exist' not found"), true);
@@ -154,7 +154,7 @@ Deno.test("PortalSymbolsTool: identity without portal permission is denied", asy
     await writeKnowledgeFixture(env.tempDir, "symbols-portal");
     const handler = createHandler(env);
 
-    const response = await handler.execute({ portal: "symbols-portal", identity_id: "other-agent" });
+    const response = await handler.execute({ portal: "symbols-portal", agent_role: "other-agent" });
 
     assertEquals(response.isError, true);
     assertEquals(getFirstTextContent(response).includes("not allowed to access portal 'symbols-portal'"), true);
@@ -163,5 +163,5 @@ Deno.test("PortalSymbolsTool: identity without portal permission is denied", asy
 
 Deno.test("PortalSymbolsTool: getToolDefinition returns correct definition", () => {
   const handler = new PortalSymbolsTool(createBaseToolContext());
-  assertToolDefinitionFields(handler.getToolDefinition(), McpToolName.PORTAL_SYMBOLS, ["portal", "identity_id"]);
+  assertToolDefinitionFields(handler.getToolDefinition(), McpToolName.PORTAL_SYMBOLS, ["portal", "agent_role"]);
 });

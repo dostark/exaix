@@ -19,7 +19,7 @@ const _frontmatter: IRequestFrontmatter = {
   priority: "normal",
   source: "cli",
   created_by: "test-user",
-  identity_id: "senior-coder",
+  agent_role: "senior-coder",
 };
 
 const _parsedRequest: IParsedRequestFile = {

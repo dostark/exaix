@@ -39,7 +39,7 @@ const TEST_IDENTITY = "dogfood-coder";
 function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
-    identity_id: TEST_IDENTITY,
+    agent_role: TEST_IDENTITY,
     gate: "code_changes" as const,
     tool: "opencode",
     objective: "Execute step test",
@@ -58,7 +58,7 @@ function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInp
 function claudeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
-    identity_id: TEST_IDENTITY,
+    agent_role: TEST_IDENTITY,
     gate: "code_changes" as const,
     tool: "claude-code",
     objective: "Execute step test",
@@ -143,7 +143,7 @@ Deno.test("[delegate_hardening] resolveHardenedLaunch appends permission flags f
 Deno.test("[delegate_hardening] agentNameMismatch is false when the brief's identity_id round-trips through the generator", async () => {
   const sessionDir = await Deno.makeTempDir();
   const svc = makeService(sessionDir);
-  const brief = opencodeBrief({ identity_id: "dogfood-coder" });
+  const brief = opencodeBrief({ agent_role: "dogfood-coder" });
   const config = hardenedConfig();
 
   const result = await svc.resolveHardenedLaunch(brief, "headless", config);

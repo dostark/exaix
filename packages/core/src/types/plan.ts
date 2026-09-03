@@ -15,7 +15,7 @@ export interface IPlanMetadata {
   id: string; // The filename (e.g., plan.md)
   status: PlanStatusType;
   trace_id?: string;
-  identity_id?: string;
+  agent_role?: string;
   author?: string;
   request_id?: string;
   request_subject?: string;

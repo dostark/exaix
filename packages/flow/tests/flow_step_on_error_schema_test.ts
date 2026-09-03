@@ -52,7 +52,7 @@ Deno.test("FlowSchema keeps onError optional for existing flow definitions", () 
       {
         id: "analyze",
         name: "Analyze",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         input: {
           source: FlowInputSource.REQUEST,
         },

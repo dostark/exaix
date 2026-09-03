@@ -10,7 +10,7 @@ steps:
   - id: gather-requirements
     name: Gather Migration Requirements
     type: agent
-    identity: product-manager
+    agent_role: product-manager
     dependsOn: []
     input:
       source: request
@@ -21,7 +21,7 @@ steps:
   - id: analyze-current-state
     name: Analyze Current Codebase
     type: agent
-    identity: code-analyst
+    agent_role: code-analyst
     strategy: react
     dependsOn: []
     input:
@@ -34,7 +34,7 @@ steps:
   - id: impact-analysis
     name: Impact Analysis
     type: agent
-    identity: software-architect
+    agent_role: software-architect
     dependsOn:
       - gather-requirements
       - analyze-current-state
@@ -51,7 +51,7 @@ steps:
   - id: breaking-changes
     name: Identify Breaking Changes
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     dependsOn:
       - impact-analysis
     input:
@@ -67,7 +67,7 @@ steps:
   - id: risk-assessment
     name: Risk Assessment
     type: agent
-    identity: qa-engineer
+    agent_role: qa-engineer
     dependsOn:
       - impact-analysis
       - breaking-changes
@@ -84,7 +84,7 @@ steps:
   - id: security-considerations
     name: Security Considerations
     type: agent
-    identity: security-expert
+    agent_role: security-expert
     dependsOn:
       - impact-analysis
     input:
@@ -98,7 +98,7 @@ steps:
   - id: create-migration-plan
     name: Create Migration Plan
     type: agent
-    identity: software-architect
+    agent_role: software-architect
     dependsOn:
       - breaking-changes
       - risk-assessment
@@ -119,7 +119,7 @@ steps:
   - id: testing-strategy
     name: Define Testing Strategy
     type: agent
-    identity: test-engineer
+    agent_role: test-engineer
     dependsOn:
       - create-migration-plan
     input:
@@ -135,7 +135,7 @@ steps:
   - id: generate-documentation
     name: Generate Migration Documentation
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - create-migration-plan
       - testing-strategy

@@ -330,7 +330,7 @@ export class AgentRunner implements IAgentRunner {
       requestId || null,
       {
         prompt_kind: "planning",
-        identity_id: identityId,
+        agent_role: identityId,
         prompt_length: combinedPrompt.length,
         skillIdsUsed: skillIds,
         skillsCount: skillIds.length,
@@ -344,7 +344,7 @@ export class AgentRunner implements IAgentRunner {
     // (no LLM call needed) confirm the prompt is complete and not truncated, independent
     // of whatever the model returns. Left in for future debugging, not just this one.
     this.logActivityDebug(AGENT_EVENT_PROMPT_DEBUG_DUMP, requestId || null, {
-      identity_id: identityId,
+      agent_role: identityId,
       prompt_length: combinedPrompt.length,
       system_prompt_length: blueprint.systemPrompt.length,
       skill_context_length: skillContextString.length,
@@ -370,7 +370,7 @@ export class AgentRunner implements IAgentRunner {
     await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${identityId}`);
     const rawResponse = generateResult?.content || "";
     this.logActivityDebug(AGENT_EVENT_LLM_RESPONSE_RECEIVED, requestId || null, {
-      identity_id: identityId,
+      agent_role: identityId,
       response_length: rawResponse.length,
       full_response: rawResponse,
       stop_reason: generateResult?.stop_reason ?? null,
@@ -382,7 +382,7 @@ export class AgentRunner implements IAgentRunner {
     // truncation, not treated as a mysteriously malformed model response.
     if (generateResult?.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS && this.logger) {
       void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
-        identity_id: identityId,
+        agent_role: identityId,
         stop_reason: generateResult.stop_reason,
         response_length: rawResponse.length,
         completion_tokens: generateResult?.usage?.completionTokens ?? null,
@@ -566,7 +566,7 @@ export class AgentRunner implements IAgentRunner {
       AGENT_EVENT_EXECUTION_STARTED,
       requestId || null,
       {
-        identity_id: identityId,
+        agent_role: identityId,
         prompt_length: request.userPrompt.length,
         has_context: Object.keys(request.context).length > 0,
         retry_enabled: !this.disableRetry,
@@ -675,7 +675,7 @@ export class AgentRunner implements IAgentRunner {
       "agent.execution_failed",
       requestId || null,
       {
-        identity_id: identityId,
+        agent_role: identityId,
         duration_ms: duration,
         total_attempts: retryResult.totalAttempts,
         retry_history: toSafeJson(retryResult.retryHistory),
@@ -717,7 +717,7 @@ export class AgentRunner implements IAgentRunner {
       AGENT_EVENT_EXECUTION_COMPLETED,
       requestId || null,
       {
-        identity_id: identityId,
+        agent_role: identityId,
         duration_ms: duration,
         total_attempts: retryResult.totalAttempts,
         retry_history: retryResult.retryHistory.length > 0 ? toSafeJson(retryResult.retryHistory) : null,
@@ -853,7 +853,7 @@ export class AgentRunner implements IAgentRunner {
       ACTIVITY_ACTOR_AGENT,
       message.includes("timed out") ? SKILL_EVENT_RETRIEVAL_TIMEOUT : SKILL_EVENT_RETRIEVAL_FAILED,
       identityId,
-      { identity_id: identityId, error: message },
+      { agent_role: identityId, error: message },
     );
     console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", message);
   }
@@ -870,7 +870,7 @@ export class AgentRunner implements IAgentRunner {
     suppressed: string[],
   ): void {
     this.logActivity(ACTIVITY_ACTOR_AGENT, SKILL_EVENT_RESOLVED, identityId, {
-      identity_id: identityId,
+      agent_role: identityId,
       skill_ids: skillIds,
       skill_count: skillIds.length,
       pinned_skill_ids: pinned,

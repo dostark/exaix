@@ -151,7 +151,7 @@ if (import.meta.main) {
         portal: "none",
       },
       {
-        identity_id: "phase-147-memory-loop",
+        agent_role: "phase-147-memory-loop",
         portal: "none",
         permitted_tools: [ToolName.REMEMBER_FACT],
         security_mode: SecurityMode.SANDBOXED,

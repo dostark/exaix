@@ -123,7 +123,7 @@ Deno.test("handler_registry_result_validation: read-only MCP tool recovers throu
     try {
       const request = createMCPRequest("tools/call", {
         name: "list_directory",
-        arguments: { portal: portalAlias, path: ".", identity_id: "test-agent" },
+        arguments: { portal: portalAlias, path: ".", agent_role: "test-agent" },
       });
       const response = await server.handleRequest(request);
       const result = response.result as { isError?: boolean; content?: Array<{ type: string; text?: string }> };

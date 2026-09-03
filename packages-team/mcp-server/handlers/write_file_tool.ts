@@ -19,7 +19,7 @@ export class WriteFileTool extends ToolHandler {
       portal: string;
       path: string;
       content: string;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, path, content, identity_id } = validatedArgs;
 
@@ -43,7 +43,7 @@ export class WriteFileTool extends ToolHandler {
       // Log successful execution
       this.logToolExecution(McpToolName.WRITE_FILE, portal, identity_id, {
         path,
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
         success: true,
         bytes: content.length,
       });
@@ -60,7 +60,7 @@ export class WriteFileTool extends ToolHandler {
       // Log failed execution
       this.logToolExecution(McpToolName.WRITE_FILE, portal, identity_id, {
         path,
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
         success: false,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -89,12 +89,12 @@ export class WriteFileTool extends ToolHandler {
             type: "string",
             description: "File content to write",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "path", "content", "identity_id"],
+        required: ["portal", "path", "content", "agent_role"],
       },
     };
   }

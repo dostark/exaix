@@ -48,7 +48,7 @@ const testContext = {
 
 function createOptions(portal: string): IAgentExecutionOptions {
   return {
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     portal,
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 300000,

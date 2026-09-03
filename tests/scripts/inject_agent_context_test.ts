@@ -39,7 +39,7 @@ Deno.test("inject finds best doc and extracts title/summary/snippet", async () =
   const filename = `test-inject-${Date.now()}.md`;
   const unique = `snippet-unique-${Date.now()}`;
   const md = `---
-identity: copilot
+agent_role: copilot
 title: Test Agent
 short_summary: A short summary
 ---
@@ -126,7 +126,7 @@ Deno.test("main prints found=false JSON when no doc matches", async () => {
 Deno.test("inject handles docs missing title/short_summary", async () => {
   const filename = `test-inject-empty-meta-${Date.now()}.md`;
   const md = `---
-identity: copilot
+agent_role: copilot
 ---
 
 This doc has no title or short summary but has a paragraph.`;

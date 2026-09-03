@@ -56,7 +56,7 @@ const testContext: IExecutionContext = {
 
 function makeOptions(nativeToolsEnabled: boolean): IAgentExecutionOptions {
   return {
-    identity_id: "gate-multi-provider-agent",
+    agent_role: "gate-multi-provider-agent",
     portal: "test",
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 30_000,

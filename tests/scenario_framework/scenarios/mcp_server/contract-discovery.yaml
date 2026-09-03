@@ -97,5 +97,5 @@ steps:
         score_weight: 0.8
       - id: "input-schemas-present"
         kind: "command-output-contains"
-        contains: ["inputSchema", "identity_id"]
+        contains: ["inputSchema", "agent_role"]
         score_weight: 0.5

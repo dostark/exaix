@@ -12,7 +12,7 @@ defaultSkills:
 steps:
   - id: delegate-step
     name: Implement the task via forced cli_delegate strategy
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: declared
     strategy: cli_delegate
     input:

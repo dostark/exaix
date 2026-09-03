@@ -21,7 +21,7 @@ export class MoveFileTool extends ToolHandler {
       portal: string;
       from: string;
       to: string;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, from, to, identity_id } = validatedArgs;
 
@@ -106,9 +106,9 @@ export class MoveFileTool extends ToolHandler {
           portal: { type: "string", description: "Portal alias" },
           from: { type: "string", description: "Source file path relative to portal root" },
           to: { type: "string", description: "Destination file path relative to portal root" },
-          identity_id: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Identity identifier for permission checks" },
         },
-        required: ["portal", "from", "to", "identity_id"],
+        required: ["portal", "from", "to", "agent_role"],
       },
     };
   }

@@ -153,7 +153,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
         traceId: "trace-1",
         requestId: "req-1",
         frontmatter: {
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           portal: "test-portal",
         },
         body: "test request",
@@ -171,7 +171,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
         traceId: "trace-1",
         requestId: "req-1",
         frontmatter: {
-          identity_id: "test-agent",
+          agent_role: "test-agent",
         },
         body: "test request",
       });
@@ -230,7 +230,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
         requestId: "req-1",
         frontmatter: {
           portal: "test-portal",
-          identity_id: "restricted-agent",
+          agent_role: "restricted-agent",
         },
         body: "test request",
       });
@@ -250,7 +250,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
         traceId: "trace-1",
         requestId: "req-1",
         frontmatter: {
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           portal: "test-portal",
         },
         body: "test request",
@@ -269,7 +269,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
         traceId: "trace-1",
         requestId: "req-1",
         frontmatter: {
-          identity_id: "test-agent",
+          agent_role: "test-agent",
         },
         body: "test request",
       });

@@ -11,7 +11,7 @@ import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestShowResult } from "@exaix/core/types";
-import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
+import { DEFAULT_AGENT_ROLE, PORTAL_LABEL } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { AnalysisMode } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -69,7 +69,7 @@ export class RequestShowHandler extends BaseCommand {
     matchingFrontmatter: Record<string, string | boolean | number>,
     planTokens: Record<string, string> | null,
   ): IRequestShowResult["metadata"] {
-    const identityValue = String(matchingFrontmatter.identity_id || DEFAULT_IDENTITY_ID);
+    const identityValue = String(matchingFrontmatter.agent_role || DEFAULT_AGENT_ROLE);
     const metadata: IRequestShowResult["metadata"] & { agent: string } = {
       path: matchingFile,
       filename: matchingFile.split("/").pop() || "",
@@ -78,7 +78,7 @@ export class RequestShowHandler extends BaseCommand {
       priority: String(
         matchingFrontmatter.priority || RequestPriority.NORMAL,
       ) as IRequestShowResult["metadata"]["priority"],
-      identity: identityValue,
+      agent_role: identityValue,
       agent: identityValue,
       created: String(matchingFrontmatter.created || ""),
       created_by: String(matchingFrontmatter.created_by || "unknown"),

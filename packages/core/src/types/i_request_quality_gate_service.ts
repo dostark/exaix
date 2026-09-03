@@ -45,7 +45,7 @@ export interface IRequestQualityContext {
   /** Request ID, for activity journal targeting. */
   requestId?: string;
   /** Agent or flow ID that will execute the request, if known. */
-  identityId?: string;
+  agentRole?: string;
   /** Absolute path to the originating request file. */
   requestFilePath?: string;
   /** Trace ID from request frontmatter, for correlated logging. */

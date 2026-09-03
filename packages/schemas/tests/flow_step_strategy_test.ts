@@ -15,7 +15,7 @@ Deno.test("FlowStepSchema: accepts strategy: react on a DECLARED agent step", ()
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DECLARED,
     strategy: ExecutionStrategyName.REACT,
   };
@@ -29,7 +29,7 @@ Deno.test("FlowStepSchema: accepts strategy: mcp on a DECLARED agent step", () =
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     strategy: ExecutionStrategyName.MCP,
   };
 
@@ -42,7 +42,7 @@ Deno.test("FlowStepSchema: accepts strategy: cli_delegate on a DECLARED agent st
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     strategy: ExecutionStrategyName.CLI_DELEGATE,
   };
 
@@ -55,7 +55,7 @@ Deno.test("FlowStepSchema: strategy is undefined when not specified (no behaviou
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
   };
 
   const result = FlowStepSchema.parse(step);
@@ -67,7 +67,7 @@ Deno.test("FlowStepSchema: rejects an invalid strategy value", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     strategy: "legacy",
   };
 
@@ -78,7 +78,7 @@ Deno.test("FlowStepSchema: rejects strategy on a DYNAMIC step", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     strategy: ExecutionStrategyName.REACT,
   };
@@ -90,7 +90,7 @@ Deno.test("FlowStepSchema: rejects strategy on a non-agent step type", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     type: FlowStepType.GATE,
     strategy: ExecutionStrategyName.REACT,
   };

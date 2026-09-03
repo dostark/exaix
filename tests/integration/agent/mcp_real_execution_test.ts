@@ -119,7 +119,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
         portal: "test",
       },
       {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "test",
         security_mode: SecurityMode.HYBRID,
       },
@@ -143,7 +143,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
             portal: "test",
           },
           {
-            identity_id: "test-agent",
+            agent_role: "test-agent",
             portal: "test",
             security_mode: SecurityMode.HYBRID,
           },

@@ -1,7 +1,7 @@
 ---
 trace_id: integration-test-123
 request_id: integration-req-456
-identity: mock-agent
+agent_role: mock-agent
 status: approved
 created_at: 2024-01-01T00:00:00Z
 ---

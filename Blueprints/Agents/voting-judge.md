@@ -1,5 +1,5 @@
 ---
-identity_id: "voting-judge"
+agent_role: "voting-judge"
 name: "Voting Consensus Judge"
 model: ""
 model_size: L

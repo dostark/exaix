@@ -220,7 +220,7 @@ async function dispatchReconciledOutcome(
           completed_at: now,
           status: ExecutionStatus.COMPLETED,
           portal: portalFromWorktreePath(brief.worktree_path),
-          identity_id: brief.identity_id,
+          agent_role: brief.identity_id,
           summary: outcome.summary,
           context_files: [],
           context_portals: [portalFromWorktreePath(brief.worktree_path)],

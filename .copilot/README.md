@@ -157,4 +157,4 @@ topics: ["keyword1", "keyword2"]
 ---
 ```
 
-Do **not** use `agent:`, `scope:`, or `identity:` in root-level files — those are `.copilot/`-internal fields.
+Do **not** use `agent:`, `scope:`, or `agent_role:` in root-level files — those are `.copilot/`-internal fields.

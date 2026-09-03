@@ -90,7 +90,7 @@ Deno.test("[plan-to-requests] each emitted frontmatter passes RequestSchema.pars
       const result = RequestSchema.safeParse(parsed);
       assertEquals(result.success, true, `Step ${stepNum} frontmatter must pass RequestSchema`);
       if (result.success) {
-        assertEquals(typeof result.data.identity_id, "string");
+        assertEquals(typeof result.data.agent_role, "string");
         assertEquals(result.data.status, "pending");
         assertEquals(typeof result.data.trace_id, "string");
         assertEquals(result.data.priority >= 0 && result.data.priority <= 10, true);
@@ -130,7 +130,7 @@ Deno.test("[plan-to-requests] dry-run prints count without writing", async () =>
     const { stdout, stderr } = await runGenerator([fixturePath, "--out-dir", tmpDir, "--dry-run"]);
     assertEquals(stderr, "");
     assertMatch(stdout, /Would write.*phase-nn-fixture-step/);
-    assertMatch(stdout, /identity_id: senior-coder/);
+    assertMatch(stdout, /agent_role: senior-coder/);
     assertMatch(stdout, /Would write 3 request file/);
 
     // Verify no files were written
@@ -683,14 +683,14 @@ async function admissionKindOf(frontmatter: Record<string, unknown>): Promise<Re
   return kind;
 }
 
-Deno.test("[plan-context][admission] generated frontmatter carries ONLY identity_id (legacy duplicate key must not return)", async () => {
+Deno.test("[plan-context][admission] generated frontmatter carries ONLY agent_role (legacy duplicate key must not return)", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-" });
   try {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
     const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
     const fm = productionFrontmatterOf(file);
-    assertEquals(fm.identity_id, "senior-coder");
-    assertEquals(fm.identity, undefined, "GAP-1 root fix: legacy identity key must not coexist with identity_id");
+    assertEquals(fm.agent_role, "senior-coder");
+    assertEquals(fm.identity, undefined, "GAP-1 root fix: legacy identity key must not coexist with agent_role");
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }
@@ -719,13 +719,13 @@ Deno.test("[plan-context][admission] manifest identity resolves to a loadable bl
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
     const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
     const fm = productionFrontmatterOf(file);
-    assertExists(fm.identity_id, "identity_id must exist before blueprint resolution can be meaningful");
+    assertExists(fm.agent_role, "agent_role must exist before blueprint resolution can be meaningful");
     // Drive the SAME resolver class RequestProcessor admission instantiates.
     const resolver = new BlueprintResolver({ blueprintsPath: join(REPO_ROOT_ADM, "Blueprints") });
-    const loaded = await resolver.resolve(String(fm.identity_id), noopTraceLogger);
+    const loaded = await resolver.resolve(String(fm.agent_role), noopTraceLogger);
     assertExists(
       loaded,
-      `blueprint '${fm.identity_id}' must load - BlueprintNotFound guard not reachable from generator output`,
+      `blueprint '${fm.agent_role}' must load - BlueprintNotFound guard not reachable from generator output`,
     );
   } finally {
     await Deno.remove(tmpDir, { recursive: true });

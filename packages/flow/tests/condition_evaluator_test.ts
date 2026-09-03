@@ -32,7 +32,7 @@ const MOCK_STEP: IFlowStep = {
   id: "s1",
   name: "s1",
   type: FlowStepType.AGENT,
-  identity: "test-agent",
+  agent_role: "test-agent",
   execution_mode: FlowStepExecutionMode.DECLARED,
   dependsOn: [],
   input: { source: FlowInputSource.REQUEST, transform: "passthrough" },

@@ -32,7 +32,7 @@ Deno.test("DeleteFileTool: deletes an existing file", async () => {
     await handler.execute({
       portal: "TestPortal",
       path: targetPath,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     await assertRejects(() => Deno.stat(join(env.portalPath, targetPath)));
@@ -47,7 +47,7 @@ Deno.test("DeleteFileTool: returns isError when file not found", async () => {
     const result = await handler.execute({
       portal: "TestPortal",
       path: targetPath,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
     assertStringIncludes(getFirstTextContent(result), "not found");
@@ -63,7 +63,7 @@ Deno.test("DeleteFileTool: returns isError when target is a directory", async ()
     const result = await handler.execute({
       portal: "TestPortal",
       path: targetPath,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
     assertStringIncludes(getFirstTextContent(result), "directory");

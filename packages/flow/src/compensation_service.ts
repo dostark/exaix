@@ -75,7 +75,7 @@ export class CompensationService {
         const compensationArgs = (compensation.args ?? compensation.params ?? {}) as Record<string, JSONValue>;
         const args: Record<string, JSONValue> = {
           ...(request.portal ? { portal: request.portal } : {}),
-          identity_id: completedStep?.identity ?? failedStep.identity,
+          agent_role: completedStep?.identity ?? failedStep.identity,
           ...compensationArgs,
         };
 

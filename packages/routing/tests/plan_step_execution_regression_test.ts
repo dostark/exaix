@@ -15,7 +15,7 @@ Deno.test("[regression] ExecutionLoop detects structured plans with steps", () =
   const planContent = `---
 trace_id: "${traceId}"
 request_id: "${requestId}"
-identity_id: "test-agent"
+agent_role: "test-agent"
 status: "approved"
 created_at: "2026-01-26T10:00:00.000Z"
 ---
@@ -38,7 +38,7 @@ Verify that the plan was actually executed.
   const structuredPlan = parseStructuredPlanFromMarkdown(planContent, {
     trace_id: traceId,
     request_id: requestId,
-    identity_id: "test-agent",
+    agent_role: "test-agent",
   });
 
   // Verify structured plan was detected
@@ -62,7 +62,7 @@ Deno.test("[regression] ExecutionLoop rejects plans without executable content",
   const planContent = `---
 trace_id: "${traceId}"
 request_id: "${requestId}"
-identity_id: "test-agent"
+agent_role: "test-agent"
 status: "approved"
 created_at: "2026-01-26T10:00:00.000Z"
 ---
@@ -79,7 +79,7 @@ This is not an execution steps section.
   const structuredPlan = parseStructuredPlanFromMarkdown(planContent, {
     trace_id: traceId,
     request_id: requestId,
-    identity_id: "test-agent",
+    agent_role: "test-agent",
   });
 
   // Verify plan was NOT detected as structured (no "## Execution Steps" section)

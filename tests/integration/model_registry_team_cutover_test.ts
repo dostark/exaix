@@ -40,7 +40,7 @@ function writeStubIdentity(root: string): void {
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
-    'identity_id: "stub-best"',
+    'agent_role: "stub-best"',
     'model: ""',
     'characteristics: ["best"]',
     "task_type: feature",
@@ -61,7 +61,7 @@ function writeStructuredPlan(root: string): void {
     "---",
     `trace_id: "${TRACE_ID}"`,
     `request_id: "${REQUEST_ID}"`,
-    "identity_id: stub-best",
+    "agent_role: stub-best",
     'portal: "workspace"',
     "status: approved",
     `created_at: "${new Date().toISOString()}"`,

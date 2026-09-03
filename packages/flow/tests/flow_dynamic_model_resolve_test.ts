@@ -49,7 +49,7 @@ function createMockFlow(stepId = "step1"): IFlowInput {
       {
         id: stepId,
         name: "Step 1",
-        identity: "agent1",
+        agent_role: "agent1",
         input: { source: FlowInputSource.REQUEST },
         dependsOn: [] as string[],
       },
@@ -162,7 +162,7 @@ function writeAgentIdentity(root: string): void {
     join(dir, "agent1.md"),
     [
       "---",
-      'identity_id: "agent1"',
+      'agent_role: "agent1"',
       'name: "Senior Software Engineer"',
       'model: ""',
       "permitted_tools:",
@@ -186,7 +186,7 @@ function createDynamicFlow(): IFlowInput {
       {
         id: "dyn1",
         name: "Dynamic Step",
-        identity: "agent1",
+        agent_role: "agent1",
         execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [
           McpToolName.READ_FILE,
@@ -290,7 +290,7 @@ Deno.test(
 class CapturingLlm implements ILlmClient {
   lastOptions: IModelCallOptions | undefined;
   reasonNextAction(params: {
-    identity: IBlueprintFrontmatter;
+    agent_role: IBlueprintFrontmatter;
     stepObjective: string;
     accumulatedContext: string;
     availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
@@ -310,7 +310,7 @@ function buildDynamicStep(): IFlowStep {
   return FlowStepSchema.parse({
     id: "dyn-gap9",
     name: "Dynamic Step",
-    identity: "agent1",
+    agent_role: "agent1",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
     input: { source: FlowInputSource.REQUEST },
@@ -333,14 +333,14 @@ Deno.test("[132.26][GAP-9] DynamicStepExecutor forwards resolved call options to
     { thinking: true, effort: "high", max_tokens: 8192 },
   );
 
-  const identity: IBlueprintFrontmatter = {
+  const agent_role: IBlueprintFrontmatter = {
     name: "agent1",
     model: "",
     description: "test",
   } as IBlueprintFrontmatter;
   const opts: IDynamicStepExecutorOptions = { traceId: "t-gap9", maxIterations: 3 };
 
-  const result = await executor.execute(buildDynamicStep(), identity, "probe", opts);
+  const result = await executor.execute(buildDynamicStep(), agent_role, "probe", opts);
 
   assertEquals(result.completed, true);
   assertEquals(llm.lastOptions?.thinking, true);
@@ -361,14 +361,14 @@ Deno.test("[132.26][GAP-9] DynamicStepExecutor without call options stays backwa
     new Set(),
   );
 
-  const identity: IBlueprintFrontmatter = {
+  const agent_role: IBlueprintFrontmatter = {
     name: "agent1",
     model: "",
     description: "test",
   } as IBlueprintFrontmatter;
   const opts: IDynamicStepExecutorOptions = { traceId: "t-gap9b", maxIterations: 3 };
 
-  await executor.execute(buildDynamicStep(), identity, "probe", opts);
+  await executor.execute(buildDynamicStep(), agent_role, "probe", opts);
 
   assertEquals(llm.lastOptions, undefined);
 });

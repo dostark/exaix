@@ -127,7 +127,7 @@ export class SessionDelegateService implements ISessionDelegateService {
       parent_trace_id: input.parentTraceId,
       parent_step_id: input.parentStepId,
       sequence: input.sequence,
-      identity_id: input.identityId,
+      agent_role: input.identityId,
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,
@@ -200,10 +200,10 @@ export class SessionDelegateService implements ISessionDelegateService {
         brief.worktree_path ?? dirname(this.briefPathFor(brief.trace_id)),
         this.deps.pathResolver,
         brief.trace_id,
-        brief.identity_id,
+        brief.agent_role,
       );
       launch.configPath = permConfig.configPath;
-      agentNameMismatch = permConfig.agentKey !== brief.identity_id;
+      agentNameMismatch = permConfig.agentKey !== brief.agent_role;
     } else if (brief.tool === TOOL_CLAUDE_CODE) {
       const flags = deriveClaudeToolFlags(brief);
       launch.args.push(...flags);

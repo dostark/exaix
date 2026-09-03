@@ -95,14 +95,14 @@ const step = FlowStepSchema.parse({
   retry: { maxAttempts: 1, backoffMs: 0 },
   permitted_tools: [McpToolName.READ_FILE],
   execution_mode: FlowStepExecutionMode.DYNAMIC,
-  identity: "test-identity",
+  agent_role: "test-identity",
   type: "agent",
 }) as IFlowStep;
 
-const identity: IBlueprintFrontmatter = {
+const agent_role: IBlueprintFrontmatter = {
   name: "test-blueprint",
   description: "a test",
-  identity_id: "test-id",
+  agent_role: "test-id",
   model: "test:default",
   capabilities: [],
   created: new Date().toISOString(),
@@ -135,7 +135,7 @@ Deno.test("hitl: blueprint rule on a dynamic tool triggers confirmation", async 
   const interceptor = new RecordingInterceptor(true);
   const executor = createExecutor(evaluator, interceptor);
 
-  const result = await executor.execute(step, identity, "input", { traceId: "trace-1" });
+  const result = await executor.execute(step, agent_role, "input", { traceId: "trace-1" });
   assert(result.completed);
   assertEquals(interceptor.requests.length, 1);
   assertEquals(interceptor.requests[0].toolName, McpToolName.READ_FILE);
@@ -147,7 +147,7 @@ Deno.test("hitl: matching tool on non-matching arg does NOT trigger confirmation
   const interceptor = new RecordingInterceptor(true);
   const executor = createExecutor(evaluator, interceptor);
 
-  const result = await executor.execute(step, identity, "input", { traceId: "trace-2" });
+  const result = await executor.execute(step, agent_role, "input", { traceId: "trace-2" });
   assert(result.completed);
   assertEquals(interceptor.requests.length, 0);
 });
@@ -156,7 +156,7 @@ Deno.test("hitl: no evaluator injected => identical to manifest-only behaviour",
   const interceptor = new RecordingInterceptor(true);
   const executor = createExecutor(undefined, interceptor);
 
-  const result = await executor.execute(step, identity, "input", { traceId: "trace-3" });
+  const result = await executor.execute(step, agent_role, "input", { traceId: "trace-3" });
   assert(result.completed);
   assertEquals(interceptor.requests.length, 0);
 });
@@ -169,7 +169,7 @@ Deno.test("hitl: denial aborts the tool and continues the ReAct loop", async () 
   const interceptor = new RecordingInterceptor(false);
   const executor = createExecutor(evaluator, interceptor);
 
-  const result = await executor.execute(step, identity, "input", { traceId: "trace-4" });
+  const result = await executor.execute(step, agent_role, "input", { traceId: "trace-4" });
   assert(result.completed);
   assertEquals(interceptor.requests.length, 1);
 });

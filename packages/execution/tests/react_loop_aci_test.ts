@@ -40,7 +40,7 @@ function testContext(traceId: string): IExecutionContext {
 
 function createOptions(permittedTools?: string[]): IAgentExecutionOptions {
   return {
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     portal: "test",
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 300000,

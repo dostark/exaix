@@ -248,7 +248,7 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     const planContent = await Deno.readTextFile(planPath);
     assertStringIncludes(planContent, `trace_id: ${traceId}`);
     assertStringIncludes(planContent, `request_id: ${requestId}`);
-    assertStringIncludes(planContent, `identity_id: code-analyst`);
+    assertStringIncludes(planContent, `agent_role: code-analyst`);
     assertStringIncludes(planContent, `portal: ${portalConfig.alias}`);
 
     const activePlanPath = await env.approvePlan(planPath);
@@ -268,7 +268,7 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     assertEquals(traceSummaryExists, true, "Expected Memory/Execution/<traceId>/summary.md");
 
     const artifacts = await env.db.preparedAll<
-      { id: string; status: string; identity: string; portal: string | null; request_id: string; file_path: string }
+      { id: string; status: string; agent_role: string; portal: string | null; request_id: string; file_path: string }
     >(
       "SELECT id, status, identity, portal, request_id, file_path FROM artifacts WHERE request_id = ?",
       [requestId],

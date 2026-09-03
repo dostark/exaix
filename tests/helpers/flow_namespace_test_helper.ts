@@ -18,7 +18,7 @@ export function makeStartAndWritersSteps(): IFlowInput["steps"] {
     {
       id: "start",
       name: "Start",
-      identity: "starter",
+      agent_role: "starter",
       dependsOn: [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -26,7 +26,7 @@ export function makeStartAndWritersSteps(): IFlowInput["steps"] {
     {
       id: "draft-a",
       name: "Draft A",
-      identity: "writerA",
+      agent_role: "writerA",
       dependsOn: ["start"],
       input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -35,7 +35,7 @@ export function makeStartAndWritersSteps(): IFlowInput["steps"] {
     {
       id: "draft-b",
       name: "Draft B",
-      identity: "writerB",
+      agent_role: "writerB",
       dependsOn: ["start"],
       input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

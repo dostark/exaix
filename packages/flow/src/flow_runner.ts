@@ -692,7 +692,7 @@ export class FlowAbortError extends Error {
  *  preserving all fields including `includeRequestCriteria`. */
 export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
   return {
-    identity: evaluate.identity,
+    agent_role: evaluate.identity,
     criteria: evaluate.criteria,
     threshold: evaluate.threshold,
     onFail: evaluate.onFail,
@@ -1627,7 +1627,7 @@ export class FlowRunner implements IFlowRunner {
     if (!fallbackResult.success) {
       return this.formatStepFailure(
         flowRunId,
-        { ...step, identity: fallbackStep.identity },
+        { ...step, agent_role: fallbackStep.identity },
         request,
         fallbackResult.error ?? DEFAULT_UNKNOWN_ERROR_MESSAGE,
         startedAt,
@@ -1643,7 +1643,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return this.formatStepSuccess(
-      { flowRunId, step: { ...step, identity: fallbackStep.identity }, request, startedAt },
+      { flowRunId, step: { ...step, agent_role: fallbackStep.identity }, request, startedAt },
       fallbackResult.result,
       {
         fallbackUsed: true,

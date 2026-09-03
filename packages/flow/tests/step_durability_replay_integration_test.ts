@@ -98,7 +98,7 @@ function buildTwoStepFlow(): IFlowInput {
       {
         id: "step1",
         name: "Step 1",
-        identity: "agent-replayable",
+        agent_role: "agent-replayable",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -106,7 +106,7 @@ function buildTwoStepFlow(): IFlowInput {
       {
         id: "step2",
         name: "Step 2",
-        identity: "agent-always-run",
+        agent_role: "agent-always-run",
         dependsOn: ["step1"],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

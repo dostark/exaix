@@ -97,7 +97,7 @@ async function findBest(agent: string, query: string) {
     const fmRaw = extractFrontmatter(md) || "";
     const fm = fmRaw ? (parse(fmRaw) as JSONObject) : {};
     // A document is eligible when either frontmatter field matches the requested agent.
-    const docAgents = [fm.agent, fm.identity].filter((value): value is string => typeof value === "string");
+    const docAgents = [fm.agent, fm.agent_role].filter((value): value is string => typeof value === "string");
     if (!docAgents.includes(agent)) continue;
     const s = scoreDoc(entry.path, md, fm, query);
     if (s > best.score) best = { path: entry.path, fm, score: s, md };

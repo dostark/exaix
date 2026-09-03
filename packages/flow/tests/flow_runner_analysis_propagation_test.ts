@@ -96,11 +96,11 @@ function makeGateFlow(): IFlow {
         id: "gate1",
         name: "Quality Gate",
         type: FlowStepType.GATE,
-        identity: "judge-agent",
+        agent_role: "judge-agent",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST },
         evaluate: {
-          identity: "judge-agent",
+          agent_role: "judge-agent",
           criteria: ["code_correctness"],
           threshold: 0.05,
           onFail: FlowGateOnFail.HALT,

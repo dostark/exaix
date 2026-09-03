@@ -47,13 +47,13 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_config_get"
-      - '{"key":"ai.provider","identity_id":"tools-eval"}'
+      - '{"key":"ai.provider","agent_role":"tools-eval"}'
       - "exaix_config_validate"
-      - '{"identity_id":"tools-eval"}'
+      - '{"agent_role":"tools-eval"}'
       - "exaix_config_diff"
-      - '{"identity_id":"tools-eval"}'
+      - '{"agent_role":"tools-eval"}'
       - "exaix_config_get_provenance"
-      - '{"key":"ai.provider","identity_id":"tools-eval"}'
+      - '{"key":"ai.provider","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -89,9 +89,9 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_config_set"
-      - '{"key":"ai.provider","value":"mock","identity_id":"tools-eval"}'
+      - '{"key":"ai.provider","value":"mock","agent_role":"tools-eval"}'
       - "exaix_config_get"
-      - '{"key":"ai.provider","identity_id":"tools-eval"}'
+      - '{"key":"ai.provider","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

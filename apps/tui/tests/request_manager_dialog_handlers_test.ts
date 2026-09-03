@@ -111,7 +111,7 @@ Deno.test("processDialogCompletion: confirmed InputDialog routes filter and prio
   confirmInputDialog(priorityDialog);
   await processDialogCompletion(priorityDialog, RequestDialogType.PRIORITY, handlers);
 
-  assertEquals(calls, ["filter_status:pending", "filter_identity:default", "priority:high"]);
+  assertEquals(calls, ["filter_status:pending", "filter_agent_role:default", "priority:high"]);
 });
 
 Deno.test("processDialogCompletion: confirmed InputDialog with null dialogType is ignored", async () => {

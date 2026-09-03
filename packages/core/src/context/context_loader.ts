@@ -49,7 +49,7 @@ export interface IContextConfig {
   requestId?: string;
 
   /** Optional: Agent ID for activity logging */
-  identityId?: string;
+  agentRole?: string;
 
   /** Optional: Database service for activity logging */
   db?: IDatabaseService;

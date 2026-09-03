@@ -25,7 +25,7 @@ export interface IPermissionCheckResult {
   allowed: boolean;
   reason?: string;
   portal: string;
-  identity_id: string;
+  agent_role: string;
   operation: PortalOperation;
 }
 
@@ -36,7 +36,7 @@ export interface IRBACPermissionCheckResult {
   allowed: boolean;
   reason?: string;
   portal: string;
-  identity_id: string;
+  agent_role: string;
   action: PermissionAction;
   resource: string;
   conditions?: {
@@ -53,7 +53,7 @@ export interface IAgentWhitelistResult {
   allowed: boolean;
   reason?: string;
   portal: string;
-  identity_id: string;
+  agent_role: string;
 }
 
 /** PortalPermissionsService satisfies this structurally; test fixtures (e.g.

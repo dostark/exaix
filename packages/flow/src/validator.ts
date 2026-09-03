@@ -134,8 +134,8 @@ export class FlowValidatorImpl implements IFlowValidator {
 
   private validateStepAgents(flowId: string, steps: IFlowStep[]): string | null {
     for (const step of steps) {
-      if (!step.identity || typeof step.identity !== "string" || step.identity === "") {
-        return `IFlow '${flowId}' step '${step.id}' has invalid identity: ${step.identity}`;
+      if (!step.agent_role || typeof step.agent_role !== "string" || step.agent_role === "") {
+        return `IFlow '${flowId}' step '${step.id}' has invalid agent_role: ${step.agent_role}`;
       }
     }
     return null;
@@ -146,8 +146,8 @@ export class FlowValidatorImpl implements IFlowValidator {
   private async validateStepIdentitiesExist(flowId: string, steps: IFlowStep[]): Promise<string | null> {
     if (!(await exists(this.blueprintsPath))) return null;
     for (const step of steps) {
-      if (!(await this.blueprintLoader.exists(step.identity))) {
-        return `IFlow '${flowId}' step '${step.id}' references identity '${step.identity}' that does not exist in the blueprint catalog`;
+      if (!(await this.blueprintLoader.exists(step.agent_role))) {
+        return `IFlow '${flowId}' step '${step.id}' references identity '${step.agent_role}' that does not exist in the blueprint catalog`;
       }
     }
     return null;

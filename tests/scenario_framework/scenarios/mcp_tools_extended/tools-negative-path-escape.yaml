@@ -39,7 +39,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "read_file"
-      - '{"portal":"tools","path":"../../../etc/passwd","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"../../../etc/passwd","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -63,7 +63,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "write_file"
-      - '{"portal":"tools","path":"/tmp/exaix-should-never-exist.txt","content":"escaped","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"/tmp/exaix-should-never-exist.txt","content":"escaped","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -97,7 +97,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "read_file"
-      - '{"portal":"tools","path":"src/greeting.txt","identity_id":"not-allowed-identity"}'
+      - '{"portal":"tools","path":"src/greeting.txt","agent_role":"not-allowed-identity"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

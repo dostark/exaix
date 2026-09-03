@@ -86,7 +86,7 @@ Deno.test("runtime_contract: ListDirectoryTool returns structured array data", a
     const handler = new ListDirectoryTool(createToolContext(env), createPermissionsService(env));
     const response = await handler.execute({
       portal: "TestPortal",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const entries = getFirstStructuredDataContent<string[]>(response);
@@ -103,7 +103,7 @@ Deno.test("runtime_contract: GitCommitTool returns commit hash text", async () =
     const response = await handler.execute({
       portal: "TestPortal",
       message: "runtime contract commit",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertMatch(getFirstTextContent(response), /^[0-9a-f]{40}$/);
@@ -115,8 +115,8 @@ Deno.test("runtime_contract: domain tools include structured data matching manif
     const createRequest = new CreateRequestTool(context);
     const createRequestResponse = await createRequest.execute({
       description: "Runtime contract request",
-      identity: "test-agent",
-      identity_id: "user-1",
+      assigned_agent_role: "test-agent",
+      agent_role: "user-1",
     });
     const createdRequest = getFirstStructuredDataContent<{
       id: string;
@@ -135,7 +135,7 @@ Deno.test("runtime_contract: domain tools include structured data matching manif
     const listPlans = new ListPlansTool(context);
     const listPlansResponse = await listPlans.execute({
       status: "pending",
-      identity_id: "user-1",
+      agent_role: "user-1",
     });
     const listedPlans = getFirstStructuredDataContent<Array<{ id: string; status: string }>>(listPlansResponse);
     assertEquals(Array.isArray(listedPlans), true);
@@ -148,7 +148,7 @@ Deno.test("runtime_contract: domain tools include structured data matching manif
     const approvePlan = new ApprovePlanTool(context);
     const approveResponse = await approvePlan.execute({
       plan_id: approvePlanId,
-      identity_id: "user-1",
+      agent_role: "user-1",
     });
     const approvedPlan = getFirstStructuredDataContent<{ id: string; status: string }>(approveResponse);
     assertEquals(approvedPlan.id, approvePlanId);
@@ -157,7 +157,7 @@ Deno.test("runtime_contract: domain tools include structured data matching manif
     db.logActivity("actor", "test.action", "target", { ok: true });
     const queryJournal = new QueryJournalTool(context);
     const journalResponse = await queryJournal.execute({
-      identity_id: "user-1",
+      agent_role: "user-1",
       limit: 10,
     });
     const journalEntries = getFirstStructuredDataContent<Array<{ action_type?: string }>>(journalResponse);

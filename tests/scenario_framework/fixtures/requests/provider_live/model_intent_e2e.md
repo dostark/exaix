@@ -1,7 +1,7 @@
 ---
 model_size: M
 thinking: true
-identity_id: senior-coder
+agent_role: senior-coder
 ---
 
 Produce a design and implementation plan for adding a `/health` readiness endpoint to

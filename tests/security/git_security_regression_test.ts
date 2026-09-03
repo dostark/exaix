@@ -47,7 +47,7 @@ args = ["reset", "--hard", "HEAD"]
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000011",
       request_id: "req-security-1",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [{ number: 1, title: "Attack", content: "Attempt destructive reset" }],
     };
@@ -101,7 +101,7 @@ args = ["checkout", "main"]
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000012",
       request_id: "req-security-2",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [{ number: 1, title: "Attack", content: "Attempt checkout main" }],
     };

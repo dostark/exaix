@@ -22,7 +22,7 @@ version: "1.0.0"
 steps:
   - id: "step1"
     name: "Test Step"
-    identity: "test-agent"
+    agent_role: "test-agent"
     input: { source: "request", transform: "passthrough" }
 output: { from: "step1", format: "markdown" }
 `;
@@ -48,14 +48,14 @@ Deno.test("FlowLoader: loads specific flow by ID", async () => {
 id: "flow1"
 name: "Flow 1"
 description: "First flow"
-steps: [{ id: "s1", name: "Step 1", identity: "agent1", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s1", name: "Step 1", agent_role: "agent1", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s1", format: "markdown" }
 `;
     const flow2Content = `
 id: "flow2"
 name: "Flow 2"
 description: "Second flow"
-steps: [{ id: "s2", name: "Step 2", identity: "agent2", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s2", name: "Step 2", agent_role: "agent2", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s2", format: "markdown" }
 `;
     await Deno.writeTextFile(`${mockFlowsDir}/flow1.flow.yaml`, flow1Content);
@@ -89,7 +89,7 @@ Deno.test("FlowLoader: ignores non-flow files and invalid files", async () => {
 id: "valid-flow"
 name: "Valid Flow"
 description: "Valid flow"
-steps: [{ id: "s1", name: "Step 1", identity: "agent1", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s1", name: "Step 1", agent_role: "agent1", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s1", format: "markdown" }
 `;
     const invalidFlow = `
@@ -120,7 +120,7 @@ Deno.test("FlowLoader: validates flow file naming convention", async () => {
 id: "my-flow"
 name: "Test Flow"
 description: "Test flow"
-steps: [{ id: "s1", name: "Step 1", identity: "agent1", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s1", name: "Step 1", agent_role: "agent1", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s1", format: "markdown" }
 `;
     await Deno.writeTextFile(`${mockFlowsDir}/my-flow.flow.yaml`, namingTestFlow);
@@ -162,7 +162,7 @@ Deno.test("FlowLoader: checks if flow exists", async () => {
 id: "existing-flow"
 name: "Existing Flow"
 description: "A flow that exists"
-steps: [{ id: "s1", name: "Step 1", identity: "agent1", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s1", name: "Step 1", agent_role: "agent1", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s1", format: "markdown" }
 `;
     await Deno.writeTextFile(`${mockFlowsDir}/existing-flow.flow.yaml`, flowContent);
@@ -185,14 +185,14 @@ Deno.test("FlowLoader: lists available flow IDs", async () => {
 id: "flow-one"
 name: "Flow One"
 description: "First flow"
-steps: [{ id: "s1", name: "Step 1", identity: "agent1", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s1", name: "Step 1", agent_role: "agent1", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s1", format: "markdown" }
 `;
     const flow2Content = `
 id: "flow-two"
 name: "Flow Two"
 description: "Second flow"
-steps: [{ id: "s2", name: "Step 2", identity: "agent2", input: { source: "request", transform: "passthrough" } }]
+steps: [{ id: "s2", name: "Step 2", agent_role: "agent2", input: { source: "request", transform: "passthrough" } }]
 output: { from: "s2", format: "markdown" }
 `;
     await Deno.writeTextFile(`${mockFlowsDir}/flow-one.flow.yaml`, flow1Content);

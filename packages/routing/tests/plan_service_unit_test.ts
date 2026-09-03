@@ -39,7 +39,7 @@ function createReviewPlanContent(overrides?: Record<string, string>): string {
     trace_id: "test-trace-123",
     created_at: new Date().toISOString(),
     status: PlanStatus.REVIEW,
-    identity_id: "coder",
+    agent_role: "coder",
     request_id: "req-1",
     subject: "Test plan",
     ...overrides,

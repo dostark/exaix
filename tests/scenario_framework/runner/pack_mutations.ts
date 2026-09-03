@@ -86,7 +86,7 @@ export const PACK_MUTATIONS: readonly IPackMutation[] = [
   {
     subsystem: "subsystem:identities",
     file: "packages/core/src/planning/plan_writer.ts",
-    find: "identity_id",
+    find: "agent_role",
     replace: "identity_id_MUTATED",
     breaks:
       "the identity stamped onto a written plan — the `frontmatter-field-equals` assertion Step 11 introduced after finding the previous check passed with the wrong identity",

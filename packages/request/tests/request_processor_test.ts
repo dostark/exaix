@@ -62,7 +62,7 @@ function createRequestContent(opts: {
     `created: "${new Date().toISOString()}"`,
     `status: ${opts.status || MemoryStatus.PENDING}`,
     `priority: ${opts.priority || "normal"}`,
-    opts.flow ? null : `identity_id: ${opts.identity || "default"}`, // Only include identity if no flow
+    opts.flow ? null : `agent_role: ${opts.identity || "default"}`, // Only include identity if no flow
     opts.flow ? `flow: ${opts.flow}` : null,
     `source: cli`,
     `created_by: "test@example.com"`,
@@ -105,7 +105,7 @@ describe("RequestProcessor", () => {
   /** Minimal IFlow for tests that only care that a LOADED flow reaches FlowRunner. */
   const makeMinimalFlow = (
     id: string,
-    steps: { id: string; identity: string }[],
+    steps: { id: string; agent_role: string }[],
   ): IFlow => ({ id, name: id, description: id, version: "1.0", steps } as IFlow);
 
   let createProcessor: (
@@ -192,7 +192,7 @@ describe("RequestProcessor", () => {
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "default",
+        agent_role: "default",
         body: "Add a hello world function to utils.ts",
       });
 
@@ -377,7 +377,7 @@ Do something
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "nonexistent-agent",
+        agent_role: "nonexistent-agent",
         body: "Use a missing blueprint",
       });
 
@@ -410,7 +410,7 @@ Do something
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "data-analyzer",
+        agent_role: "data-analyzer",
         body: "Analyze this dataset",
       });
 
@@ -434,7 +434,7 @@ Do something
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         body: "Implement a complex algorithm",
       });
 
@@ -458,7 +458,7 @@ Do something
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "content-writer",
+        agent_role: "content-writer",
         body: "Write an article about AI",
       });
 
@@ -490,7 +490,7 @@ You are an expert code reviewer. Analyze code changes and provide feedback.
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "code-reviewer",
+        agent_role: "code-reviewer",
         body: "Review my pull request",
       });
 
@@ -507,7 +507,7 @@ You are an expert code reviewer. Analyze code changes and provide feedback.
       const { traceId, requestPath } = createTestRequestPath(testDir);
       const requestContent = createRequestContent({
         traceId,
-        identity: "default",
+        agent_role: "default",
         body: "Use the default blueprint",
       });
 
@@ -581,7 +581,7 @@ created: "${new Date().toISOString()}"
 status: pending
 priority: high
 flow: code-review
-identity_id: senior-coder
+agent_role: senior-coder
 source: cli
 created_by: "test@example.com"
 ---
@@ -704,7 +704,7 @@ Review this pull request for security issues.`;
         },
       };
 
-      const loadedFlow = makeMinimalFlow("code-review", [{ id: "review", identity: "code-analyst" }]);
+      const loadedFlow = makeMinimalFlow("code-review", [{ id: "review", agent_role: "code-analyst" }]);
 
       await Deno.writeTextFile(
         requestPath,

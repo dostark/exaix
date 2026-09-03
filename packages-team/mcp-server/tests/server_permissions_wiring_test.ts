@@ -57,7 +57,7 @@ Deno.test("MCPServer: portal-affecting handlers execute when explicit allow-all 
         portal: "TestPortal",
         path: "test.txt",
         content: "ok",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       }),
     );
 

@@ -17,7 +17,7 @@ describes _who_ the agent is; a skill describes _how_ it works.
 
 ```yaml
 ---
-identity_id: "my-identity"
+agent_role: "my-identity"
 name: "My Identity"
 model: "" # deprecated — use model_size + characteristics instead
 model_size: "M" # S, M, L, XL — maps to capability profile via ModelResolver

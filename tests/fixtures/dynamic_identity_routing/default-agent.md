@@ -1,6 +1,6 @@
 ---
 title: "Default agent fallback"
-identity_id: "default-agent"
+agent_role: "default-agent"
 capabilities: ["general"]
 ---
 

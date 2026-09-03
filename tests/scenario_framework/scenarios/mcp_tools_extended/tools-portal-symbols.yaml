@@ -51,7 +51,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_portal_symbols"
-      - '{"portal":"tools","identity_id":"tools-eval"}'
+      - '{"portal":"tools","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -106,7 +106,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_portal_symbols"
-      - '{"portal":"tools","identity_id":"tools-eval"}'
+      - '{"portal":"tools","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -126,7 +126,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_portal_symbols"
-      - '{"portal":"tools","identity_id":"tools-eval","kind":"interface"}'
+      - '{"portal":"tools","agent_role":"tools-eval","kind":"interface"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -146,7 +146,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_portal_symbols"
-      - '{"portal":"tools","identity_id":"tools-eval","query":"greet","limit":1}'
+      - '{"portal":"tools","agent_role":"tools-eval","query":"greet","limit":1}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

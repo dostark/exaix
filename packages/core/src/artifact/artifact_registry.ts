@@ -15,10 +15,10 @@ import type {
   IArtifactWithContent,
 } from "@exaix/schemas/artifact.ts";
 import { coerceReviewStatus, ReviewStatus } from "@exaix/core/status";
+import type { Opt, Reason } from "@exaix/core/types";
 import { ArtifactSubtype as ArtifactType, DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifactRepository, IArtifactRow } from "./artifact_repository.ts";
-import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Generate short ID for artifacts
@@ -36,7 +36,7 @@ export class ArtifactRegistry {
       id: row.id,
       status: coerceReviewStatus(row.status),
       type: row.type as ArtifactType,
-      identity: row.identity,
+      agent_role: row.agent_role,
       portal: row.portal,
       target_branch: row.target_branch,
       created: row.created,
@@ -57,11 +57,11 @@ export class ArtifactRegistry {
   }
 
   /**
-   * Create new artifact from identity execution
+   * Create new artifact from agent role execution
    */
   async createArtifact(
     requestId: string,
-    identity: string,
+    agent_role: string,
     content: string,
     portal?: Opt<string, Reason.OptionalContext>,
     targetBranch?: Opt<string, Reason.OptionalContext>,
@@ -78,7 +78,7 @@ export class ArtifactRegistry {
     const frontmatter: IArtifactFrontmatter = {
       status: ReviewStatus.PENDING,
       type: ArtifactType.ANALYSIS,
-      identity,
+      agent_role,
       portal: portal || null,
       target_branch: targetBranch?.trim() ? targetBranch.trim() : null,
       created,
@@ -94,7 +94,7 @@ export class ArtifactRegistry {
       artifactId,
       ReviewStatus.PENDING,
       "analysis",
-      identity,
+      agent_role,
       portal || null,
       targetBranch?.trim() ? targetBranch.trim() : null,
       created,
@@ -111,7 +111,7 @@ export class ArtifactRegistry {
   async updateStatus(
     artifactId: string,
     status: Exclude<IReviewStatus, typeof ReviewStatus.PENDING>,
-    reason?: string,
+    reason?: Opt<string, Reason.OptionalInput>,
   ): Promise<void> {
     const artifact = await this.getArtifactRecord(artifactId);
 
@@ -175,7 +175,7 @@ export class ArtifactRegistry {
   /**
    * List artifacts with filters
    */
-  async listArtifacts(filters?: IArtifactFilters): Promise<IArtifact[]> {
+  async listArtifacts(filters?: Opt<IArtifactFilters, Reason.QueryFilter>): Promise<IArtifact[]> {
     const rows = await this.repo.listArtifactRecords(filters);
     return rows.map((row) => this.mapArtifactRow(row));
   }

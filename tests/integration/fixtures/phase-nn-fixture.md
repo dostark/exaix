@@ -6,7 +6,7 @@
 # step-manifest
 step: 1
 title: Setup project structure
-identity: senior-coder
+agent_role: senior-coder
 skills: [exaix-conventions]
 portal: exaix-self
 target_branch: feat/phase-nn-step-1
@@ -41,7 +41,7 @@ acceptance:
 # step-manifest
 step: 2
 title: Add core feature
-identity: senior-coder
+agent_role: senior-coder
 skills: [tdd-methodology]
 portal: exaix-self
 target_branch: feat/phase-nn-step-2

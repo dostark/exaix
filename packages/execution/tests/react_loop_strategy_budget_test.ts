@@ -53,7 +53,7 @@ const testContext: IExecutionContext = {
 
 function makeOptions(): IAgentExecutionOptions {
   return {
-    identity_id: "budget-agent",
+    agent_role: "budget-agent",
     portal: "test",
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 30_000,

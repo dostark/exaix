@@ -29,7 +29,7 @@ const TEST_BLUEPRINT: IAgentFileBlueprint = {
 };
 
 const SANDBOXED_OPTIONS: IAgentExecutionOptions = {
-  identity_id: "test-agent",
+  agent_role: "test-agent",
   portal: "workspace",
   security_mode: SecurityMode.SANDBOXED,
   audit_enabled: true,

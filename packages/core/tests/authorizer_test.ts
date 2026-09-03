@@ -24,7 +24,7 @@ describe("AllowAllAuthorizer", () => {
 
   it("permits with explicit context", () => {
     const auth = new AllowAllAuthorizer();
-    const ctx: IAuthorizationContext = { identity: "admin", attributes: { role: "superuser" } };
+    const ctx: IAuthorizationContext = { agent_role: "admin", attributes: { role: "superuser" } };
     const result = auth.authorize("admin.action", "enterprise.policy", ctx);
     assertEquals(result.allowed, true);
   });

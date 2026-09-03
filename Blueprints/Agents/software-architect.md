@@ -1,5 +1,5 @@
 ---
-identity_id: "software-architect"
+agent_role: "software-architect"
 name: "Software Architect"
 model: ""
 model_size: L

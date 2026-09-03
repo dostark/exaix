@@ -126,7 +126,7 @@ function makeCtx(): IStepExecutionContext {
       id: "next-steps",
       name: "Next Steps",
       type: FlowStepType.SESSION_DELEGATE_CYCLE,
-      identity: "senior-coder",
+      agent_role: "senior-coder",
       execution_mode: FlowStepExecutionMode.DECLARED,
       dependsOn: [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
@@ -134,7 +134,7 @@ function makeCtx(): IStepExecutionContext {
       delegateCycle: {
         requireChangedPaths: true,
         review: {
-          identity: "senior-reviewer",
+          agent_role: "senior-reviewer",
           criteria: ["correctness"],
           threshold: 0.8,
           onFail: "halt",

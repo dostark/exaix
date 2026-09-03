@@ -75,7 +75,7 @@ trace_id: "trace-123"
 created: "${new Date().toISOString()}"
 status: "${RequestStatus.PENDING}"
 priority: "normal"
-identity: "test-agent"
+agent_role: "test-agent"
 source: cli
 created_by: "test-user"
 ---

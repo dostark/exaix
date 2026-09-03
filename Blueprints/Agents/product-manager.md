@@ -1,5 +1,5 @@
 ---
-identity_id: "product-manager"
+agent_role: "product-manager"
 name: "Product Manager"
 model: ""
 model_size: S

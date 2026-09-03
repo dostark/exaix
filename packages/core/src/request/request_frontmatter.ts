@@ -13,10 +13,10 @@ export interface IRequestFrontmatter {
   created: string;
   status: RequestStatusType;
   priority: string;
-  /** Identity blueprint to use for this request. Must match writer-side RequestSchema's
-   *  `identity_id` field name exactly — a mismatched field name here made generated
+  /** Agent role blueprint to use for this request. Must match writer-side RequestSchema's
+   *  `agent_role` field name exactly — a mismatched field name here made generated
    *  requests fail admission (neither field found by RequestProcessor). */
-  identity_id?: string;
+  agent_role?: string;
   flow?: string;
   source: string;
   created_by: string;

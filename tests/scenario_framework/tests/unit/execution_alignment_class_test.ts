@@ -21,7 +21,7 @@ function makeActivity(overrides: Partial<IActivityRecord>): IActivityRecord {
     trace_id: "run-trace",
     actor: null,
     actor_type: null,
-    identity_id: null,
+    agent_role: null,
     action_type: DomainEventType.SessionDelegateReconciled,
     target: "run-trace",
     payload: "{}",

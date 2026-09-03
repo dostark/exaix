@@ -10,7 +10,7 @@ output:
 steps:
   - id: "map"
     name: "Map codebase structure with full logging"
-    identity: "code-analyst"
+    agent_role: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

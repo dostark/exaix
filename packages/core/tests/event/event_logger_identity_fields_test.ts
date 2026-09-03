@@ -32,7 +32,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
     actor: "user:test@example.com",
     actorType: ActorType.USER,
     agentKind: AgentKind.AGENT_EXECUTOR,
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
     traceId: "trace-abc-123",
   });
 
@@ -42,7 +42,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
   assertEquals(req.actor, "user:test@example.com");
   assertEquals(req.actorType, ActorType.USER);
   assertEquals(req.agentKind, AgentKind.AGENT_EXECUTOR);
-  assertEquals(req.identityId, "senior-coder");
+  assertEquals(req.agentRole, "senior-coder");
   assertEquals(req.traceId, "trace-abc-123");
 });
 
@@ -60,7 +60,7 @@ Deno.test("EventLogger: passes null for optional fields when not provided", asyn
   };
   const logger = new EventLogger({ activityRepo: mockRepo });
 
-  // Act - log without actorType, agentKind, identityId
+  // Act - log without actorType, agentKind, agentRole
   await logger.log({
     action: "test.event",
     target: "some-portal",
@@ -72,7 +72,7 @@ Deno.test("EventLogger: passes null for optional fields when not provided", asyn
   const req = capturedRequests[0];
   assertEquals(req.actorType, null);
   assertEquals(req.agentKind, null);
-  assertEquals(req.identityId, null);
+  assertEquals(req.agentRole, null);
 });
 
 Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async () => {
@@ -89,19 +89,19 @@ Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async
   };
   const logger = new EventLogger({ activityRepo: mockRepo });
 
-  // Act - log with distinct identityId and agentKind
+  // Act - log with distinct agentRole and agentKind
   await logger.log({
     action: "test.event",
     target: "some-portal",
     actor: "system",
     agentKind: AgentKind.AGENT_EXECUTOR,
-    identityId: "senior-coder",
+    agentRole: "senior-coder",
   });
 
-  // Assert - key regression guard: agentKind must NOT equal identityId
+  // Assert - key regression guard: agentKind must NOT equal agentRole
   const req = capturedRequests[0];
   assertNotEquals(req.agentKind, "senior-coder");
-  assertNotEquals(req.agentKind, req.identityId);
-  assertEquals(req.identityId, "senior-coder");
+  assertNotEquals(req.agentKind, req.agentRole);
+  assertEquals(req.agentRole, "senior-coder");
   assertEquals(req.agentKind, AgentKind.AGENT_EXECUTOR);
 });

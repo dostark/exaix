@@ -53,7 +53,7 @@ Deno.test("FrontmatterParser: logs validation failure to activity journal", () =
   };
   const parser = new FrontmatterParser(logger);
   const markdown = `---
-identity_id: coder-agent
+agent_role: coder-agent
 status: pending
 ---
 

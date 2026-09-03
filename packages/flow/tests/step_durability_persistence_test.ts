@@ -79,7 +79,7 @@ class MockEventLogger implements IFlowEventLogger {
   }
 }
 
-function buildSimpleFlow(steps: Array<{ id: string; identity: string; dependsOn?: string[] }>): IFlowInput {
+function buildSimpleFlow(steps: Array<{ id: string; agent_role: string; dependsOn?: string[] }>): IFlowInput {
   return {
     id: "test-flow",
     name: "Test Flow",
@@ -88,7 +88,7 @@ function buildSimpleFlow(steps: Array<{ id: string; identity: string; dependsOn?
     steps: steps.map((s) => ({
       id: s.id,
       name: s.id,
-      identity: s.identity,
+      agent_role: s.identity,
       dependsOn: s.dependsOn ?? [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -109,8 +109,8 @@ Deno.test("StepDurabilityPersistence: saves a record for each successful step", 
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
   const flow = buildSimpleFlow([
-    { id: "step1", identity: "agent1" },
-    { id: "step2", identity: "agent2", dependsOn: ["step1"] },
+    { id: "step1", agent_role: "agent1" },
+    { id: "step2", agent_role: "agent2", dependsOn: ["step1"] },
   ]);
 
   const result = await runner.execute(flow as IFlow, { userPrompt: "test input" });
@@ -139,7 +139,7 @@ Deno.test("StepDurabilityPersistence: records have valid idempotency keys", asyn
 
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildSimpleFlow([{ id: "step1", identity: "agent1" }]);
+  const flow = buildSimpleFlow([{ id: "step1", agent_role: "agent1" }]);
   await runner.execute(flow as IFlow, { userPrompt: "test input" });
 
   assertEquals(store.savedRecords.length, 1);
@@ -161,7 +161,7 @@ Deno.test("StepDurabilityPersistence: sets sideEffectClass on each record", asyn
 
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildSimpleFlow([{ id: "step1", identity: "agent1" }]);
+  const flow = buildSimpleFlow([{ id: "step1", agent_role: "agent1" }]);
   await runner.execute(flow as IFlow, { userPrompt: "test" });
 
   assertEquals(store.savedRecords.length, 1);
@@ -175,7 +175,7 @@ Deno.test("StepDurabilityPersistence: does not crash when no store is provided",
 
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger });
 
-  const flow = buildSimpleFlow([{ id: "step1", identity: "agent1" }]);
+  const flow = buildSimpleFlow([{ id: "step1", agent_role: "agent1" }]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "test" });
 
   assertEquals(result.success, true);
@@ -188,7 +188,7 @@ Deno.test("StepDurabilityPersistence: durationMs is populated and non-negative o
 
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildSimpleFlow([{ id: "step1", identity: "agent1" }]);
+  const flow = buildSimpleFlow([{ id: "step1", agent_role: "agent1" }]);
   await runner.execute(flow as IFlow, { userPrompt: "test" });
 
   assertEquals(store.savedRecords.length, 1);

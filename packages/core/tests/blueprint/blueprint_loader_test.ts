@@ -54,7 +54,7 @@ Deno.test("[IBlueprintLoader] loads blueprint with YAML frontmatter", async () =
     const blueprint = await loader.load("code-reviewer");
 
     assertExists(blueprint);
-    assertEquals(blueprint.identityId, "code-reviewer");
+    assertEquals(blueprint.agentRole, "code-reviewer");
     assertEquals(blueprint.name, "Code Reviewer Agent");
     assertEquals(blueprint.model, "anthropic:claude-sonnet-5");
     assertEquals(blueprint.capabilities, [McpToolName.READ_FILE, McpToolName.WRITE_FILE]);
@@ -80,7 +80,7 @@ You are a simple agent with no frontmatter.
     const blueprint = await loader.load("simple-agent");
 
     assertExists(blueprint);
-    assertEquals(blueprint.identityId, "simple-agent");
+    assertEquals(blueprint.agentRole, "simple-agent");
     assertEquals(blueprint.name, "Simple Agent"); // Derived from ID
     assertEquals(blueprint.model, DEFAULT_AI_MODEL); // Falls through when no model specified
     assertEquals(blueprint.capabilities, []);
@@ -95,7 +95,7 @@ Deno.test("[IBlueprintLoader] uses default model when not specified", async () =
 
   try {
     const content = `---
-identity_id: "no-model"
+agent_role: "no-model"
 name: "No Model Agent"
 ---
 
@@ -142,7 +142,7 @@ Deno.test("[IBlueprintLoader] lists all blueprints in Agents path", async () => 
     const blueprints = await loader.listAll();
 
     assertEquals(blueprints.length, 2);
-    assertEquals(new Set(blueprints.map((b) => b.identityId)), new Set(["alpha", "beta"]));
+    assertEquals(new Set(blueprints.map((b) => b.agentRole)), new Set(["alpha", "beta"]));
   } finally {
     await teardown(testDir);
   }
@@ -183,7 +183,7 @@ Deno.test("[IBlueprintLoader] throws on invalid YAML frontmatter", async () => {
 
   try {
     const content = `---
-identity_id: "bad-yaml"
+agent_role: "bad-yaml"
 name: [invalid: yaml: syntax
 ---
 
@@ -208,7 +208,7 @@ Deno.test("[IBlueprintLoader] validates frontmatter schema", async () => {
 
   try {
     const content = `---
-identity_id: "schema-test"
+agent_role: "schema-test"
 capabilities: "not-an-array"
 ---
 
@@ -282,7 +282,7 @@ Deno.test("[IBlueprintLoader] caches loaded blueprints", async () => {
 
   try {
     const content = `---
-identity_id: "cached-agent"
+agent_role: "cached-agent"
 name: "Cached Agent"
 ---
 
@@ -318,7 +318,7 @@ Deno.test("[IBlueprintLoader] invalidate clears specific cache entry", async () 
 
   try {
     const content = `---
-identity_id: "invalidate-test"
+agent_role: "invalidate-test"
 name: "Original Name"
 ---
 
@@ -354,7 +354,7 @@ Deno.test("[IBlueprintLoader] toLegacyBlueprint returns compatible interface", a
 
   try {
     const content = `---
-identity_id: "legacy-test"
+agent_role: "legacy-test"
 name: "Legacy Test"
 ---
 
@@ -369,7 +369,7 @@ System prompt content.
     const legacy = loader.toLegacyBlueprint(loaded);
 
     assertEquals(legacy.systemPrompt, "System prompt content.");
-    assertEquals(legacy.identityId, "legacy-test");
+    assertEquals(legacy.agentRole, "legacy-test");
   } finally {
     await teardown(testDir);
   }
@@ -383,7 +383,7 @@ Deno.test("[IBlueprintLoader] toLegacyBlueprint carries default_skills through a
   try {
     // style-exclude:SMALL_FIXTURE_OK - 5-line frontmatter fixture, inline for readability
     const content = `---
-identity_id: "skills-test"
+agent_role: "skills-test"
 name: "Skills Test"
 default_skills: ["response-contract", "error-handling"]
 ---
@@ -409,7 +409,7 @@ Deno.test("[loadBlueprint] standalone function returns legacy Blueprint", async 
 
   try {
     const content = `---
-identity_id: "standalone-test"
+agent_role: "standalone-test"
 name: "Standalone Test"
 ---
 
@@ -421,7 +421,7 @@ Standalone system prompt.
 
     assertExists(blueprint);
     assertEquals(blueprint.systemPrompt, "Standalone system prompt.");
-    assertEquals(blueprint.identityId, "standalone-test");
+    assertEquals(blueprint.agentRole, "standalone-test");
   } finally {
     await teardown(testDir);
   }
@@ -488,7 +488,7 @@ Deno.test("[IBlueprintLoader] loads from Agents path (canonical)", async () => {
     const blueprint = await loader.load("senior-coder");
 
     assertExists(blueprint);
-    assertEquals(blueprint.identityId, "senior-coder");
+    assertEquals(blueprint.agentRole, "senior-coder");
     assertEquals(blueprint.name, "Senior Coder");
     assertEquals(blueprint.path, join(identitiesDir, "senior-coder.md"));
   } finally {

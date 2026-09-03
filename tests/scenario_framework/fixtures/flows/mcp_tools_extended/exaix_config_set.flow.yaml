@@ -10,7 +10,7 @@ output:
 steps:
   - id: "exec"
     name: "Execute using exaix_config_set"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "declared"
     tools:
       - exaix_config_set

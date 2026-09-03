@@ -46,7 +46,7 @@ function makeCritiqueJSON(options: {
 async function runAgentTest(
   mockResponses: string[],
   options: IReflexiveAgentConfig = {},
-  assertions: (result: IReflexiveExecutionResult, identity: ReflexiveAgent) => void | Promise<void>,
+  assertions: (result: IReflexiveExecutionResult, agent_role: ReflexiveAgent) => void | Promise<void>,
   requestAnalysis?: IRequestAnalysis,
 ) {
   const agent = createReflexiveAgent(createMockProvider(mockResponses), options);

@@ -183,14 +183,14 @@ function createSimpleFlow(): IFlow {
     {
       id: "step1",
       name: "Step 1",
-      identity: "agent1",
+      agent_role: "agent1",
       dependsOn: [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
     },
     {
       id: "step2",
       name: "Step 2",
-      identity: "agent2",
+      agent_role: "agent2",
       dependsOn: ["step1"],
       input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
     },
@@ -318,7 +318,7 @@ Deno.test("FlowRunner: emits flow.step.skipped when step condition is false", as
       {
         id: "step1",
         name: "Step 1",
-        identity: "agent1",
+        agent_role: "agent1",
         dependsOn: [],
         condition: "false",
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
@@ -367,11 +367,11 @@ Deno.test("FlowRunner: emits approval.gate.entered on gate failure with wait sta
       {
         id: "gate1",
         name: "Quality Gate",
-        identity: "judge1",
+        agent_role: "judge1",
         dependsOn: [],
         type: FlowStepType.GATE,
         evaluate: {
-          identity: "judge1",
+          agent_role: "judge1",
           criteria: ["clarity"],
           threshold: 0.7,
           onFail: FlowGateOnFail.HALT,

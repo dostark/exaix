@@ -1,5 +1,5 @@
 ---
-identity_id: coder-agent
+agent_role: coder-agent
 status: pending
 ---
 

@@ -13,7 +13,7 @@ import { DependencyResolver, FlowValidationError } from "@exaix/flow";
 import type { IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
 const defaultStepProps = {
-  identity: "agent1",
+  agent_role: "agent1",
   input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
   retry: { maxAttempts: 1, backoffMs: 1000 },
 };

@@ -35,7 +35,7 @@ Deno.test("PlanCommands - Skills Injection on Approve", async (t) => {
 status: ${PlanStatus.REVIEW}
 trace_id: abc-123
 request_id: request-xyz
-identity_id: test-agent
+agent_role: test-agent
 created_at: 2026-01-27T10:00:00Z
 ---
 
@@ -73,7 +73,7 @@ This is a test plan.
 status: ${PlanStatus.REVIEW}
 trace_id: def-456
 request_id: request-abc
-identity_id: test-agent
+agent_role: test-agent
 created_at: 2026-01-27T11:00:00Z
 ---
 

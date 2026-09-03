@@ -122,7 +122,7 @@ Deno.test("ExecutionLoop: processes approved plan from Workspace/Active", async 
 trace_id: "${traceId}"
 request_id: test-request
 status: active
-identity_id: test-identity
+agent_role: test-identity
 ---
 
 # Test Plan
@@ -302,13 +302,13 @@ path = "analysis-target.txt"
     await ensureDir(blueprintsDir);
     await Deno.writeTextFile(
       join(blueprintsDir, "code-analyst.md"),
-      `---\nidentity_id: "code-analyst"\nname: "Code Analyst"\nmodel: "mock:test"\ncapabilities: ["read_file", "list_directory", "grep_search"]\ncreated: "2026-02-04T00:00:00Z"\ncreated_by: "test"\nversion: "1.0.0"\n---\n\n# Code Analyst\n`,
+      `---\nagent_role: "code-analyst"\nname: "Code Analyst"\nmodel: "mock:test"\ncapabilities: ["read_file", "list_directory", "grep_search"]\ncreated: "2026-02-04T00:00:00Z"\ncreated_by: "test"\nversion: "1.0.0"\n---\n\n# Code Analyst\n`,
     );
 
     await Deno.writeTextFile(join(tempDir, "analysis-target.txt"), "analysis source");
 
     const planContent =
-      `---\ntrace_id: "${traceId}"\nrequest_id: readonly-report\nstatus: active\nidentity_id: code-analyst\n---\n\n# Read-only Structured Plan\n\n## Execution Steps\n\n## Step 1: Analyze code\n\nRead files and produce an analysis report.\n`;
+      `---\ntrace_id: "${traceId}"\nrequest_id: readonly-report\nstatus: active\nagent_role: code-analyst\n---\n\n# Read-only Structured Plan\n\n## Execution Steps\n\n## Step 1: Analyze code\n\nRead files and produce an analysis report.\n`;
 
     const planPath = join(paths.activeDir, "readonly-report.md");
     await Deno.writeTextFile(planPath, planContent);
@@ -346,7 +346,7 @@ path = "analysis-target.txt"
     assertStringIncludes(reportContent, "Read-only analysis report.");
 
     const artifacts = await db.preparedAll<
-      { id: string; status: string; identity: string; portal: string | null; request_id: string; file_path: string }
+      { id: string; status: string; agent_role: string; portal: string | null; request_id: string; file_path: string }
     >(
       "SELECT id, status, identity, portal, request_id, file_path FROM artifacts WHERE request_id = ?",
       ["readonly-report"],
@@ -363,7 +363,7 @@ path = "analysis-target.txt"
     assertEquals(readonlyExecuted.length, 1);
     assertEquals(JSON.parse(readonlyExecuted[0].payload), {
       request_id: "readonly-report",
-      identity_id: "code-analyst",
+      agent_role: "code-analyst",
     });
 
     const skippedTraceId = crypto.randomUUID();
@@ -400,7 +400,7 @@ path = "analysis-target.txt"
     assertEquals(readonlySkipped.length, 1);
     assertEquals(JSON.parse(readonlySkipped[0].payload), {
       request_id: "readonly-skipped",
-      identity_id: "code-analyst",
+      agent_role: "code-analyst",
     });
   } finally {
     await cleanup();
@@ -416,7 +416,7 @@ Deno.test("ExecutionLoop: generates mission report on success", async () => {
 trace_id: "${traceId}"
 request_id: report-test
 status: active
-identity_id: test-identity
+agent_role: test-identity
 ---
 
 # Report Test Plan
@@ -570,7 +570,7 @@ Deno.test("ExecutionLoop: persists a trace-scoped skip for amendment-pending pla
       `trace_id: "${traceId}"`,
       "request_id: amendment-pending-request",
       "status: amendment_pending",
-      "identity_id: test-identity",
+      "agent_role: test-identity",
       "---",
       "",
       "# Amendment Pending Plan",
@@ -640,7 +640,7 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
       'trace_id: "test-trace-nochanges"',
       "request_id: nochanges-test",
       "status: active",
-      "identity_id: test-identity",
+      "agent_role: test-identity",
       "---",
       "",
       "# No Changes Plan",

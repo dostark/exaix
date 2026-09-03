@@ -19,9 +19,9 @@ import { DEFAULT_AGENTS_PATH, DEFAULT_AI_MODEL, DEFAULT_BLUEPRINT_VERSION, McpTo
  */
 export interface ILoadedBlueprint {
   /** Agent identifier (from frontmatter or filename) */
-  identityId: string;
+  agentRole: string;
 
-  /** Human-readable name (from frontmatter or derived from identityId) */
+  /** Human-readable name (from frontmatter or derived from agentRole) */
   name: string;
 
   /** Model specification (provider:model format) */
@@ -49,7 +49,7 @@ export interface ILoadedBlueprint {
 /** Legacy interface kept for backward compatibility — used by agent_runner.ts. */
 export interface IBlueprint {
   systemPrompt: string;
-  identityId?: string;
+  agentRole?: string;
   /** Default skills to apply for all requests, sourced from frontmatter.default_skills. */
   defaultSkills?: string[];
 }
@@ -103,7 +103,7 @@ const SessionDelegateConfigSchema = z.object({
 /** Runtime blueprint schema; more permissive than the creation schema to allow older blueprints. */
 export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Agent identifier - required */
-  identity_id: z.string().min(1).optional(),
+  agent_role: z.string().min(1).optional(),
 
   /** Human-readable name */
   name: z.string().min(1).optional(),
@@ -229,14 +229,14 @@ export class IBlueprintLoader {
 
   constructor(private options: IBlueprintLoaderOptions) {}
 
-  /** Loads a blueprint; `identityId` is the filename without the `.md` extension. */
-  async load(identityId: string): Promise<ILoadedBlueprint | null> {
+  /** Loads a blueprint; `agentRole` is the filename without the `.md` extension. */
+  async load(agentRole: string): Promise<ILoadedBlueprint | null> {
     // Check cache first
-    if (this.cache.has(identityId)) {
-      return this.cache.get(identityId)!;
+    if (this.cache.has(agentRole)) {
+      return this.cache.get(agentRole)!;
     }
 
-    const blueprintPath = this.resolvePath(identityId);
+    const blueprintPath = this.resolvePath(agentRole);
 
     if (!await exists(blueprintPath)) {
       return null;
@@ -244,10 +244,10 @@ export class IBlueprintLoader {
 
     try {
       const content = await Deno.readTextFile(blueprintPath);
-      const blueprint = this.parse(content, identityId, blueprintPath);
+      const blueprint = this.parse(content, agentRole, blueprintPath);
 
       // Cache for subsequent lookups
-      this.cache.set(identityId, blueprint);
+      this.cache.set(agentRole, blueprint);
 
       return blueprint;
     } catch (error) {
@@ -255,8 +255,8 @@ export class IBlueprintLoader {
         throw error;
       }
       throw new BlueprintLoadError(
-        `Failed to load blueprint '${identityId}': ${error instanceof Error ? error.message : String(error)}`,
-        identityId,
+        `Failed to load blueprint '${agentRole}': ${error instanceof Error ? error.message : String(error)}`,
+        agentRole,
         blueprintPath,
       );
     }
@@ -265,13 +265,13 @@ export class IBlueprintLoader {
   /**
    * Load blueprint or throw if not found
    */
-  async loadOrThrow(identityId: string): Promise<ILoadedBlueprint> {
-    const blueprint = await this.load(identityId);
+  async loadOrThrow(agentRole: string): Promise<ILoadedBlueprint> {
+    const blueprint = await this.load(agentRole);
     if (!blueprint) {
-      const path = this.resolvePath(identityId);
+      const path = this.resolvePath(agentRole);
       throw new BlueprintLoadError(
-        `Identity '${identityId}' not found in Blueprints/Agents/.`,
-        identityId,
+        `Identity '${agentRole}' not found in Blueprints/Agents/.`,
+        agentRole,
         path,
       );
     }
@@ -279,14 +279,14 @@ export class IBlueprintLoader {
   }
 
   /** Parses blueprint content: YAML (---) or TOML (+++) frontmatter, or plain markdown treated as the system prompt. */
-  parse(content: string, identityId: string, path: string): ILoadedBlueprint {
+  parse(content: string, agentRole: string, path: string): ILoadedBlueprint {
     // Try YAML frontmatter first (most common)
     const yamlMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
     if (yamlMatch) {
       return this.parseWithFrontmatter(
         yamlMatch[1],
         content.slice(yamlMatch[0].length),
-        identityId,
+        agentRole,
         path,
       );
     }
@@ -295,14 +295,14 @@ export class IBlueprintLoader {
     // reported as an explicit error rather than silently treated as a frontmatter-less prompt.
     if (content.startsWith("+++\n")) {
       throw new BlueprintLoadError(
-        `Blueprint '${identityId}' uses retired TOML (+++) frontmatter; convert it to YAML (--- ... ---).`,
-        identityId,
+        `Blueprint '${agentRole}' uses retired TOML (+++) frontmatter; convert it to YAML (--- ... ---).`,
+        agentRole,
         path,
       );
     }
 
     // No frontmatter - treat entire content as system prompt (backward compatible)
-    return this.createMinimalBlueprint(content, identityId, path);
+    return this.createMinimalBlueprint(content, agentRole, path);
   }
 
   /**
@@ -311,7 +311,7 @@ export class IBlueprintLoader {
   private parseWithFrontmatter(
     frontmatterRaw: string,
     body: string,
-    identityId: string,
+    agentRole: string,
     path: string,
   ): ILoadedBlueprint {
     let parsed: Record<string, JSONValue>;
@@ -320,10 +320,10 @@ export class IBlueprintLoader {
       parsed = parseYaml(frontmatterRaw) as Record<string, JSONValue>;
     } catch (error) {
       throw new BlueprintLoadError(
-        `Invalid YAML frontmatter in blueprint '${identityId}': ${
+        `Invalid YAML frontmatter in blueprint '${agentRole}': ${
           error instanceof Error ? error.message : String(error)
         }`,
-        identityId,
+        agentRole,
         path,
       );
     }
@@ -332,12 +332,12 @@ export class IBlueprintLoader {
     // warnings rather than rejected.
     const validation = validateRuntimeFrontmatter(parsed);
     for (const w of validation.warnings) {
-      console.warn(`Unknown frontmatter field '${w.field}' in blueprint '${identityId}' (ignored)`);
+      console.warn(`Unknown frontmatter field '${w.field}' in blueprint '${agentRole}' (ignored)`);
     }
     if (!validation.ok || validation.data === null) {
       throw new BlueprintLoadError(
-        `Invalid frontmatter in blueprint '${identityId}': ${validation.errors.join(", ")}`,
-        identityId,
+        `Invalid frontmatter in blueprint '${agentRole}': ${validation.errors.join(", ")}`,
+        agentRole,
         path,
       );
     }
@@ -349,8 +349,8 @@ export class IBlueprintLoader {
     const systemPrompt = this.resolveFragments(rawSystemPrompt, new Set());
 
     return {
-      identityId: frontmatter.identity_id || identityId,
-      name: frontmatter.name || this.deriveNameFromId(identityId),
+      agentRole: frontmatter.agent_role || agentRole,
+      name: frontmatter.name || this.deriveNameFromId(agentRole),
       model: frontmatter.model || this.options.defaultModel || DEFAULT_AI_MODEL,
       provider: frontmatter.provider,
       capabilities: frontmatter.capabilities,
@@ -404,14 +404,14 @@ export class IBlueprintLoader {
   /** Builds a minimal blueprint from frontmatter-less content (backward compatible with simple blueprint files). */
   private createMinimalBlueprint(
     content: string,
-    identityId: string,
+    agentRole: string,
     path: string,
   ): ILoadedBlueprint {
     const frontmatter = RuntimeBlueprintFrontmatterSchema.parse({});
 
     return {
-      identityId,
-      name: this.deriveNameFromId(identityId),
+      agentRole,
+      name: this.deriveNameFromId(agentRole),
       model: this.options.defaultModel || DEFAULT_AI_MODEL,
       capabilities: [],
       systemPrompt: content.trim(),
@@ -422,30 +422,30 @@ export class IBlueprintLoader {
   }
 
   /** Converts a kebab-case agent ID into a human-readable name, e.g. "code-reviewer" → "Code Reviewer". */
-  private deriveNameFromId(identityId: string): string {
-    return identityId
+  private deriveNameFromId(agentRole: string): string {
+    return agentRole
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
   }
 
-  /** Resolves an agent ID to its blueprint file path: only Blueprints/Agents/{identityId}.md
+  /** Resolves an agent ID to its blueprint file path: only Blueprints/Agents/{agentRole}.md
    * (canonical) is checked; the legacy path is no longer supported. */
-  private resolvePath(identityId: string): string {
+  private resolvePath(agentRole: string): string {
     // If blueprintsPath already ends with 'Agents', use it directly
     if (this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)) {
-      return join(this.options.blueprintsPath, `${identityId}.md`);
+      return join(this.options.blueprintsPath, `${agentRole}.md`);
     }
 
     // Otherwise, assume it's the Blueprints root and use Agents subdirectory
-    return join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH, `${identityId}.md`);
+    return join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH, `${agentRole}.md`);
   }
 
   /**
    * Check if a blueprint exists
    */
-  async exists(identityId: string): Promise<boolean> {
-    const path = this.resolvePath(identityId);
+  async exists(agentRole: string): Promise<boolean> {
+    const path = this.resolvePath(agentRole);
     return await exists(path);
   }
 
@@ -470,8 +470,8 @@ export class IBlueprintLoader {
 
     for await (const entry of Deno.readDir(identitiesDir)) {
       if (!entry.isFile || !entry.name.endsWith(".md")) continue;
-      const identityId = basename(entry.name, ".md");
-      const blueprint = await this.load(identityId);
+      const agentRole = basename(entry.name, ".md");
+      const blueprint = await this.load(agentRole);
       if (blueprint) {
         blueprints.push(blueprint);
       }
@@ -490,8 +490,8 @@ export class IBlueprintLoader {
   /**
    * Remove a specific blueprint from cache
    */
-  invalidate(identityId: string): void {
-    this.cache.delete(identityId);
+  invalidate(agentRole: string): void {
+    this.cache.delete(agentRole);
   }
 
   /**
@@ -500,7 +500,7 @@ export class IBlueprintLoader {
   toLegacyBlueprint(loaded: ILoadedBlueprint): IBlueprint {
     return {
       systemPrompt: loaded.systemPrompt,
-      identityId: loaded.identityId,
+      agentRole: loaded.agentRole,
       defaultSkills: loaded.frontmatter.default_skills,
     };
   }
@@ -514,7 +514,7 @@ export class IBlueprintLoader {
 export class BlueprintLoadError extends Error {
   constructor(
     message: string,
-    public readonly identityId: string,
+    public readonly agentRole: string,
     public readonly path: string,
   ) {
     super(message);
@@ -534,10 +534,10 @@ export function createBlueprintLoader(blueprintsPath: string): IBlueprintLoader 
 /** Standalone drop-in replacement for request_common.loadBlueprint. */
 export async function loadBlueprint(
   blueprintsPath: string,
-  identityId: string,
+  agentRole: string,
 ): Promise<IBlueprint | null> {
   const loader = new IBlueprintLoader({ blueprintsPath });
-  const loaded = await loader.load(identityId);
+  const loaded = await loader.load(agentRole);
 
   if (!loaded) {
     return null;

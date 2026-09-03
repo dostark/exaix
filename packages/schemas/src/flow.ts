@@ -130,7 +130,7 @@ export const ZFlowParallelConfig = z.object({
 // Gate evaluation configuration schema
 export const GateEvaluateSchema = z.object({
   /** Judge identity ID */
-  identity: z.string(),
+  agent_role: z.string(),
   /** Criteria to evaluate (names from built-in library or custom) */
   criteria: z.array(z.string()),
   /** Score threshold for passing (0.0 - 1.0) */
@@ -187,7 +187,7 @@ const FlowStepSchemaBase = z.object({
   /** Step type: standard agent step, gate, branch, or consensus. Defaults to "agent" */
   type: z.nativeEnum(FlowStepType).optional().default(FlowStepType.AGENT),
   /** Identity reference (required for agent type, optional for others) */
-  identity: z.string().min(1, "Identity reference cannot be empty"),
+  agent_role: z.string().min(1, "Identity reference cannot be empty"),
   /** Execution mode: DECLARED (default) or DYNAMIC (ReAct-style tool selection) */
   execution_mode: z.nativeEnum(FlowStepExecutionMode).optional().default(FlowStepExecutionMode.DECLARED),
   /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */

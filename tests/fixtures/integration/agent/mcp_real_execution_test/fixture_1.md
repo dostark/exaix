@@ -1,5 +1,5 @@
 ---
-identity_id: test-agent
+agent_role: test-agent
 name: test-agent
 model: gpt-4
 provider: openai

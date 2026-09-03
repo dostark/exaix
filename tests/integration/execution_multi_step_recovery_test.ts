@@ -98,7 +98,7 @@ Deno.test("[Step63.4] FlowRunner compensates prior portal changes and leaves the
         {
           id: "step1",
           name: "Generate Step 1",
-          identity: "agent1",
+          agent_role: "agent1",
           dependsOn: [],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: 1000 },
@@ -110,7 +110,7 @@ Deno.test("[Step63.4] FlowRunner compensates prior portal changes and leaves the
         {
           id: "step2",
           name: "Generate Step 2",
-          identity: "agent2",
+          agent_role: "agent2",
           dependsOn: ["step1"],
           input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: 1000 },
@@ -122,7 +122,7 @@ Deno.test("[Step63.4] FlowRunner compensates prior portal changes and leaves the
         {
           id: "step3",
           name: "Fail Verification",
-          identity: "agent3",
+          agent_role: "agent3",
           dependsOn: ["step2"],
           input: { source: FlowInputSource.STEP, stepId: "step2", transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: 1000 },

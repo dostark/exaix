@@ -28,7 +28,7 @@ Deno.test("CreateDirectoryTool: creates a single directory", async () => {
     await handler.execute({
       portal: "TestPortal",
       path: "src/newdir",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const stat = await Deno.stat(join(env.portalPath, "src/newdir"));
@@ -42,7 +42,7 @@ Deno.test("CreateDirectoryTool: creates nested directories recursively", async (
     await handler.execute({
       portal: "TestPortal",
       path: "src/a/b/c",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const stat = await Deno.stat(join(env.portalPath, "src/a/b/c"));
@@ -58,7 +58,7 @@ Deno.test("CreateDirectoryTool: is idempotent — succeeds if directory already 
     const result = await handler.execute({
       portal: "TestPortal",
       path: "src/existing",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result !== undefined, true);
@@ -73,7 +73,7 @@ Deno.test("CreateDirectoryTool: blocks path traversal", async () => {
         handler.execute({
           portal: "TestPortal",
           path: "../../outside",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
         }),
     );
   });

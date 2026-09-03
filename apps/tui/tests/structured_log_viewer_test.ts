@@ -80,7 +80,7 @@ const createTestLogs = (count: number): IStructuredLogEntry[] => {
     context: {
       trace_id: `trace-${i % 3}`,
       correlation_id: `corr-${i % 2}`,
-      identity_id: `agent-${i % 2}`,
+      agent_role: `agent-${i % 2}`,
     },
     metadata: {},
   }));

@@ -8,7 +8,7 @@ steps:
   - id: gather-requirements
     name: Gather API Requirements
     type: agent
-    identity: product-manager
+    agent_role: product-manager
     dependsOn: []
     input:
       source: request
@@ -19,7 +19,7 @@ steps:
   - id: design-architecture
     name: Design API Architecture
     type: agent
-    identity: software-architect
+    agent_role: software-architect
     dependsOn:
       - gather-requirements
     input:
@@ -33,7 +33,7 @@ steps:
   - id: define-endpoints
     name: Define Endpoints & Routes
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     dependsOn:
       - design-architecture
     input:
@@ -47,7 +47,7 @@ steps:
   - id: design-schemas
     name: Design Request/Response Schemas
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     dependsOn:
       - design-architecture
     input:
@@ -61,7 +61,7 @@ steps:
   - id: security-design
     name: Design Authentication & Security
     type: agent
-    identity: security-expert
+    agent_role: security-expert
     dependsOn:
       - design-architecture
     input:
@@ -75,7 +75,7 @@ steps:
   - id: error-handling
     name: Design Error Handling
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     dependsOn:
       - define-endpoints
       - design-schemas
@@ -91,7 +91,7 @@ steps:
   - id: performance-considerations
     name: Performance & Scalability Review
     type: agent
-    identity: performance-engineer
+    agent_role: performance-engineer
     dependsOn:
       - define-endpoints
       - design-schemas
@@ -109,7 +109,7 @@ steps:
   - id: compile-api-spec
     name: Compile API Specification
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - define-endpoints
       - design-schemas

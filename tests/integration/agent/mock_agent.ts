@@ -41,7 +41,7 @@ async function main() {
         portal: context.portal,
         path: "authorized.txt",
         content: "this is authorized",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       },
     }));
     await reader.read();
@@ -57,7 +57,7 @@ async function main() {
         portal: context.portal,
         path: "unauthorized.txt",
         content: "this is unauthorized",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       },
     }));
     await reader.read();

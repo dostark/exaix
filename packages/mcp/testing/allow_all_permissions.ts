@@ -23,7 +23,7 @@ export class AllowAllPermissionsService implements IPortalPermissionsChecker {
     return {
       allowed: true,
       portal: portalAlias,
-      identity_id: identityId,
+      agent_role: identityId,
     };
   }
 
@@ -35,7 +35,7 @@ export class AllowAllPermissionsService implements IPortalPermissionsChecker {
     return {
       allowed: true,
       portal: portalAlias,
-      identity_id: identityId,
+      agent_role: identityId,
       operation,
     };
   }

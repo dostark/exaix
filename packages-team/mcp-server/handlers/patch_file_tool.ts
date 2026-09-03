@@ -21,7 +21,7 @@ export class PatchFileTool extends ToolHandler {
       path: string;
       search: string;
       replace: string;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, path, search, replace, identity_id } = validatedArgs;
 
@@ -114,12 +114,12 @@ export class PatchFileTool extends ToolHandler {
             type: "string",
             description: "Replacement string. Use empty string to delete the matched section.",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "path", "search", "replace", "identity_id"],
+        required: ["portal", "path", "search", "replace", "agent_role"],
       },
     };
   }

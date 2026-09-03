@@ -10,7 +10,7 @@ output:
 steps:
   - id: "approval-attempt"
     name: "Attempt approval-gated request creation in dynamic mode"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "dynamic"
     permitted_tools:
       - exaix_create_request

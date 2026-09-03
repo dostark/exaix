@@ -1,5 +1,5 @@
 ---
-identity_id: "research-synthesizer"
+agent_role: "research-synthesizer"
 name: "Research Synthesizer"
 model: ""
 model_size: XL

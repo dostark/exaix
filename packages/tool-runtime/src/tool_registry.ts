@@ -863,7 +863,7 @@ export class ToolRegistry implements IToolRegistry {
           attempted_path: path,
           error: error.message,
           trace_id: this.traceId ?? null,
-          identity_id: this.identityId ?? null,
+          agent_role: this.identityId ?? null,
         };
         if (this.logger) {
           void this.logger.warn(DomainEventType.SecurityPathTraversalAttempted, path, payload, this.traceId);
@@ -881,7 +881,7 @@ export class ToolRegistry implements IToolRegistry {
           allowed_roots: allowedRoots.join(", "),
           error: error.message,
           trace_id: this.traceId ?? null,
-          identity_id: this.identityId ?? null,
+          agent_role: this.identityId ?? null,
         };
         if (this.logger) {
           void this.logger.warn(DomainEventType.SecurityPathAccessDenied, path, payload, this.traceId);
@@ -895,7 +895,7 @@ export class ToolRegistry implements IToolRegistry {
         input_path: path,
         error: error instanceof Error ? error.message : String(error),
         trace_id: this.traceId ?? null,
-        identity_id: this.identityId ?? null,
+        agent_role: this.identityId ?? null,
       };
       if (this.logger) {
         void this.logger.warn(DomainEventType.PathResolutionError, path, payload, this.traceId);

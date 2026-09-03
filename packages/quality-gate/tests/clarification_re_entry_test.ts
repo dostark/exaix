@@ -35,7 +35,7 @@ function makeRequestFile(
     `created: "2026-01-01T00:00:00.000Z"`,
     `status: "${status}"`,
     `priority: "normal"`,
-    `identity: "senior-coder"`,
+    `agent_role: "senior-coder"`,
     `source: ${RequestSource.CLI}`,
     `created_by: "tester"`,
     extras,

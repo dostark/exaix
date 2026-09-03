@@ -183,7 +183,7 @@ Deno.test({
           portal: "none",
         },
         {
-          identity_id: "live-cutover-agent",
+          agent_role: "live-cutover-agent",
           portal: "none",
           permitted_tools: [ToolName.REMEMBER_FACT],
           security_mode: SecurityMode.SANDBOXED,

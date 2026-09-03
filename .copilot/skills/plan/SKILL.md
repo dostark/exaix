@@ -145,7 +145,7 @@ Follow the structure defined in `exaix-dev-docs/planning/README.md`:
    # step-manifest
    step: 1
    title: Capability + constants
-   identity: senior-coder
+   agent_role: senior-coder
    skills: [tdd-methodology, exaix-conventions, portal-grounding, security-first]
    portal: exaix-self
    target_branch: feat/phase-NN

@@ -113,7 +113,7 @@ status: active
 trace_id: "${traceId}"
 request_id: ${requestId}
 status: active
-identity_id: test-identity
+agent_role: test-identity
 ---
 
 # Test Plan
@@ -242,7 +242,7 @@ status: active
 trace_id: "${traceId}"
 request_id: ${requestId}
 status: active
-identity_id: test-identity
+agent_role: test-identity
 ---
 
 # Test Plan

@@ -112,7 +112,7 @@ Deno.test("renderPendingPanel: limits display to 10 items", () => {
   for (let i = 0; i < 15; i++) {
     proposals.push({
       id: `proposal-${i}`,
-      identity_id: "test-identity",
+      agent_role: "test-identity",
       operation: MemoryOperation.ADD,
       learning: {
         id: `learning-${i}`,

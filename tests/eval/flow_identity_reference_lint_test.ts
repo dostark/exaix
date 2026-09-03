@@ -1,7 +1,7 @@
 /**
  * @module FlowIdentityReferenceLintTest
  * @path tests/eval/flow_identity_reference_lint_test.ts
- * @description Asserts every identity: reference in every Blueprints/Flows/*.flow.yaml
+ * @description Asserts every agent_role: reference in every Blueprints/Flows/*.flow.yaml
  *   resolves against Blueprints/Agents/.
  */
 import { assertEquals } from "@std/assert";
@@ -25,7 +25,7 @@ function extractIdentityRefs(content: string): string[] {
   const refs: string[] = [];
   const lines = content.split("\n");
   for (const line of lines) {
-    const match = line.match(/^\s+identity:\s*["']?([a-zA-Z0-9_-]+)["']?\s*$/);
+    const match = line.match(/^\s+agent_role:\s*["']?([a-zA-Z0-9_-]+)["']?\s*$/);
     if (match) {
       refs.push(match[1]);
     }

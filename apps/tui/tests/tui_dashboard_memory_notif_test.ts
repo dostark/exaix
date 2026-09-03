@@ -23,7 +23,7 @@ Deno.test("TUI Dashboard + Memory: handles memory update notifications", async (
     await notificationService.notifyMemoryUpdate({
       id: "prop-1",
       created_at: new Date().toISOString(),
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       operation: MemoryOperation.ADD,
       target_scope: MemoryScope.PROJECT,
       learning: { title: "ILearning 1", id: "l-1" } as Partial<IProposalLearning> as IProposalLearning,
@@ -33,7 +33,7 @@ Deno.test("TUI Dashboard + Memory: handles memory update notifications", async (
     await notificationService.notifyMemoryUpdate({
       id: "prop-2",
       created_at: new Date().toISOString(),
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       operation: MemoryOperation.ADD,
       target_scope: MemoryScope.PROJECT,
       learning: { title: "ILearning 2", id: "l-2" } as Partial<IProposalLearning> as IProposalLearning,

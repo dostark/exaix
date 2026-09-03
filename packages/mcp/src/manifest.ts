@@ -101,9 +101,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
       properties: {
         portal: { type: "string", description: "Portal name" },
         path: { type: "string", description: "Relative path within portal" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "path", "identity_id"],
+      required: ["portal", "path", "agent_role"],
     },
     output_schema: {
       type: "string",
@@ -133,9 +133,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
         portal: { type: "string", description: "Portal name" },
         path: { type: "string", description: "Relative path within portal" },
         content: { type: "string", description: "File content to write" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "path", "content", "identity_id"],
+      required: ["portal", "path", "content", "agent_role"],
     },
     output_schema: {
       type: "string",
@@ -172,9 +172,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
           type: "string",
           description: "Replacement string. Use empty string to delete the matched section.",
         },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "path", "search", "replace", "identity_id"],
+      required: ["portal", "path", "search", "replace", "agent_role"],
     },
     output_schema: {
       type: "string",
@@ -201,9 +201,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
       properties: {
         portal: { type: "string", description: "Portal alias" },
         path: { type: "string", description: "File path relative to portal root" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "path", "identity_id"],
+      required: ["portal", "path", "agent_role"],
     },
     output_schema: {
       type: "string",
@@ -231,9 +231,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
         portal: { type: "string", description: "Portal alias" },
         from: { type: "string", description: "Source file path relative to portal root" },
         to: { type: "string", description: "Destination file path relative to portal root" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "from", "to", "identity_id"],
+      required: ["portal", "from", "to", "agent_role"],
     },
     output_schema: {
       type: "string",
@@ -260,9 +260,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
       properties: {
         portal: { type: "string", description: "Portal alias" },
         path: { type: "string", description: "Directory path relative to portal root" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "path", "identity_id"],
+      required: ["portal", "path", "agent_role"],
     },
     output_schema: {
       type: "string",
@@ -289,9 +289,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
       properties: {
         portal: { type: "string", description: "Portal name" },
         path: { type: "string", description: "Relative path within portal (optional, defaults to root)" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "identity_id"],
+      required: ["portal", "agent_role"],
     },
     output_schema: {
       type: JsonSchemaType.ARRAY,
@@ -320,9 +320,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
         portal: { type: "string", description: "Portal name" },
         pattern: { type: "string", description: "Glob pattern to match" },
         path: { type: "string", description: "Optional: subdirectory to search in" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "pattern", "identity_id"],
+      required: ["portal", "pattern", "agent_role"],
     },
     output_schema: {
       type: JsonSchemaType.ARRAY,
@@ -453,9 +453,9 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
         portal: { type: "string", description: "Portal name" },
         command: { type: "string", description: "Command to execute (must be whitelisted)" },
         args: { type: JsonSchemaType.ARRAY, items: { type: "string" }, description: "Command arguments" },
-        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+        agent_role: { type: "string", description: "Identity identifier for permission checks" },
       },
-      required: ["portal", "command", "identity_id"],
+      required: ["portal", "command", "agent_role"],
     },
     output_schema: {
       type: "object",

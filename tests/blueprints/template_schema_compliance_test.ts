@@ -33,7 +33,7 @@ function parseFrontmatter(content: string): Record<string, string | string[] | b
 }
 
 const StrictBlueprintFrontmatterSchema = z.object({
-  identity_id: z.string().min(1),
+  agent_role: z.string().min(1),
   name: z.string().min(1).max(100),
   model: z.string().optional(),
   capabilities: z.array(z.string()).optional().default([]),
@@ -82,7 +82,7 @@ Deno.test({
   name: "[catalog/strict-schema] unknown frontmatter field rejects under .strict()",
   fn: () => {
     const result = StrictBlueprintFrontmatterSchema.safeParse({
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       name: "Test Agent",
       model: "test:model",
       created: "2025-01-01T00:00:00Z",

@@ -103,7 +103,7 @@ const testContext = {
 } satisfies IExecutionContext;
 
 const testOptions: IAgentExecutionOptions = {
-  identity_id: "react-live-test-agent",
+  agent_role: "react-live-test-agent",
   portal: "test",
   security_mode: SecurityMode.SANDBOXED,
   timeout_ms: LIVE_TEST_TIMEOUT_MS,

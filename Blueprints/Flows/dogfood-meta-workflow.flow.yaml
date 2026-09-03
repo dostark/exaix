@@ -9,7 +9,7 @@ steps:
   - id: pre-gap
     name: Pre-Gap Analysis
     type: agent
-    identity: code-analyst
+    agent_role: code-analyst
     strategy: react
     dependsOn: []
     input:
@@ -18,7 +18,7 @@ steps:
   - id: next-steps
     name: Implement Steps (TDD)
     type: session_delegate_cycle
-    identity: dogfood-coder
+    agent_role: dogfood-coder
     dependsOn:
       - pre-gap
     input:
@@ -28,7 +28,7 @@ steps:
     delegateCycle:
       requireChangedPaths: true
       review:
-        identity: quality-judge
+        agent_role: quality-judge
         criteria:
           - code_correctness
           - has_tests
@@ -40,7 +40,7 @@ steps:
   - id: post-gap
     name: Post-Gap Analysis
     type: agent
-    identity: code-reviewer
+    agent_role: code-reviewer
     strategy: react
     dependsOn:
       - next-steps

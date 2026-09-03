@@ -20,5 +20,5 @@ export interface IServiceContext {
   /** Category of runtime agent */
   agentKind?: AgentKind | null;
   /** LLM identity blueprint being executed */
-  identityId?: string;
+  agentRole?: string;
 }

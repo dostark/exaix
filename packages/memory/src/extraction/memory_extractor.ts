@@ -95,7 +95,7 @@ export class MemoryExtractorService {
         extracted_at: learning.extracted_at || new Date().toISOString(),
       },
       reason: `Extracted from execution ${execution.trace_id}`,
-      identity_id: identityId,
+      agent_role: identityId,
       execution_id: execution.trace_id,
       status: MemoryStatus.PENDING,
     };
@@ -115,7 +115,7 @@ export class MemoryExtractorService {
         proposal_id: proposal.id,
         learning_title: learning.title,
         category: learning.category,
-        identity_id: identityId,
+        agent_role: identityId,
       },
     );
 

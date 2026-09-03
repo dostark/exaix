@@ -19,7 +19,7 @@ const GATES: SessionGate[] = ["refinement", "plan_review", "code_changes", "revi
 function makeBrief(overrides: Partial<SessionBrief> = {}): SessionBrief {
   return SessionBriefSchema.parse({
     trace_id: crypto.randomUUID(),
-    identity_id: "dogfood-coder",
+    agent_role: "dogfood-coder",
     gate: "code_changes",
     tool: "claude-code",
     objective: "Implement the feature",

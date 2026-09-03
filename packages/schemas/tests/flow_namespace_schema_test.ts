@@ -106,7 +106,7 @@ Deno.test("FlowSchema: existing flows parse without namespace config", () => {
       {
         id: "review",
         name: "Review",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
       },
     ],
     output: {
@@ -134,7 +134,7 @@ Deno.test("FlowSchema: parses flow-level and step-level namespace config", () =>
       {
         id: "analyze",
         name: "Analyze",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         input: {
           source: FlowInputSource.REQUEST,
         },
@@ -160,7 +160,7 @@ Deno.test("FlowStepSchema: parses namespace bindings on a step", () => {
   const parsed = FlowStepSchema.parse({
     id: "step-1",
     name: "Step 1",
-    identity: "test-agent",
+    agent_role: "test-agent",
     namespace: {
       reads: [{ key: "review.summary" }],
       writes: [{ key: "review.findings", from: "findings" }],

@@ -71,7 +71,7 @@ Deno.test("Reproduction: Zombie Plan Lifecycle in Manual Execution Mode", async 
     const planContent = `---
 trace_id: "${traceId}"
 request_id: "request-test"
-identity: "default"
+agent_role: "default"
 status: "approved"
 ---
 

@@ -56,7 +56,7 @@ Deno.test("RunCommandTool: response content matches toolResultToMcpResponse for 
       portal: "TestPortal",
       command: "ls",
       args: [],
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const canonicalResponse = toolResultToMcpResponse(registryResult);
@@ -80,7 +80,7 @@ Deno.test("SearchFilesTool: response content matches toolResultToMcpResponse for
     const handlerResponse = await handler.execute({
       portal: "TestPortal",
       pattern: "**/*.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const canonicalResponse = toolResultToMcpResponse(registryResult);

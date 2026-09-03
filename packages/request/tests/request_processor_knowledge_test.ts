@@ -134,7 +134,7 @@ trace_id: "trace-${requestId}"
 created: "${new Date().toISOString()}"
 status: "${RequestStatus.PENDING}"
 priority: "normal"
-identity_id: "${opts.identity ?? "test-agent"}"
+agent_role: "${opts.identity ?? "test-agent"}"
 assessed_at: "${new Date().toISOString()}"
 ${portalLine}
 created_by: "test-user"
@@ -205,7 +205,7 @@ Deno.test("[RequestProcessor] passes injected knowledge to agent during prompt g
   const env = await makeKnowledgeProcessorEnv({ knowledgeService: mockKnowledge, withPortal: true });
 
   try {
-    const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal", identity: "know-agent" });
+    const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal", agent_role: "know-agent" });
     // Write a dummy blueprint
     const blueprintPath = join(env.blueprintsPath, "Agents", "know-agent.md");
     Deno.writeTextFileSync(blueprintPath, "# know-agent blueprint\n{{context}}");

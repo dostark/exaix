@@ -1,5 +1,5 @@
 ---
-identity_id: "senior-coder"
+agent_role: "senior-coder"
 name: "Senior Coder"
 model: "anthropic:claude-sonnet-5"
 capabilities:

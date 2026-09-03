@@ -43,24 +43,24 @@ function serializeStructuredData(value: object): JSONValue {
 export class CreateRequestTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const validatedArgs = CreateRequestToolArgsSchema.parse(args);
-    const { description, agent, identity, identity_id } = validatedArgs;
+    const { description, agent, assigned_agent_role, agent_role } = validatedArgs;
 
     try {
       const requestCmd = new RequestCommands(this.context);
 
-      // Use identity (canonical) with agent fallback for backward compatibility
-      const identityId = identity ?? agent;
+      // Use assigned_agent_role (canonical) with agent fallback for backward compatibility
+      const resolvedAgentRole = assigned_agent_role ?? agent;
 
       const result = await requestCmd.create(
         description,
-        { identity: identityId },
+        { agent_role: resolvedAgentRole },
         RequestSource.MCP,
       );
 
-      this.logToolExecution("create_request", DEFAULT_MCP_IDENTITY_ID, identity_id, {
+      this.logToolExecution("create_request", DEFAULT_MCP_IDENTITY_ID, agent_role, {
         description,
-        identity: identityId,
-        identity_id,
+        assigned_agent_role: resolvedAgentRole,
+        agent_role,
         request_id: result.filename.replace(".md", ""),
         trace_id: result.trace_id,
         success: true,
@@ -94,12 +94,12 @@ export class CreateRequestTool extends ToolHandler {
       return this.formatToolError(
         "create_request",
         DEFAULT_MCP_IDENTITY_ID,
-        identity_id,
+        agent_role,
         classifyDomainToolError(classifiedError),
         message,
         {
           description,
-          identity_id: identity_id ?? null,
+          agent_role: agent_role ?? null,
         },
       );
     }
@@ -117,20 +117,20 @@ export class CreateRequestTool extends ToolHandler {
             type: "string",
             description: "Detailed description of the request",
           },
-          identity: {
+          assigned_agent_role: {
             type: "string",
-            description: "Identity to assign (default: default)",
+            description: "Agent role to assign (default: default)",
           },
           agent: {
             type: "string",
-            description: "Deprecated: use identity instead",
+            description: "Deprecated: use assigned_agent_role instead",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
-            description: "Identity identifier for permission checks",
+            description: "Agent role identifier for permission checks",
           },
         },
-        required: ["description", "identity_id"],
+        required: ["description", "agent_role"],
       },
     };
   }
@@ -180,7 +180,7 @@ export class ListPlansTool extends ToolHandler {
         message,
         {
           status: status ?? null,
-          identity_id: identity_id ?? null,
+          agent_role: identity_id ?? null,
         },
       );
     }
@@ -199,12 +199,12 @@ export class ListPlansTool extends ToolHandler {
             enum: [PlanStatus.PENDING, PlanStatus.APPROVED, PlanStatus.REJECTED, PlanStatus.REVIEW],
             description: "Status to filter by",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["identity_id"],
+        required: ["agent_role"],
       },
     };
   }
@@ -258,7 +258,7 @@ export class ApprovePlanTool extends ToolHandler {
         message,
         {
           plan_id,
-          identity_id: identity_id ?? null,
+          agent_role: identity_id ?? null,
         },
       );
     }
@@ -276,12 +276,12 @@ export class ApprovePlanTool extends ToolHandler {
             type: "string",
             description: "ID of the plan to approve",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["plan_id", "identity_id"],
+        required: ["plan_id", "agent_role"],
       },
     };
   }
@@ -307,7 +307,7 @@ export class QueryJournalTool extends ToolHandler {
       this.logToolExecution("query_journal", DEFAULT_MCP_IDENTITY_ID, identity_id, {
         trace_id: trace_id ?? null,
         limit: limit ?? null,
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
         count: activities.length,
         success: true,
       });
@@ -336,7 +336,7 @@ export class QueryJournalTool extends ToolHandler {
         {
           trace_id: trace_id ?? null,
           limit: limit ?? null,
-          identity_id: identity_id ?? null,
+          agent_role: identity_id ?? null,
         },
       );
     }
@@ -358,12 +358,12 @@ export class QueryJournalTool extends ToolHandler {
             type: "number",
             description: "Max records to return (default: 50)",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["identity_id"],
+        required: ["agent_role"],
       },
     };
   }

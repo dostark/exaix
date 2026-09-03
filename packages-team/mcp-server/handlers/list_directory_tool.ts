@@ -17,7 +17,7 @@ export class ListDirectoryTool extends ToolHandler {
     const validatedArgs = ListDirectoryToolArgsSchema.parse(args) as {
       portal: string;
       path?: string;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, path, identity_id } = validatedArgs;
 
@@ -54,7 +54,7 @@ export class ListDirectoryTool extends ToolHandler {
       // Log successful execution
       this.logToolExecution(McpToolName.LIST_DIRECTORY, portal, identity_id, {
         path: listPath || "/",
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
         success: true,
         entry_count: entries.length,
       });
@@ -75,7 +75,7 @@ export class ListDirectoryTool extends ToolHandler {
       const message = error instanceof Error ? error.message : String(error);
       return this.formatToolError(McpToolName.LIST_DIRECTORY, portal, identity_id, ToolErrorCode.NOT_FOUND, message, {
         path: path || "/",
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
       });
     }
   }
@@ -96,12 +96,12 @@ export class ListDirectoryTool extends ToolHandler {
             type: "string",
             description: "Relative path within portal (optional, defaults to root)",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "identity_id"],
+        required: ["portal", "agent_role"],
       },
     };
   }

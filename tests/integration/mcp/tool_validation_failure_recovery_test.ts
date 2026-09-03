@@ -96,7 +96,7 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed va
     try {
       const response = await server.handleRequest(createMCPRequest("tools/call", {
         name: "write_file",
-        arguments: { portal: portalAlias, path: "note.txt", content: "hello", identity_id: "agent" },
+        arguments: { portal: portalAlias, path: "note.txt", content: "hello", agent_role: "agent" },
       }));
       assertExists(response.result);
       await db.waitForFlush();
@@ -144,7 +144,7 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP recovery write
     try {
       const response = await server.handleRequest(createMCPRequest("tools/call", {
         name: "list_directory",
-        arguments: { portal: portalAlias, path: ".", identity_id: "agent" },
+        arguments: { portal: portalAlias, path: ".", agent_role: "agent" },
       }));
       assertExists(response.result);
       await db.waitForFlush();

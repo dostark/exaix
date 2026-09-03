@@ -40,7 +40,7 @@ function selectedToModelString(payload: Opt<JSONValue, Reason.OptionalInput>): s
   return undefined;
 }
 
-/** Status line for a single identity: falls back to the journaled resolution when the
+/** Status line for a single agent_role: falls back to the journaled resolution when the
  *  agent's declared model is empty. */
 export function renderResolvedModelLine(agentModel: string, journalEntries: IResolvedModelJournalEntry[]): string {
   if (agentModel) return agentModel;

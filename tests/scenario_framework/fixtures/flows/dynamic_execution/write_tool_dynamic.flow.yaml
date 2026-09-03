@@ -10,7 +10,7 @@ output:
 steps:
   - id: "write-attempt"
     name: "Attempt a write tool in dynamic mode"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "dynamic"
     permitted_tools:
       # `write_file` is a write tool and NOT approval-required. That combination is the point:

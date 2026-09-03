@@ -51,7 +51,7 @@ const createMockStep = (overrides: Partial<IFlowStep> = {}): IFlowStep => ({
   id: "test-step",
   name: "Test Step",
   type: FlowStepType.AGENT,
-  identity: "test-agent",
+  agent_role: "test-agent",
   execution_mode: FlowStepExecutionMode.DECLARED,
   dependsOn: [],
   input: { source: FlowInputSource.REQUEST, transform: "passthrough" },

@@ -53,9 +53,9 @@ export const REPRESENTATIVE_TOOL_CALLS: readonly IRepresentativeCallSpec[] = [
   {
     category: "META",
     toolName: "run_command",
-    args: { portal: "TestPortal", command: "echo", args: ["golden-fixture-check"], identity_id: "golden-fixture" },
+    args: { portal: "TestPortal", command: "echo", args: ["golden-fixture-check"], agent_role: "golden-fixture" },
   },
-  { category: "DOMAIN", toolName: "exaix_list_plans", args: { identity_id: "golden-fixture" } },
+  { category: "DOMAIN", toolName: "exaix_list_plans", args: { agent_role: "golden-fixture" } },
 ];
 
 /** Portal content seeded for a reproducible `resources/list` + representative-call capture. */

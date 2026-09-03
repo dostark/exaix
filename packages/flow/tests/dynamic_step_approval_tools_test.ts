@@ -34,7 +34,7 @@ function dynamicStep(tools: string[]): IFlowStep {
   return {
     id: "dynamic-step",
     name: "Dynamic step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: tools,
     input: { source: "request" },

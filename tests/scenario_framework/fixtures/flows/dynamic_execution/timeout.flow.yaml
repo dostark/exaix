@@ -10,7 +10,7 @@ output:
 steps:
   - id: "timeout-step"
     name: "Step with short timeout"
-    identity: "code-analyst"
+    agent_role: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

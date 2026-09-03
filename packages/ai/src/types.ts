@@ -184,7 +184,7 @@ export type ToolArgs = Record<string, JSONValue>;
 
 export interface ILlmClient {
   reasonNextAction(params: {
-    identity: IBlueprintFrontmatter;
+    agent_role: IBlueprintFrontmatter;
     stepObjective: string;
     accumulatedContext: string;
     availableTools: Array<{

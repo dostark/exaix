@@ -379,7 +379,7 @@ function createMockArchiveService(overrides: Partial<ArchiveService> = {}): Arch
   const sampleEntry: ArchiveEntry = {
     trace_id: "00000000-0000-0000-0000-000000000001",
     request_id: "req-1",
-    identity_id: "agent-1",
+    agent_role: "agent-1",
     archived_at: new Date().toISOString(),
     completed_at: new Date().toISOString(),
     status: ArchiveStatus.COMPLETED,

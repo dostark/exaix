@@ -55,7 +55,7 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
       completed_at: new Date().toISOString(),
       status: ExecutionStatus.COMPLETED,
       portal: "integration-test-portal",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       summary: "Implemented error handling middleware with proper async/await patterns",
       context_files: ["src/middleware/error.ts"],
       context_portals: ["integration-test-portal"],
@@ -115,7 +115,7 @@ Deno.test("Integration: execution failure extracts troubleshooting learning", as
       completed_at: new Date().toISOString(),
       status: ExecutionStatus.FAILED,
       portal: "failure-test-portal",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       summary: "Failed to parse configuration file",
       context_files: ["config.json"],
       context_portals: ["failure-test-portal"],
@@ -382,7 +382,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
       completed_at: new Date().toISOString(),
       status: ExecutionStatus.COMPLETED,
       portal: "pending-cli-portal",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       summary: "Added validation middleware",
       context_files: ["src/validate.ts"],
       context_portals: ["pending-cli-portal"],
@@ -398,7 +398,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     // Extract learnings and create proposal
     const learnings = await extractor.analyzeExecution(execution);
     assertGreaterOrEqual(learnings.length, 1);
-    await extractor.createProposal(learnings[0], execution, execution.identity_id);
+    await extractor.createProposal(learnings[0], execution, execution.agent_role);
 
     // List pending via CLI
     const pendingList = await commands.pendingList(false, UIOutputFormat.TABLE);

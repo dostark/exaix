@@ -65,8 +65,8 @@ Deno.test("MCP Domain Tools", async (t) => {
     const tool = new CreateRequestTool(context);
     const result = await tool.execute({
       description: "Test Request",
-      identity: "test-agent",
-      identity_id: "user-1",
+      assigned_agent_role: "test-agent",
+      agent_role: "user-1",
     });
 
     assertExists(result.content);
@@ -99,7 +99,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     const tool = new ListPlansTool(context);
     const result = await tool.execute({
       status: "pending",
-      identity_id: "user-1",
+      agent_role: "user-1",
     });
 
     const plans = JSON.parse(getFirstTextContent(result));
@@ -121,7 +121,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     const tool = new ApprovePlanTool(context);
     const result = await tool.execute({
       plan_id: planId,
-      identity_id: "user-1",
+      agent_role: "user-1",
     });
 
     assertExists(result.content);
@@ -141,7 +141,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     const tool = new QueryJournalTool(context);
     const result = await tool.execute({
       limit: 10,
-      identity_id: "user-1",
+      agent_role: "user-1",
     });
 
     const activities = JSON.parse(getFirstTextContent(result));
@@ -154,7 +154,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     const tool = new ListPlansTool(context);
     // No status provided -> should be PENDING
     const result = await tool.execute({
-      identity_id: "user-1",
+      agent_role: "user-1",
     });
 
     // Check internal log or result
@@ -173,7 +173,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     const result = await tool.execute({
-      identity_id: "user-1",
+      agent_role: "user-1",
       trace_id: traceId, // This filters by trace_id
     });
 
@@ -196,7 +196,7 @@ Deno.test("MCP Domain Tools", async (t) => {
 
     try {
       const response = await tool.execute({
-        identity_id: "user-1",
+        agent_role: "user-1",
         trace_id: "any",
       });
       assertEquals(response.isError, true);

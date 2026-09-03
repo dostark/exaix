@@ -70,7 +70,7 @@ Deno.test("SearchFilesTool: searches for files and returns structured data conte
     const result = await handler.execute({
       portal: "TestPortal",
       pattern: "**/*.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result.content[0].type, "exaix_structured_data");
@@ -92,7 +92,7 @@ Deno.test("SearchFilesTool: search failure returns isError:true response", async
     const result = await handler.execute({
       portal: "TestPortal",
       pattern: "**/*.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result.isError, true);
@@ -109,7 +109,7 @@ Deno.test("SearchFilesTool: missing ToolRegistry returns isError:true response",
     const result = await handler.execute({
       portal: "TestPortal",
       pattern: "**/*.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result.isError, true);

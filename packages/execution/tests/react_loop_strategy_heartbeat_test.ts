@@ -46,7 +46,7 @@ const testContext: IExecutionContext = {
 
 function createOptions(): IAgentExecutionOptions {
   return {
-    identity_id: "heartbeat-agent",
+    agent_role: "heartbeat-agent",
     portal: "test",
     security_mode: SecurityMode.SANDBOXED,
     timeout_ms: 300000,

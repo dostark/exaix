@@ -21,7 +21,7 @@ Deno.test("FrontmatterParser: valid markdown with YAML frontmatter", async () =>
   const result = parser.parse(markdown);
 
   assertEquals(result.request.trace_id, "550e8400-e29b-41d4-a716-446655440000");
-  assertEquals(result.request.identity_id, "coder-agent");
+  assertEquals(result.request.agent_role, "coder-agent");
   assertEquals(result.request.status, RequestStatus.PENDING);
   assertEquals(result.request.priority, 8);
   assertEquals(result.request.tags, ["feature", "ui"]);
@@ -81,7 +81,7 @@ Deno.test("FrontmatterParser: logs validation failure", () => {
   const logger = createLoggerSpy();
   const parser = new FrontmatterParser(logger);
   const markdown = `---
-identity_id: coder-agent
+agent_role: coder-agent
 status: pending
 ---
 

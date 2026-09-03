@@ -80,7 +80,7 @@ class FailingStore implements IStepDurabilityStore {
   }
 }
 
-function buildFlow(steps: Array<{ id: string; identity: string; dependsOn?: string[] }>): IFlowInput {
+function buildFlow(steps: Array<{ id: string; agent_role: string; dependsOn?: string[] }>): IFlowInput {
   return {
     id: "edge-flow",
     name: "Edge Flow",
@@ -89,7 +89,7 @@ function buildFlow(steps: Array<{ id: string; identity: string; dependsOn?: stri
     steps: steps.map((s) => ({
       id: s.id,
       name: s.id,
-      identity: s.identity,
+      agent_role: s.identity,
       dependsOn: s.dependsOn ?? [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -105,7 +105,7 @@ Deno.test("StepDurabilityEdge: empty userPrompt still produces a valid input has
   const logger = new MockEventLogger();
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildFlow([{ id: "step1", identity: "agentA" }]);
+  const flow = buildFlow([{ id: "step1", agent_role: "agentA" }]);
   const result = await runner.execute(flow as IFlow, { userPrompt: "" });
 
   assertEquals(result.success, true);
@@ -121,7 +121,7 @@ Deno.test("StepDurabilityEdge: records are isolated by traceId", async () => {
   const logger = new MockEventLogger();
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildFlow([{ id: "step1", identity: "agentA" }]);
+  const flow = buildFlow([{ id: "step1", agent_role: "agentA" }]);
 
   await runner.execute(flow as IFlow, { userPrompt: "run a", traceId: "trace-a" });
   await runner.execute(flow as IFlow, { userPrompt: "run b", traceId: "trace-b" });
@@ -139,8 +139,8 @@ Deno.test("StepDurabilityEdge: concurrent parallel steps produce unique recordId
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
   const flow = buildFlow([
-    { id: "stepA", identity: "agentA" },
-    { id: "stepB", identity: "agentB" },
+    { id: "stepA", agent_role: "agentA" },
+    { id: "stepB", agent_role: "agentB" },
   ]);
 
   await runner.execute(flow as IFlow, { userPrompt: "parallel" });
@@ -156,7 +156,7 @@ Deno.test("StepDurabilityEdge: store save error does not crash flow — error pr
   const logger = new MockEventLogger();
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildFlow([{ id: "step1", identity: "agentA" }]);
+  const flow = buildFlow([{ id: "step1", agent_role: "agentA" }]);
 
   await assertRejects(
     () => runner.execute(flow as IFlow, { userPrompt: "store error" }),
@@ -171,7 +171,7 @@ Deno.test("StepDurabilityEdge: idempotencyKey uses attemptClass from the step co
   const logger = new MockEventLogger();
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildFlow([{ id: "step1", identity: "agentA" }]);
+  const flow = buildFlow([{ id: "step1", agent_role: "agentA" }]);
   await runner.execute(flow as IFlow, { userPrompt: "attempt test" });
 
   const record = store.savedRecords[0];
@@ -186,7 +186,7 @@ Deno.test("StepDurabilityEdge: computeStepInputHash produces deterministic outpu
   const logger = new MockEventLogger();
   const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
 
-  const flow = buildFlow([{ id: "step1", identity: "agentA" }]);
+  const flow = buildFlow([{ id: "step1", agent_role: "agentA" }]);
 
   await runner.execute(flow as IFlow, { userPrompt: "deterministic" });
   await runner.execute(flow as IFlow, { userPrompt: "deterministic", traceId: "trace-2" });

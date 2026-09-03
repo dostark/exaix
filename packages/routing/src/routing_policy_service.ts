@@ -4,7 +4,7 @@
  * @description Selects the best identity and version using routing rules,
  * capability candidates, journal performance, and deterministic experiments.
  * @architectural-layer Services
- * @related-files [packages/routing/src/routing_policy_loader.ts, packages/routing/src/candidate_discovery.ts, packages/routing/src/identity_performance_repository.ts]
+ * @related-files [packages/routing/src/routing_policy_loader.ts, packages/routing/src/candidate_discovery.ts, packages/routing/src/agent_role_performance_repository.ts]
  */
 
 import {
@@ -18,7 +18,7 @@ import {
   ZRoutingCandidate,
   ZRoutingPolicyDecision,
 } from "@exaix/schemas/routing_policy.ts";
-import type { IIdentityPerformanceSnapshot } from "./identity_performance_repository.ts";
+import type { IAgentRolePerformanceSnapshot } from "./agent_role_performance_repository.ts";
 import type { IRoutingPolicyLoadResult } from "./routing_policy_loader.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -27,28 +27,28 @@ export interface IRoutingPolicyLoader {
 }
 
 export interface ICandidateDiscovery {
-  listCandidates(criteria: IRoutingMatchCriteria, explicitIdentityId?: string): Promise<IRoutingCandidate[]>;
+  listCandidates(criteria: IRoutingMatchCriteria, explicitAgentRole?: string): Promise<IRoutingCandidate[]>;
 }
 
-export interface IIdentityPerformanceProvider {
-  getPerformanceByCapability(capability: string, portalName?: string): Promise<IIdentityPerformanceSnapshot[]>;
+export interface IAgentRolePerformanceProvider {
+  getPerformanceByCapability(capability: string, portalName?: string): Promise<IAgentRolePerformanceSnapshot[]>;
 }
 
 export interface IRoutingPolicyServiceOptions {
   policyLoader: IRoutingPolicyLoader;
   candidateDiscovery: ICandidateDiscovery;
-  performanceRepository: IIdentityPerformanceProvider;
+  performanceRepository: IAgentRolePerformanceProvider;
   experimentSalt?: string;
 }
 
 export interface IRoutingPolicyService {
-  selectIdentity(context: IRoutingContext): Promise<IRoutingPolicyDecision>;
+  selectAgentRole(context: IRoutingContext): Promise<IRoutingPolicyDecision>;
 }
 
 function sortCandidates(a: IRoutingCandidate, b: IRoutingCandidate): number {
   if (a.preferLocal && !b.preferLocal) return -1;
   if (!a.preferLocal && b.preferLocal) return 1;
-  return b.score - a.score || a.identityId.localeCompare(b.identityId);
+  return b.score - a.score || a.agentRole.localeCompare(b.agentRole);
 }
 
 export class RoutingPolicyService {
@@ -58,13 +58,13 @@ export class RoutingPolicyService {
     this.experimentSalt = options.experimentSalt?.trim() ?? "";
   }
 
-  async selectIdentity(context: IRoutingContext): Promise<IRoutingPolicyDecision> {
+  async selectAgentRole(context: IRoutingContext): Promise<IRoutingPolicyDecision> {
     const policyResult = await this.options.policyLoader.loadPolicy();
     const policy = policyResult.success
       ? policyResult.policy
       : { version: "1.0", rules: [], defaultMode: "policy_first", allowExperiments: false } as IRoutingPolicy;
     const criteria = this.buildMatchCriteria(context);
-    const candidates = await this.options.candidateDiscovery.listCandidates(criteria, context.explicitIdentityId);
+    const candidates = await this.options.candidateDiscovery.listCandidates(criteria, context.explicitAgentRole);
 
     const explicitDecision = this.tryExplicitSelection(context, candidates);
     if (explicitDecision) {
@@ -99,11 +99,11 @@ export class RoutingPolicyService {
     context: IRoutingContext,
     candidates: IRoutingCandidate[],
   ): IRoutingPolicyDecision | null {
-    if (!context.explicitIdentityId) {
+    if (!context.explicitAgentRole) {
       return null;
     }
 
-    const explicitCandidates = candidates.filter((candidate) => candidate.identityId === context.explicitIdentityId);
+    const explicitCandidates = candidates.filter((candidate) => candidate.agentRole === context.explicitAgentRole);
     if (explicitCandidates.length === 0) {
       return null;
     }
@@ -113,14 +113,14 @@ export class RoutingPolicyService {
       : explicitCandidates[0];
 
     const scoredCandidates = explicitCandidates.concat(
-      candidates.filter((candidate) => candidate.identityId !== context.explicitIdentityId),
+      candidates.filter((candidate) => candidate.agentRole !== context.explicitAgentRole),
     );
     const decision = ZRoutingPolicyDecision.parse({
-      selectedIdentityId: selected.identityId,
+      selectedAgentRole: selected.agentRole,
       selectedVersion: selected.version,
       strategy: "explicit",
       candidates: scoredCandidates,
-      rationale: `Explicit identity requested: ${selected.identityId}@${selected.version}`,
+      rationale: `Explicit identity requested: ${selected.agentRole}@${selected.version}`,
       decidedAt: new Date().toISOString(),
     });
 
@@ -161,7 +161,7 @@ export class RoutingPolicyService {
       );
 
       return ZRoutingPolicyDecision.parse({
-        selectedIdentityId: chosenCandidate.identityId,
+        selectedAgentRole: chosenCandidate.agentRole,
         selectedVersion: chosenCandidate.version,
         strategy: "policy",
         experimentApplied,
@@ -169,8 +169,8 @@ export class RoutingPolicyService {
         matchedRuleId: rule.ruleId,
         candidates: scoredCandidates,
         rationale: experimentApplied
-          ? `Rule ${rule.ruleId} matched and experiment applied to select ${chosenCandidate.identityId}@${chosenCandidate.version}`
-          : `Rule ${rule.ruleId} matched and selected preferred candidate ${chosenCandidate.identityId}@${chosenCandidate.version}`,
+          ? `Rule ${rule.ruleId} matched and experiment applied to select ${chosenCandidate.agentRole}@${chosenCandidate.version}`
+          : `Rule ${rule.ruleId} matched and selected preferred candidate ${chosenCandidate.agentRole}@${chosenCandidate.version}`,
         decidedAt: new Date().toISOString(),
       });
     }
@@ -229,7 +229,7 @@ export class RoutingPolicyService {
     prefer: IRoutingPreference,
     candidates: IRoutingCandidate[],
   ): IRoutingCandidate | null {
-    let match = candidates.filter((candidate) => candidate.identityId === prefer.identityId);
+    let match = candidates.filter((candidate) => candidate.agentRole === prefer.agentRole);
     if (prefer.version) {
       match = match.filter((candidate) => candidate.version === prefer.version);
     }
@@ -237,8 +237,8 @@ export class RoutingPolicyService {
       return match[0];
     }
 
-    if (prefer.fallbackIdentityId) {
-      let fallbackMatch = candidates.filter((candidate) => candidate.identityId === prefer.fallbackIdentityId);
+    if (prefer.fallbackAgentRole) {
+      let fallbackMatch = candidates.filter((candidate) => candidate.agentRole === prefer.fallbackAgentRole);
       if (prefer.fallbackVersion) {
         fallbackMatch = fallbackMatch.filter((candidate) => candidate.version === prefer.fallbackVersion);
       }
@@ -266,9 +266,9 @@ export class RoutingPolicyService {
       return { chosenCandidate: preferredCandidate, experimentApplied: true, experimentBucket: bucket };
     }
 
-    if (rule.prefer.fallbackIdentityId) {
+    if (rule.prefer.fallbackAgentRole) {
       const fallback = this.findPreferredCandidate({
-        identityId: rule.prefer.fallbackIdentityId,
+        agentRole: rule.prefer.fallbackAgentRole,
         version: rule.prefer.fallbackVersion,
       } as IRoutingPreference, candidates);
       if (fallback) {
@@ -293,13 +293,13 @@ export class RoutingPolicyService {
 
     return candidates.map((candidate) => {
       const snapshot = journalSnapshots.find((snapshot) =>
-        snapshot.identityId === candidate.identityId && snapshot.version === candidate.version
+        snapshot.agentRole === candidate.agentRole && snapshot.version === candidate.version
       );
       const journalScore = snapshot?.stable ? (snapshot.successRate * 0.5 + snapshot.averageConfidence / 100 * 0.5) : 0;
       const policyScore =
-        candidate.identityId === winner.identityId && candidate.version === winner.version && matchedRuleId ? 1 : 0;
+        candidate.agentRole === winner.agentRole && candidate.version === winner.version && matchedRuleId ? 1 : 0;
       const totalScore = candidate.score + policyScore + journalScore +
-        (candidate.identityId === winner.identityId && candidate.version === winner.version ? experimentScore : 0);
+        (candidate.agentRole === winner.agentRole && candidate.version === winner.version ? experimentScore : 0);
 
       return ZRoutingCandidate.parse({
         ...candidate,
@@ -308,7 +308,7 @@ export class RoutingPolicyService {
           capabilityScore: candidate.score,
           policyScore,
           journalScore,
-          experimentScore: candidate.identityId === winner.identityId && candidate.version === winner.version
+          experimentScore: candidate.agentRole === winner.agentRole && candidate.version === winner.version
             ? experimentScore
             : 0,
         },
@@ -327,7 +327,7 @@ export class RoutingPolicyService {
       null,
       candidates[0] ??
         {
-          identityId: "unknown",
+          agentRole: "unknown",
           version: "unknown",
           capabilities: [],
           score: 0,
@@ -340,13 +340,13 @@ export class RoutingPolicyService {
     const selected = scoredCandidates[0];
 
     return ZRoutingPolicyDecision.parse({
-      selectedIdentityId: selected.identityId,
+      selectedAgentRole: selected.agentRole,
       selectedVersion: selected.version,
       strategy: policy.defaultMode === "static" ? "static_fallback" : "capability_fallback",
       candidates: scoredCandidates,
-      rationale: selected.identityId === "unknown"
+      rationale: selected.agentRole === "unknown"
         ? "No candidate blueprints were available for routing."
-        : `No routing rule matched; selected best candidate ${selected.identityId}@${selected.version} using ${policy.defaultMode} fallback.`,
+        : `No routing rule matched; selected best candidate ${selected.agentRole}@${selected.version} using ${policy.defaultMode} fallback.`,
       decidedAt: new Date().toISOString(),
     });
   }

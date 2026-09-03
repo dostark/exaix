@@ -74,7 +74,7 @@ Deno.test("flow-step-accepts-voting-group-type", () => {
   const step = FlowStepSchema.parse({
     id: "vote",
     name: "Vote on Result",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     type: "voting_group",
     voting: {
       runners: [
@@ -92,7 +92,7 @@ Deno.test("existing-flow-without-voting-parses", () => {
   const step = FlowStepSchema.parse({
     id: "analyze",
     name: "Analyze",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
   });
   assertEquals(step.type, FlowStepType.AGENT);
 });

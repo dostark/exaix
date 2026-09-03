@@ -1,5 +1,5 @@
 ---
-identity_id: "performance-engineer"
+agent_role: "performance-engineer"
 name: "Performance Engineer"
 model: ""
 model_size: M

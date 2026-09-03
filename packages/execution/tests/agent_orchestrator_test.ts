@@ -264,7 +264,7 @@ Deno.test({
         };
         const options: IAgentExecutionOptions = {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -344,7 +344,7 @@ Deno.test({
         };
         const options: IAgentExecutionOptions = {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -451,7 +451,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "NonexistentPortal",
         security_mode: SecurityMode.SANDBOXED,
         timeout_ms: 300000,
@@ -491,7 +491,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "unauthorized-agent", // Not in agents_allowed
+        agent_role: "unauthorized-agent", // Not in agents_allowed
         portal: "TestPortal",
         security_mode: SecurityMode.SANDBOXED,
         timeout_ms: 300000,
@@ -640,7 +640,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -711,7 +711,7 @@ Deno.test({
       });
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -814,7 +814,7 @@ Deno.test({
       });
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -928,7 +928,7 @@ Deno.test({
       };
       const stepOptions: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -1030,7 +1030,7 @@ Deno.test({
       });
       const stepOptions: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -1176,7 +1176,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -1269,7 +1269,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -1340,7 +1340,7 @@ Deno.test({
 
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -1611,7 +1611,7 @@ Deno.test({
       const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "TestPortal",
         security_mode: SecurityMode.SANDBOXED,
         timeout_ms: 300000,
@@ -1913,7 +1913,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "/test/portal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -1995,7 +1995,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "/test/portal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2053,7 +2053,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "/test/portal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2128,7 +2128,7 @@ Deno.test({
       // Only read_file is permitted — e.g. the union of matched skills' tools intersected
       // with the identity's permitted_tools resolved to read_file alone.
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "/test/portal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2174,7 +2174,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "/test/portal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2264,7 +2264,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "TestPortal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2364,7 +2364,7 @@ Deno.test({
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "TestPortal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2416,7 +2416,7 @@ DROP TABLE sensitive_data;
       };
 
       const options: IAgentExecutionOptions = {
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         portal: "/test/portal",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
@@ -2767,7 +2767,7 @@ Deno.test({
         },
         {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -2866,7 +2866,7 @@ Deno.test({
           },
           {
             portal: "TestPortal",
-            identity_id: "test-agent",
+            agent_role: "test-agent",
             security_mode: SecurityMode.HYBRID,
             timeout_ms: 300000,
             max_tool_calls: 100,
@@ -2937,7 +2937,7 @@ Deno.test({
       const options: IAgentExecutionOptions = {
         portal: "P1",
         security_mode: SecurityMode.HYBRID,
-        identity_id: "agent1",
+        agent_role: "agent1",
         timeout_ms: 300000,
         max_tool_calls: 100,
         audit_enabled: true,
@@ -3057,7 +3057,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3147,7 +3147,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3253,7 +3253,7 @@ Deno.test({
 
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3331,7 +3331,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3394,7 +3394,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3458,7 +3458,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3522,7 +3522,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -3616,7 +3616,7 @@ Deno.test({
         };
         const options: IAgentExecutionOptions = {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -3725,7 +3725,7 @@ Deno.test({
         };
         const options: IAgentExecutionOptions = {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -3869,7 +3869,7 @@ Deno.test({
         };
         const options: IAgentExecutionOptions = {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -3955,7 +3955,7 @@ Deno.test({
         },
         {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -4050,7 +4050,7 @@ Deno.test({
         },
         {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -4119,7 +4119,7 @@ Deno.test({
         },
         {
           portal: "TestPortal",
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           security_mode: SecurityMode.HYBRID,
           timeout_ms: 300000,
           max_tool_calls: 100,
@@ -4276,7 +4276,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -4375,7 +4375,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,
@@ -4458,7 +4458,7 @@ Deno.test({
       };
       const options: IAgentExecutionOptions = {
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
         security_mode: SecurityMode.HYBRID,
         timeout_ms: 300000,
         max_tool_calls: 100,

@@ -44,7 +44,7 @@ interface BlueprintInput {
 
 /** Strict validation prevents YAML deserialization attacks. */
 export const BlueprintSchema = z.object({
-  identity_id: z.string().optional(),
+  agent_role: z.string().optional(),
   name: z.string().max(100).optional(),
   model: z.string().max(100),
   provider: z.string().max(100).optional(),

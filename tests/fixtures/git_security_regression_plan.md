@@ -1,7 +1,7 @@
 ---
 trace_id: "trace-taint"
 request_id: "req-taint"
-identity: "test-agent"
+agent_role: "test-agent"
 portal: "test"
 status: "approved"
 ---

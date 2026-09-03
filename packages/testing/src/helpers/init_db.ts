@@ -22,7 +22,7 @@ export const ACTIVITY_TABLE_SQL = `
     trace_id TEXT NOT NULL,
     actor TEXT NOT NULL,
     actor_type TEXT,
-    identity_id TEXT,
+    agent_role TEXT,
     agent_kind TEXT,
     action_type TEXT NOT NULL,
     target TEXT,
@@ -33,8 +33,8 @@ export const ACTIVITY_TABLE_SQL = `
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
-  CREATE INDEX IF NOT EXISTS idx_activity_agent ON activity(identity_id);
-  CREATE INDEX IF NOT EXISTS idx_activity_identity ON activity(identity_id);
+  CREATE INDEX IF NOT EXISTS idx_activity_agent_role ON activity(agent_role);
+  CREATE INDEX IF NOT EXISTS idx_activity_agent_role ON activity(agent_role);
   CREATE INDEX IF NOT EXISTS idx_activity_actor_type ON activity(actor_type);
   CREATE INDEX IF NOT EXISTS idx_activity_agent_kind ON activity(agent_kind);
 `;
@@ -48,7 +48,7 @@ export function initTestDb(): Database {
       trace_id TEXT NOT NULL,
       actor TEXT NOT NULL,
       actor_type TEXT,
-      identity_id TEXT,
+      agent_role TEXT,
       agent_kind TEXT,
       action_type TEXT NOT NULL,
       target TEXT,
@@ -186,7 +186,7 @@ export const ARTIFACTS_TABLE_SQL = `
     id TEXT PRIMARY KEY,
     status TEXT NOT NULL CHECK (status IN (${ARTIFACT_STATUS_CHECK_VALUES})),
     type TEXT NOT NULL CHECK (type IN ('analysis', 'report', 'diagram')),
-    identity TEXT NOT NULL,
+    agent_role TEXT NOT NULL,
     portal TEXT,
     target_branch TEXT,
     created TEXT NOT NULL,
@@ -196,7 +196,7 @@ export const ARTIFACTS_TABLE_SQL = `
     rejection_reason TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_artifacts_status ON artifacts(status);
-  CREATE INDEX IF NOT EXISTS idx_artifacts_identity ON artifacts(identity);
+  CREATE INDEX IF NOT EXISTS idx_artifacts_agent_role ON artifacts(agent_role);
   CREATE INDEX IF NOT EXISTS idx_artifacts_portal ON artifacts(portal);
   CREATE INDEX IF NOT EXISTS idx_artifacts_request_id ON artifacts(request_id);
   CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created DESC);

@@ -32,7 +32,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  */
 export const GateConfigSchema = z.object({
   /** Judge identity to use for evaluation */
-  identity: z.string(),
+  agent_role: z.string(),
   /** Criteria names or objects to evaluate against */
   criteria: z.array(z.union([z.string(), EvaluationCriterionSchema])),
   /** Score threshold for passing (0.0 - 1.0) */

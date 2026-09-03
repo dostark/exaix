@@ -1,5 +1,5 @@
 ---
-identity_id: "test-engineer"
+agent_role: "test-engineer"
 name: "Test Engineer"
 model: "google:gemini-2.0-flash-exp"
 capabilities: [

@@ -110,7 +110,7 @@ function writeWiringProbeFlow(root: string): void {
       "steps:",
       "  - id: probe",
       '    name: "Probe dynamic execution"',
-      "    identity: senior-coder",
+      "    agent_role: senior-coder",
       "    execution_mode: dynamic",
       "    permitted_tools:",
       "      - read_file",

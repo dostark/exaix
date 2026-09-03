@@ -2,7 +2,7 @@
  * @module DogfoodIdentityTest
  * @path packages/core/tests/blueprints/dogfood_identity_test.ts
  * @description Phase 122 Step 1 — verifies the dogfood-developer identity blueprint loads
- *   through IBlueprintLoader with correct identity_id, default_skills (all 5 rigor
+ *   through IBlueprintLoader with correct agent_role, default_skills (all 5 rigor
  *   skills), and valid McpToolName entries in permitted_tools.
  * @architectural-layer Integration
  * @dependencies [@exaix/core, @std/path]
@@ -22,7 +22,7 @@ Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader",
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer identity must load");
-  assertEquals(blueprint.identityId, "dogfood-developer");
+  assertEquals(blueprint.agentRole, "dogfood-developer");
 });
 
 /** Skills this identity cannot do its job without, whatever else it carries — deliberately
@@ -41,12 +41,12 @@ Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requ
   assertEquals(missing, [], `dogfood-developer is missing role-required default_skills: ${missing.join(", ")}`);
 });
 
-Deno.test("[dogfood-identity] identity_id is dogfood-developer", async () => {
+Deno.test("[dogfood-identity] agent_role is dogfood-developer", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
-  assertEquals(blueprint.identityId, "dogfood-developer");
+  assertEquals(blueprint.agentRole, "dogfood-developer");
 });
 
 Deno.test("[dogfood-identity] permitted_tools contains file, command, and search tools", async () => {
@@ -88,7 +88,7 @@ Deno.test("[dogfood-identity] loads without Zod error through IBlueprintLoader",
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "identity must load without error");
-  assertEquals(typeof blueprint.identityId, "string");
+  assertEquals(typeof blueprint.agentRole, "string");
   assertEquals(typeof blueprint.name, "string");
   assertEquals(typeof blueprint.frontmatter.model, "string");
 });

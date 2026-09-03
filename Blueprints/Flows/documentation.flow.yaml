@@ -8,7 +8,7 @@ steps:
   - id: extract-code-structure
     name: Extract Code Structure
     type: agent
-    identity: code-analyst
+    agent_role: code-analyst
     strategy: react
     dependsOn: []
     input:
@@ -20,7 +20,7 @@ steps:
   - id: generate-api-docs
     name: Generate API Documentation
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - extract-code-structure
     input:
@@ -33,7 +33,7 @@ steps:
   - id: generate-user-guide
     name: Generate User Guide
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - extract-code-structure
     input:
@@ -46,7 +46,7 @@ steps:
   - id: generate-architecture-docs
     name: Generate Architecture Documentation
     type: agent
-    identity: software-architect
+    agent_role: software-architect
     dependsOn:
       - extract-code-structure
     input:
@@ -59,7 +59,7 @@ steps:
   - id: compile-documentation
     name: Compile Final Documentation
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - generate-api-docs
       - generate-user-guide

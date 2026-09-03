@@ -47,7 +47,7 @@ class CapturingMcpClient implements IMcpClient, IToolManifestResolver {
 
 class ImmediateDoneLlmClient implements ILlmClient {
   reasonNextAction(_params: {
-    identity: IBlueprintFrontmatter;
+    agent_role: IBlueprintFrontmatter;
     stepObjective: string;
     accumulatedContext: string;
     availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
@@ -119,7 +119,7 @@ Deno.test(
     );
 
     const identity = BlueprintFrontmatterSchema.parse({
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       name: "Test Agent",
       model: "anthropic:claude-3-opus",
       created: new Date().toISOString(),
@@ -130,7 +130,7 @@ Deno.test(
     const step = FlowStepSchema.parse({
       id: "step-1",
       name: "Canonical surface test",
-      identity: "test-agent",
+      agent_role: "test-agent",
       execution_mode: FlowStepExecutionMode.DYNAMIC,
       // no permitted_tools override — inherits from identity
     });
@@ -174,7 +174,7 @@ Deno.test(
     );
 
     const identity = BlueprintFrontmatterSchema.parse({
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       name: "Test Agent",
       model: "anthropic:claude-3-opus",
       created: new Date().toISOString(),
@@ -190,7 +190,7 @@ Deno.test(
     const step = FlowStepSchema.parse({
       id: "step-2",
       name: "Domain tool filter test",
-      identity: "test-agent",
+      agent_role: "test-agent",
       execution_mode: FlowStepExecutionMode.DYNAMIC,
     });
 

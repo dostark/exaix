@@ -15,7 +15,7 @@ steps:
     path: "Blueprints/Agents/stub-best.md"
     content: |
       ---
-      identity_id: "stub-best"
+      agent_role: "stub-best"
       model: ""
       characteristics: ["best"]
       task_type: feature

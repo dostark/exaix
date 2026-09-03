@@ -75,7 +75,7 @@ Deno.test("[blueprint] create - generates valid blueprint file", async () => {
     // Verify file content (YAML frontmatter; the writer emits `---` blocks).
     const content = await Deno.readTextFile(blueprintPath);
     assertStringIncludes(content, "---");
-    assertStringIncludes(content, `identity_id: ${identityId}`);
+    assertStringIncludes(content, `agent_role: ${identityId}`);
     assertStringIncludes(content, "name: Test Agent");
     assertStringIncludes(content, "model: 'ollama:codellama:13b'");
   } finally {
@@ -328,7 +328,7 @@ Deno.test("[blueprint] list - parses YAML inline arrays with invalid JSON", asyn
       `${TEST_BLUEPRINT_YAML_AGENT_ID}.md`,
     );
     const yamlContent = `---
-identity_id: "${TEST_BLUEPRINT_YAML_AGENT_ID}"
+agent_role: "${TEST_BLUEPRINT_YAML_AGENT_ID}"
 name: "${TEST_BLUEPRINT_YAML_NAME}"
 model: "${TEST_BLUEPRINT_YAML_MODEL}"
 capabilities: [${TEST_BLUEPRINT_YAML_CAPABILITY_ONE}, ${TEST_BLUEPRINT_YAML_CAPABILITY_TWO}]
@@ -397,7 +397,7 @@ Deno.test("[blueprint] show - displays full blueprint", async () => {
     assertEquals(details.identity_id, "show-test");
     assertExists(details.content);
     assertStringIncludes(details.content, "---");
-    assertStringIncludes(details.content, "identity_id: show-test");
+    assertStringIncludes(details.content, "agent_role: show-test");
   } finally {
     await teardownTest();
   }
@@ -456,7 +456,7 @@ Content without identity_id
 
     assertEquals(result.valid, false);
     assertEquals(result.errors.length > 0, true);
-    assertStringIncludes(result.errors.join(" "), "identity_id");
+    assertStringIncludes(result.errors.join(" "), "agent_role");
   } finally {
     await teardownTest();
   }

@@ -45,9 +45,9 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_create_request"
-      - '{"subject":"tools pack domain probe","description":"created by the tools eval pack","identity_id":"tools-eval"}'
+      - '{"subject":"tools pack domain probe","description":"created by the tools eval pack","agent_role":"tools-eval"}'
       - "exaix_list_plans"
-      - '{"identity_id":"tools-eval"}'
+      - '{"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
@@ -88,7 +88,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_query_journal"
-      - '{"limit":5,"identity_id":"tools-eval"}'
+      - '{"limit":5,"agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

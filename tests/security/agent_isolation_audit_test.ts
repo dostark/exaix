@@ -149,7 +149,7 @@ Deno.test({
               portal: "audit-portal",
             },
             {
-              identity_id: "audit-agent",
+              agent_role: "audit-agent",
               portal: "audit-portal",
               allowed_paths: [],
             },
@@ -286,7 +286,7 @@ Deno.test({
           portal: "auth-portal",
         },
         {
-          identity_id: "auth-agent",
+          agent_role: "auth-agent",
           portal: "auth-portal",
           allowed_paths: ["authorized.txt"],
         },

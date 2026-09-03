@@ -66,7 +66,7 @@ class FakeDelegateService implements ISessionDelegateService {
       parent_trace_id: input.parentTraceId,
       parent_step_id: input.parentStepId,
       sequence: input.sequence,
-      identity_id: input.identityId,
+      agent_role: input.identityId,
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,
@@ -191,7 +191,7 @@ function makeCycleFlow(): IFlow {
       id: "next-steps",
       name: "Next Steps",
       type: FlowStepType.SESSION_DELEGATE_CYCLE,
-      identity: "senior-coder",
+      agent_role: "senior-coder",
       execution_mode: FlowStepExecutionMode.DECLARED,
       dependsOn: [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
@@ -199,7 +199,7 @@ function makeCycleFlow(): IFlow {
       delegateCycle: {
         requireChangedPaths: true,
         review: {
-          identity: "senior-reviewer",
+          agent_role: "senior-reviewer",
           criteria: ["correctness"],
           threshold: 0.8,
           onFail: "halt",

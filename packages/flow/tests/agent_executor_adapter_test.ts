@@ -37,7 +37,7 @@ Deno.test("AgentOrchestratorAdapter runs an agent and returns IAgentExecutionRes
   await Deno.writeTextFile(
     `${identitiesDir}/test-agent.md`,
     `---
-identity_id: "test-agent"
+agent_role: "test-agent"
 name: "Test Agent"
 model: "mock:test"
 ---\nTest system prompt`,
@@ -76,7 +76,7 @@ Deno.test("AgentOrchestratorAdapter threads scenarioId/stepId/flowStepId into th
   await Deno.writeTextFile(
     `${identitiesDir}/test-agent.md`,
     `---
-identity_id: "test-agent"
+agent_role: "test-agent"
 name: "Test Agent"
 model: "mock:test"
 ---\nTest system prompt`,

@@ -15,7 +15,7 @@ export interface ILogContext {
   trace_id?: string;
   request_id?: string;
   user_id?: string;
-  identity_id?: string;
+  agent_role?: string;
   portal?: string;
   session_id?: string;
   correlation_id?: string;
@@ -67,5 +67,5 @@ export interface ILogQueryOptions {
   includePerformance?: boolean;
   correlationId?: string;
   traceId?: string;
-  identityId?: string;
+  agentRole?: string;
 }

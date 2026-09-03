@@ -143,7 +143,7 @@ trace_id: "{traceId}"
 created: "${new Date().toISOString()}"
 status: pending
 priority: normal
-identity_id: security-expert
+agent_role: security-expert
 source: cli
 created_by: "test@example.com"
 ---

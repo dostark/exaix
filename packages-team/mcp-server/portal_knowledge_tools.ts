@@ -122,12 +122,12 @@ export class PortalSymbolsTool extends ToolHandler {
             type: "number",
             description: "Max symbols to return (default: 50)",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "identity_id"],
+        required: ["portal", "agent_role"],
       },
     };
   }

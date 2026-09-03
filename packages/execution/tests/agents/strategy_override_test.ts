@@ -96,7 +96,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=mcp forces MCP dispat
 
     await executor.executeStep(context, {
       portal: portalAlias,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       strategy: ExecutionStrategyName.MCP,
     });
 
@@ -144,7 +144,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=cli_delegate forces C
 
     await executor.executeStep(context, {
       portal: portalAlias,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       strategy: ExecutionStrategyName.CLI_DELEGATE,
     });
 
@@ -193,7 +193,7 @@ Deno.test("AgentOrchestrator.executeStep: absent options.strategy keeps capabili
     // No `strategy` in options — capability-based dispatch must still resolve REACT.
     await executor.executeStep(context, {
       portal: portalAlias,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(reactCalls.length, 1);
@@ -239,7 +239,7 @@ Deno.test("AgentOrchestrator.executeStep: applyBlueprintToolScope still narrows 
 
     await executor.executeStep(context, {
       portal: portalAlias,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       strategy: ExecutionStrategyName.MCP,
       // Caller asks for a broader set — the blueprint's own allowlist must still win.
       permitted_tools: ["read_file", "write_file", "delete_file"],

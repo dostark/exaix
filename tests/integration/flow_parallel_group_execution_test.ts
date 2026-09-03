@@ -46,7 +46,7 @@ Deno.test("[Step65.2] FlowRunner logs grouped wave lifecycle before downstream j
         {
           id: "merge",
           name: "Merge",
-          identity: "merger",
+          agent_role: "merger",
           dependsOn: ["draft-a", "draft-b"],
           input: { source: FlowInputSource.AGGREGATE, from: ["draft-a", "draft-b"], transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

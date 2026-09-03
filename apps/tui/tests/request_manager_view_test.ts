@@ -46,7 +46,7 @@ Deno.test("RequestManagerView - renders request list correctly", async () => {
       subject: "IRequest 87654321",
       status: RequestStatus.PLANNED,
       priority: RequestPriority.HIGH,
-      identity: "code-reviewer",
+      agent_role: "code-reviewer",
     },
   ]);
   const requests = await _service.listRequests();
@@ -93,7 +93,7 @@ Deno.test("RequestManagerView - filters requests by status", async () => {
       subject: "IRequest 1",
       status: RequestStatus.PENDING,
       priority: RequestPriority.NORMAL,
-      identity: "default",
+      agent_role: "default",
       created: "2025-12-23T10:00:00Z",
       created_by: "test@example.com",
     },
@@ -103,7 +103,7 @@ Deno.test("RequestManagerView - filters requests by status", async () => {
       subject: "IRequest 2",
       status: RequestStatus.COMPLETED,
       priority: RequestPriority.NORMAL,
-      identity: "default",
+      agent_role: "default",
       created: "2025-12-23T11:00:00Z",
       created_by: "test@example.com",
     },
@@ -118,7 +118,7 @@ Deno.test("RequestManagerView - creates new request", async () => {
   const { service: _service, view } = createViewWithRequests();
   const newIRequest = await view.createRequest("Test request", {
     priority: RequestPriority.HIGH,
-    identity: "test-agent",
+    agent_role: "test-agent",
   });
 
   assert(newIRequest.trace_id);
@@ -356,14 +356,14 @@ Deno.test("Phase 13.6: Search functionality", () => {
     {
       trace_id: "req-1",
       subject: "Bug fix",
-      identity: "developer",
+      agent_role: "developer",
     },
     {
       trace_id: "req-2",
       subject: "Feature request",
       status: RequestStatus.COMPLETED,
       priority: RequestPriority.HIGH,
-      identity: "designer",
+      agent_role: "designer",
     },
   ]);
   const view = new RequestManagerView(mockService);
@@ -406,7 +406,7 @@ Deno.test("Phase 13.6: Filter by identity", () => {
       subject: "IRequest 1",
       status: RequestStatus.PENDING,
       priority: RequestPriority.NORMAL,
-      identity: "developer",
+      agent_role: "developer",
       created: "2025-12-23T10:00:00Z",
       created_by: "test@example.com",
       source: RequestSource.CLI,
@@ -417,7 +417,7 @@ Deno.test("Phase 13.6: Filter by identity", () => {
       subject: "IRequest 2",
       status: RequestStatus.COMPLETED,
       priority: RequestPriority.HIGH,
-      identity: "designer",
+      agent_role: "designer",
       created: "2025-12-23T11:00:00Z",
       created_by: "test@example.com",
       source: RequestSource.CLI,

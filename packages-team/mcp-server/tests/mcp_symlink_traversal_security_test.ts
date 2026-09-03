@@ -35,7 +35,7 @@ Deno.test("security: write_file cannot write through an in-portal symlink escapi
       portal: "TestPortal",
       path: "escape/pwned.txt",
       content: "PWNED",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     }).catch(() => undefined);
 
     assert(
@@ -54,7 +54,7 @@ Deno.test("security: read_file cannot read through an in-portal symlink escaping
     const response = await handler.execute({
       portal: "TestPortal",
       path: "escape/secret.txt",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     }).catch(() => ({ content: [{ type: "text", text: "blocked" }] }));
 
     const text = response.content.map((c) => (c as { text?: string }).text ?? "").join("");

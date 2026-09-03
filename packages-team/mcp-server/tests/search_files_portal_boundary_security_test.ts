@@ -39,7 +39,7 @@ Deno.test("security: search_files must not find content outside the authorized p
       portal: "TestPortal",
       pattern: secretFileName,
       path: "..",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     // search_files returns exaix_structured_data content (a `{ files: string[] }` payload),

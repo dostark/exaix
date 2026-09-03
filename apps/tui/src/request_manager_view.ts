@@ -275,7 +275,7 @@ export class MinimalRequestServiceMock implements IRequestService {
       subject: description,
       status: RequestStatus.PENDING,
       priority: options?.priority || RequestPriority.NORMAL,
-      identity: options?.identity || options?.agent || "default",
+      agent_role: options?.identity || options?.agent || "default",
       created: new Date().toISOString(),
       filename: "request-1.md",
       source: RequestSource.TUI,

@@ -91,7 +91,7 @@ class MockLlmClient implements ILlmClient {
   }
 
   reasonNextAction(_params: {
-    identity: IBlueprintFrontmatter;
+    agent_role: IBlueprintFrontmatter;
     stepObjective: string;
     accumulatedContext: string;
     availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
@@ -133,7 +133,7 @@ class RecordingConfirmationInterceptor implements IToolConfirmationInterceptor {
 
 function createIdentity() {
   return BlueprintFrontmatterSchema.parse({
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
@@ -146,7 +146,7 @@ function createDynamicStep() {
   return FlowStepSchema.parse({
     id: "step-confirmation",
     name: "Create request if needed",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.CREATE_REQUEST, McpToolName.LIST_PLANS, McpToolName.READ_FILE],
   });
@@ -155,7 +155,7 @@ function createDynamicStep() {
 class ApprovalForcingExecutor extends DynamicStepExecutor {
   protected override resolvePermittedTools(
     _step: IFlowStep,
-    _identity: IBlueprintFrontmatter,
+    _agent_role: IBlueprintFrontmatter,
   ): McpToolName[] {
     return [McpToolName.CREATE_REQUEST];
   }

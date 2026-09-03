@@ -54,7 +54,7 @@ export function createParallelGroupFlow(options: ICreateParallelGroupFlowOptions
       {
         id: "start",
         name: "Start",
-        identity: "starter",
+        agent_role: "starter",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -62,7 +62,7 @@ export function createParallelGroupFlow(options: ICreateParallelGroupFlowOptions
       ...options.memberSteps.map((step) => ({
         id: step.stepId,
         name: step.stepName,
-        identity: step.identityId,
+        agent_role: step.identityId,
         dependsOn: ["start"],
         input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -71,7 +71,7 @@ export function createParallelGroupFlow(options: ICreateParallelGroupFlowOptions
       {
         id: mergeStepId,
         name: mergeStepName,
-        identity: mergeIdentityId,
+        agent_role: mergeIdentityId,
         dependsOn: options.memberSteps.map((step) => step.stepId),
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

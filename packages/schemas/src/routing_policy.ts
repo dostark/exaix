@@ -10,7 +10,7 @@ import type { IRequestAnalysis } from "./request_analysis.ts";
 import { z } from "zod";
 
 export interface IRoutingContext {
-  explicitIdentityId?: string;
+  explicitAgentRole?: string;
   explicitVersion?: string;
   requestText?: string;
   requestAnalysis?: IRequestAnalysis;
@@ -36,9 +36,9 @@ export const ZRoutingMatchCriteria = z.object({
 export type IRoutingMatchCriteria = z.infer<typeof ZRoutingMatchCriteria>;
 
 export const ZRoutingPreference = z.object({
-  identityId: z.string().min(1),
+  agentRole: z.string().min(1),
   version: z.string().min(1).optional(),
-  fallbackIdentityId: z.string().min(1).optional(),
+  fallbackAgentRole: z.string().min(1).optional(),
   fallbackVersion: z.string().min(1).optional(),
   trafficSplit: z.number().min(0).max(1).optional(),
   enabled: z.boolean().default(true),
@@ -67,7 +67,7 @@ export const ZRoutingPolicy = z.object({
 export type IRoutingPolicy = z.infer<typeof ZRoutingPolicy>;
 
 export const ZRoutingCandidate = z.object({
-  identityId: z.string().min(1),
+  agentRole: z.string().min(1),
   version: z.string().min(1),
   capabilities: z.array(z.string()).default([]),
   score: z.number().default(0),
@@ -88,7 +88,7 @@ export const ZRoutingCandidate = z.object({
 export type IRoutingCandidate = z.infer<typeof ZRoutingCandidate>;
 
 export const ZRoutingPolicyDecision = z.object({
-  selectedIdentityId: z.string().min(1),
+  selectedAgentRole: z.string().min(1),
   selectedVersion: z.string().min(1),
   strategy: z.enum(["explicit", "policy", "capability_fallback", "static_fallback"]),
   experimentApplied: z.boolean().optional(),

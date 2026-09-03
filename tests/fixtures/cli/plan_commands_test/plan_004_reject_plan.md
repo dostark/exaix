@@ -1,6 +1,6 @@
 ---
 trace_id: "trace-abc"
-identity_id: agent-xyz
+agent_role: agent-xyz
 status: review
 ---
 

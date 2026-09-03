@@ -96,12 +96,12 @@ export class GitStatusTool extends ToolHandler {
             type: "boolean",
             description: "Optional: include untracked files in status output (default: true)",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "identity_id"],
+        required: ["portal", "agent_role"],
       },
     };
   }

@@ -16,7 +16,7 @@ Deno.test("[step-manifest] parses a valid full manifest", () => {
   const input = {
     step: 1,
     title: "Implement feature",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     skills: ["tdd-methodology", "exaix-conventions"],
     portal: "exaix-self",
     target_branch: "feat/phase-122-step-1",
@@ -32,7 +32,7 @@ Deno.test("[step-manifest] parses a valid full manifest", () => {
   if (result.success) {
     assertEquals(result.data.step, 1);
     assertEquals(result.data.title, "Implement feature");
-    assertEquals(result.data.identity, "senior-coder");
+    assertEquals(result.data.agent_role, "senior-coder");
     assertEquals(result.data.skills?.length, 2);
   }
 });
@@ -41,7 +41,7 @@ Deno.test("[step-manifest] parses a valid minimal manifest (step + title only)",
   const result = StepManifestSchema.safeParse({ step: 1, title: "foo" });
   assertEquals(result.success, true);
   if (result.success) {
-    assertEquals(result.data.identity, "senior-coder"); // default
+    assertEquals(result.data.agent_role, "senior-coder"); // default
     assertEquals(result.data.skills, undefined);
     assertEquals(result.data.depends_on, undefined);
   }

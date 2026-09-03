@@ -70,7 +70,7 @@ describe("RequestCommands", () => {
       assertStringIncludes(content, `trace_id: "${result.trace_id}"`);
       assertStringIncludes(content, "status: pending");
       assertStringIncludes(content, "priority: normal");
-      assertStringIncludes(content, "identity_id: default");
+      assertStringIncludes(content, "agent_role: default");
       assertStringIncludes(content, "Implement user authentication");
     });
 
@@ -84,12 +84,12 @@ describe("RequestCommands", () => {
     });
 
     it("should accept custom agent", async () => {
-      const result = await requestCommands.create("Write tests", { identity: "test_writer" });
+      const result = await requestCommands.create("Write tests", { agent_role: "test_writer" });
       assertEquals(result.identity, "test_writer");
 
       if (!result.path) throw new Error("Path should be defined");
       const content = await Deno.readTextFile(result.path);
-      assertStringIncludes(content, "identity_id: test_writer");
+      assertStringIncludes(content, "agent_role: test_writer");
     });
 
     it("should accept portal option", async () => {
@@ -208,9 +208,9 @@ describe("RequestCommands", () => {
 
     it("should reject flow and agent combination", async () => {
       await assertRejects(
-        async () => await requestCommands.create("Test", { flow: "code-review", identity: "writer" }),
+        async () => await requestCommands.create("Test", { flow: "code-review", agent_role: "writer" }),
         Error,
-        "Cannot specify both 'flow' and 'agent'/'identity'",
+        "Cannot specify both 'flow' and 'agent'/'agent_role'",
       );
     });
 
@@ -310,7 +310,7 @@ describe("RequestCommands", () => {
       await Deno.writeTextFile(inputFile, "Test content");
 
       const result = await requestCommands.createFromFile(inputFile, {
-        identity: "custom_agent",
+        agent_role: "custom_agent",
         priority: RequestPriority.HIGH,
       });
 
@@ -418,7 +418,7 @@ describe("RequestCommands", () => {
     });
 
     it("should include metadata from frontmatter", async () => {
-      await requestCommands.create("Test request", { priority: RequestPriority.HIGH, identity: "architect" });
+      await requestCommands.create("Test request", { priority: RequestPriority.HIGH, agent_role: "architect" });
 
       const requests = await requestCommands.list();
       assertEquals(requests.length, 1);
@@ -741,7 +741,7 @@ Minimal content for show
     it("should log activity with correct payload fields", async () => {
       const result = await requestCommands.create("Test activity payload", {
         priority: RequestPriority.HIGH,
-        identity: "special_agent",
+        agent_role: "special_agent",
         portal: "TestPortal",
       });
 

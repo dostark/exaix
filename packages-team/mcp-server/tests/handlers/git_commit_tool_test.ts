@@ -36,7 +36,7 @@ Deno.test("GitCommitTool: commits changes successfully", async () => {
     const result = await handler.execute({
       portal: "TestPortal",
       message: "Test commit message",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
@@ -62,7 +62,7 @@ Deno.test("GitCommitTool: commits specific files successfully", async () => {
       portal: "TestPortal",
       message: "Test commit message",
       files: ["test_file2.txt"],
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
@@ -80,7 +80,7 @@ Deno.test("GitCommitTool: returns error when git commit fails", async () => {
     const response = await handler.execute({
       portal: "TestPortal",
       message: "Test commit message",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(response.isError, true);
@@ -97,7 +97,7 @@ Deno.test("GitCommitTool: returns error when access is denied", async () => {
     const response = await handler.execute({
       portal: "TestPortal",
       message: "Test commit message",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(response.isError, true);

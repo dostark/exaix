@@ -1,6 +1,6 @@
 ---
 trace_id: "{{LONG_VALUE}}"
-identity_id: senior-coder
+agent_role: senior-coder
 status: pending
 ---
 

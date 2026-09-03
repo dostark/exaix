@@ -167,7 +167,7 @@ both pass; any failure class halts before further coordinator calls.
 delegateCycle:
   requireChangedPaths: true # non-empty paths_touched required; always true today
   review:
-    identity: quality-judge # judge identity evaluating each completed step
+    agent_role: quality-judge # judge identity evaluating each completed step
     criteria: [code_correctness, has_tests, task_fulfillment]
     threshold: 0.8
     onFail: halt # halt | retry
@@ -1409,7 +1409,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 - **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
-- **[Dogfood Identity, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` identity (`Blueprints/Identities/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so identity rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
+- **[Dogfood Identity, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` identity (`Blueprints/Agents/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so identity rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
 - **[Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/post-gap-analysis output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 
 ---

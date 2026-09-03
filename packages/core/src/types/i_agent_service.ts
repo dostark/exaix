@@ -15,10 +15,10 @@ export interface IAgentService {
   listAgents(): Promise<IAgentStatusItem[]>;
 
   /** Get logs for a specific agent. */
-  getAgentLogs(identityId: string, limit?: number): Promise<IAgentLogEntry[]>;
+  getAgentLogs(agentRole: string, limit?: number): Promise<IAgentLogEntry[]>;
 
   /**
    * Get real-time health statistics for an agent.
    */
-  getAgentHealth(identityId: string): Promise<IAgentHealthData>;
+  getAgentHealth(agentRole: string): Promise<IAgentHealthData>;
 }

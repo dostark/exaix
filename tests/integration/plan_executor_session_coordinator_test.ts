@@ -72,7 +72,7 @@ Deno.test("[integration] PlanExecutor preserves changes_made/abandoned through t
   await executor.execute("phase-174.md", {
     trace_id: "00000000-0000-4000-8000-000000000173",
     request_id: "phase-174",
-    identity: "test",
+    agent_role: "test",
     frontmatter: {},
     steps: [
       {

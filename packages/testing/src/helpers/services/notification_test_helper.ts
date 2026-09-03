@@ -11,7 +11,7 @@
 import { initTestDbService } from "../init_db.ts";
 import { NotificationService } from "@exaix/core/notification";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IDatabaseService, Opt, Reason } from "@exaix/core/types";
 import type { ILogEvent, LogMetadata } from "@exaix/core";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import {
@@ -30,8 +30,12 @@ function makeDbLogger(db: IDatabaseService): IEventLogger {
     db.logActivity("test", event.action, event.target || null, event.payload ?? {}, event.traceId);
     return Promise.resolve();
   };
-  const shorthand = (action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> =>
-    write({ action, target: target ?? "", payload: payload ?? {}, traceId });
+  const shorthand = (
+    action: string,
+    target: string | null,
+    payload?: Opt<LogMetadata, Reason.TestStub>,
+    traceId?: Opt<string, Reason.TestStub>,
+  ): Promise<void> => write({ action, target: target ?? "", payload: payload ?? {}, traceId });
   return {
     log: write,
     info: shorthand,
@@ -72,7 +76,7 @@ export async function initNotificationTest(): Promise<{
  */
 // ...
 export function createNotificationTestProposal(
-  idOrOverrides?: string | Partial<IMemoryUpdateProposal>,
+  idOrOverrides?: Opt<string | Partial<IMemoryUpdateProposal>, Reason.TestOverride>,
 ): IMemoryUpdateProposal {
   const overrides = typeof idOrOverrides === "string" ? { id: idOrOverrides } : idOrOverrides || {};
 
@@ -97,7 +101,7 @@ export function createNotificationTestProposal(
       ...overrides.learning,
     },
     reason: "Extracted from execution",
-    identity_id: TEST_AGENT_NAME,
+    agent_role: TEST_AGENT_NAME,
     execution_id: "trace-123",
     status: MemoryStatus.PENDING,
     ...overrides,

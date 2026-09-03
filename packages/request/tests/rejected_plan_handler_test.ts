@@ -75,12 +75,12 @@ Deno.test("[RejectedPlanHandler.handleError] PlanValidationError includes identi
       filePath,
       "req-1",
       createMockEventLogger(),
-      makeFrontmatter({ identity_id: "coder-agent" }),
+      makeFrontmatter({ agent_role: "coder-agent" }),
     );
 
     const rejectedDir = join(config.system.root, config.paths.workspace, config.paths.rejected);
     const rejectedContent = await Deno.readTextFile(join(rejectedDir, "req-1_rejected.md"));
-    assertStringIncludes(rejectedContent, "identity_id: coder-agent");
+    assertStringIncludes(rejectedContent, "agent_role: coder-agent");
   } finally {
     await Deno.remove(testDir, { recursive: true });
   }

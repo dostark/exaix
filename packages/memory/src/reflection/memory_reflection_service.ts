@@ -152,7 +152,7 @@ export class MemoryReflectionService {
       if (synthesisSourceIds.has(first.id) || synthesisSourceIds.has(second.id)) continue;
       const keep = this.strongerOf(first, second);
       const drop = keep === first ? second : first;
-      // A fresh identity: both source ids already exist in the store.
+      // A fresh agent_role: both source ids already exist in the store.
       const merged = mergeLearnings(
         { ...keep, id: crypto.randomUUID(), created_at: new Date().toISOString() },
         drop,
@@ -363,7 +363,7 @@ ${JSON.stringify({ learnings: groups, related_pairs: related })}
       completed_at: runAt,
       status: "completed",
       portal: REFLECTION_PORTAL,
-      identity_id: REFLECTION_IDENTITY_ID,
+      agent_role: REFLECTION_IDENTITY_ID,
       summary: "Memory reflection synthesis run",
       context_files: [],
       context_portals: [],

@@ -161,7 +161,7 @@ export function createMockRequestService(initial: IRequest[] = []): IRequestServ
         subject: description,
         status: RequestStatus.PENDING,
         priority: options?.priority || RequestPriority.NORMAL,
-        identity: options?.identity || "default",
+        agent_role: options?.identity || "default",
         portal: options?.portal,
         model: options?.model,
         created: new Date().toISOString(),
@@ -235,7 +235,7 @@ export function sampleLogEntry(overrides: ILogEntryOverrides = {}): ILogEntry {
     id,
     trace_id: overrides.trace_id ?? `trace-${id}`,
     actor: overrides.actor ?? MemoryBankSource.IDENTITY,
-    identity_id: overrides.identity_id ?? "default",
+    agent_role: overrides.identity_id ?? "default",
     action_type: overrides.action_type ?? "request_created",
     target: overrides.target ?? "Workspace/Requests/test.md",
     payload: payloadObj,
@@ -251,8 +251,8 @@ export function sampleLogEntries(arr: ILogEntryOverrides[]): ILogEntry[] {
 /** Convenience: create two logs with different agents for filter tests */
 export function createTwoAgentLogs(): ILogEntry[] {
   return sampleLogEntries([
-    { identity_id: "researcher", action_type: "request_created" },
-    { identity_id: "architect", action_type: "plan_approved", target: "Workspace/Plans/test.md" },
+    { agent_role: "researcher", action_type: "request_created" },
+    { agent_role: "architect", action_type: "plan_approved", target: "Workspace/Plans/test.md" },
   ]);
 }
 
@@ -271,7 +271,7 @@ export function sampleMonitorLogs(): ILogEntry[] {
       id: "1",
       trace_id: "t1",
       actor: MemoryBankSource.USER,
-      identity_id: "a1",
+      agent_role: "a1",
       action_type: "request_created",
       target: "target.md",
       payload: {},
@@ -281,7 +281,7 @@ export function sampleMonitorLogs(): ILogEntry[] {
       id: "2",
       trace_id: "t2",
       actor: MemoryBankSource.USER,
-      identity_id: "a2",
+      agent_role: "a2",
       action_type: "plan.approved",
       target: "target2.md",
       payload: {},
@@ -297,7 +297,7 @@ export function sampleSingleMonitorLog(): ILogEntry[] {
       id: "1",
       trace_id: "t1",
       actor: MemoryBankSource.USER,
-      identity_id: "a1",
+      agent_role: "a1",
       action_type: "request_created",
       target: "target.md",
       payload: { data: "test" },
@@ -539,7 +539,7 @@ function createMockRequestMetadata(overrides: Partial<IRequest> = {}): IRequest 
     path: overrides.path ?? "request-test.md",
     status: overrides.status ?? RequestStatus.PENDING,
     priority: overrides.priority ?? RequestPriority.NORMAL,
-    identity: overrides.identity ?? "default",
+    agent_role: overrides.identity ?? "default",
     created: overrides.created ?? new Date().toISOString(),
     created_by: overrides.created_by ?? "test-user",
     source: overrides.source ?? RequestSource.CLI,
@@ -563,7 +563,7 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
     trace_id: String(a.trace_id ?? `trace-${a.id ?? Math.floor(Math.random() * 1e6)}`),
     actor: (a.actor as string | null) ?? null,
     actor_type: null,
-    identity_id: (a.identity_id as string | null) ?? null,
+    agent_role: (a.identity_id as string | null) ?? null,
     agent_kind: null,
     action_type: String(a.action_type ?? "unknown"),
     target: (a.target as string | null) ?? null,
@@ -581,7 +581,7 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
       id: log.id,
       trace_id: log.trace_id,
       actor: log.actor,
-      identity_id: log.identity_id,
+      agent_role: log.identity_id,
       action_type: log.action_type,
       target: log.target,
       payload: JSON.parse(log.payload),
@@ -605,7 +605,7 @@ export function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverride
         id: log.id,
         trace_id: log.trace_id,
         actor: log.actor ?? undefined,
-        identity_id: log.identity_id ?? undefined,
+        agent_role: log.identity_id ?? undefined,
         action_type: log.action_type,
         target: log.target ?? undefined,
         payload: typeof log.payload === "string" ? log.payload : JSON.stringify(log.payload),
@@ -1014,7 +1014,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
     {
       id: "proposal-1",
       created_at: new Date().toISOString(),
-      identity_id: "test-identity",
+      agent_role: "test-identity",
       operation: MemoryOperation.ADD,
       learning: {
         id: "729b8001-0000-4000-8000-000000000001",
@@ -1036,7 +1036,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
     {
       id: "proposal-2",
       created_at: new Date().toISOString(),
-      identity_id: "test-identity",
+      agent_role: "test-identity",
       operation: MemoryOperation.ADD,
       learning: {
         id: "729b8001-0000-4000-8000-000000000002",
@@ -1056,7 +1056,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
     {
       id: "proposal-3",
       created_at: new Date().toISOString(),
-      identity_id: "test-identity",
+      agent_role: "test-identity",
       operation: MemoryOperation.ADD,
       learning: {
         id: "729b8001-0000-4000-8000-000000000003",

@@ -506,9 +506,9 @@ export const ConfigSchema = z.object({
   }),
   /** MCP defaults */
   mcp_defaults: z.object({
-    identity_id: z.string().default(DEFAULT_MCP_IDENTITY_ID),
+    agent_role: z.string().default(DEFAULT_MCP_IDENTITY_ID),
   }).optional().default({
-    identity_id: DEFAULT_MCP_IDENTITY_ID,
+    agent_role: DEFAULT_MCP_IDENTITY_ID,
   }),
   /** Request quality gate configuration */
   quality_gate: z.object({

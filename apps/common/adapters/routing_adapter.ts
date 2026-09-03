@@ -11,7 +11,7 @@ import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRoutingPolicyLoadResult } from "@exaix/routing";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { CandidateDiscovery } from "@exaix/routing";
-import { IdentityPerformanceRepository } from "@exaix/routing";
+import { AgentRolePerformanceRepository } from "@exaix/routing";
 import { RoutingPolicyLoader } from "@exaix/routing";
 import { RoutingPolicyService } from "@exaix/routing";
 
@@ -39,7 +39,7 @@ export function createRoutingPolicyService(
   return new RoutingPolicyService({
     policyLoader,
     candidateDiscovery: new CandidateDiscovery(blueprintLoader),
-    performanceRepository: new IdentityPerformanceRepository({
+    performanceRepository: new AgentRolePerformanceRepository({
       db: options.db,
     }),
     experimentSalt: options.experimentSalt,

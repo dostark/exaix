@@ -118,7 +118,7 @@ Deno.test("MockRequestService: all methods", async () => {
   if (typeof content !== "string" || !content.includes("test-id")) throw new Error("getRequestContent failed");
   const newReq = await service.createRequest("desc", {
     priority: RequestPriority.HIGH,
-    identity: "test",
+    agent_role: "test",
     portal: "main",
     model: TEST_MODEL_OPENAI,
   });

@@ -151,9 +151,9 @@ export class GitLogTool extends ToolHandler {
             type: "string",
             description: "Required when format='custom'; git pretty format string",
           },
-          identity_id: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Identity identifier for permission checks" },
         },
-        required: ["portal", "identity_id"],
+        required: ["portal", "agent_role"],
       },
     };
   }

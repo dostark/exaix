@@ -75,11 +75,11 @@ const router = new RequestRouter({
 
 const result = await router.route(request as any);
 if (result.identityId !== selectedIdentity) {
-  throw new Error(`Unexpected selected identity: ${result.identityId}`);
+  throw new Error(`Unexpected selected agent_role: ${result.identityId}`);
 }
 
 await Deno.mkdir(join(root, "artifacts"), { recursive: true });
 await Deno.writeTextFile(
   join(root, "artifacts", "result.json"),
-  JSON.stringify({ selected_identity_id: result.identityId }),
+  JSON.stringify({ selected_agent_role: result.identityId }),
 );

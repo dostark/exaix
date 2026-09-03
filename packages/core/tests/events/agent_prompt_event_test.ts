@@ -22,14 +22,14 @@ Deno.test("[DomainEventType] AgentPromptAssembled is registered with the pre-exi
 Deno.test("[IAgentPromptAssembledPayload] the planning variant preserves every legacy field", () => {
   const payload: IAgentPromptAssembledPayload = {
     prompt_kind: "planning",
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     prompt_length: 1234,
     skillIdsUsed: ["tdd-workflow"],
     skillsCount: 1,
     retrievalLatencyMs: 5,
   };
   assertEquals(payload.prompt_kind, "planning");
-  assertEquals(payload.identity_id, "senior-coder");
+  assertEquals(payload.agent_role, "senior-coder");
   assertEquals(payload.prompt_length, 1234);
   assertEquals(payload.skillIdsUsed, ["tdd-workflow"]);
   assertEquals(payload.skillsCount, 1);

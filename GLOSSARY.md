@@ -26,7 +26,7 @@ A configured LLM persona that Exaix can run to perform work on behalf of a user,
 
 ### Identity Blueprint
 
-The markdown file that defines an identity: its metadata, instructions, capabilities, and constraints. Stored under `Blueprints/Identities/` and loaded by Exaix at runtime to configure how an identity behaves.
+The markdown file that defines an agent_role: its metadata, instructions, capabilities, and constraints. Stored under `Blueprints/Identities/` and loaded by Exaix at runtime to configure how an identity behaves.
 
 ### Actor
 

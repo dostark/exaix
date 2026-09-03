@@ -42,7 +42,7 @@ function makeCycleFlow(id: string): IFlow {
     name: id,
     description: id,
     version: "1.0",
-    steps: [{ id: "next-steps", identity: "senior-coder", type: FlowStepType.SESSION_DELEGATE_CYCLE }],
+    steps: [{ id: "next-steps", agent_role: "senior-coder", type: FlowStepType.SESSION_DELEGATE_CYCLE }],
   } as IFlow;
 }
 

@@ -1,5 +1,5 @@
 ---
-identity_id: "reflexive-agent"
+agent_role: "reflexive-agent"
 name: "Reflexive Agent"
 model: "anthropic:claude-sonnet-5"
 reflexive: true

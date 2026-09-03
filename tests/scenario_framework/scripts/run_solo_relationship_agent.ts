@@ -168,7 +168,7 @@ if (import.meta.main) {
       portal: portalAlias,
     };
     const options: IAgentExecutionOptions = {
-      identity_id: CODE_ANALYST_ID,
+      agent_role: CODE_ANALYST_ID,
       portal: portalAlias,
       permitted_tools: blueprint.permitted_tools,
       security_mode: SecurityMode.HYBRID,

@@ -131,7 +131,7 @@ export function createMockProposal(id: string, title: string): IMemoryUpdateProp
     target_scope: MemoryScope.PROJECT,
     target_project: "TestPortal",
     reason: "Test reason",
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     status: MemoryStatus.PENDING,
     created_at: new Date().toISOString(),
     learning: {
@@ -156,7 +156,7 @@ export function createMockExecution(
   return {
     trace_id: traceId,
     request_id: `request-${traceId}`,
-    identity_id: "test-agent",
+    agent_role: "test-agent",
     portal: "TestPortal",
     started_at: new Date().toISOString(),
     completed_at: status === ExecutionStatus.RUNNING ? undefined : new Date().toISOString(),

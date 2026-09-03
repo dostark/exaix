@@ -35,7 +35,7 @@ async function createPlanFile(
   const content = `---
 trace_id: "${traceId}"
 status: ${status}
-identity_id: ${TEST_AGENT_ID}
+agent_role: ${TEST_AGENT_ID}
 created_at: "${TEST_CREATED_AT}"
 ---
 
@@ -259,7 +259,7 @@ trace_id: "${traceId}"
 created: "2026-01-25T16:28:01.132Z"
 status: planned
 priority: high
-identity_id: test-agent
+agent_role: test-agent
 portal: test-portal
 created_by: test@example.com
 ---

@@ -205,7 +205,7 @@ Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", as
       eventLogger.error("permission.agent_not_allowed", unauthorizedAgent, {
         trace_id: traceId,
         portal: portalConfig.name,
-        identity: unauthorizedAgent,
+        agent_role: unauthorizedAgent,
         allowed_agents: portalConfig.agents_allowed,
         reason: "Agent not in portal's allowed list",
       }, traceId);

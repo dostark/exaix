@@ -44,7 +44,7 @@ function makeStep(overrides: Partial<IFlowStep> = {}): IFlowStep {
     id: "step-1",
     name: "Step 1",
     type: FlowStepType.AGENT,
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],
     input: { source: FlowInputSource.REQUEST, transform: "passthrough" },

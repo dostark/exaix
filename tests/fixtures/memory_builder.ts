@@ -13,6 +13,7 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
+import type { Opt, Reason } from "@exaix/core/types";
 import type {
   IChanges,
   IDecision,
@@ -87,7 +88,7 @@ export class ExecutionMemoryBuilder {
       completed_at: new Date().toISOString(),
       status: ExecutionStatus.COMPLETED,
       portal,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       summary: `Test execution for ${portal}`,
       context_files: [],
       context_portals: [portal],
@@ -110,8 +111,8 @@ export class ExecutionMemoryBuilder {
     return this;
   }
 
-  public withIdentity(identity: string): this {
-    this.memory.identity_id = identity;
+  public withIdentity(agent_role: string): this {
+    this.memory.agent_role = agent_role;
     return this;
   }
 
@@ -178,7 +179,7 @@ export class LearningBuilder {
     return this;
   }
 
-  public withScope(scope: MemoryScope | string, project?: string): this {
+  public withScope(scope: MemoryScope | string, project?: Opt<string, Reason.TestOverride>): this {
     this.learning.scope = scope as MemoryScope;
     if (project) {
       this.learning.project = project;

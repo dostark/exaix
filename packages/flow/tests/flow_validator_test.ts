@@ -31,7 +31,7 @@ steps: ${
     overrides.steps ?? `
   - id: "s1"
     name: "Step 1"
-    identity: "agent1"
+    agent_role: "agent1"
     dependsOn: []
     input:
       source: "request"
@@ -105,7 +105,7 @@ Deno.test("FlowValidatorImpl: fails for flow with dependency cycle", async () =>
     const cyclicSteps = `
   - id: "a"
     name: "A"
-    identity: "agentA"
+    agent_role: "agentA"
     dependsOn: ["b"]
     input:
       source: "request"
@@ -115,7 +115,7 @@ Deno.test("FlowValidatorImpl: fails for flow with dependency cycle", async () =>
       backoffMs: 1000
   - id: "b"
     name: "B"
-    identity: "agentB"
+    agent_role: "agentB"
     dependsOn: ["a"]
     input:
       source: "request"
@@ -150,7 +150,7 @@ Deno.test("FlowValidatorImpl: fails for flow with invalid identity field", async
     const badAgentSteps = `
   - id: "s1"
     name: "Step 1"
-    identity: ""
+    agent_role: ""
     dependsOn: []
     input:
       source: "request"

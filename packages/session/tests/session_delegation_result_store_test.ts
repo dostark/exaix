@@ -108,7 +108,7 @@ Deno.test("[session_brief_reader][security] recovery reads a schema-validated br
       parent_trace_id: PARENT_TRACE_ID,
       parent_step_id: "1",
       sequence: 1,
-      identity_id: "test-identity",
+      agent_role: "test-identity",
       gate: "code_changes",
       tool: "codex",
       objective: "Recover this validated objective.",

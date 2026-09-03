@@ -36,7 +36,7 @@ function createMockProposal(
     operation: MemoryOperation.ADD,
     target_scope: MemoryScope.PROJECT,
     reason: "test",
-    identity_id: "test",
+    agent_role: "test",
     status: MemoryRecordStatus.PENDING,
     learning: {
       id: crypto.randomUUID(),

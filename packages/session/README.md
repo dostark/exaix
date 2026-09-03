@@ -59,7 +59,7 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
 
 Every `ISessionDelegationRequest` and `SessionBrief` now carries a **required** `identityId` /
 `identity_id` — the blueprint identity actually delegating the session, sourced from the flow
-step's own `identity:` field (`PlanExecutor`/`SessionDelegateCycleStepHandler` →
+step's own `agent_role:` field (`PlanExecutor`/`SessionDelegateCycleStepHandler` →
 `SessionDelegationCoordinator` → `SessionDelegateService` → `opencode_permission_generator.ts`).
 There is no default and no fallback constant: `generateOpencodePermissionConfig(...)` keys the
 generated OpenCode agent config on whichever `identityId` it is given, and

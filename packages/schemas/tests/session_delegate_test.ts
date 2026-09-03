@@ -28,7 +28,7 @@ const VALID_BUDGET = {
 
 const VALID_BRIEF = {
   trace_id: "00000000-0000-4000-8000-000000000001",
-  identity_id: "dogfood-coder",
+  agent_role: "dogfood-coder",
   gate: "plan_review",
   tool: "claude-code",
   objective: "Review the generated plan and approve or amend it.",

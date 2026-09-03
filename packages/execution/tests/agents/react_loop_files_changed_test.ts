@@ -59,7 +59,7 @@ const context = {
 } satisfies IExecutionContext;
 
 const options: IAgentExecutionOptions = {
-  identity_id: "files-test-agent",
+  agent_role: "files-test-agent",
   portal: "todo-app",
   security_mode: SecurityMode.HYBRID,
   timeout_ms: 300000,

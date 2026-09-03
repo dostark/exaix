@@ -1,6 +1,6 @@
 ---
 trace_id: "valid-trace-id"
-identity_id: senior-coder
+agent_role: senior-coder
 status: pending
 ---
 

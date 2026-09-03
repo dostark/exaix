@@ -124,7 +124,7 @@ if (import.meta.main) {
       portal: NO_PORTAL,
     };
     const options: IAgentExecutionOptions = {
-      identity_id: "phase-147-scratchpad",
+      agent_role: "phase-147-scratchpad",
       portal: NO_PORTAL,
       permitted_tools: [ToolName.REMEMBER_FACT],
       security_mode: SecurityMode.SANDBOXED,

@@ -31,7 +31,7 @@ export interface ILogEntry {
   trace_id: string;
   actor: string | null;
   actor_type: string | null;
-  identity_id: string | null;
+  agent_role: string | null;
   agent_kind?: string | null;
   action_type: string;
   target: string | null;
@@ -341,8 +341,8 @@ export class MinimalLogServiceMock implements IJournalService {
   query(filter: IJournalFilterOptions): Promise<IActivityRecord[]> {
     let filtered = this.logs;
 
-    if (filter.identityId) {
-      filtered = filtered.filter((l) => l.identity_id === filter.identityId);
+    if (filter.agentRole) {
+      filtered = filtered.filter((l) => l.agent_role === filter.agentRole);
     }
     if (filter.actionType) {
       filtered = filtered.filter((l) => l.action_type === filter.actionType);
@@ -355,7 +355,7 @@ export class MinimalLogServiceMock implements IJournalService {
       ...log,
       payload: JSON.stringify(log.payload),
       actor_type: log.actor_type ?? null,
-      identity_id: log.identity_id ?? null,
+      agent_role: log.agent_role ?? null,
       agent_kind: log.agent_kind ?? null,
     }))]);
   }
@@ -452,7 +452,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
       // Group by identity
       const byIdentity = new Map<string, ILogEntry[]>();
       for (const log of logs) {
-        const identity = log.identity_id || "unknown";
+        const identity = log.agent_role || "unknown";
         if (!byIdentity.has(identity)) {
           byIdentity.set(identity, []);
         }
@@ -485,7 +485,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
       this.state.tree = Array.from(byAction.entries()).map(([action, actionLogs]) => {
         const icon = LOG_ICONS[action as keyof typeof LOG_ICONS] || LOG_ICONS["default"];
         const children = actionLogs.map((log) => {
-          const label = `${this.formatTimestamp(log.timestamp)} [${log.identity_id || "unknown"}]`;
+          const label = `${this.formatTimestamp(log.timestamp)} [${log.agent_role || "unknown"}]`;
           return createNode<ILogEntry>(log.id, label, "log", { expanded: true });
         });
         return createGroupNode<ILogEntry>(
@@ -634,7 +634,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     lines.push(`Trace ID: ${log.trace_id}`);
     lines.push(`Timestamp: ${log.timestamp}`);
     lines.push(`Actor: ${log.actor || "unknown"}`);
-    lines.push(`Identity: ${log.identity_id || "(none)"}`);
+    lines.push(`Identity: ${log.agent_role || "(none)"}`);
     lines.push(`Action: ${log.action_type}`);
     lines.push(`Target: ${log.target || "(none)"}`);
     lines.push("");
@@ -745,7 +745,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
 
   showFilterByIdentityDialog(): void {
     const logs = this.monitorView.getFilteredLogs();
-    const identities = [...new Set(logs.map((l) => l.identity_id).filter(Boolean))];
+    const identities = [...new Set(logs.map((l) => l.agent_role).filter(Boolean))];
     const identityList = identities.length > 0 ? identities.join(", ") : "(no identities)";
 
     this.pendingDialogType = "filter-identity";
@@ -792,12 +792,12 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     this.statusMessage = `Searching for: ${query}`;
   }
 
-  private handleIdentityFilterResult(identity: string): void {
-    if (identity) {
-      this.monitorView.setFilter({ identityId: identity });
-      this.statusMessage = `Filtered by identity: ${identity}`;
+  private handleIdentityFilterResult(agent_role: string): void {
+    if (agent_role) {
+      this.monitorView.setFilter({ agentRole: agent_role });
+      this.statusMessage = `Filtered by agent_role: ${agent_role}`;
     } else {
-      this.monitorView.setFilter({ identityId: undefined });
+      this.monitorView.setFilter({ agentRole: undefined });
       this.statusMessage = "Filter cleared";
     }
     this.monitorView.refreshLogs().then(() => {

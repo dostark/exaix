@@ -11,7 +11,7 @@ import { GateConfigSchema } from "@exaix/flow";
 import { FlowGateOnFail } from "@exaix/core";
 
 const BASE_GATE_EVALUATE = {
-  identity: "judge-agent",
+  agent_role: "judge-agent",
   criteria: ["CORRECTNESS", "COMPLETENESS"],
   threshold: 0.8,
   onFail: FlowGateOnFail.HALT,
@@ -19,7 +19,7 @@ const BASE_GATE_EVALUATE = {
 };
 
 const BASE_GATE_CONFIG = {
-  identity: "judge-agent",
+  agent_role: "judge-agent",
   criteria: ["CORRECTNESS", "COMPLETENESS"],
   threshold: 0.8,
   onFail: FlowGateOnFail.HALT,

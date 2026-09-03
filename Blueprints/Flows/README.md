@@ -16,7 +16,7 @@ plus a small **pattern-template library** under `templates/`. There is no separa
   fan-out/fan-in, self-correcting) whose agent slots are `{{placeholder}}` tokens
   you fill in when you copy one into a new flow.
 
-Every concrete flow — and every real (non-`{{placeholder}}`) `identity:` in a
+Every concrete flow — and every real (non-`{{placeholder}}`) `agent_role:` in a
 template — must resolve to an identity under `Blueprints/Identities/`. This is
 enforced by `deno task check:blueprint-integrity` (recursive, all flows; `{{…}}`
 slots are skipped).
@@ -34,7 +34,7 @@ steps:
   - id: analyze
     name: Analyze
     type: agent
-    identity: code-analyst # must be a real identity (or {{placeholder}} in a template)
+    agent_role: code-analyst # must be a real identity (or {{placeholder}} in a template)
     dependsOn: []
     input:
       source: request
@@ -42,7 +42,7 @@ steps:
   - id: review
     name: Review
     type: agent
-    identity: quality-judge
+    agent_role: quality-judge
     dependsOn: [analyze]
     input:
       source: step
@@ -68,7 +68,7 @@ instead of the default single-shot generate path:
 steps:
   - id: implement-feature
     name: Implement Feature
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: declared # strategy is only valid on a declared step
     strategy: cli_delegate # react | mcp | cli_delegate — omit for the default path
     dependsOn: [design-architecture]

@@ -9,7 +9,7 @@ version: "1.0"
 steps:
   - id: explore
     name: Explore codebase structure and gather context
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: dynamic
     permitted_tools:
       - read_file
@@ -28,7 +28,7 @@ steps:
 
   - id: write-report
     name: Write analysis report
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: declared
     dependsOn:
       - explore

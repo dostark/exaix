@@ -10,7 +10,7 @@ output:
 steps:
   - id: "list"
     name: "List directory using list_directory"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "declared"
     tools:
       - list_directory

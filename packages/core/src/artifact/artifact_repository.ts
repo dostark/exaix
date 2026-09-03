@@ -16,7 +16,7 @@ export interface IArtifactRow {
   id: string;
   status: string;
   type: string;
-  identity: string;
+  agent_role: string;
   portal: string | null;
   target_branch: string | null;
   created: string;
@@ -31,7 +31,7 @@ export interface IArtifactRepository {
     id: string,
     status: string,
     type: string,
-    identity: string,
+    agent_role: string,
     portal: string | null,
     targetBranch: string | null,
     created: string,
@@ -50,7 +50,7 @@ export interface IArtifactRepository {
 
   listArtifactRecords(filters?: {
     status?: string;
-    identity?: string;
+    agent_role?: string;
     portal?: string | null;
     type?: string;
   }): Promise<IArtifactRow[]>;
@@ -63,7 +63,7 @@ export class DatabaseArtifactRepository implements IArtifactRepository {
     id: string,
     status: string,
     type: string,
-    identity: string,
+    agent_role: string,
     portal: string | null,
     targetBranch: string | null,
     created: string,
@@ -71,9 +71,9 @@ export class DatabaseArtifactRepository implements IArtifactRepository {
     filePath: string,
   ): Promise<void> {
     await this.db.preparedRun(
-      `INSERT INTO artifacts (id, status, type, identity, portal, target_branch, created, request_id, file_path)
+      `INSERT INTO artifacts (id, status, type, agent_role, portal, target_branch, created, request_id, file_path)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, status, type, identity, portal, targetBranch, created, requestId, filePath],
+      [id, status, type, agent_role, portal, targetBranch, created, requestId, filePath],
     );
   }
 
@@ -91,7 +91,7 @@ export class DatabaseArtifactRepository implements IArtifactRepository {
 
   async getArtifactRecord(id: string): Promise<IArtifactRow | undefined> {
     const rows = await this.db.preparedAll<IArtifactRow>(
-      `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
+      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
        FROM artifacts WHERE id = ?`,
       [id],
     );
@@ -101,13 +101,13 @@ export class DatabaseArtifactRepository implements IArtifactRepository {
   async listArtifactRecords(
     filters?: Opt<{
       status?: string;
-      identity?: string;
+      agent_role?: string;
       portal?: string | null;
       type?: string;
     }, Reason.QueryFilter>,
   ): Promise<IArtifactRow[]> {
     let query =
-      `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
+      `SELECT id, status, type, agent_role, portal, target_branch, created, updated, request_id, file_path, rejection_reason
        FROM artifacts WHERE 1=1`;
     const params: (string | null)[] = [];
 
@@ -115,9 +115,9 @@ export class DatabaseArtifactRepository implements IArtifactRepository {
       query += ` AND status = ?`;
       params.push(filters.status);
     }
-    if (filters?.identity) {
-      query += ` AND identity = ?`;
-      params.push(filters.identity);
+    if (filters?.agent_role) {
+      query += ` AND agent_role = ?`;
+      params.push(filters.agent_role);
     }
     if (filters?.portal !== undefined) {
       query += ` AND portal = ?`;

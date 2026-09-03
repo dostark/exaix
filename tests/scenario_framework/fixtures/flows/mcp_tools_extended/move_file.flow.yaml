@@ -10,7 +10,7 @@ output:
 steps:
   - id: "move"
     name: "Move file to new location using move_file"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "declared"
     tools:
       - move_file

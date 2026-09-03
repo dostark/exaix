@@ -74,7 +74,7 @@ export class NotificationService implements INotificationService {
         proposal.target_project || MemoryScope.GLOBAL,
         {
           proposal_id: proposal.id,
-          identity_id: proposal.identity_id,
+          agent_role: proposal.agent_role,
           learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
           reason: proposal.reason,
         },

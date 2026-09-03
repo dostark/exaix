@@ -51,7 +51,7 @@ steps:
       - "$FRAMEWORK_HOME/../../apps/mcp-server/main.ts"
       - "--"
       - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"scenario","version":"1.0"}}}'
-      - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exaix_config_set","arguments":{"key":"ai.provider","value":"mock","identity_id":"tools-eval"}}}'
+      - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exaix_config_set","arguments":{"key":"ai.provider","value":"mock","agent_role":"tools-eval"}}}'
       - '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"exaix_create_request","arguments":{}}}'
     # The driver exits 1 because a response carries a JSON-RPC error — which is exactly
     # what this step elicits. expect_failure inverts the exit-code expectation so the

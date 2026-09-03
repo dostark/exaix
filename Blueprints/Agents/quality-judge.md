@@ -1,5 +1,5 @@
 ---
-identity_id: "quality-judge"
+agent_role: "quality-judge"
 name: "Quality Judge"
 model: ""
 model_size: L

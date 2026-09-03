@@ -13,7 +13,7 @@ import { RequestSchema } from "@exaix/schemas/request.ts";
 Deno.test("RequestSchema: valid frontmatter object passes validation", () => {
   const validRequest = {
     trace_id: "550e8400-e29b-41d4-a716-446655440000",
-    identity_id: "coder-agent",
+    agent_role: "coder-agent",
     status: RequestStatus.PENDING,
     priority: 8,
     tags: ["feature", "ui"],
@@ -22,7 +22,7 @@ Deno.test("RequestSchema: valid frontmatter object passes validation", () => {
   const result = RequestSchema.parse(validRequest);
 
   assertEquals(result.trace_id, "550e8400-e29b-41d4-a716-446655440000");
-  assertEquals(result.identity_id, "coder-agent");
+  assertEquals(result.agent_role, "coder-agent");
   assertEquals(result.status, RequestStatus.PENDING);
   assertEquals(result.priority, 8);
   assertEquals(result.tags, ["feature", "ui"]);
@@ -31,7 +31,7 @@ Deno.test("RequestSchema: valid frontmatter object passes validation", () => {
 Deno.test("RequestSchema: applies default values", () => {
   const minimalRequest = {
     trace_id: "550e8400-e29b-41d4-a716-446655440000",
-    identity_id: "coder-agent",
+    agent_role: "coder-agent",
     status: RequestStatus.PENDING,
   };
 
@@ -43,7 +43,7 @@ Deno.test("RequestSchema: applies default values", () => {
 
 Deno.test("RequestSchema: rejects missing required field (trace_id)", () => {
   const invalidRequest = {
-    identity_id: "coder-agent",
+    agent_role: "coder-agent",
     status: RequestStatus.PENDING,
   };
 
@@ -63,7 +63,7 @@ Deno.test("RequestSchema: rejects missing required field (trace_id)", () => {
 Deno.test("RequestSchema: rejects invalid enum value", () => {
   const invalidRequest = {
     trace_id: "550e8400-e29b-41d4-a716-446655440000",
-    identity_id: "coder-agent",
+    agent_role: "coder-agent",
     status: "banana", // invalid
   };
   try {
@@ -83,7 +83,7 @@ Deno.test("RequestSchema: rejects invalid enum value", () => {
 Deno.test("RequestSchema: strips unknown fields", () => {
   const requestWithExtra = {
     trace_id: "550e8400-e29b-41d4-a716-446655440000",
-    identity_id: "coder-agent",
+    agent_role: "coder-agent",
     status: RequestStatus.PENDING,
     unknown_field: "should be stripped",
     another_extra: 123,

@@ -43,7 +43,7 @@ export class ReadFileTool extends ToolHandler {
       // Log successful execution
       this.logToolExecution(McpToolName.READ_FILE, portal, identity_id, {
         path,
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
         success: true,
         bytes: content.length,
       });
@@ -61,7 +61,7 @@ export class ReadFileTool extends ToolHandler {
       const code = message.startsWith("File not found") ? ToolErrorCode.NOT_FOUND : ToolErrorCode.EXECUTION_FAILED;
       return this.formatToolError(McpToolName.READ_FILE, portal, identity_id, code, message, {
         path,
-        identity_id: identity_id ?? null,
+        agent_role: identity_id ?? null,
       });
     }
   }
@@ -82,12 +82,12 @@ export class ReadFileTool extends ToolHandler {
             type: "string",
             description: "Relative path within portal",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "path", "identity_id"],
+        required: ["portal", "path", "agent_role"],
       },
     };
   }

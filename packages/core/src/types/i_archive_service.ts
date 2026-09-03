@@ -10,7 +10,7 @@ import type { MemoryStatusType } from "@exaix/core/status";
 
 export interface IArchiveEntry {
   trace_id: string;
-  identity_id: string;
+  agent_role: string;
   status: MemoryStatusType | string;
   archived_at: string;
 }
@@ -24,7 +24,7 @@ export interface IArchiveService {
   /**
    * Search for archived entries by agent ID.
    */
-  searchByAgent(identityId: string): Promise<IArchiveEntry[]>;
+  searchByAgent(agentRole: string): Promise<IArchiveEntry[]>;
 
   /**
    * Get an archived entry by its trace ID.

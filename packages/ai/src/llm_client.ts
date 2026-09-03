@@ -111,7 +111,7 @@ export class LlmClient implements ILlmClient {
   }
 
   async reasonNextAction(params: {
-    identity: IBlueprintFrontmatter;
+    agent_role: IBlueprintFrontmatter;
     stepObjective: string;
     accumulatedContext: string;
     availableTools: Array<{
@@ -128,9 +128,9 @@ export class LlmClient implements ILlmClient {
     args?: ToolArgs;
     output?: string;
   }> {
-    const { identity, stepObjective, accumulatedContext, availableTools, iteration, maxIterations, options } = params;
+    const { agent_role, stepObjective, accumulatedContext, availableTools, iteration, maxIterations, options } = params;
 
-    const provider = this.testProvider ?? await this.resolveProvider(identity.model);
+    const provider = this.testProvider ?? await this.resolveProvider(agent_role.model);
 
     // Provide detailed tools description with JSON schemas
     const toolsDesc = availableTools
@@ -139,8 +139,8 @@ export class LlmClient implements ILlmClient {
     const accCtx = accumulatedContext || "[No previous tool calls yet]";
 
     const prompt = REACT_PROMPT_TEMPLATE
-      .replace("{identity_name}", identity.name)
-      .replace("{identity_description}", identity.description ?? "an expert assistant")
+      .replace("{identity_name}", agent_role.name)
+      .replace("{identity_description}", agent_role.description ?? "an expert assistant")
       .replace("{step_objective}", stepObjective)
       .replace("{tools_description}", toolsDesc)
       .replace("{accumulated_context}", accCtx)

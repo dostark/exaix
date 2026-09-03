@@ -39,7 +39,7 @@ Deno.test("[artifact] createArtifact() creates file with frontmatter in Memory/E
 
     // Verify frontmatter structure
     assertStringIncludes(content, `status: ${ReviewStatus.PENDING}`, "Should have pending status");
-    assertStringIncludes(content, "identity: code-analyst", "Should have agent");
+    assertStringIncludes(content, "agent_role: code-analyst", "Should have agent");
     assertStringIncludes(content, "portal: my-project", "Should have portal");
     assertStringIncludes(content, "request_id: request-123", "Should have request_id");
     assertStringIncludes(content, "# Analysis", "Should have content body");
@@ -164,8 +164,8 @@ Deno.test("[artifact] listArtifacts() filters by agent", async () => {
     await registry.createArtifact("req-2", "code-analyst", "Content 2");
     await registry.createArtifact("req-3", "quality-judge", "Content 3");
 
-    const analystArtifacts = await registry.listArtifacts({ identity: "code-analyst" });
-    const judgeArtifacts = await registry.listArtifacts({ identity: "quality-judge" });
+    const analystArtifacts = await registry.listArtifacts({ agent_role: "code-analyst" });
+    const judgeArtifacts = await registry.listArtifacts({ agent_role: "quality-judge" });
 
     assertEquals(analystArtifacts.length, 2, "Should have 2 code-analyst artifacts");
     assertEquals(judgeArtifacts.length, 1, "Should have 1 quality-judge artifact");

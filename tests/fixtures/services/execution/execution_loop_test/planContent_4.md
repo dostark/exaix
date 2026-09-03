@@ -2,7 +2,7 @@
 trace_id: "test-trace-toml"
 request_id: logging-test
 status: active
-identity_id: test-identity
+agent_role: test-identity
 ---
 
 # Logging Test Plan

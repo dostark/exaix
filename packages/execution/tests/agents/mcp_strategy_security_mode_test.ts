@@ -39,7 +39,7 @@ const MINIMAL_BLUEPRINT: IAgentFileBlueprint = {
 
 function buildOptions(security_mode: SecurityMode): IAgentExecutionOptions {
   return {
-    identity_id: "test-identity",
+    agent_role: "test-identity",
     portal: "test-portal",
     security_mode,
     timeout_ms: 300000,

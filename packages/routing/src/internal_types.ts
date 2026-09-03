@@ -8,7 +8,7 @@
 import type { JSONValue } from "@exaix/core";
 
 export interface ILoadedBlueprint {
-  identityId: string;
+  agentRole: string;
   version: string;
   capabilities: string[];
   frontmatter: { deprecated?: boolean; [key: string]: JSONValue | object };

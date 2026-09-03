@@ -10,7 +10,7 @@ output:
 steps:
   - id: "write"
     name: "Write file using write_file"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "declared"
     tools:
       - write_file

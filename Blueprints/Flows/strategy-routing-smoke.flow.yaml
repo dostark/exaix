@@ -12,7 +12,7 @@ defaultSkills:
 steps:
   - id: no-strategy-step
     name: Execute via the unchanged no-strategy path
-    identity: mock-agent
+    agent_role: mock-agent
     execution_mode: declared
     dependsOn: []
     input:
@@ -24,7 +24,7 @@ steps:
 
   - id: react-step
     name: Execute via forced react strategy
-    identity: mock-agent
+    agent_role: mock-agent
     execution_mode: declared
     strategy: react
     dependsOn:

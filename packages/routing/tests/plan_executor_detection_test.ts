@@ -149,7 +149,7 @@ describe("Plan Executor - Detection", () => {
       const frontmatter = parseYaml(yamlMatch[1]) as {
         trace_id?: string;
         request_id?: string;
-        identity_id?: string;
+        agent_role?: string;
         status?: string;
         [key: string]: any;
       };
@@ -157,7 +157,7 @@ describe("Plan Executor - Detection", () => {
       // Assert
       assertEquals(frontmatter.trace_id, "550e8400-e29b-41d4-a716-446655440000");
       assertEquals(frontmatter.request_id, "request-550e8400");
-      assertEquals(frontmatter.identity_id, "senior-coder");
+      assertEquals(frontmatter.agent_role, "senior-coder");
       assertEquals(frontmatter.status, MemoryStatus.APPROVED);
     });
 
@@ -264,7 +264,7 @@ status: approved
       const frontmatter = parseYaml(yamlMatch[1]) as {
         trace_id?: string;
         request_id?: string;
-        identity_id?: string;
+        agent_role?: string;
         status?: string;
         [key: string]: any;
       };

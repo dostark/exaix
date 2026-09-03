@@ -36,8 +36,8 @@ export interface IGateResult {
  * Gate configuration
  */
 export interface IGateConfig {
-  /** Judge identity to use for evaluation */
-  identity: string;
+  /** Judge agent role to use for evaluation */
+  agentRole: string;
   /** Criteria names or objects to evaluate against */
   criteria: Array<string | EvaluationCriterion>;
   /** Score threshold for passing (0.0 - 1.0) */
@@ -55,7 +55,7 @@ export interface IGateConfig {
  */
 export interface IJudgeInvoker {
   evaluate(
-    identityId: string,
+    agentRole: string,
     content: string,
     criteria: EvaluationCriterion[],
     context?: string,

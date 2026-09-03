@@ -831,9 +831,9 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most 
     // An earlier scenario's plan, then this scenario's plan.
     const stale = join(plansDir, "request-aaaa_plan.md");
     const fresh = join(plansDir, "request-zzzz_plan.md");
-    await Deno.writeTextFile(stale, "---\nidentity_id: earlier-scenario\n---\n");
+    await Deno.writeTextFile(stale, "---\nagent_role: earlier-scenario\n---\n");
     await new Promise((r) => setTimeout(r, 25));
-    await Deno.writeTextFile(fresh, "---\nidentity_id: this-scenario\n---\n");
+    await Deno.writeTextFile(fresh, "---\nagent_role: this-scenario\n---\n");
     // Make the ordering unambiguous regardless of filesystem timestamp granularity.
     const staleTime = new Date(Date.now() - 60_000);
     await Deno.utime(stale, staleTime, staleTime);
@@ -849,7 +849,7 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most 
           {
             id: "attributed-to-this-scenario",
             kind: CriterionKind.FRONTMATTER_FIELD_EQUALS,
-            field: "identity_id",
+            field: "agent_role",
             equals: "this-scenario",
           },
         ],

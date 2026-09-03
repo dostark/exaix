@@ -168,7 +168,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
     started_at: new Date().toISOString(),
     status: ExecutionStatus.COMPLETED,
     portal: "test-portal",
-    identity_id: "test-identity",
+    agent_role: "test-identity",
     summary: "Test execution summary that is long enough to be meaningful and extract patterns.",
     changes: { files_modified: ["src/app.ts"], files_created: [], files_deleted: [] },
     lessons_learned: ["Learned that X is better than Y."],

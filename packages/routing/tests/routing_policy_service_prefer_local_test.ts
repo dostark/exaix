@@ -12,14 +12,14 @@ import { createRoutingCandidate, createRoutingPolicyService } from "./routing_po
 Deno.test("RoutingPolicyService: prefers local candidate in fallback when preferLocal set", async () => {
   const policy: IRoutingPolicy = { version: "1.0", allowExperiments: false, defaultMode: "policy_first", rules: [] };
   const localCandidate = createRoutingCandidate({
-    identityId: "local-agent",
+    agentRole: "local-agent",
     version: "1.0.0",
     capabilities: ["code_review"],
     score: 0.5,
     preferLocal: true,
   });
   const remoteCandidate = createRoutingCandidate({
-    identityId: "remote-agent",
+    agentRole: "remote-agent",
     version: "2.0.0",
     capabilities: ["code_review"],
     score: 0.8,
@@ -31,10 +31,10 @@ Deno.test("RoutingPolicyService: prefers local candidate in fallback when prefer
     [remoteCandidate, localCandidate],
   );
 
-  const decision = await service.selectIdentity({ matchCriteria: { capability: "code_review", tags: [] } });
+  const decision = await service.selectAgentRole({ matchCriteria: { capability: "code_review", tags: [] } });
 
   assertEquals(
-    decision.selectedIdentityId,
+    decision.selectedAgentRole,
     "local-agent",
     "Should prefer local even with lower score",
   );
@@ -48,7 +48,7 @@ Deno.test("CandidateDiscovery: extracts preferLocal from blueprint frontmatter",
   }
 
   interface TestBlueprint {
-    identityId: string;
+    agentRole: string;
     version: string;
     capabilities: string[];
     frontmatter: TestBlueprintFrontmatter;
@@ -66,13 +66,13 @@ Deno.test("CandidateDiscovery: extracts preferLocal from blueprint frontmatter",
 
   const loader = new TestBlueprintLoader();
   loader.addBlueprint({
-    identityId: "local-agent",
+    agentRole: "local-agent",
     version: "1.0.0",
     capabilities: ["code_review"],
     frontmatter: { routing_prefer_local: true },
   });
   loader.addBlueprint({
-    identityId: "remote-agent",
+    agentRole: "remote-agent",
     version: "2.0.0",
     capabilities: ["code_review"],
     frontmatter: {},
@@ -81,8 +81,8 @@ Deno.test("CandidateDiscovery: extracts preferLocal from blueprint frontmatter",
   const discovery = new CandidateDiscovery(loader);
   const candidates = await discovery.listCandidates({ capability: "code_review", tags: [] });
 
-  const localCandidate = candidates.find((c: IRoutingCandidate) => c.identityId === "local-agent");
-  const remoteCandidate = candidates.find((c: IRoutingCandidate) => c.identityId === "remote-agent");
+  const localCandidate = candidates.find((c: IRoutingCandidate) => c.agentRole === "local-agent");
+  const remoteCandidate = candidates.find((c: IRoutingCandidate) => c.agentRole === "remote-agent");
 
   assertEquals(localCandidate?.preferLocal, true);
   assertEquals(remoteCandidate?.preferLocal, undefined);

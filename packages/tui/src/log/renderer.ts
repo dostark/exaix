@@ -135,8 +135,8 @@ export function renderContextBadges(entry: IStructuredLogEntry, options: ILogRen
       ),
     );
   }
-  if (entry.context.identity_id) {
-    badges.push(colorize(`agent:${entry.context.identity_id}`, options.theme.success, options.theme.reset));
+  if (entry.context.agent_role) {
+    badges.push(colorize(`agent:${entry.context.agent_role}`, options.theme.success, options.theme.reset));
   }
   if (entry.context.operation) {
     badges.push(colorize(`op:${entry.context.operation}`, options.theme.warning, options.theme.reset));
@@ -322,6 +322,6 @@ function analyzeContext(
 ): { correlationIds: number; traceIds: number; identityIds: number } {
   const correlationIds = new Set(entries.map((entry) => entry.context.correlation_id).filter(Boolean));
   const traceIds = new Set(entries.map((entry) => entry.context.trace_id).filter(Boolean));
-  const identityIds = new Set(entries.map((entry) => entry.context.identity_id).filter(Boolean));
+  const identityIds = new Set(entries.map((entry) => entry.context.agent_role).filter(Boolean));
   return { correlationIds: correlationIds.size, traceIds: traceIds.size, identityIds: identityIds.size };
 }

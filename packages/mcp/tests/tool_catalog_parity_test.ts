@@ -85,9 +85,9 @@ Deno.test("[checkToolCatalogParity] matching required-param sets produce zero er
           portal: { type: "string" },
           path: { type: "string" },
           content: { type: "string" },
-          identity_id: { type: "string" },
+          agent_role: { type: "string" },
         },
-        required: ["portal", "path", "content", "identity_id"],
+        required: ["portal", "path", "content", "agent_role"],
       },
     }),
   ];
@@ -110,8 +110,8 @@ Deno.test("[checkToolCatalogParity] MCP-only auth params (portal, identity_id) a
       name: "example_tool",
       input_schema: {
         type: "object",
-        properties: { portal: { type: "string" }, path: { type: "string" }, identity_id: { type: "string" } },
-        required: ["portal", "path", "identity_id"],
+        properties: { portal: { type: "string" }, path: { type: "string" }, agent_role: { type: "string" } },
+        required: ["portal", "path", "agent_role"],
       },
     }),
   ];

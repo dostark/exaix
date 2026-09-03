@@ -21,7 +21,7 @@ import type { IRequestMetadata, IRequestOptions } from "@exaix/core/types";
 import { resolveSubject } from "@exaix/cli/helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
 import { AnalysisMode, type IRequestAnalysis, type Opt, type Reason } from "@exaix/core/types";
-import { DEFAULT_IDENTITY_ID } from "@exaix/core";
+import { DEFAULT_AGENT_ROLE } from "@exaix/core";
 
 const VALID_PRIORITIES: RequestPriority[] = [
   RequestPriority.LOW,
@@ -51,7 +51,7 @@ export class RequestCreateHandler extends BaseCommand {
       if (options.flow) await this.assertFlowExists(options.flow);
 
       // Set defaults
-      const agent = options.identity || options.agent || DEFAULT_IDENTITY_ID;
+      const agent = options.agent_role || options.agent || DEFAULT_AGENT_ROLE;
       const portal = options.portal;
 
       // Generate unique trace_id
@@ -72,15 +72,15 @@ export class RequestCreateHandler extends BaseCommand {
 
       const initialStatus = options.analyze ? RequestStatus.ANALYZING : RequestStatus.PENDING;
 
-      // A flow request must carry NO identity: RequestProcessor.getRequestKindOrFail rejects
-      // specifying both. `agent` above always resolves via the DEFAULT_IDENTITY_ID fallback,
+      // A flow request must carry NO agent_role: RequestProcessor.getRequestKindOrFail rejects
+      // specifying both. `agent` above always resolves via the DEFAULT_AGENT_ROLE fallback,
       // so it must be added conditionally here rather than unconditionally.
       const frontmatterFields: Record<string, string | boolean> = {
         trace_id,
         created,
         status: initialStatus,
         priority,
-        ...(options.flow ? {} : { identity_id: agent }),
+        ...(options.flow ? {} : { agent_role: agent }),
         source,
         created_by,
         subject,
@@ -114,7 +114,7 @@ export class RequestCreateHandler extends BaseCommand {
       await this.display.info("request.created", path, {
         trace_id,
         priority,
-        identity: agent,
+        agent_role: agent,
         agent,
         portal: portal || null,
         model: options.model || null,
@@ -132,7 +132,7 @@ export class RequestCreateHandler extends BaseCommand {
         path,
         status: RequestStatus.PENDING,
         priority,
-        identity: agent,
+        agent_role: agent,
         portal,
         target_branch: options.target_branch,
         model: options.model,
@@ -172,8 +172,8 @@ export class RequestCreateHandler extends BaseCommand {
       .addRule(
         RequestKind.FLOW,
         (val) =>
-          (val && (options.agent || options.identity))
-            ? "Cannot specify both 'flow' and 'agent'/'identity'. Use 'flow' for multi-agent workflows or 'identity' for single agent requests."
+          (val && (options.agent || options.agent_role))
+            ? "Cannot specify both 'flow' and 'agent'/'agent_role'. Use 'flow' for multi-agent workflows or 'agent_role' for single agent requests."
             : null,
       )
       .validate({ description, priority, flow: options.flow });
@@ -316,7 +316,7 @@ function mergeFileFrontmatterIntoOptions(
   const flow = options.flow ?? frontmatter.flow;
   return {
     ...options,
-    identity: flow ? undefined : (options.identity ?? options.agent ?? frontmatter.identity_id),
+    agent_role: flow ? undefined : (options.agent_role ?? options.agent ?? frontmatter.agent_role),
     agent: flow ? undefined : options.agent,
     priority: options.priority ?? priority,
     portal: options.portal ?? frontmatter.portal,

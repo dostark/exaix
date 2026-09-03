@@ -1,6 +1,6 @@
 ---
 title: "Senior Coder blueprint"
-identity_id: "senior-coder"
+agent_role: "senior-coder"
 capabilities: ["code_review"]
 language: "typescript"
 portal_type: "api"

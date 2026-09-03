@@ -173,10 +173,10 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
       // Check that required indexes exist
       const indexes = [
         "idx_activity_trace",
-        "idx_activity_identity",
+        "idx_activity_agent_role",
         "idx_activity_actor_type",
         "idx_activity_agent_kind",
-        "idx_leases_identity",
+        "idx_leases_agent_role",
         "idx_reviews_trace_id",
         "idx_reviews_status",
         "idx_reviews_portal",
@@ -185,7 +185,7 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "idx_provider_costs_provider",
         "idx_provider_costs_timestamp",
         "idx_artifacts_status",
-        "idx_artifacts_identity",
+        "idx_artifacts_agent_role",
         "idx_latency_lookup",
         "idx_benchmark_rank",
       ];

@@ -41,7 +41,7 @@ Deno.test("[dogfood-identity-reviewer] code-reviewer loads successfully", async 
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("code-reviewer");
   assertExists(blueprint);
-  assertEquals(blueprint.identityId, "code-reviewer");
+  assertEquals(blueprint.agentRole, "code-reviewer");
 });
 
 Deno.test("[dogfood-identity-reviewer] code-reviewer carries review default_skills", async () => {

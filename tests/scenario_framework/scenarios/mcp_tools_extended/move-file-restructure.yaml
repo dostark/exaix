@@ -38,11 +38,11 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "move_file"
-      - '{"portal":"tools","from":"src/greeting.txt","to":"docs/greeting.txt","identity_id":"tools-eval"}'
+      - '{"portal":"tools","from":"src/greeting.txt","to":"docs/greeting.txt","agent_role":"tools-eval"}'
       - "read_file"
-      - '{"portal":"tools","path":"docs/greeting.txt","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"docs/greeting.txt","agent_role":"tools-eval"}'
       - "read_file"
-      - '{"portal":"tools","path":"src/greeting.txt","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/greeting.txt","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

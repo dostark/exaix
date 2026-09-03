@@ -19,7 +19,7 @@ const MANIFEST_YAML = `
 # step-manifest
 step: 1
 title: Test step
-identity: senior-coder
+agent_role: senior-coder
 skills: [testing]
 portal: exaix-self
 target_branch: feat/test

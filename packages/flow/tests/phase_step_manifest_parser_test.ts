@@ -21,7 +21,7 @@ Some text.
 # step-manifest
 step: 1
 title: First step
-identity: senior-coder
+agent_role: senior-coder
 \`\`\`
 
 ## Step 2

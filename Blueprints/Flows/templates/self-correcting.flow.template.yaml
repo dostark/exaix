@@ -6,7 +6,7 @@ steps:
   - id: generate-initial
     name: Generate Initial Output
     type: agent
-    identity: "{{generator}}"
+    agent_role: "{{generator}}"
     dependsOn: []
     input:
       source: request
@@ -17,7 +17,7 @@ steps:
   - id: evaluate-quality
     name: Evaluate Output Quality
     type: agent
-    identity: quality-judge
+    agent_role: quality-judge
     dependsOn:
       - generate-initial
     input:
@@ -31,7 +31,7 @@ steps:
   - id: refine-output
     name: Refine Output Based on Feedback
     type: agent
-    identity: "{{refiner}}"
+    agent_role: "{{refiner}}"
     dependsOn:
       - evaluate-quality
     input:
@@ -46,7 +46,7 @@ steps:
   - id: finalize-output
     name: Finalize Output
     type: agent
-    identity: "{{generator}}"
+    agent_role: "{{generator}}"
     dependsOn:
       - refine-output
     input:

@@ -20,7 +20,7 @@ export class GitCreateBranchTool extends ToolHandler {
       branch: string;
       track?: string;
       force?: boolean;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, branch, track, force, identity_id } = validatedArgs;
 
@@ -94,12 +94,12 @@ export class GitCreateBranchTool extends ToolHandler {
             type: "boolean",
             description: "Optional: force-reset existing branch to current HEAD if it already exists",
           },
-          identity_id: {
+          agent_role: {
             type: "string",
             description: "Identity identifier for permission checks",
           },
         },
-        required: ["portal", "branch", "identity_id"],
+        required: ["portal", "branch", "agent_role"],
       },
     };
   }

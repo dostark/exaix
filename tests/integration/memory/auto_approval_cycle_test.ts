@@ -65,7 +65,7 @@ Deno.test("Phase 71 Integration: End-to-end memory auto-approval cycle", async (
       completed_at: new Date().toISOString(),
       status: ExecutionStatus.COMPLETED,
       portal: "test-portal",
-      identity_id: "test-identity",
+      agent_role: "test-identity",
       summary: "Test execution",
       context_files: [],
       context_portals: [],

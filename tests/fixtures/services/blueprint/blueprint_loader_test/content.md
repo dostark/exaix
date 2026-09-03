@@ -1,5 +1,5 @@
 ---
-identity_id: "code-reviewer"
+agent_role: "code-reviewer"
 name: "Code Reviewer Agent"
 model: "anthropic:claude-sonnet-5"
 capabilities:

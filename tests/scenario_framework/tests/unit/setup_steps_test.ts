@@ -27,7 +27,7 @@ Deno.test("[setup_steps] patch-blueprint adds a capability to the sandboxed blue
     await Deno.mkdir(join(ws, "Blueprints", "Agents"), { recursive: true });
     await Deno.writeTextFile(
       join(ws, "Blueprints", "Agents", "senior-coder.md"),
-      '---\nidentity_id: "senior-coder"\ncapabilities: ["react"]\n---\n',
+      '---\nagent_role: "senior-coder"\ncapabilities: ["react"]\n---\n',
     );
     const result = await executeScenarioStep({
       step: {

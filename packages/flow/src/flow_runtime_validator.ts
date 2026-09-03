@@ -112,11 +112,11 @@ export class FlowRuntimeValidator {
     hasBlueprint: (identityId: string) => Promise<boolean>,
   ): Promise<string | null> {
     for (const step of flow.steps) {
-      if (!step.identity) {
+      if (!step.agent_role) {
         return `Step '${step.id}' has no identity`;
       }
-      if (!(await hasBlueprint(step.identity))) {
-        return `Step '${step.id}' references identity '${step.identity}' that does not exist in the blueprint catalog`;
+      if (!(await hasBlueprint(step.agent_role))) {
+        return `Step '${step.id}' references identity '${step.agent_role}' that does not exist in the blueprint catalog`;
       }
     }
     return null;

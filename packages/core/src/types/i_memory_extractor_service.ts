@@ -20,7 +20,7 @@ export interface IMemoryExtractorService {
   createProposal(
     learning: IProposalLearning,
     execution: IExecutionMemory,
-    identityId: string,
+    agentRole: string,
   ): Promise<string>;
 
   /**

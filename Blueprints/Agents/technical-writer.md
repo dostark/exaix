@@ -1,5 +1,5 @@
 ---
-identity_id: "technical-writer"
+agent_role: "technical-writer"
 name: "Technical Writer"
 model: ""
 model_size: S

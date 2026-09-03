@@ -106,7 +106,7 @@ const testContext = {
 } satisfies IExecutionContext;
 
 const testOptions: IAgentExecutionOptions = {
-  identity_id: "truncation-test-agent",
+  agent_role: "truncation-test-agent",
   portal: "test",
   security_mode: SecurityMode.SANDBOXED,
   timeout_ms: 300000,

@@ -7,12 +7,12 @@
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/core/src/planning/plan_writer.ts"]
  */
 
-import { DEFAULT_IDENTITY_ID } from "../types/constants.ts";
+import { DEFAULT_AGENT_ROLE } from "../types/constants.ts";
 
 export interface IStructuredPlanFrontmatter {
   trace_id: string;
   request_id: string;
-  identity_id?: string;
+  agent_role?: string;
 }
 
 export interface IStructuredPlanStep {
@@ -65,7 +65,7 @@ export function parseStructuredPlanFromMarkdown(
   return {
     trace_id: frontmatter.trace_id,
     request_id: frontmatter.request_id,
-    agent: frontmatter.identity_id || DEFAULT_IDENTITY_ID,
+    agent: frontmatter.agent_role || DEFAULT_AGENT_ROLE,
     steps,
   };
 }

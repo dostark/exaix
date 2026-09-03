@@ -38,7 +38,7 @@ Deno.test("[Step64.3] FlowRunner persists namespace artifact and preserves same-
         {
           id: "alpha-step",
           name: "Alpha Step",
-          identity: "agent1",
+          agent_role: "agent1",
           dependsOn: [],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -47,7 +47,7 @@ Deno.test("[Step64.3] FlowRunner persists namespace artifact and preserves same-
         {
           id: "beta-step",
           name: "Beta Step",
-          identity: "agent2",
+          agent_role: "agent2",
           dependsOn: [],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -56,7 +56,7 @@ Deno.test("[Step64.3] FlowRunner persists namespace artifact and preserves same-
         {
           id: "reader-step",
           name: "Reader Step",
-          identity: "agent3",
+          agent_role: "agent3",
           dependsOn: ["alpha-step", "beta-step"],
           input: { source: FlowInputSource.AGGREGATE, from: ["alpha-step", "beta-step"], transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

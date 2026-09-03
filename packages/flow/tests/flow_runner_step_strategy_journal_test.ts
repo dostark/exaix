@@ -63,7 +63,7 @@ function makeFlow(
         id: "s1",
         name: "Step 1",
         type: FlowStepType.AGENT,
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         execution_mode: FlowStepExecutionMode.DECLARED,
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },

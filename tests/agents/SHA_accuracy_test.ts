@@ -113,7 +113,7 @@ Deno.test({
           portal: "test-portal",
         },
         {
-          identity_id: "test-agent",
+          agent_role: "test-agent",
           portal: "test-portal",
         },
       );

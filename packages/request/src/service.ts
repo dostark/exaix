@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
-import { DEFAULT_IDENTITY_ID, RequestPriority, RequestSource } from "@exaix/core";
+import { DEFAULT_AGENT_ROLE, RequestPriority, RequestSource } from "@exaix/core";
 import type { IRequestShowResult } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
 import type { IApplicationContext } from "@exaix/core/types";
@@ -80,7 +80,7 @@ export class RequestService {
     if (!trimmedDescription) throw new Error("Description cannot be empty");
 
     const priority = options.priority || RequestPriority.NORMAL;
-    const identity = options.identity || DEFAULT_IDENTITY_ID;
+    const agent_role = options.agent_role || DEFAULT_AGENT_ROLE;
     const portal = options.portal;
 
     const trace_id = crypto.randomUUID();
@@ -98,7 +98,7 @@ export class RequestService {
       created,
       status: RequestStatus.PENDING,
       priority,
-      identity_id: identity,
+      agent_role: agent_role,
       source,
       created_by,
       subject,
@@ -127,7 +127,7 @@ export class RequestService {
     await this.display.info("request.created", path, {
       trace_id,
       priority,
-      identity_id: identity,
+      agent_role: agent_role,
       portal: portal || null,
       source,
       created_by,
@@ -139,7 +139,7 @@ export class RequestService {
       path,
       status: RequestStatus.PENDING,
       priority,
-      identity,
+      agent_role: agent_role,
       portal,
       target_branch: options.target_branch,
       model: options.model,
@@ -201,7 +201,7 @@ export class RequestService {
           filename,
           status: RequestStatus.PENDING,
           priority: RequestPriority.NORMAL,
-          identity: DEFAULT_IDENTITY_ID,
+          agent_role: DEFAULT_AGENT_ROLE,
           created: "",
           created_by: "unknown",
           source: RequestSource.CLI,
@@ -219,7 +219,7 @@ export class RequestService {
         filename,
         status: fm.status as RequestStatusType,
         priority: this.parsePriority(fm.priority),
-        identity: fm.identity_id || DEFAULT_IDENTITY_ID,
+        agent_role: fm.agent_role || DEFAULT_AGENT_ROLE,
         portal: fm.portal,
         created: fm.created || "",
         created_by: fm.created_by || "unknown",
@@ -299,7 +299,7 @@ export class RequestService {
     );
 
     const analysis = await analyzer.analyze(body, {
-      identityId: metadata.identity || DEFAULT_IDENTITY_ID,
+      agentRole: metadata.identity || DEFAULT_AGENT_ROLE,
       priority: metadata.priority,
       requestFilePath: path,
       traceId: metadata.trace_id,
@@ -316,7 +316,7 @@ export class RequestService {
       path,
       status: fm.status as RequestStatusType,
       priority: this.parsePriority(fm.priority),
-      identity: fm.identity_id || DEFAULT_IDENTITY_ID,
+      agent_role: fm.agent_role || DEFAULT_AGENT_ROLE,
       created: fm.created || "",
       created_by: fm.created_by || "unknown",
       source: this.parseSource(fm.source),

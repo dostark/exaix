@@ -37,5 +37,5 @@ export interface ISkillMatchRequest {
   /** Optional character budget for the matched skills that will be formatted into prompt context */
   contextBudgetChars?: number;
   /** ID of the agent making the request */
-  identityId?: string;
+  agentRole?: string;
 }

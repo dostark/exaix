@@ -40,10 +40,10 @@ function sliceSection(doc: string, sectionNumber: string): string {
   return next < 0 ? doc.slice(start) : doc.slice(start, headingEnd + next);
 }
 
-/** Extract every `identity: <name>` reference, tolerating quotes and backticks. */
+/** Extract every `identity:`/`identity_id:`/`agent_role:` reference, tolerating quotes and backticks. */
 function extractIdentityRefs(text: string): Set<string> {
   const refs = new Set<string>();
-  for (const match of text.matchAll(/identity(?:_id)?:\s*["'`]?([a-z][a-z0-9-]*)["'`]?/g)) {
+  for (const match of text.matchAll(/(?:identity(?:_id)?|agent_role):\s*["'`]?([a-z][a-z0-9-]*)["'`]?/g)) {
     refs.add(match[1]);
   }
   return refs;
@@ -74,7 +74,7 @@ Deno.test({
         blueprint,
         `§7.5 references identity '${id}', which has no Blueprints/Agents/${id}.md`,
       );
-      assertEquals(blueprint.identityId, id, `identity_id must match the referenced name '${id}'`);
+      assertEquals(blueprint.agentRole, id, `agent_role must match the referenced name '${id}'`);
     }
   },
 });
@@ -95,7 +95,7 @@ Deno.test("[dogfood-identity-drift] every identity in the meta-workflow flow blu
 });
 
 Deno.test("[dogfood-identity-drift] an unresolvable identity reference fails", async () => {
-  const synthetic = "### 7.5 What's missing\n\n| step | `identity: no-such-identity` |\n";
+  const synthetic = "### 7.5 What's missing\n\n| step | `agent_role: no-such-identity` |\n";
   const section = sliceSection(synthetic, "7.5");
   const refs = extractIdentityRefs(section);
   assertEquals([...refs], ["no-such-identity"], "extraction must find the dangling reference");

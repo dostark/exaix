@@ -61,7 +61,7 @@ Deno.test("Integration: Plan Execution Detection - approved plan detected", asyn
     const planContent = `---
 trace_id: "${traceId}"
 request_id: "${requestId}"
-identity_id: "senior-coder"
+agent_role: "senior-coder"
 status: approved
 created_at: "${new Date().toISOString()}"
 ---

@@ -70,11 +70,11 @@ class MockFlowLoader extends FlowLoader {
 /**
  * Helper to create minimal valid step
  */
-function createStep(id: string, identity: string, dependsOn: string[] = []): IFlowStep {
+function createStep(id: string, agent_role: string, dependsOn: string[] = []): IFlowStep {
   return {
     id,
     name: `Step ${id}`,
-    identity,
+    agent_role,
     type: FlowStepType.AGENT,
     execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn,
@@ -153,13 +153,13 @@ Deno.test("FlowValidatorImpl: fails for step with non-string agent", async () =>
   const validator = new FlowValidatorImpl(loader, "blueprints");
 
   const step = createStep("s1", "agent1");
-  Object.defineProperty(step, "identity", { value: 123, writable: true, configurable: true });
+  Object.defineProperty(step, "agent_role", { value: 123, writable: true, configurable: true });
   const flow = createFlow("non-string-agent", [step]);
   loader.setFlow("non-string-agent", flow);
 
   const result = await validator.validateFlow("non-string-agent");
   assertEquals(result.valid, false);
-  assertStringIncludes(result.error ?? "", "invalid identity");
+  assertStringIncludes(result.error ?? "", "invalid agent_role");
 });
 
 Deno.test("FlowValidatorImpl: fails for step with null agent", async () => {
@@ -167,13 +167,13 @@ Deno.test("FlowValidatorImpl: fails for step with null agent", async () => {
   const validator = new FlowValidatorImpl(loader, "blueprints");
 
   const step = createStep("s1", "agent1");
-  Object.defineProperty(step, "identity", { value: null, writable: true, configurable: true });
+  Object.defineProperty(step, "agent_role", { value: null, writable: true, configurable: true });
   const flow = createFlow("null-agent", [step]);
   loader.setFlow("null-agent", flow);
 
   const result = await validator.validateFlow("null-agent");
   assertEquals(result.valid, false);
-  assertStringIncludes(result.error ?? "", "invalid identity");
+  assertStringIncludes(result.error ?? "", "invalid agent_role");
 });
 
 Deno.test("FlowValidatorImpl: fails for step with undefined agent", async () => {
@@ -181,13 +181,13 @@ Deno.test("FlowValidatorImpl: fails for step with undefined agent", async () => 
   const validator = new FlowValidatorImpl(loader, "blueprints");
 
   const step = createStep("s1", "agent1");
-  (step as Partial<typeof step>).identity = undefined;
+  (step as Partial<typeof step>).agent_role = undefined;
   const flow = createFlow("undefined-agent", [step]);
   loader.setFlow("undefined-agent", flow);
 
   const result = await validator.validateFlow("undefined-agent");
   assertEquals(result.valid, false);
-  assertStringIncludes(result.error ?? "", "invalid identity");
+  assertStringIncludes(result.error ?? "", "invalid agent_role");
 });
 
 // Tests for error handling
@@ -282,7 +282,7 @@ Deno.test("FlowValidatorImpl: fails when second step has invalid agent", async (
   const validator = new FlowValidatorImpl(loader, "blueprints");
 
   const step2 = createStep("s2", "agent2");
-  (step2 as Partial<typeof step2>).identity = "";
+  (step2 as Partial<typeof step2>).agent_role = "";
   const flow = createFlow("second-invalid", [
     createStep("s1", "agent1"),
     step2,
@@ -292,7 +292,7 @@ Deno.test("FlowValidatorImpl: fails when second step has invalid agent", async (
   const result = await validator.validateFlow("second-invalid");
   assertEquals(result.valid, false);
   assertStringIncludes(result.error ?? "", "step 's2'");
-  assertStringIncludes(result.error ?? "", "invalid identity");
+  assertStringIncludes(result.error ?? "", "invalid agent_role");
 });
 
 // Tests for dependency validation edge cases

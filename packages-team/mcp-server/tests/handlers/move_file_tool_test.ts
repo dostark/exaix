@@ -32,7 +32,7 @@ Deno.test("MoveFileTool: moves a file to a new path", async () => {
       portal: "TestPortal",
       from: "src/old.ts",
       to: "src/new.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     await assertRejects(() => Deno.stat(join(env.portalPath, "src/old.ts")));
@@ -52,7 +52,7 @@ Deno.test("MoveFileTool: returns isError if destination already exists", async (
       portal: "TestPortal",
       from: "src/a.ts",
       to: "src/b.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
     assertStringIncludes(getFirstTextContent(result), "Destination already exists");
@@ -69,7 +69,7 @@ Deno.test("MoveFileTool: creates destination parent directories", async () => {
       portal: "TestPortal",
       from: "src/a.ts",
       to: "src/subdir/nested/a.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const content = await Deno.readTextFile(join(env.portalPath, "src/subdir/nested/a.ts"));
@@ -87,7 +87,7 @@ Deno.test("MoveFileTool: returns isError on path traversal in destination", asyn
       portal: "TestPortal",
       from: "src/a.ts",
       to: "../../outside.ts",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     assertEquals(result.isError, true);
   });

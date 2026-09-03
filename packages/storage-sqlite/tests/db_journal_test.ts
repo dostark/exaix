@@ -2,7 +2,7 @@
  * @module DBJournalTest
  * @path packages/storage-sqlite/tests/db_journal_test.ts
  * @description Specialized tests for DatabaseService's activity journaling, verifying complex
- * query filters (trace_id, identity_id, action_type), sort ordering, and asynchronous flush behavior.
+ * query filters (trace_id,.agent_role, action_type), sort ordering, and asynchronous flush behavior.
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
@@ -69,12 +69,12 @@ describe("DatabaseService - Journal Queries", () => {
     const results = await db.queryActivity({ actionType: "request.created" });
     assertEquals(results.length, 2);
     // Sort check
-    assertEquals(results[0].identity_id, "agent-2"); // trace-2 (newer)
-    assertEquals(results[1].identity_id, "agent-1"); // trace-1 (older)
+    assertEquals(results[0].agent_role, "agent-2"); // trace-2 (newer)
+    assertEquals(results[1].agent_role, "agent-1"); // trace-1 (older)
   });
 
-  it("should filter by identity_id", async () => {
-    const results = await db.queryActivity({ identityId: "agent-1" });
+  it("should filter by.agent_role", async () => {
+    const results = await db.queryActivity({ agentRole: "agent-1" });
     assertEquals(results.length, 3); // trace-1: request, plan.created; trace-3: error
     // Filter out user actions
     const userAction = results.find((r) => r.actor === "user");

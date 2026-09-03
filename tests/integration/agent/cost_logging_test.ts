@@ -45,7 +45,7 @@ async function runCostLoggingStep(
       portal: "TestPortal",
     };
     const options: IAgentExecutionOptions = {
-      identity_id: "test-agent",
+      agent_role: "test-agent",
       portal: "TestPortal",
       security_mode: SecurityMode.HYBRID,
       timeout_ms: 30000,

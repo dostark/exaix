@@ -689,7 +689,7 @@ Deno.test("[security] git_create_branch: validateArgs called before branch creat
     const request = createToolCallRequest("git_create_branch", {
       portal: "TestPortal",
       branch: "feat/valid-name",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const response = await ctx.server.handleRequest(request);
@@ -716,7 +716,7 @@ Deno.test("[security] git_worktree: validateArgs rejects dangerous worktree args
       path: "wt-security",
       branch: "feat/security-test",
       force: true,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
     const addResponse = await ctx.server.handleRequest(addRequest);
     assertMCPSuccess(addResponse);
@@ -727,7 +727,7 @@ Deno.test("[security] git_worktree: validateArgs rejects dangerous worktree args
       action: "remove",
       path: "wt-security",
       force: true,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     }));
   } finally {
     await ctx.cleanup();
@@ -739,7 +739,7 @@ Deno.test("[security] git_status: validateArgs runs without error on normal stat
   try {
     const request = createToolCallRequest("git_status", {
       portal: "TestPortal",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const response = await ctx.server.handleRequest(request);
@@ -755,14 +755,14 @@ Deno.test("[security] git_log: validateArgs runs without error on normal log", a
     await ctx.server.handleRequest(createToolCallRequest("git_commit", {
       portal: "TestPortal",
       message: "feat: add a.txt",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     }));
 
     const request = createToolCallRequest("git_log", {
       portal: "TestPortal",
       max_count: 1,
       format: "oneline",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const response = await ctx.server.handleRequest(request);

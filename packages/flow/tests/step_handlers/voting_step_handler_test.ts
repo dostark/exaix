@@ -52,7 +52,7 @@ function makeStep(overrides: Partial<IFlowStep> = {}): IFlowStep {
     id: "vote-1",
     name: "Vote Step",
     type: FlowStepType.VOTING_GROUP,
-    identity: "voter",
+    agent_role: "voter",
     execution_mode: FlowStepExecutionMode.DECLARED,
     permitted_tools: undefined,
     dependsOn: [],

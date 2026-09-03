@@ -43,7 +43,7 @@ export interface IReviewMetadata {
   worktree_path?: string;
   files_changed: number;
   created_at: string;
-  identity_id: string;
+  agent_role: string;
   // Request context
   request_subject?: string;
   request_identity?: string;
@@ -415,7 +415,7 @@ export class ReviewCommands extends BaseCommand {
       id: string;
       status: string;
       type: string;
-      identity: string;
+      agent_role: string;
       portal: string | null;
       target_branch: string | null;
       created: string;
@@ -440,7 +440,7 @@ export class ReviewCommands extends BaseCommand {
       id: row.id,
       status,
       type: row.type as ArtifactSubtype,
-      identity: row.identity,
+      agent_role: row.identity,
       portal: row.portal,
       target_branch: row.target_branch,
       created: row.created,
@@ -483,7 +483,7 @@ export class ReviewCommands extends BaseCommand {
       id: string;
       status: string;
       type: string;
-      identity: string;
+      agent_role: string;
       portal: string | null;
       target_branch: string | null;
       created: string;
@@ -497,7 +497,7 @@ export class ReviewCommands extends BaseCommand {
       id: row.id,
       status: isReviewStatus(row.status) ? row.status : ReviewStatus.PENDING,
       type: row.type as ArtifactSubtype,
-      identity: row.identity,
+      agent_role: row.identity,
       portal: row.portal,
       target_branch: row.target_branch,
       created: row.created,
@@ -704,7 +704,7 @@ export class ReviewCommands extends BaseCommand {
         request_id: artifact.request_id,
         files_changed: 0,
         created_at: artifact.created,
-        identity_id: artifact.identity,
+        agent_role: artifact.identity,
         file_path: artifact.file_path,
         portal: artifact.portal ?? undefined,
         status: artifact.status,
@@ -794,7 +794,7 @@ export class ReviewCommands extends BaseCommand {
       worktree_path: row.worktree_path ?? undefined,
       files_changed: row.files_changed ?? 0,
       created_at: row.created,
-      identity_id: row.created_by,
+      agent_role: row.created_by,
       portal: row.portal ?? undefined,
       status,
       approved_at: row.approved_at ?? undefined,
@@ -882,7 +882,7 @@ export class ReviewCommands extends BaseCommand {
   private async getBranchTimestampAndAgent(
     repoPath: string,
     branch: string,
-  ): Promise<{ timestamp: string; identity_id: string } | null> {
+  ): Promise<{ timestamp: string; agent_role: string } | null> {
     const logCmd = new Deno.Command("git", {
       args: ["log", branch, "--format=%H %aI %ae", "-1"],
       cwd: repoPath,
@@ -896,7 +896,7 @@ export class ReviewCommands extends BaseCommand {
     const logLine = new TextDecoder().decode(logResult.stdout).trim();
     const parts = logLine.split(" ");
     if (parts.length < 3) return null;
-    return { timestamp: parts[1], identity_id: parts[2] };
+    return { timestamp: parts[1], agent_role: parts[2] };
   }
 
   private async getFilesChangedCount(repoPath: string, baseBranch: string, branch: string): Promise<number> {
@@ -954,7 +954,7 @@ export class ReviewCommands extends BaseCommand {
       worktree_path: storedWorktreePath ?? undefined,
       files_changed: filesChanged,
       created_at: logInfo.timestamp,
-      identity_id: logInfo.identity_id,
+      agent_role: logInfo.identity_id,
       status,
       anomalySummary:
         anomalySummary.high > 0 || anomalySummary.medium > 0 || anomalySummary.low > 0 || anomalySummary.recovered > 0
@@ -997,7 +997,7 @@ export class ReviewCommands extends BaseCommand {
         request_id: artifact.request_id,
         files_changed: 0,
         created_at: artifact.created,
-        identity_id: artifact.identity,
+        agent_role: artifact.identity,
         portal: artifact.portal ?? undefined,
         status: artifact.status,
         rejection_reason: artifact.rejection_reason ?? undefined,
@@ -1028,7 +1028,7 @@ export class ReviewCommands extends BaseCommand {
             request_id: artifact.request_id,
             files_changed: 0,
             created_at: artifact.created,
-            identity_id: artifact.identity,
+            agent_role: artifact.identity,
             file_path: artifact.file_path,
             portal: artifact.portal ?? undefined,
             status: artifact.status,
@@ -1123,7 +1123,7 @@ export class ReviewCommands extends BaseCommand {
       worktree_path: storedWorktreePath ?? undefined,
       files_changed: files.length,
       created_at: commits[commits.length - 1]?.timestamp || new Date().toISOString(),
-      identity_id: commits[0]?.sha.substring(0, 8) || "unknown",
+      agent_role: commits[0]?.sha.substring(0, 8) || "unknown",
     } as IReviewMetadata;
 
     // Enrich with request and plan context

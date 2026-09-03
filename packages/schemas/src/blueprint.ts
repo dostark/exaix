@@ -18,7 +18,7 @@ import { SessionDelegateConfigSchema } from "./session_delegate.ts";
  * Result from blueprint creation
  */
 export interface IBlueprintCreateResult {
-  identity_id: string;
+  agent_role: string;
   name: string;
   model: string;
   capabilities?: string[];
@@ -32,7 +32,7 @@ export interface IBlueprintCreateResult {
  * Metadata for blueprint listing
  */
 export interface IBlueprintMetadata {
-  identity_id: string;
+  agent_role: string;
   name: string;
   model: string;
   capabilities?: string[];
@@ -65,7 +65,7 @@ export interface IBlueprintValidationResult {
  */
 export const BlueprintFrontmatterSchema = z.object({
   /** Unique agent identifier (lowercase alphanumeric + hyphens) */
-  identity_id: z.string()
+  agent_role: z.string()
     .min(1)
     .regex(/^[a-z0-9-]+$/, "identity_id must be lowercase alphanumeric with hyphens only"),
 

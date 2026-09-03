@@ -19,7 +19,7 @@ export class DeleteFileTool extends ToolHandler {
     const validatedArgs = DeleteFileToolArgsSchema.parse(args) as {
       portal: string;
       path: string;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, path, identity_id } = validatedArgs;
 
@@ -82,9 +82,9 @@ export class DeleteFileTool extends ToolHandler {
         properties: {
           portal: { type: "string", description: "Portal alias" },
           path: { type: "string", description: "File path relative to portal root" },
-          identity_id: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Identity identifier for permission checks" },
         },
-        required: ["portal", "path", "identity_id"],
+        required: ["portal", "path", "agent_role"],
       },
     };
   }

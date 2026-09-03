@@ -38,11 +38,11 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "write_file"
-      - '{"portal":"tools","path":"src/created.txt","content":"written through the write_file tool","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/created.txt","content":"written through the write_file tool","agent_role":"tools-eval"}'
       - "read_file"
-      - '{"portal":"tools","path":"src/created.txt","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/created.txt","agent_role":"tools-eval"}'
       - "list_directory"
-      - '{"portal":"tools","path":"src","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

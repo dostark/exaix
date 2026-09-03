@@ -56,7 +56,7 @@ export async function enrichWithRequest<T extends IRequestEnrichable>(
     return {
       ...metadata,
       request_subject: title,
-      request_identity: request.identity,
+      request_agent_role: request.identity,
       request_portal: request.portal,
       request_priority: request.priority,
       request_created_by: request.created_by,

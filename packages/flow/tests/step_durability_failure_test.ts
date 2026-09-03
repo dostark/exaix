@@ -71,7 +71,7 @@ function buildFailureFlow(): IFlowInput {
     steps: [{
       id: "step1",
       name: "Step 1",
-      identity: "agent1",
+      agent_role: "agent1",
       dependsOn: [],
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

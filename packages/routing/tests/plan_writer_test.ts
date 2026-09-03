@@ -84,7 +84,7 @@ describe("PlanWriter - JSON Integration", () => {
         createdAt: new Date(),
         contextFiles: [],
         contextWarnings: [],
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);
@@ -109,7 +109,7 @@ describe("PlanWriter - JSON Integration", () => {
         createdAt: new Date(),
         contextFiles: [],
         contextWarnings: [],
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);
@@ -135,7 +135,7 @@ describe("PlanWriter - JSON Integration", () => {
         createdAt: new Date("2024-11-25T10:00:00Z"),
         contextFiles: [],
         contextWarnings: [],
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);
@@ -160,7 +160,7 @@ describe("PlanWriter - JSON Integration", () => {
         createdAt: new Date("2024-11-25T10:00:00Z"),
         contextFiles: [],
         contextWarnings: [],
-        identityId: "test-agent",
+        agentRole: "test-agent",
         requestIntent: { model_size: "M", thinking: true, effort: "high", preferred_provider: "anthropic" },
       };
 
@@ -185,7 +185,7 @@ describe("PlanWriter - JSON Integration", () => {
         createdAt: new Date(),
         contextFiles: [],
         contextWarnings: [],
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);
@@ -237,7 +237,7 @@ describe("PlanWriter - JSON Integration", () => {
         createdAt: new Date(),
         contextFiles: [`${knowledgeDir}/Doc1.md`], // Need at least one context file for warnings to show
         contextWarnings: ["Warning 1", "Warning 2"],
-        identityId: "test-agent",
+        agentRole: "test-agent",
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);
@@ -260,7 +260,7 @@ describe("PlanWriter - JSON Integration", () => {
         requestId: "my-feature",
         traceId: "trace",
         createdAt: new Date(),
-        identityId: "test-agent",
+        agentRole: "test-agent",
         contextFiles: [],
         contextWarnings: [],
       };
@@ -298,7 +298,7 @@ describe("PlanWriter - JSON Integration", () => {
                 model: "m1",
               }),
               timestamp: new Date().toISOString(),
-              identity_id: null,
+              agent_role: null,
             },
             {
               id: "ev2",
@@ -315,7 +315,7 @@ describe("PlanWriter - JSON Integration", () => {
                 model: "m2",
               }),
               timestamp: new Date().toISOString(),
-              identity_id: null,
+              agent_role: null,
             },
           ] as IActivityRecord[])
         ),

@@ -46,7 +46,7 @@ async function withSubjectPropagationEnv(
     join(identitiesDir, "test-agent.md"),
     `---
 name: "Test Agent"
-identity_id: "test-agent"
+agent_role: "test-agent"
 description: "Test agent"
 ---
 Follow instructions
@@ -159,7 +159,7 @@ trace_id: "trace-123"
 created: "${new Date().toISOString()}"
 status: "pending"
 priority: "normal"
-identity_id: "test-agent"
+agent_role: "test-agent"
 source: RequestSource.CLI
 created_by: "user"
 subject: "${initialSubject}"
@@ -234,7 +234,7 @@ trace_id: "trace-456"
 created: "${new Date().toISOString()}"
 status: "pending"
 priority: "normal"
-identity_id: "test-agent"
+agent_role: "test-agent"
 source: RequestSource.CLI
 created_by: "user"
 subject: "${explicitSubject}"

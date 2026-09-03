@@ -1,6 +1,6 @@
 /**
- * @module IdentityPerformanceRepository
- * @path packages/routing/src/identity_performance_repository.ts
+ * @module AgentRolePerformanceRepository
+ * @path packages/routing/src/agent_role_performance_repository.ts
  * @description Aggregates historical routing performance metrics from the activity journal.
  * @architectural-layer Services
  * @related-files [packages/routing/src/routing_policy_service.ts]
@@ -11,8 +11,8 @@ import type { IDatabaseService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-export interface IIdentityPerformanceSnapshot {
-  identityId: string;
+export interface IAgentRolePerformanceSnapshot {
+  agentRole: string;
   version: string;
   successRate: number;
   averageConfidence: number;
@@ -28,28 +28,28 @@ export interface IBuildSnapshotOptions {
   maxAgeMs?: number;
 }
 
-export interface IIdentityPerformanceRepositoryOptions {
+export interface IAgentRolePerformanceRepositoryOptions {
   db: IDatabaseService;
   sampleThreshold?: number;
 }
 
-export interface IIdentityPerformanceRepository {
+export interface IAgentRolePerformanceRepository {
   getPerformanceByCapability(
     capability: string,
     portalName?: string,
     options?: IBuildSnapshotOptions,
-  ): Promise<IIdentityPerformanceSnapshot[]>;
+  ): Promise<IAgentRolePerformanceSnapshot[]>;
 
-  getPerformanceByIdentity(
-    identityId: string,
+  getPerformanceByAgentRole(
+    agentRole: string,
     options?: IBuildSnapshotOptions,
-  ): Promise<IIdentityPerformanceSnapshot[]>;
+  ): Promise<IAgentRolePerformanceSnapshot[]>;
 }
 
 const DECAY_FACTOR = 2.0;
 
 interface SnapshotAccumulator {
-  identityId: string;
+  agentRole: string;
   version: string;
   sampleSize: number;
   successCount: number;
@@ -62,11 +62,11 @@ interface SnapshotAccumulator {
   totalWeight: number;
 }
 
-export class IdentityPerformanceRepository implements IIdentityPerformanceRepository {
+export class AgentRolePerformanceRepository implements IAgentRolePerformanceRepository {
   private readonly db: IDatabaseService;
   private readonly sampleThreshold: number;
 
-  constructor(options: IIdentityPerformanceRepositoryOptions) {
+  constructor(options: IAgentRolePerformanceRepositoryOptions) {
     this.db = options.db;
     this.sampleThreshold = options.sampleThreshold ?? 5;
   }
@@ -75,7 +75,7 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
     capability: string,
     portalName?: Opt<string, Reason.QueryFilter>,
     options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
-  ): Promise<IIdentityPerformanceSnapshot[]> {
+  ): Promise<IAgentRolePerformanceSnapshot[]> {
     const filter: IJournalFilterOptions = { payload: capability, limit: 1000 };
     if (options?.maxAgeMs) {
       filter.since = new Date(Date.now() - options.maxAgeMs).toISOString();
@@ -84,11 +84,11 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
     return this.buildSnapshots(records, capability, portalName, options);
   }
 
-  async getPerformanceByIdentity(
-    identityId: string,
+  async getPerformanceByAgentRole(
+    agentRole: string,
     options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
-  ): Promise<IIdentityPerformanceSnapshot[]> {
-    const filter: IJournalFilterOptions = { identityId, limit: 1000 };
+  ): Promise<IAgentRolePerformanceSnapshot[]> {
+    const filter: IJournalFilterOptions = { agentRole, limit: 1000 };
     if (options?.maxAgeMs) {
       filter.since = new Date(Date.now() - options.maxAgeMs).toISOString();
     }
@@ -101,13 +101,13 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
     capability?: Opt<string, Reason.QueryFilter>,
     portalName?: Opt<string, Reason.QueryFilter>,
     options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
-  ): IIdentityPerformanceSnapshot[] {
+  ): IAgentRolePerformanceSnapshot[] {
     const buckets = new Map<string, SnapshotAccumulator>();
     const now = Date.now();
     const maxAgeMs = options?.maxAgeMs ?? 0;
 
     for (const record of records) {
-      if (!record.identity_id) continue;
+      if (!record.agent_role) continue;
 
       const ageMs = Math.max(0, now - new Date(record.timestamp).getTime());
       if (maxAgeMs > 0 && ageMs > maxAgeMs) continue;
@@ -124,8 +124,8 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
       }
 
       const version = this.extractVersion(payload);
-      const key = `${record.identity_id}::${version}`;
-      const existing = this.getOrCreateSnapshotAccumulator(buckets, key, record.identity_id, version);
+      const key = `${record.agent_role}::${version}`;
+      const existing = this.getOrCreateSnapshotAccumulator(buckets, key, record.agent_role, version);
 
       const recencyWeight = maxAgeMs > 0 ? Math.exp(-(ageMs / maxAgeMs) * DECAY_FACTOR) : 1;
 
@@ -156,11 +156,11 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
   private getOrCreateSnapshotAccumulator(
     buckets: Map<string, SnapshotAccumulator>,
     key: string,
-    identityId: string,
+    agentRole: string,
     version: string,
   ): SnapshotAccumulator {
     return buckets.get(key) ?? {
-      identityId,
+      agentRole,
       version,
       sampleSize: 0,
       successCount: 0,
@@ -202,13 +202,13 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
   private formatSnapshots(
     buckets: Map<string, SnapshotAccumulator>,
     hasWeighting: boolean,
-  ): IIdentityPerformanceSnapshot[] {
+  ): IAgentRolePerformanceSnapshot[] {
     return Array.from(buckets.values()).map((bucket) => {
       const totalWeight = bucket.totalWeight || 1;
       const weightedSuccessRate = bucket.sampleSize > 0 ? bucket.weightedSuccessCount / totalWeight : 0;
       const weightedAvgConfidence = bucket.sampleSize > 0 ? bucket.weightedConfidenceSum / totalWeight : 0;
       return {
-        identityId: bucket.identityId,
+        agentRole: bucket.agentRole,
         version: bucket.version,
         successRate: hasWeighting ? weightedSuccessRate : bucket.successCount / (bucket.sampleSize || 1),
         averageConfidence: hasWeighting ? weightedAvgConfidence : bucket.confidenceSum / (bucket.sampleSize || 1),

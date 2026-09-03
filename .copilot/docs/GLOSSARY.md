@@ -170,7 +170,7 @@ Fields in journal entries describing **who** performed the action.
 
 | Field        | Type   | Meaning                                                                                                               |
 | ------------ | ------ | --------------------------------------------------------------------------------------------------------------------- |
-| `actor`      | string | Free-form identity of who acted. Format: `"user:<email>"`, `"service:<name>"`, `"mcp-client:<id>"`, `"identity:<id>"` |
+| `actor`      | string | Free-form identity of who acted. Format: `"user:<email>"`, `"service:<name>"`, `"mcp-client:<id>"`, `"agent_role:<id>"` |
 | `actor_type` | string | Enumerated category of the actor: `"user"`, `"service"`, `"mcp-client"`, `"identity"`                                 |
 
 `actor_type = "identity"` means an identity instance acted autonomously with

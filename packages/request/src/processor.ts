@@ -286,7 +286,7 @@ export class RequestProcessor {
 
     traceLogger.info(DomainEventType.RequestProcessing, filePath, {
       flow: frontmatter.flow ?? null,
-      agent: frontmatter.identity_id ?? null,
+      agent: frontmatter.agent_role ?? null,
       priority: frontmatter.priority ?? null,
     });
 
@@ -342,7 +342,7 @@ export class RequestProcessor {
     const analysis = analysisEnabled
       ? await this.analyzer.analyze(assessedBody, {
         traceId,
-        identityId: frontmatter.identity_id ?? frontmatter.flow,
+        agentRole: frontmatter.agent_role ?? frontmatter.flow,
         priority: frontmatter.priority,
         mode: analysisMode,
         memories: memoryContext,
@@ -437,7 +437,7 @@ export class RequestProcessor {
     const { frontmatter, filePath, traceLogger } = args;
 
     const hasFlow = !!frontmatter.flow;
-    const hasAgent = !!frontmatter.identity_id;
+    const hasAgent = !!frontmatter.agent_role;
 
     if (hasFlow && hasAgent) {
       traceLogger.error(DomainEventType.RequestInvalid, filePath, {
@@ -683,11 +683,11 @@ export class RequestProcessor {
       specification,
       memoryContext,
     } = opts;
-    const identityId = frontmatter.identity_id;
-    const loadedBlueprint = await this.blueprintResolver.resolve(identityId!, traceLogger);
+    const agentRole = frontmatter.agent_role;
+    const loadedBlueprint = await this.blueprintResolver.resolve(agentRole!, traceLogger);
 
     if (!loadedBlueprint) {
-      return this.handleBlueprintNotFound(filePath, identityId!, traceLogger);
+      return this.handleBlueprintNotFound(filePath, agentRole!, traceLogger);
     }
 
     const blueprintLoader = new IBlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
@@ -718,7 +718,7 @@ export class RequestProcessor {
       createdAt: new Date(frontmatter.created),
       contextFiles: [],
       contextWarnings: [],
-      identityId: frontmatter.identity_id,
+      agentRole: frontmatter.agent_role,
       model: frontmatter.model,
       portal: frontmatter.portal,
       targetBranch: frontmatter.target_branch,
@@ -851,12 +851,12 @@ export class RequestProcessor {
 
   private async handleBlueprintNotFound(
     filePath: string,
-    identityId: string,
+    agentRole: string,
     traceLogger: IEventLogger,
   ): Promise<string | null> {
-    traceLogger.error(DomainEventType.RequestBlueprintNotFound, identityId, { request: filePath });
-    await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, `Blueprint not found: ${identityId}`);
-    traceLogger.error(DomainEventType.RequestFailed, filePath, { error: `Blueprint not found: ${identityId}` });
+    traceLogger.error(DomainEventType.RequestBlueprintNotFound, agentRole, { request: filePath });
+    await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, `Blueprint not found: ${agentRole}`);
+    traceLogger.error(DomainEventType.RequestFailed, filePath, { error: `Blueprint not found: ${agentRole}` });
     return null;
   }
 

@@ -1,6 +1,6 @@
 ---
 trace_id: test-trace-123
-identity: mock-agent
+agent_role: mock-agent
 ---
 
 # Plan

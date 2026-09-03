@@ -6,7 +6,7 @@ steps:
   - id: initialize
     name: Initialize Process
     type: agent
-    identity: "{{coordinator}}"
+    agent_role: "{{coordinator}}"
     dependsOn: []
     input:
       source: request
@@ -17,7 +17,7 @@ steps:
   - id: process-step-1
     name: First Processing Step
     type: agent
-    identity: "{{processor}}"
+    agent_role: "{{processor}}"
     dependsOn:
       - initialize
     input:
@@ -30,7 +30,7 @@ steps:
   - id: process-step-2
     name: Second Processing Step
     type: agent
-    identity: "{{refiner}}"
+    agent_role: "{{refiner}}"
     dependsOn:
       - process-step-1
     input:
@@ -43,7 +43,7 @@ steps:
   - id: finalize
     name: Finalize Results
     type: agent
-    identity: "{{summarizer}}"
+    agent_role: "{{summarizer}}"
     dependsOn:
       - process-step-2
     input:

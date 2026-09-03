@@ -11,6 +11,7 @@ import { type Request, RequestSchema } from "@exaix/schemas";
 import { FRONTMATTER_REGEX } from "./constants.ts";
 import { ParserActivityActionType } from "./enums.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IParsedRequest {
   request: Request;
@@ -18,13 +19,13 @@ export interface IParsedRequest {
 }
 
 export class FrontmatterParser {
-  private readonly logger?: IEventLogger;
+  private readonly logger?: Opt<IEventLogger, Reason.OptionalDependency>;
 
-  constructor(logger?: IEventLogger) {
+  constructor(logger?: Opt<IEventLogger, Reason.OptionalDependency>) {
     this.logger = logger;
   }
 
-  parse(markdown: string, filePath?: string): IParsedRequest {
+  parse(markdown: string, filePath?: Opt<string, Reason.OptionalContext>): IParsedRequest {
     const { frontmatter, body } = this.extractFrontmatter(markdown);
 
     const result = RequestSchema.safeParse(frontmatter);
@@ -47,7 +48,7 @@ export class FrontmatterParser {
       filePath ?? null,
       {
         trace_id: result.data.trace_id,
-        identity_id: result.data.identity_id,
+        agent_role: result.data.agent_role,
         status: result.data.status,
       },
     );

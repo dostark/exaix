@@ -39,13 +39,13 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "create_directory"
-      - '{"portal":"tools","path":"src/modules/new-feature/components","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/modules/new-feature/components","agent_role":"tools-eval"}'
       - "write_file"
-      - '{"portal":"tools","path":"src/modules/new-feature/components/widget.ts","content":"export const widget = true;","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/modules/new-feature/components/widget.ts","content":"export const widget = true;","agent_role":"tools-eval"}'
       - "list_directory"
-      - '{"portal":"tools","path":"src/modules/new-feature/components","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/modules/new-feature/components","agent_role":"tools-eval"}'
       - "create_directory"
-      - '{"portal":"tools","path":"src/modules/new-feature/components","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/modules/new-feature/components","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

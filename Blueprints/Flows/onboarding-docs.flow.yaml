@@ -8,7 +8,7 @@ steps:
   - id: analyze-project-structure
     name: Analyze Project Structure
     type: agent
-    identity: code-analyst
+    agent_role: code-analyst
     strategy: react
     dependsOn: []
     input:
@@ -21,7 +21,7 @@ steps:
   - id: identify-key-concepts
     name: Identify Key Concepts & Patterns
     type: agent
-    identity: software-architect
+    agent_role: software-architect
     dependsOn:
       - analyze-project-structure
     input:
@@ -35,7 +35,7 @@ steps:
   - id: generate-quickstart
     name: Generate Quick Start Guide
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - analyze-project-structure
     input:
@@ -54,7 +54,7 @@ steps:
   - id: generate-architecture-overview
     name: Generate Architecture Overview
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - identify-key-concepts
     input:
@@ -70,7 +70,7 @@ steps:
   - id: generate-dev-setup
     name: Generate Development Setup Guide
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - analyze-project-structure
     input:
@@ -89,7 +89,7 @@ steps:
   - id: generate-contribution-guide
     name: Generate Contribution Guidelines
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - identify-key-concepts
     input:
@@ -111,7 +111,7 @@ steps:
   - id: generate-glossary
     name: Generate Glossary & Terminology
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - identify-key-concepts
     input:
@@ -130,7 +130,7 @@ steps:
   - id: compile-onboarding-docs
     name: Compile Onboarding Documentation
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - generate-quickstart
       - generate-architecture-overview

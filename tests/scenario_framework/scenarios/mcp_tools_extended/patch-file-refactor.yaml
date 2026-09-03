@@ -39,9 +39,9 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "patch_file"
-      - '{"portal":"tools","path":"src/main.ts","search":"oldFunctionName","replace":"newFunctionName","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/main.ts","search":"oldFunctionName","replace":"newFunctionName","agent_role":"tools-eval"}'
       - "read_file"
-      - '{"portal":"tools","path":"src/main.ts","identity_id":"tools-eval"}'
+      - '{"portal":"tools","path":"src/main.ts","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

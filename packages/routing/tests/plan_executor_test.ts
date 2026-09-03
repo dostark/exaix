@@ -100,7 +100,7 @@ content = "Hello World"
       const context: IPlanContext = {
         trace_id: "00000000-0000-0000-0000-000000000001",
         request_id: "req-123",
-        identity: "test-agent",
+        agent_role: "test-agent",
         frontmatter: {
           trace_id: "00000000-0000-0000-0000-000000000001",
           request_id: "req-123",
@@ -189,7 +189,7 @@ content = "Step 2"
       const context: IPlanContext = {
         trace_id: "00000000-0000-0000-0000-000000000002",
         request_id: "req-456",
-        identity: "test-agent",
+        agent_role: "test-agent",
         frontmatter: {},
         steps: [
           { number: 1, title: "Step 1", content: "Do step 1" },
@@ -232,7 +232,7 @@ foo = "bar"
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000003",
       request_id: "req-fail",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [{ number: 1, title: "Fail", content: "Fail" }],
     };
@@ -257,7 +257,7 @@ Deno.test("PlanExecutor: handles no actions generated", async () => {
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000004",
       request_id: "req-no-act",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [{ number: 1, title: "No Action", content: "Do nothing" }],
     };
@@ -288,7 +288,7 @@ path = "bad.txt"
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000005",
       request_id: "req-bad",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [{ number: 1, title: "Bad TOML", content: "Bad" }],
     };
@@ -320,7 +320,7 @@ path = "non_existent.txt"
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000006",
       request_id: "req-fail-res",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [{ number: 1, title: "Fail Result", content: "Fail" }],
     };
@@ -359,7 +359,7 @@ path = "read.txt"
       const context: IPlanContext = {
         trace_id: "00000000-0000-0000-0000-000000000007",
         request_id: "req-no-change",
-        identity: "test-agent",
+        agent_role: "test-agent",
         frontmatter: {},
         steps: [{ number: 1, title: "Read Only", content: "Read" }],
       };
@@ -387,7 +387,7 @@ Deno.test("PlanExecutor: handles execution without git", async () => {
       const context: IPlanContext = {
         trace_id: "00000000-0000-0000-0000-000000000008",
         request_id: "req-no-git",
-        identity: "test-agent",
+        agent_role: "test-agent",
         frontmatter: {},
         steps: [{ number: 1, title: "No Git", content: "No Git" }],
       };
@@ -429,7 +429,7 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
       const context: IPlanContext = {
         trace_id: "00000000-0000-0000-0000-000000000009",
         request_id: "req-portal",
-        identity: "test-agent",
+        agent_role: "test-agent",
         frontmatter: { portal: "MyPortal" },
         steps: [{ number: 1, title: "Portal Step", content: "Write in portal" }],
       };
@@ -452,7 +452,7 @@ Deno.test("PlanExecutor: generates execution report", async () => {
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000010",
       request_id: "req-report",
-      identity: "test-agent",
+      agent_role: "test-agent",
       frontmatter: {},
       steps: [], // No steps will trigger report even if generateReport is false, but we set it true
     };
@@ -490,7 +490,7 @@ Deno.test("PlanExecutor: passes its executionRoot (worktree path) to the code-ch
       const context: IPlanContext = {
         trace_id: "00000000-0000-0000-0000-0000000000aa",
         request_id: "req-wt",
-        identity: "test-agent",
+        agent_role: "test-agent",
         frontmatter: { trace_id: "00000000-0000-0000-0000-0000000000aa", request_id: "req-wt" },
         steps: [{ number: 1, title: "Edit code", content: "Make a code change" }],
       };

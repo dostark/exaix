@@ -58,7 +58,7 @@ type MergeMode = "ordered" | "concat" | "manual" | "all";
 interface IParallelStepDefinition {
   id: string;
   name: string;
-  identity: string;
+  agent_role: string;
 }
 
 interface IParallelFlowDefinition {
@@ -78,7 +78,7 @@ function createParallelStep(step: IParallelStepDefinition, parallelOrder?: strin
   return {
     id: step.id,
     name: step.name,
-    identity: step.identity,
+    agent_role: step.identity,
     dependsOn: ["start"],
     input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
     retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -101,7 +101,7 @@ function createParallelFlowHarness(definition: IParallelFlowDefinition) {
       {
         id: "start",
         name: "Start",
-        identity: "starter",
+        agent_role: "starter",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -110,7 +110,7 @@ function createParallelFlowHarness(definition: IParallelFlowDefinition) {
       {
         id: "merge",
         name: "Merge",
-        identity: "merger",
+        agent_role: "merger",
         dependsOn: definition.mergeDependsOn ?? definition.parallelSteps.map((step) => step.id),
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -144,8 +144,8 @@ Deno.test("[Step65.3] FlowRunner injects ordered parallelGroupResults into downs
       merger: "merged",
     },
     parallelSteps: [
-      { id: "draft-a", name: "Draft A", identity: "writerA" },
-      { id: "draft-b", name: "Draft B", identity: "writerB" },
+      { id: "draft-a", name: "Draft A", agent_role: "writerA" },
+      { id: "draft-b", name: "Draft B", agent_role: "writerB" },
     ],
     mergeMode: "ordered",
     parallelOrder: ["draft-b", "draft-a"],
@@ -177,8 +177,8 @@ Deno.test("[Step65.3] FlowRunner concat merge uses lexicographic fallback order"
       merger: "merged",
     },
     parallelSteps: [
-      { id: "zeta", name: "Zeta", identity: "zebraAgent" },
-      { id: "alpha", name: "Alpha", identity: "alphaAgent" },
+      { id: "zeta", name: "Zeta", agent_role: "zebraAgent" },
+      { id: "alpha", name: "Alpha", agent_role: "alphaAgent" },
     ],
     mergeMode: "concat",
   });
@@ -201,8 +201,8 @@ Deno.test("[Step65.3] FlowRunner manual merge leaves mergedOutput empty", async 
       merger: "merged",
     },
     parallelSteps: [
-      { id: "draft-a", name: "Draft A", identity: "writerA" },
-      { id: "draft-b", name: "Draft B", identity: "writerB" },
+      { id: "draft-a", name: "Draft A", agent_role: "writerA" },
+      { id: "draft-b", name: "Draft B", agent_role: "writerB" },
     ],
     mergeMode: "manual",
   });
@@ -229,8 +229,8 @@ Deno.test("[Step65.3] FlowRunner journals merge failures for automatic fan-in mo
       merger: "merged",
     },
     parallelSteps: [
-      { id: "draft-a", name: "Draft A", identity: "writerA" },
-      { id: "draft-b", name: "Draft B", identity: "writerB" },
+      { id: "draft-a", name: "Draft A", agent_role: "writerA" },
+      { id: "draft-b", name: "Draft B", agent_role: "writerB" },
     ],
     mergeMode: "all",
     failFast: false,

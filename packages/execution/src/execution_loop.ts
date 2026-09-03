@@ -421,7 +421,7 @@ export class ExecutionLoop {
     const structuredPlan = parseStructuredPlanFromMarkdown(planContent, {
       trace_id: frontmatter.trace_id,
       request_id: frontmatter.request_id,
-      identity_id: frontmatter.identity_id,
+      agent_role: frontmatter.identity_id,
     });
 
     const actions = structuredPlan ? [] : this.parsePlanActions(planContent);
@@ -455,7 +455,7 @@ export class ExecutionLoop {
       if (args.isReadOnly && (!this.llmProvider || !this.db)) {
         this.logActivity(DomainEventType.ExecutionReadonlyPlanSkipped, args.traceId, {
           request_id: args.requestId,
-          identity_id: args.planAgentId ?? null,
+          agent_role: args.planAgentId ?? null,
         });
         return { didExecuteWork: false, didMutateRepo: false };
       }
@@ -471,7 +471,7 @@ export class ExecutionLoop {
       if (args.isReadOnly) {
         this.logActivity(DomainEventType.ExecutionReadonlyPlanExecuted, args.traceId, {
           request_id: args.requestId,
-          identity_id: args.planAgentId ?? null,
+          agent_role: args.planAgentId ?? null,
         });
       }
 
@@ -756,7 +756,7 @@ export class ExecutionLoop {
     const context = {
       trace_id: plan.trace_id,
       request_id: plan.request_id,
-      identity: (plan as { identity?: string; agent?: string }).identity ?? plan.agent,
+      agent_role: (plan as { identity?: string; agent?: string }).identity ?? plan.agent,
       frontmatter: this.toSafeFrontmatter(frontmatter),
       steps: plan.steps,
     };

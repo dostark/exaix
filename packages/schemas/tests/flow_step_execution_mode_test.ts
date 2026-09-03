@@ -15,7 +15,7 @@ Deno.test("FlowStepSchema: accepts execution_mode: declared", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DECLARED,
   };
 
@@ -28,7 +28,7 @@ Deno.test("FlowStepSchema: accepts execution_mode: dynamic", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
   };
 
@@ -41,7 +41,7 @@ Deno.test("FlowStepSchema: defaults execution_mode to DECLARED", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     // No execution_mode specified
   };
 
@@ -54,7 +54,7 @@ Deno.test("FlowStepSchema: accepts permitted_tools array", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [
       McpToolName.READ_FILE,
@@ -76,7 +76,7 @@ Deno.test("FlowStepSchema: accepts empty permitted_tools", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [],
   };
@@ -90,7 +90,7 @@ Deno.test("FlowStepSchema: rejects invalid execution_mode", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: "invalid_mode",
   };
 
@@ -101,7 +101,7 @@ Deno.test("FlowStepSchema: rejects invalid tool in permitted_tools", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     permitted_tools: ["invalid_tool"],
   };
 
@@ -112,7 +112,7 @@ Deno.test("FlowStepSchema: strips unknown fields", () => {
   const step = {
     id: "test-step",
     name: "Test Step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     unknown_field: "should be stripped",
   };
 

@@ -63,7 +63,7 @@ export interface IPlanStep {
 export interface IPlanContext {
   trace_id: string;
   request_id: string;
-  identity: string;
+  agent_role: string;
   frontmatter: Record<string, JSONValue>;
   steps: IPlanStep[];
 }
@@ -99,7 +99,7 @@ export interface IPlanExecutorOptions {
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
-    identityId: string,
+    agentRole: string,
   ) => Promise<string>;
 }
 
@@ -198,7 +198,7 @@ export class PlanExecutor {
           config: this.config,
           repoPath: this.repoPath,
           traceId,
-          identityId: context.identity,
+          identityId: context.agent_role,
         })
         : null;
 
@@ -226,7 +226,7 @@ export class PlanExecutor {
             git,
             requestId,
             traceId,
-            context.identity,
+            context.agent_role,
           );
         }
 
@@ -350,7 +350,7 @@ export class PlanExecutor {
       // matcher with nothing but extracted keywords and returned 0 matches on requests whose
       // tags named a skill outright.
       tags: frontmatterTags(context),
-      identityId: context.identity,
+      agentRole: context.agent_role,
     });
     const topMatch = matches[0];
     const candidateTaskTypes = topMatch?.matchedTriggers.task_types ?? [];
@@ -371,7 +371,7 @@ export class PlanExecutor {
     const { matches } = await skills.matchSkills({
       requestText,
       tags: frontmatterTags(context),
-      identityId: context.identity,
+      agentRole: context.agent_role,
     });
 
     return await Promise.all(
@@ -399,7 +399,7 @@ export class PlanExecutor {
       try {
         let result: { description: string } | undefined;
 
-        const delegateOutcome = await this._tryDelegateStep(step, traceId, actionReports, context.identity);
+        const delegateOutcome = await this._tryDelegateStep(step, traceId, actionReports, context.agent_role);
         if (delegateOutcome.skip) continue;
         if (delegateOutcome.result) {
           result = delegateOutcome.result;
@@ -416,7 +416,7 @@ export class PlanExecutor {
               full_plan: fullPlan,
             },
             {
-              identity_id: context.identity,
+              agent_role: context.agent_role,
               portal: portalName,
               security_mode: SecurityMode.HYBRID,
               audit_enabled: true,
@@ -486,7 +486,7 @@ export class PlanExecutor {
     step: IPlanStep,
     traceId: string,
     actionReports: IPlanActionReport[],
-    identityId: string,
+    agentRole: string,
   ): Promise<{ skip: boolean; result?: { description: string } }> {
     if (!this.options.onCodeChangesDelegate) {
       return { skip: false };
@@ -500,7 +500,7 @@ export class PlanExecutor {
         successCriteria: step.successCriteria ?? undefined,
       },
       this.repoPath,
-      identityId,
+      agentRole,
     );
     if (delegateResult === "changes_made") {
       return {
@@ -552,12 +552,12 @@ export class PlanExecutor {
     git: GitService,
     requestId: string,
     traceId: string,
-    identityId: string,
+    agentRole: string,
   ): Promise<void> {
     try {
       await git.commit({
         message: `Complete plan: ${requestId}`,
-        description: `Executed by identity ${identityId}`,
+        description: `Executed by identity ${agentRole}`,
         traceId,
       });
     } catch (error) {

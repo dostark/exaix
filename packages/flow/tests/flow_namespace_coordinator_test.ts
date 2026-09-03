@@ -88,7 +88,7 @@ function buildFlow(namespaceEnabled: boolean): IFlow {
       {
         id: "step-1",
         name: "Step 1",
-        identity: "agent1",
+        agent_role: "agent1",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: 1000 },
@@ -110,7 +110,7 @@ function buildStep(overrides: Partial<IFlowStepInput> = {}): IFlowStep {
       {
         id: "step-1",
         name: "Step 1",
-        identity: "agent1",
+        agent_role: "agent1",
         dependsOn: [],
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: 1000 },

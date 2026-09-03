@@ -45,7 +45,7 @@ function extractPlanMetadata(planId: string, frontmatter: PlanFrontmatter): IPla
     id: planId,
     status: validated.status || PlanStatus.REVIEW,
     trace_id: validated.trace_id as string | undefined,
-    identity_id: validated.identity_id as string | undefined,
+    agent_role: validated.identity_id as string | undefined,
     request_id: validated.request_id as string | undefined,
     created_at: validated.created_at as string | undefined,
     input_tokens: validated.input_tokens?.toString(),

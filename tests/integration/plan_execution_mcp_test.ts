@@ -173,7 +173,7 @@ function createHappyPathPlanContent(options: IHappyPathPlanOptions): string {
 trace_id: ${options.traceId}
 request_id: ${options.requestId}
 status: approved
-identity: mock-agent
+agent_role: mock-agent
 portal: ${TEST_PORTAL_NAME}
 ${securityModeLine}created: ${new Date().toISOString()}
 ---
@@ -602,7 +602,7 @@ Deno.test("Integration Test 15.7: Plan Parsing Errors", async () => {
     const planInvalidSteps = `---
 trace_id: ${crypto.randomUUID()}
 status: approved
-identity: test-agent
+agent_role: test-agent
 portal: TestPortal
 ---
 
@@ -622,7 +622,7 @@ This should be "Step 1"
     const planEmptyTitles = `---
 trace_id: ${crypto.randomUUID()}
 status: approved
-identity: test-agent
+agent_role: test-agent
 portal: TestPortal
 ---
 
@@ -831,7 +831,7 @@ Deno.test("Integration Test 15.11: Multi-Step Plan Execution", async () => {
 trace_id: ${traceId}
 request_id: multi-step-001
 status: approved
-identity: test-agent
+agent_role: test-agent
 portal: TestPortal
 ---
 

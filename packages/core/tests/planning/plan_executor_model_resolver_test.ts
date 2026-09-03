@@ -85,7 +85,7 @@ Deno.test({
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        '---\nidentity_id: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
+        '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();
@@ -108,7 +108,7 @@ Deno.test({
       await executor.execute(`${root}/plan.md`, {
         trace_id: crypto.randomUUID(),
         request_id: "test-req",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         frontmatter: {},
         steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
       });
@@ -138,7 +138,7 @@ Deno.test({
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        '---\nidentity_id: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub identity for testing.\n',
+        '---\nagent_role: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub identity for testing.\n',
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();
@@ -166,7 +166,7 @@ Deno.test({
       await executor.execute(`${root}/plan.md`, {
         trace_id: crypto.randomUUID(),
         request_id: "test-req",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         frontmatter: {},
         steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
       });

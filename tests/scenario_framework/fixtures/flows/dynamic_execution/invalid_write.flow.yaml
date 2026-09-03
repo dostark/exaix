@@ -10,7 +10,7 @@ output:
 steps:
   - id: "write-attempt"
     name: "Attempt to write file in dynamic mode"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

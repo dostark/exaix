@@ -68,7 +68,7 @@ export interface IFlowRunner {
 export interface IRoutingDecision {
   type: RequestKind;
   flowId?: string;
-  identityId?: string;
+  agentRole?: string;
   result: IAgentExecutionResult | IFlowResult;
 }
 
@@ -178,22 +178,22 @@ export class RequestRouter {
   async route(request: RouterRequest): Promise<IRoutingDecision> {
     const { traceId, requestId, frontmatter } = request;
     const flowId = frontmatter.flow;
-    const identityId = frontmatter.identity_id;
+    const agentRole = frontmatter.agent_role;
 
     // Check for conflicting fields
-    if (flowId && identityId) {
+    if (flowId && agentRole) {
       await this.eventLogger.log({
         action: "request.routing.error",
         target: requestId,
         payload: {
-          error: "Request cannot specify both 'flow' and 'identity' fields",
+          error: "Request cannot specify both 'flow' and 'agent_role' fields",
           field: "conflict",
-          value: `${flowId}/${identityId}`,
+          value: `${flowId}/${agentRole}`,
         },
         traceId,
       });
       throw new RoutingError(
-        "Request cannot specify both 'flow' and 'identity' fields",
+        "Request cannot specify both 'flow' and 'agent_role' fields",
         requestId,
       );
     }
@@ -204,8 +204,8 @@ export class RequestRouter {
     }
 
     // Route to agent if specified
-    if (identityId) {
-      return await this.routeToAgent(identityId, request);
+    if (agentRole) {
+      return await this.routeToAgent(agentRole, request);
     }
 
     // Route to default agent
@@ -261,22 +261,22 @@ export class RequestRouter {
     };
   }
 
-  public async routeToAgent(identityId: string, request: RouterRequest): Promise<IRoutingDecision> {
+  public async routeToAgent(agentRole: string, request: RouterRequest): Promise<IRoutingDecision> {
     const { traceId, requestId } = request;
 
     // Log routing decision
     await this.eventLogger.log({
-      action: "request.routing.identity_id",
+      action: "request.routing.agent_role",
       target: requestId,
-      payload: { identityId },
+      payload: { agentRole },
       traceId,
     });
 
-    const { selectedIdentityId, policyDecision } = await this.selectIdentity(request, identityId);
+    const { selectedAgentRole, policyDecision } = await this.selectAgentRole(request, agentRole);
 
     if (policyDecision) {
       await this.logRoutingDecision(requestId, traceId, {
-        explicit_identity_id: identityId,
+        explicit_agent_role: agentRole,
       }, policyDecision);
 
       if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
@@ -284,7 +284,7 @@ export class RequestRouter {
           action: "routing.fallback_used",
           target: requestId,
           payload: {
-            fallback_identity_id: selectedIdentityId,
+            fallback_agent_role: selectedAgentRole,
             strategy: policyDecision.strategy,
             reason: "Routing policy returned a fallback candidate",
           },
@@ -297,7 +297,7 @@ export class RequestRouter {
           action: "routing.experiment_applied",
           target: requestId,
           payload: {
-            selected_identity_id: policyDecision.selectedIdentityId,
+            selected_agent_role: policyDecision.selectedAgentRole,
             selected_version: policyDecision.selectedVersion,
             strategy: policyDecision.strategy,
             matched_rule_id: policyDecision.matchedRuleId ?? null,
@@ -309,9 +309,9 @@ export class RequestRouter {
     }
 
     // Load blueprint
-    const blueprint = await this.loadBlueprint(selectedIdentityId);
+    const blueprint = await this.loadBlueprint(selectedAgentRole);
     if (!blueprint) {
-      throw new RoutingError(`Agent blueprint not found: ${selectedIdentityId}`, requestId);
+      throw new RoutingError(`Agent blueprint not found: ${selectedAgentRole}`, requestId);
     }
 
     // Create parsed request
@@ -322,7 +322,7 @@ export class RequestRouter {
 
     return {
       type: RequestKind.IDENTITY,
-      identityId: selectedIdentityId,
+      agentRole: selectedAgentRole,
       result,
     };
   }
@@ -338,7 +338,7 @@ export class RequestRouter {
       traceId,
     });
 
-    const { selectedIdentityId, policyDecision } = await this.selectIdentity(request, undefined);
+    const { selectedAgentRole, policyDecision } = await this.selectAgentRole(request, undefined);
 
     if (policyDecision) {
       await this.logRoutingDecision(requestId, traceId, {
@@ -350,7 +350,7 @@ export class RequestRouter {
           action: "routing.fallback_used",
           target: requestId,
           payload: {
-            fallback_identity_id: selectedIdentityId,
+            fallback_agent_role: selectedAgentRole,
             strategy: policyDecision.strategy,
             reason: "Routing policy returned a fallback candidate",
           },
@@ -363,7 +363,7 @@ export class RequestRouter {
           action: "routing.experiment_applied",
           target: requestId,
           payload: {
-            selected_identity_id: policyDecision.selectedIdentityId,
+            selected_agent_role: policyDecision.selectedAgentRole,
             selected_version: policyDecision.selectedVersion,
             strategy: policyDecision.strategy,
             matched_rule_id: policyDecision.matchedRuleId ?? null,
@@ -375,9 +375,9 @@ export class RequestRouter {
     }
 
     // Load selected blueprint
-    const blueprint = await this.loadBlueprint(selectedIdentityId);
+    const blueprint = await this.loadBlueprint(selectedAgentRole);
     if (!blueprint) {
-      throw new RoutingError(`Agent blueprint not found: ${selectedIdentityId}`, requestId);
+      throw new RoutingError(`Agent blueprint not found: ${selectedAgentRole}`, requestId);
     }
 
     // Create parsed request
@@ -388,14 +388,14 @@ export class RequestRouter {
 
     return {
       type: RequestKind.IDENTITY,
-      identityId: selectedIdentityId,
+      agentRole: selectedAgentRole,
       result,
     };
   }
 
-  protected async loadBlueprint(identityId: string): Promise<IBlueprint | null> {
+  protected async loadBlueprint(agentRole: string): Promise<IBlueprint | null> {
     const loader = new IBlueprintLoader({ blueprintsPath: this.blueprintsPath });
-    const loaded = await loader.load(identityId);
+    const loaded = await loader.load(agentRole);
     if (!loaded) {
       return null;
     }
@@ -441,21 +441,21 @@ export class RequestRouter {
     };
   }
 
-  private async selectIdentity(
+  private async selectAgentRole(
     request: RouterRequest,
-    explicitIdentityId?: Opt<string, Reason.OptionalInput>,
-  ): Promise<{ selectedIdentityId: string; policyDecision?: IRoutingPolicyDecision }> {
+    explicitAgentRole?: Opt<string, Reason.OptionalInput>,
+  ): Promise<{ selectedAgentRole: string; policyDecision?: IRoutingPolicyDecision }> {
     const allowDynamicRouting = request.frontmatter.allow_dynamic_routing ??
       this.config.routing?.enable_dynamic_routing ?? false;
     if (!allowDynamicRouting || !this.routingPolicyService) {
-      return { selectedIdentityId: explicitIdentityId ?? this.defaultAgentId };
+      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentId };
     }
 
     try {
       const routingContext = this.buildRoutingContext(request);
       const frontmatter = request.frontmatter as RouterRequestFrontmatterMap;
-      const decision = await this.routingPolicyService.selectIdentity({
-        explicitIdentityId,
+      const decision = await this.routingPolicyService.selectAgentRole({
+        explicitAgentRole,
         explicitVersion: typeof frontmatter.identity_version === "string" ? frontmatter.identity_version : undefined,
         requestText: routingContext.requestText,
         requestAnalysis: routingContext.requestAnalysis,
@@ -466,14 +466,14 @@ export class RequestRouter {
         allowDynamicRouting: true,
       });
 
-      return { selectedIdentityId: decision.selectedIdentityId, policyDecision: decision };
+      return { selectedAgentRole: decision.selectedAgentRole, policyDecision: decision };
     } catch (error) {
       await this.eventLogger.log({
         action: "request.routing.policy.failed",
         target: request.requestId,
         payload: {
           error: error instanceof Error ? error.message : String(error),
-          explicit_identity_id: explicitIdentityId ?? null,
+          explicit_agent_role: explicitAgentRole ?? null,
         },
         traceId: request.traceId,
       });
@@ -481,13 +481,13 @@ export class RequestRouter {
         action: "routing.fallback_used",
         target: request.requestId,
         payload: {
-          fallback_identity_id: explicitIdentityId ?? this.defaultAgentId,
+          fallback_agent_role: explicitAgentRole ?? this.defaultAgentId,
           reason: error instanceof Error ? error.message : String(error),
           allow_dynamic_routing: true,
         },
         traceId: request.traceId,
       });
-      return { selectedIdentityId: explicitIdentityId ?? this.defaultAgentId };
+      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentId };
     }
   }
 
@@ -503,14 +503,14 @@ export class RequestRouter {
       payload: {
         ...basePayload,
         allow_dynamic_routing: true,
-        selected_identity_id: policyDecision.selectedIdentityId,
+        selected_agent_role: policyDecision.selectedAgentRole,
         selected_version: policyDecision.selectedVersion,
         strategy: policyDecision.strategy,
         matched_rule_id: policyDecision.matchedRuleId ?? null,
         rationale: policyDecision.rationale,
         candidate_count: policyDecision.candidates.length,
         top_candidates: policyDecision.candidates.slice(0, 5).map((candidate) => ({
-          identity_id: candidate.identityId,
+          agent_role: candidate.agentRole,
           version: candidate.version,
           score: candidate.score,
           score_breakdown: candidate.scoreBreakdown,

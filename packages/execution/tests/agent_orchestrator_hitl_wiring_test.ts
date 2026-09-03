@@ -111,7 +111,7 @@ Deno.test("AgentOrchestrator.executeStep: forwards the loaded blueprint's hitl.r
 
     await executor.executeStep(context, {
       portal: portalAlias,
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(evaluator.received.length, 1);

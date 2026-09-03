@@ -39,7 +39,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
         {
           id: "writer",
           name: "Writer",
-          identity: "agent1",
+          agent_role: "agent1",
           dependsOn: [],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
@@ -48,7 +48,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
         {
           id: "reader",
           name: "Reader",
-          identity: "agent2",
+          agent_role: "agent2",
           dependsOn: ["writer"],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

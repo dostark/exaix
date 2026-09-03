@@ -117,7 +117,7 @@ function createTrivialExecution(portal: string, traceId: string): IExecutionMemo
     completed_at: "2026-01-04T12:01:00Z",
     status: ExecutionStatus.COMPLETED,
     portal,
-    identity_id: "assistant",
+    agent_role: "assistant",
     summary: "Answered a simple question about syntax.",
     context_files: [],
     context_portals: [portal],

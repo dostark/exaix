@@ -223,7 +223,7 @@ Deno.test("[step135.8] request-level requestIntent.task_type wins as frontmatter
   }
 });
 
-Deno.test("[step135.8] blueprint frontmatter task_type field derives with source 'identity'", async () => {
+Deno.test("[step135.8] blueprint frontmatter task_type field derives with source 'agent_role'", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();
@@ -296,7 +296,7 @@ Deno.test("[step135.8] config task_type_map soft-matches the identity_id when no
       model: "ignored",
       model_size: "L",
       capabilities: "[chat]",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     const executor = makeExecutor(config, db, resolver);

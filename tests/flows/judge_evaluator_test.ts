@@ -36,7 +36,7 @@ class MockAgentRunner {
 
     const response = await this.responses.get(identityId);
     if (!response) {
-      throw new Error(`No mock response for identity: ${identityId}`);
+      throw new Error(`No mock response for agent_role: ${identityId}`);
     }
 
     return { content: response };

@@ -237,7 +237,7 @@ Deno.test("[E2E] Gap 4: structured frontmatter criteria propagate through pipeli
     priority: "high",
     source: "manual",
     created_by: "user",
-    identity_id: "senior-coder",
+    agent_role: "senior-coder",
     acceptance_criteria: ["All tests pass", "No lint errors"],
     expected_outcomes: ["Feature is live", "Documentation updated"],
     scope: {
@@ -287,7 +287,7 @@ Deno.test("[E2E] Gap 4: buildParsedRequest works without optional frontmatter fi
     priority: "medium",
     source: "manual",
     created_by: "user",
-    identity_id: "general",
+    agent_role: "general",
   };
 
   const parsed = buildParsedRequest(

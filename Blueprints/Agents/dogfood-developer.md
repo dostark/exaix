@@ -1,5 +1,5 @@
 ---
-identity_id: "dogfood-developer"
+agent_role: "dogfood-developer"
 name: "Dogfooding Engineer"
 model: ""
 model_size: M

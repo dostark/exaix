@@ -10,7 +10,7 @@ output:
 steps:
   - id: "exec"
     name: "Execute command using run_command"
-    identity: "senior-coder"
+    agent_role: "senior-coder"
     execution_mode: "declared"
     tools:
       - run_command

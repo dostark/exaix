@@ -10,7 +10,7 @@ steps:
   - id: analyze-bug-report
     name: Analyze Bug Report
     type: agent
-    identity: product-manager
+    agent_role: product-manager
     dependsOn: []
     input:
       source: request
@@ -21,7 +21,7 @@ steps:
   - id: locate-relevant-code
     name: Locate Relevant Code
     type: agent
-    identity: code-analyst
+    agent_role: code-analyst
     strategy: react
     dependsOn:
       - analyze-bug-report
@@ -35,7 +35,7 @@ steps:
   - id: identify-root-cause
     name: Identify Root Cause
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     strategy: react
     dependsOn:
       - locate-relevant-code
@@ -50,7 +50,7 @@ steps:
   - id: security-impact
     name: Assess Security Impact
     type: agent
-    identity: security-expert
+    agent_role: security-expert
     dependsOn:
       - identify-root-cause
     input:
@@ -64,7 +64,7 @@ steps:
   - id: propose-fix
     name: Propose Fix
     type: agent
-    identity: senior-coder
+    agent_role: senior-coder
     strategy: react
     dependsOn:
       - identify-root-cause
@@ -82,7 +82,7 @@ steps:
   - id: write-test-cases
     name: Write Regression Tests
     type: agent
-    identity: test-engineer
+    agent_role: test-engineer
     strategy: react
     dependsOn:
       - propose-fix
@@ -96,7 +96,7 @@ steps:
   - id: compile-report
     name: Compile Investigation Report
     type: agent
-    identity: technical-writer
+    agent_role: technical-writer
     dependsOn:
       - propose-fix
       - write-test-cases

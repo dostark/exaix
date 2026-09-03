@@ -14,7 +14,7 @@ Deno.test("FlowRunner: step with execution_mode dynamic identified", () => {
   const dynamicStep: IFlowStepInput = {
     id: "dynamic-step",
     name: "Dynamic exploration",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
   };
@@ -27,7 +27,7 @@ Deno.test("FlowRunner: step with execution_mode declared identified", () => {
   const declaredStep: IFlowStep = {
     id: "declared-step",
     name: "Write output",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DECLARED,
   } as IFlowStep;
 
@@ -39,7 +39,7 @@ Deno.test("FlowRunner: step without execution_mode defaults to declared", () => 
   const legacyStep: IFlowStep = {
     id: "legacy-step",
     name: "Legacy step",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     // No execution_mode specified - should default to DECLARED
   } as IFlowStep;
 
@@ -61,14 +61,14 @@ Deno.test("FlowRunner: flow with mixed execution modes", () => {
       {
         id: "explore",
         name: "Explore codebase",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
       },
       {
         id: "write",
         name: "Write output",
-        identity: "senior-coder",
+        agent_role: "senior-coder",
         execution_mode: FlowStepExecutionMode.DECLARED,
       },
     ] as IFlowStep[],
@@ -90,7 +90,7 @@ Deno.test("FlowRunner: dynamic step has permitted_tools", () => {
   const dynamicStep: IFlowStepInput = {
     id: "dynamic-step",
     name: "Explore",
-    identity: "senior-coder",
+    agent_role: "senior-coder",
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY, McpToolName.SEARCH_FILES],
   };

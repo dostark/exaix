@@ -73,7 +73,7 @@ describe("FlowReporter", () => {
         steps: [{
           id: "step1",
           name: stepName,
-          identity: "test-agent",
+          agent_role: "test-agent",
           dependsOn: [],
           input: {
             source: FlowInputSource.REQUEST,
@@ -126,7 +126,7 @@ describe("FlowReporter", () => {
           {
             id: "step1",
             name: "First Step",
-            identity: "test-agent",
+            agent_role: "test-agent",
             dependsOn: [],
             input: {
               source: FlowInputSource.REQUEST,
@@ -140,7 +140,7 @@ describe("FlowReporter", () => {
           {
             id: "step2",
             name: "Second Step",
-            identity: "test-agent",
+            agent_role: "test-agent",
             dependsOn: ["step1"],
             input: {
               source: FlowInputSource.REQUEST,

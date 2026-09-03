@@ -2,7 +2,7 @@
 trace_id: "test-trace-failreport"
 request_id: failreport-test
 status: active
-identity_id: test-identity
+agent_role: test-identity
 ---
 
 # Failure Report Test

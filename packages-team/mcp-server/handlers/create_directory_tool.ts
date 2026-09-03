@@ -18,7 +18,7 @@ export class CreateDirectoryTool extends ToolHandler {
     const validatedArgs = CreateDirectoryToolArgsSchema.parse(args) as {
       portal: string;
       path: string;
-      identity_id: string;
+      agent_role: string;
     };
     const { portal, path, identity_id } = validatedArgs;
 
@@ -54,9 +54,9 @@ export class CreateDirectoryTool extends ToolHandler {
         properties: {
           portal: { type: "string", description: "Portal alias" },
           path: { type: "string", description: "Directory path relative to portal root" },
-          identity_id: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Identity identifier for permission checks" },
         },
-        required: ["portal", "path", "identity_id"],
+        required: ["portal", "path", "agent_role"],
       },
     };
   }

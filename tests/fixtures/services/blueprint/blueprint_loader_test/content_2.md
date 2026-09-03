@@ -1,5 +1,5 @@
 ---
-identity_id: "skilled-agent"
+agent_role: "skilled-agent"
 name: "Skilled Agent"
 model: "anthropic:claude-sonnet-5"
 memory_enabled: true

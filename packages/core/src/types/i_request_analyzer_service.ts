@@ -32,7 +32,7 @@ export interface IRequestAnalyzerConfig {
 /** Optional context enrichment injected into the analysis prompt/heuristic context to improve result quality. */
 export interface IRequestAnalysisContext {
   /** The agent or flow ID that will execute the request, if known. */
-  identityId?: string;
+  agentRole?: string;
   /** Request priority (low/medium/high) as a string hint. */
   priority?: string;
   /** Known file paths already associated with the request (e.g. from frontmatter). */

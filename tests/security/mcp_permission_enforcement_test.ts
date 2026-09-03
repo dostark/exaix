@@ -59,7 +59,7 @@ Deno.test("[security] MCPServer: denies unauthorized portal writes and logs perm
         portal: "SecurePortal",
         path: "blocked.txt",
         content: "nope",
-        identity_id: "agent-a",
+        agent_role: "agent-a",
       }),
     );
 

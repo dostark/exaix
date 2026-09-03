@@ -80,7 +80,7 @@ function buildContextSection(
   let contextSection = "";
   if (context) {
     const parts: string[] = [];
-    if (context.identityId) parts.push(`Agent: ${context.identityId}`);
+    if (context.agentRole) parts.push(`Agent: ${context.agentRole}`);
     if (context.priority) parts.push(`Priority: ${context.priority}`);
     if (context.filePaths?.length) {
       const files = context.filePaths.slice(0, 25);

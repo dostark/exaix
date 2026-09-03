@@ -52,7 +52,7 @@ function buildFrontmatter(traceId?: string, status?: string): string {
     `created: "${TEST_REQUEST_CREATED_AT}"`,
     `status: ${status ?? TEST_REQUEST_STATUS_VALID}`,
     `priority: ${TEST_REQUEST_PRIORITY}`,
-    `identity_id: ${TEST_REQUEST_AGENT}`,
+    `agent_role: ${TEST_REQUEST_AGENT}`,
     `source: ${TEST_REQUEST_SOURCE}`,
     `created_by: "${TEST_REQUEST_CREATED_BY}"`,
   ].filter(Boolean);
@@ -150,9 +150,9 @@ Deno.test("RequestParser: logs parse failure on invalid YAML", async () => {
   });
 });
 
-// canonical identity_id frontmatter field
+// canonical.agent_role frontmatter field
 
-Deno.test("RequestParser: parses canonical identity_id from frontmatter", async () => {
+Deno.test("RequestParser: parses canonical.agent_role from frontmatter", async () => {
   const errors: LoggedError[] = [];
   const parser = new RequestParser(createLogger(errors));
 
@@ -162,7 +162,7 @@ Deno.test("RequestParser: parses canonical identity_id from frontmatter", async 
       `created: "${TEST_REQUEST_CREATED_AT}"`,
       `status: ${TEST_REQUEST_STATUS_VALID}`,
       `priority: ${TEST_REQUEST_PRIORITY}`,
-      `identity_id: "senior-coder"`,
+      `agent_role: "senior-coder"`,
       `source: ${TEST_REQUEST_SOURCE}`,
       `created_by: "${TEST_REQUEST_CREATED_BY}"`,
     ].join("\n");
@@ -172,11 +172,11 @@ Deno.test("RequestParser: parses canonical identity_id from frontmatter", async 
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    assertEquals(result?.frontmatter.identity_id, "senior-coder");
+    assertEquals(result?.frontmatter.agent_role, "senior-coder");
   });
 });
 
-Deno.test("RequestParser: does not alias the retired identity field to identity_id", async () => {
+Deno.test("RequestParser: does not alias the retired identity field to.agent_role", async () => {
   const errors: LoggedError[] = [];
   const parser = new RequestParser(createLogger(errors));
 
@@ -186,7 +186,7 @@ Deno.test("RequestParser: does not alias the retired identity field to identity_
       `created: "${TEST_REQUEST_CREATED_AT}"`,
       `status: ${TEST_REQUEST_STATUS_VALID}`,
       `priority: ${TEST_REQUEST_PRIORITY}`,
-      `identity: "senior-coder"`,
+      `agent_role: "senior-coder"`,
       `source: ${TEST_REQUEST_SOURCE}`,
       `created_by: "${TEST_REQUEST_CREATED_BY}"`,
     ].join("\n");
@@ -195,7 +195,7 @@ Deno.test("RequestParser: does not alias the retired identity field to identity_
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    assertEquals(result?.frontmatter.identity_id, undefined);
+    assertEquals(result?.frontmatter.agent_role, undefined);
   });
 });
 
@@ -204,7 +204,7 @@ Deno.test("RequestParser: ignores agent field (Phase 54 removed)", async () => {
   const parser = new RequestParser(createLogger(errors));
 
   await withTempRequestFile(async (filePath) => {
-    // Request with only agent field (no identity_id) - should parse but identity_id will be undefined
+    // Request with only agent field (no.agent_role) - should parse but.agent_role will be undefined
     const frontmatter = [
       `trace_id: "${TEST_REQUEST_TRACE_ID}"`,
       `created: "${TEST_REQUEST_CREATED_AT}"`,
@@ -220,7 +220,7 @@ Deno.test("RequestParser: ignores agent field (Phase 54 removed)", async () => {
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    // agent field is no longer recognized - identity_id should be undefined
-    assertEquals(result?.frontmatter.identity_id, undefined);
+    // agent field is no longer recognized -.agent_role should be undefined
+    assertEquals(result?.frontmatter.agent_role, undefined);
   });
 });

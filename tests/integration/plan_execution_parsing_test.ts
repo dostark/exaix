@@ -31,7 +31,7 @@ Deno.test("Integration: Plan Execution Parsing", async (t) => {
       const planContent = `---
 trace_id: ${crypto.randomUUID()}
 request_id: ${crypto.randomUUID()}
-identity: mock-agent
+agent_role: mock-agent
 status: approved
 created_at: ${new Date().toISOString()}
 ---
@@ -246,7 +246,7 @@ This plan has no step headers, which should be detected as invalid.
       const planContent = `---
 trace_id: ${traceId}
 request_id: ${requestId}
-identity: mock-agent
+agent_role: mock-agent
 status: approved
 priority: high
 created_at: 2024-01-01T10:00:00Z

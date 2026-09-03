@@ -67,7 +67,7 @@ Deno.test("RunCommandTool: actual command output appears in MCP response content
       portal: "TestPortal",
       command: "ls",
       args: ["-1"],
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result.content[0].type, "exaix_structured_data");
@@ -93,7 +93,7 @@ Deno.test("RunCommandTool: execution failure returns isError:true response, not 
     const result = await handler.execute({
       portal: "TestPortal",
       command: "ls",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result.isError, true);
@@ -110,7 +110,7 @@ Deno.test("RunCommandTool: missing ToolRegistry returns isError:true response", 
     const result = await handler.execute({
       portal: "TestPortal",
       command: "ls",
-      identity_id: "test-agent",
+      agent_role: "test-agent",
     });
 
     assertEquals(result.isError, true);

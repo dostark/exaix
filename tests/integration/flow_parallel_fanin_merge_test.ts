@@ -44,7 +44,7 @@ Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downst
         {
           id: "merge",
           name: "Merge",
-          identity: "merger",
+          agent_role: "merger",
           dependsOn: ["draft-a", "draft-b"],
           input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
           retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

@@ -130,7 +130,7 @@ Deno.test("setup_db.ts initializes journal.db with expected tables", async () =>
 
       const leasesCols = await tableColumns(dbPath, "leases");
       assert(leasesCols.includes("file_path"));
-      assert(leasesCols.includes("identity_id"));
+      assert(leasesCols.includes("agent_role"));
       assert(leasesCols.includes("expires_at"));
 
       const schemaCols = await tableColumns(dbPath, "schema_migrations");

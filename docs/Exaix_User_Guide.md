@@ -1847,7 +1847,7 @@ Exaix's agent strategy registry instead of the default single-shot generate path
 steps:
   - id: implement-feature
     name: Implement Feature
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: declared # strategy is only valid on a declared step
     strategy: cli_delegate # react | mcp | cli_delegate
     dependsOn: [design-architecture]
@@ -1902,7 +1902,7 @@ steps:
   - id: implement-steps
     name: Implement Steps (TDD)
     type: session_delegate_cycle
-    identity: dogfood-coder # identity_id threaded to the delegate's hardened launch
+    agent_role: dogfood-coder # identity_id threaded to the delegate's hardened launch
     dependsOn: [plan-review]
     input:
       source: request # the request must carry plan_context_ref — no static plan path here
@@ -1910,7 +1910,7 @@ steps:
     delegateCycle:
       requireChangedPaths: true # non-empty paths_touched required (currently always true)
       review:
-        identity: quality-judge # judge identity that reviews each completed step
+        agent_role: quality-judge # judge identity that reviews each completed step
         criteria: [code_correctness, has_tests, task_fulfillment]
         threshold: 0.8
         onFail: halt # only halt is accepted for this step type
@@ -1954,7 +1954,7 @@ A flow step declares how it executes via `execution_mode`:
 steps:
   - id: explore
     name: Explore the codebase
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: dynamic # declared (default) | dynamic
     permitted_tools:
       - read_file
@@ -2089,7 +2089,7 @@ step:
 
 ```markdown
 ---
-identity_id: "senior-coder"
+agent_role: "senior-coder"
 name: "Senior Coder"
 model: "anthropic:claude-3-sonnet"
 capabilities: ["code_generation", "debugging"]
@@ -2175,7 +2175,7 @@ consensus. This is a **Team/Enterprise** feature (Solo ❌ / Team ✅ / Enterpri
 step:
   id: "vote-on-result"
   type: "voting_group"
-  identity: "voter"
+  agent_role: "voter"
   voting:
     runners:
       - blueprint: "senior-coder"
@@ -2913,7 +2913,7 @@ trace_id: "550e8400-e29b-41d4-a716-446655440000"
 created: 2025-11-28T10:30:00.000Z
 status: pending
 priority: normal
-identity_id: default
+agent_role: default
 source: cli
 created_by: user@example.com
 tags: [feature, api]
@@ -2963,7 +2963,7 @@ trace_id: "550e8400-e29b-41d4-a716-446655440000"
 created: 2025-11-28T10:30:00.000Z
 status: pending
 priority: high
-identity_id: senior-coder
+agent_role: senior-coder
 source: cli
 created_by: user@example.com
 acceptance_criteria:
@@ -3010,7 +3010,7 @@ Use them when you want fewer clarification rounds and more reliable evaluation a
 ```yaml
 # Strings (quotes optional for simple values)
 status: pending
-identity_id: default
+agent_role: default
 
 # Strings with special characters (quotes required)
 trace_id: "550e8400-e29b-41d4-a716-446655440000"
@@ -3626,7 +3626,7 @@ Enable reflexion in identity blueprint frontmatter:
 
 ```yaml
 ---
-identity_id: "quality-reviewer"
+agent_role: "quality-reviewer"
 name: "Quality Reviewer"
 model: ""                  # deprecated — use model_size + characteristics instead
 model_size: L              # large model for thorough evaluation

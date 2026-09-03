@@ -43,7 +43,7 @@ Deno.test("RequestManagerTuiSession - Detail View includes Analysis section", as
     subject: "Test Request",
     status: RequestStatus.PENDING,
     priority: RequestPriority.NORMAL,
-    identity: "default",
+    agent_role: "default",
     created: new Date().toISOString(),
     source: RequestSource.TUI,
     created_by: "test-user",

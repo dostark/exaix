@@ -54,7 +54,7 @@ function writeTwoRouteIdentity(root: string): void {
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
-    'identity_id: "stub-two-route"',
+    'agent_role: "stub-two-route"',
     'model: ""',
     "model_size: M",
     "permitted_tools:",
@@ -72,7 +72,7 @@ function writeExplicitIdentity(root: string): void {
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
     "---",
-    'identity_id: "stub-explicit"',
+    'agent_role: "stub-explicit"',
     'model: "anthropic:claude-stub-explicit-use"',
     "permitted_tools:",
     "  - write_file",
@@ -97,7 +97,7 @@ function writeStructuredPlan(
     "---",
     `trace_id: "${traceId}"`,
     `request_id: "${requestId}"`,
-    `identity_id: ${identityId}`,
+    `agent_role: ${identityId}`,
     'portal: "workspace"',
     "status: approved",
     `created_at: "${new Date().toISOString()}"`,

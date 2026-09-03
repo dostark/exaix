@@ -344,7 +344,7 @@ status: review
 trace_id: "trace-req"
 status: ${RequestStatus.PLANNED}
 priority: normal
-identity: code-analyst
+agent_role: code-analyst
 source: cli
 created: "2025-11-25T10:00:00Z"
 created_by: "tester"
@@ -567,7 +567,7 @@ Just some content.
       const planContent = `---
 status: rejected
 trace_id: "trace-rejected-001"
-identity_id: agent-456
+agent_role: agent-456
 created_at: "2025-11-25T10:00:00Z"
 rejected_at: "${rejectedAt}"
 rejected_by: "${rejectedBy}"

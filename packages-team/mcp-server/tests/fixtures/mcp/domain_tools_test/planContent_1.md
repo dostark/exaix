@@ -1,7 +1,7 @@
 ---
 trace_id: "fixture-trace-approve"
 request_id: "fixture-req-approve"
-identity_id: "user-1"
+agent_role: "user-1"
 status: "review"
 created_at: "2026-08-13T00:00:00Z"
 subject: "Fixture review plan"

@@ -38,7 +38,7 @@ output:
 steps:
   - id: dynamic-step
     name: Dynamic exploration
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: dynamic
     permitted_tools:
       - read_file
@@ -93,7 +93,7 @@ output:
 steps:
   - id: declared-step
     name: Write output
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: declared
     tools:
       - write_file
@@ -123,7 +123,7 @@ output:
 steps:
   - id: dynamic-step
     name: Explore codebase
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: dynamic
     permitted_tools:
       - read_file
@@ -160,7 +160,7 @@ output:
 steps:
   - id: dynamic-step
     name: Explore codebase
-    identity: senior-coder
+    agent_role: senior-coder
     execution_mode: dynamic
     permitted_tools: []
 `;

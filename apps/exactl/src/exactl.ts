@@ -378,7 +378,7 @@ export const __test_command = new Command()
     new Command()
       .description("Create requests for Exaix agents or multi-agent flows (PRIMARY INTERFACE)")
       .arguments("[description:string]")
-      .option("-i, --identity <identity:string>", "Target identity blueprint", { default: CLI_DEFAULTS.AGENT })
+      .option("-i, --identity <agent_role:string>", "Target identity blueprint", { default: CLI_DEFAULTS.AGENT })
       .option("-p, --priority <priority:string>", "Priority: low, normal, high, critical", {
         default: CLI_DEFAULTS.PRIORITY,
       })
@@ -2135,7 +2135,7 @@ export const __test_command = new Command()
             try {
               const result = await routingCommands.explainRequest(requestFile);
               display.info("routing.explain", requestFile, {
-                selected_identity_id: result.selectedIdentityId,
+                selected_agent_role: result.selectedIdentityId,
                 selected_version: result.selectedVersion,
                 strategy: result.strategy,
                 matched_rule_id: result.matchedRuleId ?? null,

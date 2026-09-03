@@ -13,7 +13,7 @@ import { ArchiveStatus } from "@exaix/core";
 export const ArchiveEntrySchema = z.object({
   trace_id: z.string().uuid(),
   request_id: z.string(),
-  identity_id: z.string(),
+  agent_role: z.string(),
   archived_at: z.string().datetime(),
   completed_at: z.string().datetime(),
   status: z.nativeEnum(ArchiveStatus),
@@ -63,11 +63,11 @@ export class ArchiveService {
     return index.find((e) => e.trace_id === traceId);
   }
 
-  async searchByAgent(identityId: string): Promise<ArchiveEntry[]> {
+  async searchByAgent(agentRole: string): Promise<ArchiveEntry[]> {
     if (!(await exists(this.indexPath))) return [];
     const raw = await Deno.readTextFile(this.indexPath);
     const index: ArchiveEntry[] = JSON.parse(raw);
-    return index.filter((e) => e.identity_id === identityId);
+    return index.filter((e) => e.agent_role === agentRole);
   }
 
   async searchByDateRange(start: string, end: string): Promise<ArchiveEntry[]> {

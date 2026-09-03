@@ -1,5 +1,5 @@
 ---
-identity_id: "code-analyst"
+agent_role: "code-analyst"
 name: "Code Analyst"
 model: "mock:test"
 capabilities: ["read_file", "list_directory", "grep_search"]

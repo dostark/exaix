@@ -70,7 +70,7 @@ Deno.test("onCodeChangesDelegate: guard-equipped callback rejects contentless br
   await executor.execute("plan.md", {
     trace_id: "test-trace",
     request_id: "test-req",
-    identity: "test",
+    agent_role: "test",
     frontmatter: {},
     steps: [
       { number: 1, title: "Empty step", content: "" },

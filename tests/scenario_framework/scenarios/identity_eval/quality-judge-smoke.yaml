@@ -53,7 +53,7 @@ steps:
       - id: "plan-attributed-to-identity"
         score_weight: 1.0
         kind: "frontmatter-field-equals"
-        field: "identity_id"
+        field: "agent_role"
         equals: "quality-judge"
       - id: "has-subject"
         score_weight: 0.5

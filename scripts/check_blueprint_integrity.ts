@@ -10,7 +10,7 @@
  *
  * @description Catalog referential-integrity + anti-bloat gate. Validates four
  *   facets across Blueprints/{Agents,Skills,Flows}, all fail-closed:
- *     1. dangling-identity — every flow `identity:` resolves to an identity file.
+ *     1. dangling-identity — every flow `agent_role:` resolves to an identity file.
  *     2. dangling-skill    — every identity `default_skills` entry resolves to a
  *        `Blueprints/Skills/<id>.skill.md` file.
  *     3. orphan-identity   — every identity is referenced by >=1 flow. System
@@ -114,7 +114,7 @@ function loadFlowIdentityRefs(flowsDir: string): Set<string> {
       } else if (e.isFile && (e.name.endsWith(".flow.yaml") || e.name.endsWith(".flow.template.yaml"))) {
         const text = Deno.readTextFileSync(path);
         // Bare identity identifier only; `{{placeholder}}` slots never match.
-        for (const m of text.matchAll(/^\s*identity:\s*["']?([A-Za-z0-9_-]+)["']?\s*$/gm)) {
+        for (const m of text.matchAll(/^\s*agent_role:\s*["']?([A-Za-z0-9_-]+)["']?\s*$/gm)) {
           refs.add(m[1]);
         }
       }
@@ -141,7 +141,7 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
 
   const violations: IIntegrityViolation[] = [];
 
-  // 1. dangling-identity: flow → identity must exist.
+  // 1. dangling-agent_role: flow → identity must exist.
   for (const ref of flowRefs) {
     if (!identityIds.has(ref)) {
       violations.push({ kind: "dangling-identity", detail: `flow references identity "${ref}" which has no .md file` });
@@ -162,7 +162,7 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
     }
   }
 
-  // 3. orphan-identity: every (non-exempt) identity must appear in >=1 flow.
+  // 3. orphan-agent_role: every (non-exempt) identity must appear in >=1 flow.
   for (const rec of identities) {
     if (isExemptIdentity(rec)) continue;
     if (!flowRefs.has(rec.id)) {

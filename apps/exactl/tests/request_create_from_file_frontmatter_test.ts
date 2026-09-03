@@ -7,7 +7,7 @@
  *   `createFromFile` read the file whole and handed it to `create()` as the free-text
  *   description, which wraps it in a NEWLY generated frontmatter block. Any frontmatter the
  *   file carried therefore ended up as literal text inside the request BODY, below a
- *   `# Request` heading — so `skills:`, `tags:`, `identity:` and the rest were silently
+ *   `# Request` heading — so `skills:`, `tags:`, `agent_role:` and the rest were silently
  *   dropped on every file submission. That is why the whole skill_eval pack resolved
  *   `pinned_skill_ids: []` under the default identity no matter what its fixtures pinned:
  *   the pins never reached the request file the daemon parsed.
@@ -76,7 +76,7 @@ describe("request --file honours the submitted file's own frontmatter", () => {
 trace_id: "fixture-trace"
 status: "pending"
 priority: "high"
-identity_id: "senior-coder"
+agent_role: "senior-coder"
 skills: [tdd-methodology, security-first]
 tags: [review, quality]
 ---
@@ -96,7 +96,7 @@ Evaluate the pinned skills.
     assertEquals(asList(frontmatter.tags), ["review", "quality"]);
   });
 
-  it("carries identity_id: and priority: through", async () => {
+  it("carries agent_role: and priority: through", async () => {
     const { frontmatter } = await submit(PINNED);
     assertEquals(frontmatter.identity_id, "senior-coder");
     assertEquals(frontmatter.priority, "high");
@@ -126,7 +126,7 @@ Evaluate the pinned skills.
   it("lets an explicit CLI flag win over the file's frontmatter", async () => {
     const inputFile = join(tempDir, "input.md");
     await Deno.writeTextFile(inputFile, PINNED);
-    const result = await requestCommands.createFromFile(inputFile, { identity: "researcher" });
+    const result = await requestCommands.createFromFile(inputFile, { agent_role: "researcher" });
     assert(result.path);
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
     assertEquals(frontmatter.identity_id, "researcher", "the flag stated at invocation is the more explicit intent");
@@ -145,7 +145,7 @@ Evaluate the pinned skills.
       '---\ntrace_id: "flow-trace"\nstatus: "pending"\nflow: "api-design"\n---\n\nExecute the flow.\n',
     );
 
-    const result = await requestCommands.createFromFile(inputFile, { identity: "default" });
+    const result = await requestCommands.createFromFile(inputFile, { agent_role: "default" });
     assert(result.path, "a flow request submitted by file must be created");
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
     assertEquals((frontmatter as { flow?: string }).flow, "api-design", "the flow must reach the request file");
@@ -164,7 +164,7 @@ Evaluate the pinned skills.
       '---\ntrace_id: "flow-trace-2"\nstatus: "pending"\nflow: "api-design"\n---\n\nExecute the flow.\n',
     );
 
-    const result = await requestCommands.createFromFile(inputFile, { identity: "default" });
+    const result = await requestCommands.createFromFile(inputFile, { agent_role: "default" });
     assert(result.path);
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
 

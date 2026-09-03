@@ -60,7 +60,7 @@ Deno.test("MCP Tools: read_file requires read permission", async () => {
       const result = await tool.execute({
         portal: "TestPortal",
         path: "test.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       });
 
       assertExists(result.content);
@@ -79,7 +79,7 @@ Deno.test("MCP Tools: read_file rejects when read permission denied", async () =
       const result = await tool.execute({
         portal: "TestPortal",
         path: "test.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       });
       assertEquals(result.isError, true);
       assertStringIncludes((result.content[0] as { type: string; text: string }).text, "not permitted");
@@ -101,7 +101,7 @@ Deno.test("MCP Tools: write_file requires write permission", async () => {
         portal: "TestPortal",
         path: "test.txt",
         content: "new content",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       });
 
       assertExists(result.content);
@@ -123,7 +123,7 @@ Deno.test("MCP Tools: write_file rejects when write permission denied", async ()
             portal: "TestPortal",
             path: "test.txt",
             content: "new content",
-            identity_id: "test-agent",
+            agent_role: "test-agent",
           });
         },
         Error,
@@ -146,7 +146,7 @@ Deno.test("MCP Tools: git_status requires git permission", async () => {
 
       const result = await tool.execute({
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       });
 
       assertExists(result.content);
@@ -163,7 +163,7 @@ Deno.test("MCP Tools: git_status rejects when git permission denied", async () =
       const tool = new GitStatusTool(context, permissions);
       const result = await tool.execute({
         portal: "TestPortal",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       });
       assertEquals(result.isError, true);
       assertStringIncludes((result.content[0] as { type: string; text: string }).text, "not permitted");
@@ -185,7 +185,7 @@ Deno.test("MCP Tools: rejects non-whitelisted agent", async () => {
       const result = await tool.execute({
         portal: "TestPortal",
         path: "test.txt",
-        identity_id: "unauthorized-agent",
+        agent_role: "unauthorized-agent",
       });
       assertEquals(result.isError, true);
       assertStringIncludes((result.content[0] as { type: string; text: string }).text, "not allowed");
@@ -206,7 +206,7 @@ Deno.test("MCP Tools: allows wildcard agent access", async () => {
       const result = await tool.execute({
         portal: "TestPortal",
         path: "test.txt",
-        identity_id: "any-agent",
+        agent_role: "any-agent",
       });
 
       assertExists(result.content);
@@ -225,7 +225,7 @@ Deno.test("MCP Tools: permission-protected handlers fail closed without permissi
       const result = await tool.execute({
         portal: "TestPortal",
         path: "test.txt",
-        identity_id: "test-agent",
+        agent_role: "test-agent",
       });
       assertEquals(result.isError, true);
       assertStringIncludes((result.content[0] as { type: string; text: string }).text, "Permission denied");

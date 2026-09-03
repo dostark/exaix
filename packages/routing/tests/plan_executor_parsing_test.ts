@@ -138,7 +138,7 @@ Deno.test("Plan Executor - Parsing", async (t) => {
 
       const frontmatter = parse(frontmatterMatch![1]) as JSONObject;
 
-      assertEquals(frontmatter.identity, "mock-agent");
+      assertEquals(frontmatter.agent_role, "mock-agent");
     });
 
     await t.step("should handle missing optional context fields", async () => {
@@ -159,7 +159,7 @@ trace_id: test-trace-123
       const frontmatter = parse(frontmatterMatch![1]) as JSONObject;
 
       assertEquals(frontmatter.request_id, undefined);
-      assertEquals(frontmatter.identity, undefined);
+      assertEquals(frontmatter.agent_role, undefined);
       assertExists(frontmatter.trace_id); // Only trace_id is required
     });
   });
@@ -329,7 +329,7 @@ trace_id: test-trace-123
 
       assertEquals(frontmatter.trace_id, "integration-test-123");
       assertEquals(frontmatter.request_id, "integration-req-456");
-      assertEquals(frontmatter.identity, "mock-agent");
+      assertEquals(frontmatter.agent_role, "mock-agent");
 
       // Parse body
       const bodyMatch = content.match(/^---\n[\s\S]*?\n---\n\n([\s\S]*)$/);

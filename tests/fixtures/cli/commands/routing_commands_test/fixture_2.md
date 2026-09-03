@@ -1,5 +1,5 @@
 ---
-identity_id: default-agent
+agent_role: default-agent
 model: test:model
 capabilities:
   - general

@@ -116,7 +116,7 @@ export class AgentOrchestratorAdapter {
   async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     const loaded = await this.loader.load(identityId);
     if (!loaded) {
-      throw new Error(`Blueprint not found for identity: ${identityId}`);
+      throw new Error(`Blueprint not found for agent_role: ${identityId}`);
     }
     const blueprint: IBlueprint = {
       systemPrompt: loaded.systemPrompt,
@@ -143,12 +143,12 @@ export class AgentOrchestratorAdapter {
   ): Promise<IAgentExecutionResult> {
     if (!this.orchestratorDeps) {
       throw new Error(
-        `runWithStrategy requires AgentOrchestrator construction dependencies, none were provided (identity: ${identityId}, strategy: ${strategy})`,
+        `runWithStrategy requires AgentOrchestrator construction dependencies, none were provided (agent_role: ${identityId}, strategy: ${strategy})`,
       );
     }
     if (!request.portal) {
       throw new Error(
-        `runWithStrategy requires a portal on the flow step request — the flow was invoked with no portal (identity: ${identityId}, strategy: ${strategy})`,
+        `runWithStrategy requires a portal on the flow step request — the flow was invoked with no portal (agent_role: ${identityId}, strategy: ${strategy})`,
       );
     }
 
@@ -199,7 +199,7 @@ export class AgentOrchestratorAdapter {
         portal: request.portal,
       };
       const options: IAgentExecutionOptionsInput = {
-        identity_id: identityId,
+        agent_role: identityId,
         portal: request.portal,
         strategy,
       };

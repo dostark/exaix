@@ -18,7 +18,7 @@ import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_orchestrator.ts";
 
 export const TEST_OPTIONS: IAgentExecutionOptions = {
-  identity_id: "test-agent",
+  agent_role: "test-agent",
   portal: "workspace",
   security_mode: SecurityMode.HYBRID,
   audit_enabled: true,

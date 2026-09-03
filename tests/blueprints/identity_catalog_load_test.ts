@@ -76,7 +76,7 @@ Deno.test({
   name: "[step9/catalog-load] all identity default_skills resolve to existing .skill.md files",
   fn() {
     const activeIds = listActiveAgentRoles();
-    const missingSkills: Array<{ identity: string; skill: string }> = [];
+    const missingSkills: Array<{ agent_role: string; skill: string }> = [];
 
     for (const id of activeIds) {
       const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
@@ -87,7 +87,7 @@ Deno.test({
         try {
           Deno.statSync(skillPath);
         } catch {
-          missingSkills.push({ identity: id, skill: s });
+          missingSkills.push({ agent_role: id, skill: s });
         }
       }
     }
@@ -113,7 +113,7 @@ Deno.test({
   name: "[step9/catalog-load] every identity's capabilities are behavioral-only (no tool-name values)",
   fn() {
     const activeIds = listActiveAgentRoles();
-    const violations: Array<{ identity: string; capability: string }> = [];
+    const violations: Array<{ agent_role: string; capability: string }> = [];
 
     for (const id of activeIds) {
       const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
@@ -121,7 +121,7 @@ Deno.test({
       const caps = (fm.capabilities ?? []) as string[];
       for (const c of caps) {
         if (VALID_TOOL_NAMES.has(c)) {
-          violations.push({ identity: id, capability: c });
+          violations.push({ agent_role: id, capability: c });
         }
       }
     }
@@ -182,7 +182,7 @@ Deno.test({
   name: "[step9/catalog-load] permitted_tools values are valid McpToolName or ToolName members",
   fn() {
     const activeIds = listActiveAgentRoles();
-    const invalid: Array<{ identity: string; tool: string }> = [];
+    const invalid: Array<{ agent_role: string; tool: string }> = [];
 
     for (const id of activeIds) {
       const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
@@ -190,7 +190,7 @@ Deno.test({
       const tools = (fm.permitted_tools ?? []) as string[];
       for (const t of tools) {
         if (!VALID_TOOL_NAMES.has(t)) {
-          invalid.push({ identity: id, tool: t });
+          invalid.push({ agent_role: id, tool: t });
         }
       }
     }
@@ -220,13 +220,13 @@ Deno.test({
   async fn() {
     const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_DIR });
     const activeIds = listActiveAgentRoles();
-    const unresolved: Array<{ identity: string }> = [];
+    const unresolved: Array<{ agent_role: string }> = [];
 
     for (const id of activeIds) {
       try {
         const bp = await loader.load(id);
         if (bp && bp.systemPrompt.includes("{{include:")) {
-          unresolved.push({ identity: id });
+          unresolved.push({ agent_role: id });
         }
       } catch {
         // Skip identities that fail to load (permitted_tools schema issues)

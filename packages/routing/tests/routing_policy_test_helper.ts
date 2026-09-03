@@ -5,13 +5,13 @@
  * @description TODO: Add description */
 import type { IRoutingCandidate, IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { type IRoutingPolicyServiceOptions, RoutingPolicyService } from "@exaix/routing";
-import type { IIdentityPerformanceSnapshot } from "@exaix/routing";
+import type { IAgentRolePerformanceSnapshot } from "@exaix/routing";
 
 const TEST_EXPERIMENT_SALT = "test-salt";
 
 interface ICreateRoutingPolicyServiceOptions {
   experimentSalt?: string;
-  performanceSnapshots?: IIdentityPerformanceSnapshot[];
+  performanceSnapshots?: IAgentRolePerformanceSnapshot[];
 }
 
 export function createRoutingCandidate(

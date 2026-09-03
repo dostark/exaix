@@ -18,7 +18,7 @@ interface TestBlueprintFrontmatter {
 }
 
 interface TestBlueprint {
-  identityId: string;
+  agentRole: string;
   version: string;
   capabilities: string[];
   frontmatter: TestBlueprintFrontmatter;
@@ -34,7 +34,7 @@ function createFrontmatter(overrides: Partial<TestBlueprintFrontmatter> = {}): T
 }
 
 const makeBlueprint = (overrides: Partial<TestBlueprint>): TestBlueprint => ({
-  identityId: overrides.identityId ?? "test-agent",
+  agentRole: overrides.agentRole ?? "test-agent",
   version: overrides.version ?? "1.0.0",
   capabilities: overrides.capabilities ?? ["code_review", "documentation"],
   frontmatter: overrides.frontmatter ?? createFrontmatter(),
@@ -47,7 +47,7 @@ Deno.test("CapabilityMatcher: matches blueprint with requested capability", () =
   const candidate = matcher.matchBlueprint(blueprint, { capability: "code_review", tags: [] });
 
   assertExists(candidate);
-  assertEquals(candidate?.identityId, "test-agent");
+  assertEquals(candidate?.agentRole, "test-agent");
   assertEquals(candidate?.score, 1);
 });
 
@@ -132,7 +132,7 @@ Deno.test("CapabilityMatcher: includes deprecated blueprints when allowed", () =
   const candidate = matcher.matchBlueprint(blueprint, { capability: "code_review", tags: [] });
 
   assertExists(candidate);
-  assertEquals(candidate?.identityId, "test-agent");
+  assertEquals(candidate?.agentRole, "test-agent");
 });
 
 // Streaming capability tests
@@ -144,7 +144,7 @@ Deno.test("CapabilityMatcher: matches blueprint with streaming capability", () =
   const candidate = matcher.matchBlueprint(blueprint, { capability: "streaming", tags: [] });
 
   assertExists(candidate);
-  assertEquals(candidate?.identityId, "test-agent");
+  assertEquals(candidate?.agentRole, "test-agent");
   assertEquals(candidate?.score, 1);
 });
 
@@ -160,11 +160,11 @@ Deno.test("CapabilityMatcher: returns null when blueprint lacks streaming capabi
 Deno.test("CapabilityMatcher: fallback selects streaming-capable blueprint over non-streaming one", () => {
   const matcher = new CapabilityMatcher();
   const streamingBp = makeBlueprint({
-    identityId: "streaming-agent",
+    agentRole: "streaming-agent",
     capabilities: ["chat", "streaming"],
   });
   const nonStreamingBp = makeBlueprint({
-    identityId: "basic-agent",
+    agentRole: "basic-agent",
     capabilities: ["chat"],
   });
 
@@ -174,5 +174,5 @@ Deno.test("CapabilityMatcher: fallback selects streaming-capable blueprint over 
   });
 
   assertExists(candidate);
-  assertEquals(candidate?.identityId, "streaming-agent");
+  assertEquals(candidate?.agentRole, "streaming-agent");
 });
