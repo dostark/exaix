@@ -186,8 +186,8 @@ const FlowStepSchemaBase = z.object({
   name: z.string().min(1, "Step name cannot be empty"),
   /** Step type: standard agent step, gate, branch, or consensus. Defaults to "agent" */
   type: z.nativeEnum(FlowStepType).optional().default(FlowStepType.AGENT),
-  /** Identity reference (required for agent type, optional for others) */
-  agent_role: z.string().min(1, "Identity reference cannot be empty"),
+  /** Agent role reference (required for agent type, optional for others) */
+  agent_role: z.string().min(1, "Agent role reference cannot be empty"),
   /** Execution mode: DECLARED (default) or DYNAMIC (ReAct-style tool selection) */
   execution_mode: z.nativeEnum(FlowStepExecutionMode).optional().default(FlowStepExecutionMode.DECLARED),
   /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */

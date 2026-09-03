@@ -144,7 +144,7 @@ Deno.test("FlowValidatorImpl: fails for flow with dependency cycle", async () =>
   }
 });
 
-Deno.test("FlowValidatorImpl: fails for flow with invalid identity field", async () => {
+Deno.test("FlowValidatorImpl: fails for flow with invalid agent_role field", async () => {
   const dir = await setupTestDir();
   try {
     const badAgentSteps = `
@@ -168,8 +168,8 @@ Deno.test("FlowValidatorImpl: fails for flow with invalid identity field", async
     const result = await validator.validateFlow("bad-agent");
     if (!result.valid) console.error("bad-agent debug:", result.error ?? "(no error)");
     assertEquals(result.valid, false);
-    // Error comes from Zod schema validation for empty identity
-    assertEquals(typeof result.error === "string" && (result.error ?? "").includes("identity"), true);
+    // Error comes from Zod schema validation for empty agent_role
+    assertEquals(typeof result.error === "string" && (result.error ?? "").includes("agent_role"), true);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
