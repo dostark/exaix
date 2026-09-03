@@ -30,7 +30,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-exaix", "--identity", "senior-coder"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-exaix", "--agent-role", "senior-coder"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"

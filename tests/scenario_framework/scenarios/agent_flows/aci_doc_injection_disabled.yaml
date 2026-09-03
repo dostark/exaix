@@ -67,7 +67,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--identity", "aci-react", "--subject", "ACI injection disabled scenario"]
+    args: ["--file", "$REQUEST_FIXTURE", "--agent-role", "aci-react", "--subject", "ACI injection disabled scenario"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"

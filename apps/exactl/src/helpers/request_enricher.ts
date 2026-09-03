@@ -12,7 +12,7 @@ import type { IRequestMetadata } from "@exaix/core/request";
 export interface IRequestEnrichable {
   request_id?: string;
   request_subject?: string;
-  request_identity?: string;
+  request_agent_role?: string;
   request_portal?: string;
   request_priority?: string;
   request_created_by?: string;

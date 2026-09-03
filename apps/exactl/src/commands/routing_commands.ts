@@ -58,13 +58,13 @@ export class RoutingCommands extends BaseCommand {
 
     const content = await Deno.readTextFile(requestPath);
     const frontmatter = this.parseRequestFrontmatter(content, requestPath);
-    const identityField = this.getRequestIdentity(frontmatter);
+    const agentRoleField = this.getRequestAgentRole(frontmatter);
     const explicitVersion = typeof frontmatter.agent_role_version === "string"
       ? frontmatter.agent_role_version
       : undefined;
 
     const routingContext: IRoutingContext = {
-      explicitAgentRole: identityField,
+      explicitAgentRole: agentRoleField,
       explicitVersion,
       matchCriteria: this.buildMatchCriteria(frontmatter),
       traceId: String(frontmatter.trace_id ?? ""),
@@ -101,7 +101,7 @@ export class RoutingCommands extends BaseCommand {
     };
   }
 
-  private getRequestIdentity(frontmatter: ParsedFrontmatter): string | undefined {
+  private getRequestAgentRole(frontmatter: ParsedFrontmatter): string | undefined {
     if (typeof frontmatter.agent_role === "string" && frontmatter.agent_role.trim()) {
       return frontmatter.agent_role.trim();
     }

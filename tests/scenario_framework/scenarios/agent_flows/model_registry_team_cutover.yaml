@@ -99,7 +99,14 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--identity", "stub-best", "--subject", "Model registry Team cutover scenario"]
+    args: [
+      "--file",
+      "$REQUEST_FIXTURE",
+      "--agent-role",
+      "stub-best",
+      "--subject",
+      "Model registry Team cutover scenario",
+    ]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"

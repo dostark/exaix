@@ -62,7 +62,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--identity", "code-analyst"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--agent-role", "code-analyst"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"

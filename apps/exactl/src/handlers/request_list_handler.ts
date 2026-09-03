@@ -100,15 +100,15 @@ export class RequestListHandler extends BaseCommand {
     frontmatter: Record<string, string | boolean | number>,
     status: RequestStatusType,
   ): IRequestEntry {
-    const identityValue = String(frontmatter.agent_role || DEFAULT_AGENT_ROLE);
+    const agentRoleValue = String(frontmatter.agent_role || DEFAULT_AGENT_ROLE);
     const entry: IRequestEntry & { agent: string } = {
       filename,
       path: filePath,
       status,
       trace_id: String(frontmatter.trace_id || ""),
       priority: String(frontmatter.priority || RequestPriority.NORMAL) as IRequestEntry["priority"],
-      agent_role: identityValue,
-      agent: identityValue,
+      agent_role: agentRoleValue,
+      agent: agentRoleValue,
       created: String(frontmatter.created || ""),
       created_by: String(frontmatter.created_by || "unknown"),
       source: String(frontmatter.source || "unknown") as IRequestEntry["source"],

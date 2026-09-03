@@ -3949,7 +3949,7 @@ directory). To create a new identity, clone an existing one as a prototype with
 # Clone a prototype, then validate and use
 exactl blueprint create my-agent --name "My Agent" --from senior-coder
 exactl blueprint validate my-agent
-exactl request "Task" --identity my-agent
+exactl request "Task" --agent-role my-agent
 ```
 
 The behavioural patterns that used to be templates are now **skills** in

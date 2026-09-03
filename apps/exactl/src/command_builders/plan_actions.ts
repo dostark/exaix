@@ -57,8 +57,8 @@ export async function handlePlanList(
           ? `${plan.request_subject.substring(0, 47)}...`
           : plan.request_subject;
       }
-      if (plan.request_identity) {
-        displayData.agent = plan.request_identity;
+      if (plan.request_agent_role) {
+        displayData.agent = plan.request_agent_role;
       }
       if (plan.request_portal) {
         displayData.portal = plan.request_portal;
@@ -106,8 +106,8 @@ export async function handlePlanShow(
     if (metadata.request_subject) {
       displayData.request_subject = metadata.request_subject;
     }
-    if (metadata.request_identity) {
-      displayData.agent = metadata.request_identity;
+    if (metadata.request_agent_role) {
+      displayData.agent = metadata.request_agent_role;
     }
     if (metadata.request_portal) {
       displayData.portal = metadata.request_portal;

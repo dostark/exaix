@@ -103,10 +103,10 @@ Deno.test("[blueprint] create - validates against schema", async () => {
   }
 });
 
-Deno.test("[blueprint] create - clones an existing identity with --from", async () => {
+Deno.test("[blueprint] create - clones an existing agent role with --from", async () => {
   await setupTest();
   try {
-    // Seed a prototype identity, then clone it via --from.
+    // Seed a prototype agent role, then clone it via --from.
     await commands.create("proto-agent", {
       name: "Proto Agent",
       model: "anthropic:claude-sonnet",
@@ -148,7 +148,7 @@ Deno.test("[blueprint] create - --from with explicit overrides wins", async () =
   }
 });
 
-Deno.test("[blueprint] create - --from a missing identity errors", async () => {
+Deno.test("[blueprint] create - --from a missing agent role errors", async () => {
   await setupTest();
   try {
     let threw = false;
@@ -157,7 +157,7 @@ Deno.test("[blueprint] create - --from a missing identity errors", async () => {
     } catch {
       threw = true;
     }
-    assertEquals(threw, true, "cloning a non-existent identity must throw");
+    assertEquals(threw, true, "cloning a non-existent agent role must throw");
   } finally {
     await teardownTest();
   }
@@ -190,7 +190,7 @@ Deno.test("[blueprint] create - loads system prompt from file", async () => {
   }
 });
 
-Deno.test("[blueprint] create - rejects reserved identity_id names", async () => {
+Deno.test("[blueprint] create - rejects reserved agent_role names", async () => {
   await setupTest();
   try {
     await assertRejects(
@@ -208,7 +208,7 @@ Deno.test("[blueprint] create - rejects reserved identity_id names", async () =>
   }
 });
 
-Deno.test("[blueprint] create - rejects duplicate identity_id", async () => {
+Deno.test("[blueprint] create - rejects duplicate agent_role", async () => {
   await setupTest();
   try {
     // Create first blueprint
@@ -233,7 +233,7 @@ Deno.test("[blueprint] create - rejects duplicate identity_id", async () => {
   }
 });
 
-Deno.test("[blueprint] create - rejects invalid identity_id format", async () => {
+Deno.test("[blueprint] create - rejects invalid agent_role format", async () => {
   await setupTest();
   try {
     await assertRejects(
@@ -266,7 +266,7 @@ Deno.test("[blueprint] create - logs to IActivity Journal", async () => {
     const activities = testEnv.db.getActivitiesByActionType("blueprint.created");
 
     assertEquals(activities.length >= 1, true);
-    // The target field should contain the identity_id
+    // The target field should contain the agent_role
     const activity = activities.find((a) => a.target === "journal-test");
     assertExists(activity);
   } finally {
@@ -353,7 +353,7 @@ Inline YAML array test
   }
 });
 
-Deno.test("[blueprint] list - skips YAML frontmatter missing identity_id", async () => {
+Deno.test("[blueprint] list - skips YAML frontmatter missing agent_role", async () => {
   await setupTest();
   try {
     const blueprintPath = join(
@@ -370,7 +370,7 @@ created_by: "${TEST_BLUEPRINT_YAML_CREATED_BY}"
 version: "${TEST_BLUEPRINT_YAML_VERSION}"
 ---
 
-Missing identity_id
+Missing agent_role
 `;
     await Deno.writeTextFile(blueprintPath, yamlContent);
 
@@ -448,7 +448,7 @@ Deno.test("[blueprint] validate - detects missing required fields", async () => 
 name = "Invalid"
 +++
 
-Content without identity_id
+Content without agent_role
 `,
     );
 
@@ -470,7 +470,7 @@ Deno.test("[blueprint] validate - checks system prompt format", async () => {
     await Deno.writeTextFile(
       blueprintPath,
       `+++
-identity_id = "no-tags"
+agent_role = "no-tags"
 name = "No Tags"
 model = "ollama:llama3.2"
 created = "2025-12-02T10:00:00Z"
@@ -535,7 +535,7 @@ Deno.test("[blueprint] remove - logs to IActivity Journal", async () => {
 
     const activities = testEnv.db.getActivitiesByActionType("blueprint.removed");
 
-    // The target field should contain the identity_id
+    // The target field should contain the agent_role
     const activity = activities.find((a) => a.target === "remove-journal");
     assertExists(activity);
   } finally {
@@ -628,7 +628,7 @@ Deno.test("[blueprint] edit - allows save when only warnings exist", async () =>
       "warn-test.md",
     );
     const shortContent = `+++
-identity_id = "warn-test"
+agent_role = "warn-test"
 name = "Warn Test"
 model = "ollama:llama3.2"
 version = "1.0.0"
@@ -680,7 +680,7 @@ Deno.test("[blueprint] edit - blocks save when validation errors exist", async (
       "error-test.md",
     );
     const errorContent = `+++
-identity_id = "error-test"
+agent_role = "error-test"
 name = "Error Test"
 model = "ollama:llama3.2"
 version = "1.0.0"

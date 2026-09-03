@@ -937,7 +937,7 @@ Deno.test("request create with all options", async () => {
       await mod.__test_command.parse([
         FlowInputSource.REQUEST,
         "Do task",
-        "--identity",
+        "--agent-role",
         "custom-agent",
         "-p",
         "high",

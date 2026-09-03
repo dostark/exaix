@@ -24,7 +24,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--identity", "dogfood-developer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["--agent-role", "dogfood-developer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
     env:
       EXA_LLM_PROVIDER: "mock"
     output_criteria:

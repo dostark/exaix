@@ -298,7 +298,7 @@ This plan references a request and should show request context.
     assertEquals(plan.status, "review");
     assertEquals(plan.request_id, requestId);
     assertEquals(plan.request_subject, "Test Request Title");
-    assertEquals(plan.request_identity, "test-agent");
+    assertEquals(plan.request_agent_role, "test-agent");
     assertEquals(plan.request_portal, "test-portal");
     assertEquals(plan.request_priority, "high");
     assertEquals(plan.request_created_by, "test@example.com");
@@ -309,7 +309,7 @@ This plan references a request and should show request context.
     assertEquals(planDetails.metadata.status, "review");
     assertEquals(planDetails.metadata.request_id, requestId);
     assertEquals(planDetails.metadata.request_subject, "Test Request Title");
-    assertEquals(planDetails.metadata.request_identity, "test-agent");
+    assertEquals(planDetails.metadata.request_agent_role, "test-agent");
     assertEquals(planDetails.metadata.request_portal, "test-portal");
     assertEquals(planDetails.metadata.request_priority, "high");
     assertEquals(planDetails.metadata.request_created_by, "test@example.com");

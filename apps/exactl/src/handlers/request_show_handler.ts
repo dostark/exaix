@@ -69,7 +69,7 @@ export class RequestShowHandler extends BaseCommand {
     matchingFrontmatter: Record<string, string | boolean | number>,
     planTokens: Record<string, string> | null,
   ): IRequestShowResult["metadata"] {
-    const identityValue = String(matchingFrontmatter.agent_role || DEFAULT_AGENT_ROLE);
+    const agentRoleValue = String(matchingFrontmatter.agent_role || DEFAULT_AGENT_ROLE);
     const metadata: IRequestShowResult["metadata"] & { agent: string } = {
       path: matchingFile,
       filename: matchingFile.split("/").pop() || "",
@@ -78,8 +78,8 @@ export class RequestShowHandler extends BaseCommand {
       priority: String(
         matchingFrontmatter.priority || RequestPriority.NORMAL,
       ) as IRequestShowResult["metadata"]["priority"],
-      agent_role: identityValue,
-      agent: identityValue,
+      agent_role: agentRoleValue,
+      agent: agentRoleValue,
       created: String(matchingFrontmatter.created || ""),
       created_by: String(matchingFrontmatter.created_by || "unknown"),
       source: String(matchingFrontmatter.source || "unknown") as IRequestShowResult["metadata"]["source"],

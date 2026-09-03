@@ -24,7 +24,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--identity", "technical-writer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["--agent-role", "technical-writer", "--plan-only", "--file", "$REQUEST_FIXTURE"]
     env:
       EXA_LLM_PROVIDER: "mock"
     output_criteria:

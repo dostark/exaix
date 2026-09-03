@@ -247,7 +247,7 @@ function logReviewListItem(cs: IReviewMetadata) {
   const statusEmoji = getReviewStatusEmoji(cs.status);
   const requestTitle = cs.request_subject ? `"${cs.request_subject}"` : cs.request_id;
   const planInfo = cs.plan_id ? `plan: ${cs.plan_id} (${cs.plan_status})` : undefined;
-  const agentInfo = cs.request_identity || cs.agent_role;
+  const agentInfo = cs.request_agent_role || cs.agent_role;
   const portalInfo = cs.request_portal || cs.portal || "workspace";
   const typeInfo = cs.type || "code";
   const trace = formatTraceShort(cs.trace_id);
@@ -322,7 +322,7 @@ function renderReviewShowSummary(cs: IReviewDetails) {
   const statusEmoji = getReviewStatusEmoji(cs.status);
   const requestTitle = cs.request_subject ? `"${cs.request_subject}"` : "Untitled Request";
   const planInfo = cs.plan_id ? `${cs.plan_id} (${cs.plan_status})` : "unknown";
-  const agentInfo = cs.request_identity || cs.agent_role;
+  const agentInfo = cs.request_agent_role || cs.agent_role;
   const portalInfo = cs.request_portal || cs.portal || "workspace";
 
   display.info(`${statusEmoji} review.show`, cs.request_id, {
@@ -378,7 +378,7 @@ export const __test_command = new Command()
     new Command()
       .description("Create requests for Exaix agents or multi-agent flows (PRIMARY INTERFACE)")
       .arguments("[description:string]")
-      .option("-i, --identity <agent_role:string>", "Target identity blueprint", { default: CLI_DEFAULTS.AGENT })
+      .option("-a, --agent-role <agent-role:string>", "Target agent role blueprint", { default: CLI_DEFAULTS.AGENT })
       .option("-p, --priority <priority:string>", "Priority: low, normal, high, critical", {
         default: CLI_DEFAULTS.PRIORITY,
       })
@@ -397,7 +397,7 @@ export const __test_command = new Command()
         "--preferred-provider <provider:string>",
         "Narrow candidates to specific provider (skips cross-provider scoring)",
       )
-      .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --identity)")
+      .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --agent-role)")
       .option("--skills <skills:string>", "Comma-separated list of skills to inject")
       .option("-s, --subject <subject:string>", "Human-readable subject for the request")
       .option(
@@ -421,13 +421,13 @@ export const __test_command = new Command()
         await handleRequestCreate({ requestCommands, display }, options as IRequestCreateOptions, description);
       })
       .example(
-        "Create a request for a specific identity",
-        'exactl request "Analyze this code" --identity code-reviewer',
+        "Create a request for a specific agent role",
+        'exactl request "Analyze this code" --agent-role code-reviewer',
       )
       .example("Create a request for a multi-agent flow", 'exactl request "Build a web app" --flow web-development')
       .example(
         "Create a high-priority request",
-        'exactl request "Fix critical bug" --priority critical --identity debugger',
+        'exactl request "Fix critical bug" --priority critical --agent-role debugger',
       )
       .command(
         RequestOperation.LIST,
@@ -1707,8 +1707,8 @@ export const __test_command = new Command()
           .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
           .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
           .option(
-            "--from <identity-id:string>",
-            "Clone an existing identity as a prototype (seeds model, capabilities, and body)",
+            "--from <agent-role-id:string>",
+            "Clone an existing agent role as a prototype (seeds model, capabilities, and body)",
           )
           .action(async (options, ...args: string[]) => {
             const agentRole = args[0];
@@ -1924,24 +1924,24 @@ export const __test_command = new Command()
           },
         ),
       )
-      // identity subcommands (canonical) with agent as deprecated aliases
+      // agent-role subcommands
       .command(
-        "identity",
+        "agent-role",
         new Command()
-          .description("Manage identity blueprints (canonical name)")
+          .description("Manage agent role blueprints")
           .command(
-            "create <identity-id>",
+            "create <agent-role-id>",
             new Command()
-              .description("Create a new identity blueprint")
-              .option("-n, --name <name:string>", "Identity name (required)")
+              .description("Create a new agent role blueprint")
+              .option("-n, --name <name:string>", "Agent role name (required)")
               .option("-m, --model <model:string>", "Model in provider:model format (required)")
               .option("-d, --description <description:string>", "Brief description")
               .option("-c, --capabilities <capabilities:string>", "Comma-separated capabilities")
               .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
               .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
               .option(
-                "--from <identity-id:string>",
-                "Clone an existing identity as a prototype (seeds model, capabilities, and body)",
+                "--from <agent-role-id:string>",
+                "Clone an existing agent role as a prototype (seeds model, capabilities, and body)",
               )
               .action(async (options, ...args: string[]) => {
                 const agentRole = args[0];
@@ -1971,7 +1971,7 @@ export const __test_command = new Command()
           .command(
             RequestOperation.LIST,
             new Command()
-              .description("List all identity blueprints")
+              .description("List all agent role blueprints")
               .option("--capability <capability:string>", "Only show blueprints that declare this capability")
               .option(
                 "--status <status:string>",
@@ -1987,7 +1987,7 @@ export const __test_command = new Command()
                     display.info("blueprint.list", "identities", {
                       count: 0,
                       hint:
-                        'Create an identity with: exactl blueprint identity create <identity-id> --name "Name" --model "provider:model"',
+                        'Create an agent role with: exactl blueprint agent-role create <agent-role-id> --name "Name" --model "provider:model"',
                     });
                     return;
                   }
@@ -2009,9 +2009,9 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "show <identity-id>",
+            "show <agent-role-id>",
             new Command()
-              .description("Show identity blueprint details")
+              .description("Show agent role blueprint details")
               .action(async (_options, ...args: string[]) => {
                 const agentRole = args[0];
                 try {
@@ -2034,9 +2034,9 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "validate <identity-id>",
+            "validate <agent-role-id>",
             new Command()
-              .description("Validate identity blueprint format")
+              .description("Validate agent role blueprint format")
               .action(async (_options, ...args: string[]) => {
                 const agentRole = args[0];
                 try {
@@ -2062,9 +2062,9 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "edit <identity-id>",
+            "edit <agent-role-id>",
             new Command()
-              .description("Edit identity blueprint in $EDITOR")
+              .description("Edit agent role blueprint in $EDITOR")
               .action(async (_options, ...args: string[]) => {
                 const agentRole = args[0];
                 try {
@@ -2078,9 +2078,9 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "remove <identity-id>",
+            "remove <agent-role-id>",
             new Command()
-              .description("Remove an identity blueprint")
+              .description("Remove an agent role blueprint")
               .option("--force", "Skip confirmation")
               .action(async (options, ...args: string[]) => {
                 const agentRole = args[0];
@@ -2096,9 +2096,9 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "deprecate <identity-id>",
+            "deprecate <agent-role-id>",
             new Command()
-              .description("Mark an identity blueprint as deprecated (retires it without deleting the file)")
+              .description("Mark an agent role blueprint as deprecated (retires it without deleting the file)")
               .action(async (_options, ...args: string[]) => {
                 const agentRole = args[0];
                 try {
@@ -2579,7 +2579,7 @@ export const __test_command = new Command()
 
 const journalCommand = new Command()
   .description("Query the IActivity Journal")
-  .option("-f, --filter <filter:string>", "Filter by key=value (trace_id, action_type, identity_id, since)", {
+  .option("-f, --filter <filter:string>", "Filter by key=value (trace_id, action_type, agent_role, since)", {
     collect: true,
   })
   .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })

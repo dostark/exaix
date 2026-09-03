@@ -152,7 +152,7 @@ Deno.test("[integrity] system identities (default, mock-model) are exempt from t
   }
 });
 
-Deno.test("[integrity] dogfood-developer is exempt from the orphan-identity rule (invoked directly via --identity, not via a flow)", async () => {
+Deno.test("[integrity] dogfood-developer is exempt from the orphan-identity rule (invoked directly via --agent-role, not via a flow)", async () => {
   const root = await buildCatalog({
     identities: [
       { id: "coder", skills: ["review"] },

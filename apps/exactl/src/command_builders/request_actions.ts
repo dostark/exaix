@@ -31,7 +31,7 @@ export interface IRequestActionContext {
 
 export interface IRequestCreateOptions {
   file?: string;
-  agent_role?: string;
+  agentRole?: string;
   priority?: string | RequestPriority;
   portal?: string;
   targetBranch?: string;
@@ -118,7 +118,7 @@ export async function handleRequestCreate(
   const { requestCommands, display } = context;
 
   try {
-    const agentRole = options.agent_role;
+    const agentRole = options.agentRole;
 
     const createOptions = {
       agent_role: options.flow ? undefined : agentRole,

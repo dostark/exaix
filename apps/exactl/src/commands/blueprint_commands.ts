@@ -1,7 +1,7 @@
 /**
  * @module BlueprintCommands
  * @path apps/exactl/src/commands/blueprint_commands.ts
- * @description Provides CLI commands for identity blueprint management, including creation from templates, listing, showing details, and validation.
+ * @description Provides CLI commands for agent role blueprint management, including creation from templates, listing, showing details, and validation.
  * @architectural-layer CLI
  * @related-files ["packages/schemas/src/blueprint.ts", "apps/daemon/main.ts"]
  */
@@ -59,7 +59,7 @@ export interface IBlueprintCreateOptions {
   capabilities?: string;
   systemPrompt?: string;
   systemPromptFile?: string;
-  /** Clone an existing identity by id as a prototype (replaces the retired --template). */
+  /** Clone an existing agent role by id as a prototype (replaces the retired --template). */
   from?: string;
 }
 
@@ -333,9 +333,9 @@ export class BlueprintCommands extends BaseCommand {
     return blueprintPath;
   }
 
-  // Loads an existing identity by id as a `--from` creation prototype (a concrete
-  // identity, not a separate template library) — returns its model, capabilities,
-  // and body, or null if the identity does not exist.
+  // Loads an existing agent role by id as a `--from` creation prototype (a concrete
+  // agent role, not a separate template library) — returns its model, capabilities,
+  // and body, or null if the agent role does not exist.
   private loadPrototype(agentRole: string): { model: string; capabilities: string[]; systemPrompt: string } | null {
     const filePath = join(this.getBlueprintsDir(), `${agentRole}.md`);
     try {
@@ -352,7 +352,7 @@ export class BlueprintCommands extends BaseCommand {
   }
 
   // Resolves the effective model / capabilities / system prompt for `create`,
-  // seeding any unset field from the `--from` prototype identity when given.
+  // seeding any unset field from the `--from` prototype agent role when given.
   private applyPrototype(
     options: IBlueprintCreateOptions,
   ): { model: string; capabilities: string[]; systemPrompt?: string } {
@@ -363,7 +363,7 @@ export class BlueprintCommands extends BaseCommand {
     if (options.from) {
       const proto = this.loadPrototype(options.from);
       if (!proto) {
-        throw new Error(`--from identity not found: ${options.from}`);
+        throw new Error(`--from agent role not found: ${options.from}`);
       }
       model = model || proto.model;
       capabilities = capabilities.length > 0 ? capabilities : proto.capabilities;
@@ -371,7 +371,7 @@ export class BlueprintCommands extends BaseCommand {
     }
 
     if (!model) {
-      throw new Error("--model is required (or pass --from <identity-id> to clone one)");
+      throw new Error("--model is required (or pass --from <agent-role-id> to clone one)");
     }
 
     return { model, capabilities, systemPrompt };

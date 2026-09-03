@@ -60,7 +60,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-sample-app", "--identity", "senior-coder", "--plan-only"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-sample-app", "--agent-role", "senior-coder", "--plan-only"]
     env:
       EXA_LLM_PROVIDER: "mock"
     output_criteria:

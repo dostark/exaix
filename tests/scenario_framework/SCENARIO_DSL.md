@@ -194,7 +194,7 @@ The most common step type. Runs `exactl <command> <args>` against the workspace 
       contains: ["daemon.started"]
 ```
 
-Examples: `exactl request --identity <id> --plan-only --file $REQUEST_FIXTURE`,
+Examples: `exactl request --agent-role <id> --plan-only --file $REQUEST_FIXTURE`,
 `exactl review approve $REQUEST_ID`, `exactl journal wait --event daemon.ready --since-rowid $JOURNAL_BASELINE`,
 `exactl flow validate <flow-id>`.
 
@@ -265,7 +265,7 @@ emits rows for json-query criteria; `sums` (`{col: "<payload path>"}`) emits one
 **Assertion contract (one of):** `expect_count` (rows == N), `expect_sum` (`{path, gt}`),
 `expect_contains` (latest row's payload contains every substring), or default = ≥1 matching row.
 
-### 5.5 `patch-blueprint` — add capabilities to an identity's blueprint
+### 5.5 `patch-blueprint` — add capabilities to an agent role's blueprint
 
 ```yaml
 - id: "grant-tool"
@@ -498,7 +498,7 @@ only the DSL knobs are listed here:
 ## 8. Tutorial — Building a Scenario
 
 Let's author a scenario that mounts the `todo_app` fixture, starts a mock daemon, submits a
-plan-only request as the `senior-coder` identity, waits for the plan, asserts its structure,
+plan-only request as the `senior-coder` agent role, waits for the plan, asserts its structure,
 and has an LLM judge grade it.
 
 **File:** create it as `tests/scenario_framework/scenarios/<pack>/<scenario-id>.yaml` — a new
@@ -539,7 +539,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--identity", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    args: ["--agent-role", "senior-coder", "--plan-only", "--file", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"

@@ -13,7 +13,7 @@ steps:
     type: "exactl"
     command: "request"
     args:
-      - "--identity"
+      - "--agent-role"
       - "software-architect"
       - "--portal"
       - "portal-exaix"

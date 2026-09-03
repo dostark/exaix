@@ -16,7 +16,7 @@
  *     3. orphan-identity   — every identity is referenced by >=1 flow. System
  *        agent roles (`default`, `dogfood-developer`, or any with a `mock:` model) are
  *        exempt: they are invoked directly (global fallback / CI fixture / CLI
- *        `--identity`), not via flows.
+ *        `--agent-role`), not via flows.
  *     4. orphan-skill      — every skill is referenced by >=1 identity's
  *        default_skills, trigger-matched, or explicitly programmatic.
  * @architectural-layer Script

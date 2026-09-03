@@ -74,7 +74,7 @@ for the authoritative field reference.
 ## Using an identity
 
 ```bash
-exactl request "Task description" --identity senior-coder
+exactl request "Task description" --agent-role senior-coder
 ```
 
 ## Creating a new identity

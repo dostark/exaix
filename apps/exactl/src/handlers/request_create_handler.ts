@@ -307,7 +307,7 @@ function splitFileFrontmatter(content: string): ISplitFile {
 
 /** Folds a submitted file's frontmatter into create options; CLI flags always win. Pipeline-owned
  * fields (trace_id, created, status, source, created_by) are never carried over since `create()`
- * mints fresh ones; the flow/identity exclusion is re-applied here since a frontmatter flow bypasses the CLI's own --flow-only guard. */
+ * mints fresh ones; the flow/agent-role exclusion is re-applied here since a frontmatter flow bypasses the CLI's own --flow-only guard. */
 function mergeFileFrontmatterIntoOptions(
   frontmatter: IRequestFrontmatter,
   options: IRequestOptions,
