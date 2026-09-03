@@ -852,6 +852,11 @@ describe("DaemonCommands - version fields in status() (Step 5)", {
     const status = await daemonCommands.status();
     assert(/^\d+\.\d+\.\d+$/.test(status.workspace_schema_version));
   });
+
+  it("[phase179] status() workspace_schema_version is 1.6.0 for a freshly-created workspace", async () => {
+    const status = await daemonCommands.status();
+    assertEquals(status.workspace_schema_version, "1.6.0");
+  });
 });
 
 describe("DaemonCommands - migrate() compatibility check (Step 6)", {
@@ -946,7 +951,7 @@ describe("DaemonCommands - waitForDaemonReady", {
           trace_id TEXT NOT NULL,
           actor TEXT NOT NULL,
           actor_type TEXT,
-          identity_id TEXT,
+          agent_role TEXT,
           agent_kind TEXT,
           action_type TEXT NOT NULL,
           target TEXT,

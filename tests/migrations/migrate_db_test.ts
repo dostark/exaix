@@ -148,6 +148,36 @@ Deno.test("migrate_db.ts up creates database and applies migrations", async () =
   }
 });
 
+Deno.test("[phase179] migrate_db.ts up creates activity/leases with agent_role columns and renamed indexes, no identity_id", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    const result = await runMigrate(tmp, ["up"]);
+    assertEquals(result.code, 0, `migrate up failed: ${result.stderr}`);
+    assertStringIncludes(result.stdout, "All migrations up to date");
+
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+
+    const activityColumns = await queryDb(dbPath, "PRAGMA table_info(activity);");
+    assertStringIncludes(activityColumns, "agent_role");
+    assert(!activityColumns.includes("identity_id"), "activity table must not have an identity_id column");
+
+    const leasesColumns = await queryDb(dbPath, "PRAGMA table_info(leases);");
+    assertStringIncludes(leasesColumns, "agent_role");
+    assert(!leasesColumns.includes("identity_id"), "leases table must not have an identity_id column");
+
+    const indexes = await queryDb(
+      dbPath,
+      "SELECT name FROM sqlite_master WHERE type='index' ORDER BY name;",
+    );
+    assertStringIncludes(indexes, "idx_activity_agent_role");
+    assertStringIncludes(indexes, "idx_leases_agent_role");
+    assert(!indexes.includes("idx_activity_identity"), "idx_activity_identity must no longer exist");
+    assert(!indexes.includes("idx_leases_identity"), "idx_leases_identity must no longer exist");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
 Deno.test("[phase135] migrate_db.ts up creates the registry tables, cost_source and benchmark from 001", async () => {
   const tmp = await setupTestWorkspace();
   try {
