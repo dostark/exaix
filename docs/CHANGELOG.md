@@ -18,6 +18,29 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 179 (Agent Role Terminology Rename)
+
+### Changed
+
+- The LLM persona concept is now called "Agent Role" everywhere it's user-visible:
+  blueprints live under `Blueprints/Agents/` (previously `Blueprints/Identities/`), and
+  blueprint/request frontmatter uses `agent_role:` as the sole key (see
+  [Exaix_User_Guide.md §4.6](Exaix_User_Guide.md#46-file-format-reference)).
+- `exactl request`'s `-i, --identity <name>` flag is now `-a, --agent-role <name>`.
+
+### Removed
+
+- The legacy `identity_id`/`identity` blueprint and request frontmatter keys are no
+  longer accepted — a file using either fails validation instead of being silently
+  migrated.
+- The `-i, --identity` flag on `exactl request` no longer exists; there is no
+  deprecated alias, so a stale invocation fails immediately with an unknown-option
+  error rather than misrouting.
+
+A local `.exa/journal.db` created before this change is incompatible with the renamed
+`agent_role` DB columns — delete and recreate it (or the whole `Workspace/` directory)
+if you hit a "no such column" error after upgrading.
+
 ## Unreleased — Phase 147 (Memory Capability Maturation)
 
 ### Added
