@@ -521,7 +521,7 @@ export const REACT_EVENT_ACTION_PARSE_FAILED = "agent.react_action_parse_failed"
 /** Anthropic stop_reason value meaning the generation hit max_tokens and was truncated. */
 export const RESPONSE_STOP_REASON_MAX_TOKENS = "max_tokens";
 
-export const AGENT_EXECUTOR_ID = "agent-executor";
+export const AGENT_COMPOSER_ID = "agent-composer";
 // Plan amendment event names
 export const PLAN_AMENDMENT_EVENT_PROPOSED = "plan.amendment.proposed";
 export const PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL = "plan.amendment.awaiting_approval";

@@ -31,7 +31,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
     target: "some-portal",
     actor: "user:test@example.com",
     actorType: ActorType.USER,
-    runnerKind: RunnerKind.AGENT_EXECUTOR,
+    runnerKind: RunnerKind.AGENT_COMPOSER,
     agentRole: "senior-coder",
     traceId: "trace-abc-123",
   });
@@ -41,7 +41,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
   const req = capturedRequests[0];
   assertEquals(req.actor, "user:test@example.com");
   assertEquals(req.actorType, ActorType.USER);
-  assertEquals(req.runnerKind, RunnerKind.AGENT_EXECUTOR);
+  assertEquals(req.runnerKind, RunnerKind.AGENT_COMPOSER);
   assertEquals(req.agentRole, "senior-coder");
   assertEquals(req.traceId, "trace-abc-123");
 });
@@ -94,7 +94,7 @@ Deno.test("EventLogger: does NOT put blueprint slug into runnerKind field", asyn
     action: "test.event",
     target: "some-portal",
     actor: "system",
-    runnerKind: RunnerKind.AGENT_EXECUTOR,
+    runnerKind: RunnerKind.AGENT_COMPOSER,
     agentRole: "senior-coder",
   });
 
@@ -103,5 +103,5 @@ Deno.test("EventLogger: does NOT put blueprint slug into runnerKind field", asyn
   assertNotEquals(req.runnerKind, "senior-coder");
   assertNotEquals(req.runnerKind, req.agentRole);
   assertEquals(req.agentRole, "senior-coder");
-  assertEquals(req.runnerKind, RunnerKind.AGENT_EXECUTOR);
+  assertEquals(req.runnerKind, RunnerKind.AGENT_COMPOSER);
 });

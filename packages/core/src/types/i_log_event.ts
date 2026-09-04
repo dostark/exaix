@@ -29,7 +29,7 @@ export interface ILogEvent {
   /** Trace ID for correlation */
   traceId?: string;
 
-  /** Runner handling this event, e.g. "agent-executor" — NOT an agent role id */
+  /** Runner handling this event, e.g. "agent-composer" — NOT an agent role id */
   runnerId?: string;
 
   /** Category of Runner */

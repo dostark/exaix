@@ -21,8 +21,8 @@ const _logEvent: ILogEvent = {
   target: "portal",
   actor: "user:test",
   actorType: ActorType.USER,
-  runnerId: "agent-executor", // runtime agent — NOT a blueprint slug
-  runnerKind: RunnerKind.AGENT_EXECUTOR, // category of runtime agent
+  runnerId: "agent-composer", // runtime agent — NOT a blueprint slug
+  runnerKind: RunnerKind.AGENT_COMPOSER, // category of runtime agent
   agentRole: "senior-coder", // LLM agent role blueprint slug
 };
 
@@ -30,8 +30,8 @@ const _logEvent: ILogEvent = {
 const _ctx: IServiceContext = {
   actor: "user:test",
   actorType: ActorType.USER,
-  runnerId: "agent-executor",
-  runnerKind: RunnerKind.AGENT_EXECUTOR,
+  runnerId: "agent-composer",
+  runnerKind: RunnerKind.AGENT_COMPOSER,
   agentRole: "senior-coder",
 };
 
@@ -55,7 +55,7 @@ const _undefinedEvent: ILogEvent = {
 // uncommented into an ILogEvent literal.
 
 // runnerId: "senior-coder",                       // blueprint slug, not a runtime agent name
-// identityKind: RunnerKind.AGENT_EXECUTOR,       // field is named runnerKind, not identityKind
+// identityKind: RunnerKind.AGENT_COMPOSER,       // field is named runnerKind, not identityKind
 
 // actorType: "invalid-actor-type" as ActorType,   // not a valid ActorType
 // runnerKind: "invalid-agent-kind" as RunnerKind, // not a valid RunnerKind

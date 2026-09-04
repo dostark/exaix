@@ -49,7 +49,7 @@ export enum CircuitState {
 
 /** Runner categories per GLOSSARY.md — identifies which Runner component handled an action. */
 export enum RunnerKind {
-  AGENT_EXECUTOR = "agent-executor",
+  AGENT_COMPOSER = "agent-composer",
   REQUEST_ROUTER = "request-router",
 }
 

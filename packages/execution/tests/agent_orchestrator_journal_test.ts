@@ -73,8 +73,8 @@ Deno.test("AgentOrchestrator: logExecutionStart writes correct field separation"
   assertEquals(loggedEvents.length, 1);
   const event = loggedEvents[0];
   assertEquals(event.action, AGENT_EVENT_EXECUTION_STARTED);
-  assertEquals(event.runnerId, "agent-executor"); // constant — the Runner
-  assertEquals(event.runnerKind, RunnerKind.AGENT_EXECUTOR);
+  assertEquals(event.runnerId, "agent-composer"); // constant — the Runner
+  assertEquals(event.runnerKind, RunnerKind.AGENT_COMPOSER);
   assertEquals(event.agentRole, "senior-coder"); // the blueprint slug
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
@@ -103,8 +103,8 @@ Deno.test("AgentOrchestrator: logExecutionComplete writes correct field separati
   assertEquals(loggedEvents.length, 1);
   const event = loggedEvents[0];
   assertEquals(event.action, AGENT_EVENT_EXECUTION_COMPLETED);
-  assertEquals(event.runnerId, "agent-executor");
-  assertEquals(event.runnerKind, RunnerKind.AGENT_EXECUTOR);
+  assertEquals(event.runnerId, "agent-composer");
+  assertEquals(event.runnerKind, RunnerKind.AGENT_COMPOSER);
   assertEquals(event.agentRole, "code-reviewer");
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
@@ -133,8 +133,8 @@ Deno.test("AgentOrchestrator: logExecutionError writes correct field separation"
   // Assert
   assertEquals(loggedEvents.length, 1);
   const event = loggedEvents[0];
-  assertEquals(event.runnerId, "agent-executor");
-  assertEquals(event.runnerKind, RunnerKind.AGENT_EXECUTOR);
+  assertEquals(event.runnerId, "agent-composer");
+  assertEquals(event.runnerKind, RunnerKind.AGENT_COMPOSER);
   assertEquals(event.agentRole, "test-agent");
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
@@ -154,7 +154,7 @@ Deno.test("AgentOrchestrator: REGRESSION - runnerId must never be agent role blu
   // Assert - most important regression guard
   const event = loggedEvents[0];
   assertNotEquals(event.runnerId, "senior-coder");
-  assertEquals(event.runnerId, "agent-executor");
+  assertEquals(event.runnerId, "agent-composer");
   assertEquals(event.agentRole, "senior-coder");
 
   executor.dispose();

@@ -16,6 +16,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
+import { RunnerKind } from "@exaix/core";
 import { ReActLoopAdapter } from "../src/react_loop_adapter.ts";
 import { OutputParser } from "../src/output_parser.ts";
 import { ExecutionContextService } from "../src/execution_context_service.ts";
@@ -61,6 +62,32 @@ Deno.test("[ReActLoopAdapter] logPromptAssembled emits agent.prompt_assembled wi
     assertEquals(payload.fragmentChars, 256);
     assertEquals(payload.budgetChars, 12000);
     assertEquals(payload.truncated, false);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[ReActLoopAdapter] logGeneration logs runnerId/runnerKind as AGENT_COMPOSER_ID/RunnerKind.AGENT_COMPOSER, not the agentRole", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const adapter = createAdapter(config, logger);
+    const traceId = crypto.randomUUID();
+
+    await adapter.logGeneration(traceId, "senior-coder", "gpt-4o-mini", "openai", {
+      promptTokens: 100,
+      completionTokens: 50,
+      totalTokens: 150,
+      costUsd: 0.01,
+    });
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByTrace(traceId);
+    const generation = activities.find((a) => a.action_type === "agent.generation_completed");
+    assertExists(generation, "agent.generation_completed must be emitted");
+    assertEquals(generation.agent_role, "senior-coder");
+    assertEquals(generation.runner_kind, RunnerKind.AGENT_COMPOSER);
+    assertEquals(generation.runner_kind, "agent-composer");
   } finally {
     await cleanup();
   }

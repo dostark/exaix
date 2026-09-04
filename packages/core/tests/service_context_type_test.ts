@@ -15,8 +15,8 @@ import type { IServiceContext } from "@exaix/core";
 const _ctx: IServiceContext = {
   actor: "user:test",
   actorType: ActorType.USER,
-  runnerId: "agent-executor",
-  runnerKind: RunnerKind.AGENT_EXECUTOR,
+  runnerId: "agent-composer",
+  runnerKind: RunnerKind.AGENT_COMPOSER,
   agentRole: "senior-coder",
   traceId: crypto.randomUUID(),
 };

@@ -30,11 +30,11 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
 import {
+  AGENT_COMPOSER_ID,
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_FAILED,
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_SECURITY_VIOLATION,
-  AGENT_EXECUTOR_ID,
 } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID, SESSION_BIN_CLAUDE_CODE, SESSION_BIN_OPENCODE } from "@exaix/core/types";
 import type {
@@ -751,8 +751,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      runnerId: AGENT_EXECUTOR_ID,
-      runnerKind: RunnerKind.AGENT_EXECUTOR,
+      runnerId: AGENT_COMPOSER_ID,
+      runnerKind: RunnerKind.AGENT_COMPOSER,
       agentRole: agentRole,
       payload: {
         portal,
@@ -802,8 +802,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      runnerId: "agent-executor",
-      runnerKind: RunnerKind.AGENT_EXECUTOR,
+      runnerId: AGENT_COMPOSER_ID,
+      runnerKind: RunnerKind.AGENT_COMPOSER,
       agentRole: agentRole,
       promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
       completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
@@ -835,8 +835,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      runnerId: "agent-executor",
-      runnerKind: RunnerKind.AGENT_EXECUTOR,
+      runnerId: AGENT_COMPOSER_ID,
+      runnerKind: RunnerKind.AGENT_COMPOSER,
       agentRole: agentRole,
       level: LogLevel.ERROR,
       payload: {
@@ -881,8 +881,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      runnerId: "agent-executor",
-      runnerKind: RunnerKind.AGENT_EXECUTOR,
+      runnerId: AGENT_COMPOSER_ID,
+      runnerKind: RunnerKind.AGENT_COMPOSER,
       agentRole: agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
