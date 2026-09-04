@@ -139,7 +139,7 @@ export const ExecutionMemorySchema = z.object({
   status: z.nativeEnum(ExecutionStatus).describe("Current execution status"),
   portal: z.string().describe("Portal this execution ran against"),
   agent_role: z.string().describe("Agent role (blueprint name) that performed the execution"),
-  agent_id: z.string().optional().describe("Runtime agent instance ID, if available"),
+  runner_id: z.string().optional().describe("Runner instance ID, if available"),
   summary: z.string().describe("Human-readable summary of what was done"),
 
   context_files: z.array(z.string()).describe("Files provided as context"),
