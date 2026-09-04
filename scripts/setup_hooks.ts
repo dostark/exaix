@@ -337,7 +337,11 @@ cat > "$PRE_PUSH_REFS"
 
 check_and_push_submodule() {
   SUBMODULE_NAME="$1"
-  if [ ! -d "$SUBMODULE_NAME/.git" ]; then
+  # An initialized submodule's ".git" is a FILE (a gitlink pointing at the real
+  # gitdir under .git/modules/), not a directory — "-d" here always evaluated
+  # false and silently skipped this whole check. "-e" covers both the gitlink
+  # file (initialized) and an absent/uninitialized submodule correctly.
+  if [ ! -e "$SUBMODULE_NAME/.git" ]; then
     return 0
   fi
 
