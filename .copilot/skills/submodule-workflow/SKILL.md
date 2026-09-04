@@ -19,13 +19,15 @@ qwen_skill: submodule-workflow
 
 Key points
 
-- exaix-dev-docs is a real Git submodule, not a normal nested folder
-- The parent repository only stores a pointer to the submodule commit
+- exaix-dev-docs and packages-team are real Git submodules, not normal nested folders
+- The parent repository only stores a pointer to each submodule's commit
 - A broken workflow can leave the parent repo pointing at a detached or uncommitted submodule state
 - ALWAYS commit submodule changes first, then update the parent pointer — **except for
   plan-step commits** (a parent commit whose message carries a `plan:` field), which use
   the commit-together flow below so `scripts/commit_plan_step.ts` can verify the phase
-  file and the parent stay in sync
+  file and the parent stay in sync. The plan-step-commit exception applies only to
+  `exaix-dev-docs` planning docs — `packages-team` is source code, not planning docs, so
+  it always follows the "submodule first" rule below, never the exception.
 
 Canonical prompt (short):
 "Update exaix-dev-docs submodule for {goal}: commit submodule change first, push it,
@@ -33,9 +35,11 @@ then update the parent repo pointer and commit with the submodule SHA reference.
 
 Core policy
 
-1. Make the documentation or planning change inside exaix-dev-docs/
+1. Make the change inside the submodule — documentation/planning changes inside
+   exaix-dev-docs/, Team-tier source/test changes inside packages-team/
 2. Commit and push that change in the submodule repository
-3. In the parent repo, run git add exaix-dev-docs after the submodule commit exists
+3. In the parent repo, run git add exaix-dev-docs (or git add packages-team) after the
+   submodule commit exists
 4. Commit the pointer update in the parent repo with a clear message referencing the submodule SHA
 5. Keep matching or related branch names across repos (feat/<feature> + feat/<feature>-docs)
 
@@ -70,6 +74,10 @@ commit the submodule first. Instead:
 The general "submodule first" rule still governs all NON-plan-step submodule changes.
 
 Recommended local workflow
+
+The same submodule-first sequence applies to `packages-team` (Team-tier source/test
+changes) — substitute `packages-team` for `exaix-dev-docs` and use a `feat:`/`fix:` commit
+type instead of `docs:` in the steps below.
 
 ```bash
 # Ensure submodules are initialized

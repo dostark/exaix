@@ -323,9 +323,24 @@ fi
 rm -f "$MANIFEST_BACKUP"
 
 # 2. Submodule Safety Check
-#    If the parent repo includes a changed exaix-dev-docs pointer, ensure
-#    the submodule is committed and pushed before pushing the parent repo.
-if [ -d "exaix-dev-docs/.git" ]; then
+#    For each submodule whose pointer changed in this push, ensure it is
+#    committed and pushed to its own remote before the parent repo is pushed —
+#    otherwise CI (which fetches both exaix-dev-docs and packages-team on every
+#    run) would resolve a gitlink pointing at a commit that doesn't exist yet.
+#    exaix-enterprise is deliberately excluded: CI never fetches it, so this
+#    check does not apply.
+#    Git's pre-push hook protocol feeds the ref list on stdin, which can only be
+#    consumed once — captured to a file here so both submodule checks below can
+#    each read the same ref list independently.
+PRE_PUSH_REFS=$(mktemp)
+cat > "$PRE_PUSH_REFS"
+
+check_and_push_submodule() {
+  SUBMODULE_NAME="$1"
+  if [ ! -d "$SUBMODULE_NAME/.git" ]; then
+    return 0
+  fi
+
   SUBMODULE_CHANGED=0
   while read LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
     if [ "$LOCAL_SHA" = "0000000000000000000000000000000000000000" ]; then
@@ -333,29 +348,29 @@ if [ -d "exaix-dev-docs/.git" ]; then
     fi
 
     if [ "$REMOTE_SHA" = "0000000000000000000000000000000000000000" ]; then
-      CHANGED_SUBMODULE=$(git diff-tree --no-commit-id --name-only --submodule=log -r "$LOCAL_SHA" -- exaix-dev-docs 2>/dev/null || true)
+      CHANGED_SUBMODULE=$(git diff-tree --no-commit-id --name-only --submodule=log -r "$LOCAL_SHA" -- "$SUBMODULE_NAME" 2>/dev/null || true)
     else
-      CHANGED_SUBMODULE=$(git diff --name-only --submodule=log "$REMOTE_SHA".."$LOCAL_SHA" -- exaix-dev-docs 2>/dev/null || true)
+      CHANGED_SUBMODULE=$(git diff --name-only --submodule=log "$REMOTE_SHA".."$LOCAL_SHA" -- "$SUBMODULE_NAME" 2>/dev/null || true)
     fi
 
     if [ -n "$CHANGED_SUBMODULE" ]; then
       SUBMODULE_CHANGED=1
       break
     fi
-  done
+  done < "$PRE_PUSH_REFS"
 
   if [ "$SUBMODULE_CHANGED" -eq 1 ]; then
-    echo "🔐 Detected exaix-dev-docs submodule pointer change in the parent repo."
-    cd exaix-dev-docs || exit 1
+    echo "🔐 Detected $SUBMODULE_NAME submodule pointer change in the parent repo."
+    cd "$SUBMODULE_NAME" || exit 1
 
     if [ -n "$(git status --porcelain)" ]; then
-      echo "❌ exaix-dev-docs has uncommitted changes. Commit or stash them before pushing the parent repo."
+      echo "❌ $SUBMODULE_NAME has uncommitted changes. Commit or stash them before pushing the parent repo."
       exit 1
     fi
 
     UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)
     if [ -z "$UPSTREAM" ]; then
-      echo "❌ exaix-dev-docs has no upstream branch configured. Push it manually before pushing the parent repo."
+      echo "❌ $SUBMODULE_NAME has no upstream branch configured. Push it manually before pushing the parent repo."
       exit 1
     fi
 
@@ -363,19 +378,24 @@ if [ -d "exaix-dev-docs/.git" ]; then
     AHEAD=$(echo "$AHEAD_BEHIND" | awk '{print $1}')
 
     if [ "$AHEAD" -gt 0 ]; then
-      echo "🔁 Pushing exaix-dev-docs submodule to its upstream branch ($UPSTREAM)..."
+      echo "🔁 Pushing $SUBMODULE_NAME submodule to its upstream branch ($UPSTREAM)..."
       git push
       if [ $? -ne 0 ]; then
-        echo "❌ Failed to push exaix-dev-docs. Push the submodule first before pushing the parent repo."
+        echo "❌ Failed to push $SUBMODULE_NAME. Push the submodule first before pushing the parent repo."
         exit 1
       fi
     else
-      echo "✅ exaix-dev-docs submodule is already pushed to upstream."
+      echo "✅ $SUBMODULE_NAME submodule is already pushed to upstream."
     fi
 
     cd - >/dev/null || exit 1
   fi
-fi
+}
+
+check_and_push_submodule exaix-dev-docs
+check_and_push_submodule packages-team
+
+rm -f "$PRE_PUSH_REFS"
 
 # 3. Full Type Check (all source AND test files)
 #    The pre-push hook checks all packages, apps, and tests.
