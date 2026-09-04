@@ -15,8 +15,8 @@
 
 import { assert, assertFalse } from "@std/assert";
 import { McpAgentStrategy } from "@exaix/execution";
-import type { AgentOrchestrator, IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions } from "@exaix/schemas/agent_orchestrator.ts";
+import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
+import type { IAgentExecutionOptions } from "@exaix/schemas/agent_composer.ts";
 import { SecurityMode } from "@exaix/core";
 
 /** Minimal blueprint sufficient for buildAgentArgs (no blueprint fields are read) */
@@ -51,7 +51,7 @@ type BuildArgsFn = {
 };
 
 function withStrategy(fn: (strategy: BuildArgsFn) => void): void {
-  const strategy = new McpAgentStrategy({} as AgentOrchestrator);
+  const strategy = new McpAgentStrategy({} as AgentComposer);
   try {
     fn((strategy as any) as BuildArgsFn);
   } finally {

@@ -49,7 +49,7 @@ min_context_window = 32000
 supports_thinking = false
 candidates = ["claude-cli"]
 
-# Verifies CliDelegateStrategy: AgentOrchestrator registers it only when enabled = true, and
+# Verifies CliDelegateStrategy: AgentComposer registers it only when enabled = true, and
 # dispatches to it only for a blueprint whose capabilities include "cli_delegate" (the scenario
 # patches a SANDBOXED COPY of senior-coder.md, not the real Blueprints/, to add that capability).
 # Same model as [ai]/[models.default] above — every part of the test uses one tool/model.

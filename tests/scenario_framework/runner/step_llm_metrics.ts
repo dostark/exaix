@@ -5,7 +5,7 @@
  * the workspace journal (`.exa/journal.db`), scoped to the exact rowid window synthetic_runner
  * already tracks per step. Phase 140a Step 3.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/runner/synthetic_runner.ts, packages/execution/src/agent_orchestrator.ts]
+ * @related-files [tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/runner/synthetic_runner.ts, packages/execution/src/agent_composer.ts]
  */
 
 import { join } from "@std/path";

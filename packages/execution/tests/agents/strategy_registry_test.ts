@@ -10,7 +10,7 @@ import { assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { StrategyRegistry } from "@exaix/execution";
 import type { IExecutionStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 /**
  * Mock strategy for tests

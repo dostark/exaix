@@ -10,7 +10,7 @@
  */
 
 import { assertEquals, assertFalse, assertNotEquals } from "@std/assert";
-import { ActivityActor, ActorType, MemoryBankSource, RequestKind, RuntimeKind } from "@exaix/core";
+import { ActivityActor, ActorType, MemoryBankSource, RequestKind, RunnerKind } from "@exaix/core";
 import {
   GroupingMode,
   LogGroupingMode,
@@ -30,13 +30,17 @@ Deno.test("ActorType enum has correct string values", () => {
   assertFalse("IDENTITY" in ActorType);
 });
 
-Deno.test("RuntimeKind (renamed from AgentKind) exposes exactly the live members", () => {
-  assertEquals(RuntimeKind.AGENT_EXECUTOR, "agent-executor");
-  assertEquals(RuntimeKind.REQUEST_ROUTER, "request-router");
-  // IDENTITY_RUNNER, FLOW_AGENT, TOOL_AGENT were deleted as dead code (Phase 179 Step 3)
-  assertFalse("IDENTITY_RUNNER" in RuntimeKind);
-  assertFalse("FLOW_AGENT" in RuntimeKind);
-  assertFalse("TOOL_AGENT" in RuntimeKind);
+Deno.test("RunnerKind (renamed from AgentKind) exposes exactly the live members", () => {
+  assertEquals(RunnerKind.AGENT_COMPOSER, "agent-composer");
+  assertEquals(RunnerKind.AGENT_RUNNER, "agent-runner");
+  assertEquals(RunnerKind.REQUEST_ROUTER, "request-router");
+  assertEquals(Object.values(RunnerKind).sort(), ["agent-composer", "agent-runner", "request-router"]);
+  // AGENT_EXECUTOR was renamed to AGENT_COMPOSER; IDENTITY_RUNNER, FLOW_AGENT, TOOL_AGENT
+  // were deleted as dead code (Phase 179 Step 3)
+  assertFalse("AGENT_EXECUTOR" in RunnerKind);
+  assertFalse("IDENTITY_RUNNER" in RunnerKind);
+  assertFalse("FLOW_AGENT" in RunnerKind);
+  assertFalse("TOOL_AGENT" in RunnerKind);
 });
 
 Deno.test("ActivityActor no longer exposes IDENTITY", () => {

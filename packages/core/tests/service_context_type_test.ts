@@ -9,14 +9,14 @@
  * It exists solely to verify the TypeScript contract at compile time.
  */
 
-import { ActorType, RuntimeKind } from "@exaix/core";
+import { ActorType, RunnerKind } from "@exaix/core";
 import type { IServiceContext } from "@exaix/core";
 
 const _ctx: IServiceContext = {
   actor: "user:test",
   actorType: ActorType.USER,
-  agentId: "agent-executor",
-  agentKind: RuntimeKind.AGENT_EXECUTOR,
+  runnerId: "agent-composer",
+  runnerKind: RunnerKind.AGENT_COMPOSER,
   agentRole: "senior-coder",
   traceId: crypto.randomUUID(),
 };

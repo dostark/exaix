@@ -38,10 +38,10 @@ import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } f
 import type { IDatabaseService, IModelRegistry } from "@exaix/core/types";
 import { TaskType } from "@exaix/core/types";
 import {
-  AgentOrchestrator,
+  AgentComposer,
   ContextBudgetManager,
   ExecutionContextService,
-  type IAgentOrchestratorOptions,
+  type IAgentComposerOptions,
   type IGuardrailRunner,
 } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core";
@@ -84,11 +84,11 @@ export interface IPlanExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields that override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
-  /** Resolver threaded into AgentOrchestrator so resolveModelFromBlueprint's
+  /** Resolver threaded into AgentComposer so resolveModelFromBlueprint's
    *  ModelResolver.resolve() branch is reachable during real execution — without it,
    *  best/route/auto-admit/task_type derivation never fires, regardless of blueprint content. */
   modelResolver?: ModelResolver;
-  /** Edition-selected registry threaded into AgentOrchestrator's PromptBudgetAllocator so
+  /** Edition-selected registry threaded into AgentComposer's PromptBudgetAllocator so
    *  context-window resolution reaches production instead of the hardcoded 128K fallback —
    *  without it every allocate() call ignores the resolved model's real context window. */
   modelRegistry?: IModelRegistry;
@@ -277,15 +277,15 @@ export class PlanExecutor {
   }
 
   /**
-   * Create an AgentOrchestrator instance with proper dependencies.
+   * Create an AgentComposer instance with proper dependencies.
    */
-  private async createAgentExecutor(traceId: string, context: IPlanContext): Promise<AgentOrchestrator> {
+  private async createAgentExecutor(traceId: string, context: IPlanContext): Promise<AgentComposer> {
     const pathResolver = new PathResolver(this.config, {
       traceId,
     });
     const permissions = new PortalPermissionsService(this.config.portals);
 
-    const options: IAgentOrchestratorOptions = {};
+    const options: IAgentComposerOptions = {};
     if (this.options.guardrailRunner) {
       options.guardrailRunner = this.options.guardrailRunner;
     }
@@ -302,13 +302,13 @@ export class PlanExecutor {
     }
 
     // Builds the allocator here (rather than leaving it undefined) so it carries the
-    // edition-selected registry, bypassing AgentOrchestrator's own default construction.
+    // edition-selected registry, bypassing AgentComposer's own default construction.
     // When modelRegistry is absent, undefined passes through and that default still applies.
     const promptBudgetAllocator = this.options.modelRegistry
       ? new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger, this.options.modelRegistry)
       : undefined;
 
-    return new AgentOrchestrator({
+    return new AgentComposer({
       config: this.config,
       db: this.db as DatabaseService,
       logger: this.logger,
@@ -387,7 +387,7 @@ export class PlanExecutor {
     context: IPlanContext,
     portalName: string,
     git: GitService | null,
-    agentExecutor: AgentOrchestrator,
+    agentExecutor: AgentComposer,
     actionReports: IPlanActionReport[],
   ): Promise<string | null> {
     const traceId = context.trace_id;

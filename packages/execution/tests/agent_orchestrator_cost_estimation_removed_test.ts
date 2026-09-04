@@ -2,9 +2,9 @@
  * @module AgentExecutorCostEstimationRemovedTest
  * @path packages/execution/tests/agent_orchestrator_cost_estimation_removed_test.ts
  * @description Phase 135 Step 12 (GAP-23/GAP-24/GAP-25) — proves
- *   AgentOrchestrator.estimateExecutionUsage() and its pricingLookup constructor
+ *   AgentComposer.estimateExecutionUsage() and its pricingLookup constructor
  *   parameter are fully removed, rather than narrowed. Before this step,
- *   AgentOrchestrator accepted a 16th positional pricingLookup argument
+ *   AgentComposer accepted a 16th positional pricingLookup argument
  *   (packages/core/src/types/i_model_pricing_lookup.ts:IModelPricingLookup) that
  *   fed a heuristic, structurally-inaccurate cost estimate
  *   (GAP-23: prices unmeasurable output tokens at the input rate; GAP-24: ignores
@@ -17,17 +17,17 @@
  *   tests/integration/agent/cost_logging_test.ts, which already owns the
  *   git-initialised-portal fixture this scenario needs.
  * @architectural-layer Test
- * @related-files [packages/execution/src/agent_orchestrator.ts, tests/integration/agent/cost_logging_test.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, tests/integration/agent/cost_logging_test.ts]
  */
 
 import { assertEquals } from "@std/assert";
 
-Deno.test("[regression] AgentOrchestrator constructor no longer accepts a pricingLookup argument (structural — TS2554 too-many-arguments at compile time if reintroduced)", () => {
+Deno.test("[regression] AgentComposer constructor no longer accepts a pricingLookup argument (structural — TS2554 too-many-arguments at compile time if reintroduced)", () => {
   // Structural/compile-time proof: `deno check` on this file is the actual gate if
   // pricingLookup or estimateExecutionUsage were ever reintroduced. Checks for the actual
   // declarations, not any textual mention (a comment below legitimately names it).
   const source = Deno.readTextFileSync(
-    new URL("../src/agent_orchestrator.ts", import.meta.url),
+    new URL("../src/agent_composer.ts", import.meta.url),
   );
   assertEquals(
     /private\s+async\s+estimateExecutionUsage\s*\(/.test(source),

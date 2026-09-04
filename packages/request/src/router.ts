@@ -16,7 +16,15 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
-import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
+import {
+  AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_FAILED,
+  AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_RUNNER_ID,
+  PORTAL_CONTEXT_KEY,
+  RequestKind,
+  RunnerKind,
+} from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "@exaix/core/request";
@@ -94,7 +102,7 @@ export interface IRequestRouterConfig {
   agentRunner: IAgentRunner;
   flowValidator: IFlowValidator;
   eventLogger: IEventLogger;
-  defaultAgentId: string;
+  defaultAgentRole: string;
   blueprintsPath: string;
   config: Config;
   routingPolicyService?: IRoutingPolicyService;
@@ -120,7 +128,7 @@ export class RequestRouter {
   private agentRunner: IAgentRunner;
   private flowValidator: IFlowValidator;
   private eventLogger: IEventLogger;
-  private defaultAgentId: string;
+  private defaultAgentRole: string;
   private blueprintsPath: string;
   private config: Config;
   private routingPolicyService?: IRoutingPolicyService;
@@ -131,7 +139,7 @@ export class RequestRouter {
     this.agentRunner = options.agentRunner;
     this.flowValidator = options.flowValidator;
     this.eventLogger = options.eventLogger;
-    this.defaultAgentId = options.defaultAgentId;
+    this.defaultAgentRole = options.defaultAgentRole;
     this.blueprintsPath = options.blueprintsPath;
     this.config = ctx?.config.get() || options.config;
     this.routingPolicyService = options.routingPolicyService;
@@ -318,7 +326,7 @@ export class RequestRouter {
     const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
 
     // Execute agent
-    const result = await this.agentRunner.run(blueprint, parsedRequest);
+    const result = await this.runAgentRunnerWithJournal(blueprint, parsedRequest, requestId, traceId);
 
     return {
       type: RequestKind.AGENT_ROLE,
@@ -334,7 +342,7 @@ export class RequestRouter {
     await this.eventLogger.log({
       action: "request.routing.default",
       target: requestId,
-      payload: { defaultAgentId: this.defaultAgentId },
+      payload: { defaultAgentRole: this.defaultAgentRole },
       traceId,
     });
 
@@ -342,7 +350,7 @@ export class RequestRouter {
 
     if (policyDecision) {
       await this.logRoutingDecision(requestId, traceId, {
-        default_agent_id: this.defaultAgentId,
+        default_agent_role: this.defaultAgentRole,
       }, policyDecision);
 
       if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
@@ -384,13 +392,52 @@ export class RequestRouter {
     const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
 
     // Execute default agent
-    const result = await this.agentRunner.run(blueprint, parsedRequest);
+    const result = await this.runAgentRunnerWithJournal(blueprint, parsedRequest, requestId, traceId);
 
     return {
       type: RequestKind.AGENT_ROLE,
       agentRole: selectedAgentRole,
       result,
     };
+  }
+
+  /** Wraps an `agentRunner.run()` call with Activity Journal execution-start/complete/error
+   *  logging tagged `runnerKind: RunnerKind.AGENT_RUNNER`, shared by routeToAgent and
+   *  routeToDefaultAgent. */
+  private async runAgentRunnerWithJournal(
+    blueprint: IBlueprint,
+    parsedRequest: IParsedRequest,
+    requestId: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<IAgentExecutionResult> {
+    await this.eventLogger.log({
+      action: AGENT_EVENT_EXECUTION_STARTED,
+      target: requestId,
+      runnerId: AGENT_RUNNER_ID,
+      runnerKind: RunnerKind.AGENT_RUNNER,
+      traceId,
+    });
+    try {
+      const result = await this.agentRunner.run(blueprint, parsedRequest);
+      await this.eventLogger.log({
+        action: AGENT_EVENT_EXECUTION_COMPLETED,
+        target: requestId,
+        runnerId: AGENT_RUNNER_ID,
+        runnerKind: RunnerKind.AGENT_RUNNER,
+        traceId,
+      });
+      return result;
+    } catch (error) {
+      await this.eventLogger.log({
+        action: AGENT_EVENT_EXECUTION_FAILED,
+        target: requestId,
+        runnerId: AGENT_RUNNER_ID,
+        runnerKind: RunnerKind.AGENT_RUNNER,
+        traceId,
+        payload: { error_message: error instanceof Error ? error.message : String(error) },
+      });
+      throw error;
+    }
   }
 
   protected async loadBlueprint(agentRole: string): Promise<IBlueprint | null> {
@@ -448,7 +495,7 @@ export class RequestRouter {
     const allowDynamicRouting = request.frontmatter.allow_dynamic_routing ??
       this.config.routing?.enable_dynamic_routing ?? false;
     if (!allowDynamicRouting || !this.routingPolicyService) {
-      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentId };
+      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentRole };
     }
 
     try {
@@ -483,13 +530,13 @@ export class RequestRouter {
         action: "routing.fallback_used",
         target: request.requestId,
         payload: {
-          fallback_agent_role: explicitAgentRole ?? this.defaultAgentId,
+          fallback_agent_role: explicitAgentRole ?? this.defaultAgentRole,
           reason: error instanceof Error ? error.message : String(error),
           allow_dynamic_routing: true,
         },
         traceId: request.traceId,
       });
-      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentId };
+      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentRole };
     }
   }
 

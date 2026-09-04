@@ -9,7 +9,7 @@
  *   permitted_tools is always the ceiling) and the standalone pure-function convention in
  *   `task_type_derivation.ts`.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_orchestrator.ts, packages/execution/src/task_type_derivation.ts, packages/flow/src/dynamic_step_executor.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/task_type_derivation.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
 import type { Opt, Reason } from "@exaix/core/types";

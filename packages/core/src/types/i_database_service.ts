@@ -22,7 +22,7 @@ export interface IDatabaseService {
     traceId?: string,
     actorType?: string | null,
     agentRole?: string | null,
-    agentKind?: string | null,
+    runnerKind?: string | null,
     promptTokens?: number,
     completionTokens?: number,
     costUsd?: number,

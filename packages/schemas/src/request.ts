@@ -21,7 +21,7 @@ export const PlanContextRefSchema = z.string().regex(
 export const RequestSchema = z.object({
   trace_id: z.string().uuid("Invalid trace_id: must be a valid UUID"),
   agent_role: z.string().min(1, "agent_role cannot be empty"),
-  agent_kind: z.string().min(0).optional(),
+  runner_kind: z.string().min(0).optional(),
   status: z.enum(REQUEST_STATUS_VALUES),
   priority: z.number().int().min(0).max(10).default(5),
   created_at: z.string().datetime().optional(),

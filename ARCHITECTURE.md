@@ -409,7 +409,7 @@ The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `Confi
 **Security controls (config security hardening):**
 
 - **Three-tier MCP authorization** — `ConfigSet.execute()` routes by the key's tier, **derived** (not hand-annotated) from existing metadata via `resolveTier(key)` (`packages/core/src/config/registry.ts`): `swap: "restart"` or `edition: "team"` → `"dangerous"` (stage + human approval + a `requires_confirmation: true` marker in the response for a future approval-UI phase); otherwise → `"leaf"` (stage + human approval); an explicit `tier: "safe"` override on the `configurable()` opts → `"safe"` (writes through immediately, no staging). The own-portal auto-approve tier is deferred (no own-portal context on the MCP tool yet). `requires_confirmation` on `IToolManifestEntry` is metadata-only this phase.
-- **Deny-permanently blocklist** — a `config_mcp_blocklist` table (`agent_id` nullable = all-agents; `key_pattern` glob) blocks MCP config writes. `ConfigSet`/`ConfigApply` refuse blocked paths through `IConfigAdapter.isPathBlocked()` (the adapter owns the private config `Database`; MCP tools never touch a raw handle), returning a `ConfigPathBlockedError` via `formatToolError`. Managed by `exactl config block {add,remove,list}`.
+- **Deny-permanently blocklist** — a `config_mcp_blocklist` table (`agent_role` nullable = all agent roles; `key_pattern` glob) blocks MCP config writes. `ConfigSet`/`ConfigApply` refuse blocked paths through `IConfigAdapter.isPathBlocked()` (the adapter owns the private config `Database`; MCP tools never touch a raw handle), returning a `ConfigPathBlockedError` via `formatToolError`. Managed by `exactl config block {add,remove,list}`.
 - **Rate limiting** — CLI debounce (max `CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW` per `CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS`) is **DB-backed** via `IConfigAdapter.countRecentWrites()` so it survives across separate CLI processes; MCP staging is capped at `MCP_CONFIG_SET_MAX_PENDING` (in-process); the append-only log has a `CONFIG_DB_OVERRIDE_HARD_LIMIT` anti-DoS page-limit that **exempts tombstone (`unset`) and `init` writes** so recovery always works, with `exactl config compact` (`IConfigAdapter.compact()`, collapses to one row per key) as the escape hatch. All three throw/surface `ConfigRateLimitedError`.
 
 **Config history, rollback, and integrity checksum:**
@@ -552,7 +552,7 @@ the other's behaviour:
   or selected by the model at runtime.
 - **`strategy`** (`react` | `mcp` | `cli_delegate`, optional, DECLARED-only) — the _agent
   strategy_ axis: routes a DECLARED step through the agent strategy registry
-  (`AgentOrchestrator.executeStep`) instead of the default single-shot `AgentRunner.run` path.
+  (`AgentComposer.executeStep`) instead of the default single-shot `AgentRunner.run` path.
   Left unset (the catalog default for most steps), the step takes the direct-generate path.
   `react` runs the daemon's own ReAct tool-use loop against the step's portal; `cli_delegate`
   delegates the whole step to a headless CLI subprocess (`opencode`/`claude`) driving its own
@@ -561,7 +561,7 @@ the other's behaviour:
   and the two axes would conflict.
 
 `AgentStepHandler.execute` checks `step.strategy` first: when set, it calls
-`IAgentExecutor.runWithStrategy`, which builds a fresh, per-call `AgentOrchestrator` (never a
+`IAgentExecutor.runWithStrategy`, which builds a fresh, per-call `AgentComposer` (never a
 stored, long-lived instance, so one flow's writes can never leak into an unrelated flow's audit)
 and dispatches through the forced strategy; otherwise it falls through to the unchanged `run()`
 path, so a step with no `strategy` is byte-for-byte unaffected. See
@@ -745,7 +745,7 @@ For env var reference, see `packages/flow/README.md#session-tool-integration` an
 
 #### 6. AgentExecutor Decomposition — Service-oriented Architecture
 
-**File:** `packages/execution/src/agent_orchestrator.ts`
+**File:** `packages/execution/src/agent_composer.ts`
 
 AgentExecutor is a **thin orchestrator and strategy dispatcher** — its sole responsibility is routing each execution sub-step to the appropriate injected service. Sub-domain logic lives in dedicated services, not in AgentExecutor itself:
 
@@ -792,7 +792,7 @@ for the parity guard.
 - The `IAgentExecutorDeps` interface (16 fields at peak, now 12) continues to shrink as services bundle their own sub-dependencies.
 - Adding a new execution capability means adding a new service, not growing AgentExecutor.
 
-See the table above for the full extraction plan; `packages/execution/src/agent_orchestrator.ts`'s
+See the table above for the full extraction plan; `packages/execution/src/agent_composer.ts`'s
 module header lists the corresponding service files.
 
 #### 6a. IExecutionStrategy — Per-Step Direct-API vs Headless-CLI Execution
@@ -906,7 +906,7 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### Tool Selection & Resolution
 
-Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentOrchestrator` reads `IToolRegistry.getTools()` and `PromptBuilder` renders the resulting `## Available Tools` prompt section plus the TOML action-block calling convention `LegacyAgentStrategy` parses responses against), **agent role `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Agents/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the agent role's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the agent role doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
+Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentComposer` reads `IToolRegistry.getTools()` and `PromptBuilder` renders the resulting `## Available Tools` prompt section plus the TOML action-block calling convention `LegacyAgentStrategy` parses responses against), **agent role `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Agents/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the agent role's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the agent role doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
 
 For the full resolution order, the fail-closed semantics (`permitted_tools: []` permits nothing regardless of skill declarations; `undefined` means no restriction), and the pure `resolveEffectiveSkillTools()` union+intersect function, see `packages/execution/README.md#tool-selection--resolution`.
 

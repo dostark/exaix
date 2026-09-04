@@ -12,7 +12,7 @@ import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import {
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,

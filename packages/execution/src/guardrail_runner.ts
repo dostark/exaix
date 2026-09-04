@@ -6,7 +6,7 @@
  *   (packages-team/guardrail/) which screens agent output against configurable policies.
  * @architectural-layer Services
  * @dependencies [packages/execution/src/strategies/react_loop_strategy.ts]
- * @related-files [packages-team/guardrail/src/guardrail_runner.ts, packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages-team/guardrail/src/guardrail_runner.ts, packages/execution/src/agent_composer.ts]
  */
 
 import type { GuardrailIncident } from "@exaix/schemas";

@@ -68,7 +68,7 @@ MANDATORY — Phase 0: Comprehend Exaix's Own Architecture
         - Agent = runtime execution unit (agent-runner, flow-runner, etc.)
         - Agent Role = LLM persona (resolved from Blueprints/Agents/)
       → Extract the journal field naming conventions:
-        actor/actor_type (who), agent_id/agent_kind (how), agent_role (what persona)
+        actor/actor_type (who), runner_id/runner_kind (how), agent_role (what persona)
       → Extract the pipeline artifact code identifiers:
         ExecutionTriggerEnvelope, IPlanMetadata, IReviewStatus, IChangesetResult
       → Extract wait state lifecycle: resume/approve/reject/amend/expire/cancel

@@ -1,7 +1,7 @@
 /**
  * @module ResolveBlueprintModelWiringTest
  * @path packages/execution/tests/resolve_blueprint_model_wiring_test.ts
- * @description Phase 132 Step 3 — validates that AgentOrchestrator uses ModelResolver
+ * @description Phase 132 Step 3 — validates that AgentComposer uses ModelResolver
  *   when injected, replacing the inline provider:model split. Also verifies that
  *   resolved options are forwarded to generate() calls.
  * @architectural-layer Execution
@@ -11,7 +11,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { initTestDbService } from "@exaix/testing";
-import { AgentOrchestrator } from "@exaix/execution";
+import { AgentComposer } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
 import type { IResolvedModel } from "@exaix/schemas";
 import { EventLogger } from "@exaix/core/logger";
@@ -24,7 +24,7 @@ function createMockResolver(expected: IResolvedModel): ModelResolver {
   } as ModelResolver;
 }
 
-Deno.test("[step132.3] AgentOrchestrator with injected ModelResolver calls resolve", async () => {
+Deno.test("[step132.3] AgentComposer with injected ModelResolver calls resolve", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const config = createTestConfig();
@@ -43,7 +43,7 @@ Deno.test("[step132.3] AgentOrchestrator with injected ModelResolver calls resol
 
     const mockResolver = createMockResolver(mockModel);
 
-    const executor = new AgentOrchestrator({
+    const executor = new AgentComposer({
       config,
       db,
       logger,
@@ -59,7 +59,7 @@ Deno.test("[step132.3] AgentOrchestrator with injected ModelResolver calls resol
   }
 });
 
-Deno.test("[step132.3] AgentOrchestrator with injected ModelResolver resolves provider:model", async () => {
+Deno.test("[step132.3] AgentComposer with injected ModelResolver resolves provider:model", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();
@@ -93,7 +93,7 @@ Test agent
 
     const mockResolver = createMockResolver(mockModel);
 
-    const executor = new AgentOrchestrator({
+    const executor = new AgentComposer({
       config,
       db,
       logger,

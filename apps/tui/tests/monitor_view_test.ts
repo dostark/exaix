@@ -157,7 +157,7 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
         actor: (a.actor as string | null) ?? null,
         actor_type: null,
         agent_role: (a.agent_role as string | null) ?? null,
-        agent_kind: null,
+        runner_kind: null,
         action_type: String(a.action_type ?? "unknown"),
         target: (a.target as string | null) ?? null,
         payload: typeof a.payload === "string" ? a.payload : JSON.stringify(a.payload ?? {}),

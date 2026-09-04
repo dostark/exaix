@@ -176,22 +176,22 @@ export interface IConfigAdapter {
    * run, emits ConfigIntegrityVerified on match and ConfigIntegrityMismatch on an out-of-band edit. */
   verifyIntegrity(): Promise<IIntegrityResult>;
 
-  /** True if `key` is in the MCP deny-permanently blocklist for `agentId`; a NULL-agent
-   * block applies to all agents. */
-  isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean;
+  /** True if `key` is in the MCP deny-permanently blocklist for `agentRole`; a NULL-agent-role
+   * block applies to all agent roles. */
+  isPathBlocked(key: string, agentRole?: Opt<string, Reason.QueryFilter>): boolean;
 
   /** The block reason for a blocked `key`, if any (undefined when not blocked). */
-  getBlockReason(key: string, agentId?: Opt<string, Reason.QueryFilter>): string | undefined;
+  getBlockReason(key: string, agentRole?: Opt<string, Reason.QueryFilter>): string | undefined;
 
   /** Add a deny-permanently blocklist pattern (admin/CLI). */
   addBlock(
     pattern: string,
     reason?: Opt<string, Reason.OptionalInput>,
-    agentId?: Opt<string, Reason.QueryFilter>,
+    agentRole?: Opt<string, Reason.QueryFilter>,
   ): void;
 
   /** Remove a blocklist pattern (admin/CLI). */
-  removeBlock(pattern: string, agentId?: Opt<string, Reason.QueryFilter>): void;
+  removeBlock(pattern: string, agentRole?: Opt<string, Reason.QueryFilter>): void;
 
   /** List all blocklist patterns, newest first. */
   listBlocks(): IBlocklistEntry[];
@@ -667,18 +667,18 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return { ok, stored: String(stored), computed };
   }
 
-  isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean {
-    return dbIsPathBlocked(this.db, key, agentId);
+  isPathBlocked(key: string, agentRole?: Opt<string, Reason.QueryFilter>): boolean {
+    return dbIsPathBlocked(this.db, key, agentRole);
   }
 
   getBlockReason(
     key: string,
-    agentId?: Opt<string, Reason.QueryFilter>,
+    agentRole?: Opt<string, Reason.QueryFilter>,
   ): string | undefined {
-    if (!dbIsPathBlocked(this.db, key, agentId)) return undefined;
-    // Return the reason of the first matching pattern (NULL-agent or this agent).
+    if (!dbIsPathBlocked(this.db, key, agentRole)) return undefined;
+    // Return the reason of the first matching pattern (NULL-agent-role or this agent role).
     for (const entry of listBlocklistPatterns(this.db)) {
-      if (entry.agent_id !== null && entry.agent_id !== agentId) continue;
+      if (entry.agent_role !== null && entry.agent_role !== agentRole) continue;
       if (globMatches(entry.key_pattern, key)) return entry.reason ?? undefined;
     }
     return undefined;
@@ -687,13 +687,13 @@ export class DirectConfigAdapter implements IConfigAdapter {
   addBlock(
     pattern: string,
     reason?: Opt<string, Reason.OptionalInput>,
-    agentId?: Opt<string, Reason.QueryFilter>,
+    agentRole?: Opt<string, Reason.QueryFilter>,
   ): void {
-    addBlocklistPattern(this.db, pattern, reason, agentId);
+    addBlocklistPattern(this.db, pattern, reason, agentRole);
   }
 
-  removeBlock(pattern: string, agentId?: Opt<string, Reason.QueryFilter>): void {
-    removeBlocklistPattern(this.db, pattern, agentId);
+  removeBlock(pattern: string, agentRole?: Opt<string, Reason.QueryFilter>): void {
+    removeBlocklistPattern(this.db, pattern, agentRole);
   }
 
   listBlocks(): IBlocklistEntry[] {

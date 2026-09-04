@@ -72,7 +72,7 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
       agentRunner: mockAgentRunner,
       flowValidator: mockFlowValidator,
       eventLogger: logger,
-      defaultAgentId: "default-agent",
+      defaultAgentRole: "default-agent",
       blueprintsPath: join(tempDir, "Blueprints"),
       config,
     });

@@ -32,7 +32,7 @@ const ACTIVITY_TABLE_DDL = `
     actor TEXT NOT NULL,
     actor_type TEXT,
     agent_role TEXT,
-    agent_kind TEXT,
+    runner_kind TEXT,
     action_type TEXT NOT NULL,
     target TEXT,
     payload TEXT NOT NULL,
@@ -56,7 +56,7 @@ const ACTIVITY_COLUMNS: ReadonlySet<string> = new Set([
   "actor",
   "actor_type",
   "agent_role",
-  "agent_kind",
+  "runner_kind",
   "action_type",
   "target",
   "payload",
@@ -72,7 +72,7 @@ interface LogEntry {
   actor: string;
   actorType: string | null;
   agentRole: string | null;
-  agentKind: string | null;
+  runnerKind: string | null;
   actionType: string;
   target: string | null;
   payload: string;
@@ -89,7 +89,7 @@ export const ActivityRecordSchema = z.object({
   actor: z.string().nullable(),
   actor_type: z.string().nullable(),
   agent_role: z.string().nullable(),
-  agent_kind: z.string().nullable().optional(),
+  runner_kind: z.string().nullable().optional(),
   action_type: z.string(),
   target: z.string().nullable(),
   payload: z.string(),
@@ -177,7 +177,7 @@ export class DatabaseService implements IDatabaseService {
     traceId?: Opt<string, Reason.TraceAbsent>,
     actorType?: Opt<string | null, Reason.OptionalContext>,
     agentRole?: Opt<string | null, Reason.OptionalContext>,
-    agentKind?: Opt<string | null, Reason.OptionalContext>,
+    runnerKind?: Opt<string | null, Reason.OptionalContext>,
     promptTokens?: Opt<number, Reason.OptionalInput>,
     completionTokens?: Opt<number, Reason.OptionalInput>,
     costUsd?: Opt<number, Reason.OptionalInput>,
@@ -193,7 +193,7 @@ export class DatabaseService implements IDatabaseService {
       actor,
       actorType: actorType || null,
       agentRole: agentRole || null,
-      agentKind: agentKind || null,
+      runnerKind: runnerKind || null,
       actionType,
       target,
       payload: JSON.stringify(payload),
@@ -290,7 +290,7 @@ export class DatabaseService implements IDatabaseService {
         this.retryTransaction(() => {
           for (const entry of batch) {
             this.db.exec(
-              `INSERT INTO activity (id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp)
+              `INSERT INTO activity (id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
               [
                 entry.activityId ?? null,
@@ -298,7 +298,7 @@ export class DatabaseService implements IDatabaseService {
                 entry.actor ?? null,
                 entry.actorType ?? null,
                 entry.agentRole ?? null,
-                entry.agentKind ?? null,
+                entry.runnerKind ?? null,
                 entry.actionType ?? null,
                 entry.target ?? null,
                 entry.payload ?? null,
@@ -357,7 +357,7 @@ export class DatabaseService implements IDatabaseService {
     value: string,
   ): Promise<ActivityRecord[]> {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        WHERE ${field} = ?
        ORDER BY timestamp`,
@@ -379,7 +379,7 @@ export class DatabaseService implements IDatabaseService {
 
   getActivitiesByTrace(traceId: string): ActivityRecord[] {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        WHERE trace_id = ?
        ORDER BY timestamp`,
@@ -395,7 +395,7 @@ export class DatabaseService implements IDatabaseService {
 
   getActivitiesByActionType(actionType: string): ActivityRecord[] {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        WHERE action_type = ?
        ORDER BY timestamp`,
@@ -413,7 +413,7 @@ export class DatabaseService implements IDatabaseService {
     await this.flushPendingLogs("getRecentActivity");
 
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        ORDER BY timestamp DESC
        LIMIT ?`,
@@ -523,7 +523,7 @@ export class DatabaseService implements IDatabaseService {
       selectClause += `action_type, COUNT(*) as count`;
     } else {
       selectClause +=
-        `id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp`;
+        `id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp`;
     }
 
     const whereParts: string[] = [];

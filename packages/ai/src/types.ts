@@ -83,7 +83,7 @@ export interface IModelOptions {
   stop?: string[];
   stream?: boolean;
   /** Indices of content blocks eligible for Anthropic cache_control, set by
-   *  AgentOrchestrator based on ContextCache stability analysis. Non-Anthropic
+   *  AgentComposer based on ContextCache stability analysis. Non-Anthropic
    *  providers ignore this field. */
   cachedSections?: number[];
   /** Enable extended/chain-of-thought reasoning. Provider-specific mapping. */

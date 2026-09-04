@@ -2,7 +2,7 @@
  * @module PlanExecutorPromptBudgetRegistryTest
  * @path packages/core/tests/planning/plan_executor_prompt_budget_registry_test.ts
  * @description Phase 135 Step 11 (GAP-10, context-window half) — proves PlanExecutor
- *   threads an IModelRegistry through IPlanExecutorOptions into AgentOrchestrator's
+ *   threads an IModelRegistry through IPlanExecutorOptions into AgentComposer's
  *   internally-constructed PromptBudgetAllocator, so a step's real context-window
  *   resolution reaches production instead of always falling back to the hardcoded
  *   128K default. Before this fix, createAgentExecutor never populated the
@@ -10,7 +10,7 @@
  *   always took the 128_000 fallback branch regardless of the resolved model's real
  *   context window.
  * @architectural-layer Test
- * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_orchestrator.ts, packages/core/src/prompt_budget_allocator.ts]
+ * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts, packages/core/src/prompt_budget_allocator.ts]
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
@@ -74,7 +74,7 @@ Deno.test("PlanExecutor accepts modelRegistry via IPlanExecutorOptions", () => {
 
 Deno.test({
   name:
-    "PlanExecutor's AgentOrchestrator resolves a non-default context window via the injected IModelRegistry (Step 11, GAP-10 context-window half)",
+    "PlanExecutor's AgentComposer resolves a non-default context window via the injected IModelRegistry (Step 11, GAP-10 context-window half)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -126,7 +126,7 @@ Deno.test({
       assertEquals(
         totalTokens,
         LARGE_CONTEXT_WINDOW,
-        "PromptBudgetAllocator constructed inside AgentOrchestrator via PlanExecutor must resolve " +
+        "PromptBudgetAllocator constructed inside AgentComposer via PlanExecutor must resolve " +
           "the injected registry's real context window, not the hardcoded 128K fallback",
       );
       assertNotEquals(

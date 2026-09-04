@@ -19,7 +19,7 @@ function makeLog(overrides: Partial<ILogEntry> = {}): ILogEntry {
     actor: overrides.actor ?? "actor",
     actor_type: overrides.actor_type ?? null,
     agent_role: overrides.agent_role ?? "agent",
-    agent_kind: overrides.agent_kind ?? null,
+    runner_kind: overrides.runner_kind ?? null,
     action_type: overrides.action_type ?? "request_created",
     target: overrides.target ?? "t",
     payload: overrides.payload ?? { k: 1 },

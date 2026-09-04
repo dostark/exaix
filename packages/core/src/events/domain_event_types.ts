@@ -266,7 +266,7 @@ export const DomainEventType = {
   CostSummaryQueried: "cost.query.summary",
   CostBatchFlushed: "cost.batch.flushed",
 
-  // Agent orchestrator events (agent_orchestrator.ts, react_loop_adapter.ts)
+  // Agent orchestrator events (agent_composer.ts, react_loop_adapter.ts)
   AgentOutput: "agent.output",
   // Same value as the legacy ACTIVITY_EVENT_DYNAMIC_TOOL_CALL constant (packages/core/src/
   // types/constants.ts) — trajectory_evaluator.ts still queries by that constant's string

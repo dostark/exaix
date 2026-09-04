@@ -12,11 +12,11 @@
  * existing direct-API call site that doesn't set it explicitly keeps today's exact
  * behavior.
  * @architectural-layer Schemas
- * @related-files [packages/schemas/src/agent_orchestrator.ts]
+ * @related-files [packages/schemas/src/agent_composer.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { ChangesetResultSchema } from "@exaix/schemas/agent_orchestrator.ts";
+import { ChangesetResultSchema } from "@exaix/schemas/agent_composer.ts";
 
 const BASE_RESULT = {
   branch: "feat/test",

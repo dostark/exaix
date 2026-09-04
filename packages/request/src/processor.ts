@@ -11,7 +11,7 @@
 import { basename, join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IAgentExecutionResult, IParsedRequest, IRequestContextContext } from "@exaix/execution";
+import type { IAgentExecutionResult, IBlueprint, IParsedRequest, IRequestContextContext } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest, buildPlanValidationFeedbackPrompt } from "./common.ts";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
@@ -19,11 +19,16 @@ import { PlanValidationError } from "@exaix/core/planning";
 import { getPlanJsonSchema } from "@exaix/schemas/plan_schema.ts";
 import { RequestStatus } from "@exaix/core/status";
 import {
+  AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_FAILED,
+  AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_RUNNER_ID,
   DEFAULT_ANALYZER_MODE,
   MEMORY_CONTEXT_KEY,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
+  RunnerKind,
 } from "@exaix/core";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import type {
@@ -62,7 +67,7 @@ import { BlueprintResolver, type IBlueprintResolver } from "./blueprint_resolver
 import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_context_builder.ts";
 import { ClarificationGateway, type IClarificationGateway } from "./clarification_gateway.ts";
 import { type IRejectedPlanHandler, RejectedPlanHandler } from "./rejected_plan_handler.ts";
-import type { ILogEvent } from "@exaix/core";
+import type { ILogEvent, JSONValue } from "@exaix/core";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 
@@ -728,7 +733,15 @@ export class RequestProcessor {
     };
 
     const planJsonSchema = getPlanJsonSchema();
-    let result = await agentRunner.run(blueprint, request, planJsonSchema);
+    let result = await this.runAgentRunnerWithJournal({
+      agentRunner,
+      blueprint,
+      request,
+      planJsonSchema,
+      requestId,
+      traceId,
+      traceLogger,
+    });
     let attempts = 0;
     const maxRetries = 2;
 
@@ -751,7 +764,15 @@ export class RequestProcessor {
             userPrompt: buildPlanValidationFeedbackPrompt(request.userPrompt, error.message, result.content),
           };
 
-          result = await agentRunner.run(blueprint, feedbackRequest, planJsonSchema);
+          result = await this.runAgentRunnerWithJournal({
+            agentRunner,
+            blueprint,
+            request: feedbackRequest,
+            planJsonSchema,
+            requestId,
+            traceId,
+            traceLogger,
+          });
           continue;
         }
         throw error;
@@ -759,6 +780,49 @@ export class RequestProcessor {
     }
 
     return null; // Should be unreachable
+  }
+
+  /** Wraps an `agentRunner.run()` call with Activity Journal execution-start/complete/error
+   *  logging tagged `runnerKind: RunnerKind.AGENT_RUNNER`, shared by processAgentRequest's
+   *  initial and feedback-retry calls. */
+  private async runAgentRunnerWithJournal(args: {
+    agentRunner: IAgentRunner;
+    blueprint: IBlueprint;
+    request: IParsedRequest;
+    planJsonSchema: Record<string, JSONValue>;
+    requestId: string;
+    traceId: string;
+    traceLogger: IEventLogger;
+  }): Promise<IAgentExecutionResult> {
+    const { agentRunner, blueprint, request, planJsonSchema, requestId, traceId, traceLogger } = args;
+    await traceLogger.log({
+      action: AGENT_EVENT_EXECUTION_STARTED,
+      target: requestId,
+      runnerId: AGENT_RUNNER_ID,
+      runnerKind: RunnerKind.AGENT_RUNNER,
+      traceId,
+    });
+    try {
+      const result = await agentRunner.run(blueprint, request, planJsonSchema);
+      await traceLogger.log({
+        action: AGENT_EVENT_EXECUTION_COMPLETED,
+        target: requestId,
+        runnerId: AGENT_RUNNER_ID,
+        runnerKind: RunnerKind.AGENT_RUNNER,
+        traceId,
+      });
+      return result;
+    } catch (error) {
+      await traceLogger.log({
+        action: AGENT_EVENT_EXECUTION_FAILED,
+        target: requestId,
+        runnerId: AGENT_RUNNER_ID,
+        runnerKind: RunnerKind.AGENT_RUNNER,
+        traceId,
+        payload: { error_message: error instanceof Error ? error.message : String(error) },
+      });
+      throw error;
+    }
   }
 
   private async buildRequestContext(

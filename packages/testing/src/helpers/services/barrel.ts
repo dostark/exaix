@@ -239,7 +239,7 @@ export function createTestRequestRouter(
         agentRunner,
         flowValidator,
         eventLogger: logger,
-        defaultAgentId: defaultAgent,
+        defaultAgentRole: defaultAgent,
         blueprintsPath,
         config,
         routingPolicyService,

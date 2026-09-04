@@ -1,7 +1,7 @@
 /**
  * @module LegacyStrategyGenerationDurationTest
  * @path packages/execution/tests/legacy_strategy_generation_duration_test.ts
- * @related-files [packages/execution/src/strategies/legacy_strategy.ts, packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/strategies/legacy_strategy.ts, packages/execution/src/agent_composer.ts]
  * @architectural-layer Services
  * @description Phase 140a Step 2 — RED-first test. agent.generation_completed carries
  * token counts but no duration at all. LegacyAgentStrategy has exactly one
@@ -14,11 +14,11 @@
 
 import { assertEquals } from "@std/assert";
 import { LegacyAgentStrategy } from "@exaix/execution";
-import type { AgentOrchestrator, IAgentFileBlueprint } from "@exaix/execution";
+import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 const testBlueprint = {
   name: "test-agent",
@@ -108,7 +108,7 @@ Deno.test("[LegacyStrategyGenerationDuration] logGeneration is called with a rea
     },
   };
 
-  const strategy = new LegacyAgentStrategy(mockExecutor as Partial<AgentOrchestrator> as AgentOrchestrator, provider);
+  const strategy = new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
   await strategy.execute(testBlueprint, testContext, createOptions("test"));
 
   assertEquals(typeof capturedDurationMs, "number");

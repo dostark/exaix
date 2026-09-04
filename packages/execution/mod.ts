@@ -8,7 +8,7 @@
  */
 
 export * from "./src/agent_runner.ts";
-export * from "./src/agent_orchestrator.ts";
+export * from "./src/agent_composer.ts";
 export * from "./src/execution_context_service.ts";
 export * from "./src/blueprint_service.ts";
 export * from "./src/prompt_builder.ts";

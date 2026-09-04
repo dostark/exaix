@@ -22,7 +22,7 @@ import {
   type IBlueprintDetails,
   type IBlueprintMetadata,
   type IBlueprintValidationResult,
-  isReservedAgentId,
+  isReservedAgentRole,
 } from "@exaix/schemas/blueprint.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -310,7 +310,7 @@ export class BlueprintCommands extends BaseCommand {
         "agentRole",
         (val) => /^[a-z0-9-]+$/.test(String(val)) ? null : "must be lowercase alphanumeric with hyphens only",
       )
-      .addRule("agentRole", (val) => isReservedAgentId(String(val)) ? `reserved name: ${val}` : null)
+      .addRule("agentRole", (val) => isReservedAgentRole(String(val)) ? `reserved name: ${val}` : null)
       .addRule("name", (_val) => (!options.name) ? "--name is required" : null)
       .addRule("model", (_val) => (!options.model && !options.from) ? "--model is required" : null)
       .validate({ agentRole, ...options });

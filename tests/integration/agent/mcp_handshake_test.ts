@@ -7,12 +7,12 @@
 import { assertEquals } from "@std/assert";
 import { McpAgentStrategy } from "@exaix/execution";
 import { ProcessManager } from "@exaix/core";
-import type { AgentOrchestrator, IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { SecurityMode } from "@exaix/core";
 
 type IMcpHandshakeExecutor = Pick<
-  AgentOrchestrator,
+  AgentComposer,
   "validateReviewResult" | "getRecentActivitiesByTraceId" | "logAgentOutput"
 >;
 
@@ -24,7 +24,7 @@ Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
     logAgentOutput: () => Promise.resolve(),
   };
 
-  const strategy = new McpAgentStrategy(mockExecutor as AgentOrchestrator, processManager);
+  const strategy = new McpAgentStrategy(mockExecutor as AgentComposer, processManager);
 
   const blueprint: IAgentFileBlueprint = {
     name: "mcp-test",
@@ -68,7 +68,7 @@ Deno.test("McpAgentStrategy - Parent Context Query", async () => {
     logAgentOutput: () => Promise.resolve(),
   };
 
-  const strategy = new McpAgentStrategy(mockExecutor as AgentOrchestrator, processManager);
+  const strategy = new McpAgentStrategy(mockExecutor as AgentComposer, processManager);
 
   const blueprint: IAgentFileBlueprint = {
     name: "mcp-query-test",

@@ -136,12 +136,12 @@ export const BlueprintFrontmatterSchema = z.object({
 
 export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;
 
-// Reserved Agent IDs
+// Reserved Agent Roles
 
 /**
- * Agent IDs that cannot be used for custom blueprints
+ * Agent roles that cannot be used for custom blueprints
  */
-export const RESERVED_AGENT_IDS = new Set<string>([
+export const RESERVED_AGENT_ROLES = new Set<string>([
   ActivityActor.SYSTEM,
   TaskType.TEST,
 ]);
@@ -149,6 +149,6 @@ export const RESERVED_AGENT_IDS = new Set<string>([
 /**
  * Check if agent_role is reserved
  */
-export function isReservedAgentId(agentRole: string): boolean {
-  return RESERVED_AGENT_IDS.has(agentRole);
+export function isReservedAgentRole(agentRole: string): boolean {
+  return RESERVED_AGENT_ROLES.has(agentRole);
 }

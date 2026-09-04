@@ -1,7 +1,7 @@
 /**
  * @module ReActLoopFilesChangedTest
  * @path packages/execution/tests/agents/react_loop_files_changed_test.ts
- * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/agent_composer.ts]
  * @architectural-layer Services
  * @description Offline (mock-provider) tests for ReActLoopStrategy's changeset
  * file tracking: the strategy must report every file it wrote through a
@@ -18,7 +18,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { JSONValue } from "@exaix/core/types";
 
 type TestToolParams = Record<string, JSONValue>;

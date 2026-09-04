@@ -14,7 +14,7 @@
  *   the Reachability Ledger row from the phase-135 planning doc.
  * @architectural-layer Execution
  * @dependencies [@exaix/core/types]
- * @related-files [packages/execution/src/agent_orchestrator.ts, packages/ai/src/model_resolver.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, packages/ai/src/model_resolver.ts]
  */
 import { TaskType } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";

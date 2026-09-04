@@ -73,10 +73,10 @@ export interface IExecutionLoopConfig {
   amendmentService?: IPlanAmendmentService;
   amendmentGate?: IPlanAmendmentGate;
   /** Threaded into PlanExecutor's IPlanExecutorOptions so
-   *  AgentOrchestrator.resolveModelFromBlueprint's ModelResolver.resolve() branch is
+   *  AgentComposer.resolveModelFromBlueprint's ModelResolver.resolve() branch is
    *  reachable during real plan execution. */
   modelResolver?: ModelResolver;
-  /** Threaded into PlanExecutor's IPlanExecutorOptions so AgentOrchestrator's internally-constructed
+  /** Threaded into PlanExecutor's IPlanExecutorOptions so AgentComposer's internally-constructed
    *  PromptBudgetAllocator resolves a step's real context window instead of always falling back to the
    *  hardcoded 128K default. */
   modelRegistry?: IModelRegistry;

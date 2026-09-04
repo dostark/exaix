@@ -12,11 +12,11 @@
 
 import { assertAlmostEquals, assertEquals } from "@std/assert";
 import { LegacyAgentStrategy } from "@exaix/execution";
-import type { AgentOrchestrator, IAgentFileBlueprint } from "@exaix/execution";
+import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 const testBlueprint = {
   name: "test-agent",
@@ -104,7 +104,7 @@ Deno.test("[LegacyStrategyRegistryComputedCost] cost_usd for a known model is re
     },
   };
 
-  const strategy = new LegacyAgentStrategy(mockExecutor as Partial<AgentOrchestrator> as AgentOrchestrator, provider);
+  const strategy = new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
   const result = await strategy.execute(testBlueprint, testContext, createOptions("test"));
 
   assertAlmostEquals(capture.costUsd!, 18);
@@ -130,7 +130,7 @@ Deno.test("[LegacyStrategyRegistryComputedCost] an unknown model falls back to r
     },
   };
 
-  const strategy = new LegacyAgentStrategy(mockExecutor as Partial<AgentOrchestrator> as AgentOrchestrator, provider);
+  const strategy = new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
   const result = await strategy.execute(
     { ...testBlueprint, model: "some-unlisted-future-model" },
     testContext,

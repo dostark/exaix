@@ -365,6 +365,9 @@ function realDelegateService(sessionDir: string): SessionDelegateService {
     pathResolver: {
       resolve: (path: string) => Promise.resolve(`${sessionDir}/${path.replace("@Runtime/", "")}`),
     } as never,
+    // Mocked so this test doesn't depend on the opencode binary being installed on the
+    // host — this test only cares about the generated permission config's agent-role key.
+    versionProbe: (_command, minimumVersion) => Promise.resolve({ version: minimumVersion, supported: true }),
   });
 }
 

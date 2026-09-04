@@ -17,7 +17,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { type AgentOrchestrator, ReActLoopStrategy } from "@exaix/execution";
+import { type AgentComposer, ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -31,7 +31,7 @@ import {
   REACT_THOUGHT_PREFIX,
   SecurityMode,
 } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 
 const PORTAL_ALIAS = "todo-app";
 
@@ -126,7 +126,7 @@ Deno.test({
         },
       };
 
-      const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentOrchestrator> as AgentOrchestrator, provider);
+      const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
       await strategy.execute(testBlueprint, {
         trace_id: "trace-e2e-1",
         request_id: "request-1",

@@ -120,7 +120,7 @@ steps:
 
   # PortalExecutionStrategy.WORKTREE (GitExecutionSetupService.getExecutionStrategy) is forced
   # for every plan whose frontmatter carries a portal — CliDelegateStrategy gets no exemption
-  # from this: its subprocess cwd resolves through AgentOrchestrator's ToolRegistry, whose
+  # from this: its subprocess cwd resolves through AgentComposer's ToolRegistry, whose
   # baseDir is the worktree checkout for a WORKTREE-strategy plan (PlanExecutor.createAgentExecutor).
   # So the agent's commit lands only in .exa/worktrees/<portal>/<trace_id>/ until a review is
   # approved. Discover this run's trace_id from the journal (activity.trace_id, populated

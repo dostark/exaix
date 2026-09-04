@@ -1086,9 +1086,9 @@ import low-level implementation constants from packages that provide services it
 delegates to. The constants are implementation details of those services, not of
 the class that orchestrates them.
 
-### Story — the `AgentOrchestrator` cleanup
+### Story — the `AgentComposer` cleanup
 
-`AgentOrchestrator` was the composition root for agent execution — it delegated
+`AgentComposer` was the composition root for agent execution — it delegated
 blueprint loading, git auditing, prompt building, history management, output
 parsing, and strategy dispatch to seven injected services. Yet it still
 imported constants from four packages it delegated to:
@@ -1109,8 +1109,8 @@ service boundary (`GitAuditService`, `ExecutionContextService`, etc.).
 **Fix pattern:**
 
 ```
-Before:                    After:
-  AgentOrchestrator          AgentOrchestrator
+Before:                     After:
+  AgentComposer              AgentComposer
   ├── import SafeSubprocess  └── depends on GitAuditService interface
   ├── import GIT_CMD_*            └── GitAuditService imports SafeSubprocess
   └── import ToolRegistry          └── imports ToolRegistry
@@ -1126,7 +1126,7 @@ consumed by `S` in fulfilling that concern must be imported by `S`, not by `A`.
 
 **Signal — you have a layer violation if:**
 
-- `AgentOrchestrator` imports `SafeSubprocess` (it's the subprocess runner that
+- `AgentComposer` imports `SafeSubprocess` (it's the subprocess runner that
   `GitAuditService` uses — the orchestrator should never spawn subprocesses
   directly).
 - A coordinator imports a `DEFAULT_*` timeout for a git command it never invokes

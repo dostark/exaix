@@ -18,6 +18,25 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 180 (Runner Terminology + AgentRunner Journal Tagging)
+
+### Added
+
+- `exactl journal` can now distinguish direct, non-flow agent executions (routed through
+  the request pipeline) with `runner_kind: agent-runner` — previously these executions
+  left no execution-attribution record in the Activity Journal at all (see
+  [Exaix_User_Guide.md §10.3](Exaix_User_Guide.md#103-activity-journal)).
+
+### Changed
+
+- The Activity Journal's `agent_kind` column — queryable via `exactl journal --filter`
+  and `--distinct` — is renamed `runner_kind`; flow-dispatched executions are now tagged
+  `agent-composer` (previously `agent-executor`).
+
+A local `.exa/journal.db` created before this change is incompatible with the renamed
+`runner_kind` column — delete and recreate it (or the whole `Workspace/` directory) if
+you hit a "no such column" error after upgrading.
+
 ## Unreleased — Phase 179 (Agent Role Terminology Rename)
 
 ### Changed

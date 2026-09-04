@@ -32,14 +32,14 @@
  * hardened launch) so the CLI can write files without an interactive
  * approval prompt it can never answer headlessly.
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_orchestrator.ts, packages/execution/src/strategies/cli_delegate_stream_parser.ts, packages/session/src/delegate_return_parser.ts, packages/session/src/claude_permission_flags.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/cli_delegate_stream_parser.ts, packages/session/src/delegate_return_parser.ts, packages/session/src/claude_permission_flags.ts]
  */
 
 import { isAbsolute, relative } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_orchestrator.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
@@ -92,7 +92,7 @@ export type IRunCliDelegateProcess = (
   options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; clearEnv?: boolean },
 ) => Promise<ICliDelegateProcessResult>;
 
-/** Resolves a portal alias to its absolute checkout path. Backed by AgentOrchestrator.getPortalConfig. */
+/** Resolves a portal alias to its absolute checkout path. Backed by AgentComposer.getPortalConfig. */
 export type IResolvePortalPath = (portalAlias: string) => string | undefined;
 
 /** Dependencies for CliDelegateStrategy (constructor DI, config-free). */
@@ -360,7 +360,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     ];
   }
 
-  /** No-op: both tools are cold-spawned per step with no persistent process to tear down; kept so AgentOrchestrator.dispose()'s call site needs no branching. */
+  /** No-op: both tools are cold-spawned per step with no persistent process to tear down; kept so AgentComposer.dispose()'s call site needs no branching. */
   dispose(): void {
     this.sessionIds.clear();
   }

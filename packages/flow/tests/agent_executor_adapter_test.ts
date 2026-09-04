@@ -1,12 +1,12 @@
 /**
  * @module AgentExecutorAdapterTest
  * @path packages/flow/tests/agent_executor_adapter_test.ts
- * @description Tests for AgentOrchestratorAdapter — bridges IAgentRunner into
+ * @description Tests for AgentComposerAdapter — bridges IAgentRunner into
  * FlowRunner's IAgentExecutor interface.
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { AgentOrchestratorAdapter, type IRunner } from "../src/agent_executor_adapter.ts";
+import { AgentComposerAdapter, type IRunner } from "../src/agent_composer_adapter.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IFlowStepRequest } from "../src/flow_runner.ts";
 import type { IBlueprint } from "@exaix/execution";
@@ -30,7 +30,7 @@ function makeFakeRunner(): IRunner {
   };
 }
 
-Deno.test("AgentOrchestratorAdapter runs an agent and returns IAgentExecutionResult", async () => {
+Deno.test("AgentComposerAdapter runs an agent and returns IAgentExecutionResult", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
   const agentRolesDir = `${tmpDir}/Blueprints/Agents`;
   await Deno.mkdir(agentRolesDir, { recursive: true });
@@ -52,7 +52,7 @@ model: "mock:test"
       },
     };
 
-    const adapter = new AgentOrchestratorAdapter(fakeRunner, agentRolesDir);
+    const adapter = new AgentComposerAdapter(fakeRunner, agentRolesDir);
     const request: IFlowStepRequest = {
       userPrompt: "do something",
       context: {},
@@ -69,7 +69,7 @@ model: "mock:test"
   }
 });
 
-Deno.test("AgentOrchestratorAdapter threads scenarioId/stepId/flowStepId into the runner's request (Phase 157)", async () => {
+Deno.test("AgentComposerAdapter threads scenarioId/stepId/flowStepId into the runner's request (Phase 157)", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
   const agentRolesDir = `${tmpDir}/Blueprints/Agents`;
   await Deno.mkdir(agentRolesDir, { recursive: true });
@@ -94,7 +94,7 @@ model: "mock:test"
       },
     };
 
-    const adapter = new AgentOrchestratorAdapter(capturingRunner, agentRolesDir);
+    const adapter = new AgentComposerAdapter(capturingRunner, agentRolesDir);
     const request: IFlowStepRequest = {
       userPrompt: "do something",
       context: {},
@@ -112,9 +112,9 @@ model: "mock:test"
   }
 });
 
-Deno.test("AgentOrchestratorAdapter throws when blueprint is not found", async () => {
+Deno.test("AgentComposerAdapter throws when blueprint is not found", async () => {
   const fakeRunner = makeFakeRunner();
-  const adapter = new AgentOrchestratorAdapter(fakeRunner, "/nonexistent/path");
+  const adapter = new AgentComposerAdapter(fakeRunner, "/nonexistent/path");
   const request: IFlowStepRequest = { userPrompt: "test", context: {} };
 
   await assertRejects(

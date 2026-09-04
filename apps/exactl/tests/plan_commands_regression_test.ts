@@ -19,7 +19,7 @@ import { PlanCommands } from "../src/commands/plan_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { LogLevel } from "@exaix/core";
 
-const TEST_AGENT_ID = "test-agent";
+const TEST_AGENT_ROLE = "test-agent";
 const TEST_CREATED_AT = "2026-01-17T00:00:00.000Z";
 const TEST_PLAN_FILE = "test_plan.md";
 const TEST_PLAN_REJECTED_FILE = "test_plan_rejected.md";
@@ -35,7 +35,7 @@ async function createPlanFile(
   const content = `---
 trace_id: "${traceId}"
 status: ${status}
-agent_role: ${TEST_AGENT_ID}
+agent_role: ${TEST_AGENT_ROLE}
 created_at: "${TEST_CREATED_AT}"
 ---
 

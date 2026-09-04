@@ -19,8 +19,8 @@ export interface IActivity {
   traceId: string;
   actor: string | null;
   actorType: string | null;
-  agentId: string | null;
-  agentKind?: string | null;
+  runnerId: string | null;
+  runnerKind?: string | null;
   agentRole: string | null;
   actionType: string;
   target: string | null;
@@ -40,9 +40,9 @@ export interface ILogActivityRequest {
   target: string | null;
   payload?: Record<string, JSONValue>;
   traceId?: string;
-  agentId?: string | null;
+  runnerId?: string | null;
   actorType?: string | null;
-  agentKind?: string | null;
+  runnerKind?: string | null;
   agentRole?: string | null;
   promptTokens?: number;
   completionTokens?: number;
@@ -89,7 +89,7 @@ export class DatabaseActivityRepository implements IActivityRepository {
       request.traceId,
       request.actorType,
       request.agentRole,
-      request.agentKind,
+      request.runnerKind,
       request.promptTokens,
       request.completionTokens,
       request.costUsd,
@@ -132,8 +132,8 @@ export class DatabaseActivityRepository implements IActivityRepository {
       traceId: record.trace_id,
       actor: record.actor,
       actorType: record.actor_type,
-      agentId: null, // Legacy: no longer tracked this way
-      agentKind: record.agent_kind,
+      runnerId: null, // Legacy: no longer tracked this way
+      runnerKind: record.runner_kind,
       agentRole: record.agent_role,
       actionType: record.action_type,
       target: record.target,

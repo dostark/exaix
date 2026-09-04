@@ -1,26 +1,26 @@
 /**
  * @module StrategyOverrideTest
  * @path packages/execution/tests/agents/strategy_override_test.ts
- * @related-files [packages/execution/src/agent_orchestrator.ts, packages/execution/src/strategies/strategy_registry.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/strategy_registry.ts]
  * @architectural-layer Services
  * @description Phase 159 Step 2: `options.strategy` forces a strategy on `executeStep`
  * regardless of the blueprint's own `capabilities`, while `applyBlueprintToolScope`'s
  * tool-narrowing and the permission check still run unconditionally. Uses spy strategies
- * registered on a custom `StrategyRegistry` (the same pattern `agent_orchestrator_test.ts`
+ * registered on a custom `StrategyRegistry` (the same pattern `agent_composer_test.ts`
  * already uses) rather than real ReAct/MCP/CliDelegate strategies, so the test has no
  * subprocess or live-provider dependency.
  */
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { AgentOrchestrator, StrategyRegistry } from "@exaix/execution";
+import { AgentComposer, StrategyRegistry } from "@exaix/execution";
 import { initTestDbService } from "@exaix/testing";
 import { createMockConfig } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { ExecutionStrategyName } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 interface IBlueprintExtraFields {
   permitted_tools?: string[];
@@ -61,7 +61,7 @@ function registerSpy(strategyRegistry: StrategyRegistry, name: string, calls: IA
   });
 }
 
-Deno.test("AgentOrchestrator.executeStep: options.strategy=mcp forces MCP dispatch even when capabilities only list react", async () => {
+Deno.test("AgentComposer.executeStep: options.strategy=mcp forces MCP dispatch even when capabilities only list react", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -77,7 +77,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=mcp forces MCP dispat
     const logger = new EventLogger({ db: dbService.db });
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService(config.portals!);
-    const executor = new AgentOrchestrator({
+    const executor = new AgentComposer({
       config,
       db: dbService.db,
       logger,
@@ -109,7 +109,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=mcp forces MCP dispat
   }
 });
 
-Deno.test("AgentOrchestrator.executeStep: options.strategy=cli_delegate forces CLI_DELEGATE dispatch even when capabilities only list react", async () => {
+Deno.test("AgentComposer.executeStep: options.strategy=cli_delegate forces CLI_DELEGATE dispatch even when capabilities only list react", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -125,7 +125,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=cli_delegate forces C
     const logger = new EventLogger({ db: dbService.db });
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService(config.portals!);
-    const executor = new AgentOrchestrator({
+    const executor = new AgentComposer({
       config,
       db: dbService.db,
       logger,
@@ -157,7 +157,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=cli_delegate forces C
   }
 });
 
-Deno.test("AgentOrchestrator.executeStep: absent options.strategy keeps capability-based dispatch (react agent role -> REACT)", async () => {
+Deno.test("AgentComposer.executeStep: absent options.strategy keeps capability-based dispatch (react agent role -> REACT)", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -173,7 +173,7 @@ Deno.test("AgentOrchestrator.executeStep: absent options.strategy keeps capabili
     const logger = new EventLogger({ db: dbService.db });
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService(config.portals!);
-    const executor = new AgentOrchestrator({
+    const executor = new AgentComposer({
       config,
       db: dbService.db,
       logger,
@@ -205,7 +205,7 @@ Deno.test("AgentOrchestrator.executeStep: absent options.strategy keeps capabili
   }
 });
 
-Deno.test("AgentOrchestrator.executeStep: applyBlueprintToolScope still narrows permitted_tools under a strategy override", async () => {
+Deno.test("AgentComposer.executeStep: applyBlueprintToolScope still narrows permitted_tools under a strategy override", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -220,7 +220,7 @@ Deno.test("AgentOrchestrator.executeStep: applyBlueprintToolScope still narrows 
     const logger = new EventLogger({ db: dbService.db });
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService(config.portals!);
-    const executor = new AgentOrchestrator({
+    const executor = new AgentComposer({
       config,
       db: dbService.db,
       logger,

@@ -11,6 +11,7 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
+import type { ILogEvent } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { ISkillsService } from "@exaix/core/types";
 import type { ISkillMatchRequest } from "@exaix/core/types";
@@ -1187,7 +1188,10 @@ Deno.test("[IAgentRunner] routes prompt_assembled through IEventLogger when prov
       return Promise.resolve();
     },
     warn: () => Promise.resolve(),
-    log: () => Promise.resolve(),
+    log(event: ILogEvent): Promise<void> {
+      actions.push(event.action);
+      return Promise.resolve();
+    },
     error: () => Promise.resolve(),
     fatal: () => Promise.resolve(),
     debug: () => Promise.resolve(),

@@ -75,7 +75,7 @@ export const VERIFY_TESTS_STEP_ID = "verify-tests";
 /** Default wall-clock bound for the bare delegate step. */
 const DEFAULT_BARE_DELEGATE_TIMEOUT_SEC = 600;
 /** OpenCode agent key for the bare-delegate SWE-task cell's staged permission config. */
-export const BARE_DELEGATE_AGENT_ID = "bare-delegate";
+export const BARE_DELEGATE_AGENT_ROLE = "bare-delegate";
 // Default wall-clock bound for the external-bench verify step: a real pytest run against the
 // hidden oracle-tests mount must declare its own bound explicitly rather than silently inherit
 // step_executor.ts's generic `timeout_sec ?? 120` fallback.
@@ -560,7 +560,7 @@ export function renderSweTaskBareTemplate(
   // The bare delegate's opencode permission config is staged INTO the sandbox worktree via
   // OPENCODE_CONFIG, so the raw CLI cannot read outside it — e.g. the repo's
   // fixtures/swe_tasks/<task>/reference.patch solution. `**` = everything under the worktree.
-  const bareScopeConfigJson = JSON.stringify(buildOpencodePermissionConfig(["**"], BARE_DELEGATE_AGENT_ID))
+  const bareScopeConfigJson = JSON.stringify(buildOpencodePermissionConfig(["**"], BARE_DELEGATE_AGENT_ROLE))
     .replaceAll('"', '\\"');
 
   const parts: string[] = [

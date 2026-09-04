@@ -2,20 +2,20 @@
  * @module ReActLoopAdapter
  * @path packages/execution/src/react_loop_adapter.ts
  * @description Adapter that implements IReActLoopExecutor by composing
- *   AgentOrchestrator's extracted services. Breaks the structural coupling
- *   between AgentOrchestrator and the ReAct loop strategy.
+ *   AgentComposer's extracted services. Breaks the structural coupling
+ *   between AgentComposer and the ReAct loop strategy.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/agent_composer.ts]
  */
 
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RuntimeKind } from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RunnerKind } from "@exaix/core";
 import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
-import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -24,7 +24,7 @@ import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/** Interface the ReAct loop strategy requires from its executor, decoupled from AgentOrchestrator's internal types. */
+/** Interface the ReAct loop strategy requires from its executor, decoupled from AgentComposer's internal types. */
 export interface IReActLoopExecutor {
   logAgentOutput(traceId: string, output: string): Promise<void>;
   /** Journals a dynamic_tool_call event, matching DynamicStepExecutor; optional since test
@@ -85,7 +85,7 @@ export interface IReActLoopAdapterOptions {
   aci?: IReActLoopAdapterAciOptions;
 }
 
-/** Adapter that implements IReActLoopExecutor by composing AgentOrchestrator's services.
+/** Adapter that implements IReActLoopExecutor by composing AgentComposer's services.
  * @visible
  */
 export class ReActLoopAdapter implements IReActLoopExecutor {
@@ -169,8 +169,8 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId,
-      agentId: "agent-executor",
-      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      runnerId: "agent-composer",
+      runnerKind: RunnerKind.AGENT_COMPOSER,
       agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,

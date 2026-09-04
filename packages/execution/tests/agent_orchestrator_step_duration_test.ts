@@ -1,9 +1,9 @@
 /**
- * @module AgentOrchestratorStepDurationTest
+ * @module AgentComposerStepDurationTest
  * @path packages/execution/tests/agent_orchestrator_step_duration_test.ts
- * @related-files [packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/agent_composer.ts]
  * @architectural-layer Services
- * @description Phase 140a Step 2 — RED-first test. AgentOrchestrator.executeStep computes
+ * @description Phase 140a Step 2 — RED-first test. AgentComposer.executeStep computes
  * a real wall-clock _startTime but never wires it into a per-step duration on
  * agent.execution_completed's journal payload — the field is currently dead
  * (underscore-prefixed, unused). Verifies logExecutionComplete accepts and journals a
@@ -12,7 +12,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { AgentOrchestrator } from "@exaix/execution";
+import { AgentComposer } from "@exaix/execution";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -23,7 +23,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 const testConfig: Config = createTestConfig();
 
 async function setupExecutor(): Promise<{
-  executor: AgentOrchestrator;
+  executor: AgentComposer;
   db: IDatabaseService;
   cleanup: () => Promise<void>;
 }> {
@@ -31,13 +31,12 @@ async function setupExecutor(): Promise<{
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(testConfig);
   const permissions = new PortalPermissionsService([]);
-  const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
+  const executor = new AgentComposer({ config: testConfig, db, logger, pathResolver, permissions });
   return { executor, db, cleanup };
 }
 
 Deno.test({
-  name:
-    "[AgentOrchestratorStepDuration] logExecutionComplete journals a real duration_ms distinct from execution_time_ms",
+  name: "[AgentComposerStepDuration] logExecutionComplete journals a real duration_ms distinct from execution_time_ms",
   fn: async () => {
     const { executor, db, cleanup } = await setupExecutor();
     try {

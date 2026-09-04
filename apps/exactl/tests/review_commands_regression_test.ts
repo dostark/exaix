@@ -18,7 +18,7 @@ import { createMockConfig } from "@exaix/testing";
 import type { IGitService } from "@exaix/core/types";
 const TEST_REQUEST_ID = "request-test123";
 const TEST_TRACE_ID = "test-trace-123";
-const TEST_AGENT_ID = "test-agent";
+const TEST_AGENT_ROLE = "test-agent";
 const TEST_CREATED_AT = "2026-01-25T00:00:00.000Z";
 const TEST_BRANCH = `feat/${TEST_REQUEST_ID}-${TEST_TRACE_ID}`;
 
@@ -54,7 +54,7 @@ async function createPlanFile(
   const content = `---
 trace_id: "${traceId}"
 status: ${status}
-agent_role: ${TEST_AGENT_ID}
+agent_role: ${TEST_AGENT_ROLE}
 created_at: "${TEST_CREATED_AT}"
 ---
 
@@ -95,7 +95,7 @@ Deno.test("[regression] Review list shows request and plan context", async () =>
     );
 
     // Create test request
-    await createRequestFile(requestsDir, TEST_REQUEST_ID, "Test Request Title", TEST_AGENT_ID);
+    await createRequestFile(requestsDir, TEST_REQUEST_ID, "Test Request Title", TEST_AGENT_ROLE);
 
     // Create test plan
     await createPlanFile(plansDir, `${TEST_REQUEST_ID}_plan`, TEST_TRACE_ID, "review");
@@ -145,7 +145,7 @@ Deno.test("[regression] Review list shows request and plan context", async () =>
       request_id: TEST_REQUEST_ID,
       files_changed: 5,
       created_at: TEST_CREATED_AT,
-      agent_role: TEST_AGENT_ID,
+      agent_role: TEST_AGENT_ROLE,
       // New fields that should be supported
       request_subject: "Test Request",
       plan_id: "test_plan",
@@ -173,10 +173,10 @@ Deno.test("[regression] Review show displays complete context information", () =
     request_id: TEST_REQUEST_ID,
     files_changed: 3,
     created_at: TEST_CREATED_AT,
-    agent_role: TEST_AGENT_ID,
+    agent_role: TEST_AGENT_ROLE,
     // Request context
     request_subject: "Test Request Title",
-    request_agent: TEST_AGENT_ID,
+    request_agent: TEST_AGENT_ROLE,
     request_portal: "test-portal",
     request_priority: "high",
     request_created_by: "test-user",

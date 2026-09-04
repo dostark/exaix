@@ -63,8 +63,8 @@ consistent with each other.
         v                |       JOURNAL       |
 +---------------------+  | - actor             |
 |  TOOLS / SERVICES   |  | - actor_type        |
-| (memory, tools, ..) |  | - agent_id          |
-+---------------------+  | - agent_kind        |
+| (memory, tools, ..) |  | - runner_id         |
++---------------------+  | - runner_kind       |
                          | - agent_role         |
                          | - request/flow ids   |
                          +---------------------+
@@ -167,33 +167,33 @@ testing.
 
 Fields in journal entries describing **who** performed the action.
 
-| Field        | Type   | Meaning                                                                                                               |
-| ------------ | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Field        | Type   | Meaning                                                                                                              |
+| ------------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
 | `actor`      | string | Free-form identifier of who acted. Format: `"user:<email>"`, `"service:<name>"`, `"mcp-client:<id>"`, `"agent:<id>"` |
 | `actor_type` | string | Enumerated category of the actor: `"user"`, `"service"`, `"mcp-client"`, `"system"`, `"agent"`                       |
 
 `actor_type = "agent"` means an agent role instance acted autonomously with
 no human in the loop (e.g. a chained or scheduled agent-role call).
 
-### Journal Agent Fields (`agent*id`, `agent*kind`)
+### Journal Runner Fields (`runner*id`, `runner*kind`)
 
-Fields in journal entries describing **how** the work was done — which runtime
-execution unit handled it.
+Fields in journal entries describing **how** the work was done — which Runner
+handled it.
 
-| Field        | Type   | Meaning                                                                                              |
-| ------------ | ------ | ---------------------------------------------------------------------------------------------------- |
-| `agent_id`   | string | Identifier of the runtime agent instance, e.g. `"agent-runner"`, `"flow-runner"`, `"request-router"` |
-| `agent_kind` | string | Category of runtime agent: `"agent-executor"`, `"request-router"`                                    |
+| Field         | Type   | Meaning                                                                      |
+| ------------- | ------ | ---------------------------------------------------------------------------- |
+| `runner_id`   | string | Identifier of the Runner instance, e.g. `"agent-runner"`, `"agent-composer"` |
+| `runner_kind` | string | Category of Runner: `"agent-composer"`, `"agent-runner"`, `"request-router"` |
 
-These fields are **always** about the runtime Agent, never about an agent role
+These fields are **always** about the Runner, never about an agent role
 blueprint.
 
 ### Journal Agent Role Field (`agent_role`)
 
 Field in journal entries describing **what** LLM persona was used.
 
-| Field        | Type   | Meaning                                                                                                                                          |
-| ------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Field        | Type   | Meaning                                                                                                                                         |
+| ------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agent_role` | string | Canonical ID of the agent role blueprint that was loaded and run for this LLM call. Matches the slug of the `.md` file in `Blueprints/Agents/`. |
 
 ---
@@ -205,8 +205,8 @@ interfaces, database columns and journal payloads for each core concept.
 
 ### `agent_role`
 
-| Name         | Where used                                                                            | Meaning                                                                              |
-| ------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Name         | Where used                                                                               | Meaning                                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `agent_role` | Request frontmatter, flow YAML step, CLI flag `--agent-role`, DB column, journal payload | The canonical slug that selects and, once resolved, identifies an agent role blueprint (e.g. `senior-coder`) |
 
 Unlike the retired `identity`/`identity_id` pair, `agent_role` is used
@@ -215,22 +215,22 @@ separate resolved-identifier field.
 
 ### Actor code identifiers
 
-| Code name    | Layer                                        | Meaning                                                                     |
-| ------------ | -------------------------------------------- | ----------------------------------------------------------------------------- |
-| `actor`      | TypeScript field, journal payload, DB column | Free-form string identifying who performed the action                        |
+| Code name    | Layer                                        | Meaning                                                                                   |
+| ------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `actor`      | TypeScript field, journal payload, DB column | Free-form string identifying who performed the action                                     |
 | `actor_type` | TypeScript field, journal payload, DB column | Enumerated category: `"user"` \| `"service"` \| `"mcp-client"` \| `"system"` \| `"agent"` |
 
-### Agent code identifiers
+### Runner code identifiers
 
-| Code name    | Layer                                        | Meaning                                                                                                     |
-| ------------ | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `agent_id`   | TypeScript field, journal payload, DB column | Identifier of the runtime agent instance that handled execution. Never holds an agent role blueprint reference. |
-| `agent_kind` | TypeScript field, journal payload, DB column | Category of runtime agent: `"agent-executor"` \| `"request-router"`                                          |
+| Code name     | Layer                                        | Meaning                                                                                                  |
+| ------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `runner_id`   | TypeScript field, journal payload, DB column | Identifier of the Runner instance that handled execution. Never holds an agent role blueprint reference. |
+| `runner_kind` | TypeScript field, journal payload, DB column | Category of Runner: `"agent-composer"` \| `"agent-runner"` \| `"request-router"`                         |
 
 ### Agent Role code identifiers
 
 | Code name    | Layer                                        | Meaning                                                       |
-| ------------ | -------------------------------------------- | ---------------------------------------------------------------- |
+| ------------ | -------------------------------------------- | ------------------------------------------------------------- |
 | `agent_role` | TypeScript field, journal payload, DB column | Canonical ID of the agent role blueprint used for an LLM call |
 
 ### Pipeline artifact code identifiers
@@ -242,7 +242,7 @@ in the root glossary (Trigger, Plan, Review, Artifact):
 | -------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ExecutionTriggerEnvelope`             | Zod-inferred type, `packages/core/src/triggers/schemas.ts`      | The canonical, normalized form every trigger source (`cli`, `webhook`, `schedule`, `filesystem`, `internal_event`, `mcp`) is parsed into before policy evaluation and dispatch — carries `triggerId`, `source`, `action`, `idempotencyKey`, `subject`, `payload`, `metadata`, `occurredAt` |
 | `ITriggerAdapter<TRawInput>`           | Interface, `packages/core/src/triggers/interfaces.ts`           | Per-source adapter contract: `parse(rawInput) → ExecutionTriggerEnvelope`                                                                                                                                                                                                                  |
-| `IPlanMetadata` / `IPlanDetails`       | Interfaces, `packages/core/src/types/plan.ts`                   | Frontmatter-derived plan metadata (`status`, `agent_role`, `request_id`, `approved_by`/`rejected_by`/`reviewed_by` + timestamps) and full markdown content for a plan file in `Workspace/Plans/`                                                                                          |
+| `IPlanMetadata` / `IPlanDetails`       | Interfaces, `packages/core/src/types/plan.ts`                   | Frontmatter-derived plan metadata (`status`, `agent_role`, `request_id`, `approved_by`/`rejected_by`/`reviewed_by` + timestamps) and full markdown content for a plan file in `Workspace/Plans/`                                                                                           |
 | `IReviewStatus`                        | Type, `packages/core/src/status/review_status.ts`               | Enumerated review outcome — `PENDING` \| `APPROVED` \| `REJECTED` (aliases of the shared `GeneralStatus` enum)                                                                                                                                                                             |
 | `IArtifactRow` / `IArtifactRepository` | Interfaces, `packages/core/src/artifact/artifact_repository.ts` | DB-row shape and CRUD contract for the generic `artifact` table that backs Plans, reviews, and other persisted pipeline records — keyed by `id`, `type`, `status`, `request_id`, `file_path`                                                                                               |
 
@@ -251,11 +251,11 @@ in the root glossary (Trigger, Plan, Review, Artifact):
 Canonical implementation-level names for the **Changeset** and **Plan Amendment**
 concepts defined in the root glossary:
 
-| Code name                                    | Layer                                                                    | Meaning                                                                                                                                                                                         |
-| --------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IChangesetResult` / `ChangesetResultSchema` | Zod-inferred type + schema, `packages/schemas/src/agent_orchestrator.ts` | Structured result an agent reports after applying a Plan's changes — `branch`, `commit_sha`, `files_changed`, `description`, `tool_calls`, `execution_time_ms`, `unauthorized_changes`, `usage` |
-| `IPlanAmendmentService`                      | Interface, `packages/core/src/types/i_plan_amendment_service.ts`         | `shouldAmend(trigger)` decides whether an amendment is warranted; generates a structural patch proposal against a plan's remaining steps                                                        |
-| `IPlanAmendmentGate`                         | Interface, `packages/core/src/types/i_plan_amendment_gate.ts`            | `processAmendment(...)` routes a proposed amendment through human approval and returns a decision; `applyApprovedAmendment(...)` rewrites the plan content once approved                        |
+| Code name                                    | Layer                                                                | Meaning                                                                                                                                                                                         |
+| -------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IChangesetResult` / `ChangesetResultSchema` | Zod-inferred type + schema, `packages/schemas/src/agent_composer.ts` | Structured result an agent reports after applying a Plan's changes — `branch`, `commit_sha`, `files_changed`, `description`, `tool_calls`, `execution_time_ms`, `unauthorized_changes`, `usage` |
+| `IPlanAmendmentService`                      | Interface, `packages/core/src/types/i_plan_amendment_service.ts`     | `shouldAmend(trigger)` decides whether an amendment is warranted; generates a structural patch proposal against a plan's remaining steps                                                        |
+| `IPlanAmendmentGate`                         | Interface, `packages/core/src/types/i_plan_amendment_gate.ts`        | `processAmendment(...)` routes a proposed amendment through human approval and returns a decision; `applyApprovedAmendment(...)` rewrites the plan content once approved                        |
 
 ### Wait-state code identifiers
 
@@ -263,7 +263,7 @@ Canonical implementation-level names for the **Wait State** concept defined in
 the root glossary:
 
 | Code name                        | Layer                                                            | Meaning                                                                                                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IWaitState` / `WaitStateSchema` | Zod-inferred type, `packages/flow/src/wait_states/wait_state.ts` | Persisted pause-point record — `waitStateId`, `traceId`, `kind`, `status`, `artifactPath`, `deadlineAt`, `resumeToken`, `requestedBy`/`assignedApprover`, `amendmentOf`, `metadata`   |
 | `IWaitStateService`              | Interface, `packages/flow/src/wait_states/wait_state_service.ts` | `create` / `getById` / `getByToken` / `transition` / `listPending` — the contract that turns a human approval gate into a durable, resumable record instead of a session-bound prompt |
 | `WaitStateAction`                | Union type, `packages/flow/src/wait_states/wait_state.ts`        | Legal transitions a Wait State can undergo: `"resume"` \| `"approve"` \| `"reject"` \| `"amend"` \| `"expire"` \| `"cancel"`                                                          |
@@ -274,8 +274,8 @@ Canonical implementation-level names for the **Activity Journal** and **Trace ID
 concepts defined in the root glossary:
 
 | Code name              | Layer                                                                       | Meaning                                                                                                                                                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IActivityRecord`      | Interface, `packages/core/src/types/database.ts`                            | DB-row shape for the `activity` table that backs the Activity Journal — `id`, `trace_id`, `actor`/`actor_type`, `agent_role`, `agent_kind`, `action_type`, `target`, `payload`, token/cost fields, `timestamp` |
+| ---------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IActivityRecord`      | Interface, `packages/core/src/types/database.ts`                            | DB-row shape for the `activity` table that backs the Activity Journal — `id`, `trace_id`, `actor`/`actor_type`, `agent_role`, `runner_kind`, `action_type`, `target`, `payload`, token/cost fields, `timestamp` |
 | `traceId` / `trace_id` | TypeScript field (camelCase) vs. DB column and journal payload (snake_case) | The Trace ID value carried through every layer — same string, different casing convention depending on whether you're in application code or persisted/serialized form                                          |
 
 ### Complete journal record field map
@@ -286,13 +286,13 @@ fields from all three concepts:
 ```text
 actor        — who initiated            (Actor concept)
 actor_type   — category of who          (Actor concept)
-agent_id     — which runtime agent      (Agent concept)
-agent_kind   — category of agent        (Agent concept)
+runner_id    — which Runner             (Runner concept)
+runner_kind  — category of Runner       (Runner concept)
 agent_role   — which LLM blueprint      (Agent Role concept)
 ```
 
 Not every event has all five fields populated. A CLI command with no LLM call
-will have `actor` and `agent*id` but an empty `agent_role`.
+will have `actor` and `runner*id` but an empty `agent_role`.
 
 ### `AgentHealth` and `AgentStatus`
 

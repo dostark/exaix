@@ -24,7 +24,7 @@ import {
   SecurityMode,
   ToolName,
 } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { JSONValue } from "@exaix/core/types";
 
 type TestToolParams = Record<string, JSONValue>;

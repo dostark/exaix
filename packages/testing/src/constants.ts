@@ -99,7 +99,7 @@ export const TEST_PENDING_REASON = "Proposed from execution";
 // Dashboard mock tests
 export const TEST_SKILL_ID_USER = "tdd-methodology";
 export const TEST_SKILL_ID_LEARNED = "api-design-learned";
-export const TEST_AGENT_ID = "agent-1";
+export const TEST_AGENT_ROLE_ID = "agent-1";
 export const TEST_PROPOSAL_ID = "proposal-1";
 export const TEST_UNKNOWN_PROPOSAL_ID = "proposal-unknown";
 
@@ -124,7 +124,7 @@ export const TEST_LOG_ACTION_PARSE_FAILED = "file.parse_failed";
 export const TEST_AGENT_STATUS_INVALID = "invalid-agent-status";
 
 // Blueprint commands tests
-export const TEST_BLUEPRINT_YAML_AGENT_ID = "yaml-inline-agent";
+export const TEST_BLUEPRINT_YAML_AGENT_ROLE = "yaml-inline-agent";
 export const TEST_BLUEPRINT_YAML_NAME = "YAML Inline Agent";
 export const TEST_BLUEPRINT_YAML_MODEL = "mock:test-model";
 export const TEST_BLUEPRINT_YAML_CAPABILITY_ONE = "alpha";
@@ -132,7 +132,7 @@ export const TEST_BLUEPRINT_YAML_CAPABILITY_TWO = "beta";
 export const TEST_BLUEPRINT_YAML_CREATED = "2026-02-10T00:00:00Z";
 export const TEST_BLUEPRINT_YAML_CREATED_BY = "tester";
 export const TEST_BLUEPRINT_YAML_VERSION = DEFAULT_BLUEPRINT_VERSION;
-export const TEST_BLUEPRINT_MISSING_AGENT_ID = "missing-agent";
+export const TEST_BLUEPRINT_MISSING_AGENT_ROLE = "missing-agent";
 export const TEST_BLUEPRINT_NO_FRONTMATTER_ID = "no-frontmatter";
 export const TEST_BLUEPRINT_NO_FRONTMATTER_CONTENT = "No frontmatter content";
 export const TEST_BLUEPRINT_ERROR_MISSING_FRONTMATTER = "Missing or invalid TOML frontmatter";

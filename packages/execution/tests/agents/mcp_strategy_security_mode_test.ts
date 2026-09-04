@@ -26,8 +26,8 @@
 import { assert } from "@std/assert";
 import { McpAgentStrategy } from "@exaix/execution";
 import { ProcessManager, SecurityMode } from "@exaix/core";
-import type { AgentOrchestrator, IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions } from "@exaix/schemas/agent_orchestrator.ts";
+import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
+import type { IAgentExecutionOptions } from "@exaix/schemas/agent_composer.ts";
 
 const MINIMAL_BLUEPRINT: IAgentFileBlueprint = {
   name: "test-agent",
@@ -59,7 +59,7 @@ function getBuildAgentArgs(
 }
 
 Deno.test("[security] McpAgentStrategy: HYBRID must not grant unrestricted --allow-all (Phase 170 Weakness 1)", () => {
-  const strategy = new McpAgentStrategy({} as AgentOrchestrator, new ProcessManager());
+  const strategy = new McpAgentStrategy({} as AgentComposer, new ProcessManager());
   try {
     const buildAgentArgs = getBuildAgentArgs(strategy);
     const args = buildAgentArgs.call(strategy, MINIMAL_BLUEPRINT, buildOptions(SecurityMode.HYBRID));

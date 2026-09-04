@@ -9,7 +9,7 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
 import type { IActivityRepository, ILogActivityRequest } from "@exaix/core/repositories";
-import { ActorType, RuntimeKind } from "@exaix/core";
+import { ActorType, RunnerKind } from "@exaix/core";
 
 Deno.test("EventLogger: passes all separation fields through to logActivity", async () => {
   // Arrange
@@ -31,7 +31,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
     target: "some-portal",
     actor: "user:test@example.com",
     actorType: ActorType.USER,
-    agentKind: RuntimeKind.AGENT_EXECUTOR,
+    runnerKind: RunnerKind.AGENT_COMPOSER,
     agentRole: "senior-coder",
     traceId: "trace-abc-123",
   });
@@ -41,7 +41,7 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
   const req = capturedRequests[0];
   assertEquals(req.actor, "user:test@example.com");
   assertEquals(req.actorType, ActorType.USER);
-  assertEquals(req.agentKind, RuntimeKind.AGENT_EXECUTOR);
+  assertEquals(req.runnerKind, RunnerKind.AGENT_COMPOSER);
   assertEquals(req.agentRole, "senior-coder");
   assertEquals(req.traceId, "trace-abc-123");
 });
@@ -60,7 +60,7 @@ Deno.test("EventLogger: passes null for optional fields when not provided", asyn
   };
   const logger = new EventLogger({ activityRepo: mockRepo });
 
-  // Act - log without actorType, agentKind, agentRole
+  // Act - log without actorType, runnerKind, agentRole
   await logger.log({
     action: "test.event",
     target: "some-portal",
@@ -71,11 +71,11 @@ Deno.test("EventLogger: passes null for optional fields when not provided", asyn
   assertEquals(capturedRequests.length, 1);
   const req = capturedRequests[0];
   assertEquals(req.actorType, null);
-  assertEquals(req.agentKind, null);
+  assertEquals(req.runnerKind, null);
   assertEquals(req.agentRole, null);
 });
 
-Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async () => {
+Deno.test("EventLogger: does NOT put blueprint slug into runnerKind field", async () => {
   // Arrange
   const capturedRequests: ILogActivityRequest[] = [];
   const mockRepo: IActivityRepository = {
@@ -89,19 +89,19 @@ Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async
   };
   const logger = new EventLogger({ activityRepo: mockRepo });
 
-  // Act - log with distinct agentRole and agentKind
+  // Act - log with distinct agentRole and runnerKind
   await logger.log({
     action: "test.event",
     target: "some-portal",
     actor: "system",
-    agentKind: RuntimeKind.AGENT_EXECUTOR,
+    runnerKind: RunnerKind.AGENT_COMPOSER,
     agentRole: "senior-coder",
   });
 
-  // Assert - key regression guard: agentKind must NOT equal agentRole
+  // Assert - key regression guard: runnerKind must NOT equal agentRole
   const req = capturedRequests[0];
-  assertNotEquals(req.agentKind, "senior-coder");
-  assertNotEquals(req.agentKind, req.agentRole);
+  assertNotEquals(req.runnerKind, "senior-coder");
+  assertNotEquals(req.runnerKind, req.agentRole);
   assertEquals(req.agentRole, "senior-coder");
-  assertEquals(req.agentKind, RuntimeKind.AGENT_EXECUTOR);
+  assertEquals(req.runnerKind, RunnerKind.AGENT_COMPOSER);
 });

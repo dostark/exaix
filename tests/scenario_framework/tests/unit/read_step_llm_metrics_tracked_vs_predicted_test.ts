@@ -7,7 +7,7 @@
  * trackedCostUsd, and a window with only predicted rows must produce trackedCostUsd:
  * undefined rather than a silently-included predicted figure.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/step_llm_metrics.ts, packages/execution/src/agent_orchestrator.ts]
+ * @related-files [tests/scenario_framework/runner/step_llm_metrics.ts, packages/execution/src/agent_composer.ts]
  */
 
 import { assertEquals } from "@std/assert";
