@@ -3,12 +3,12 @@
  * @path packages/execution/src/strategies/mcp_agent_strategy.ts
  * @description Implementation of the MCP-based agent execution strategy (Out-of-Process).
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_orchestrator.ts, packages/execution/src/strategies/execution_strategy.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, type AgentOrchestrator, type IAgentFileBlueprint } from "../agent_orchestrator.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import { type AgentComposer, AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { SafeSubprocess } from "@exaix/core";
 import { ProcessManager } from "@exaix/core";
 import { TextLineStream } from "@std/streams";
@@ -32,7 +32,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
   private readonly HANDSHAKE_TIMEOUT_MS = DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS;
 
   constructor(
-    private executor: AgentOrchestrator,
+    private executor: AgentComposer,
     private processManager: ProcessManager = new ProcessManager(),
   ) {}
 
@@ -232,7 +232,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
 
   private async handleToolCall(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {
     if (!this.executor.toolRegistry) {
-      throw new Error("ToolRegistry not available in AgentOrchestrator");
+      throw new Error("ToolRegistry not available in AgentComposer");
     }
 
     // If tool specifies 'portal' and 'path', translate to '@Portal/path' for legacy registry tools,

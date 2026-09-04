@@ -502,7 +502,7 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
       const planContextRef = ".exa/PlanContext/hardened-fixture.md";
-      // The file-change audit (AgentOrchestrator.auditGitChanges) flags ANY untracked
+      // The file-change audit (AgentComposer.auditGitChanges) flags ANY untracked
       // file in the portal, including the PlanContext copy the generator just wrote — commit
       // it so the worktree is clean before the real flow's first step runs.
       await new Deno.Command("git", { args: ["add", "-A"], cwd: portalDir }).output();

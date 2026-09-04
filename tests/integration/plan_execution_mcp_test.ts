@@ -261,7 +261,7 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     assertEquals(frontmatter.agent_role, "mock-agent");
     assertEquals(frontmatter.portal, TEST_PORTAL_NAME);
 
-    // In real execution, AgentOrchestrator would create branch and commit
+    // In real execution, AgentComposer would create branch and commit
     const reviewRegistry = createReviewRegistry(dbService);
 
     const reviewId = await registerReview(

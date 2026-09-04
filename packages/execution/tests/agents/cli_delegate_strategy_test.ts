@@ -14,7 +14,7 @@ import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateStrategy } from "@exaix/execution";
 import { AgentExecutionError, type IAgentFileBlueprint } from "@exaix/execution";
 import { AgentExecutionErrorType, CLI_DELEGATE_TURN_TIMEOUT_MS, ExecutionStrategyName } from "@exaix/core";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
 
 function makeBlueprint(): IAgentFileBlueprint {

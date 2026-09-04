@@ -2,7 +2,7 @@
  * @module AciInjectionIntegrationTest
  * @path tests/integration/aci_injection_test.ts
  * @description Phase 112 Step 3 — drives `PlanExecutor.execute` -> `createAgentExecutor` ->
- * `AgentOrchestrator` -> `ReActLoopStrategy` end-to-end with a real `MockLLMProvider`, proving
+ * `AgentComposer` -> `ReActLoopStrategy` end-to-end with a real `MockLLMProvider`, proving
  * the `read_file` ACI fragment reaches the provider prompt through the real production
  * construction path (the renderer and adapter are never hand-built here), and that the
  * daemon-level `agents.inject_aci_docs` config flag gates both the rendered prompt content
@@ -10,7 +10,7 @@
  * @architectural-layer Integration
  * @related-files [
  *   "packages/core/src/planning/plan_executor.ts",
- *   "packages/execution/src/agent_orchestrator.ts",
+ *   "packages/execution/src/agent_composer.ts",
  *   "packages/execution/src/strategies/react_loop_strategy.ts",
  *   "packages/execution/src/react_loop_adapter.ts"
  * ]

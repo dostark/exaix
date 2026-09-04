@@ -55,7 +55,7 @@ import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import {
-  AgentOrchestratorAdapter,
+  AgentComposerAdapter,
   createJudgeEvaluator,
   FlowLoader,
   FlowRunner,
@@ -849,7 +849,7 @@ if (import.meta.main) {
     if (editionType === EDITION_TEAM) {
       mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
     }
-    const agentExecutorAdapter = new AgentOrchestratorAdapter(
+    const agentExecutorAdapter = new AgentComposerAdapter(
       agentRunner,
       blueprintsPath,
       {

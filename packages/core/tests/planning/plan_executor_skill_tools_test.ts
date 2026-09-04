@@ -2,13 +2,13 @@
  * @module PlanExecutorSkillToolsTest
  * @path packages/core/tests/planning/plan_executor_skill_tools_test.ts
  * @description Proves PlanExecutor.createAgentExecutor unions the `tools` declared by every
- *   matched skill and passes them as AgentOrchestrator's matchedSkillTools option, and that
+ *   matched skill and passes them as AgentComposer's matchedSkillTools option, and that
  *   the union (intersected with the agent role's permitted_tools) actually filters the
  *   execution prompt's tool list — mirroring plan_executor_skill_task_type_test.ts's proof
  *   for topSkillTaskTypes, but for the tools union+intersect wiring instead of task_type
  *   derivation.
  * @architectural-layer Test
- * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_orchestrator.ts, packages/execution/src/skill_tools_derivation.ts]
+ * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_composer.ts, packages/execution/src/skill_tools_derivation.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -85,7 +85,7 @@ function createMultiMatchSkillsService(
 
 Deno.test({
   name:
-    "PlanExecutor's AgentOrchestrator unions matched skills' tools and filters the execution prompt (matchedSkillTools wiring)",
+    "PlanExecutor's AgentComposer unions matched skills' tools and filters the execution prompt (matchedSkillTools wiring)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

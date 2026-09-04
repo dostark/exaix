@@ -16,7 +16,7 @@
  *   Network-zeroing is a design property (documentation-reviewed, no scenario counter);
  *   pricing-lookup-zeroing is the spy-verified stand-in asserted here.
  * @architectural-layer Integration
- * @related-files [packages/ai/src/model_resolver.ts, packages/execution/src/agent_orchestrator.ts, apps/daemon/main.ts]
+ * @related-files [packages/ai/src/model_resolver.ts, packages/execution/src/agent_composer.ts, apps/daemon/main.ts]
  * @phase-134 Step 7 cutover — Solo resolution reachable end-to-end, spy-verified.
  */
 

@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { AgentOrchestrator, type IAgentFileBlueprint } from "@exaix/execution";
+import { AgentComposer, type IAgentFileBlueprint } from "@exaix/execution";
 import { initTestDbService } from "@exaix/testing";
 import { createMockConfig } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -17,9 +17,9 @@ import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ToolName } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
-describe("AgentOrchestrator Capability Differentiation", () => {
+describe("AgentComposer Capability Differentiation", () => {
   let config: Config;
-  let executor: AgentOrchestrator;
+  let executor: AgentComposer;
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
@@ -31,7 +31,7 @@ describe("AgentOrchestrator Capability Differentiation", () => {
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService([]);
 
-    executor = new AgentOrchestrator({ config, db: dbService.db, logger, pathResolver, permissions });
+    executor = new AgentComposer({ config, db: dbService.db, logger, pathResolver, permissions });
   });
 
   afterEach(async () => {

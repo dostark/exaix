@@ -2,7 +2,7 @@
 /**
  * @module AgentIsolationAuditTest
  * @path tests/security/agent_isolation_audit_test.ts
- * @description Step 61.7 (G3) + Step 61.11 (G7): Verifies that AgentOrchestrator.executeStep()
+ * @description Step 61.7 (G3) + Step 61.11 (G7): Verifies that AgentComposer.executeStep()
  * detects unauthorized file modifications via post-execution git audit,
  * logs a security.violation event, and throws AgentExecutionError(SECURITY_VIOLATION).
  *
@@ -14,7 +14,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutionError, AgentOrchestrator, type IAgentFileBlueprint } from "@exaix/execution";
+import { AgentComposer, AgentExecutionError, type IAgentFileBlueprint } from "@exaix/execution";
 import type { IExecutionStrategy } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
@@ -22,7 +22,7 @@ import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
 import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { LogMetadata } from "@exaix/core/types";
 import { createMockConfig } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -129,7 +129,7 @@ Deno.test({
       }]);
       const pathResolver = new PathResolver(config);
 
-      const executor = new AgentOrchestrator({
+      const executor = new AgentComposer({
         config,
         db: dbService.db,
         logger,
@@ -268,7 +268,7 @@ Deno.test({
       }]);
       const pathResolver = new PathResolver(config);
 
-      const executor = new AgentOrchestrator({
+      const executor = new AgentComposer({
         config,
         db: dbService.db,
         logger,

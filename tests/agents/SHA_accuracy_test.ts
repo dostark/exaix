@@ -1,7 +1,7 @@
 /**
  * @module SHAAccuracyTest
  * @path tests/agents/SHA_accuracy_test.ts
- * @description Step 61.7 (G3): Verifies that AgentOrchestrator.executeStep() overwrites the
+ * @description Step 61.7 (G3): Verifies that AgentComposer.executeStep() overwrites the
  * strategy's returned commit_sha with the real HEAD SHA from the portal git repository.
  *
  * Success Criteria:
@@ -11,12 +11,12 @@
 
 import { assertMatch, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
-import { AgentOrchestrator } from "@exaix/execution";
+import { AgentComposer } from "@exaix/execution";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IExecutionStrategy } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
-import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import { ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
 import { initTestDbService } from "@exaix/testing";
@@ -94,7 +94,7 @@ Deno.test({
       }]);
       const pathResolver = new PathResolver(config);
 
-      const executor = new AgentOrchestrator({
+      const executor = new AgentComposer({
         config,
         db: dbService.db,
         logger,

@@ -1,20 +1,20 @@
 /**
- * @module AgentOrchestratorAdapterStrategyTest
+ * @module AgentComposerAdapterStrategyTest
  * @path packages/flow/tests/agent_executor_adapter_strategy_test.ts
- * @description Phase 159 Step 3: `AgentOrchestratorAdapter.runWithStrategy` constructs a
- *   fresh, per-call `AgentOrchestrator` (mirroring `PlanExecutor.createAgentExecutor`'s
+ * @description Phase 159 Step 3: `AgentComposerAdapter.runWithStrategy` constructs a
+ *   fresh, per-call `AgentComposer` (mirroring `PlanExecutor.createAgentExecutor`'s
  *   trace/portal-scoped construction — see GAP-2), builds `IExecutionContext`/
  *   `IAgentExecutionOptionsInput` from the flow step's own request, dispatches through the
  *   forced strategy, and bridges `IChangesetResult.description` into
  *   `IAgentExecutionResult.content`. Fails fast when construction dependencies or the
- *   step's portal are absent, rather than reaching `AgentOrchestrator`'s generic errors.
+ *   step's portal are absent, rather than reaching `AgentComposer`'s generic errors.
  *   Uses a spy strategy (via the adapter's test-only `strategyRegistry` construction dep)
  *   so the test has no live-provider or subprocess dependency.
  */
 
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { AgentOrchestratorAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "@exaix/flow";
+import { AgentComposerAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "@exaix/flow";
 import type { IFlowStepRequest } from "@exaix/flow";
 import { StrategyRegistry } from "@exaix/execution";
 import { initTestDbService } from "@exaix/testing";
@@ -23,7 +23,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { PortalPermissionsService } from "@exaix/portal";
 import { ExecutionStrategyName } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 async function writeBlueprint(root: string, agentRole: string): Promise<void> {
   const dir = join(root, "Blueprints", "Agents");
@@ -67,10 +67,10 @@ function makeStepRequest(overrides: Partial<IFlowStepRequest> = {}): IFlowStepRe
   };
 }
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast when construction dependencies are absent", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: fails fast when construction dependencies are absent", async () => {
   const dbService = await initTestDbService();
   try {
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
     );
@@ -86,7 +86,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast when constructio
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast with a distinct error when the request has no portal", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: fails fast with a distinct error when the request has no portal", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -94,7 +94,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast with a distinct 
     const permissions = new PortalPermissionsService(config.portals!);
     await writeBlueprint(dbService.tempDir, "test-agent");
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions },
@@ -109,7 +109,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: fails fast with a distinct 
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: dispatches through the forced strategy and bridges output", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: dispatches through the forced strategy and bridges output", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -122,7 +122,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: dispatches through the forc
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -152,7 +152,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: dispatches through the forc
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: extracts the <content> block from a raw thought/content response (CliDelegateStrategy shape) instead of bridging the whole raw text", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: extracts the <content> block from a raw thought/content response (CliDelegateStrategy shape) instead of bridging the whole raw text", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -179,7 +179,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: extracts the <content> bloc
         }),
     });
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -197,7 +197,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: extracts the <content> bloc
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: bridges the whole description unchanged when it carries no <content> wrapper", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: bridges the whole description unchanged when it carries no <content> wrapper", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);
@@ -210,7 +210,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: bridges the whole descripti
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -230,7 +230,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: bridges the whole descripti
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls for different portals each build options/context scoped to their own portal", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: two calls for different portals each build options/context scoped to their own portal", async () => {
   const dbService = await initTestDbService();
   try {
     const portalA = join(dbService.tempDir, "portal-a");
@@ -252,7 +252,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls for different por
     const strategyRegistry = new StrategyRegistry();
     registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -314,7 +314,7 @@ async function initGitPortal(portalPath: string): Promise<void> {
   await new Deno.Command("git", { args: ["commit", "-m", "init"], cwd: portalPath }).output();
 }
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId accumulate planWrittenFiles (a later step doesn't revert an earlier step's uncommitted write)", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: two calls sharing a traceId accumulate planWrittenFiles (a later step doesn't revert an earlier step's uncommitted write)", async () => {
   const dbService = await initTestDbService();
   try {
     const portalPath = join(dbService.tempDir, "portal-shared-trace");
@@ -336,7 +336,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/step1.ts");
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, portalPath, "src/step2.ts");
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -349,7 +349,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId
       makeStepRequest({ portal: "portal", traceId }),
       ExecutionStrategyName.REACT,
     );
-    // A second call (fresh AgentOrchestrator, same traceId) must not see the earlier still-dirty file as unauthorized.
+    // A second call (fresh AgentComposer, same traceId) must not see the earlier still-dirty file as unauthorized.
     const result = await adapter.runWithStrategy!(
       "test-agent",
       makeStepRequest({ portal: "portal", traceId }),
@@ -367,7 +367,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NOT inherit another flow run's planWrittenFiles", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: a different traceId does NOT inherit another flow run's planWrittenFiles", async () => {
   const dbService = await initTestDbService();
   try {
     const portalPath = join(dbService.tempDir, "portal-isolated-trace");
@@ -389,7 +389,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NO
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/run-a.ts");
     registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, portalPath, "src/run-b.ts");
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -414,7 +414,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NO
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-touched trace's planWrittenFiles entry once PLAN_WRITTEN_FILES_TRACE_MAX distinct trace_ids have been seen (post-gap Step 10, GAP-1)", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: evicts the least-recently-touched trace's planWrittenFiles entry once PLAN_WRITTEN_FILES_TRACE_MAX distinct trace_ids have been seen (post-gap Step 10, GAP-1)", async () => {
   const dbService = await initTestDbService();
   try {
     const portalPath = join(dbService.tempDir, "portal-eviction");
@@ -445,7 +445,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-t
     const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -488,7 +488,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-t
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's planWrittenFiles entry is never evicted while it remains the most-recently-touched entry (post-gap Step 10, GAP-1 regression guard)", async () => {
+Deno.test("AgentComposerAdapter.runWithStrategy: an actively-touched trace's planWrittenFiles entry is never evicted while it remains the most-recently-touched entry (post-gap Step 10, GAP-1 regression guard)", async () => {
   const dbService = await initTestDbService();
   try {
     const portalPath = join(dbService.tempDir, "portal-eviction-regression");
@@ -518,7 +518,7 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's
     const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
     registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
 
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       { run: () => Promise.reject(new Error("should not be called")) },
       join(dbService.tempDir, "Blueprints", "Agents"),
       { config, db: dbService.db, logger, permissions, strategyRegistry },
@@ -560,12 +560,12 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's
   }
 });
 
-Deno.test("AgentOrchestratorAdapter.run: no-strategy path still calls the wrapped runner unchanged", async () => {
+Deno.test("AgentComposerAdapter.run: no-strategy path still calls the wrapped runner unchanged", async () => {
   const dbService = await initTestDbService();
   try {
     await writeBlueprint(dbService.tempDir, "test-agent");
     let runnerCalled = false;
-    const adapter = new AgentOrchestratorAdapter(
+    const adapter = new AgentComposerAdapter(
       {
         run: () => {
           runnerCalled = true;

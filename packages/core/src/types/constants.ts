@@ -597,7 +597,7 @@ export const MEMORY_REFLECTION_RELATED_SIMILARITY_THRESHOLD: number = configurab
   swap: SwapClass.RESTART,
 });
 
-/** Example execution time used in AgentOrchestrator response-shape examples. */
+/** Example execution time used in AgentComposer response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS: number = configurable({
   key: "agent.execution_example_time_ms",
   default: 2_000,

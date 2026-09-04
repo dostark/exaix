@@ -22,7 +22,7 @@ import {
 } from "@exaix/core";
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import type { GuardrailIncident } from "@exaix/schemas";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { JSONValue } from "@exaix/core/types";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];

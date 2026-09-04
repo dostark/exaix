@@ -2,23 +2,23 @@
  * @module AgentCostLoggingIntegrationTest
  * @path tests/integration/agent/cost_logging_test.ts
  * @description Integration tests for Phase 62 Step 62.4 cost and usage logging in
- *   AgentOrchestrator. Phase 135 Step 12 (GAP-25) added a regression asserting the
+ *   AgentComposer. Phase 135 Step 12 (GAP-25) added a regression asserting the
  *   no-strategy-usage fallback journals cost_usd_estimate exactly 0 — never a
  *   heuristic-computed figure, now that estimateExecutionUsage() is removed.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { AgentOrchestrator } from "@exaix/execution";
+import { AgentComposer } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
-import { setupAgentExecutorFixture } from "../helpers/agent_orchestrator_fixture.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { setupAgentExecutorFixture } from "../helpers/agent_composer_fixture.ts";
 
 interface IUsagePayload {
   usage?: { tokens?: number; cost_usd_estimate?: number };
 }
 
-// Runs a single-step AgentOrchestrator execution through a LEGACY strategy whose execute()
+// Runs a single-step AgentComposer execution through a LEGACY strategy whose execute()
 // result is supplied by the caller, then returns the journaled agent.execution_completed
 // usage payload. Shared by every cost-logging case below.
 async function runCostLoggingStep(
@@ -34,7 +34,7 @@ async function runCostLoggingStep(
       execute: () => Promise.resolve(strategyResult),
     });
 
-    const executor = new AgentOrchestrator({ config, db, logger, pathResolver, permissions, strategyRegistry });
+    const executor = new AgentComposer({ config, db, logger, pathResolver, permissions, strategyRegistry });
 
     const traceId = crypto.randomUUID();
     const context: IExecutionContext = {
@@ -68,7 +68,7 @@ async function runCostLoggingStep(
   }
 }
 
-Deno.test("AgentOrchestrator integration: logs usage.tokens and usage.cost_usd_estimate", async () => {
+Deno.test("AgentComposer integration: logs usage.tokens and usage.cost_usd_estimate", async () => {
   const payload = await runCostLoggingStep("functional-cost-1", {
     branch: "feat/cost-test",
     commit_sha: "0000000000000000000000000000000000000000",
@@ -83,7 +83,7 @@ Deno.test("AgentOrchestrator integration: logs usage.tokens and usage.cost_usd_e
   assertEquals(typeof payload.usage?.cost_usd_estimate, "number");
 });
 
-Deno.test("[regression] AgentOrchestrator: a step with no strategy-reported usage journals cost_usd_estimate exactly 0 (Step 12, GAP-25 — no heuristic computation anywhere in the call chain)", async () => {
+Deno.test("[regression] AgentComposer: a step with no strategy-reported usage journals cost_usd_estimate exactly 0 (Step 12, GAP-25 — no heuristic computation anywhere in the call chain)", async () => {
   const payload = await runCostLoggingStep("cost-removed-1", {
     branch: "feat/cost-removed-test",
     commit_sha: "0000000000000000000000000000000000000000",

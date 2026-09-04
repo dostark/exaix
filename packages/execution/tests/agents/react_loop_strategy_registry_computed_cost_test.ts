@@ -13,11 +13,11 @@
 
 import { assertAlmostEquals, assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
-import type { AgentOrchestrator, IAgentFileBlueprint } from "@exaix/execution";
+import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 const testBlueprint = {
   name: "test-agent",
@@ -97,7 +97,7 @@ Deno.test("[ReActLoopStrategyRegistryComputedCost] cost_usd for a known model is
     },
   };
 
-  const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentOrchestrator> as AgentOrchestrator, provider);
+  const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
   await strategy.execute(testBlueprint, testContext, createOptions("test"));
 
   assertAlmostEquals(capturedCostUsd!, 18);
@@ -152,7 +152,7 @@ Deno.test("[ReActLoopStrategyRegistryComputedCost] an unknown model falls back t
     },
   };
 
-  const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentOrchestrator> as AgentOrchestrator, provider);
+  const strategy = new ReActLoopStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider);
   await strategy.execute(
     { ...testBlueprint, model: "some-unlisted-future-model" },
     testContext,

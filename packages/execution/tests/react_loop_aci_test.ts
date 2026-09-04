@@ -20,7 +20,7 @@ import type { IReActLoopExecutor } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { ITool } from "@exaix/core/types";
 import { ToolSideEffectScope } from "@exaix/core";
 import type { AciDoc } from "@exaix/schemas";

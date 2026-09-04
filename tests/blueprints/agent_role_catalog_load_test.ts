@@ -144,7 +144,7 @@ const AGENST_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
 
 Deno.test({
   name:
-    "fix(agent-role-catalog): every active agent role (except mock-agent) declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
+    "fix(agent-role-catalog): every active agent role (except mock-agent) declares react in capabilities so AgentComposer dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
   fn() {
     const activeIds = listActiveAgentRoles();
     const missing: string[] = [];
@@ -169,7 +169,7 @@ Deno.test({
       missing.length,
       0,
       `${missing.length} agent role(s) missing "react" in capabilities — without it, ` +
-        "AgentOrchestrator.executeStep falls through to LegacyAgentStrategy, which makes a " +
+        "AgentComposer.executeStep falls through to LegacyAgentStrategy, which makes a " +
         "single blind provider.generate() call with no tool-result feedback loop " +
         "(Ledger:EXECUTION_STRATEGY_NO_TOOLS)",
     );

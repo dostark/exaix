@@ -23,7 +23,7 @@ import {
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import { ReActLoopStrategy } from "@exaix/execution";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IContextBudgetManager, IContextBudgetManagerInput, IContextBudgetManagerOutput } from "@exaix/execution";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";

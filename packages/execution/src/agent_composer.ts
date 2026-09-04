@@ -1,6 +1,6 @@
 /**
- * @module AgentOrchestrator
- * @path packages/execution/src/agent_orchestrator.ts
+ * @module AgentComposer
+ * @path packages/execution/src/agent_composer.ts
  * @description Thin orchestrator that delegates to injected services for
  *   blueprint loading (BlueprintService), prompt building (PromptBuilder),
  *   git audit (GitAuditService), output parsing (OutputParser), history
@@ -43,7 +43,7 @@ import type {
   IChangesetCostSource,
   IChangesetResult,
   IExecutionContext,
-} from "@exaix/schemas/agent_orchestrator.ts";
+} from "@exaix/schemas/agent_composer.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
@@ -86,13 +86,13 @@ export interface IAgentFileBlueprint {
   hitl?: HitlPolicy;
 }
 
-/** Optional configuration for AgentOrchestrator. */
-export interface IAgentOrchestratorOptions {
+/** Optional configuration for AgentComposer. */
+export interface IAgentComposerOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
   /** The caller's highest-confidence skill match's triggers.task_types, in priority order
-   *  (first = most confident). AgentOrchestrator has no SkillsService dependency; a caller
+   *  (first = most confident). AgentComposer has no SkillsService dependency; a caller
    *  that already matched skills (e.g. AgentRunner) supplies this for the derivation chain. */
   topSkillTaskTypes?: TaskType[];
   /** The `tools` declared by every skill matched for this execution, one array per matched
@@ -101,8 +101,8 @@ export interface IAgentOrchestratorOptions {
   matchedSkillTools?: Array<string[] | undefined>;
 }
 
-/** Dependencies for AgentOrchestrator constructor. */
-export interface IAgentOrchestratorDeps {
+/** Dependencies for AgentComposer constructor. */
+export interface IAgentComposerDeps {
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;
@@ -118,7 +118,7 @@ export interface IAgentOrchestratorDeps {
   outputParser?: OutputParser;
   historyManager?: HistoryManager;
   guardrailRunner?: IGuardrailRunner;
-  options?: IAgentOrchestratorOptions;
+  options?: IAgentComposerOptions;
   modelResolver?: ModelResolver;
   /** Externally-owned set of files already legitimately written by an earlier step of the
    *  same plan/flow run, shared across per-call orchestrator instances so a later step's
@@ -143,7 +143,7 @@ export class AgentExecutionError extends Error {
 /** Orchestrator and strategy dispatcher for agent execution — delegates blueprint
  *  loading, prompt building, budget/context, git audit, output parsing, and loop history
  *  to the injected services named in the module header. */
-export class AgentOrchestrator {
+export class AgentComposer {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
   private config: Config;
@@ -155,7 +155,7 @@ export class AgentOrchestrator {
   private strategyRegistry?: StrategyRegistry;
   private _toolRegistry?: IToolRegistry;
   private _guardrailRunner?: IGuardrailRunner;
-  private readonly options?: IAgentOrchestratorOptions;
+  private readonly options?: IAgentComposerOptions;
   private modelResolver?: ModelResolver;
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
@@ -199,7 +199,7 @@ export class AgentOrchestrator {
     return this._guardrailRunner;
   }
 
-  constructor(deps: IAgentOrchestratorDeps) {
+  constructor(deps: IAgentComposerDeps) {
     this.config = deps.config;
     this.db = deps.db;
     this.logger = deps.logger;

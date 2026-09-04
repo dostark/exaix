@@ -164,7 +164,7 @@ export interface IFlowStepRequest {
   /** Deterministic summaries for requested parallel groups. */
   parallelGroupResults?: Record<string, IParallelGroupSummary>;
   /** The flow's portal alias, threaded unchanged from `FlowRunner.execute()`'s `request.portal`.
-   *  Required by a strategy-routed step to resolve `AgentOrchestrator.executeStep`'s mandatory
+   *  Required by a strategy-routed step to resolve `AgentComposer.executeStep`'s mandatory
    *  `options.portal`; absent is fine for a no-strategy step (`AgentRunner.run` never needs one). */
   portal?: string;
 }
@@ -274,7 +274,7 @@ interface IStepNamespaceWrites {
 
 /** The original flow-execution request, threaded unchanged from `FlowRunner.execute()` through
  *  every internal step method. `portal` is carried here so a strategy-routed step can resolve
- *  a portal alias for `AgentOrchestrator.executeStep`. */
+ *  a portal alias for `AgentComposer.executeStep`. */
 type IFlowOriginalRequest = {
   userPrompt: string;
   traceId?: string;

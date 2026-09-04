@@ -518,7 +518,7 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Sets the per-blueprint HITL rules the HITL middleware evaluates against for every
    * subsequent `execute()` call, replacing whatever was passed at construction (if any).
-   * Called by `AgentOrchestrator.executeStep()` once it has loaded the blueprint about to
+   * Called by `AgentComposer.executeStep()` once it has loaded the blueprint about to
    * run (Phase 154 Step 3) — see `IToolRegistry.setHitlBlueprintRules` for why this exists
    * as a setter rather than a constructor-only option.
    */
@@ -793,7 +793,7 @@ export class ToolRegistry implements IToolRegistry {
    * A `baseDir` other than config.system.root means this registry was constructed for a
    * specific execution root (e.g. a plan's git worktree, per PlanExecutor's `repoPath` ->
    * ToolRegistry `baseDir` wiring) — mirrors resolveAuditPortalPath's identical guard in
-   * agent_orchestrator.ts.
+   * agent_composer.ts.
    */
   private hasExplicitExecutionRoot(): boolean {
     return this.baseDir !== resolve(this.config.system.root);

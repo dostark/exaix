@@ -1,11 +1,11 @@
 /**
  * @module AgentExecutorJournalTest
  * @path packages/execution/tests/agent_orchestrator_journal_test.ts
- * @description Verifies AgentOrchestrator journal calls use correct Actor/Agent/Agent-Role field separation.
+ * @description Verifies AgentComposer journal calls use correct Actor/Agent/Agent-Role field separation.
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { AgentOrchestrator } from "@exaix/execution";
+import { AgentComposer } from "@exaix/execution";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
@@ -18,7 +18,7 @@ import {
 } from "@exaix/core";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import { createMockConfig } from "@exaix/testing";
 
 function createMockLogger(eventCapture: ILogEvent[]): IEventLogger {
@@ -50,9 +50,9 @@ function createMockConfigForTest(): ReturnType<typeof createMockConfig> {
   return createMockConfig("/tmp/test");
 }
 
-function createExecutorHarness(): { executor: AgentOrchestrator; loggedEvents: ILogEvent[] } {
+function createExecutorHarness(): { executor: AgentComposer; loggedEvents: ILogEvent[] } {
   const loggedEvents: ILogEvent[] = [];
-  const executor = new AgentOrchestrator({
+  const executor = new AgentComposer({
     config: createMockConfigForTest(),
     db: {} as Partial<DatabaseService> as DatabaseService,
     logger: createMockLogger(loggedEvents),
@@ -63,7 +63,7 @@ function createExecutorHarness(): { executor: AgentOrchestrator; loggedEvents: I
   return { executor, loggedEvents };
 }
 
-Deno.test("AgentOrchestrator: logExecutionStart writes correct field separation", async () => {
+Deno.test("AgentComposer: logExecutionStart writes correct field separation", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act
@@ -84,7 +84,7 @@ Deno.test("AgentOrchestrator: logExecutionStart writes correct field separation"
   executor.dispose();
 });
 
-Deno.test("AgentOrchestrator: logExecutionComplete writes correct field separation", async () => {
+Deno.test("AgentComposer: logExecutionComplete writes correct field separation", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   const mockResult: IChangesetResult = {
@@ -119,7 +119,7 @@ Deno.test("AgentOrchestrator: logExecutionComplete writes correct field separati
   executor.dispose();
 });
 
-Deno.test("AgentOrchestrator: logExecutionError writes correct field separation", async () => {
+Deno.test("AgentComposer: logExecutionError writes correct field separation", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   const errorPayload = {
@@ -145,7 +145,7 @@ Deno.test("AgentOrchestrator: logExecutionError writes correct field separation"
   executor.dispose();
 });
 
-Deno.test("AgentOrchestrator: REGRESSION - runnerId must never be agent role blueprint slug", async () => {
+Deno.test("AgentComposer: REGRESSION - runnerId must never be agent role blueprint slug", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act - log with agentRole = "senior-coder"

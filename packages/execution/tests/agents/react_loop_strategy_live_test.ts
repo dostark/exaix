@@ -14,7 +14,7 @@
  *   MockModelProvider to return REACT_STATUS_COMPLETE verbatim and a canned tool result,
  *   which proves the parser recognizes the string and the history-append plumbing works,
  *   but proves nothing about whether a real model actually reads and uses what comes back.
- *   Deliberately does not exercise AgentOrchestrator, PlanExecutor, the daemon, or a
+ *   Deliberately does not exercise AgentComposer, PlanExecutor, the daemon, or a
  *   portal — the swe_tasks scenario pack already covers that heavier, full-stack path;
  *   this test isolates ReActLoopStrategy's own tool-use, comprehension, and termination
  *   contract against a real model as cheaply and directly as possible. Provider and model
@@ -33,7 +33,7 @@ import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
 import { ExecutionStrategyName, ProviderType, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import {
   ENV_ANTHROPIC_API_KEY,
   ENV_GOOGLE_API_KEY,

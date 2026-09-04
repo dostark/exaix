@@ -11,7 +11,7 @@ import { StrategyRegistry } from "@exaix/execution";
 import { LegacyAgentStrategy } from "@exaix/execution";
 import { ReActLoopStrategy } from "@exaix/execution";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { ExecutionStrategyName } from "@exaix/core";
 import { setupStrategyExecutor, TEST_BLUEPRINT, TEST_OPTIONS } from "../helpers/agent_strategy_test_helpers.ts";
 

@@ -1,7 +1,7 @@
 /**
  * @module AgentExecutorWorkspaceContextTest
  * @path packages/execution/tests/agent_orchestrator_workspace_context_test.ts
- * @description Verifies the integration between the AgentOrchestrator and Workspace-bound
+ * @description Verifies the integration between the AgentComposer and Workspace-bound
  * execution contexts, ensuring trace metadata and environment variables are correctly inherited.
  */
 
@@ -13,7 +13,7 @@ import { WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { IPortalConfig } from "@exaix/schemas/config.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-describe("AgentOrchestrator with IWorkspaceExecutionContext", () => {
+describe("AgentComposer with IWorkspaceExecutionContext", () => {
   let tempDir: string;
   let portalDir: string;
   let workspaceDir: string;

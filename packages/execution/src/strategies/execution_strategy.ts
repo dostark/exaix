@@ -4,12 +4,12 @@
  * @description Interface for agent execution strategies, including the optional
  * `dispose?()` lifecycle contract for strategies that manage external resources.
  * @architectural-layer Services
- * @related-files [packages/execution/src/strategies/strategy_registry.ts, packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/strategies/strategy_registry.ts, packages/execution/src/agent_composer.ts]
  * Allows different execution models (ReAct, MCP, etc.) to be used interchangeably.
  */
 
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
-import type { IAgentFileBlueprint } from "../agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentFileBlueprint } from "../agent_composer.ts";
 
 export interface IExecutionStrategy {
   readonly name: string;

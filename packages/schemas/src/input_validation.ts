@@ -19,7 +19,7 @@ import {
   PLAN_CONTENT_MAX_LENGTH,
   USER_REQUEST_MAX_LENGTH,
 } from "@exaix/core";
-import { AgentExecutionOptionsSchema } from "./agent_orchestrator.ts";
+import { AgentExecutionOptionsSchema } from "./agent_composer.ts";
 
 /**
  * Blueprint name validation - prevents path traversal and injection

@@ -18,7 +18,7 @@
 import { assertEquals } from "@std/assert";
 import { CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IRunCliDelegateProcess } from "@exaix/execution";
 
 function makeBlueprint(): IAgentFileBlueprint {

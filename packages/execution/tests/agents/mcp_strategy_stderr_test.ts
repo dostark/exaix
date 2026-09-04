@@ -4,14 +4,14 @@
  * @related-files []
  * @architectural-layer Services
  * @description Step 61.8 (G5): Verifies stderr stream failures are logged via
- * AgentOrchestrator.logAgentOutput without aborting McpAgentStrategy stderr piping.
+ * AgentComposer.logAgentOutput without aborting McpAgentStrategy stderr piping.
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { McpAgentStrategy } from "@exaix/execution";
 import { ProcessManager } from "@exaix/core";
-import type { AgentOrchestrator } from "@exaix/execution";
-import type { IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { AgentComposer } from "@exaix/execution";
+import type { IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 function createFailingStderrStream(errorMessage: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -39,9 +39,9 @@ Deno.test("McpAgentStrategy: stderr pipe logs stream errors without aborting exe
       outputs.push(output);
       return Promise.resolve();
     },
-  } as Partial<AgentOrchestrator>;
+  } as Partial<AgentComposer>;
 
-  const strategy = new McpAgentStrategy(mockExecutor as AgentOrchestrator, processManager);
+  const strategy = new McpAgentStrategy(mockExecutor as AgentComposer, processManager);
   const context: IExecutionContext = {
     trace_id: "trace-stderr-123",
     request_id: "REQ-STDERR-123",

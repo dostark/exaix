@@ -4,12 +4,12 @@
  * @description In-process reasoning strategy using the ReAct (Reasoning + Acting) loop.
  * Executes tasks by prompting an LLM for tool calls and processing results within Exaix.
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_orchestrator.ts, packages/execution/src/strategies/execution_strategy.ts]
+ * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_orchestrator.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IModelProvider, IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";

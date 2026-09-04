@@ -1,12 +1,12 @@
 /**
  * @module AgentExecutorBudgetWiringTest
  * @path packages/execution/tests/agent_orchestrator_budget_wiring_test.ts
- * @description Tests for Step 6: AgentOrchestrator constructor injection of
+ * @description Tests for Step 6: AgentComposer constructor injection of
  * contextBudgetManager and snapshotStore. Verifies these parameters are
  * accepted and properly assigned to instance fields.
  * @architectural-layer Tests
  * @related-files [
- *   "packages/execution/src/agent_orchestrator.ts",
+ *   "packages/execution/src/agent_composer.ts",
  *   "packages/execution/src/context/context_budget_manager.ts",
  *   "packages/execution/src/context/snapshot_store.ts"
  * ]
@@ -15,7 +15,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import type { IContextBudgetManager } from "@exaix/execution";
 import type { ISnapshotStore } from "@exaix/execution";
-import { AgentOrchestrator, ExecutionContextService } from "@exaix/execution";
+import { AgentComposer, ExecutionContextService } from "@exaix/execution";
 import { castAny } from "@exaix/testing";
 
 // Helpers
@@ -48,8 +48,8 @@ function makeMockSnapshotStore(): ISnapshotStore {
 
 // Tests
 
-Deno.test("[AgentOrchestrator] default production composition provides contextBudgetManager", () => {
-  const executor = new AgentOrchestrator({
+Deno.test("[AgentComposer] default production composition provides contextBudgetManager", () => {
+  const executor = new AgentComposer({
     config: castAny({}),
     db: castAny({}),
     logger: castAny({}),
@@ -59,9 +59,9 @@ Deno.test("[AgentOrchestrator] default production composition provides contextBu
 
   assertExists(executor.contextBudgetManager);
 });
-Deno.test("[AgentOrchestrator] constructor accepts contextBudgetManager parameter", () => {
+Deno.test("[AgentComposer] constructor accepts contextBudgetManager parameter", () => {
   const budgetManager = makeMockBudgetManager();
-  const executor = new AgentOrchestrator({
+  const executor = new AgentComposer({
     config: castAny({}),
     db: castAny({}),
     logger: castAny({}),
@@ -75,9 +75,9 @@ Deno.test("[AgentOrchestrator] constructor accepts contextBudgetManager paramete
   assertEquals(executor.contextBudgetManager, budgetManager);
 });
 
-Deno.test("[AgentOrchestrator] constructor accepts snapshotStore parameter", () => {
+Deno.test("[AgentComposer] constructor accepts snapshotStore parameter", () => {
   const snapshotStore = makeMockSnapshotStore();
-  const executor = new AgentOrchestrator({
+  const executor = new AgentComposer({
     config: castAny({}),
     db: castAny({}),
     logger: castAny({}),
@@ -91,10 +91,10 @@ Deno.test("[AgentOrchestrator] constructor accepts snapshotStore parameter", () 
   assertEquals(executor.snapshotStore, snapshotStore);
 });
 
-Deno.test("[AgentOrchestrator] both contextBudgetManager and snapshotStore can be passed together", () => {
+Deno.test("[AgentComposer] both contextBudgetManager and snapshotStore can be passed together", () => {
   const budgetManager = makeMockBudgetManager();
   const snapshotStore = makeMockSnapshotStore();
-  const executor = new AgentOrchestrator({
+  const executor = new AgentComposer({
     config: castAny({}),
     db: castAny({}),
     logger: castAny({}),

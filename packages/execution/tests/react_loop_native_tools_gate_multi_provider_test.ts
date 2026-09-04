@@ -20,7 +20,7 @@
 import { assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";

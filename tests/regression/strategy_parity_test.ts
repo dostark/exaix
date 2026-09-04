@@ -18,19 +18,19 @@
  *
  *   NOT covered: the previous header also claimed these strategies "emit identical event types to
  *   the Activity Journal". Nothing in this file ever read the journal, and the strategies emit no
- *   distinct events of their own (`AgentOrchestrator` emits `AgentOutput` for both), so there is no
+ *   distinct events of their own (`AgentComposer` emits `AgentOutput` for both), so there is no
  *   divergence to assert today. The claim is dropped rather than backed by a comparison of two
  *   empty sets.
  * @architectural-layer Test
- * @related-files [packages/schemas/src/agent_orchestrator.ts, packages/execution/src/strategies/]
+ * @related-files [packages/schemas/src/agent_composer.ts, packages/execution/src/strategies/]
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { ChangesetResultSchema } from "@exaix/schemas/agent_orchestrator.ts";
+import { ChangesetResultSchema } from "@exaix/schemas/agent_composer.ts";
 import { LegacyAgentStrategy } from "@exaix/execution";
 import { ReActLoopStrategy } from "@exaix/execution";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { setupStrategyExecutor, TEST_BLUEPRINT, TEST_OPTIONS } from "../helpers/agent_strategy_test_helpers.ts";
 
 /** Assertions the schema cannot make: `z.string()` accepts "", so a blank branch or description parses cleanly while being useless downstream. */

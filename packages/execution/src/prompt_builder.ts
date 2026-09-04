@@ -2,15 +2,15 @@
  * @module PromptBuilder
  * @path packages/execution/src/prompt_builder.ts
  * @description Builds execution prompts for LLM agents with token budget enforcement,
- *   input sanitization, and context cache integration. Extracted from AgentOrchestrator.
+ *   input sanitization, and context cache integration. Extracted from AgentComposer.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/agent_composer.ts]
  */
 
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
-import type { IAgentFileBlueprint } from "./agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import type { IAgentFileBlueprint } from "./agent_composer.ts";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { ExecutionContextService } from "./execution_context_service.ts";
 import { AGENT_EXECUTION_EXAMPLE_TIME_MS, MAX_USER_INPUT_LENGTH } from "@exaix/core";

@@ -7,7 +7,7 @@
  * combined input+output tokens with no split) with a real per-model, split input/output price
  * from the existing static_overlay.ts price table, plus Anthropic's documented 0.1x cache-read
  * discount multiplier. Distinct in kind from the heuristic estimator GAP-23/24/25 removed from
- * AgentOrchestrator: that estimator guessed at unmeasurable PRE-CALL output-token counts; this
+ * AgentComposer: that estimator guessed at unmeasurable PRE-CALL output-token counts; this
  * function only re-prices already-measured, real, POST-CALL token counts — cost_source remains
  * "predicted", unchanged, never surfaced as tracked cost.
  * @architectural-layer Services

@@ -2,9 +2,9 @@
  * @module GitAuditService
  * @path packages/execution/src/git_audit_service.ts
  * @description Git audit, SHA resolution, file path validation, and
- *   unauthorized change reversion. Extracted from AgentOrchestrator.
+ *   unauthorized change reversion. Extracted from AgentComposer.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_orchestrator.ts]
+ * @related-files [packages/execution/src/agent_composer.ts]
  */
 
 import { join } from "@std/path";

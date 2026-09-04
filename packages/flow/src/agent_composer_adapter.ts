@@ -1,10 +1,10 @@
 /**
- * @module AgentOrchestratorAdapter
- * @path packages/flow/src/agent_executor_adapter.ts
+ * @module AgentComposerAdapter
+ * @path packages/flow/src/agent_composer_adapter.ts
  * @description Bridges IAgentRunner into FlowRunner's IAgentExecutor interface.
  * Loads blueprints by agentRole and converts IFlowStepRequest to IParsedRequest
  * before delegating to IAgentRunner.run(). Also implements the strategy-routed seam
- * (Phase 159): `runWithStrategy` constructs a fresh, per-call `AgentOrchestrator` from
+ * (Phase 159): `runWithStrategy` constructs a fresh, per-call `AgentComposer` from
  * injected construction dependencies (never a stored, long-lived instance — see GAP-2)
  * and dispatches through the agent strategy registry with a forced strategy. Each call's
  * fresh orchestrator shares a `planWrittenFiles` Set with every other step of the SAME flow
@@ -12,10 +12,10 @@
  * later steps don't revert an earlier step's still-uncommitted, legitimate writes (Step 8).
  * @architectural-layer Flows
  * @dependencies ["@exaix/execution", "@exaix/core"]
- * @related-files ["packages/flow/src/flow_runner.ts", "packages/execution/src/agent_runner.ts", "packages/execution/src/agent_orchestrator.ts"]
+ * @related-files ["packages/flow/src/flow_runner.ts", "packages/execution/src/agent_runner.ts", "packages/execution/src/agent_composer.ts"]
  */
 
-import { AgentOrchestrator, type IAgentExecutionResult, type IBlueprint } from "@exaix/execution";
+import { AgentComposer, type IAgentExecutionResult, type IBlueprint } from "@exaix/execution";
 import type { StrategyRegistry } from "@exaix/execution";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
@@ -30,7 +30,7 @@ import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
-import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 /**
  * Minimal request context type for converting IFlowStepRequest to IParsedRequest.
@@ -68,9 +68,9 @@ export interface IRunner {
   ): Promise<IAgentExecutionResult>;
 }
 
-/** For constructing a fresh, per-call `AgentOrchestrator` — never a shared instance, since
+/** For constructing a fresh, per-call `AgentComposer` — never a shared instance, since
  *  it carries mutable state (`planWrittenFiles`) that must not survive past one call. */
-export interface IAgentOrchestratorConstructionDeps {
+export interface IAgentComposerConstructionDeps {
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;
@@ -88,23 +88,23 @@ export const PLAN_WRITTEN_FILES_TRACE_MAX: number = configurable({
   default: 100,
   type: ConfigValueType.NUMBER,
   description:
-    "Maximum number of distinct flow-run trace_ids whose planWrittenFiles accumulator AgentOrchestratorAdapter retains before evicting the least-recently-touched entry",
+    "Maximum number of distinct flow-run trace_ids whose planWrittenFiles accumulator AgentComposerAdapter retains before evicting the least-recently-touched entry",
   min: 1,
   max: 10_000,
   swap: SwapClass.HOT,
 });
 
 /** Wraps an IAgentRunner (or compatible IRunner) into FlowRunner's IAgentExecutor interface. */
-export class AgentOrchestratorAdapter {
+export class AgentComposerAdapter {
   private loader: IBlueprintLoader;
 
-  /** Files legitimately written by an earlier flow step, keyed by trace_id and shared across this run's AgentOrchestrator instances so a later step's audit doesn't revert them. */
+  /** Files legitimately written by an earlier flow step, keyed by trace_id and shared across this run's AgentComposer instances so a later step's audit doesn't revert them. */
   private readonly planWrittenFilesByTrace = new Map<string, Set<string>>();
 
   constructor(
     private runner: IRunner,
     blueprintsPath: string,
-    private orchestratorDeps?: Opt<IAgentOrchestratorConstructionDeps, Reason.OptionalDependency>,
+    private orchestratorDeps?: Opt<IAgentComposerConstructionDeps, Reason.OptionalDependency>,
   ) {
     this.loader = new IBlueprintLoader({ blueprintsPath });
   }
@@ -135,7 +135,7 @@ export class AgentOrchestratorAdapter {
     return await this.runner.run(blueprint, parsedRequest, undefined);
   }
 
-  /** Strategy-routed step execution: builds a fresh per-call PathResolver/ToolRegistry/AgentOrchestrator (mirroring PlanExecutor.createAgentExecutor) and bridges the result into IAgentExecutionResult.content. */
+  /** Strategy-routed step execution: builds a fresh per-call PathResolver/ToolRegistry/AgentComposer (mirroring PlanExecutor.createAgentExecutor) and bridges the result into IAgentExecutionResult.content. */
   async runWithStrategy(
     agentRole: string,
     request: IFlowStepRequest,
@@ -143,7 +143,7 @@ export class AgentOrchestratorAdapter {
   ): Promise<IAgentExecutionResult> {
     if (!this.orchestratorDeps) {
       throw new Error(
-        `runWithStrategy requires AgentOrchestrator construction dependencies, none were provided (agent_role: ${agentRole}, strategy: ${strategy})`,
+        `runWithStrategy requires AgentComposer construction dependencies, none were provided (agent_role: ${agentRole}, strategy: ${strategy})`,
       );
     }
     if (!request.portal) {
@@ -175,7 +175,7 @@ export class AgentOrchestratorAdapter {
       planWrittenFiles = new Set<string>();
     }
     this.planWrittenFilesByTrace.set(traceId, planWrittenFiles);
-    const orchestrator = new AgentOrchestrator({
+    const orchestrator = new AgentComposer({
       config,
       db,
       logger,

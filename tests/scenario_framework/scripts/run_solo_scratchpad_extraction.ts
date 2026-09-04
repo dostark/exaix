@@ -23,7 +23,7 @@ import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import {
   createMinimalExecutionMemory,
   createStubConfig,

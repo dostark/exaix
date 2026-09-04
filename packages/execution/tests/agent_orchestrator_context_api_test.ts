@@ -1,14 +1,14 @@
 /**
  * @module AgentExecutorContextAPITest
  * @path packages/execution/tests/agent_orchestrator_context_api_test.ts
- * @description Verifies the Context API within the AgentOrchestrator, ensuring sandboxed tools
+ * @description Verifies the Context API within the AgentComposer, ensuring sandboxed tools
  * can securely access and modify approved execution state.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { AgentOrchestrator } from "@exaix/execution";
+import { AgentComposer } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { PortalOperation } from "@exaix/core";
@@ -16,12 +16,12 @@ import { createMockConfig, initTestDbService, setupPortalWorkspaceTestDirs } fro
 import { EventLogger } from "@exaix/core/logger";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
-describe("AgentOrchestrator API with IWorkspaceExecutionContext", () => {
+describe("AgentComposer API with IWorkspaceExecutionContext", () => {
   let tempDir: string;
   let portalDir: string;
   let workspaceDir: string;
   let originalCwd: string;
-  let executor: AgentOrchestrator;
+  let executor: AgentComposer;
 
   beforeEach(async () => {
     originalCwd = Deno.cwd();
@@ -44,7 +44,7 @@ describe("AgentOrchestrator API with IWorkspaceExecutionContext", () => {
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService([portalConfig]);
 
-    executor = new AgentOrchestrator({ config, db: dbService.db, logger, pathResolver, permissions });
+    executor = new AgentComposer({ config, db: dbService.db, logger, pathResolver, permissions });
   });
 
   afterEach(() => {
@@ -68,7 +68,7 @@ describe("AgentOrchestrator API with IWorkspaceExecutionContext", () => {
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
 
-      // This method should exist on AgentOrchestrator
+      // This method should exist on AgentComposer
       executor.setExecutionContext(context);
 
       // Verify context was stored
