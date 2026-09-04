@@ -422,7 +422,7 @@ export class AgentRunner implements IAgentRunner {
 
     const matchingStartTime = Date.now();
     try {
-      // ONE rule: the resulting set is pinned ∪ dynamically-matched ∪ identity defaults —
+      // ONE rule: the resulting set is pinned ∪ dynamically-matched ∪ agent-role defaults —
       // no branch-specific merge rules, so it's always predictable why a skill was or
       // wasn't injected. Prompt bloat is controlled by keeping default_skills short.
       const matchScores = new Map<string, number>();
@@ -886,10 +886,16 @@ export class AgentRunner implements IAgentRunner {
     target: string | null,
     payload: Record<string, JSONValue>,
     traceId?: Opt<string, Reason.TraceAbsent>,
-    _agentRole?: Opt<string | null, Reason.OptionalContext>,
+    agentRole?: Opt<string | null, Reason.OptionalContext>,
   ): void {
     if (!this.logger) return;
-    void this.logger.info(actionType, target, payload, traceId);
+    void this.logger.log({
+      action: actionType,
+      target: target ?? "",
+      payload,
+      traceId,
+      agentRole: agentRole ?? undefined,
+    });
   }
 
   /** Debug-level activity log (filtered out unless the logger's minLevel is DEBUG). Used
