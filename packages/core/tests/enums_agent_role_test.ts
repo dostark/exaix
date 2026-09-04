@@ -32,7 +32,9 @@ Deno.test("ActorType enum has correct string values", () => {
 
 Deno.test("RunnerKind (renamed from AgentKind) exposes exactly the live members", () => {
   assertEquals(RunnerKind.AGENT_COMPOSER, "agent-composer");
+  assertEquals(RunnerKind.AGENT_RUNNER, "agent-runner");
   assertEquals(RunnerKind.REQUEST_ROUTER, "request-router");
+  assertEquals(Object.values(RunnerKind).sort(), ["agent-composer", "agent-runner", "request-router"]);
   // AGENT_EXECUTOR was renamed to AGENT_COMPOSER; IDENTITY_RUNNER, FLOW_AGENT, TOOL_AGENT
   // were deleted as dead code (Phase 179 Step 3)
   assertFalse("AGENT_EXECUTOR" in RunnerKind);

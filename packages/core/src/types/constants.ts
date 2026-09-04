@@ -522,6 +522,7 @@ export const REACT_EVENT_ACTION_PARSE_FAILED = "agent.react_action_parse_failed"
 export const RESPONSE_STOP_REASON_MAX_TOKENS = "max_tokens";
 
 export const AGENT_COMPOSER_ID = "agent-composer";
+export const AGENT_RUNNER_ID = "agent-runner";
 // Plan amendment event names
 export const PLAN_AMENDMENT_EVENT_PROPOSED = "plan.amendment.proposed";
 export const PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL = "plan.amendment.awaiting_approval";
