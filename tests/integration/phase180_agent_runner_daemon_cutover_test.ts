@@ -61,6 +61,7 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 interface IActivityRow {
   action_type: string;
   runner_kind: string | null;
+  trace_id: string | null;
 }
 
 async function readActivity(configPath: string): Promise<IActivityRow[]> {
@@ -68,7 +69,7 @@ async function readActivity(configPath: string): Promise<IActivityRow[]> {
   const db = new DatabaseService(configService.getAll());
   try {
     return await db.preparedAll<IActivityRow>(
-      "SELECT action_type, runner_kind FROM activity ORDER BY rowid ASC",
+      "SELECT action_type, runner_kind, trace_id FROM activity ORDER BY rowid ASC",
     );
   } finally {
     await db.close();
@@ -101,7 +102,7 @@ Deno.test({
 
 Deno.test({
   name:
-    "[phase180-cutover] a real daemon boot processing a real Request file produces an activity row with runner_kind = agent-runner",
+    "[phase180-cutover] a real daemon boot processing a real Request file produces an activity row, scoped to the request's own trace_id, with runner_kind = agent-runner",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -146,10 +147,12 @@ Add a hello world function.
       });
 
       const activities = await readActivity(configPath);
-      const started = activities.find((a) => a.action_type === "agent.execution_started" && a.runner_kind);
+      const started = activities.filter((a) => a.trace_id === traceId).find((a) =>
+        a.action_type === "agent.execution_started" && a.runner_kind
+      );
       assert(
         started,
-        `a queryable activity row for agent.execution_started with runner_kind must exist. got: ${
+        `a queryable activity row for agent.execution_started with runner_kind, scoped to trace_id ${traceId}, must exist. got: ${
           JSON.stringify(activities)
         }`,
       );
