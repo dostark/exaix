@@ -175,7 +175,7 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "idx_activity_trace",
         "idx_activity_agent_role",
         "idx_activity_actor_type",
-        "idx_activity_agent_kind",
+        "idx_activity_runner_kind",
         "idx_leases_agent_role",
         "idx_reviews_trace_id",
         "idx_reviews_status",

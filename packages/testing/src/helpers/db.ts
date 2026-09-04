@@ -16,7 +16,7 @@ export interface ILoggedActivity {
   traceId?: string;
   actorType?: string | null;
   agentRole?: string | null;
-  agentKind?: string | null;
+  runnerKind?: string | null;
   promptTokens?: number;
   completionTokens?: number;
   costUsd?: number;
@@ -31,7 +31,7 @@ export interface ITestDatabaseService {
     traceId?: string,
     actorType?: string | null,
     agentRole?: string | null,
-    agentKind?: string | null,
+    runnerKind?: string | null,
     promptTokens?: number,
     completionTokens?: number,
     costUsd?: number,
@@ -55,7 +55,7 @@ export function createLoggingTestDb(): ILoggingTestDb {
       traceId,
       actorType,
       agentRole,
-      agentKind,
+      runnerKind,
       promptTokens,
       completionTokens,
       costUsd,
@@ -68,7 +68,7 @@ export function createLoggingTestDb(): ILoggingTestDb {
         traceId,
         actorType,
         agentRole,
-        agentKind,
+        runnerKind,
         promptTokens,
         completionTokens,
         costUsd,

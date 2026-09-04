@@ -22,7 +22,7 @@ Deno.test("IActivityRepository: writes and reads back all separation fields", as
       target: "some-portal",
       payload: { key: "value" },
       traceId,
-      agentKind: "agent-executor",
+      runnerKind: "agent-executor",
       agentRole: "senior-coder",
     };
 
@@ -35,8 +35,8 @@ Deno.test("IActivityRepository: writes and reads back all separation fields", as
     const row = rows[0];
     assertEquals(row.actor, "user:test@example.com");
     assertEquals(row.actorType, "user");
-    assertEquals(row.agentId, null); // Legacy: no longer tracked this way per mapping
-    assertEquals(row.agentKind, "agent-executor");
+    assertEquals(row.runnerId, null); // Legacy: no longer tracked this way per mapping
+    assertEquals(row.runnerKind, "agent-executor");
     assertEquals(row.agentRole, "senior-coder");
     assertEquals(row.actionType, "test.action");
     assertEquals(row.target, "some-portal");
@@ -65,37 +65,37 @@ Deno.test("IActivityRepository: stores null when separation fields are omitted",
     assertEquals(rows.length, 1);
     const row = rows[0];
     assertEquals(row.actorType, null);
-    assertEquals(row.agentKind, null);
+    assertEquals(row.runnerKind, null);
     assertEquals(row.agentRole, null);
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("IActivityRepository: agentKind stores runtime agent category, distinct from agentRole", async () => {
+Deno.test("IActivityRepository: runnerKind stores Runner category, distinct from agentRole", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
     const traceId = crypto.randomUUID();
 
-    // Act - write row with distinct agentKind and agentRole
+    // Act - write row with distinct runnerKind and agentRole
     await repo.logActivity({
       actor: "system",
       actionType: "flow.step.started",
       target: "test-portal",
       traceId,
-      agentKind: "flow-runner",
+      runnerKind: "flow-runner",
       agentRole: "code-reviewer",
     });
 
     const rows = await repo.getActivitiesByTraceId(traceId);
 
-    // Assert - regression: agentKind must differ from agentRole
+    // Assert - regression: runnerKind must differ from agentRole
     assertEquals(rows.length, 1);
     const row = rows[0];
-    assertEquals(row.agentKind, "flow-runner");
+    assertEquals(row.runnerKind, "flow-runner");
     assertEquals(row.agentRole, "code-reviewer");
-    assertNotEquals(row.agentKind, row.agentRole);
+    assertNotEquals(row.runnerKind, row.agentRole);
   } finally {
     await cleanup();
   }

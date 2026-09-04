@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS activity (
   actor TEXT NOT NULL,
   actor_type TEXT,
   agent_role TEXT,
-  agent_kind TEXT,
+  runner_kind TEXT,
   action_type TEXT NOT NULL,
   target TEXT,
   payload TEXT NOT NULL,
@@ -32,7 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_activity_time ON activity(timestamp);
 CREATE INDEX IF NOT EXISTS idx_activity_actor ON activity(actor);
 CREATE INDEX IF NOT EXISTS idx_activity_agent_role ON activity(agent_role);
 CREATE INDEX IF NOT EXISTS idx_activity_actor_type ON activity(actor_type);
-CREATE INDEX IF NOT EXISTS idx_activity_agent_kind ON activity(agent_kind);
+CREATE INDEX IF NOT EXISTS idx_activity_runner_kind ON activity(runner_kind);
 
 -- ============================================================================
 -- File Locking / Leases

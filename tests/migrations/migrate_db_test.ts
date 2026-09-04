@@ -178,6 +178,30 @@ Deno.test("[phase179] migrate_db.ts up creates activity/leases with agent_role c
   }
 });
 
+Deno.test("[phase180] migrate_db.ts up creates activity with runner_kind column and renamed index, no agent_kind", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    const result = await runMigrate(tmp, ["up"]);
+    assertEquals(result.code, 0, `migrate up failed: ${result.stderr}`);
+    assertStringIncludes(result.stdout, "All migrations up to date");
+
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+
+    const activityColumns = await queryDb(dbPath, "PRAGMA table_info(activity);");
+    assertStringIncludes(activityColumns, "runner_kind");
+    assert(!activityColumns.includes("agent_kind"), "activity table must not have an agent_kind column");
+
+    const indexes = await queryDb(
+      dbPath,
+      "SELECT name FROM sqlite_master WHERE type='index' ORDER BY name;",
+    );
+    assertStringIncludes(indexes, "idx_activity_runner_kind");
+    assert(!indexes.includes("idx_activity_agent_kind"), "idx_activity_agent_kind must no longer exist");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
 Deno.test("[phase135] migrate_db.ts up creates the registry tables, cost_source and benchmark from 001", async () => {
   const tmp = await setupTestWorkspace();
   try {

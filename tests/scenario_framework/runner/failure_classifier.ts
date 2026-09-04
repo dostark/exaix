@@ -62,7 +62,7 @@ export function loadTraceActivities(journalPath: string): IActivityRecord[] {
     ).get<{ trace_id: string }>(RUN_TRACE_MARKER_EVENT);
     if (!marker) return [];
     return db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, agent_kind, action_type, target, payload,
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload,
               prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity WHERE trace_id = ? ORDER BY timestamp`,
     ).all(marker.trace_id) as IActivityRecord[];

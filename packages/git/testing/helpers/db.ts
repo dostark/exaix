@@ -19,7 +19,7 @@ const ACTIVITY_TABLE_SQL = `
     actor TEXT NOT NULL,
     actor_type TEXT,
     agent_role TEXT,
-    agent_kind TEXT,
+    runner_kind TEXT,
     action_type TEXT NOT NULL,
     target TEXT,
     payload TEXT NOT NULL,

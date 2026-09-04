@@ -7,7 +7,7 @@
  */
 
 import type { Actor, ActorType } from "./actor.ts";
-import type { LogLevel, RuntimeKind } from "./enums.ts";
+import type { LogLevel, RunnerKind } from "./enums.ts";
 import type { JSONValue } from "./json.ts";
 
 export interface ILogEvent {
@@ -29,11 +29,11 @@ export interface ILogEvent {
   /** Trace ID for correlation */
   traceId?: string;
 
-  /** Runtime agent handling this event, e.g. "agent-executor" — NOT an agent role id */
-  agentId?: string;
+  /** Runner handling this event, e.g. "agent-executor" — NOT an agent role id */
+  runnerId?: string;
 
-  /** Category of runtime agent */
-  agentKind?: RuntimeKind | null;
+  /** Category of Runner */
+  runnerKind?: RunnerKind | null;
 
   /** LLM agent role blueprint used for this event, e.g. "senior-coder" */
   agentRole?: string;

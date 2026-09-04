@@ -35,7 +35,7 @@ Deno.test("[AgentRolePerformanceRepository] aggregates performance by agent role
       actor: "agent",
       actor_type: null,
       agent_role: "senior-coder",
-      agent_kind: null,
+      runner_kind: null,
       action_type: "agent.execution.completed",
       target: "TestPortal",
       payload: JSON.stringify({
@@ -74,7 +74,7 @@ Deno.test("[AgentRolePerformanceRepository] filters by capability and portal nam
       actor: "agent",
       actor_type: null,
       agent_role: "security-architect",
-      agent_kind: null,
+      runner_kind: null,
       action_type: "agent.execution.completed",
       target: "TestPortal",
       payload: JSON.stringify({
@@ -95,7 +95,7 @@ Deno.test("[AgentRolePerformanceRepository] filters by capability and portal nam
       actor: "agent",
       actor_type: null,
       agent_role: "security-architect",
-      agent_kind: null,
+      runner_kind: null,
       action_type: "agent.execution.completed",
       target: "OtherPortal",
       payload: JSON.stringify({
@@ -130,7 +130,7 @@ Deno.test("[AgentRolePerformanceRepository] marks snapshots stable when sample t
     actor: "agent",
     actor_type: null,
     agent_role: "stability-agent",
-    agent_kind: null,
+    runner_kind: null,
     action_type: "agent.execution.completed",
     target: "TestPortal",
     payload: JSON.stringify({
@@ -167,7 +167,7 @@ Deno.test("[AgentRolePerformanceRepository] filters old records and applies rece
       actor: "agent",
       actor_type: null,
       agent_role: "decay-agent",
-      agent_kind: null,
+      runner_kind: null,
       action_type: "agent.execution.completed",
       target: "TestPortal",
       payload: JSON.stringify({
@@ -188,7 +188,7 @@ Deno.test("[AgentRolePerformanceRepository] filters old records and applies rece
       actor: "agent",
       actor_type: null,
       agent_role: "decay-agent",
-      agent_kind: null,
+      runner_kind: null,
       action_type: "agent.execution.completed",
       target: "TestPortal",
       payload: JSON.stringify({
@@ -209,7 +209,7 @@ Deno.test("[AgentRolePerformanceRepository] filters old records and applies rece
       actor: "agent",
       actor_type: null,
       agent_role: "decay-agent",
-      agent_kind: null,
+      runner_kind: null,
       action_type: "agent.execution.completed",
       target: "TestPortal",
       payload: JSON.stringify({

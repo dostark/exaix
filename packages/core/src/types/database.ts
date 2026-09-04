@@ -34,7 +34,7 @@ export interface IActivityRecord {
   actor: string | null;
   actor_type: string | null;
   agent_role: string | null;
-  agent_kind?: string | null;
+  runner_kind?: string | null;
   action_type: string;
   target: string | null;
   payload: string;

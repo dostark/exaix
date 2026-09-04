@@ -23,7 +23,7 @@ import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, LogLevel, RuntimeKind } from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, LogLevel, RunnerKind } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -751,8 +751,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      agentId: AGENT_EXECUTOR_ID,
-      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      runnerId: AGENT_EXECUTOR_ID,
+      runnerKind: RunnerKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       payload: {
         portal,
@@ -802,8 +802,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      agentId: "agent-executor",
-      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      runnerId: "agent-executor",
+      runnerKind: RunnerKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
       completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
@@ -835,8 +835,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      agentId: "agent-executor",
-      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      runnerId: "agent-executor",
+      runnerKind: RunnerKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       level: LogLevel.ERROR,
       payload: {
@@ -881,8 +881,8 @@ export class AgentOrchestrator {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      agentId: "agent-executor",
-      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      runnerId: "agent-executor",
+      runnerKind: RunnerKind.AGENT_EXECUTOR,
       agentRole: agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,

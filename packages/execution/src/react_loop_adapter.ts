@@ -11,7 +11,7 @@
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RuntimeKind } from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, RunnerKind } from "@exaix/core";
 import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
@@ -169,8 +169,8 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       actor: DEFAULT_MCP_AGENT_ROLE_ID,
       actorType: ActorType.SERVICE,
       traceId,
-      agentId: "agent-executor",
-      agentKind: RuntimeKind.AGENT_EXECUTOR,
+      runnerId: "agent-executor",
+      runnerKind: RunnerKind.AGENT_EXECUTOR,
       agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,

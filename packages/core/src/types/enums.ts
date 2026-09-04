@@ -47,8 +47,8 @@ export enum CircuitState {
   HALF_OPEN = "half-open",
 }
 
-/** Runtime kind categories per GLOSSARY.md — identifies which runtime component handled an action. */
-export enum RuntimeKind {
+/** Runner categories per GLOSSARY.md — identifies which Runner component handled an action. */
+export enum RunnerKind {
   AGENT_EXECUTOR = "agent-executor",
   REQUEST_ROUTER = "request-router",
 }

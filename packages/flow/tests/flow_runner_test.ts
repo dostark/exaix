@@ -2328,7 +2328,7 @@ class MockDatabaseService {
       actor: "test",
       actor_type: null,
       agent_role: null,
-      agent_kind: null,
+      runner_kind: null,
       target: null,
       prompt_tokens: 0,
       completion_tokens: 0,
@@ -2345,7 +2345,7 @@ class MockDatabaseService {
     _traceId?: string,
     _actorType?: string | null,
     _agentRole?: string | null,
-    _agentKind?: string | null,
+    _runnerKind?: string | null,
   ): void {}
   waitForFlush(): Promise<void> {
     return Promise.resolve();

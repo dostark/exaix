@@ -84,7 +84,7 @@ export class EventLoggerStructuredOutput implements IEventLoggerOutput {
     if (event.traceId) context.trace_id = event.traceId;
     if (event.agentRole) context.agent_role = event.agentRole;
     if (event.actor) context.operation = String(event.actor);
-    if (event.agentId) context.agent_id = event.agentId;
+    if (event.runnerId) context.runner_id = event.runnerId;
 
     const metadata: LogMetadata = {};
     if (event.payload) {
