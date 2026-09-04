@@ -57,7 +57,7 @@ steps:
     input_criteria: []
     output_criteria: []
 
-  # AgentOrchestrator.executeStep requires a `workspace`-aliased portal to be registered
+  # AgentComposer.executeStep requires a `workspace`-aliased portal to be registered
   # (resolvePortalName's fallback default) — the framework's default config has none.
   - id: "add-workspace-portal"
     type: "exactl"

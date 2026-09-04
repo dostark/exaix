@@ -570,7 +570,7 @@ model = "claude-sonnet-5"     # optional; tool default when absent
 capabilities: ["code_generation", "cli_delegate"]
 ```
 
-`AgentOrchestrator` only registers `CliDelegateStrategy` when `[cli_delegate].enabled = true`,
+`AgentComposer` only registers `CliDelegateStrategy` when `[cli_delegate].enabled = true`,
 and only dispatches a step to it when the executing agent role's `capabilities` includes
 `"cli_delegate"` — both conditions must hold. A step whose agent role lacks the tag still runs
 through whichever strategy its own capabilities select (`react`/`mcp`/legacy), even with

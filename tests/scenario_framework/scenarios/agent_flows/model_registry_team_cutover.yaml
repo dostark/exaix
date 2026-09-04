@@ -36,7 +36,7 @@ steps:
   # ourselves: quality_gate/request_analysis disabled (heuristic-only would still need a
   # provider round trip we don't want here), model_registry enabled for Team edition.
   # Deliberately NOT configs/dogfood.toml — its session_delegate.model = "deepseek-v4-flash"
-  # intercepts plan steps before AgentOrchestrator/ModelResolver ever runs.
+  # intercepts plan steps before AgentComposer/ModelResolver ever runs.
   - id: "write-config"
     type: "write-file"
     path: "exa.config.toml"
@@ -84,7 +84,7 @@ steps:
     input_criteria: []
     output_criteria: []
 
-  # AgentOrchestrator.executeStep requires a `workspace`-aliased portal to be registered
+  # AgentComposer.executeStep requires a `workspace`-aliased portal to be registered
   # (resolvePortalName's fallback default) — the framework's default config has none.
   - id: "add-workspace-portal"
     type: "exactl"
