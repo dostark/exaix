@@ -89,7 +89,7 @@ export class SearchFilesTool extends ToolHandler {
           portal: { type: "string", description: "Portal name" },
           pattern: { type: "string", description: "Glob pattern to match" },
           path: { type: "string", description: "Optional: subdirectory to search in" },
-          agent_role: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Agent role identifier for permission checks" },
         },
         required: ["portal", "pattern", "agent_role"],
       },

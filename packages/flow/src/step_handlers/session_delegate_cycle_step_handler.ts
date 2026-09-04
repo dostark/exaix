@@ -248,7 +248,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
   }
 
   /** Loads a persisted checkpoint for (parentTraceId, flowStepId) or initializes a fresh one. Rejects a checkpoint
-   *  whose identity/digest no longer matches this attempt — the caller must never silently overwrite that evidence. */
+   *  whose key/digest no longer matches this attempt — the caller must never silently overwrite that evidence. */
   private async loadOrInitCheckpoint(
     parentTraceId: string,
     flowStepId: string,
@@ -275,7 +275,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
         mode: "fresh",
       };
     }
-    // A persisted terminal failure must never be silently retried. An identity/digest
+    // A persisted terminal failure must never be silently retried. A key/digest
     // mismatch means either a forged checkpoint or an operator editing the hardened plan
     // mid-cycle — both fail closed. A completed checkpoint is a legitimate replay, not a mismatch.
     if (

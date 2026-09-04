@@ -6,9 +6,9 @@
  *
  *   A green pack means something only if it is known to go red, and this phase repeatedly found
  *   packs that could not fail for the right reason: the skills pack sat at mean 0.714 with three
- *   "green" scenarios while asserting nothing at all (Step 17), and the fourteen identity smokes
+ *   "green" scenarios while asserting nothing at all (Step 17), and the fourteen agent-role smokes
  *   asserted a frontmatter field `PlanWriter` stamps unconditionally, so every one of them would
- *   have passed with the WRONG identity (Step 11).
+ *   have passed with the WRONG agent role (Step 11).
  *
  *   Checking that the anchors still resolve is the part that keeps this honest over time: a
  *   refactor that moves the code would otherwise silently retire the pack's only evidence of

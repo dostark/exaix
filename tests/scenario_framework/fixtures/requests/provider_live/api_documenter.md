@@ -1,4 +1,4 @@
-Generate comprehensive documentation for the Exaix identity blueprint schema. Document:
+Generate comprehensive documentation for the Exaix agent role blueprint schema. Document:
 
 - Complete TOML schema specification for agent definitions in Blueprints/Agents/
 - All supported blueprint fields, types, and validation rules

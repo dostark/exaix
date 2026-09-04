@@ -2,7 +2,7 @@
  * @module TestEngineerMigrationTest
  * @path tests/blueprints/test_engineer_migration_test.ts
  * @description Phase 131 Step 4 — vertical slice. Verifies the test-engineer
- *   identity is migrated to the skill model: its methodology lives in
+ *   agent role is migrated to the skill model: its methodology lives in
  *   tdd-methodology (not the persona), the output contract is the `critical`
  *   response-contract skill (added to default_skills, fragment includes
  *   retired), and the persona is slimmed to role/scope/voice. Also asserts the

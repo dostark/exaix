@@ -1,8 +1,8 @@
 /**
- * @module IdentityStructureLintTest
- * @path tests/blueprints/identity_structure_lint_test.ts
- * @description Phase 131 Step 8 — structure lint for all active identities,
- *   active identities: balanced thought/content tags, terminated fences,
+ * @module AgentRoleStructureLintTest
+ * @path tests/blueprints/agent_role_structure_lint_test.ts
+ * @description Phase 131 Step 8 — structure lint for all active agent roles,
+ *   active agent roles: balanced thought/content tags, terminated fences,
  *   no empty numbered list markers.
  * @architectural-layer Integration
  * @dependencies [@std/path, @std/assert]
@@ -110,7 +110,7 @@ function filePath(...parts: string[]): string {
 }
 
 Deno.test({
-  name: "[step8] active identities pass structure lint (balanced tags, terminated fences, no empty markers)",
+  name: "[step8] active agent roles pass structure lint (balanced tags, terminated fences, no empty markers)",
   fn() {
     const allIssues: LintIssue[] = [];
     for (const f of ACTIVE_FILES) {

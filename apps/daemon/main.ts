@@ -834,7 +834,7 @@ if (import.meta.main) {
       config.paths.blueprints,
       DEFAULT_AGENTS_PATH,
     );
-    // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the identity's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
+    // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the agent role's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
     const agentRunner = new AgentRunner(llmProvider, {
       milestoneEmitter: buildMilestoneEmitterFromConfig(config),
       skillsService,

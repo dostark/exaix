@@ -2,7 +2,7 @@
  * @module FlowAgentResolutionTest
  * @path tests/blueprints/flow_agent_resolution_test.ts
  * @description Verifies that all agents referenced in flow definitions correctly
- * resolve to valid system identities or project blueprints.
+ * resolve to valid system agent roles or project blueprints.
  */
 
 import { assertEquals } from "@std/assert";

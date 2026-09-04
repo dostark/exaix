@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkJudgeCalibrationTest
  * @path tests/scenario_framework/tests/unit/judge_calibration_test.ts
  * @description Tests for Phase 158 Step 5's judge calibration: the Pearson correlation
- * between a judge identity's scores and the objective test outcome for the same tasks.
+ * between a judge agent role's scores and the objective test outcome for the same tasks.
  * Distinct from Phase 146's judge-vs-human agreement (Cohen's/Krippendorff's α) — this
  * measures judge-vs-objective-outcome correlation. A shuffled pairing of the same score
  * values must collapse the correlation to (near) zero, proving the statistic actually
@@ -16,7 +16,7 @@ import { computeJudgeCalibration } from "../../runner/judge_calibration.ts";
 
 Deno.test("[JudgeCalibration] judge scores that track the objective outcome exactly correlate at 1", () => {
   const result = computeJudgeCalibration({
-    judgeIdentityId: "quality-judge",
+    judgeAgentRole: "quality-judge",
     samples: [
       { taskId: "task-1", judgeScore: 0.1, objectiveOutcome: 0.1 },
       { taskId: "task-2", judgeScore: 0.4, objectiveOutcome: 0.4 },
@@ -31,7 +31,7 @@ Deno.test("[JudgeCalibration] judge scores that track the objective outcome exac
 Deno.test("[JudgeCalibration] a shuffled control pairing of the same score values scores at (near) zero", () => {
   // Same four values on each side, re-paired so they no longer track task-for-task.
   const result = computeJudgeCalibration({
-    judgeIdentityId: "quality-judge",
+    judgeAgentRole: "quality-judge",
     samples: [
       { taskId: "task-1", judgeScore: 0.1, objectiveOutcome: 0.6 },
       { taskId: "task-2", judgeScore: 0.4, objectiveOutcome: 0.1 },
@@ -44,7 +44,7 @@ Deno.test("[JudgeCalibration] a shuffled control pairing of the same score value
 
 Deno.test("[JudgeCalibration] inversely related scores correlate near -1", () => {
   const result = computeJudgeCalibration({
-    judgeIdentityId: "miscalibrated-judge",
+    judgeAgentRole: "miscalibrated-judge",
     samples: [
       { taskId: "task-1", judgeScore: 0.9, objectiveOutcome: 0.1 },
       { taskId: "task-2", judgeScore: 0.6, objectiveOutcome: 0.4 },
@@ -57,7 +57,7 @@ Deno.test("[JudgeCalibration] inversely related scores correlate near -1", () =>
 
 Deno.test("[JudgeCalibration] a constant judge score (zero variance) reports zero correlation, not NaN", () => {
   const result = computeJudgeCalibration({
-    judgeIdentityId: "flat-judge",
+    judgeAgentRole: "flat-judge",
     samples: [
       { taskId: "task-1", judgeScore: 0.5, objectiveOutcome: 0.1 },
       { taskId: "task-2", judgeScore: 0.5, objectiveOutcome: 0.9 },
@@ -66,10 +66,10 @@ Deno.test("[JudgeCalibration] a constant judge score (zero variance) reports zer
   assertEquals(result.correlation, 0);
 });
 
-Deno.test("[JudgeCalibration] the judge identity id is carried through to the result", () => {
+Deno.test("[JudgeCalibration] the judge agent role is carried through to the result", () => {
   const result = computeJudgeCalibration({
-    judgeIdentityId: "quality-judge",
+    judgeAgentRole: "quality-judge",
     samples: [{ taskId: "task-1", judgeScore: 0.5, objectiveOutcome: 0.5 }],
   });
-  assertEquals(result.judgeIdentityId, "quality-judge");
+  assertEquals(result.judgeAgentRole, "quality-judge");
 });

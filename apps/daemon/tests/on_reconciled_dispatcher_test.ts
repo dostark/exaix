@@ -78,7 +78,7 @@ async function makeRig(gate: SessionBrief["gate"]): Promise<IRig> {
 
   await service.prepareBrief({
     traceId,
-    agentRole: "test-identity",
+    agentRole: "test-role",
     gate,
     tool: "claude-code",
     objective: `Do the ${gate} work.`,

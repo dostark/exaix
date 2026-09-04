@@ -378,7 +378,7 @@ export function getDashboardHelpSections(): IHelpSection[] {
         { key: "📋 Plan Reviewer", description: "Review and approve plans" },
         { key: "📊 Monitor", description: "View system logs" },
         { key: "⚙️ Daemon Control", description: "Manage daemon" },
-        { key: "🤖 Identities", description: "View identity status" },
+        { key: "🤖 Agent Roles", description: "View agent role status" },
         { key: "📥 Request Manager", description: "Manage requests" },
         { key: "💾 Memory", description: "Memory management" },
       ],

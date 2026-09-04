@@ -60,12 +60,12 @@ Deno.test(
 );
 
 Deno.test(
-  "[opencode_perm] the agent key is the caller's identity, not a fixed value",
+  "[opencode_perm] the agent key is the caller's agent role, not a fixed value",
   () => {
-    const first = buildOpencodePermissionConfig(["src/**"], "identity-one");
-    const second = buildOpencodePermissionConfig(["src/**"], "identity-two");
-    assertEquals(Object.keys(first.agent), ["identity-one"]);
-    assertEquals(Object.keys(second.agent), ["identity-two"]);
+    const first = buildOpencodePermissionConfig(["src/**"], "role-one");
+    const second = buildOpencodePermissionConfig(["src/**"], "role-two");
+    assertEquals(Object.keys(first.agent), ["role-one"]);
+    assertEquals(Object.keys(second.agent), ["role-two"]);
   },
 );
 

@@ -3,11 +3,11 @@
  * @path tests/scripts/check_blueprint_integrity_test.ts
  * @description Tests for scripts/check_blueprint_integrity.ts — the catalog
  *   referential-integrity + anti-bloat gate. Verifies all four facets:
- *   (1) every flow `agent_role:` resolves to an existing identity (no dangling),
- *   (2) every identity `default_skills` entry resolves to an existing skill,
- *   (3) every identity is referenced by >=1 flow (orphan identities, with the
- *   `default`/`mock-agent` system identities exempt), and (4) every skill is
- *   referenced by >=1 identity (orphan skills). Each facet fails closed.
+ *   (1) every flow `agent_role:` resolves to an existing agent role (no dangling),
+ *   (2) every agent role `default_skills` entry resolves to an existing skill,
+ *   (3) every agent role is referenced by >=1 flow (orphan agent roles, with the
+ *   `default`/`mock-agent` system agent roles exempt), and (4) every skill is
+ *   referenced by >=1 agent role (orphan skills). Each facet fails closed.
  * @architectural-layer Script (test)
  * @dependencies [@std/assert, @std/fs, @std/path]
  * @related-files [scripts/check_blueprint_integrity.ts]
@@ -18,7 +18,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { checkBlueprintIntegrity } from "../../scripts/check_blueprint_integrity.ts";
 
-interface IFixtureIdentity {
+interface IFixtureAgentRole {
   id: string;
   model?: string;
   skills?: string[];
@@ -26,7 +26,7 @@ interface IFixtureIdentity {
 
 interface IFixtureFlow {
   id: string;
-  identities: string[];
+  agentRoles: string[];
   /** Optional subdirectory under Flows/ (tests recursive walk). */
   subdir?: string;
   /** Write as a `.flow.template.yaml` pattern template instead of `.flow.yaml`. */
@@ -34,7 +34,7 @@ interface IFixtureFlow {
 }
 
 async function buildCatalog(opts: {
-  identities: IFixtureIdentity[];
+  agentRoles: IFixtureAgentRole[];
   skills: string[];
   flows: IFixtureFlow[];
 }): Promise<string> {
@@ -46,7 +46,7 @@ async function buildCatalog(opts: {
   await ensureDir(skillDir);
   await ensureDir(flowDir);
 
-  for (const it of opts.identities) {
+  for (const it of opts.agentRoles) {
     const fm = [
       `agent_role: "${it.id}"`,
       `name: "${it.id}"`,
@@ -59,7 +59,7 @@ async function buildCatalog(opts: {
     await Deno.writeTextFile(join(skillDir, `${s}.skill.md`), `---\nskill_id: "${s}"\n---\n\n# ${s}\n`);
   }
   for (const f of opts.flows) {
-    const steps = f.identities
+    const steps = f.agentRoles
       .map((id, i) => `  - id: step-${i}\n    type: agent\n    agent_role: ${id}`)
       .join("\n");
     const dir = f.subdir ? join(flowDir, f.subdir) : flowDir;
@@ -75,9 +75,9 @@ async function buildCatalog(opts: {
 
 Deno.test("[integrity] a fully-wired catalog passes with no violations", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
@@ -88,26 +88,26 @@ Deno.test("[integrity] a fully-wired catalog passes with no violations", async (
   }
 });
 
-Deno.test("[integrity] a flow referencing a non-existent identity FAILS (dangling identity)", async () => {
+Deno.test("[integrity] a flow referencing a non-existent agent role FAILS (dangling agent role)", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review"],
-    flows: [{ id: "f", identities: ["coder", "ghost"] }],
+    flows: [{ id: "f", agentRoles: ["coder", "ghost"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
     assertEquals(r.ok, false);
-    assert(r.violations.some((v) => v.kind === "dangling-identity" && v.detail.includes("ghost")));
+    assert(r.violations.some((v) => v.kind === "dangling-agent-role" && v.detail.includes("ghost")));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
-Deno.test("[integrity] an identity referencing a non-existent skill FAILS (dangling skill)", async () => {
+Deno.test("[integrity] an agent role referencing a non-existent skill FAILS (dangling skill)", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review", "missing-skill"] }],
+    agentRoles: [{ id: "coder", skills: ["review", "missing-skill"] }],
     skills: ["review"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
@@ -118,30 +118,30 @@ Deno.test("[integrity] an identity referencing a non-existent skill FAILS (dangl
   }
 });
 
-Deno.test("[integrity] an identity used by no flow FAILS (orphan identity)", async () => {
+Deno.test("[integrity] an agent role used by no flow FAILS (orphan agent role)", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }, { id: "lonely", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }, { id: "lonely", skills: ["review"] }],
     skills: ["review"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
     assertEquals(r.ok, false);
-    assert(r.violations.some((v) => v.kind === "orphan-identity" && v.detail.includes("lonely")));
+    assert(r.violations.some((v) => v.kind === "orphan-agent-role" && v.detail.includes("lonely")));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
-Deno.test("[integrity] system identities (default, mock-model) are exempt from the orphan-identity rule", async () => {
+Deno.test("[integrity] system agent roles (default, mock-model) are exempt from the orphan-agent-role rule", async () => {
   const root = await buildCatalog({
-    identities: [
+    agentRoles: [
       { id: "coder", skills: ["review"] },
       { id: "default", skills: ["review"] },
       { id: "mock-agent", model: "mock:test-model", skills: ["review"] },
     ],
     skills: ["review"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
@@ -152,14 +152,14 @@ Deno.test("[integrity] system identities (default, mock-model) are exempt from t
   }
 });
 
-Deno.test("[integrity] dogfood-developer is exempt from the orphan-identity rule (invoked directly via --agent-role, not via a flow)", async () => {
+Deno.test("[integrity] dogfood-developer is exempt from the orphan-agent-role rule (invoked directly via --agent-role, not via a flow)", async () => {
   const root = await buildCatalog({
-    identities: [
+    agentRoles: [
       { id: "coder", skills: ["review"] },
       { id: "dogfood-developer", skills: ["review"] },
     ],
     skills: ["review"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
@@ -169,11 +169,11 @@ Deno.test("[integrity] dogfood-developer is exempt from the orphan-identity rule
   }
 });
 
-Deno.test("[integrity] a skill used by no identity FAILS (orphan skill)", async () => {
+Deno.test("[integrity] a skill used by no agent role FAILS (orphan skill)", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review", "unused-skill"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
@@ -184,11 +184,11 @@ Deno.test("[integrity] a skill used by no identity FAILS (orphan skill)", async 
   }
 });
 
-Deno.test("[integrity] an explicitly programmatic skill is exempt from identity-default reachability", async () => {
+Deno.test("[integrity] an explicitly programmatic skill is exempt from agent-role-default reachability", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review", "memory-extraction-content-policy"],
-    flows: [{ id: "f", identities: ["coder"] }],
+    flows: [{ id: "f", agentRoles: ["coder"] }],
   });
   try {
     const r = checkBlueprintIntegrity(root);
@@ -198,51 +198,51 @@ Deno.test("[integrity] an explicitly programmatic skill is exempt from identity-
   }
 });
 
-Deno.test("[integrity] a dangling identity ref in a SUBDIRECTORY flow FAILS (recursive walk)", async () => {
+Deno.test("[integrity] a dangling agent role ref in a SUBDIRECTORY flow FAILS (recursive walk)", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review"],
     flows: [
-      { id: "f", identities: ["coder"] },
-      { id: "nested", identities: ["ghost"], subdir: "examples/dev" },
+      { id: "f", agentRoles: ["coder"] },
+      { id: "nested", agentRoles: ["ghost"], subdir: "examples/dev" },
     ],
   });
   try {
     const r = checkBlueprintIntegrity(root);
     assertEquals(r.ok, false);
-    assert(r.violations.some((v) => v.kind === "dangling-identity" && v.detail.includes("ghost")));
+    assert(r.violations.some((v) => v.kind === "dangling-agent-role" && v.detail.includes("ghost")));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
-Deno.test("[integrity] a dangling identity ref in a .flow.template.yaml FAILS", async () => {
+Deno.test("[integrity] a dangling agent role ref in a .flow.template.yaml FAILS", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review"],
     flows: [
-      { id: "f", identities: ["coder"] },
-      { id: "pattern", identities: ["ghost"], template: true, subdir: "templates" },
+      { id: "f", agentRoles: ["coder"] },
+      { id: "pattern", agentRoles: ["ghost"], template: true, subdir: "templates" },
     ],
   });
   try {
     const r = checkBlueprintIntegrity(root);
     assertEquals(r.ok, false);
-    assert(r.violations.some((v) => v.kind === "dangling-identity" && v.detail.includes("ghost")));
+    assert(r.violations.some((v) => v.kind === "dangling-agent-role" && v.detail.includes("ghost")));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
 });
 
-Deno.test("[integrity] {{placeholder}} agent slots in templates are skipped (not treated as identities)", async () => {
+Deno.test("[integrity] {{placeholder}} agent slots in templates are skipped (not treated as agent roles)", async () => {
   const root = await buildCatalog({
-    identities: [{ id: "coder", skills: ["review"] }],
+    agentRoles: [{ id: "coder", skills: ["review"] }],
     skills: ["review"],
     flows: [
-      { id: "f", identities: ["coder"] },
+      { id: "f", agentRoles: ["coder"] },
       // A template whose agent slots are {{placeholder}} tokens — must NOT count
-      // as dangling identity references.
-      { id: "pipeline", identities: ['"{{coordinator}}"', '"{{processor}}"'], template: true, subdir: "templates" },
+      // as dangling agent-role references.
+      { id: "pipeline", agentRoles: ['"{{coordinator}}"', '"{{processor}}"'], template: true, subdir: "templates" },
     ],
   });
   try {

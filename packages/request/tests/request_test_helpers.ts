@@ -77,10 +77,10 @@ export async function makeRequestProcessorEnv(): Promise<{
   const plansDir = join(workspacePath, config.paths.plans);
   const blueprintsPath = join(tempDir, config.paths.blueprints);
 
-  const identitiesPath = join(blueprintsPath, config.paths.agents);
+  const agentRolesPath = join(blueprintsPath, config.paths.agents);
   await Deno.mkdir(requestsDir, { recursive: true });
   await Deno.mkdir(plansDir, { recursive: true });
-  await Deno.mkdir(identitiesPath, { recursive: true });
+  await Deno.mkdir(agentRolesPath, { recursive: true });
 
   const processorConfig = {
     workspacePath,
@@ -103,7 +103,7 @@ export function makeAgentRequestFileSync(requestsDir: string, options: {
 } = {}): string {
   const requestId = options.requestId ?? "req-001";
   const body = options.body ?? "Fix the login bug in the auth module";
-  const identity = options.agent_role ?? "nonexistent-agent";
+  const agentRole = options.agent_role ?? "nonexistent-agent";
   const filePath = join(requestsDir, `${requestId}.md`);
 
   const fields = [
@@ -111,7 +111,7 @@ export function makeAgentRequestFileSync(requestsDir: string, options: {
     `created: "${new Date().toISOString()}"`,
     `status: "${options.status ?? RequestStatus.PENDING}"`,
     `priority: "normal"`,
-    `agent_role: "${identity}"`,
+    `agent_role: "${agentRole}"`,
     `source: "${options.source ?? RequestSource.CLI}"`,
     options.portal ? `portal: "${options.portal}"` : null,
     `created_by: "test-user"`,

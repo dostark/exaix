@@ -62,7 +62,7 @@ steps up to a larger size tier or tries your configured fallbacks — you don't 
 retry manually.
 
 During plan execution, request-level intent from the request frontmatter (CLI flags such
-as `--model-size`, `--thinking`) overrides the identity blueprint's intent fields for any
+as `--model-size`, `--thinking`) overrides the agent role blueprint's intent fields for any
 field explicitly set; unset fields fall through to the blueprint. Each provider's
 capability metadata (context window, thinking support, reference cost) is what powers the
 size/thinking eligibility checks, so a custom provider must be registered with those
@@ -108,7 +108,7 @@ rather than picking the best one and then re-deciding on price.
 ### Quality-aware selection with `best` (Team)
 
 When you ask for `best`, Team looks at what _kind_ of task this is (feature work, a bug
-fix, a refactor, docs, and so on — inferred from your request, the agent identity, or a
+fix, a refactor, docs, and so on — inferred from your request, the agent role, or a
 matched skill, in that order of trust) and checks which provider scores highest on
 benchmarks relevant to that kind of task. A provider with no relevant benchmark data
 simply doesn't get boosted — it's never penalized for being unmeasured.

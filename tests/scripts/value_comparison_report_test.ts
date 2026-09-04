@@ -20,10 +20,10 @@
 
 import { assertAlmostEquals, assertEquals, assertThrows } from "@std/assert";
 import {
+  computeAgentRolePruneReport,
+  computeAgentRoleTaskTypeReport,
   computeArmComparisonReport,
   computeFlowValueReport,
-  computeIdentityPruneReport,
-  computeIdentityTaskTypeReport,
   computeJudgeCalibrationReport,
   computePlaceboReport,
   computeSkillFullTrialPlan,
@@ -32,10 +32,10 @@ import {
   computeValidityGateReport,
 } from "../../scripts/run_value_comparison_report.ts";
 import type {
+  IAgentRolePruneRequest,
+  IAgentRoleTaskTypeRequest,
   IArmComparisonRequest,
   IFlowValueRequest,
-  IIdentityPruneRequest,
-  IIdentityTaskTypeRequest,
   ISkillFullTrialPlanRequest,
   ISkillReachabilityRequest,
   ISkillValueReportRequest,
@@ -134,8 +134,6 @@ Deno.test("[value-comparison-report] assertThrows sanity: the real assertValidit
   });
 });
 
-// Skill/identity/flow reporting layers, same synthetic-only-data discipline.
-
 const SYNTHETIC_SKILL_REACHABILITY_REQUEST: ISkillReachabilityRequest = {
   catalog: [{ skillId: "demo-skill-a", critical: false }, { skillId: "demo-skill-b", critical: true }],
   defaultSkillIds: ["demo-skill-a"],
@@ -211,9 +209,9 @@ Deno.test("[value-comparison-report] computeSkillValueReport reports decisionsOk
   assertEquals(typeof report.decisionsError, "string");
 });
 
-const SYNTHETIC_TASK_TYPE_REQUEST: IIdentityTaskTypeRequest = {
+const SYNTHETIC_TASK_TYPE_REQUEST: IAgentRoleTaskTypeRequest = {
   input: {
-    armId: "identity-swap",
+    armId: "agent-role-swap",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
     tasks: [
       { taskId: "bugfix-task", control: [0.5], treatment: [0.9] },
@@ -223,14 +221,14 @@ const SYNTHETIC_TASK_TYPE_REQUEST: IIdentityTaskTypeRequest = {
   taskTypeById: { "bugfix-task": "bugfix", "refactor-task": "refactor" },
 };
 
-Deno.test("[value-comparison-report] computeIdentityTaskTypeReport calls the real computePairedComparison then groupDeltasByTaskType", () => {
-  const groups = computeIdentityTaskTypeReport(SYNTHETIC_TASK_TYPE_REQUEST);
+Deno.test("[value-comparison-report] computeAgentRoleTaskTypeReport calls the real computePairedComparison then groupDeltasByTaskType", () => {
+  const groups = computeAgentRoleTaskTypeReport(SYNTHETIC_TASK_TYPE_REQUEST);
   const byType = Object.fromEntries(groups.map((g) => [g.taskType, g.meanDelta]));
   assertEquals(byType["bugfix"], 0.4);
   assertEquals(byType["refactor"], -0.4);
 });
 
-const SYNTHETIC_PRUNE_REQUEST: IIdentityPruneRequest = {
+const SYNTHETIC_PRUNE_REQUEST: IAgentRolePruneRequest = {
   input: {
     armId: "prune",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
@@ -243,8 +241,8 @@ const SYNTHETIC_PRUNE_REQUEST: IIdentityPruneRequest = {
   },
 };
 
-Deno.test("[value-comparison-report] computeIdentityPruneReport calls the real computePairedComparison then interpretPruneVerdict", () => {
-  const verdict = computeIdentityPruneReport(SYNTHETIC_PRUNE_REQUEST);
+Deno.test("[value-comparison-report] computeAgentRolePruneReport calls the real computePairedComparison then interpretPruneVerdict", () => {
+  const verdict = computeAgentRolePruneReport(SYNTHETIC_PRUNE_REQUEST);
   assertEquals(verdict, "no-effect");
 });
 
@@ -283,7 +281,7 @@ Deno.test("[value-comparison-report] computeFlowValueReport calls the real compu
 Deno.test("[value-comparison-report] computeJudgeCalibrationReport calls the real computeJudgeCalibration — perfect positive correlation", () => {
   // Judge score exactly tracks objective outcome across all four synthetic samples.
   const result = computeJudgeCalibrationReport({
-    judgeIdentityId: "demo-judge",
+    judgeAgentRole: "demo-judge",
     samples: [
       { taskId: "t1", judgeScore: 0.2, objectiveOutcome: 0.2 },
       { taskId: "t2", judgeScore: 0.4, objectiveOutcome: 0.4 },
@@ -291,14 +289,14 @@ Deno.test("[value-comparison-report] computeJudgeCalibrationReport calls the rea
       { taskId: "t4", judgeScore: 0.8, objectiveOutcome: 0.8 },
     ],
   });
-  assertEquals(result.judgeIdentityId, "demo-judge");
+  assertEquals(result.judgeAgentRole, "demo-judge");
   assertAlmostEquals(result.correlation, 1);
   assertEquals(result.sampleCount, 4);
 });
 
 Deno.test("[value-comparison-report] computeJudgeCalibrationReport reports correlation 0 for too few samples — the real function's own rule, not a stub", () => {
   const result = computeJudgeCalibrationReport({
-    judgeIdentityId: "demo-judge",
+    judgeAgentRole: "demo-judge",
     samples: [{ taskId: "t1", judgeScore: 0.5, objectiveOutcome: 0.5 }],
   });
   assertEquals(result.correlation, 0);

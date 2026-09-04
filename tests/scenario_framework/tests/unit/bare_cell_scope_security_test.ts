@@ -87,7 +87,7 @@ Deno.test("[security] the staged opencode config denies external-directory reads
   const config = OpencodeConfigSchema.parse(JSON.parse(jsonMatch[1]));
 
   const agent = config.agent[BARE_DELEGATE_AGENT_ID];
-  assertExists(agent, "config must carry the bare-delegate identity's permission block");
+  assertExists(agent, "config must carry the bare-delegate agent role's permission block");
   assertEquals(agent.external_directory["**"], "deny", "external directory reads must be denied");
   assertEquals(agent.edit["*"], "deny", "edits outside the worktree must be denied");
   assertEquals(agent.edit["**"], "allow", "edits under the worktree must be allowed");

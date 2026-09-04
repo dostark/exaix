@@ -10,14 +10,14 @@
  *
  * @description Catalog referential-integrity + anti-bloat gate. Validates four
  *   facets across Blueprints/{Agents,Skills,Flows}, all fail-closed:
- *     1. dangling-identity — every flow `agent_role:` resolves to an identity file.
- *     2. dangling-skill    — every identity `default_skills` entry resolves to a
+ *     1. dangling-agent-role — every flow `agent_role:` resolves to an agent role file.
+ *     2. dangling-skill      — every agent role `default_skills` entry resolves to a
  *        `Blueprints/Skills/<id>.skill.md` file.
- *     3. orphan-identity   — every identity is referenced by >=1 flow. System
+ *     3. orphan-agent-role   — every agent role is referenced by >=1 flow. System
  *        agent roles (`default`, `dogfood-developer`, or any with a `mock:` model) are
  *        exempt: they are invoked directly (global fallback / CI fixture / CLI
  *        `--agent-role`), not via flows.
- *     4. orphan-skill      — every skill is referenced by >=1 identity's
+ *     4. orphan-skill        — every skill is referenced by >=1 agent role's
  *        default_skills, trigger-matched, or explicitly programmatic.
  * @architectural-layer Script
  * @dependencies [@std/path, @std/yaml]
@@ -29,7 +29,7 @@ import { parse as parseYaml } from "@std/yaml";
 
 /** A single integrity violation. */
 export interface IIntegrityViolation {
-  kind: "dangling-identity" | "dangling-skill" | "orphan-identity" | "orphan-skill";
+  kind: "dangling-agent-role" | "dangling-skill" | "orphan-agent-role" | "orphan-skill";
   detail: string;
 }
 
@@ -49,15 +49,15 @@ const TRIGGER_MATCHED_SKILLS: string[] = [
   "error-handling",
 ];
 
-/** Skills loaded directly by background services rather than through identity defaults or request matching. */
+/** Skills loaded directly by background services rather than through agent-role defaults or request matching. */
 const PROGRAMMATIC_SKILLS: ReadonlySet<string> = new Set([
   "memory-extraction-content-policy",
 ]);
 
-/** Identities exempt from the orphan-identity rule (invoked directly, not via flows). */
+/** Agent roles exempt from the orphan-agent-role rule (invoked directly, not via flows). */
 const EXEMPT_AGENT_ROLE_IDS: ReadonlySet<string> = new Set(["default", "dogfood-developer"]);
 
-interface IIdentityRecord {
+interface IAgentRoleRecord {
   id: string;
   model: string;
   defaultSkills: string[];
@@ -70,12 +70,12 @@ function readFrontmatter(filePath: string): { model?: string; default_skills?: s
   return parseYaml(m[1]) as { model?: string; default_skills?: string[] };
 }
 
-/** Load every active identity (top-level `*.md`, excluding README). */
-function loadIdentities(identitiesDir: string): IIdentityRecord[] {
-  const out: IIdentityRecord[] = [];
-  for (const e of Deno.readDirSync(identitiesDir)) {
+/** Load every active agent role (top-level `*.md`, excluding README). */
+function loadAgentRoles(agentRolesDir: string): IAgentRoleRecord[] {
+  const out: IAgentRoleRecord[] = [];
+  for (const e of Deno.readDirSync(agentRolesDir)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
-    const fm = readFrontmatter(join(identitiesDir, e.name));
+    const fm = readFrontmatter(join(agentRolesDir, e.name));
     if (!fm) continue;
     out.push({
       id: e.name.replace(/\.md$/, ""),
@@ -95,9 +95,9 @@ function loadSkillIds(skillsDir: string): Set<string> {
   return ids;
 }
 
-/** Real identities referenced by any flow file (recursively, `*.flow.yaml` and
+/** Real agent roles referenced by any flow file (recursively, `*.flow.yaml` and
  * `*.flow.template.yaml`); `{{placeholder}}` agent slots are skipped. */
-function loadFlowIdentityRefs(flowsDir: string): Set<string> {
+function loadFlowAgentRoleRefs(flowsDir: string): Set<string> {
   const refs = new Set<string>();
 
   function walk(dir: string): void {
@@ -113,7 +113,7 @@ function loadFlowIdentityRefs(flowsDir: string): Set<string> {
         walk(path);
       } else if (e.isFile && (e.name.endsWith(".flow.yaml") || e.name.endsWith(".flow.template.yaml"))) {
         const text = Deno.readTextFileSync(path);
-        // Bare identity identifier only; `{{placeholder}}` slots never match.
+        // Bare agent-role identifier only; `{{placeholder}}` slots never match.
         for (const m of text.matchAll(/^\s*agent_role:\s*["']?([A-Za-z0-9_-]+)["']?\s*$/gm)) {
           refs.add(m[1]);
         }
@@ -125,8 +125,8 @@ function loadFlowIdentityRefs(flowsDir: string): Set<string> {
   return refs;
 }
 
-/** A system identity is invoked directly, not via flows, so it is orphan-exempt. */
-function isExemptIdentity(rec: IIdentityRecord): boolean {
+/** A system agent role is invoked directly, not via flows, so it is orphan-exempt. */
+function isExemptAgentRole(rec: IAgentRoleRecord): boolean {
   return EXEMPT_AGENT_ROLE_IDS.has(rec.id) || rec.model.startsWith("mock:");
 }
 
@@ -134,53 +134,56 @@ function isExemptIdentity(rec: IIdentityRecord): boolean {
  * Run the four-facet integrity check against a Blueprints directory.
  */
 export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult {
-  const identities = loadIdentities(join(blueprintsDir, "Agents"));
+  const agentRoleRecords = loadAgentRoles(join(blueprintsDir, "Agents"));
   const skillIds = loadSkillIds(join(blueprintsDir, "Skills"));
-  const flowRefs = loadFlowIdentityRefs(join(blueprintsDir, "Flows"));
-  const agentRoles = new Set(identities.map((i) => i.id));
+  const flowRefs = loadFlowAgentRoleRefs(join(blueprintsDir, "Flows"));
+  const agentRoles = new Set(agentRoleRecords.map((i) => i.id));
 
   const violations: IIntegrityViolation[] = [];
 
-  // 1. dangling-agent_role: flow → identity must exist.
+  // 1. dangling-agent-role: flow → agent role must exist.
   for (const ref of flowRefs) {
     if (!agentRoles.has(ref)) {
-      violations.push({ kind: "dangling-identity", detail: `flow references identity "${ref}" which has no .md file` });
+      violations.push({
+        kind: "dangling-agent-role",
+        detail: `flow references agent role "${ref}" which has no .md file`,
+      });
     }
   }
 
-  // 2. dangling-skill: identity default_skills → skill must exist.
+  // 2. dangling-skill: agent role default_skills → skill must exist.
   const usedSkills = new Set<string>();
-  for (const rec of identities) {
+  for (const rec of agentRoleRecords) {
     for (const s of rec.defaultSkills) {
       usedSkills.add(s);
       if (!skillIds.has(s)) {
         violations.push({
           kind: "dangling-skill",
-          detail: `identity "${rec.id}" references skill "${s}" which has no .skill.md file`,
+          detail: `agent role "${rec.id}" references skill "${s}" which has no .skill.md file`,
         });
       }
     }
   }
 
-  // 3. orphan-agent_role: every (non-exempt) identity must appear in >=1 flow.
-  for (const rec of identities) {
-    if (isExemptIdentity(rec)) continue;
+  // 3. orphan-agent-role: every (non-exempt) agent role must appear in >=1 flow.
+  for (const rec of agentRoleRecords) {
+    if (isExemptAgentRole(rec)) continue;
     if (!flowRefs.has(rec.id)) {
       violations.push({
-        kind: "orphan-identity",
+        kind: "orphan-agent-role",
         detail:
-          `identity "${rec.id}" is not referenced by any flow (wire it into a Blueprints/Flows/ flow or justify an exemption)`,
+          `agent role "${rec.id}" is not referenced by any flow (wire it into a Blueprints/Flows/ flow or justify an exemption)`,
       });
     }
   }
 
-  // 4. orphan-skill: every skill must be identity-referenced, trigger-matched, or programmatic.
+  // 4. orphan-skill: every skill must be agent-role-referenced, trigger-matched, or programmatic.
   for (const id of skillIds) {
     if (TRIGGER_MATCHED_SKILLS.includes(id) || PROGRAMMATIC_SKILLS.has(id)) continue;
     if (!usedSkills.has(id)) {
       violations.push({
         kind: "orphan-skill",
-        detail: `skill "${id}" is not referenced by identity defaults, trigger matching, or a programmatic consumer`,
+        detail: `skill "${id}" is not referenced by agent-role defaults, trigger matching, or a programmatic consumer`,
       });
     }
   }
@@ -192,7 +195,9 @@ if (import.meta.main) {
   const blueprintsDir = Deno.args[0] ?? "./Blueprints";
   const result = checkBlueprintIntegrity(blueprintsDir);
   if (result.ok) {
-    console.log("✅ Blueprint catalog integrity: no violations (identities ↔ flows, skills ↔ identities all resolve).");
+    console.log(
+      "✅ Blueprint catalog integrity: no violations (agent roles ↔ flows, skills ↔ agent roles all resolve).",
+    );
     Deno.exit(0);
   }
   console.error(`❌ Blueprint catalog integrity: ${result.violations.length} violation(s):`);

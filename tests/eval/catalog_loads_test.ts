@@ -23,7 +23,7 @@ const SUBSYSTEMS = [
   "tools",
   "mcp-server",
   "mcp-client",
-  "identities",
+  "agent_roles",
   "skills",
   "flows",
 ] as const;

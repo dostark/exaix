@@ -696,7 +696,7 @@ Deno.test("[plan-context][admission] generated frontmatter carries ONLY agent_ro
   }
 });
 
-Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFail returns IDENTITY for generated output", async () => {
+Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFail returns AGENT_ROLE for generated output", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-kind-" });
   try {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
@@ -706,14 +706,14 @@ Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFai
     assertEquals(
       kind,
       RequestKind.AGENT_ROLE,
-      "generated requests must be admitted as identity-kind, not marked FAILED for missing agent field",
+      "generated requests must be admitted as agent-role-kind, not marked FAILED for missing agent field",
     );
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
   }
 });
 
-Deno.test("[plan-context][admission] manifest identity resolves to a loadable blueprint file", async () => {
+Deno.test("[plan-context][admission] manifest agent role resolves to a loadable blueprint file", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-bp-" });
   try {
     assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);

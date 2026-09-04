@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "swe-explain-request-flow-codeanalyst-preprune"
-title: "Explain request flow (code-analyst identity, pre-prune overlay)"
+title: "Explain request flow (code-analyst agent role, pre-prune overlay)"
 pack: "swe_tasks"
 scoring: "gated"
 tags: ["swe", "provider-live"]
@@ -41,7 +41,7 @@ steps:
     command: "daemon"
     args: ["start"]
     env:
-      EXA_EVAL_IDENTITY_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-identities"
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-agent-roles"
     output_criteria:
       - id: "daemon-started"
         kind: "command-output-contains"
@@ -51,7 +51,7 @@ steps:
     command: "daemon"
     args: ["restart"]
     env:
-      EXA_EVAL_IDENTITY_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-identities"
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-agent-roles"
     output_criteria:
       - id: "daemon-restarted"
         kind: "command-output-contains"

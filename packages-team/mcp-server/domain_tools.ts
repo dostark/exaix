@@ -201,7 +201,7 @@ export class ListPlansTool extends ToolHandler {
           },
           agent_role: {
             type: "string",
-            description: "Identity identifier for permission checks",
+            description: "Agent role identifier for permission checks",
           },
         },
         required: ["agent_role"],
@@ -278,7 +278,7 @@ export class ApprovePlanTool extends ToolHandler {
           },
           agent_role: {
             type: "string",
-            description: "Identity identifier for permission checks",
+            description: "Agent role identifier for permission checks",
           },
         },
         required: ["plan_id", "agent_role"],
@@ -360,7 +360,7 @@ export class QueryJournalTool extends ToolHandler {
           },
           agent_role: {
             type: "string",
-            description: "Identity identifier for permission checks",
+            description: "Agent role identifier for permission checks",
           },
         },
         required: ["agent_role"],

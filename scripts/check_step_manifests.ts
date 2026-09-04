@@ -80,7 +80,6 @@ interface ManifestAcceptance {
 interface ManifestRecord {
   step?: number;
   title?: string;
-  identity?: string;
   skills?: string[];
   portal?: string;
   target_branch?: string;

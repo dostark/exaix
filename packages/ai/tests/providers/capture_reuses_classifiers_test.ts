@@ -20,7 +20,7 @@ import {
 } from "../../src/providers/mock_llm_provider.ts";
 
 const FLOW_STEP_PROMPT = "## Step 1\nSome merged flow context from the prior step.";
-const REACT_LOOP_PROMPT = "IDENTITY: default\nAVAILABLE TOOLS: write_file, read_file";
+const REACT_LOOP_PROMPT = "AGENT ROLE: default\nAVAILABLE TOOLS: write_file, read_file";
 const LEGACY_PLAN_PROMPT = "Please implement a REST API endpoint for user registration.";
 
 Deno.test("[capture_reuses_classifiers] isFlowStepPrompt classifies a flow-step prompt", () => {

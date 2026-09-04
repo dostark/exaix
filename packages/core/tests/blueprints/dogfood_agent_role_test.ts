@@ -1,7 +1,7 @@
 /**
- * @module DogfoodIdentityTest
- * @path packages/core/tests/blueprints/dogfood_identity_test.ts
- * @description Phase 122 Step 1 — verifies the dogfood-developer identity blueprint loads
+ * @module DogfoodAgentRoleTest
+ * @path packages/core/tests/blueprints/dogfood_agent_role_test.ts
+ * @description Phase 122 Step 1 — verifies the dogfood-developer agent role blueprint loads
  *   through IBlueprintLoader with correct agent_role, default_skills (all 5 rigor
  *   skills), and valid McpToolName entries in permitted_tools.
  * @architectural-layer Integration
@@ -17,20 +17,20 @@ import { McpToolName } from "@exaix/core/types";
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
-Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader", async () => {
+Deno.test("[dogfood-agent-role] dogfood-developer loads through IBlueprintLoader", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
-  assertExists(blueprint, "dogfood-developer identity must load");
+  assertExists(blueprint, "dogfood-developer agent role must load");
   assertEquals(blueprint.agentRole, "dogfood-developer");
 });
 
-/** Skills this identity cannot do its job without, whatever else it carries — deliberately
+/** Skills this agent role cannot do its job without, whatever else it carries — deliberately
  *  a SUBSET, not an exact list or count, both of which break on any legitimate curation
- *  without saying what the identity actually needs. */
+ *  without saying what the agent role actually needs. */
 const DOGFOOD_REQUIRED_SKILLS = ["response-contract", "exaix-conventions", "tdd-methodology"];
 
-Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requires", async () => {
+Deno.test("[dogfood-agent-role] dogfood-developer carries the skills its role requires", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
@@ -41,7 +41,7 @@ Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requ
   assertEquals(missing, [], `dogfood-developer is missing role-required default_skills: ${missing.join(", ")}`);
 });
 
-Deno.test("[dogfood-identity] agent_role is dogfood-developer", async () => {
+Deno.test("[dogfood-agent-role] agent_role is dogfood-developer", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
@@ -49,7 +49,7 @@ Deno.test("[dogfood-identity] agent_role is dogfood-developer", async () => {
   assertEquals(blueprint.agentRole, "dogfood-developer");
 });
 
-Deno.test("[dogfood-identity] permitted_tools contains file, command, and search tools", async () => {
+Deno.test("[dogfood-agent-role] permitted_tools contains file, command, and search tools", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
@@ -70,7 +70,7 @@ Deno.test("[dogfood-identity] permitted_tools contains file, command, and search
   }
 });
 
-Deno.test("[dogfood-identity] every permitted_tool is a valid McpToolName", async () => {
+Deno.test("[dogfood-agent-role] every permitted_tool is a valid McpToolName", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
@@ -83,11 +83,11 @@ Deno.test("[dogfood-identity] every permitted_tool is a valid McpToolName", asyn
   }
 });
 
-Deno.test("[dogfood-identity] loads without Zod error through IBlueprintLoader", async () => {
+Deno.test("[dogfood-agent-role] loads without Zod error through IBlueprintLoader", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
-  assertExists(blueprint, "identity must load without error");
+  assertExists(blueprint, "agent role must load without error");
   assertEquals(typeof blueprint.agentRole, "string");
   assertEquals(typeof blueprint.name, "string");
   assertEquals(typeof blueprint.frontmatter.model, "string");

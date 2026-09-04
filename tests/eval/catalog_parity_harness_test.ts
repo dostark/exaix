@@ -10,7 +10,7 @@ import { assertCatalogCovered } from "./catalog_parity.ts";
 const SYNTHETIC_SCENARIOS = [
   { id: "read_file_test", tags: ["subsystem:tools", "entity:read_file"] },
   { id: "write_test", tags: ["subsystem:tools", "entity:write_file"] },
-  { id: "identity_test", tags: ["subsystem:identities", "entity:senior-coder"] },
+  { id: "agent_role_test", tags: ["subsystem:agent_roles", "entity:senior-coder"] },
   { id: "untagged", tags: ["smoke"] },
 ];
 
@@ -48,7 +48,7 @@ Deno.test("assertCatalogCovered ignores scenarios from other subsystems", () => 
   const missing = assertCatalogCovered({
     catalogIds: ["senior-coder", "mock-agent"],
     scenarioCatalog: SYNTHETIC_SCENARIOS,
-    subsystemTag: "subsystem:identities",
+    subsystemTag: "subsystem:agent_roles",
     exclusions: [],
   });
   assertEquals(missing, ["mock-agent"]);

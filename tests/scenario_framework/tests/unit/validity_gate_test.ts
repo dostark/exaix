@@ -71,7 +71,7 @@ Deno.test("[ValidityGate] mechanics evidence from a different commit is rejected
 });
 
 Deno.test("[ValidityGate] mechanics evidence for a different pack is rejected", () => {
-  const result = evaluateValidityGate(makeBinding(), makeEvidence({ pack: "identity_eval" }), "abc1234");
+  const result = evaluateValidityGate(makeBinding(), makeEvidence({ pack: "agent_role_eval" }), "abc1234");
   assertEquals(result.admitted, false);
   assertEquals(result.reason?.includes("pack"), true);
 });

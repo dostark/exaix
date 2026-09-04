@@ -39,7 +39,7 @@ export interface IRequestFrontmatter {
    * array string (CLI-written), or a bare comma-separated string — `buildParsedRequest`
    * normalises all three; typing this `string` alone broke hand-written arrays' `.trim()`. */
   skills?: string[] | string;
-  /** Tags used by skill trigger matching and identity routing. Declared in RequestSchema but
+  /** Tags used by skill trigger matching and agent-role routing. Declared in RequestSchema but
    * previously absent here, so no builder could copy them and tag-driven matching never
    * fired. Accepts a list or a lone string, matching what raw YAML can yield. */
   tags?: string[] | string;

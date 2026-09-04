@@ -1,8 +1,8 @@
 /**
- * @module DynamicIdentityRoutingSyntheticScenarioTest
- * @path tests/scenario_framework/tests/integration/dynamic_identity_routing_synthetic_test.ts
+ * @module DynamicAgentRoleRoutingSyntheticScenarioTest
+ * @path tests/scenario_framework/tests/integration/dynamic_agent_role_routing_synthetic_test.ts
  * @description Verifies the Scenario Framework can execute a synthetic scenario that exercises
- * Phase 74 dynamic identity routing and validates the routing outcome end to end.
+ * Phase 74 dynamic agent-role routing and validates the routing outcome end to end.
  */
 
 import { assertEquals } from "@std/assert";
@@ -29,7 +29,7 @@ const DENO_CONFIG_FILE = new URL("../../../../deno.json", import.meta.url).pathn
 const REPO_ROOT_PLACEHOLDER = "{{REPO_ROOT}}";
 
 Deno.test(
-  "[ScenarioFrameworkSyntheticRunner] dynamic identity routing scenario executes successfully",
+  "[ScenarioFrameworkSyntheticRunner] dynamic agent-role routing scenario executes successfully",
   async () => {
     await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
       const scriptPath = await prepareWorkspaceFixtures(workspaceRoot);
@@ -48,7 +48,7 @@ Deno.test(
               `    - id: "${SELECTED_AGENT_ROLE}-file-created"`,
               `      kind: "file-exists"`,
               `      path: "${RESULT_FILE_PATH}"`,
-              `    - id: "selected-identity-${SELECTED_AGENT_ROLE}"`,
+              `    - id: "selected-agent-role-${SELECTED_AGENT_ROLE}"`,
               `      kind: "json-path-equals"`,
               `      path: "$.selected_agent_role"`,
               `      equals: "${SELECTED_AGENT_ROLE}"`,

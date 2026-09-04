@@ -186,7 +186,7 @@ function request(): ISessionDelegationRequest {
     parentTraceId: PARENT_TRACE_ID,
     parentStepId: "1",
     sequence: 1,
-    agentRole: "test-identity",
+    agentRole: "test-role",
     objective: "Implement the coordinator.",
     acceptanceCriteria: ["The coordinator is wired."],
     artifactRef: ".exa/PlanContext/phase-174.md",
@@ -384,7 +384,7 @@ Deno.test("[session_delegation_coordinator][security] harden_permissions=true ke
       logger,
     );
 
-    for (const agentRole of ["dogfood-coder", "some-other-identity"]) {
+    for (const agentRole of ["dogfood-coder", "some-other-agent-role"]) {
       const delegationTraceId = crypto.randomUUID();
       resultStore.request = { ...request(), agentRole: agentRole, delegationTraceId };
       const outcome = await coordinator.delegate({ ...request(), agentRole: agentRole, delegationTraceId });
@@ -395,7 +395,7 @@ Deno.test("[session_delegation_coordinator][security] harden_permissions=true ke
       assertEquals(
         Object.keys(config.agent),
         [agentRole],
-        `config must not carry any identity key other than '${agentRole}'`,
+        `config must not carry any agent-role key other than '${agentRole}'`,
       );
     }
   } finally {

@@ -1,15 +1,15 @@
 /**
- * @module ResolveIdentityModelTest
- * @path packages/ai/tests/resolve_identity_model_test.ts
- * @description Phase 131 Step 6 (GAP-3) — the identity model resolver. Verifies
- *   resolveIdentityModel maps declarative model preferences onto a concrete
+ * @module ResolveAgentRoleModelTest
+ * @path packages/ai/tests/resolve_agent_role_model_test.ts
+ * @description Phase 131 Step 6 (GAP-3) — the agent role model resolver. Verifies
+ *   resolveAgentRoleModel maps declarative model preferences onto a concrete
  *   {provider, model} pair (not just a provider name): explicit `model` wins,
  *   else preferences select a provider via ProviderSelector and a concrete model
  *   via getDefaultModels, and unsupported thinking/effort hints degrade
  *   gracefully without throwing.
  * @architectural-layer AI
  * @dependencies [@std/assert, @exaix/core, @exaix/testing]
- * @related-files [packages/ai/src/resolve_identity_model.ts, packages/ai/src/provider_selector.ts]
+ * @related-files [packages/ai/src/resolve_agent_role_model.ts, packages/ai/src/provider_selector.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -19,7 +19,7 @@ import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 import { ProviderSelector } from "../src/provider_selector.ts";
-import { resolveIdentityModel } from "../src/resolve_identity_model.ts";
+import { resolveAgentRoleModel } from "../src/resolve_agent_role_model.ts";
 
 function makeSelector(): ProviderSelector {
   return new ProviderSelector(ProviderRegistry, createStubCostTracker(), createStubHealthChecker());
@@ -41,7 +41,7 @@ Deno.test("[step6][GAP-3] explicit model preference wins and returns a concrete 
   try {
     ProviderRegistry.clear();
     registerOne("anthropic", PricingTier.MEDIUM);
-    const got = await resolveIdentityModel({ model: "anthropic:claude-sonnet-5" }, makeSelector());
+    const got = await resolveAgentRoleModel({ model: "anthropic:claude-sonnet-5" }, makeSelector());
     assertEquals(got.provider, "anthropic");
     assertEquals(got.model, "claude-sonnet-5");
   } finally {
@@ -54,7 +54,7 @@ Deno.test("[step6][GAP-3] preferences resolve to a concrete model (not just a pr
   try {
     ProviderRegistry.clear();
     registerOne("anthropic", PricingTier.HIGH);
-    const got = await resolveIdentityModel({ model_size: "L" }, makeSelector());
+    const got = await resolveAgentRoleModel({ model_size: "L" }, makeSelector());
     assertEquals(got.provider, "anthropic");
     // The model must be a real concrete id from getDefaultModels, never empty or the bare provider.
     assert(got.model.length > 0, "model must be concrete");
@@ -69,7 +69,7 @@ Deno.test("[step6] unsupported thinking/effort hints degrade gracefully (no thro
   try {
     ProviderRegistry.clear();
     registerOne("anthropic", PricingTier.HIGH);
-    const got = await resolveIdentityModel(
+    const got = await resolveAgentRoleModel(
       { model_size: "XL", thinking: true, effort: "high" },
       makeSelector(),
     );
@@ -85,7 +85,7 @@ Deno.test("[step6] preferred_provider hint maps to requiredCapabilities without 
   try {
     ProviderRegistry.clear();
     registerOne("openai", PricingTier.MEDIUM);
-    const got = await resolveIdentityModel({ preferred_provider: "openai", model_size: "M" }, makeSelector());
+    const got = await resolveAgentRoleModel({ preferred_provider: "openai", model_size: "M" }, makeSelector());
     assertEquals(got.provider, "openai");
     assert(got.model.length > 0);
   } finally {

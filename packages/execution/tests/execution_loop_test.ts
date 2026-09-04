@@ -1,7 +1,7 @@
 /**
  * @module ExecutionLoopTest
  * @path packages/execution/tests/execution_loop_test.ts
- * @description Verifies the primary identity execution loop, ensuring robust orchestration
+ * @description Verifies the primary agent-role execution loop, ensuring robust orchestration
  * of planning, execution, and confirmation phases for user requests.
  */
 
@@ -77,14 +77,14 @@ async function withExecutionLoopTestContext(
       config,
       db,
       logger,
-      agentRole: options.agentRole ?? "test-identity",
+      agentRole: options.agentRole ?? "test-role",
       llmProvider: options.llmProvider,
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
           return new GitService({
             config,
             traceId,
-            agentRole: options.agentRole ?? "test-identity",
+            agentRole: options.agentRole ?? "test-role",
             repoPath,
           });
         },
@@ -94,7 +94,7 @@ async function withExecutionLoopTestContext(
           return new ToolRegistry({
             config,
             traceId,
-            agentRole: options.agentRole ?? "test-identity",
+            agentRole: options.agentRole ?? "test-role",
             baseDir,
           });
         },
@@ -122,7 +122,7 @@ Deno.test("ExecutionLoop: processes approved plan from Workspace/Active", async 
 trace_id: "${traceId}"
 request_id: test-request
 status: active
-agent_role: test-identity
+agent_role: test-role
 ---
 
 # Test Plan
@@ -165,8 +165,8 @@ Deno.test("ExecutionLoop: acquires lease to prevent concurrent execution", async
     const planPath = join(paths.activeDir, "lease-test.md");
     await Deno.writeTextFile(planPath, planContent);
 
-    const loop1 = new ExecutionLoop({ config, db, agentRole: "identity-1" });
-    const loop2 = new ExecutionLoop({ config, db, agentRole: "identity-2" });
+    const loop1 = new ExecutionLoop({ config, db, agentRole: "role-1" });
+    const loop2 = new ExecutionLoop({ config, db, agentRole: "role-2" });
 
     // Start first execution but don't await
     const exec1Promise = loop1.processTask(planPath);
@@ -416,7 +416,7 @@ Deno.test("ExecutionLoop: generates mission report on success", async () => {
 trace_id: "${traceId}"
 request_id: report-test
 status: active
-agent_role: test-identity
+agent_role: test-role
 ---
 
 # Report Test Plan
@@ -462,8 +462,8 @@ Deno.test("ExecutionLoop: releases lease even on failure", async () => {
     const planPath = join(paths.activeDir, "lease-release-test.md");
     await Deno.writeTextFile(planPath, planContent);
 
-    const loop1 = new ExecutionLoop({ config, db, agentRole: "identity-1" });
-    const loop2 = new ExecutionLoop({ config, db, agentRole: "identity-2" });
+    const loop1 = new ExecutionLoop({ config, db, agentRole: "role-1" });
+    const loop2 = new ExecutionLoop({ config, db, agentRole: "role-2" });
 
     // First execution fails
     const result1 = await loop1.processTask(planPath);
@@ -570,7 +570,7 @@ Deno.test("ExecutionLoop: persists a trace-scoped skip for amendment-pending pla
       `trace_id: "${traceId}"`,
       "request_id: amendment-pending-request",
       "status: amendment_pending",
-      "agent_role: test-identity",
+      "agent_role: test-role",
       "---",
       "",
       "# Amendment Pending Plan",
@@ -640,7 +640,7 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
       'trace_id: "test-trace-nochanges"',
       "request_id: nochanges-test",
       "status: active",
-      "agent_role: test-identity",
+      "agent_role: test-role",
       "---",
       "",
       "# No Changes Plan",
@@ -661,15 +661,15 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
       config,
       db,
       logger: new EventLogger({ db }),
-      agentRole: "test-identity",
+      agentRole: "test-role",
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
-          return new GitService({ config, traceId, agentRole: "test-identity", repoPath });
+          return new GitService({ config, traceId, agentRole: "test-role", repoPath });
         },
       },
       toolRegistryFactory: {
         createToolRegistry(traceId: string, baseDir: string) {
-          return new ToolRegistry({ config, traceId, agentRole: "test-identity", baseDir });
+          return new ToolRegistry({ config, traceId, agentRole: "test-role", baseDir });
         },
       },
       memoryBank: new MemoryBankService(config, new EventLogger({ db })),
@@ -739,7 +739,7 @@ Deno.test("ExecutionLoop: lease mechanism prevents duplicate processing", async 
 
     // Parse payload to verify holder
     const payload = JSON.parse(leaseAcquired.payload);
-    assertEquals(payload.holder, "test-identity");
+    assertEquals(payload.holder, "test-role");
   });
 });
 
@@ -813,7 +813,7 @@ Deno.test("ExecutionLoop: onCodeChangesDelegate is accepted in config without er
       config,
       db,
       logger,
-      agentRole: "test-identity",
+      agentRole: "test-role",
       onCodeChangesDelegate: (
         _traceId: string,
         _step: { title: string; content: string; successCriteria?: string[] },

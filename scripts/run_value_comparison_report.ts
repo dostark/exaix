@@ -15,8 +15,8 @@
  * Step 9), `computeSkillReachability` (`skill_corpus_reachability.ts`), `planFullTrials`
  * (`skill_value_plan.ts`), `buildSkillValueReport` (`skill_value_report.ts`),
  * `assertSkillDecisionsRecorded` (`skill_value_decision.ts`), `groupDeltasByTaskType`
- * (`identity_task_type_report.ts`), `interpretPruneVerdict`
- * (`identity_config_prune_verdict.ts`), `computeFlowReachability`
+ * (`agent_role_task_type_report.ts`), `interpretPruneVerdict`
+ * (`agent_role_config_prune_verdict.ts`), `computeFlowReachability`
  * (`flow_corpus_reachability.ts`), `buildFlowValueReport` (`flow_value_report.ts`), and
  * `computeJudgeCalibration` (`judge_calibration.ts`, Step 10). The post-gap
  * analysis found these functions had zero production callers despite six Reachability
@@ -34,7 +34,7 @@
  * Operator-run only, same class as `scripts/check_artefact_decision_coverage.ts` and
  * `scripts/check_blueprint_integrity.ts` — not wired into CI.
  * @architectural-layer Script
- * @dependencies [tests/scenario_framework/runner/arm_comparison.ts, tests/scenario_framework/runner/validity_gate.ts, tests/scenario_framework/runner/skill_corpus_reachability.ts, tests/scenario_framework/runner/skill_value_plan.ts, tests/scenario_framework/runner/skill_value_report.ts, tests/scenario_framework/runner/skill_value_decision.ts, tests/scenario_framework/runner/identity_task_type_report.ts, tests/scenario_framework/runner/identity_config_prune_verdict.ts, tests/scenario_framework/runner/flow_corpus_reachability.ts, tests/scenario_framework/runner/flow_value_report.ts]
+ * @dependencies [tests/scenario_framework/runner/arm_comparison.ts, tests/scenario_framework/runner/validity_gate.ts, tests/scenario_framework/runner/skill_corpus_reachability.ts, tests/scenario_framework/runner/skill_value_plan.ts, tests/scenario_framework/runner/skill_value_report.ts, tests/scenario_framework/runner/skill_value_decision.ts, tests/scenario_framework/runner/agent_role_task_type_report.ts, tests/scenario_framework/runner/agent_role_config_prune_verdict.ts, tests/scenario_framework/runner/flow_corpus_reachability.ts, tests/scenario_framework/runner/flow_value_report.ts]
  * @related-files [tests/scripts/value_comparison_report_test.ts, scripts/check_artefact_decision_coverage.ts]
  */
 
@@ -55,8 +55,8 @@ import {
 } from "../tests/scenario_framework/runner/validity_gate.ts";
 import {
   computeSkillReachability,
+  type IAgentRoleDefaultSkills,
   type ICorpusTaskMatch,
-  type IIdentityDefaultSkills,
   type INonCoverageEntry,
   type ISkillCatalogEntry,
   type ISkillReachabilityResult,
@@ -73,11 +73,11 @@ import {
 import {
   groupDeltasByTaskType,
   type ITaskTypeGroup,
-} from "../tests/scenario_framework/runner/identity_task_type_report.ts";
+} from "../tests/scenario_framework/runner/agent_role_task_type_report.ts";
 import {
   interpretPruneVerdict,
   type PruneVerdict,
-} from "../tests/scenario_framework/runner/identity_config_prune_verdict.ts";
+} from "../tests/scenario_framework/runner/agent_role_config_prune_verdict.ts";
 import {
   computeFlowReachability,
   type IFlowCatalogEntry,
@@ -108,10 +108,10 @@ export interface ISkillReachabilityRequest {
   catalog: ISkillCatalogEntry[];
   defaultSkillIds: string[];
   corpusMatches: ICorpusTaskMatch[];
-  /** Every shipped identity's declared default_skills, catalog-wide — not just the
-   *  identity(ies) this run exercised. Optional: omitting it reproduces the original,
+  /** Every shipped agent role's declared default_skills, catalog-wide — not just the
+   *  agent role(s) this run exercised. Optional: omitting it reproduces the original,
    *  narrower non-coverage reason. See `computeSkillReachability`'s docstring. */
-  identityDefaultSkills?: IIdentityDefaultSkills[];
+  agentRoleDefaultSkills?: IAgentRoleDefaultSkills[];
 }
 
 export interface ISkillFullTrialPlanRequest {
@@ -126,12 +126,12 @@ export interface ISkillValueReportRequest {
   decisions: ISkillValueDecision[];
 }
 
-export interface IIdentityTaskTypeRequest {
+export interface IAgentRoleTaskTypeRequest {
   input: IComparisonInput;
   taskTypeById: Record<string, string>;
 }
 
-export interface IIdentityPruneRequest {
+export interface IAgentRolePruneRequest {
   input: IComparisonInput;
 }
 
@@ -154,8 +154,8 @@ export interface IValueComparisonReportInput {
   skillReachability?: ISkillReachabilityRequest;
   skillFullTrialPlan?: ISkillFullTrialPlanRequest;
   skillValueReport?: ISkillValueReportRequest;
-  identityTaskType?: IIdentityTaskTypeRequest;
-  identityPrune?: IIdentityPruneRequest;
+  agentRoleTaskType?: IAgentRoleTaskTypeRequest;
+  agentRolePrune?: IAgentRolePruneRequest;
   flowValue?: IFlowValueRequest;
   judgeCalibration?: IJudgeCalibrationInput;
 }
@@ -221,7 +221,7 @@ export function computeSkillReachabilityReport(request: ISkillReachabilityReques
     request.catalog,
     request.defaultSkillIds,
     request.corpusMatches,
-    request.identityDefaultSkills ?? [],
+    request.agentRoleDefaultSkills ?? [],
   );
 }
 
@@ -253,13 +253,13 @@ export function computeSkillValueReport(request: ISkillValueReportRequest): ISki
 }
 
 /** Calls the real `computePairedComparison` then `groupDeltasByTaskType`. */
-export function computeIdentityTaskTypeReport(request: IIdentityTaskTypeRequest): ITaskTypeGroup[] {
+export function computeAgentRoleTaskTypeReport(request: IAgentRoleTaskTypeRequest): ITaskTypeGroup[] {
   const comparison = computePairedComparison(request.input);
   return groupDeltasByTaskType(comparison.perTask, request.taskTypeById);
 }
 
 /** Calls the real `computePairedComparison` then `interpretPruneVerdict`. */
-export function computeIdentityPruneReport(request: IIdentityPruneRequest): PruneVerdict {
+export function computeAgentRolePruneReport(request: IAgentRolePruneRequest): PruneVerdict {
   return interpretPruneVerdict(computePairedComparison(request.input));
 }
 
@@ -336,14 +336,14 @@ function renderReport(input: IValueComparisonReportInput): string {
     );
   }
 
-  if (input.identityTaskType) {
-    const groups = computeIdentityTaskTypeReport(input.identityTaskType);
-    lines.push(`[identity-task-type] ${groups.map((g) => `${g.taskType}=${g.meanDelta}`).join(", ")}`);
+  if (input.agentRoleTaskType) {
+    const groups = computeAgentRoleTaskTypeReport(input.agentRoleTaskType);
+    lines.push(`[agent-role-task-type] ${groups.map((g) => `${g.taskType}=${g.meanDelta}`).join(", ")}`);
   }
 
-  if (input.identityPrune) {
-    const verdict = computeIdentityPruneReport(input.identityPrune);
-    lines.push(`[identity-prune] verdict=${verdict}`);
+  if (input.agentRolePrune) {
+    const verdict = computeAgentRolePruneReport(input.agentRolePrune);
+    lines.push(`[agent-role-prune] verdict=${verdict}`);
   }
 
   if (input.flowValue) {
@@ -356,7 +356,7 @@ function renderReport(input: IValueComparisonReportInput): string {
   if (input.judgeCalibration) {
     const result = computeJudgeCalibrationReport(input.judgeCalibration);
     lines.push(
-      `[judge-calibration] ${result.judgeIdentityId}: correlation=${result.correlation} sampleCount=${result.sampleCount}`,
+      `[judge-calibration] ${result.judgeAgentRole}: correlation=${result.correlation} sampleCount=${result.sampleCount}`,
     );
   }
 

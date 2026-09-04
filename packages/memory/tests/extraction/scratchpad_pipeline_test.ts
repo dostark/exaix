@@ -45,7 +45,7 @@ Deno.test("[integration] scratchpad appends reach the normal Pending -> approval
     assertEquals(candidates.length, 2, "scratchpad#1 + shared insight (deduplicated) must yield two candidates");
 
     for (const candidate of candidates) {
-      await extractorService.createProposal(candidate, execution, "test-identity");
+      await extractorService.createProposal(candidate, execution, "test-role");
     }
 
     const pending = await extractorService.listPending();

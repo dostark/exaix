@@ -31,7 +31,7 @@ class TestBlueprintLoader {
   }
 }
 
-Deno.test("CandidateDiscovery: returns explicit identity candidates first", async () => {
+Deno.test("CandidateDiscovery: returns explicit agent-role candidates first", async () => {
   const loader = new TestBlueprintLoader();
   loader.addBlueprint({
     agentRole: "alpha",

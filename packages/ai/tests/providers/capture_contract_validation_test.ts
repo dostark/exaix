@@ -14,7 +14,7 @@ import type { ICallSite, IModelOptions, IModelProvider } from "../../src/types.t
 import type { IGenerateResult } from "../../src/providers/common.ts";
 
 const FLOW_STEP_PROMPT = "## Step 1\nContext from the prior step.";
-const REACT_LOOP_PROMPT = "IDENTITY: default\nAVAILABLE TOOLS: write_file, read_file";
+const REACT_LOOP_PROMPT = "AGENT ROLE: default\nAVAILABLE TOOLS: write_file, read_file";
 
 function okResult(content: string): IGenerateResult {
   return {

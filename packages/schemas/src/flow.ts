@@ -129,7 +129,7 @@ export const ZFlowParallelConfig = z.object({
 
 // Gate evaluation configuration schema
 export const GateEvaluateSchema = z.object({
-  /** Judge identity ID */
+  /** Judge agent role ID */
   agent_role: z.string(),
   /** Criteria to evaluate (names from built-in library or custom) */
   criteria: z.array(z.string()),
@@ -270,7 +270,7 @@ export const SessionDelegateCycleRejectionReasonSchema = z.enum([
   "non_completed_status",
   "empty_paths_touched",
   "review_failed",
-  // A persisted checkpoint's identity (parentTraceId/flowStepId) or planDigest no longer
+  // A persisted checkpoint's key (parentTraceId/flowStepId) or planDigest no longer
   // matches the current attempt, or the checkpoint is already terminal and cannot be resumed.
   "checkpoint_mismatch",
 ]);

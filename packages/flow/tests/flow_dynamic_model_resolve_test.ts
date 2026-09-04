@@ -155,7 +155,7 @@ const REACT_COMPLETE_FIXTURE = {
   recordedAt: "2026-08-13T00:00:00Z",
 };
 
-function writeAgentIdentity(root: string): void {
+function writeAgentRole(root: string): void {
   const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(
@@ -171,7 +171,7 @@ function writeAgentIdentity(root: string): void {
       "  - search_files",
       "---",
       "",
-      "Test identity for the dynamic step executor.",
+      "Test agent role for the dynamic step executor.",
       "",
     ].join("\n"),
   );
@@ -243,7 +243,7 @@ Deno.test(
           mock: { strategy: MockStrategy.RECORDED, fixtures_dir: recordingsDir },
         },
       });
-      writeAgentIdentity(tempDir);
+      writeAgentRole(tempDir);
 
       let resolvedIntent: IModelIntent | undefined;
       const mockResolver = {

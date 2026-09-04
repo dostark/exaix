@@ -429,7 +429,7 @@ export class ExecutionLoop {
     if (!frontmatter.agent_role && structuredPlan && planAgentId) {
       console.warn(
         `[ExecutionLoop] plan ${structuredPlan.trace_id} carried no.agent_role; ` +
-          `falling back to default identity "${planAgentId}" for execution`,
+          `falling back to default agent role "${planAgentId}" for execution`,
       );
     }
     const isReadOnly = await this.isReadOnlyAgentId(planAgentId);

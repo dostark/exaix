@@ -1,9 +1,9 @@
 # Blueprints/Skills/
 
 This directory holds the **authored skill blueprints** — the curated, versioned
-procedural knowledge ("how to work") that identities reference via
-`default_skills`. A skill describes _how_ to do something; an identity (under
-`Blueprints/Identities/`) describes _who_ the agent is.
+procedural knowledge ("how to work") that agent roles reference via
+`default_skills`. A skill describes _how_ to do something; an agent role (under
+`Blueprints/Agents/`) describes _who_ the agent is.
 
 ## Source of truth vs. runtime store
 
@@ -32,7 +32,7 @@ deno run -A scripts/build_skills_index.ts Memory/Skills .
 
 ## Usage
 
-Identities reference skills by `skill_id` in their `default_skills` list, e.g.
+Agent roles reference skills by `skill_id` in their `default_skills` list, e.g.
 `default_skills: ["response-contract", "code-review", "portal-grounding"]`. At
 request time the skill service loads the matching runtime JSON from
 `Memory/Skills/` and injects each skill's instructions into the agent's prompt.

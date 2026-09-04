@@ -1,11 +1,11 @@
 /**
- * @module IdentityCatalogValidationTest
- * @path tests/blueprints/identity_catalog_validation_test.ts
- * @description Phase 131 Step 6 — validates every active identity's capabilities are
+ * @module AgentRoleCatalogValidationTest
+ * @path tests/blueprints/agent_role_catalog_validation_test.ts
+ * @description Phase 131 Step 6 — validates every active agent role's capabilities are
  *   behavioral-only (no McpToolName/ToolName values), default_skills include the
- *   role-required core skill, and read-only identities carry no destructive tools in
+ *   role-required core skill, and read-only agent roles carry no destructive tools in
  *   permitted_tools (least-privilege). This is a catalog-wide structural integrity
- *   gate; it reads all identity YAML frontmatter files.
+ *   gate; it reads all agent role YAML frontmatter files.
  * @architectural-layer Skill (test)
  * @dependencies [@std/assert, @std/path, @std/yaml]
  * @related-files [packages/core/src/types/enums.ts]
@@ -17,7 +17,7 @@ import { parse as parseYaml } from "@std/yaml";
 import {
   AGENTS_DIR,
   DESTRUCTIVE_TOOLS,
-  type IIdentityFrontmatter,
+  type IAgentRoleFrontmatter,
   READ_ONLY_AGENT_ROLES,
   ROLE_REQUIRED_SKILLS,
 } from "./test_helpers.ts";
@@ -54,15 +54,15 @@ const KNOWN_TOOL_NAMES = new Set([
   "git_stash",
 ]);
 
-/** Load all active identity files (non-example, non-template, non-README). */
-function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }> {
-  const out: Array<{ id: string; fm: IIdentityFrontmatter }> = [];
+/** Load all active agent role files (non-example, non-template, non-README). */
+function loadActiveAgentRoles(): Array<{ id: string; fm: IAgentRoleFrontmatter }> {
+  const out: Array<{ id: string; fm: IAgentRoleFrontmatter }> = [];
   for (const e of Deno.readDirSync(AGENTS_DIR)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
     const content = Deno.readTextFileSync(join(AGENTS_DIR, e.name));
     const m = content.match(/^---\n([\s\S]*?)\n---\n/);
-    if (!m) throw new Error(`malformed identity ${e.name}`);
-    const fm = parseYaml(m[1]) as IIdentityFrontmatter;
+    if (!m) throw new Error(`malformed agent role ${e.name}`);
+    const fm = parseYaml(m[1]) as IAgentRoleFrontmatter;
     const id = e.name.replace(/\.md$/, "");
     if (fm.agent_role && fm.agent_role !== id) {
       throw new Error(`agent_role mismatch in ${e.name}: frontmatter says "${fm.agent_role}"`);
@@ -73,10 +73,10 @@ function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }>
 }
 
 Deno.test({
-  name: "[step6] every identity's capabilities are behavioral-only (no tool names)",
+  name: "[step6] every agent role's capabilities are behavioral-only (no tool names)",
   fn() {
-    const identities = loadActiveAgentRoles();
-    for (const { id, fm } of identities) {
+    const agentRoles = loadActiveAgentRoles();
+    for (const { id, fm } of agentRoles) {
       const caps = fm.capabilities ?? [];
       for (const c of caps) {
         assert(
@@ -89,13 +89,13 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[step6] every identity declares its role-required default_skills",
+  name: "[step6] every agent role declares its role-required default_skills",
   fn() {
-    const identities = loadActiveAgentRoles();
+    const agentRoles = loadActiveAgentRoles();
     const required = ROLE_REQUIRED_SKILLS;
-    for (const { id, fm } of identities) {
+    for (const { id, fm } of agentRoles) {
       const expected = required[id];
-      assert(expected !== undefined, `${id}: no role-required entry in the identity-role matrix`);
+      assert(expected !== undefined, `${id}: no role-required entry in the agent-role matrix`);
       const skills = new Set(fm.default_skills ?? []);
       for (const s of expected) {
         assert(
@@ -108,16 +108,16 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[step6] read-only identities carry no destructive tools in permitted_tools",
+  name: "[step6] read-only agent roles carry no destructive tools in permitted_tools",
   fn() {
-    const identities = loadActiveAgentRoles();
-    for (const { id, fm } of identities) {
+    const agentRoles = loadActiveAgentRoles();
+    for (const { id, fm } of agentRoles) {
       if (!READ_ONLY_AGENT_ROLES.has(id)) continue;
       const tools = fm.permitted_tools ?? [];
       for (const t of tools) {
         assert(
           !DESTRUCTIVE_TOOLS.has(t),
-          `${id}: read-only identity has destructive tool "${t}" in permitted_tools`,
+          `${id}: read-only agent role has destructive tool "${t}" in permitted_tools`,
         );
       }
     }

@@ -71,7 +71,7 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
     const extractedLearnings = await extractor.analyzeExecution(execution);
     assertGreaterOrEqual(extractedLearnings.length, 1);
 
-    const proposalId = await extractor.createProposal(extractedLearnings[0], execution, "test-identity");
+    const proposalId = await extractor.createProposal(extractedLearnings[0], execution, "test-role");
     assertExists(proposalId);
 
     const pending = await extractor.listPending();

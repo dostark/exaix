@@ -1,9 +1,9 @@
 /**
- * @module EventLoggerIdentityFieldsTest
- * @path packages/core/tests/event/event_logger_identity_fields_test.ts
+ * @module EventLoggerAgentRoleFieldsTest
+ * @path packages/core/tests/event/event_logger_agent_role_fields_test.ts
  * @related-files []
  * @architectural-layer Core
- * @description Verifies that EventLogger correctly forwards Actor/Agent/Identity separation fields to IActivityRepository.
+ * @description Verifies that EventLogger correctly forwards Actor/Agent/AgentRole separation fields to IActivityRepository.
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";

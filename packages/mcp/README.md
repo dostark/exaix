@@ -14,9 +14,9 @@ classDiagram
         +execute(args): Promise~MCPToolResponse~
         +getToolDefinition(): ToolDefinition
         +validatePortalExists(portal): string
-        +validatePermission(portal, identity, operation): void
+        +validatePermission(portal, agent_role, operation): void
         +resolvePortalPath(portal, path): string
-        +logToolExecution(tool, portal, identity, metadata): void
+        +logToolExecution(tool, portal, agent_role, metadata): void
     }
 
     class PatchFileTool

@@ -3,7 +3,7 @@
  * @path tests/integration/meta_workflow_queue_pipeline_test.ts
  * @description Phase 150 Step 5 — CI token-free variant of the meta-workflow queue
  *   pipeline. Validates that plan_to_requests.ts generates correct queue entries from
- *   a plan with step manifests: identities resolve, depends_on ordering is consistent,
+ *   a plan with step manifests: agent roles resolve, depends_on ordering is consistent,
  *   and each request carries content suitable for a non-empty brief objective.
  */
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -85,7 +85,7 @@ function stepNumberOf(fm: IRequestFrontmatter): number | undefined {
   return undefined;
 }
 
-Deno.test("[meta-workflow-queue] plan_to_requests generates queue with correct identity resolution", async () => {
+Deno.test("[meta-workflow-queue] plan_to_requests generates queue with correct agent-role resolution", async () => {
   const tmpDir = cleanTempDir();
   try {
     const files = await generateQueue(MINIMAL_PLAN, tmpDir);
@@ -97,7 +97,7 @@ Deno.test("[meta-workflow-queue] plan_to_requests generates queue with correct i
       const fm = parseRequestFrontmatter(file);
       assertExists(fm.agent_role, `request ${file} is missing agent_role`);
       const blueprint = await loader.load(fm.agent_role!);
-      assertExists(blueprint, `identity '${fm.agent_role}' from ${file} must resolve through IBlueprintLoader`);
+      assertExists(blueprint, `agent role '${fm.agent_role}' from ${file} must resolve through IBlueprintLoader`);
       assertEquals(blueprint.agentRole, fm.agent_role, `agent_role mismatch`);
     }
   } finally {

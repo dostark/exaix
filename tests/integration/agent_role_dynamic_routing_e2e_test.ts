@@ -1,7 +1,7 @@
 /**
- * @module DynamicIdentityRoutingE2ETest
- * @path tests/integration/identity_dynamic_routing_e2e_test.ts
- * @description Verifies Phase 74 dynamic identity routing using the real routing policy service,
+ * @module DynamicAgentRoleRoutingE2ETest
+ * @path tests/integration/agent_role_dynamic_routing_e2e_test.ts
+ * @description Verifies Phase 74 dynamic agent-role routing using the real routing policy service,
  * ensuring request metadata drives policy selection and experiment event emission.
  */
 
@@ -22,10 +22,10 @@ type DynamicRoutingFrontmatter = {
 };
 
 const FIXTURE_ROOT = join(Deno.cwd(), "tests", "fixtures", "dynamic_agent_role_routing");
-const SELECTED_IDENTITY = "senior-coder";
+const SELECTED_AGENT_ROLE = "senior-coder";
 const DEFAULT_AGENT_ID = "default-agent";
 
-Deno.test("Integration: dynamic identity routing uses routing policy rules and logs experiment events", async () => {
+Deno.test("Integration: dynamic agent-role routing uses routing policy rules and logs experiment events", async () => {
   const env = await TestEnvironment.create({
     configOverrides: {
       routing: {
@@ -42,8 +42,8 @@ Deno.test("Integration: dynamic identity routing uses routing policy rules and l
     await ensureDir(blueprintsPath);
 
     await copyFixture(
-      join(FIXTURE_ROOT, `${SELECTED_IDENTITY}.md`),
-      join(blueprintsPath, `${SELECTED_IDENTITY}.md`),
+      join(FIXTURE_ROOT, `${SELECTED_AGENT_ROLE}.md`),
+      join(blueprintsPath, `${SELECTED_AGENT_ROLE}.md`),
     );
 
     await copyFixture(
@@ -96,7 +96,7 @@ Deno.test("Integration: dynamic identity routing uses routing policy rules and l
     );
 
     const decisionEvent = mockLogger.events.find((event: { action: string }) => event.action === "routing.decision");
-    assertEquals(decisionEvent?.payload?.selected_agent_role, SELECTED_IDENTITY);
+    assertEquals(decisionEvent?.payload?.selected_agent_role, SELECTED_AGENT_ROLE);
   } finally {
     await env.cleanup();
   }

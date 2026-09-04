@@ -2,9 +2,9 @@
  * @module SkillToolsDerivationTest
  * @path packages/execution/tests/skill_tools_derivation_test.ts
  * @description Verifies resolveEffectiveSkillTools: union of matched skills' tools,
- *   deduplicated, then intersected with the identity's permitted_tools — a skill can
- *   only narrow within what the identity already permits, never grant a tool the
- *   identity does not already allow.
+ *   deduplicated, then intersected with the agent role's permitted_tools — a skill can
+ *   only narrow within what the agent role already permits, never grant a tool the
+ *   agent role does not already allow.
  * @architectural-layer Execution
  */
 import { assertEquals } from "@std/assert";
@@ -26,7 +26,7 @@ Deno.test("[skill-tools] unions tools from three or more skills without duplicat
   assertEquals(result.sort(), ["grep_search", "read_file", "write_file"]);
 });
 
-Deno.test("[skill-tools] intersects the union with the identity's permitted_tools", () => {
+Deno.test("[skill-tools] intersects the union with the agent role's permitted_tools", () => {
   const result = resolveEffectiveSkillTools(
     [["read_file", "write_file"], ["delete_file"]],
     ["read_file", "grep_search"],
@@ -34,7 +34,7 @@ Deno.test("[skill-tools] intersects the union with the identity's permitted_tool
   assertEquals(result, ["read_file"]);
 });
 
-Deno.test("[skill-tools] a skill cannot grant a tool the identity does not permit", () => {
+Deno.test("[skill-tools] a skill cannot grant a tool the agent role does not permit", () => {
   const result = resolveEffectiveSkillTools(
     [["delete_file", "run_command"]],
     ["read_file"],
@@ -50,7 +50,7 @@ Deno.test("[skill-tools] empty permitted_tools array permits nothing, regardless
   assertEquals(result, []);
 });
 
-Deno.test("[skill-tools] undefined permitted_tools means no identity-level restriction — full union passes through", () => {
+Deno.test("[skill-tools] undefined permitted_tools means no agent-role-level restriction — full union passes through", () => {
   const result = resolveEffectiveSkillTools(
     [["read_file"], ["write_file"]],
     undefined,

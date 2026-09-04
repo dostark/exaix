@@ -89,7 +89,7 @@ export interface IModelResolutionTraceEventPayload {
   route_reason?: IRouteReason;
   /** The routes weighed, with price + health, for the journal. */
   considered_routes?: IConsideredRoute[];
-  /** How task_type was derived (frontmatter|identity|skill|static_map|analyzer|unknown); lives here (not just IResolvedModel) so it reaches `exactl logs`. */
+  /** How task_type was derived (frontmatter|agent_role|skill|static_map|analyzer|unknown); lives here (not just IResolvedModel) so it reaches `exactl logs`. */
   task_type_source?: TaskTypeSource;
 }
 
@@ -242,7 +242,7 @@ export const DomainEventType = {
   SessionDelegateBriefFailed: "session.delegate.brief_failed", // Phase 150 Step 13: prepareBrief throw (distinct from reconciled)
 
   // Delegate permission-hardening events
-  SessionDelegateAgentMismatch: "session.delegate.agent_mismatch", // R3: generated agent.<name> key diverges from delegate identity
+  SessionDelegateAgentMismatch: "session.delegate.agent_mismatch", // R3: generated agent.<name> key diverges from delegate agent role
   SessionDelegateVersionWarning: "session.delegate.version_warning", // R3 post-gap: version probe below minimum
 
   // Net allowlist instrumentation
@@ -416,8 +416,8 @@ export const DomainEventType = {
   // Git events (git_service.ts)
   GitCheck: "git.check",
   GitInit: "git.init",
-  GitIdentityCheck: "git.agent_role_check",
-  GitIdentityConfigured: "git.agent_role_configured",
+  GitIdentityCheck: "git.identity_check",
+  GitIdentityConfigured: "git.identity_configured",
   GitBranchCreated: "git.branch_created",
   GitCommitted: "git.committed",
   GitCheckout: "git.checkout",

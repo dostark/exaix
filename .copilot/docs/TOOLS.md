@@ -184,7 +184,7 @@ aciDoc: {
 schema (`packages/tool-runtime/src/aci_example_validator.ts`): every key must be a known
 parameter, every required parameter must be present, and every value's runtime type (and
 enum membership, where declared) must match. MCP-transport-only fields such as `portal` or
-`identity_id` are never part of `ITool.parameters` — the MCP server injects them at the
+`agent_role` are never part of `ITool.parameters` — the MCP server injects them at the
 transport layer, not the ReAct tool-call convention — so including one in a worked example
 is always a validator error, not a stylistic choice.
 

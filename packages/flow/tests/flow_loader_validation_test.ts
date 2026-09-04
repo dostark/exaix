@@ -72,12 +72,12 @@ steps:
   }
 });
 
-// Identity-level permitted_tools validation requires IBlueprintLoader integration —
+// Agent-role-level permitted_tools validation requires IBlueprintLoader integration —
 // not yet implemented; only step-level tool-kind validation runs today.
 
-Deno.test("FlowLoader: skips identity validation (requires IBlueprintLoader)", () => {
-  // Identity-level validation requires loading the identity blueprint
-  // and comparing step.permitted_tools against identity.permitted_tools.
+Deno.test("FlowLoader: skips agent-role validation (requires IBlueprintLoader)", () => {
+  // Agent-role-level validation requires loading the agent role blueprint
+  // and comparing step.permitted_tools against agent_role.permitted_tools.
   // This is deferred until FlowRunner integration (Task 4).
 });
 

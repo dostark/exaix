@@ -1630,7 +1630,7 @@ export const DAEMON_STOP_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Identity ID used for the daemon actor in logs and permission checks */
+/** Agent role ID used for the daemon actor in logs and permission checks */
 export const DAEMON_AGENT_ROLE_ID = "daemon";
 
 /** Max delay for database retries */

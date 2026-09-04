@@ -126,7 +126,7 @@ const DEFAULT_GIT_OPERATIONS = {
 
 const AutoApproveSourceSchema = z.union([
   z.nativeEnum(MemoryBankSource),
-  z.enum(["EXECUTION", "USER", "IDENTITY", "AGENT", "LEARNED", "CORE", "PROJECT", "FILE", "DATABASE", "LLM"]),
+  z.enum(["EXECUTION", "USER", "AGENT", "LEARNED", "CORE", "PROJECT", "FILE", "DATABASE", "LLM"]),
 ]);
 
 const RoutingConfigSchema = z.object({

@@ -298,23 +298,23 @@ Deno.test("RequestManagerTuiSession: buildGroupedByPriority", () => {
   assertEquals(groupIds.some((id: string) => id.startsWith("priority-")), true);
 });
 
-Deno.test("RequestManagerTuiSession: buildGroupedByIdentity", () => {
+Deno.test("RequestManagerTuiSession: buildGroupedByAgentRole", () => {
   const mockService = new MinimalRequestServiceMock();
   const requests = createTestRequests();
   const view = new RequestManagerView(mockService);
   const session = view.createTuiSession(requests);
 
-  // Switch to identity grouping
+  // Switch to agent-role grouping
   session.toggleGrouping(); // none -> status
   session.toggleGrouping(); // status -> priority
-  session.toggleGrouping(); // priority -> identity
+  session.toggleGrouping(); // priority -> agent-role
 
   const tree = session.getState().requestTree;
   assert(tree.length > 0);
 
-  // Should have identity groups
+  // Should have agent-role groups
   const groupIds = tree.map((node) => node.id);
-  assertEquals(groupIds.some((id: string) => id.startsWith("identity-")), true);
+  assertEquals(groupIds.some((id: string) => id.startsWith("agent-role-")), true);
 });
 
 Deno.test("RequestManagerTuiSession: expandSelectedNode and collapseSelectedNode", async () => {

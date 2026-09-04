@@ -33,13 +33,13 @@ Deno.test({
     });
 
     try {
-      const identitiesDir = join(tempDir, "Blueprints", "Agents");
-      await Deno.mkdir(identitiesDir, { recursive: true });
+      const agentRolesDir = join(tempDir, "Blueprints", "Agents");
+      await Deno.mkdir(agentRolesDir, { recursive: true });
 
       // Replicate daemon bootstrap sequence from apps/daemon/main.ts
       const provider = await ProviderFactory.createByName(config, "default");
       const agentRunner = new AgentRunner(provider);
-      const adapter = new AgentOrchestratorAdapter(agentRunner, identitiesDir);
+      const adapter = new AgentOrchestratorAdapter(agentRunner, agentRolesDir);
       const flowLogger: IFlowEventLogger = {
         log: <TEvent extends string>(_event: TEvent, _payload: Record<string, string | number | boolean>): void => {},
       } as IFlowEventLogger;

@@ -39,8 +39,8 @@ class ControlledParallelExecutor implements IAgentExecutor {
   private readonly startWaiters: IStartWaiter[] = [];
   private readonly gates = new Map<string, { promise: Promise<void>; resolve: () => void }>();
 
-  constructor(blockedIdentityIds: string[]) {
-    for (const agentRole of blockedIdentityIds) {
+  constructor(blockedAgentRoleIds: string[]) {
+    for (const agentRole of blockedAgentRoleIds) {
       this.gates.set(agentRole, createDeferred());
     }
   }

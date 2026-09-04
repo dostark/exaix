@@ -18,8 +18,8 @@ import { computeMultiTrialMetrics, type IMultiTrialMetrics } from "./scoring.ts"
 export enum ArmKind {
   SKILL_ABLATION = "skill-ablation",
   SKILL_VERSION = "skill-version",
-  IDENTITY_SWAP = "identity-swap",
-  IDENTITY_CONFIG = "identity-config",
+  AGENT_ROLE_SWAP = "agent-role-swap",
+  AGENT_ROLE_CONFIG = "agent-role-config",
   FLOW_ABLATION = "flow-ablation",
   FLOW_SWAP = "flow-swap",
   /** The harness-lift arm — the full Exaix cell (treatment) vs the bare delegate baseline

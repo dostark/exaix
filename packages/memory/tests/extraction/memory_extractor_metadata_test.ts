@@ -168,7 +168,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
     started_at: new Date().toISOString(),
     status: ExecutionStatus.COMPLETED,
     portal: "test-portal",
-    agent_role: "test-identity",
+    agent_role: "test-role",
     summary: "Test execution summary that is long enough to be meaningful and extract patterns.",
     changes: { files_modified: ["src/app.ts"], files_created: [], files_deleted: [] },
     lessons_learned: ["Learned that X is better than Y."],
@@ -191,7 +191,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
     references: [],
   }) as IProposalLearning;
 
-  const proposalId = await service.createProposal(learning, execution, "test-identity");
+  const proposalId = await service.createProposal(learning, execution, "test-role");
   const proposal = await service.getPending(proposalId);
 
   assertExists(proposal);

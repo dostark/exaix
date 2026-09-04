@@ -298,7 +298,7 @@ For **every interface, type, or output field** the step introduces:
    non-test reference outside the definition file. This exists because phase-158's
    2026-08-04 post-gap analysis found six ✅ rows whose narrated call-site
    (`computePairedComparison`, `evaluateValidityGate`, and the Step 4–6
-   skill/identity/flow reporting modules) was never actually invoked by any committed
+   skill/agent-role/flow reporting modules) was never actually invoked by any committed
    code — a manual grep is what caught it, and this mechanizes that grep so it does
    not depend on remembering to do it by hand. It is advisory (free-text heuristics
    both miss dynamic-dispatch/registry-based wiring and can false-positive on an

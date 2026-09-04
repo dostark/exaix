@@ -63,19 +63,19 @@ MANDATORY — Phase 0: Comprehend Exaix's Own Architecture
       → Extract the guardrail runner architecture (concurrent, non-blocking)
 
   0b. .copilot/docs/GLOSSARY.md — precise terminology definitions
-      → Extract the Actor/Agent/Identity distinction:
-        - Actor = who initiated (user, service, mcp-client, identity)
+      → Extract the Actor/Agent/Agent Role distinction:
+        - Actor = who initiated (user, service, mcp-client, agent)
         - Agent = runtime execution unit (agent-runner, flow-runner, etc.)
-        - Identity = LLM persona (resolved from Blueprints/Identities/)
+        - Agent Role = LLM persona (resolved from Blueprints/Agents/)
       → Extract the journal field naming conventions:
-        actor/actor_type (who), agent_id/agent_kind (how), identity_id (what persona)
+        actor/actor_type (who), agent_id/agent_kind (how), agent_role (what persona)
       → Extract the pipeline artifact code identifiers:
         ExecutionTriggerEnvelope, IPlanMetadata, IReviewStatus, IChangesetResult
       → Extract wait state lifecycle: resume/approve/reject/amend/expire/cancel
       → Extract traceId vs trace_id naming (camelCase in code, snake_case in DB/payloads)
       → Extract the anomaly classification: severity levels (high/medium/low),
         recovered failure detection, anomaly badge format
-      → Extract the directory structure: Blueprints/Identities/, Blueprints/Flows/
+      → Extract the directory structure: Blueprints/Agents/, Blueprints/Flows/
 
   0c. exaix-dev-docs/dev/Exaix_White_Paper.md — governance-first positioning,
       market landscape, competitive moats, compliance frameworks, use cases
@@ -126,7 +126,7 @@ Exaix core identity (from canonical analyses + ARCHITECTURE.md + White Paper):
 Comprehension verification (must satisfy before starting Phase 1):
   - State the 9 core invariants from memory (correct order not required)
   - State the 4 architectural pillars from the White Paper
-  - Distinguish Actor vs Agent vs Identity correctly
+  - Distinguish Actor vs Agent vs Agent Role correctly
   - Name all 3 database tiers and which edition maps to which
   - List the 3 execution semantics guarantees
   - Name the 3 market segments and Exaix's differentiation in each
@@ -191,13 +191,13 @@ Do / Don't
   ✅ Do tier suggestions by priority
   ✅ Do cite specific architecture doc sections when claiming Exaix capabilities
      (e.g., "As ARCHITECTURE.md §AI Provider Architecture describes...")
-  ✅ Do use correct GLOSSARY.md terminology (Actor vs Agent vs Identity)
+  ✅ Do use correct GLOSSARY.md terminology (Actor vs Agent vs Agent Role)
   ❌ Don't skip Phase 0 — comprehension of Exaix's own architecture is mandatory
   ❌ Don't suggest weakening the mandatory human gate
   ❌ Don't suggest cloud dependency for core operation
   ❌ Don't suggest removing file-as-API philosophy
   ❌ Don't suggest dynamic agent spawning without approval bounds
-  ❌ Don't confuse Actor (who) with Agent (runtime unit) with Identity (LLM persona)
+  ❌ Don't confuse Actor (who) with Agent (runtime unit) with Agent Role (LLM persona)
   ❌ Don't reproduce competitor marketing terminology as functional categories —
      "meta-harness", "agentic OS", "AI orchestration layer" describe the product's
      self-positioning, not its architectural mechanism. Use functional descriptions:
@@ -240,7 +240,7 @@ exaix:
     - "Must tier suggestions by priority/risk"
     - "Must reference existing canonical analyses as structural patterns"
     - "Must follow submodule-workflow for exaix-dev-docs changes"
-    - "Must use correct GLOSSARY.md terminology (Actor/Agent/Identity distinction)"
+    - "Must use correct GLOSSARY.md terminology (Actor/Agent/Agent Role distinction)"
     - "Must cite specific doc sections when referencing Exaix capabilities"
     - "Must look past marketing terminology — map actual architecture and functionality from source code or API docs"
     - "Must flag unverifiable claims instead of reproducing them"

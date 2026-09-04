@@ -84,7 +84,7 @@ export class ReadFileTool extends ToolHandler {
           },
           agent_role: {
             type: "string",
-            description: "Identity identifier for permission checks",
+            description: "Agent role identifier for permission checks",
           },
         },
         required: ["portal", "path", "agent_role"],

@@ -2,7 +2,7 @@
 trace_id: "test-trace-unknown"
 request_id: any-test
 status: active
-agent_role: test-identity
+agent_role: test-role
 ---
 
 # Unknown Tool Test

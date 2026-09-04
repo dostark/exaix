@@ -634,7 +634,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     lines.push(`Trace ID: ${log.trace_id}`);
     lines.push(`Timestamp: ${log.timestamp}`);
     lines.push(`Actor: ${log.actor || "unknown"}`);
-    lines.push(`Identity: ${log.agent_role || "(none)"}`);
+    lines.push(`Agent Role: ${log.agent_role || "(none)"}`);
     lines.push(`Action: ${log.action_type}`);
     lines.push(`Target: ${log.target || "(none)"}`);
     lines.push("");
@@ -743,15 +743,15 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     });
   }
 
-  showFilterByIdentityDialog(): void {
+  showFilterByAgentRoleDialog(): void {
     const logs = this.monitorView.getFilteredLogs();
-    const identities = [...new Set(logs.map((l) => l.agent_role).filter(Boolean))];
-    const identityList = identities.length > 0 ? identities.join(", ") : "(no identities)";
+    const agentRoles = [...new Set(logs.map((l) => l.agent_role).filter(Boolean))];
+    const agentRoleList = agentRoles.length > 0 ? agentRoles.join(", ") : "(no agent roles)";
 
     this.pendingDialogType = "filter-agent-role";
     this.showInputDialog({
-      title: "Filter by Identity",
-      label: `Available identities: ${identityList}\nEnter identity ID (empty to clear):`,
+      title: "Filter by Agent Role",
+      label: `Available agent roles: ${agentRoleList}\nEnter agent role ID (empty to clear):`,
       defaultValue: "",
     });
   }
@@ -792,7 +792,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     this.statusMessage = `Searching for: ${query}`;
   }
 
-  private handleIdentityFilterResult(agent_role: string): void {
+  private handleAgentRoleFilterResult(agent_role: string): void {
     if (agent_role) {
       this.monitorView.setFilter({ agentRole: agent_role });
       this.statusMessage = `Filtered by agent_role: ${agent_role}`;
@@ -867,7 +867,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
         this.handleSearchResult(value);
         break;
       case "filter-agent-role":
-        this.handleIdentityFilterResult(value);
+        this.handleAgentRoleFilterResult(value);
         break;
       case "filter-time":
         this.handleTimeFilterResult(value);
@@ -937,7 +937,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
         this.showSearchDialog();
         return true;
       case MonitorViewAction.FILTER_AGENT_ROLE:
-        this.showFilterByIdentityDialog();
+        this.showFilterByAgentRoleDialog();
         return true;
       case KEYS.T:
         this.showTimeFilterDialog();

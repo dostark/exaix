@@ -5,7 +5,7 @@
  *   subprocess (EXAIX_EDITION=team, model_registry.enabled=true, all five catalog
  *   adapters pointed at local stub HTTP servers via model_registry.adapter_base_urls),
  *   one scheduler refresh cycle (refresh_on_start) admits stub catalog entries, and a
- *   structured-plan execution for an identity with `characteristics: ["best"]` resolves
+ *   structured-plan execution for an agent role with `characteristics: ["best"]` resolves
  *   via ModelResolver with `reason: "best_ranked"` — all asserted via the Activity
  *   Journal on the real daemon lifecycle (`exactl logs` reads the same table).
  *
@@ -16,7 +16,7 @@
  *   2. `packages/core/src/planning/plan_executor.ts`'s `createAgentExecutor` never
  *      passed `modelResolver` to `AgentOrchestrator` at all — ModelResolver.resolve() (the
  *      only path to best/route/auto-admit/task_type) was production-dead for every
- *      plan execution, independent of identity blueprint content.
+ *      plan execution, independent of agent role blueprint content.
  *   3. `model_registry.adapter_base_urls` (this step) — a test-only seam letting a real
  *      daemon subprocess point its catalog adapters at local stub servers instead of
  *      the vendor hosts.
@@ -35,7 +35,7 @@ import { type IStubCatalogServer, shutdownAll, startAllStubCatalogServers } from
 const TRACE_ID = "12121212-1212-4121-8121-121212121212";
 const REQUEST_ID = "step135-9-cutover-req";
 
-function writeStubIdentity(root: string): void {
+function writeStubAgentRole(root: string): void {
   const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
@@ -155,7 +155,7 @@ Deno.test({
       stubs = started.servers;
 
       await runMigrationsIn(tempDir);
-      writeStubIdentity(tempDir);
+      writeStubAgentRole(tempDir);
       const portalDir = writePortalDir(tempDir);
       writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls);
 
@@ -177,7 +177,7 @@ Deno.test({
       assertEquals(
         payload.reason,
         "best_ranked",
-        "a plan step for an identity with characteristics=['best'] must resolve via the best scorer, " +
+        "a plan step for an agent role with characteristics=['best'] must resolve via the best scorer, " +
           "not a route/curated/legacy fallback reason",
       );
       assertEquals(

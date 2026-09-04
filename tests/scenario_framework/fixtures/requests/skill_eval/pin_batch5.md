@@ -19,7 +19,7 @@ skills: [
 # Reconcile the response-contract skill family into a documented hierarchy
 
 Six `response-contract*` skills now exist, one generic and five per-domain. Nothing states
-which one an identity should carry, and an identity carrying two pays for both on every
+which one an agent role should carry, and an agent role carrying two pays for both on every
 request. Produce the missing definition:
 
 - What the generic contract guarantees that every variant inherits
@@ -30,5 +30,5 @@ request. Produce the missing definition:
 Acceptance criteria:
 
 - Each of the six skills is described by its difference from the generic contract
-- The selection rule is stated precisely enough to become a test over the identity catalog
-- Any recommended merge or deletion names the identities it would affect
+- The selection rule is stated precisely enough to become a test over the agent role catalog
+- Any recommended merge or deletion names the agent roles it would affect

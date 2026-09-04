@@ -9,7 +9,7 @@ capabilities: ["code_generation", "testing", "code_review", "planning", "executi
 created: "2026-06-18T00:00:00Z"
 created_by: "opencode"
 version: "1.1.0"
-description: "Solo developer identity for self-hosted dogfooding — plans with its own model, delegates code-changes to headless OpenCode"
+description: "Solo developer agent role for self-hosted dogfooding — plans with its own model, delegates code-changes to headless OpenCode"
 default_skills: [
   "response-contract",
   "exaix-conventions",

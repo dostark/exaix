@@ -1,6 +1,6 @@
 /**
- * @module FlowIdentityReferenceLintTest
- * @path tests/eval/flow_identity_reference_lint_test.ts
+ * @module FlowAgentRoleReferenceLintTest
+ * @path tests/eval/flow_agent_role_reference_lint_test.ts
  * @description Asserts every agent_role: reference in every Blueprints/Flows/*.flow.yaml
  *   resolves against Blueprints/Agents/.
  */
@@ -21,7 +21,7 @@ function loadAgentRoleNames(): Set<string> {
   return names;
 }
 
-function extractIdentityRefs(content: string): string[] {
+function extractAgentRoleRefs(content: string): string[] {
   const refs: string[] = [];
   const lines = content.split("\n");
   for (const line of lines) {
@@ -33,7 +33,7 @@ function extractIdentityRefs(content: string): string[] {
   return refs;
 }
 
-Deno.test("flow_identity_reference_lint — all flow-step identities resolve", async () => {
+Deno.test("flow_agent_role_reference_lint — all flow-step agent roles resolve", async () => {
   const knownAgentRoles = loadAgentRoleNames();
 
   const failures: string[] = [];
@@ -41,14 +41,14 @@ Deno.test("flow_identity_reference_lint — all flow-step identities resolve", a
     if (!entry.isFile || !entry.name.endsWith(".flow.yaml")) continue;
 
     const content = await Deno.readTextFile(entry.path);
-    const refs = extractIdentityRefs(content);
+    const refs = extractAgentRoleRefs(content);
 
     for (const ref of refs) {
       if (!knownAgentRoles.has(ref)) {
-        failures.push(`${entry.name}: references unknown identity "${ref}"`);
+        failures.push(`${entry.name}: references unknown agent role "${ref}"`);
       }
     }
   }
 
-  assertEquals(failures, [], `Identity reference failures:\n  ${failures.join("\n  ")}`);
+  assertEquals(failures, [], `Agent role reference failures:\n  ${failures.join("\n  ")}`);
 });

@@ -504,7 +504,7 @@ Deno.test({
           await executor.executeStep(context, options);
         },
         Error,
-        "Identity not allowed",
+        "Agent role not allowed",
       );
     } finally {
       await cleanup();
@@ -596,7 +596,7 @@ Deno.test({
 
       // A strategy that writes a real portal file and reports it in files_changed,
       // mirroring the ReAct loop authorizing its own writes. allowed_paths is empty
-      // (identity declares none), so only files_changed can authorize this change.
+      // (agent role declares none), so only files_changed can authorize this change.
       const writtenPath = "src/step-output.ts";
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
@@ -2126,7 +2126,7 @@ Deno.test({
       };
 
       // Only read_file is permitted — e.g. the union of matched skills' tools intersected
-      // with the identity's permitted_tools resolved to read_file alone.
+      // with the agent role's permitted_tools resolved to read_file alone.
       const options: IAgentExecutionOptions = {
         agent_role: "test-agent",
         portal: "/test/portal",
@@ -2958,7 +2958,7 @@ Deno.test({
 
 Deno.test({
   name:
-    "fix(agent-orchestrator): executeStep unions matchedSkillTools and intersects with the identity's permitted_tools",
+    "fix(agent-orchestrator): executeStep unions matchedSkillTools and intersects with the agent role's permitted_tools",
   fn: async () => {
     await setup();
     try {
@@ -3027,17 +3027,17 @@ Deno.test({
         options: {
           // Two matched skills: one contributes read_file+write_file, the other
           // contributes write_file+delete_file. Union = {read_file, write_file, delete_file}
-          // — deliberately a STRICT SUBSET of the identity's broader permitted_tools below,
+          // — deliberately a STRICT SUBSET of the agent role's broader permitted_tools below,
           // so this test can only pass if matchedSkillTools is actually consulted (not just
-          // passed through identity permitted_tools unfiltered).
+          // passed through agent role permitted_tools unfiltered).
           matchedSkillTools: [["read_file", "write_file"], ["write_file", "delete_file"]],
         },
       });
 
-      // Identity permits a BROADER set (including list_directory, which no matched skill
+      // Agent role permits a BROADER set (including list_directory, which no matched skill
       // declared) — list_directory must be filtered out because no skill's tools union
       // includes it, and delete_file must survive because it's in both the skill union and
-      // the identity's permitted_tools. "test-agent" is used (rather than a new identity
+      // the agent role's permitted_tools. "test-agent" is used (rather than a new agent role
       // name) because getServices()'s fixed portal permissions only allow
       // ["test-agent", "ollama-agent"] to access TestPortal.
       const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
@@ -3071,11 +3071,11 @@ Deno.test({
       assertStringIncludes(
         capturedPrompt,
         "delete_file",
-        "delete_file is in both the skill-tools union and the identity's permitted_tools — must survive the intersection",
+        "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive the intersection",
       );
       assert(
         !capturedPrompt.includes("list_directory"),
-        "list_directory must be excluded: the identity permits it, but no matched skill's tools union includes it",
+        "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
       );
     } finally {
       await cleanup();

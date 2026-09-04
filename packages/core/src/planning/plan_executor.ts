@@ -557,7 +557,7 @@ export class PlanExecutor {
     try {
       await git.commit({
         message: `Complete plan: ${requestId}`,
-        description: `Executed by identity ${agentRole}`,
+        description: `Executed by agent role ${agentRole}`,
         traceId,
       });
     } catch (error) {

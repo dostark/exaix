@@ -530,7 +530,7 @@ harden_permissions = true
 
 An accepted delegated session — any gate — feeds Exaix's memory lifecycle exactly
 like a plan execution: the daemon mints an execution record from the return's own
-`summary`/`paths_touched` and the brief's `identity_id`, then runs the same
+`summary`/`paths_touched` and the brief's `agent_role`, then runs the same
 skill-guided extraction and Pending → approval pipeline. A rejected or expired
 return never does. The delegate's `transcript_ref` (the full session transcript)
 stays audit-only — extraction never reads it. See
@@ -556,7 +556,7 @@ the API.
 
 #### 2.5a.1 Configuration
 
-Add a `[cli_delegate]` section, and grant the identity's blueprint the matching capability tag:
+Add a `[cli_delegate]` section, and grant the agent role's blueprint the matching capability tag:
 
 ```toml
 [cli_delegate]
@@ -566,13 +566,13 @@ model = "claude-sonnet-5"     # optional; tool default when absent
 ```
 
 ```yaml
-# Blueprints/Identities/<identity>.md frontmatter
+# Blueprints/Agents/<agent-role>.md frontmatter
 capabilities: ["code_generation", "cli_delegate"]
 ```
 
 `AgentOrchestrator` only registers `CliDelegateStrategy` when `[cli_delegate].enabled = true`,
-and only dispatches a step to it when the executing identity's `capabilities` includes
-`"cli_delegate"` — both conditions must hold. A step whose identity lacks the tag still runs
+and only dispatches a step to it when the executing agent role's `capabilities` includes
+`"cli_delegate"` — both conditions must hold. A step whose agent role lacks the tag still runs
 through whichever strategy its own capabilities select (`react`/`mcp`/legacy), even with
 `[cli_delegate]` enabled globally.
 
@@ -793,9 +793,9 @@ context_budget_chars = 4000 # Max characters for skills context
 
 #### Skill Tools
 
-A skill can optionally declare a `tools:` list — the MCP tools its own procedure calls for (e.g. `read_file`, `write_file`, `git_commit`). When one or more skills are matched onto a request, their `tools:` lists are combined into a single set (a matched-only tool is added once even if two skills both name it). That combined set is then narrowed to whatever the identity's own `permitted_tools` allowlist already permits — a skill can only restrict which of the identity's tools are shown, never add a tool the identity isn't already allowed to use. If no matched skill declares `tools:`, the identity's `permitted_tools` (or the full registered tool set, if the identity has no allowlist) is used unchanged.
+A skill can optionally declare a `tools:` list — the MCP tools its own procedure calls for (e.g. `read_file`, `write_file`, `git_commit`). When one or more skills are matched onto a request, their `tools:` lists are combined into a single set (a matched-only tool is added once even if two skills both name it). That combined set is then narrowed to whatever the agent role's own `permitted_tools` allowlist already permits — a skill can only restrict which of the agent role's tools are shown, never add a tool the agent role isn't already allowed to use. If no matched skill declares `tools:`, the agent role's `permitted_tools` (or the full registered tool set, if the agent role has no allowlist) is used unchanged.
 
-This keeps prompts focused: an identity broadly permitted to use many tools only sees the ones relevant to the skills actually driving a given request, without an author having to hand-tune `permitted_tools` per request.
+This keeps prompts focused: an agent role broadly permitted to use many tools only sees the ones relevant to the skills actually driving a given request, without an author having to hand-tune `permitted_tools` per request.
 
 ## 4. CLI Reference
 
@@ -1082,8 +1082,8 @@ exactl request analyze "Existing Request Subject" --engine llm
 
 | Option                  | Short | Description                                                                                                                 |
 | ----------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--agent`               | `-a`  | Target identity blueprint (default: `default`, mutually exclusive with --flow)                                              |
-| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                                                                   |
+| `--agent-role`          | `-a`  | Target agent role blueprint (default: `default`, mutually exclusive with --flow)                                            |
+| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent-role)                                                              |
 | `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                                               |
 | `--portal`              |       | Portal alias for project context                                                                                            |
 | `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                                                 |
@@ -1784,7 +1784,7 @@ Continue? (y/N): y
 Blueprints define agent personas, capabilities, and system prompts. They are **required** for request processing - missing blueprints cause requests to fail.
 
 ```bash
-# Create a new identity blueprint
+# Create a new agent role blueprint
 exactl blueprint create <agent-id> --name "Agent Name" --model <provider:model>
 exactl blueprint create senior-coder --name "Senior Coder" --model anthropic:claude-sonnet
 
@@ -1796,7 +1796,7 @@ exactl blueprint create security-auditor \
   --capabilities code_review,vulnerability_scanning \
   --system-prompt-file ~/prompts/security.txt
 
-# Clone an existing identity as a prototype (faster setup)
+# Clone an existing agent role as a prototype (faster setup)
 exactl blueprint create my-coder --name "My Coder" --from senior-coder
 exactl blueprint create my-reviewer --name "My Reviewer" --from code-analyst
 exactl blueprint create test-agent --name "Test Agent" --from mock-agent
@@ -1902,7 +1902,7 @@ steps:
   - id: implement-steps
     name: Implement Steps (TDD)
     type: session_delegate_cycle
-    agent_role: dogfood-coder # identity_id threaded to the delegate's hardened launch
+    agent_role: dogfood-coder # agent_role threaded to the delegate's hardened launch
     dependsOn: [plan-review]
     input:
       source: request # the request must carry plan_context_ref — no static plan path here
@@ -1910,7 +1910,7 @@ steps:
     delegateCycle:
       requireChangedPaths: true # non-empty paths_touched required (currently always true)
       review:
-        agent_role: quality-judge # judge identity that reviews each completed step
+        agent_role: quality-judge # judge agent role that reviews each completed step
         criteria: [code_correctness, has_tests, task_fulfillment]
         threshold: 0.8
         onFail: halt # only halt is accepted for this step type
@@ -1933,7 +1933,7 @@ prose can substitute a different plan or point outside the portal.
 `parentTraceId`/`parentStepId`/`sequence`/`planDigest`) guarantees at most one durable launch per
 step even across a daemon restart or duplicate watcher entry; a JSON checkpoint lets a restarted
 daemon resume a running cycle, replay an already-completed one with zero relaunches, or reject a
-checkpoint whose plan or identity no longer matches (rather than silently overwriting it).
+checkpoint whose plan or key no longer matches (rather than silently overwriting it).
 
 **Failure semantics:** any failure — a hollow or rejected delegate return, a failed review, an
 oversized/too-long plan, a plan-parse error, or a checkpoint mismatch — halts the cycle before
@@ -1974,9 +1974,9 @@ Use `dynamic` when the step genuinely needs to inspect the live workspace and ch
 next action (exploration, investigation); use `declared` (with or without a `strategy`) for
 steps whose work is already fully specified.
 
-#### Routing Commands — Inspect dynamic identity selection
+#### Routing Commands — Inspect dynamic agent-role selection
 
-Use routing commands to preview how Exaix will choose an identity before executing a request, and to validate routing policy syntax and semantics.
+Use routing commands to preview how Exaix will choose an agent role before executing a request, and to validate routing policy syntax and semantics.
 
 ```bash
 # Preview routing candidate ranking for a request file
@@ -1989,7 +1989,7 @@ exactl routing policy validate ./routing.policy.yaml
 exactl routing policy validate
 ```
 
-`exactl routing explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected identity/version, matched rule, routing strategy, and top candidate scores.
+`exactl routing explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected agent role/version, matched rule, routing strategy, and top candidate scores.
 
 `exactl routing policy validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file.
 
@@ -2111,7 +2111,7 @@ System prompt with <thought> and <content> tags...
 $ exactl blueprint create my-agent \
   --name "My Custom Agent" \
   --model anthropic:claude-sonnet
-✓ Blueprint created: Blueprints/Identities/my-agent.md
+✓ Blueprint created: Blueprints/Agents/my-agent.md
 
 # 2. List all agents
 $ exactl blueprint list
@@ -2929,7 +2929,7 @@ Implement user authentication for the API...
 | Benefit                 | Description                                               |
 | ----------------------- | --------------------------------------------------------- |
 | **Memory Banks search** | Structured metadata enables powerful search and filtering |
-| **CLI commands work**   | CLI can filter/sort by status, priority, identity_id      |
+| **CLI commands work**   | CLI can filter/sort by status, priority, agent_role       |
 | **Standard format**     | Most markdown tools expect YAML (`---` delimiters)        |
 | **Auto-generated**      | `exactl request` creates proper frontmatter automatically |
 
@@ -2943,7 +2943,7 @@ Implement user authentication for the API...
 | `created`             | datetime | ✓        | `2025-11-28T10:30:00.000Z`                                                  |
 | `status`              | string   | ✓        | `pending`, `processing`, `completed`                                        |
 | `priority`            | string   | ✓        | `low`, `normal`, `high`, `critical`                                         |
-| `identity_id`         | string   | ✓        | `default`, `senior-coder`, `architect`                                      |
+| `agent_role`          | string   | ✓        | `default`, `senior-coder`, `architect`                                      |
 | `source`              | string   | ✓        | `cli`, `file`, `interactive`                                                |
 | `created_by`          | string   | ✓        | `user@example.com`                                                          |
 | `portal`              | string   |          | `MyProject` (optional project context)                                      |
@@ -3622,7 +3622,7 @@ The Reflexion pattern enables agents to critique and improve their own outputs i
 
 #### Configuration
 
-Enable reflexion in identity blueprint frontmatter:
+Enable reflexion in agent role blueprint frontmatter:
 
 ```yaml
 ---
@@ -3667,21 +3667,21 @@ rather than hardcoding a specific `provider:model` ID. Instead of saying
 "use claude-sonnet-4", you say "give me a size L model with thinking" — and
 `ModelResolver` picks the best available provider+model that matches.
 
-This decouples your request/identity from any single provider. The same intent
+This decouples your request/agent role from any single provider. The same intent
 works locally with Ollama, in the cloud with Anthropic, or in an air-gapped
 environment — without editing blueprints.
 
 #### Available intent fields in blueprint frontmatter
 
-| Field                   | Values                                                | Behavior                                                                   |
-| ----------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| `model_size`            | `S`, `M`, `L`, `XL`                                   | Maps to capability profile (context window, cost, thinking support)        |
-| `thinking`              | `true`, `false`                                       | Require extended reasoning model                                           |
-| `effort`                | `low`, `medium`, `high`                               | Reasoning token budget (only meaningful with `thinking: true`)             |
-| `characteristics`       | `["cheapest"]`, `["fastest"]`                         | Soft ranking hint — scores providers, does not eliminate                   |
-| `preferred_provider`    | provider name                                         | Narrow candidate pool, skip cross-provider scoring                         |
-| `required_capabilities` | `chat`, `streaming`, `vision`, `tools`, `multi-model` | Hard filter — providers lacking ALL listed values are excluded             |
-| `model`                 | `provider:model`                                      | **Deprecated** — bypasses ModelResolver, ties identity to a specific model |
+| Field                   | Values                                                | Behavior                                                                     |
+| ----------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `model_size`            | `S`, `M`, `L`, `XL`                                   | Maps to capability profile (context window, cost, thinking support)          |
+| `thinking`              | `true`, `false`                                       | Require extended reasoning model                                             |
+| `effort`                | `low`, `medium`, `high`                               | Reasoning token budget (only meaningful with `thinking: true`)               |
+| `characteristics`       | `["cheapest"]`, `["fastest"]`                         | Soft ranking hint — scores providers, does not eliminate                     |
+| `preferred_provider`    | provider name                                         | Narrow candidate pool, skip cross-provider scoring                           |
+| `required_capabilities` | `chat`, `streaming`, `vision`, `tools`, `multi-model` | Hard filter — providers lacking ALL listed values are excluded               |
+| `model`                 | `provider:model`                                      | **Deprecated** — bypasses ModelResolver, ties agent role to a specific model |
 
 `required_capabilities` is a **hard filter** — providers that don't support
 every listed value are excluded. Supported values per provider:
@@ -3738,7 +3738,7 @@ candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
 
 During plan execution, **request-level intent overrides the blueprint**: CLI flags such as
 `--model-size M` or `--thinking` (written to the request frontmatter) take precedence over
-the identity blueprint's `model_size:`/`thinking:` for any field that is explicitly set;
+the agent role blueprint's `model_size:`/`thinking:` for any field that is explicitly set;
 unset fields fall through to the blueprint default. `--preferred-provider` narrows the
 candidate pool and skips cross-provider scoring.
 
@@ -3757,9 +3757,9 @@ Available on `exactl request`:
 | `--characteristic`     | `cheapest`, `fastest`   | Soft ranking hint (repeatable) |
 | `--preferred-provider` | provider name           | Narrow to one provider         |
 
-#### Migration: Identity Blueprints
+#### Migration: Agent Role Blueprints
 
-**Hardcoded `model:` in identity blueprints is deprecated.** Replace with
+**Hardcoded `model:` in agent role blueprints is deprecated.** Replace with
 declarative fields:
 
 ```diff
@@ -3783,7 +3783,7 @@ Supported frontmatter fields:
 | `model`              | string  | **Deprecated** — `provider:model` |
 
 The `model` field continues to work, but it short-circuits the resolver and
-ties the identity to a specific provider+model, defeating portability.
+ties the agent role to a specific provider+model, defeating portability.
 
 #### Future: the curated model registry Model Registry
 
@@ -3939,10 +3939,10 @@ When validation fails, you'll see detailed errors:
   - steps[0].tools[1]: Unknown tool "invalid_tool"
 ```
 
-### 6.6 Scaffolding Identities and Behavioural Patterns
+### 6.6 Scaffolding Agent Roles and Behavioural Patterns
 
-The catalog is a flat set of concrete identities (no separate template
-directory). To create a new identity, clone an existing one as a prototype with
+The catalog is a flat set of concrete agent roles (no separate template
+directory). To create a new agent role, clone an existing one as a prototype with
 `--from`, then attach the skills that give it the behaviour you want:
 
 ```bash
@@ -3953,7 +3953,7 @@ exactl request "Task" --agent-role my-agent
 ```
 
 The behavioural patterns that used to be templates are now **skills** in
-`Blueprints/Skills/` — add them to your identity's `default_skills`:
+`Blueprints/Skills/` — add them to your agent role's `default_skills`:
 
 | Pattern                  | Skill                                                  | Best for                   |
 | ------------------------ | ------------------------------------------------------ | -------------------------- |
@@ -3966,8 +3966,8 @@ The behavioural patterns that used to be templates are now **skills** in
 
 See `Blueprints/Skills/README.md` for the full skill library.
 
-Each identity's frontmatter also carries a `permitted_tools` allowlist — the
-least-privilege ceiling on which MCP tools that identity may ever use,
+Each agent role's frontmatter also carries a `permitted_tools` allowlist — the
+least-privilege ceiling on which MCP tools that agent role may ever use,
 regardless of which skills get matched onto a request. See
 [§3.3 Skill Tools](#skill-tools) for how a matched skill's own `tools:`
 declaration narrows within that ceiling.
@@ -4906,7 +4906,7 @@ CI integration, see **[`docs/Exaix_Evaluation.md`](Exaix_Evaluation.md)**.
 
 ### Subsystem evaluation
 
-Scenarios are tagged by the subsystem they measure — tools, mcp-server, mcp-client, identities,
+Scenarios are tagged by the subsystem they measure — tools, mcp-server, mcp-client, agent_roles,
 skills, flows — so coverage can be read per subsystem rather than per directory:
 
 ```bash
@@ -4916,7 +4916,7 @@ deno task eval:subsystems
 # The cheap tier: one or more representatives per subsystem
 deno task eval:subsystems:core
 
-# The catalog/flow/identity/skill/tool parity gates
+# The catalog/flow/agent-role/skill/tool parity gates
 deno task test:parity
 
 # Per-subsystem summary with pass counts and trend deltas

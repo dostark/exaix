@@ -34,7 +34,7 @@ class FixedResultRegistry implements IToolRegistry {
   }
 }
 
-Deno.test("toolResultToMcpResponse: identity check — converter output structure is stable", () => {
+Deno.test("toolResultToMcpResponse: pass-through check — converter output structure is stable", () => {
   const input = { success: true, data: { output: "hello", exitCode: 0 } };
   const converted = toolResultToMcpResponse(input);
 

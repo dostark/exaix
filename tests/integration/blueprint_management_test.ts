@@ -57,8 +57,8 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     });
 
     // Test 2: Create Blueprint by cloning an existing one (--from)
-    await t.step("Test 2: --from clones model and capabilities from a prototype identity", async () => {
-      // Clone the identity created in Test 1.
+    await t.step("Test 2: --from clones model and capabilities from a prototype agent role", async () => {
+      // Clone the agent role created in Test 1.
       const result = await blueprintCommands.create(coderAgentId, {
         name: "Integration Coder",
         from: testAgentId,

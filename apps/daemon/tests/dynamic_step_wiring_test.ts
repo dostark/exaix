@@ -37,7 +37,7 @@ import {
   writePortalDir,
 } from "../../../tests/integration/helpers/daemon_config.ts";
 
-/** Repo root, from `apps/daemon/tests/` — the source of the shipped identity blueprint. */
+/** Repo root, from `apps/daemon/tests/` — the source of the shipped agent role blueprint. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
 /** Activity-journal action_type strings this step asserts on. */
@@ -130,7 +130,7 @@ function writeWiringProbeFlow(root: string): void {
   );
 }
 
-function writeSeniorCoderIdentity(root: string): void {
+function writeSeniorCoderAgentRole(root: string): void {
   const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   Deno.copyFileSync(
@@ -214,7 +214,7 @@ function writeFlowRequest(root: string): void {
 
 function seedTeamWorkspace(root: string): void {
   writeWiringProbeFlow(root);
-  writeSeniorCoderIdentity(root);
+  writeSeniorCoderAgentRole(root);
   writePortalDir(root);
   const recordingsDir = join(root, "recordings");
   Deno.mkdirSync(recordingsDir, { recursive: true });
@@ -226,7 +226,7 @@ function seedTeamWorkspace(root: string): void {
 
 function seedSoloWorkspace(root: string): void {
   writeWiringProbeFlow(root);
-  writeSeniorCoderIdentity(root);
+  writeSeniorCoderAgentRole(root);
   writePortalDir(root);
 }
 

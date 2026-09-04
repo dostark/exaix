@@ -1,10 +1,10 @@
 /**
- * @module IdentityDefaultSkillsTest
- * @path tests/eval/identity_default_skills_test.ts
- * @description Phase 142 Step 17 — guards the identity `default_skills` lists.
+ * @module AgentRoleDefaultSkillsTest
+ * @path tests/eval/agent_role_default_skills_test.ts
+ * @description Phase 142 Step 17 — guards the agent role `default_skills` lists.
  *
  *   Under the always-concatenate model every default is injected on every request that
- *   identity handles, unconditionally. That makes list LENGTH the budget control (the
+ *   agent role handles, unconditionally. That makes list LENGTH the budget control (the
  *   critical-only union that used to trim them is gone), so these lists must stay short and
  *   every entry must resolve — a dangling id is a silently-missing skill, and an over-long
  *   list is prompt weight paid on every request for no return.
@@ -21,7 +21,7 @@ const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 const MEMORY_SKILLS = join(REPO_ROOT, "Memory", "Skills");
 
-// Upper bound on an identity's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`
+// Upper bound on an agent role's `default_skills`. Matches `DEFAULT_CONFIG.maxSkillsPerRequest`
 // in `packages/core/src/skills/skills.ts`: that cap governs dynamically matched skills, and
 // defaults should not exceed on their own what matching is allowed to contribute in total.
 const MAX_DEFAULT_SKILLS = 5;
@@ -38,11 +38,11 @@ const TRIGGER_MATCHED_SKILL_IDS: ReadonlySet<string> = new Set([
   "error-handling",
 ]);
 
-interface IIdentityFrontmatter {
+interface IAgentRoleFrontmatter {
   default_skills?: string[];
 }
 
-interface IIdentityDefaults {
+interface IAgentRoleDefaults {
   agentRole: string;
   defaults: string[];
 }
@@ -54,13 +54,13 @@ function readCatalogSkillIds(): Promise<Set<string>> {
   return readRuntimeSkillIds(MEMORY_SKILLS);
 }
 
-async function readIdentityDefaults(): Promise<IIdentityDefaults[]> {
-  const rows: IIdentityDefaults[] = [];
+async function readAgentRoleDefaults(): Promise<IAgentRoleDefaults[]> {
+  const rows: IAgentRoleDefaults[] = [];
   for await (const entry of Deno.readDir(AGENTS_DIR)) {
     if (!entry.isFile || !entry.name.endsWith(".md") || entry.name === "README.md") continue;
     const text = await Deno.readTextFile(join(AGENTS_DIR, entry.name));
     const match = text.match(/^---\n([\s\S]*?)\n---/);
-    const frontmatter = match ? parseYaml(match[1]) as IIdentityFrontmatter : {};
+    const frontmatter = match ? parseYaml(match[1]) as IAgentRoleFrontmatter : {};
     rows.push({
       agentRole: entry.name.replace(/\.md$/, ""),
       defaults: frontmatter.default_skills ?? [],
@@ -70,48 +70,48 @@ async function readIdentityDefaults(): Promise<IIdentityDefaults[]> {
   return rows;
 }
 
-Deno.test("identity_default_skills — every declared default resolves in the runtime catalog", async () => {
+Deno.test("agent_role_default_skills — every declared default resolves in the runtime catalog", async () => {
   const catalog = await readCatalogSkillIds();
   const dangling: string[] = [];
-  for (const identity of await readIdentityDefaults()) {
-    for (const skillId of identity.defaults) {
-      if (!catalog.has(skillId)) dangling.push(`${identity.agentRole} -> ${skillId}`);
+  for (const agentRole of await readAgentRoleDefaults()) {
+    for (const skillId of agentRole.defaults) {
+      if (!catalog.has(skillId)) dangling.push(`${agentRole.agentRole} -> ${skillId}`);
     }
   }
   assertEquals(dangling.sort(), [], `default_skills entries with no catalog skill:\n${dangling.join("\n")}`);
 });
 
-Deno.test("identity_default_skills — no identity exceeds the default-skills budget", async () => {
-  const overCap = (await readIdentityDefaults())
-    .filter((identity) => identity.defaults.length > MAX_DEFAULT_SKILLS)
-    .map((identity) => `${identity.agentRole} (${identity.defaults.length})`);
+Deno.test("agent_role_default_skills — no agent role exceeds the default-skills budget", async () => {
+  const overCap = (await readAgentRoleDefaults())
+    .filter((agentRole) => agentRole.defaults.length > MAX_DEFAULT_SKILLS)
+    .map((agentRole) => `${agentRole.agentRole} (${agentRole.defaults.length})`);
   assertEquals(
     overCap,
     [],
-    `identities exceeding ${MAX_DEFAULT_SKILLS} default skills — every entry is unconditional ` +
+    `agent roles exceeding ${MAX_DEFAULT_SKILLS} default skills — every entry is unconditional ` +
       `prompt weight on every request:\n${overCap.join("\n")}`,
   );
 });
 
-Deno.test("identity_default_skills — no identity carries both the generic and a specialised response contract", async () => {
+Deno.test("agent_role_default_skills — no agent role carries both the generic and a specialised response contract", async () => {
   const doubled: string[] = [];
-  for (const identity of await readIdentityDefaults()) {
-    const contracts = identity.defaults.filter((id) => id.startsWith("response-contract"));
+  for (const agentRole of await readAgentRoleDefaults()) {
+    const contracts = agentRole.defaults.filter((id) => id.startsWith("response-contract"));
     if (contracts.includes("response-contract") && contracts.length > 1) {
-      doubled.push(`${identity.agentRole}: ${contracts.join(" + ")}`);
+      doubled.push(`${agentRole.agentRole}: ${contracts.join(" + ")}`);
     }
   }
   assertEquals(
     doubled.sort(),
     [],
-    `identities paying for two overlapping output contracts on every request:\n${doubled.join("\n")}`,
+    `agent roles paying for two overlapping output contracts on every request:\n${doubled.join("\n")}`,
   );
 });
 
-Deno.test("identity_default_skills — the README's authoring example obeys the rules a real identity must", async () => {
+Deno.test("agent_role_default_skills — the README's authoring example obeys the rules a real agent role must", async () => {
   // The README is where a contributor learns the shape, so a stale example reintroduces exactly
   // what a prior pruning removed. Its previous example carried `portal-grounding`, removed from all
-  // identities because the skill declares triggers and is picked up dynamically — the cap test couldn't have caught it.
+  // agent roles because the skill declares triggers and is picked up dynamically — the cap test couldn't have caught it.
   const readme = await Deno.readTextFile(join(AGENTS_DIR, "README.md"));
   const catalog = await readCatalogSkillIds();
 
@@ -144,6 +144,6 @@ Deno.test("identity_default_skills — the README's authoring example obeys the 
   assertEquals(
     problems.sort(),
     [],
-    `the identity authoring README teaches a shape the catalog rejects:\n  ${problems.join("\n  ")}`,
+    `the agent role authoring README teaches a shape the catalog rejects:\n  ${problems.join("\n  ")}`,
   );
 });

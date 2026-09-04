@@ -27,7 +27,7 @@ Key points
 
 See also
   User guide           →  [docs/Exaix_Dogfooding.md](../../docs/Exaix_Dogfooding.md)
-  Dogfood identity     →  [Blueprints/Identities/dogfood-developer.md](../../Blueprints/Identities/dogfood-developer.md)
+  Dogfood agent role   →  [Blueprints/Agents/dogfood-developer.md](../../Blueprints/Agents/dogfood-developer.md)
   Dogfood flow         →  [Blueprints/Flows/dogfood_loop.flow.yaml](../../Blueprints/Flows/dogfood_loop.flow.yaml)
 
 Canonical prompt (short):
@@ -62,7 +62,7 @@ Meta-pipeline cycle (daily rhythm)
 
   Each maps to a request with depends_on ordering:
 
-  Phase         Identity        depends_on
+  Phase         Agent Role      depends_on
   pre-gap       code-analyst    (first)
   next-steps x1 dogfood-coder   [pre-gap]
   next-steps x2 dogfood-coder   [step-1]
@@ -76,7 +76,7 @@ Key configuration
   - Portal: the Exaix repo is mounted as a portal for codebase context
   - Provider: configured during bootstrap, or override via EXA_LLM_PROVIDER
   - Skills: daemon uses Blueprints/Skills/ (not .copilot/skills/)
-  - Identity: dogfood-developer (model size M, thinking enabled, 8 default skills)
+  - Agent role: dogfood-developer (model size M, thinking enabled, 8 default skills)
   - Permissions: HITL secondary approval for writes and run_command
 
 Related skills
@@ -104,7 +104,7 @@ exaix:
     tags: [dogfooding]
   constraints:
     - "Use deno task dogfood:bootstrap for one-time sandbox setup"
-    - "Write requests as .md files with frontmatter (identity, skills, portal, target_branch)"
+    - "Write requests as .md files with frontmatter (agent_role, skills, portal, target_branch)"
     - "Always review the plan before approving — HITL gates exist for a reason"
     - "Dogfood runs in an isolated git worktree — never on the live checkout"
   output_requirements:

@@ -111,7 +111,7 @@ call site (scenario id, step id, call index) rather than by prompt content — a
 reports as drift on the affected fixtures instead of invalidating the whole set.
 
 **Why call site, not prompt content.** The earlier design hashed the whole prompt (system
-prompt + injected skills + task) to find a recording. That means editing one identity
+prompt + injected skills + task) to find a recording. That means editing one agent role
 blueprint invalidates every fixture that used it, and under strict mode every affected
 scenario fails at once — the predictable response is to switch strict mode off, which
 returns the tier to regex dispatch with extra machinery in front. A naive prompt-hash
@@ -180,7 +180,7 @@ artefact actually helps is a provider-live question; see
 
 ### Value Evaluation — Arm Authoring & Pre-Registration (Phase 158)
 
-Whether an artefact (identity, skill, or flow) actually improves an outcome — not merely whether
+Whether an artefact (agent role, skill, or flow) actually improves an outcome — not merely whether
 it is injected — is a separate, provider-live tier layered on top of the packs above. Full
 narrative (the no-effect rule, value-per-token, the validity gate, how to read a report) lives in
 [`docs/Exaix_Evaluation.md` §15](../../docs/Exaix_Evaluation.md#15-artefact-value-evaluation); this
@@ -189,15 +189,15 @@ section covers the mechanical "how do I author an arm" side.
 **An arm is a configuration overlay, never a `Blueprints/` edit.** Seven kinds cover every artefact
 class:
 
-| Arm kind            | Mechanism                                                                                                                                                                            | Env var / field                                        |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| `skill-ablation`    | suppress a skill from the resolved set for this run only                                                                                                                             | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids) |
-| `skill-version`     | shadow `Memory/Skills/` with an overlay directory                                                                                                                                    | `EXA_EVAL_SKILL_OVERLAY_DIR`                           |
-| `identity-swap`     | route the request to a different identity                                                                                                                                            | request frontmatter `agent_role:`                      |
-| `identity-config`   | shadow `Blueprints/Agents/` with an overlay directory                                                                                                                                | `EXA_EVAL_IDENTITY_OVERLAY_DIR`                        |
-| `persona-isolation` | shadow only an identity's persona body, holding `model_size`/`capabilities`/`default_skills`/`permitted_tools` fixed (Phase 161) — see `templates/persona_isolation_arm.template.md` | `EXA_EVAL_IDENTITY_OVERLAY_DIR` (body-only overlay)    |
-| `flow-ablation`     | run the request with or without flow orchestration                                                                                                                                   | request frontmatter `flow:` present/absent             |
-| `flow-swap`         | route the request to a different flow                                                                                                                                                | request frontmatter `flow:`                            |
+| Arm kind            | Mechanism                                                                                                                                                                              | Env var / field                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `skill-ablation`    | suppress a skill from the resolved set for this run only                                                                                                                               | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids) |
+| `skill-version`     | shadow `Memory/Skills/` with an overlay directory                                                                                                                                      | `EXA_EVAL_SKILL_OVERLAY_DIR`                           |
+| `agent-role-swap`   | route the request to a different agent role                                                                                                                                            | request frontmatter `agent_role:`                      |
+| `agent-role-config` | shadow `Blueprints/Agents/` with an overlay directory                                                                                                                                  | `EXA_EVAL_AGENT_ROLE_OVERLAY_DIR`                      |
+| `persona-isolation` | shadow only an agent role's persona body, holding `model_size`/`capabilities`/`default_skills`/`permitted_tools` fixed (Phase 161) — see `templates/persona_isolation_arm.template.md` | `EXA_EVAL_AGENT_ROLE_OVERLAY_DIR` (body-only overlay)  |
+| `flow-ablation`     | run the request with or without flow orchestration                                                                                                                                     | request frontmatter `flow:` present/absent             |
+| `flow-swap`         | route the request to a different flow                                                                                                                                                  | request frontmatter `flow:`                            |
 
 All three env vars are per-process — safe because the scenario framework runs one scenario per
 daemon process, so concurrent arms never share an env — and every overlay directory is validated
@@ -232,7 +232,7 @@ deno run -A scripts/run_value_comparison_report.ts scripts/run_value_comparison_
 ```
 
 `scripts/run_value_comparison_report.ts` calls `computePairedComparison`/`computeValuePerToken`,
-`evaluateValidityGate`/`assertValidityGate`/`assertPlaceboDetected`, the skill/identity/flow
+`evaluateValidityGate`/`assertValidityGate`/`assertPlaceboDetected`, the skill/agent-role/flow
 reporting layer, and `computeJudgeCalibration` against a generic JSON input — see the checked-in
 `.example.json` for the exact schema per section. Feed it a real live run's collected per-task
 trial data (never hand-transcribe historical numbers into a fixture — see §15) to get a
@@ -394,25 +394,25 @@ with `loadScenarioCatalog` if they drift). The `Subsystem` column is what
 `eval report --group-by subsystem` aggregates and what the cadence tiers select on; a pack with no
 subsystem tag is not part of the six-subsystem coverage contract.
 
-| Pack                 | Requires        | Scenarios | Subsystem    |
-| -------------------- | --------------- | --------- | ------------ |
-| `agent_flows`        | Daemon + portal | 17        | `flows`      |
-| `blueprint_eval`     | None            | 2         | —            |
-| `dynamic_execution`  | Daemon          | 11        | `mcp-client` |
-| `eval_edge_cases`    | None            | 5         | —            |
-| `eval_smoke`         | None            | 1         | —            |
-| `flow_blueprints`    | Daemon          | 16        | `flows`      |
-| `framework_test`     | Framework       | 2         | —            |
-| `identity_eval`      | Daemon          | 14        | `identities` |
-| `integration_e2e`    | Daemon + portal | 3         | —            |
-| `mcp_server`         | Daemon (Team)   | 5         | `mcp-server` |
-| `mcp_tools_extended` | Daemon          | 16        | `tools`      |
-| `portal_knowledge`   | Daemon + portal | 1         | —            |
-| `provider_live`      | Real LLM        | 21        | `identities` |
-| `skill_eval`         | Daemon          | 7         | `skills`     |
-| `smoke`              | Daemon          | 1         | —            |
-| `swe_tasks`          | Real LLM        | 23        | —            |
-| `triggers_basic`     | Daemon          | 1         | —            |
+| Pack                 | Requires        | Scenarios | Subsystem     |
+| -------------------- | --------------- | --------- | ------------- |
+| `agent_flows`        | Daemon + portal | 17        | `flows`       |
+| `agent_role_eval`    | Daemon          | 14        | `agent_roles` |
+| `blueprint_eval`     | None            | 2         | —             |
+| `dynamic_execution`  | Daemon          | 11        | `mcp-client`  |
+| `eval_edge_cases`    | None            | 5         | —             |
+| `eval_smoke`         | None            | 1         | —             |
+| `flow_blueprints`    | Daemon          | 16        | `flows`       |
+| `framework_test`     | Framework       | 2         | —             |
+| `integration_e2e`    | Daemon + portal | 3         | —             |
+| `mcp_server`         | Daemon (Team)   | 5         | `mcp-server`  |
+| `mcp_tools_extended` | Daemon          | 16        | `tools`       |
+| `portal_knowledge`   | Daemon + portal | 1         | —             |
+| `provider_live`      | Real LLM        | 21        | `agent_roles` |
+| `skill_eval`         | Daemon          | 7         | `skills`      |
+| `smoke`              | Daemon          | 1         | —             |
+| `swe_tasks`          | Real LLM        | 23        | —             |
+| `triggers_basic`     | Daemon          | 1         | —             |
 
 ### 2.4 Where Sandboxes Are Created
 
@@ -619,19 +619,19 @@ scenario_framework/
 ## 4b. Subsystem Cadence — Which Tier Runs What
 
 Phase 142 defines three tiers over the six subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
-`subsystem:mcp-client`, `subsystem:identities`, `subsystem:skills`, `subsystem:flows`).
+`subsystem:mcp-client`, `subsystem:agent_roles`, `subsystem:skills`, `subsystem:flows`).
 
 > **These are run by hand.** None of the commands below is attached to a GitHub Actions job, to
 > `scripts/ci.ts`, or to the pre-commit gates — "tier" here names a _selection_ and the task that
 > executes it, not something that fires on every change. Adding them to a CI job is a separate,
 > deliberate decision.
 
-| Tier               | Command                          | Selects                                                        |
-| ------------------ | -------------------------------- | -------------------------------------------------------------- |
-| **ci-core**        | `deno task eval:subsystems:core` | `smoke`-tagged representatives, one or more per subsystem      |
-| **ci-core** (also) | `deno task test:parity`          | the catalog/flow/identity/skill/tool parity gates (deno tests) |
-| **ci-extended**    | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems             |
-| **nightly**        | see below                        | the `provider-live` tier, against a real model                 |
+| Tier               | Command                          | Selects                                                          |
+| ------------------ | -------------------------------- | ---------------------------------------------------------------- |
+| **ci-core**        | `deno task eval:subsystems:core` | `smoke`-tagged representatives, one or more per subsystem        |
+| **ci-core** (also) | `deno task test:parity`          | the catalog/flow/agent-role/skill/tool parity gates (deno tests) |
+| **ci-extended**    | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems               |
+| **nightly**        | see below                        | the `provider-live` tier, against a real model                   |
 
 `ci-core` and `ci-extended` used to select the _same_ set — 86 scenarios each on a Team build — so
 the cheap tier bought nothing. `ci-core` is now the `smoke` subset (28), and its extra content is
@@ -816,25 +816,25 @@ image caching).
 ### Subsystem Tag Taxonomy (Phase 142)
 
 Each scenario that covers a core Exaix capability surface (tools, MCP server/contract,
-MCP client/ReAct selection, identities, skills, or flows) SHOULD carry the appropriate
+MCP client/ReAct selection, agent roles, skills, or flows) SHOULD carry the appropriate
 `subsystem:<name>` and `entity:<id>` tags so that `exactl eval report --group-by subsystem|entity`
 can produce per-surface and per-entity trend reports.
 
-| Tag                    | Purpose                                                                     |
-| ---------------------- | --------------------------------------------------------------------------- |
-| `subsystem:tools`      | Scenario exercises an MCP tool handler                                      |
-| `subsystem:mcp-server` | Scenario exercises the out-of-process MCP server contract                   |
-| `subsystem:mcp-client` | Scenario exercises in-process ReAct tool selection or permission            |
-| `subsystem:identities` | Scenario evaluates a Blueprint identity                                     |
-| `subsystem:skills`     | Scenario evaluates skill injection mechanics or effectiveness               |
-| `subsystem:flows`      | Scenario evaluates a Blueprint flow blueprint                               |
-| `entity:<id>`          | The specific entity tested (e.g. `entity:read_file`, `entity:senior-coder`) |
+| Tag                     | Purpose                                                                     |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `subsystem:tools`       | Scenario exercises an MCP tool handler                                      |
+| `subsystem:mcp-server`  | Scenario exercises the out-of-process MCP server contract                   |
+| `subsystem:mcp-client`  | Scenario exercises in-process ReAct tool selection or permission            |
+| `subsystem:agent_roles` | Scenario evaluates a Blueprint agent role                                   |
+| `subsystem:skills`      | Scenario evaluates skill injection mechanics or effectiveness               |
+| `subsystem:flows`       | Scenario evaluates a Blueprint flow blueprint                               |
+| `entity:<id>`           | The specific entity tested (e.g. `entity:read_file`, `entity:senior-coder`) |
 
-**Parity gate rule:** Adding a new tool/identity/skill/flow to its catalog requires
+**Parity gate rule:** Adding a new tool/agent-role/skill/flow to its catalog requires
 adding at least one eval scenario with the matching `entity:<id>` tag, or adding a
 reasoned entry to the parity exclusion list at `tests/eval/parity_exclusions.json`.
 
-The gates that check this are `tests/eval/{catalog,flow,identity,skill,tool}_*parity*_test.ts`, run
+The gates that check this are `tests/eval/{catalog,flow,agent_role,skill,tool}_*parity*_test.ts`, run
 by `deno task test:parity`. **This is a manual command, not a CI job** — it is not in
 `.github/workflows/`, `scripts/ci.ts` or the pre-commit gate list. (An earlier version of this
 paragraph said "the parity gate (Gate 15) enforces this in ci-core"; Gate 15 is the markdown-path

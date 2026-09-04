@@ -82,7 +82,7 @@ export class DeleteFileTool extends ToolHandler {
         properties: {
           portal: { type: "string", description: "Portal alias" },
           path: { type: "string", description: "File path relative to portal root" },
-          agent_role: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Agent role identifier for permission checks" },
         },
         required: ["portal", "path", "agent_role"],
       },

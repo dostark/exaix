@@ -47,8 +47,8 @@ export class FlowValidatorImpl implements IFlowValidator {
       const agentError = this.validateStepAgents(flowId, flow.steps);
       if (agentError) errors.push(agentError);
 
-      const identityError = await this.validateStepIdentitiesExist(flowId, flow.steps);
-      if (identityError) errors.push(identityError);
+      const agentRoleError = await this.validateStepAgentRolesExist(flowId, flow.steps);
+      if (agentRoleError) errors.push(agentRoleError);
 
       const outputError = this.validateOutput(flowId, flow);
       if (outputError) errors.push(outputError);
@@ -143,11 +143,11 @@ export class FlowValidatorImpl implements IFlowValidator {
 
   /** Gated on the catalog directory existing: a validator built without a real catalog
    *  path (e.g. in-memory tests) only enforces the schema-level non-empty check above. */
-  private async validateStepIdentitiesExist(flowId: string, steps: IFlowStep[]): Promise<string | null> {
+  private async validateStepAgentRolesExist(flowId: string, steps: IFlowStep[]): Promise<string | null> {
     if (!(await exists(this.blueprintsPath))) return null;
     for (const step of steps) {
       if (!(await this.blueprintLoader.exists(step.agent_role))) {
-        return `IFlow '${flowId}' step '${step.id}' references identity '${step.agent_role}' that does not exist in the blueprint catalog`;
+        return `IFlow '${flowId}' step '${step.id}' references agent role '${step.agent_role}' that does not exist in the blueprint catalog`;
       }
     }
     return null;

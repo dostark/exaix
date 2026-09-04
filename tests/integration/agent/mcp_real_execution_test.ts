@@ -95,8 +95,8 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
   const blueprintsDir = helper.registry["config"].paths.blueprints;
   const systemRoot = helper.registry["config"].system.root;
   const blueprintsDirAbs = blueprintsDir.startsWith("/") ? blueprintsDir : join(systemRoot, blueprintsDir);
-  const identitiesDir = join(blueprintsDirAbs, "Agents");
-  await Deno.mkdir(identitiesDir, { recursive: true });
+  const agentRolesDir = join(blueprintsDirAbs, "Agents");
+  await Deno.mkdir(agentRolesDir, { recursive: true });
 
   // Create a blueprint that allows write_file but restricts paths
   const fixture_1 = readFixtureTextSync(
@@ -106,7 +106,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
     "mcp_real_execution_test",
     "fixture_1.md",
   );
-  await Deno.writeTextFile(join(identitiesDir, "test-agent.md"), fixture_1);
+  await Deno.writeTextFile(join(agentRolesDir, "test-agent.md"), fixture_1);
 
   try {
     // 1. Test Authorized Write

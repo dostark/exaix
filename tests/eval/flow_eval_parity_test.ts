@@ -31,7 +31,7 @@ const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
 const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
 
-/** The suffix a flow's entity tag carries, distinguishing it from an identity or tool of that name. */
+/** The suffix a flow's entity tag carries, distinguishing it from an agent role or tool of that name. */
 const FLOW_ENTITY_SUFFIX = ".flow";
 
 // The shipped flow catalog, read from each file's declared `id` rather than its filename. The id

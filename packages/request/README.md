@@ -108,7 +108,7 @@ Requests are routed as either **Flow** (multi-agent, with quality gates) or **Ag
   "type": "routing.decision",
   "trace_id": "abc-123",
   "payload": {
-    "selectedIdentityId": "senior-coder",
+    "selectedAgentRole": "senior-coder",
     "strategy": "policy_match",
     "candidateCount": 4,
     "candidates": [

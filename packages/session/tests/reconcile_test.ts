@@ -20,7 +20,7 @@ const OTHER_TRACE = "11111111-1111-1111-8111-111111111111";
 function brief(overrides: Partial<SessionBrief> = {}): SessionBrief {
   return SessionBriefSchema.parse({
     trace_id: TRACE,
-    agent_role: "test-identity",
+    agent_role: "test-role",
     gate: "code_changes",
     tool: "claude-code",
     objective: "Implement the feature within src/.",

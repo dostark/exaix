@@ -1,10 +1,10 @@
 /**
- * @module IdentitySchemaComplianceTest
+ * @module AgentRoleSchemaComplianceTest
  * @path tests/blueprints/template_schema_compliance_test.ts
- * @description Phase 131 — strict-schema compliance for the active identity
+ * @description Phase 131 — strict-schema compliance for the active agent role
  *   catalog. After the catalog reconciliation the separate examples/ and
  *   templates/ directories are retired (their content moved to concrete
- *   identities and skills), so this asserts every active identity parses under a
+ *   agent roles and skills), so this asserts every active agent role parses under a
  *   `.strict()` frontmatter schema and that an unknown field is rejected.
  * @architectural-layer Integration
  * @dependencies [@std/assert, @std/yaml, zod]
@@ -16,7 +16,7 @@ import { z } from "zod";
 
 const AGENTS_DIR = "Blueprints/Agents";
 
-/** Active identities are the top-level `*.md` files (no subdirectories remain). */
+/** Active agent roles are the top-level `*.md` files (no subdirectories remain). */
 function collectActiveAgentRoles(): string[] {
   const files: string[] = [];
   for (const entry of Deno.readDirSync(AGENTS_DIR)) {
@@ -54,10 +54,10 @@ const StrictBlueprintFrontmatterSchema = z.object({
 }).strict();
 
 Deno.test({
-  name: "[catalog/strict-schema] every active identity parses under .strict()",
+  name: "[catalog/strict-schema] every active agent role parses under .strict()",
   fn: () => {
     const files = collectActiveAgentRoles();
-    assertEquals(files.length > 0, true, "expected at least one identity file");
+    assertEquals(files.length > 0, true, "expected at least one agent role file");
 
     const failures: string[] = [];
     for (const file of files) {
@@ -72,8 +72,8 @@ Deno.test({
       failures.length,
       0,
       failures.length > 0
-        ? `Identities failing .strict() validation:\n  ${failures.join("\n  ")}`
-        : "All identities pass .strict()",
+        ? `Agent roles failing .strict() validation:\n  ${failures.join("\n  ")}`
+        : "All agent roles pass .strict()",
     );
   },
 });

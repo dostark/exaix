@@ -5,7 +5,7 @@
  *   SessionDelegateCycleStepHandler: resume from a persisted checkpoint at each of the
  *   four claim/spawn/return/review crash points without a duplicate launch, duplicate
  *   handler entry for the same idempotency tuple launching at most one delegate, a
- *   changed plan digest or forged checkpoint identity failing closed, and cancellation/
+ *   changed plan digest or forged checkpoint key failing closed, and cancellation/
  *   expiry/rejection persisting a terminal, non-advancing checkpoint.
  * @architectural-layer Flows
  * @related-files [packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts, packages/session/src/session_delegate_cycle_claim_store.ts, packages/session/src/session_delegate_cycle_store.ts]
@@ -323,7 +323,7 @@ Deno.test("[race] duplicate handler entry for the same idempotency tuple launche
   assertEquals(typeof resultB.raw, "string");
 });
 
-// Security: forged/changed checkpoint identity
+// Security: forged/changed checkpoint key
 
 Deno.test("[security] a changed plan digest cannot reuse the persisted checkpoint", async () => {
   const traceId = crypto.randomUUID();

@@ -161,7 +161,7 @@ Deno.test("[delegate_hardening] the hardening scenario asserts reconciled WITHOU
   );
   assert(
     !events.includes("session.delegate.agent_mismatch"),
-    "hardening scenario must NOT assert agent_mismatch (identity matches by construction)",
+    "hardening scenario must NOT assert agent_mismatch (agent role matches by construction)",
   );
 });
 

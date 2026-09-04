@@ -8,7 +8,7 @@
  *   a blueprint's own `hitl` rules silently did nothing for tool calls routed through
  *   `ReActLoopStrategy`/`LegacyAgentStrategy`/`McpAgentStrategy` (all of which dispatch via
  *   `AgentOrchestrator.toolRegistry.execute()`), even though the identical mechanism IS
- *   respected by `DynamicStepExecutor`'s Flow path (`identity.hitl?.require_secondary_approval`).
+ *   respected by `DynamicStepExecutor`'s Flow path (`agent_role.hitl?.require_secondary_approval`).
  *   `AgentOrchestrator.executeStep()` already loads the blueprint (with its parsed `.hitl`
  *   field) before dispatching to a strategy — this test proves it now forwards
  *   `blueprint.hitl?.require_secondary_approval` to `toolRegistry.setHitlBlueprintRules()`

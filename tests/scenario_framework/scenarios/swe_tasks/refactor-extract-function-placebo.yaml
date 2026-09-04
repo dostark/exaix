@@ -42,7 +42,7 @@ steps:
     command: "daemon"
     args: ["start"]
     env:
-      EXA_EVAL_IDENTITY_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-identities"
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-agent-roles"
     output_criteria:
       - id: "daemon-started"
         kind: "command-output-contains"
@@ -52,7 +52,7 @@ steps:
     command: "daemon"
     args: ["restart"]
     env:
-      EXA_EVAL_IDENTITY_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-identities"
+      EXA_EVAL_AGENT_ROLE_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-agent-roles"
     output_criteria:
       - id: "daemon-restarted"
         kind: "command-output-contains"

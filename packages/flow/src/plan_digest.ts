@@ -2,7 +2,7 @@
  * @module PlanDigest
  * @path packages/flow/src/plan_digest.ts
  * @description Phase 174 Step 4 package-pure sha256 digest of a resolved PlanContext
- *   document's raw text, used as the cycle checkpoint/claim identity component that
+ *   document's raw text, used as the cycle checkpoint/claim identifying component that
  *   detects an operator editing the hardened phase plan mid-cycle.
  * @architectural-layer Flows
  * @dependencies []

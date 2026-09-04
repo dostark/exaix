@@ -71,8 +71,8 @@ async function makeKnowledgeProcessorEnv(opts: {
   const workspacePath = join(tempDir, config.paths.workspace);
   const requestsDir = join(workspacePath, config.paths.requests);
   const blueprintsPath = join(tempDir, config.paths.blueprints);
-  const identitiesPath = join(blueprintsPath, config.paths.agents);
-  await Deno.mkdir(identitiesPath, { recursive: true });
+  const agentRolesPath = join(blueprintsPath, config.paths.agents);
+  await Deno.mkdir(agentRolesPath, { recursive: true });
 
   // Inject a portal entry into the config when portal-bound testing is needed
   const portalTargetDir = await Deno.makeTempDir({ prefix: "portal-target-" });

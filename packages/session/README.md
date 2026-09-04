@@ -55,7 +55,7 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
   cheap resume without re-scanning claims. Never the authority on its own — the claim store's
   unique key is; the checkpoint is a resume convenience.
 
-### Identity Threading (Phase 174)
+### Agent Role Threading (Phase 174)
 
 Every `ISessionDelegationRequest` and `SessionBrief` now carries a **required** `agentRole` /
 `agent_role` — the blueprint agent role actually delegating the session, sourced from the flow
@@ -64,7 +64,7 @@ step's own `agent_role:` field (`PlanExecutor`/`SessionDelegateCycleStepHandler`
 There is no default and no fallback constant: `generateOpencodePermissionConfig(...)` keys the
 generated OpenCode agent config on whichever `agentRole` it is given, and
 `resolveHardenedLaunch()`'s `agentNameMismatch` check compares the generated key against that
-same value — so the check is keyed on the real delegating identity, not a hardcoded name.
+same value — so the check is keyed on the real delegating agent role, not a hardcoded name.
 
 The security invariant is mechanical: only files and the typed `return.json`
 cross back into the core pipeline — never session or conversation state.

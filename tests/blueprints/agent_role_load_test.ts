@@ -1,7 +1,7 @@
 /**
- * @module BlueprintIdentityLoadTest
- * @path tests/blueprints/identity_load_test.ts
- * @description Unit tests for loading agent blueprints from the Identities/ directory.
+ * @module BlueprintAgentRoleLoadTest
+ * @path tests/blueprints/agent_role_load_test.ts
+ * @description Unit tests for loading agent blueprints from the Blueprints/Agents/ directory.
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
@@ -12,18 +12,18 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "@exaix/testing";
 import { readFixtureTextSync } from "@exaix/testing";
 
-Deno.test("AgentOrchestrator Blueprint Loading - Mock Identity resolution", async () => {
+Deno.test("AgentOrchestrator Blueprint Loading - Mock Agent Role resolution", async () => {
   const tempDir = await Deno.makeTempDir();
-  const identityDir = join(tempDir, "Agents");
-  await Deno.mkdir(identityDir);
+  const agentRoleDir = join(tempDir, "Agents");
+  await Deno.mkdir(agentRoleDir);
 
   const blueprintContent = readFixtureTextSync(
     import.meta.url,
     "blueprints",
-    "identity_load_test",
+    "agent_role_load_test",
     "blueprintContent.md",
   );
-  await Deno.writeTextFile(join(identityDir, "designer.md"), blueprintContent);
+  await Deno.writeTextFile(join(agentRoleDir, "designer.md"), blueprintContent);
 
   const mockConfig = createStubConfig(ConfigSchema.parse({
     system: { root: tempDir, log_level: "info", schema_version: "1.0.0" },

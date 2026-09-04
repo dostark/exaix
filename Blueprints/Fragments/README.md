@@ -5,7 +5,7 @@
 > `blueprint-best-practices.md`) have been migrated to versioned
 > **skills** in `Blueprints/Skills/`.
 >
-> The `{{include:…}}` mechanism is no longer active. All identities now
+> The `{{include:…}}` mechanism is no longer active. All agent roles now
 > reference skills via `default_skills` instead.
 >
 > This directory is kept as a **static boilerplate only** location.

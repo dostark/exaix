@@ -44,13 +44,13 @@ Deno.test({
     });
 
     try {
-      const identitiesDir = join(tempDir, "Blueprints", "Agents");
+      const agentRolesDir = join(tempDir, "Blueprints", "Agents");
       const requestsDir = getWorkspaceRequestsDir(tempDir);
-      await Deno.mkdir(identitiesDir, { recursive: true });
+      await Deno.mkdir(agentRolesDir, { recursive: true });
       await Deno.mkdir(requestsDir, { recursive: true });
 
       await Deno.writeTextFile(
-        join(identitiesDir, "default.md"),
+        join(agentRolesDir, "default.md"),
         `---
 agent_role: "default"
 name: "Default Agent"
@@ -113,7 +113,7 @@ model: "mock:gpt-5.2-pro"
       const requestProcessor = new RequestProcessor({
         workspacePath: getWorkspaceDir(tempDir),
         requestsDir,
-        blueprintsPath: identitiesDir,
+        blueprintsPath: agentRolesDir,
         includeReasoning: true,
         context,
         costTracker,

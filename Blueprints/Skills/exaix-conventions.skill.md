@@ -85,7 +85,7 @@ tests/               # Cross-cutting integration/scenario/security tests
 packages/testing/    # Shared test helpers (initTestDbService, fixtures)
 
 Blueprints/          # Agent and Flow definitions
-├── Identities/      # Identity blueprints (YAML frontmatter + persona)
+├── Agents/          # Agent role blueprints (YAML frontmatter + persona)
 ├── Skills/          # Skill definitions (*.skill.md → Memory/Skills JSON)
 └── Flows/           # Flow definitions
 

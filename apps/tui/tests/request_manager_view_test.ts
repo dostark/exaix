@@ -317,7 +317,7 @@ Deno.test("Phase 13.6: RequestViewState interface", () => {
   assertEquals(state.searchQuery, "");
   assertEquals(state.filterStatus, null);
   assertEquals(state.filterPriority, null);
-  assertEquals(state.filterIdentity, null);
+  assertEquals(state.filterAgentRole, null);
   assertEquals(state.groupBy, "none");
 });
 
@@ -341,7 +341,7 @@ Deno.test("Phase 13.6: Tree grouping by status", () => {
   tui.toggleGrouping();
   assertEquals(tui.getState().groupBy, "priority");
 
-  // Toggle to identity grouping
+  // Toggle to agent-role grouping
   tui.toggleGrouping();
   assertEquals(tui.getState().groupBy, RequestGroupingMode.AGENT_ROLE);
 
@@ -397,7 +397,7 @@ Deno.test("Phase 13.6: Filter by status", () => {
   assertEquals(tui.getFilteredRequests()[0].status, RequestStatus.PENDING);
 });
 
-Deno.test("Phase 13.6: Filter by identity", () => {
+Deno.test("Phase 13.6: Filter by agent role", () => {
   const mockService = new MinimalRequestServiceMock();
   const requests: IRequest[] = [
     {
@@ -426,8 +426,8 @@ Deno.test("Phase 13.6: Filter by identity", () => {
   const view = new RequestManagerView(mockService);
   const tui = view.createTuiSession(requests);
 
-  // Filter by identity
-  tui.getState().filterIdentity = "dev";
+  // Filter by agent role
+  tui.getState().filterAgentRole = "dev";
   tui.buildTree();
 
   assertEquals(tui.getFilteredRequests().length, 1);

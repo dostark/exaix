@@ -139,7 +139,7 @@ Follow the structure defined in `exaix-dev-docs/planning/README.md`:
 1. **Reachability Ledger (§E)**: A seeded (initially empty) `## Reachability Ledger (pending production consumers)` table that #next-steps maintains step-by-step; the phase cannot close while any row is ⏳.
 1. **Documentation Updates (§3D)**: Mandatory final step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
 1. **Success Metrics**: Quantitative targets (performance, quality), including an opt-in reachability metric for every `enabled`-style flag.
-1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `identity`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. `target_branch` is the SAME value on every step of a phase — `feat/phase-NN`, one shared branch, never `feat/phase-NN-step-N` (Phase 166 created and had to delete 5 empty placeholder branches from that per-step pattern before standardizing; `plan_to_requests.ts` reads `target_branch` as a plain per-step string with no uniqueness assumption, so sharing one value across every step is fully compatible). Example:
+1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `agent_role`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. `target_branch` is the SAME value on every step of a phase — `feat/phase-NN`, one shared branch, never `feat/phase-NN-step-N` (Phase 166 created and had to delete 5 empty placeholder branches from that per-step pattern before standardizing; `plan_to_requests.ts` reads `target_branch` as a plain per-step string with no uniqueness assumption, so sharing one value across every step is fully compatible). Example:
 
    ```yaml
    # step-manifest
@@ -456,7 +456,7 @@ coverage:
   — endpoints, auth model, config knobs — never a workaround. Record sources + research date (§2F).
 - **Step-manifest convention**: Every implementation step must include a fenced YAML step-manifest
   block (after Success Criteria) for machine conversion to dogfood requests. The manifest fields
-  (`identity`, `skills`, `portal`, `target_branch`, `depends_on`, `acceptance`) are a subset of the
+  (`agent_role`, `skills`, `portal`, `target_branch`, `depends_on`, `acceptance`) are a subset of the
   daemon request schema — validating early ensures the step is representable as a request. The
   manifest is additive and backward-compatible: existing tools read the prose, `plan_to_requests.ts`
   prefers the manifest.

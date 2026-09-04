@@ -7,7 +7,7 @@ import { assertEquals } from "@std/assert";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";
 
-Deno.test("RoutingPolicyService: returns explicit identity when requested even if no rule matches", async () => {
+Deno.test("RoutingPolicyService: returns explicit agent role when requested even if no rule matches", async () => {
   const policy: IRoutingPolicy = { version: "1.0", allowExperiments: false, defaultMode: "policy_first", rules: [] };
   const candidates = [
     createRoutingCandidate({

@@ -58,7 +58,7 @@ Deno.test("[flow-catalog] every flow declares an id", async () => {
 });
 
 Deno.test("[flow-catalog] flow ids are kebab-case, matching every other artefact id", async () => {
-  // Identities and skills are kebab-case throughout (senior-coder, tdd-methodology). The
+  // Agent roles and skills are kebab-case throughout (senior-coder, tdd-methodology). The
   // snake_case flow filenames were the outlier, which is why the rename went that direction.
   const offenders = (await readFlowFiles())
     .filter((flow) => flow.declaredId !== null && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(flow.declaredId))

@@ -85,7 +85,7 @@ Deno.test("[dynamic-tools] a declared step is unaffected — the restriction is 
 });
 
 Deno.test("[dynamic-tools] a step with no permitted_tools is not validated here", () => {
-  // It inherits the identity's tools at runtime; this validator has nothing to check.
+  // It inherits the agent role's tools at runtime; this validator has nothing to check.
   const step = { ...dynamicStep([]), permitted_tools: undefined } as IFlowStep;
   assertEquals(validateDynamicStepTools([step]), []);
 });

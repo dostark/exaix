@@ -2,7 +2,7 @@
 /**
  * @module AgentRunnerSkillMergeTest
  * @path packages/execution/tests/agent_runner_skill_merge_test.ts
- * @description Phase 122 Step 2 — verifies the agent_runner merges identity
+ * @description Phase 122 Step 2 — verifies the agent_runner merges agent-role
  *   default_skills with explicit request.skills (GAP-5 fix).
  * @architectural-layer Unit
  * @dependencies [@exaix/execution]
@@ -94,7 +94,7 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
   const result = await (runner as any).matchAndApplySkills(
     blueprint,
     request,
-    "test-identity",
+    "test-role",
   );
 
   assertExists(result);
@@ -103,7 +103,7 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
   // Must contain the explicit request skill
   assertEquals(resolved.includes("exaix-conventions"), true);
 
-  // Must ALSO contain all 5 default_skills from the identity
+  // Must ALSO contain all 5 default_skills from the agent role
   const rigorSkills = ["tdd-methodology", "exaix-conventions", "portal-grounding", "security-first", "code-review"];
   for (const skill of rigorSkills) {
     assertEquals(resolved.includes(skill), true, `resolved set must include '${skill}'`);
@@ -134,7 +134,7 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
     taskType: "bugfix",
   };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
   assertExists(result);
   const resolved: string[] = result.skillIds;
@@ -146,7 +146,7 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
   assertEquals(resolved.includes("response-contract"), true, "critical default skill must not be dropped");
 
   // Non-critical defaults ARE now pulled in — the old critical-only union made the result
-  // depend on a flag only 2 of 27 skills set. Bloat is now controlled by keeping identity
+  // depend on a flag only 2 of 27 skills set. Bloat is now controlled by keeping agent-role
   // default_skills short instead, and every default is concatenated.
   assertEquals(resolved.includes("error-handling"), true);
   assertEquals(resolved.includes("portal-grounding"), true);
@@ -157,7 +157,7 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
 // branch, so nobody could predict the resulting set. One rule now applies everywhere:
 // pinned ∪ matched ∪ defaults.
 
-Deno.test("[step17] explicit pin concatenates with every identity default", async () => {
+Deno.test("[step17] explicit pin concatenates with every agent-role default", async () => {
   const runner = createMinimalRunner();
   const blueprint: IBlueprint = {
     systemPrompt: "test",
@@ -165,7 +165,7 @@ Deno.test("[step17] explicit pin concatenates with every identity default", asyn
   };
   const request = { skills: ["exaix-conventions"], userPrompt: "do the thing", taskType: "feature" };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
   assertEquals(resolved.includes("exaix-conventions"), true, "the pinned skill is present");
@@ -179,7 +179,7 @@ Deno.test("[step17] the resulting set has no duplicates when a pin repeats a def
   const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["response-contract", "error-handling"] };
   const request = { skills: ["error-handling"], userPrompt: "do the thing", taskType: "feature" };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
   assertEquals(resolved.filter((id) => id === "error-handling").length, 1);
@@ -188,7 +188,7 @@ Deno.test("[step17] the resulting set has no duplicates when a pin repeats a def
 Deno.test("[step17] a successful dynamic match concatenates ALL defaults, not just critical ones", async () => {
   // Reverses the earlier "critical-only union" rule: it made the resulting set unpredictable
   // since survival depended on a `critical` flag only 2 of 27 skills set. Bloat is now
-  // controlled at the source (short identity default_skills lists) instead.
+  // controlled at the source (short agent-role default_skills lists) instead.
   const provider = makeMockProvider();
   const skillsSvc = makeMockSkillsServiceWithDynamicMatch("tdd-methodology", new Set(["response-contract"]));
   const runner = new AgentRunner(provider as any, { skillsService: skillsSvc, disableSkills: false } as any);
@@ -199,7 +199,7 @@ Deno.test("[step17] a successful dynamic match concatenates ALL defaults, not ju
   };
   const request = { userPrompt: "Fix the null-safety bug in src/utils.ts", taskType: "bugfix" };
 
-  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
   assertEquals(resolved.includes("tdd-methodology"), true, "the dynamic match is present");

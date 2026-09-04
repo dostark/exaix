@@ -3,7 +3,7 @@
  * @path packages/core/tests/planning/plan_executor_skill_tools_test.ts
  * @description Proves PlanExecutor.createAgentExecutor unions the `tools` declared by every
  *   matched skill and passes them as AgentOrchestrator's matchedSkillTools option, and that
- *   the union (intersected with the identity's permitted_tools) actually filters the
+ *   the union (intersected with the agent role's permitted_tools) actually filters the
  *   execution prompt's tool list — mirroring plan_executor_skill_task_type_test.ts's proof
  *   for topSkillTaskTypes, but for the tools union+intersect wiring instead of task_type
  *   derivation.
@@ -94,13 +94,13 @@ Deno.test({
     try {
       const root = await Deno.makeTempDir();
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
-      // Identity permits a BROAD set — list_directory is included here but no matched skill
+      // Agent role permits a BROAD set — list_directory is included here but no matched skill
       // declares it, so it must not survive the intersection.
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
         '---\nagent_role: senior-coder\nmodel: ""\n' +
           'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\n\n' +
-          "Stub identity for testing.\n",
+          "Stub agent role for testing.\n",
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();
@@ -177,12 +177,12 @@ Deno.test({
       assertStringIncludes(
         capturedPrompt,
         "delete_file",
-        "delete_file is in both the skill-tools union and the identity's permitted_tools — must survive",
+        "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive",
       );
       assertEquals(
         capturedPrompt.includes("list_directory"),
         false,
-        "list_directory must be excluded: the identity permits it, but no matched skill's tools union includes it",
+        "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
       );
     } finally {
       ProviderRegistry.clear();

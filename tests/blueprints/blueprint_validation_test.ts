@@ -2,7 +2,7 @@
  * @module BlueprintValidationTest
  * @path tests/blueprints/blueprint_validation_test.ts
  * @description Verifies the core agent blueprints, ensuring that Senior Coder,
- * Quality Judge, and default identities pass strict schema validation.
+ * Quality Judge, and default agent roles pass strict schema validation.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
@@ -280,7 +280,7 @@ Deno.test("Blueprint validation: voting-judge.md passes schema", async () => {
   assertEquals(parsed.name, "Voting Consensus Judge");
 });
 
-Deno.test("Blueprint validation: every active identity declares default_skills", async () => {
+Deno.test("Blueprint validation: every active agent role declares default_skills", async () => {
   const files = await getMarkdownFiles(BLUEPRINTS_DIR);
 
   for (const file of files) {

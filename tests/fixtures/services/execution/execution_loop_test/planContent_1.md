@@ -2,7 +2,7 @@
 trace_id: "test-trace-git"
 request_id: git-commit-test
 status: approved
-agent_role: test-identity
+agent_role: test-role
 ---
 
 # Git Integration Test

@@ -59,10 +59,10 @@ export class PortalPermissionsService {
     }
 
     // Check if agent is in whitelist
-    const identitiesAllowed = portal.agents_allowed || ["*"];
+    const agentRolesAllowed = portal.agents_allowed || ["*"];
 
     // Wildcard allows all agents
-    if (identitiesAllowed.includes("*")) {
+    if (agentRolesAllowed.includes("*")) {
       return {
         allowed: true,
         portal: portalAlias,
@@ -71,7 +71,7 @@ export class PortalPermissionsService {
     }
 
     // Check explicit whitelist
-    if (identitiesAllowed.includes(agentRole)) {
+    if (agentRolesAllowed.includes(agentRole)) {
       return {
         allowed: true,
         portal: portalAlias,
@@ -352,8 +352,8 @@ export class PortalPermissionsService {
     // Convert legacy model to RBAC for consistent interface
 
     // Check agent whitelist
-    const identitiesAllowed = portal.agents_allowed || ["*"];
-    if (!identitiesAllowed.includes("*") && !identitiesAllowed.includes(agentRole)) {
+    const agentRolesAllowed = portal.agents_allowed || ["*"];
+    if (!agentRolesAllowed.includes("*") && !agentRolesAllowed.includes(agentRole)) {
       return {
         allowed: false,
         reason: `Agent '${agentRole}' is not allowed to access portal '${portal.alias}'`,

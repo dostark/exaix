@@ -1,20 +1,20 @@
 /**
  * @module BlueprintTestHelpers
  * @path tests/blueprints/test_helpers.ts
- * @description Shared test data and helpers for Blueprint identity catalog tests.
- *   Extracted from identity_catalog_validation_test.ts, identity_catalog_load_test.ts,
+ * @description Shared test data and helpers for Blueprint agent role catalog tests.
+ *   Extracted from agent_role_catalog_validation_test.ts, agent_role_catalog_load_test.ts,
  *   and referential_integrity_gate_test.ts to reduce test-file duplication.
  * @architectural-layer Test (helpers)
  * @dependencies [@std/path, @std/yaml]
- * @related-files [tests/blueprints/identity_catalog_validation_test.ts,
- *   tests/blueprints/identity_catalog_load_test.ts,
+ * @related-files [tests/blueprints/agent_role_catalog_validation_test.ts,
+ *   tests/blueprints/agent_role_catalog_load_test.ts,
  *   tests/blueprints/referential_integrity_gate_test.ts]
  */
 
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
-export interface IIdentityFrontmatter {
+export interface IAgentRoleFrontmatter {
   agent_role?: string;
   capabilities?: string[];
   default_skills?: string[];
@@ -39,7 +39,7 @@ export const AGENTS_DIR = join(REPO_ROOT, "Blueprints", "Agents");
 export const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 export const FRAGMENTS_DIR = join(REPO_ROOT, "Blueprints", "Fragments");
 
-/** Destructive tool names that read-only identities must not carry. */
+/** Destructive tool names that read-only agent roles must not carry. */
 export const DESTRUCTIVE_TOOLS = new Set([
   "write_file",
   "delete_file",
@@ -49,9 +49,9 @@ export const DESTRUCTIVE_TOOLS = new Set([
   "create_directory",
 ]);
 
-/** Identity-role matrix: maps agent_role → role-required default_skills (beyond the universal
+/** Agent-role matrix: maps agent_role → role-required default_skills (beyond the universal
  * response-contract). Every default is unconditional prompt weight on every request, so only
- * skills an identity needs EVERY time belong here; situational skills use trigger matching instead. */
+ * skills an agent role needs EVERY time belong here; situational skills use trigger matching instead. */
 export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "default": ["response-contract"],
   "mock-agent": ["response-contract"],

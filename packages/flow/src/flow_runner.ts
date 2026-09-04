@@ -108,7 +108,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  */
 export interface IAgentExecutor {
   run(agentRole: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
-  /** Optional blueprint-existence probe; absent executors (e.g. test doubles) skip the identity check. */
+  /** Optional blueprint-existence probe; absent executors (e.g. test doubles) skip the agent-role check. */
   hasBlueprint?(agentRole: string): Promise<boolean>;
   /** Strategy-routed step execution: forces `agentRole` through the agent strategy registry,
    * bypassing `run()`'s single generate call. Absent executors fail fast rather than falling back. */
@@ -457,7 +457,7 @@ export interface IFlowEventPayloadMap {
     stepId: string;
     agentRole: string;
     fallbackStepId: string;
-    fallbackIdentityId: string;
+    fallbackAgentRole: string;
     error: string;
   };
   "flow.step.compensated": IFlowEventRequestContext & {
@@ -1187,16 +1187,16 @@ export class FlowRunner implements IFlowRunner {
     }
 
     if (this.agentExecutor.hasBlueprint) {
-      const identityValidationError = await this.runtimeValidator.validateStepIdentities(
+      const agentRoleValidationError = await this.runtimeValidator.validateStepAgentRoles(
         flow,
         (agentRole) => this.agentExecutor.hasBlueprint!(agentRole),
       );
-      if (identityValidationError) {
+      if (agentRoleValidationError) {
         await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
-          error: identityValidationError,
+          error: agentRoleValidationError,
           ...this.getIFlowLogBase(flow, request),
         });
-        throw new FlowExecutionError(identityValidationError, flowRunId);
+        throw new FlowExecutionError(agentRoleValidationError, flowRunId);
       }
     }
 
@@ -1573,7 +1573,7 @@ export class FlowRunner implements IFlowRunner {
           stepId: step.id,
           agentRole: step.agent_role,
           fallbackStepId: fallbackStep.id,
-          fallbackIdentityId: fallbackStep.agent_role,
+          fallbackAgentRole: fallbackStep.agent_role,
           error: lastError instanceof Error ? lastError.message : String(lastError),
           traceId: request.traceId,
           requestId: request.requestId,

@@ -253,7 +253,7 @@ Deno.test("[step135.8] blueprint frontmatter task_type field derives with source
   }
 });
 
-Deno.test("[step135.8] caller-supplied topSkillTaskTypes derives with source 'skill' when no frontmatter/identity task_type", async () => {
+Deno.test("[step135.8] caller-supplied topSkillTaskTypes derives with source 'skill' when no frontmatter/agent-role task_type", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();

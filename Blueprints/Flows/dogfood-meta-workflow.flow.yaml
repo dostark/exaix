@@ -1,6 +1,6 @@
 id: dogfood-meta-workflow
 name: Dogfood Meta-Workflow Pipeline
-description: Phase-plan → pre-gap → next-steps (N phases) → post-gap → clean-ci pipeline. Each step maps to a §7.5 identity.
+description: Phase-plan → pre-gap → next-steps (N phases) → post-gap → clean-ci pipeline. Each step maps to a §7.5 agent role.
 version: 1.0.0
 defaultSkills:
   - step-execution

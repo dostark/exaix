@@ -1,7 +1,7 @@
 /**
  * @module RoutingPolicyService
  * @path packages/routing/src/routing_policy_service.ts
- * @description Selects the best identity and version using routing rules,
+ * @description Selects the best agent role and version using routing rules,
  * capability candidates, journal performance, and deterministic experiments.
  * @architectural-layer Services
  * @related-files [packages/routing/src/routing_policy_loader.ts, packages/routing/src/candidate_discovery.ts, packages/routing/src/agent_role_performance_repository.ts]
@@ -120,7 +120,7 @@ export class RoutingPolicyService {
       selectedVersion: selected.version,
       strategy: "explicit",
       candidates: scoredCandidates,
-      rationale: `Explicit identity requested: ${selected.agentRole}@${selected.version}`,
+      rationale: `Explicit agent role requested: ${selected.agentRole}@${selected.version}`,
       decidedAt: new Date().toISOString(),
     });
 

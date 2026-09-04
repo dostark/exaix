@@ -44,7 +44,7 @@ export type MCPConfig = z.infer<typeof MCPConfigSchema>;
 // MCP Tool Schemas
 
 const MCP_ERR_PORTAL_REQUIRED = "Portal name required";
-const MCP_ERR_AGENT_ROLE_REQUIRED = "Identity ID required";
+const MCP_ERR_AGENT_ROLE_REQUIRED = "Agent role ID required";
 const MCP_ERR_PATH_REQUIRED = "File path required";
 
 export const ReadFileToolArgsSchema = z.object({

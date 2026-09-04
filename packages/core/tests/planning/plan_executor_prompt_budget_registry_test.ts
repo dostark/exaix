@@ -94,7 +94,7 @@ Deno.test({
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        `---\nagent_role: senior-coder\nmodel: "${providerName}:any-model"\n---\n\nStub identity for testing.\n`,
+        `---\nagent_role: senior-coder\nmodel: "${providerName}:any-model"\n---\n\nStub agent role for testing.\n`,
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();

@@ -9,7 +9,7 @@ capabilities: ["code_generation", "testing", "code_review", "planning", "executi
 created: "2026-07-29T00:00:00Z"
 created_by: "opencode"
 version: "1.0.0"
-description: "Coder identity for the dogfood meta-workflow — implements phase-plan steps using TDD, CI gates, and structured commits, with headless OpenCode delegation for code changes"
+description: "Coder agent role for the dogfood meta-workflow — implements phase-plan steps using TDD, CI gates, and structured commits, with headless OpenCode delegation for code changes"
 default_skills: [
   "response-contract",
   "exaix-conventions",

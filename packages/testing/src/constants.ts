@@ -236,7 +236,7 @@ export const JOURNAL_TRACE_ID_TWO = "trace-2";
 export const JOURNAL_TRACE_ID_THREE = "trace-3";
 
 export const JOURNAL_ACTOR_USER = "user";
-export const JOURNAL_AGENT_ROLE_ID = "agent-identity-1";
+export const JOURNAL_AGENT_ROLE_ID = "agent-role-1";
 
 export const JOURNAL_TARGET_SHORT = "target-short";
 export const JOURNAL_TARGET_LONG = "target-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";

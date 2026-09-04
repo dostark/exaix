@@ -57,7 +57,7 @@ export interface IReActAction {
   description?: string;
 }
 
-/** The five tools listed when an identity/skill declares no permitted_tools restriction at all. */
+/** The five tools listed when an agent role/skill declares no permitted_tools restriction at all. */
 const DEFAULT_REACT_VISIBLE_TOOLS: readonly string[] = [
   ToolName.READ_FILE,
   ToolName.WRITE_FILE,
@@ -858,7 +858,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   ): string {
     const historyText = this.buildBudgetedHistoryText(history);
 
-    let prompt = `IDENTITY: ${blueprint.name}
+    let prompt = `AGENT ROLE: ${blueprint.name}
 CAPABILITIES: ${blueprint.capabilities.join(", ")}
 
 CONTEXT:

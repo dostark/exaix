@@ -1,10 +1,10 @@
 /**
- * @module FlowRuntimeValidatorIdentityTest
- * @path packages/flow/tests/flow_runtime_validator_identity_test.ts
- * @description Regression for the flow→execution identity hand-off: before a flow's waves
- *   are scheduled, every step's identity must resolve to a real blueprint so hand-offs
+ * @module FlowRuntimeValidatorAgentRoleTest
+ * @path packages/flow/tests/flow_runtime_validator_agent_role_test.ts
+ * @description Regression for the flow→execution agent-role hand-off: before a flow's waves
+ *   are scheduled, every step's agent role must resolve to a real blueprint so hand-offs
  *   never fail mid-execution with "Blueprint not found". The runtime validator rejects a
- *   flow whose step references a missing identity up front, and the schema validator
+ *   flow whose step references a missing agent role up front, and the schema validator
  *   (FlowValidatorImpl) enforces the same existence check against a real catalog.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -45,52 +45,52 @@ function makeFlow(step: IFlowStep): IFlow {
   };
 }
 
-Deno.test("FlowRuntimeValidator.validateStepIdentities passes when every identity resolves", async () => {
+Deno.test("FlowRuntimeValidator.validateStepAgentRoles passes when every agent role resolves", async () => {
   const validator = new FlowRuntimeValidator();
   const flow = makeFlow(makeStep("s1", "senior-coder"));
-  const err = await validator.validateStepIdentities(flow, (id: string) => Promise.resolve(id === "senior-coder"));
+  const err = await validator.validateStepAgentRoles(flow, (id: string) => Promise.resolve(id === "senior-coder"));
   assertEquals(err, null);
 });
 
-Deno.test("FlowRuntimeValidator.validateStepIdentities rejects a step whose identity does not exist", async () => {
+Deno.test("FlowRuntimeValidator.validateStepAgentRoles rejects a step whose agent role does not exist", async () => {
   const validator = new FlowRuntimeValidator();
-  const flow = makeFlow(makeStep("s2", "typo-identity"));
-  const err = await validator.validateStepIdentities(flow, (_id: string) => Promise.resolve(false));
+  const flow = makeFlow(makeStep("s2", "typo-role"));
+  const err = await validator.validateStepAgentRoles(flow, (_id: string) => Promise.resolve(false));
   assertStringIncludes(err ?? "", "s2");
-  assertStringIncludes(err ?? "", "typo-identity");
+  assertStringIncludes(err ?? "", "typo-role");
 });
 
-Deno.test("FlowRuntimeValidator.validateStepIdentities passes for a strategy-forced step whose identity resolves", async () => {
+Deno.test("FlowRuntimeValidator.validateStepAgentRoles passes for a strategy-forced step whose agent role resolves", async () => {
   const validator = new FlowRuntimeValidator();
   const step = makeStep("s1", "senior-coder");
   step.strategy = ExecutionStrategyName.REACT;
   const flow = makeFlow(step);
-  const err = await validator.validateStepIdentities(flow, (id: string) => Promise.resolve(id === "senior-coder"));
+  const err = await validator.validateStepAgentRoles(flow, (id: string) => Promise.resolve(id === "senior-coder"));
   assertEquals(err, null);
 });
 
-Deno.test("FlowRuntimeValidator.validateStepIdentities rejects a strategy-forced step whose identity does not exist", async () => {
+Deno.test("FlowRuntimeValidator.validateStepAgentRoles rejects a strategy-forced step whose agent role does not exist", async () => {
   const validator = new FlowRuntimeValidator();
-  const step = makeStep("s1", "typo-identity");
+  const step = makeStep("s1", "typo-role");
   step.strategy = ExecutionStrategyName.CLI_DELEGATE;
   const flow = makeFlow(step);
-  const err = await validator.validateStepIdentities(flow, (_id: string) => Promise.resolve(false));
+  const err = await validator.validateStepAgentRoles(flow, (_id: string) => Promise.resolve(false));
   assertStringIncludes(err ?? "", "s1");
-  assertStringIncludes(err ?? "", "typo-identity");
+  assertStringIncludes(err ?? "", "typo-role");
 });
 
-Deno.test("FlowRuntimeValidator.validateStepIdentities covers hand-off targets (dependsOn next step)", async () => {
+Deno.test("FlowRuntimeValidator.validateStepAgentRoles covers hand-off targets (dependsOn next step)", async () => {
   const validator = new FlowRuntimeValidator();
   const first = makeStep("s1", "senior-coder");
-  const next = makeStep("s2", "missing-handoff-identity");
+  const next = makeStep("s2", "missing-handoff-role");
   next.dependsOn = ["s1"];
   const flow = makeFlow(first);
   flow.steps = [first, next];
-  const err = await validator.validateStepIdentities(flow, (id: string) => Promise.resolve(id === "senior-coder"));
+  const err = await validator.validateStepAgentRoles(flow, (id: string) => Promise.resolve(id === "senior-coder"));
   assertStringIncludes(err ?? "", "s2");
 });
 
-Deno.test("FlowValidatorImpl rejects a flow whose step identity is absent from a real blueprint catalog", async () => {
+Deno.test("FlowValidatorImpl rejects a flow whose step agent role is absent from a real blueprint catalog", async () => {
   const dir = await Deno.makeTempDir({ prefix: "exa-flow-id-" });
   try {
     await Deno.mkdir(`${dir}/Agents`, { recursive: true });
@@ -108,7 +108,7 @@ description: "bad"
 steps:
   - id: "s1"
     name: "S1"
-    agent_role: "typo-identity"
+    agent_role: "typo-role"
     dependsOn: []
     input:
       source: "request"
@@ -123,13 +123,13 @@ output: { from: "s1", format: "markdown" }
     const validator = new FlowValidatorImpl(loader, dir);
     const result = await validator.validateFlow("bad-flow");
     assertEquals(result.valid, false);
-    assertStringIncludes(result.error ?? "", "typo-identity");
+    assertStringIncludes(result.error ?? "", "typo-role");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("FlowValidatorImpl accepts a flow whose step identities exist in the catalog", async () => {
+Deno.test("FlowValidatorImpl accepts a flow whose step agent roles exist in the catalog", async () => {
   const dir = await Deno.makeTempDir({ prefix: "exa-flow-id-" });
   try {
     await Deno.mkdir(`${dir}/Agents`, { recursive: true });

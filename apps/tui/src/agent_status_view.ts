@@ -287,9 +287,9 @@ export class AgentStatusView {
   async renderAgentList(): Promise<string> {
     const agents = await this.getAgentList();
     if (agents.length === 0) {
-      return "No identities registered.";
+      return "No agent roles registered.";
     }
-    const lines = ["Identities:", ""];
+    const lines = ["Agent Roles:", ""];
     for (const agent of agents) {
       const statusIcon = AGENT_STATUS_ICONS[agent.status] || "⚪";
       lines.push(
@@ -302,7 +302,7 @@ export class AgentStatusView {
   /** Render detailed view for selected agent. */
   async renderAgentDetails(): Promise<string> {
     if (!this.selectedAgentId) {
-      return "No identity selected.";
+      return "No agent role selected.";
     }
     const [health, logs] = await Promise.all([
       this.getAgentHealth(this.selectedAgentId),
@@ -693,10 +693,10 @@ export class AgentStatusTuiSession extends TuiSessionBase {
   }
 
   private formatDetailContent(agent: Opt<IAgentStatusItem, Reason.OptionalInput>, health: IAgentHealthData): string {
-    if (!agent) return "Identity not found.";
+    if (!agent) return "Agent role not found.";
 
     const lines: string[] = [];
-    lines.push(`Identity: ${agent.name}`);
+    lines.push(`Agent Role: ${agent.name}`);
     lines.push(`ID: ${agent.id}`);
     lines.push(`Model: ${agent.model}`);
     lines.push(`Status: ${AGENT_STATUS_ICONS[agent.status]} ${agent.status.toUpperCase()}`);
@@ -1019,7 +1019,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
 
   renderHelp(): string[] {
     return renderHelpScreen({
-      title: "Identities Help",
+      title: "Agent Roles Help",
       sections: this.getHelpSections(),
       useColors: this.useColors,
       width: TUI_LAYOUT_NARROW_WIDTH,

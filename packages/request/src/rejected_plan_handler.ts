@@ -139,14 +139,14 @@ export class RejectedPlanHandler implements IRejectedPlanHandler {
     rawDetails: string;
     validationError: PlanValidationError;
   }): string {
-    // Record the identity that produced this rejected draft so it has the same
+    // Record the agent role that produced this rejected draft so it has the same
     // attribution an accepted plan carries (agent_role) — reviewers and the
-    // identity e2e can trace the draft back to its persona.
-    const identityLine = args.frontmatter?.agent_role ? `agent_role: ${args.frontmatter.agent_role}\n` : "";
+    // agent-role e2e can trace the draft back to its persona.
+    const agentRoleLine = args.frontmatter?.agent_role ? `agent_role: ${args.frontmatter.agent_role}\n` : "";
     return `---
 trace_id: "${args.traceId ?? "unknown"}"
 request_id: "${args.requestId}"
-${identityLine}status: ${PlanStatus.REJECTED}
+${agentRoleLine}status: ${PlanStatus.REJECTED}
 error: "${args.errorMessage.replace(/"/g, '\\"')}"
 ---
 

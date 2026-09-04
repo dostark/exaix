@@ -47,7 +47,7 @@ Deno.test("FlowStepSchema: validates valid step definition", () => {
   assertEquals(result.retry.maxAttempts, 2);
 });
 
-Deno.test("FlowStepSchema: requires id, name, and identity fields", () => {
+Deno.test("FlowStepSchema: requires id, name, and agent role fields", () => {
   // Test missing all required fields
   assertThrows(
     () => FlowStepSchema.parse({}),
@@ -66,7 +66,7 @@ Deno.test("FlowStepSchema: requires id, name, and identity fields", () => {
     ZodError,
   );
 
-  // Test missing identity
+  // Test missing agent role
   assertThrows(
     () => FlowStepSchema.parse({ id: "test", name: "Test" }),
     ZodError,

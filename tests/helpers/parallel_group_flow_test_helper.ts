@@ -31,7 +31,7 @@ interface ICreateParallelGroupFlowOptions {
   memberSteps: IParallelGroupMemberStep[];
   mergeStepId?: string;
   mergeStepName?: string;
-  mergeIdentityId?: string;
+  mergeAgentRoleId?: string;
 }
 
 interface IScriptedFlowRunnerHarness {
@@ -43,7 +43,7 @@ interface IScriptedFlowRunnerHarness {
 export function createParallelGroupFlow(options: ICreateParallelGroupFlowOptions): IFlowInput {
   const mergeStepId = options.mergeStepId ?? "merge";
   const mergeStepName = options.mergeStepName ?? "Merge";
-  const mergeIdentityId = options.mergeIdentityId ?? "merger";
+  const mergeAgentRoleId = options.mergeAgentRoleId ?? "merger";
 
   return {
     id: options.flowId,
@@ -71,7 +71,7 @@ export function createParallelGroupFlow(options: ICreateParallelGroupFlowOptions
       {
         id: mergeStepId,
         name: mergeStepName,
-        agent_role: mergeIdentityId,
+        agent_role: mergeAgentRoleId,
         dependsOn: options.memberSteps.map((step) => step.stepId),
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },

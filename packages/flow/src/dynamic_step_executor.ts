@@ -293,13 +293,13 @@ export class DynamicStepExecutor {
     };
   }
 
-  /** Identity's permitted_tools, narrowed to the step's if specified, then filtered to
+  /** Agent role's permitted_tools, narrowed to the step's if specified, then filtered to
    *  READ_ONLY_TOOLS (defensive runtime enforcement). */
   protected resolvePermittedTools(
     step: IFlowStep,
     agent_role: IBlueprintFrontmatter,
   ): McpToolName[] {
-    const identityTools = new Set(agent_role.permitted_tools ?? []);
+    const agentRoleTools = new Set(agent_role.permitted_tools ?? []);
     const allowedDynamicTools = this.confirmationInterceptor
       ? new Set<McpToolName>([
         ...([...this.dynamicModeTools] as McpToolName[]),
@@ -307,15 +307,15 @@ export class DynamicStepExecutor {
       ])
       : new Set<McpToolName>([...this.dynamicModeTools] as McpToolName[]);
 
-    const stepTools = step.permitted_tools?.length ? step.permitted_tools : [...identityTools];
+    const stepTools = step.permitted_tools?.length ? step.permitted_tools : [...agentRoleTools];
 
     return stepTools.filter((tool) => {
       const mcpTool = tool as McpToolName;
-      const isAllowed = allowedDynamicTools.has(mcpTool) && identityTools.has(mcpTool);
+      const isAllowed = allowedDynamicTools.has(mcpTool) && agentRoleTools.has(mcpTool);
       if (!isAllowed) {
         console.warn(
           `Dynamic step "${step.id}": tool "${tool}" filtered out at runtime ` +
-            `(must be dynamic-mode allowed per manifest and in identity permitted_tools)`,
+            `(must be dynamic-mode allowed per manifest and in agent role permitted_tools)`,
         );
       }
       return isAllowed;

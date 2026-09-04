@@ -99,13 +99,13 @@ Deno.test("[mutation] only the first occurrence is replaced, matching the covera
   const root = await Deno.makeTempDir({ prefix: "pack-mutation-" });
   const file = "repeated.ts";
   try {
-    await Deno.writeTextFile(join(root, file), "identity_id\nidentity_id\n");
+    await Deno.writeTextFile(join(root, file), "agent_role_id\nagent_role_id\n");
     const mutation: IPackMutation = {
-      subsystem: "subsystem:identities",
+      subsystem: "subsystem:agent_roles",
       file,
-      find: "identity_id",
-      replace: "identity_id_MUTATED",
-      breaks: "the identity stamped onto a written plan, which the smokes assert per-scenario",
+      find: "agent_role_id",
+      replace: "agent_role_id_MUTATED",
+      breaks: "the agent role stamped onto a written plan, which the smokes assert per-scenario",
     };
 
     let observed = "";
@@ -113,8 +113,8 @@ Deno.test("[mutation] only the first occurrence is replaced, matching the covera
       observed = await Deno.readTextFile(join(root, file));
     });
 
-    assertEquals(observed, "identity_id_MUTATED\nidentity_id\n");
-    assertEquals(await Deno.readTextFile(join(root, file)), "identity_id\nidentity_id\n");
+    assertEquals(observed, "agent_role_id_MUTATED\nagent_role_id\n");
+    assertEquals(await Deno.readTextFile(join(root, file)), "agent_role_id\nagent_role_id\n");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

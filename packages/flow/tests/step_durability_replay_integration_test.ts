@@ -71,11 +71,11 @@ class TrackingDurabilityStore implements IStepDurabilityStore {
 
 class TrackingAgentRunner implements IAgentExecutor {
   callCount = 0;
-  calledIdentities: string[] = [];
+  calledAgentRoles: string[] = [];
 
   run(agentRole: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     this.callCount++;
-    this.calledIdentities.push(agentRole);
+    this.calledAgentRoles.push(agentRole);
     return Promise.resolve({ thought: "executed", content: `result-from-${agentRole}`, raw: `raw-${agentRole}` });
   }
 }
@@ -172,7 +172,7 @@ Deno.test("StepDurabilityReplay: skips execution when reusable prior record exis
   assertEquals(step1FindCalls.length >= 1, true, "findReplayCandidate should be called for step1");
 
   assertEquals(agent.callCount, 1, "Only step2 should be executed (step1 replayed)");
-  assertEquals(agent.calledIdentities, ["agent-always-run"], "Only step2 agent should run");
+  assertEquals(agent.calledAgentRoles, ["agent-always-run"], "Only step2 agent should run");
 });
 
 Deno.test("StepDurabilityReplay: executes normally when no prior record exists", async () => {
@@ -195,7 +195,7 @@ Deno.test("StepDurabilityReplay: executes normally when no prior record exists",
 
   assertEquals(result.success, true);
   assertEquals(agent.callCount, 2, "Both steps should execute fresh");
-  assertEquals(agent.calledIdentities, ["agent-replayable", "agent-always-run"]);
+  assertEquals(agent.calledAgentRoles, ["agent-replayable", "agent-always-run"]);
 });
 
 async function computeInputHash(userPrompt: string): Promise<string> {

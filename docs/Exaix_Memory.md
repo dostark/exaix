@@ -79,7 +79,7 @@ run finishes, **not** the session transcript. Concretely, per run:
 Delegated sessions (a human coding tool run via `[session_delegate]`) participate in
 this same lifecycle: once the daemon accepts a session's return, it mints an
 execution record from the return's own validated fields (`summary`, `paths_touched`,
-the brief's `identity_id`/`worktree_path`) and runs it through the identical
+the brief's `agent_role`/`worktree_path`) and runs it through the identical
 extraction and Pending → approval pipeline as a plan execution. The return's
 `transcript_ref` stays audit-only — it is never parsed as extraction input; richer
 transcript-aware extraction is a deliberate future decision, not granted silently.

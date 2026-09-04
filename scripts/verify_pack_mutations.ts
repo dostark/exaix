@@ -14,8 +14,8 @@
  *   Step 7 declared one mutation per subsystem and asserted, as its Success Criterion, that each is
  *   "proven to turn it red". What was built proved something weaker: that each mutation's anchor
  *   still resolves in its file. Anchor resolution survives a pack that asserts nothing at all —
- *   which is the exact state the skills pack was in at mean 0.714, and the identity smokes were in
- *   while passing with the wrong identity. Only one of the six mutations was ever executed.
+ *   which is the exact state the skills pack was in at mean 0.714, and the agent-role smokes were in
+ *   while passing with the wrong agent role. Only one of the six mutations was ever executed.
  *
  *   Reading the result:
  *     - exit 1 from the pack run  → the pack noticed. This is the outcome the criterion claims.

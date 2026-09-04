@@ -138,7 +138,7 @@ export const ExecutionMemorySchema = z.object({
   completed_at: z.string().optional().describe("ISO timestamp when execution completed (if finished)"),
   status: z.nativeEnum(ExecutionStatus).describe("Current execution status"),
   portal: z.string().describe("Portal this execution ran against"),
-  agent_role: z.string().describe("Identity (blueprint name) that performed the execution"),
+  agent_role: z.string().describe("Agent role (blueprint name) that performed the execution"),
   agent_id: z.string().optional().describe("Runtime agent instance ID, if available"),
   summary: z.string().describe("Human-readable summary of what was done"),
 
@@ -298,7 +298,7 @@ export const MemoryUpdateProposalSchema = z.object({
   learning: ProposalLearningSchema.describe("The proposed learning content"),
 
   reason: z.string().describe("Why this update is proposed"),
-  agent_role: z.string().describe("Identity (blueprint name) that proposed the update"),
+  agent_role: z.string().describe("Agent role (blueprint name) that proposed the update"),
   execution_id: z.string().optional().describe("Related execution trace_id"),
 
   status: z.enum(MEMORY_STATUS_VALUES)
@@ -385,10 +385,10 @@ export const SkillSchema = z.object({
   ),
 
   /** Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit, git_create_branch). When
-   *  matched onto a request, unioned with every other matched skill's tools, then intersected with the identity's
-   *  permitted_tools — a skill can never grant a tool the identity doesn't already permit. */
+   *  matched onto a request, unioned with every other matched skill's tools, then intersected with the agent role's
+   *  permitted_tools — a skill can never grant a tool the agent role doesn't already permit. */
   tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional().describe(
-    "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the identity's permitted_tools",
+    "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the agent role's permitted_tools",
   ),
 
   // Compatibility

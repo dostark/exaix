@@ -14,7 +14,7 @@ import type { MessageType } from "@exaix/core";
 export interface IRequestManagerMockHandlers {
   handleSearchResult: (value: string) => void;
   handleFilterStatusResult: (value: string) => void;
-  handleFilterIdentityResult: (value: string) => void;
+  handleFilterAgentRoleResult: (value: string) => void;
   handleCreateResult: (value: string) => Promise<void>;
   handlePriorityResult: (value: string) => void;
   processConfirmDialog: (dialog: ConfirmDialog) => Promise<void>;
@@ -32,7 +32,7 @@ export function createMockHandlers(
     handleFilterStatusResult: (value: string) => {
       calls.push(`filter_status:${value}`);
     },
-    handleFilterIdentityResult: (value: string) => {
+    handleFilterAgentRoleResult: (value: string) => {
       calls.push(`filter_agent_role:${value}`);
     },
     handleCreateResult: (value: string) => {

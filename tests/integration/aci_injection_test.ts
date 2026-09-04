@@ -26,7 +26,7 @@ import type { IPlanContext } from "@exaix/core/planning";
 import { PlanExecutor } from "@exaix/core/planning";
 import { getBlueprintsAgentsDir, initTestDbService, readFixtureTextSync } from "@exaix/testing";
 
-const IDENTITY_ID = "aci-react-agent";
+const AGENT_ROLE_ID = "aci-react-agent";
 
 /** A minimal ReAct-capable blueprint scoped to exactly one tool, so the rendered ACI
  * section (when enabled) is unambiguous: it must be the real `read_file` fragment. */
@@ -42,7 +42,7 @@ async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStr
 
   const agentsDir = getBlueprintsAgentsDir(tempDir);
   await Deno.mkdir(agentsDir, { recursive: true });
-  await Deno.writeTextFile(join(agentsDir, `${IDENTITY_ID}.md`), REACT_BLUEPRINT);
+  await Deno.writeTextFile(join(agentsDir, `${AGENT_ROLE_ID}.md`), REACT_BLUEPRINT);
 
   const logger = new EventLogger({ db });
   const provider = new MockLLMProvider(providerStrategy, { responses: [SCRIPTED_COMPLETE_RESPONSE] });
@@ -55,7 +55,7 @@ async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStr
   const context: IPlanContext = {
     trace_id: traceId,
     request_id: requestId,
-    agent_role: IDENTITY_ID,
+    agent_role: AGENT_ROLE_ID,
     frontmatter: {},
     steps: [{
       number: 1,

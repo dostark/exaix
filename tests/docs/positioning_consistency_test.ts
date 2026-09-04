@@ -140,8 +140,8 @@ Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementatio
   // terms in root GLOSSARY.md, 5 implementation-level groupings in the dev glossary). Confirm the
   // union still covers all of them — the split lost nothing.
   const conceptLevelTerms = [
-    "Identity",
-    "Identity Blueprint",
+    "Agent Role",
+    "Agent Role Blueprint",
     "Actor",
     "Agent",
     "Request",

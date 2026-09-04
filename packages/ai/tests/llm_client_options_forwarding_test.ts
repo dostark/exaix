@@ -17,7 +17,7 @@ interface ICaptureOptions {
   max_tokens?: number;
 }
 
-const mockIdentity: IBlueprintFrontmatter = {
+const mockAgentRole: IBlueprintFrontmatter = {
   agent_role: "test",
   name: "Test Agent",
   model: "mock:test",
@@ -51,7 +51,7 @@ Deno.test("[step132.5] reasonNextAction forwards thinking=true to provider.gener
   lastGenerateOptions = undefined;
   const client = new LlmClient(undefined, capturingProvider);
   await client.reasonNextAction({
-    agent_role: mockIdentity,
+    agent_role: mockAgentRole,
     stepObjective: "test",
     accumulatedContext: "",
     availableTools: mockTools as never,
@@ -68,7 +68,7 @@ Deno.test("[step132.5] reasonNextAction with undefined options is backward compa
   lastGenerateOptions = undefined;
   const client = new LlmClient(undefined, capturingProvider);
   await client.reasonNextAction({
-    agent_role: mockIdentity,
+    agent_role: mockAgentRole,
     stepObjective: "test",
     accumulatedContext: "",
     availableTools: mockTools as never,
@@ -83,7 +83,7 @@ Deno.test("[step132.5] reasonNextAction with no options field is backward compat
   lastGenerateOptions = undefined;
   const client = new LlmClient(undefined, capturingProvider);
   await client.reasonNextAction({
-    agent_role: mockIdentity,
+    agent_role: mockAgentRole,
     stepObjective: "test",
     accumulatedContext: "",
     availableTools: mockTools as never,

@@ -37,7 +37,7 @@ const NO_PORTAL = "none";
 const MAX_TOOL_CALLS = 3;
 const EXECUTION_TIMEOUT_MS = 120_000;
 
-/** The first turn must see the identity-authorized tool; the second may complete only
+/** The first turn must see the agent-role-authorized tool; the second may complete only
  * after the real scratchpad write result appears in ReAct history. */
 class RememberFactProvider implements IModelProvider {
   readonly id = "phase-147-scratchpad";
@@ -158,7 +158,7 @@ if (import.meta.main) {
     });
     const candidates = await extractor.analyzeExecution(execution);
     for (const candidate of candidates) {
-      await extractor.createProposal(candidate, execution, "scenario-identity");
+      await extractor.createProposal(candidate, execution, "scenario-role");
     }
     const pending = await extractor.listPending();
     const global = await memoryBank.getGlobalMemory();

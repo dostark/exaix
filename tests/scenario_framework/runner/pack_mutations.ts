@@ -6,8 +6,8 @@
  * A green pack means something only if it is known to go red. Nothing enforced that property, and
  * this phase repeatedly found packs that could not fail for the right reason: the skills pack sat
  * at mean 0.714 with three "green" scenarios while asserting nothing at all (Step 17), and the
- * identity smokes asserted `frontmatter-field-exists: agent_role` — a field `PlanWriter` stamps
- * unconditionally — so all fourteen would have passed with the WRONG identity (Step 11).
+ * agent-role smokes asserted `frontmatter-field-exists: agent_role` — a field `PlanWriter` stamps
+ * unconditionally — so all fourteen would have passed with the WRONG agent role (Step 11).
  *
  * Each entry names a real source edit that breaks the mechanism the pack exists to test. Declaring
  * them here rather than in prose makes them checkable: `pack_mutation_coverage_test.ts` verifies
@@ -26,7 +26,7 @@ export type SubsystemTag =
   | "subsystem:tools"
   | "subsystem:mcp-server"
   | "subsystem:mcp-client"
-  | "subsystem:identities"
+  | "subsystem:agent_roles"
   | "subsystem:skills"
   | "subsystem:flows"
   | "subsystem:memory";
@@ -52,7 +52,7 @@ export const SUBSYSTEM_TAGS: readonly SubsystemTag[] = [
   "subsystem:tools",
   "subsystem:mcp-server",
   "subsystem:mcp-client",
-  "subsystem:identities",
+  "subsystem:agent_roles",
   "subsystem:skills",
   "subsystem:flows",
   "subsystem:memory",
@@ -84,12 +84,12 @@ export const PACK_MUTATIONS: readonly IPackMutation[] = [
       "pinned-skill injection — reproduces exactly the Step 17 regression where every pinned skill was dropped and the pack still scored 0.800",
   },
   {
-    subsystem: "subsystem:identities",
+    subsystem: "subsystem:agent_roles",
     file: "packages/core/src/planning/plan_writer.ts",
     find: "agent_role",
     replace: "agent_role_MUTATED",
     breaks:
-      "the identity stamped onto a written plan — the `frontmatter-field-equals` assertion Step 11 introduced after finding the previous check passed with the wrong identity",
+      "the agent role stamped onto a written plan — the `frontmatter-field-equals` assertion Step 11 introduced after finding the previous check passed with the wrong agent role",
   },
   {
     subsystem: "subsystem:tools",

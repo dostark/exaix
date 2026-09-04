@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "swe-write-tests-uncovered-testengineer"
-title: "Write tests for priority calculator (test-engineer identity)"
+title: "Write tests for priority calculator (test-engineer agent role)"
 pack: "swe_tasks"
 scoring: "gated"
 tags: ["swe", "provider-live"]

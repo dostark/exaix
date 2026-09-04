@@ -45,7 +45,7 @@ Deno.test("deploy_workspace.ts copies Memory, Blueprints, and not docs subfolder
     const memExists = await exists(memIndex) || await exists(memProjects);
     assert(memExists, "Memory content should be copied to deployed workspace");
 
-    // Blueprints should be copied (expect at least a README or identity file)
+    // Blueprints should be copied (expect at least a README or agent role file)
     const blueprintReadme = join(tmp, "Blueprints", "Agents", "README.md");
     assert(await exists(blueprintReadme), "Blueprints content should be copied to deployed workspace");
 

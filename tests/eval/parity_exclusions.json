@@ -1,17 +1,17 @@
 {
   "tools": [],
-  "identities": [
+  "agent_roles": [
     {
       "id": "mock-agent",
       "reason": "test double"
     },
     {
       "id": "dogfood-coder",
-      "reason": "dogfood meta-workflow identity (Phase 150) — exercised by the live session_delegate_outcome scenario"
+      "reason": "dogfood meta-workflow agent role (Phase 150) — exercised by the live session_delegate_outcome scenario"
     },
     {
       "id": "code-reviewer",
-      "reason": "dogfood meta-workflow identity (Phase 150) — exercised by the live session_delegate_outcome scenario"
+      "reason": "dogfood meta-workflow agent role (Phase 150) — exercised by the live session_delegate_outcome scenario"
     }
   ],
   "skills": [

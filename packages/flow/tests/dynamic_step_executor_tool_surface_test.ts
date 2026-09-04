@@ -64,7 +64,7 @@ class NoopJournal implements IActivityJournal {
   }
 }
 
-// All McpToolName values the identity says it can use
+// All McpToolName values the agent role says it can use
 const allToolNames = Object.values(McpToolName) as McpToolName[];
 
 // Constant tests
@@ -102,7 +102,7 @@ Deno.test("DYNAMIC_MODE_TOOLS excludes write and git mutation tools", () => {
 // DynamicStepExecutor behavioural tests
 
 Deno.test(
-  "DynamicStepExecutor resolves permitted tools from canonical manifest set, not arbitrary identity list",
+  "DynamicStepExecutor resolves permitted tools from canonical manifest set, not arbitrary agent-role list",
   async () => {
     const mcpClient = new CapturingMcpClient();
     const llmClient = new ImmediateDoneLlmClient();
@@ -118,13 +118,13 @@ Deno.test(
       DYNAMIC_MODE_APPROVAL_TOOLS,
     );
 
-    const identity = BlueprintFrontmatterSchema.parse({
+    const agentRole = BlueprintFrontmatterSchema.parse({
       agent_role: "test-agent",
       name: "Test Agent",
       model: "anthropic:claude-3-opus",
       created: new Date().toISOString(),
       created_by: "test",
-      permitted_tools: allToolNames, // give identity ALL tools
+      permitted_tools: allToolNames, // give agent role ALL tools
     });
 
     const step = FlowStepSchema.parse({
@@ -132,10 +132,10 @@ Deno.test(
       name: "Canonical surface test",
       agent_role: "test-agent",
       execution_mode: FlowStepExecutionMode.DYNAMIC,
-      // no permitted_tools override — inherits from identity
+      // no permitted_tools override — inherits from agent role
     });
 
-    await executor.execute(step, identity, "test input", { traceId: "t1" });
+    await executor.execute(step, agentRole, "test input", { traceId: "t1" });
 
     // The captured effective tools must be a subset of DYNAMIC_MODE_TOOLS
     for (const tool of mcpClient.capturedTools) {
@@ -145,19 +145,19 @@ Deno.test(
       );
     }
 
-    // And the canonical dynamic tools present in identity's permitted_tools must all appear
-    const identitySet = new Set(allToolNames);
-    const expectedPresent = [...DYNAMIC_MODE_TOOLS].filter((t) => identitySet.has(t as McpToolName));
+    // And the canonical dynamic tools present in agent role's permitted_tools must all appear
+    const agentRoleSet = new Set(allToolNames);
+    const expectedPresent = [...DYNAMIC_MODE_TOOLS].filter((t) => agentRoleSet.has(t as McpToolName));
     assertEquals(
       mcpClient.capturedTools.sort(),
       (expectedPresent as McpToolName[]).sort(),
-      "Effective tools must equal DYNAMIC_MODE_TOOLS intersected with identity permitted_tools",
+      "Effective tools must equal DYNAMIC_MODE_TOOLS intersected with agent-role permitted_tools",
     );
   },
 );
 
 Deno.test(
-  "DynamicStepExecutor filters requires_human_approval domain tools even when identity permits them",
+  "DynamicStepExecutor filters requires_human_approval domain tools even when agent role permits them",
   async () => {
     const mcpClient = new CapturingMcpClient();
     const llmClient = new ImmediateDoneLlmClient();
@@ -173,7 +173,7 @@ Deno.test(
       DYNAMIC_MODE_APPROVAL_TOOLS,
     );
 
-    const identity = BlueprintFrontmatterSchema.parse({
+    const agentRole = BlueprintFrontmatterSchema.parse({
       agent_role: "test-agent",
       name: "Test Agent",
       model: "anthropic:claude-3-opus",
@@ -194,7 +194,7 @@ Deno.test(
       execution_mode: FlowStepExecutionMode.DYNAMIC,
     });
 
-    await executor.execute(step, identity, "test input", { traceId: "t2" });
+    await executor.execute(step, agentRole, "test input", { traceId: "t2" });
 
     assertFalse(
       mcpClient.capturedTools.includes(McpToolName.CREATE_REQUEST),

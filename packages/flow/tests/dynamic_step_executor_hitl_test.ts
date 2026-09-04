@@ -95,7 +95,7 @@ const step = FlowStepSchema.parse({
   retry: { maxAttempts: 1, backoffMs: 0 },
   permitted_tools: [McpToolName.READ_FILE],
   execution_mode: FlowStepExecutionMode.DYNAMIC,
-  agent_role: "test-identity",
+  agent_role: "test-role",
   type: "agent",
 }) as IFlowStep;
 

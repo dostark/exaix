@@ -116,7 +116,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   // Declarative model preferences (W5/W20)
 
-  /** Preferred provider hint (resolved by resolveIdentityModel; `model` overrides). */
+  /** Preferred provider hint (resolved by resolveAgentRoleModel; `model` overrides). */
   preferred_provider: z.string().min(1).optional(),
 
   /** Size tier mapped onto task complexity for provider selection. */
@@ -173,7 +173,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Default skills to apply */
   default_skills: z.array(z.string()).optional(),
 
-  /** Tools this identity is permitted to use (from McpToolName or ToolName). */
+  /** Tools this agent role is permitted to use (from McpToolName or ToolName). */
   permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
 
   /** Deprecation flag for outdated blueprints; consumed by routing/capability matching */
@@ -270,7 +270,7 @@ export class IBlueprintLoader {
     if (!blueprint) {
       const path = this.resolvePath(agentRole);
       throw new BlueprintLoadError(
-        `Identity '${agentRole}' not found in Blueprints/Agents/.`,
+        `Agent role '${agentRole}' not found in Blueprints/Agents/.`,
         agentRole,
         path,
       );
@@ -453,12 +453,12 @@ export class IBlueprintLoader {
    * List all blueprint files under Blueprints/Agents.
    */
   async listAll(): Promise<ILoadedBlueprint[]> {
-    const identitiesDir = this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)
+    const agentRolesDir = this.options.blueprintsPath.endsWith(DEFAULT_AGENTS_PATH)
       ? this.options.blueprintsPath
       : join(this.options.blueprintsPath, DEFAULT_AGENTS_PATH);
 
     try {
-      const stat = await Deno.stat(identitiesDir);
+      const stat = await Deno.stat(agentRolesDir);
       if (!stat.isDirectory) {
         return [];
       }
@@ -468,7 +468,7 @@ export class IBlueprintLoader {
 
     const blueprints: ILoadedBlueprint[] = [];
 
-    for await (const entry of Deno.readDir(identitiesDir)) {
+    for await (const entry of Deno.readDir(agentRolesDir)) {
       if (!entry.isFile || !entry.name.endsWith(".md")) continue;
       const agentRole = basename(entry.name, ".md");
       const blueprint = await this.load(agentRole);

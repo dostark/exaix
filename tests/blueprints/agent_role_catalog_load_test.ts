@@ -1,8 +1,8 @@
 /**
- * @module IdentityCatalogLoadTest
- * @path tests/blueprints/identity_catalog_load_test.ts
+ * @module AgentRoleCatalogLoadTest
+ * @path tests/blueprints/agent_role_catalog_load_test.ts
  * @description Phase 131 Step 9 — catalog-wide load+validate integration test.
- *   Walks every active identity under Blueprints/Agents/ (the separate
+ *   Walks every active agent role under Blueprints/Agents/ (the separate
  *   examples/ and templates/ directories were retired in the catalog
  *   reconciliation), loads through IBlueprintLoader, and validates: schema passes,
  *   default_skills resolve, permitted_tools are valid McpToolName, capabilities
@@ -26,7 +26,7 @@ const VALID_TOOL_NAMES = new Set([
 ]);
 
 /**
- * List active identity filenames (non-example, non-template, non-README .md files).
+ * List active agent role filenames (non-example, non-template, non-README .md files).
  */
 function listActiveAgentRoles(): string[] {
   const ids: string[] = [];
@@ -37,10 +37,10 @@ function listActiveAgentRoles(): string[] {
   return ids.sort();
 }
 
-// 1. Active identity load via IBlueprintLoader
+// 1. Active agent role load via IBlueprintLoader
 
 Deno.test({
-  name: "[step9/catalog-load] every active identity loads through IBlueprintLoader with valid frontmatter",
+  name: "[step9/catalog-load] every active agent role loads through IBlueprintLoader with valid frontmatter",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -66,14 +66,14 @@ Deno.test({
       }
     }
 
-    assertEquals(failures.length, 0, `${failures.length} active identity/ies failed to load via IBlueprintLoader`);
+    assertEquals(failures.length, 0, `${failures.length} active agent role(s) failed to load via IBlueprintLoader`);
   },
 });
 
 // default_skills resolve to loadable .skill.md files
 
 Deno.test({
-  name: "[step9/catalog-load] all identity default_skills resolve to existing .skill.md files",
+  name: "[step9/catalog-load] all agent role default_skills resolve to existing .skill.md files",
   fn() {
     const activeIds = listActiveAgentRoles();
     const missingSkills: Array<{ agent_role: string; skill: string }> = [];
@@ -110,7 +110,7 @@ Deno.test({
 // 5. capabilities are behavioral-only (no tool names)
 
 Deno.test({
-  name: "[step9/catalog-load] every identity's capabilities are behavioral-only (no tool-name values)",
+  name: "[step9/catalog-load] every agent role's capabilities are behavioral-only (no tool-name values)",
   fn() {
     const activeIds = listActiveAgentRoles();
     const violations: Array<{ agent_role: string; capability: string }> = [];
@@ -133,18 +133,18 @@ Deno.test({
       }
     }
 
-    assertEquals(violations.length, 0, `${violations.length} identity/ies have tool names in capabilities`);
+    assertEquals(violations.length, 0, `${violations.length} agent role(s) have tool names in capabilities`);
   },
 });
 
-// every active identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS)
+// every active agent role opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS)
 
-/** mock-agent declares no capabilities at all — test-only identity, not a real execution path. */
+/** mock-agent declares no capabilities at all — test-only agent role, not a real execution path. */
 const AGENST_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
 
 Deno.test({
   name:
-    "fix(identity-catalog): every active identity (except mock-agent) declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
+    "fix(agent-role-catalog): every active agent role (except mock-agent) declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
   fn() {
     const activeIds = listActiveAgentRoles();
     const missing: string[] = [];
@@ -159,7 +159,7 @@ Deno.test({
     }
 
     if (missing.length > 0) {
-      console.log('\nIdentities missing "react" in capabilities:');
+      console.log('\nAgent roles missing "react" in capabilities:');
       for (const id of missing) {
         console.log(`  ${id}`);
       }
@@ -168,7 +168,7 @@ Deno.test({
     assertEquals(
       missing.length,
       0,
-      `${missing.length} identity/ies missing "react" in capabilities — without it, ` +
+      `${missing.length} agent role(s) missing "react" in capabilities — without it, ` +
         "AgentOrchestrator.executeStep falls through to LegacyAgentStrategy, which makes a " +
         "single blind provider.generate() call with no tool-result feedback loop " +
         "(Ledger:EXECUTION_STRATEGY_NO_TOOLS)",
@@ -214,7 +214,7 @@ Deno.test({
 
 Deno.test({
   name:
-    "[step9/catalog-load] no unresolved {{include:}} remains in loaded system prompts (active identities only — examples/templates have no includes)",
+    "[step9/catalog-load] no unresolved {{include:}} remains in loaded system prompts (active agent roles only — examples/templates have no includes)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -229,18 +229,18 @@ Deno.test({
           unresolved.push({ agent_role: id });
         }
       } catch {
-        // Skip identities that fail to load (permitted_tools schema issues)
+        // Skip agent roles that fail to load (permitted_tools schema issues)
       }
     }
 
     if (unresolved.length > 0) {
-      console.log("\nIdentities with unresolved {{include:}} in systemPrompt:");
+      console.log("\nAgent roles with unresolved {{include:}} in systemPrompt:");
       for (const u of unresolved) {
         console.log(`  ${u.agent_role}`);
       }
     }
 
-    assertEquals(unresolved.length, 0, `${unresolved.length} identity/ies have unresolved {{include:}}`);
+    assertEquals(unresolved.length, 0, `${unresolved.length} agent role(s) have unresolved {{include:}}`);
   },
 });
 

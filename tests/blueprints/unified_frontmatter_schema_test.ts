@@ -3,7 +3,7 @@
  * @path tests/blueprints/unified_frontmatter_schema_test.ts
  * @description Phase 131 Step 2 — verifies the unified blueprint frontmatter
  *   schema and the finished TOML→YAML migration. Asserts: (1) all existing
- *   identities + examples parse under the unified schema; (2) GAP-1 field
+ *   agent roles + examples parse under the unified schema; (2) GAP-1 field
  *   optionality (agent_role required; created/created_by optional-with-default
  *   at load); (3) session_delegate survives a load round-trip (was dropped by the
  *   runtime fork); (4) GAP-2 unknown fields WARN (not reject) and legacy runtime
@@ -40,12 +40,12 @@ function parseFrontmatter(content: string): IParsedFrontmatter | null {
   return parseYaml(match[1]) as IParsedFrontmatter;
 }
 
-Deno.test("[step2] unified schema accepts every active identity (pre-strict)", async () => {
+Deno.test("[step2] unified schema accepts every active agent role (pre-strict)", async () => {
   const files: string[] = [];
   for await (const e of Deno.readDir(AGENTS_DIR)) {
     if (e.isFile && e.name.endsWith(".md") && e.name !== "README.md") files.push(join(AGENTS_DIR, e.name));
   }
-  assert(files.length >= 14, `expected the full identity catalog, found ${files.length}`);
+  assert(files.length >= 14, `expected the full agent role catalog, found ${files.length}`);
 
   for (const file of files) {
     const content = await Deno.readTextFile(file);
@@ -70,7 +70,7 @@ Deno.test("[step2][GAP-1] agent_role required; created/created_by optional-with-
   });
   assert(minimal.success, "blueprint without created/created_by must load");
 
-  // agent_role is the one required identity field on the authoring (CLI) schema.
+  // agent_role is the one required agent-role field on the authoring (CLI) schema.
   const noId = BlueprintFrontmatterSchema.safeParse({
     name: "X",
     model: "mock:test-model",
@@ -96,8 +96,8 @@ Deno.test("[step2] session_delegate survives a runtime load round-trip (was drop
 Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through IBlueprintLoader (no TOML)", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_roundtrip_" });
   try {
-    const identitiesDir = join(dir, "Agents");
-    await ensureDir(identitiesDir);
+    const agentRolesDir = join(dir, "Agents");
+    await ensureDir(agentRolesDir);
     // Mirror the CLI writer format: `---\n<yaml>---\n\n<body>`.
     const fm = {
       agent_role: "round-trip-agent",
@@ -110,9 +110,9 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
       session_delegate: { enabled: true, tool: "opencode", gates: ["code_changes"], launch_mode: "headless" },
     };
     const content = `---\n${stringifyYaml(fm)}---\n\n# Round Trip Agent\n\nBody.\n`;
-    await Deno.writeTextFile(join(identitiesDir, "round-trip-agent.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "round-trip-agent.md"), content);
 
-    const loader = new IBlueprintLoader({ blueprintsPath: identitiesDir });
+    const loader = new IBlueprintLoader({ blueprintsPath: agentRolesDir });
     const loaded = await loader.load("round-trip-agent");
     assertExists(loaded, "CLI-format YAML blueprint must load");
     assertEquals(loaded!.agentRole, "round-trip-agent");
@@ -126,13 +126,13 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
 Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an actionable error", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_toml_" });
   try {
-    const identitiesDir = join(dir, "Agents");
-    await ensureDir(identitiesDir);
+    const agentRolesDir = join(dir, "Agents");
+    await ensureDir(agentRolesDir);
     await Deno.writeTextFile(
-      join(identitiesDir, "legacy-toml.md"),
+      join(agentRolesDir, "legacy-toml.md"),
       `+++\nagent_role = "legacy-toml"\nname = "Legacy"\nmodel = "mock:test-model"\n+++\n\nBody.\n`,
     );
-    const loader = new IBlueprintLoader({ blueprintsPath: identitiesDir });
+    const loader = new IBlueprintLoader({ blueprintsPath: agentRolesDir });
     let threw = false;
     try {
       await loader.load("legacy-toml");

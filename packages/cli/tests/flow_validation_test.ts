@@ -138,7 +138,7 @@ for (
     {
       name: "validateFlowForCli: returns warning for dynamic step with no permitted_tools",
       overrides: { permitted_tools: undefined, timeout: 60000 },
-      expectedMessages: ["no permitted_tools specified", "identity"],
+      expectedMessages: ["no permitted_tools specified", "agent role"],
     },
     {
       name: "validateFlowForCli: returns warning for dynamic step with empty permitted_tools",

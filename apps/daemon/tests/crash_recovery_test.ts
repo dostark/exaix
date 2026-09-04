@@ -141,7 +141,7 @@ Deno.test("[crash_recovery][security] redacted launch payload recovers from brie
       join(traceDir, "brief.json"),
       JSON.stringify(SessionBriefSchema.parse({
         trace_id: traceId,
-        agent_role: "test-identity",
+        agent_role: "test-role",
         gate: "code_changes",
         tool: "codex",
         objective: "Validated recovery objective",

@@ -38,9 +38,9 @@
     ],
     "defaultSkillIds": ["demo-skill-a"],
     "corpusMatches": [{ "taskId": "demo-task", "matchedSkillIds": [] }],
-    "identityDefaultSkills": [
+    "agentRoleDefaultSkills": [
       {
-        "agentRole": "demo-other-identity",
+        "agentRole": "demo-other-role",
         "defaultSkillIds": [
           "demo-skill-b"
         ]
@@ -87,9 +87,9 @@
     "nonCoverage": [],
     "decisions": [{ "skillId": "demo-skill-flat", "decision": "keep", "rationale": "no measured harm" }]
   },
-  "identityTaskType": {
+  "agentRoleTaskType": {
     "input": {
-      "armId": "identity-swap",
+      "armId": "agent-role-swap",
       "metric": "objective_outcome",
       "tasks": [
         { "taskId": "bugfix-task", "control": [0.5], "treatment": [0.9] },
@@ -98,7 +98,7 @@
     },
     "taskTypeById": { "bugfix-task": "bugfix", "refactor-task": "refactor" }
   },
-  "identityPrune": {
+  "agentRolePrune": {
     "input": {
       "armId": "prune",
       "metric": "objective_outcome",
@@ -133,7 +133,7 @@
     ]
   },
   "judgeCalibration": {
-    "judgeIdentityId": "demo-judge",
+    "judgeAgentRole": "demo-judge",
     "samples": [
       { "taskId": "t1", "judgeScore": 0.2, "objectiveOutcome": 0.2 },
       { "taskId": "t2", "judgeScore": 0.4, "objectiveOutcome": 0.4 },

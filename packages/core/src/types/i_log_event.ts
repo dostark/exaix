@@ -29,13 +29,13 @@ export interface ILogEvent {
   /** Trace ID for correlation */
   traceId?: string;
 
-  /** Runtime agent handling this event, e.g. "identity-runner" — NOT an identity id */
+  /** Runtime agent handling this event, e.g. "agent-executor" — NOT an agent role id */
   agentId?: string;
 
   /** Category of runtime agent */
   agentKind?: RuntimeKind | null;
 
-  /** LLM identity blueprint used for this event, e.g. "senior-coder" */
+  /** LLM agent role blueprint used for this event, e.g. "senior-coder" */
   agentRole?: string;
 
   /** Log level for console output */

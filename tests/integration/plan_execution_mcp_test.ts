@@ -26,7 +26,6 @@ interface IPlanFrontmatter {
   trace_id?: string;
   request_id?: string;
   agent?: string;
-  identity?: string;
   status?: string;
   created_at?: string;
   security_mode?: string;
@@ -551,7 +550,7 @@ Deno.test("Integration Test 15.6: Review Filtering", async () => {
     assertEquals(portal1Reviews.length, 1);
     assertEquals(portal1Reviews[0].portal, "Portal1");
 
-    // Filter by identity
+    // Filter by agent role
     const agent2Reviews = await reviewRegistry.list({ created_by: "agent2" });
     assertEquals(agent2Reviews.length, 1);
     assertEquals(agent2Reviews[0].created_by, "agent2");

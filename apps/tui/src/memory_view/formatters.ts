@@ -201,7 +201,7 @@ export class MemoryFormatter {
       `# Execution: ${memory.trace_id.slice(0, 8)}...`,
       "",
       `**Status:** ${memory.status}`,
-      `**Identity:** ${memory.agent_role}`,
+      `**Agent Role:** ${memory.agent_role}`,
       `**Portal:** ${memory.portal}`,
       `**Started:** ${memory.started_at}`,
       memory.completed_at ? `**Completed:** ${memory.completed_at}` : "",

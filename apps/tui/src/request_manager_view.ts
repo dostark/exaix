@@ -68,7 +68,7 @@ export interface IRequestViewState {
   searchQuery: string;
   filterStatus: RequestStatusType | null;
   filterPriority: string | null;
-  filterIdentity: string | null;
+  filterAgentRole: string | null;
   groupBy: RequestGroupingMode;
 }
 /**
@@ -330,7 +330,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       searchQuery: "",
       filterStatus: null,
       filterPriority: null,
-      filterIdentity: null,
+      filterAgentRole: null,
       groupBy: RequestGroupingMode.NONE,
     };
 
@@ -387,7 +387,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
         this.state.requestTree = this.buildGroupedByPriority(filtered);
         break;
       case RequestGroupingMode.AGENT_ROLE:
-        this.state.requestTree = this.buildGroupedByIdentity(filtered);
+        this.state.requestTree = this.buildGroupedByAgentRole(filtered);
         break;
       default:
         this.state.requestTree = this.buildFlatTree(filtered);
@@ -454,18 +454,18 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       });
   }
 
-  private buildGroupedByIdentity(requests: IRequest[]): ITreeNode[] {
+  private buildGroupedByAgentRole(requests: IRequest[]): ITreeNode[] {
     const groups = new Map<string, IRequest[]>();
     for (const req of requests) {
-      const identity = req.agent_role || "unassigned";
-      if (!groups.has(identity)) groups.set(identity, []);
-      groups.get(identity)!.push(req);
+      const agentRole = req.agent_role || "unassigned";
+      if (!groups.has(agentRole)) groups.set(agentRole, []);
+      groups.get(agentRole)!.push(req);
     }
 
-    return Array.from(groups.entries()).map(([identity, reqs]) => {
+    return Array.from(groups.entries()).map(([agentRole, reqs]) => {
       return createGroupNode(
-        `identity-${identity}`,
-        `👤 ${identity} (${reqs.length})`,
+        `agent-role-${agentRole}`,
+        `👤 ${agentRole} (${reqs.length})`,
         TuiNodeType.GROUP,
         reqs.map((r) => this.createRequestNode(r)),
         { expanded: true },
@@ -497,9 +497,9 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       filtered = filtered.filter((r) => r.priority === this.state.filterPriority);
     }
 
-    // Apply identity filter
-    if (this.state.filterIdentity) {
-      const query = this.state.filterIdentity.toLowerCase();
+    // Apply agent-role filter
+    if (this.state.filterAgentRole) {
+      const query = this.state.filterAgentRole.toLowerCase();
       filtered = filtered.filter((r) => r.agent_role.toLowerCase().includes(query));
     }
 
@@ -627,12 +627,12 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     this.pendingDialogType = RequestDialogType.FILTER_STATUS;
   }
 
-  showFilterIdentityDialog(): void {
+  showFilterAgentRoleDialog(): void {
     this.state.activeDialog = new InputDialog({
-      title: "Filter by Identity",
-      label: "Enter identity name (or empty for all):",
-      placeholder: "identity name...",
-      defaultValue: this.state.filterIdentity || "",
+      title: "Filter by Agent Role",
+      label: "Enter agent role name (or empty for all):",
+      placeholder: "agent role name...",
+      defaultValue: this.state.filterAgentRole || "",
     });
     this.pendingDialogType = RequestDialogType.FILTER_AGENT_ROLE;
   }
@@ -697,10 +697,10 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     this.setStatus(`Filtering: status=${trimmed}`, MessageType.INFO);
   }
 
-  private handleFilterIdentityResult(value: string): void {
-    this.state.filterIdentity = value || null;
+  private handleFilterAgentRoleResult(value: string): void {
+    this.state.filterAgentRole = value || null;
     this.buildTree();
-    this.setStatus(value ? `Filtering: identity=${value}` : "Identity filter cleared", MessageType.INFO);
+    this.setStatus(value ? `Filtering: agent_role=${value}` : "Agent role filter cleared", MessageType.INFO);
   }
 
   private async handleCreateResult(description: string): Promise<void> {
@@ -753,7 +753,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     await helperProcessDialogCompletion(dialog, dialogType, {
       handleSearchResult: this.handleSearchResult.bind(this),
       handleFilterStatusResult: this.handleFilterStatusResult.bind(this),
-      handleFilterIdentityResult: this.handleFilterIdentityResult.bind(this),
+      handleFilterAgentRoleResult: this.handleFilterAgentRoleResult.bind(this),
       handleCreateResult: this.handleCreateResult.bind(this),
       handlePriorityResult: this.handlePriorityResult.bind(this),
       processConfirmDialog: this.processConfirmDialog.bind(this),
@@ -878,8 +878,8 @@ export class RequestManagerTuiSession extends TuiSessionBase {
     // Show current filters
     const filters: string[] = [];
     if (this.state.searchQuery) filters.push(`search="${this.state.searchQuery}"`);
-    if (this.state.filterStatus || this.state.filterIdentity) {
-      filters.push(`Status: ${this.state.filterStatus || "all"} | Identity: ${this.state.filterIdentity || "all"}`);
+    if (this.state.filterStatus || this.state.filterAgentRole) {
+      filters.push(`Status: ${this.state.filterStatus || "all"} | Agent Role: ${this.state.filterAgentRole || "all"}`);
     }
     if (filters.length > 0) {
       lines.push(`Filters: ${filters.join(", ")}`);
@@ -977,7 +977,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
         showPriorityDialog: this.showPriorityDialog.bind(this),
         showSearchDialog: this.showSearchDialog.bind(this),
         showFilterStatusDialog: this.showFilterStatusDialog.bind(this),
-        showFilterIdentityDialog: this.showFilterIdentityDialog.bind(this),
+        showFilterAgentRoleDialog: this.showFilterAgentRoleDialog.bind(this),
         setShowHelp: (show: boolean) => this.state.showHelp = show,
         updateTree: (tree: ITreeNode[]) => this.state.requestTree = tree,
       },

@@ -32,10 +32,10 @@ function makeFakeRunner(): IRunner {
 
 Deno.test("AgentOrchestratorAdapter runs an agent and returns IAgentExecutionResult", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
-  const identitiesDir = `${tmpDir}/Blueprints/Agents`;
-  await Deno.mkdir(identitiesDir, { recursive: true });
+  const agentRolesDir = `${tmpDir}/Blueprints/Agents`;
+  await Deno.mkdir(agentRolesDir, { recursive: true });
   await Deno.writeTextFile(
-    `${identitiesDir}/test-agent.md`,
+    `${agentRolesDir}/test-agent.md`,
     `---
 agent_role: "test-agent"
 name: "Test Agent"
@@ -52,7 +52,7 @@ model: "mock:test"
       },
     };
 
-    const adapter = new AgentOrchestratorAdapter(fakeRunner, identitiesDir);
+    const adapter = new AgentOrchestratorAdapter(fakeRunner, agentRolesDir);
     const request: IFlowStepRequest = {
       userPrompt: "do something",
       context: {},
@@ -71,10 +71,10 @@ model: "mock:test"
 
 Deno.test("AgentOrchestratorAdapter threads scenarioId/stepId/flowStepId into the runner's request (Phase 157)", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "adapter-test-" });
-  const identitiesDir = `${tmpDir}/Blueprints/Agents`;
-  await Deno.mkdir(identitiesDir, { recursive: true });
+  const agentRolesDir = `${tmpDir}/Blueprints/Agents`;
+  await Deno.mkdir(agentRolesDir, { recursive: true });
   await Deno.writeTextFile(
-    `${identitiesDir}/test-agent.md`,
+    `${agentRolesDir}/test-agent.md`,
     `---
 agent_role: "test-agent"
 name: "Test Agent"
@@ -94,7 +94,7 @@ model: "mock:test"
       },
     };
 
-    const adapter = new AgentOrchestratorAdapter(capturingRunner, identitiesDir);
+    const adapter = new AgentOrchestratorAdapter(capturingRunner, agentRolesDir);
     const request: IFlowStepRequest = {
       userPrompt: "do something",
       context: {},

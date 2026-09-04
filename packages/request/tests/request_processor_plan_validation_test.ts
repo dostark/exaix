@@ -174,8 +174,8 @@ Audit this code.
     );
     const content = await Deno.readTextFile(rejectedPath);
     const frontmatter = parseFrontmatter(content);
-    // The identity that produced the rejected output must be recorded, so the
-    // identity e2e (and any reviewer) can attribute the draft to its persona.
+    // The agent role that produced the rejected output must be recorded, so the
+    // agent-role e2e (and any reviewer) can attribute the draft to its persona.
     assertEquals(frontmatter.agent_role, "security-expert");
   } finally {
     await env.cleanup();

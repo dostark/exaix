@@ -234,7 +234,7 @@ export function isFlowStepPrompt(prompt: string): boolean {
 
 /** ReActLoopStrategy's prompt template (react_loop_strategy.ts:768,788), which its own parser pairs with. */
 export function isReActLoopPrompt(prompt: string): boolean {
-  return prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
+  return prompt.includes("AGENT ROLE: ") && prompt.includes("AVAILABLE TOOLS:");
 }
 
 /** The response a prompt's own parser can read, when that isn't the legacy <actions> envelope. A
@@ -720,8 +720,8 @@ I see the drift instructions in the analysis phase.
 </content>`;
           }
 
-          // 2. Execution Phase — identities with capabilities:["react"] (e.g. "default") dispatch to ReActLoopStrategy, whose own prompt template (buildPrompt) is "IDENTITY: ...\n...\nAVAILABLE TOOLS:...", NOT the legacy PromptBuilder's "## Execution Context (SYSTEM CONTROLLED)" template — and its parseResponse() looks for the literal "THOUGHT: " prefix and "STATUS: COMPLETE" text, not the <thought>/<content> JSON envelope the legacy strategy expects. A response with neither STATUS: COMPLETE nor a ```toml action block throws "Agent provided no actions and did not signal completion", which itself becomes a NEW (tool_error-sourced) amendment trigger, looping forever regardless of content.
-          const isReActPrompt = prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
+          // 2. Execution Phase — agent roles with capabilities:["react"] (e.g. "default") dispatch to ReActLoopStrategy, whose own prompt template (buildPrompt) is "AGENT ROLE: ...\n...\nAVAILABLE TOOLS:...", NOT the legacy PromptBuilder's "## Execution Context (SYSTEM CONTROLLED)" template — and its parseResponse() looks for the literal "THOUGHT: " prefix and "STATUS: COMPLETE" text, not the <thought>/<content> JSON envelope the legacy strategy expects. A response with neither STATUS: COMPLETE nor a ```toml action block throws "Agent provided no actions and did not signal completion", which itself becomes a NEW (tool_error-sourced) amendment trigger, looping forever regardless of content.
+          const isReActPrompt = prompt.includes("AGENT ROLE: ") && prompt.includes("AVAILABLE TOOLS:");
           if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)") || isReActPrompt) {
             // Each step's prompt only carries that step's own content (context.request /
             // context.plan = step.content), not the whole plan body — so a later step's
@@ -845,7 +845,7 @@ I will analyze the request and provide a detailed architectural assessment.
       // so that "Step N" prompts are caught before generic "implement" patterns
       {
         // ReAct prompts carry NONE of the execution markers below — the template is
-        // `IDENTITY: ... CAPABILITIES: ... AVAILABLE TOOLS: ...` — so a check placed inside the
+        // `AGENT ROLE: ... CAPABILITIES: ... AVAILABLE TOOLS: ...` — so a check placed inside the
         // execution response never ran for them. They fell through to a plan-shaped pattern,
         // returning neither a toml action block nor STATUS: COMPLETE, which the loop reports as
         // "Agent provided no actions and did not signal completion" and PlanExecutor converts

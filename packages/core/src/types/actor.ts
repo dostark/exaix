@@ -2,7 +2,7 @@
  * @module Actor
  * @path packages/core/src/types/actor.ts
  * @related-files []
- * @description Actor category and identity string types used across the core package.
+ * @description Actor category and scoped actor-id string types used across the core package.
  * @architectural-layer Shared
  */
 

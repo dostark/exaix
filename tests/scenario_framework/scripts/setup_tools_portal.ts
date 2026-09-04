@@ -5,7 +5,7 @@
  * @architectural-layer Test
  * @description Prepares the fixture portal and config the `mcp_tools_extended` scenarios
  *   need in order to invoke real MCP tools. The tool handlers resolve a portal by alias
- *   out of `config.portals` and check the calling identity against `agents_allowed`,
+ *   out of `config.portals` and check the calling agent role against `agents_allowed`,
  *   so a tool call is only possible against a config that declares both. Writes a
  *   scenario-scoped `tools_pack.config.toml` next to a fresh copy of the fixture portal.
  * @dependencies []
@@ -17,10 +17,10 @@ import { join, resolve } from "@std/path";
 
 /** Alias the scenarios call tools against. */
 export const TOOLS_PORTAL_ALIAS = "tools";
-/** Identity the scenarios present; must appear in `agents_allowed` to be permitted. */
-export const TOOLS_PORTAL_IDENTITY = "tools-eval";
-/** Identity deliberately absent from `agents_allowed`, for the permission-refusal case. */
-export const TOOLS_PORTAL_DENIED_IDENTITY = "not-allowed-identity";
+/** Agent role the scenarios present; must appear in `agents_allowed` to be permitted. */
+export const TOOLS_PORTAL_AGENT_ROLE = "tools-eval";
+/** Agent role deliberately absent from `agents_allowed`, for the permission-refusal case. */
+export const TOOLS_PORTAL_DENIED_AGENT_ROLE = "not-allowed-role";
 /** Config file name the scenarios point `EXA_CONFIG_PATH` at. */
 export const TOOLS_CONFIG_FILE = "tools_pack.config.toml";
 /** Directory the fixture portal is copied into, relative to the workspace root. */
@@ -37,7 +37,7 @@ export function buildToolsConfigToml(workspaceRoot: string, portalPath: string):
     `alias = "${TOOLS_PORTAL_ALIAS}"`,
     `target_path = "${portalPath}"`,
     'description = "tools pack fixture portal"',
-    `agents_allowed = ["${TOOLS_PORTAL_IDENTITY}"]`,
+    `agents_allowed = ["${TOOLS_PORTAL_AGENT_ROLE}"]`,
     'operations = ["read", "write", "git"]',
     "",
   ].join("\n");

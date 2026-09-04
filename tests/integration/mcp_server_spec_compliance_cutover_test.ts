@@ -184,11 +184,11 @@ function seedAnalyzeCodebaseWorkspace(root: string): void {
     join(REPO_ROOT, "Blueprints", "Flows", "analyze-codebase.flow.yaml"),
     join(flowsDir, "analyze-codebase.flow.yaml"),
   );
-  const identitiesDir = join(root, "Blueprints", "Agents");
-  Deno.mkdirSync(identitiesDir, { recursive: true });
+  const agentRolesDir = join(root, "Blueprints", "Agents");
+  Deno.mkdirSync(agentRolesDir, { recursive: true });
   Deno.copyFileSync(
     join(REPO_ROOT, "Blueprints", "Agents", "senior-coder.md"),
-    join(identitiesDir, "senior-coder.md"),
+    join(agentRolesDir, "senior-coder.md"),
   );
   writePortalDir(root);
   const recordingsDir = join(root, "recordings");

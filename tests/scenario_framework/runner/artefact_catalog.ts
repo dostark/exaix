@@ -5,7 +5,7 @@
  * `Blueprints/{Agents,Skills,Flows}` into the `IArtefactRef[]` shape
  * `assertArtefactDecisionCoverage` consumes. Reuses the exclusions Phase 158 has used
  * throughout its live runs — README files are not artefacts, `mock-agent`/`default`
- * are non-curated identities excluded from every count in the phase doc, and a flow's
+ * are non-curated agent roles excluded from every count in the phase doc, and a flow's
  * id is read from its declared `id:` field rather than its filename (the two have
  * drifted before — `flow_eval_parity_test.ts` documents the `api_design` vs
  * `api-design` incident this mirrors the fix for).
@@ -17,16 +17,16 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ArtefactKind, type IArtefactRef } from "./artefact_decision_coverage.ts";
 
-/** Files in `Blueprints/Agents/` that are not curated, measured identities. */
-const NON_CURATED_IDENTITY_IDS: ReadonlySet<string> = new Set(["mock-agent", "default"]);
+/** Files in `Blueprints/Agents/` that are not curated, measured agent roles. */
+const NON_CURATED_AGENT_ROLE_IDS: ReadonlySet<string> = new Set(["mock-agent", "default"]);
 
-async function loadIdentityRefs(identitiesDir: string): Promise<IArtefactRef[]> {
+async function loadAgentRoleRefs(agentRolesDir: string): Promise<IArtefactRef[]> {
   const refs: IArtefactRef[] = [];
-  for await (const entry of Deno.readDir(identitiesDir)) {
+  for await (const entry of Deno.readDir(agentRolesDir)) {
     if (!entry.isFile || !entry.name.endsWith(".md")) continue;
     const artefactId = entry.name.replace(/\.md$/, "");
-    if (artefactId === "README" || NON_CURATED_IDENTITY_IDS.has(artefactId)) continue;
-    refs.push({ kind: ArtefactKind.IDENTITY, artefactId });
+    if (artefactId === "README" || NON_CURATED_AGENT_ROLE_IDS.has(artefactId)) continue;
+    refs.push({ kind: ArtefactKind.AGENT_ROLE, artefactId });
   }
   return refs;
 }
@@ -50,12 +50,12 @@ async function loadFlowRefs(flowsDir: string): Promise<IArtefactRef[]> {
   return refs;
 }
 
-/** Reads the real `Blueprints/` catalog (identities, skills, flows) into the flat `IArtefactRef[]` shape `assertArtefactDecisionCoverage` compares against. `blueprintsDir` is `Blueprints/` itself, not its parent. */
+/** Reads the real `Blueprints/` catalog (agent roles, skills, flows) into the flat `IArtefactRef[]` shape `assertArtefactDecisionCoverage` compares against. `blueprintsDir` is `Blueprints/` itself, not its parent. */
 export async function loadArtefactCatalog(blueprintsDir: string): Promise<IArtefactRef[]> {
-  const [identities, skills, flows] = await Promise.all([
-    loadIdentityRefs(join(blueprintsDir, "Agents")),
+  const [agentRoles, skills, flows] = await Promise.all([
+    loadAgentRoleRefs(join(blueprintsDir, "Agents")),
     loadSkillRefs(join(blueprintsDir, "Skills")),
     loadFlowRefs(join(blueprintsDir, "Flows")),
   ]);
-  return [...identities, ...skills, ...flows];
+  return [...agentRoles, ...skills, ...flows];
 }

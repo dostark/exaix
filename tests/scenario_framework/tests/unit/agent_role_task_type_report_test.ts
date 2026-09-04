@@ -1,22 +1,22 @@
 /**
- * @module ScenarioFrameworkIdentityTaskTypeReportTest
- * @path tests/scenario_framework/tests/unit/identity_task_type_report_test.ts
- * @description Tests for Phase 158 Step 5's per-task-type delta grouping: an identity
+ * @module ScenarioFrameworkAgentRoleTaskTypeReportTest
+ * @path tests/scenario_framework/tests/unit/agent_role_task_type_report_test.ts
+ * @description Tests for Phase 158 Step 5's per-task-type delta grouping: an agent role
  * may win on one task type (e.g. bugfix) and lose on another (e.g. refactor), so the
  * report groups Step 1's already-computed per-task deltas by task type rather than
  * collapsing them into one aggregate, which would hide exactly that disagreement.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/identity_task_type_report.ts, tests/scenario_framework/runner/arm_comparison.ts]
+ * @related-files [tests/scenario_framework/runner/agent_role_task_type_report.ts, tests/scenario_framework/runner/arm_comparison.ts]
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { groupDeltasByTaskType } from "../../runner/identity_task_type_report.ts";
+import { groupDeltasByTaskType } from "../../runner/agent_role_task_type_report.ts";
 import { computePairedComparison } from "../../runner/arm_comparison.ts";
 import { ComparisonMetric } from "../../runner/arm_comparison.ts";
 
-Deno.test("[IdentityTaskTypeReport] deltas are grouped into their declared task type", () => {
+Deno.test("[AgentRoleTaskTypeReport] deltas are grouped into their declared task type", () => {
   const result = computePairedComparison({
-    armId: "identity-swap-a-vs-b",
+    armId: "agent-role-swap-a-vs-b",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
     tasks: [
       { taskId: "task-bugfix-1", control: [0.5], treatment: [0.9] }, // +0.4
@@ -35,9 +35,9 @@ Deno.test("[IdentityTaskTypeReport] deltas are grouped into their declared task 
   assertEquals(Math.round((refactor?.meanDelta ?? 0) * 100) / 100, -0.3);
 });
 
-Deno.test("[IdentityTaskTypeReport] an identity that wins on one type and loses on another produces opposite-signed groups", () => {
+Deno.test("[AgentRoleTaskTypeReport] an agent role that wins on one type and loses on another produces opposite-signed groups", () => {
   const result = computePairedComparison({
-    armId: "identity-swap-a-vs-b",
+    armId: "agent-role-swap-a-vs-b",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
     tasks: [
       { taskId: "bugfix-1", control: [0.5], treatment: [0.9] },
@@ -60,9 +60,9 @@ Deno.test("[IdentityTaskTypeReport] an identity that wins on one type and loses 
   assertEquals((refactor?.meanDelta ?? 0) < 0, true);
 });
 
-Deno.test("[IdentityTaskTypeReport] a group's task ids are preserved for traceability", () => {
+Deno.test("[AgentRoleTaskTypeReport] a group's task ids are preserved for traceability", () => {
   const result = computePairedComparison({
-    armId: "identity-swap-a-vs-b",
+    armId: "agent-role-swap-a-vs-b",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
     tasks: [{ taskId: "bugfix-1", control: [0.5], treatment: [0.9] }],
   });
@@ -70,18 +70,18 @@ Deno.test("[IdentityTaskTypeReport] a group's task ids are preserved for traceab
   assertEquals(groups[0].taskIds, ["bugfix-1"]);
 });
 
-Deno.test("[IdentityTaskTypeReport] a task with no declared type throws, naming the task", () => {
+Deno.test("[AgentRoleTaskTypeReport] a task with no declared type throws, naming the task", () => {
   const result = computePairedComparison({
-    armId: "identity-swap-a-vs-b",
+    armId: "agent-role-swap-a-vs-b",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
     tasks: [{ taskId: "untyped-task", control: [0.5], treatment: [0.9] }],
   });
   assertThrows(() => groupDeltasByTaskType(result.perTask, {}), Error, "untyped-task");
 });
 
-Deno.test("[IdentityTaskTypeReport] a group's noEffect flag applies the same rule as the aggregate: |mean| < stdev", () => {
+Deno.test("[AgentRoleTaskTypeReport] a group's noEffect flag applies the same rule as the aggregate: |mean| < stdev", () => {
   const result = computePairedComparison({
-    armId: "identity-swap-a-vs-b",
+    armId: "agent-role-swap-a-vs-b",
     metric: ComparisonMetric.OBJECTIVE_OUTCOME,
     tasks: [
       { taskId: "bugfix-1", control: [0.5], treatment: [0.4] }, // -0.1

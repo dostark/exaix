@@ -1,7 +1,7 @@
 /**
- * @module DogfoodIdentityDefaultSkillsTest
- * @path packages/core/tests/blueprints/dogfood_identity_default_skills_test.ts
- * @description Phase 150 Step 4 — verifies the dogfood-coder identity carries the
+ * @module DogfoodAgentRoleDefaultSkillsTest
+ * @path packages/core/tests/blueprints/dogfood_agent_role_default_skills_test.ts
+ * @description Phase 150 Step 4 — verifies the dogfood-coder agent role carries the
  *   rigor default_skills the meta-workflow relies on.
  */
 import { assertEquals, assertExists } from "@std/assert";
@@ -17,7 +17,7 @@ const DOGFOOD_CODER_REQUIRED_SKILLS = [
   "tdd-methodology",
 ];
 
-Deno.test("[dogfood-identity-skills] dogfood-coder carries the skills its role requires", async () => {
+Deno.test("[dogfood-agent-role-skills] dogfood-coder carries the skills its role requires", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-coder");
 

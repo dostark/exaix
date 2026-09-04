@@ -13,7 +13,7 @@
  *   `skill-catalog-sandbox-seeding` ledger row asked for.
  *
  *   Seeding is additive: it fills in what is absent and never overwrites, so a scenario that
- *   deliberately patches an identity in its sandbox keeps the patch, and an operator-supplied
+ *   deliberately patches an agent role in its sandbox keeps the patch, and an operator-supplied
  *   workspace is not rewritten under them.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, apps/exactl/src/handlers/request_create_handler.ts]
@@ -49,11 +49,11 @@ Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the flow catalog
   }
 });
 
-Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the identity and skill catalogs", async () => {
+Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the agent-role and skill catalogs", async () => {
   const ws = await Deno.makeTempDir({ prefix: "seed-rest-" });
   try {
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
-    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "identities must be seeded");
+    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "agent roles must be seeded");
     assert(await exists(join(ws, "Memory", "Skills")), "the skill catalog must be seeded");
   } finally {
     await Deno.remove(ws, { recursive: true });
@@ -61,18 +61,18 @@ Deno.test("[workspace_catalog_seeding] a fresh sandbox receives the identity and
 });
 
 Deno.test("[workspace_catalog_seeding] seeding never overwrites a catalog already in the sandbox", async () => {
-  // A scenario that patches an identity in its own sandbox — the capability-patch step in
+  // A scenario that patches an agent role in its own sandbox — the capability-patch step in
   // scenario_templates.ts does exactly this — must not have the patch reverted by a later
   // scenario's seeding pass over the shared workspace.
   const ws = await Deno.makeTempDir({ prefix: "seed-nooverwrite-" });
   try {
-    const identities = join(ws, "Blueprints", "Agents");
-    await Deno.mkdir(identities, { recursive: true });
-    await Deno.writeTextFile(join(identities, "senior-coder.md"), "PATCHED BY SCENARIO");
+    const agentRoles = join(ws, "Blueprints", "Agents");
+    await Deno.mkdir(agentRoles, { recursive: true });
+    await Deno.writeTextFile(join(agentRoles, "senior-coder.md"), "PATCHED BY SCENARIO");
 
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
 
-    assertEquals(await Deno.readTextFile(join(identities, "senior-coder.md")), "PATCHED BY SCENARIO");
+    assertEquals(await Deno.readTextFile(join(agentRoles, "senior-coder.md")), "PATCHED BY SCENARIO");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
@@ -232,25 +232,25 @@ Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed,
       await exists(join(ws, "Blueprints", "Flows", "analyze-codebase.flow.yaml")),
       "the shipped flow catalog must be seeded even though Blueprints/ already existed",
     );
-    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "identities too");
+    assert(await exists(join(ws, "Blueprints", "Agents", "senior-coder.md")), "agent roles too");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
 });
 
 Deno.test("[workspace_catalog_seeding] completing a partial catalog still never overwrites", async () => {
-  // The no-overwrite guarantee must survive the fix: a scenario that patches an identity in
+  // The no-overwrite guarantee must survive the fix: a scenario that patches an agent role in
   // the shared sandbox keeps its patch.
   const ws = await Deno.makeTempDir({ prefix: "seed-partial-nooverwrite-" });
   try {
-    const identities = join(ws, "Blueprints", "Agents");
-    await Deno.mkdir(identities, { recursive: true });
-    await Deno.writeTextFile(join(identities, "senior-coder.md"), "PATCHED BY SCENARIO");
+    const agentRoles = join(ws, "Blueprints", "Agents");
+    await Deno.mkdir(agentRoles, { recursive: true });
+    await Deno.writeTextFile(join(agentRoles, "senior-coder.md"), "PATCHED BY SCENARIO");
 
     await seedWorkspaceCatalogs(ws, REPO_ROOT);
 
-    assertEquals(await Deno.readTextFile(join(identities, "senior-coder.md")), "PATCHED BY SCENARIO");
-    assert(await exists(join(identities, "code-analyst.md")), "the rest of the catalog still arrives");
+    assertEquals(await Deno.readTextFile(join(agentRoles, "senior-coder.md")), "PATCHED BY SCENARIO");
+    assert(await exists(join(agentRoles, "code-analyst.md")), "the rest of the catalog still arrives");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }

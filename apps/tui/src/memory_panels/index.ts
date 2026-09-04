@@ -271,7 +271,7 @@ function renderExecutionDetails(
   lines.push(
     `  Status: ${useColors ? statusPresentation.color : ""}${statusPresentation.icon} ${memory.status}${c.reset}`,
   );
-  lines.push(`  Identity: ${memory.agent_role}`);
+  lines.push(`  Agent Role: ${memory.agent_role}`);
   lines.push(`  Started: ${formatDate(memory.started_at)}`);
   if (memory.completed_at) lines.push(`  Completed: ${formatDate(memory.completed_at)}`);
   lines.push("");

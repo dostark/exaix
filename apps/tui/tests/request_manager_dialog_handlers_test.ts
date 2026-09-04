@@ -95,13 +95,13 @@ Deno.test("processDialogCompletion: confirmed InputDialog routes filter and prio
   confirmInputDialog(filterStatusDialog);
   await processDialogCompletion(filterStatusDialog, RequestDialogType.FILTER_STATUS, handlers);
 
-  const filterIdentityDialog = new InputDialog({
-    title: "Filter Identity",
-    label: "Identity",
+  const filterAgentRoleDialog = new InputDialog({
+    title: "Filter Agent Role",
+    label: "Agent Role",
     defaultValue: "default",
   });
-  confirmInputDialog(filterIdentityDialog);
-  await processDialogCompletion(filterIdentityDialog, RequestDialogType.FILTER_AGENT_ROLE, handlers);
+  confirmInputDialog(filterAgentRoleDialog);
+  await processDialogCompletion(filterAgentRoleDialog, RequestDialogType.FILTER_AGENT_ROLE, handlers);
 
   const priorityDialog = new InputDialog({
     title: "Priority",

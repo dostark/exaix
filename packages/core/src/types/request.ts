@@ -34,9 +34,9 @@ export interface IRequestSkills {
  * Options for creating a request
  */
 export interface IRequestOptions {
-  /** @deprecated Use identity instead */
+  /** @deprecated Use agent_role instead */
   agent?: string;
-  /** Identity blueprint to use (canonical field) */
+  /** Agent role blueprint to use (canonical field) */
   agent_role?: string;
   priority?: RequestPriority;
   portal?: string;

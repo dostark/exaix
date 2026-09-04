@@ -166,14 +166,14 @@ Deno.test("[flow-fixture] staging names the file after the flow's own id, not th
   }
 });
 
-Deno.test("[flow-fixture] every identity a fixture flow names exists in the catalog", async () => {
+Deno.test("[flow-fixture] every agent role a fixture flow names exists in the catalog", async () => {
   // Now that fixture flows are staged and actually load, their `agent_role:` references resolve
-  // at runtime — several of them named identities the catalog does not have.
+  // at runtime — several of them named agent roles the catalog does not have.
   const catalog = new Set<string>();
   for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Agents"))) {
     if (entry.isFile && entry.name.endsWith(".md")) catalog.add(entry.name.replace(/\.md$/, ""));
   }
-  assert(catalog.size > 0, "expected identities to be shipped");
+  assert(catalog.size > 0, "expected agent roles to be shipped");
 
   const dangling: string[] = [];
   for await (const entry of walk(join(FRAMEWORK_HOME, "fixtures", "flows"), { exts: [".yaml"], includeDirs: false })) {
@@ -185,7 +185,7 @@ Deno.test("[flow-fixture] every identity a fixture flow names exists in the cata
   assertEquals(
     [...new Set(dangling)].sort(),
     [],
-    `fixture flows naming an identity the catalog does not have:\n${[...new Set(dangling)].sort().join("\n")}\n\n` +
+    `fixture flows naming an agent role the catalog does not have:\n${[...new Set(dangling)].sort().join("\n")}\n\n` +
       `Catalog: ${[...catalog].sort().join(", ")}`,
   );
 });

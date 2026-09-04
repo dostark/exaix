@@ -11,4 +11,4 @@ rules:
     prefer:
       agentRole: "senior-coder"
       trafficSplit: 1.0
-      fallbackIdentityId: "default-agent"
+      fallbackAgentRole: "default-agent"

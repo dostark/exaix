@@ -122,7 +122,7 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  const identity = BlueprintFrontmatterSchema.parse({
+  const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
@@ -145,7 +145,7 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
   ]);
   mcpClient.setResponse(McpToolName.READ_FILE, "console.log('hello');");
 
-  const result = await executor.execute(step, identity, "Find bugs in main.ts", {
+  const result = await executor.execute(step, agentRole, "Find bugs in main.ts", {
     traceId: "trace-1",
   });
 
@@ -175,7 +175,7 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  const identity = BlueprintFrontmatterSchema.parse({
+  const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
@@ -198,7 +198,7 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
     { done: false, tool: McpToolName.READ_FILE, args: { path: "3.ts" } },
   ]);
 
-  const result = await executor.execute(step, identity, "Go", { traceId: "trace-2" });
+  const result = await executor.execute(step, agentRole, "Go", { traceId: "trace-2" });
 
   assertEquals(result.completed, false);
   assertEquals(result.iterations, 2);
@@ -224,7 +224,7 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  const identity = BlueprintFrontmatterSchema.parse({
+  const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
@@ -246,14 +246,14 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
   ]);
 
   try {
-    await executor.execute(step, identity, "Write something", { traceId: "trace-3" });
+    await executor.execute(step, agentRole, "Write something", { traceId: "trace-3" });
     assertEquals(true, false, "Should have thrown");
   } catch (error) {
     assertStringIncludes((error as Error).message, "which is not in permitted_tools");
   }
 });
 
-Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", async () => {
+Deno.test("DynamicStepExecutor: filters non-read-only tools from agent role", async () => {
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
@@ -268,7 +268,7 @@ Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", asyn
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  const identity = BlueprintFrontmatterSchema.parse({
+  const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
@@ -289,7 +289,7 @@ Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", asyn
   ]);
 
   try {
-    await executor.execute(step, identity, "Write", { traceId: "trace-4" });
+    await executor.execute(step, agentRole, "Write", { traceId: "trace-4" });
     assertEquals(true, false, "Should have thrown because WRITE was filtered out");
   } catch (error) {
     assertStringIncludes((error as Error).message, "not in permitted_tools");
@@ -317,7 +317,7 @@ Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
     execution_mode: FlowStepExecutionMode.DECLARED,
   });
 
-  const identity = BlueprintFrontmatterSchema.parse({
+  const agentRole = BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
     name: "Senior Coder",
     model: "anthropic:claude-3-opus",
@@ -326,7 +326,7 @@ Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
   });
 
   try {
-    await executor.execute(step, identity, "", {
+    await executor.execute(step, agentRole, "", {
       traceId: "t",
     });
     assertEquals(true, false, "Should have thrown");

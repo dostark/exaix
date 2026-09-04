@@ -88,7 +88,7 @@ resolve paths relative to `env.tempDir`.
 
 | Method                                        | Purpose                            |
 | --------------------------------------------- | ---------------------------------- |
-| `env.createBlueprint("senior-coder")`         | Write identity blueprint to disk   |
+| `env.createBlueprint("senior-coder")`         | Write agent role blueprint to disk |
 | `env.createRequest("description", opts)`      | Write request `.md` to `Requests/` |
 | `env.createFlowRequest("desc", flowId, opts)` | Write flow request `.md`           |
 

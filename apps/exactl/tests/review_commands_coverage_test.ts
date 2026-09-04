@@ -132,7 +132,7 @@ describe("ReviewCommands Targeted Coverage", () => {
           "feat/request-dbonly-trace-db-only",
           "pending",
           new Date().toISOString(),
-          "identity",
+          "test-role",
           tempDir,
           "description",
         ],
@@ -168,7 +168,7 @@ describe("ReviewCommands Targeted Coverage", () => {
       await db.preparedRun(
         `INSERT INTO reviews (id, trace_id, branch, status, created, created_by, repository, description)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        ["review-both", traceId, branchName, "pending", new Date().toISOString(), "identity", tempDir, "description"],
+        ["review-both", traceId, branchName, "pending", new Date().toISOString(), "test-role", tempDir, "description"],
       );
 
       const reviews = await reviewCommands.list();
@@ -181,7 +181,7 @@ describe("ReviewCommands Targeted Coverage", () => {
       await db.preparedRun(
         `INSERT INTO artifacts (id, request_id, type, agent_role, status, created, file_path)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        ["artifact-1", "req-1", "analysis", "identity", "pending", new Date().toISOString(), "path/to/art.md"],
+        ["artifact-1", "req-1", "analysis", "test-role", "pending", new Date().toISOString(), "path/to/art.md"],
       );
 
       const artifacts = await reviewCommands.list(undefined, "artifact");
@@ -269,7 +269,7 @@ branch refs/heads/other
       await db.preparedRun(
         `INSERT INTO artifacts (id, request_id, type, agent_role, status, created, file_path)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        ["artifact-bad", "req-bad", "analysis", "identity", "pending", new Date().toISOString(), "bad-art.md"],
+        ["artifact-bad", "req-bad", "analysis", "test-role", "pending", new Date().toISOString(), "bad-art.md"],
       );
       await assertRejects(
         () => internals().updateArtifactStatus("artifact-bad", "approved"),

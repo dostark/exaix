@@ -70,7 +70,7 @@ describe("MemoryAutoApprovalAdapter", () => {
         references: [],
       },
       reason: "test",
-      agent_role: "identity-1",
+      agent_role: "role-1",
       execution_id: undefined,
       status: MemoryRecordStatus.PENDING,
       reviewed_at: undefined,

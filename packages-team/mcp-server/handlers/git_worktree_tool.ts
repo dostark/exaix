@@ -187,7 +187,7 @@ export class GitWorktreeTool extends ToolHandler {
           dry_run: { type: "boolean", description: "Optional: prune dry run" },
           verbose: { type: "boolean", description: "Optional: prune verbose output" },
           expire: { type: "string", description: "Optional prune expiration threshold (e.g. '2.days.ago')" },
-          agent_role: { type: "string", description: "Identity identifier for permission checks" },
+          agent_role: { type: "string", description: "Agent role identifier for permission checks" },
         },
         required: ["portal", "action", "agent_role"],
       },

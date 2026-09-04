@@ -2,7 +2,7 @@
  * @module BlueprintResolverTest
  * @path packages/request/tests/blueprint_resolver_test.ts
  * @architectural-layer Services
- * @description Verifies BlueprintResolver resolves an identity's blueprint from
+ * @description Verifies BlueprintResolver resolves an agent role's blueprint from
  * the configured blueprintsPath, falling back to a Blueprints/Agents
  * directory walked upward from the current working directory when the primary
  * path has no match. Direct unit coverage for the extracted resolver (god-object
@@ -42,7 +42,7 @@ Deno.test("[BlueprintResolver.resolve] loads blueprint directly from configured 
   }
 });
 
-Deno.test("[BlueprintResolver.resolve] returns null when identity is not found anywhere", async () => {
+Deno.test("[BlueprintResolver.resolve] returns null when agent role is not found anywhere", async () => {
   const { testDir, blueprintsPath } = await makeBlueprintsDir();
   const mockLogger = createMockEventLogger();
   try {
@@ -61,7 +61,7 @@ Deno.test("[BlueprintResolver.resolve] falls back to the repo-root Blueprints/Ag
   const mockLogger = createMockEventLogger();
   const originalCwd = Deno.cwd();
   // A sibling-of-repo directory has no Blueprints/ in any cwd-upward-walk ancestor, so
-  // only the module-relative fallback in findInRepoRoots can locate the identity.
+  // only the module-relative fallback in findInRepoRoots can locate the agent role.
   const outsideRepoDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_outside_repo_" });
   try {
     Deno.chdir(outsideRepoDir);

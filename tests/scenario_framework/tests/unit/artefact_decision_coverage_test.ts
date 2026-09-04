@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkArtefactDecisionCoverageTest
  * @path tests/scenario_framework/tests/unit/artefact_decision_coverage_test.ts
  * @description Tests for Phase 158 Step 7's cross-artefact decision coverage: every
- * catalog artefact (skill, identity, flow) must carry a recorded decision or a
+ * catalog artefact (skill, agent role, flow) must carry a recorded decision or a
  * non-coverage reason. Flows carry one extra rule the other two kinds do not: a flow
  * decision cannot be remove/revise/keep unless it is backed by a clean (non-confounded)
  * measurement — the flow-ablation result is confounded by execution strategy
@@ -28,7 +28,7 @@ function catalog(...refs: IArtefactRef[]): IArtefactRef[] {
 Deno.test("[ArtefactDecisionCoverage] every catalog artefact with a recorded entry passes", () => {
   const cat = catalog(
     { kind: ArtefactKind.SKILL, artefactId: "response-contract" },
-    { kind: ArtefactKind.IDENTITY, artefactId: "senior-coder" },
+    { kind: ArtefactKind.AGENT_ROLE, artefactId: "senior-coder" },
     { kind: ArtefactKind.FLOW, artefactId: "feature-development" },
   );
   const entries: IArtefactDecisionEntry[] = [
@@ -39,7 +39,7 @@ Deno.test("[ArtefactDecisionCoverage] every catalog artefact with a recorded ent
       rationale: "positive effect on both measured tasks",
     },
     {
-      kind: ArtefactKind.IDENTITY,
+      kind: ArtefactKind.AGENT_ROLE,
       artefactId: "senior-coder",
       status: ArtefactDecisionStatus.KEEP,
       rationale: "statistically indistinguishable from test-engineer, no measured harm",
@@ -64,9 +64,9 @@ Deno.test("[ArtefactDecisionCoverage] a catalog artefact with no entry is reject
 });
 
 Deno.test("[ArtefactDecisionCoverage] an entry with an empty rationale is rejected", () => {
-  const cat = catalog({ kind: ArtefactKind.IDENTITY, artefactId: "code-analyst" });
+  const cat = catalog({ kind: ArtefactKind.AGENT_ROLE, artefactId: "code-analyst" });
   const entries: IArtefactDecisionEntry[] = [
-    { kind: ArtefactKind.IDENTITY, artefactId: "code-analyst", status: ArtefactDecisionStatus.KEEP, rationale: "" },
+    { kind: ArtefactKind.AGENT_ROLE, artefactId: "code-analyst", status: ArtefactDecisionStatus.KEEP, rationale: "" },
   ];
   assertThrows(() => assertArtefactDecisionCoverage(cat, entries), Error, "rationale");
 });
@@ -115,10 +115,10 @@ Deno.test("[ArtefactDecisionCoverage] a flow decision of KEEP with cleanMeasurem
   assertArtefactDecisionCoverage(cat, entries);
 });
 
-Deno.test("[ArtefactDecisionCoverage] a skill or identity decision of KEEP needs no cleanMeasurement flag", () => {
+Deno.test("[ArtefactDecisionCoverage] a skill or agent role decision of KEEP needs no cleanMeasurement flag", () => {
   const cat = catalog(
     { kind: ArtefactKind.SKILL, artefactId: "security-first" },
-    { kind: ArtefactKind.IDENTITY, artefactId: "test-engineer" },
+    { kind: ArtefactKind.AGENT_ROLE, artefactId: "test-engineer" },
   );
   const entries: IArtefactDecisionEntry[] = [
     {
@@ -128,7 +128,7 @@ Deno.test("[ArtefactDecisionCoverage] a skill or identity decision of KEEP needs
       rationale: "positive effect, free-tier screening",
     },
     {
-      kind: ArtefactKind.IDENTITY,
+      kind: ArtefactKind.AGENT_ROLE,
       artefactId: "test-engineer",
       status: ArtefactDecisionStatus.KEEP,
       rationale: "no measured harm vs senior-coder",

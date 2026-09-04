@@ -33,7 +33,7 @@ function makeService(sessionDir: string): SessionDelegateService {
 function baseInput(overrides: Partial<IPrepareBriefInput> = {}): IPrepareBriefInput {
   return {
     traceId: TRACE_ID,
-    agentRole: "test-identity",
+    agentRole: "test-role",
     gate: "code_changes",
     tool: "claude-code",
     objective: "Implement the feature within src/.",

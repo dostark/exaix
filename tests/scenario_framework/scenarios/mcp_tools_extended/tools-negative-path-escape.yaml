@@ -1,9 +1,9 @@
 schema_version: "1.0.0"
-# [security] Asserts the handlers REFUSE out-of-portal paths and unauthorised identities.
+# [security] Asserts the handlers REFUSE out-of-portal paths and unauthorised agent roles.
 # The previous version ran `cat /tmp/.../../etc/passwd || true` and asserted exit code 0,
 # which is satisfied by any outcome whatsoever — it proved nothing about refusal.
 id: "tools-negative-path-escape"
-title: "[security] Path escape and unauthorised identity are refused by the handlers"
+title: "[security] Path escape and unauthorised agent role are refused by the handlers"
 pack: "mcp_tools_extended"
 tags: ["negative", "security", "path-escape", "subsystem:tools", "entity:read_file", "entity:write_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
@@ -86,9 +86,9 @@ steps:
         path: "/tmp/exaix-should-never-exist.txt"
         score_weight: 1.0
 
-  - id: "unauthorised-identity-refused"
+  - id: "unauthorised-agent-role-refused"
     type: "run-script"
-    name: "[security] an identity absent from agents_allowed is refused"
+    name: "[security] an agent role absent from agents_allowed is refused"
     command: "deno"
     args:
       - "run"
@@ -97,7 +97,7 @@ steps:
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "read_file"
-      - '{"portal":"tools","path":"src/greeting.txt","agent_role":"not-allowed-identity"}'
+      - '{"portal":"tools","path":"src/greeting.txt","agent_role":"not-allowed-role"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:

@@ -1,8 +1,8 @@
 schema_version: "1.0.0"
 id: "security-expert-smoke"
 title: "security-expert structural smoke — plan structure validation on mock provider"
-pack: "identity_eval"
-tags: ["smoke", "subsystem:identities", "entity:security-expert"]
+pack: "agent_role_eval"
+tags: ["smoke", "subsystem:agent_roles", "entity:security-expert"]
 request_fixture: "fixtures/requests/provider_live/security_expert.md"
 mode_support: ["auto"]
 portals: []
@@ -47,10 +47,10 @@ steps:
     type: "json-assert"
     file_pattern: "**/*_plan.md"
     output_criteria:
-      # The point of an identity smoke is that THIS identity produced the plan.
+      # The point of an agent-role smoke is that THIS agent role produced the plan.
       # frontmatter-field-exists only proves the field is present — PlanWriter stamps it
-      # unconditionally, so every identity scenario would pass with the wrong identity.
-      - id: "plan-attributed-to-identity"
+      # unconditionally, so every agent-role scenario would pass with the wrong agent role.
+      - id: "plan-attributed-to-agent-role"
         score_weight: 1.0
         kind: "frontmatter-field-equals"
         field: "agent_role"

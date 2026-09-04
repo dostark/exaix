@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkArtefactDecisionCoverage
  * @path tests/scenario_framework/runner/artefact_decision_coverage.ts
  * @description Phase 158 Step 7's cross-artefact decision coverage: every catalog
- * artefact (skill, identity, flow) must carry a recorded decision or a non-coverage
+ * artefact (skill, agent role, flow) must carry a recorded decision or a non-coverage
  * reason, so no measured or unmeasured artefact is silently left unaddressed. Flows
  * carry one extra rule the other two kinds do not: a flow decision cannot be
  * remove/revise/keep unless `cleanMeasurement` is set, because the only flow-ablation
@@ -16,7 +16,7 @@
 
 export enum ArtefactKind {
   SKILL = "skill",
-  IDENTITY = "identity",
+  AGENT_ROLE = "agent_role",
   FLOW = "flow",
 }
 

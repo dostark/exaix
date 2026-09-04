@@ -106,17 +106,17 @@ export class FlowRuntimeValidator {
   }
 
   /** The whole step list is checked, so a flow whose next step references a missing
-   *  identity is rejected up front instead of failing mid-execution. */
-  async validateStepIdentities(
+   *  agent role is rejected up front instead of failing mid-execution. */
+  async validateStepAgentRoles(
     flow: IFlow,
     hasBlueprint: (agentRole: string) => Promise<boolean>,
   ): Promise<string | null> {
     for (const step of flow.steps) {
       if (!step.agent_role) {
-        return `Step '${step.id}' has no identity`;
+        return `Step '${step.id}' has no agent role`;
       }
       if (!(await hasBlueprint(step.agent_role))) {
-        return `Step '${step.id}' references identity '${step.agent_role}' that does not exist in the blueprint catalog`;
+        return `Step '${step.id}' references agent role '${step.agent_role}' that does not exist in the blueprint catalog`;
       }
     }
     return null;

@@ -5,7 +5,7 @@
  * whose value report row reads no-effect must carry a recorded decision (keep with
  * rationale, revise, or remove) — an unrecorded no-effect result is a gap, not a silent
  * default, per the plan's Success Criteria. Scoped to skills specifically; Step 7 owns
- * the cross-artefact (identity + skill + flow) coverage check.
+ * the cross-artefact (agent_role + skill + flow) coverage check.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/skill_value_decision.ts, tests/scenario_framework/runner/skill_value_report.ts]
  */

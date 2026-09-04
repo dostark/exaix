@@ -672,7 +672,7 @@ Deno.test("FlowRunner: falls back to a recovery step when primary step fails", a
   assertEquals(fallbackEvents.length, 1);
   assertEquals(fallbackEvents[0].payload.stepId, "primary");
   assertEquals(fallbackEvents[0].payload.fallbackStepId, "fallback");
-  assertEquals(fallbackEvents[0].payload.fallbackIdentityId, "fallback-agent");
+  assertEquals(fallbackEvents[0].payload.fallbackAgentRole, "fallback-agent");
   assertEquals(fallbackEvents[0].payload.error, "primary failed");
 });
 

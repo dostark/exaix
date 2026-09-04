@@ -40,7 +40,7 @@ const ReActResponseSchema = z.object({
 });
 
 const REACT_PROMPT_TEMPLATE = `
-You are {identity_name}, {identity_description}.
+You are {agent_role_name}, {agent_role_description}.
 
 Step Objective: {step_objective}
 
@@ -139,8 +139,8 @@ export class LlmClient implements ILlmClient {
     const accCtx = accumulatedContext || "[No previous tool calls yet]";
 
     const prompt = REACT_PROMPT_TEMPLATE
-      .replace("{identity_name}", agent_role.name)
-      .replace("{identity_description}", agent_role.description ?? "an expert assistant")
+      .replace("{agent_role_name}", agent_role.name)
+      .replace("{agent_role_description}", agent_role.description ?? "an expert assistant")
       .replace("{step_objective}", stepObjective)
       .replace("{tools_description}", toolsDesc)
       .replace("{accumulated_context}", accCtx)

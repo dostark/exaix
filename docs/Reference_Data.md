@@ -140,25 +140,25 @@ exactl memory
 
 ---
 
-## Blueprint Management — Creating Identities
+## Blueprint Management — Creating Agent Roles
 
-The identity catalog is a flat set of concrete identities under
-`Blueprints/Identities/*.md` (the former `examples/` and `templates/`
+The agent role catalog is a flat set of concrete agent roles under
+`Blueprints/Agents/*.md` (the former `examples/` and `templates/`
 subdirectories were retired in identity skill quality refactoring — examples merged into concrete
-identities, templates converted to skills in `Blueprints/Skills/`).
+agent roles, templates converted to skills in `Blueprints/Skills/`).
 
-`exactl blueprint create <id>` (alias: `exactl blueprint identity create <id>`)
-creates an identity. There is no separate template library; instead, scaffold a
-new identity by cloning an existing one as a prototype:
+`exactl blueprint create <id>` (alias: `exactl blueprint agent-role create <id>`)
+creates an agent role. There is no separate template library; instead, scaffold a
+new agent role by cloning an existing one as a prototype:
 
-| Flag                     | Purpose                                                              |
-| ------------------------ | -------------------------------------------------------------------- |
-| `--name`                 | Identity display name (required)                                     |
-| `--model`                | `provider:model` (required unless `--from` supplies one)             |
-| `--from <identity-id>`   | Clone an existing identity's model, capabilities, and body as a base |
-| `--capabilities`         | Comma-separated behavioural tags                                     |
-| `--description`          | Brief description                                                    |
-| `--system-prompt[-file]` | Inline / file system prompt (else a default scaffold is used)        |
+| Flag                     | Purpose                                                                |
+| ------------------------ | ---------------------------------------------------------------------- |
+| `--name`                 | Agent role display name (required)                                     |
+| `--model`                | `provider:model` (required unless `--from` supplies one)               |
+| `--from <agent-role-id>` | Clone an existing agent role's model, capabilities, and body as a base |
+| `--capabilities`         | Comma-separated behavioural tags                                       |
+| `--description`          | Brief description                                                      |
+| `--system-prompt[-file]` | Inline / file system prompt (else a default scaffold is used)          |
 
 ```bash
 # Clone senior-coder as a starting point, then customise:
@@ -565,8 +565,8 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `ReviewRejected`                         | `review.rejected`                             | Review                          |
 | `GitCheck`                               | `git.check`                                   | Git                             |
 | `GitInit`                                | `git.init`                                    | Git                             |
-| `GitIdentityCheck`                       | `git.agent_role_check`                        | Git                             |
-| `GitIdentityConfigured`                  | `git.agent_role_configured`                   | Git                             |
+| `GitIdentityCheck`                       | `git.identity_check`                          | Git                             |
+| `GitIdentityConfigured`                  | `git.identity_configured`                     | Git                             |
 | `GitBranchCreated`                       | `git.branch_created`                          | Git                             |
 | `GitCommitted`                           | `git.committed`                               | Git                             |
 | `GitCheckout`                            | `git.checkout`                                | Git                             |

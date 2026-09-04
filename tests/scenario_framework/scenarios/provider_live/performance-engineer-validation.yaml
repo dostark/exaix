@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "performance-engineer-validation"
 title: "Performance Engineer agent validation"
 pack: "provider_live"
-tags: ["provider-live", "planning", "subsystem:identities", "entity:performance-engineer"]
+tags: ["provider-live", "planning", "subsystem:agent_roles", "entity:performance-engineer"]
 request_fixture: "fixtures/requests/provider_live/performance_engineer.md"
 mode_support: ["auto", "step"]
 portals:

@@ -2,10 +2,10 @@
  * @module ScenarioFrameworkSkillCorpusReachability
  * @path tests/scenario_framework/runner/skill_corpus_reachability.ts
  * @description Phase 158 Step 4's corpus-reachability computation: a skill is
- * corpus-reachable when it is either in the evaluated identity's default_skills or
+ * corpus-reachable when it is either in the evaluated agent role's default_skills or
  * matched by the real SkillsService.matchSkills engine against at least one corpus
  * task's request text. Pure computation only, matching arm_comparison.ts's pattern —
- * loading the skill catalog, the identity's default_skills, and running the real
+ * loading the skill catalog, the agent role's default_skills, and running the real
  * matcher per corpus task is the caller's concern; this module only aggregates
  * already-computed matches into a reachable set and a non-coverage list.
  * @architectural-layer Test
@@ -36,22 +36,22 @@ export interface ISkillReachabilityResult {
   nonCoverage: INonCoverageEntry[];
 }
 
-/** One shipped identity's declared `default_skills`, independent of whether the corpus run
- *  under measurement selected that identity — lets a non-coverage reason distinguish "absent
- *  from every identity's defaults" from "outside this run's identity coverage". */
-export interface IIdentityDefaultSkills {
+/** One shipped agent role's declared `default_skills`, independent of whether the corpus run
+ *  under measurement selected that agent role — lets a non-coverage reason distinguish "absent
+ *  from every agent role's defaults" from "outside this run's agent-role coverage". */
+export interface IAgentRoleDefaultSkills {
   agentRole: string;
   defaultSkillIds: string[];
 }
 
 // Unions default_skills with every corpus match to find the corpus-reachable set; a default_skills
 // entry naming a skill outside the catalog is silently ignored rather than reported.
-// `allIdentityDefaultSkills` distinguishes "not reached by this run" from "unused by the catalog".
+// `allAgentRoleDefaultSkills` distinguishes "not reached by this run" from "unused by the catalog".
 export function computeSkillReachability(
   catalog: ISkillCatalogEntry[],
   defaultSkillIds: string[],
   corpusMatches: ICorpusTaskMatch[],
-  allIdentityDefaultSkills: IIdentityDefaultSkills[] = [],
+  allAgentRoleDefaultSkills: IAgentRoleDefaultSkills[] = [],
 ): ISkillReachabilityResult {
   const reached = new Set<string>(defaultSkillIds);
   for (const match of corpusMatches) {
@@ -69,18 +69,18 @@ export function computeSkillReachability(
       continue;
     }
 
-    const wiredElsewhere = allIdentityDefaultSkills.filter((identity) =>
-      identity.defaultSkillIds.includes(entry.skillId)
+    const wiredElsewhere = allAgentRoleDefaultSkills.filter((agentRole) =>
+      agentRole.defaultSkillIds.includes(entry.skillId)
     );
 
     nonCoverage.push({
       skillId: entry.skillId,
       reason: wiredElsewhere.length > 0
         ? `not matched by any of the ${corpusMatches.length} corpus tasks and not this run's active ` +
-          `identity default; still the declared default_skills of ` +
-          `${wiredElsewhere.map((identity) => `"${identity.agentRole}"`).join(", ")} — outside this run's ` +
-          `identity coverage, not evidence the skill is unused`
-        : `not in the evaluated identity's default_skills and matched by none of the ${corpusMatches.length} corpus tasks`,
+          `agent-role default; still the declared default_skills of ` +
+          `${wiredElsewhere.map((agentRole) => `"${agentRole.agentRole}"`).join(", ")} — outside this run's ` +
+          `agent-role coverage, not evidence the skill is unused`
+        : `not in the evaluated agent role's default_skills and matched by none of the ${corpusMatches.length} corpus tasks`,
     });
   }
 

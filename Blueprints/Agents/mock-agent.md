@@ -8,7 +8,7 @@ capabilities:
 created: "2025-12-09T13:47:00Z"
 created_by: "exaix-test-suite"
 version: "1.1.0"
-description: "Identity blueprint for testing and CI/CD"
+description: "Agent role blueprint for testing and CI/CD"
 default_skills: [response-contract]
 ---
 

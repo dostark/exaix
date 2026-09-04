@@ -31,7 +31,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  * Gate configuration schema
  */
 export const GateConfigSchema = z.object({
-  /** Judge identity to use for evaluation */
+  /** Judge agent role to use for evaluation */
   agentRole: z.string(),
   /** Criteria names or objects to evaluate against */
   criteria: z.array(z.union([z.string(), EvaluationCriterionSchema])),
@@ -82,7 +82,7 @@ export class GateEvaluator implements IGateEvaluator {
         }
       }
 
-      // Invoke judge identity
+      // Invoke judge agent role
       const evaluation = await this.judgeInvoker.evaluate(
         config.agentRole,
         contentToEvaluate,

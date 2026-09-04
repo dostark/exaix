@@ -4,7 +4,7 @@
  * @description Phase 157 Step 3 — MOCK_STRICT=1 in a step's `env:` block reaches that step's
  *   subprocess (buildStepBaseEnv layers step.env last, over the shared baseEnv), while a step
  *   with no MOCK_STRICT in its own `env:` does NOT inherit one from the runner's own process
- *   env — proving per-step scoping actually isolates identity/skill pack steps from a flows
+ *   env — proving per-step scoping actually isolates agent-role/skill pack steps from a flows
  *   step's MOCK_STRICT=1, rather than relying on it merely being absent by convention.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, packages/ai/src/provider_factory.ts]
@@ -35,13 +35,13 @@ Deno.test("[strict_scoped_per_step] a step's own MOCK_STRICT=1 reaches its subpr
 
 Deno.test("[strict_scoped_per_step] a step without MOCK_STRICT in its own env does not inherit one from the runner process", async () => {
   await withEnv({ MOCK_STRICT: null }, () => {
-    const identityStep = buildStepBaseEnv({
+    const agentRoleStep = buildStepBaseEnv({
       ...BASE_OPTIONS,
       stepId: "start-daemon",
       env: { EXA_LLM_PROVIDER: "mock" },
     });
 
-    assertEquals(identityStep.MOCK_STRICT, undefined);
+    assertEquals(agentRoleStep.MOCK_STRICT, undefined);
   });
 });
 

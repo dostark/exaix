@@ -1,14 +1,14 @@
 /**
- * @module ScenarioFrameworkIdentityTaskTypeReport
- * @path tests/scenario_framework/runner/identity_task_type_report.ts
- * @description Phase 158 Step 5's per-task-type delta grouping: an identity may win on
+ * @module ScenarioFrameworkAgentRoleTaskTypeReport
+ * @path tests/scenario_framework/runner/agent_role_task_type_report.ts
+ * @description Phase 158 Step 5's per-task-type delta grouping: an agent role may win on
  * one task type (e.g. bugfix) and lose on another (e.g. refactor), so this groups Step
  * 1's already-computed per-task deltas (`arm_comparison.ts`'s `ITaskPairedResult[]`) by
  * task type rather than collapsing them into one aggregate, which would hide exactly
  * that disagreement. Pure computation only — the caller supplies the paired comparison
  * and the task-id-to-task-type mapping.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/tests/unit/identity_task_type_report_test.ts, tests/scenario_framework/runner/arm_comparison.ts]
+ * @related-files [tests/scenario_framework/tests/unit/agent_role_task_type_report_test.ts, tests/scenario_framework/runner/arm_comparison.ts]
  */
 
 import type { ITaskPairedResult } from "./arm_comparison.ts";

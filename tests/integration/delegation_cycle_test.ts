@@ -82,7 +82,7 @@ async function runCycle(
 
   const brief = SessionBriefSchema.parse({
     trace_id: traceId,
-    agent_role: "test-identity",
+    agent_role: "test-role",
     gate,
     tool: tool.name === "mock" ? "claude-code" as SessionTool : tool.name as SessionTool,
     objective: `Delegation cycle test for gate ${gate}`,

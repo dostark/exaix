@@ -122,7 +122,7 @@ Deno.test("MemoryFormatter.formatExecutionDetail: loads fresh execution when dat
 
   const result = await MemoryFormatter.formatExecutionDetail(n, service);
   assertStringIncludes(result, "# Execution:");
-  assertStringIncludes(result, "**Identity:** a");
+  assertStringIncludes(result, "**Agent Role:** a");
 });
 
 Deno.test("MemoryFormatter.formatLearningDetail: renders proposal learning content", () => {

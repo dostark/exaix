@@ -15,10 +15,10 @@ export interface IServiceContext {
   actor?: Actor;
   /** Category of actor */
   actorType?: ActorType | null;
-  /** Runtime agent handling this service call — NOT an identity id */
+  /** Runtime agent handling this service call — NOT an agent role id */
   agentId?: string;
   /** Category of runtime agent */
   agentKind?: RuntimeKind | null;
-  /** LLM identity blueprint being executed */
+  /** LLM agent role blueprint being executed */
   agentRole?: string;
 }

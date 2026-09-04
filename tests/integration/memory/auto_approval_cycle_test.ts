@@ -65,13 +65,13 @@ Deno.test("Phase 71 Integration: End-to-end memory auto-approval cycle", async (
       completed_at: new Date().toISOString(),
       status: ExecutionStatus.COMPLETED,
       portal: "test-portal",
-      agent_role: "test-identity",
+      agent_role: "test-role",
       summary: "Test execution",
       context_files: [],
       context_portals: [],
       changes: { files_created: [], files_modified: [], files_deleted: [] },
     };
-    const proposalId = await memoryExtractor.createProposal(learning, execution, "test-identity");
+    const proposalId = await memoryExtractor.createProposal(learning, execution, "test-role");
 
     // 2. Create a low-confidence proposal (Ineligible)
     const lowLearning: IProposalLearning = {
@@ -81,7 +81,7 @@ Deno.test("Phase 71 Integration: End-to-end memory auto-approval cycle", async (
       confidence: ConfidenceAssessmentLevel.LOW,
       extracted_at: extractedAt,
     };
-    await memoryExtractor.createProposal(lowLearning, execution, "test-identity");
+    await memoryExtractor.createProposal(lowLearning, execution, "test-role");
 
     const eligibleCandidates = await autoApprovalService.listEligible();
     assertEquals(eligibleCandidates.length, 1, "List eligible should expose exactly one candidate");

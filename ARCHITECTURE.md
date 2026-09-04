@@ -167,7 +167,7 @@ both pass; any failure class halts before further coordinator calls.
 delegateCycle:
   requireChangedPaths: true # non-empty paths_touched required; always true today
   review:
-    agent_role: quality-judge # judge identity evaluating each completed step
+    agent_role: quality-judge # judge agent role evaluating each completed step
     criteria: [code_correctness, has_tests, task_fulfillment]
     threshold: 0.8
     onFail: halt # halt | retry
@@ -180,7 +180,7 @@ is the launch source of truth — a unique `(parentTraceId, parentStepId, sequen
 key guarantees at most one durable launch across crash points and duplicate handler/watcher
 entry. An atomic JSON checkpoint (`ISessionDelegateCycleStore`) mirrors progress
 (`completedSteps`, an optional `inFlight` step, `status`) for cheap resume without re-scanning
-claims; a checkpoint whose identity or `planDigest` no longer matches, or that is already
+claims; a checkpoint whose key or `planDigest` no longer matches, or that is already
 terminal, is rejected (`checkpoint_mismatch`) rather than silently overwritten. Each sequence's
 delegation runs under its own `delegationTraceId`, distinct from the parent flow's trace, with
 `parent_trace_id` carried in the `session.delegate.launched` event payload for lineage.
@@ -799,7 +799,7 @@ module header lists the corresponding service files.
 
 **File:** `packages/execution/src/strategies/` (`legacy_strategy.ts`, `react_loop_strategy.ts`, `mcp_agent_strategy.ts`, `cli_delegate_strategy.ts`)
 
-`AgentExecutor.executeStep()` resolves one `IExecutionStrategy` per step from a `StrategyRegistry`, selected by the executing identity's `IAgentFileBlueprint.capabilities`:
+`AgentExecutor.executeStep()` resolves one `IExecutionStrategy` per step from a `StrategyRegistry`, selected by the executing agent role's `IAgentFileBlueprint.capabilities`:
 
 ```text
 capabilities.includes("mcp")          → McpAgentStrategy
@@ -850,7 +850,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
 
 **Team seam (`IResolutionStrategy`, `packages/ai/src/i_resolution_strategy.ts`):** four optional hooks (`validateExplicit`, `selectRoute`, `scoreBest`, `rankUsage`) a strategy may implement; an absent hook is a Solo-identical no-op, never an error. `apps/daemon/src/bootstrap_team.ts:buildTeamResolutionStrategy` constructs the concrete `TeamResolutionStrategy` (`packages-team/model-registry-live/src/team_resolution_strategy.ts`) only in Team edition; Solo passes no strategy at all. `packages/core/src/planning/plan_executor.ts:createAgentExecutor` threads the resolver (and, for `best`, the skill-derived task type via `deriveTopSkillTaskTypes`) into `AgentExecutor` per plan execution.
 
-**Team live model registry (`packages-team/model-registry-live/`, `model_registry.enabled` config gate):** a `RegistryRefreshScheduler` periodically fetches each provider's catalog through a per-provider adapter (`packages-team/model-registry-live/src/adapters/`) and admits a filtered subset — curated, first-party/native, previously-used, or top-N of a tracked benchmark — persisting to SQLite (`model_catalog`, `model_pricing`, `model_benchmark` tables). `validateExplicit` re-fetches and auto-admits a real-but-unadmitted explicit model on first use rather than rejecting it. `selectRoute` applies a configurable route policy (`cheapest`/`reliability`/`native_first`/`user_order`) when a model has 2+ provider routes. `scoreBest` looks up each candidate's benchmark score for the request's derived `TaskType` (`packages/execution/src/task_type_derivation.ts:deriveTaskType`, a 5-tier precedence: frontmatter > identity > skill > static map > analyzer). Cost records (`packages/core/src/cost/cost_tracker.ts:CostTracker.resolveCost`) carry `cost_source: "registry_computed"` when the resolved `provider:model` has a live-registry price and no provider-reported cost exists, replacing the legacy blended estimate; a reported-vs-computed divergence beyond `model_registry.cost_divergence_tolerance_pct` emits `model.cost.divergence`. Solo's `DefaultModelRegistry` (`packages/model-registry/`) is a static offline floor with no scheduler and no live hooks — selected instead of the Team service via the edition-composer seam (`apps/daemon/main.ts:getModelRegistryProvider`) whenever `model_registry.enabled` is `false` or the Team module isn't present.
+**Team live model registry (`packages-team/model-registry-live/`, `model_registry.enabled` config gate):** a `RegistryRefreshScheduler` periodically fetches each provider's catalog through a per-provider adapter (`packages-team/model-registry-live/src/adapters/`) and admits a filtered subset — curated, first-party/native, previously-used, or top-N of a tracked benchmark — persisting to SQLite (`model_catalog`, `model_pricing`, `model_benchmark` tables). `validateExplicit` re-fetches and auto-admits a real-but-unadmitted explicit model on first use rather than rejecting it. `selectRoute` applies a configurable route policy (`cheapest`/`reliability`/`native_first`/`user_order`) when a model has 2+ provider routes. `scoreBest` looks up each candidate's benchmark score for the request's derived `TaskType` (`packages/execution/src/task_type_derivation.ts:deriveTaskType`, a 5-tier precedence: frontmatter > agent role > skill > static map > analyzer). Cost records (`packages/core/src/cost/cost_tracker.ts:CostTracker.resolveCost`) carry `cost_source: "registry_computed"` when the resolved `provider:model` has a live-registry price and no provider-reported cost exists, replacing the legacy blended estimate; a reported-vs-computed divergence beyond `model_registry.cost_divergence_tolerance_pct` emits `model.cost.divergence`. Solo's `DefaultModelRegistry` (`packages/model-registry/`) is a static offline floor with no scheduler and no live hooks — selected instead of the Team service via the edition-composer seam (`apps/daemon/main.ts:getModelRegistryProvider`) whenever `model_registry.enabled` is `false` or the Team module isn't present.
 
 **Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason (`explicit_override`/`preferred_list`/`preset_default`/`characteristics_scored`/`best_ranked`/`usage_ranked`/`fallback`/…), attempt count, and duration; Team additionally journals `model.admitted`/`model.retired` (catalog changes), `model.route.selected` (multi-route decisions), `model.catalog.refreshed`/`model.pricing.refreshed`/`model.benchmark.refreshed` (scheduler cycles), and `model.cost.divergence`.
 
@@ -906,7 +906,7 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### Tool Selection & Resolution
 
-Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentOrchestrator` reads `IToolRegistry.getTools()` and `PromptBuilder` renders the resulting `## Available Tools` prompt section plus the TOML action-block calling convention `LegacyAgentStrategy` parses responses against), **identity `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Identities/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the identity's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the identity doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
+Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentOrchestrator` reads `IToolRegistry.getTools()` and `PromptBuilder` renders the resulting `## Available Tools` prompt section plus the TOML action-block calling convention `LegacyAgentStrategy` parses responses against), **agent role `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Agents/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the agent role's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the agent role doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
 
 For the full resolution order, the fail-closed semantics (`permitted_tools: []` permits nothing regardless of skill declarations; `undefined` means no restriction), and the pure `resolveEffectiveSkillTools()` union+intersect function, see `packages/execution/README.md#tool-selection--resolution`.
 
@@ -1154,7 +1154,7 @@ on-disk memory state:
   insight captured mid-run and restated post-run is extracted once. A third source
   feeds the identical pipeline: an accepted `session_delegate` return (`apps/daemon/src/on_reconciled_dispatcher.ts`)
   mints an execution record from the return's own validated `summary`/`paths_touched`
-  and the brief's `identity_id`, so delegated-tool work is captured the same way a
+  and the brief's `agent_role`, so delegated-tool work is captured the same way a
   plan execution is — a rejected return never mints one, and the return's
   `transcript_ref` stays opaque, never parsed as extraction input.
 - **Curation.** Extraction and reflection load a dedicated content-curation policy skill
@@ -1237,9 +1237,9 @@ For full cleanup behavior details, see `packages/portal/README.md#review-cleanup
 
 ## Blueprint Management System
 
-Blueprints define agent identities, each stored as `Blueprints/Identities/{identity_id}.md` with YAML frontmatter specifying provider/model, behavioural capabilities, least-privilege `permitted_tools`, `default_skills`, and persona instructions. The catalog is a flat set of concrete identities — the former `examples/` and `templates/` subdirectories were retired in Phase 131 (examples merged into concrete identities, templates converted to skills). Shared "how to work" knowledge lives in `Blueprints/Skills/`, referenced via `default_skills`.
+Blueprints define agent roles, each stored as `Blueprints/Agents/{agent_role}.md` with YAML frontmatter specifying provider/model, behavioural capabilities, least-privilege `permitted_tools`, `default_skills`, and persona instructions. The catalog is a flat set of concrete agent roles — the former `examples/` and `templates/` subdirectories were retired in Phase 131 (examples merged into concrete agent roles, templates converted to skills). Shared "how to work" knowledge lives in `Blueprints/Skills/`, referenced via `default_skills`.
 
-For the blueprint CLI commands (including `create --from <identity-id>` to clone a prototype) and the runtime usage flow diagram, see `docs/Reference_Data.md#blueprint-management`.
+For the blueprint CLI commands (including `create --from <agent-role-id>` to clone a prototype) and the runtime usage flow diagram, see `docs/Reference_Data.md#blueprint-management`.
 
 ---
 
@@ -1338,7 +1338,7 @@ The scenario framework provides comprehensive end-to-end testing for Exaix featu
 
 ### Subsystem evaluation layer
 
-Scenarios carry a `subsystem:` tag naming what they measure — `tools`, `mcp-server`, `mcp-client`, `identities`, `skills`, `flows` — and an optional `entity:<name>` narrowing to a single tool, identity, skill or flow. This is the axis coverage is read on: a subsystem with no green scenario is a subsystem nothing measures, and the parity gates (`tests/eval/*_parity_test.ts`) fail when a catalog entry has neither a scenario nor a reasoned exclusion in `tests/eval/parity_exclusions.json`.
+Scenarios carry a `subsystem:` tag naming what they measure — `tools`, `mcp-server`, `mcp-client`, `agent_roles`, `skills`, `flows` — and an optional `entity:<name>` narrowing to a single tool, agent role, skill or flow. This is the axis coverage is read on: a subsystem with no green scenario is a subsystem nothing measures, and the parity gates (`tests/eval/*_parity_test.ts`) fail when a catalog entry has neither a scenario nor a reasoned exclusion in `tests/eval/parity_exclusions.json`.
 
 Three properties are structural rather than conventional, because each failed silently before it was enforced:
 
@@ -1409,7 +1409,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 - **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
-- **[Dogfood Identity, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` identity (`Blueprints/Agents/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so identity rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
+- **[Dogfood Agent Role, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` agent role (`Blueprints/Agents/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so agent-role rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
 - **[Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/post-gap-analysis output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 
 ---

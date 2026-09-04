@@ -3,7 +3,7 @@
  * @module ScenarioFrameworkArmIsolationTest
  * @path tests/scenario_framework/tests/unit/arm_isolation_test.ts
  * @description Verifies Phase 158 Step 2's env-scoped arm mechanisms (skill
- * suppression, skill overlay, identity overlay) never leak state between arms. The
+ * suppression, skill overlay, agent-role overlay) never leak state between arms. The
  * scenario framework runs one scenario per daemon process, so true concurrent access
  * to different env values within one process never happens in production — what a
  * same-process unit test CAN meaningfully prove is the honest proxy: two SEQUENTIAL
@@ -60,14 +60,14 @@ Deno.test("[ArmIsolation] suppressing skill X for one arm does not suppress it f
   const armAResult: { skillIds: string[] } = await withEnv(
     EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR,
     "skill-x",
-    () => (runner as Any).matchAndApplySkills(blueprint, request, "test-identity"),
+    () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
   assertEquals(armAResult.skillIds.includes("skill-x"), false, "arm A suppresses skill-x");
 
   const armBResult: { skillIds: string[] } = await withEnv(
     EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR,
     "skill-y",
-    () => (runner as Any).matchAndApplySkills(blueprint, request, "test-identity"),
+    () => (runner as Any).matchAndApplySkills(blueprint, request, "test-role"),
   );
   assertEquals(armBResult.skillIds.includes("skill-x"), true, "arm B must not inherit arm A's suppression");
   assertEquals(armBResult.skillIds.includes("skill-y"), false, "arm B suppresses skill-y instead");
@@ -127,21 +127,21 @@ Deno.test("[ArmIsolation] two sequential skill overlays each see only their own 
 });
 
 Deno.test("[ArmIsolation] two sequential agent role overlays each see only their own content", async () => {
-  const identitiesRoot = await Deno.makeTempDir({ prefix: "isolation-identities-" });
-  const identitiesDir = join(identitiesRoot, "Agents");
-  const overlayARoot = await Deno.makeTempDir({ prefix: "isolation-identity-overlay-a-" });
+  const agentRolesRoot = await Deno.makeTempDir({ prefix: "isolation-agent-roles-" });
+  const agentRolesDir = join(agentRolesRoot, "Agents");
+  const overlayARoot = await Deno.makeTempDir({ prefix: "isolation-agent-role-overlay-a-" });
   const overlayA = join(overlayARoot, "Agents");
-  const overlayBRoot = await Deno.makeTempDir({ prefix: "isolation-identity-overlay-b-" });
+  const overlayBRoot = await Deno.makeTempDir({ prefix: "isolation-agent-role-overlay-b-" });
   const overlayB = join(overlayBRoot, "Agents");
   const mockLogger = createMockEventLogger();
   try {
-    await Deno.mkdir(identitiesDir, { recursive: true });
+    await Deno.mkdir(agentRolesDir, { recursive: true });
     await Deno.mkdir(overlayA, { recursive: true });
     await Deno.mkdir(overlayB, { recursive: true });
     const shippedBlueprint = await Deno.readTextFile(
       new URL("../../../../packages/request/tests/fixtures/sample_blueprint.yaml", import.meta.url),
     );
-    await Deno.writeTextFile(join(identitiesDir, "test-agent.md"), shippedBlueprint);
+    await Deno.writeTextFile(join(agentRolesDir, "test-agent.md"), shippedBlueprint);
     await Deno.writeTextFile(
       join(overlayA, "test-agent.md"),
       shippedBlueprint.replace('name: "Test Agent"', 'name: "Arm A"'),
@@ -150,7 +150,7 @@ Deno.test("[ArmIsolation] two sequential agent role overlays each see only their
       join(overlayB, "test-agent.md"),
       shippedBlueprint.replace('name: "Test Agent"', 'name: "Arm B"'),
     );
-    const resolver = new BlueprintResolver({ blueprintsPath: identitiesDir });
+    const resolver = new BlueprintResolver({ blueprintsPath: agentRolesDir });
 
     const armA = await withEnv(
       EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR,
@@ -174,7 +174,7 @@ Deno.test("[ArmIsolation] two sequential agent role overlays each see only their
     assertExists(noOverlay);
     assertEquals(noOverlay.name, "Test Agent");
   } finally {
-    await Deno.remove(identitiesRoot, { recursive: true });
+    await Deno.remove(agentRolesRoot, { recursive: true });
     await Deno.remove(overlayARoot, { recursive: true });
     await Deno.remove(overlayBRoot, { recursive: true });
   }

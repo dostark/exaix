@@ -16,11 +16,11 @@ consistent with each other.
 
 > **Why a second glossary?** Exaix splits its terminology across two documents
 > by audience. **[`../../GLOSSARY.md`](../../GLOSSARY.md)**, at the repo root, is the
-> public, concept-level glossary — plain-language definitions of Identity,
-> Identity Blueprint, Actor, Agent, Tool, Artifact, Trigger, Request, Request
+> public, concept-level glossary — plain-language definitions of Agent Role,
+> Agent Role Blueprint, Actor, Agent, Tool, Artifact, Trigger, Request, Request
 > Frontmatter, Plan, Plan Amendment, Changeset, Review, Blueprint, Flow, Flow
 > Step, Gate Evaluate, Wait State, Activity Journal, Trace ID, Portal, Memory,
-> Skills, MCP Server, and the Actor/Agent/Identity clarifying diagram — written
+> Skills, MCP Server, and the Actor/Agent/Agent Role clarifying diagram — written
 > for anyone building a mental model of how Exaix works. **This document** is
 > its contributor-facing companion: it does not redefine any of those terms —
 > it assumes you already have that mental model — and instead adds the
@@ -45,14 +45,14 @@ consistent with each other.
         |
         | creates request (frontmatter + body)
         v
-+---------------------+    resolve identity    +-----------------------+
-|      REQUEST        | --------------------> |   IDENTITY REGISTRY   |
-| - frontmatter       |                        | Blueprints/Identities/|
-|   - identity        |                        +-----------------------+
++---------------------+   resolve agent role   +-----------------------+
+|      REQUEST        | --------------------> |  AGENT ROLE REGISTRY  |
+| - frontmatter       |                        | Blueprints/Agents/    |
+|   - agent_role      |                        +-----------------------+
 +---------------------+                                  |
         |                                                 v
         | dispatch                              +-------------------+
-        v                                       |     IDENTITY      |
+        v                                       |    AGENT ROLE     |
 +---------------------+  orchestrate using      | (LLM persona)     |
 |       AGENT         | ----------------------> +-------------------+
 | - type (flow, tool) |
@@ -65,7 +65,7 @@ consistent with each other.
 |  TOOLS / SERVICES   |  | - actor_type        |
 | (memory, tools, ..) |  | - agent_id          |
 +---------------------+  | - agent_kind        |
-                         | - identity_id        |
+                         | - agent_role         |
                          | - request/flow ids   |
                          +---------------------+
 ```
@@ -74,23 +74,23 @@ consistent with each other.
 
 ## Request and Flow Field Conventions
 
-### `identity` (request frontmatter)
+### `agent_role` (request frontmatter)
 
-Name or ID of the identity to use when handling the request. Exaix resolves
-this to an identity blueprint and passes it to the appropriate agent for
+Name or ID of the agent role to use when handling the request. Exaix resolves
+this to an agent role blueprint and passes it to the appropriate agent for
 execution. See the root glossary's **Request Frontmatter** entry for the
 concept-level role this field plays.
 
-### Identity Directory (`Blueprints/Identities/`)
+### Agent Role Directory (`Blueprints/Agents/`)
 
-Canonical directory where identity blueprints are stored and resolved.
-All identities used by flows, requests and tools must live here.
+Canonical directory where agent role blueprints are stored and resolved.
+All agent roles used by flows, requests and tools must live here.
 
-### `identity` (flow step)
+### `agent_role` (flow step)
 
-Required field on a flow step indicating which identity blueprint to use for
+Required field on a flow step indicating which agent role blueprint to use for
 that step. The flow engine selects an appropriate agent to run the given
-identity. See the root glossary's **Flow Step** entry for the concept-level
+agent role. See the root glossary's **Flow Step** entry for the concept-level
 role this field plays.
 
 ---
@@ -133,15 +133,15 @@ flows. The composite form is `"Blueprints/Flows"`.
 Primary CLI entrypoint for Exaix operations: creating and sending requests,
 managing blueprints and flows, running validations and CI checks.
 
-### `--identity` (CLI flag)
+### `--agent-role` (CLI flag)
 
-CLI option used to select the identity blueprint for a given request. The CLI
-resolves the identity and delegates execution to the correct agent.
+CLI option used to select the agent role blueprint for a given request. The CLI
+resolves the agent role and delegates execution to the correct agent.
 
-### `exactl blueprint identity *`
+### `exactl blueprint agent-role *`
 
-CLI subcommands for managing identity blueprints (list, create, validate, show,
-delete). These commands operate only on `Blueprints/Identities/`.
+CLI subcommands for managing agent role blueprints (list, create, validate, show,
+delete). These commands operate only on `Blueprints/Agents/`.
 
 ---
 
@@ -150,9 +150,8 @@ delete). These commands operate only on `Blueprints/Identities/`.
 ### `exaix*create*request` (MCP tool)
 
 MCP tool used by clients to create and submit Exaix requests programmatically.
-Its input parameter for selecting an identity is named `identity` and maps
-directly to an `identity_id`. See the root glossary's **MCP Server** entry for
-the concept-level role MCP plays in Exaix.
+Its input parameter for selecting an agent role is named `agent_role`. See the
+root glossary's **MCP Server** entry for the concept-level role MCP plays in Exaix.
 
 ---
 
@@ -169,12 +168,12 @@ testing.
 Fields in journal entries describing **who** performed the action.
 
 | Field        | Type   | Meaning                                                                                                               |
-| ------------ | ------ | --------------------------------------------------------------------------------------------------------------------- |
-| `actor`      | string | Free-form identity of who acted. Format: `"user:<email>"`, `"service:<name>"`, `"mcp-client:<id>"`, `"agent_role:<id>"` |
-| `actor_type` | string | Enumerated category of the actor: `"user"`, `"service"`, `"mcp-client"`, `"identity"`                                 |
+| ------------ | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `actor`      | string | Free-form identifier of who acted. Format: `"user:<email>"`, `"service:<name>"`, `"mcp-client:<id>"`, `"agent:<id>"` |
+| `actor_type` | string | Enumerated category of the actor: `"user"`, `"service"`, `"mcp-client"`, `"system"`, `"agent"`                       |
 
-`actor_type = "identity"` means an identity instance acted autonomously with
-no human in the loop (e.g. a chained or scheduled identity call).
+`actor_type = "agent"` means an agent role instance acted autonomously with
+no human in the loop (e.g. a chained or scheduled agent-role call).
 
 ### Journal Agent Fields (`agent*id`, `agent*kind`)
 
@@ -184,18 +183,18 @@ execution unit handled it.
 | Field        | Type   | Meaning                                                                                              |
 | ------------ | ------ | ---------------------------------------------------------------------------------------------------- |
 | `agent_id`   | string | Identifier of the runtime agent instance, e.g. `"agent-runner"`, `"flow-runner"`, `"request-router"` |
-| `agent_kind` | string | Category of runtime agent: `"agent-runner"`, `"flow-agent"`, `"tool-agent"`, `"request-router"`      |
+| `agent_kind` | string | Category of runtime agent: `"agent-executor"`, `"request-router"`                                    |
 
-These fields are **always** about the runtime Agent, never about an identity
+These fields are **always** about the runtime Agent, never about an agent role
 blueprint.
 
-### Journal Identity Field (`identity_id`)
+### Journal Agent Role Field (`agent_role`)
 
 Field in journal entries describing **what** LLM persona was used.
 
-| Field         | Type   | Meaning                                                                                                                                           |
-| ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `identity_id` | string | Canonical ID of the identity blueprint that was loaded and run for this LLM call. Matches the slug of the `.md` file in `Blueprints/Identities/`. |
+| Field        | Type   | Meaning                                                                                                                                          |
+| ------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent_role` | string | Canonical ID of the agent role blueprint that was loaded and run for this LLM call. Matches the slug of the `.md` file in `Blueprints/Agents/`. |
 
 ---
 
@@ -204,35 +203,35 @@ Field in journal entries describing **what** LLM persona was used.
 This section defines the exact camelCase / snake_case names used in TypeScript
 interfaces, database columns and journal payloads for each core concept.
 
-### `identity` vs `identity_id`
+### `agent_role`
 
-| Name          | Where used                                                   | Meaning                                                                                         |
-| ------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `identity`    | Request frontmatter, flow YAML step, CLI flag `--identity`   | The name or slug the user/config provides to select an identity blueprint (e.g. `senior-coder`) |
-| `identity_id` | TypeScript interface field, database column, journal payload | The resolved canonical identifier stored in a record after the blueprint has been looked up     |
+| Name         | Where used                                                                            | Meaning                                                                              |
+| ------------ | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `agent_role` | Request frontmatter, flow YAML step, CLI flag `--agent-role`, DB column, journal payload | The canonical slug that selects and, once resolved, identifies an agent role blueprint (e.g. `senior-coder`) |
 
-`identity` is the **input**. `identity_id` is what the system **stores**.
-They are often the same string value but play different roles.
+Unlike the retired `identity`/`identity_id` pair, `agent_role` is used
+end-to-end as both the user-facing input and the stored value — there is no
+separate resolved-identifier field.
 
 ### Actor code identifiers
 
-| Code name    | Layer                                        | Meaning                                                                        |
-| ------------ | -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `actor`      | TypeScript field, journal payload, DB column | Free-form string identifying who performed the action                          |
-| `actor_type` | TypeScript field, journal payload, DB column | Enumerated category: `"user"` \| `"service"` \| `"mcp-client"` \| `"identity"` |
+| Code name    | Layer                                        | Meaning                                                                     |
+| ------------ | -------------------------------------------- | ----------------------------------------------------------------------------- |
+| `actor`      | TypeScript field, journal payload, DB column | Free-form string identifying who performed the action                        |
+| `actor_type` | TypeScript field, journal payload, DB column | Enumerated category: `"user"` \| `"service"` \| `"mcp-client"` \| `"system"` \| `"agent"` |
 
 ### Agent code identifiers
 
-| Code name    | Layer                                        | Meaning                                                                                                       |
-| ------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `agent_id`   | TypeScript field, journal payload, DB column | Identifier of the runtime agent instance that handled execution. Never holds an identity blueprint reference. |
-| `agent_kind` | TypeScript field, journal payload, DB column | Category of runtime agent: `"agent-runner"` \| `"flow-agent"` \| `"tool-agent"` \| `"request-router"`         |
+| Code name    | Layer                                        | Meaning                                                                                                     |
+| ------------ | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `agent_id`   | TypeScript field, journal payload, DB column | Identifier of the runtime agent instance that handled execution. Never holds an agent role blueprint reference. |
+| `agent_kind` | TypeScript field, journal payload, DB column | Category of runtime agent: `"agent-executor"` \| `"request-router"`                                          |
 
-### Identity code identifiers
+### Agent Role code identifiers
 
-| Code name     | Layer                                        | Meaning                                                     |
-| ------------- | -------------------------------------------- | ----------------------------------------------------------- |
-| `identity_id` | TypeScript field, journal payload, DB column | Canonical ID of the identity blueprint used for an LLM call |
+| Code name    | Layer                                        | Meaning                                                       |
+| ------------ | -------------------------------------------- | ---------------------------------------------------------------- |
+| `agent_role` | TypeScript field, journal payload, DB column | Canonical ID of the agent role blueprint used for an LLM call |
 
 ### Pipeline artifact code identifiers
 
@@ -243,7 +242,7 @@ in the root glossary (Trigger, Plan, Review, Artifact):
 | -------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ExecutionTriggerEnvelope`             | Zod-inferred type, `packages/core/src/triggers/schemas.ts`      | The canonical, normalized form every trigger source (`cli`, `webhook`, `schedule`, `filesystem`, `internal_event`, `mcp`) is parsed into before policy evaluation and dispatch — carries `triggerId`, `source`, `action`, `idempotencyKey`, `subject`, `payload`, `metadata`, `occurredAt` |
 | `ITriggerAdapter<TRawInput>`           | Interface, `packages/core/src/triggers/interfaces.ts`           | Per-source adapter contract: `parse(rawInput) → ExecutionTriggerEnvelope`                                                                                                                                                                                                                  |
-| `IPlanMetadata` / `IPlanDetails`       | Interfaces, `packages/core/src/types/plan.ts`                   | Frontmatter-derived plan metadata (`status`, `identity_id`, `request_id`, `approved_by`/`rejected_by`/`reviewed_by` + timestamps) and full markdown content for a plan file in `Workspace/Plans/`                                                                                          |
+| `IPlanMetadata` / `IPlanDetails`       | Interfaces, `packages/core/src/types/plan.ts`                   | Frontmatter-derived plan metadata (`status`, `agent_role`, `request_id`, `approved_by`/`rejected_by`/`reviewed_by` + timestamps) and full markdown content for a plan file in `Workspace/Plans/`                                                                                          |
 | `IReviewStatus`                        | Type, `packages/core/src/status/review_status.ts`               | Enumerated review outcome — `PENDING` \| `APPROVED` \| `REJECTED` (aliases of the shared `GeneralStatus` enum)                                                                                                                                                                             |
 | `IArtifactRow` / `IArtifactRepository` | Interfaces, `packages/core/src/artifact/artifact_repository.ts` | DB-row shape and CRUD contract for the generic `artifact` table that backs Plans, reviews, and other persisted pipeline records — keyed by `id`, `type`, `status`, `request_id`, `file_path`                                                                                               |
 
@@ -253,7 +252,7 @@ Canonical implementation-level names for the **Changeset** and **Plan Amendment*
 concepts defined in the root glossary:
 
 | Code name                                    | Layer                                                                    | Meaning                                                                                                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IChangesetResult` / `ChangesetResultSchema` | Zod-inferred type + schema, `packages/schemas/src/agent_orchestrator.ts` | Structured result an agent reports after applying a Plan's changes — `branch`, `commit_sha`, `files_changed`, `description`, `tool_calls`, `execution_time_ms`, `unauthorized_changes`, `usage` |
 | `IPlanAmendmentService`                      | Interface, `packages/core/src/types/i_plan_amendment_service.ts`         | `shouldAmend(trigger)` decides whether an amendment is warranted; generates a structural patch proposal against a plan's remaining steps                                                        |
 | `IPlanAmendmentGate`                         | Interface, `packages/core/src/types/i_plan_amendment_gate.ts`            | `processAmendment(...)` routes a proposed amendment through human approval and returns a decision; `applyApprovedAmendment(...)` rewrites the plan content once approved                        |
@@ -264,7 +263,7 @@ Canonical implementation-level names for the **Wait State** concept defined in
 the root glossary:
 
 | Code name                        | Layer                                                            | Meaning                                                                                                                                                                               |
-| -------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IWaitState` / `WaitStateSchema` | Zod-inferred type, `packages/flow/src/wait_states/wait_state.ts` | Persisted pause-point record — `waitStateId`, `traceId`, `kind`, `status`, `artifactPath`, `deadlineAt`, `resumeToken`, `requestedBy`/`assignedApprover`, `amendmentOf`, `metadata`   |
 | `IWaitStateService`              | Interface, `packages/flow/src/wait_states/wait_state_service.ts` | `create` / `getById` / `getByToken` / `transition` / `listPending` — the contract that turns a human approval gate into a durable, resumable record instead of a session-bound prompt |
 | `WaitStateAction`                | Union type, `packages/flow/src/wait_states/wait_state.ts`        | Legal transitions a Wait State can undergo: `"resume"` \| `"approve"` \| `"reject"` \| `"amend"` \| `"expire"` \| `"cancel"`                                                          |
@@ -275,8 +274,8 @@ Canonical implementation-level names for the **Activity Journal** and **Trace ID
 concepts defined in the root glossary:
 
 | Code name              | Layer                                                                       | Meaning                                                                                                                                                                                                         |
-| ---------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IActivityRecord`      | Interface, `packages/core/src/types/database.ts`                            | DB-row shape for the `activity` table that backs the Activity Journal — `id`, `trace_id`, `actor`/`actor_type`, `identity_id`, `agent_kind`, `action_type`, `target`, `payload`, token/cost fields, `timestamp` |
+| ----------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IActivityRecord`      | Interface, `packages/core/src/types/database.ts`                            | DB-row shape for the `activity` table that backs the Activity Journal — `id`, `trace_id`, `actor`/`actor_type`, `agent_role`, `agent_kind`, `action_type`, `target`, `payload`, token/cost fields, `timestamp` |
 | `traceId` / `trace_id` | TypeScript field (camelCase) vs. DB column and journal payload (snake_case) | The Trace ID value carried through every layer — same string, different casing convention depending on whether you're in application code or persisted/serialized form                                          |
 
 ### Complete journal record field map
@@ -289,11 +288,11 @@ actor        — who initiated            (Actor concept)
 actor_type   — category of who          (Actor concept)
 agent_id     — which runtime agent      (Agent concept)
 agent_kind   — category of agent        (Agent concept)
-identity_id  — which LLM blueprint      (Identity concept)
+agent_role   — which LLM blueprint      (Agent Role concept)
 ```
 
 Not every event has all five fields populated. A CLI command with no LLM call
-will have `actor` and `agent*id` but an empty `identity*id`.
+will have `actor` and `agent*id` but an empty `agent_role`.
 
 ### `AgentHealth` and `AgentStatus`
 
@@ -383,15 +382,15 @@ Used by the `show()` and DB-backed list paths.
 
 ## Directories and Constants
 
-### `Blueprints/Identities/`
+### `Blueprints/Agents/`
 
-Directory containing all identity blueprints known to Exaix. Treated as the
-single source of truth for identities.
+Directory containing all agent role blueprints known to Exaix. Treated as the
+single source of truth for agent roles.
 
 ### `Blueprints/Flows/`
 
-Directory containing flow blueprints. Each flow step references identities by
-`identity` name or `identity_id`.
+Directory containing flow blueprints. Each flow step references agent roles by
+`agent_role` name.
 
 ## Model Registry (Solo Phase 134 + Team Phase 135)
 
@@ -458,7 +457,7 @@ penalized to zero.
 
 The precedence chain (`deriveTaskType`, Phase 135 Step 8) that resolves a request's
 `TaskType` for the Team `best` scorer's benchmark lookup: request frontmatter beats
-identity blueprint declaration beats the highest-confidence matched skill's trigger
+agent role blueprint declaration beats the highest-confidence matched skill's trigger
 beats a static entity-name soft-match beats the request analyzer's inferred intent. An
 entity's own declaration is never silently overridden by the static map.
 
@@ -483,4 +482,4 @@ instead of an arbitrary pick, journalled with `reason: usage_ranked`. Off by def
 
 ## Examples
 
-- Example prompt: "Look up `identity_id` in the glossary to verify the journal field name."
+- Example prompt: "Look up `agent_role` in the glossary to verify the journal field name."

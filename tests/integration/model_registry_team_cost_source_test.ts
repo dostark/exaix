@@ -2,7 +2,7 @@
  * @module ModelRegistryTeamCostSourceTest
  * @path tests/integration/model_registry_team_cost_source_test.ts
  * @description Phase 135 Step 9 (GAP-C9) — proves, on a REAL booted daemon subprocess,
- *   that a standard identity request's `provider_costs` row is no longer forced to
+ *   that a standard agent-role request's `provider_costs` row is no longer forced to
  *   `cost_source: "provider_reported"` by the mock provider. Two real production bugs
  *   were found and fixed while building this proof: (a) RequestProcessor built its own
  *   CostTracker with no pricing lookup ever set (fixed: apps/daemon/main.ts now passes
@@ -12,13 +12,13 @@
  *   (fixed: the mock no longer reports a cost at all).
  *
  *   Reachability Ledger follow-up: the second test below proves
- *   `cost_source: "registry_computed"` itself. The standard identity-request path
+ *   `cost_source: "registry_computed"` itself. The standard agent-role-request path
  *   resolves via `agents.default_model`/`ai.provider`, tied to the `mock` provider TYPE —
  *   `setPricingLookup`'s `getModelPricing(provider, model)` lookup is a pure parameterized
  *   `SELECT ... WHERE provider = ? AND model = ?` with no provider-type filtering, so a
  *   `model_pricing` row seeded for `("mock", "mock-model")` — the exact
  *   provider/model string the mock provider always reports — resolves through it on a
- *   real `EXAIX_EDITION=team` boot without needing a real (non-mock) provider identity.
+ *   real `EXAIX_EDITION=team` boot without needing a real (non-mock) AI provider.
  * @architectural-layer Test
  * @related-files [apps/daemon/main.ts, packages/core/src/cost/cost_tracker.ts, packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/rate_limited_provider.ts, packages-team/model-registry-live/src/model_registry_service.ts]
  */
@@ -49,7 +49,7 @@ const REQUEST_MARKDOWN = [
   "",
 ].join("\n");
 
-function writeStubIdentity(root: string): void {
+function writeStubAgentRole(root: string): void {
   const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   Deno.writeTextFileSync(join(dir, "stub-agent.md"), "You are a stub agent for testing.\n");
@@ -143,7 +143,7 @@ Deno.test({
     const configPath = join(tempDir, "exa.config.toml");
     try {
       await runMigrationsIn(tempDir);
-      writeStubIdentity(tempDir);
+      writeStubAgentRole(tempDir);
       writeMockDaemonConfig(configPath, tempDir);
 
       await bootRealDaemon(configPath, 6000, {
@@ -199,7 +199,7 @@ Deno.test({
     const configPath = join(tempDir, "exa.config.toml");
     try {
       await runMigrationsIn(tempDir);
-      writeStubIdentity(tempDir);
+      writeStubAgentRole(tempDir);
       writeTeamDaemonConfig(configPath, tempDir);
       await seedMockPricing(configPath);
 

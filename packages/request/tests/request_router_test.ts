@@ -141,7 +141,7 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
   assertEquals(mockAgentRunner.executedAgents.length, 0); // Agent should not be called
 });
 
-Deno.test("RequestRouter: applies routing policy service for explicit identity when dynamic routing is enabled", async () => {
+Deno.test("RequestRouter: applies routing policy service for explicit agent role when dynamic routing is enabled", async () => {
   const routingPolicyService = {
     selectAgentRole: () =>
       Promise.resolve({
@@ -292,7 +292,7 @@ Deno.test("RequestRouter: forwards full routing context to routing policy servic
       task_type: "implementation",
       portal_type: "api",
       portal: "portal-a",
-      identity_version: "1.2.3",
+      agent_role_version: "1.2.3",
     } as TestRouterFrontmatter,
     body: "Use the code review agent.",
   });

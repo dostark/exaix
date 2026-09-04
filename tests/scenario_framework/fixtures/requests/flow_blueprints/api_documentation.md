@@ -14,7 +14,7 @@ Produce reference documentation for the MCP tools exposed by `packages/mcp/serve
 
 - Every tool's name, parameters and return shape
 - Which tools mutate state and which are read-only
-- The permission model: how an identity's `permitted_tools` restricts availability
+- The permission model: how an agent role's `permitted_tools` restricts availability
 - Error responses and which are retryable
 
 Acceptance criteria:

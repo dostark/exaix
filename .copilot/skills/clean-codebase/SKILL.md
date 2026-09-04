@@ -75,7 +75,7 @@ Phase 1 — Baseline measurement
        deno task check:edition-graph                      → edition-leak graph gate (deno-info double-check)
        deno task check:runtime-artifacts                  → committed venv/__pycache__/node_modules-style artifacts
        deno task check:agent-docs-integrity                → dangling references in the .copilot/ corpus
-       deno task check:blueprint-integrity                 → Blueprint catalog identity/flow/skill resolution
+       deno task check:blueprint-integrity                 → Blueprint catalog agent-role/flow/skill resolution
        deno task check:skill-index                         → Memory/Skills ↔ Blueprints/Skills sync
        deno task check:qwen-skills-sync                    → .qwen/settings.json ↔ .copilot/skills/ sync
        deno task check:config-keys                         → duplicate configurable() key collisions
@@ -281,7 +281,7 @@ Phase 23 — Additional pre-commit-hook parity gates
         node_modules-style artifact; remove it and add/verify a .gitignore entry.
       - `check:agent-docs-integrity` — a dangling reference inside the `.copilot/` corpus;
         fix the citation or the file it points to.
-      - `check:blueprint-integrity` — an orphan identity/skill/flow in `Blueprints/`;
+      - `check:blueprint-integrity` — an orphan agent-role/skill/flow in `Blueprints/`;
         resolve the dangling reference or remove the orphan.
       - `check:skill-index` — `Memory/Skills` is out of sync with `Blueprints/Skills`;
         run `deno task check:skill-index` without `--check` to regenerate.

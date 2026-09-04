@@ -2,7 +2,7 @@
 
 This directory contains **abstract flow patterns** — structural starting points
 for authoring new concrete flows. They are not runnable as-is: each agent slot is
-a `{{placeholder}}` token you replace with a real identity id.
+a `{{placeholder}}` token you replace with a real agent role id.
 
 ## Available templates
 
@@ -24,8 +24,8 @@ via `dependsOn`, aggregate with `input.source: aggregate`.
 **Pattern:** Generate → judge → refine (the Reflexion loop).
 **Use case:** High-quality generation that must meet a quality bar.
 **Slots:** `{{generator}}`, `{{refiner}}` (the judge slot uses the real
-`quality-judge` identity). Pair with the `reflexive-critique` skill on the
-generator/refiner identities.
+`quality-judge` agent role). Pair with the `reflexive-critique` skill on the
+generator/refiner agent roles.
 
 ## How to use
 
@@ -37,11 +37,11 @@ generator/refiner identities.
 
 1. Customize it:
    - Update `id`, `name`, `description`.
-   - Replace every `{{placeholder}}` agent slot with a real identity id (see
-     `Blueprints/Identities/`).
+   - Replace every `{{placeholder}}` agent slot with a real agent role id (see
+     `Blueprints/Agents/`).
    - Configure each step's `input` (how data flows in).
 
-1. Validate — once the placeholders are real identities, the integrity gate
+1. Validate — once the placeholders are real agent roles, the integrity gate
    requires them to exist:
 
    ```bash

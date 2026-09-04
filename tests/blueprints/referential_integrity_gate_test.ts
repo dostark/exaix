@@ -1,8 +1,8 @@
 /**
  * @module ReferentialIntegrityGateTest
  * @path tests/blueprints/referential_integrity_gate_test.ts
- * @description Phase 131 Step 9 — referential-integrity + identity-role
- *   conformance gate. Validates that every identity's default_skills resolve
+ * @description Phase 131 Step 9 — referential-integrity + agent-role
+ *   conformance gate. Validates that every agent role's default_skills resolve
  *   to loadable .skill.md files, its capabilities/permitted_tools match its
  *   role, and the gate FAILS CLOSED on a dangling skill reference, wrong
  *   skills, or over-privileged tools.
@@ -16,7 +16,7 @@ import { McpToolName } from "@exaix/core";
 import {
   AGENTS_DIR,
   DESTRUCTIVE_TOOLS,
-  type IIdentityFrontmatter,
+  type IAgentRoleFrontmatter,
   READ_ONLY_AGENT_ROLES,
   readRawFrontmatter,
   ROLE_REQUIRED_SKILLS,
@@ -32,7 +32,7 @@ const VALID_MCP_TOOL_NAMES = new Set(
 
 // Helpers
 
-function listActiveIdentityIds(): string[] {
+function listActiveAgentRoleIds(): string[] {
   const ids: string[] = [];
   for (const e of Deno.readDirSync(AGENTS_DIR)) {
     if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
@@ -41,12 +41,12 @@ function listActiveIdentityIds(): string[] {
   return ids.sort();
 }
 
-function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }> {
-  const out: Array<{ id: string; fm: IIdentityFrontmatter }> = [];
-  for (const id of listActiveIdentityIds()) {
+function loadActiveAgentRoles(): Array<{ id: string; fm: IAgentRoleFrontmatter }> {
+  const out: Array<{ id: string; fm: IAgentRoleFrontmatter }> = [];
+  for (const id of listActiveAgentRoleIds()) {
     const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
     assertExists(fm, `${id}: must have YAML frontmatter`);
-    out.push({ id, fm: fm as IIdentityFrontmatter });
+    out.push({ id, fm: fm as IAgentRoleFrontmatter });
   }
   return out;
 }
@@ -56,10 +56,10 @@ function loadActiveAgentRoles(): Array<{ id: string; fm: IIdentityFrontmatter }>
 Deno.test({
   name: "[step9/integrity-gate] all default_skills references resolve to existent .skill.md files — FAILS CLOSED",
   fn() {
-    const identities = loadActiveAgentRoles();
+    const agentRoles = loadActiveAgentRoles();
     const dangling: Array<{ id: string; skill: string }> = [];
 
-    for (const { id, fm } of identities) {
+    for (const { id, fm } of agentRoles) {
       const skills = fm.default_skills ?? [];
       for (const s of skills) {
         const skillPath = join(SKILLS_DIR, `${s}.skill.md`);
@@ -82,7 +82,7 @@ Deno.test({
   },
 });
 
-// 2. FAILS CLOSED: dangling skill ref on a synthetic identity
+// 2. FAILS CLOSED: dangling skill ref on a synthetic agent role
 
 Deno.test({
   name: "[step9/integrity-gate] a dangling skill reference is detected — FAILS CLOSED",
@@ -98,8 +98,8 @@ Deno.test({
     assertEquals(fileExists, false, `Precondition: "${dangling}" must not have a .skill.md file`);
 
     // Simulate the gate check
-    const badIdentity = { id: "__test_dangling_ref", fm: { default_skills: [dangling] } };
-    const skills = badIdentity.fm.default_skills ?? [];
+    const badAgentRole = { id: "__test_dangling_ref", fm: { default_skills: [dangling] } };
+    const skills = badAgentRole.fm.default_skills ?? [];
     const missing = skills.filter((s: string) => {
       try {
         Deno.statSync(join(SKILLS_DIR, `${s}.skill.md`));
@@ -122,19 +122,19 @@ Deno.test({
   },
 });
 
-// ── 3. Role-matrix conformance: every identity has role-required skills ─
+// ── 3. Role-matrix conformance: every agent role has role-required skills ─
 
 Deno.test({
-  name: "[step9/integrity-gate] every identity declares its role-required default_skills — FAILS CLOSED",
+  name: "[step9/integrity-gate] every agent role declares its role-required default_skills — FAILS CLOSED",
   fn() {
-    const identities = loadActiveAgentRoles();
+    const agentRoles = loadActiveAgentRoles();
     const missing: Array<{ id: string; skill: string }> = [];
 
-    for (const { id, fm } of identities) {
+    for (const { id, fm } of agentRoles) {
       const required = ROLE_REQUIRED_SKILLS[id];
       assert(
         required !== undefined,
-        `${id}: no role-required entry in the identity-role matrix`,
+        `${id}: no role-required entry in the agent-role matrix`,
       );
       const declared = new Set(fm.default_skills ?? []);
       for (const s of required) {
@@ -147,51 +147,51 @@ Deno.test({
     assert(
       missing.length === 0,
       missing.length > 0
-        ? `Identities missing role-required skills:\n${
+        ? `Agent roles missing role-required skills:\n${
           missing.map((m) => `  ${m.id}: missing "${m.skill}"`).join("\n")
         }`
-        : "All identities declare role-required default_skills",
+        : "All agent roles declare role-required default_skills",
     );
   },
 });
 
-// 4. FAILS CLOSED: wrong skills on synthetic identity
+// 4. FAILS CLOSED: wrong skills on synthetic agent role
 
 Deno.test({
-  name: "[step9/integrity-gate] a wrong-skills identity is caught — FAILS CLOSED",
+  name: "[step9/integrity-gate] a wrong-skills agent role is caught — FAILS CLOSED",
   fn() {
-    // A synthetic identity that should NOT have the role-required skill
-    const badIdentity: { id: string; fm: { default_skills: string[] } } = {
+    // A synthetic agent role that should NOT have the role-required skill
+    const badAgentRole: { id: string; fm: { default_skills: string[] } } = {
       id: "__test_wrong_skills_default",
       fm: { default_skills: [] },
     };
     const required: string[] = ROLE_REQUIRED_SKILLS["default"] ?? [];
-    const declared = new Set(badIdentity.fm.default_skills);
+    const declared = new Set(badAgentRole.fm.default_skills);
     const missing = required.filter((s) => !declared.has(s));
 
     assertEquals(
       missing.length > 0,
       true,
-      "Gate must detect an identity missing role-required skills",
+      "Gate must detect an agent role missing role-required skills",
     );
     // Assert against the role matrix rather than a hardcoded skill name, since role requirements change.
     assertEquals(
       missing.sort(),
       [...required].sort(),
-      "Gate must report every role-required skill the identity failed to declare",
+      "Gate must report every role-required skill the agent role failed to declare",
     );
   },
 });
 
-// ── 5. Least-privilege: read-only identities carry no destructive tools ─
+// ── 5. Least-privilege: read-only agent roles carry no destructive tools ─
 
 Deno.test({
-  name: "[step9/integrity-gate] read-only identities carry no destructive permitted_tools — FAILS CLOSED",
+  name: "[step9/integrity-gate] read-only agent roles carry no destructive permitted_tools — FAILS CLOSED",
   fn() {
-    const identities = loadActiveAgentRoles();
+    const agentRoles = loadActiveAgentRoles();
     const violations: Array<{ id: string; tool: string }> = [];
 
-    for (const { id, fm } of identities) {
+    for (const { id, fm } of agentRoles) {
       if (!READ_ONLY_AGENT_ROLES.has(id)) continue;
       const tools = fm.permitted_tools ?? [];
       for (const t of tools) {
@@ -204,26 +204,26 @@ Deno.test({
     assert(
       violations.length === 0,
       violations.length > 0
-        ? `Read-only identities with destructive tools:\n${violations.map((v) => `  ${v.id}: "${v.tool}"`).join("\n")}`
-        : "All read-only identities carry no destructive tools",
+        ? `Read-only agent roles with destructive tools:\n${violations.map((v) => `  ${v.id}: "${v.tool}"`).join("\n")}`
+        : "All read-only agent roles carry no destructive tools",
     );
   },
 });
 
-// 6. FAILS CLOSED: over-privileged synthetic identity
+// 6. FAILS CLOSED: over-privileged synthetic agent role
 
 Deno.test({
-  name: "[step9/integrity-gate] an over-privileged read-only identity is caught — FAILS CLOSED",
+  name: "[step9/integrity-gate] an over-privileged read-only agent role is caught — FAILS CLOSED",
   fn() {
     const destructive = [...DESTRUCTIVE_TOOLS][0]; // e.g. "write_file"
-    const badIdentity = { id: "__test_overprivileged", fm: { permitted_tools: [destructive] } };
-    const tools = badIdentity.fm.permitted_tools ?? [];
+    const badAgentRole = { id: "__test_overprivileged", fm: { permitted_tools: [destructive] } };
+    const tools = badAgentRole.fm.permitted_tools ?? [];
     const violations = tools.filter((t: string) => DESTRUCTIVE_TOOLS.has(t));
 
     assertEquals(
       violations.length > 0,
       true,
-      `Gate must detect "${destructive}" in a read-only identity's permitted_tools`,
+      `Gate must detect "${destructive}" in a read-only agent role's permitted_tools`,
     );
     assertEquals(
       violations[0],
@@ -236,12 +236,12 @@ Deno.test({
 // 7. capabilities behavioral-only gate
 
 Deno.test({
-  name: "[step9/integrity-gate] no identity has McpToolName values in capabilities — FAILS CLOSED",
+  name: "[step9/integrity-gate] no agent role has McpToolName values in capabilities — FAILS CLOSED",
   fn() {
-    const identities = loadActiveAgentRoles();
+    const agentRoles = loadActiveAgentRoles();
     const violations: Array<{ id: string; capability: string }> = [];
 
-    for (const { id, fm } of identities) {
+    for (const { id, fm } of agentRoles) {
       const caps = fm.capabilities ?? [];
       for (const c of caps) {
         if (VALID_MCP_TOOL_NAMES.has(c)) {
@@ -253,7 +253,7 @@ Deno.test({
     assert(
       violations.length === 0,
       violations.length > 0
-        ? `Identities with tool names in capabilities:\n${
+        ? `Agent roles with tool names in capabilities:\n${
           violations.map((v) => `  ${v.id}: "${v.capability}"`).join("\n")
         }`
         : "All capabilities are behavioral-only",

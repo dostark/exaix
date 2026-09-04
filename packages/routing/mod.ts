@@ -2,7 +2,7 @@
  * @module Routing
  * @path packages/routing/mod.ts
  * @architectural-layer Services
- * @description Routing policy: capability matching, experiment splitting, performance-based identity selection.
+ * @description Routing policy: capability matching, experiment splitting, performance-based agent-role selection.
  * @related-files ["packages/schemas/src/routing_policy.ts", "packages/routing/src/"]
  */
 

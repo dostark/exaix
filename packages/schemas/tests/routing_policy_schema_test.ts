@@ -70,7 +70,7 @@ Deno.test("[RoutingPolicyDecisionSchema] validates a minimal decision", () => {
     selectedVersion: "1.0.0",
     strategy: "explicit",
     candidates: [],
-    rationale: "Explicit identity used",
+    rationale: "Explicit agent role used",
     decidedAt: new Date().toISOString(),
   });
 

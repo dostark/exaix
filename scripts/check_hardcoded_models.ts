@@ -45,7 +45,7 @@ const KNOWN_PROVIDER_PREFIXES = new Set([
   "mock",
 ]);
 
-// Allowlist covers only mock/test identities — all business logic resolves models
+// Allowlist covers only mock/test agent roles — all business logic resolves models
 // through IModelRegistry/IModelPricingLookup. The curated data file (static_overlay.ts)
 // is exempted via SKIP_PATTERNS above. No new provider:model entries should be added.
 const allowlist = new Set<string>([

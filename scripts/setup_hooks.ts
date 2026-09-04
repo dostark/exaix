@@ -187,10 +187,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 14c. Blueprint catalog integrity (identities ↔ flows, skills ↔ identities all resolve)
+# 14c. Blueprint catalog integrity (agent roles ↔ flows, skills ↔ agent roles all resolve)
 deno task check:blueprint-integrity
 if [ $? -ne 0 ]; then
-  echo "❌ Error: Blueprint catalog has integrity violations (dangling or orphan identity/skill). See output above."
+  echo "❌ Error: Blueprint catalog has integrity violations (dangling or orphan agent-role/skill). See output above."
   exit 1
 fi
 

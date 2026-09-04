@@ -214,7 +214,7 @@ export async function createTestExecution(
 ): Promise<void> {
   const builder = new ExecutionMemoryBuilder(portal, traceId);
 
-  builder.withIdentity(opts.agent_role || TEST_AGENT_ROLE_ID);
+  builder.withAgentRole(opts.agent_role || TEST_AGENT_ROLE_ID);
   builder.withSummary(opts.summary || `Test execution for ${portal}`);
   builder.addContextFile("src/main.ts");
   builder.withChanges({

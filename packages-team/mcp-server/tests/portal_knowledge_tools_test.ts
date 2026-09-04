@@ -149,7 +149,7 @@ Deno.test("PortalSymbolsTool: unknown portal returns isError:true, not thrown", 
   });
 });
 
-Deno.test("PortalSymbolsTool: identity without portal permission is denied", async () => {
+Deno.test("PortalSymbolsTool: agent role without portal permission is denied", async () => {
   await withToolPermissionTest({ portalAlias: "symbols-portal", agentRole: "allowed-agent" }, async (env) => {
     await writeKnowledgeFixture(env.tempDir, "symbols-portal");
     const handler = createHandler(env);

@@ -1,12 +1,12 @@
 /**
- * @module ResolveIdentityModel
- * @path packages/ai/src/resolve_identity_model.ts
- * @description Phase 131 Step 6 (GAP-3) — resolves an identity's declarative model
+ * @module ResolveAgentRoleModel
+ * @path packages/ai/src/resolve_agent_role_model.ts
+ * @description Phase 131 Step 6 (GAP-3) — resolves an agent role's declarative model
  *   preferences into a concrete {provider, model} pair. Precedence: an explicit
  *   `model` (provider:model) wins; otherwise the preferences are mapped onto
  *   ISelectionCriteria, ProviderSelector picks the provider name, and the concrete
  *   model is read from getDefaultModels() for that provider. Unsupported hints
- *   (thinking/effort) degrade gracefully. This is the identity-local resolver;
+ *   (thinking/effort) degrade gracefully. This is the agent-role-local resolver;
  *   Phase 132 generalizes it into a shared ModelResolver.
  * @architectural-layer AI
  * @dependencies [@exaix/core, @exaix/schemas]
@@ -17,15 +17,15 @@ import { TaskComplexity } from "@exaix/core";
 import { getDefaultModels } from "@exaix/schemas";
 import type { ISelectionCriteria } from "./provider_selector.ts";
 
-/** A declarative model size tier declared on an identity. */
+/** A declarative model size tier declared on an agent role. */
 export type ModelSize = "S" | "M" | "L" | "XL";
 
-/** Structural selector shape consumed by resolveIdentityModel (avoids coupling to the ProviderSelector class). */
+/** Structural selector shape consumed by resolveAgentRoleModel (avoids coupling to the ProviderSelector class). */
 export interface ISelectorLike {
   selectProvider(criteria: ISelectionCriteria): Promise<string>;
 }
 
-/** Declarative model preferences read from an identity's frontmatter; all fields are optional. */
+/** Declarative model preferences read from an agent role's frontmatter; all fields are optional. */
 export interface IModelPreferences {
   /** Explicit provider:model override (highest precedence; e.g. mock-agent). */
   model?: string;
@@ -60,7 +60,7 @@ function splitCanonical(canonical: string): IResolvedModel {
 }
 
 /** Resolves provider and model; execution hints do not affect selection. */
-export async function resolveIdentityModel(
+export async function resolveAgentRoleModel(
   prefs: IModelPreferences,
   selector: ISelectorLike,
 ): Promise<IResolvedModel> {
@@ -71,7 +71,7 @@ export async function resolveIdentityModel(
 
   const defaults = getDefaultModels();
 
-  // 2. A preferred provider is an explicit identity preference: honor it directly
+  // 2. A preferred provider is an explicit agent-role preference: honor it directly
   //    when it is a known provider, rather than treating its name as a capability.
   if (prefs.preferred_provider && defaults[prefs.preferred_provider] !== undefined) {
     return { provider: prefs.preferred_provider, model: defaults[prefs.preferred_provider] };

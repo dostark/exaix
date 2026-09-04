@@ -21,7 +21,7 @@ import { GitWorktreeTool } from "@exaix-team/mcp-server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "@exaix/mcp/testing";
 
-const IDENTITY = "test-agent";
+const AGENT_ROLE = "test-agent";
 const PORTAL = "TestPortal";
 const WORKTREE_DIR = "wt";
 
@@ -72,7 +72,7 @@ Deno.test("[git-worktree] detach pins the worktree to the branch tip in detached
         path: WORKTREE_DIR,
         ref: branch,
         detach: true,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assert(!response.isError, `worktree add must succeed, got: ${toolText(response)}`);
@@ -100,7 +100,7 @@ Deno.test("[git-worktree] omitting detach leaves the worktree attached to the br
         action: GitWorktreeAction.ADD,
         path: WORKTREE_DIR,
         ref: branch,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assert(!response.isError, `worktree add must succeed, got: ${toolText(response)}`);
@@ -128,7 +128,7 @@ Deno.test("[git-worktree] remove deletes the worktree directory", async () => {
         path: WORKTREE_DIR,
         ref: sha,
         detach: true,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
       assert(await exists(worktreePath), "worktree must exist before removal");
 
@@ -136,7 +136,7 @@ Deno.test("[git-worktree] remove deletes the worktree directory", async () => {
         portal: PORTAL,
         action: GitWorktreeAction.REMOVE,
         path: WORKTREE_DIR,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assert(!response.isError, `worktree remove must succeed, got: ${toolText(response)}`);
@@ -158,14 +158,14 @@ Deno.test("[git-worktree] list reports the worktree the tool created", async () 
         path: WORKTREE_DIR,
         ref: sha,
         detach: true,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       const response = await tool.execute({
         portal: PORTAL,
         action: GitWorktreeAction.LIST,
         porcelain: true,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assert(!response.isError, `worktree list must succeed, got: ${toolText(response)}`);
@@ -187,7 +187,7 @@ Deno.test("[git-worktree] removing a worktree that was never added returns isErr
         portal: PORTAL,
         action: GitWorktreeAction.REMOVE,
         path: "never-created",
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assertEquals(response.isError, true);
@@ -205,7 +205,7 @@ Deno.test("[git-worktree] a portal without the GIT operation is refused", async 
       const response = await worktreeTool(env).execute({
         portal: PORTAL,
         action: GitWorktreeAction.LIST,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assertEquals(response.isError, true);
@@ -226,7 +226,7 @@ Deno.test("[git-worktree][security] a traversing worktree path is rejected befor
         path: "../escaped-worktree",
         ref: sha,
         detach: true,
-        agent_role: IDENTITY,
+        agent_role: AGENT_ROLE,
       });
 
       assertEquals(response.isError, true);

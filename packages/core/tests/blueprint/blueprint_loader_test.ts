@@ -24,9 +24,9 @@ let blueprintsPath: string;
 async function setup() {
   testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
   blueprintsPath = join(testDir, "Blueprints");
-  const identitiesDir = join(blueprintsPath, "Agents");
-  await Deno.mkdir(identitiesDir, { recursive: true });
-  return { testDir, blueprintsPath, identitiesDir };
+  const agentRolesDir = join(blueprintsPath, "Agents");
+  await Deno.mkdir(agentRolesDir, { recursive: true });
+  return { testDir, blueprintsPath, agentRolesDir };
 }
 
 async function teardown(dir: string) {
@@ -40,7 +40,7 @@ async function teardown(dir: string) {
 // IBlueprintLoader.load() Tests
 
 Deno.test("[IBlueprintLoader] loads blueprint with YAML frontmatter", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = readFixtureTextSync(
@@ -48,7 +48,7 @@ Deno.test("[IBlueprintLoader] loads blueprint with YAML frontmatter", async () =
       "blueprint",
       "content.md",
     );
-    await Deno.writeTextFile(join(identitiesDir, "code-reviewer.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "code-reviewer.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("code-reviewer");
@@ -67,14 +67,14 @@ Deno.test("[IBlueprintLoader] loads blueprint with YAML frontmatter", async () =
 });
 
 Deno.test("[IBlueprintLoader] loads blueprint without frontmatter (backward compatible)", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `# Simple Agent
 
 You are a simple agent with no frontmatter.
 `;
-    await Deno.writeTextFile(join(identitiesDir, "simple-agent.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "simple-agent.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("simple-agent");
@@ -91,7 +91,7 @@ You are a simple agent with no frontmatter.
 });
 
 Deno.test("[IBlueprintLoader] uses default model when not specified", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -101,7 +101,7 @@ name: "No Model Agent"
 
 Agent without model specification.
 `;
-    await Deno.writeTextFile(join(identitiesDir, "no-model.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "no-model.md"), content);
 
     const loader = new IBlueprintLoader({
       blueprintsPath,
@@ -130,13 +130,13 @@ Deno.test("[IBlueprintLoader] returns null for non-existent blueprint", async ()
 });
 
 Deno.test("[IBlueprintLoader] lists all blueprints in Agents path", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const alpha = readFixtureTextSync(import.meta.url, "blueprint", "alpha.md");
     const beta = readFixtureTextSync(import.meta.url, "blueprint", "beta.md");
-    await Deno.writeTextFile(join(identitiesDir, "alpha.md"), alpha);
-    await Deno.writeTextFile(join(identitiesDir, "beta.md"), beta);
+    await Deno.writeTextFile(join(agentRolesDir, "alpha.md"), alpha);
+    await Deno.writeTextFile(join(agentRolesDir, "beta.md"), beta);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprints = await loader.listAll();
@@ -171,7 +171,7 @@ Deno.test("[IBlueprintLoader] loadOrThrow throws for non-existent blueprint", as
     await assertRejects(
       () => loader.loadOrThrow("non-existent"),
       BlueprintLoadError,
-      "Identity 'non-existent' not found",
+      "Agent role 'non-existent' not found",
     );
   } finally {
     await teardown(testDir);
@@ -179,7 +179,7 @@ Deno.test("[IBlueprintLoader] loadOrThrow throws for non-existent blueprint", as
 });
 
 Deno.test("[IBlueprintLoader] throws on invalid YAML frontmatter", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -189,7 +189,7 @@ name: [invalid: yaml: syntax
 
 Content
 `;
-    await Deno.writeTextFile(join(identitiesDir, "bad-yaml.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "bad-yaml.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
 
@@ -204,7 +204,7 @@ Content
 });
 
 Deno.test("[IBlueprintLoader] validates frontmatter schema", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -214,7 +214,7 @@ capabilities: "not-an-array"
 
 Content
 `;
-    await Deno.writeTextFile(join(identitiesDir, "schema-test.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "schema-test.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
 
@@ -231,7 +231,7 @@ Content
 // Extension Fields Tests
 
 Deno.test("[IBlueprintLoader] parses reflexive agent configuration", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = readFixtureTextSync(
@@ -239,7 +239,7 @@ Deno.test("[IBlueprintLoader] parses reflexive agent configuration", async () =>
       "blueprint",
       "content_1.md",
     );
-    await Deno.writeTextFile(join(identitiesDir, "reflexive-agent.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "reflexive-agent.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("reflexive-agent");
@@ -254,7 +254,7 @@ Deno.test("[IBlueprintLoader] parses reflexive agent configuration", async () =>
 });
 
 Deno.test("[IBlueprintLoader] parses memory and skills configuration", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = readFixtureTextSync(
@@ -262,7 +262,7 @@ Deno.test("[IBlueprintLoader] parses memory and skills configuration", async () 
       "blueprint",
       "content_2.md",
     );
-    await Deno.writeTextFile(join(identitiesDir, "skilled-agent.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "skilled-agent.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("skilled-agent");
@@ -278,7 +278,7 @@ Deno.test("[IBlueprintLoader] parses memory and skills configuration", async () 
 // Caching Tests
 
 Deno.test("[IBlueprintLoader] caches loaded blueprints", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -288,7 +288,7 @@ name: "Cached Agent"
 
 Content
 `;
-    await Deno.writeTextFile(join(identitiesDir, "cached-agent.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "cached-agent.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
 
@@ -297,7 +297,7 @@ Content
 
     // Modify file (shouldn't affect cached result)
     await Deno.writeTextFile(
-      join(identitiesDir, "cached-agent.md"),
+      join(agentRolesDir, "cached-agent.md"),
       content.replace("Cached Agent", "Modified Agent"),
     );
 
@@ -314,7 +314,7 @@ Content
 });
 
 Deno.test("[IBlueprintLoader] invalidate clears specific cache entry", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -324,7 +324,7 @@ name: "Original Name"
 
 Content
 `;
-    await Deno.writeTextFile(join(identitiesDir, "invalidate-test.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "invalidate-test.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
 
@@ -334,7 +334,7 @@ Content
 
     // Modify file and invalidate cache
     await Deno.writeTextFile(
-      join(identitiesDir, "invalidate-test.md"),
+      join(agentRolesDir, "invalidate-test.md"),
       content.replace("Original Name", "New Name"),
     );
     loader.invalidate("invalidate-test");
@@ -350,7 +350,7 @@ Content
 // Backward Compatibility Tests
 
 Deno.test("[IBlueprintLoader] toLegacyBlueprint returns compatible interface", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -360,7 +360,7 @@ name: "Legacy Test"
 
 System prompt content.
 `;
-    await Deno.writeTextFile(join(identitiesDir, "legacy-test.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "legacy-test.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const loaded = await loader.load("legacy-test");
@@ -378,7 +378,7 @@ System prompt content.
 Deno.test("[IBlueprintLoader] toLegacyBlueprint carries default_skills through as defaultSkills", async () => {
   // Regression: frontmatter.default_skills was parsed onto ILoadedBlueprint.frontmatter, but
   // toLegacyBlueprint's mapping to IBlueprint dropped it, so AgentRunner.run() never received it.
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     // style-exclude:SMALL_FIXTURE_OK - 5-line frontmatter fixture, inline for readability
@@ -390,7 +390,7 @@ default_skills: ["response-contract", "error-handling"]
 
 System prompt content.
 `;
-    await Deno.writeTextFile(join(identitiesDir, "skills-test.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "skills-test.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const loaded = await loader.load("skills-test");
@@ -405,7 +405,7 @@ System prompt content.
 });
 
 Deno.test("[loadBlueprint] standalone function returns legacy Blueprint", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = `---
@@ -415,7 +415,7 @@ name: "Standalone Test"
 
 Standalone system prompt.
 `;
-    await Deno.writeTextFile(join(identitiesDir, "standalone-test.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "standalone-test.md"), content);
 
     const blueprint = await loadBlueprint(blueprintsPath, "standalone-test");
 
@@ -445,7 +445,7 @@ Deno.test("[createBlueprintLoader] factory function creates loader", async () =>
 // Name Derivation Tests
 
 Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     // Test various ID patterns
@@ -457,7 +457,7 @@ Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () =>
 
     for (const { id, expectedName } of testCases) {
       const content = `# Agent\n\nPrompt`;
-      await Deno.writeTextFile(join(identitiesDir, `${id}.md`), content);
+      await Deno.writeTextFile(join(agentRolesDir, `${id}.md`), content);
 
       const loader = new IBlueprintLoader({ blueprintsPath });
       loader.clearCache(); // Clear cache between tests
@@ -474,7 +474,7 @@ Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () =>
 // Agents Path Tests
 
 Deno.test("[IBlueprintLoader] loads from Agents path (canonical)", async () => {
-  const { blueprintsPath, identitiesDir, testDir } = await setup();
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
 
   try {
     const content = readFixtureTextSync(
@@ -482,7 +482,7 @@ Deno.test("[IBlueprintLoader] loads from Agents path (canonical)", async () => {
       "blueprint",
       "content_3.md",
     );
-    await Deno.writeTextFile(join(identitiesDir, "senior-coder.md"), content);
+    await Deno.writeTextFile(join(agentRolesDir, "senior-coder.md"), content);
 
     const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("senior-coder");
@@ -490,13 +490,13 @@ Deno.test("[IBlueprintLoader] loads from Agents path (canonical)", async () => {
     assertExists(blueprint);
     assertEquals(blueprint.agentRole, "senior-coder");
     assertEquals(blueprint.name, "Senior Coder");
-    assertEquals(blueprint.path, join(identitiesDir, "senior-coder.md"));
+    assertEquals(blueprint.path, join(agentRolesDir, "senior-coder.md"));
   } finally {
     await teardown(testDir);
   }
 });
 
-Deno.test("[IBlueprintLoader] returns null when identity not found in Agents path", async () => {
+Deno.test("[IBlueprintLoader] returns null when agent role not found in Agents path", async () => {
   const { blueprintsPath, testDir } = await setup();
 
   try {

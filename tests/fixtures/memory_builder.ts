@@ -111,7 +111,7 @@ export class ExecutionMemoryBuilder {
     return this;
   }
 
-  public withIdentity(agent_role: string): this {
+  public withAgentRole(agent_role: string): this {
     this.memory.agent_role = agent_role;
     return this;
   }

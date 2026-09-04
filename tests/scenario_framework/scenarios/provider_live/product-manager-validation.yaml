@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "product-manager-validation"
 title: "Product Manager agent validation"
 pack: "provider_live"
-tags: ["provider-live", "planning", "subsystem:identities", "entity:product-manager"]
+tags: ["provider-live", "planning", "subsystem:agent_roles", "entity:product-manager"]
 request_fixture: "fixtures/requests/provider_live/product_manager.md"
 mode_support: ["auto", "step"]
 portals:

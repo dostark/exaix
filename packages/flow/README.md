@@ -187,7 +187,7 @@ instead of always restarting from scratch.
 | Action       | Behavior                                                      |
 | ------------ | ------------------------------------------------------------- |
 | `RETRY`      | Re-execute the failed step (up to `maxRetries`), with backoff |
-| `FALLBACK`   | Execute a fallback step or identity, then continue            |
+| `FALLBACK`   | Execute a fallback step or agent role, then continue          |
 | `COMPENSATE` | Unwind side effects (LIFO), then mark flow as compensated     |
 | `ABORT`      | Halt the entire flow immediately                              |
 
@@ -417,7 +417,7 @@ resume without re-scanning claims. On restart the handler:
 - **Resumes** a matching `running` checkpoint (`session.delegate.cycle_resumed`), continuing from
   the first incomplete sequence.
 - **Replays** an already-`completed` checkpoint idempotently — zero relaunches.
-- **Rejects** (`checkpoint_mismatch`) a checkpoint whose identity or `planDigest` no longer
+- **Rejects** (`checkpoint_mismatch`) a checkpoint whose key or `planDigest` no longer
   matches the current attempt, or one already terminally `failed` — never silently overwriting
   that evidence.
 

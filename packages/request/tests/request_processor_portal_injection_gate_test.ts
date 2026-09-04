@@ -53,8 +53,8 @@ async function makePortalGateEnv(opts: {
   const workspacePath = join(tempDir, config.paths.workspace);
   const requestsDir = join(workspacePath, config.paths.requests);
   const blueprintsPath = join(tempDir, config.paths.blueprints);
-  const identitiesPath = join(blueprintsPath, config.paths.agents);
-  await Deno.mkdir(identitiesPath, { recursive: true });
+  const agentRolesPath = join(blueprintsPath, config.paths.agents);
+  await Deno.mkdir(agentRolesPath, { recursive: true });
 
   const portalTargetDir = await Deno.makeTempDir({ prefix: "portal-target-" });
   config.portals = [{

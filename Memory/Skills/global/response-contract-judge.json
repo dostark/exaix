@@ -7,7 +7,7 @@
   "skill_id": "response-contract-judge",
   "name": "LLM-as-Judge — Evaluation Method & Contract",
   "version": "2.0.0",
-  "description": "How to evaluate another agent's output as an impartial judge: apply the rubric, ground every score in quoted evidence, reason before scoring, avoid judge biases — and return one JSON verdict whose reasoning fields carry the justification. Replaces the generic response-contract for judge identities.",
+  "description": "How to evaluate another agent's output as an impartial judge: apply the rubric, ground every score in quoted evidence, reason before scoring, avoid judge biases — and return one JSON verdict whose reasoning fields carry the justification. Replaces the generic response-contract for judge agent roles.",
   "triggers": {
     "keywords": [
       "evaluate",

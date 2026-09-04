@@ -1,15 +1,15 @@
-# Identity Blueprints
+# Agent Role Blueprints
 
-This directory contains **identity blueprints** — the LLM personas, models, and
-capabilities Exaix routes requests to. Each identity is a single `.md` file with
+This directory contains **agent role blueprints** — the LLM personas, models, and
+capabilities Exaix routes requests to. Each agent role is a single `.md` file with
 YAML frontmatter (role/scope/voice) plus a `default_skills` list that injects the
 shared procedural knowledge ("how to work") at runtime.
 
 ## Catalog model
 
-The catalog is a **flat set of concrete identities** (`*.md` in this directory).
+The catalog is a **flat set of concrete agent roles** (`*.md` in this directory).
 There are no separate `examples/` or `templates/` subdirectories — example stubs
-that duplicated concrete identities were merged away, and the template scaffolds
+that duplicated concrete agent roles were merged away, and the template scaffolds
 were converted into reusable **skills** under `Blueprints/Skills/`. A persona
 describes _who_ the agent is; a skill describes _how_ it works.
 
@@ -17,8 +17,8 @@ describes _who_ the agent is; a skill describes _how_ it works.
 
 ```yaml
 ---
-agent_role: "my-identity"
-name: "My Identity"
+agent_role: "my-agent"
+name: "My Agent"
 model: "" # deprecated — use model_size + characteristics instead
 model_size: "M" # S, M, L, XL — maps to capability profile via ModelResolver
 thinking: true # enable extended reasoning
@@ -33,7 +33,7 @@ created_by: "you@example.com"
 version: "1.0.0"
 ---
 
-# My Identity
+# My Agent Role
 
 You are a … (role, scope, and voice — keep this short; methodology lives in skills).
 
@@ -41,19 +41,18 @@ Apply your `code-review` skill for systematic review; follow your
 `response-contract` skill for output format.
 ```
 
-- `capabilities` are **behavioural tags** (e.g. `evaluation`, `analysis`), never
-  tool names. Tools an identity may invoke go in `permitted_tools` (valid
+- `capabilities` are **behavioural tags** (e.g. `evaluation`, `analysis`), never  tool names. Tools of an agent role may invoke go in `permitted_tools` (valid
   `McpToolName` / `ToolName` values), kept least-privilege — read-only roles
   (analysts, judges, reviewers) carry no `write_file`/`run_command`/`delete_file`.
-- Every identity should include `response-contract` in `default_skills` — it
+- Every agent role should include `response-contract` in `default_skills` — it
   defines the mandatory `<thought>`/`<content>` output contract.
 
 See `Blueprints/Skills/` for the full skill library and `docs/Reference_Data.md`
 for the authoritative field reference.
 
-## Available identities
+## Available agent roles
 
-| Identity               | Use case                                        |
+| Agent Role              | Use case                                        |
 | ---------------------- | ----------------------------------------------- |
 | `default`              | General-purpose coding assistant                |
 | `senior-coder`         | Complex, expert-level implementations           |
@@ -69,47 +68,44 @@ for the authoritative field reference.
 | `quality-judge`        | LLM-as-a-Judge quality evaluation               |
 | `voting-judge`         | LLM-as-a-Judge multi-candidate voting consensus |
 | `dogfood-developer`    | Self-hosted dogfooding (TDD loop)               |
-| `mock-agent`           | Deterministic identity for tests/CI             |
+| `mock-agent`           | Deterministic agent role for tests/CI             |
 
-## Using an identity
+## Using an agent role
 
 ```bash
 exactl request "Task description" --agent-role senior-coder
 ```
 
-## Creating a new identity
+## Creating a new agent role
 
-Either author the `.md` file directly (using the frontmatter above), or scaffold
-from an existing identity as a prototype:
+Either author the `.md` file directly (using the frontmatter above), or scaffold from an existing agent role as a prototype:
 
 ```bash
-# Clone an existing identity's model, capabilities, and body as a starting point:
-exactl blueprint identity create my-identity --name "My Identity" --from senior-coder
+# Clone an existing agent role's model, capabilities, and body as a starting point:
+exactl blueprint agent-role create my-agent-role --name "My Agent Role" --from senior-coder
 
 # Or define it from scratch:
-exactl blueprint identity create my-identity --name "My Identity" --model "provider:model"
+exactl blueprint agent-role create my-agent-role --name "My Agent Role" --model "provider:model"
 ```
 
 > The previous `--template <name>` flag (backed by a separate template library)
-> has been replaced by `--from <identity-id>`, which clones a concrete identity.
+> has been replaced by `--from <agent-role-id>`, which clones a concrete agent role.
 
 ### Contributor rule: value evidence
 
-A new identity must carry either a value-evaluation result (a head-to-head or
+A new agent role must carry either a value-evaluation result (a head-to-head or
 config-arm delta from the value tier described in
 `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
-it cannot be measured yet (e.g. it is not corpus-reachable). An identity with neither
-is presence-tested but never shown to help.
+it cannot be measured yet (e.g. it is not corpus-reachable). An agent role with neither is presence-tested but never shown to help.
 
-**Persona-body value specifically** is a separate, narrower question from "does this
-identity earn its place" — `identity-swap`/`identity-config` vary the whole bundle or
+**Persona-body value specifically** is a separate, narrower question from "does this agent role earn its place" — `agent-role-swap`/`agent-role-config` vary the whole bundle or
 just `default_skills`, never the persona/voice prose alone. See
 `exaix-dev-docs/planning/phase-161-identity-persona-value-isolation.md` (🚧 Planning)
 for the `persona-isolation` arm that isolates it, and
 `tests/scenario_framework/templates/persona_isolation_arm.template.md` for the
-authoring template. Until that arm has run for a given identity, its `KEEP` decision
+authoring template. Until that arm has run for a given agent role, its `KEEP` decision
 in `phase-158-artefact-value-evaluation.md` reflects "no measured harm from the
-identity as a whole," not "the persona text specifically helps."
+agent role as a whole," not "the persona text specifically helps."
 
 ## Skills
 
@@ -125,7 +121,7 @@ default_skills: ["response-contract", "tdd-methodology"]
 Skills reach a prompt through one of two channels, and choosing the wrong one is
 the most common authoring mistake:
 
-- **`default_skills`** — injected on **every** request this identity handles,
+- **`default_skills`** — injected on **every** request this agent role handles,
   unconditionally. Every entry is prompt weight paid whether or not the request
   needs it.
 - **Trigger matching** — the skill's own `triggers` (keywords, tags, task types,
@@ -134,10 +130,10 @@ the most common authoring mistake:
 A skill that declares triggers belongs in the trigger channel. `code-review`,
 `portal-grounding`, `fix-bug`, `commit-message`, `error-handling` and
 `gap-analysis` all declare triggers, so none of them should appear in
-`default_skills` — `portal-grounding` was carried by 14 of 15 identities before
+`default_skills` — `portal-grounding` was carried by 14 of 15 agent roles before
 Phase 142 Step 17 removed it from all of them for exactly this reason.
 
-Two rules the catalog enforces (`tests/eval/identity_default_skills_test.ts`):
+Two rules the catalog enforces (`tests/eval/agent_role_default_skills_test.ts`):
 
 - **At most five entries**, matching the `max_per_request` cap on matched skills.
   Skills are always concatenated — pinned ∪ trigger-matched ∪ defaults — so a
@@ -149,7 +145,7 @@ Two rules the catalog enforces (`tests/eval/identity_default_skills_test.ts`):
 Key skills:
 
 - `response-contract` — the mandatory `<thought>`/`<content>` output contract and
-  executable-plan JSON schema. A good default for every identity.
+  executable-plan JSON schema. A good default for every agent role.
 - `tdd-methodology` — Red-Green-Refactor cycle and test design.
 - `security-first` — secure coding and vulnerability assessment.
 - `code-review` — comprehensive code-review checklist (**trigger-matched**).
@@ -169,4 +165,4 @@ keeps the two in sync).
 A plan's `<content>` block is a single JSON object matching the executable-plan
 schema (`title`, `description`, `steps[]`, …). See `packages/schemas/src/plan_schema.ts`
 for the complete schema, and the `response-contract` skill for the contract every
-identity must emit. Generated plans land in `Workspace/Plans/`.
+agent role must emit. Generated plans land in `Workspace/Plans/`.

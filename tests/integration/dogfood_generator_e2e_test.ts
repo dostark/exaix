@@ -1,8 +1,8 @@
 /**
  * @module DogfoodGeneratorE2eTest
  * @path tests/integration/dogfood_generator_e2e_test.ts
- * @description Phase 122 Step 5 — full identity → skills → generator E2E test.
- *   Proves the dogfood-developer identity, gap-analysis/step-execution skills,
+ * @description Phase 122 Step 5 — full agent role -> skills -> generator E2E test.
+ *   Proves the dogfood-developer agent role, gap-analysis/step-execution skills,
  *   and plan_to_requests generator work together on a real plan file.
  *   GAP-12/GAP-13 remediation: uses SkillsService.getSkill for runtime loading
  *   and asserts dogfood metadata line in generated files.
@@ -28,15 +28,15 @@ const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 
-Deno.test("[dogfood-e2e] dogfood-developer identity loads through IBlueprintLoader", async () => {
+Deno.test("[dogfood-e2e] dogfood-developer agent role loads through IBlueprintLoader", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer must load");
   assertEquals(blueprint.agentRole, "dogfood-developer");
-  // This test covers the GENERATOR flow, so it only needs the identity to load and carry the
+  // This test covers the GENERATOR flow, so it only needs the agent role to load and carry the
   // skill that flow depends on. It used to assert `skills.length === 8`, which broke when the
-  // list was legitimately curated and told a reader nothing; skill defaults are `dogfood_identity_test.ts`'s concern.
+  // list was legitimately curated and told a reader nothing; skill defaults are `dogfood_agent_role_test.ts`'s concern.
   const skills = blueprint.frontmatter.default_skills ?? [];
   assertEquals(skills.includes("tdd-methodology"), true, "the generator flow assumes TDD guidance is loaded");
 });

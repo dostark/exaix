@@ -10,7 +10,7 @@ portals: []
 
 steps:
   # --- Setup ---
-  - id: "setup-best-identity"
+  - id: "setup-best-agent-role"
     type: "write-file"
     path: "Blueprints/Agents/stub-best.md"
     content: |
@@ -25,7 +25,7 @@ steps:
 
       You are a stub agent for testing best-ranked model resolution.
     output_criteria:
-      - id: "identity-written"
+      - id: "agent-role-written"
         kind: "command-exit-code"
         equals: 0
 
@@ -95,7 +95,7 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # --- Submit request targeting the best-characteristic identity ---
+  # --- Submit request targeting the best-characteristic agent role ---
   - id: "submit-request"
     type: "exactl"
     command: "request"

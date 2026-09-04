@@ -27,7 +27,7 @@ const makeStubDb = (records: IActivityRecord[]): IDatabaseService => ({
   listPendingToolConfirmations: () => Promise.resolve([]),
 });
 
-Deno.test("[AgentRolePerformanceRepository] aggregates performance by identity", async () => {
+Deno.test("[AgentRolePerformanceRepository] aggregates performance by agent role", async () => {
   const records: IActivityRecord[] = [
     {
       id: "1",

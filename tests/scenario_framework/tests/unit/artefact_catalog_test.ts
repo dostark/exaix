@@ -5,7 +5,7 @@
  * `Blueprints/{Agents,Skills,Flows}` trees into the `IArtefactRef[]` shape
  * `assertArtefactDecisionCoverage` consumes, applying the same exclusions Phase 158
  * has used throughout (README files, the non-curated `mock-agent`/`default`
- * identities, flow ids read from each file's declared `id:` rather than its
+ * agent roles, flow ids read from each file's declared `id:` rather than its
  * filename — the historical `api_design` vs `api-design` bug this repo already hit
  * once in `flow_eval_parity_test.ts`).
  * @architectural-layer Test
@@ -18,18 +18,18 @@ import { loadArtefactCatalog } from "../../runner/artefact_catalog.ts";
 import { ArtefactKind } from "../../runner/artefact_decision_coverage.ts";
 
 async function writeFixtureBlueprints(root: string): Promise<void> {
-  const identitiesDir = join(root, "Agents");
+  const agentRolesDir = join(root, "Agents");
   const skillsDir = join(root, "Skills");
   const flowsDir = join(root, "Flows");
   const templatesDir = join(flowsDir, "templates");
-  await Deno.mkdir(identitiesDir, { recursive: true });
+  await Deno.mkdir(agentRolesDir, { recursive: true });
   await Deno.mkdir(skillsDir, { recursive: true });
   await Deno.mkdir(templatesDir, { recursive: true });
 
-  await Deno.writeTextFile(join(identitiesDir, "README.md"), "# not an identity");
-  await Deno.writeTextFile(join(identitiesDir, "senior-coder.md"), "---\nmodel: x\n---\nbody");
-  await Deno.writeTextFile(join(identitiesDir, "mock-agent.md"), "---\nmodel: mock:x\n---\nbody");
-  await Deno.writeTextFile(join(identitiesDir, "default.md"), "---\nmodel: x\n---\nbody");
+  await Deno.writeTextFile(join(agentRolesDir, "README.md"), "# not an agent role");
+  await Deno.writeTextFile(join(agentRolesDir, "senior-coder.md"), "---\nmodel: x\n---\nbody");
+  await Deno.writeTextFile(join(agentRolesDir, "mock-agent.md"), "---\nmodel: mock:x\n---\nbody");
+  await Deno.writeTextFile(join(agentRolesDir, "default.md"), "---\nmodel: x\n---\nbody");
 
   await Deno.writeTextFile(join(skillsDir, "README.md"), "# not a skill");
   await Deno.writeTextFile(join(skillsDir, "response-contract.skill.md"), "---\nid: response-contract\n---\nbody");
@@ -54,8 +54,8 @@ Deno.test("[ArtefactCatalog] a fixture catalog resolves to the expected refs", a
     assertEquals(
       catalog.sort((a, b) => `${a.kind}:${a.artefactId}`.localeCompare(`${b.kind}:${b.artefactId}`)),
       [
+        { kind: ArtefactKind.AGENT_ROLE, artefactId: "senior-coder" },
         { kind: ArtefactKind.FLOW, artefactId: "feature-development" },
-        { kind: ArtefactKind.IDENTITY, artefactId: "senior-coder" },
         { kind: ArtefactKind.SKILL, artefactId: "response-contract" },
       ],
     );
@@ -75,12 +75,12 @@ Deno.test("[ArtefactCatalog] README files never appear in any kind", async () =>
   }
 });
 
-Deno.test("[ArtefactCatalog] mock-agent and default are excluded (non-curated identities)", async () => {
+Deno.test("[ArtefactCatalog] mock-agent and default are excluded (non-curated agent roles)", async () => {
   const root = await Deno.makeTempDir();
   try {
     await writeFixtureBlueprints(root);
     const catalog = await loadArtefactCatalog(root);
-    const agentRoles = catalog.filter((r) => r.kind === ArtefactKind.IDENTITY).map((r) => r.artefactId);
+    const agentRoles = catalog.filter((r) => r.kind === ArtefactKind.AGENT_ROLE).map((r) => r.artefactId);
     assertEquals(agentRoles, ["senior-coder"]);
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -123,9 +123,9 @@ Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts 
 
   const byKind = (kind: ArtefactKind) => catalog.filter((r) => r.kind === kind).length;
 
-  // Blueprints/Agents/aci-react.md (a real-daemon scenario fixture identity) is included,
+  // Blueprints/Agents/aci-react.md (a real-daemon scenario fixture agent role) is included,
   // bringing the curated count to 16.
-  assertEquals(byKind(ArtefactKind.IDENTITY), 16, "curated identities (excluding README, mock-agent, default)");
+  assertEquals(byKind(ArtefactKind.AGENT_ROLE), 16, "curated agent roles (excluding README, mock-agent, default)");
   // memory-extraction-content-policy.skill.md is included, bringing the count to 28.
   assertEquals(byKind(ArtefactKind.SKILL), 28, "skills");
   // Includes 3 mechanism-proof fixture flows (strategy-comparison-cli-delegate,

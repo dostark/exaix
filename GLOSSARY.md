@@ -6,7 +6,7 @@ copilot_knowledge_base: true
 version: "1.3"
 capabilities: [terminology, system_overview]
 topics: ["glossary", "terminology", "concepts", "onboarding"]
-short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Tool, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
+short_summary: "Plain-language definitions of the core Exaix concepts — Agent Role, Agent, Tool, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
 links:
   - "README.md"
   - "ARCHITECTURE.md"
@@ -20,29 +20,29 @@ Plain-language definitions of the concepts you need to read the rest of Exaix's 
 
 ## Core Execution Concepts
 
-### Identity
+### Agent Role
 
-A configured LLM persona that Exaix can run to perform work on behalf of a user, service, or flow step. An identity is defined by an **Identity Blueprint** — a markdown file describing its instructions, capabilities, and constraints — and is referenced from requests, flows, and tools by its `identity_id` (for example, `senior-coder`).
+A configured LLM persona that Exaix can run to perform work on behalf of a user, service, or flow step. An agent role is defined by an **Agent Role Blueprint** — a markdown file describing its instructions, capabilities, and constraints — and is referenced from requests, flows, and tools by its `agent_role` (for example, `senior-coder`).
 
-### Identity Blueprint
+### Agent Role Blueprint
 
-The markdown file that defines an agent_role: its metadata, instructions, capabilities, and constraints. Stored under `Blueprints/Identities/` and loaded by Exaix at runtime to configure how an identity behaves.
+The markdown file that defines an agent_role: its metadata, instructions, capabilities, and constraints. Stored under `Blueprints/Agents/` and loaded by Exaix at runtime to configure how an agent role behaves.
 
 ### Actor
 
-Any entity that can initiate, receive, or process a request or event in Exaix — an end user, a developer, a running identity instance, an internal Exaix service, or an external MCP client. Actors are the **"who"** behind every action, and every Activity Journal entry records which actor was responsible.
+Any entity that can initiate, receive, or process a request or event in Exaix — an end user, a developer, a running agent-role instance, an internal Exaix service, or an external MCP client. Actors are the **"who"** behind every action, and every Activity Journal entry records which actor was responsible.
 
 ### Agent (Runtime Agent)
 
-The code-level execution unit that orchestrates one or more identities to complete a task — it owns the control flow (calling identities, invoking tools, coordinating services), while the identities it runs supply the actual LLM behavior. `AgentRunner`, `FlowRunner`, and `RequestRouter` are examples of runtime agents.
+The code-level execution unit that orchestrates one or more agent roles to complete a task — it owns the control flow (calling agent roles, invoking tools, coordinating services), while the agent roles it runs supply the actual LLM behavior. `AgentRunner`, `FlowRunner`, and `RequestRouter` are examples of runtime agents.
 
 ### Tool
 
-A discrete capability — reading or writing files, running git operations, querying external systems — that an agent invokes on an identity's behalf to act on the world beyond LLM reasoning. Tools are implemented as handlers under `packages/mcp/server/handlers/` (see [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md) for the full agent-accessible index), validated and executed by the `ToolRegistry` within an identity's permitted capabilities and a portal's security boundaries, and exposed to MCP clients through the MCP Server.
+A discrete capability — reading or writing files, running git operations, querying external systems — that an agent invokes on an agent role's behalf to act on the world beyond LLM reasoning. Tools are implemented as handlers under `packages/mcp/server/handlers/` (see [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md) for the full agent-accessible index), validated and executed by the `ToolRegistry` within an agent role's permitted capabilities and a portal's security boundaries, and exposed to MCP clients through the MCP Server.
 
 ### Model Intent (model resolution and intent)
 
-A description of the model you want — by capability requirements — rather than a hardcoded `provider:model` ID. Model Intent fields include `model_size` (S/M/L/XL), `thinking` (true/false), `effort` (low/medium/high), `characteristics` (cheapest/fastest — soft ranking hints), `required_capabilities` (chat, streaming, vision, tools — hard filters), and `preferred_provider`. The `ModelResolver` translates these fields into a concrete `provider:model` at runtime, decoupling identities from any single provider.
+A description of the model you want — by capability requirements — rather than a hardcoded `provider:model` ID. Model Intent fields include `model_size` (S/M/L/XL), `thinking` (true/false), `effort` (low/medium/high), `characteristics` (cheapest/fastest — soft ranking hints), `required_capabilities` (chat, streaming, vision, tools — hard filters), and `preferred_provider`. The `ModelResolver` translates these fields into a concrete `provider:model` at runtime, decoupling agent roles from any single provider.
 
 ### ModelResolver (model resolution and intent)
 
@@ -66,18 +66,18 @@ A hard filter that excludes providers lacking **all** listed capabilities. Value
 
 ---
 
-## Clarifying Diagram: Actor vs Agent vs Identity
+## Clarifying Diagram: Actor vs Agent vs Agent Role
 
 ```text
 +---------------------+         +-----------------+         +-------------------+
-|       ACTOR         |  uses   |      AGENT      |  runs   |     IDENTITY      |
+|       ACTOR         |  uses   |      AGENT      |  runs   |    AGENT ROLE     |
 |---------------------| ------> | (runtime logic) | ----->  | (LLM persona)     |
 | - user              |         | - orchestrator  |         | - instructions    |
 | - service           |         | - flow engine   |         | - behavior config |
 | - mcp client        |         | - router        |         | - tools access    |
 +---------------------+         +-----------------+         +-------------------+
 
-Actors are "who", agents are "how", identities are "what and with which voice".
+Actors are "who", agents are "how", agent roles are "what and with which voice".
 ```
 
 ---
@@ -94,11 +94,11 @@ An external or internal signal that starts Exaix processing — a webhook call, 
 
 ### Request
 
-The top-level unit of work submitted to Exaix — a markdown file with YAML frontmatter, dropped into `Workspace/Requests/` (or submitted via the CLI, MCP, or a Trigger). Exaix picks it up asynchronously, routes it to the right identity, and processes it through the gated pipeline: file → plan → approve → execute → review → merge.
+The top-level unit of work submitted to Exaix — a markdown file with YAML frontmatter, dropped into `Workspace/Requests/` (or submitted via the CLI, MCP, or a Trigger). Exaix picks it up asynchronously, routes it to the right agent role, and processes it through the gated pipeline: file → plan → approve → execute → review → merge.
 
 ### Request Frontmatter
 
-The YAML metadata block at the top of a request file that configures how Exaix should process it — including which `identity` to use, an optional `flow_id`, and execution options. Validated against a schema before processing begins.
+The YAML metadata block at the top of a request file that configures how Exaix should process it — including which `agent_role` to use, an optional `flow_id`, and execution options. Validated against a schema before processing begins.
 
 ### Plan
 
@@ -118,19 +118,19 @@ The human-in-the-loop gate that closes out execution: once an agent finishes pro
 
 ### Blueprint
 
-A configuration file that defines reusable behavior for Exaix — identities, flows, tools, and other structured definitions. Identity blueprints live under `Blueprints/Identities/`; flow blueprints live under `Blueprints/Flows/`.
+A configuration file that defines reusable behavior for Exaix — agent roles, flows, tools, and other structured definitions. Agent role blueprints live under `Blueprints/Agents/`; flow blueprints live under `Blueprints/Flows/`.
 
 ### Flow
 
-A declarative, multi-step process that Exaix executes — typically using one or more agents that in turn run identities and tools, optionally sharing intermediate state through a namespace-scoped blackboard. Flows are authored once as YAML and executed by Exaix's reasoning engine, which selects tools, branches, and recovers based on what it observes at runtime.
+A declarative, multi-step process that Exaix executes — typically using one or more agents that in turn run agent roles and tools, optionally sharing intermediate state through a namespace-scoped blackboard. Flows are authored once as YAML and executed by Exaix's reasoning engine, which selects tools, branches, and recovers based on what it observes at runtime.
 
 ### Flow Step
 
-A single unit of work within a flow, mapped to a specific identity. Each step has an `id`, a `name`, the `identity` it should run, its dependencies on other steps, and any step-specific configuration.
+A single unit of work within a flow, mapped to a specific agent role. Each step has an `id`, a `name`, the `agent_role` it should run, its dependencies on other steps, and any step-specific configuration.
 
 ### Gate Evaluate
 
-A flow block that performs a quality or acceptance check using a "judge" identity against a list of criteria — the mechanism flows use to validate their own output before proceeding.
+A flow block that performs a quality or acceptance check using a "judge" agent role against a list of criteria — the mechanism flows use to validate their own output before proceeding.
 
 ### Wait State
 
@@ -142,7 +142,7 @@ The durable, resumable pause point underneath every gate described above — Pla
 
 ### Activity Journal
 
-Exaix's permanent, append-only audit trail: a typed, trace-linked record of every significant action the system takes — who initiated it, which Agent and Identity carried it out, what it touched, and when. Every Request, Plan, Changeset, Review, and Wait State transition is logged here, which is what makes an Exaix run independently inspectable after the fact — you don't have to have watched it live to trust what happened.
+Exaix's permanent, append-only audit trail: a typed, trace-linked record of every significant action the system takes — who initiated it, which Agent and Agent Role carried it out, what it touched, and when. Every Request, Plan, Changeset, Review, and Wait State transition is logged here, which is what makes an Exaix run independently inspectable after the fact — you don't have to have watched it live to trust what happened.
 
 ### Trace ID
 
@@ -162,7 +162,7 @@ Exaix's persistent, file-backed knowledge store. It retains project context, exe
 
 ### Skills
 
-Reusable procedural knowledge — "how-to" guidance for recurring tasks such as writing tests for a particular codebase or resolving a familiar class of merge conflict. Skills are matched against an incoming request and injected into the identity's prompt, letting it draw on prior experience rather than rediscovering the same approach from scratch each time.
+Reusable procedural knowledge — "how-to" guidance for recurring tasks such as writing tests for a particular codebase or resolving a familiar class of merge conflict. Skills are matched against an incoming request and injected into the agent role's prompt, letting it draw on prior experience rather than rediscovering the same approach from scratch each time.
 
 ---
 

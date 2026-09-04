@@ -70,7 +70,7 @@ class SnapshotPortalKnowledgeService implements IPortalKnowledgeService {
   }
 }
 
-/** The first turn must see the identity-authorized tool; the second may complete only
+/** The first turn must see the agent-role-authorized tool; the second may complete only
  * after the real ToolRegistry result appears in ReAct history. */
 class RelationshipQueryProvider implements IModelProvider {
   readonly id = "phase-175-solo-cutover";

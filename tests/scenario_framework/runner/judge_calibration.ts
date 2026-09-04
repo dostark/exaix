@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkJudgeCalibration
  * @path tests/scenario_framework/runner/judge_calibration.ts
  * @description Phase 158 Step 5's judge calibration: the Pearson correlation between a
- * judge identity's scores and the objective test outcome for the same tasks. Distinct
+ * judge agent role's scores and the objective test outcome for the same tasks. Distinct
  * from Phase 146's judge-vs-human agreement (Cohen's/Krippendorff's α) — this measures
  * judge-vs-objective-outcome correlation, complementary rather than redundant. Pure
  * computation only, matching arm_comparison.ts's pattern — collecting paired judge
@@ -18,12 +18,12 @@ export interface IJudgeCalibrationSample {
 }
 
 export interface IJudgeCalibrationInput {
-  judgeIdentityId: string;
+  judgeAgentRole: string;
   samples: IJudgeCalibrationSample[];
 }
 
 export interface IJudgeCalibrationResult {
-  judgeIdentityId: string;
+  judgeAgentRole: string;
   correlation: number;
   sampleCount: number;
 }
@@ -36,7 +36,7 @@ function mean(values: number[]): number {
 export function computeJudgeCalibration(input: IJudgeCalibrationInput): IJudgeCalibrationResult {
   const { samples } = input;
   if (samples.length < 2) {
-    return { judgeIdentityId: input.judgeIdentityId, correlation: 0, sampleCount: samples.length };
+    return { judgeAgentRole: input.judgeAgentRole, correlation: 0, sampleCount: samples.length };
   }
 
   const judgeScores = samples.map((s) => s.judgeScore);
@@ -58,5 +58,5 @@ export function computeJudgeCalibration(input: IJudgeCalibrationInput): IJudgeCa
   const denominator = Math.sqrt(judgeVariance * outcomeVariance);
   const correlation = denominator === 0 ? 0 : covariance / denominator;
 
-  return { judgeIdentityId: input.judgeIdentityId, correlation, sampleCount: samples.length };
+  return { judgeAgentRole: input.judgeAgentRole, correlation, sampleCount: samples.length };
 }

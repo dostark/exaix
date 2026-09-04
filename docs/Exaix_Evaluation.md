@@ -23,7 +23,7 @@ track scores over time, compare runs, and gate CI on quality thresholds.
 | Eval self-test       | `eval-smoke`              |
 
 Packs are also tagged by the **subsystem** they measure — `subsystem:tools`, `subsystem:mcp-server`,
-`subsystem:mcp-client`, `subsystem:identities`, `subsystem:skills`, `subsystem:flows` — which is the
+`subsystem:mcp-client`, `subsystem:agent_roles`, `subsystem:skills`, `subsystem:flows` — which is the
 axis `eval report --group-by subsystem` aggregates and the one the cadence tiers select on. See
 [§12 Subsystem Evaluation](#12-subsystem-evaluation).
 
@@ -858,16 +858,16 @@ Packs are organised by _which subsystem they measure_, not only by which directo
 scenario carries a `subsystem:` tag, and the six subsystems together are the coverage contract: if a
 subsystem has no green scenario, nothing in this framework is measuring it.
 
-| Subsystem tag          | What it measures                                       | Edition |
-| ---------------------- | ------------------------------------------------------ | ------- |
-| `subsystem:tools`      | MCP tool round-trips through the real server           | all     |
-| `subsystem:mcp-server` | the external-client contract over stdio                | Team    |
-| `subsystem:mcp-client` | dynamic-step execution and tool selection              | all     |
-| `subsystem:identities` | identity resolution and its effect on the written plan | all     |
-| `subsystem:skills`     | skill matching, pinning and injection into the prompt  | all     |
-| `subsystem:flows`      | flow blueprints end to end, request through plan       | all     |
+| Subsystem tag           | What it measures                                         | Edition |
+| ----------------------- | -------------------------------------------------------- | ------- |
+| `subsystem:tools`       | MCP tool round-trips through the real server             | all     |
+| `subsystem:mcp-server`  | the external-client contract over stdio                  | Team    |
+| `subsystem:mcp-client`  | dynamic-step execution and tool selection                | all     |
+| `subsystem:agent_roles` | agent role resolution and its effect on the written plan | all     |
+| `subsystem:skills`      | skill matching, pinning and injection into the prompt    | all     |
+| `subsystem:flows`       | flow blueprints end to end, request through plan         | all     |
 
-A second axis, `entity:<name>`, narrows to one tool, identity, skill or flow — that is what
+A second axis, `entity:<name>`, narrows to one tool, agent role, skill or flow — that is what
 `eval report --group-by entity` aggregates.
 
 ### Cadence tiers
@@ -876,7 +876,7 @@ A second axis, `entity:<name>`, narrows to one tool, identity, skill or flow —
 | --------------- | -------------------------------- | -------------------------------------------------------------- |
 | **ci-smoke**    | `--profile ci-smoke`             | `smoke`-tagged scenarios                                       |
 | **ci-core**     | `deno task eval:subsystems:core` | the `smoke` subset — one or more representatives per subsystem |
-| **ci-core**     | `deno task test:parity`          | the catalog/flow/identity/skill/tool parity gates              |
+| **ci-core**     | `deno task test:parity`          | the catalog/flow/agent-role/skill/tool parity gates            |
 | **ci-extended** | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems             |
 | **nightly**     | see below                        | the `provider-live` tier, against a real model                 |
 
@@ -908,7 +908,7 @@ exactl eval report --group-by subsystem
 ```text
 Name                    Tasks  Passed   Mean    Delta    Pass@1
 subsystem:flows         21     21/21    —       +0.000   1.000
-subsystem:identities    15     15/15    —       —        1.000
+subsystem:agent_roles   15     15/15    —       —        1.000
 ```
 
 Two columns deserve care:
@@ -923,7 +923,7 @@ Two columns deserve care:
 
 ### The contributor rule
 
-**Adding a tool, identity, skill or flow requires an eval scenario — or a reasoned parity
+**Adding a tool, agent role, skill or flow requires an eval scenario — or a reasoned parity
 exclusion.** The parity gates (`deno task test:parity`) compare each catalog against the scenarios
 that reference it and fail on anything uncovered. To exclude something deliberately, add it to
 `tests/eval/parity_exclusions.json` with a reason; an unexplained gap is a failure, not a default.
@@ -933,8 +933,8 @@ that reference it and fail on anything uncovered. To exclude something deliberat
 Every subsystem declares at least one mutation that must turn its pack red, in
 `tests/scenario_framework/runner/pack_mutations.ts`. This exists because packs in this codebase have
 repeatedly been unable to fail for the right reason: one sat at mean 0.714 with three "green"
-scenarios while asserting nothing at all, and fourteen identity smokes asserted a frontmatter field
-that is stamped unconditionally — so every one would have passed with the _wrong_ identity.
+scenarios while asserting nothing at all, and fourteen agent-role smokes asserted a frontmatter field
+that is stamped unconditionally — so every one would have passed with the _wrong_ agent role.
 
 `pack_mutation_coverage_test.ts` verifies each mutation's anchor still resolves in its source file,
 so a refactor cannot silently retire a pack's only evidence of sensitivity.
@@ -964,7 +964,7 @@ not mean, and was never designed to mean, that any particular artefact improved 
 Whether an artefact helps is a provider-live question — value evaluation runs against a real model
 every time, in every arm, which recorded fixtures structurally cannot substitute for.
 
-Only `flow_blueprints` uses fixtures. `identity_eval` and `skill_eval` assert against frontmatter
+Only `flow_blueprints` uses fixtures. `agent_role_eval` and `skill_eval` assert against frontmatter
 fields and journal payloads — what the daemon _did_ with a request, not what the model _said_ —
 so they do not depend on response content and gain nothing from replaying real exchanges; the
 mock's pattern-dispatch fallback is sufficient and unaffected by the fixture-replay wiring above.
@@ -1072,7 +1072,7 @@ See `tests/scenario_framework/AUTHORING.md` for the full authoring workflow.
 
 ## 15. Artefact Value Evaluation
 
-Every pack described above — `identity_eval`, `skill_eval`, `flow_blueprints`, and §14's
+Every pack described above — `agent_role_eval`, `skill_eval`, `flow_blueprints`, and §14's
 `swe_tasks` on its own — answers "does the artefact reach the run and execute?" None of them
 answers "does the artefact make the outcome better?" A skill whose instructions actively degrade
 the model's output still passes `skill_eval` as long as it is injected; a flow that produces a
@@ -1082,13 +1082,13 @@ once without — and reporting the difference.
 
 ### What this tier answers, and what it costs
 
-|          | Mechanics packs (§12, `identity_eval`/`skill_eval`/`flow_blueprints`) | Value tier (this section)                                            |
-| -------- | --------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Question | Does the artefact reach the run and execute?                          | Does the artefact improve the outcome?                               |
-| Tier     | Mock — canned responses chosen by prompt regex                        | Provider-live                                                        |
-| Verdict  | Pass/fail per scenario                                                | A paired delta, with its variance and its token cost                 |
-| Cost     | Seconds, every PR                                                     | Model spend, deliberately scheduled                                  |
-| Catches  | The pinned skill never arrived; the flow was never loadable           | The artefact is injected correctly and still makes the outcome worse |
+|          | Mechanics packs (§12, `agent_role_eval`/`skill_eval`/`flow_blueprints`) | Value tier (this section)                                            |
+| -------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Question | Does the artefact reach the run and execute?                            | Does the artefact improve the outcome?                               |
+| Tier     | Mock — canned responses chosen by prompt regex                          | Provider-live                                                        |
+| Verdict  | Pass/fail per scenario                                                  | A paired delta, with its variance and its token cost                 |
+| Cost     | Seconds, every PR                                                       | Model spend, deliberately scheduled                                  |
+| Catches  | The pinned skill never arrived; the flow was never loadable             | The artefact is injected correctly and still makes the outcome worse |
 
 **A green mechanics pack is a precondition for a value result, not a substitute for one.** Before
 the mock tier's own scoring fix landed, every pinned skill was silently dropped before reaching
@@ -1103,14 +1103,14 @@ An **arm** is a named configuration delta applied to one scenario run — never 
 `Blueprints/` on disk, since an arm that rewrites the catalog cannot run concurrently with its own
 control and corrupts the working tree on failure.
 
-| Arm kind          | Control                          | Treatment                                   | Mechanism                                                                                            |
-| ----------------- | -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `skill-ablation`  | resolved skill set minus skill S | resolved set as normal                      | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids), read inside `AgentRunner`'s skill resolution |
-| `skill-version`   | skill S at version _a_           | skill S at version _b_                      | `EXA_EVAL_SKILL_OVERLAY_DIR`, a directory shadowing `Memory/Skills/` for the run                     |
-| `identity-swap`   | identity A handles the request   | identity B handles the request              | request frontmatter `agent_role:`, one value per arm                                                 |
-| `identity-config` | identity A as shipped            | identity A with a modified `default_skills` | `EXA_EVAL_IDENTITY_OVERLAY_DIR`, a directory shadowing `Blueprints/Identities/` for the run          |
-| `flow-ablation`   | request executed without a flow  | request executed under flow F               | request frontmatter `flow:`, present or absent                                                       |
-| `flow-swap`       | flow F                           | flow G                                      | request frontmatter `flow:`, one value per arm                                                       |
+| Arm kind            | Control                          | Treatment                                     | Mechanism                                                                                            |
+| ------------------- | -------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `skill-ablation`    | resolved skill set minus skill S | resolved set as normal                        | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids), read inside `AgentRunner`'s skill resolution |
+| `skill-version`     | skill S at version _a_           | skill S at version _b_                        | `EXA_EVAL_SKILL_OVERLAY_DIR`, a directory shadowing `Memory/Skills/` for the run                     |
+| `agent-role-swap`   | agent role A handles the request | agent role B handles the request              | request frontmatter `agent_role:`, one value per arm                                                 |
+| `agent-role-config` | agent role A as shipped          | agent role A with a modified `default_skills` | `EXA_EVAL_AGENT_ROLE_OVERLAY_DIR`, a directory shadowing `Blueprints/Agents/` for the run            |
+| `flow-ablation`     | request executed without a flow  | request executed under flow F                 | request frontmatter `flow:`, present or absent                                                       |
+| `flow-swap`         | flow F                           | flow G                                        | request frontmatter `flow:`, one value per arm                                                       |
 
 Every overlay directory is validated through `PathResolver` before it is prepended to a search
 path, and both `Blueprints/` and the generated `Memory/Skills/` tree are asserted byte-identical
@@ -1170,7 +1170,7 @@ that it once could.
 
 Every function this section describes — `computePairedComparison`, `computeValuePerToken`,
 `evaluateValidityGate`, `assertValidityGate`, `assertPlaceboDetected`, plus the
-skill/identity/flow reporting layer (`computeSkillReachability`, `planFullTrials`,
+skill/agent-role/flow reporting layer (`computeSkillReachability`, `planFullTrials`,
 `buildSkillValueReport`, `assertSkillDecisionsRecorded`, `groupDeltasByTaskType`,
 `interpretPruneVerdict`, `computeFlowReachability`, `buildFlowValueReport`) and judge
 calibration (`computeJudgeCalibration`) — is real, reusable computation, not a one-off. A
@@ -1188,7 +1188,7 @@ deno run -A scripts/run_value_comparison_report.ts scripts/run_value_comparison_
 ```
 
 **The input schema is deliberately generic — it names no artefact.** A section for arm
-comparisons, one for validity gates, one for placebo arms, and one each for skill/identity/flow
+comparisons, one for validity gates, one for placebo arms, and one each for skill/agent-role/flow
 reporting and judge calibration; whichever a real live run collects flows straight through. This
 was a considered design choice, not an oversight: the first draft of the fix proposed transcribing
 phase-158's own historical numbers into a checked-in fixture to "reproduce" them — but those
@@ -1216,7 +1216,7 @@ recorded `keep`/`revise`/`remove` unless its measurement is flagged `cleanMeasur
 flow-ablation result confounded by something other than the flow itself (see the next section)
 can only ever back an `awaiting-remeasurement` status, never a verdict.
 
-**Contributor rule:** a new identity, skill, or flow ships with either a value result or a stated
+**Contributor rule:** a new agent role, skill, or flow ships with either a value result or a stated
 reason it cannot be measured yet (see the "Contributor rule: value evidence" section in each of
 `Blueprints/Skills/README.md`, `Blueprints/Agents/README.md`, `Blueprints/Flows/README.md`).
 
@@ -1236,7 +1236,7 @@ didn't hold fixed, and the honest response is to withhold the verdict, not round
 
 ### Where results live
 
-Live-run records — the actual arm results, per-skill/identity/flow decisions, and founding
+Live-run records — the actual arm results, per-skill/agent-role/flow decisions, and founding
 baselines for trend comparison — are recorded directly in
 `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`, dated per run. This tier is
 provider-live and deliberately scheduled (never a CI gate, never a pre-commit hook); running a

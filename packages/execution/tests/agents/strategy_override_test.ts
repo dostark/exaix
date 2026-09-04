@@ -157,7 +157,7 @@ Deno.test("AgentOrchestrator.executeStep: options.strategy=cli_delegate forces C
   }
 });
 
-Deno.test("AgentOrchestrator.executeStep: absent options.strategy keeps capability-based dispatch (react identity -> REACT)", async () => {
+Deno.test("AgentOrchestrator.executeStep: absent options.strategy keeps capability-based dispatch (react agent role -> REACT)", async () => {
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir);

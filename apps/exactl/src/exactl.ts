@@ -1984,14 +1984,14 @@ export const __test_command = new Command()
                     status: options.status as BlueprintStatus | undefined,
                   });
                   if (blueprints.length === 0) {
-                    display.info("blueprint.list", "identities", {
+                    display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
                       count: 0,
                       hint:
                         'Create an agent role with: exactl blueprint agent-role create <agent-role-id> --name "Name" --model "provider:model"',
                     });
                     return;
                   }
-                  display.info("blueprint.list", "identities", { count: blueprints.length });
+                  display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
                   for (const blueprint of blueprints) {
                     display.info(blueprint.agent_role, blueprint.name, {
                       model: blueprint.model,

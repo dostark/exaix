@@ -141,7 +141,7 @@ scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
   both implementable and live-verifiable in the same session. Runners-up: Phase 154 (MCP
   Tool Catalog Unification — ready but Step 2 carries a real architectural-decision
   ambiguity), Phase 161 (Identity Persona Value Isolation — ready but needs paid,
-  multi-trial live LLM runs across the identity catalog), Phase 145-149 (the
+  multi-trial live LLM runs across the agent-role catalog), Phase 145-149 (the
   eval-framework-maturation cluster — all legitimate, but each is a multi-step strategic
   initiative better suited to a dedicated push than a single "what's next" pick).
 

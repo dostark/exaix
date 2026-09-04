@@ -60,7 +60,7 @@ Deno.test("[codex_session_scope][security] untracked forbidden Codex write canno
     const resultStore = new SessionDelegationResultStore(waitDir, clock.now);
     const brief = await service.prepareBrief({
       traceId: crypto.randomUUID(),
-      agentRole: "test-identity",
+      agentRole: "test-role",
       gate: "code_changes",
       tool: "codex",
       objective: "Implement the permitted source change.",

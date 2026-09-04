@@ -7,12 +7,12 @@
  *   `SkillsService.loadSkills` walks global, core, learned and the project scope
  *   (`packages/core/src/skills/skills.ts`), so any check that asks "does this skill exist at
  *   runtime?" must ask across all four. Two tests in this directory previously answered that
- *   question with two different scope lists — `identity_default_skills_test.ts` read all four
+ *   question with two different scope lists — `agent_role_default_skills_test.ts` read all four
  *   while `skill_seed_runtime_integrity_test.ts` read only `global`, which forced the two
  *   project-scoped skills onto an exclusion list whose stated reason ("no standalone runtime
  *   JSON") was contradicted by the files on disk. One declaration is what stops that recurring.
  * @dependencies []
- * @related-files [tests/eval/skill_seed_runtime_integrity_test.ts, tests/eval/identity_default_skills_test.ts]
+ * @related-files [tests/eval/skill_seed_runtime_integrity_test.ts, tests/eval/agent_role_default_skills_test.ts]
  */
 import { join } from "@std/path";
 

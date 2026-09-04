@@ -26,7 +26,7 @@ function writeMinimalConfig(root: string): string {
       "[[portals]]",
       'alias = "probe"',
       `target_path = "${root}/portal"`,
-      'agents_allowed = ["test-identity"]',
+      'agents_allowed = ["test-role"]',
       'operations = ["read", "write"]',
       "",
     ].join("\n"),

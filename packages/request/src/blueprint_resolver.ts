@@ -1,7 +1,7 @@
 /**
  * @module BlueprintResolver
  * @path packages/request/src/blueprint_resolver.ts
- * @description Resolves an identity's blueprint from the configured
+ * @description Resolves an agent role's blueprint from the configured
  * blueprintsPath, falling back to a Blueprints/Agents directory walked
  * upward from the current working directory, then to the repository root and
  * module-relative root. Extracted from RequestProcessor (god-object
@@ -90,22 +90,22 @@ export class BlueprintResolver implements IBlueprintResolver {
     traceLogger: IEventLogger,
   ): Promise<ILoadedBlueprint | null> {
     // Try the repository root (cwd) directly
-    const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_AGENTS_PATH);
-    const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoIdentitiesPath });
+    const repoAgentRolesPath = join(Deno.cwd(), "Blueprints", DEFAULT_AGENTS_PATH);
+    const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoAgentRolesPath });
     const loadedBlueprint = await fallbackLoader.load(agentRole);
     if (loadedBlueprint) {
-      traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: repoIdentitiesPath });
+      traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: repoAgentRolesPath });
       return loadedBlueprint;
     }
 
     // Also try locating Blueprints relative to this module (repo root)
     try {
       const repoRoot = join(dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname)))));
-      const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_AGENTS_PATH);
-      const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleIdentities });
+      const repoModuleAgentRoles = join(repoRoot, "Blueprints", DEFAULT_AGENTS_PATH);
+      const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleAgentRoles });
       const moduleLoaded = await moduleLoader.load(agentRole);
       if (moduleLoaded) {
-        traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: repoModuleIdentities });
+        traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, agentRole, { from: repoModuleAgentRoles });
         return moduleLoaded;
       }
     } catch {

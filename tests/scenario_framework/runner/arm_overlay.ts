@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkArmOverlay
  * @path tests/scenario_framework/runner/arm_overlay.ts
  * @description Catalog overlay path validation for Phase 158 Step 2's arm mechanism.
- * A `skill-version` or `identity-config` arm overlays a directory ahead of the shipped
+ * A `skill-version` or `agent-role-config` arm overlays a directory ahead of the shipped
  * catalog for the duration of one run; before that directory is ever prepended to a
  * search path, it must resolve through `PathResolver` — the same boundary every other
  * workspace-path-accepting code path in the repository uses — so an operator typo or a

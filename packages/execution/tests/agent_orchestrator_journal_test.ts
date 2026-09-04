@@ -1,7 +1,7 @@
 /**
  * @module AgentExecutorJournalTest
  * @path packages/execution/tests/agent_orchestrator_journal_test.ts
- * @description Verifies AgentOrchestrator journal calls use correct Actor/Agent/Identity field separation.
+ * @description Verifies AgentOrchestrator journal calls use correct Actor/Agent/Agent-Role field separation.
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
@@ -138,14 +138,14 @@ Deno.test("AgentOrchestrator: logExecutionError writes correct field separation"
   assertEquals(event.agentRole, "test-agent");
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
-  // target should be the identity that failed
+  // target should be the agent role that failed
   assertEquals(event.target, "test-agent");
   assertNotEquals(event.agentId, event.agentRole);
 
   executor.dispose();
 });
 
-Deno.test("AgentOrchestrator: REGRESSION - agentId must never be identity blueprint slug", async () => {
+Deno.test("AgentOrchestrator: REGRESSION - agentId must never be agent role blueprint slug", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act - log with agentRole = "senior-coder"

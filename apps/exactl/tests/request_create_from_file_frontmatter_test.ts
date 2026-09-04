@@ -9,7 +9,7 @@
  *   file carried therefore ended up as literal text inside the request BODY, below a
  *   `# Request` heading — so `skills:`, `tags:`, `agent_role:` and the rest were silently
  *   dropped on every file submission. That is why the whole skill_eval pack resolved
- *   `pinned_skill_ids: []` under the default identity no matter what its fixtures pinned:
+ *   `pinned_skill_ids: []` under the default agent role no matter what its fixtures pinned:
  *   the pins never reached the request file the daemon parsed.
  * @architectural-layer CLI
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/request/src/common.ts]
@@ -132,10 +132,10 @@ Evaluate the pinned skills.
     assertEquals(frontmatter.agent_role, "researcher", "the flag stated at invocation is the more explicit intent");
   });
 
-  it("accepts a file whose frontmatter declares a flow, without an identity conflict", async () => {
-    // A flow declared in file frontmatter bypasses the CLI's flow/identity exclusion guard
+  it("accepts a file whose frontmatter declares a flow, without an agent-role conflict", async () => {
+    // A flow declared in file frontmatter bypasses the CLI's flow/agent-role exclusion guard
     // (that guard only fires on the `--flow` flag), so it must not conflict with the
-    // default identity that options.agent_role always carries.
+    // default agent role that options.agent_role always carries.
     await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
     await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
 
@@ -151,10 +151,10 @@ Evaluate the pinned skills.
     assertEquals((frontmatter as { flow?: string }).flow, "api-design", "the flow must reach the request file");
   });
 
-  it("omits identity from a flow request's frontmatter, which the daemon requires", async () => {
-    // A flow request's frontmatter must omit `identity` entirely: `create()` always
+  it("omits agent_role from a flow request's frontmatter, which the daemon requires", async () => {
+    // A flow request's frontmatter must omit `agent_role` entirely: `create()` always
     // populates `agent` from options.agent_role as a fallback, but the daemon rejects
-    // any request carrying both `flow` and `agent`/`identity` fields.
+    // any request carrying both `flow` and `agent`/`agent_role` fields.
     await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
     await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
 
@@ -169,7 +169,7 @@ Evaluate the pinned skills.
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
 
     assertEquals((frontmatter as { flow?: string }).flow, "api-design");
-    assertEquals(frontmatter.agent_role, undefined, "a flow request must carry no identity");
+    assertEquals(frontmatter.agent_role, undefined, "a flow request must carry no agent_role");
   });
 
   it("still accepts a plain file with no frontmatter at all", async () => {

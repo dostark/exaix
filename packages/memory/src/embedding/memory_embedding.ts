@@ -174,7 +174,7 @@ export class MemoryEmbeddingService implements IMemoryEmbeddingService {
     await this.embed({ kind: MemoryType.LEARNING, learning });
   }
 
-  /** Embed any embeddable memory entry (mock vectors; idempotent per identity). */
+  /** Embed any embeddable memory entry (mock vectors; idempotent per key). */
   async embed(entry: IEmbeddableMemoryEntry): Promise<void> {
     await this.initializeManifest();
 

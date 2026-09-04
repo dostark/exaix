@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "skill-engine-defaults-merge"
-title: "Skill engine — identity default_skills merge with pinned skills"
+title: "Skill engine — agent role default_skills merge with pinned skills"
 pack: "skill_eval"
 tags: ["smoke", "engine", "subsystem:skills"]
 request_fixture: "fixtures/requests/skill_eval/pin_batch1.md"

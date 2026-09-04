@@ -176,7 +176,7 @@ Before writing a request, use the `/plan` skill to create a phase planning docum
 # - step-manifest: YAML block for machine-convertibility
 ```
 
-Each step in the plan becomes a request. The step manifest (`step`, `identity`,
+Each step in the plan becomes a request. The step manifest (`step`, `agent_role`,
 `skills`, `portal`, `target_branch`, `depends_on`, `acceptance`) maps directly
 to the request frontmatter, making plan-to-request conversion mechanical.
 
@@ -188,7 +188,7 @@ A step's manifest fields:
 | ------------------ | --------------------- | ---------------------------------- |
 | `step`             | `tags: [step-N]`      | Request queue ordering             |
 | `depends_on`       | `priority` / ordering | Step N+1 waits for N               |
-| `identity`         | `identity`            | Which agent persona executes       |
+| `agent_role`       | `agent_role`          | Which agent persona executes       |
 | `skills`           | `skills`              | Pinned rigor (tdd, security, etc.) |
 | `portal`           | `portal`              | Which workspace the agent uses     |
 | `target_branch`    | `target_branch`       | Feature branch isolation           |
@@ -251,7 +251,7 @@ target_branch: "feature/my-thing"   # Optional. Feature branch.
 tags: ["feature", "phase-121"]      # Optional. Categorization.
 depends_on: ["step-1-uuid"]          # Optional. Prior dependency.
 flow: "my-flow"                      # Optional. Flow ID (mutually
-                                     #          exclusive with identity).
+                                     #          exclusive with agent_role).
 ---
 # Title
 
@@ -304,9 +304,9 @@ deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfoo
 The generator reads fenced YAML step-manifests (the `# step-manifest` blocks in
 phase-NN-*.md documents). Each manifest maps to a request file with:
 
-- `identity_id` from the manifest's `identity` field (defaults to `senior-coder`)
+- `agent_role` from the manifest's `agent_role` field (defaults to `senior-coder`)
 - `priority` clamped to 0–10 (earlier steps higher priority)
-- `skills` merged with the identity's `default_skills` by `agent_runner`
+- `skills` merged with the agent role's `default_skills` by `agent_runner`
 - `trace_id` generated as a UUID
 
 **Prerequisite:** the plan file must use `## Step N` or `### Step N` headings.
@@ -593,8 +593,8 @@ allowlist flag, so the pre-flight grant is weaker than OpenCode's.
 **Version probe:** `probeDelegateVersion` checks the binary version before launch and warns
 if below the minimum (OpenCode ≥ 1.0.0, Claude Code ≥ 2.0.0).
 
-**Identity reconciliation:** the agent key in the generated config (`dogfood-developer`) is asserted
-against `Blueprints/Identities/dogfood-developer.md:identity_id` by a drift test, so the two cannot
+**Agent role reconciliation:** the agent key in the generated config (`dogfood-developer`) is asserted
+against `Blueprints/Agents/dogfood-developer.md:agent_role` by a drift test, so the two cannot
 diverge.
 
 **E2E scenario:** `session-delegate-hardening-active-live` in `tests/scenario_framework/scenarios/provider_live/`

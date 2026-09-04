@@ -155,7 +155,7 @@ Deno.test("[delegate_hardening] the generator keys the agent config on whichever
   const config = buildOpencodePermissionConfig(["src/**"], "dogfood-coder");
   assertExists(config.agent["dogfood-coder"]);
   assertEquals(config.agent["dogfood-coder"].edit, { "*": "deny", "src/**": "allow" });
-  assertEquals(config.agent["some-other-identity"], undefined);
+  assertEquals(config.agent["some-other-agent-role"], undefined);
 });
 
 Deno.test("[delegate_hardening] resolveHardenedLaunch returns versionWarning field on result", async () => {

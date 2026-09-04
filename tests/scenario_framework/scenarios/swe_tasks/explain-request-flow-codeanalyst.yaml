@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "swe-explain-request-flow-codeanalyst"
-title: "Explain request flow (code-analyst identity, post-prune)"
+title: "Explain request flow (code-analyst agent role, post-prune)"
 pack: "swe_tasks"
 scoring: "gated"
 tags: ["swe", "provider-live"]

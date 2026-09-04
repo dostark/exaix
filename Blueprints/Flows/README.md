@@ -1,7 +1,7 @@
 # Exaix Flows
 
 This directory contains **flow definitions** for multi-agent orchestration. A flow
-is a YAML file (`*.flow.yaml`) that wires together identity steps with
+is a YAML file (`*.flow.yaml`) that wires together agent-role steps with
 dependencies, inputs, and an aggregated output.
 
 ## Catalog model
@@ -11,13 +11,13 @@ plus a small **pattern-template library** under `templates/`. There is no separa
 `examples/` tier — example flows that duplicated concretes were retired in Phase
 131 (one distinct flow, API documentation, was promoted to a concrete flow).
 
-- `*.flow.yaml` — **concrete, runnable flows** that reference real identities.
+- `*.flow.yaml` — **concrete, runnable flows** that reference real agent roles.
 - `templates/*.flow.template.yaml` — **abstract structural patterns** (pipeline,
   fan-out/fan-in, self-correcting) whose agent slots are `{{placeholder}}` tokens
   you fill in when you copy one into a new flow.
 
 Every concrete flow — and every real (non-`{{placeholder}}`) `agent_role:` in a
-template — must resolve to an identity under `Blueprints/Identities/`. This is
+template — must resolve to an agent role under `Blueprints/Agents/`. This is
 enforced by `deno task check:blueprint-integrity` (recursive, all flows; `{{…}}`
 slots are skipped).
 
@@ -34,7 +34,7 @@ steps:
   - id: analyze
     name: Analyze
     type: agent
-    agent_role: code-analyst # must be a real identity (or {{placeholder}} in a template)
+    agent_role: code-analyst # must be a real agent role (or {{placeholder}} in a template)
     dependsOn: []
     input:
       source: request
@@ -124,12 +124,12 @@ flow (copy a similar `*.flow.yaml` and edit it) or from a structural template:
 
 ```bash
 cp templates/pipeline.flow.template.yaml my-new-flow.flow.yaml
-# replace each {{placeholder}} agent slot with a real identity id, then:
+# replace each {{placeholder}} agent slot with a real agent role id, then:
 exactl flow validate my-new-flow
 ```
 
-When you fill a template's `{{placeholder}}` slots with real identity ids and save
-it as a `*.flow.yaml`, the integrity gate will require those identities to exist.
+When you fill a template's `{{placeholder}}` slots with real agent role ids and save
+it as a `*.flow.yaml`, the integrity gate will require those agent roles to exist.
 
 ### Contributor rule: value evidence
 

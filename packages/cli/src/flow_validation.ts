@@ -44,7 +44,7 @@ export function validateFlowForCli(
     if (!step.permitted_tools || step.permitted_tools.length === 0) {
       warnings.push(
         `Step "${step.id}": no permitted_tools specified. ` +
-          `Will use identity "${step.agent_role}" permitted_tools at runtime. ` +
+          `Will use agent role "${step.agent_role}" permitted_tools at runtime. ` +
           `Consider declaring permitted_tools explicitly for clarity.`,
       );
     }

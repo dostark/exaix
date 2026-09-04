@@ -1014,7 +1014,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
     {
       id: "proposal-1",
       created_at: new Date().toISOString(),
-      agent_role: "test-identity",
+      agent_role: "test-role",
       operation: MemoryOperation.ADD,
       learning: {
         id: "729b8001-0000-4000-8000-000000000001",
@@ -1036,7 +1036,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
     {
       id: "proposal-2",
       created_at: new Date().toISOString(),
-      agent_role: "test-identity",
+      agent_role: "test-role",
       operation: MemoryOperation.ADD,
       learning: {
         id: "729b8001-0000-4000-8000-000000000002",
@@ -1056,7 +1056,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
     {
       id: "proposal-3",
       created_at: new Date().toISOString(),
-      agent_role: "test-identity",
+      agent_role: "test-role",
       operation: MemoryOperation.ADD,
       learning: {
         id: "729b8001-0000-4000-8000-000000000003",

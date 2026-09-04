@@ -15,11 +15,11 @@ import { AgentStatus } from "@exaix/core/status";
 import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 import type { IAgentService } from "@exaix/core/types";
 export class AgentServiceAdapter extends BaseCommand implements IAgentService {
-  private identitiesDir: string;
+  private agentRolesDir: string;
 
   constructor(context: ICommandContext) {
     super(context);
-    this.identitiesDir = join(
+    this.agentRolesDir = join(
       this.config.system.root!,
       this.config.paths.workspace!,
       this.config.paths.agents!,
@@ -33,7 +33,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
     const agents: IAgentStatusItem[] = [];
 
     try {
-      if (!await exists(this.identitiesDir)) {
+      if (!await exists(this.agentRolesDir)) {
         // Return a default system agent if directory doesn't exist
         return [{
           id: ActivityActor.SYSTEM,
@@ -46,7 +46,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
         }];
       }
 
-      for await (const entry of Deno.readDir(this.identitiesDir)) {
+      for await (const entry of Deno.readDir(this.agentRolesDir)) {
         if (entry.isDirectory || (entry.isFile && entry.name.endsWith(".json"))) {
           const id = entry.name.replace(".json", "");
           agents.push({

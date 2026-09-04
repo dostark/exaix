@@ -4,7 +4,7 @@
  * @description Phase 158 Step 4's per-skill decision recording: every skill whose value
  * report row reads no-effect must carry a recorded decision — keep with rationale,
  * revise, or remove — so a no-effect result cannot be silently left unaddressed. Scoped
- * to skills specifically; Step 7 owns the cross-artefact (identity + skill + flow)
+ * to skills specifically; Step 7 owns the cross-artefact (agent_role + skill + flow)
  * coverage check over all measured artefacts.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/unit/skill_value_decision_test.ts, tests/scenario_framework/runner/skill_value_report.ts]

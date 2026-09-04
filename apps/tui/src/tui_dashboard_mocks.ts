@@ -87,7 +87,7 @@ import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 
-/** Default identity ID used across all mock service implementations */
+/** Default agent role ID used across all mock service implementations */
 const MOCK_AGENT_ROLE_ID = "test-agent";
 /** Placeholder project name used in mock project lists */
 const MOCK_PROJECT_NAME = "test";

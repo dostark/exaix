@@ -2,7 +2,7 @@
  * @module OpencodeConfigSchemas
  * @path packages/schemas/src/opencode_config.ts
  * @description Zod schemas for the OpenCode permission config structure
- *   (opencode.jsonc). Modelled on the OpenCode `agent.<identity>` permission
+ *   (opencode.jsonc). Modelled on the OpenCode `agent.<agent-role>` permission
  *   block — tool-level `allow`/`ask`/`deny` with glob-pattern keys.
  * @architectural-layer Schemas
  * @related-files [packages/schemas/src/mod.ts, packages/session/src/opencode_permission_generator.ts]

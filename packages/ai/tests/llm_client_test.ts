@@ -13,7 +13,7 @@ import { McpToolName, ToolName } from "@exaix/core";
 import type { IModelProvider } from "../src/types.ts";
 import type { IGenerateResult } from "../src/providers/common.ts";
 
-const mockIdentity: IBlueprintFrontmatter = {
+const mockAgentRole: IBlueprintFrontmatter = {
   agent_role: "test",
   name: "Test Agent",
   model: "mock:test",
@@ -69,7 +69,7 @@ Deno.test("LlmClient - builds correct reasoning prompt and handles valid tool_ca
   const provider = new TestProvider(mockResponse);
   const client = new LlmClient(undefined, provider);
   const result = await client.reasonNextAction({
-    agent_role: mockIdentity,
+    agent_role: mockAgentRole,
     stepObjective: "Test Objective",
     accumulatedContext: "Context Data",
     availableTools: mockTools,
@@ -101,7 +101,7 @@ Deno.test("LlmClient - handles complete action", async () => {
   }));
 
   const result = await client.reasonNextAction({
-    agent_role: mockIdentity,
+    agent_role: mockAgentRole,
     stepObjective: "Test Objective",
     accumulatedContext: "",
     availableTools: [],
@@ -122,7 +122,7 @@ Deno.test("LlmClient - parses code blocks containing JSON", async () => {
   );
 
   const result = await client.reasonNextAction({
-    agent_role: mockIdentity,
+    agent_role: mockAgentRole,
     stepObjective: "Test",
     accumulatedContext: "",
     availableTools: [
@@ -141,7 +141,7 @@ Deno.test("LlmClient - handles invalid JSON", async () => {
   await assertRejects(
     () =>
       client.reasonNextAction({
-        agent_role: mockIdentity,
+        agent_role: mockAgentRole,
         stepObjective: "Test",
         accumulatedContext: "",
         availableTools: [],

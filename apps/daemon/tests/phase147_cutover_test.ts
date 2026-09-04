@@ -242,7 +242,7 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
     for (const candidate of candidates) {
       candidate.scope = MemoryScope.GLOBAL;
       candidate.project = undefined;
-      await memoryExtractor.createProposal(candidate, executionMemory, "cutover-identity");
+      await memoryExtractor.createProposal(candidate, executionMemory, "cutover-role");
     }
     const pending = await memoryExtractor.listPending();
     assertEquals(pending.length, 1, "one deduplicated extraction candidate must land in Memory/Pending/");

@@ -21,7 +21,7 @@ export interface IMemoryEmbeddingService {
    */
   embedLearning(learning: ILearning): Promise<void>;
 
-  /** Embed any embeddable memory entry, keyed by its identity (id / trace_id / `${portal}:overview`); cost-gated and idempotent per identity. */
+  /** Embed any embeddable memory entry, keyed by its own id (id / trace_id / `${portal}:overview`); cost-gated and idempotent per key. */
   embed(entry: IEmbeddableMemoryEntry): Promise<void>;
 
   /**

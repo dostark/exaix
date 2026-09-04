@@ -93,17 +93,17 @@ status: active
       const loop = new ExecutionLoop({
         config,
         db,
-        agentRole: "test-identity",
+        agentRole: "test-role",
         context,
         memoryBank: new MemoryBankService(config, logger),
         gitServiceFactory: {
           createGitService(repoPath: string, traceId: string) {
-            return new GitService({ config, traceId, agentRole: "test-identity", repoPath });
+            return new GitService({ config, traceId, agentRole: "test-role", repoPath });
           },
         },
         toolRegistryFactory: {
           createToolRegistry(traceId: string, baseDir: string) {
-            return new ToolRegistry({ config, traceId, agentRole: "test-identity", baseDir });
+            return new ToolRegistry({ config, traceId, agentRole: "test-role", baseDir });
           },
         },
       });
@@ -113,7 +113,7 @@ status: active
 trace_id: "${traceId}"
 request_id: ${requestId}
 status: active
-agent_role: test-identity
+agent_role: test-role
 ---
 
 # Test Plan
@@ -142,7 +142,7 @@ No actions — will succeed immediately
         true,
         "createProposal should be called at least once",
       );
-      assertEquals(createdProposals[0].agentRole, "test-identity");
+      assertEquals(createdProposals[0].agentRole, "test-role");
     } finally {
       await cleanup();
       await Deno.remove(tempDir, { recursive: true });
@@ -222,18 +222,18 @@ status: active
       const loop = new ExecutionLoop({
         config,
         db,
-        agentRole: "test-identity",
+        agentRole: "test-role",
         context,
         sessionMemory: spySessionMemory as SessionMemoryService,
         memoryBank: new MemoryBankService(config, logger),
         gitServiceFactory: {
           createGitService(repoPath: string, traceId: string) {
-            return new GitService({ config, traceId, agentRole: "test-identity", repoPath });
+            return new GitService({ config, traceId, agentRole: "test-role", repoPath });
           },
         },
         toolRegistryFactory: {
           createToolRegistry(traceId: string, baseDir: string) {
-            return new ToolRegistry({ config, traceId, agentRole: "test-identity", baseDir });
+            return new ToolRegistry({ config, traceId, agentRole: "test-role", baseDir });
           },
         },
       });
@@ -242,7 +242,7 @@ status: active
 trace_id: "${traceId}"
 request_id: ${requestId}
 status: active
-agent_role: test-identity
+agent_role: test-role
 ---
 
 # Test Plan

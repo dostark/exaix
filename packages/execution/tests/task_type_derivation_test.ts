@@ -2,7 +2,7 @@
  * @module TaskTypeDerivationTest
  * @path packages/execution/tests/task_type_derivation_test.ts
  * @description Phase 135 Step 8 (§5.8.8) — deriveTaskType precedence chain: request
- *   frontmatter > identity blueprint declaration > highest-confidence skill trigger >
+ *   frontmatter > agent role blueprint declaration > highest-confidence skill trigger >
  *   static task_type_map soft-match > analyzer-derived intent > UNKNOWN. Never shadows
  *   an entity's own declaration (anti-drift).
  * @architectural-layer Execution
@@ -62,7 +62,7 @@ Deno.test("[step135.8] static task_type_map soft-matches senior-coder-v2 → sen
   assertEquals(result.source, "static_map");
 });
 
-Deno.test("[step135.8] unmatched static map identity falls through to analyzer", () => {
+Deno.test("[step135.8] unmatched static map agent role falls through to analyzer", () => {
   const ctx: ITaskTypeDerivationContext = {
     agentRole: "totally-unrelated-name",
     taskTypeMap: { "senior-coder": TaskType.REFACTOR },
@@ -103,7 +103,7 @@ Deno.test("[step135.8][edge] static map normalised-prefix match: senior-coder-v3
   assertEquals(result.source, "static_map");
 });
 
-Deno.test("[step135.8] identity declaration never shadowed by a static_map entry for the same identity (anti-drift)", () => {
+Deno.test("[step135.8] agent role declaration never shadowed by a static_map entry for the same agent role (anti-drift)", () => {
   const ctx: ITaskTypeDerivationContext = {
     agentRole: "senior-coder",
     agentRoleTaskType: TaskType.FEATURE,

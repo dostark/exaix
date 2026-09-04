@@ -48,7 +48,7 @@ Project structure (key packages)
   apps/daemon/main.ts       Application entry point
   apps/exactl/              CLI concrete commands
   .copilot/                 Developer-agent guidance
-  Blueprints/               Runtime agent definitions (identities, skills, flows)
+  Blueprints/               Runtime agent definitions (agent roles, skills, flows)
 
 Service pattern — Interface-first, Constructor Injection
 

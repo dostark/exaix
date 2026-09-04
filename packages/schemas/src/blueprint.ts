@@ -123,7 +123,7 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Default skills to apply to all requests for this agent. */
   default_skills: z.array(z.string()).optional(),
 
-  /** Tools this identity is permitted to use in dynamic execution steps (from McpToolName or ToolName). Flow
+  /** Tools this agent role is permitted to use in dynamic execution steps (from McpToolName or ToolName). Flow
    *  steps may narrow but not expand this set. Omitting this field means no dynamic tool permissions. */
   permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
 

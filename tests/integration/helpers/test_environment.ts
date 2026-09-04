@@ -290,7 +290,7 @@ retry_backoff_base_ms = 1000
     operations?: PortalOperation[];
     defaultBranch?: string;
     initialCommit?: boolean;
-    identitiesAllowed?: string[];
+    agentRolesAllowed?: string[];
   }): Promise<{ portalDir: string; config: IPortalPermissions }> {
     const portalDir = options.targetPath ?? join(this.tempDir, options.alias);
     const operations = options.operations ?? [
@@ -311,7 +311,7 @@ retry_backoff_base_ms = 1000
       target_path: portalDir,
       default_branch: defaultBranch,
       operations,
-      agents_allowed: options.identitiesAllowed ?? ["*"],
+      agents_allowed: options.agentRolesAllowed ?? ["*"],
     };
 
     return { portalDir, config };

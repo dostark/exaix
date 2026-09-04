@@ -119,7 +119,7 @@ Deno.test("high-quality extracted learning auto-approves; low-quality stays pend
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const run = execution(["proposal-write"]);
     for (const learning of extracted) {
-      await extractor.createProposal({ ...learning, extracted_at: twoHoursAgo }, run, "test-identity");
+      await extractor.createProposal({ ...learning, extracted_at: twoHoursAgo }, run, "test-role");
     }
     assertEquals((await extractor.listPending()).length, 2);
 

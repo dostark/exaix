@@ -23,7 +23,7 @@ export const StepManifestSchema = z.object({
   /** Agent role to route the step request (defaults to senior-coder) */
   agent_role: z.string().min(1).default("senior-coder"),
 
-  /** Explicit skills to inject (merged with identity default_skills by agent_runner) */
+  /** Explicit skills to inject (merged with agent-role default_skills by agent_runner) */
   skills: z.array(z.string()).optional(),
 
   /** Portal alias for the step's scope */

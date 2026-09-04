@@ -8,10 +8,10 @@
  *   `critical` is the compaction guarantee: `renderCriticalSkillsSection` emits a
  *   `REQUIRED SKILLS & CONTRACT` block that AgentRunner inserts with
  *   `nonCompactable: true`, so flagged skills survive context-budget pressure. Only 2 of 27
- *   skills carried the flag, which meant an identity holding just a specialised contract
- *   variant — the four analysis identities, quality-judge, voting-judge — had NO
+ *   skills carried the flag, which meant an agent role holding just a specialised contract
+ *   variant — the four analysis agent roles, quality-judge, voting-judge — had NO
  *   compaction-protected contract at all: exactly the failure the flag exists to prevent,
- *   on the identities whose output format matters most.
+ *   on the agent roles whose output format matters most.
  * @architectural-layer Test
  * @dependencies [packages/core/src/func/prompt_formatter.ts]
  * @related-files [packages/execution/src/agent_runner.ts, packages/core/src/func/prompt_formatter.ts]

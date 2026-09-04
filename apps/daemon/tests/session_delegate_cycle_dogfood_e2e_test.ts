@@ -170,7 +170,7 @@ const REACT_COMPLETION_SUMMARY =
 /** Each react step needs its own recording: `MockLLMProvider` only falls back to its generic
  * pattern matcher when ZERO recordings are loaded, so the review-pass recording above disables
  * that fallback for every other prompt. Neither step's output is asserted on directly. */
-function writeReactCompletionFixture(recordingsDir: string, filename: string, identityName: string): void {
+function writeReactCompletionFixture(recordingsDir: string, filename: string, agentRoleName: string): void {
   Deno.mkdirSync(recordingsDir, { recursive: true });
   Deno.writeTextFileSync(
     join(recordingsDir, filename),
@@ -179,7 +179,7 @@ function writeReactCompletionFixture(recordingsDir: string, filename: string, id
         // promptHash is unused for matching (previewMatch below is what matches); it only
         // needs to be schema-valid and distinct per fixture file.
         promptHash: filename.padEnd(68, "0"),
-        promptPreview: `IDENTITY: ${identityName}`,
+        promptPreview: `AGENT ROLE: ${agentRoleName}`,
         response: `THOUGHT: ${REACT_COMPLETION_SUMMARY}\nSTATUS: COMPLETE\nSUMMARY: ${REACT_COMPLETION_SUMMARY}`,
         model: "test",
         tokens: { input: 10, output: 10 },

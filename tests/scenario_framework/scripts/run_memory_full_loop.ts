@@ -191,7 +191,7 @@ if (import.meta.main) {
     for (const candidate of candidates) {
       candidate.scope = MemoryScope.GLOBAL;
       candidate.project = undefined;
-      await memoryExtractor.createProposal(candidate, executionMemory, "scenario-identity");
+      await memoryExtractor.createProposal(candidate, executionMemory, "scenario-role");
     }
     const pending = await memoryExtractor.listPending();
     if (pending.length < 1) throw new Error("extraction produced no Pending proposals");

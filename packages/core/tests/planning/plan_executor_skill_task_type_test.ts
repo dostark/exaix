@@ -91,11 +91,11 @@ Deno.test({
     try {
       const root = await Deno.makeTempDir();
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
-      // No frontmatter task_type/characteristics on the identity — precedence must fall
-      // through frontmatter/identity tiers to reach the skill-trigger tier.
+      // No frontmatter task_type/characteristics on the agent role — precedence must fall
+      // through frontmatter/agent-role tiers to reach the skill-trigger tier.
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
+        '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();

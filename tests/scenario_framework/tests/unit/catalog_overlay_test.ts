@@ -2,7 +2,7 @@
  * @module ScenarioFrameworkCatalogOverlayTest
  * @path tests/scenario_framework/tests/unit/catalog_overlay_test.ts
  * @description Tests for the catalog overlay mechanism (Phase 158 Step 2, closes GAP-1):
- * a `skill-version` or `identity-config` arm shadows one shipped catalog entry for the
+ * a `skill-version` or `agent-role-config` arm shadows one shipped catalog entry for the
  * run without editing `Blueprints/`. Skills are resolved against `Memory/Skills/` (the
  * tree `SkillsService` actually reads, generated from `Blueprints/Skills/*.skill.md` by
  * `scripts/build_skills_index.ts`), not `Blueprints/Skills/` itself. Agent roles are
@@ -115,9 +115,9 @@ Deno.test("[CatalogOverlay] a skill with no overlay file falls back to the shipp
   }
 });
 
-Deno.test("[CatalogOverlay] an identity overlay shadows the shipped identity's content for BlueprintResolver.resolve", async () => {
-  const testDir = await Deno.makeTempDir({ prefix: "identity-overlay-" });
-  const overlayRoot = await Deno.makeTempDir({ prefix: "identity-overlay-dir-" });
+Deno.test("[CatalogOverlay] an agent role overlay shadows the shipped agent role's content for BlueprintResolver.resolve", async () => {
+  const testDir = await Deno.makeTempDir({ prefix: "agent-role-overlay-" });
+  const overlayRoot = await Deno.makeTempDir({ prefix: "agent-role-overlay-dir-" });
   const overlayDir = join(overlayRoot, "Agents");
   const mockLogger = createMockEventLogger();
   try {
@@ -156,9 +156,9 @@ Deno.test("[CatalogOverlay] an identity overlay shadows the shipped identity's c
   }
 });
 
-Deno.test("[CatalogOverlay] an identity with no overlay file falls back to the shipped catalog", async () => {
-  const testDir = await Deno.makeTempDir({ prefix: "identity-overlay-fallback-" });
-  const overlayRoot = await Deno.makeTempDir({ prefix: "identity-overlay-dir-empty-" });
+Deno.test("[CatalogOverlay] an agent role with no overlay file falls back to the shipped catalog", async () => {
+  const testDir = await Deno.makeTempDir({ prefix: "agent-role-overlay-fallback-" });
+  const overlayRoot = await Deno.makeTempDir({ prefix: "agent-role-overlay-dir-empty-" });
   const overlayDir = join(overlayRoot, "Agents");
   const mockLogger = createMockEventLogger();
   try {

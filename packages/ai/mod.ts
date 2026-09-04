@@ -26,5 +26,5 @@ export * from "./src/factories/abstract_provider_factory.ts";
 export * from "./src/embeddings/embedding_provider.ts";
 export * from "./src/embeddings/embedding_errors.ts";
 export * from "./src/embeddings/embedding_provider_factory.ts";
-export * from "./src/resolve_identity_model.ts";
+export * from "./src/resolve_agent_role_model.ts";
 export * from "./src/model_resolver.ts";

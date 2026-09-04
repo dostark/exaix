@@ -7,7 +7,7 @@
  *   during real plan execution. Before this fix, createAgentExecutor never passed
  *   modelResolver at all — ModelResolver.resolve() (the only path to best/route/
  *   auto-admit/task_type derivation) was production-dead for every plan execution,
- *   regardless of identity blueprint content.
+ *   regardless of agent role blueprint content.
  * @architectural-layer Test
  * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_orchestrator.ts, packages/ai/src/model_resolver.ts]
  */
@@ -85,7 +85,7 @@ Deno.test({
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
+        '---\nagent_role: senior-coder\nmodel: ""\n---\n\nStub agent role for testing.\n',
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();
@@ -138,7 +138,7 @@ Deno.test({
       await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
       await Deno.writeTextFile(
         `${root}/Blueprints/Agents/senior-coder.md`,
-        '---\nagent_role: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub identity for testing.\n',
+        '---\nagent_role: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub agent role for testing.\n',
       );
       const config = createMockConfig(root, {});
       const logger = createMockEventLogger();

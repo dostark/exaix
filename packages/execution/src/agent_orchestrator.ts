@@ -432,8 +432,8 @@ export class AgentOrchestrator {
     return BlueprintService.sanitizePrompt(prompt);
   }
   /** Bridges blueprint-level permitted_tools/allowed_paths onto per-call options, then
-   *  narrows permitted_tools to matched skills' tools intersected with the identity's own
-   *  allowlist — a skill can only narrow, never grant a tool the identity doesn't allow. */
+   *  narrows permitted_tools to matched skills' tools intersected with the agent role's own
+   *  allowlist — a skill can only narrow, never grant a tool the agent role doesn't allow. */
   private applyBlueprintToolScope(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
@@ -474,7 +474,7 @@ export class AgentOrchestrator {
     // Validate agent has permissions (check before loading blueprint)
     if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
       throw new Error(
-        `Identity not allowed to access portal: ${options.agent_role} -> ${options.portal}`,
+        `Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`,
       );
     }
 
@@ -499,7 +499,7 @@ export class AgentOrchestrator {
 
     // Forward this blueprint's own hitl.require_secondary_approval rules to the
     // ToolRegistry the resolved strategy will call execute() on, so the blueprint's
-    // approval rules gate every strategy's tool calls, same as identity.hitl.
+    // approval rules gate every strategy's tool calls, same as agent_role.hitl.
     this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
 
     try {

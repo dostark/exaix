@@ -14,7 +14,7 @@
  *
  *   Two-route: the stub OpenAI server is made to also serve Anthropic's
  *   `claude-stub-curated` model id, so `model_catalog` gets two rows for one model
- *   name after refresh_on_start. The identity carries model_size but no explicit model,
+ *   name after refresh_on_start. The agent role carries model_size but no explicit model,
  *   so ModelResolver falls through tryResolveCurated (no model_presets.M.candidates
  *   configured) to the scored resolveOnce path, whose model_registry.getModelsByCapability
  *   lookup resolves the winning provider's model to the real catalog entry
@@ -25,7 +25,7 @@
  *   Explicit-unadmit: `[model_registry.admission] keep_native_whole = false` stops the
  *   scheduled refresh from admitting every native model up front, so
  *   `claude-stub-explicit-use` (served by the stub but never curated) stays genuinely
- *   unadmitted until a plan step's identity blueprint names it explicitly
+ *   unadmitted until a plan step's agent role blueprint names it explicitly
  *   (`model: "anthropic:claude-stub-explicit-use"`) — driving
  *   `ModelResolver.tryResolveExplicit` -> `validateExplicit`'s live re-fetch-and-admit
  *   path, which journals `model.admitted{reason: "explicit_use"}`.
@@ -49,7 +49,7 @@ const EXPLICIT_REQUEST_ID = "step135-ledger-explicit-req";
 // NO explicit model, just model_size: M — forces ModelResolver's scored resolveOnce path
 // (not tryResolveCurated, which returns null with no model_presets.M.candidates configured).
 // resolveOnce's getModelsByCapability lookup swaps in the real catalog entry so routesFor finds 2 rows.
-function writeTwoRouteIdentity(root: string): void {
+function writeTwoRouteAgentRole(root: string): void {
   const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
@@ -67,7 +67,7 @@ function writeTwoRouteIdentity(root: string): void {
   Deno.writeTextFileSync(join(dir, "stub-two-route.md"), frontmatter);
 }
 
-function writeExplicitIdentity(root: string): void {
+function writeExplicitAgentRole(root: string): void {
   const dir = join(root, "Blueprints", "Agents");
   Deno.mkdirSync(dir, { recursive: true });
   const frontmatter = [
@@ -209,7 +209,7 @@ Deno.test({
       stubs = started.servers;
 
       await runMigrationsIn(tempDir);
-      writeTwoRouteIdentity(tempDir);
+      writeTwoRouteAgentRole(tempDir);
       const portalDir = writePortalDir(tempDir);
       writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls, true, true);
 
@@ -270,7 +270,7 @@ Deno.test({
       stubs = started.servers;
 
       await runMigrationsIn(tempDir);
-      writeExplicitIdentity(tempDir);
+      writeExplicitAgentRole(tempDir);
       const portalDir = writePortalDir(tempDir);
       writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls, false);
 

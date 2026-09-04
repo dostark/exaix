@@ -400,7 +400,7 @@ export const ScenarioStepSchema = z.object({
   // file-contains: wait until at least this many files match the step's glob(s) (args and/or
   // file_pattern) before evaluating its file/text criteria. Default 1.
   min_matches: z.number().int().min(1).optional(),
-  // patch-blueprint: the identity whose sandboxed blueprint gets capabilities added.
+  // patch-blueprint: the agent role whose sandboxed blueprint gets capabilities added.
   blueprint: z.string().min(1).optional(),
   // patch-blueprint: capabilities to add to the blueprint's capabilities array.
   add_capabilities: z.array(z.string().min(1)).optional(),

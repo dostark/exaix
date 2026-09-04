@@ -103,7 +103,7 @@ Deno.test("[step17e] a pinned request journals skills.resolved even though match
   const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["response-contract", "error-handling"] };
   const request = { skills: ["exaix-conventions"], userPrompt: "do the thing", taskType: "feature" };
 
-  await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
   const events = resolutionEvents(captured);
   assertEquals(events.length, 1, "exactly one resolution event per skill-management pass");
@@ -122,7 +122,7 @@ Deno.test("[step17e] a dynamically matched request journals the matched ids sepa
   const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["response-contract"] };
   const request = { userPrompt: "Fix the null-safety bug in src/utils.ts", taskType: "bugfix" };
 
-  await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
   const payload = resolutionEvents(captured)[0].payload as IResolutionPayload;
   assertEquals(payload.pinned_skill_ids, []);
@@ -139,7 +139,7 @@ Deno.test("[step17e] a request that resolves to no skills at all is still journa
   const blueprint: IBlueprint = { systemPrompt: "test" };
   const request = { userPrompt: "hello", taskType: "chat" };
 
-  await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
   const payload = resolutionEvents(captured)[0].payload as IResolutionPayload;
   assertEquals(payload.skill_ids, []);

@@ -56,7 +56,7 @@ Exaix isn't trying to out-complete your IDE agent or out-orchestrate every frame
 
 ## Key Concepts
 
-> See [GLOSSARY.md](./GLOSSARY.md) for full definitions of these and other Exaix concepts (Identity, Agent, Actor, Gate Evaluate, and more).
+> See [GLOSSARY.md](./GLOSSARY.md) for full definitions of these and other Exaix concepts (Agent Role, Agent, Actor, Gate Evaluate, and more).
 
 | Term               | Description                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------------- |
@@ -65,7 +65,7 @@ Exaix isn't trying to out-complete your IDE agent or out-orchestrate every frame
 | **Changeset**      | Approved, atomic file modifications from Plans.                                                             |
 | **Plan Amendment** | Mid-execution replanning with human approval when triggers fire.                                            |
 | **Wait State**     | Durable, resumable pause point — approval, clarification, or other gate — with deadlines and resume tokens. |
-| **Blueprint**      | Reusable agent identity/persona definitions.                                                                |
+| **Blueprint**      | Reusable agent role/persona definitions.                                                                    |
 | **Flow**           | Declarative, multi-agent execution graph with namespace-scoped shared state.                                |
 | **Portal**         | Symlink to external project repos for context.                                                              |
 | **Memory**         | Persistent vector store for agent recall/search.                                                            |

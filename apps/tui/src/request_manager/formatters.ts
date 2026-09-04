@@ -36,7 +36,7 @@ export class RequestFormatter {
       `║ Subject:  ${(request.subject || "").padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
       `║ Status:   ${request.status.padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
       `║ Priority: ${request.priority.padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
-      `║ Identity: ${request.agent_role.padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
+      `║ Role:     ${request.agent_role.padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
       `║ Created:  ${new Date(request.created).toLocaleString(TUI_DETAIL_DATE_LOCALE).padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
       `║ Creator:  ${request.created_by.padEnd(TUI_LAYOUT_VALUE_WIDTH)}║`,
       ...(request.rejected_path

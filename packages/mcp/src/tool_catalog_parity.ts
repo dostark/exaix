@@ -23,7 +23,7 @@ export interface IToolCatalogParityResult {
   checkedTools: number;
 }
 
-/** ToolRegistry executes within an already-resolved single-portal, single-identity
+/** ToolRegistry executes within an already-resolved single-portal, single-agent-role
  *  context, so it never accepts these — excluded from comparison so they don't flag
  *  every overlapping tool as a "divergence". */
 const MCP_AUTH_ONLY_PARAMS: ReadonlySet<string> = new Set(["portal", "agent_role"]);

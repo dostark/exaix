@@ -131,7 +131,7 @@ class RecordingConfirmationInterceptor implements IToolConfirmationInterceptor {
   }
 }
 
-function createIdentity() {
+function createAgentRole() {
   return BlueprintFrontmatterSchema.parse({
     agent_role: "senior-coder",
     name: "Senior Coder",
@@ -190,7 +190,7 @@ Deno.test("DynamicStepExecutor confirmation: approved approval-required tool exe
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  const result = await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-approval" });
+  const result = await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-approval" });
 
   assertEquals(result.completed, true);
   assertEquals(mcpClient.getCallHistory().length, 1);
@@ -233,7 +233,7 @@ Deno.test("DynamicStepExecutor confirmation: denied approval-required tool retur
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  const result = await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-denial" });
+  const result = await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-denial" });
 
   assertEquals(mcpClient.getCallHistory().length, 0);
   assertEquals(result.completed, true);
@@ -267,7 +267,7 @@ Deno.test("DynamicStepExecutor confirmation: without interceptor approval-requir
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-no-interceptor" });
+  await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-no-interceptor" });
 
   assert(!mcpClient.getCapturedTools().includes(McpToolName.CREATE_REQUEST));
   assert(mcpClient.getCapturedTools().includes(McpToolName.LIST_PLANS));
@@ -284,7 +284,7 @@ Deno.test("DynamicStepExecutor confirmation: defensive throw when approval-requi
   const executor = new ApprovalForcingExecutor(mcpClient, llmClient, journal);
 
   await assertRejects(
-    () => executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-defensive" }),
+    () => executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-defensive" }),
     Error,
     "requires human approval",
   );
@@ -318,7 +318,7 @@ Deno.test("DynamicStepExecutor confirmation: approval request timeout window use
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-timeout-default" });
+  await executor.execute(createDynamicStep(), createAgentRole(), "input", { traceId: "trace-timeout-default" });
 
   const request = interceptor.getRequests()[0];
   const requestedAt = new Date(request.requestedAt).getTime();
@@ -355,7 +355,7 @@ Deno.test("DynamicStepExecutor confirmation: config override changes approval re
     DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 
-  await executor.execute(createDynamicStep(), createIdentity(), "input", {
+  await executor.execute(createDynamicStep(), createAgentRole(), "input", {
     traceId: "trace-config-timeout",
     config: { tools: { confirmation_timeout_s: 60 } },
   });

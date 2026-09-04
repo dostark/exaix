@@ -11,7 +11,7 @@
  * @description Phase 158 Step 7's live-catalog wiring: reads the real
  *   `Blueprints/{Agents,Skills,Flows}` catalog and asserts every artefact carries
  *   the decision recorded in `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s
- *   "Step 7 decisions" table (skills/identities: KEEP; the one flow this
+ *   "Step 7 decisions" table (skills/agent roles: KEEP; the one flow this
  *   phase measured: AWAITING_REMEASUREMENT, since its only result is confounded by
  *   execution strategy — see that phase's Step 6 caveat and Phase 159). This is an
  *   operator-run gate, matching `check_blueprint_integrity.ts`'s pattern for the same
@@ -94,30 +94,30 @@ const SKILL_DECISIONS: IArtefactDecisionEntry[] = [
   nonCoverage(ArtefactKind.SKILL, "step-execution", NOT_CORPUS_REACHABLE),
 ];
 
-const IDENTITY_DECISIONS: IArtefactDecisionEntry[] = [
+const AGENT_ROLE_DECISIONS: IArtefactDecisionEntry[] = [
   keep(
-    ArtefactKind.IDENTITY,
+    ArtefactKind.AGENT_ROLE,
     "senior-coder",
     "statistically indistinguishable from test-engineer on the measured task (Δ +0.002); no measured harm",
   ),
-  keep(ArtefactKind.IDENTITY, "test-engineer", "same identity-swap arm; no measured harm"),
+  keep(ArtefactKind.AGENT_ROLE, "test-engineer", "same agent-role-swap arm; no measured harm"),
   keep(
-    ArtefactKind.IDENTITY,
+    ArtefactKind.AGENT_ROLE,
     "code-analyst",
     "prune arm Δ 0.000 — the Phase 142 Step 17 portal-grounding prune neither helped nor hurt; kept pruned",
   ),
-  nonCoverage(ArtefactKind.IDENTITY, "code-reviewer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "dogfood-coder", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "dogfood-developer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "performance-engineer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "product-manager", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "qa-engineer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "quality-judge", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "research-synthesizer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "security-expert", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "software-architect", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "technical-writer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.IDENTITY, "voting-judge", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "code-reviewer", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "dogfood-coder", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "dogfood-developer", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "performance-engineer", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "product-manager", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "qa-engineer", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "quality-judge", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "research-synthesizer", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "security-expert", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "software-architect", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "technical-writer", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "voting-judge", NOT_EXERCISED_BY_AN_ARM),
 ];
 
 const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
@@ -165,7 +165,7 @@ const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
 /** The live run's recorded decisions. */
 export const ARTEFACT_DECISIONS_2026_08_04: IArtefactDecisionEntry[] = [
   ...SKILL_DECISIONS,
-  ...IDENTITY_DECISIONS,
+  ...AGENT_ROLE_DECISIONS,
   ...FLOW_DECISIONS,
 ];
 
@@ -180,7 +180,7 @@ if (import.meta.main) {
   }
   console.log(
     `✅ Artefact decision coverage: all ${catalog.length} catalog artefacts (` +
-      `${catalog.filter((r) => r.kind === ArtefactKind.IDENTITY).length} identities, ` +
+      `${catalog.filter((r) => r.kind === ArtefactKind.AGENT_ROLE).length} agent roles, ` +
       `${catalog.filter((r) => r.kind === ArtefactKind.SKILL).length} skills, ` +
       `${catalog.filter((r) => r.kind === ArtefactKind.FLOW).length} flows) carry a recorded decision.`,
   );

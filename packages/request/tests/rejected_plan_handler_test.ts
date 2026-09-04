@@ -66,7 +66,7 @@ Deno.test("[RejectedPlanHandler.handleError] PlanValidationError persists a reje
   }
 });
 
-Deno.test("[RejectedPlanHandler.handleError] PlanValidationError includes agent_role when frontmatter has identity", async () => {
+Deno.test("[RejectedPlanHandler.handleError] PlanValidationError includes agent_role when frontmatter has agent_role", async () => {
   const { testDir, config, filePath, handler } = await makeHandlerTestSetup();
   try {
     const error = new PlanValidationError("Invalid plan JSON", { rawContent: "bad" });

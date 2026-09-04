@@ -126,7 +126,7 @@ const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
   [join("Memory"), join("Memory")],
 ] as const;
 
-/** Additive by design: a scenario that patches an identity inside its sandbox keeps the
+/** Additive by design: a scenario that patches an agent role inside its sandbox keeps the
  *  patch, and an operator-supplied `--workspace` is never rewritten. */
 export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: string): Promise<void> {
   for (const [from, to] of SEEDED_CATALOGS) {
@@ -141,7 +141,7 @@ export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: str
 }
 
 /** Additive at the FILE level, not the directory level — a file the destination already has
- *  is left exactly as it is, so a scenario's own patch to an identity survives seeding. */
+ *  is left exactly as it is, so a scenario's own patch to an agent role survives seeding. */
 async function seedMissingEntries(source: string, destination: string): Promise<void> {
   await ensureDir(destination);
   for await (const entry of Deno.readDir(source)) {
