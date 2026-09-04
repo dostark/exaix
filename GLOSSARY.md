@@ -32,9 +32,9 @@ The markdown file that defines an agent_role: its metadata, instructions, capabi
 
 Any entity that can initiate, receive, or process a request or event in Exaix — an end user, a developer, a running agent-role instance, an internal Exaix service, or an external MCP client. Actors are the **"who"** behind every action, and every Activity Journal entry records which actor was responsible.
 
-### Agent (Runtime Agent)
+### Runner
 
-The code-level execution unit that orchestrates one or more agent roles to complete a task — it owns the control flow (calling agent roles, invoking tools, coordinating services), while the agent roles it runs supply the actual LLM behavior. `AgentRunner`, `FlowRunner`, and `RequestRouter` are examples of runtime agents.
+The code-level execution unit that orchestrates one or more agent roles to complete a task — it owns the control flow (calling agent roles, invoking tools, coordinating services), while the agent roles it runs supply the actual LLM behavior. `AgentRunner`, `AgentComposer`, `FlowRunner`, and `RequestRouter` are examples of Runners.
 
 ### Tool
 
@@ -66,23 +66,23 @@ A hard filter that excludes providers lacking **all** listed capabilities. Value
 
 ---
 
-## Clarifying Diagram: Actor vs Agent vs Agent Role
+## Clarifying Diagram: Actor vs Runner vs Agent Role
 
 ```text
 +---------------------+         +-----------------+         +-------------------+
-|       ACTOR         |  uses   |      AGENT      |  runs   |    AGENT ROLE     |
+|       ACTOR         |  uses   |      RUNNER     |  runs   |    AGENT ROLE     |
 |---------------------| ------> | (runtime logic) | ----->  | (LLM persona)     |
-| - user              |         | - orchestrator  |         | - instructions    |
+| - user              |         | - composer      |         | - instructions    |
 | - service           |         | - flow engine   |         | - behavior config |
 | - mcp client        |         | - router        |         | - tools access    |
 +---------------------+         +-----------------+         +-------------------+
 
-Actors are "who", agents are "how", agent roles are "what and with which voice".
+Actors are "who", runners are "how", agent roles are "what and with which voice".
 ```
 
-`Agent Role` (the persona) is distinct from `Agent (Runtime Agent)` (the orchestrator that runs it) — the two are not interchangeable despite the shared prefix. The orchestrator's own `RuntimeKind` taxonomy (`agent-runner`, `agent-executor`, `flow-runner`, `tool-runner`, `request-router`) is a separate, closed set describing _which_ runtime component acted, not which Agent Role it was acting on behalf of.
+`Agent Role` (the persona) is distinct from `Runner` (the harness component that runs it) — the two are not interchangeable despite the shared prefix. The Runner's own `RunnerKind` taxonomy (`agent-composer`, `agent-runner`, `request-router`) is a separate, closed set describing **which** Runner acted, not which Agent Role it was acting on behalf of.
 
-As a naming rule going forward: "Agent" names something an LLM model is or does (a persona, a model-driven behavior); harness/orchestration machinery uses "Runtime"/"Executor"/"Orchestrator"/"Worker" instead.
+As a naming rule going forward: "Agent" names something an LLM model is or does (a persona, a model-driven behavior); execution/dispatch machinery is a Runner, typically named with a `*Runner`/`*Router`/`*Composer` suffix.
 
 ---
 
