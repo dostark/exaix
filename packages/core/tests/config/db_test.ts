@@ -260,20 +260,20 @@ Deno.test("[configuring] addBlocklistPattern inserts row", () => {
     assertEquals(rows.length, 1);
     assertEquals(rows[0].key_pattern, "system.*");
     assertEquals(rows[0].reason, "admin lock");
-    assertEquals(rows[0].agent_id, null);
+    assertEquals(rows[0].agent_role, null);
   } finally {
     cleanUp(dir, db);
   }
 });
 
-Deno.test("[configuring] addBlocklistPattern with agentId inserts agent-scoped row", () => {
+Deno.test("[configuring] addBlocklistPattern with agentRole inserts agent-role-scoped row", () => {
   const { db, dir } = createTestDb();
   try {
     migrateConfigDb(db);
     addBlocklistPattern(db, "ai.provider", "no provider swap", "agent-x");
     const rows = listBlocklistPatterns(db);
     assertEquals(rows.length, 1);
-    assertEquals(rows[0].agent_id, "agent-x");
+    assertEquals(rows[0].agent_role, "agent-x");
     assertEquals(rows[0].key_pattern, "ai.provider");
   } finally {
     cleanUp(dir, db);
@@ -341,16 +341,16 @@ Deno.test("[configuring] isPathBlocked returns false for non-matching key", () =
   }
 });
 
-Deno.test("[configuring] isPathBlocked respects agent scope", () => {
+Deno.test("[configuring] isPathBlocked respects agent-role scope", () => {
   const { db, dir } = createTestDb();
   try {
     migrateConfigDb(db);
-    // Agent-scoped block: only blocks agent-x.
+    // Agent-role-scoped block: only blocks agent-x.
     addBlocklistPattern(db, "ai.provider", undefined, "agent-x");
     assertEquals(isPathBlocked(db, "ai.provider", "agent-x"), true);
     assertEquals(isPathBlocked(db, "ai.provider", "agent-y"), false);
     assertEquals(isPathBlocked(db, "ai.provider"), false);
-    // NULL-agent block: blocks everyone.
+    // NULL-agent-role block: blocks everyone.
     addBlocklistPattern(db, "system.root");
     assertEquals(isPathBlocked(db, "system.root", "agent-y"), true);
     assertEquals(isPathBlocked(db, "system.root"), true);

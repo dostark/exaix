@@ -31,7 +31,7 @@ export interface IConfigOverrideEntry {
 
 /** A row in the config_mcp_blocklist table. */
 export interface IBlocklistEntry {
-  agent_id: string | null;
+  agent_role: string | null;
   key_pattern: string;
   reason: string | null;
   created_at: string;
@@ -90,16 +90,16 @@ export function migrateConfigDb(db: Database): void {
     "CREATE INDEX IF NOT EXISTS idx_config_overrides_key ON config_overrides(key, id)",
   );
   // Deny-permanently blocklist for MCP config writes.
-  // agent_id IS NULL means the pattern applies to all agents (admin lock);
-  // a non-null agent_id scopes the block to one agent ("deny permanently").
+  // agent_role IS NULL means the pattern applies to all agent roles (admin lock);
+  // a non-null agent_role scopes the block to one agent role ("deny permanently").
   db.exec(`
     CREATE TABLE IF NOT EXISTS config_mcp_blocklist (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      agent_id    TEXT,
+      agent_role  TEXT,
       key_pattern TEXT NOT NULL,
       created_at  TEXT NOT NULL DEFAULT (datetime('now')),
       reason      TEXT,
-      UNIQUE (agent_id, key_pattern)
+      UNIQUE (agent_role, key_pattern)
     )
   `);
   // Per-key write lock. A locked key is refused by
@@ -253,46 +253,46 @@ export function getOverrideHistory(
 
 // config_mcp_blocklist DAO
 
-/** Adds a deny-permanently blocklist pattern. `agentId` scopes the block to one agent; omit it (NULL) to block for all agents. Idempotent on the `(agent_id, key_pattern)` unique key. */
+/** Adds a deny-permanently blocklist pattern. `agentRole` scopes the block to one agent role; omit it (NULL) to block for all agent roles. Idempotent on the `(agent_role, key_pattern)` unique key. */
 export function addBlocklistPattern(
   db: Database,
   pattern: string,
   reason?: Opt<string, Reason.OptionalInput>,
-  agentId?: Opt<string, Reason.QueryFilter>,
+  agentRole?: Opt<string, Reason.QueryFilter>,
 ): void {
   db.prepare(
-    "INSERT OR IGNORE INTO config_mcp_blocklist (agent_id, key_pattern, reason) VALUES (?, ?, ?)",
-  ).run(agentId ?? null, pattern, reason ?? null);
+    "INSERT OR IGNORE INTO config_mcp_blocklist (agent_role, key_pattern, reason) VALUES (?, ?, ?)",
+  ).run(agentRole ?? null, pattern, reason ?? null);
 }
 
-/** Remove a blocklist pattern (optionally scoped to one agent). */
+/** Remove a blocklist pattern (optionally scoped to one agent role). */
 export function removeBlocklistPattern(
   db: Database,
   pattern: string,
-  agentId?: Opt<string, Reason.QueryFilter>,
+  agentRole?: Opt<string, Reason.QueryFilter>,
 ): void {
-  if (agentId === undefined) {
+  if (agentRole === undefined) {
     db.prepare(
-      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_id IS NULL",
+      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_role IS NULL",
     ).run(pattern);
   } else {
     db.prepare(
-      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_id = ?",
-    ).run(pattern, agentId);
+      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_role = ?",
+    ).run(pattern, agentRole);
   }
 }
 
 /** List all blocklist patterns, newest first. */
 export function listBlocklistPatterns(db: Database): Array<IBlocklistEntry> {
   return db.prepare(
-    "SELECT agent_id, key_pattern, reason, created_at FROM config_mcp_blocklist ORDER BY id DESC",
+    "SELECT agent_role, key_pattern, reason, created_at FROM config_mcp_blocklist ORDER BY id DESC",
   ).all<{
-    agent_id: string | null;
+    agent_role: string | null;
     key_pattern: string;
     reason: string | null;
     created_at: string;
   }>().map((row) => ({
-    agent_id: row.agent_id ?? null,
+    agent_role: row.agent_role ?? null,
     key_pattern: row.key_pattern,
     reason: row.reason ?? null,
     created_at: row.created_at,
@@ -307,15 +307,15 @@ export function globMatches(pattern: string, key: string): boolean {
     key.length >= prefix.length + suffix.length;
 }
 
-/** True if `key` is blocked for `agentId`. A row with NULL `agent_id` blocks all agents; a row with a matching `agent_id` blocks that agent. Patterns are glob matched via {@link globMatches}. */
+/** True if `key` is blocked for `agentRole`. A row with NULL `agent_role` blocks all agent roles; a row with a matching `agent_role` blocks that agent role. Patterns are glob matched via {@link globMatches}. */
 export function isPathBlocked(
   db: Database,
   key: string,
-  agentId?: Opt<string, Reason.QueryFilter>,
+  agentRole?: Opt<string, Reason.QueryFilter>,
 ): boolean {
   const rows = db.prepare(
-    "SELECT agent_id, key_pattern FROM config_mcp_blocklist WHERE agent_id IS NULL OR agent_id = ?",
-  ).all<{ agent_id: string | null; key_pattern: string }>(agentId ?? null);
+    "SELECT agent_role, key_pattern FROM config_mcp_blocklist WHERE agent_role IS NULL OR agent_role = ?",
+  ).all<{ agent_role: string | null; key_pattern: string }>(agentRole ?? null);
   return rows.some((row) => globMatches(row.key_pattern, key));
 }
 
