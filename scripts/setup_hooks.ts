@@ -471,7 +471,7 @@ if [ -n "$DIRTY" ]; then
 fi
 `;
 
-async function installHooks() {
+export async function installHooks() {
   console.log("🛠️ Installing Exaix Git Hooks...");
 
   try {

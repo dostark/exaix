@@ -8,6 +8,7 @@ import { assert, assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { defaultSandboxRoot } from "../../scripts/prune_scenario_sandboxes.ts";
+import { installHooks } from "../../scripts/setup_hooks.ts";
 
 // We won't import the logic directly as it's a main-only script usually,
 // but we can test it by running it as a subprocess.
@@ -89,7 +90,11 @@ describe("event coverage visibility via the real pre-commit hook (real subproces
   // Extracts the event-coverage block from the REAL installed pre-commit hook so this test
   // never drifts from what it actually runs. `deno task X` redirects CWD by walking up to find
   // deno.json, so it's swapped for absolute `deno run`, which correctly scopes to the scratch repo.
+  // Installs hooks first — a CI checkout never runs `deno task hooks:install`, so
+  // `.git/hooks/pre-commit` wouldn't exist there otherwise; a local dev machine's hooks are
+  // idempotently overwritten with the same canonical content.
   async function extractEventCoverageHook(): Promise<string> {
+    await installHooks();
     const proc = await new Deno.Command("git", {
       args: ["rev-parse", "--git-path", "hooks"],
       cwd: REPO_ROOT,

@@ -30,6 +30,10 @@ function makeService(sessionDir: string, overrides: Partial<ISessionDelegateServ
     pathResolver: {
       resolve: (path: string) => Promise.resolve(`${sessionDir}/${path.replace("@Runtime/", "")}`),
     } as never,
+    // Defaults to a mock so these tests don't depend on opencode/claude/codex binaries being
+    // installed on the host — real probe behavior has its own coverage in
+    // delegate_version_probe_test.ts. A test exercising probe results overrides this.
+    versionProbe: (_command, minimumVersion) => Promise.resolve({ version: minimumVersion, supported: true }),
     ...overrides,
   });
 }
