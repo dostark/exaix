@@ -16,7 +16,15 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
-import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
+import {
+  AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_FAILED,
+  AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_RUNNER_ID,
+  PORTAL_CONTEXT_KEY,
+  RequestKind,
+  RunnerKind,
+} from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "@exaix/core/request";
@@ -318,7 +326,7 @@ export class RequestRouter {
     const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
 
     // Execute agent
-    const result = await this.agentRunner.run(blueprint, parsedRequest);
+    const result = await this.runAgentRunnerWithJournal(blueprint, parsedRequest, requestId, traceId);
 
     return {
       type: RequestKind.AGENT_ROLE,
@@ -384,13 +392,52 @@ export class RequestRouter {
     const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
 
     // Execute default agent
-    const result = await this.agentRunner.run(blueprint, parsedRequest);
+    const result = await this.runAgentRunnerWithJournal(blueprint, parsedRequest, requestId, traceId);
 
     return {
       type: RequestKind.AGENT_ROLE,
       agentRole: selectedAgentRole,
       result,
     };
+  }
+
+  /** Wraps an `agentRunner.run()` call with Activity Journal execution-start/complete/error
+   *  logging tagged `runnerKind: RunnerKind.AGENT_RUNNER`, shared by routeToAgent and
+   *  routeToDefaultAgent. */
+  private async runAgentRunnerWithJournal(
+    blueprint: IBlueprint,
+    parsedRequest: IParsedRequest,
+    requestId: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<IAgentExecutionResult> {
+    await this.eventLogger.log({
+      action: AGENT_EVENT_EXECUTION_STARTED,
+      target: requestId,
+      runnerId: AGENT_RUNNER_ID,
+      runnerKind: RunnerKind.AGENT_RUNNER,
+      traceId,
+    });
+    try {
+      const result = await this.agentRunner.run(blueprint, parsedRequest);
+      await this.eventLogger.log({
+        action: AGENT_EVENT_EXECUTION_COMPLETED,
+        target: requestId,
+        runnerId: AGENT_RUNNER_ID,
+        runnerKind: RunnerKind.AGENT_RUNNER,
+        traceId,
+      });
+      return result;
+    } catch (error) {
+      await this.eventLogger.log({
+        action: AGENT_EVENT_EXECUTION_FAILED,
+        target: requestId,
+        runnerId: AGENT_RUNNER_ID,
+        runnerKind: RunnerKind.AGENT_RUNNER,
+        traceId,
+        payload: { error_message: error instanceof Error ? error.message : String(error) },
+      });
+      throw error;
+    }
   }
 
   protected async loadBlueprint(agentRole: string): Promise<IBlueprint | null> {
