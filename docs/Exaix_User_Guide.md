@@ -2992,7 +2992,7 @@ Use them when you want fewer clarification rounds and more reliable evaluation a
 | `request_id` | string   | ✓        | `"implement-auth"`                       |
 | `status`     | string   | ✓        | `review`, `approved`, `rejected`         |
 | `created_at` | datetime | ✓        | `2025-11-28T10:35:00.000Z`               |
-| `agent_id`   | string   | ✓        | `senior_coder`                           |
+| `agent_role` | string   | ✓        | `senior_coder`                           |
 
 **Report Files** (`Memory/Reports/*.md`):
 
@@ -3002,7 +3002,7 @@ Use them when you want fewer clarification rounds and more reliable evaluation a
 | `request_id`   | string   | ✓        | `"implement-auth"`                       |
 | `status`       | string   | ✓        | `completed`, `failed`                    |
 | `completed_at` | datetime | ✓        | `2025-11-28T11:00:00.000Z`               |
-| `agent_id`     | string   | ✓        | `senior_coder`                           |
+| `agent_role`   | string   | ✓        | `senior_coder`                           |
 | `branch`       | string   |          | `feat/implement-auth-550e8400`           |
 
 #### YAML Syntax Quick Reference
@@ -4507,7 +4507,7 @@ exactl journal [options]
 
 - `trace_id`: Filter by specific operation UUID (e.g., `trace_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890`)
 - `action_type`: Filter by event type (e.g., `action_type=request.created`, supports wildcards like `action_type=plan.%`)
-- `agent_id`: Filter by agent name (e.g., `agent_id=security-auditor`)
+- `agent_role`: Filter by agent name (e.g., `agent_role=security-auditor`)
 - `since`: Filter by time (e.g., `since=2024-01-01`, `since=2024-01-01T10:00:00`)
 
 #### Basic Usage Examples
@@ -4557,10 +4557,10 @@ exactl journal --filter action_type=blueprint.%
 
 ```bash
 # Show activity for a specific agent
-exactl journal --filter agent_id=security-auditor
+exactl journal --filter agent_role=security-auditor
 
 # Show activity for mock agents (using wildcard)
-exactl journal --filter agent_id=mock-%
+exactl journal --filter agent_role=mock-%
 ```
 
 #### Time-Based Filtering
@@ -4601,7 +4601,7 @@ exactl journal --payload %cost%
 exactl journal --count
 
 # Get distinct list of all agents that have performed actions
-exactl journal --distinct agent_id
+exactl journal --distinct agent_role
 
 # Get distinct list of all action types
 exactl journal --distinct action_type
@@ -4614,7 +4614,7 @@ exactl journal --distinct actor
 
 ```bash
 # Combine multiple filters: errors from specific agent since date
-exactl journal --filter action_type=error --filter agent_id=security-auditor --filter since=2024-01-01
+exactl journal --filter action_type=error --filter agent_role=security-auditor --filter since=2024-01-01
 
 # Find all failed actions for a specific trace
 exactl journal --filter trace_id=$TRACE_ID --filter action_type=action.failed
@@ -4655,7 +4655,7 @@ exactl journal --payload %password% --payload %key% --payload %secret% | wc -l
 
 ```bash
 # Count requests by agent over time
-exactl journal --filter action_type=request.created --distinct agent_id
+exactl journal --filter action_type=request.created --distinct agent_role
 
 # Find most active time periods
 exactl journal --count --filter since=$(date -d '7 days ago' +%Y-%m-%d)
@@ -4671,7 +4671,7 @@ exactl journal --payload %tokens% --tail 100 --format json | jq '.[] | .payload.
 exactl journal --filter since=2024-01-01 --filter since=2024-02-01 --format json > january_activities.json
 
 # Generate audit report for specific agent
-exactl journal --filter agent_id=production-agent --format json > production_audit.json
+exactl journal --filter agent_role=production-agent --format json > production_audit.json
 
 # Count human approvals vs automated actions
 exactl journal --filter action_type=plan.approved --count

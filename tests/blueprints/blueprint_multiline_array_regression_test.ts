@@ -13,7 +13,7 @@ import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
-const AGENT_ID = "multiline-test";
+const AGENT_ROLE = "multiline-test";
 const CAP_TESTING = "testing";
 const CAP_VALIDATION = "validation";
 const CAP_DEBUGGING = "debugging";
@@ -29,7 +29,7 @@ Deno.test("[regression] YAML multi-line array format parses correctly", async ()
 
     // Create blueprint with multi-line array format (like mock-agent.md)
     const multilineBlueprint = `---
-agent_role: "${AGENT_ID}"
+agent_role: "${AGENT_ROLE}"
 name: "Multi-line Array Test"
 model: "mock:test-model"
 capabilities:
@@ -48,7 +48,7 @@ default_skills:
 
 This blueprint uses multi-line YAML array format.
 `;
-    await Deno.writeTextFile(join(blueprintsDir, `${AGENT_ID}.md`), multilineBlueprint);
+    await Deno.writeTextFile(join(blueprintsDir, `${AGENT_ROLE}.md`), multilineBlueprint);
 
     // Use ConfigSchema to create a valid config object with defaults
     const config = ConfigSchema.parse({
@@ -66,7 +66,7 @@ This blueprint uses multi-line YAML array format.
     const blueprints = await blueprintCommands.list();
 
     assertEquals(blueprints.length, 1, "Should find multi-line blueprint");
-    assertEquals(blueprints[0].agent_role, AGENT_ID);
+    assertEquals(blueprints[0].agent_role, AGENT_ROLE);
 
     // CRITICAL: capabilities should be an array, not a string
     assertEquals(Array.isArray(blueprints[0].capabilities), true, "capabilities should be an array");

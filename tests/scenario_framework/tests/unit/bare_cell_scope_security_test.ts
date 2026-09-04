@@ -18,7 +18,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import {
-  BARE_DELEGATE_AGENT_ID,
+  BARE_DELEGATE_AGENT_ROLE,
   type ISweTaskTemplateOptions,
   renderSweTaskBareTemplate,
 } from "../../runner/scenario_templates.ts";
@@ -86,7 +86,7 @@ Deno.test("[security] the staged opencode config denies external-directory reads
   assert(jsonMatch, "config JSON must be embedded in the staging command");
   const config = OpencodeConfigSchema.parse(JSON.parse(jsonMatch[1]));
 
-  const agent = config.agent[BARE_DELEGATE_AGENT_ID];
+  const agent = config.agent[BARE_DELEGATE_AGENT_ROLE];
   assertExists(agent, "config must carry the bare-delegate agent role's permission block");
   assertEquals(agent.external_directory["**"], "deny", "external directory reads must be denied");
   assertEquals(agent.edit["*"], "deny", "edits outside the worktree must be denied");
@@ -102,7 +102,7 @@ Deno.test("[security] the staged config matches the shared permission builder (d
   const jsonMatch = arg.match(/'(\{.*\})'/);
   assert(jsonMatch);
 
-  const expected = buildOpencodePermissionConfig(["**"], BARE_DELEGATE_AGENT_ID);
+  const expected = buildOpencodePermissionConfig(["**"], BARE_DELEGATE_AGENT_ROLE);
   assertEquals(JSON.parse(jsonMatch[1]), expected, "bare config must be byte-identical to the shared builder");
 });
 

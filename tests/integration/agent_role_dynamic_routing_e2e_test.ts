@@ -23,7 +23,7 @@ type DynamicRoutingFrontmatter = {
 
 const FIXTURE_ROOT = join(Deno.cwd(), "tests", "fixtures", "dynamic_agent_role_routing");
 const SELECTED_AGENT_ROLE = "senior-coder";
-const DEFAULT_AGENT_ID = "default-agent";
+const DEFAULT_AGENT_ROLE = "default-agent";
 
 Deno.test("Integration: dynamic agent-role routing uses routing policy rules and logs experiment events", async () => {
   const env = await TestEnvironment.create({
@@ -47,8 +47,8 @@ Deno.test("Integration: dynamic agent-role routing uses routing policy rules and
     );
 
     await copyFixture(
-      join(FIXTURE_ROOT, `${DEFAULT_AGENT_ID}.md`),
-      join(blueprintsPath, `${DEFAULT_AGENT_ID}.md`),
+      join(FIXTURE_ROOT, `${DEFAULT_AGENT_ROLE}.md`),
+      join(blueprintsPath, `${DEFAULT_AGENT_ROLE}.md`),
     );
 
     await ensureDir(join(env.tempDir, ".exa"));
@@ -66,7 +66,7 @@ Deno.test("Integration: dynamic agent-role routing uses routing policy rules and
 
     const { mockAgentRunner, mockLogger, router } = createRouterTestContext({
       routingPolicyService,
-      defaultAgent: DEFAULT_AGENT_ID,
+      defaultAgent: DEFAULT_AGENT_ROLE,
       blueprintsPath,
       config: env.config,
     });

@@ -17,10 +17,10 @@ import { TestEnvironment } from "../../../tests/integration/helpers/test_environ
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
 import {
   TEST_BLUEPRINT_ERROR_MISSING_FRONTMATTER,
-  TEST_BLUEPRINT_MISSING_AGENT_ID,
+  TEST_BLUEPRINT_MISSING_AGENT_ROLE,
   TEST_BLUEPRINT_NO_FRONTMATTER_CONTENT,
   TEST_BLUEPRINT_NO_FRONTMATTER_ID,
-  TEST_BLUEPRINT_YAML_AGENT_ID,
+  TEST_BLUEPRINT_YAML_AGENT_ROLE,
   TEST_BLUEPRINT_YAML_CAPABILITY_ONE,
   TEST_BLUEPRINT_YAML_CAPABILITY_TWO,
   TEST_BLUEPRINT_YAML_CREATED,
@@ -325,10 +325,10 @@ Deno.test("[blueprint] list - parses YAML inline arrays with invalid JSON", asyn
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
       "Agents",
-      `${TEST_BLUEPRINT_YAML_AGENT_ID}.md`,
+      `${TEST_BLUEPRINT_YAML_AGENT_ROLE}.md`,
     );
     const yamlContent = `---
-agent_role: "${TEST_BLUEPRINT_YAML_AGENT_ID}"
+agent_role: "${TEST_BLUEPRINT_YAML_AGENT_ROLE}"
 name: "${TEST_BLUEPRINT_YAML_NAME}"
 model: "${TEST_BLUEPRINT_YAML_MODEL}"
 capabilities: [${TEST_BLUEPRINT_YAML_CAPABILITY_ONE}, ${TEST_BLUEPRINT_YAML_CAPABILITY_TWO}]
@@ -342,7 +342,7 @@ Inline YAML array test
     await Deno.writeTextFile(blueprintPath, yamlContent);
 
     const blueprints = await commands.list();
-    const blueprint = blueprints.find((b) => b.agent_role === TEST_BLUEPRINT_YAML_AGENT_ID);
+    const blueprint = blueprints.find((b) => b.agent_role === TEST_BLUEPRINT_YAML_AGENT_ROLE);
 
     assertExists(blueprint);
     if (!blueprint) throw new Error("Blueprint not found");
@@ -360,7 +360,7 @@ Deno.test("[blueprint] list - skips YAML frontmatter missing agent_role", async 
       testEnv.config.system.root,
       testEnv.config.paths.blueprints,
       "Agents",
-      `${TEST_BLUEPRINT_MISSING_AGENT_ID}.md`,
+      `${TEST_BLUEPRINT_MISSING_AGENT_ROLE}.md`,
     );
     const yamlContent = `---
 name: "Missing Agent Id"

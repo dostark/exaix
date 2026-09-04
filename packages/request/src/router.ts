@@ -102,7 +102,7 @@ export interface IRequestRouterConfig {
   agentRunner: IAgentRunner;
   flowValidator: IFlowValidator;
   eventLogger: IEventLogger;
-  defaultAgentId: string;
+  defaultAgentRole: string;
   blueprintsPath: string;
   config: Config;
   routingPolicyService?: IRoutingPolicyService;
@@ -128,7 +128,7 @@ export class RequestRouter {
   private agentRunner: IAgentRunner;
   private flowValidator: IFlowValidator;
   private eventLogger: IEventLogger;
-  private defaultAgentId: string;
+  private defaultAgentRole: string;
   private blueprintsPath: string;
   private config: Config;
   private routingPolicyService?: IRoutingPolicyService;
@@ -139,7 +139,7 @@ export class RequestRouter {
     this.agentRunner = options.agentRunner;
     this.flowValidator = options.flowValidator;
     this.eventLogger = options.eventLogger;
-    this.defaultAgentId = options.defaultAgentId;
+    this.defaultAgentRole = options.defaultAgentRole;
     this.blueprintsPath = options.blueprintsPath;
     this.config = ctx?.config.get() || options.config;
     this.routingPolicyService = options.routingPolicyService;
@@ -342,7 +342,7 @@ export class RequestRouter {
     await this.eventLogger.log({
       action: "request.routing.default",
       target: requestId,
-      payload: { defaultAgentId: this.defaultAgentId },
+      payload: { defaultAgentRole: this.defaultAgentRole },
       traceId,
     });
 
@@ -350,7 +350,7 @@ export class RequestRouter {
 
     if (policyDecision) {
       await this.logRoutingDecision(requestId, traceId, {
-        default_agent_id: this.defaultAgentId,
+        default_agent_role: this.defaultAgentRole,
       }, policyDecision);
 
       if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
@@ -495,7 +495,7 @@ export class RequestRouter {
     const allowDynamicRouting = request.frontmatter.allow_dynamic_routing ??
       this.config.routing?.enable_dynamic_routing ?? false;
     if (!allowDynamicRouting || !this.routingPolicyService) {
-      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentId };
+      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentRole };
     }
 
     try {
@@ -530,13 +530,13 @@ export class RequestRouter {
         action: "routing.fallback_used",
         target: request.requestId,
         payload: {
-          fallback_agent_role: explicitAgentRole ?? this.defaultAgentId,
+          fallback_agent_role: explicitAgentRole ?? this.defaultAgentRole,
           reason: error instanceof Error ? error.message : String(error),
           allow_dynamic_routing: true,
         },
         traceId: request.traceId,
       });
-      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentId };
+      return { selectedAgentRole: explicitAgentRole ?? this.defaultAgentRole };
     }
   }
 

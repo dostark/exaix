@@ -19,7 +19,7 @@ const BLUEPRINTS_SUBDIR = "Blueprints/Agents";
 const ROUTING_POLICY_FILE_NAME = ".exa/routing.policy.yaml";
 const RESULT_FILE_PATH = "artifacts/result.json";
 const SELECTED_AGENT_ROLE = "senior-coder";
-const DEFAULT_AGENT_ID = "default-agent";
+const DEFAULT_AGENT_ROLE = "default-agent";
 const DYNAMIC_ROUTING_STEP_ID = "execute-dynamic-routing";
 const SCENARIO_TAGS = ["routing", "dynamic"] as const;
 const FIXTURE_ROOT =
@@ -79,8 +79,8 @@ async function prepareWorkspaceFixtures(workspaceRoot: string): Promise<string> 
     join(workspaceRoot, BLUEPRINTS_SUBDIR, `${SELECTED_AGENT_ROLE}.md`),
   );
   await copyFixture(
-    join(FIXTURE_ROOT, "blueprints", `${DEFAULT_AGENT_ID}.md`),
-    join(workspaceRoot, BLUEPRINTS_SUBDIR, `${DEFAULT_AGENT_ID}.md`),
+    join(FIXTURE_ROOT, "blueprints", `${DEFAULT_AGENT_ROLE}.md`),
+    join(workspaceRoot, BLUEPRINTS_SUBDIR, `${DEFAULT_AGENT_ROLE}.md`),
   );
   await Deno.mkdir(join(workspaceRoot, ".exa"), { recursive: true });
   await copyFixture(
