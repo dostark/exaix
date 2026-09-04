@@ -152,6 +152,16 @@ periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` c
 1. When a doc uses neither GFM checkboxes nor `### Step N` headings to track completion
    (e.g. `phase-132-model-routing.md` at the time of the 2026-08-15 audit), do not guess
    from indirect signals — leave the header untouched and say so.
+1. **The prose `**Status**:` header (§Status & Context) and the YAML frontmatter
+   `status:` field (line 2 of the doc, inside the opening `---` block) are two separate
+   fields — bumping one does not bump the other, and both need it.** `PHASE_REGISTRY.md`'s
+   own canonical method for "list every completed phase" is
+   `grep -l '^status: COMPLETED' planning/phase-*.md` — it reads the frontmatter field
+   only, never the prose header. A phase whose prose header says `✅ Complete` but whose
+   frontmatter still says `status: PLANNING` is invisible to that grep and will keep
+   surfacing as open work. Update both in the same pass (phase-179's own retro,
+   2026-09-04, found and fixed exactly this split — the prose header had been bumped
+   first, the frontmatter field was missed until this checklist item existed).
 
 **Draft the replacement in the doc's own voice**: cite the concrete evidence you actually
 read (step count, test counts, gap counts, key symbols); never invent numbers the

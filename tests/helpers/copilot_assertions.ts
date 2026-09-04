@@ -10,7 +10,6 @@ import { assert, assertExists } from "@std/assert";
 import { parse } from "@std/yaml";
 
 interface Frontmatter {
-  identity?: string;
   agent?: string;
   scope: string;
   title: string;

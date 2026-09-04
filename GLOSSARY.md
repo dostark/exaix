@@ -80,6 +80,10 @@ A hard filter that excludes providers lacking **all** listed capabilities. Value
 Actors are "who", agents are "how", agent roles are "what and with which voice".
 ```
 
+`Agent Role` (the persona) is distinct from `Agent (Runtime Agent)` (the orchestrator that runs it) — the two are not interchangeable despite the shared prefix. The orchestrator's own `RuntimeKind` taxonomy (`agent-runner`, `agent-executor`, `flow-runner`, `tool-runner`, `request-router`) is a separate, closed set describing _which_ runtime component acted, not which Agent Role it was acting on behalf of.
+
+As a naming rule going forward: "Agent" names something an LLM model is or does (a persona, a model-driven behavior); harness/orchestration machinery uses "Runtime"/"Executor"/"Orchestrator"/"Worker" instead.
+
 ---
 
 ## Work Artifacts and the Gated Pipeline
