@@ -952,3 +952,78 @@ Deno.test("wait cancel calls waitStateCommands.cancel with token and message", a
     assert(called);
   });
 });
+
+Deno.test("wait approve --resolved-by passes the actor through to waitStateCommands.approve", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.waitStateCommands.approve = (token: string, message?: string, resolvedBy?: string) => {
+      called = true;
+      assertEquals(token, "tok-123");
+      assertEquals(message, "Approved");
+      assertEquals(resolvedBy, "user-simulator:cooperative");
+      return Promise.resolve({ waitStateId: "ws-1", status: "fulfilled" } as any);
+    };
+    await mod.__test_command.parse([
+      "wait",
+      "approve",
+      "tok-123",
+      "-m",
+      "Approved",
+      "--resolved-by",
+      "user-simulator:cooperative",
+    ]);
+    assert(called);
+  });
+});
+
+Deno.test("wait reject --resolved-by passes the actor through to waitStateCommands.reject", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.waitStateCommands.reject = (_token: string, _message?: string, resolvedBy?: string) => {
+      called = true;
+      assertEquals(resolvedBy, "user-simulator:adversarial");
+      return Promise.resolve({ waitStateId: "ws-2", status: "rejected" } as any);
+    };
+    await mod.__test_command.parse(["wait", "reject", "tok-456", "--resolved-by", "user-simulator:adversarial"]);
+    assert(called);
+  });
+});
+
+Deno.test("wait amend --resolved-by passes the actor through to waitStateCommands.amend", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.waitStateCommands.amend = (_token: string, _message?: string, resolvedBy?: string) => {
+      called = true;
+      assertEquals(resolvedBy, "operator:jane");
+      return Promise.resolve({ waitStateId: "ws-3", status: "amended" } as any);
+    };
+    await mod.__test_command.parse(["wait", "amend", "tok-789", "--resolved-by", "operator:jane"]);
+    assert(called);
+  });
+});
+
+Deno.test("wait expire --resolved-by passes the actor through to waitStateCommands.expire", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.waitStateCommands.expire = (_token: string, _message?: string, resolvedBy?: string) => {
+      called = true;
+      assertEquals(resolvedBy, "system:timeout-watcher");
+      return Promise.resolve({ waitStateId: "ws-4", status: "expired" } as any);
+    };
+    await mod.__test_command.parse(["wait", "expire", "tok-000", "--resolved-by", "system:timeout-watcher"]);
+    assert(called);
+  });
+});
+
+Deno.test("wait cancel --resolved-by passes the actor through to waitStateCommands.cancel", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.waitStateCommands.cancel = (_token: string, _message?: string, resolvedBy?: string) => {
+      called = true;
+      assertEquals(resolvedBy, "operator:jane");
+      return Promise.resolve({ waitStateId: "ws-5", status: "cancelled" } as any);
+    };
+    await mod.__test_command.parse(["wait", "cancel", "tok-cancel", "--resolved-by", "operator:jane"]);
+    assert(called);
+  });
+});

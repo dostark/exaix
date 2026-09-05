@@ -118,6 +118,8 @@ const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
 const CLI_OPTION_WAIT_STATUS = "-s, --status <status:string>";
 const CLI_OPTION_WAIT_MESSAGE = "-m, --message <message:string>";
 const CLI_OPTION_WAIT_MESSAGE_DESC = "Resolution summary";
+const CLI_OPTION_WAIT_RESOLVED_BY = "--resolved-by <actor:string>";
+const CLI_OPTION_WAIT_RESOLVED_BY_DESC = "Actor identity resolving this wait state, recorded for audit";
 
 const services = await initializeServices();
 const fullContext: ICliApplicationContext = services;
@@ -673,9 +675,10 @@ export const __test_command = new Command()
         new Command()
           .description("Approve a pending wait state by resume token")
           .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
           .action(async (options, ...args: string[]) => {
             try {
-              const updated = await waitStateCommands.approve(args[0], options.message);
+              const updated = await waitStateCommands.approve(args[0], options.message, options.resolvedBy);
               display.info("wait.approve", updated.waitStateId.slice(0, 8), { status: updated.status });
             } catch (error) {
               display.error("cli.error", "wait approve", {
@@ -690,9 +693,10 @@ export const __test_command = new Command()
         new Command()
           .description("Reject a pending wait state by resume token")
           .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
           .action(async (options, ...args: string[]) => {
             try {
-              const updated = await waitStateCommands.reject(args[0], options.message);
+              const updated = await waitStateCommands.reject(args[0], options.message, options.resolvedBy);
               display.info("wait.reject", updated.waitStateId.slice(0, 8), { status: updated.status });
             } catch (error) {
               display.error("cli.error", "wait reject", {
@@ -707,9 +711,10 @@ export const __test_command = new Command()
         new Command()
           .description("Mark a wait state as amended by resume token")
           .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
           .action(async (options, ...args: string[]) => {
             try {
-              const updated = await waitStateCommands.amend(args[0], options.message);
+              const updated = await waitStateCommands.amend(args[0], options.message, options.resolvedBy);
               display.info("wait.amend", updated.waitStateId.slice(0, 8), { status: updated.status });
             } catch (error) {
               display.error("cli.error", "wait amend", {
@@ -724,9 +729,10 @@ export const __test_command = new Command()
         new Command()
           .description("Expire a pending wait state by resume token")
           .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
           .action(async (options, ...args: string[]) => {
             try {
-              const updated = await waitStateCommands.expire(args[0], options.message);
+              const updated = await waitStateCommands.expire(args[0], options.message, options.resolvedBy);
               display.info("wait.expire", updated.waitStateId.slice(0, 8), { status: updated.status });
             } catch (error) {
               display.error("cli.error", "wait expire", {
@@ -741,9 +747,10 @@ export const __test_command = new Command()
         new Command()
           .description("Cancel a pending wait state by resume token")
           .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .option(CLI_OPTION_WAIT_RESOLVED_BY, CLI_OPTION_WAIT_RESOLVED_BY_DESC)
           .action(async (options, ...args: string[]) => {
             try {
-              const updated = await waitStateCommands.cancel(args[0], options.message);
+              const updated = await waitStateCommands.cancel(args[0], options.message, options.resolvedBy);
               display.info("wait.cancel", updated.waitStateId.slice(0, 8), { status: updated.status });
             } catch (error) {
               display.error("cli.error", "wait cancel", {
