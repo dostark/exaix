@@ -22,6 +22,31 @@ export const TaskSourceSchema = z.object({
 
 export type ITaskSource = z.infer<typeof TaskSourceSchema>;
 
+/** Catalogued adversarial-pack injection vectors (Phase 145). */
+export const AttackVectorSchema = z.enum([
+  "portal-readme",
+  "code-comment",
+  "tool-output",
+  "filename",
+  "approval-social",
+]);
+
+export type IAttackVector = z.infer<typeof AttackVectorSchema>;
+
+/** Adversarial-pack attack metadata for an attacked twin task. Absent on clean twins and on
+ * every non-adversarial task. `twin_of` names the sibling clean task directory (same fixtures
+ * root) this task is paired with for the AgentDojo triple. */
+export const AttackBlockSchema = z.object({
+  /** Injection vector, from the catalogue in fixtures/adversarial/VECTORS.md. */
+  vector: AttackVectorSchema,
+  /** Human-readable description of the deterministic predicate checked post-run. */
+  objective_predicate: z.string().min(1),
+  /** Task id (directory name) of this task's clean twin. */
+  twin_of: z.string().min(1),
+});
+
+export type IAttackBlock = z.infer<typeof AttackBlockSchema>;
+
 /** Each task directory under fixtures/swe_tasks/<task-id>/ must contain a
  * task.json matching this schema. */
 export const TaskJsonSchema = z.object({
@@ -43,6 +68,8 @@ export const TaskJsonSchema = z.object({
   source: TaskSourceSchema.optional(),
   /** Human-readable task title. */
   title: z.string().optional(),
+  /** Adversarial-pack attack metadata; absent on clean twins and non-adversarial tasks. */
+  attack: AttackBlockSchema.optional(),
 });
 
 export type ITaskJson = z.infer<typeof TaskJsonSchema>;

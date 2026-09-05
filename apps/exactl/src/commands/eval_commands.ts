@@ -81,6 +81,23 @@ export interface IExternalCellRow {
   latestRunAt: string;
 }
 
+/** One vector/family's AgentDojo triple. `matched` is false when only one side of the clean/
+ *  attacked pair has runs — the triple fields are then undefined, never half-computed. */
+export interface IRobustnessRow {
+  vector: string;
+  family: string;
+  cleanRunCount: number;
+  attackedRunCount: number;
+  matched: boolean;
+  cleanUtility: number | undefined;
+  utilityUnderAttack: number | undefined;
+  /** Fraction of gated-scoring attacked runs whose `class: security` objective fired
+   *  (suite_score zeroed by `composeGated()`). Undefined when no attacked run in the group used
+   *  gated scoring — additive-scoring runs carry no zero-signal to read this from. */
+  attackSuccessRate: number | undefined;
+  robustnessGap: number | undefined;
+}
+
 interface ICostReportRunRow {
   cell_id: string | null;
   provider: string | null;
@@ -115,6 +132,8 @@ const EXTERNAL_BENCHMARK_FIXTURE_DIRS: Record<string, string> = {
 };
 /** Shared report-table column label (check:magic: appears in 4 renderers). */
 const TASKS_COLUMN = "Tasks";
+/** Shared report-table column label (check:magic: appears in 4 renderers). */
+const FAMILY_COLUMN = "Family";
 /** The `--format json` output format (check:magic: appears in 3 renderers). */
 const JSON_FORMAT = "json";
 /** Report views that spawn a Test-layer script bridge (never imported into production). */
@@ -310,7 +329,7 @@ export class EvalCommands extends BaseCommand {
         console.log("Family Report");
         console.log("-------------");
         console.log(
-          `  ${"Family".padEnd(25)} ${TASKS_COLUMN.padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
+          `  ${FAMILY_COLUMN.padEnd(25)} ${TASKS_COLUMN.padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
             "Reconcile".padEnd(10)
           } ${"Duration".padEnd(10)}`,
         );
@@ -334,9 +353,44 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
+    if (view === "robustness") {
+      this.renderRobustnessReport(options);
+      return;
+    }
+
     console.log(
-      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external`,
+      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external, robustness`,
     );
+  }
+
+  /** `--view robustness`: the AgentDojo triple per vector/family, from runs tagged
+   *  `vector:<name>` / `attack:clean|attacked` (optionally `task:<family>`). */
+  private renderRobustnessReport(options: {
+    scenario?: string;
+    last?: number;
+    vector?: string;
+    family?: string;
+    dbPath?: string;
+    format?: string;
+  }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
+      const rows = computeRobustnessRows(runs, { vector: options.vector, family: options.family });
+      if (rows.length === 0) {
+        console.log("No adversarial-pack run data found for robustness report.");
+        return;
+      }
+      if (options.format === JSON_FORMAT) {
+        console.log(JSON.stringify(rows, null, 2));
+      } else {
+        renderRobustnessTable(rows);
+      }
+    } finally {
+      store.close();
+    }
   }
 
   private renderGroupedReport(options: {
@@ -815,6 +869,149 @@ function renderFailuresTable(report: IFailuresReport): void {
   }
 }
 
+/** Structural subset of the eval-history run row the robustness view needs. */
+interface IRobustnessRunRow {
+  tags: string | null;
+  suite_score: number;
+  scoring_mode: string | null;
+}
+
+const VECTOR_TAG_PREFIX = "vector:";
+const ATTACK_CLEAN_TAG = "attack:clean";
+const ATTACK_ATTACKED_TAG = "attack:attacked";
+const GATED_SCORING_MODE = "gated";
+
+/** Groups runs by (vector, family) via `vector:`/`task:`/`attack:clean|attacked` tags.
+ *  `attack_success_rate` counts only gated-scoring attacked runs zeroed by `composeGated()` —
+ *  additive runs carry no such signal. A one-sided group is `matched: false`, triple undefined. */
+interface IRobustnessGroupAcc {
+  vector: string;
+  family: string;
+  clean: number[];
+  attacked: number[];
+  attackedGatedTotal: number;
+  attackedGatedZero: number;
+}
+
+function parseRunTags(tags: string | null): string[] {
+  try {
+    return tags ? JSON.parse(tags) as string[] : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Resolves a run's (vector, family, isClean) from its tags, applying the caller's vector/family
+ *  filters. Returns undefined for a run that isn't part of the adversarial pack, doesn't declare
+ *  a clean/attacked side, or is filtered out. */
+function classifyRobustnessRun(
+  tags: string[],
+  options: { vector?: string; family?: string },
+): { vector: string; family: string; isClean: boolean } | undefined {
+  const vector = tags.find((t) => t.startsWith(VECTOR_TAG_PREFIX))?.slice(VECTOR_TAG_PREFIX.length);
+  if (!vector || (options.vector && vector !== options.vector)) return undefined;
+  const isClean = tags.includes(ATTACK_CLEAN_TAG);
+  const isAttacked = tags.includes(ATTACK_ATTACKED_TAG);
+  if (!isClean && !isAttacked) return undefined;
+  const family = tags.find((t) => t.startsWith(FAMILY_TAG_PREFIX)) ?? UNKNOWN_FAMILY;
+  if (options.family && family !== options.family) return undefined;
+  return { vector, family, isClean };
+}
+
+function accumulateRobustnessRun(
+  groups: Map<string, IRobustnessGroupAcc>,
+  run: IRobustnessRunRow,
+  classified: { vector: string; family: string; isClean: boolean },
+): void {
+  const key = `${classified.vector}|${classified.family}`;
+  let group = groups.get(key);
+  if (!group) {
+    group = {
+      vector: classified.vector,
+      family: classified.family,
+      clean: [],
+      attacked: [],
+      attackedGatedTotal: 0,
+      attackedGatedZero: 0,
+    };
+    groups.set(key, group);
+  }
+  if (classified.isClean) {
+    group.clean.push(run.suite_score);
+    return;
+  }
+  group.attacked.push(run.suite_score);
+  if (run.scoring_mode === GATED_SCORING_MODE) {
+    group.attackedGatedTotal++;
+    if (run.suite_score === 0) group.attackedGatedZero++;
+  }
+}
+
+function finalizeRobustnessRow(group: IRobustnessGroupAcc): IRobustnessRow {
+  const matched = group.clean.length > 0 && group.attacked.length > 0;
+  const cleanUtility = matched ? mean(group.clean) : undefined;
+  const utilityUnderAttack = matched ? mean(group.attacked) : undefined;
+  const attackSuccessRate = matched && group.attackedGatedTotal > 0
+    ? group.attackedGatedZero / group.attackedGatedTotal
+    : undefined;
+  return {
+    vector: group.vector,
+    family: group.family,
+    cleanRunCount: group.clean.length,
+    attackedRunCount: group.attacked.length,
+    matched,
+    cleanUtility,
+    utilityUnderAttack,
+    attackSuccessRate,
+    robustnessGap: cleanUtility !== undefined && utilityUnderAttack !== undefined
+      ? cleanUtility - utilityUnderAttack
+      : undefined,
+  };
+}
+
+export function computeRobustnessRows(
+  runs: IRobustnessRunRow[],
+  options: { vector?: string; family?: string },
+): IRobustnessRow[] {
+  const groups = new Map<string, IRobustnessGroupAcc>();
+
+  for (const run of runs) {
+    const classified = classifyRobustnessRun(parseRunTags(run.tags), options);
+    if (!classified) continue;
+    accumulateRobustnessRun(groups, run, classified);
+  }
+
+  return [...groups.values()].map(finalizeRobustnessRow);
+}
+
+/** Render the robustness report: the AgentDojo triple per vector/family; unmatched groups
+ *  (only one side of the clean/attacked pair present) render as an excluded warning line. */
+function renderRobustnessTable(rows: IRobustnessRow[]): void {
+  console.log("Adversarial Robustness Report (AgentDojo triple)");
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Vector", 18)} ${padRight(FAMILY_COLUMN, 20)} ${padRight("Clean", 7)} ${padRight("Attacked", 9)} ${
+      padRight("AttackSucc", 10)
+    } ${padRight("Gap", 7)}`,
+  );
+  for (const row of rows) {
+    if (!row.matched) {
+      console.log(
+        `  ${padRight(row.vector, 18)} ${padRight(row.family, 20)} ` +
+          `excluded: unmatched twin (clean=${row.cleanRunCount}, attacked=${row.attackedRunCount})`,
+      );
+      continue;
+    }
+    console.log(
+      `  ${padRight(row.vector, 18)} ${padRight(row.family, 20)} ${
+        padRight(formatNumberOrAbsent(row.cleanUtility, 3), 7)
+      } ${padRight(formatNumberOrAbsent(row.utilityUnderAttack, 3), 9)} ${
+        padRight(formatNumberOrAbsent(row.attackSuccessRate, 3), 10)
+      } ${padRight(formatNumberOrAbsent(row.robustnessGap, 3), 7)}`,
+    );
+  }
+}
+
 /** Resolves the coverage manifest path for a benchmark: the manifest the batch ingest publishes
  *  under tests/scenario_framework/fixtures/external/<dir>/manifest.json. Unmapped benchmarks
  *  resolve to undefined and render subset/coverage as —. */
@@ -1031,7 +1228,7 @@ function renderHarnessLiftTable(stdout: string): void {
   console.log(`Harness Lift Report (${report.arm.kind} / ${report.arm.metric})`);
   console.log("-".repeat(100));
   console.log(
-    `  ${padRight("Family", 24)} ${padRight("Tool", 12)} ${padRight("Provider", 10)} ${padRight("Model", 20)} ${
+    `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Tool", 12)} ${padRight("Provider", 10)} ${padRight("Model", 20)} ${
       padRight(TASKS_COLUMN, 6)
     } ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
@@ -1106,9 +1303,9 @@ function renderAblationTable(stdout: string): void {
   console.log(`Ablation Report — arms: ${armLabel}`);
   console.log("-".repeat(100));
   console.log(
-    `  ${padRight("Family", 24)} ${padRight("Subsystem", 16)} ${padRight("Tool", 12)} ${padRight("Provider", 10)} ${
-      padRight(TASKS_COLUMN, 6)
-    } ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
+    `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Subsystem", 16)} ${padRight("Tool", 12)} ${
+      padRight("Provider", 10)
+    } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
   for (const family of report.families) {
     const meanDelta = `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;

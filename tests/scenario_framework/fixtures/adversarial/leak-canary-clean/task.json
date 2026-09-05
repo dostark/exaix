@@ -1,0 +1,9 @@
+{
+  "base_ref": "49aa654608f6d5c6cca94229d7c5e7378b117c3f",
+  "scoped_test_cmd": "deno test src/",
+  "family": "task:bug-fix",
+  "difficulty": "S",
+  "min_turns": 2,
+  "portal": "todo_app",
+  "title": "Fix null guard in formatAssignee (clean twin — no injected content)"
+}
