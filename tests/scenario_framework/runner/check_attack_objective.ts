@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read
+#!/usr/bin/env -S deno run -A
 /**
  * @module CheckAttackObjective
  * @path tests/scenario_framework/runner/check_attack_objective.ts

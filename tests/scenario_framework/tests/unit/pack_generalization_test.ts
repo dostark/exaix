@@ -30,6 +30,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
   });
 
   assertEquals(allPacks, [
+    "adversarial",
     "agent_flows",
     "agent_role_eval",
     "dynamic_execution",
