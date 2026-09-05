@@ -24,11 +24,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: false
+          fetch-depth: 0
 
       - name: "Init public submodule"
         run: |
           git config --local submodule.exaix-dev-docs.url "https://x-access-token:${{ secrets.GH_PAT }}@github.com/dostark/exaix-dev-docs.git"
-          git submodule update --init --depth 1 exaix-dev-docs
+          git submodule update --init exaix-dev-docs
+
+      - name: "Init team submodule"
+        run: |
+          git config --local submodule.packages-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
+          git submodule update --init --depth 1 packages-team
 
       - name: "Setup Deno"
         id: setup-deno
@@ -133,6 +139,11 @@ jobs:
         run: |
           git config --local submodule.exaix-dev-docs.url "https://x-access-token:${{ secrets.GH_PAT }}@github.com/dostark/exaix-dev-docs.git"
           git submodule update --init --depth 1 exaix-dev-docs
+
+      - name: "Init team submodule"
+        run: |
+          git config --local submodule.packages-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
+          git submodule update --init --depth 1 packages-team
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2

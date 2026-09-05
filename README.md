@@ -99,6 +99,10 @@ Every transition in this loop emits a typed, trace-linked event — that event s
 git clone https://github.com/dostark/exaix.git
 cd exaix
 deno task compile  # or use `deno task start` to run without compiling
+# Note: exaix-dev-docs, packages-team (Team-tier), and exaix-enterprise are private
+# submodules requiring separate access grants — this default clone gives you a full
+# Solo-edition checkout with those directories empty. See CONTRIBUTING.md § 4.2 for
+# how to initialize them once you have access.
 
 # 2. Configure LLM
 exactl config set ai.provider ollama
