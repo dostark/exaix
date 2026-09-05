@@ -224,6 +224,10 @@ export const DomainEventType = {
   // Wait state events
   WaitStateCreated: "wait_state.created",
   WaitStateResolved: "wait_state.resolved",
+  /** Emitted by `WaitStateCommands.transitionByToken` only when the caller supplies a
+   *  `resolvedBy` actor identity — the deterministic, journal-visible signal a policy-adherence
+   *  check reads to confirm a gate was resolved through the intended surface. */
+  WaitStateCommandResolved: "wait_state.command_resolved",
 
   // Session delegation events. Emitted today by SessionReturnWatcher: returned,
   // reconciled, scope_violation, token_rejected, budget_exceeded. The rest (briefed,

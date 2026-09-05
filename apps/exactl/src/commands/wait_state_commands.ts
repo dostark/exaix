@@ -16,6 +16,7 @@ import {
   WaitStateSchema,
   type WaitStateStatus,
 } from "@exaix/flow";
+import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IWaitStateListEntry {
@@ -180,10 +181,34 @@ export class WaitStateCommands extends BaseCommand {
         };
 
         await Deno.writeTextFile(filePath, JSON.stringify(updated, null, 2));
+        if (resolvedBy !== undefined) {
+          await this.logResolution(updated, action, resolvedBy);
+        }
         return updated;
       }
     }
 
     throw new Error(`wait state not found for resume token: ${resumeToken}`);
+  }
+
+  /** Journal-visible counterpart to the `metadata.resolvedBy` written above — otherwise the
+   *  attribution exists only in the wait-state file, not the activity journal audit tooling reads. */
+  private async logResolution(
+    updated: IWaitState,
+    action: WaitStateAction,
+    resolvedBy: string,
+  ): Promise<void> {
+    await this.display.info(
+      DomainEventType.WaitStateCommandResolved,
+      resolvedBy,
+      {
+        waitStateId: updated.waitStateId,
+        resumeToken: updated.resumeToken,
+        action,
+        status: updated.status,
+        resolvedBy,
+      },
+      updated.traceId,
+    );
   }
 }

@@ -9,8 +9,10 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { WaitStateCommands } from "../src/commands/wait_state_commands.ts";
 import type { IWaitState } from "@exaix/flow";
+import { DomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import type { JSONObject } from "@exaix/core/types";
 
 const TEST_TRACE = "trace-001";
 const TEST_WAIT_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -291,6 +293,57 @@ Deno.test("WaitStateCommands: reject with resolvedBy merges it into metadata", a
     const updated = await commands.reject(TEST_TOKEN, "Not approved", "user-simulator:adversarial");
     assertEquals(updated.status, "rejected");
     assertEquals(updated.metadata, { resolvedBy: "user-simulator:adversarial" });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("WaitStateCommands: approve with resolvedBy logs a WaitStateCommandResolved event to the activity journal", async () => {
+  const { context, tempDir, db, cleanup } = await createCliTestContext();
+  try {
+    const config = context.config.getAll();
+    const waitStatesDir = join(tempDir, config.paths.workspace!, config.paths.waitStates!);
+    await writeWaitState(waitStatesDir, makeWaitState());
+
+    const commands = new WaitStateCommands(context);
+    await commands.approve(TEST_TOKEN, "Looks good", "user-simulator:cooperative");
+    await db.waitForFlush();
+
+    const logs = db.instance.prepare(
+      "SELECT * FROM activity WHERE action_type = ?",
+    ).all(DomainEventType.WaitStateCommandResolved) as JSONObject[];
+
+    assertEquals(logs.length, 1);
+    const log = logs[0];
+    assertEquals(log.target, "user-simulator:cooperative");
+
+    const payload = JSON.parse(log.payload as string);
+    assertEquals(payload.waitStateId, TEST_WAIT_ID);
+    assertEquals(payload.resumeToken, TEST_TOKEN);
+    assertEquals(payload.action, "approve");
+    assertEquals(payload.status, "fulfilled");
+    assertEquals(payload.resolvedBy, "user-simulator:cooperative");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("WaitStateCommands: approve without resolvedBy logs no WaitStateCommandResolved event", async () => {
+  const { context, tempDir, db, cleanup } = await createCliTestContext();
+  try {
+    const config = context.config.getAll();
+    const waitStatesDir = join(tempDir, config.paths.workspace!, config.paths.waitStates!);
+    await writeWaitState(waitStatesDir, makeWaitState());
+
+    const commands = new WaitStateCommands(context);
+    await commands.approve(TEST_TOKEN, "Looks good");
+    await db.waitForFlush();
+
+    const logs = db.instance.prepare(
+      "SELECT * FROM activity WHERE action_type = ?",
+    ).all(DomainEventType.WaitStateCommandResolved);
+
+    assertEquals(logs.length, 0);
   } finally {
     await cleanup();
   }
