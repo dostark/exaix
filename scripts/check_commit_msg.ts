@@ -748,20 +748,23 @@ async function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): 
   };
 }
 
-async function isGitMergeCommit(): Promise<boolean> {
-  try {
-    const process = new Deno.Command("git", {
-      args: ["rev-parse", "--verify", "MERGE_HEAD"],
-      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
-      env: { LD_LIBRARY_PATH: "" },
-      stdout: "null",
-      stderr: "null",
-    });
-    const { code } = await process.output();
-    return code === 0;
-  } catch (_e) {
-    return false;
+export async function isGitMergeCommit(cwd?: Opt<string, Reason.OptionalContext>): Promise<boolean> {
+  // MERGE_HEAD only exists during a live, in-progress merge (the pre-commit/
+  // pre-merge-commit hook case, before the commit is finalized) — git deletes
+  // it the moment the merge commit lands. Checking out an already-committed
+  // merge commit later (e.g. CI's Gate 0, which re-derives the message from
+  // `git log -1` on a fresh checkout) never sees MERGE_HEAD, so relying on it
+  // alone made every real merge commit fail Gate 0 in CI despite passing
+  // locally. A merge commit is identifiable independent of that transient
+  // state by having 2+ parents on HEAD. Both checks go through `gitOut` so
+  // they resolve against `cwd`/`-C`, not an inherited GIT_DIR (see `gitOut`'s
+  // own doc comment for the hook-environment bug this guards against).
+  const mergeHead = await gitOut(["rev-parse", "--verify", "MERGE_HEAD"], cwd);
+  if (mergeHead) {
+    return true;
   }
+  const secondParent = await gitOut(["rev-parse", "--verify", "HEAD^2"], cwd);
+  return secondParent.length > 0;
 }
 
 /** CLI Entry point */

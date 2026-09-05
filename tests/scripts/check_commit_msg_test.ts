@@ -10,6 +10,7 @@ import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import {
   gitOut,
+  isGitMergeCommit,
   parseLedgerSymbols,
   parsePlanField,
   parsePlanStep,
@@ -1004,6 +1005,59 @@ describe("gitOut", () => {
       } finally {
         await Deno.remove(otherRepo, { recursive: true });
       }
+    } finally {
+      await Deno.remove(repoDir, { recursive: true });
+    }
+  });
+});
+
+describe("isGitMergeCommit", () => {
+  it("detects an already-committed merge commit by parent count, not just live MERGE_HEAD", async () => {
+    // Reproduces the live failure: MERGE_HEAD only exists during a live, in-progress
+    // merge (the local pre-commit/pre-merge-commit hook case) — git deletes it the
+    // moment the commit lands. CI's Gate 0 checks out an already-committed merge commit
+    // fresh and re-derives the message via `git log -1`, so MERGE_HEAD-only detection
+    // always reported false there, making every real merge commit fail the full
+    // structured-message check in CI despite passing locally.
+    const repoDir = await Deno.makeTempDir();
+    try {
+      const run = (args: string[]) =>
+        new Deno.Command("git", { args, cwd: repoDir, env: { LD_LIBRARY_PATH: "" } }).output();
+      // Explicit -b main: git init's default branch name depends on the environment's
+      // init.defaultBranch config (often "master"), so pin it for a deterministic test.
+      await run(["init", "-q", "-b", "main"]);
+      await run(["config", "user.email", "test@example.com"]);
+      await run(["config", "user.name", "Test"]);
+      await Deno.writeTextFile(`${repoDir}/file.txt`, "base\n");
+      await run(["add", "file.txt"]);
+      await run(["commit", "-q", "-m", "base"]);
+
+      assertEquals(
+        await isGitMergeCommit(repoDir),
+        false,
+        "a plain, non-merge commit must not be reported as a merge commit",
+      );
+
+      await run(["checkout", "-q", "-b", "feature"]);
+      await Deno.writeTextFile(`${repoDir}/file.txt`, "base\nfeature line\n");
+      await run(["add", "file.txt"]);
+      await run(["commit", "-q", "-m", "feature work"]);
+      await run(["checkout", "-q", "main"]);
+      await Deno.writeTextFile(`${repoDir}/other.txt`, "main-only\n");
+      await run(["add", "other.txt"]);
+      await run(["commit", "-q", "-m", "main-only work"]);
+      await run(["merge", "--no-ff", "-q", "-m", "merge feature into main", "feature"]);
+
+      // At this point MERGE_HEAD no longer exists (the merge already landed) — exactly
+      // the state a fresh CI checkout of the merge commit would see.
+      const mergeHeadStillPresent = await gitOut(["rev-parse", "--verify", "MERGE_HEAD"], repoDir);
+      assertEquals(mergeHeadStillPresent, "", "sanity: MERGE_HEAD must be gone after the merge commit lands");
+
+      assertEquals(
+        await isGitMergeCommit(repoDir),
+        true,
+        "an already-committed merge commit must still be detected via its second parent",
+      );
     } finally {
       await Deno.remove(repoDir, { recursive: true });
     }
