@@ -70,10 +70,12 @@ import { EvalCommands } from "./commands/eval_commands.ts";
 // Extracted action handlers
 import {
   handleRequestAnalyze,
+  handleRequestClarify,
   handleRequestCreate,
   handleRequestList,
   handleRequestShow,
   type IRequestAnalyzeOptions,
+  type IRequestClarifyOptions,
   type IRequestCreateOptions,
   type IRequestListOptions,
 } from "./command_builders/request_actions.ts";
@@ -464,6 +466,19 @@ export const __test_command = new Command()
           .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options: IRequestAnalyzeOptions, ...id: string[]) => {
             await handleRequestAnalyze({ requestCommands, display }, id[0], options);
+          }),
+      )
+      .command(
+        "clarify <id:string>",
+        new Command()
+          .description("Answer pending clarification questions, or force proceed/cancel")
+          .option("--answer <pair:string>", "Answer in id=text form (repeatable)", { collect: true })
+          .option("--proceed", "Force proceed with the current best-effort request body")
+          .option("--cancel", "Cancel clarification and re-queue the request as-is")
+          .option(CLI_OPTION_WAIT_RESOLVED_BY, "Actor identity resolving the clarification wait state")
+          .option("--json", CLI_OPTION_JSON_HELP)
+          .action(async (options: IRequestClarifyOptions, ...id: string[]) => {
+            await handleRequestClarify({ requestCommands, display, provider: fullContext.provider }, id[0], options);
           }),
       ),
   )

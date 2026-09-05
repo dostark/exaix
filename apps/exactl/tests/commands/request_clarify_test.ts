@@ -83,6 +83,8 @@ interface IClarifyTestSetup {
   commands: RequestCommands;
   cleanup: () => Promise<void>;
   filePath: string;
+  tempDir: string;
+  waitStatesDir: string;
 }
 
 async function setupClarifyTest(options: IClarifyTestSetupOptions): Promise<IClarifyTestSetup> {
@@ -99,6 +101,8 @@ async function setupClarifyTest(options: IClarifyTestSetupOptions): Promise<ICla
     commands: new RequestCommands(context),
     cleanup,
     filePath,
+    tempDir,
+    waitStatesDir: join(tempDir, config.paths.workspace, config.paths.waitStates ?? "WaitStates"),
   };
 }
 
@@ -201,6 +205,45 @@ Deno.test("[request clarify] cancel reverts session", async () => {
     // Request file status should now be PENDING (re-queued)
     const content = await Deno.readTextFile(setup.filePath);
     assertEquals(content.includes(RequestStatus.PENDING), true);
+  } finally {
+    await setup.cleanup();
+  }
+});
+
+Deno.test("[request clarify] proceed resolves a real pending clarification wait state with resolvedBy attribution", async () => {
+  const requestId = "req-clarify-005";
+  const setup = await setupClarifyTest({
+    requestId,
+    session: makeSession({ requestId }),
+  });
+  try {
+    const traceDir = join(setup.waitStatesDir, `trace-${requestId}`);
+    await Deno.mkdir(traceDir, { recursive: true });
+    const waitStatePath = join(traceDir, "clarification-gate.json");
+    await Deno.writeTextFile(
+      waitStatePath,
+      JSON.stringify({
+        waitStateId: "550e8400-e29b-41d4-a716-446655440010",
+        traceId: `trace-${requestId}`,
+        kind: "clarification",
+        status: "pending",
+        artifactPath: `Workspace/WaitStates/trace-${requestId}/clarification-gate.json`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        resumeToken: "550e8400-e29b-41d4-a716-446655440011",
+        metadata: {},
+      }),
+    );
+
+    const result = await setup.commands.clarify(requestId, {
+      proceed: true,
+      resolvedBy: "user-simulator:cooperative",
+    });
+    assertEquals(result.status, ClarifyResultStatus.COMPLETE);
+
+    const updated = JSON.parse(await Deno.readTextFile(waitStatePath));
+    assertEquals(updated.status, "fulfilled");
+    assertEquals(updated.metadata.resolvedBy, "user-simulator:cooperative");
   } finally {
     await setup.cleanup();
   }

@@ -151,6 +151,29 @@ Deno.test("request list shows 'No requests found' when empty", async () => {
   });
 });
 
+Deno.test("request clarify parses --answer and --resolved-by and forwards them to requestCommands.clarify", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.requestCommands.clarify = (id: string, options?: { [key: string]: any }) => {
+      called = true;
+      assertEquals(id, "req-clarify-cli");
+      assertEquals(options?.answers, { r1q1: "Fix the search endpoint" });
+      assertEquals(options?.resolvedBy, "user-simulator:cooperative");
+      return Promise.resolve({ status: "questions", round: 2 } as any);
+    };
+    await mod.__test_command.parse([
+      FlowInputSource.REQUEST,
+      "clarify",
+      "req-clarify-cli",
+      "--answer",
+      "r1q1=Fix the search endpoint",
+      "--resolved-by",
+      "user-simulator:cooperative",
+    ]);
+    assert(called);
+  });
+});
+
 Deno.test("request list prints entries when present", async () => {
   await withTestMod(async (mod, ctx) => {
     ctx.requestCommands.list = () =>

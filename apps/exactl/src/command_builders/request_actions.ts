@@ -10,6 +10,7 @@
 import type { RequestCommands } from "../commands/request_commands.ts";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import {
+  DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_NONE_LABEL,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   FlowInputSource,
@@ -21,12 +22,18 @@ import type { RequestStatus } from "@exaix/core/status";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
 import type { IDisplayService } from "@exaix/core/types";
+import type { IModelProvider } from "@exaix/ai";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ClarificationEngine } from "@exaix/quality-gate";
+import { createOutputValidator } from "@exaix/tool-runtime";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
   display: IDisplayService;
+  /** Real model provider — only needed by `handleRequestClarify` to construct a live
+   *  `ClarificationEngine` when answers are supplied. Absent in every other action. */
+  provider?: Opt<IModelProvider, Reason.OptionalDependency>;
 }
 
 export interface IRequestCreateOptions {
@@ -62,6 +69,15 @@ export interface IRequestAnalyzeOptions {
   engine?: string;
   json?: boolean;
   force?: boolean;
+}
+
+export interface IRequestClarifyOptions {
+  /** Answer in `id=text` form (repeatable via CLI `--answer`). */
+  answer?: string[];
+  proceed?: boolean;
+  cancel?: boolean;
+  resolvedBy?: string;
+  json?: boolean;
 }
 
 /**
@@ -344,5 +360,65 @@ function printRequestResult(
         toSafeJson(analysisData) as Record<string, JSONValue>,
       );
     }
+  }
+}
+
+/** Parses `["id=text", ...]` CLI pairs into a `Record<id, text>`, splitting on the first `=`
+ *  only (an answer's own text may itself contain `=`). */
+function parseAnswerPairs(pairs: string[]): Record<string, string> {
+  const answers: Record<string, string> = {};
+  for (const pair of pairs) {
+    const separatorIndex = pair.indexOf("=");
+    if (separatorIndex <= 0) continue;
+    const id = pair.slice(0, separatorIndex);
+    const text = pair.slice(separatorIndex + 1);
+    answers[id] = text;
+  }
+  return answers;
+}
+
+/** Handle request clarify action: answers, forced proceed/cancel, or a real engine round. */
+export async function handleRequestClarify(
+  context: IRequestActionContext,
+  id: string,
+  options: IRequestClarifyOptions,
+): Promise<void> {
+  const { requestCommands, display, provider } = context;
+
+  try {
+    const answers = options.answer ? parseAnswerPairs(options.answer) : undefined;
+    const engine = answers && provider
+      ? new ClarificationEngine(provider, createOutputValidator(), { maxRounds: DEFAULT_MAX_CLARIFICATION_ROUNDS })
+      : undefined;
+
+    const result = await requestCommands.clarify(id, {
+      answers,
+      proceed: options.proceed,
+      cancel: options.cancel,
+      resolvedBy: options.resolvedBy,
+      engine,
+    });
+
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
+    display.info("request.clarify", id, {
+      status: result.status,
+      round: result.round,
+      score: result.score,
+    } as Record<string, JSONValue>);
+
+    if (result.questions) {
+      for (const question of result.questions) {
+        display.info("request.clarify.question", question.id, { question: question.question });
+      }
+    }
+  } catch (error) {
+    display.error("cli.error", "request clarify", {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    Deno.exit(1);
   }
 }

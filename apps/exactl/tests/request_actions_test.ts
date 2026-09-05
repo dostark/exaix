@@ -8,18 +8,30 @@
  * correctly include trace_id, agent assignments, and token usage statistics.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { TEST_MODEL_ANTHROPIC, TEST_PROVIDER_ID_ANTHROPIC } from "@exaix/testing";
 import {
   handleRequestAnalyze,
+  handleRequestClarify,
   handleRequestCreate,
   handleRequestShow,
   type IRequestActionContext,
 } from "../src/command_builders/request_actions.ts";
+import { ClarifyResultStatus } from "@exaix/core";
+import { MockLLMProvider } from "@exaix/ai/providers";
+import { MockStrategy } from "@exaix/core";
+import type { IClarifyOptions } from "../src/handlers/request_clarify_handler.ts";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import { EventLogger, type IEventLoggerConfig } from "@exaix/core/logger";
 
 import { LogLevel } from "@exaix/core";
+
+interface ICapturedClarifyOptions {
+  answers?: Record<string, string>;
+  proceed?: boolean;
+  resolvedBy?: string;
+  engine?: IClarifyOptions["engine"];
+}
 
 type TestPayload = {
   input_tokens?: number;
@@ -292,4 +304,75 @@ Deno.test("handleRequestAnalyze: hybrid engine routes to HYBRID mode", async () 
   if (calls[0].c) {
     assertEquals(calls[0].c.mode, "hybrid");
   }
+});
+
+Deno.test("handleRequestClarify: parses --answer pairs and constructs a real engine when a provider is present", async () => {
+  const { display, calls } = createDisplay();
+  let capturedOptions: ICapturedClarifyOptions = {};
+  const requestCommands = {
+    clarify: (_id: string, options: ICapturedClarifyOptions) => {
+      capturedOptions = options;
+      return Promise.resolve({ status: ClarifyResultStatus.QUESTIONS, round: 2 });
+    },
+  };
+  const context: IRequestActionContext = {
+    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
+    display,
+    provider: new MockLLMProvider(MockStrategy.SCRIPTED, { responses: ["ok"] }),
+  };
+
+  await handleRequestClarify(context, "trace-6", {
+    answer: ["r1q1=Fix the search endpoint", "r1q2=Return 400 on empty query"],
+    resolvedBy: "user-simulator:cooperative",
+  });
+
+  assertEquals(capturedOptions.answers, {
+    r1q1: "Fix the search endpoint",
+    r1q2: "Return 400 on empty query",
+  });
+  assertEquals(capturedOptions.resolvedBy, "user-simulator:cooperative");
+  assertExists(capturedOptions.engine);
+  assertEquals(calls[0].a, "request.clarify");
+});
+
+Deno.test("handleRequestClarify: proceed/cancel need no engine and no answers", async () => {
+  const { display } = createDisplay();
+  let capturedOptions: ICapturedClarifyOptions = {};
+  const requestCommands = {
+    clarify: (_id: string, options: ICapturedClarifyOptions) => {
+      capturedOptions = options;
+      return Promise.resolve({ status: ClarifyResultStatus.COMPLETE });
+    },
+  };
+  const context: IRequestActionContext = {
+    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
+    display,
+  };
+
+  await handleRequestClarify(context, "trace-7", { proceed: true });
+
+  assertEquals(capturedOptions.proceed, true);
+  assertEquals(capturedOptions.answers, undefined);
+  assertEquals(capturedOptions.engine, undefined);
+});
+
+Deno.test("handleRequestClarify: default displays pending questions", async () => {
+  const { display, calls } = createDisplay();
+  const requestCommands = {
+    clarify: (_id: string, _options: ICapturedClarifyOptions) =>
+      Promise.resolve({
+        status: ClarifyResultStatus.QUESTIONS,
+        round: 1,
+        questions: [{ id: "r1q1", question: "What component needs fixing?" }],
+      }),
+  };
+  const context: IRequestActionContext = {
+    requestCommands: Object.assign(Object.create(RequestCommands.prototype), requestCommands),
+    display,
+  };
+
+  await handleRequestClarify(context, "trace-8", {});
+
+  assertEquals(calls[0].a, "request.clarify");
+  assertEquals(calls[1].a, "request.clarify.question");
 });

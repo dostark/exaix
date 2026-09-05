@@ -28,6 +28,7 @@ import {
 import { join } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import { WaitStateSchema } from "@exaix/flow";
+import { WaitStateCommands } from "./wait_state_commands.ts";
 
 /** All operations are logged to activity_log with actor='human'. */
 export class RequestCommands extends BaseCommand {
@@ -35,6 +36,7 @@ export class RequestCommands extends BaseCommand {
   private listHandler: RequestListHandler;
   private showHandler: RequestShowHandler;
   private clarifyHandler: RequestClarifyHandler;
+  private waitStateCommands: WaitStateCommands;
 
   constructor(
     context: ICommandContext,
@@ -44,6 +46,7 @@ export class RequestCommands extends BaseCommand {
     this.listHandler = new RequestListHandler(context);
     this.showHandler = new RequestShowHandler(context);
     this.clarifyHandler = new RequestClarifyHandler(context);
+    this.waitStateCommands = new WaitStateCommands(context);
   }
 
   /** Internal helper for request promotion or manual trigger. */
@@ -96,6 +99,7 @@ export class RequestCommands extends BaseCommand {
     if (!options?.onClarificationResolved) {
       const cfg = this.context.config.getAll();
       const waitStatesRoot = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates ?? "WaitStates");
+      const resolvedBy = options?.resolvedBy;
       const resolveCallback = async (traceId: string) => {
         const waitDir = join(waitStatesRoot, traceId);
         try {
@@ -109,12 +113,9 @@ export class RequestCommands extends BaseCommand {
               continue;
             }
             if (parsed.kind === "clarification" && parsed.status === "pending") {
-              const updated = WaitStateSchema.parse({
-                ...parsed,
-                status: "fulfilled",
-                updatedAt: new Date().toISOString(),
-              });
-              await Deno.writeTextFile(join(waitDir, entry.name), JSON.stringify(updated, null, 2));
+              // Route through WaitStateCommands (not a direct file write) so this resolution
+              // carries the same resolvedBy audit attribution as every other wait-state gate.
+              await this.waitStateCommands.approve(parsed.resumeToken, undefined, resolvedBy);
             }
           }
         } catch {

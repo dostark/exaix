@@ -46,6 +46,10 @@ export interface IClarifyOptions {
   engine?: IClarificationEngineForCLI;
   /** Optional callback invoked when a clarification wait state should be resolved. */
   onClarificationResolved?: (traceId: string) => Promise<void>;
+  /** Actor identity resolving the clarification wait state, forwarded to the default
+   *  `onClarificationResolved` callback for audit attribution. Ignored when the caller
+   *  supplies its own `onClarificationResolved`. */
+  resolvedBy?: string;
 }
 
 export interface IClarifyResult {
