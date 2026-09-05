@@ -1,0 +1,60 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = []
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Interactive-pack provider-live cell: unlike claude-cli-delegate-all.toml (which disables
+# quality_gate entirely for swe_tasks scenarios that don't care about clarification), this one
+# turns it on so a real clarification round can be driven against the real `claude` CLI —
+# billed against a Claude Pro/Max subscription (flat monthly rate), no ANTHROPIC_API_KEY or any
+# metered HTTP API call (allow_net is empty; CliDelegateModelProvider strips
+# ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN from the spawned CLI's env).
+[ai]
+provider = "claude-cli"
+model = "claude-sonnet-5"
+
+[models.default]
+provider = "claude-cli"
+model = "claude-sonnet-5"
+timeout_ms = 300000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+# mode = "heuristic" makes the initial NEEDS_CLARIFICATION decision deterministic (no LLM call,
+# no risk of the LLM instead choosing PROCEED/AUTO_ENRICH for a borderline score). Once a
+# clarification session starts, RequestQualityGate.startClarification() always uses the real
+# ClarificationEngine when a provider is present, regardless of assessment mode — so round-1
+# questions and the answer-judgment call are still real, live LLM calls.
+[quality_gate]
+enabled = true
+mode = "heuristic"
+
+[request_analysis]
+enabled = true
+
+# Pin the curated list to claude-cli so a size-M request cannot resolve to any other
+# (metered) provider via ProviderSelector's scoring path — mirrors the Phase 134 Solo
+# curated-list pin used by the other cli-delegate configs, adapted to this provider type.
+[model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["claude-cli"]
+
+[cli_delegate]
+enabled = true
+tool = "claude-code"
+model = "claude-sonnet-5"

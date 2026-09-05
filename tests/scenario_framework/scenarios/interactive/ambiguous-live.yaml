@@ -1,0 +1,124 @@
+schema_version: "1.0.0"
+id: "interactive-ambiguous-live"
+title: "Interactive pack — ambiguous persona, live round"
+pack: "interactive"
+scoring: "additive"
+tags: ["persona:ambiguous", "provider-live"]
+request_fixture: "fixtures/requests/interactive/cooperative-ambiguous.md"
+portals: []
+mode_support: ["auto"]
+matrix:
+  cells:
+    - tool: "claude-code"
+      provider: "$CELL_PROVIDER"
+      config: "configs/claude-cli-delegate-interactive.toml"
+      requires_bin: "claude"
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--agent-role", "senior-coder"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+  - id: "wait-for-clarification-session"
+    type: "wait-for-file"
+    args: ["**/Requests/*_clarification.json"]
+    timeout_sec: 60
+    output_criteria:
+      - id: "clarification-session-produced"
+        kind: "file-found"
+        path_pattern: "**/Requests/*_clarification.json"
+  - id: "drive-clarification-round"
+    type: "shell"
+    command: "bash"
+    args:
+      - "-c"
+      - |
+          set -e
+          # CliDelegateModelProvider prints unconditional diagnostic console.log lines (e.g.
+          # "[CliDelegateModelProvider] generate start: ...") that land on this CLI process's
+          # own stdout whenever it calls a real provider — sed strips everything before the
+          # JSON payload's opening brace so downstream jq/file consumers see clean JSON.
+          QUESTIONS_RAW=$("$FRAMEWORK_HOME/bin/exactl" request clarify "$REQUEST_ID" --json)
+          QID=$(echo "$QUESTIONS_RAW" | sed -n '/^{/,$p' | jq -r '.questions[0].id')
+          ANSWER_RAW=$("$FRAMEWORK_HOME/bin/exactl" request clarify "$REQUEST_ID" \
+            --answer "$QID=Not totally sure, honestly. Just make it better I guess -- whatever seems reasonable to you is probably fine." \
+            --resolved-by "user-simulator:ambiguous" \
+            --json)
+          echo "$ANSWER_RAW" | sed -n '/^{/,$p' > "$WORKSPACE_ROOT/clarify-round-result.json"
+          cat "$WORKSPACE_ROOT/clarify-round-result.json"
+    timeout_sec: 60
+    output_criteria:
+      - id: "clarification-round-driven"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "force-resolve-clarification"
+    type: "shell"
+    command: "bash"
+    args:
+      - "-c"
+      - |
+          set -e
+          # The real engine did not converge in one round (a genuine, recorded finding — see
+          # clarify-round-result.json's status). An operator forcing the request through anyway
+          # is real production behavior (--proceed), and the only way to actually exercise the
+          # resolvedBy-carrying resolution path this scenario is verifying: `converged` stays
+          # whatever the answer round already recorded; this step only proves resolution.
+          "$FRAMEWORK_HOME/bin/exactl" request clarify "$REQUEST_ID" \
+            --proceed \
+            --resolved-by "user-simulator:ambiguous" \
+            --json > /dev/null
+    timeout_sec: 30
+    output_criteria:
+      - id: "clarification-force-resolved"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "check-interactive-result"
+    type: "shell"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "$FRAMEWORK_HOME/runner/check_interactive_result.ts"
+      - "$WORKSPACE_ROOT/clarify-round-result.json"
+      - "$WORKSPACE_ROOT/Workspace/WaitStates/$TRACE_ID"
+      - "user-simulator:ambiguous"
+      - "ambiguous"
+      - "$FRAMEWORK_HOME/../../.exa/eval.db"
+    output_criteria:
+      - id: "interactive-result-recorded"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

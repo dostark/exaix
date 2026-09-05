@@ -40,6 +40,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "flow_blueprints",
     "framework_test",
     "integration_e2e",
+    "interactive",
     "mcp_server",
     "mcp_tools_extended",
     "portal_knowledge",
