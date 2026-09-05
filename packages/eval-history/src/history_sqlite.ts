@@ -62,6 +62,9 @@ interface IRunRow {
   failure_classes: string | null;
   score_threshold: number | null;
   trials: number;
+  /** The multi-trial metric — a real DB column, previously unexposed on this type even
+   *  though `SELECT *` always returned it. */
+  pass_pow_k: number | null;
   exactl_version: string | null;
   schema_version: string | null;
   duration_ms: number | null;

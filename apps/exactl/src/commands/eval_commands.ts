@@ -98,6 +98,16 @@ export interface IRobustnessRow {
   robustnessGap: number | undefined;
 }
 
+/** One persona's convergence/adherence/pass^k aggregate. */
+export interface IInteractiveRow {
+  persona: string;
+  runCount: number;
+  meanRoundsToConverge: number | undefined;
+  nonConvergenceRate: number | undefined;
+  policyAdherenceRate: number | undefined;
+  meanPassPowK: number | undefined;
+}
+
 interface ICostReportRunRow {
   cell_id: string | null;
   provider: string | null;
@@ -358,8 +368,13 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
+    if (view === "interactive") {
+      this.renderInteractiveReport(options);
+      return;
+    }
+
     console.log(
-      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external, robustness`,
+      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external, robustness, interactive`,
     );
   }
 
@@ -387,6 +402,34 @@ export class EvalCommands extends BaseCommand {
         console.log(JSON.stringify(rows, null, 2));
       } else {
         renderRobustnessTable(rows);
+      }
+    } finally {
+      store.close();
+    }
+  }
+
+  /** `--view interactive`: per-persona convergence/adherence/pass^k, from runs tagged
+   *  `persona:<name>` / `rounds:<N>` / `converged:true|false` / `adherent:true|false`. */
+  private renderInteractiveReport(options: {
+    scenario?: string;
+    last?: number;
+    dbPath?: string;
+    format?: string;
+  }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
+      const rows = computeInteractiveRows(runs);
+      if (rows.length === 0) {
+        console.log("No interactive-pack run data found for interactive report.");
+        return;
+      }
+      if (options.format === JSON_FORMAT) {
+        console.log(JSON.stringify(rows, null, 2));
+      } else {
+        renderInteractiveTable(rows);
       }
     } finally {
       store.close();
@@ -1008,6 +1051,104 @@ function renderRobustnessTable(rows: IRobustnessRow[]): void {
       } ${padRight(formatNumberOrAbsent(row.utilityUnderAttack, 3), 9)} ${
         padRight(formatNumberOrAbsent(row.attackSuccessRate, 3), 10)
       } ${padRight(formatNumberOrAbsent(row.robustnessGap, 3), 7)}`,
+    );
+  }
+}
+
+/** Structural subset of the eval-history run row the interactive view needs. */
+interface IInteractiveRunRow {
+  tags: string | null;
+  pass_pow_k: number | null;
+}
+
+interface IInteractiveGroupAcc {
+  runCount: number;
+  rounds: number[];
+  converged: boolean[];
+  adherent: boolean[];
+  passPowK: number[];
+}
+
+const PERSONA_TAG_PREFIX = "persona:";
+const ROUNDS_TAG_PREFIX = "rounds:";
+const CONVERGED_TAG_PREFIX = "converged:";
+const ADHERENT_TAG_PREFIX = "adherent:";
+
+/** Extracts a `<prefix>true|false` tag's boolean value; absent when the tag itself is absent. */
+function findBooleanTag(tags: string[], prefix: string): boolean | undefined {
+  const tag = tags.find((t) => t.startsWith(prefix));
+  return tag === undefined ? undefined : tag.slice(prefix.length) === "true";
+}
+
+function accumulateInteractiveRun(
+  groups: Map<string, IInteractiveGroupAcc>,
+  run: IInteractiveRunRow,
+): void {
+  const tags = parseRunTags(run.tags);
+  const persona = tags.find((t) => t.startsWith(PERSONA_TAG_PREFIX))?.slice(PERSONA_TAG_PREFIX.length);
+  if (!persona) return;
+
+  const group = groups.get(persona) ?? { runCount: 0, rounds: [], converged: [], adherent: [], passPowK: [] };
+  group.runCount++;
+
+  const roundsTag = tags.find((t) => t.startsWith(ROUNDS_TAG_PREFIX));
+  const rounds = roundsTag !== undefined ? Number(roundsTag.slice(ROUNDS_TAG_PREFIX.length)) : undefined;
+  if (rounds !== undefined && !Number.isNaN(rounds)) group.rounds.push(rounds);
+
+  const converged = findBooleanTag(tags, CONVERGED_TAG_PREFIX);
+  if (converged !== undefined) group.converged.push(converged);
+
+  const adherent = findBooleanTag(tags, ADHERENT_TAG_PREFIX);
+  if (adherent !== undefined) group.adherent.push(adherent);
+
+  if (run.pass_pow_k !== null) group.passPowK.push(run.pass_pow_k);
+
+  groups.set(persona, group);
+}
+
+function finalizeInteractiveRow(persona: string, group: IInteractiveGroupAcc): IInteractiveRow {
+  return {
+    persona,
+    runCount: group.runCount,
+    meanRoundsToConverge: group.rounds.length > 0 ? mean(group.rounds) : undefined,
+    nonConvergenceRate: group.converged.length > 0
+      ? group.converged.filter((c) => !c).length / group.converged.length
+      : undefined,
+    policyAdherenceRate: group.adherent.length > 0
+      ? group.adherent.filter((a) => a).length / group.adherent.length
+      : undefined,
+    meanPassPowK: group.passPowK.length > 0 ? mean(group.passPowK) : undefined,
+  };
+}
+
+/** Groups runs by their `persona:<name>` tag and aggregates `rounds:<N>` / `converged:` /
+ *  `adherent:` tags plus the pre-existing multi-trial `pass_pow_k` column, per persona. A run
+ *  with no `persona:` tag is excluded, not counted against any group. */
+export function computeInteractiveRows(runs: IInteractiveRunRow[]): IInteractiveRow[] {
+  const groups = new Map<string, IInteractiveGroupAcc>();
+  for (const run of runs) {
+    accumulateInteractiveRun(groups, run);
+  }
+  return [...groups.entries()].map(([persona, group]) => finalizeInteractiveRow(persona, group));
+}
+
+/** Render the interactive report: per-persona rounds-to-converge, non-convergence rate,
+ *  policy-adherence rate, and pass^k. */
+function renderInteractiveTable(rows: IInteractiveRow[]): void {
+  console.log("Interactive Pack Report (per persona)");
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Persona", 14)} ${padRight("Runs", 6)} ${padRight("MeanRounds", 11)} ${padRight("NonConverge", 12)} ${
+      padRight("Adherence", 10)
+    } ${padRight("Pass^K", 8)}`,
+  );
+  for (const row of rows) {
+    console.log(
+      `  ${padRight(row.persona, 14)} ${padRight(String(row.runCount), 6)} ${
+        padRight(formatNumberOrAbsent(row.meanRoundsToConverge, 3), 11)
+      } ${padRight(formatNumberOrAbsent(row.nonConvergenceRate, 3), 12)} ${
+        padRight(formatNumberOrAbsent(row.policyAdherenceRate, 3), 10)
+      } ${padRight(formatNumberOrAbsent(row.meanPassPowK, 3), 8)}`,
     );
   }
 }
