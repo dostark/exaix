@@ -232,9 +232,13 @@ export class RequestProcessor {
       inferAcceptanceCriteria: this.config.request_analysis?.infer_acceptance_criteria,
     };
     const outputValidator = processorConfig.outputValidator ?? createOutputValidator();
+    // Falls back to ctx.provider so LLM/HYBRID modes escalate in production (main.ts never
+    // passes testProvider). Kept separate from this.testProvider below, which also gates
+    // selectProvider()'s real per-request routing bypass and must stay undefined in production.
+    const defaultProvider = processorConfig.testProvider ?? ctx.provider;
     this.analyzer = processorConfig.testAnalyzer ?? new RequestAnalyzer(
       analyzerConfig,
-      this.testProvider,
+      defaultProvider,
       outputValidator,
       this.db,
       this.logger,
@@ -247,7 +251,7 @@ export class RequestProcessor {
     this.qualityGate = processorConfig.testQualityGate ??
       buildRequestQualityGateFromConfig(
         this.config.quality_gate ?? {},
-        this.testProvider,
+        defaultProvider,
         outputValidator,
         this.logger,
       );

@@ -7,11 +7,12 @@
  * @related-files ["packages/request/src/processor.ts", "packages/quality-gate/src/request_quality_gate.ts"]
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
 import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   type IRequestQualityAssessment,
   RequestQualityLevel,
@@ -26,6 +27,7 @@ import {
   createStubDisplay,
   createStubGit,
   initTestDbService,
+  makeGenerateResult,
 } from "@exaix/testing";
 import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
@@ -373,6 +375,59 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
     // before the processor reached blueprint lookup.
     const content = await Deno.readTextFile(filePath);
     assertEquals(content.includes(RequestStatus.REFINING), true);
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor] production wiring: context.provider reaches the quality gate's LLM assessor without an explicit testProvider override", async () => {
+  const env = await makeEnv();
+  try {
+    let callCount = 0;
+    const provider: IModelProvider = {
+      id: "wiring-check-provider",
+      generate: (_prompt: string) => {
+        callCount++;
+        return Promise.resolve(makeGenerateResult(JSON.stringify({
+          score: 30,
+          level: RequestQualityLevel.POOR,
+          issues: [],
+          recommendation: RequestQualityRecommendation.NEEDS_CLARIFICATION,
+        })));
+      },
+    };
+    const cfgPatch = {
+      ...env.config,
+      quality_gate: {
+        enabled: true,
+        mode: QualityGateMode.LLM,
+        auto_enrich: false,
+        block_unactionable: false,
+        max_clarification_rounds: 5,
+        thresholds: { minimum: 20, enrichment: 50, proceed: 70 },
+      },
+    };
+    const context: IApplicationContext = {
+      config: createStubConfig(cfgPatch),
+      db: env.db,
+      provider,
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
+    };
+    const filePath = makeRequestFile(env.requestsDir, "fix it", { requestId: "req-wiring-001" });
+
+    // Deliberately mirrors apps/daemon/main.ts's real RequestProcessor construction, which
+    // never passes testProvider — only context.provider. No testQualityGate injection either,
+    // so this exercises the real buildRequestQualityGateFromConfig() construction path.
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      agentRunner: new AgentRunner(provider),
+    });
+
+    await processor.process(filePath);
+
+    assert(callCount > 0, "the context's real provider must reach the quality gate's LLM assessor");
   } finally {
     await env.cleanup();
   }
