@@ -83,21 +83,32 @@ are:
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pre-commit` (Gate 0)         | Blocks direct commits on `main`                                                                                                                                                                                                                                                                                                                |
 | `pre-commit` (numbered gates) | Format, lint, style/boundaries, test placement, magic values, doc/manifest sync, markdown lint, complexity, architecture, docs validation, tool-result parity, event strings, skill/manifest/config checks, and more — see `.git/hooks/pre-commit` for the exact, current list; a fixed gate count here would drift every time a gate is added |
-| `pre-push`                    | Regenerate `.copilot/manifest.json` (amends the commit only if it substantively changed), auto-push the `exaix-dev-docs` submodule first if its pointer changed, full type-check (packages/ + apps/ + tests/), security regression tests                                                                                                       |
+| `pre-push`                    | Regenerate `.copilot/manifest.json` (amends the commit only if it substantively changed), auto-push the `exaix-dev-docs` and `packages-team` submodules first if their pointers changed, full type-check (packages/ + apps/ + tests/), security regression tests                                                                               |
 | `pre-merge-commit`            | Regenerate `.copilot/manifest.json` before merge commits                                                                                                                                                                                                                                                                                       |
 
 The `pre-push` hook is the last gate before code leaves your machine, and it runs in this
 order: (1) regenerate `.copilot/manifest.json` — amends the current commit only if the
 regenerated manifest substantively changed (a `generated_at` timestamp-only diff is
-restored and skipped); (2) if the `exaix-dev-docs` gitlink changed, verify the submodule
-has no uncommitted changes and a configured upstream, then push it to its own remote
-_before_ the parent repo's commits are sent — this ordering matters, because CI's
-`git submodule update` on the parent's new HEAD would fail to resolve a submodule commit
-that only exists locally; (3) `deno check packages/ apps/ tests/` to catch type errors in
-ALL files (not just `apps/daemon/main.ts`); (4) the `[security]`-filtered regression suite
-across `tests/`. There is no "run only the tests for your changed files" step — the type
-check and security suite always run in full. If any step fails, the push (including the
-submodule push) is blocked.
+restored and skipped); (2) for each of `exaix-dev-docs` and `packages-team`, if that
+submodule's gitlink changed, verify the submodule has no uncommitted changes and a
+configured upstream, then push it to its own remote _before_ the parent repo's commits
+are sent — this ordering matters, because CI's `git submodule update` on the parent's new
+HEAD would fail to resolve a submodule commit that only exists locally (`exaix-enterprise`
+is deliberately excluded from this check: CI never fetches it); (3) a full `deno check`
+across `packages/`, `apps/`, and `tests/` to catch type errors in ALL files (not just
+`apps/daemon/main.ts`); (4) the `[security]`-filtered regression suite across `tests/`.
+There is no "run only the tests
+for your changed files" step — the type check and security suite always run in full. If
+any step fails, the push (including either submodule push) is blocked.
+
+**Submodule access:** `exaix-dev-docs`, `packages-team` (Team-tier, BSL — backed by the
+separate `exaix-team` repo), and `exaix-enterprise` are all private submodules. Cloning
+the parent repo alone does not grant read access to any of them — a contributor needs a
+separate, explicit access grant to each before `git submodule update --init` can populate
+it (see `packages-team/README.md` for the current access-grant policy on that one). `git
+clone` without `--recurse-submodules` still works and gives you a full Solo-edition
+checkout; the `exaix-dev-docs/`, `packages-team/`, and `exaix-enterprise/` directories
+simply stay empty until you have access and initialize them.
 
 | Hook         | Purpose                               |
 | ------------ | ------------------------------------- |

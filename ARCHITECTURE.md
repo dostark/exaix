@@ -37,7 +37,7 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 ## Edition Model Overview
 
-> **Current Status (June 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `packages-team/` (BSL) lives in the same repo; `exaix-enterprise/` is a private submodule. Edition-specific code is never loaded into Solo builds.
+> **Current Status (September 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `packages-team/` (BSL) and `exaix-enterprise/` (Enterprise) are both private submodules, mounted at their existing in-repo paths (Phase 171 converted `packages-team/` from a plain workspace member to a submodule backed by its own `exaix-team` repo). Edition-specific code is never loaded into Solo builds.
 
 Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
 
@@ -49,7 +49,7 @@ Exaix follows a **three-tier edition model** served by a single **`IEditionCompo
 │ │  apps/daemon · apps/exactl · apps/tui · apps/mcp-server│ │
 │ └────────────────────────────────────────────────────────┘ │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │  packages-team/  (BSL — Team+Enterprise)               │ │
+│ │  packages-team/  (private submodule, BSL — Team+Ent.)  │ │
 │ └────────────────────────────────────────────────────────┘ │
 │ ┌────────────────────────────────────────────────────────┐ │
 │ │  exaix-enterprise/  (private submodule — Enterprise)   │ │
@@ -251,7 +251,7 @@ package-level configuration and restart/failure semantics:
 - Collaboration features in Team+ (🔵 Team)
 - Governance and compliance features in Enterprise (🟣 Enterprise)
 - **Composition seam:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for paid capabilities; `ICapabilityModule` registers hooks per seam
-- **Option-C layout:** `packages/` (MIT) · `packages-team/` (BSL, same repo) · `exaix-enterprise/` (private submodule)
+- **Option-C layout:** `packages/` (MIT) · `packages-team/` (private submodule, BSL) · `exaix-enterprise/` (private submodule)
 - **Solo defaults:** `SoloComposer` with `AllowAllAuthorizer` — zero paid code in Solo builds
 - **Edition build:** `build:solo|team|enterprise` selects entry point + prefix via `scripts/ci.ts`
 - **Leak-guard:** `scripts/leak_guard.ts` blocks Enterprise paths and proprietary headers from OSS publish targets
