@@ -9,7 +9,13 @@
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { DefaultWaitStateTransitionPolicy, type IWaitState, type WaitStateAction, WaitStateSchema } from "@exaix/flow";
+import {
+  DefaultWaitStateTransitionPolicy,
+  type IWaitState,
+  type WaitStateAction,
+  WaitStateSchema,
+  type WaitStateStatus,
+} from "@exaix/flow";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IWaitStateListEntry {
@@ -24,6 +30,20 @@ export interface IWaitStateListEntry {
   requestedBy?: string;
   assignedApprover?: string;
   amendmentOf?: string;
+}
+
+/** The status each action transitions a wait state to; a `resume`-shaped action (not exposed
+ *  by any public method here) leaves the current status unchanged. */
+const ACTION_STATUS: Partial<Record<WaitStateAction, WaitStateStatus>> = {
+  approve: "fulfilled",
+  reject: "rejected",
+  amend: "amended",
+  expire: "expired",
+  cancel: "cancelled",
+};
+
+function resolveActionStatus(action: WaitStateAction, currentStatus: WaitStateStatus): WaitStateStatus {
+  return ACTION_STATUS[action] ?? currentStatus;
 }
 
 export class WaitStateCommands extends BaseCommand {
@@ -41,7 +61,7 @@ export class WaitStateCommands extends BaseCommand {
     await ensureDir(this.workspaceWaitStatesDir);
   }
 
-  async list(status?: string): Promise<IWaitStateListEntry[]> {
+  async list(status?: Opt<string, Reason.OptionalInput>): Promise<IWaitStateListEntry[]> {
     await this.initStore();
     const entries: IWaitStateListEntry[] = [];
 
@@ -79,33 +99,54 @@ export class WaitStateCommands extends BaseCommand {
     );
   }
 
-  async approve(resumeToken: string, resolutionSummary?: string): Promise<IWaitState> {
-    return await this.transitionByToken(resumeToken, "approve", resolutionSummary);
+  async approve(
+    resumeToken: string,
+    resolutionSummary?: Opt<string, Reason.OptionalInput>,
+    resolvedBy?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IWaitState> {
+    return await this.transitionByToken(resumeToken, "approve", resolutionSummary, resolvedBy);
   }
 
-  async reject(resumeToken: string, resolutionSummary?: string): Promise<IWaitState> {
-    return await this.transitionByToken(resumeToken, "reject", resolutionSummary);
+  async reject(
+    resumeToken: string,
+    resolutionSummary?: Opt<string, Reason.OptionalInput>,
+    resolvedBy?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IWaitState> {
+    return await this.transitionByToken(resumeToken, "reject", resolutionSummary, resolvedBy);
   }
 
   async amend(
     resumeToken: string,
     resolutionSummary?: Opt<string, Reason.OptionalInput>,
+    resolvedBy?: Opt<string, Reason.OptionalInput>,
   ): Promise<IWaitState> {
-    return await this.transitionByToken(resumeToken, "amend", resolutionSummary);
+    return await this.transitionByToken(resumeToken, "amend", resolutionSummary, resolvedBy);
   }
 
-  async expire(resumeToken: string, resolutionSummary?: string): Promise<IWaitState> {
-    return await this.transitionByToken(resumeToken, "expire", resolutionSummary);
+  async expire(
+    resumeToken: string,
+    resolutionSummary?: Opt<string, Reason.OptionalInput>,
+    resolvedBy?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IWaitState> {
+    return await this.transitionByToken(resumeToken, "expire", resolutionSummary, resolvedBy);
   }
 
-  async cancel(resumeToken: string, resolutionSummary?: string): Promise<IWaitState> {
-    return await this.transitionByToken(resumeToken, "cancel", resolutionSummary);
+  async cancel(
+    resumeToken: string,
+    resolutionSummary?: Opt<string, Reason.OptionalInput>,
+    resolvedBy?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IWaitState> {
+    return await this.transitionByToken(resumeToken, "cancel", resolutionSummary, resolvedBy);
   }
 
+  /** `resolvedBy` (an actor identity, e.g. `"user-simulator:<persona>"`) is merged into the
+   *  wait-state's existing free-form `metadata` when provided; omitted, it leaves `metadata`
+   *  byte-identical to today's behavior — no `WaitStateSchema` change needed. */
   private async transitionByToken(
     resumeToken: string,
     action: WaitStateAction,
     resolutionSummary?: Opt<string, Reason.OptionalInput>,
+    resolvedBy?: Opt<string, Reason.OptionalInput>,
   ): Promise<IWaitState> {
     await this.initStore();
     const policy = new DefaultWaitStateTransitionPolicy();
@@ -130,22 +171,12 @@ export class WaitStateCommands extends BaseCommand {
           throw new Error(validation.reason!);
         }
 
-        const now = new Date().toISOString();
         const updated: IWaitState = {
           ...parsed,
-          status: action === "approve"
-            ? "fulfilled" as const
-            : action === "reject"
-            ? "rejected" as const
-            : action === "amend"
-            ? "amended" as const
-            : action === "expire"
-            ? "expired" as const
-            : action === "cancel"
-            ? "cancelled" as const
-            : parsed.status,
-          updatedAt: now,
+          status: resolveActionStatus(action, parsed.status),
+          updatedAt: new Date().toISOString(),
           resolutionSummary: resolutionSummary ?? parsed.resolutionSummary,
+          ...(resolvedBy !== undefined ? { metadata: { ...parsed.metadata, resolvedBy } } : {}),
         };
 
         await Deno.writeTextFile(filePath, JSON.stringify(updated, null, 2));

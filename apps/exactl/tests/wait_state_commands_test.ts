@@ -248,6 +248,54 @@ Deno.test("WaitStateCommands: amend on fulfilled wait state throws policy error"
   }
 });
 
+Deno.test("WaitStateCommands: approve with resolvedBy merges it into metadata", async () => {
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  try {
+    const config = context.config.getAll();
+    const waitStatesDir = join(tempDir, config.paths.workspace!, config.paths.waitStates!);
+    await writeWaitState(waitStatesDir, makeWaitState({ metadata: { existingKey: "kept" } }));
+
+    const commands = new WaitStateCommands(context);
+    const updated = await commands.approve(TEST_TOKEN, "Looks good", "user-simulator:cooperative");
+    assertEquals(updated.status, "fulfilled");
+    assertEquals(updated.metadata, { existingKey: "kept", resolvedBy: "user-simulator:cooperative" });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("WaitStateCommands: approve without resolvedBy leaves metadata unchanged (backward compat)", async () => {
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  try {
+    const config = context.config.getAll();
+    const waitStatesDir = join(tempDir, config.paths.workspace!, config.paths.waitStates!);
+    await writeWaitState(waitStatesDir, makeWaitState({ metadata: { existingKey: "kept" } }));
+
+    const commands = new WaitStateCommands(context);
+    const updated = await commands.approve(TEST_TOKEN, "Looks good");
+    assertEquals(updated.status, "fulfilled");
+    assertEquals(updated.metadata, { existingKey: "kept" });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("WaitStateCommands: reject with resolvedBy merges it into metadata", async () => {
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  try {
+    const config = context.config.getAll();
+    const waitStatesDir = join(tempDir, config.paths.workspace!, config.paths.waitStates!);
+    await writeWaitState(waitStatesDir, makeWaitState());
+
+    const commands = new WaitStateCommands(context);
+    const updated = await commands.reject(TEST_TOKEN, "Not approved", "user-simulator:adversarial");
+    assertEquals(updated.status, "rejected");
+    assertEquals(updated.metadata, { resolvedBy: "user-simulator:adversarial" });
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("WaitStateCommands: list returns entries sorted by createdAt descending", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
   try {
