@@ -18,6 +18,17 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 171 (packages-team Submodule Extraction)
+
+### Changed
+
+- `packages-team/` (Team-tier code) is now a git submodule backed by its own `exaix-team`
+  repository, rather than a plain tracked directory — fresh clones need
+  `git clone --recurse-submodules` (or a subsequent `git submodule update --init`) to
+  populate it, and contributors touching Team-tier code need a separate access grant to
+  `exaix-team` (see [CONTRIBUTING.md §4.2](../CONTRIBUTING.md#42-hooks)). Solo-edition
+  clones and builds are unaffected — `packages-team/` simply stays uninitialized.
+
 ## Unreleased — Phase 180 (Runner Terminology + AgentRunner Journal Tagging)
 
 ### Added
