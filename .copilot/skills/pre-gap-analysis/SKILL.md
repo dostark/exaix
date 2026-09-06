@@ -99,6 +99,7 @@ Do / Don't
 - ✅ Do check constructor signatures for every newly injected dependency.
 - ✅ Do verify Zod schemas have .default() on every optional new field.
 - ✅ Do check that every new interface is exported from an index/barrel file.
+- ✅ Do `ls`/`stat` every doc file path the mandatory §3D documentation step's Actions name — a path that doesn't exist is a 🟡 Feasibility gap, not something to leave for implementation to discover.
 - ✅ Do verify value specification depth — enum/variant fields must specify which value each component emits, not just the allowed set.
 - ✅ Do survey module conventions before accepting the plan's pattern choices — new code should match the dominant existing style in the same module.
 - ✅ Do trace every prose behavioural claim to a named test in Planned Tests — claims without test names are gaps.
@@ -310,7 +311,17 @@ Run this phase after Phase 2 (architectural alignment) and before Phase 3 (detai
 1. **Check barrel exports.**
    For each new or extended interface, verify the plan names the barrel/index file it will be exported from. If multiple packages share the type, confirm the plan specifies which package owns the canonical definition.
 
-**Rationale:** Catches the pattern where a plan says "extend IModelOptions with thinking/effort" but IModelOptions doesn't exist, or says "add ModelResolved to DomainEventType" but DomainEventType doesn't use that event registration pattern. Phase 3 cannot catch these — it verifies the files the plan names, not the files the plan assumes.
+1. **Verify every doc file path named in the mandatory §3D documentation step's Actions.**
+   `ls`/`stat` each file the closing documentation step proposes to edit (e.g. a security
+   guide file that turns out not to exist yet). A path that doesn't exist is the doc-path equivalent of
+   NOT-FOUND-EXTEND — flag a 🟡 Feasibility gap naming the real file the content should
+   land in instead (grep `docs/*.md`/`ARCHITECTURE.md` for the nearest existing section
+   covering the same topic), rather than leaving the step to discover this at
+   implementation time. A plan step that already hedges with "(or the security-facing
+   guide)" is itself acknowledging the uncertainty this check should have resolved before
+   implementation, not during it.
+
+**Rationale:** Catches the pattern where a plan says "extend IModelOptions with thinking/effort" but IModelOptions doesn't exist, or says "add ModelResolved to DomainEventType" but DomainEventType doesn't use that event registration pattern. Phase 3 cannot catch these — it verifies the files the plan names, not the files the plan assumes. The same failure mode applies to doc paths: Phase 145's own Step 6 named a security guide file that was never created — a one-line `ls` at plan-review time would have caught it instead of costing an `#next-steps` implementation pass a grep-the-repo detour to find the real target (`docs/Exaix_User_Guide.md` §9).
 
 ---
 

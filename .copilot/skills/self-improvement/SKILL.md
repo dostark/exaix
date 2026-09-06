@@ -182,6 +182,18 @@ and write the file back from that variable instead of retyping the line by hand;
 verify immediately with `git diff -- <path>` that only the intended words changed and the
 line length matches expectations.
 
+**A `deno fmt` reflow can split a single backtick span across the new line break it
+introduces**, and `scripts/check_md_paths.ts`'s bare-prose-path detector tracks backtick
+state per line (it strips `` `[^`]+` `` spans one line at a time, like the fence/frontmatter
+state it DOES carry across lines) — so a path that is genuinely, visibly backticked when
+the two lines are read together can still be flagged as an un-backticked bare path once
+`deno fmt` wraps the sentence between them (confirmed 2026-09-06, `docs/Exaix_User_Guide.md`
+via `check_md_paths.ts --staged`). The fix is not to chase the checker: shorten or restructure
+the sentence so no single backtick span straddles a probable wrap point (a long
+`` `command --flag value` `` inline code span is the usual culprit) — verify with
+`deno fmt <file>` followed by `scripts/check_md_paths.ts . --staged` before treating a
+"bare path" finding on an already-backticked-looking path as evidence of a real typo.
+
 ## Doc patch loop (when inadequate)
 
 1. **List the gaps** (actionable, not vague)
@@ -250,6 +262,10 @@ Do / Don't
 - ❌ Don't copy `read`/`grep` output ending in `…`/`...` into an edit body for a long
   line — it is display-truncated, not the real content; recover the full line (`git
   show`, untruncated re-read) before editing it.
+- ❌ Don't trust a `check_md_paths.ts` "bare path" finding at face value when the path
+  already looks backticked — a `deno fmt` line-wrap can split one backtick span across
+  two lines, desyncing the checker's per-line parser; shorten the sentence instead of
+  chasing the checker.
 
 ## Examples
 

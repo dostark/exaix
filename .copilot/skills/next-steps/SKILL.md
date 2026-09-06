@@ -122,6 +122,14 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
         rows whose named call-site was never actually invoked by any committed code.
         Advisory only (false positives happen — see the tool's own output for known
         causes), so a finding means "verify by hand," not "automatically revert to ⏳."
+        When a row's ✅ status genuinely holds despite the tool flagging it (e.g. a
+        same-file call site the tool's cross-file-only search can't see, or a symbol the
+        row itself already documents as intentionally test-only), append a short
+        `(tool false-positive: verified <date> — <one-line reason>)` note to that row so
+        a later audit or Phase-Completion Gate G2 pass doesn't re-investigate the same
+        finding from scratch — this recurred twice in Phase 145 (once at
+        `#post-gap-analysis`, again at G2) for the identical three rows before this
+        convention existed.
       Every ledger row MUST be ✅ before the phase is closed (Phase-completion gate G2).
   12. Trace every output field to its consumer.
       Grep the codebase for consumers of each new exported symbol, interface field,
@@ -370,6 +378,20 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       not block phase closure on them. Any finding on an `@visible`-tagged class (this
       phase's own or pre-existing) is a BLOCKING failure regardless of the file-touched
       scoping above — the tag is an explicit commitment, not a heuristic guess.
+  G7. **Phase-doc status hygiene.** Before committing the step that closes the phase,
+      bump BOTH the doc's YAML frontmatter `status:` field (line 2, inside the opening
+      `---` block) AND the prose `**Status**:` header (§Status & Context) to their
+      terminal value in the SAME commit — these are two separate fields, and a doc whose
+      prose header says done but whose frontmatter still says `PLANNING`/`IN_PROGRESS` is
+      invisible to `grep -l '^status: COMPLETED' planning/phase-*.md`, the canonical way
+      completed phases are found. This is a real repeat-offender pattern (see
+      `.copilot/skills/self-improvement/SKILL.md`'s "Phase-doc status hygiene" section for
+      the full checklist and 11+ prior instances) — it recurs because the LAST step's own
+      `✅`/`WIRED` marker is easy to land without also touching the header a few lines
+      above it. Also reconcile `exaix-dev-docs/planning/PHASE_REGISTRY.md`: grep it for
+      every mention of this phase's number (pickup-order bullets, narrative notes, AND
+      the Registry table row are often three separate, non-adjacent spots) and remove or
+      close them per that file's own "completed phases are not listed" rule.
 
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
@@ -394,6 +416,7 @@ Do / Don't
 - ✅ Do document any edge cases handled and any deviations from the plan in the commit body
 - ✅ Do re-ground on `git log --oneline` (both repos) before resuming a phase after a session gap/compaction, or when another agent/tool may have touched it — never assume chat memory reflects current repo state (step 1a)
 - ✅ Do grep the phase's tests for `ignore:.*CI` and re-run matches with `env -u CI` at the Phase-Completion Gate (G5) — a shell's default `CI=true` silently skips real-subprocess/real-boot tests inside an otherwise-green summary line
+- ✅ Do bump BOTH the phase doc's frontmatter `status:` field and its prose `**Status**:` header in the same commit that closes the last step (Phase-Completion Gate G7) — one without the other leaves the phase invisible to `grep -l '^status: COMPLETED'` or stuck reading as open work
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit
 - ❌ Don't proceed to the next step if any CI gate fails
@@ -458,6 +481,7 @@ exaix:
     - "Run CI gates against each step before moving to next"
     - "Update planning doc with step status per step"
     - "Maintain Reachability Ledger in planning doc"
+    - "Bump both frontmatter status: and the prose Status header when closing the last step"
   output_requirements:
     - "Step completed with passing tests"
     - "CI gates clean per step"
