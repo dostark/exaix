@@ -25,7 +25,8 @@ export interface IJournalCommandOptions {
 }
 
 export interface IJournalWaitOptions {
-  event?: string;
+  /** One event, or several to wait on with OR semantics — resolves on whichever appears first. */
+  event?: string | string[];
   /** ISO-datetime floor — only events timestamped after this count (user-facing). */
   since?: string;
   /** Internal rowid floor — only events with rowid strictly above this count. Used by the
@@ -67,10 +68,10 @@ export class JournalCommands extends BaseCommand {
   /** Readiness barrier: blocks until `event` is journalled after `since` (default: the max
    *  rowid at call time). Exits 0 on match, 1 on timeout. */
   async wait(options: IJournalWaitOptions): Promise<void> {
-    const event = options.event;
+    const events = this.normalizeEvents(options.event);
     const timeoutSec = options.timeout ?? JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC;
     const payload = options.payload;
-    if (!event) {
+    if (events.length === 0) {
       console.error(colors.red("journal wait requires --event <action_type>"));
       Deno.exit(1);
     }
@@ -85,25 +86,33 @@ export class JournalCommands extends BaseCommand {
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeoutMs) {
-      if (await this.journalHasEvent(event, baseline, payload)) {
-        console.log(`Journal event present: ${event}`);
+      const matched = await this.journalHasEvent(events, baseline, payload);
+      if (matched) {
+        console.log(`Journal event present: ${matched}`);
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, JOURNAL_WAIT_POLL_INTERVAL_MS));
     }
 
-    console.error(colors.red(`Timeout after ${timeoutSec}s waiting for journal event: ${event}`));
+    console.error(colors.red(`Timeout after ${timeoutSec}s waiting for journal event: ${events.join(", ")}`));
     Deno.exit(1);
   }
 
-  /** True when an activity row matches `event` above the rowid/timestamp baseline. */
+  /** Normalizes the `--event` option (single value, repeated values, or absent) into a list. */
+  private normalizeEvents(event: IJournalWaitOptions["event"]): string[] {
+    if (!event) return [];
+    return Array.isArray(event) ? event : [event];
+  }
+
+  /** Returns the first of `events` (OR semantics) with an activity row above the rowid/timestamp
+   *  baseline, or undefined when none match. */
   private async journalHasEvent(
-    event: string,
+    events: string[],
     baseline: { rowid?: number; iso?: string },
     payload: Opt<string, Reason.OptionalInput> = undefined,
-  ): Promise<boolean> {
-    let where = "action_type = ?";
-    const params: Array<string | number> = [event];
+  ): Promise<string | undefined> {
+    let where = `action_type IN (${events.map(() => "?").join(", ")})`;
+    const params: Array<string | number> = [...events];
     if (baseline.rowid !== undefined) {
       where += " AND rowid > ?";
       params.push(baseline.rowid);
@@ -115,12 +124,12 @@ export class JournalCommands extends BaseCommand {
       where += " AND payload LIKE ?";
       params.push(payload);
     }
-    const row = await this.db.preparedGet<{ n: number }>(
-      `SELECT 1 AS n FROM activity WHERE ${where} LIMIT 1`,
+    const row = await this.db.preparedGet<{ action_type: string }>(
+      `SELECT action_type FROM activity WHERE ${where} ORDER BY rowid ASC LIMIT 1`,
       params,
     );
     // `preparedGet` yields undefined (not null) for an absent row — treat both as no-match.
-    return row !== null && row !== undefined;
+    return row === null || row === undefined ? undefined : row.action_type;
   }
 
   /** The highest activity rowid currently journalled, or 0 in an empty journal. */

@@ -2619,7 +2619,9 @@ const journalCommand = new Command()
     "wait",
     new Command()
       .description("Block until an event is journalled after a baseline (or timeout)")
-      .option("--event <event:string>", "Action type to wait for (e.g. daemon.ready)")
+      .option("--event <event:string>", "Action type to wait for (repeatable — OR semantics, e.g. daemon.ready)", {
+        collect: true,
+      })
       .option(
         "--since <since:string>",
         "Only count events timestamped after this ISO datetime (default: events arriving while waiting)",

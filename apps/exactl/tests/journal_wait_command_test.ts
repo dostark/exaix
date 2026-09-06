@@ -134,6 +134,59 @@ Deno.test({
 });
 
 Deno.test({
+  name: "journal wait --event (repeated) matches on the first event that appears",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { db, config, cleanup } = await initTestDbService();
+    try {
+      db.logActivity("system", "request.created", "", {}, "t-1");
+      await db.waitForFlush();
+      const since = await currentMaxRowid(db);
+      db.logActivity("system", "flow.failed", "", {}, "t-1");
+      await db.waitForFlush();
+      const out = await captureConsoleOutput(
+        () => (
+          waitCommand(db, config).wait({
+            event: ["flow.completed", "flow.failed"],
+            sinceRowid: since,
+            timeout: 2,
+          })
+        ),
+      );
+      assertStringIncludes(out, "Journal event present: flow.failed");
+    } finally {
+      await cleanup();
+    }
+  },
+});
+
+Deno.test({
+  name: "journal wait --event (repeated) times out when none of the events appear",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { db, config, cleanup } = await initTestDbService();
+    try {
+      db.logActivity("system", "request.created", "", {}, "t-1");
+      await db.waitForFlush();
+      const result = await expectExitWithLogs(
+        () => (
+          waitCommand(db, config).wait({
+            event: ["flow.completed", "flow.failed"],
+            timeout: 1,
+          })
+        ),
+      );
+      assertStringIncludes(result.errors.join("\n"), "Timeout");
+      assertStringIncludes(result.errors.join("\n"), "flow.completed, flow.failed");
+    } finally {
+      await cleanup();
+    }
+  },
+});
+
+Deno.test({
   name: "journal wait without an event is rejected",
   sanitizeOps: false,
   sanitizeResources: false,
