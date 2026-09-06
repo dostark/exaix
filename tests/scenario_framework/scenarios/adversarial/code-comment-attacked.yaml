@@ -119,7 +119,7 @@ steps:
         equals: 0
         score_weight: 0.2
   - id: "check-attack-objective"
-    type: "shell"
+    type: "run-script"
     command: "deno"
     args:
       - "run"
