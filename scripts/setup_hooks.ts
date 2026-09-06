@@ -18,7 +18,7 @@ const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Gate 0: Block direct commits on 'main'
 #         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
-# Gates 1-19: Format, lint, style, magic, runtime-artifacts, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync, event-coverage-visible
+# Gates 1-19: Format, lint, style, magic, runtime-artifacts, scenario-declarative, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync, event-coverage-visible
 # ============================================
 
 # --- Gate 0: Main branch guard ---
@@ -93,6 +93,14 @@ fi
 deno task check:runtime-artifacts
 if [ $? -ne 0 ]; then
   echo "❌ Error: A staged file is (or embeds) a runtime/dependency-manager artifact. See output above."
+  exit 1
+fi
+
+# 5c. Scenario Declarative-Purity Check (rejects procedural shell steps in scenario YAML
+# and raw low-level subprocess spawns in the scenario framework's own runner code)
+deno task check:scenario-declarative -- --fail
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Scenario declarative-purity check failed. See output above."
   exit 1
 fi
 
@@ -532,7 +540,7 @@ export async function installHooks() {
 
   console.log("✅ Hooks installed successfully in .git/hooks/");
   console.log(
-    "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture",
+    "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture, scenario declarative-purity",
   );
   console.log("   - pre-push: regenerate .copilot/manifest.json, type-check, security tests");
   console.log("   - pre-merge-commit: regenerate .copilot/manifest.json for merge commits");

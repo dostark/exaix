@@ -63,6 +63,14 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes("deno task check:runtime-artifacts"),
       "pre-commit hook should run the runtime-artifacts check (venv/, __pycache__/, node_modules/)",
     );
+    assert(
+      denoConfig.tasks["check:scenario-declarative"],
+      "deno.json should have check:scenario-declarative task",
+    );
+    assert(
+      hookInstaller.includes("deno task check:scenario-declarative -- --fail"),
+      "pre-commit hook should run the scenario declarative-purity check (rejects procedural shell steps in scenario YAML)",
+    );
   });
 
   it("clears git-hook-injected GIT_* env vars before running the pre-push security suite", async () => {
