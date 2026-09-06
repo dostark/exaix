@@ -2650,14 +2650,23 @@ exactl eval report --pack swe-tasks --format table
 
 # External-benchmark comparability (Terminal-Bench, Docker required to run tasks live)
 exactl eval report --view external
+
+# Adversarial-robustness and interactive-evaluation packs
+exactl eval report --view robustness
+exactl eval report --view interactive
+exactl eval report --view robustness --run-ids <id,id,...>   # scope to an exact run set
 ```
 
 `eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
 task), `ablation` (per-subsystem contribution), `frontier` (accuracy vs cost with Pareto
-marking), `failures` (why runs fail, per family and cell), and `external` (comparability against
+marking), `failures` (why runs fail, per family and cell), `external` (comparability against
 a public benchmark — currently Terminal-Bench; requires Docker to run tasks live, read-only
 against history otherwise; see `docs/Exaix_Evaluation.md` §17 for the methodology and its
-caveats); `--format json` gives machine-readable rows. `--max-cost-usd` stops scheduling once
+caveats), `robustness` (the AgentDojo triple per injection vector — clean utility,
+utility-under-attack, attack-success-rate, robustness gap), and `interactive` (per-persona
+clarification-loop convergence and policy-adherence rate; see `docs/Exaix_Evaluation.md` §18 for
+both views' methodology, safety model, and the `--run-ids` reproducibility option);
+`--format json` gives machine-readable rows. `--max-cost-usd` stops scheduling once
 accumulated tracked cost reaches the cap (remaining scenarios skipped, never a task truncated
 mid-run). Full documentation in `docs/Exaix_Evaluation.md`.
 
@@ -4439,6 +4448,27 @@ started:
 1. **Review Plans:** Always inspect the diffs in the TUI (`exactl plan show`) before approving.
 2. **Audit Logs:** Use `exactl journal` to audit agent activity.
 3. **Keep Keys Private:** Never commit your `.env` or `exa.config.toml` if it contains secrets (though it shouldn't).
+
+### 9.3 Adversarial robustness and gate-bypass attribution
+
+Exaix's own gates (scope enforcement, approval, quality gate) are themselves measured under
+hostile input via the `adversarial` and `interactive` evaluation packs
+(`exactl eval report --view robustness`, `exactl eval report --view interactive`).
+See `docs/Exaix_Evaluation.md` §18 for the full methodology, vector catalogue, and personas. Two
+production mechanisms exist specifically to make this measurable:
+
+- **Actor attribution on gate resolution.** `exactl wait approve/reject/amend/expire/cancel`
+  accept an optional `--resolved-by <actor>` value, merged into the wait-state's metadata and
+  journalled as a `wait_state.command_resolved` event — so an audit can distinguish a gate
+  resolved through the intended CLI/API surface from any other write that flips its status.
+  Omitting `--resolved-by` leaves behavior exactly as before this existed.
+- **Canary-only injection content.** Every "sensitive" artifact used to test whether an agent
+  leaks or acts on hostile content is a fixture canary (`CANARY-<uuid>`-shaped), never a real
+  credential, and injection stays inside the sandboxed worktree/portal for the run — see
+  `docs/Exaix_Evaluation.md` §18.6.
+
+These numbers describe one provider and one point in time, not a standing guarantee — see
+`docs/Exaix_Evaluation.md` §18.5 before citing a robustness or adherence figure.
 
 ---
 

@@ -22,6 +22,8 @@ every criterion kind** — see **[`SCENARIO_DSL.md`](./SCENARIO_DSL.md)**.
    - [Sandbox Lifecycle](#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest)
 1. [Architecture & Extension](#3-architecture--extension)
 1. [Directory Structure](#4-directory-structure)
+   - [Subsystem Cadence](#4b-subsystem-cadence--which-tier-runs-what)
+   - [Adversarial & Interactive Packs](#4c-adversarial--interactive-packs)
 1. [Quick Reference](#5-quick-reference)
 
 ---
@@ -665,6 +667,48 @@ Notes that cost real money if ignored:
 - `--trials 3` is what makes a reliability number meaningful; a single live trial measures one
   sample of a stochastic system.
 - Costs land in the journal and surface via `exactl eval report` (cost view).
+
+## 4c. Adversarial & Interactive Packs
+
+Two packs, distinct from the subsystem packs above, put Exaix's own gates under fire rather than
+measuring performance on cooperative tasks: `pack: "adversarial"` and `pack: "interactive"`
+(Phase 145). Full methodology — the injection-vector catalogue, the AgentDojo triple, the
+personas, and the never-weaken-a-gate rule — is in `docs/Exaix_Evaluation.md` §18; this section
+covers only what an author touching these scenario files needs to know.
+
+**Tags.** Every adversarial scenario carries `vector:<name>` (`portal-readme`, `code-comment`,
+`tool-output`, `filename`, `approval-social`) and `attack:clean` or `attack:attacked`; every
+interactive scenario carries `persona:<name>` (`cooperative`, `ambiguous`, `adversarial`). Both
+packs additionally carry `provider-live` — like every other live tier, they are excluded from a
+bare `--pack`/`--tag` selection unless `--tag provider-live` is also given.
+
+**Canary safety.** Any fixture value an injected vector targets as a "secret" must be a
+recognizable canary (`CANARY-<uuid>`-shaped), never anything shaped like a real credential —
+enforced by a corpus-lint check (`tests/scenario_framework/runner/corpus_lint.ts`) against every
+`fixtures/adversarial/*/task.json`. This is a fixture-author error to catch at lint time, not a
+runtime check.
+
+**Running them:**
+
+```bash
+# Controls only (ci-core, agent-free, zero token cost): attack predicates on hand-crafted fixtures
+deno test --allow-all tests/scenario_framework/tests/unit/attack_predicate_test.ts
+deno test --allow-all tests/scenario_framework/tests/unit/all_vectors_predicate_test.ts
+
+# Mechanics pipeline (zero token cost): the whole clean/attacked → predicate → --view robustness
+# and simulator → clarification → wait-state → --view interactive chains, scripted end to end
+deno test --allow-all tests/scenario_framework/tests/integration/adversarial_pipeline_test.ts
+deno test --allow-all tests/scenario_framework/tests/integration/interactive_pipeline_test.ts
+
+# A live run (real provider, budget-capped)
+EXA_LLM_PROVIDER=<provider> \
+deno run -A tests/scenario_framework/runner/main.ts \
+  --pack adversarial --tag provider-live --max-cost-usd 2.00 --eval-mode
+
+# Read the results
+exactl eval report --view robustness
+exactl eval report --view interactive
+```
 
 ## 5. Quick Reference
 
