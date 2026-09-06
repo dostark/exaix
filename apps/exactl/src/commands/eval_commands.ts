@@ -288,6 +288,10 @@ export class EvalCommands extends BaseCommand {
     /** Explicit coverage-manifest path override for `--view external` (test-supporting).
      *  When absent, resolves per benchmark from the framework fixtures dir. */
     externalManifestPath?: Opt<string, Reason.OptionalInput>;
+    /** `--view robustness`/`--view interactive` only: scope the rendered table to an exact
+     *  run-id set, so a documented founding table can be regenerated regardless of how much
+     *  further local run history exists at the time it's re-run. */
+    runIds?: Opt<string[], Reason.OptionalInput>;
   }): void {
     const view = options.view ?? "cost";
     const resolveDb = () => options.dbPath ?? resolveEvalDbPath();
@@ -379,7 +383,8 @@ export class EvalCommands extends BaseCommand {
   }
 
   /** `--view robustness`: the AgentDojo triple per vector/family, from runs tagged
-   *  `vector:<name>` / `attack:clean|attacked` (optionally `task:<family>`). */
+   *  `vector:<name>` / `attack:clean|attacked` (optionally `task:<family>`). `runIds` scopes it
+   *  to an exact run set, regenerating a documented founding table regardless of later runs. */
   private renderRobustnessReport(options: {
     scenario?: string;
     last?: number;
@@ -387,13 +392,18 @@ export class EvalCommands extends BaseCommand {
     family?: string;
     dbPath?: string;
     format?: string;
+    runIds?: string[];
   }): void {
     const dbPath = options.dbPath ?? resolveEvalDbPath();
     const store = new EvalSqliteStore(dbPath);
     try {
       store.initialize();
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
-      const rows = computeRobustnessRows(runs, { vector: options.vector, family: options.family });
+      const rows = computeRobustnessRows(runs, {
+        vector: options.vector,
+        family: options.family,
+        runIds: options.runIds,
+      });
       if (rows.length === 0) {
         console.log("No adversarial-pack run data found for robustness report.");
         return;
@@ -409,19 +419,21 @@ export class EvalCommands extends BaseCommand {
   }
 
   /** `--view interactive`: per-persona convergence/adherence/pass^k, from runs tagged
-   *  `persona:<name>` / `rounds:<N>` / `converged:true|false` / `adherent:true|false`. */
+   *  `persona:<name>` / `rounds:<N>` / `converged:true|false` / `adherent:true|false`. `runIds`
+   *  scopes it to an exact run set, regenerating a documented founding table regardless of later runs. */
   private renderInteractiveReport(options: {
     scenario?: string;
     last?: number;
     dbPath?: string;
     format?: string;
+    runIds?: string[];
   }): void {
     const dbPath = options.dbPath ?? resolveEvalDbPath();
     const store = new EvalSqliteStore(dbPath);
     try {
       store.initialize();
       const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
-      const rows = computeInteractiveRows(runs);
+      const rows = computeInteractiveRows(runs, { runIds: options.runIds });
       if (rows.length === 0) {
         console.log("No interactive-pack run data found for interactive report.");
         return;
@@ -912,8 +924,11 @@ function renderFailuresTable(report: IFailuresReport): void {
   }
 }
 
-/** Structural subset of the eval-history run row the robustness view needs. */
+/** Structural subset of the eval-history run row the robustness view needs. `run_id` is
+ *  optional so literal test fixtures that predate `runIds` scoping keep type-checking
+ *  unchanged. */
 interface IRobustnessRunRow {
+  run_id?: string;
   tags: string | null;
   suite_score: number;
   scoring_mode: string | null;
@@ -1012,13 +1027,17 @@ function finalizeRobustnessRow(group: IRobustnessGroupAcc): IRobustnessRow {
   };
 }
 
+/** A `runIds` allowlist scopes the AgentDojo triple to an exact set of runs — without it,
+ *  further local runs sharing the same vector/family tags silently shift a previously-recorded
+ *  "founding" table's numbers. */
 export function computeRobustnessRows(
   runs: IRobustnessRunRow[],
-  options: { vector?: string; family?: string },
+  options: { vector?: string; family?: string; runIds?: string[] },
 ): IRobustnessRow[] {
   const groups = new Map<string, IRobustnessGroupAcc>();
 
   for (const run of runs) {
+    if (options.runIds && (!run.run_id || !options.runIds.includes(run.run_id))) continue;
     const classified = classifyRobustnessRun(parseRunTags(run.tags), options);
     if (!classified) continue;
     accumulateRobustnessRun(groups, run, classified);
@@ -1055,8 +1074,11 @@ function renderRobustnessTable(rows: IRobustnessRow[]): void {
   }
 }
 
-/** Structural subset of the eval-history run row the interactive view needs. */
+/** Structural subset of the eval-history run row the interactive view needs. `run_id` is
+ *  optional so literal test fixtures that predate `runIds` scoping keep type-checking
+ *  unchanged. */
 interface IInteractiveRunRow {
+  run_id?: string;
   tags: string | null;
   pass_pow_k: number | null;
 }
@@ -1122,11 +1144,15 @@ function finalizeInteractiveRow(persona: string, group: IInteractiveGroupAcc): I
 }
 
 /** Groups runs by their `persona:<name>` tag and aggregates `rounds:<N>` / `converged:` /
- *  `adherent:` tags plus the pre-existing multi-trial `pass_pow_k` column, per persona. A run
- *  with no `persona:` tag is excluded, not counted against any group. */
-export function computeInteractiveRows(runs: IInteractiveRunRow[]): IInteractiveRow[] {
+ *  `adherent:` tags plus the `pass_pow_k` column, per persona. `runIds`, when given, scopes the
+ *  aggregation to an exact run set so a recorded table's numbers don't drift with later runs. */
+export function computeInteractiveRows(
+  runs: IInteractiveRunRow[],
+  options: { runIds?: string[] } = {},
+): IInteractiveRow[] {
   const groups = new Map<string, IInteractiveGroupAcc>();
   for (const run of runs) {
+    if (options.runIds && (!run.run_id || !options.runIds.includes(run.run_id))) continue;
     accumulateInteractiveRun(groups, run);
   }
   return [...groups.entries()].map(([persona, group]) => finalizeInteractiveRow(persona, group));

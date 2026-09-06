@@ -3017,7 +3017,7 @@ const evalCommand = new Command()
       .description("Render a cross-cell timing/token/tracked-cost comparison report")
       .option(
         "--view <view:string>",
-        "Report view: cost, families, lift, ablation, frontier, failures, or external",
+        "Report view: cost, families, lift, ablation, frontier, failures, external, robustness, or interactive",
         { default: "cost" },
       )
       .option("--scenario <id:string>", "Filter to a single scenario ID")
@@ -3025,6 +3025,11 @@ const evalCommand = new Command()
       .option("-l, --last <n:number>", "Limit to the last N runs")
       .option("--group-by <prefix:string>", "Group by tag prefix: subsystem or entity")
       .option(CLI_OUTPUT_FORMAT_OPTION, "Output format: table, json (frontier/failures/external views)")
+      .option(
+        "--run-ids <ids:string>",
+        "robustness/interactive views only: comma-separated run IDs to scope the table to " +
+          "(regenerates a founding table exactly, regardless of later local runs)",
+      )
       .action((options) => {
         try {
           evalCommands.report({
@@ -3034,6 +3039,7 @@ const evalCommand = new Command()
             pack: options.pack,
             groupBy: options.groupBy,
             format: options.format,
+            runIds: options.runIds ? options.runIds.split(",").map((id: string) => id.trim()) : undefined,
           });
         } catch (error) {
           console.error("eval report failed:", error instanceof Error ? error.message : String(error));

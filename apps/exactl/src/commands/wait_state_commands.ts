@@ -4,6 +4,7 @@
  * @description CLI commands for listing, approving, rejecting, amending, and expiring durable wait states.
  * @architectural-layer CLI
  * @related-files [packages/flow/src/wait_states/]
+ * @visible
  */
 
 import { join } from "@std/path";
