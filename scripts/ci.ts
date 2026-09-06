@@ -76,6 +76,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
   { cmd: ["deno", "task", "check:magic"], desc: "Magic Value Gate" },
   { cmd: ["deno", "task", "check:runtime-artifacts"], desc: "Runtime Artifact Guard" },
+  { cmd: ["deno", "task", "check:scenario-declarative", "--", "--fail"], desc: "Scenario Declarative-Purity Check" },
   { cmd: ["deno", "task", "check:complexity"], desc: "Code Complexity Gate" },
   { cmd: ["deno", "task", "check:arch"], desc: "Architecture Validation" },
   { cmd: ["deno", "task", "docs-agent-validate"], desc: "Agent-Native Documentation Nervous System Check" },
