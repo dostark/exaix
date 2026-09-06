@@ -18,6 +18,31 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 145 (Adversarial Robustness & Interactive Evaluation)
+
+### Added
+
+- `exactl eval report --view robustness` — the AgentDojo triple (clean utility,
+  utility-under-attack, attack-success-rate, robustness gap) per injection vector for the new
+  `adversarial` evaluation pack (portal-readme, code-comment, tool-output, filename, and
+  approval-social injection vectors), plus a `--run-ids <id,id,...>` option to scope the
+  rendered table to an exact run set so a recorded result can be reproduced later regardless of
+  how much further local evaluation history has accumulated.
+- `exactl eval report --view interactive` — per-persona (cooperative/ambiguous/adversarial)
+  clarification-loop convergence, policy-adherence rate, and pass^k for the new `interactive`
+  evaluation pack, with the same `--run-ids` scoping option.
+- `exactl request clarify <id>` — drive a request's clarification Q&A loop from the CLI
+  (`--answer id=text`, repeatable; `--proceed`; `--cancel`; `--resolved-by <actor>`; `--json`).
+- `--resolved-by <actor>` option on `exactl wait approve/reject/amend/expire/cancel` — records
+  who resolved a wait-state gate, visible in the Activity Journal.
+
+### Fixed
+
+- The daemon now actually uses the configured live provider for LLM/HYBRID quality-gate
+  assessment and request analysis — previously it silently ran heuristic-only regardless of
+  the configured mode, because no provider was ever wired into request processing at daemon
+  startup.
+
 ## Unreleased — Phase 171 (packages-team Submodule Extraction)
 
 ### Changed
