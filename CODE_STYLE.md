@@ -280,9 +280,9 @@ Package entrypoints must only expose package-local source exports, not direct im
 
 ### No Production Dependency on `tests/` {#no-prod-tests-dependency}
 
-Functional, deployable modules under `packages/`, `packages-team/`, and `apps/` **must not** import from the repository's `tests/` folder. Test code is **excluded from a deployed workspace**, so a production module that imports it (even a type-only or transitively dead import) fails to resolve at module load in a deploy, breaking the deployed `exactl`/daemon. This is the layering bug that originally placed `EvalSqliteStore` under `tests/scenario_framework/` and was imported by the production `exactl eval` command — relocate such shared code into a real package under `packages/` instead.
+Functional, deployable modules under `packages/`, `exaix-team/`, and `apps/` **must not** import from the repository's `tests/` folder. Test code is **excluded from a deployed workspace**, so a production module that imports it (even a type-only or transitively dead import) fails to resolve at module load in a deploy, breaking the deployed `exactl`/daemon. This is the layering bug that originally placed `EvalSqliteStore` under `tests/scenario_framework/` and was imported by the production `exactl eval` command — relocate such shared code into a real package under `packages/` instead.
 
-**Prohibited (in any `packages/`, `packages-team/`, or `apps/` non-test module):**
+**Prohibited (in any `packages/`, `exaix-team/`, or `apps/` non-test module):**
 
 ```ts
 // apps/exactl/src/commands/eval_commands.ts
@@ -678,19 +678,19 @@ Boundary checks run as part of the standard quality gates in pre-commit hooks an
 
 ### Edition Tier Import Boundary {#edition-tier-boundary}
 
-Exaix is edition-separated by license and distribution: **MIT** (`packages/`, `apps/`) < **Team**
-(`packages-team/`, BSL) < **Enterprise** (`exaix-enterprise/`). A **lower-edition module must not
-import from a higher edition.** Doing so couples the lower edition's source and build to code that is
-licensed and shipped separately — e.g. an MIT Solo app importing BSL Team code, which ships Team
+Exaix is edition-separated by license and distribution: **Solo** (Apache 2.0; `packages/`, `apps/`) <
+**Team** (`exaix-team/`, BSL) < **Enterprise** (`exaix-enterprise/`). A **lower-edition module must
+not import from a higher edition.** Doing so couples the lower edition's source and build to code that
+is licensed and shipped separately — e.g. a Solo app importing BSL Team code, which ships Team
 source into the free deployment and pulls it into the Solo binary (the Team-into-Solo leak).
 
 **Prohibited (in any lower-edition non-test source module):**
 
 ```ts
-// apps/exactl/src/init.ts (MIT)
-import { TeamComposer } from "@exaix-team/team-composer"; // ❌ MIT → Team
+// apps/exactl/src/init.ts (Solo)
+import { TeamComposer } from "@exaix-team/team-composer"; // ❌ Solo → Team
 
-// packages-team/voting/src/x.ts (Team)
+// exaix-team/packages/voting/src/x.ts (Team)
 import { Y } from "@exaix-enterprise/mod.ts"; // ❌ Team → Enterprise
 ```
 
@@ -712,11 +712,11 @@ if (editionType === EDITION_TEAM) {
 - **Test files** (`/tests/`, `_test.ts`, `.test.ts`) — integration tests may exercise higher tiers.
 - **Test-infra** (`*/testing/` shims) — never deployed.
 - **Team-tier modules that live under `apps/`** — `apps/daemon/src/bootstrap_team.ts` (edition glue,
-  loaded only in the Team branch) and `apps/mcp-server/` (a Team-coupled standalone app) are Team-tier
-  and may statically import `@exaix-team/*`.
+  loaded only in the Team branch) may statically import `@exaix-team/*`. `exaix-team/apps/mcp-server/`
+  is itself a Team-tier app (mounted inside the `exaix-team` submodule), not a Solo-tree exception.
 
 **Remediation**: When lower-edition source needs a _type_ from higher-edition code, extract the
-interface into `packages/core/types/` and have both sides depend on the MIT home; when it needs a
+interface into `packages/core/types/` and have both sides depend on the Solo home; when it needs a
 _value_, use the edition-gated dynamic import in the dispatch entry.
 
 Enforced by `scripts/check_code_style.ts` via `[edition-leak]` (supersedes the former
@@ -728,9 +728,9 @@ Enforced by `scripts/check_code_style.ts` via `[edition-leak]` (supersedes the f
 — the **source-run deploy** (`deploy_workspace.ts`). The invariant it enforces is: in a lower-edition
 source module, **every** upper-edition reference is either type-only (erased at compile) or a
 genuinely **edition-gated** dynamic import (preceded by an `editionType` guard, in a dispatch entry).
-Given that invariant, a Solo run never executes any upper-edition import, so `packages-team/` can be
+Given that invariant, a Solo run never executes any upper-edition import, so `exaix-team/` can be
 physically absent from the deployed workspace and Solo still boots — which is exactly what
-`deploy_workspace.ts` does (it omits `packages-team/` and rewrites `deno.json`'s `workspace[]`).
+`deploy_workspace.ts` does (it omits `exaix-team/` and rewrites `deno.json`'s `workspace[]`).
 
 The guard is **strict about "edition-gated"**: a dynamic `import("@exaix-team/...")` that is NOT
 inside an `editionType` guard is still flagged — it would load Team code unconditionally, even in

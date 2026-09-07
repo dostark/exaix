@@ -4,7 +4,7 @@
  * @description Phase 135 (GAP-1) — the Solo-owned seam through which the Team
  *   model-registry module supplies optional resolution behaviours to ModelResolver
  *   without forking it. Every hook is optional: a resolver with no strategy (Solo)
- *   behaves exactly as Phase 134. The Team module (packages-team/model-registry-live)
+ *   behaves exactly as Phase 134. The Team module (exaix-team/packages/model-registry-live)
  *   implements this interface and is injected at daemon bootstrap.
  *
  *   Hooks land incrementally: `validateExplicit` (Step 1 seam / Step 3 semantics),
@@ -17,7 +17,7 @@
  *   candidate pool; a Team strategy with the flag off returns `undefined` (inert).
  * @architectural-layer AI-Routing
  * @dependencies [@exaix/schemas, @exaix/core/types]
- * @related-files [packages/ai/src/model_resolver.ts, packages-team/model-registry-live/mod.ts]
+ * @related-files [packages/ai/src/model_resolver.ts, exaix-team/packages/model-registry-live/mod.ts]
  */
 import type { IRouteReason } from "@exaix/schemas";
 import type { TaskType } from "@exaix/core/types";

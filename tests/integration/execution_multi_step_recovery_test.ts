@@ -3,7 +3,7 @@
  * @path tests/integration/execution_multi_step_recovery_test.ts
  * @description Integration coverage for Step 63.4 compensation against a real git-backed portal worktree.
  * @architectural-layer Test
- * @related-files [packages/flow/src/flow_runner.ts, packages-team/mcp-server/handlers/delete_file_tool.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, exaix-team/packages/mcp-server/handlers/delete_file_tool.ts]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";

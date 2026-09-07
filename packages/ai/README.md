@@ -118,6 +118,6 @@ Provider selection is configured in `exa.config.toml`. See the Provider Strategy
 - [@exaix/ai-anthropic](../../packages/ai-anthropic/) — Anthropic/Claude provider implementation
 - [@exaix/ai-openai](../../packages/ai-openai/) — OpenAI/GPT provider implementation
 - [@exaix/ai-google](../../packages/ai-google/) — Google/Gemini provider implementation
-- [@exaix-team/ai-vertex](../../packages-team/ai-vertex/) — Google Vertex AI provider (service-account auth, regional quotas)
+- [@exaix-team/ai-vertex](../../exaix-team/packages/ai-vertex/) — Google Vertex AI provider (service-account auth, regional quotas)
 - [@exaix/ai-openrouter](../../packages/ai-openrouter/) — OpenRouter unified-gateway provider
 - [@exaix/ai-ollama](../../packages/ai-ollama/) — Ollama provider implementation

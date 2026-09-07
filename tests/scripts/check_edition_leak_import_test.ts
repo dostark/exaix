@@ -4,7 +4,7 @@
  * @description Tests for the edition-tier import guard in scripts/check_code_style.ts.
  *   A lower-edition module must not import a higher-edition one (it would couple the
  *   lower edition's source/build to code that is licensed/shipped separately — the
- *   Team-into-Solo leak). Tiers: MIT (packages/, apps/) < Team (packages-team/) <
+ *   Team-into-Solo leak). Tiers: Solo (packages/, apps/) < Team (exaix-team/) <
  *   Enterprise (exaix-enterprise/). The single sanctioned exception is an edition-gated
  *   DYNAMIC edition-gated load of `@exaix-team/...` in the daemon/exactl dispatch entries,
  *   which is loaded only in the Team branch and never executed in a Solo run.
@@ -15,16 +15,16 @@
 import { assertEquals } from "@std/assert";
 import { isEditionLeakImport } from "../../scripts/check_code_style.ts";
 
-// --- MIT (packages/, apps/) must not import Team or Enterprise ---
+// --- Solo (packages/, apps/) must not import Team or Enterprise ---
 
-Deno.test("[edition-leak] a packages/ (MIT) module importing @exaix-team is flagged", () => {
+Deno.test("[edition-leak] a packages/ (Solo) module importing @exaix-team is flagged", () => {
   assertEquals(
     isEditionLeakImport("packages/quality-gate/src/foo.ts", 'import { X } from "@exaix-team/voting";'),
     true,
   );
 });
 
-Deno.test("[edition-leak] an apps/ (MIT) module statically importing @exaix-team is flagged (the leak that shipped)", () => {
+Deno.test("[edition-leak] an apps/ (Solo) module statically importing @exaix-team is flagged (the leak that shipped)", () => {
   assertEquals(
     isEditionLeakImport(
       "apps/exactl/src/init.ts",
@@ -48,25 +48,25 @@ Deno.test("[edition-leak] a packages/ module importing exaix-enterprise is flagg
   );
 });
 
-// --- Team (packages-team/) must not import Enterprise, but MAY use MIT ---
+// --- Team (exaix-team/) must not import Enterprise, but MAY use Solo ---
 
-Deno.test("[edition-leak] a packages-team/ (Team) module importing exaix-enterprise is flagged", () => {
+Deno.test("[edition-leak] a exaix-team/ (Team) module importing exaix-enterprise is flagged", () => {
   assertEquals(
-    isEditionLeakImport("packages-team/voting/src/x.ts", 'import { Z } from "@exaix-enterprise/mod.ts";'),
+    isEditionLeakImport("exaix-team/voting/src/x.ts", 'import { Z } from "@exaix-enterprise/mod.ts";'),
     true,
   );
 });
 
-Deno.test("[edition-leak] a packages-team/ module importing @exaix-team (same tier) is NOT flagged", () => {
+Deno.test("[edition-leak] a exaix-team/ module importing @exaix-team (same tier) is NOT flagged", () => {
   assertEquals(
-    isEditionLeakImport("packages-team/voting/src/x.ts", 'import { W } from "@exaix-team/hitl";'),
+    isEditionLeakImport("exaix-team/voting/src/x.ts", 'import { W } from "@exaix-team/hitl";'),
     false,
   );
 });
 
-Deno.test("[edition-leak] a packages-team/ module importing MIT (@exaix/core) is NOT flagged", () => {
+Deno.test("[edition-leak] a exaix-team/ module importing Solo (@exaix/core) is NOT flagged", () => {
   assertEquals(
-    isEditionLeakImport("packages-team/voting/src/x.ts", 'import { C } from "@exaix/core";'),
+    isEditionLeakImport("exaix-team/voting/src/x.ts", 'import { C } from "@exaix/core";'),
     false,
   );
 });
@@ -135,7 +135,7 @@ Deno.test("[edition-leak] a type-only @exaix-team import is NOT flagged (erased 
 
 // --- Negative cases ---
 
-Deno.test("[edition-leak] a normal MIT-to-MIT import is NOT flagged", () => {
+Deno.test("[edition-leak] a normal Solo-to-Solo import is NOT flagged", () => {
   assertEquals(
     isEditionLeakImport("apps/exactl/src/init.ts", 'import { SoloComposer } from "@exaix/core/composer";'),
     false,
@@ -153,7 +153,7 @@ Deno.test("[edition-leak] test files are exempt (integration tests may import hi
   );
 });
 
-Deno.test("[edition-leak] a non-import line in an MIT module is NOT flagged", () => {
+Deno.test("[edition-leak] a non-import line in a Solo module is NOT flagged", () => {
   assertEquals(
     isEditionLeakImport("apps/exactl/src/init.ts", "// this references @exaix-team in a comment"),
     false,
@@ -172,16 +172,19 @@ Deno.test("[edition-leak] apps/daemon/src/bootstrap_team.ts is Team-tier and may
   );
 });
 
-Deno.test("[edition-leak] apps/mcp-server (Team-coupled app) may import @exaix-team", () => {
+Deno.test("[edition-leak] exaix-team/apps/mcp-server (Team's own standalone app) may import @exaix-team", () => {
   assertEquals(
-    isEditionLeakImport("apps/mcp-server/main.ts", 'import { MCPServer } from "@exaix-team/mcp-server";'),
+    isEditionLeakImport(
+      "exaix-team/apps/mcp-server/main.ts",
+      'import { MCPServer } from "@exaix-team/mcp-server";',
+    ),
     false,
   );
 });
 
 Deno.test("[edition-leak] BUT a Team-tier app still may NOT import Enterprise", () => {
   assertEquals(
-    isEditionLeakImport("apps/mcp-server/main.ts", 'import { E } from "@exaix-enterprise/mod.ts";'),
+    isEditionLeakImport("exaix-team/apps/mcp-server/main.ts", 'import { E } from "@exaix-enterprise/mod.ts";'),
     true,
   );
 });

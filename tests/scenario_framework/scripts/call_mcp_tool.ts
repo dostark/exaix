@@ -9,7 +9,7 @@
  *   driver-and-server plumbing repeated per scenario. The `initialize` handshake is
  *   implicit; each (tool, args-json) pair becomes one `tools/call`.
  * @dependencies [tests/scenario_framework/scripts/mcp_stdio_driver.ts]
- * @related-files [apps/mcp-server/main.ts, tests/scenario_framework/scripts/setup_tools_portal.ts]
+ * @related-files [exaix-team/apps/mcp-server/main.ts, tests/scenario_framework/scripts/setup_tools_portal.ts]
  */
 
 import { dirname, fromFileUrl, resolve } from "@std/path";
@@ -17,7 +17,7 @@ import { type IJsonRpcParams, type IJsonRpcRequest, sendJsonRpcRequests, spawnPr
 
 const SCRIPTS_DIR = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = resolve(SCRIPTS_DIR, "..", "..", "..");
-const SERVER_ENTRY = resolve(REPO_ROOT, "apps", "mcp-server", "main.ts");
+const SERVER_ENTRY = resolve(REPO_ROOT, "exaix-team", "apps", "mcp-server", "main.ts");
 const DENO_CONFIG = resolve(REPO_ROOT, "deno.json");
 const DEFAULT_TIMEOUT_MS = 30000;
 

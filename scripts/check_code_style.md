@@ -104,10 +104,10 @@ comments; the other checks exempt the module's own leading header comment.
 
 ## Edition Boundary
 
-| Tag                                      | Severity | What it detects                                                                                                                                                                                                        |
-| ---------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer                                                                                                                                                           |
-| `[edition-leak]`                         | error    | Lower-edition module imports a higher edition (MIT → Team/Enterprise, Team → Enterprise); exempt only: type-only imports, and `editionType`-guarded dynamic `import("@exaix-team/...")` in `apps/daemon`/`apps/exactl` |
+| Tag                                      | Severity | What it detects                                                                                                                                                                                                         |
+| ---------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer                                                                                                                                                            |
+| `[edition-leak]`                         | error    | Lower-edition module imports a higher edition (Solo → Team/Enterprise, Team → Enterprise); exempt only: type-only imports, and `editionType`-guarded dynamic `import("@exaix-team/...")` in `apps/daemon`/`apps/exactl` |
 
 > `[edition-leak]` supersedes the former `[mit-team-import]` rule (which only covered `packages/` → Team).
 > It is the enforceable bundle guarantee for the **source-run deploy** — every upper-edition reference
@@ -129,7 +129,7 @@ comments; the other checks exempt the module's own leading header comment.
 
 | Tag                        | Severity | What it detects                                                                    |
 | -------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| `[package-tests-boundary]` | error    | A deployable module (`packages/`, `packages-team/`, `apps/`) imports from `tests/` |
+| [package-tests-boundary]` | error    | A deployable module (`packages/`, `exaix-team/`, `apps/`) imports from `tests/` |
 
 ---
 

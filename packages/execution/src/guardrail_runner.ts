@@ -3,10 +3,10 @@
  * @path packages/execution/src/guardrail_runner.ts
  * @description Post-output guardrail screening seam (Phase 107, replaces Phase 115 pre-action seam).
  *   Solo injects no runner, so the hook is a pure no-op; Team edition injects GuardrailRunner
- *   (packages-team/guardrail/) which screens agent output against configurable policies.
+ *   (exaix-team/packages/guardrail/) which screens agent output against configurable policies.
  * @architectural-layer Services
  * @dependencies [packages/execution/src/strategies/react_loop_strategy.ts]
- * @related-files [packages-team/guardrail/src/guardrail_runner.ts, packages/execution/src/agent_composer.ts]
+ * @related-files [exaix-team/packages/guardrail/src/guardrail_runner.ts, packages/execution/src/agent_composer.ts]
  */
 
 import type { GuardrailIncident } from "@exaix/schemas";

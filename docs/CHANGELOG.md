@@ -43,16 +43,34 @@
   the configured mode, because no provider was ever wired into request processing at daemon
   startup.
 
-## Unreleased — Phase 171 (packages-team Submodule Extraction)
+## Unreleased — Phase 171 (exaix-team Submodule Extraction)
 
 ### Changed
 
-- `packages-team/` (Team-tier code) is now a git submodule backed by its own `exaix-team`
-  repository, rather than a plain tracked directory — fresh clones need
-  `git clone --recurse-submodules` (or a subsequent `git submodule update --init`) to
-  populate it, and contributors touching Team-tier code need a separate access grant to
-  `exaix-team` (see [CONTRIBUTING.md §4.2](../CONTRIBUTING.md#42-hooks)). Solo-edition
-  clones and builds are unaffected — `packages-team/` simply stays uninitialized.
+- `exaix-team/` (Team-tier code, mounted at `packages-team/` until its later rename) is
+  now a git submodule backed by its own `exaix-team` repository, rather than a plain
+  tracked directory — fresh clones need `git clone --recurse-submodules` (or a subsequent
+  `git submodule update --init`) to populate it, and contributors touching Team-tier code
+  need a separate access grant to `exaix-team` (see
+  [CONTRIBUTING.md §4.2](../CONTRIBUTING.md#42-hooks)). Solo-edition clones and builds are
+  unaffected — `exaix-team/` simply stays uninitialized.
+
+## Unreleased — Phase 193 (Team & Enterprise Directory Restructure)
+
+### Changed
+
+- The `exaix-team` submodule's mount point in the parent repo was renamed from
+  `packages-team/` to `exaix-team/`, matching its repository name — contributors who
+  already have an initialized `exaix-team` (or still-named `packages-team`) checkout need
+  to run `git submodule sync --recursive` (or re-clone) to pick up the new path. Inside the
+  submodule, its 9 sub-packages moved under a new internal `exaix-team/packages/`
+  directory, and the standalone MCP server app (previously `apps/mcp-server/` in the parent
+  repo, a documented exception to the Solo/Team import-boundary rule) moved into the
+  submodule as `exaix-team/apps/mcp-server/` — both `exaix-team/` and `exaix-enterprise/`
+  now share the identical `packages/` + `apps/` layout. No CLI command, config key, or
+  public `@exaix/*`/`@exaix-team/*` package export changed. See
+  `exaix-dev-docs/planning/phase-193-team-enterprise-directory-restructure.md` for the full
+  record.
 
 ## Unreleased — Phase 180 (Runner Terminology + AgentRunner Journal Tagging)
 

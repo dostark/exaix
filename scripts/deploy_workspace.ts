@@ -17,8 +17,8 @@ import { ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { copy, type CopyOptions } from "@std/fs/copy";
 
-// Source directories a **Solo** deploy copies into a standalone workspace. `packages-team/`
-// is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in an MIT Solo
+// Source directories a **Solo** deploy copies into a standalone workspace. `exaix-team/`
+// is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in a Solo
 // deployment. Safe because app entry points load `@exaix-team/*` only when editionType !== "solo".
 /** Minimal shape of a deno.json config the deploy rewrites (only `workspace` is touched). */
 export interface IDenoConfigShape {
@@ -31,14 +31,14 @@ export const WORKSPACE_COPY_DIRS: readonly string[] = [
   "migrations",
 ];
 
-// Remove `packages-team/*` entries from a deployed deno.json's `workspace` array so a Solo
-// deploy (which excludes packages-team/ source) does not reference absent workspace members.
+// Remove `exaix-team/*` entries from a deployed deno.json's `workspace` array so a Solo
+// deploy (which excludes exaix-team/ source) does not reference absent workspace members.
 // Other config fields are preserved unchanged.
 export function stripTeamWorkspaceMembers<T extends IDenoConfigShape>(denoConfig: T): T {
   if (!Array.isArray(denoConfig.workspace)) return denoConfig;
   return {
     ...denoConfig,
-    workspace: denoConfig.workspace.filter((member) => !member.includes("packages-team/")),
+    workspace: denoConfig.workspace.filter((member) => !member.includes("exaix-team/")),
   };
 }
 
@@ -92,9 +92,9 @@ async function main() {
   // 2. Copy artifacts
   const copyOpts: CopyOptions = { overwrite: true };
 
-  // Copy deno.json, stripping packages-team workspace members (Solo deploy excludes them).
+  // Copy deno.json, stripping exaix-team workspace members (Solo deploy excludes them).
   // The @exaix-team/* import-map entries remain so a Team run's dynamic Team load can still
-  // resolve when packages-team/ IS present; a Solo run never triggers those Team loads.
+  // resolve when exaix-team/ IS present; a Solo run never triggers those Team loads.
   const denoConfig = JSON.parse(await Deno.readTextFile(join(repoRoot, "deno.json")));
   await Deno.writeTextFile(
     join(dest, "deno.json"),
@@ -124,7 +124,7 @@ async function main() {
     }
   }
 
-  // Copy workspace members (packages, apps) + migrations. packages-team/ is EXCLUDED —
+  // Copy workspace members (packages, apps) + migrations. exaix-team/ is EXCLUDED —
   // it is BSL Team code that must not ship in a Solo deploy; the apps load @exaix-team/*
   // dynamically only in the Team branch, so a Solo run never needs it on disk.
   await copyWorkspaceDirs(repoRoot, dest, copyOpts);
@@ -143,9 +143,9 @@ async function main() {
   // 3. Post-deploy tasks
   if (!flags["no-run"]) {
     console.log(`Caching Solo runtime entries and running setup in ${dest}...`);
-    // Cache only the Solo runtime entries — NOT apps/mcp-server/main.ts, which statically
-    // imports @exaix-team/mcp-server (a Team feature, excluded from a Solo deploy). The
-    // `exactl mcp` command spawns mcp-server as a subprocess only under Team.
+    // Cache only the Solo runtime entries. exaix-team/apps/mcp-server/main.ts (which statically
+    // imports @exaix-team/mcp-server) is not copied into a Solo deploy at all; `exactl mcp`
+    // spawns it as a subprocess only under Team.
     await run([
       "deno",
       "cache",

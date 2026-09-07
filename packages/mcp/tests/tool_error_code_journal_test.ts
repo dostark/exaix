@@ -12,7 +12,7 @@
  *   emits a code, and which omitted COMMAND_BLOCKED while claiming to check that "all expected
  *   error codes are defined". These tests assert the code is observable instead.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tool_handler.ts, packages-team/mcp-server/handlers/read_file_tool.ts]
+ * @related-files [packages/mcp/server/tool_handler.ts, exaix-team/packages/mcp-server/handlers/read_file_tool.ts]
  */
 import { assert, assertEquals } from "@std/assert";
 import { ToolErrorCode } from "@exaix/core";

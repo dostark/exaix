@@ -7,7 +7,7 @@
  *   Spawns the MCP server as a subprocess, sends JSON-RPC requests, collects
  *   responses, and emits a composite JSON result document for scenario assertion.
  * @dependencies []
- * @related-files [apps/mcp-server/main.ts, tests/scenario_framework/scenarios/mcp_server/]
+ * @related-files [exaix-team/apps/mcp-server/main.ts, tests/scenario_framework/scenarios/mcp_server/]
  */
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };

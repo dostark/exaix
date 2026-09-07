@@ -30,7 +30,7 @@
  *   `ModelResolver.tryResolveExplicit` -> `validateExplicit`'s live re-fetch-and-admit
  *   path, which journals `model.admitted{reason: "explicit_use"}`.
  * @architectural-layer Test
- * @related-files [packages/ai/src/model_resolver.ts, packages-team/model-registry-live/src/team_resolution_strategy.ts, packages-team/model-registry-live/src/adapters/admission.ts, tests/integration/model_registry_team_cutover_test.ts]
+ * @related-files [packages/ai/src/model_resolver.ts, exaix-team/packages/model-registry-live/src/team_resolution_strategy.ts, exaix-team/packages/model-registry-live/src/adapters/admission.ts, tests/integration/model_registry_team_cutover_test.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

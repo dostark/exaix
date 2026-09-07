@@ -2,11 +2,11 @@
  * @module DeployWorkspaceDirsTest
  * @path tests/helpers/deploy_workspace_dirs_test.ts
  * @description Tests for deploy_workspace.ts's Solo-edition copy set and deno.json rewrite.
- *   A Solo deploy must EXCLUDE packages-team/ (BSL Team code must not ship in an MIT Solo
+ *   A Solo deploy must EXCLUDE exaix-team/ (BSL Team code must not ship in a Solo
  *   deployment — edition separation). This is safe because the app entry points load
  *   @exaix-team/* dynamically only in the editionType !== "solo" branch, so a Solo
  *   run never references Team modules. The deployed deno.json's workspace[] is rewritten to
- *   drop packages-team members so Deno does not warn about absent workspace members.
+ *   drop exaix-team members so Deno does not warn about absent workspace members.
  * @architectural-layer Test
  * @related-files [scripts/deploy_workspace.ts]
  */
@@ -27,22 +27,22 @@ Deno.test("[deploy_workspace] the copy-dir set includes packages, apps, migratio
   }
 });
 
-Deno.test("[deploy_workspace] a Solo deploy EXCLUDES packages-team/ (no BSL Team source in an MIT deploy)", () => {
+Deno.test("[deploy_workspace] a Solo deploy EXCLUDES exaix-team/ (no BSL Team source in a Solo deploy)", () => {
   // Team code is loaded dynamically only in the Team branch, so a Solo run never
-  // needs packages-team/ on disk. Shipping it would leak BSL source into an MIT deployment.
+  // needs exaix-team/ on disk. Shipping it would leak BSL source into a Solo deployment.
   assert(
-    !WORKSPACE_COPY_DIRS.includes("packages-team"),
-    "Solo deploy must NOT copy packages-team/ — edition separation",
+    !WORKSPACE_COPY_DIRS.includes("exaix-team"),
+    "Solo deploy must NOT copy exaix-team/ — edition separation",
   );
 });
 
-Deno.test("[deploy_workspace] stripTeamWorkspaceMembers drops packages-team/* workspace entries", () => {
+Deno.test("[deploy_workspace] stripTeamWorkspaceMembers drops exaix-team/* workspace entries", () => {
   const config = {
     workspace: [
       "./packages/core",
       "./packages/quality-gate",
-      "./packages-team/team-composer",
-      "./packages-team/voting",
+      "./exaix-team/team-composer",
+      "./exaix-team/voting",
       "./packages/routing",
     ],
     imports: { "@exaix/core": "./packages/core/mod.ts" },

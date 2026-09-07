@@ -4,7 +4,7 @@
  * @description IFlowStepHandler for VOTING_GROUP step type — fans out N runners via
  * IVotingConsensusService and returns the consensus winner as the step result.
  * @architectural-layer Flows
- * @related-files [packages/flow/src/step_handlers/step_handler.ts, packages-team/voting/src/voting_consensus_service.ts]
+ * @related-files [packages/flow/src/step_handlers/step_handler.ts, exaix-team/packages/voting/src/voting_consensus_service.ts]
  */
 
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";

@@ -3,7 +3,7 @@
  * @path tests/scripts/check_prod_tests_import_test.ts
  * @description Tests for the production-module → tests/ import guard in
  *   scripts/check_code_style.ts. Functional deployable modules (packages/,
- *   packages-team/, apps/) must NOT depend on the tests/ folder — that is the
+ *   exaix-team/, apps/) must NOT depend on the tests/ folder — that is the
  *   layering violation that put EvalSqliteStore under tests/scenario_framework and
  *   broke a deployed exactl/daemon at module load. Test files themselves may import
  *   test helpers, so the guard excludes test files.
@@ -34,10 +34,10 @@ Deno.test("[prod-tests-import] an apps/ module importing tests/ is flagged (the 
   );
 });
 
-Deno.test("[prod-tests-import] a packages-team/ module importing tests/ is flagged", () => {
+Deno.test("[prod-tests-import] a exaix-team/ module importing tests/ is flagged", () => {
   assertEquals(
     isProductionToTestsImport(
-      "packages-team/voting/src/bar.ts",
+      "exaix-team/voting/src/bar.ts",
       "../../../tests/helpers/x.ts",
     ),
     true,

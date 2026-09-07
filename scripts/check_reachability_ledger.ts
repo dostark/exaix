@@ -345,7 +345,7 @@ export async function readPhaseDocs(globPattern: string): Promise<IFileRecord[]>
 }
 
 const DEFAULT_DOC_GLOB = "exaix-dev-docs/planning/phase-*.md";
-const CODE_ROOTS = ["packages", "packages-team", "apps", "scripts", "tests"];
+const CODE_ROOTS = ["packages", "exaix-team", "apps", "scripts", "tests"];
 
 if (import.meta.main) {
   const docGlob = Deno.args[0] ?? DEFAULT_DOC_GLOB;

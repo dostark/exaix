@@ -4,7 +4,7 @@
  * @description Central registry for available tools. Maps abstract tool names (e.g., 'read_file')
  * to concrete implementations with security validation and logging.
  * @architectural-layer Services
- * @related-files ["packages/core/src/planning/plan_executor.ts", packages-team/mcp-server/tools.ts]
+ * @related-files ["packages/core/src/planning/plan_executor.ts", exaix-team/packages/mcp-server/tools.ts]
  */
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";
@@ -1529,7 +1529,7 @@ export class ToolRegistry implements IToolRegistry {
       const content = await Deno.readTextFile(resolvedPath);
 
       // Exact-one-occurrence match, mirroring the live MCP handler
-      // (packages-team/mcp-server/handlers/patch_file_tool.ts): fails loudly if the search
+      // (exaix-team/packages/mcp-server/handlers/patch_file_tool.ts): fails loudly if the search
       // string is absent or ambiguous rather than silently patching the first occurrence.
       const segments = content.split(search);
       const occurrences = segments.length - 1;

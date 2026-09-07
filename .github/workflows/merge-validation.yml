@@ -24,8 +24,8 @@ jobs:
 
       - name: "Init team submodule"
         run: |
-          git config --local submodule.packages-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
-          git submodule update --init --depth 1 packages-team
+          git config --local submodule.exaix-team.url "https://x-access-token:${{ secrets.EXAIX_TEAM_PAT }}@github.com/dostark/exaix-team.git"
+          git submodule update --init --depth 1 exaix-team
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
@@ -47,7 +47,7 @@ jobs:
           else
             CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
           fi
-          if echo "$CHANGED" | grep -qE '^packages-team/|^apps/common/|^scripts/ci\.ts|^deno\.json|^\.github/workflows/'; then
+          if echo "$CHANGED" | grep -qE '^exaix-team/|^apps/common/|^scripts/ci\.ts|^deno\.json|^\.github/workflows/'; then
             echo "team_changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "team_changed=false" >> "$GITHUB_OUTPUT"

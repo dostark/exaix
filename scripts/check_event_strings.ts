@@ -51,7 +51,7 @@ interface Violation {
 const violations: Violation[] = [];
 const scannedFiles: number[] = [];
 
-for (const dir of ["packages", "packages-team", "apps"]) {
+for (const dir of ["packages", "exaix-team", "apps"]) {
   let dirExists = true;
   try {
     await Deno.stat(dir);

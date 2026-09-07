@@ -26,11 +26,11 @@ Deno.test("getTestPlacementIssue: rejects test files outside tests/", () => {
 
   assertEquals(
     issue?.message,
-    "Test files must live under tests/, packages/<package>/tests/, packages-team/<package>/tests/, or apps/<app>/tests/.",
+    "Test files must live under tests/, packages/<package>/tests/, exaix-team/{packages,apps}/<name>/tests/, or apps/<app>/tests/.",
   );
   assertEquals(
     issue?.suggestion,
-    "Move this file under tests/, a package/app tests folder, or packages-team/<package>/tests/.",
+    "Move this file under tests/, a package/app tests folder, or exaix-team/{packages,apps}/<name>/tests/.",
   );
 });
 

@@ -177,13 +177,17 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
   const binDir = "dist/bin";
   await Deno.mkdir(binDir, { recursive: true });
 
-  // Edition determines the entry point and binary name prefix. Solo excludes packages-team/ +
-  // exaix-enterprise; Team includes packages-team/ but excludes exaix-enterprise; Enterprise
-  // builds the empty submodule scaffold.
-  const editionConfigs: Record<string, { entry: string; prefix: string }> = {
+  // Edition determines the entry point and binary name prefix. Solo excludes exaix-team/ +
+  // exaix-enterprise; Team includes exaix-team/ but excludes exaix-enterprise. Enterprise's
+  // entry lives in its own workspace (exaix-enterprise/deno.json), so its compile needs --config.
+  const editionConfigs: Record<string, { entry: string; prefix: string; config?: string }> = {
     [EDITION_SOLO]: { entry: "apps/daemon/main.ts", prefix: "exaix" },
     [EDITION_TEAM]: { entry: "apps/daemon/main.ts", prefix: "exaix-team" },
-    [EDITION_ENTERPRISE]: { entry: "exaix-enterprise/mod.ts", prefix: "exaix-enterprise" },
+    [EDITION_ENTERPRISE]: {
+      entry: "exaix-enterprise/apps/enterprise/main.ts",
+      prefix: "exaix-enterprise",
+      config: "exaix-enterprise/deno.json",
+    },
   };
   const cfg = editionConfigs[edition];
   const entryPoint = cfg.entry;
@@ -199,6 +203,7 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
       "deno",
       "compile",
       "--allow-all",
+      ...(cfg.config ? ["--config", cfg.config] : []),
       "--target",
       target,
       "--output",
@@ -220,7 +225,7 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
     for (const target of buildTargets) {
       const isWin = target.includes("windows");
       const binDir = "dist/bin";
-      const output = isWin ? `${binDir}/exaix-${target}.exe` : `${binDir}/exaix-${target}`;
+      const output = isWin ? `${binDir}/${binaryPrefix}-${target}.exe` : `${binDir}/${binaryPrefix}-${target}`;
       try {
         const stats = await Deno.stat(output);
         const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
@@ -310,7 +315,7 @@ async function verifyCoverage(edition: EditionType = EDITION_SOLO): Promise<bool
     const testStart = Date.now();
     const testPaths = edition === EDITION_SOLO
       ? ["tests/", "packages/", "apps/"]
-      : ["tests/", "packages/", "packages-team/", "apps/"];
+      : ["tests/", "packages/", "exaix-team/", "apps/"];
     const testCmd = new Deno.Command("deno", {
       args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, ...testPaths],
       stdout: "inherit",

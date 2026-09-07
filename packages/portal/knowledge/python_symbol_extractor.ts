@@ -3,7 +3,7 @@
  * @path packages/portal/knowledge/python_symbol_extractor.ts
  * @description Python ISymbolExtractor using tree-sitter-python WASM grammar and the
  * grammar's tags.scm query. Extracts functions, classes, and module-level constants
- * with signatures, docstrings, and pageRank-based ranking. Part of the Solo (MIT)
+ * with signatures, docstrings, and pageRank-based ranking. Part of the Solo
  * multi-language baseline.
  * @architectural-layer Portal
  * @dependencies [npm:web-tree-sitter, npm:tree-sitter-python]
@@ -39,7 +39,7 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
 
 // PythonSymbolExtractor
 
-/** Python tree-sitter symbol extractor — Solo (MIT) tier. Returns `[]` for any `primaryLanguage` other than `"python"`. */
+/** Python tree-sitter symbol extractor — Solo tier. Returns `[]` for any `primaryLanguage` other than `"python"`. */
 export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
   protected readonly languageName = "python";
   protected readonly grammarWasmSpecifier = "npm:tree-sitter-python/tree-sitter-python.wasm";

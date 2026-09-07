@@ -120,7 +120,7 @@ Exaix core identity (from canonical analyses + ARCHITECTURE.md + White Paper):
   Between lightweight IDE agents (no governance) and heavy enterprise platforms (too complex/expensive).
   Built on 4 pillars: Activity Journal (AI-BOM), Explicit Approval Gates, MCP-Native
   Interoperability, Deno Security Model.
-  3-tier edition: Solo (MIT, CLI+TUI+SQLite), Team (BSL, +Web UI+PostgreSQL+MCP Server),
+  3-tier edition: Solo (Apache 2.0, CLI+TUI+SQLite), Team (BSL, +Web UI+PostgreSQL+MCP Server),
   Enterprise (proprietary, +Governance Dashboard+Compliance+immudb).
 
 Comprehension verification (must satisfy before starting Phase 1):

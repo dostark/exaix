@@ -5,7 +5,7 @@
  * @architectural-layer Schemas
  * @ungrounded
  * @dependencies [src/shared/constants.ts]
- * @related-files [packages/core/src/observability/event_bus_service.ts, packages-team/mcp-server/sse_handler.ts]
+ * @related-files [packages/core/src/observability/event_bus_service.ts, exaix-team/packages/mcp-server/sse_handler.ts]
  */
 
 import { z } from "zod";

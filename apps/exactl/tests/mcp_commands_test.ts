@@ -4,7 +4,7 @@
  * @related-files [apps/exactl/src/commands/mcp_commands.ts]
  * @architectural-layer CLI
  * @description Verifies CLI commands for the MCP verb: starting the
- * inbound MCP server (delegating to apps/mcp-server/main.ts) and
+ * inbound MCP server (delegating to exaix-team/apps/mcp-server/main.ts) and
  * connecting outbound to a real external MCP server via `connect()`. The
  * outbound tests run against a real local server built with the official
  * `@modelcontextprotocol/server` SDK — Step 4's reusable fixture module
@@ -84,7 +84,7 @@ Deno.test("McpCommands.start(sse): delegates with --transport sse and custom por
 
   assertEquals(commands.capturedArgs.length, 1);
   const args = commands.capturedArgs[0];
-  assertEquals(args.includes("apps/mcp-server/main.ts"), true);
+  assertEquals(args.includes("exaix-team/apps/mcp-server/main.ts"), true);
   assertEquals(args.includes("--transport"), true);
   assertEquals(args[args.indexOf("--transport") + 1], "sse");
   assertEquals(args.includes("--port"), true);

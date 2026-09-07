@@ -3,7 +3,7 @@
  * @module BackupRepo
  * @path scripts/backup_repo.ts
  * @description Full backup of the Exaix repository — git history, current branch, and all
- * submodules (exaix-dev-docs, exaix-enterprise, packages-team) — cloned to a target destination.
+ * submodules (exaix-dev-docs, exaix-enterprise, exaix-team) — cloned to a target destination.
  *
  * The clone is fully offline: submodule URLs in .gitmodules are overridden with the local
  * submodule checkouts as sources, so no network or SSH access is required. The backup is

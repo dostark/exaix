@@ -15,7 +15,7 @@
  *   Mirrors Phase 162's `external_mcp_client_cutover_test.ts` subprocess discipline (real
  *   process, real port/pipe, real client) — never an in-process `MCPServer` construction.
  * @architectural-layer Test
- * @related-files [apps/mcp-server/main.ts, packages-team/mcp-server/server.ts, apps/daemon/main.ts, packages/flow/src/dynamic_step_executor.ts]
+ * @related-files [exaix-team/apps/mcp-server/main.ts, exaix-team/packages/mcp-server/server.ts, apps/daemon/main.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
@@ -34,11 +34,11 @@ import {
   GOLDEN_FIXTURE_SEED_FILES,
   type IGoldenFixtureCapture,
   REPRESENTATIVE_TOOL_CALLS,
-} from "../../packages-team/mcp-server/tests/fixtures/golden_fixture_capture.ts";
+} from "../../exaix-team/packages/mcp-server/tests/fixtures/golden_fixture_capture.ts";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 const PORTAL_ALIAS = "TestPortal";
-const MCP_SERVER_MAIN = join(REPO_ROOT, "apps", "mcp-server", "main.ts");
+const MCP_SERVER_MAIN = join(REPO_ROOT, "exaix-team", "apps", "mcp-server", "main.ts");
 const DYNAMIC_STEP_COMPLETED = "dynamic_step_completed";
 
 /** ReAct completion fixture: the dynamic step's single LLM call declares completion. */
@@ -113,7 +113,7 @@ interface IServerHandle {
   stop: () => Promise<void>;
 }
 
-/** Spawn `apps/mcp-server/main.ts --transport sse --port <free>` with `EXA_CONFIG_PATH`. */
+/** Spawn `exaix-team/apps/mcp-server/main.ts --transport sse --port <free>` with `EXA_CONFIG_PATH`. */
 async function startSseServer(
   configPath: string,
   extraEnv: Record<string, string> = {},

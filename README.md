@@ -17,7 +17,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 [![Deno](https://img.shields.io/badge/runtime-Deno-green.svg)](https://deno.land/)
 [![SQLite](https://img.shields.io/badge/storage-SQLite-blue.svg)](https://www.sqlite.org/)
 [![CI](https://img.shields.io/github/actions/workflow/status/dostark/exaix/ci.yml)](https://github.com/dostark/exaix/actions)
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 > Exaix surrounds AI agents with step-level durability (still maturing), resumable human-approval gates, and a typed domain-event stream — giving you the reliability and governance of a production orchestration system, expressed as inspectable YAML flows and filesystem artifacts instead of an opaque runtime graph, with no cloud infrastructure required.
 
@@ -99,7 +99,7 @@ Every transition in this loop emits a typed, trace-linked event — that event s
 git clone https://github.com/dostark/exaix.git
 cd exaix
 deno task compile  # or use `deno task start` to run without compiling
-# Note: exaix-dev-docs, packages-team (Team-tier), and exaix-enterprise are private
+# Note: exaix-dev-docs, exaix-team (Team-tier), and exaix-enterprise are private
 # submodules requiring separate access grants — this default clone gives you a full
 # Solo-edition checkout with those directories empty. See CONTRIBUTING.md § 4.2 for
 # how to initialize them once you have access.
@@ -191,7 +191,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md), [AGENTS.
 
 ## License
 
-Proprietary © Exaix Development Team. See [LICENSE](./LICENSE).
+This repository is licensed per directory, not as a single whole:
+
+- `packages/`, `apps/`, `scripts/` (Solo edition, this LICENSE file) — **Apache License 2.0**.
+- `exaix-team/` (Team edition, private submodule) — Business Source License 1.1, converting to Apache 2.0 on its Change Date. See [exaix-team/README.md](./exaix-team/README.md#licensing).
+- `exaix-enterprise/` (Enterprise edition, private submodule) — proprietary. See [exaix-enterprise/LICENSE](./exaix-enterprise/LICENSE).
 
 ---
 

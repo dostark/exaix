@@ -5,6 +5,6 @@
 [submodule "exaix-enterprise"]
 	path = exaix-enterprise
 	url = git@github.com:dostark/exaix-enterprise.git
-[submodule "packages-team"]
-	path = packages-team
+[submodule "exaix-team"]
+	path = exaix-team
 	url = git@github.com:dostark/exaix-team.git

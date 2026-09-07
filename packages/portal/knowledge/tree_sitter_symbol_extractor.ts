@@ -1,7 +1,7 @@
 /**
  * @module TreeSitterSymbolExtractor
  * @path packages/portal/knowledge/tree_sitter_symbol_extractor.ts
- * @description Shared MIT base class for tree-sitter-based ISymbolExtractor implementations.
+ * @description Shared Solo base class for tree-sitter-based ISymbolExtractor implementations.
  * Handles Parser init, grammar loading, query execution, bounds (byte/node/file/time),
  * path security, pageRank ranking, and capping at DEFAULT_SYMBOL_MAP_LIMIT.
  * Subclasses provide the language name, grammar WASM path, .scm query source, and

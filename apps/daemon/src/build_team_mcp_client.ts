@@ -7,7 +7,7 @@
  * construction) logs `DynamicToolsInitFailed` and returns `undefined`, degrading to
  * today's no-dynamic-step-mode behavior rather than crashing Team-daemon boot.
  * @architectural-layer Application
- * @related-files [apps/daemon/main.ts, packages-team/mcp-server/tools.ts, packages/mcp/server/local_tool_dispatcher.ts]
+ * @related-files [apps/daemon/main.ts, exaix-team/packages/mcp-server/tools.ts, packages/mcp/server/local_tool_dispatcher.ts]
  */
 
 import { LocalToolDispatcher } from "@exaix/mcp/server";

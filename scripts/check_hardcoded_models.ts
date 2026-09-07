@@ -100,7 +100,7 @@ export async function checkAllFiles(
   const allViolations: IViolation[] = [];
   const scannedFiles: number[] = [];
 
-  for (const dir of ["packages", "packages-team", "apps"]) {
+  for (const dir of ["packages", "exaix-team", "apps"]) {
     let dirExists = true;
     try {
       await Deno.stat(dir);
@@ -161,7 +161,7 @@ if (import.meta.main) {
 
 async function countFiles(): Promise<number> {
   let count = 0;
-  for (const dir of ["packages", "packages-team", "apps"]) {
+  for (const dir of ["packages", "exaix-team", "apps"]) {
     try {
       await Deno.stat(dir);
       for await (const entry of walk(dir, { exts: [".ts"], followSymlinks: false })) {

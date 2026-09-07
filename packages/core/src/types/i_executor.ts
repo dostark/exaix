@@ -4,7 +4,7 @@
  * @description Minimal executor interface for voting fan-out — runs a blueprint with a prompt and returns content + optional confidence.
  * @architectural-layer Core
  * @dependencies []
- * @related-files [packages-team/voting/src/voting_consensus_service.ts]
+ * @related-files [exaix-team/packages/voting/src/voting_consensus_service.ts]
  */
 
 export interface IExecutorResult {

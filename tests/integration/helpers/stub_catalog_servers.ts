@@ -4,7 +4,7 @@
  * @description Phase 135 Step 9 — local HTTP stubs for the five Team model-registry
  *   catalog adapters (anthropic, openai, google, ollama, openrouter), each serving the
  *   exact response shape its adapter Zod-validates (see
- *   packages-team/model-registry-live/src/adapters/*_catalog_adapter.ts). Used with the
+ *   exaix-team/packages/model-registry-live/src/adapters/*_catalog_adapter.ts). Used with the
  *   model_registry.adapter_base_urls config override so a REAL booted daemon subprocess
  *   fetches from these stubs instead of the vendor hosts.
  * @architectural-layer Test

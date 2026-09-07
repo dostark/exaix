@@ -7,7 +7,7 @@
  *   text-based `[edition-leak]` rule in scripts/check_code_style.ts. It resolves an entry's
  *   real module graph via `deno info --json` and flags any STATIC (non-dynamic) runtime
  *   `code` edge from a module of one edition tier into a module of a HIGHER tier
- *   (MIT < Team < Enterprise). Because it reads the resolved graph (not source regex), a bug
+ *   (Solo < Team < Enterprise). Because it reads the resolved graph (not source regex), a bug
  *   in the static rule's parsing — a specifier shape it fails to match, a guard it mis-reads —
  *   is caught here instead of silently leaking Team/Enterprise code into a lower-edition build.
  *
@@ -45,7 +45,7 @@ export interface IStaticEditionLeak extends IGraphEdge {
   toTier: number;
 }
 
-/** Entry points whose graphs ship in a Solo (MIT) source-run deploy. */
+/** Entry points whose graphs ship in a Solo source-run deploy. */
 const DEFAULT_ENTRIES = ["apps/daemon/main.ts", "apps/exactl/main.ts"];
 
 /** Hard cap on the `deno info` resolve so a hung subprocess cannot stall the CI gate. */
