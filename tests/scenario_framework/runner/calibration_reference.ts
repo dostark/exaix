@@ -22,6 +22,7 @@ import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@ex
 import { deriveCalibrationLabel } from "@exaix/eval-history";
 import type { CalibrationLabel } from "@exaix/eval-history";
 import { callLlmEndpoint } from "./assertions.ts";
+import type { ILlmEndpointResolvedMetadata } from "./assertions.ts";
 
 export interface IReferenceEvaluationInput {
   readonly requestContext: string;
@@ -73,11 +74,22 @@ export async function evaluateReference(
   };
   const jsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
 
+  let resolved: ILlmEndpointResolvedMetadata | undefined;
   let raw: string;
   try {
-    raw = await callLlmEndpoint(prompt, env, jsonSchema);
+    raw = await callLlmEndpoint(prompt, env, jsonSchema, (metadata) => {
+      resolved = metadata;
+    });
   } catch (error) {
     throw new ReferenceEvaluationError(`reference call failed: ${(error as Error).message}`);
+  }
+  if (!resolved) {
+    throw new ReferenceEvaluationError(`reference call resolved to no provider/model for "${input.referenceProvider}"`);
+  }
+  if (resolved.provider !== input.referenceProvider) {
+    throw new ReferenceEvaluationError(
+      `reference provider substituted: requested "${input.referenceProvider}", resolved "${resolved.provider}"`,
+    );
   }
   const cleaned = stripCodeFence(raw);
 
@@ -92,8 +104,8 @@ export async function evaluateReference(
         score,
         label: deriveCalibrationLabel(score, input.labelThreshold),
         rationale,
-        provider: input.referenceProvider,
-        model: input.referenceModel,
+        provider: resolved.provider,
+        model: resolved.model,
       };
     }
     const parsed = JudgeResponseSchema.parse(JSON.parse(cleaned));
@@ -101,8 +113,8 @@ export async function evaluateReference(
       score: parsed.score,
       label: deriveCalibrationLabel(parsed.score, input.labelThreshold),
       rationale: parsed.reasoning,
-      provider: input.referenceProvider,
-      model: input.referenceModel,
+      provider: resolved.provider,
+      model: resolved.model,
     };
   } catch (error) {
     throw new ReferenceEvaluationError(`failed to parse reference response: ${(error as Error).message}`);
