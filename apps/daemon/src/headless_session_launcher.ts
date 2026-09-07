@@ -47,6 +47,9 @@ export interface IHeadlessSessionLauncherDeps {
   launchTimeoutMs?: Opt<number, Reason.OptionalDependency>;
   /** Cumulative byte cap per drained stream before truncation; defaults to DELEGATE_STREAM_MAX_BYTES. */
   streamMaxBytes?: Opt<number, Reason.OptionalDependency>;
+  /** Idle timeout (ms) between reads while draining a stream; defaults to DELEGATE_STDOUT_DRAIN_MS.
+   *  Override in tests whose mock stream never naturally closes. */
+  drainIdleTimeoutMs?: Opt<number, Reason.OptionalDependency>;
 }
 
 const RETURN_FILE = "return.json";
@@ -224,7 +227,7 @@ export class HeadlessSessionLauncher {
     return true;
   }
 
-  /** Drains one child stream completely, bounded by DELEGATE_STDOUT_DRAIN_MS. */
+  /** Drains one child stream completely, bounded by DELEGATE_STDOUT_DRAIN_MS (or deps.drainIdleTimeoutMs). */
   private async drainStream(stream: ReadableStream<Uint8Array>, label: string): Promise<string> {
     const reader = stream.getReader();
     const chunks: Uint8Array[] = [];
@@ -232,6 +235,7 @@ export class HeadlessSessionLauncher {
     let totalLength = 0;
 
     const streamMaxBytes = this.deps.streamMaxBytes ?? DELEGATE_STREAM_MAX_BYTES;
+    const drainIdleTimeoutMs = this.deps.drainIdleTimeoutMs ?? DELEGATE_STDOUT_DRAIN_MS;
     let truncated = false;
 
     try {
@@ -240,7 +244,7 @@ export class HeadlessSessionLauncher {
         const timeout = Promise.withResolvers<never>();
         const timeoutId = setTimeout(
           () => timeout.reject(new Error(`${label} drain timeout`)),
-          DELEGATE_STDOUT_DRAIN_MS,
+          drainIdleTimeoutMs,
         );
         const { value, done } = await Promise.race([read, timeout.promise]).finally(() => {
           clearTimeout(timeoutId);

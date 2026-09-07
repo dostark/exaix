@@ -348,12 +348,14 @@ export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE: number = configurable({
 });
 
 // Session Delegate
-/** Maximum time (ms) to drain a headless delegate's stdout stream. */
+/** Idle timeout (ms) between reads while draining a headless delegate's stdout stream.
+ *  claude-code's `--output-format json` is fully-buffered, not streamed, so for that tool
+ *  this is effectively "time to first byte" rather than a true idle gap. */
 export const DELEGATE_STDOUT_DRAIN_MS: number = configurable({
   key: "delegate.stdout_drain_ms",
-  default: 5_000,
+  default: 120_000,
   type: ConfigValueType.NUMBER,
-  description: "Maximum time in milliseconds to drain a headless delegate's stdout stream",
+  description: "Idle timeout in milliseconds between reads while draining a headless delegate's stdout stream",
   min: 100,
   max: 300_000,
   swap: SwapClass.RESTART,
