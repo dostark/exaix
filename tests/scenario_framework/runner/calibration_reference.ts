@@ -21,6 +21,7 @@ import {
 import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import { deriveCalibrationLabel } from "@exaix/eval-history";
 import type { CalibrationLabel } from "@exaix/eval-history";
+import type { JSONValue } from "@exaix/core/types";
 import { callLlmEndpoint } from "./assertions.ts";
 import type { ILlmEndpointResolvedMetadata } from "./assertions.ts";
 
@@ -54,6 +55,59 @@ function stripCodeFence(raw: string): string {
   return raw.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 }
 
+/** The rubric prompt AND whether it's a multi-criteria preset — shared verbatim by
+ *  every reference execution path (unsandboxed or sandboxed) so neither can drift
+ *  into an independent scorer. Throws on an unknown/empty preset. */
+export function buildReferencePrompt(
+  requestContext: string,
+  artifact: string,
+  preset: string,
+): { prompt: string; isMulti: boolean; jsonSchema: Record<string, JSONValue> } {
+  const criteria = resolveCriterionPreset(preset);
+  if (criteria.length === 0) {
+    throw new ReferenceEvaluationError(`Unknown or empty preset: "${preset}"`);
+  }
+  const isMulti = criteria.length > 1;
+  return {
+    prompt: buildEvaluationPrompt(artifact, criteria, requestContext, isMulti),
+    isMulti,
+    jsonSchema: isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema(),
+  };
+}
+
+/** Parses a reference evaluator's raw response into a score/label/rationale, using the
+ *  exact scoring semantics (calculateWeightedScore) the target judge uses. Throws
+ *  ReferenceEvaluationError on a malformed/unparseable response — never synthesizes
+ *  a passing result. */
+export function parseReferenceResponse(
+  raw: string,
+  preset: string,
+  labelThreshold: number,
+): { score: number; label: CalibrationLabel; rationale: string } {
+  const criteria = resolveCriterionPreset(preset);
+  const isMulti = criteria.length > 1;
+  const cleaned = stripCodeFence(raw);
+
+  try {
+    if (isMulti) {
+      const parsed = EvaluationResultSchema.parse(JSON.parse(cleaned));
+      const score = calculateWeightedScore(parsed.criteriaScores, criteria);
+      const rationale = criteria
+        .map((c) => `${c.name}: ${parsed.criteriaScores[c.name]?.reasoning ?? "(no reasoning)"}`)
+        .join(" | ");
+      return { score, label: deriveCalibrationLabel(score, labelThreshold), rationale };
+    }
+    const parsed = JudgeResponseSchema.parse(JSON.parse(cleaned));
+    return {
+      score: parsed.score,
+      label: deriveCalibrationLabel(parsed.score, labelThreshold),
+      rationale: parsed.reasoning,
+    };
+  } catch (error) {
+    throw new ReferenceEvaluationError(`failed to parse reference response: ${(error as Error).message}`);
+  }
+}
+
 /** Scores one calibration item via a live call to `referenceProvider`/`referenceModel`,
  *  using the same rubric prompt and scoring semantics as the target judge — never the
  *  target's own score or label. Throws on a malformed/unparseable response rather than
@@ -61,18 +115,12 @@ function stripCodeFence(raw: string): string {
 export async function evaluateReference(
   input: IReferenceEvaluationInput,
 ): Promise<IReferenceEvaluationResult> {
-  const criteria = resolveCriterionPreset(input.preset);
-  if (criteria.length === 0) {
-    throw new ReferenceEvaluationError(`Unknown or empty preset: "${input.preset}"`);
-  }
-  const isMulti = criteria.length > 1;
-  const prompt = buildEvaluationPrompt(input.artifact, criteria, input.requestContext, isMulti);
+  const { prompt, jsonSchema } = buildReferencePrompt(input.requestContext, input.artifact, input.preset);
   const env = {
     EXA_EVAL_LLM_MOCK: "false",
     EXA_LLM_PROVIDER: input.referenceProvider,
     EXA_LLM_MODEL: input.referenceModel,
   };
-  const jsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
 
   let resolved: ILlmEndpointResolvedMetadata | undefined;
   let raw: string;
@@ -91,32 +139,7 @@ export async function evaluateReference(
       `reference provider substituted: requested "${input.referenceProvider}", resolved "${resolved.provider}"`,
     );
   }
-  const cleaned = stripCodeFence(raw);
 
-  try {
-    if (isMulti) {
-      const parsed = EvaluationResultSchema.parse(JSON.parse(cleaned));
-      const score = calculateWeightedScore(parsed.criteriaScores, criteria);
-      const rationale = criteria
-        .map((c) => `${c.name}: ${parsed.criteriaScores[c.name]?.reasoning ?? "(no reasoning)"}`)
-        .join(" | ");
-      return {
-        score,
-        label: deriveCalibrationLabel(score, input.labelThreshold),
-        rationale,
-        provider: resolved.provider,
-        model: resolved.model,
-      };
-    }
-    const parsed = JudgeResponseSchema.parse(JSON.parse(cleaned));
-    return {
-      score: parsed.score,
-      label: deriveCalibrationLabel(parsed.score, input.labelThreshold),
-      rationale: parsed.reasoning,
-      provider: resolved.provider,
-      model: resolved.model,
-    };
-  } catch (error) {
-    throw new ReferenceEvaluationError(`failed to parse reference response: ${(error as Error).message}`);
-  }
+  const { score, label, rationale } = parseReferenceResponse(raw, input.preset, input.labelThreshold);
+  return { score, label, rationale, provider: resolved.provider, model: resolved.model };
 }
