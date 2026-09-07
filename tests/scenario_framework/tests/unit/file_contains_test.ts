@@ -129,6 +129,21 @@ Deno.test("[file_contains] cwd $WORKTREE resolves a relative glob against the ne
   });
 });
 
+Deno.test("[file_contains] cwd $WORKTREE waits when the worktree is created after the step starts", async () => {
+  await withTempWorkspace(async (ws) => {
+    setTimeout(async () => {
+      const wt = join(ws, ".exa", "worktrees", "todo-app", "trace-1");
+      await Deno.mkdir(join(wt, "src"), { recursive: true });
+      await Deno.writeTextFile(join(wt, "src", "main.ts"), "const GREETING = 'hi';\n");
+    }, 200);
+    const result = await executeScenarioStep({
+      step: step({ cwd: "$WORKTREE", file_pattern: "src/main.ts", timeout_sec: 5 }),
+      cwd: ws,
+    });
+    assertEquals(result.exitCode, 0, `expected worktree-relative match once it appears, got ${result.stderr}`);
+  });
+});
+
 Deno.test("[file_contains] cwd relative path resolves against the workspace root", async () => {
   await withTempWorkspace(async (ws) => {
     await Deno.mkdir(join(ws, "todo-app", "src"), { recursive: true });

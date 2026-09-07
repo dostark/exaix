@@ -82,6 +82,42 @@ Deno.test("[wait_for_file] fails fast when failure_glob matches before the succe
   });
 });
 
+Deno.test("[wait_for_file] min_matches requires a new match count, not just any existing match", async () => {
+  await withTempWorkspace(async (ws) => {
+    await Deno.mkdir(join(ws, "Archive"), { recursive: true });
+    // One archive already exists from an earlier step — a bare "found.length > 0" check would
+    // pass instantly on this stale match without ever observing THIS step's own archive.
+    await Deno.writeTextFile(join(ws, "Archive", "request-aaa_plan.md"), "plan body");
+
+    const resultPtr: { value?: Awaited<ReturnType<typeof executeScenarioStep>> } = {};
+    const run = executeScenarioStep({
+      step: {
+        id: "wait-for-second-archive",
+        type: ScenarioStepType.WAIT_FOR_FILE,
+        args: ["**/Archive/*_plan.md"],
+        min_matches: 2,
+        timeout_sec: 5,
+        input_criteria: [],
+        output_criteria: [],
+        continue_on_failure: false,
+      },
+      cwd: ws,
+    }).then((r) => {
+      resultPtr.value = r;
+      return r;
+    });
+
+    // Confirm it hasn't resolved on the stale single match.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assertEquals(resultPtr.value, undefined, "should still be waiting for the second archive");
+
+    await Deno.writeTextFile(join(ws, "Archive", "request-bbb_plan.md"), "plan body");
+    const result = await run;
+
+    assertEquals(result.exitCode, 0);
+  });
+});
+
 Deno.test("[wait_for_file] success glob still wins if both patterns exist (success checked first)", async () => {
   await withTempWorkspace(async (ws) => {
     await Deno.mkdir(join(ws, "Plans"), { recursive: true });
