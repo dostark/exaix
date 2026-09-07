@@ -5,7 +5,7 @@
  * tools. This is the single source of truth for registration, classification, docs visibility,
  * dynamic-execution policy, and agent-quality metadata.
  * @architectural-layer MCP
- * @related-files [packages-team/mcp-server/tools.ts, packages-team/mcp-server/server.ts, packages/core/src/types/enums.ts]
+ * @related-files [exaix-team/packages/mcp-server/tools.ts, exaix-team/packages/mcp-server/server.ts, packages/core/src/types/enums.ts]
  */
 
 import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
@@ -93,7 +93,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/read_file_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/read_file_tool.ts",
     description:
       "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use run_command with grep or rg; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
     input_schema: {
@@ -122,7 +122,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/write_file_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/write_file_tool.ts",
     description:
       "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
     preferred_tool_choice_hint:
@@ -154,7 +154,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/patch_file_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/patch_file_tool.ts",
     description:
       "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
     preferred_tool_choice_hint:
@@ -193,7 +193,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/delete_file_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/delete_file_tool.ts",
     description:
       "Permanently delete a file inside a portal. Use only when you are certain the file is no longer needed; the operation is irreversible unless the portal is under git version control. Returns a success confirmation message.",
     input_schema: {
@@ -222,7 +222,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/move_file_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/move_file_tool.ts",
     description:
       "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying. Returns a success confirmation message.",
     input_schema: {
@@ -252,7 +252,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/create_directory_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/create_directory_tool.ts",
     description:
       "Create a directory (and any missing parent directories) inside a portal. Use before writing files into a directory that may not exist yet. Safe to call if the directory already exists. Returns a success confirmation message.",
     input_schema: {
@@ -281,7 +281,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/list_directory_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/list_directory_tool.ts",
     description:
       "List the files and subdirectories at a path inside a portal. Use to check whether a file exists, explore directory structure, or enumerate files before processing. Returns an array of entry names.",
     input_schema: {
@@ -311,7 +311,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/search_files_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/search_files_tool.ts",
     description:
       "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use run_command with grep or rg. Returns an array of matching relative file paths.",
     input_schema: {
@@ -344,7 +344,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/git_create_branch_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/git_create_branch_tool.ts",
     description:
       "Create a new git branch in the portal repository. Use before making changes that should be isolated on a branch. Returns the new branch name on success.",
     output_schema: {
@@ -364,7 +364,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/git_commit_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/git_commit_tool.ts",
     description:
       "Stage all changes and create a git commit in the portal repository. Use after writing or modifying files to record the change. Returns the commit hash of the newly created commit.",
     output_schema: {
@@ -384,7 +384,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/git_status_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/git_status_tool.ts",
     description:
       "Show the working tree status (modified, staged, untracked files) of the portal git repository. Use to inspect pending changes before committing. Returns the git status output as a formatted string.",
     output_schema: {
@@ -404,7 +404,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/git_log_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/git_log_tool.ts",
     description:
       "Query git commit history in the portal repository with common filters and formatting. Use this tool when you need commit chronology, author/message filtering, or path-specific history. Supports max_count/skip pagination, date filters, author/message search, path filtering, and oneline/full/custom output modes. Returns git log output as text.",
     output_schema: {
@@ -424,7 +424,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/git_worktree_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/git_worktree_tool.ts",
     description:
       "Manage git worktrees in the portal repository. Use this tool when you need parallel checkouts for branch work, cleanup stale worktrees, or inspect active worktree state. Supports add/list/remove/prune/lock/unlock actions and important flags such as force, detach, porcelain output, dry-run prune, and lock reasons. Returns command output as text.",
     output_schema: {
@@ -444,7 +444,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/handlers/run_command_tool.ts",
+    source_ref: "exaix-team/packages/mcp-server/handlers/run_command_tool.ts",
     description:
       "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
     input_schema: {
@@ -481,7 +481,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: true,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/domain_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/domain_tools.ts",
     description:
       "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation before execution. Returns the created request record with its assigned ID.",
     output_schema: {
@@ -506,7 +506,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/domain_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/domain_tools.ts",
     description:
       "List all execution plans (active, draft, or completed) tracked in the Exaix workspace. Read-only; safe for dynamic execution. Use to check plan status or find a plan ID before approving or querying. Returns an array of plan summary objects.",
     output_schema: {
@@ -534,7 +534,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: true,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/domain_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/domain_tools.ts",
     description:
       "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation before execution. Returns the updated plan record.",
     output_schema: {
@@ -558,7 +558,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/domain_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/domain_tools.ts",
     description:
       "Query the Exaix activity journal for execution history, tool calls, or agent events. Read-only; safe for dynamic execution. Use to audit what happened or look up recent activity in a flow. Returns an array of matching journal entry records.",
     output_schema: {
@@ -586,7 +586,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/portal_knowledge_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/portal_knowledge_tools.ts",
     description:
       "List code symbols (functions, classes, interfaces, consts, types, enums) previously extracted from a portal's codebase by 'portal analyze' (standard/deep mode). Read-only; safe for dynamic execution. Use to navigate an unfamiliar codebase, find a symbol's file and signature, or discover what a portal exports without reading whole files. Optionally filter by a case-insensitive name substring (query) or symbol kind, and cap result count (limit). Returns an error if the portal has not been analyzed yet — run 'portal analyze' first. Returns an array of symbol records ranked by connectivity (pageRankScore, most-referenced first).",
     output_schema: {
@@ -618,7 +618,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/config_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/config_tools.ts",
     description:
       "Read the current effective value of a single Exaix configuration key. Read-only; safe for dynamic execution. Use to inspect current config without starting the daemon. Returns the resolved value (override → registry default).",
     output_schema: {
@@ -642,7 +642,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/config_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/config_tools.ts",
     description:
       "Validate all registered configuration keys against their registry metadata (type, min, max, enum). Read-only; safe for dynamic execution. Use to confirm config is well-formed before applying changes or starting the daemon. Returns a validation report with any constraint violations.",
     output_schema: {
@@ -666,7 +666,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/config_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/config_tools.ts",
     description:
       "Compare effective configuration values against registry defaults. Read-only; safe for dynamic execution. Returns overridden, added, and missing keys. Use to see what config has been changed from defaults.",
     output_schema: {
@@ -691,7 +691,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/config_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/config_tools.ts",
     description:
       "Trace the origin of a configuration key's value — whether it comes from a DB override, registry default, schema default, or bootstrap. Read-only; safe for dynamic execution. Use to explain why a key has its current value or debug unexpected config. Returns provenance source and resolved value.",
     output_schema: {
@@ -716,7 +716,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: true,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/config_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/config_tools.ts",
     description:
       "Stage a configuration change for later activation. Use to propose a config mutation; the change is held in a per-session pending list and is NOT written until exaix_config_apply is called. Unapplied changes auto-discard after 60 seconds. Requires human approval before execution. Returns the staged key and status.",
     output_schema: {
@@ -740,7 +740,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: true,
     docs_visible: true,
-    source_ref: "packages-team/mcp-server/config_tools.ts",
+    source_ref: "exaix-team/packages/mcp-server/config_tools.ts",
     description:
       "Apply all staged configuration changes from exaix_config_set. Use after staging one or more changes to commit them. Drains the pending list and writes each change through the config adapter. Requires human approval before execution. Returns a summary of applied and failed changes.",
     output_schema: {

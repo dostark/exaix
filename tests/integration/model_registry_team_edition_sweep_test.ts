@@ -13,7 +13,7 @@
  *       fires for the failing provider while model.catalog.refreshed fires for the rest
  *       (registry_refresh_scheduler.ts's per-provider isolation, §7.2).
  * @architectural-layer Test
- * @related-files [apps/daemon/src/bootstrap_team.ts, packages-team/model-registry-live/src/registry_refresh_scheduler.ts]
+ * @related-files [apps/daemon/src/bootstrap_team.ts, exaix-team/packages/model-registry-live/src/registry_refresh_scheduler.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";

@@ -512,10 +512,10 @@ function suggestFor(
   if (!matches || matches.length !== 1) return undefined;
   const onlyRepoRel = matches[0]; // repo-relative path of the real file
   // Do NOT suggest an edition-crossing rewrite: a Solo `packages/...` reference must
-  // not be auto-rewritten to a Team `packages-team/...` path (and vice-versa). Those
+  // not be auto-rewritten to a Team `exaix-team/...` path (and vice-versa). Those
   // may be intentional edition-composed references; leave them for human review.
-  const refTeam = ref.startsWith("packages-team/");
-  const onlyTeam = onlyRepoRel.startsWith("packages-team/");
+  const refTeam = ref.startsWith("exaix-team/");
+  const onlyTeam = onlyRepoRel.startsWith("exaix-team/");
   if (refTeam !== onlyTeam) return undefined;
 
   if (!isRelativeReference(ref)) return onlyRepoRel;

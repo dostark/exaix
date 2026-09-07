@@ -112,6 +112,19 @@ const SEQUENTIAL_FILES: string[] = [
   // contention that intermittently errors, and critical=true turns the transient
   // failure into a hard FAIL, breaking assertions expecting "pass"/"warn"/"degraded".
   "apps/daemon/tests/health_check_service_test.ts",
+  // Both boot a real daemon via bootRealDaemon(), which spawns `deno run
+  // scripts/setup_db.ts` as a subprocess (daemon_config.ts:migrateDaemonWorkspace).
+  // Same spawn-capacity class as blueprint_commands_test.ts above (not an env-var
+  // leak — PATH is never mutated globally outside child_env_test.ts, which is
+  // already sequential and runs after Batch 1 completes): under Batch 1's
+  // concurrent spawn pressure this subprocess intermittently fails with
+  // "Failed to spawn 'deno': entity not found"; passes reliably standalone.
+  "apps/daemon/tests/dynamic_step_wiring_test.ts",
+  "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
+  // Polls waitForReadiness() with a tight 1000ms timeout checking a live PID.
+  // Under Batch 1's CPU-scheduling pressure on a resource-constrained host, the
+  // poll loop can lose the race and time out before observing the live PID.
+  "apps/daemon/tests/readiness_test.ts",
 ];
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
@@ -621,7 +634,7 @@ export async function main(args: string[]): Promise<number> {
 
   // Edition filtering: exclude Team-only paths when EXAIX_EDITION is solo/unset
   const edition = Deno.env.get("EXAIX_EDITION") ?? "solo";
-  const teamPaths = edition === "solo" ? [] : ["packages-team/"];
+  const teamPaths = edition === "solo" ? [] : ["exaix-team/"];
 
   // Batch 1: full test suite in parallel (use TAP reporter for error capture)
   const batch1Env: Record<string, string> = {

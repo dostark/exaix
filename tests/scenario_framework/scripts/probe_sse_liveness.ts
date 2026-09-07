@@ -10,14 +10,14 @@
  *   pre-gap GAP-8 raised. Chooses an ephemeral port by default so parallel runs cannot
  *   collide.
  * @dependencies []
- * @related-files [apps/mcp-server/main.ts, tests/scenario_framework/scenarios/mcp_server/sse-liveness.yaml]
+ * @related-files [exaix-team/apps/mcp-server/main.ts, tests/scenario_framework/scenarios/mcp_server/sse-liveness.yaml]
  */
 
 import { dirname, fromFileUrl, resolve } from "@std/path";
 
 const SCRIPTS_DIR = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = resolve(SCRIPTS_DIR, "..", "..", "..");
-const SERVER_ENTRY = resolve(REPO_ROOT, "apps", "mcp-server", "main.ts");
+const SERVER_ENTRY = resolve(REPO_ROOT, "exaix-team", "apps", "mcp-server", "main.ts");
 const DENO_CONFIG = resolve(REPO_ROOT, "deno.json");
 const DEFAULT_BOOT_TIMEOUT_MS = 30000;
 const POLL_INTERVAL_MS = 250;

@@ -29,7 +29,7 @@ function isTestFilePath(repoPath: string): boolean {
 
 function isProductionRoot(repoPath: string): boolean {
   return repoPath.startsWith("packages/") ||
-    repoPath.startsWith("packages-team/") ||
+    repoPath.startsWith("exaix-team/") ||
     repoPath.startsWith("apps/");
 }
 
@@ -333,7 +333,7 @@ async function main() {
 
         // Skip known registry-wired directories
         if (site.repoPath.startsWith("packages/tui/") || site.repoPath.startsWith("apps/tui/")) continue;
-        if (site.repoPath.startsWith("packages-team/")) continue;
+        if (site.repoPath.startsWith("exaix-team/")) continue;
         if (site.repoPath.startsWith("packages/schemas/")) continue;
         // apps/daemon/src/ and apps/common/ — dynamically imported by edition composer
         if (site.repoPath.startsWith("apps/daemon/src/") || site.repoPath.startsWith("apps/common/")) continue;

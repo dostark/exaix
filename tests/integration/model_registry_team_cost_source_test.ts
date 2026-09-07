@@ -20,7 +20,7 @@
  *   provider/model string the mock provider always reports — resolves through it on a
  *   real `EXAIX_EDITION=team` boot without needing a real (non-mock) AI provider.
  * @architectural-layer Test
- * @related-files [apps/daemon/main.ts, packages/core/src/cost/cost_tracker.ts, packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/rate_limited_provider.ts, packages-team/model-registry-live/src/model_registry_service.ts]
+ * @related-files [apps/daemon/main.ts, packages/core/src/cost/cost_tracker.ts, packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/rate_limited_provider.ts, exaix-team/packages/model-registry-live/src/model_registry_service.ts]
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";

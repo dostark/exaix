@@ -10,7 +10,7 @@ flow: "consensus-review"
 
 # Assess whether multi-judge consensus improves verdict stability
 
-Assess the voting consensus path in `packages-team/voting/` and determine what it adds over a single judge. Cover:
+Assess the voting consensus path in `exaix-team/packages/voting/` and determine what it adds over a single judge. Cover:
 
 - How individual verdicts are combined, and what happens on a tie
 - Whether judge disagreement is recorded or discarded

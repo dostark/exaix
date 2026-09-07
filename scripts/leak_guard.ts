@@ -33,7 +33,7 @@ export interface ILeakResult {
 const REPO_ROOT = normalize(join(dirname(fromFileUrl(import.meta.url)), ".."));
 
 // Allowlisted directories for public mirror content
-const LEAK_PATHS = ["exaix-enterprise", "packages-enterprise", "packages-team"];
+const LEAK_PATHS = ["exaix-enterprise", "packages-enterprise", "exaix-team", "packages-team"];
 
 // Patterns that indicate a proprietary (BSL+) license header
 const PROPRIETARY_HEADER_PATTERNS = [
@@ -122,10 +122,22 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
         try {
           const content = await Deno.readTextFile(entry.path);
           for (const leakPath of LEAK_PATHS) {
+            // A file already inside leakPath's own tier referencing that same tier is a
+            // self-reference (e.g. exaix-enterprise/apps/* importing @exaix-enterprise/*),
+            // not a leak into a public mirror — only content OUTSIDE that tier can leak it in.
+            if (relativePath.startsWith(`${leakPath}/`)) continue;
             if (content.includes(leakPath)) {
+              // A reference through the package-scope alias (`@exaix-team/...`,
+              // `@exaix-enterprise/...`) is the CODE_STYLE.md-sanctioned cross-tier
+              // reference (type-only import, or an edition-gated dynamic import) — the
+              // [edition-leak] rule already enforces that it's actually gated. Only a raw
+              // path reference that bypasses the alias reveals structure a public mirror
+              // shouldn't ship, so strip scope-alias occurrences before matching.
+              const packageScope = `@${leakPath}`;
               const lines = content.split("\n");
               for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
+                const line = lines[i].replaceAll(packageScope, "");
+                if (!line.includes(leakPath)) continue;
                 // Ignore pathFilter exemptions, style rules, and build-config declarations
                 if (
                   line.includes("pathFilter") || line.includes("style rule") ||
@@ -145,7 +157,8 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
                 // Flag literal string references that reveal enterprise or team paths
                 if (
                   (line.match(/["'`][^"'`]*exaix-enterprise[^"'`]*["'`]/) ||
-                    line.match(/["'`][^"'`]*packages-team[^"'`]*["'`]/)) &&
+                    line.match(/["'`][^"'`]*packages-team[^"'`]*["'`]/) ||
+                    line.match(/["'`][^"'`]*exaix-team[^"'`]*["'`]/)) &&
                   /\b(import|require)\b/.test(line)
                 ) {
                   errors.push(

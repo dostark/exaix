@@ -14,7 +14,7 @@
  *   run with no fixtures at all, so every call falls back to the provider's default
  *   patterns exactly as it did before this phase.
  * @architectural-layer Test
- * @related-files [apps/daemon/main.ts, packages-team/mcp-server/tools.ts, packages/mcp/server/local_tool_dispatcher.ts, packages/flow/src/dynamic_step_executor.ts]
+ * @related-files [apps/daemon/main.ts, exaix-team/packages/mcp-server/tools.ts, packages/mcp/server/local_tool_dispatcher.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";

@@ -38,7 +38,7 @@
 //   (ts.createSourceFile per file, no cross-file type resolution), matching
 //   check_magic_values.ts/check_optional_params.ts/check_unused_exports.ts.
 // - Two invocation modes: default scans every non-test .ts file under packages/,
-//   packages-team/, apps/ and prints a full advisory report (exit 0 unless --fail is
+//   exaix-team/, apps/ and prints a full advisory report (exit 0 unless --fail is
 //   passed); --staged scans only `git diff --cached` .ts files under those roots — a
 //   file-level ratchet, mirroring check_optional_params.ts --staged. Not yet wired into
 //   .git/hooks/pre-commit; the pre-existing corpus has not been triaged, so wiring it as a
@@ -662,7 +662,7 @@ export function shouldFailOnTagged(
 
 // ── CLI ──
 
-const SCAN_ROOTS = ["packages", "packages-team", "apps"];
+const SCAN_ROOTS = ["packages", "exaix-team", "apps"];
 const TEST_PATH_PATTERNS = [/_test\.ts$/, /(^|\/)tests\//];
 
 function isTestPath(path: string): boolean {
@@ -680,7 +680,7 @@ async function collectFiles(roots: readonly string[]): Promise<string[]> {
         files.push(rel);
       }
     } catch {
-      // root doesn't exist in this checkout (e.g. packages-team in a Solo-only clone) — skip.
+      // root doesn't exist in this checkout (e.g. exaix-team in a Solo-only clone) — skip.
     }
   }
   return files;

@@ -33,12 +33,12 @@ qwen_skill: edition-development
 
 Key points
 
-- Exaix ships **three tiers**: Solo (MIT), Team (BSL), Enterprise (private submodule)
-- **Option-C layout:** `packages/` (MIT always compiled) · `packages-team/` (BSL, same repo) · `exaix-enterprise/` (private submodule, never published)
+- Exaix ships **three tiers**: Solo (Apache 2.0), Team (BSL), Enterprise (private submodule)
+- **Option-C layout:** `packages/` (Solo, always compiled) · `exaix-team/` (BSL, private submodule, internal `packages/`+`apps/` split) · `exaix-enterprise/` (private submodule, never published)
 - **`IEditionComposer`** + **`ICapabilityModule`** seam shipped in **Phase 115**. `SoloComposer` stores modules but invokes no hooks; `TeamComposer` (Phase 116) is wired in the daemon when `EXAIX_EDITION=team`.
 - **`ISeamRegistryPlaceholder`** avoids circular deps between `@exaix/core` and consumer packages. Concrete types are resolved at the app-entry level via `as unknown as ISeamRegistryPlaceholder` — this is the intended bridge (the placeholder is replaced by a concrete type when the first consumer exists, per the JSDoc).
 - **Module hooks are invoked post-construction.** Build the seam owner first (e.g., `FlowRunner`), then iterate `composer.getModules()` and call each hook with the concrete registry cast to `ISeamRegistryPlaceholder`.
-- Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside `apps/daemon/main.ts`, `apps/exactl/src/init.ts`, `packages-team/`, `exaix-enterprise/`, `scripts/`, and `apps/common/`. Enforced by `deno task check:no-edition-conditionals`.
+- Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside `apps/daemon/main.ts`, `apps/exactl/src/init.ts`, `exaix-team/`, `exaix-enterprise/`, `scripts/`, and `apps/common/`. Enforced by `deno task check:no-edition-conditionals`.
 - **Leak-guard** (`scripts/leak_guard.ts`) blocks enterprise paths/headers before OSS publishing.
 - **build:solo|team|enterprise** (`deno.json` lines 105-107) compile distinct binaries via `scripts/ci.ts build --edition <name>`.
 
@@ -49,15 +49,23 @@ Canonical prompt (short):
 
 ## Step 1 — Determine the correct directory
 
-| Code type                    | Directory                  | License     | Available in      |
-| ---------------------------- | -------------------------- | ----------- | ----------------- |
-| Core contracts, shared logic | `packages/<name>/`         | MIT         | All editions      |
-| Team-only feature            | `packages-team/<name>/`    | BSL         | Team + Enterprise |
-| Enterprise-only feature      | `exaix-enterprise/<name>/` | Proprietary | Enterprise only   |
-| App wiring                   | `apps/<name>/`             | MIT         | All editions      |
-| Build/CI tooling             | `scripts/`                 | MIT         | All editions      |
+| Code type                             | Directory                           | License     | Available in      |
+| ------------------------------------- | ----------------------------------- | ----------- | ----------------- |
+| Core contracts, shared logic          | `packages/<name>/`                  | Apache 2.0  | All editions      |
+| Team-only library feature             | `exaix-team/packages/<name>/`       | BSL         | Team + Enterprise |
+| Team-only standalone app/binary       | `exaix-team/apps/<name>/`           | BSL         | Team + Enterprise |
+| Enterprise-only library feature       | `exaix-enterprise/packages/<name>/` | Proprietary | Enterprise only   |
+| Enterprise-only standalone app/binary | `exaix-enterprise/apps/<name>/`     | Proprietary | Enterprise only   |
+| App wiring                            | `apps/<name>/`                      | Apache 2.0  | All editions      |
+| Build/CI tooling                      | `scripts/`                          | Apache 2.0  | All editions      |
 
-**Rule:** If the feature could be consumed by any edition, put the interface in `packages/`. Put the edition-specific implementation in `packages-team/` or `exaix-enterprise/`.
+**Rule:** If the feature could be consumed by any edition, put the interface in `packages/`. Put the edition-specific implementation in `exaix-team/packages/` or `exaix-enterprise/packages/`.
+
+**Note:** Both `exaix-team/` and `exaix-enterprise/` are private submodules with their own internal
+`packages/` + `apps/` split (each its own `deno.json` workspace, mirroring root's layout), so a
+Team- or Enterprise-only standalone app has an obvious home — see `deno task build:team`'s entry
+(`exaix-team/apps/mcp-server/main.ts`) and `deno task build:enterprise`'s entry
+(`exaix-enterprise/apps/enterprise/main.ts`).
 
 ---
 
@@ -107,7 +115,7 @@ export interface ICapabilityModule {
 ## Step 3 — Implement the capability module
 
 ```typescript
-// packages-team/team-feature/src/team_module.ts
+// exaix-team/packages/team-feature/src/team_module.ts
 import type { IAuthorizer, ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core";
 
 export class TeamFeatureModule implements ICapabilityModule {
@@ -175,7 +183,7 @@ if (editionType === EDITION_TEAM) {
 Inside the module's hook implementation, cast back to the concrete registry type:
 
 ```typescript
-// packages-team/voting/src/voting_capability_module.ts
+// exaix-team/packages/voting/src/voting_capability_module.ts
 export class VotingCapabilityModule implements ICapabilityModule {
   readonly #votingService: IVotingConsensusService;
   readonly #logger: IEventLogger;
@@ -210,15 +218,15 @@ export class VotingCapabilityModule implements ICapabilityModule {
 ## Step 5 — Build and verify
 
 ```bash
-# Solo (MIT, excludes packages-team/ and exaix-enterprise/)
+# Solo (Apache 2.0, excludes exaix-team/ and exaix-enterprise/)
 deno task build:solo        # entry: apps/daemon/main.ts, prefix: exaix
 deno task build:team        # entry: apps/daemon/main.ts, prefix: exaix-team
-deno task build:enterprise  # entry: exaix-enterprise/mod.ts, prefix: exaix-enterprise
+deno task build:enterprise  # entry: exaix-enterprise/apps/enterprise/main.ts, prefix: exaix-enterprise
 
 # Check edition conditionals — ensures no edition === / EXAIX_EDITION leaks
-# into MIT packages. Forbidden everywhere except:
+# into Solo packages. Forbidden everywhere except:
 #   apps/daemon/main.ts, apps/exactl/src/init.ts,
-#   packages-team/, exaix-enterprise/, scripts/, apps/common/
+#   exaix-team/, exaix-enterprise/, scripts/, apps/common/
 deno task check:no-edition-conditionals
 
 # Full CI pipeline per edition — runs check + test + coverage (re-runs the suite a SECOND
@@ -293,9 +301,9 @@ describe("Team composition — stub module with all hooks", () => {
 
 ## Guardrails to follow
 
-1. **Never put edition conditionals in core packages.** The `[edition-conditional-outside-composer]` rule in `check_code_style.ts` enforces this. Allowed only in: `src/composer/`, `packages-team/`, `exaix-enterprise/`, `scripts/`, `apps/common/`.
+1. **Never put edition conditionals in core packages.** The `[edition-conditional-outside-composer]` rule in `check_code_style.ts` enforces this. Allowed only in: `src/composer/`, `exaix-team/`, `exaix-enterprise/`, `scripts/`, `apps/common/`.
 
-2. **Never import from `packages-team/` or `@exaix-team/*` in MIT source files.** The `[mit-team-import]` rule in `check_code_style.ts` enforces this across `packages/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When MIT source needs a Team type, extract the interface to `packages/core/types/`.
+2. **Never import from `exaix-team/` or `@exaix-team/*` in Solo source files.** The `[edition-leak]` rule in `check_code_style.ts` enforces this across `packages/` and `apps/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When Solo source needs a Team type, extract the interface to `packages/core/types/`.
 
 3. **Leak-guard must pass before publishing.** The CI release pipeline blocks on it. Leaks detected: enterprise path imports in source, proprietary license headers, `.gitmodules` enterprise entry.
 
@@ -306,7 +314,7 @@ describe("Team composition — stub module with all hooks", () => {
 ## Output Format
 
 1. **Edition tier** — Solo / Team / Enterprise.
-1. **Directory selected** — `packages/`, `packages-team/`, or `exaix-enterprise/`.
+1. **Directory selected** — `packages/`, `exaix-team/`, or `exaix-enterprise/`.
 1. **Seam interface** — interface name, registry, and hook on `ICapabilityModule`.
 1. **Capability module** — file path and hook implementation.
 1. **Wiring changes** — files modified in `apps/daemon/main.ts` or `apps/exactl/src/init.ts`.
@@ -318,7 +326,7 @@ describe("Team composition — stub module with all hooks", () => {
 
 **Example 1: Add a Team-only flow-step handler.**
 
-1. Define the handler in `packages-team/team-flow/src/` implementing `IFlowStepHandler`
+1. Define the handler in `exaix-team/packages/team-flow/src/` implementing `IFlowStepHandler`
 2. Create a `TeamFlowModule` implementing `ICapabilityModule` with `registerFlowStepHandlers`
 3. The module receives an `ISeamRegistryPlaceholder` (cast to `IFlowStepHandlerRegistry` in the module)
 4. In `apps/daemon/main.ts`, within the `if (editionType === EDITION_TEAM)` block, construct the module, register it with the composer, and call `registerFlowStepHandlers` against the FlowRunner's registry
@@ -327,7 +335,7 @@ describe("Team composition — stub module with all hooks", () => {
 
 **Example 2: Add an Enterprise-only entitlement check.**
 
-1. Define an `EnterpriseAuthorizer` implementing `IAuthorizer` in `exaix-enterprise/src/`
+1. Define an `EnterpriseAuthorizer` implementing `IAuthorizer` in `exaix-enterprise/packages/<name>/`
 2. Create an `EnterpriseModule` implementing `ICapabilityModule` with `registerEntitlement`
 3. The hook receives the concrete `IAuthorizer` instance from the composer
 4. Test: verify `EnterpriseAuthorizer.authorize()` returns expected decisions
@@ -345,21 +353,21 @@ describe("Team composition — stub module with all hooks", () => {
 
 **Example 4: Phase 113 voting module — first concrete seam consumer (reference implementation).**
 
-The voting module (`packages-team/voting/src/voting_capability_module.ts`) is the **first production
+The voting module (`exaix-team/packages/voting/src/voting_capability_module.ts`) is the **first production
 consumer** of `ICapabilityModule.registerFlowStepHandlers`. Follow this pattern for new Team features:
 
-1. Create the capability module alongside the service (MIT package). The edition gating happens at
+1. Create the capability module alongside the service (Solo package). The edition gating happens at
    the daemon level via `EXAIX_EDITION`, not in the module itself.
 2. The module's hook casts `ISeamRegistryPlaceholder` to `FlowStepHandlerRegistry` and registers
    the handler.
 3. In the daemon, construct the service, construct the module, register with `TeamComposer`,
    then iterate modules and invoke hooks against the FlowRunner's registry.
 4. Handler-level tests prove the module registers correctly.
-5. Integration tests (`packages-team/voting/tests/voting_capability_module_test.ts`) prove the full path with `EXAIX_EDITION=team`.
+5. Integration tests (`exaix-team/packages/voting/tests/voting_capability_module_test.ts`) prove the full path with `EXAIX_EDITION=team`.
 
 Key files to reference:
 
-- `packages-team/voting/src/voting_capability_module.ts` — the module
+- `exaix-team/packages/voting/src/voting_capability_module.ts` — the module
 - `packages/flow/src/step_handlers/voting_step_handler.ts` — the handler
 - `apps/daemon/main.ts` (Team edition bootstrap) — the wiring
 

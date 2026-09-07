@@ -8,7 +8,7 @@
  *   Skipped in CI (network-dependent); run locally with
  *   `deno test tests/integration/modelsdev_live_benchmark_fetch_test.ts --allow-all --no-check`.
  * @architectural-layer Test
- * @related-files [packages-team/model-registry-live/src/modelsdev_ingest.ts]
+ * @related-files [exaix-team/packages/model-registry-live/src/modelsdev_ingest.ts]
  */
 import { assert, assertEquals, assertGreater } from "@std/assert";
 

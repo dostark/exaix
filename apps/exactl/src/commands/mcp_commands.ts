@@ -2,11 +2,11 @@
  * @module McpCommands
  * @path apps/exactl/src/commands/mcp_commands.ts
  * @description Provides CLI commands for the MCP verb: starting the inbound
- * MCP server (delegates to the standalone apps/mcp-server/main.ts entry
- * point) and connecting outbound to a real external MCP server via
+ * MCP server (delegates to the standalone exaix-team/apps/mcp-server/main.ts
+ * entry point) and connecting outbound to a real external MCP server via
  * `ExternalMcpClient`.
  * @architectural-layer CLI
- * @related-files ["apps/mcp-server/main.ts", "packages-team/mcp-server/server.ts", "packages/mcp/src/external_mcp_client.ts"]
+ * @related-files ["exaix-team/apps/mcp-server/main.ts", "exaix-team/packages/mcp-server/server.ts", "packages/mcp/src/external_mcp_client.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -85,7 +85,7 @@ export class McpCommands extends BaseCommand {
   }
 
   async start(options: { sse?: boolean; port?: number }): Promise<void> {
-    const args = ["run", "--allow-all", "apps/mcp-server/main.ts"];
+    const args = ["run", "--allow-all", "exaix-team/apps/mcp-server/main.ts"];
 
     if (options.sse) {
       args.push("--transport", "sse");

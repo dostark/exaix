@@ -333,7 +333,7 @@ rm -f "$MANIFEST_BACKUP"
 # 2. Submodule Safety Check
 #    For each submodule whose pointer changed in this push, ensure it is
 #    committed and pushed to its own remote before the parent repo is pushed —
-#    otherwise CI (which fetches both exaix-dev-docs and packages-team on every
+#    otherwise CI (which fetches both exaix-dev-docs and exaix-team on every
 #    run) would resolve a gitlink pointing at a commit that doesn't exist yet.
 #    exaix-enterprise is deliberately excluded: CI never fetches it, so this
 #    check does not apply.
@@ -405,7 +405,7 @@ check_and_push_submodule() {
 }
 
 check_and_push_submodule exaix-dev-docs
-check_and_push_submodule packages-team
+check_and_push_submodule exaix-team
 
 rm -f "$PRE_PUSH_REFS"
 

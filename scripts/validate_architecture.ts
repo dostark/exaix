@@ -17,7 +17,7 @@ const PACKAGES_DIR = join(ROOT, "packages");
 const SCRIPTS_DIR = join(ROOT, "scripts");
 const APPS_DIR = join(ROOT, "apps");
 const COPILOT_DIR = join(ROOT, ".copilot");
-const TEAM_PACKAGES_DIR = join(ROOT, "packages-team");
+const TEAM_PACKAGES_DIR = join(ROOT, "exaix-team");
 const ARCH_DOC = join(ROOT, "ARCHITECTURE.md");
 
 interface ModuleInfo {
@@ -43,7 +43,7 @@ async function validate() {
   const testFiles = new Set<string>();
   const packageFiles = new Set<string>();
 
-  // 1. Gather all .ts files in packages/, apps/, and packages-team/ (no top-level src/ anymore)
+  // 1. Gather all .ts files in packages/, apps/, and exaix-team/ (no top-level src/ anymore)
   for (const dir of [PACKAGES_DIR, APPS_DIR, TEAM_PACKAGES_DIR]) {
     if (await Deno.stat(dir).then((s) => s.isDirectory).catch(() => false)) {
       for await (const entry of walk(dir, { includeDirs: false })) {
@@ -70,7 +70,7 @@ async function validate() {
     }
   }
 
-  // 1.2 Gather all .ts files in packages/ and packages-team/
+  // 1.2 Gather all .ts files in packages/ and exaix-team/
   for (const pkgDir of [PACKAGES_DIR, TEAM_PACKAGES_DIR]) {
     if (await Deno.stat(pkgDir).then((s) => s.isDirectory).catch(() => false)) {
       for await (const entry of walk(pkgDir, { includeDirs: false })) {
@@ -332,9 +332,9 @@ async function validate() {
     const archContent = await Deno.readTextFile(ARCH_DOC);
     const archLines = archContent.split("\n");
     // Flags any line (prose or bullet) that contains file paths under packages/
-    // or packages-team/ with /src/ — ARCHITECTURE.md must reference packages by
+    // or exaix-team/ with /src/ — ARCHITECTURE.md must reference packages by
     // name only. YAML frontmatter (between --- markers) is metadata, not content.
-    const implPathPattern = /(?:packages|packages-team)\/[^\s"')`]+src\//;
+    const implPathPattern = /(?:packages|exaix-team)\/[^\s"')`]+src\//;
     let inFrontmatter = false;
     for (let i = 0; i < archLines.length; i++) {
       const line = archLines[i];

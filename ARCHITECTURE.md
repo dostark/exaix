@@ -37,7 +37,7 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 ## Edition Model Overview
 
-> **Current Status (September 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `packages-team/` (BSL) and `exaix-enterprise/` (Enterprise) are both private submodules, mounted at their existing in-repo paths (Phase 171 converted `packages-team/` from a plain workspace member to a submodule backed by its own `exaix-team` repo). Edition-specific code is never loaded into Solo builds.
+> **Current Status (September 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `exaix-team/` (BSL) and `exaix-enterprise/` (Enterprise) are both private submodules, mounted at their existing in-repo paths (Phase 171 converted the Team submodule, then mounted at `packages-team/`, from a plain workspace member to a submodule backed by its own `exaix-team` repo; it was later renamed to mount at `exaix-team/` with an internal `packages/` + `apps/` split mirroring the parent monorepo). Edition-specific code is never loaded into Solo builds.
 
 Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
 
@@ -45,11 +45,11 @@ Exaix follows a **three-tier edition model** served by a single **`IEditionCompo
 ┌────────────────────────────────────────────────────────────┐
 │                     exaix (monorepo)                       │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │  packages/  (MIT — always compiled)                    │ │
-│ │  apps/daemon · apps/exactl · apps/tui · apps/mcp-server│ │
+│ │  packages/  (Solo — always compiled)                   │ │
+│ │  apps/daemon · apps/exactl · apps/tui                  │ │
 │ └────────────────────────────────────────────────────────┘ │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │  packages-team/  (private submodule, BSL — Team+Ent.)  │ │
+│ │  exaix-team/  (private submodule, BSL — Team+Ent.)     │ │
 │ └────────────────────────────────────────────────────────┘ │
 │ ┌────────────────────────────────────────────────────────┐ │
 │ │  exaix-enterprise/  (private submodule — Enterprise)   │ │
@@ -59,7 +59,7 @@ Exaix follows a **three-tier edition model** served by a single **`IEditionCompo
 
 **Composition architecture:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for edition-specific capabilities. The Solo edition uses `SoloComposer` (default — zero paid features). SoloComposer is **passive**: it stores registered modules but does not invoke their hooks — Team/Enterprise composers will invoke them. Each runtime entry point (daemon, exactl, agent-entrypoint) instantiates `SoloComposer` as the hook anchor (`_editionComposer`), keeping the import path live for Team/Enterprise wiring. Team and Enterprise editions register `ICapabilityModule` instances that fill optional hooks (flow-step handlers, symbol extractors, guardrail runner, routing strategy, entitlement).
 
-**Publishing:** Solo+Team source is published as OSS mirrors (`exaix-core` MIT, `exaix-team` BSL) via `git subtree split` with a leak-guard (`scripts/leak_guard.ts`) that blocks proprietary Enterprise code. The Enterprise submodule is excluded from the subtree filter and stripped from `.gitmodules` before publishing.
+**Publishing:** Solo+Team source is published as OSS mirrors (`exaix-core` Apache 2.0, `exaix-team` BSL) via `git subtree split` with a leak-guard (`scripts/leak_guard.ts`) that blocks proprietary Enterprise code. The Enterprise submodule is excluded from the subtree filter and stripped from `.gitmodules` before publishing.
 
 | Edition           | Target Audience                         | Key Differentiation                                             |
 | ----------------- | --------------------------------------- | --------------------------------------------------------------- |
@@ -234,7 +234,7 @@ package-level configuration and restart/failure semantics:
 - Vertex AI: Google service-account auth for project-based quotas and regional endpoints (🔵 Team+; `@exaix-team/ai-vertex`)
 - OpenRouter: unified gateway to many models (ships in the Solo build; positioned as a 🔵 Team+ differentiator; `@exaix/ai-openrouter`)
 - Enterprise providers: Azure OpenAI, AWS Bedrock (🟣 Enterprise)
-- Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts` (Solo) or `packages-team/team-composer/src/team_bootstrap.ts` (Team)
+- Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts` (Solo) or `exaix-team/packages/team-composer/src/team_bootstrap.ts` (Team)
 - Cost management with edition-tiered capabilities
 - **Model registry (Solo tier, the curated model registry):** the model resolver consults an `IModelRegistry` when selecting a concrete model for an intent. Solo ships a lightweight **floor** — a static, no-network catalog of provider/model capabilities and pricing provenance — so resolution stays offline and deterministic. Resolution honours a user-**curated list** first (per-size preferred providers, `preferred_list` reason), exempts genuinely local/free providers from cost filtering, and never fabricates a price for an unknown-priced model. A live catalog and routing rigor are Team+ capabilities, attached through the edition seam (`IModelRegistryProvider`); when no Team module is present the Solo floor is used and behaviour is unchanged. See `packages/model-registry/README.md` and the User Guide's model-intent section.
 
@@ -251,7 +251,7 @@ package-level configuration and restart/failure semantics:
 - Collaboration features in Team+ (🔵 Team)
 - Governance and compliance features in Enterprise (🟣 Enterprise)
 - **Composition seam:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for paid capabilities; `ICapabilityModule` registers hooks per seam
-- **Option-C layout:** `packages/` (MIT) · `packages-team/` (private submodule, BSL) · `exaix-enterprise/` (private submodule)
+- **Option-C layout:** `packages/` (Solo, Apache 2.0) · `exaix-team/` (private submodule, BSL) · `exaix-enterprise/` (private submodule)
 - **Solo defaults:** `SoloComposer` with `AllowAllAuthorizer` — zero paid code in Solo builds
 - **Edition build:** `build:solo|team|enterprise` selects entry point + prefix via `scripts/ci.ts`
 - **Leak-guard:** `scripts/leak_guard.ts` blocks Enterprise paths and proprietary headers from OSS publish targets
@@ -402,7 +402,7 @@ The `.exa/config.db` SQLite database stores configuration overrides for keys reg
 
 **Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()`) → (3) ConfigSchema default → (4) undefined. Profile-scoped keys (`profile.<name>.<key>`) validate against their unscoped base key's metadata via `resolveValidationKey()`; global reads do not fall through to the active profile (explicit `--profile` scoping only).
 
-**MCP config tools:** 6 domain tools registered at `packages-team/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`.
+**MCP config tools:** 6 domain tools registered at `exaix-team/packages/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`.
 
 The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `ConfigApply`) gate on human approval. `ConfigApply` awaits each staged `set()` and records per-key applied/error results.
 
@@ -610,7 +610,7 @@ If no interceptor is available, **mandatory** rules fail closed (tool denied), w
 rules degrade gracefully (tool proceeds).
 
 The Team-only `HitlPolicyEvaluator` lives in the `@exaix-team/hitl` package.
-The MIT seam (`IHitlPolicyEvaluator`) is exported from `@exaix/core/types`.
+The Solo seam (`IHitlPolicyEvaluator`) is exported from `@exaix/core/types`.
 Solo edition injects no evaluator, producing identical behaviour to pre-P118.
 
 ---
@@ -848,9 +848,9 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
                                  → context-window overflow detection & model-size bump
 ```
 
-**Team seam (`IResolutionStrategy`, `packages/ai/src/i_resolution_strategy.ts`):** four optional hooks (`validateExplicit`, `selectRoute`, `scoreBest`, `rankUsage`) a strategy may implement; an absent hook is a Solo-identical no-op, never an error. `apps/daemon/src/bootstrap_team.ts:buildTeamResolutionStrategy` constructs the concrete `TeamResolutionStrategy` (`packages-team/model-registry-live/src/team_resolution_strategy.ts`) only in Team edition; Solo passes no strategy at all. `packages/core/src/planning/plan_executor.ts:createAgentExecutor` threads the resolver (and, for `best`, the skill-derived task type via `deriveTopSkillTaskTypes`) into `AgentExecutor` per plan execution.
+**Team seam (`IResolutionStrategy`, `packages/ai/src/i_resolution_strategy.ts`):** four optional hooks (`validateExplicit`, `selectRoute`, `scoreBest`, `rankUsage`) a strategy may implement; an absent hook is a Solo-identical no-op, never an error. `apps/daemon/src/bootstrap_team.ts:buildTeamResolutionStrategy` constructs the concrete `TeamResolutionStrategy` (`exaix-team/packages/model-registry-live/src/team_resolution_strategy.ts`) only in Team edition; Solo passes no strategy at all. `packages/core/src/planning/plan_executor.ts:createAgentExecutor` threads the resolver (and, for `best`, the skill-derived task type via `deriveTopSkillTaskTypes`) into `AgentExecutor` per plan execution.
 
-**Team live model registry (`packages-team/model-registry-live/`, `model_registry.enabled` config gate):** a `RegistryRefreshScheduler` periodically fetches each provider's catalog through a per-provider adapter (`packages-team/model-registry-live/src/adapters/`) and admits a filtered subset — curated, first-party/native, previously-used, or top-N of a tracked benchmark — persisting to SQLite (`model_catalog`, `model_pricing`, `model_benchmark` tables). `validateExplicit` re-fetches and auto-admits a real-but-unadmitted explicit model on first use rather than rejecting it. `selectRoute` applies a configurable route policy (`cheapest`/`reliability`/`native_first`/`user_order`) when a model has 2+ provider routes. `scoreBest` looks up each candidate's benchmark score for the request's derived `TaskType` (`packages/execution/src/task_type_derivation.ts:deriveTaskType`, a 5-tier precedence: frontmatter > agent role > skill > static map > analyzer). Cost records (`packages/core/src/cost/cost_tracker.ts:CostTracker.resolveCost`) carry `cost_source: "registry_computed"` when the resolved `provider:model` has a live-registry price and no provider-reported cost exists, replacing the legacy blended estimate; a reported-vs-computed divergence beyond `model_registry.cost_divergence_tolerance_pct` emits `model.cost.divergence`. Solo's `DefaultModelRegistry` (`packages/model-registry/`) is a static offline floor with no scheduler and no live hooks — selected instead of the Team service via the edition-composer seam (`apps/daemon/main.ts:getModelRegistryProvider`) whenever `model_registry.enabled` is `false` or the Team module isn't present.
+**Team live model registry (`exaix-team/packages/model-registry-live/`, `model_registry.enabled` config gate):** a `RegistryRefreshScheduler` periodically fetches each provider's catalog through a per-provider adapter (`exaix-team/packages/model-registry-live/src/adapters/`) and admits a filtered subset — curated, first-party/native, previously-used, or top-N of a tracked benchmark — persisting to SQLite (`model_catalog`, `model_pricing`, `model_benchmark` tables). `validateExplicit` re-fetches and auto-admits a real-but-unadmitted explicit model on first use rather than rejecting it. `selectRoute` applies a configurable route policy (`cheapest`/`reliability`/`native_first`/`user_order`) when a model has 2+ provider routes. `scoreBest` looks up each candidate's benchmark score for the request's derived `TaskType` (`packages/execution/src/task_type_derivation.ts:deriveTaskType`, a 5-tier precedence: frontmatter > agent role > skill > static map > analyzer). Cost records (`packages/core/src/cost/cost_tracker.ts:CostTracker.resolveCost`) carry `cost_source: "registry_computed"` when the resolved `provider:model` has a live-registry price and no provider-reported cost exists, replacing the legacy blended estimate; a reported-vs-computed divergence beyond `model_registry.cost_divergence_tolerance_pct` emits `model.cost.divergence`. Solo's `DefaultModelRegistry` (`packages/model-registry/`) is a static offline floor with no scheduler and no live hooks — selected instead of the Team service via the edition-composer seam (`apps/daemon/main.ts:getModelRegistryProvider`) whenever `model_registry.enabled` is `false` or the Team module isn't present.
 
 **Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason (`explicit_override`/`preferred_list`/`preset_default`/`characteristics_scored`/`best_ranked`/`usage_ranked`/`fallback`/…), attempt count, and duration; Team additionally journals `model.admitted`/`model.retired` (catalog changes), `model.route.selected` (multi-route decisions), `model.catalog.refreshed`/`model.pricing.refreshed`/`model.benchmark.refreshed` (scheduler cycles), and `model.cost.divergence`.
 
@@ -981,7 +981,7 @@ fast-slot LLM, **without blocking** the primary agent loop.
 
 **Architecture:**
 
-- `IGuardrailRunner` interface (`@exaix/execution`, MIT) defines the
+- `IGuardrailRunner` interface (`@exaix/execution`, Solo) defines the
   post-output contract: `screen(agentOutput, traceId, iteration)` and `hasBlockingViolation(traceId)`.
 - `GuardrailRunner` implementation (`@exaix-team/guardrail`, BSL) uses
   `Promise.allSettled` over configured policies, parses structured JSON verdicts, and journals
@@ -1070,7 +1070,7 @@ All tools enforce portal-scoped operations. Git tools obtain `IGitService` throu
 
 ### Inbound vs. Outbound MCP
 
-`packages/mcp` owns MCP in both directions. **Inbound** (existing, `packages-team/mcp-server`): Exaix acts as an MCP _server_, exposing the tool handlers above to external agents — built on the official `@modelcontextprotocol/server` SDK (Phase 163), serving the current spec protocol version over stdio and Streamable HTTP, with an opt-in bearer-token gate (`mcp.require_auth` + `MCP_AUTH_TOKEN` env indirection). **Outbound** (Phase 162, new): Exaix acts as an MCP _client_, via `ExternalMcpClient`/`IExternalMcpClient` (`packages/mcp/src/external_mcp_client.ts`), reaching a real external MCP server over the wire (Streamable HTTP primary, legacy SSE fallback, with optional bearer-token auth), through `exactl mcp connect`. Do not confuse this with `LocalToolDispatcher` (`packages/mcp/server/local_tool_dispatcher.ts`) — a local, in-process facade that dispatches to Exaix's own tool handlers and never opens a network connection; its `callTool` is keyed by the closed `McpToolName` enum, structurally incompatible with `IExternalMcpClient`'s string-keyed one. Since Phase 163 Step 6, `LocalToolDispatcher` is real-daemon-reachable: the Team-edition daemon (`apps/daemon/main.ts`) builds it from `buildDynamicHandlers(context, portalPermissions)` and passes it as `mcpClient` into the real `FlowRunner`, so `execution_mode: dynamic` flow steps execute for real on a Team/Enterprise daemon (previously the class existed only under test). Follow-up deferred from Step 5: the `IMcpClient`/`IToolManifestResolver` interface names still carry the pre-rename `McpClient` name and are candidates for a future rename phase — explicitly out of Phase 163's scope.
+`packages/mcp` owns MCP in both directions. **Inbound** (existing, `exaix-team/packages/mcp-server`): Exaix acts as an MCP _server_, exposing the tool handlers above to external agents — built on the official `@modelcontextprotocol/server` SDK (Phase 163), serving the current spec protocol version over stdio and Streamable HTTP, with an opt-in bearer-token gate (`mcp.require_auth` + `MCP_AUTH_TOKEN` env indirection). **Outbound** (Phase 162, new): Exaix acts as an MCP _client_, via `ExternalMcpClient`/`IExternalMcpClient` (`packages/mcp/src/external_mcp_client.ts`), reaching a real external MCP server over the wire (Streamable HTTP primary, legacy SSE fallback, with optional bearer-token auth), through `exactl mcp connect`. Do not confuse this with `LocalToolDispatcher` (`packages/mcp/server/local_tool_dispatcher.ts`) — a local, in-process facade that dispatches to Exaix's own tool handlers and never opens a network connection; its `callTool` is keyed by the closed `McpToolName` enum, structurally incompatible with `IExternalMcpClient`'s string-keyed one. Since Phase 163 Step 6, `LocalToolDispatcher` is real-daemon-reachable: the Team-edition daemon (`apps/daemon/main.ts`) builds it from `buildDynamicHandlers(context, portalPermissions)` and passes it as `mcpClient` into the real `FlowRunner`, so `execution_mode: dynamic` flow steps execute for real on a Team/Enterprise daemon (previously the class existed only under test). Follow-up deferred from Step 5: the `IMcpClient`/`IToolManifestResolver` interface names still carry the pre-rename `McpClient` name and are candidates for a future rename phase — explicitly out of Phase 163's scope.
 
 **Scope Note:** Phase 162 ships the outbound client and CLI subcommand only — no benchmark integration (e.g. Terminal-Bench) is included; Phase 144's Terminal-Bench-harness-fidelity gap remains open and unrelated to this phase's completion. `exactl mcp connect` reaches unauthenticated and bearer-token-authenticated servers only — any server requiring interactive OAuth or `client_credentials`/JWT-assertion grants is out of reach until a further follow-up.
 
@@ -1223,7 +1223,7 @@ The embedding-backed semantic retrieval path (`PortalKnowledgeService.getRelevan
 
 **Known weak points:** the two staleness-visibility gaps above; `symbolMap` entries store an absolute `file://` URI while every other path field in `IPortalKnowledge` is portal-relative (an inconsistency, not yet fixed); `architectureOverview` can be empty under `quick` mode; most `IPortalKnowledge` fields (`dependencies`, `techStack`, `stats`, `gitHistory`, `licenses`, `vulnerabilities`) have no dedicated agent-facing query tool — only `symbolMap` (`exaix_portal_symbols`, Team) and `relationships` (`query_relationships`/`who_depends_on`, Solo) do; the rest reach an agent only via the automatic context-injection summary or indirectly through the CLI plus the generic `run_command` tool. **Fixed history:** `InternalImportGraphBuilder` originally capped tracing to a portal's first 5 entrypoints, severely undercovering large monorepos (this repo's own graph once covered only 7 of ~50 package prefixes) — now a named, `configurable()` limit (`DEFAULT_MAX_INTERNAL_GRAPH_ENTRYPOINTS`, default 500) with a visible truncation warning logged if a portal's entrypoint count ever exceeds it.
 
-Symbol extraction is language-aware through the `ISymbolExtractorRegistry` seam (`packages/portal/knowledge/symbol_extractor_registry.ts`). The **Solo (MIT) baseline** ships TypeScript/JavaScript (via `deno doc --json`) and **Python** (via a local tree-sitter WASM grammar, no `--allow-ffi` or `--allow-net`). The **Team (BSL) edition** adds extended-language extractors (Rust, Go, Java, …) gated by `CAP_EXTENDED_LANG_EXTRACTION`, registered through `PortalExtractorsModule`. Extraction follows a single-primary-language model — only the dominant language's symbols are mapped; secondary languages are absent and unsupported languages fail-soft. True per-language extraction across language zones is deferred to a successor phase.
+Symbol extraction is language-aware through the `ISymbolExtractorRegistry` seam (`packages/portal/knowledge/symbol_extractor_registry.ts`). The **Solo (Apache 2.0) baseline** ships TypeScript/JavaScript (via `deno doc --json`) and **Python** (via a local tree-sitter WASM grammar, no `--allow-ffi` or `--allow-net`). The **Team (BSL) edition** adds extended-language extractors (Rust, Go, Java, …) gated by `CAP_EXTENDED_LANG_EXTRACTION`, registered through `PortalExtractorsModule`. Extraction follows a single-primary-language model — only the dominant language's symbols are mapped; secondary languages are absent and unsupported languages fail-soft. True per-language extraction across language zones is deferred to a successor phase.
 
 For analysis modes, strategies, configuration, CLI commands, and review cleanup semantics, see `packages/portal/README.md`.
 

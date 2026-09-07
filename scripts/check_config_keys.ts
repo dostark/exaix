@@ -43,7 +43,7 @@ async function scanFile(filePath: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const sourceDirs = ["packages", "apps", "packages-team"];
+  const sourceDirs = ["packages", "apps", "exaix-team"];
   const entries: string[] = [];
 
   for (const dir of sourceDirs) {

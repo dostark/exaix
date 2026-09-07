@@ -4,7 +4,7 @@
  * @description Manifest-aware helpers for tool result schema discovery and remediation policy lookup.
  * @architectural-layer MCP
  * @ungrounded
- * @related-files [packages/mcp/src/manifest.ts, packages/schemas/src/tool_result.ts, packages-team/mcp-server/server.ts]
+ * @related-files [packages/mcp/src/manifest.ts, packages/schemas/src/tool_result.ts, exaix-team/packages/mcp-server/server.ts]
  */
 
 import { TOOL_RESULT_SCHEMA_VERSION } from "@exaix/core";

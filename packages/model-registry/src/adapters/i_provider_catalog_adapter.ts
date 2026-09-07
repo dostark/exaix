@@ -5,11 +5,11 @@
  *   Solo-owned (no runtime deps) so both the Solo package and the Team live registry
  *   share one type surface. An adapter fetches a provider's model list + capabilities
  *   (and, if the provider exposes a price endpoint, per-model pricing). Concrete
- *   adapters live in packages-team/model-registry-live; admission/persistence is the
+ *   adapters live in exaix-team/packages/model-registry-live; admission/persistence is the
  *   registry's job, not the adapter's (§5.9).
  * @architectural-layer ModelRegistry
  * @dependencies [@exaix/core]
- * @related-files [packages-team/model-registry-live/src/adapters/openrouter_catalog_adapter.ts]
+ * @related-files [exaix-team/packages/model-registry-live/src/adapters/openrouter_catalog_adapter.ts]
  */
 import type { JSONValue } from "@exaix/core";
 

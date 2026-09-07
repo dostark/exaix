@@ -50,7 +50,7 @@ export function createDefaultSymbolExtractorRegistry(
   const tsExtractor = runner ? new SymbolExtractor(runner) : new SymbolExtractor();
   registry.register(LANG_TYPESCRIPT, tsExtractor);
   registry.register(LANG_JAVASCRIPT, tsExtractor);
-  // Python tree-sitter extractor ships in Solo (MIT) alongside TS/JS.
+  // Python tree-sitter extractor ships in Solo alongside TS/JS.
   registry.register(LANG_PYTHON, new PythonSymbolExtractor());
   return registry;
 }

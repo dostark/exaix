@@ -3,12 +3,12 @@
  * @path packages/tool-runtime/tests/tool_registry_patch_file_shape_test.ts
  * @description Phase 154 Step 4: `ToolRegistry`'s `patch_file` previously accepted
  *   `{path, patches: [{search, replace}]}` (an array of sequential patches) while the live MCP
- *   handler (`packages-team/mcp-server/handlers/patch_file_tool.ts`) accepts the flat
+ *   handler (`exaix-team/packages/mcp-server/handlers/patch_file_tool.ts`) accepts the flat
  *   `{path, search, replace}` shape and requires the search string to match exactly once. This
  *   test file replaces patch_file_test.ts: it verifies the new flat shape (matching the MCP
  *   handler's contract and exact-occurrence validation) and that the retired array shape is no
  *   longer silently accepted.
- * @related-files [packages/tool-runtime/src/tool_registry.ts, packages/tool-runtime/src/tool_schemas.ts, packages-team/mcp-server/handlers/patch_file_tool.ts]
+ * @related-files [packages/tool-runtime/src/tool_registry.ts, packages/tool-runtime/src/tool_schemas.ts, exaix-team/packages/mcp-server/handlers/patch_file_tool.ts]
  */
 
 import { assertEquals } from "@std/assert";

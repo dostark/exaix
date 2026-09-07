@@ -11,7 +11,7 @@
 // app entries are edition-dispatch points (apps/daemon/main.ts, apps/exactl/src/init.ts)
 const ALLOWED = [
   "apps/common",
-  "packages-team",
+  "exaix-team",
   "exaix-enterprise",
   "scripts",
   ".github",

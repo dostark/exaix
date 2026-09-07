@@ -24,7 +24,7 @@ Key points
 - Never mark complete until ALL checks report zero errors/warnings/violations
 - Prefer running check scripts with file-scope flags to get faster feedback loops
 - When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
-- Edition awareness: `deno task` wrappers (check, lint, fmt) already include `packages-team/`
+- Edition awareness: `deno task` wrappers (check, lint, fmt) already include `exaix-team/`
   automatically — static checks never need edition scoping. For an edition-scoped test run,
   use `deno task test:solo` / `deno task test:team` directly. For an edition-scoped BUILD,
   use `deno task ci:solo --skip-tests` / `deno task ci:team --skip-tests` (checks + build,
@@ -52,13 +52,13 @@ Phase 1 — Baseline measurement
   1. Run `deno task check` first — this catches type errors, module resolution,
      and any compilation issues. Fix all type errors before proceeding.
   2. Run each remaining check in sequence and record all failures:
-       deno lint                                         → list lint violations (includes packages-team/)
-       deno fmt --check                                  → list formatting diffs (includes packages-team/)
+       deno lint                                         → list lint violations (includes exaix-team/)
+       deno fmt --check                                  → list formatting diffs (includes exaix-team/)
        deno task check:style                             → list style violations
        deno task check:test-placement                    → mislocated test files
        deno task check:magic                             → count magic violations
        deno task check:no-edition-conditionals            → edition-conditional violations outside allowed dirs
-       deno task check:arch                              → list UNGROUNDED files (includes packages-team/)
+       deno task check:arch                              → list UNGROUNDED files (includes exaix-team/)
        deno task check:complexity                        → list functions above threshold
        deno task check:unused-exports:strict              → dead/unwired exports (CI grade)
        deno task check:duplication                       → duplication % per category
@@ -86,10 +86,10 @@ Phase 1 — Baseline measurement
      N UNGROUNDED, N magic, duplication X/Y/Z%, complexity breaches.
   4. Do NOT attempt all fixes at once — process one category per batch.
 
-  Edition note: All `deno task` commands above already include `packages-team/`. The `check:style`
+  Edition note: All `deno task` commands above already include `exaix-team/`. The `check:style`
   script has an `edition-conditional-outside-composer` rule that forbids `EXAIX_EDITION` /
   `edition ===` conditionals outside these allowed paths:
-    - `packages-team/`, `apps/daemon/`, `apps/exactl/`, `tests/`, `scripts/ci.ts`, `scripts/test_parallel.ts`
+    - `exaix-team/`, `apps/daemon/`, `apps/exactl/`, `tests/`, `scripts/ci.ts`, `scripts/test_parallel.ts`
     - `tests/scenario_framework/runner/modes.ts`, `.github/`, `exaix-enterprise/`
   If a cleanup introduces an edition conditional in a path not in this list, the style check will fail.
 
@@ -98,14 +98,14 @@ Phase 2 — Type errors (highest priority)
      - Remove `any` types; replace with specific interfaces or `unknown`.
      - Resolve missing module errors (TS2307) by creating stubs or fixing imports.
      - Never cast to `as any` to silence type errors.
-     - Note: `deno task check` includes packages-team/ (use `deno check packages/ apps/ tests/` for Solo-only scope).
+     - Note: `deno task check` includes exaix-team/ (use `deno check packages/ apps/ tests/` for Solo-only scope).
   6. Re-run `deno task check` — must report 0 errors before continuing.
 
 Phase 3 — Lint
   7. Fix every violation reported by `deno lint`.
      - Prefer fixing the root cause over `// deno-lint-ignore` suppressions.
      - If suppression is the only option, add an inline comment explaining why.
-     - Note: `deno lint` includes packages-team/ by default via deno.json task definition.
+     - Note: `deno lint` includes exaix-team/ by default via deno.json task definition.
   8. Re-run `deno lint` — 0 errors, 0 warnings.
 
 Phase 4 — Formatting
@@ -124,9 +124,9 @@ Phase 6 — Architecture groundedness
   13. Fix every UNGROUNDED file reported by `deno task check:arch`:
      - Add or correct the module-header JSDoc block with @module, @path, @description,
        @architectural-layer, @dependencies, @related-files.
-     - Files under `packages-team/` are already scanned by check:arch and share the same
+     - Files under `exaix-team/` are already scanned by check:arch and share the same
        grounding requirements as `packages/`. Files tagged `@ungrounded` are exempted.
-     - For packages-team only: if a file belongs to a Team-specific package and should not
+     - For exaix-team only: if a file belongs to a Team-specific package and should not
        be grounded (no ARCHITECTURE.md reference), add the `@ungrounded` tag to the JSDoc header.
   14. Re-run `deno task check:arch` — 0 UNGROUNDED files.
 
@@ -144,14 +144,14 @@ Phase 8 — Duplication (if threshold breached)
 
 Phase 9 — Code complexity (if threshold breached)
   20. Run `deno task check:complexity` — verifies no function exceeds cyclomatic
-     complexity of 15 (--threshold 15 --fail). Scans packages/, packages-team/, apps/.
+     complexity of 15 (--threshold 15 --fail). Scans packages/, exaix-team/, apps/.
   21. If violations found, refactor over-complex functions by splitting into smaller
      single-responsibility functions. Keep behavioral changes to zero.
   22. Re-run `deno task check:complexity` — must exit 0 with "Complexity matches expectations."
 
 Phase 10 — Edition-conditional compliance
   23. Run `deno task check:no-edition-conditionals` — verifies `EXAIX_EDITION` references
-     only appear in edition-aware directories (apps/common, packages-team, exaix-enterprise,
+     only appear in edition-aware directories (apps/common, exaix-team, exaix-enterprise,
      scripts, .github, apps/daemon, apps/exactl, tests/). Any violation outside these paths
      must be fixed by moving edition logic to an edition-composer or a script boundary.
 
@@ -243,9 +243,9 @@ Phase 21 — Final full-suite validation
       c. Run tests — choose the edition-scoped command:
          # Full (all editions — slowest)
          deno task test_parallel
-         # Solo-only (excludes packages-team/)
+         # Solo-only (excludes exaix-team/)
          deno task test:solo && deno task test:security
-         # Team edition (includes packages-team/)
+         # Team edition (includes exaix-team/)
          deno task test:team
       Shortcut: `deno task ci:solo --skip-tests` / `deno task ci:team --skip-tests`
       (== `scripts/ci.ts all --edition <X> --skip-tests`) runs 42a + build in one
@@ -325,7 +325,7 @@ Do / Don't
 - ✅ Do run `deno task test:solo` (or `test:team`) AFTER all other checks to confirm no regressions
 - ✅ Do run `deno run -A scripts/ci.ts check` before the final commit (Phase 21, step 42a) instead of hand-chaining individual `deno task check:X` commands — a second hand-maintained copy of that list is exactly how 9 real gates went unchecked here before the Phase 168 alignment
 - ✅ Do keep changes behavioral-neutral (cleanup only, no feature changes)
-- ✅ Do use `deno task` wrappers instead of raw `deno check/lint/fmt` — they automatically include `packages-team/`
+- ✅ Do use `deno task` wrappers instead of raw `deno check/lint/fmt` — they automatically include `exaix-team/`
 - ✅ Do verify edition-conditional placement when touching edition-aware code
 - ❌ Don't use `as any` to silence type errors
 - ❌ Don't skip intermediate validations and only run the full suite at the end

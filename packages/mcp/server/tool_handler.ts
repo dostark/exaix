@@ -3,7 +3,7 @@
  * @path packages/mcp/server/tool_handler.ts
  * @description Base class for all MCP tool handlers, providing common validation, security, and logging.
  * @architectural-layer MCP
- * @related-files ["packages/portal/src/portal_permissions.ts", packages-team/mcp-server/handlers/read_file_tool.ts, packages-team/mcp-server/handlers/write_file_tool.ts]
+ * @related-files ["packages/portal/src/portal_permissions.ts", exaix-team/packages/mcp-server/handlers/read_file_tool.ts, exaix-team/packages/mcp-server/handlers/write_file_tool.ts]
  */
 import { join, normalize } from "@std/path";
 import { PathSecurity } from "@exaix/tool-runtime";

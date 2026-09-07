@@ -3,7 +3,7 @@
  * @path packages/mcp/tests/server_surface_test.ts
  * @related-files []
  * @architectural-layer MCP
- * @description Verifies the public @exaix/mcp/server subpath exposes the canonical MIT surface.
+ * @description Verifies the public @exaix/mcp/server subpath exposes the canonical Solo surface.
  */
 
 import { assertEquals } from "@std/assert";
