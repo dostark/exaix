@@ -156,6 +156,7 @@ steps:
   - id: "wait-for-pregap-archive"
     type: "wait-for-file"
     args: ["**/Archive/*_plan.md"]
+    min_matches: 1
     timeout_sec: 180
     output_criteria:
       - id: "pregap-archived"
@@ -220,6 +221,12 @@ steps:
   # session_delegate_outcome_live.yaml's identical step for the Phase 150 LIVE-RT
   # defect (#5) this guards against: a read-only first plan step would otherwise
   # satisfy a naive "first return" wait before the writing step has even run.
+  #
+  # $WORKTREE resolves dynamically to the newest execution worktree (mtime-based,
+  # see resolveNewestWorktree in step_executor.ts), not to a specific request's
+  # trace — unlike $TRACE_ID/$REQUEST_ID. Since code-analyst and code-reviewer are
+  # read-only and never create a worktree, the coding step's worktree is the only
+  # one that ever exists, so this is unambiguous even with three requests queued.
   - id: "wait-for-intended-change"
     type: "file-contains"
     cwd: "$WORKTREE"
@@ -262,6 +269,7 @@ steps:
 
   # Delegate edits land in the isolated worktree (.exa/worktrees/<portal>/<traceId>/),
   # not the portal checkout — reconcile.ts only validates, nothing merges back.
+  # Same $WORKTREE resolution as wait-for-intended-change above.
   - id: "assert-greeting-added"
     type: "file-contains"
     cwd: "$WORKTREE"
@@ -277,9 +285,13 @@ steps:
         kind: "text-contains"
         contains: "hello from delegate"
 
+  # min_matches: 2 — the pregap plan is already archived by this point, and the bare glob
+  # would otherwise resolve instantly on that stale match without ever observing THIS
+  # step's own (nextsteps) archive landing.
   - id: "wait-for-nextsteps-archive"
     type: "wait-for-file"
     args: ["**/Archive/*_plan.md"]
+    min_matches: 2
     timeout_sec: 180
     output_criteria:
       - id: "nextsteps-archive-count"
@@ -339,9 +351,12 @@ steps:
         kind: "command-output-contains"
         contains: ["approved"]
 
+  # min_matches: 3 — same reasoning as wait-for-nextsteps-archive above, now against both
+  # already-archived plans (pregap, nextsteps).
   - id: "wait-for-postgap-archive"
     type: "wait-for-file"
     args: ["**/Archive/*_plan.md"]
+    min_matches: 3
     timeout_sec: 180
     output_criteria:
       - id: "postgap-archived"
