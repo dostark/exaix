@@ -1,14 +1,16 @@
 /**
  * @module ScenarioFrameworkCalibrationSources
  * @path tests/scenario_framework/runner/calibration_sources.ts
- * @description Phase 146 Step 1's real-artifact source reader: consumes an explicit
- *   `--source-index` JSON file of immutable evidence-snapshot pointers, validates each
- *   snapshot (hash integrity, required fields, real-run marker, redacted secrets), then
- *   deterministically selects a seeded sample for judge calibration. Never reconstructs
- *   evidence from current Workspace files or summary rows — a snapshot not on disk is
- *   simply unusable, not a fallback trigger.
+ * @description Phase 146 Step 1's real-artifact source reader and writer.
+ *   `captureCalibrationEvidence` writes one immutable, content-addressed snapshot per
+ *   real judge call and appends it to a `.jsonl` source index; `compileCalibrationSourceIndex`
+ *   turns that index into the JSON-array form `readCalibrationSources` consumes — it
+ *   validates each snapshot (hash integrity, required fields, real-run marker, redacted
+ *   secrets), then deterministically selects a seeded sample. Never reconstructs evidence
+ *   from current Workspace files or summary rows — a snapshot not on disk is simply
+ *   unusable, not a fallback trigger.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/tests/unit/calibration_sources_test.ts, packages/eval-history/src/calibration/identity.ts]
+ * @related-files [tests/scenario_framework/tests/unit/calibration_sources_test.ts, tests/scenario_framework/runner/history_writer.ts, packages/eval-history/src/calibration/identity.ts]
  */
 
 import { isAbsolute, resolve } from "@std/path";
@@ -62,6 +64,17 @@ export interface IReadCalibrationSourcesOptions {
   readonly sampleCount: number;
 }
 
+export interface ICaptureCalibrationEvidenceOptions {
+  readonly captureDirectory: string;
+  readonly runId: string;
+  readonly stepId: string;
+  readonly requestContext: string;
+  readonly artifact: string;
+  readonly rubricMethodology: string;
+  readonly executionStatus: string;
+  readonly sourceRevision: string;
+}
+
 export class CalibrationSourceError extends Error {
   constructor(message: string) {
     super(message);
@@ -84,6 +97,9 @@ const SourceIndexEntrySchema = z.object({
 }).strict();
 
 const SourceIndexSchema = z.array(SourceIndexEntrySchema);
+
+const SNAPSHOT_SUBDIRECTORY = "snapshots";
+export const CALIBRATION_SOURCE_INDEX_JSONL_NAME = "source-index.jsonl";
 
 const EvidenceSnapshotSchema = z.object({
   request_context: z.string().min(1),
@@ -243,4 +259,77 @@ export async function readCalibrationSources(
   }
 
   return { selected, excluded, seed: options.seed, sourceIndexHash };
+}
+
+// True O_APPEND mode so concurrent step writers don't clobber each other; a single write()
+// syscall appends atomically at the OS level for lines under PIPE_BUF (~4KiB) — matches
+// history_writer.ts:writeJsonlLine's guarantee for the same reason.
+async function appendCalibrationSourceIndexEntry(
+  indexPath: string,
+  entry: ICalibrationSourceIndexEntry,
+): Promise<void> {
+  const line = `${JSON.stringify(entry)}\n`;
+  const file = await Deno.open(indexPath, { append: true, create: true, write: true });
+  try {
+    await file.write(new TextEncoder().encode(line));
+  } finally {
+    file.close();
+  }
+}
+
+/** Writes one immutable, content-addressed snapshot and appends its pointer to the
+ *  `.jsonl` source index — the write-side counterpart to {@link readCalibrationSources}.
+ *  Identical content is a no-op write, but its index entry is still appended. */
+export async function captureCalibrationEvidence(
+  options: ICaptureCalibrationEvidenceOptions,
+): Promise<ICalibrationSourceIndexEntry> {
+  const snapshot: ICalibrationEvidenceSnapshot = {
+    request_context: options.requestContext,
+    artifact: options.artifact,
+    rubric_methodology: options.rubricMethodology,
+    real_run_marker: true,
+    execution_status: options.executionStatus,
+    source_revision: options.sourceRevision,
+  };
+  const text = JSON.stringify(snapshot);
+  const hash = await sha256Hex(text);
+
+  const snapshotDir = resolve(options.captureDirectory, SNAPSHOT_SUBDIRECTORY);
+  await Deno.mkdir(snapshotDir, { recursive: true });
+  const relativePath = `${SNAPSHOT_SUBDIRECTORY}/${hash}.json`;
+
+  try {
+    const file = await Deno.open(resolve(options.captureDirectory, relativePath), {
+      write: true,
+      createNew: true,
+    });
+    try {
+      await file.write(new TextEncoder().encode(text));
+    } finally {
+      file.close();
+    }
+  } catch (error) {
+    if (!(error instanceof Deno.errors.AlreadyExists)) throw error;
+  }
+
+  const entry: ICalibrationSourceIndexEntry = {
+    run_id: options.runId,
+    step_id: options.stepId,
+    snapshot_path: relativePath,
+    snapshot_hash: hash,
+  };
+  await appendCalibrationSourceIndexEntry(
+    resolve(options.captureDirectory, CALIBRATION_SOURCE_INDEX_JSONL_NAME),
+    entry,
+  );
+  return entry;
+}
+
+/** Reads a captured `.jsonl` source index (one entry per line, as written by
+ *  {@link captureCalibrationEvidence}) and compiles it into the JSON-array form
+ *  {@link readCalibrationSources}'s `--source-index` file expects. */
+export async function compileCalibrationSourceIndex(jsonlPath: string): Promise<ICalibrationSourceIndexEntry[]> {
+  const raw = await Deno.readTextFile(jsonlPath);
+  const lines = raw.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+  return lines.map((line) => SourceIndexEntrySchema.parse(JSON.parse(line)));
 }
