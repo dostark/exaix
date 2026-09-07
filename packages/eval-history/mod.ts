@@ -22,7 +22,7 @@ export type { ICalibrationAlignedPair, ICalibrationScoredItem } from "./src/cali
 export type { IMetricResult } from "./src/calibration/metrics.ts";
 export { canonicalJsonStringify, hashCalibrationValue, sha256Hex } from "./src/calibration/identity.ts";
 export { CalibrationCanonicalizationError, SHA256_HEX_PATTERN } from "./src/calibration/identity.ts";
-export { DEFAULT_CALIBRATION_SAMPLE_COUNT } from "./src/calibration/constants.ts";
+export { DEFAULT_CALIBRATION_MAX_ITEM_BYTES, DEFAULT_CALIBRATION_SAMPLE_COUNT } from "./src/calibration/constants.ts";
 export { CalibrationBaselineSchema, CalibrationDriftEntrySchema } from "./src/calibration/schema.ts";
 export { CalibrationDriftOutcome, CalibrationIdentityBasis } from "./src/calibration/schema.ts";
 export { CalibrationItemSchema, CalibrationManifestSchema, CalibrationReportSchema } from "./src/calibration/schema.ts";
