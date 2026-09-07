@@ -1,0 +1,361 @@
+schema_version: "1.0.0"
+id: "session-delegate-meta-workflow-queue-live"
+title: "Meta-Workflow Queue — pre-gap -> next-steps -> post-gap (provider-live)"
+pack: "provider_live"
+tags: ["provider-live", "session-delegation", "meta-workflow", "phase-150-step-5"]
+request_fixture: "fixtures/requests/provider_live/session_delegate_code_change.md"
+mode_support: ["auto"]
+portals:
+  - alias: "test-portal"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/test-portal"
+    git_init: true
+
+# Phase 150 Step 5's outstanding [live, operator-run] item: the documented
+# pre-gap -> next-steps -> post-gap dogfood queue (Exaix_Dogfooding_Analysis.md §7.5),
+# run through a real daemon with a real delegate for the coding step, proving three
+# things the CI-only meta_workflow_queue_pipeline_test.ts cannot (it never boots a
+# daemon): (1) each of the three identities actually resolves — code-analyst,
+# dogfood-coder, code-reviewer — not just that plan_to_requests.ts *would* assign
+# them; (2) the queue's ordering holds against a REAL daemon, not a fixture; (3) the
+# dogfood-coder step's delegate produces a real, reconciled file change (Step 1
+# fidelity), reusing the exact assertions session-delegate-outcome-live already
+# proved for a single request, now inside a 3-identity chain.
+#
+# Ordering is enforced by SEQUENCING, not by a `depends_on` field: each identity's
+# request is submitted only after the previous one's plan has been archived
+# (Workspace/Archive/*_plan.md), so at most one plan ever sits in Workspace/Plans/ at
+# a time — a `wait-for-file` / `frontmatter-field-equals` glob against Plans/ is
+# therefore unambiguous at every stage without needing to resolve a specific
+# trace_id/request_id per step. This is a stronger ordering proof than `depends_on`
+# alone would give (it is enforced by the scenario, not merely declared in
+# frontmatter the daemon is trusted to honour).
+#
+# code-analyst and code-reviewer (Blueprints/Agents/{code-analyst,code-reviewer}.md)
+# have no `session_delegate` block and are read-only (no write_file/patch_file/
+# run_command in permitted_tools) — they execute via the in-process ReAct loop, not a
+# headless delegate subprocess. Only the middle (dogfood-coder) request is expected to
+# emit `session.delegate.*` journal events.
+
+matrix:
+  axes:
+    tool: ["opencode", "claude-code"]
+    provider: ["direct"]
+  cells:
+    - tool: "opencode"
+      provider: "direct"
+      config: "configs/dogfood.toml"
+      requires_bin: "opencode"
+      requires_optin: "EXA_MATRIX_OPENCODE"
+    # claude-code on Sonnet 5, deliberately NOT gated on ANTHROPIC_API_KEY — see
+    # session_delegate_outcome_live.yaml's identical cell for why (subscription OAuth
+    # for the delegate, Google for the daemon's own planning in this preset).
+    - tool: "claude-code"
+      provider: "direct"
+      config: "configs/dogfood.claude.sonnet5.toml"
+      requires_bin: "claude"
+      requires_optin: "EXA_MATRIX_CLAUDE_SONNET5"
+
+steps:
+  # --- Setup ---
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/test-portal", "test-project"]
+    output_criteria:
+      - id: "portal-added"
+        score_weight: 0.5
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  # ==========================================================================
+  # Step 1 — pre-gap (code-analyst, read-only, in-process)
+  # ==========================================================================
+
+  - id: "submit-pregap-request"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/meta_workflow_queue_pregap.md",
+      "--portal",
+      "test-project",
+      "--agent-role",
+      "code-analyst",
+    ]
+    output_criteria:
+      - id: "pregap-request-submitted"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-pregap-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "pregap-plan-produced"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  # Proves identity resolution — the phase's own stated goal for this step, not just
+  # that plan_to_requests.ts would have assigned code-analyst on paper.
+  - id: "assert-pregap-identity"
+    type: "json-assert"
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "pregap-plan-attributed-to-code-analyst"
+        score_weight: 1.0
+        kind: "frontmatter-field-equals"
+        field: "agent_role"
+        equals: "code-analyst"
+
+  - id: "approve-pregap-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "pregap-plan-approved"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["approved"]
+
+  # Wait for archival, not just approval — this is what makes the NEXT step's
+  # `wait-for-file **/Plans/*_plan.md` unambiguous (Plans/ is empty again once this
+  # resolves), and it is the queue's own real "step done" signal.
+  - id: "wait-for-pregap-archive"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "pregap-archived"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Archive/*_plan.md"
+
+  # ==========================================================================
+  # Step 2 — next-steps (dogfood-coder, real headless delegate)
+  # Mirrors session_delegate_outcome_live.yaml's proven assertions exactly.
+  # ==========================================================================
+
+  - id: "submit-nextsteps-request"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/session_delegate_code_change.md",
+      "--portal",
+      "test-project",
+      "--agent-role",
+      "dogfood-coder",
+    ]
+    output_criteria:
+      - id: "nextsteps-request-submitted"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-nextsteps-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "nextsteps-plan-produced"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-nextsteps-identity"
+    type: "json-assert"
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "nextsteps-plan-attributed-to-dogfood-coder"
+        score_weight: 1.0
+        kind: "frontmatter-field-equals"
+        field: "agent_role"
+        equals: "dogfood-coder"
+
+  - id: "approve-nextsteps-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "nextsteps-plan-approved"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["approved"]
+
+  # Wait for the INTENDED CHANGE, not the first return.json — see
+  # session_delegate_outcome_live.yaml's identical step for the Phase 150 LIVE-RT
+  # defect (#5) this guards against: a read-only first plan step would otherwise
+  # satisfy a naive "first return" wait before the writing step has even run.
+  - id: "wait-for-intended-change"
+    type: "file-contains"
+    cwd: "$WORKTREE"
+    file_pattern: "src/main.ts"
+    timeout_sec: 300
+    output_criteria:
+      - id: "intended-change-observed"
+        kind: "text-contains"
+        contains: "GREETING"
+
+  # Block on reconciliation before asserting — LIVE-RT defect #6: un-awaited journal
+  # writes were lost on daemon shutdown when teardown outran reconciliation.
+  - id: "wait-for-reconcile"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-brief-prepared"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "briefed-event-present"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "session.delegate.briefed"
+
+  - id: "assert-reconciled-clean"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "reconciled-event-accepted"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "session.delegate.reconciled"
+        payload_absent:
+          rejected: true
+
+  # Delegate edits land in the isolated worktree (.exa/worktrees/<portal>/<traceId>/),
+  # not the portal checkout — reconcile.ts only validates, nothing merges back.
+  - id: "assert-greeting-added"
+    type: "file-contains"
+    cwd: "$WORKTREE"
+    file_pattern: "src/main.ts"
+    input_criteria: []
+    output_criteria:
+      - id: "greeting-constant-present"
+        score_weight: 1.0
+        kind: "text-contains"
+        contains: "GREETING"
+      - id: "greeting-value-present"
+        score_weight: 1.0
+        kind: "text-contains"
+        contains: "hello from delegate"
+
+  - id: "wait-for-nextsteps-archive"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "nextsteps-archive-count"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Archive/*_plan.md"
+
+  # ==========================================================================
+  # Step 3 — post-gap (code-reviewer, read-only, in-process)
+  # ==========================================================================
+
+  - id: "submit-postgap-request"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/meta_workflow_queue_postgap.md",
+      "--portal",
+      "test-project",
+      "--agent-role",
+      "code-reviewer",
+    ]
+    output_criteria:
+      - id: "postgap-request-submitted"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-postgap-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "postgap-plan-produced"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-postgap-identity"
+    type: "json-assert"
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "postgap-plan-attributed-to-code-reviewer"
+        score_weight: 1.0
+        kind: "frontmatter-field-equals"
+        field: "agent_role"
+        equals: "code-reviewer"
+
+  - id: "approve-postgap-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "postgap-plan-approved"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["approved"]
+
+  - id: "wait-for-postgap-archive"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "postgap-archived"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Archive/*_plan.md"
+
+  # --- Teardown ---
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]
