@@ -41,6 +41,8 @@ import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@ex
 import type { ICostTracker } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { captureCalibrationEvidence } from "./calibration_sources.ts";
+import { CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR } from "./capture_calibration_evidence_flag.ts";
 import { ProviderType } from "@exaix/core";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
 import { ModelResolver } from "../../../packages/ai/src/model_resolver.ts";
@@ -1515,6 +1517,42 @@ export async function computeGitDiffEvidence(
   return diff.trim().length > 0 ? diff : GIT_DIFF_NO_CHANGES_MESSAGE;
 }
 
+async function resolveCalibrationSourceRevision(workspaceRoot: string): Promise<string> {
+  try {
+    return (await runGitCapture(workspaceRoot, ["rev-parse", "HEAD"])).trim();
+  } catch {
+    return "unversioned";
+  }
+}
+
+// An explicit options.calibrationCapture always wins (test/CalibrationRunner injection); absent
+// that, --capture-calibration-evidence's env var (capture_calibration_evidence_flag.ts) builds a
+// default writer so an ordinary real scenario run can accumulate a calibration set unattended.
+function resolveEffectiveCalibrationCapture(
+  explicit: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>,
+  criterionId: string,
+  workspaceRoot: string,
+): ((metadata: ICalibrationCaptureMetadata) => Promise<void>) | undefined {
+  if (explicit) return async (metadata) => await explicit(metadata);
+
+  const captureDirectory = Deno.env.get(CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR);
+  if (!captureDirectory) return undefined;
+
+  return async (metadata: ICalibrationCaptureMetadata) => {
+    const sourceRevision = await resolveCalibrationSourceRevision(workspaceRoot);
+    await captureCalibrationEvidence({
+      captureDirectory,
+      runId: crypto.randomUUID(),
+      stepId: criterionId,
+      requestContext: metadata.requestContext,
+      artifact: metadata.artifact,
+      rubricMethodology: metadata.rubricMethodology,
+      executionStatus: "completed",
+      sourceRevision,
+    });
+  };
+}
+
 export async function evaluateLlmJudgeCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
@@ -1646,9 +1684,14 @@ export async function evaluateLlmJudgeCriterion(
   // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
     const judgeJsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
-    const captureObserver = options.calibrationCapture
+    const calibrationCapture = resolveEffectiveCalibrationCapture(
+      options.calibrationCapture,
+      criterion.id,
+      options.workspaceRoot,
+    );
+    const captureObserver = calibrationCapture
       ? async (resolved: ILlmEndpointResolvedMetadata) => {
-        await options.calibrationCapture!({
+        await calibrationCapture({
           requestContext: contextWithTests ?? "",
           artifact: content,
           rubricMethodology: methodology,

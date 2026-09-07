@@ -11,6 +11,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 import { withEnv } from "@exaix/testing";
 import {
   callLlmEndpoint,
@@ -19,6 +20,8 @@ import {
   type IEvaluateCriterionOptions,
   type ILlmEndpointResolvedMetadata,
 } from "../../runner/assertions.ts";
+import { CALIBRATION_SOURCE_INDEX_JSONL_NAME } from "../../runner/calibration_sources.ts";
+import { CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR } from "../../runner/capture_calibration_evidence_flag.ts";
 import { CriterionKind, CriterionPhase } from "../../schema/step_schema.ts";
 
 const NO_BACKWARD_KEYS: Record<string, null> = {
@@ -168,6 +171,78 @@ Deno.test({
       assertEquals(result.kind, CriterionKind.LLM_JUDGE);
       assertExists(result.status);
     });
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
+  name:
+    "[CalibrationCapture] --capture-calibration-evidence's env var writes a real snapshot when no explicit calibrationCapture is given",
+  fn: async () => {
+    const captureDir = await Deno.makeTempDir();
+    try {
+      await withEnv({
+        EXA_LLM_PROVIDER: "mock",
+        [CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR]: captureDir,
+        ...NO_BACKWARD_KEYS,
+      }, async () => {
+        await evaluateLlmJudgeCriterion(makeOptions({ env: { EXA_EVAL_LLM_MOCK: "false" } }));
+      });
+
+      const indexText = await Deno.readTextFile(join(captureDir, CALIBRATION_SOURCE_INDEX_JSONL_NAME));
+      const lines = indexText.split("\n").filter((line) => line.trim().length > 0);
+      assertEquals(lines.length, 1);
+      const entry = JSON.parse(lines[0]);
+      assertEquals(entry.step_id, "test-llm-judge");
+      assertExists(entry.snapshot_hash);
+
+      const snapshotText = await Deno.readTextFile(join(captureDir, entry.snapshot_path));
+      const snapshot = JSON.parse(snapshotText);
+      assertEquals(snapshot.real_run_marker, true);
+      assertExists(snapshot.request_context);
+      assertExists(snapshot.source_revision);
+    } finally {
+      await Deno.remove(captureDir, { recursive: true });
+    }
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
+  name: "[CalibrationCapture] an explicit calibrationCapture takes precedence over the env-var default",
+  fn: async () => {
+    const captureDir = await Deno.makeTempDir();
+    try {
+      await withEnv({
+        EXA_LLM_PROVIDER: "mock",
+        [CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR]: captureDir,
+        ...NO_BACKWARD_KEYS,
+      }, async () => {
+        let explicitCalls = 0;
+        await evaluateLlmJudgeCriterion(
+          makeOptions({
+            env: { EXA_EVAL_LLM_MOCK: "false" },
+            calibrationCapture: () => {
+              explicitCalls++;
+            },
+          }),
+        );
+        assertEquals(explicitCalls, 1);
+      });
+
+      // The env-var default path never ran — nothing was written to captureDir.
+      let indexExists = true;
+      try {
+        await Deno.stat(join(captureDir, CALIBRATION_SOURCE_INDEX_JSONL_NAME));
+      } catch {
+        indexExists = false;
+      }
+      assertEquals(indexExists, false);
+    } finally {
+      await Deno.remove(captureDir, { recursive: true });
+    }
   },
   sanitizeOps: false,
   sanitizeResources: false,
