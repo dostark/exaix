@@ -1883,7 +1883,13 @@ export async function callLlmEndpoint(
       default: { provider: resolved.provider, model: resolved.model },
     },
     ...(cliDelegateTimeoutMs
-      ? { ai_timeout: { default_ms: cliDelegateTimeoutMs, providers: { [resolved.provider]: cliDelegateTimeoutMs } } }
+      ? {
+        // Without an explicit `ai`, AiConfigSchema's own 30s default wins in
+        // resolveOptionsByName before ai_timeout.providers is ever read — a real CLI call
+        // silently timed out at 30s despite the override below until `ai` was set directly.
+        ai: { provider: resolved.provider, model: resolved.model, timeout_ms: cliDelegateTimeoutMs },
+        ai_timeout: { default_ms: cliDelegateTimeoutMs, providers: { [resolved.provider]: cliDelegateTimeoutMs } },
+      }
       : {}),
   };
   const finalConfig = createMockConfig(
