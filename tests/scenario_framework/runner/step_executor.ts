@@ -278,6 +278,9 @@ async function executeWaitForFileStep(
   const failureGlob = options.step.failure_glob;
   const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
   const timeoutMs = timeoutSec * 1000;
+  // Default 1: a repeated glob (e.g. Archive/*_plan.md across several sequenced requests) would
+  // otherwise resolve instantly on a match a PRIOR step's own wait already consumed.
+  const minMatches = options.step.min_matches ?? 1;
 
   const pattern = globToRegExp(pathPattern);
   const failurePattern = failureGlob ? globToRegExp(failureGlob) : undefined;
@@ -287,7 +290,7 @@ async function executeWaitForFileStep(
     // Search for matching files
     const found = await findMatchingFiles(executionBase, pattern, options.artifactBaselineMs);
 
-    if (found.length > 0) {
+    if (found.length >= minMatches) {
       const completedAtEpochMs = Date.now();
       const completedAt = new Date(completedAtEpochMs).toISOString();
 
@@ -418,7 +421,6 @@ async function executeFileContainsStep(
   startedAtEpochMs: number,
 ): Promise<IScenarioStepExecutionResult> {
   const timeoutSec = options.step.timeout_sec ?? 120;
-  const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
   const timeoutMs = timeoutSec * 1000;
   const startTime = Date.now();
 
@@ -449,6 +451,14 @@ async function executeFileContainsStep(
   }
 
   while (Date.now() - startTime < timeoutMs) {
+    // Re-resolved every iteration: for cwd "$WORKTREE", the target worktree may not exist yet
+    // on the first iteration (it appears only once its delegate launches), so a one-time
+    // resolution before the loop can permanently lock onto the workspace-root fallback.
+    const executionBase = await resolveExecutionBase(
+      options.step,
+      options.cwd || Deno.cwd(),
+      options.artifactBaselineMs,
+    );
     const matches: string[] = [];
     for (const glob of globs) {
       const found = await findMatchingFiles(executionBase, globToRegExp(glob), options.artifactBaselineMs);
