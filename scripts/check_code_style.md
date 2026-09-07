@@ -127,8 +127,8 @@ comments; the other checks exempt the module's own leading header comment.
 
 ## Package & Tests Boundary
 
-| Tag                        | Severity | What it detects                                                                    |
-| -------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| Tag                       | Severity | What it detects                                                                 |
+| ------------------------- | -------- | ------------------------------------------------------------------------------- |
 | [package-tests-boundary]` | error    | A deployable module (`packages/`, `exaix-team/`, `apps/`) imports from `tests/` |
 
 ---
