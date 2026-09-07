@@ -28,11 +28,22 @@ function makeLaunch(overrides: Partial<ISessionLaunch> = {}): ISessionLaunch {
   };
 }
 
+/** An empty, immediately-closed stream — `new ReadableStream()` with no controller
+ *  never emits `done`, so drainStream() would wait out the full idle timeout on every
+ *  test using it instead of resolving instantly. */
+function emptyClosedStream(): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.close();
+    },
+  });
+}
+
 function makeMockChild(code: number): Deno.ChildProcess {
   return {
     status: Promise.resolve({ code, signal: null }),
-    stdout: new ReadableStream(),
-    stderr: new ReadableStream(),
+    stdout: emptyClosedStream(),
+    stderr: emptyClosedStream(),
     kill: () => {},
   } as Deno.ChildProcess;
 }

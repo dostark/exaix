@@ -31,7 +31,14 @@ function makeMockChild(stdoutData: string, exitCode = 0): Deno.ChildProcess {
         controller.close();
       },
     }),
-    stderr: new ReadableStream(),
+    // Immediately-closed, not `new ReadableStream()` with no controller — that variant never
+    // emits `done`, so drainStream() would wait out the full idle timeout on every test using
+    // this helper instead of resolving instantly.
+    stderr: new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    }),
     kill: () => {},
   } as Deno.ChildProcess;
 }

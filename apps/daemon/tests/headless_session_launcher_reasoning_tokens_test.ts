@@ -25,7 +25,14 @@ function makeCodexChild(stdout: string): Deno.ChildProcess {
   return {
     status: Promise.resolve({ code: 0, signal: null }),
     stdout: new Response(stdout).body!,
-    stderr: new ReadableStream(),
+    // Immediately-closed, not `new ReadableStream()` with no controller — that variant never
+    // emits `done`, so drainStream() would wait out the full idle timeout instead of resolving
+    // instantly.
+    stderr: new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    }),
     kill: () => {},
   } as Deno.ChildProcess;
 }
