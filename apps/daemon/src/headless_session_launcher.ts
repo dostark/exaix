@@ -105,15 +105,10 @@ export class HeadlessSessionLauncher {
 
     let rawStdout: string;
     try {
-      let rawStderr: string;
-      let childStatus: Deno.CommandStatus;
-      [childStatus, rawStdout, rawStderr] = await Promise.race([
+      [, rawStdout] = await Promise.race([
         Promise.all([child.status, stdoutDrain, stderrDrain]),
         launchTimeout.promise,
       ]);
-      if (Deno.env.get("EXA_DEBUG_SESSION_DELEGATE") === "1") {
-        await this.writeDebugCapture(traceId, { childStatus, rawStdout, rawStderr });
-      }
     } catch (error) {
       console.warn(
         `[HeadlessSessionLauncher] launch for trace ${traceId} did not complete cleanly: ` +
@@ -135,56 +130,7 @@ export class HeadlessSessionLauncher {
       // return.json exists — no abandoned synthesis needed
     } catch {
       // No return.json and no stdout — synthesize abandoned
-      if (Deno.env.get("EXA_DEBUG_SESSION_DELEGATE") === "1") {
-        await this.writeDebugNote(
-          traceId,
-          "synthesizeFromStdout returned false and no tool-written return.json was found — falling back to synthesizeAbandoned().",
-        );
-      }
       await this.synthesizeAbandoned(traceId);
-    }
-  }
-
-  /** TEMPORARY diagnostic, gated on EXA_DEBUG_SESSION_DELEGATE=1 — writes the raw
-   *  child output to <sessionDir>/<traceId>/debug_capture.json for inspection. */
-  private async writeDebugCapture(
-    traceId: string,
-    info: { childStatus: Deno.CommandStatus; rawStdout: string; rawStderr: string },
-  ): Promise<void> {
-    try {
-      const dir = join(this.deps.sessionDir, traceId);
-      await Deno.mkdir(dir, { recursive: true });
-      await Deno.writeTextFile(
-        join(dir, "debug_capture.json"),
-        JSON.stringify(
-          {
-            exitCode: info.childStatus.code,
-            success: info.childStatus.success,
-            rawStdoutLength: info.rawStdout.length,
-            rawStdout: info.rawStdout,
-            rawStderrLength: info.rawStderr.length,
-            rawStderr: info.rawStderr,
-          },
-          null,
-          2,
-        ),
-      );
-    } catch (error) {
-      console.warn(
-        `[HeadlessSessionLauncher] debug capture write failed for trace ${traceId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
-  }
-
-  private async writeDebugNote(traceId: string, note: string): Promise<void> {
-    try {
-      const dir = join(this.deps.sessionDir, traceId);
-      await Deno.mkdir(dir, { recursive: true });
-      await Deno.writeTextFile(join(dir, "debug_note.txt"), `${note}\n`, { append: true });
-    } catch {
-      // Best-effort diagnostic only.
     }
   }
 
@@ -228,15 +174,6 @@ export class HeadlessSessionLauncher {
       briefResumeToken = parsed.resume_token;
     } catch {
       return false;
-    }
-
-    if (Deno.env.get("EXA_DEBUG_SESSION_DELEGATE") === "1") {
-      await this.writeDebugNote(
-        traceId,
-        `synthesizeFromStdout read brief.json: tool=${tool} gate=${briefGate} ` +
-          `briefTraceId=${briefTraceId} briefResumeToken=${briefResumeToken} ` +
-          `at ${new Date().toISOString()}`,
-      );
     }
 
     const parsed = parseDelegateStdout(rawStdout, tool);
@@ -287,14 +224,6 @@ export class HeadlessSessionLauncher {
     const tmp = `${returnPath}.tmp`;
     await Deno.writeTextFile(tmp, JSON.stringify(sessionReturn, null, 2));
     await Deno.rename(tmp, returnPath);
-    if (Deno.env.get("EXA_DEBUG_SESSION_DELEGATE") === "1") {
-      await this.writeDebugNote(
-        traceId,
-        `synthesizeFromStdout wrote return.json: trace_id=${sessionReturn.trace_id} ` +
-          `resume_token=${sessionReturn.resume_token} decision=${sessionReturn.decision} ` +
-          `at ${new Date().toISOString()}`,
-      );
-    }
     return true;
   }
 
