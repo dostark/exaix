@@ -40,6 +40,7 @@ import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { ICostTracker } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import { ProviderType } from "@exaix/core";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
 import { ModelResolver } from "../../../packages/ai/src/model_resolver.ts";
@@ -48,6 +49,26 @@ import type { IProviderHealthChecker } from "../../../packages/ai/src/provider_s
 import type { ModelSize } from "../../../packages/schemas/src/model_intent.ts";
 import { createMockConfig, createMockEventLogger } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
+
+/** The actual resolved provider/model and full generation result for one `callLlmEndpoint`
+ *  call — distinct from its string-only return so an observer sees what was really used. */
+export interface ILlmEndpointResolvedMetadata {
+  provider: string;
+  model: string;
+  result: IGenerateResult;
+}
+
+/** Judge-calibration snapshot inputs: the target judge's raw evaluation materials,
+ *  never its score/verdict — the reference evaluator must stay blind to it. */
+export interface ICalibrationCaptureMetadata {
+  requestContext: string;
+  artifact: string;
+  rubricMethodology: string;
+  provider: string;
+  model: string;
+  promptUsed: string;
+  rawResponse: string;
+}
 
 export interface IEvaluateCriterionOptions {
   workspaceRoot: string;
@@ -61,6 +82,9 @@ export interface IEvaluateCriterionOptions {
   exactlExecutable?: string;
   /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
   stepOutcomes?: IScenarioStepOutcome[];
+  /** Fires after a real (non-mock) llm-judge call resolves, before scoring. Absent by
+   *  default — ordinary history/scoring behavior is unaffected either way. */
+  calibrationCapture?: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>;
 }
 
 export interface IEvaluateStepOutcomeOptions {
@@ -1622,7 +1646,20 @@ export async function evaluateLlmJudgeCriterion(
   // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
     const judgeJsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
-    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema);
+    const captureObserver = options.calibrationCapture
+      ? async (resolved: ILlmEndpointResolvedMetadata) => {
+        await options.calibrationCapture!({
+          requestContext: contextWithTests ?? "",
+          artifact: content,
+          rubricMethodology: methodology,
+          provider: resolved.provider,
+          model: resolved.model,
+          promptUsed,
+          rawResponse: resolved.result.content,
+        });
+      }
+      : undefined;
+    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema, captureObserver);
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 
     if (isMulti) {
@@ -1712,6 +1749,7 @@ export async function callLlmEndpoint(
   prompt: string,
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
   jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  onResolved?: Opt<(metadata: ILlmEndpointResolvedMetadata) => void | Promise<void>, Reason.OptionalDependency>,
 ): Promise<string> {
   // Step env (options.env) takes precedence over the runner's process env — reading only
   // Deno.env here silently ignored a step-declared EXA_EVAL_LLM_MOCK/EXA_LLM_PROVIDER and
@@ -1814,6 +1852,9 @@ export async function callLlmEndpoint(
     ...resolved.options,
     ...(jsonSchema !== undefined ? { jsonSchema } : {}),
   });
+  if (onResolved) {
+    await onResolved({ provider: resolved.provider, model: resolved.model, result });
+  }
   return result.content;
 }
 
