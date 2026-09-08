@@ -278,3 +278,23 @@ export const CalibrationDriftEntrySchema = z.object({
 });
 
 export type ICalibrationDriftEntry = z.infer<typeof CalibrationDriftEntrySchema>;
+
+const CalibrationVendorTargetStringSchema = z.string().regex(
+  /^[^:]+:.+$/,
+  'must be "provider:model" (e.g. "claude-cli:claude-sonnet-5")',
+);
+
+/** Shared by apps/exactl's `eval calibration score` dispatch and
+ *  scripts/run_judge_calibration.ts's own arg parsing, so both reject malformed input
+ *  identically rather than drifting into two independent validation paths. */
+export const CalibrationScoreOptionsSchema = z.object({
+  capture_dir: z.string().min(1),
+  seed: z.string().min(1),
+  sample_count: z.number().int().min(1),
+  target: CalibrationVendorTargetStringSchema,
+  reference: CalibrationVendorTargetStringSchema,
+  isolated: z.boolean(),
+  label_threshold: z.number().min(0).max(1),
+}).strict();
+
+export type ICalibrationScoreOptions = z.infer<typeof CalibrationScoreOptionsSchema>;

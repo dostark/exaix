@@ -3046,6 +3046,87 @@ const evalCommand = new Command()
           Deno.exit(1);
         }
       }),
+  )
+  .command(
+    "calibration",
+    new Command()
+      .description("Judge calibration: accumulate real evidence and score judge/reference agreement")
+      .command(
+        "generate",
+        new Command()
+          .description("Run real scenarios, capturing real judge-call evidence for calibration")
+          .option("-P, --pack <pack:string>", "Run scenarios in a named pack (repeatable)", { collect: true })
+          .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
+          .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
+          .option(
+            "--cell <tool:string>",
+            "Run only the matrix cell whose tool matches (e.g. claude-code, opencode)",
+          )
+          .option("--max-cost-usd <usd:number>", "Stop scheduling after accumulated tracked cost reaches this cap")
+          .option("-v, --verbose", "Show detailed output")
+          .option(
+            "--capture-calibration-evidence <dir:string>",
+            "Directory to capture real judge-call evidence into",
+            { required: true },
+          )
+          .action(async (options) => {
+            try {
+              await evalCommands.calibrationGenerate({
+                pack: options.pack,
+                tag: options.tag,
+                scenario: options.scenario,
+                cell: options.cell,
+                maxCostUsd: options.maxCostUsd,
+                verbose: options.verbose,
+                captureCalibrationEvidence: options.captureCalibrationEvidence,
+              });
+            } catch (error) {
+              console.error(
+                "eval calibration generate failed:",
+                error instanceof Error ? error.message : String(error),
+              );
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "score",
+        new Command()
+          .description("Score judge/reference agreement over captured calibration evidence")
+          .option("--capture-dir <dir:string>", "Directory captured by 'eval calibration generate'", {
+            required: true,
+          })
+          .option("--target <target:string>", "Target judge, as provider:model (e.g. claude-cli:claude-sonnet-5)", {
+            required: true,
+          })
+          .option(
+            "--reference <reference:string>",
+            "Reference evaluator, as provider:model (e.g. codex-cli:gpt-5.6-sol)",
+            { required: true },
+          )
+          .option("--seed <seed:string>", "Deterministic selection seed", { required: true })
+          .option("--sample-count <n:number>", "Number of eligible artifacts to score")
+          .option("--label-threshold <n:number>", "Pass/fail label threshold (0-1)")
+          .option("--isolated", "Run the reference evaluator in the bwrap-sandboxed isolation profile")
+          .option("--output <dir:string>", "Directory to write the calibration report into")
+          .action(async (options) => {
+            try {
+              await evalCommands.calibrationScore({
+                captureDir: options.captureDir,
+                target: options.target,
+                reference: options.reference,
+                seed: options.seed,
+                sampleCount: options.sampleCount,
+                labelThreshold: options.labelThreshold,
+                isolated: options.isolated,
+                output: options.output,
+              });
+            } catch (error) {
+              console.error("eval calibration score failed:", error instanceof Error ? error.message : String(error));
+              Deno.exit(1);
+            }
+          }),
+      ),
   );
 
 __test_command.command("eval", evalCommand);

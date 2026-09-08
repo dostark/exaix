@@ -28,6 +28,7 @@ export { CalibrationDriftOutcome, CalibrationIdentityBasis } from "./src/calibra
 export { CalibrationItemSchema, CalibrationManifestSchema, CalibrationReportSchema } from "./src/calibration/schema.ts";
 export { CalibrationRubricSchema, CalibrationTransport, CalibrationVendor } from "./src/calibration/schema.ts";
 export { EvaluatorProvenanceSchema, isCalibrationItemLabelConsistent } from "./src/calibration/schema.ts";
+export { CalibrationScoreOptionsSchema } from "./src/calibration/schema.ts";
 export type { ICalibrationBaseline, ICalibrationDriftEntry, ICalibrationItem } from "./src/calibration/schema.ts";
 export type { ICalibrationManifest, ICalibrationReport, ICalibrationRubric } from "./src/calibration/schema.ts";
-export type { IEvaluatorProvenance } from "./src/calibration/schema.ts";
+export type { ICalibrationScoreOptions, IEvaluatorProvenance } from "./src/calibration/schema.ts";

@@ -128,9 +128,12 @@ interface ICostReportCellGroup {
   runs: ICostReportRunRow[];
 }
 
+/** Binary every report-script bridge in this file spawns its bridged script through. */
+const DENO_BIN = "deno";
 const FRAMEWORK_RELATIVE_PATH = "../../../../tests/scenario_framework/runner/main.ts";
 const HARNESS_LIFT_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_harness_lift_report.ts";
 const ABLATION_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_ablation_report.ts";
+const JUDGE_CALIBRATION_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_judge_calibration.ts";
 /** Relative (to this file) root of the external-benchmark coverage manifests published by the
  *  batch ingest (scripts/ingest_terminal_bench.ts). Resolved per benchmark via
  *  EXTERNAL_BENCHMARK_FIXTURE_DIRS. */
@@ -164,10 +167,63 @@ export class EvalCommands extends BaseCommand {
     cell?: string;
     maxCostUsd?: number;
     verbose?: boolean;
+    captureCalibrationEvidence?: string;
   }): Promise<void> {
     const args = buildRunArgs(options);
+    await this.spawnAndPropagateExit(DENO_BIN, args);
+  }
 
-    const cmd = new Deno.Command("deno", { args, cwd: Deno.cwd() });
+  /** `eval calibration generate` — accumulates real judge-call evidence for calibration by
+   *  running the scenario framework the same way `run()` does, plus the capture flag. */
+  async calibrationGenerate(options: {
+    pack?: string[];
+    tag?: string[];
+    scenario?: string[];
+    cell?: string;
+    maxCostUsd?: number;
+    verbose?: boolean;
+    captureCalibrationEvidence: string;
+  }): Promise<void> {
+    await this.run(options);
+  }
+
+  /** `eval calibration score` — the report-script bridge to CalibrationRunner (mirrors
+   *  renderScriptView's harness-lift/ablation pattern): spawns scripts/run_judge_calibration.ts
+   *  score, which never touches the Test layer's exports from this (production) module. */
+  async calibrationScore(options: {
+    captureDir: string;
+    target: string;
+    reference: string;
+    seed: string;
+    sampleCount?: number;
+    labelThreshold?: number;
+    isolated?: boolean;
+    output?: string;
+  }): Promise<void> {
+    const args = [
+      "run",
+      "--allow-all",
+      resolveJudgeCalibrationScriptPath(),
+      "score",
+      "--capture-dir",
+      options.captureDir,
+      "--target",
+      options.target,
+      "--reference",
+      options.reference,
+      "--seed",
+      options.seed,
+    ];
+    if (options.sampleCount !== undefined) args.push("--sample-count", String(options.sampleCount));
+    if (options.labelThreshold !== undefined) args.push("--label-threshold", String(options.labelThreshold));
+    if (options.isolated) args.push("--isolated");
+    if (options.output !== undefined) args.push("--output", options.output);
+
+    await this.spawnAndPropagateExit(DENO_BIN, args);
+  }
+
+  private async spawnAndPropagateExit(command: string, args: string[]): Promise<void> {
+    const cmd = new Deno.Command(command, { args, cwd: Deno.cwd() });
     const proc = cmd.spawn();
     const status = await proc.status;
 
@@ -598,7 +654,7 @@ export class EvalCommands extends BaseCommand {
     if (pack) {
       args.push("--pack", pack);
     }
-    const output = new Deno.Command("deno", { args, cwd: Deno.cwd() }).outputSync();
+    const output = new Deno.Command(DENO_BIN, { args, cwd: Deno.cwd() }).outputSync();
     if (output.code !== 0) {
       console.error(
         `${isLift ? "Harness lift" : "Ablation"} report failed: ${new TextDecoder().decode(output.stderr)}`,
@@ -673,6 +729,10 @@ function resolveAblationScriptPath(): string {
   return resolve(new URL(".", import.meta.url).pathname, ABLATION_SCRIPT_RELATIVE_PATH);
 }
 
+function resolveJudgeCalibrationScriptPath(): string {
+  return resolve(new URL(".", import.meta.url).pathname, JUDGE_CALIBRATION_SCRIPT_RELATIVE_PATH);
+}
+
 export function buildRunArgs(options: {
   pack?: string[];
   tag?: string[];
@@ -683,6 +743,7 @@ export function buildRunArgs(options: {
   cell?: string;
   maxCostUsd?: number;
   verbose?: boolean;
+  captureCalibrationEvidence?: string;
 }): string[] {
   const frameworkPath = resolveFrameworkPath();
   const outputDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output");
@@ -706,6 +767,9 @@ export function buildRunArgs(options: {
   if (options.historyFormat !== undefined) args.push("--history-format", options.historyFormat);
   if (options.cell !== undefined) args.push("--cell", options.cell);
   if (options.maxCostUsd !== undefined) args.push("--max-cost-usd", String(options.maxCostUsd));
+  if (options.captureCalibrationEvidence !== undefined) {
+    args.push("--capture-calibration-evidence", options.captureCalibrationEvidence);
+  }
 
   args.push("--eval-mode");
 
