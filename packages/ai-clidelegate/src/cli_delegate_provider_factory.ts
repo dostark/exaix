@@ -33,6 +33,14 @@ const BIN_AND_MODEL_BY_TOOL: Partial<Record<SessionTool, { bin: string; defaultM
 };
 const OPENCODE_FALLBACK = { bin: DEFAULT_OPENCODE_CLI_BIN, defaultModel: DEFAULT_OPENCODE_CLI_MODEL };
 
+// options.model may arrive "provider:model"-prefixed (ModelResolver/EXA_LLM_MODEL convention,
+// see session_adapter_registry.ts's identical helper) — claude/codex/opencode reject that
+// compound form on --model with a 404 (live-verified); none of the three use colons themselves.
+function stripProviderPrefix(model: string): string {
+  const separatorIndex = model.indexOf(":");
+  return separatorIndex === -1 ? model : model.slice(separatorIndex + 1);
+}
+
 export class CliDelegateProviderFactory extends AbstractProviderFactory {
   constructor(private readonly tool: SessionTool) {
     super();
@@ -40,15 +48,16 @@ export class CliDelegateProviderFactory extends AbstractProviderFactory {
 
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {
     const { bin, defaultModel } = BIN_AND_MODEL_BY_TOOL[this.tool] ?? OPENCODE_FALLBACK;
+    const model = stripProviderPrefix(options.model || defaultModel);
 
     return Promise.resolve(
       new CliDelegateModelProvider({
         tool: this.tool,
         bin,
-        model: options.model || defaultModel,
+        model,
         cwd: options.config?.system.root ?? Deno.cwd(),
         timeoutMs: options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
-        id: options.id ?? this.generateId(this.tool, options.model || defaultModel),
+        id: options.id ?? this.generateId(this.tool, model),
       }),
     );
   }

@@ -38,6 +38,32 @@ Deno.test("CliDelegateProviderFactory: creates an opencode provider with the req
   assertEquals(casted.id, "opencode-opencode/deepseek-v4-flash-free");
 });
 
+Deno.test("CliDelegateProviderFactory: strips a provider-prefixed model before constructing the provider", async () => {
+  // options.model may arrive "provider:model"-prefixed; claude/codex/opencode reject that on
+  // --model with a 404 (live-verified). Ollama's colon-tag models never reach this factory.
+  const factory = new CliDelegateProviderFactory("claude-code");
+  const provider = await factory.create({
+    provider: ProviderType.CLAUDE_CLI,
+    model: "claude-cli:claude-sonnet-5",
+    timeoutMs: 60000,
+  } as IResolvedProviderOptions);
+
+  const casted = provider as CliDelegateModelProvider;
+  assertEquals(casted.id, "claude-code-claude-sonnet-5");
+});
+
+Deno.test("CliDelegateProviderFactory: strips a provider-prefixed model for the codex tool too", async () => {
+  const factory = new CliDelegateProviderFactory("codex");
+  const provider = await factory.create({
+    provider: ProviderType.CODEX_CLI,
+    model: "codex-cli:gpt-5.6-sol",
+    timeoutMs: 60000,
+  } as IResolvedProviderOptions);
+
+  const casted = provider as CliDelegateModelProvider;
+  assertEquals(casted.id, "codex-gpt-5.6-sol");
+});
+
 Deno.test("CliDelegateProviderFactory: falls back to the tool's default model when options.model is empty", async () => {
   const claudeFactory = new CliDelegateProviderFactory("claude-code");
   const claudeProvider = await claudeFactory.create({
