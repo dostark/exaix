@@ -138,6 +138,9 @@ function buildDelegateEnv(): Record<string, string> {
 /** Placeholder for an absent sessionId/conversationId in the diagnostic generate-start log. */
 const UNSET_LOG_LABEL = "none";
 
+/** Cap on how much of a failing CLI's raw stdout an error message quotes. */
+const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
+
 /** Tool identifiers compared at each of generate()'s three-way dispatch sites. */
 const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
 const TOOL_CODEX = SessionToolSchema.enum.codex;
@@ -284,7 +287,9 @@ export class CliDelegateModelProvider implements IModelProvider {
 
     if (result.code !== 0) {
       throw new ModelProviderError(
-        `CliDelegateModelProvider '${this.options.bin}' exited with code ${result.code}: ${result.stderr.trim()}`,
+        `CliDelegateModelProvider '${this.options.bin}' exited with code ${result.code}: stderr=${
+          result.stderr.trim() || "(empty)"
+        } stdout=${result.stdout.trim().slice(0, ERROR_STDOUT_PREVIEW_MAX_CHARS) || "(empty)"}`,
         this.id,
       );
     }

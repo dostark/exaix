@@ -40,6 +40,9 @@ import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { ICostTracker } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import type { IGenerateResult } from "@exaix/ai/providers";
+import { captureCalibrationEvidence } from "./calibration_sources.ts";
+import { CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR } from "./capture_calibration_evidence_flag.ts";
 import { ProviderType } from "@exaix/core";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
 import { ModelResolver } from "../../../packages/ai/src/model_resolver.ts";
@@ -48,6 +51,26 @@ import type { IProviderHealthChecker } from "../../../packages/ai/src/provider_s
 import type { ModelSize } from "../../../packages/schemas/src/model_intent.ts";
 import { createMockConfig, createMockEventLogger } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
+
+/** The actual resolved provider/model and full generation result for one `callLlmEndpoint`
+ *  call — distinct from its string-only return so an observer sees what was really used. */
+export interface ILlmEndpointResolvedMetadata {
+  provider: string;
+  model: string;
+  result: IGenerateResult;
+}
+
+/** Judge-calibration snapshot inputs: the target judge's raw evaluation materials,
+ *  never its score/verdict — the reference evaluator must stay blind to it. */
+export interface ICalibrationCaptureMetadata {
+  requestContext: string;
+  artifact: string;
+  rubricMethodology: string;
+  provider: string;
+  model: string;
+  promptUsed: string;
+  rawResponse: string;
+}
 
 export interface IEvaluateCriterionOptions {
   workspaceRoot: string;
@@ -61,6 +84,9 @@ export interface IEvaluateCriterionOptions {
   exactlExecutable?: string;
   /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
   stepOutcomes?: IScenarioStepOutcome[];
+  /** Fires after a real (non-mock) llm-judge call resolves, before scoring. Absent by
+   *  default — ordinary history/scoring behavior is unaffected either way. */
+  calibrationCapture?: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>;
 }
 
 export interface IEvaluateStepOutcomeOptions {
@@ -1491,6 +1517,42 @@ export async function computeGitDiffEvidence(
   return diff.trim().length > 0 ? diff : GIT_DIFF_NO_CHANGES_MESSAGE;
 }
 
+async function resolveCalibrationSourceRevision(workspaceRoot: string): Promise<string> {
+  try {
+    return (await runGitCapture(workspaceRoot, ["rev-parse", "HEAD"])).trim();
+  } catch {
+    return "unversioned";
+  }
+}
+
+// An explicit options.calibrationCapture always wins (test/CalibrationRunner injection); absent
+// that, --capture-calibration-evidence's env var (capture_calibration_evidence_flag.ts) builds a
+// default writer so an ordinary real scenario run can accumulate a calibration set unattended.
+function resolveEffectiveCalibrationCapture(
+  explicit: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>,
+  criterionId: string,
+  workspaceRoot: string,
+): ((metadata: ICalibrationCaptureMetadata) => Promise<void>) | undefined {
+  if (explicit) return async (metadata) => await explicit(metadata);
+
+  const captureDirectory = Deno.env.get(CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR);
+  if (!captureDirectory) return undefined;
+
+  return async (metadata: ICalibrationCaptureMetadata) => {
+    const sourceRevision = await resolveCalibrationSourceRevision(workspaceRoot);
+    await captureCalibrationEvidence({
+      captureDirectory,
+      runId: crypto.randomUUID(),
+      stepId: criterionId,
+      requestContext: metadata.requestContext,
+      artifact: metadata.artifact,
+      rubricMethodology: metadata.rubricMethodology,
+      executionStatus: "completed",
+      sourceRevision,
+    });
+  };
+}
+
 export async function evaluateLlmJudgeCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
@@ -1622,7 +1684,25 @@ export async function evaluateLlmJudgeCriterion(
   // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
     const judgeJsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
-    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema);
+    const calibrationCapture = resolveEffectiveCalibrationCapture(
+      options.calibrationCapture,
+      criterion.id,
+      options.workspaceRoot,
+    );
+    const captureObserver = calibrationCapture
+      ? async (resolved: ILlmEndpointResolvedMetadata) => {
+        await calibrationCapture({
+          requestContext: contextWithTests ?? "",
+          artifact: content,
+          rubricMethodology: methodology,
+          provider: resolved.provider,
+          model: resolved.model,
+          promptUsed,
+          rawResponse: resolved.result.content,
+        });
+      }
+      : undefined;
+    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema, captureObserver);
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 
     if (isMulti) {
@@ -1712,6 +1792,7 @@ export async function callLlmEndpoint(
   prompt: string,
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
   jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  onResolved?: Opt<(metadata: ILlmEndpointResolvedMetadata) => void | Promise<void>, Reason.OptionalDependency>,
 ): Promise<string> {
   // Step env (options.env) takes precedence over the runner's process env — reading only
   // Deno.env here silently ignored a step-declared EXA_EVAL_LLM_MOCK/EXA_LLM_PROVIDER and
@@ -1802,7 +1883,13 @@ export async function callLlmEndpoint(
       default: { provider: resolved.provider, model: resolved.model },
     },
     ...(cliDelegateTimeoutMs
-      ? { ai_timeout: { default_ms: cliDelegateTimeoutMs, providers: { [resolved.provider]: cliDelegateTimeoutMs } } }
+      ? {
+        // Without an explicit `ai`, AiConfigSchema's own 30s default wins in
+        // resolveOptionsByName before ai_timeout.providers is ever read — a real CLI call
+        // silently timed out at 30s despite the override below until `ai` was set directly.
+        ai: { provider: resolved.provider, model: resolved.model, timeout_ms: cliDelegateTimeoutMs },
+        ai_timeout: { default_ms: cliDelegateTimeoutMs, providers: { [resolved.provider]: cliDelegateTimeoutMs } },
+      }
       : {}),
   };
   const finalConfig = createMockConfig(
@@ -1814,6 +1901,9 @@ export async function callLlmEndpoint(
     ...resolved.options,
     ...(jsonSchema !== undefined ? { jsonSchema } : {}),
   });
+  if (onResolved) {
+    await onResolved({ provider: resolved.provider, model: resolved.model, result });
+  }
   return result.content;
 }
 

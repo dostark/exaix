@@ -14,12 +14,14 @@ import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
 import { applyCaptureFixturesFlag, copyCapturedFixtures, reportCaptureFlakiness } from "./capture_fixtures_flag.ts";
+import { applyCaptureCalibrationEvidenceFlag } from "./capture_calibration_evidence_flag.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
+import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
   accumulateRunVerdict,
   computeMultiTrialMetrics,
@@ -88,10 +90,17 @@ await new Command()
       "resolved provider is mock — set --capture-fixtures alongside a real EXA_LLM_PROVIDER. " +
       "Operator-triggered only, never a CI gate.",
   )
+  .option(
+    "--capture-calibration-evidence <dir:string>",
+    "Capture real llm-judge evaluation inputs into immutable snapshots at <dir> for judge " +
+      "calibration (Phase 146). Only fires on a real (non-mock) judge call. Operator-triggered " +
+      "only, never a CI gate; run against the real Phase 141 pack to build a calibration set.",
+  )
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");
     applyCaptureFixturesFlag(options.captureFixtures);
+    applyCaptureCalibrationEvidenceFlag(options.captureCalibrationEvidence);
 
     // 2. Load file-based config if provided or default exists
     let fileConfig: Partial<IRuntimeConfig> = {};
@@ -301,6 +310,28 @@ await new Command()
             outcomeScore: suiteScore,
             scoreThreshold,
           });
+        }
+      }
+
+      // A real HTTP 400/429 means every remaining scenario would just re-hit the same exhausted
+      // resource — stop the whole run, unconditionally (not gated behind --fail-fast).
+      if (firstTrialWorkspaceRoot) {
+        const exhaustion = computeRunCapacityExhaustion(join(firstTrialWorkspaceRoot, ".exa", "journal.db"));
+        if (exhaustion.detected) {
+          const remaining = selectedEntries.slice(selectedEntries.indexOf(entry) + 1);
+          console.error(
+            `\nCapacity/quota exhaustion detected (HTTP 400/429) after ${entry.id}; stopping the run — ` +
+              `${remaining.length} scenario(s) not run.\nEvidence: ${exhaustion.evidence}`,
+          );
+          for (const skipped of remaining) {
+            scenarioVerdicts.push({
+              scenarioId: `${skipped.id} (skipped: capacity-exhausted)`,
+              pack: "",
+              suiteScore: 0,
+              passed: false,
+            });
+          }
+          break;
         }
       }
 

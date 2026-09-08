@@ -15,6 +15,7 @@
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
+import { Database } from "@db/sqlite";
 import { executeScenarioStep } from "../../runner/step_executor.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
 
@@ -25,6 +26,30 @@ async function withTempWorkspace(fn: (ws: string) => Promise<void>): Promise<voi
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
+}
+
+/** Writes a minimal real journal.db under `ws/.exa/` — the same lightweight fixture shape
+ *  journal_assert_test.ts already establishes for this layer, not the full production schema. */
+async function withJournalWorkspace(
+  rows: Array<[string, string, string]>,
+  fn: (ws: string) => Promise<void>,
+): Promise<void> {
+  await withTempWorkspace(async (ws) => {
+    await Deno.mkdir(join(ws, ".exa"), { recursive: true });
+    const db = new Database(join(ws, ".exa", "journal.db"));
+    db.prepare(
+      "CREATE TABLE activity (rowid INTEGER PRIMARY KEY, trace_id TEXT, action_type TEXT, payload TEXT)",
+    ).run();
+    for (const [traceId, actionType, payload] of rows) {
+      db.prepare("INSERT INTO activity (trace_id, action_type, payload) VALUES (?, ?, ?)").run(
+        traceId,
+        actionType,
+        payload,
+      );
+    }
+    db.close();
+    await fn(ws);
+  });
 }
 
 Deno.test("[wait_for_file] succeeds as soon as the success glob matches (no failure_glob set, backward-compat)", async () => {
@@ -144,4 +169,135 @@ Deno.test("[wait_for_file] success glob still wins if both patterns exist (succe
 
     assertEquals(result.exitCode, 0);
   });
+});
+
+// General early-exit on a definitive daemon-side request failure — unlike a rejected-plan
+// failure_glob match, no file is written for this failure class, so wait-for-file previously
+// burned its full timeout_sec (root cause traced live: a 140s real failure cost 30 minutes).
+
+Deno.test("[wait_for_file] fails fast on request.failed for the current trace, with no failure_glob configured", async () => {
+  await withJournalWorkspace(
+    [
+      ["trace-current", "request.created", "{}"],
+      ["trace-current", "request.failed", JSON.stringify({ error: "CLI delegate 'claude' exited with code 1" })],
+    ],
+    async (ws) => {
+      const startedAt = Date.now();
+      const result = await executeScenarioStep({
+        step: {
+          id: "wait-for-plan",
+          type: ScenarioStepType.WAIT_FOR_FILE,
+          args: ["**/Plans/*_plan.md"],
+          timeout_sec: 180,
+          input_criteria: [],
+          output_criteria: [],
+          continue_on_failure: false,
+        },
+        cwd: ws,
+        traceBaselineRowid: 0,
+      });
+      const elapsedMs = Date.now() - startedAt;
+
+      assertEquals(result.exitCode, 1);
+      assertStringIncludes(result.stderr, "request.failed");
+      assertStringIncludes(result.stderr, "exited with code 1");
+      assert(elapsedMs < 10_000, `expected fast failure, took ${elapsedMs}ms`);
+    },
+  );
+});
+
+Deno.test("[wait_for_file] fails fast on request.skipped for the current trace", async () => {
+  await withJournalWorkspace(
+    [
+      ["trace-current", "request.created", "{}"],
+      ["trace-current", "request.skipped", JSON.stringify({ reason: "processing returned null" })],
+    ],
+    async (ws) => {
+      const result = await executeScenarioStep({
+        step: {
+          id: "wait-for-plan",
+          type: ScenarioStepType.WAIT_FOR_FILE,
+          args: ["**/Plans/*_plan.md"],
+          timeout_sec: 180,
+          input_criteria: [],
+          output_criteria: [],
+          continue_on_failure: false,
+        },
+        cwd: ws,
+        traceBaselineRowid: 0,
+      });
+
+      assertEquals(result.exitCode, 1);
+      assertStringIncludes(result.stderr, "request.skipped");
+    },
+  );
+});
+
+Deno.test("[wait_for_file] a PRIOR trace's request.failed (stale, shared sandbox) never false-positives the CURRENT trace's wait", async () => {
+  await withJournalWorkspace(
+    [
+      ["trace-prior", "request.created", "{}"],
+      ["trace-prior", "request.failed", JSON.stringify({ error: "unrelated earlier failure" })],
+      ["trace-current", "request.created", "{}"],
+    ],
+    async (ws) => {
+      const result = await executeScenarioStep({
+        step: {
+          id: "wait-for-plan",
+          type: ScenarioStepType.WAIT_FOR_FILE,
+          args: ["**/Plans/*_plan.md"],
+          timeout_sec: 1,
+          input_criteria: [],
+          output_criteria: [],
+          continue_on_failure: false,
+        },
+        cwd: ws,
+        // Baseline set past the prior trace's rows — resolveCurrentTrace must pick trace-current.
+        traceBaselineRowid: 2,
+      });
+
+      // No plan file was ever written and trace-current has no failure of its own — this must
+      // time out normally (generic timeout path), never claim a false request.failed/skipped match
+      // against the unrelated prior trace.
+      assertEquals(result.exitCode, 1);
+      assertEquals(result.stderr.includes("request.failed") || result.stderr.includes("request.skipped"), false);
+      assertStringIncludes(result.stderr, "Timeout after");
+    },
+  );
+});
+
+Deno.test("[wait_for_file] succeeds normally when the request has neither failed nor produced its file yet, then the file lands", async () => {
+  await withJournalWorkspace(
+    [
+      ["trace-current", "request.created", "{}"],
+    ],
+    async (ws) => {
+      const resultPtr: { value?: Awaited<ReturnType<typeof executeScenarioStep>> } = {};
+      const run = executeScenarioStep({
+        step: {
+          id: "wait-for-plan",
+          type: ScenarioStepType.WAIT_FOR_FILE,
+          args: ["**/Plans/*_plan.md"],
+          timeout_sec: 5,
+          input_criteria: [],
+          output_criteria: [],
+          continue_on_failure: false,
+        },
+        cwd: ws,
+        traceBaselineRowid: 0,
+      }).then((r) => {
+        resultPtr.value = r;
+        return r;
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assertEquals(resultPtr.value, undefined, "should still be waiting — no failure, no file yet");
+
+      await Deno.mkdir(join(ws, "Plans"), { recursive: true });
+      await Deno.writeTextFile(join(ws, "Plans", "request-current_plan.md"), "plan body");
+      const result = await run;
+
+      assertEquals(result.exitCode, 0);
+    },
+  );
 });

@@ -204,6 +204,21 @@ Deno.test("[EvalCommands] buildRunArgs forwards --cell for explicit matrix-cell 
   assertEquals(argsStr.includes("claude-code"), true, "should include the selected cell's tool");
 });
 
+Deno.test("[EvalCommands] buildRunArgs forwards --capture-calibration-evidence when provided", () => {
+  const args = buildRunArgs({
+    pack: ["swe_tasks"],
+    captureCalibrationEvidence: "/tmp/calib-capture",
+  });
+  const argsStr = args.join(" ");
+  assertEquals(argsStr.includes("--capture-calibration-evidence"), true, "should include the capture flag");
+  assertEquals(argsStr.includes("/tmp/calib-capture"), true, "should include the capture directory");
+});
+
+Deno.test("[EvalCommands] buildRunArgs omits --capture-calibration-evidence when not provided", () => {
+  const args = buildRunArgs({ pack: ["swe_tasks"] });
+  assertEquals(args.join(" ").includes("--capture-calibration-evidence"), false);
+});
+
 Deno.test("[EvalCommands] history with no history file shows empty message", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
   Deno.chdir(tempDir);
