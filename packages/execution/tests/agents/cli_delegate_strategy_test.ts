@@ -121,6 +121,77 @@ Deno.test("CliDelegateStrategy: builds claude argv with -p <objective>, stream-j
   assertEquals(capturedArgs.includes("--allowedTools"), true);
 });
 
+Deno.test("CliDelegateStrategy: strips a provider-prefixed model before passing it to claude's --model", async () => {
+  // config.cli_delegate.model is expected bare, but this mirrors the exact defect already
+  // fixed in CliDelegateProviderFactory — claude rejects a "provider:model" compound form
+  // on --model with a 404, so this strategy must never pass one through unstripped either.
+  let capturedArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args, _options) => {
+    capturedArgs = args;
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-cli:claude-sonnet-5",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+  const modelIndex = capturedArgs.indexOf("--model");
+  assertEquals(modelIndex !== -1, true, "--model should be present");
+  assertEquals(capturedArgs[modelIndex + 1], "claude-sonnet-5");
+});
+
+Deno.test("CliDelegateStrategy: strips a provider-prefixed model before passing it to opencode's --model", async () => {
+  let capturedArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args, _options) => {
+    capturedArgs = args;
+    return Promise.resolve({ code: 0, stdout: JSON.stringify({ sessionID: "s1" }), stderr: "" });
+  };
+
+  const strategy = new CliDelegateStrategy({
+    tool: "opencode",
+    bin: "opencode",
+    model: "opencode-cli:opencode/deepseek-v4-flash-free",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+  const modelIndex = capturedArgs.indexOf("--model");
+  assertEquals(modelIndex !== -1, true, "--model should be present");
+  assertEquals(capturedArgs[modelIndex + 1], "opencode/deepseek-v4-flash-free");
+});
+
+Deno.test("CliDelegateStrategy: a non-zero exit with empty stderr surfaces stdout in the error instead of an empty reason", async () => {
+  // A non-zero exit previously discarded stdout entirely, hiding the CLI's actual JSON error
+  // body (e.g. a 404 model-not-found response) behind an uninformative "exited with code 1: ".
+  const run: IRunCliDelegateProcess = () =>
+    Promise.resolve({
+      code: 1,
+      stdout: JSON.stringify({ is_error: true, result: "There's an issue with the selected model." }),
+      stderr: "",
+    });
+
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  const err = await assertRejects(
+    () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
+    AgentExecutionError,
+  );
+  assertStringIncludes(err.message, "issue with the selected model");
+});
+
 Deno.test("CliDelegateStrategy: passes CLI_DELEGATE_TURN_TIMEOUT_MS (not SafeSubprocess's generic 30s default) to a claude turn", async () => {
   let capturedTimeoutMs: number | undefined;
   const run: IRunCliDelegateProcess = (_command, _args, options) => {

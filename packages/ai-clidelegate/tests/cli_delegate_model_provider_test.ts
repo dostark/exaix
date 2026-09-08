@@ -8,7 +8,7 @@
  * independent), env auth stripped, and both tools' stdout shapes parsed into IGenerateResult.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 import { ModelProviderError } from "@exaix/ai/providers";
@@ -579,6 +579,26 @@ Deno.test("CliDelegateModelProvider: throws ModelProviderError when the subproce
   });
 
   await assertRejects(() => provider.generate("prompt"), ModelProviderError);
+});
+
+Deno.test("CliDelegateModelProvider: a non-zero exit with empty stderr surfaces stdout in the error instead of an empty reason", async () => {
+  const run: IRunCliDelegateProcess = () =>
+    Promise.resolve({
+      code: 1,
+      stdout: JSON.stringify({ is_error: true, result: "There's an issue with the selected model." }),
+      stderr: "",
+    });
+
+  const provider = new CliDelegateModelProvider({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-sonnet-5",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  const err = await assertRejects(() => provider.generate("prompt"), ModelProviderError);
+  assertStringIncludes(err.message, "issue with the selected model");
 });
 
 Deno.test("CliDelegateModelProvider: id defaults to '<tool>-<model>'", () => {

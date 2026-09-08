@@ -111,6 +111,22 @@ export interface ICliDelegateStrategyDeps {
 
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
 
+/** Cap on how much of a failing CLI's raw stdout an error message quotes. */
+const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
+
+// deps.model may arrive "provider:model"-prefixed (ModelResolver convention); claude/opencode
+// reject that on --model with a 404 (live-verified). Neither tool's own model names use a colon.
+function stripProviderPrefix(model: string): string {
+  const separatorIndex = model.indexOf(":");
+  return separatorIndex === -1 ? model : model.slice(separatorIndex + 1);
+}
+
+/** Truncated, never-empty preview of a CLI's raw stdout for an error message — the daemon's
+ *  own JSON error body (e.g. a 404 model-not-found response) lives here, not in stderr. */
+function stdoutPreview(stdout: string): string {
+  return stdout.trim().slice(0, ERROR_STDOUT_PREVIEW_MAX_CHARS) || "(empty)";
+}
+
 /** Env vars stripped from every CLI-delegate spawn so a Claude Pro/Max subscription login wins over metered API billing (see module doc's Auth section). */
 const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"];
 
@@ -241,7 +257,9 @@ export class CliDelegateStrategy implements IExecutionStrategy {
 
     if (result.code !== 0) {
       throw new AgentExecutionError(
-        `CLI delegate '${this.deps.bin}' exited with code ${result.code}: ${result.stderr.trim()}`,
+        `CLI delegate '${this.deps.bin}' exited with code ${result.code}: stderr=${
+          result.stderr.trim() || "(empty)"
+        } stdout=${stdoutPreview(result.stdout)}`,
         AgentExecutionErrorType.CONFIGURATION_ERROR,
       );
     }
@@ -287,7 +305,9 @@ export class CliDelegateStrategy implements IExecutionStrategy {
 
     if (result.code !== 0) {
       throw new AgentExecutionError(
-        `CLI delegate '${this.deps.bin}' exited with code ${result.code}: ${result.stderr.trim()}`,
+        `CLI delegate '${this.deps.bin}' exited with code ${result.code}: stderr=${
+          result.stderr.trim() || "(empty)"
+        } stdout=${stdoutPreview(result.stdout)}`,
         AgentExecutionErrorType.CONFIGURATION_ERROR,
       );
     }
@@ -333,7 +353,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   }
 
   private buildClaudeArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
-    const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, this.deps.model] : [];
+    const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
     return [
       SESSION_FLAG_PRINT,
@@ -348,7 +368,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   }
 
   private buildOpencodeArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
-    const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, this.deps.model] : [];
+    const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
     return [
       SESSION_SUBCMD_RUN,
