@@ -284,6 +284,8 @@ async function executeWaitForFileStep(
 
   const pattern = globToRegExp(pathPattern);
   const failurePattern = failureGlob ? globToRegExp(failureGlob) : undefined;
+  const workspaceRoot = options.cwd || Deno.cwd();
+  const traceId = resolveCurrentTrace(workspaceRoot, options.traceBaselineRowid);
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeoutMs) {
@@ -324,6 +326,34 @@ async function executeWaitForFileStep(
         const completedAt = new Date(completedAtEpochMs).toISOString();
         const failureContent = await Deno.readTextFile(failureFound[0]).catch(() => "");
         const message = `Failure file matched ${failureGlob}: ${failureFound[0]}\n${failureContent}`;
+
+        if (options.verbose) {
+          console.log(`\n%c > ${message}`, "color: red; font-weight: bold;");
+        }
+
+        return {
+          stepId: options.step.id,
+          stepType: options.step.type,
+          startedAt,
+          completedAt,
+          durationMs: completedAtEpochMs - startedAtEpochMs,
+          exitCode: 1,
+          stdout: "",
+          stderr: message,
+          combinedOutput: message,
+        };
+      }
+    }
+
+    // A definitive request.failed/request.skipped means the file we're waiting for can never be
+    // produced — fail immediately instead of burning the rest of timeout_sec. General counterpart
+    // to failure_glob: covers every failure class, not only a rejected plan.
+    if (traceId) {
+      const failure = checkRequestDefinitivelyFailed(workspaceRoot, traceId);
+      if (failure) {
+        const completedAtEpochMs = Date.now();
+        const completedAt = new Date(completedAtEpochMs).toISOString();
+        const message = `Request ${traceId} ${failure.actionType} before this wait could succeed: ${failure.payload}`;
 
         if (options.verbose) {
           console.log(`\n%c > ${message}`, "color: red; font-weight: bold;");
@@ -600,6 +630,32 @@ async function checkEntry(
 interface ICommandSpec {
   executable: string;
   args: string[];
+}
+
+interface IRequestFailureCheck {
+  readonly actionType: string;
+  readonly payload: string;
+}
+
+/** Terminal request.failed/request.skipped for `traceId` — the general counterpart to
+ *  failure_glob, which only catches a rejected PLAN, never a request that fails outright. */
+function checkRequestDefinitivelyFailed(workspaceRoot: string, traceId: string): IRequestFailureCheck | undefined {
+  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  let db: Database | undefined;
+  try {
+    db = new Database(dbPath, { readonly: true });
+    const row = db
+      .prepare(
+        `SELECT action_type, payload FROM activity WHERE trace_id = ? AND action_type IN ('request.failed', 'request.skipped') ORDER BY rowid ASC LIMIT 1`,
+      )
+      .get<{ action_type: string; payload: string }>(traceId);
+    if (!row) return undefined;
+    return { actionType: row.action_type, payload: row.payload };
+  } catch {
+    return undefined;
+  } finally {
+    db?.close();
+  }
 }
 
 /** Resolve the current scenario's request trace: the first `request.created` rowid above the
