@@ -137,8 +137,13 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
 
   async searchByEmbedding(
     query: string,
-    options?: Opt<{ limit?: number; threshold?: number }, Reason.ExecutionConfig>,
+    options?: Opt<
+      { limit?: number; threshold?: number; allowedIds?: ReadonlySet<string>; signal?: AbortSignal },
+      Reason.ExecutionConfig
+    >,
   ): Promise<IEmbeddingSearchResult[]> {
+    if (options?.signal?.aborted) return [];
+
     const manifest = await this.loadManifest();
     if (manifest.index.length === 0) return [];
 
@@ -160,8 +165,12 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     // Ensure HNSW index is built from stored embeddings
     await this.ensureIndex(manifest);
 
+    // Expand base entry ids (e.g. a pattern/decision/overview id) to every chunk id
+    // (`<baseId>` and `<baseId>:<n>`) currently in the manifest for that entry.
+    const allowedChunkIds = options?.allowedIds ? this.expandAllowedChunkIds(manifest, options.allowedIds) : undefined;
+
     // Search via HNSW index (O(log N))
-    const indexResults = this.hnsw.search(queryVector, limit);
+    const indexResults = this.hnsw.search(queryVector, limit, allowedChunkIds);
 
     // Load metadata for top-K results only (O(K) disk reads)
     const results: IEmbeddingSearchResult[] = [];
@@ -292,6 +301,26 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     for (const id of staleIds) {
       await this.deleteEmbedding(id);
     }
+  }
+
+  /** Expands base entry ids (pattern/decision/overview/execution/learning id) to every
+   *  chunk id currently in the manifest for that entry — `<baseId>` and `<baseId>:<n>`. */
+  private expandAllowedChunkIds(manifest: IEmbeddingManifest, baseIds: ReadonlySet<string>): Set<string> {
+    const expanded = new Set<string>();
+    for (const entry of manifest.index) {
+      if (baseIds.has(entry.id) || this.isChunkOfAllowedBase(entry.id, baseIds)) {
+        expanded.add(entry.id);
+      }
+    }
+    return expanded;
+  }
+
+  private isChunkOfAllowedBase(chunkId: string, baseIds: ReadonlySet<string>): boolean {
+    const separatorIndex = chunkId.lastIndexOf(":");
+    if (separatorIndex === -1) return false;
+    const suffix = chunkId.slice(separatorIndex + 1);
+    if (!/^\d+$/.test(suffix)) return false;
+    return baseIds.has(chunkId.slice(0, separatorIndex));
   }
 
   private async ensureIndex(manifest: IEmbeddingManifest): Promise<void> {

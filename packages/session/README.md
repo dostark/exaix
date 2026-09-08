@@ -54,6 +54,12 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
   session_delegate_cycles/{flowStepId}.json` mirroring `completedSteps`/`inFlight`/`status` for
   cheap resume without re-scanning claims. Never the authority on its own — the claim store's
   unique key is; the checkpoint is a resume convenience.
+- `context_record_store.ts` (Phase 176) — `ContextRecordStore`, an immutable, owner-only
+  (0700/0600) atomic-write store for dogfood context capture records under
+  `Memory/Execution/{traceId}/context/{recordId}.json`. Validates every id before path
+  resolution, refuses symlink path components, never overwrites an existing record, implements
+  `IContextInspectionReader` for future read-only CLI inspection, and `pruneExpired()` removes
+  records older than the configured retention window.
 
 ### Agent Role Threading (Phase 174)
 

@@ -40,6 +40,13 @@ import {
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
+/** Caller-bound retrieval scope: restricts {@link SessionMemoryService.lookupMemories} to
+ *  `portalAlias`'s own patterns, decisions, overview and execution summaries, plus
+ *  APPROVED global learnings — denying unknown provenance and non-APPROVED entries. */
+export interface IMemoryRetrievalScope {
+  portalAlias: string;
+}
+
 // Configuration Schema
 
 /**
@@ -180,6 +187,7 @@ export class SessionMemoryService {
     query: string,
     tokenCap?: Opt<number, Reason.ExecutionConfig>,
     options?: Opt<Partial<SessionMemoryConfig>, Reason.ExecutionConfig>,
+    scope?: Opt<IMemoryRetrievalScope, Reason.ExecutionConfig>,
   ): Promise<MemoryItem[]> {
     const cfg = { ...this.config, ...options };
 
@@ -187,13 +195,15 @@ export class SessionMemoryService {
       return [];
     }
 
+    const allowedIds = scope ? await this.computeAllowedEmbeddingIds(scope.portalAlias) : undefined;
+
     // Hybrid retrieval: collect both signals keyed by candidate identity, then fuse.
     const itemsByIdentity = new Map<string, MemoryItem>();
     const vectorScores = new Map<string, number>();
     const keywordScores = new Map<string, number>();
 
-    await this.collectVectorSignal(query, cfg, itemsByIdentity, vectorScores);
-    await this.collectKeywordSignal(query, cfg, itemsByIdentity, keywordScores);
+    await this.collectVectorSignal(query, cfg, itemsByIdentity, vectorScores, allowedIds);
+    await this.collectKeywordSignal(query, cfg, itemsByIdentity, keywordScores, scope?.portalAlias);
 
     // Fuse: items surfaced by both signals accumulate score and outrank single-signal items;
     // when embeddings are unavailable the keyword signal alone still populates results (floor).
@@ -221,7 +231,9 @@ export class SessionMemoryService {
     memories.sort((a, b) => b.relevance - a.relevance);
 
     const selected = memories.slice(0, cfg.topK);
-    const expanded = cfg.expandLinks ? await this.expandByLinks(selected) : selected;
+    // Link expansion appends items without scope checks — never run it for a scoped
+    // lookup, regardless of the caller's own expandLinks config.
+    const expanded = (!scope && cfg.expandLinks) ? await this.expandByLinks(selected) : selected;
 
     if (tokenCap !== undefined) {
       return this.applyTokenCap(expanded, tokenCap);
@@ -268,6 +280,7 @@ export class SessionMemoryService {
     cfg: SessionMemoryConfig,
     itemsByIdentity: Map<string, MemoryItem>,
     vectorScores: Map<string, number>,
+    allowedIds?: Opt<ReadonlySet<string>, Reason.OptionalInput>,
   ): Promise<void> {
     if (!cfg.includeLearnings && !cfg.includePatterns && !cfg.includeExecutions) {
       return;
@@ -275,6 +288,7 @@ export class SessionMemoryService {
     const embeddingResults = await this.embeddingService.searchByEmbedding(query, {
       limit: cfg.topK,
       threshold: cfg.threshold,
+      allowedIds,
     });
     const learningLike = embeddingResults.filter((r) => r.kind === undefined || r.kind === MemoryType.LEARNING);
     const nonLearning = embeddingResults.filter((r) => r.kind !== undefined && r.kind !== MemoryType.LEARNING);
@@ -298,21 +312,25 @@ export class SessionMemoryService {
     }
   }
 
-  /** Collects the keyword signal over the memory bank, joining vector-shared candidates by identity. */
+  /** Collects the keyword signal over the memory bank, joining vector-shared candidates by identity.
+   *  `portalAlias`, when given, bounds project/execution hits to that portal; global APPROVED
+   *  learnings remain reachable regardless (existing `portal`-filtered search behavior). */
   private async collectKeywordSignal(
     query: string,
     cfg: SessionMemoryConfig,
     itemsByIdentity: Map<string, MemoryItem>,
     keywordScores: Map<string, number>,
+    portalAlias?: Opt<string, Reason.OptionalInput>,
   ): Promise<void> {
     const searchResults = await this.memoryBank.searchMemory(query, {
+      portal: portalAlias,
       limit: cfg.topK * 2, // Get more to filter
     });
 
     // searchMemory omits global learnings; searchByKeyword covers them (APPROVED-filtered),
     // so keep just its learning results (its project/decision hits duplicate the above).
     const globalLearningResults = cfg.includeLearnings
-      ? (await this.memoryBank.searchByKeyword(query, { limit: cfg.topK * 2 }))
+      ? (await this.memoryBank.searchByKeyword(query, { portal: portalAlias, limit: cfg.topK * 2 }))
         .filter((result) => result.type === MemoryType.LEARNING)
       : [];
 
@@ -847,5 +865,35 @@ ${memory.content}`;
     if (!memory.source) return undefined;
     const match = memory.source.match(/^learning:(.+)$/);
     return match?.[1];
+  }
+
+  /** Builds the set of embedding-manifest ids a scoped lookup may retrieve: `portalAlias`'s
+   *  own patterns, decisions, overview and execution trace ids, plus APPROVED global
+   *  learning ids. Unknown provenance and non-APPROVED entries are never included. */
+  private async computeAllowedEmbeddingIds(portalAlias: string): Promise<Set<string>> {
+    const allowed = new Set<string>();
+
+    const projectMemory = await this.memoryBank.getProjectMemory(portalAlias);
+    if (projectMemory) {
+      for (const pattern of projectMemory.patterns) {
+        if (pattern.id) allowed.add(pattern.id);
+      }
+      for (const decision of projectMemory.decisions) {
+        if (decision.id) allowed.add(decision.id);
+      }
+      allowed.add(overviewEmbeddingId(portalAlias));
+    }
+
+    const executions = await this.memoryBank.getExecutionHistory(portalAlias);
+    for (const execution of executions) {
+      allowed.add(execution.trace_id);
+    }
+
+    const globalMemory = await this.memoryBank.getGlobalMemory();
+    for (const learning of globalMemory?.learnings ?? []) {
+      if (learning.status === MemoryStatus.APPROVED) allowed.add(learning.id);
+    }
+
+    return allowed;
   }
 }

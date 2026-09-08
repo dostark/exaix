@@ -23,7 +23,7 @@ import type { IDatabaseService, JSONValue } from "@exaix/core";
 import type { ExecutionStrategyName } from "@exaix/core";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PathResolver, type PortalPermissionsService } from "@exaix/portal";
 import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
@@ -80,6 +80,9 @@ export interface IAgentComposerConstructionDeps {
   /** Test-only escape hatch: inject a custom `StrategyRegistry` (e.g. spy strategies) to
    *  avoid a live provider/subprocess; production never sets this. */
   strategyRegistry?: StrategyRegistry;
+  /** Optional dogfood bounded-context port passed through to AgentComposer's
+   *  CliDelegateStrategy; absent for every non-dogfood/disabled-config caller. */
+  contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
 }
 
 /** Bounds `planWrittenFiles` Map growth for this long-lived singleton (mirrors `apps/daemon/main.ts`'s `traceModelCache`). */
@@ -152,7 +155,8 @@ export class AgentComposerAdapter {
       );
     }
 
-    const { config, db, logger, permissions, provider, modelResolver, strategyRegistry } = this.orchestratorDeps;
+    const { config, db, logger, permissions, provider, modelResolver, strategyRegistry, contextPort } =
+      this.orchestratorDeps;
     const portalConfig = config.portals?.find((p) => p.alias === request.portal);
     if (!portalConfig) {
       throw new Error(`runWithStrategy: portal not found in config: ${request.portal}`);
@@ -186,6 +190,7 @@ export class AgentComposerAdapter {
       modelResolver,
       strategyRegistry,
       planWrittenFiles,
+      contextPort,
     });
 
     try {

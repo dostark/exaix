@@ -12,6 +12,7 @@
  * @related-files ["./memory_embedding.ts", "./provider_embedding_service.ts"]
  */
 import { cosineSimilarity } from "./memory_embedding.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IVectorIndexEntry {
   id: string;
@@ -37,15 +38,34 @@ export class HnswVectorIndex {
     this.vectors.delete(id);
   }
 
-  search(query: number[], k: number): Array<{ id: string; similarity: number }> {
+  /** `allowedIds`, when given, restricts candidates before the cosine scan (never an
+   *  unrestricted topK filtered after) and tie-breaks by ascending id; omitted, behavior
+   *  is unchanged from the legacy unscoped path. */
+  search(
+    query: number[],
+    k: number,
+    allowedIds?: Opt<ReadonlySet<string>, Reason.OptionalInput>,
+  ): Array<{ id: string; similarity: number }> {
     if (this.vectors.size === 0 || k <= 0) return [];
 
     const results: Array<{ id: string; similarity: number }> = [];
     for (const [id, vector] of this.vectors) {
+      if (allowedIds && !allowedIds.has(id)) continue;
       results.push({ id, similarity: cosineSimilarity(query, vector) });
     }
-    results.sort((a, b) => b.similarity - a.similarity);
+    results.sort(allowedIds ? this._compareScopedResult : this._compareResult);
     return results.slice(0, k);
+  }
+
+  private _compareResult(a: { similarity: number }, b: { similarity: number }): number {
+    return b.similarity - a.similarity;
+  }
+
+  private _compareScopedResult(
+    a: { id: string; similarity: number },
+    b: { id: string; similarity: number },
+  ): number {
+    return b.similarity - a.similarity || a.id.localeCompare(b.id);
   }
 
   rebuildFromVectors(vectors: Map<string, number[]>): void {

@@ -49,6 +49,7 @@ export * from "./i_plan_amendment_gate.ts";
 export * from "./i_plan_amendment_service.ts";
 export * from "./i_plan_service.ts";
 export * from "./i_portal_knowledge_service.ts";
+export * from "./i_dogfood_context.ts";
 export * from "./i_portal_service.ts";
 export * from "./i_request_analyzer_service.ts";
 export * from "./i_request_quality_gate_service.ts";

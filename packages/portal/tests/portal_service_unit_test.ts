@@ -11,7 +11,13 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import type { IContextCardGeneratorService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { PortalService } from "@exaix/portal";
-import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus } from "@exaix/core";
+import {
+  ContextResultStatus,
+  ContextUnavailableReason,
+  PortalAnalysisMode,
+  PortalExecutionStrategy,
+  PortalStatus,
+} from "@exaix/core";
 import { createMockConfig, createStubConfig, createStubDisplay } from "@exaix/testing";
 function createMockContextCardGenerator(): IContextCardGeneratorService {
   return {
@@ -51,6 +57,13 @@ async function createPortalTestEnv() {
     updateKnowledge: (portalAlias: string) =>
       mockKnowledge.analyze(portalAlias, "/tmp/dummy", PortalAnalysisMode.QUICK),
     getRelevantContext: () => Promise.resolve(undefined),
+    queryContext: () =>
+      Promise.resolve({
+        status: ContextResultStatus.UNAVAILABLE,
+        reason: ContextUnavailableReason.DISABLED,
+        items: [],
+      }),
+    loadCachedKnowledge: () => Promise.resolve(undefined),
   };
   const mockKnowledgeConfig: IPortalKnowledgeConfig = {
     autoAnalyzeOnMount: false,

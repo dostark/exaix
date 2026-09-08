@@ -146,6 +146,13 @@ the agent's context. What surfaces is ranked by a hybrid of:
   `memory.temporal.recency_half_life_days`) so fresh learnings outrank stale
   ones, and superseded knowledge is excluded outright.
 
+Retrieval can also be **scoped to one portal**: a caller-bound scope restricts results to
+that portal's own patterns/decisions/overview/executions plus APPROVED global learnings,
+denying another portal's content even when it would otherwise rank higher. Unscoped
+callers are unaffected. The dogfood context supplement (see the
+[Dogfooding Guide](Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext)) is
+the first consumer of this scope.
+
 You can also inspect what memory holds at any time:
 
 ```bash

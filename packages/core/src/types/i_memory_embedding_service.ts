@@ -24,12 +24,11 @@ export interface IMemoryEmbeddingService {
   /** Embed any embeddable memory entry, keyed by its own id (id / trace_id / `${portal}:overview`); cost-gated and idempotent per key. */
   embed(entry: IEmbeddableMemoryEntry): Promise<void>;
 
-  /**
-   * Search for similar learnings using embedding similarity.
-   */
+  /** Search by embedding similarity. `allowedIds` restricts candidates to those manifest
+   *  identities before ranking (never topK-then-filter); `signal` cancels the query. */
   searchByEmbedding(
     query: string,
-    options?: { limit?: number; threshold?: number },
+    options?: { limit?: number; threshold?: number; allowedIds?: ReadonlySet<string>; signal?: AbortSignal },
   ): Promise<IEmbeddingSearchResult[]>;
 
   /**

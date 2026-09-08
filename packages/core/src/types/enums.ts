@@ -1405,3 +1405,36 @@ export enum ConfigOutputFormat {
   HUMAN = "human",
   JSON = "json",
 }
+
+/** How a scoped context item's score was computed: portal retrieval uses raw HNSW
+ *  cosine similarity; memory retrieval uses the existing post-fusion/tier relevance. */
+export enum ContextItemScoreKind {
+  COSINE = "cosine",
+  HYBRID = "hybrid",
+}
+
+/** Outcome of a scoped context query — whether real, provenance-labelled items were
+ *  found or the source was unavailable (see {@link ContextUnavailableReason}). */
+export enum ContextResultStatus {
+  OK = "ok",
+  UNAVAILABLE = "unavailable",
+}
+
+/** Why a scoped context source returned no items — from never-configured (DISABLED) to
+ *  a real search that found nothing (NO_HITS) or fit no candidate in budget (BUDGET_DENIED). */
+export enum ContextUnavailableReason {
+  DISABLED = "disabled",
+  COLD = "cold",
+  STALE = "stale",
+  NO_HITS = "no_hits",
+  TIMEOUT = "timeout",
+  BUDGET_DENIED = "budget_denied",
+  PROVIDER_ERROR = "provider_error",
+}
+
+/** Why a dogfood context connection/port was closed. */
+export enum ContextConnectionCloseReason {
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
+}

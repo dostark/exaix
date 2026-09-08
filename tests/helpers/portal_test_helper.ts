@@ -18,7 +18,7 @@ import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../apps/common/adapters/portal_adapter.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService, Opt, Reason } from "@exaix/core/types";
-import { PortalAnalysisMode } from "@exaix/core";
+import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode } from "@exaix/core";
 import { getPortalsDir } from "@exaix/testing";
 
 // Build an empty portal-knowledge snapshot, used by the mock PortalKnowledgeService below.
@@ -51,6 +51,13 @@ export function createMockKnowledgeService(): IPortalKnowledgeService {
     isStale: () => Promise.resolve(false),
     updateKnowledge: (p1, _p2) => Promise.resolve(emptyKnowledge(p1)),
     getRelevantContext: () => Promise.resolve(undefined),
+    queryContext: () =>
+      Promise.resolve({
+        status: ContextResultStatus.UNAVAILABLE,
+        reason: ContextUnavailableReason.DISABLED,
+        items: [],
+      }),
+    loadCachedKnowledge: () => Promise.resolve(undefined),
   };
 }
 

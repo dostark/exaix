@@ -249,6 +249,61 @@ export interface ICalibrationFailedPayload {
   duration_ms: number;
 }
 
+/** Shared identity/correlation fields on every dogfood.context.* event payload. */
+export interface IContextEventIdentity {
+  record_id: string;
+  parent_trace_id: string;
+  child_trace_id: string;
+  step_id: string;
+  turn: number;
+  attempt: number;
+}
+
+/** Typed payload for dogfood.context.captured. Never carries the prompt text or query. */
+export interface IContextCapturedPayload extends IContextEventIdentity {
+  model: string;
+  original_token_count: number;
+  final_token_count: number;
+  token_source: string;
+  duration_ms: number;
+}
+
+/** Typed payload for dogfood.context.capture_failed. `reason` is a bounded category,
+ *  never a raw error message or host path. */
+export interface IContextCaptureFailedPayload extends IContextEventIdentity {
+  reason: string;
+  duration_ms: number;
+}
+
+/** Typed payload for dogfood.context.query_completed — one per successful child query. */
+export interface IContextQueryCompletedPayload {
+  connection_id: string;
+  tool: string;
+  result_category: string;
+  output_tokens: number;
+  duration_ms: number;
+}
+
+/** Typed payload for dogfood.context.query_denied — authority/lifecycle rejection. */
+export interface IContextQueryDeniedPayload {
+  connection_id: string;
+  tool: string;
+  reason: string;
+}
+
+/** Typed payload for dogfood.context.connection_closed. */
+export interface IContextConnectionClosedPayload {
+  connection_id: string;
+  reason: string;
+}
+
+/** Typed payload for dogfood.context.records_pruned — one per prune pass, not per record. */
+export interface IContextRecordsPrunedPayload {
+  pruned_count: number;
+  retention_days: number;
+  duration_ms: number;
+}
+
 export const DomainEventType = {
   // Flow step events
   FlowStepExecuted: "flow.step.executed",
@@ -667,6 +722,16 @@ export const DomainEventType = {
   CalibrationReferenceCompleted: "eval.calibration.reference_completed",
   CalibrationScored: "eval.calibration.scored",
   CalibrationFailed: "eval.calibration.failed",
+
+  // Dogfood context supplement — payloads carry record id/parent/child/step/turn/attempt,
+  // scope hash, counts, model, latency, result category and schema/prompt digests; never
+  // raw prompts, queries, credentials or host paths.
+  ContextCaptured: "dogfood.context.captured",
+  ContextCaptureFailed: "dogfood.context.capture_failed",
+  ContextQueryCompleted: "dogfood.context.query_completed",
+  ContextQueryDenied: "dogfood.context.query_denied",
+  ContextConnectionClosed: "dogfood.context.connection_closed",
+  ContextRecordsPruned: "dogfood.context.records_pruned",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

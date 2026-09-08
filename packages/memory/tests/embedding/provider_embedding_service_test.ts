@@ -142,6 +142,68 @@ Deno.test("ProviderEmbeddingService: searchByEmbedding respects threshold", asyn
   }
 });
 
+Deno.test("ProviderEmbeddingService: searchByEmbedding allowedIds restricts results to authorized entries", async () => {
+  let callCount = 0;
+  const provider: IEmbeddingProvider = {
+    providerId: "mock",
+    dimension: 5,
+    async embed(_texts: string[]): Promise<number[][]> {
+      await Promise.resolve();
+      callCount++;
+      if (callCount <= 2) return [TEST_VECTOR_1];
+      return [TEST_VECTOR_QUERY];
+    },
+  };
+  const { service, cleanup } = await createTestService(provider);
+  try {
+    await service.embedLearning(createTestLearning({ id: "authorized", title: "Alpha", description: "First" }));
+    await service.embedLearning(createTestLearning({ id: "denied", title: "Beta", description: "Second" }));
+
+    const results = await service.searchByEmbedding("query text", {
+      limit: 5,
+      allowedIds: new Set(["authorized"]),
+    });
+
+    assertEquals(results.length, 1);
+    assertEquals(results[0].id, "authorized");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("ProviderEmbeddingService: searchByEmbedding allowedIds returns empty when nothing authorized matches", async () => {
+  const provider = createMockProvider([TEST_VECTOR_1, TEST_VECTOR_QUERY]);
+  const { service, cleanup } = await createTestService(provider);
+  try {
+    await service.embedLearning(createTestLearning({ id: "l1", title: "Alpha", description: "First" }));
+
+    const results = await service.searchByEmbedding("query text", {
+      limit: 5,
+      allowedIds: new Set(["never-embedded"]),
+    });
+
+    assertEquals(results, []);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("ProviderEmbeddingService: searchByEmbedding returns empty when signal is already aborted", async () => {
+  const provider = createMockProvider([TEST_VECTOR_1, TEST_VECTOR_QUERY]);
+  const { service, cleanup } = await createTestService(provider);
+  try {
+    await service.embedLearning(createTestLearning({ id: "l1", title: "Alpha", description: "First" }));
+
+    const controller = new AbortController();
+    controller.abort();
+
+    const results = await service.searchByEmbedding("query text", { limit: 5, signal: controller.signal });
+    assertEquals(results, []);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("ProviderEmbeddingService: deleteEmbedding removes file and manifest entry", async () => {
   const provider = createMockProvider([TEST_VECTOR_1]);
   const { service, cleanup } = await createTestService(provider);

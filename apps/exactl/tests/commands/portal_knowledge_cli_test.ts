@@ -13,7 +13,13 @@ import { join } from "@std/path";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { ExaPathDefaults, PortalAnalysisMode, SystemCommand } from "@exaix/core";
+import {
+  ContextResultStatus,
+  ContextUnavailableReason,
+  ExaPathDefaults,
+  PortalAnalysisMode,
+  SystemCommand,
+} from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
 // Fixture helpers
@@ -96,6 +102,13 @@ function makeMockKnowledgeService(
       return Promise.resolve(knowledge);
     },
     getRelevantContext: () => Promise.resolve(undefined),
+    queryContext: () =>
+      Promise.resolve({
+        status: ContextResultStatus.UNAVAILABLE,
+        reason: ContextUnavailableReason.DISABLED,
+        items: [],
+      }),
+    loadCachedKnowledge: () => Promise.resolve(undefined),
   };
 }
 

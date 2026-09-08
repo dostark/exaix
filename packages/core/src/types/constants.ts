@@ -3099,3 +3099,177 @@ export const SUBSYSTEM_EVAL_SCORE_THRESHOLD: number = configurable({
   max: 1,
   swap: SwapClass.HOT,
 });
+
+// Dogfood Context
+
+/** Only daemon config plus a trusted dogfood-loop binding activate the bounded-context
+ *  supplement and its scoped query tools — disabled by default. */
+export const DEFAULT_DOGFOOD_CONTEXT_ENABLED: boolean = configurable({
+  key: "dogfood.context.enabled",
+  default: false,
+  type: ConfigValueType.BOOLEAN,
+  description: "Enable the dogfood bounded-context supplement and scoped query tools",
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOP_K: number = configurable({
+  key: "dogfood.context.portal_top_k",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum portal-knowledge items in the initial dogfood context supplement",
+  min: 1,
+  max: 20,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOP_K: number = configurable({
+  key: "dogfood.context.memory_top_k",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum memory items in the initial dogfood context supplement",
+  min: 1,
+  max: 20,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOKENS: number = configurable({
+  key: "dogfood.context.portal_tokens",
+  default: 2048,
+  type: ConfigValueType.NUMBER,
+  description: "Token ceiling for the portal-knowledge section of the dogfood supplement (0 disables)",
+  min: 0,
+  max: 8192,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOKENS: number = configurable({
+  key: "dogfood.context.memory_tokens",
+  default: 1024,
+  type: ConfigValueType.NUMBER,
+  description: "Token ceiling for the memory section of the dogfood supplement (0 disables)",
+  min: 0,
+  max: 8192,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_INPUT_TOKENS: number = configurable({
+  key: "dogfood.context.max_input_tokens",
+  default: 16384,
+  type: ConfigValueType.NUMBER,
+  description: "Configured input-token cap for a dogfood launch; model/session limits can only lower it",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_OUTPUT_RESERVE_TOKENS: number = configurable({
+  key: "dogfood.context.output_reserve_tokens",
+  default: 4096,
+  type: ConfigValueType.NUMBER,
+  description: "Tokens reserved for the model's output when computing the dogfood input budget",
+  min: 0,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_QUERY_CHARS: number = configurable({
+  key: "dogfood.context.query_chars",
+  default: 4096,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum query-text characters accepted by a dogfood context query",
+  min: 1,
+  max: 16384,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_QUERY_TIMEOUT_MS: number = configurable({
+  key: "dogfood.context.query_timeout_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for a single dogfood context query",
+  min: 1,
+  max: 30_000,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_CALLS: number = configurable({
+  key: "dogfood.context.max_query_calls",
+  default: 16,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum query calls (including unavailable ones) permitted per child lifetime",
+  min: 0,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_TOKENS: number = configurable({
+  key: "dogfood.context.max_query_tokens",
+  default: 8192,
+  type: ConfigValueType.NUMBER,
+  description: "Cumulative successful-query output token budget per child lifetime",
+  min: 0,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_RESPONSE_BYTES: number = configurable({
+  key: "dogfood.context.max_response_bytes",
+  default: 32_768,
+  type: ConfigValueType.NUMBER,
+  description: "UTF-8 byte ceiling for a single dogfood context query response",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_REQUEST_BYTES: number = configurable({
+  key: "dogfood.context.max_request_bytes",
+  default: 8192,
+  type: ConfigValueType.NUMBER,
+  description: "UTF-8 byte ceiling for a single dogfood context query request, rejected before parsing",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES: number = configurable({
+  key: "dogfood.context.max_record_bytes",
+  default: 262_144,
+  type: ConfigValueType.NUMBER,
+  description: "UTF-8 byte ceiling for one captured context record; capture over the limit rejects before launch",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE: number = configurable({
+  key: "dogfood.context.max_records_per_trace",
+  default: 128,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum captured context records retained per execution trace",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS: number = configurable({
+  key: "dogfood.context.retention_days",
+  default: 7,
+  type: ConfigValueType.NUMBER,
+  description: "Days a completed/expired trace's context records are retained before pruning",
+  min: 1,
+  max: 30,
+  swap: SwapClass.RESTART,
+});
+
+/** Portal alias the daemon trusts as its own dogfood-context target — the alias
+ *  `scripts/dogfood_bootstrap.ts` mounts a bootstrapped dogfood workspace under. */
+export const DEFAULT_DOGFOOD_CONTEXT_PORTAL_ALIAS: string = configurable({
+  key: "dogfood.context.portal_alias",
+  default: "exaix-self",
+  type: ConfigValueType.STRING,
+  description: "Portal alias the daemon trusts as its own dogfood-context target",
+  swap: SwapClass.RESTART,
+});
+
+/** How often the daemon prunes expired dogfood context records (24 hours). */
+export const DEFAULT_DOGFOOD_CONTEXT_PRUNE_INTERVAL_MS: number = configurable({
+  key: "dogfood.context.prune_interval_ms",
+  default: 86_400_000,
+  type: ConfigValueType.NUMBER,
+  description: "Milliseconds between periodic dogfood context record retention prunes",
+  min: 60_000,
+  swap: SwapClass.RESTART,
+});

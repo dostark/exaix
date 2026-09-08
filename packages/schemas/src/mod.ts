@@ -18,6 +18,7 @@ export * from "./session_delegate.ts";
 export * from "./skill_envelope.ts";
 export * from "./step_manifest.ts";
 export * from "./config.ts";
+export * from "./dogfood_context.ts";
 export * from "./flow.ts";
 export * from "./guardrail.ts";
 export * from "./hitl.ts";

@@ -13,11 +13,13 @@ import {
   DAEMON_DEFAULT_NET_HOSTS,
   DaemonStatus,
   DEFAULT_AGENTS_PATH,
+  DEFAULT_DOGFOOD_CONTEXT_PRUNE_INTERVAL_MS,
   DEFAULT_PROJECTS_MEMORY_PATH,
   EDITION_SOLO,
   EDITION_TEAM,
   ProviderType,
   scrubProcessEnv,
+  SECRET_ENV_PATTERN,
   SwapClass,
 } from "@exaix/core";
 import { Database } from "@db/sqlite";
@@ -123,10 +125,13 @@ import {
   createCodeChangesDelegateAdapter,
   SessionDelegationCoordinator,
 } from "./src/session_delegation_coordinator.ts";
+import { DogfoodContextService } from "./src/dogfood_context_service.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { SessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
 import { SessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
+import { ContextRecordStore } from "@exaix/session/context_record_store.ts";
+import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import {
@@ -849,6 +854,71 @@ if (import.meta.main) {
     if (editionType === EDITION_TEAM) {
       mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
     }
+
+    // Dogfood bounded-context supplement: additive, disabled by default. Enabled-but-
+    // unwired (trusted portal alias not uniquely configured) is a startup error, not a
+    // silent no-op; every other caller sees contextPort: undefined and is unaffected.
+    let dogfoodContextPort: DogfoodContextService | undefined;
+    if (config.dogfood.context.enabled) {
+      const dogfoodPortalAlias = config.dogfood.context.portal_alias;
+      const matchingPortals = (config.portals ?? []).filter((p) => p.alias === dogfoodPortalAlias);
+      if (matchingPortals.length !== 1) {
+        throw new Error(
+          `dogfood.context.enabled is true but its trusted portal alias "${dogfoodPortalAlias}" is not uniquely configured (found ${matchingPortals.length} match(es)) — refusing to start unwired`,
+        );
+      }
+      const dogfoodCfg = config.dogfood.context;
+      const knownSecrets = Object.entries(Deno.env.toObject())
+        .filter(([key, value]) => SECRET_ENV_PATTERN.test(key) && value.length > 0)
+        .map(([, value]) => value);
+      const contextRecordStore = new ContextRecordStore(new PathResolver(config));
+      dogfoodContextPort = new DogfoodContextService({
+        portalAlias: dogfoodPortalAlias,
+        portalKnowledge,
+        memory: sessionMemory,
+        tokenizer: new AiTokenEstimatorTokenizer(),
+        recordStore: contextRecordStore,
+        config: {
+          portalTopK: dogfoodCfg.portal_top_k,
+          memoryTopK: dogfoodCfg.memory_top_k,
+          portalTokens: dogfoodCfg.portal_tokens,
+          memoryTokens: dogfoodCfg.memory_tokens,
+          maxInputTokens: dogfoodCfg.max_input_tokens,
+          outputReserveTokens: dogfoodCfg.output_reserve_tokens,
+        },
+        knownSecrets,
+        now: () => new Date(),
+        logger,
+      });
+
+      const pruneDogfoodContext = async () => {
+        const startMs = Date.now();
+        try {
+          const prunedCount = await contextRecordStore.pruneExpired(dogfoodCfg.retention_days, new Date());
+          if (prunedCount > 0) {
+            await logger.info(DomainEventType.ContextRecordsPruned, "dogfood_context", {
+              pruned_count: prunedCount,
+              retention_days: dogfoodCfg.retention_days,
+              duration_ms: Date.now() - startMs,
+            });
+          }
+        } catch (error) {
+          console.error(
+            `[dogfood_context] retention prune failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      };
+      await pruneDogfoodContext();
+      const dogfoodContextPruneHandle = setInterval(
+        () => void pruneDogfoodContext(),
+        DEFAULT_DOGFOOD_CONTEXT_PRUNE_INTERVAL_MS,
+      );
+      gracefulShutdown.registerCleanup("clear_dogfood_context_prune", () => {
+        clearInterval(dogfoodContextPruneHandle);
+        return Promise.resolve();
+      });
+    }
+
     const agentExecutorAdapter = new AgentComposerAdapter(
       agentRunner,
       blueprintsPath,
@@ -859,6 +929,7 @@ if (import.meta.main) {
         permissions: portalPermissions,
         provider: llmProvider,
         modelResolver,
+        contextPort: dogfoodContextPort,
       },
     );
     // FlowRunner and PlanExecutor share one coordinator as delegation authority.
@@ -879,6 +950,7 @@ if (import.meta.main) {
         resolveProviderApiKey: (keyEnv: string) => Deno.env.get(keyEnv),
         now: () => new Date(),
         sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+        contextPort: dogfoodContextPort,
       }, logger)
       : undefined;
     const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider)));

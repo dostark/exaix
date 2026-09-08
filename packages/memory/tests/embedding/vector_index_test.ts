@@ -143,3 +143,49 @@ Deno.test("HnswVectorIndex: handles large search result set gracefully", () => {
   const results = index.search([1, 0, 0, 0], 50);
   assertEquals(results.length, 20);
 });
+
+// allowedIds — scoped search
+
+Deno.test("HnswVectorIndex: allowedIds excludes candidates before scoring, never a topK-then-filter", () => {
+  const index = new HnswVectorIndex();
+  index.insert("closest", [1, 0, 0, 0]);
+  index.insert("allowed-but-farther", [0.5, 0.5, 0, 0]);
+  index.insert("denied-closest", [0.99, 0.01, 0, 0]);
+
+  // Even though "denied-closest" is nearer the query than "allowed-but-farther", a
+  // narrow k that would normally only return unauthorized items must still surface
+  // the authorized one instead of returning an empty/short list.
+  const results = index.search([1, 0, 0, 0], 1, new Set(["allowed-but-farther"]));
+  assertEquals(results.length, 1);
+  assertEquals(results[0].id, "allowed-but-farther");
+});
+
+Deno.test("HnswVectorIndex: allowedIds returns empty when nothing in the set exists in the index", () => {
+  const index = new HnswVectorIndex();
+  index.insert("a", [1, 0, 0, 0]);
+  index.insert("b", [0, 1, 0, 0]);
+
+  const results = index.search([1, 0, 0, 0], 5, new Set(["not-indexed"]));
+  assertEquals(results, []);
+});
+
+Deno.test("HnswVectorIndex: without allowedIds, behavior is unchanged (legacy no-scope path)", () => {
+  const index = new HnswVectorIndex();
+  index.insert("a", [1, 0, 0, 0]);
+  index.insert("b", [0, 1, 0, 0]);
+
+  const withoutScope = index.search([1, 0, 0, 0], 5);
+  const withUndefinedScope = index.search([1, 0, 0, 0], 5, undefined);
+  assertEquals(withoutScope, withUndefinedScope);
+  assertEquals(withoutScope.length, 2);
+});
+
+Deno.test("HnswVectorIndex: allowedIds tie-breaks equal similarity by ascending id", () => {
+  const index = new HnswVectorIndex();
+  index.insert("zeta", [1, 0, 0, 0]);
+  index.insert("alpha", [1, 0, 0, 0]);
+  index.insert("beta", [1, 0, 0, 0]);
+
+  const results = index.search([1, 0, 0, 0], 3, new Set(["zeta", "alpha", "beta"]));
+  assertEquals(results.map((r) => r.id), ["alpha", "beta", "zeta"]);
+});

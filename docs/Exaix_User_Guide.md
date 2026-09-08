@@ -1946,6 +1946,13 @@ mechanism and journal-event detail: `packages/flow/README.md#session-delegate-cy
 **Production example:** `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:next-steps` ships this
 configuration in production, replacing an earlier `strategy: cli_delegate` step.
 
+**Bounded context supplement:** when `[dogfood.context] enabled = true`, both this cycle step
+and the single-shot `cli_delegate` strategy compose a small, scoped portal-knowledge/memory
+supplement onto the objective before each launch, and capture an immutable record of the exact
+bytes sent — disabled by default and additive; see the
+[Dogfooding Guide §6.7](Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext) for
+the full contract and its stated limitations.
+
 #### Flow Step Execution Modes
 
 A flow step declares how it executes via `execution_mode`:

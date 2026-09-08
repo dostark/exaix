@@ -11,7 +11,12 @@
 
 import { assertEquals } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core/types";
-import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
+import type {
+  IPortalContextQuery,
+  IPortalKnowledgeConfig,
+  IPortalKnowledgeService,
+  IScoredContextResult,
+} from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 // Minimal stub that must satisfy the full IPortalKnowledgeService contract — a missing
@@ -50,6 +55,14 @@ class StubPortalKnowledgeService implements IPortalKnowledgeService {
     _portalPath: string,
     _maxTokens: number,
   ): Promise<string | undefined> {
+    return Promise.reject(new Error("stub"));
+  }
+
+  queryContext(_query: IPortalContextQuery): Promise<IScoredContextResult> {
+    return Promise.reject(new Error("stub"));
+  }
+
+  loadCachedKnowledge(_portalAlias: string): Promise<IPortalKnowledge | undefined> {
     return Promise.reject(new Error("stub"));
   }
 }

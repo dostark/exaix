@@ -56,7 +56,7 @@ import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { CliDelegateStrategy } from "./strategies/cli_delegate_strategy.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import type { Opt, Reason, TaskType } from "@exaix/core/types";
+import type { IDogfoodContextPort, Opt, Reason, TaskType } from "@exaix/core/types";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
@@ -124,6 +124,9 @@ export interface IAgentComposerDeps {
    *  same plan/flow run, shared across per-call orchestrator instances so a later step's
    *  audit doesn't flag them. Defaults to a fresh, empty Set when omitted. */
   planWrittenFiles?: Set<string>;
+  /** Optional dogfood bounded-context port passed through to CliDelegateStrategy; absent
+   *  for every non-dogfood/disabled-config caller, which preserves existing behavior. */
+  contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
 }
 
 /**
@@ -164,6 +167,7 @@ export class AgentComposer {
   private historyManager: HistoryManager;
   private reActAdapter: ReActLoopAdapter;
   private ctx: ExecutionContextService;
+  private readonly contextPort?: IDogfoodContextPort;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
@@ -210,6 +214,7 @@ export class AgentComposer {
     this.strategyRegistry = deps.strategyRegistry;
     this._toolRegistry = deps.toolRegistry;
     this._guardrailRunner = deps.guardrailRunner;
+    this.contextPort = deps.contextPort;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
     this.blueprintService = deps.blueprintService ??
@@ -268,6 +273,7 @@ export class AgentComposer {
       model: cliDelegateConfig.model,
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
+      contextPort: this.contextPort,
     });
   }
 

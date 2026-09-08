@@ -11,7 +11,13 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { MockStrategy, PortalAnalysisMode, PortalOperation } from "@exaix/core";
+import {
+  ContextResultStatus,
+  ContextUnavailableReason,
+  MockStrategy,
+  PortalAnalysisMode,
+  PortalOperation,
+} from "@exaix/core";
 import { type IDocCommandRunner, loadKnowledge, PortalKnowledgeService, saveKnowledge } from "@exaix/portal/knowledge";
 import { MemoryBankService } from "@exaix/memory";
 import { RequestProcessor } from "@exaix/request";
@@ -260,6 +266,13 @@ Deno.test(
           return svc.analyze(alias, path);
         },
         getRelevantContext: () => Promise.resolve(undefined),
+        queryContext: () =>
+          Promise.resolve({
+            status: ContextResultStatus.UNAVAILABLE,
+            reason: ContextUnavailableReason.DISABLED,
+            items: [],
+          }),
+        loadCachedKnowledge: () => Promise.resolve(undefined),
       };
 
       await env.createBlueprint("code-analyst");

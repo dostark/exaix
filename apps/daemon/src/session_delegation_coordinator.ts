@@ -19,6 +19,7 @@ import {
   TIME_MS_PER_HOUR,
 } from "@exaix/core/types";
 import { ProviderType } from "@exaix/core/types";
+import type { IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
 import { SessionGateSchema, SessionLaunchModeSchema } from "@exaix/schemas/session_delegate.ts";
 import type {
   SessionBrief,
@@ -73,6 +74,9 @@ export interface ISessionDelegationCoordinatorDeps {
   resolveProviderApiKey(keyEnv: string): string | undefined;
   now(): Date;
   sleep(milliseconds: number): Promise<void>;
+  /** Optional dogfood bounded-context port; absent preserves the existing objective
+   *  byte-for-byte. A failure surfaces as the existing `launch_failed` terminal outcome. */
+  contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
 }
 
 export interface ICodeChangesDelegateAdapterDeps {
@@ -174,9 +178,11 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
   ): Promise<SessionBrief> {
     const config = this.deps.config;
     const resolvedModel = await this.deps.resolveModel(input.parentTraceId);
+    const model = resolvedModel ?? config.model;
     const deadline = new Date(
       this.deps.now().getTime() + SESSION_DEFAULT_DEADLINE_HOURS * TIME_MS_PER_HOUR,
     ).toISOString();
+    const objective = await this.applyDogfoodContext(input, delegationTraceId, model);
     return await this.deps.delegateService.prepareBrief({
       traceId: delegationTraceId,
       parentTraceId: input.parentTraceId,
@@ -185,7 +191,7 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
       agentRole: input.agentRole,
       gate: SessionGateSchema.enum.code_changes,
       tool: config.tool,
-      objective: input.objective,
+      objective,
       acceptanceCriteria: input.acceptanceCriteria,
       artifactRef: input.artifactRef,
       permittedPaths: config.permitted_paths ?? LEGACY_PERMITTED_PATHS,
@@ -196,8 +202,34 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
         max_total_tokens: SESSION_DEFAULT_MAX_TOTAL_TOKENS,
       },
       deadline,
-      ...(resolvedModel ? { model: resolvedModel } : config.model ? { model: config.model } : {}),
+      ...(model ? { model } : {}),
     });
+  }
+
+  /** Absent contextPort returns `input.objective` unchanged (byte-for-byte); acceptance
+   *  criteria and artifactRef are never touched. A prepare() failure propagates to
+   *  `delegate`'s existing try/catch, mapping to the `launch_failed` terminal outcome. */
+  private async applyDogfoodContext(
+    input: ISessionDelegationRequest,
+    delegationTraceId: string,
+    model: Opt<string, Reason.OptionalContext>,
+  ): Promise<string> {
+    if (!this.deps.contextPort) return input.objective;
+
+    const handle = await this.deps.contextPort.prepare({
+      executionTraceId: delegationTraceId,
+      parentTraceId: input.parentTraceId,
+      stepId: input.parentStepId,
+      sequence: input.sequence,
+      turn: 0,
+      attempt: 1,
+      surface: "session_delegate_cycle",
+      model: model ?? "",
+      originalPrompt: input.objective,
+      queryText: input.objective,
+      acceptanceCriteria: input.acceptanceCriteria,
+    });
+    return handle.prompt;
   }
 
   private async resolveLaunch(brief: SessionBrief): Promise<ISessionLaunch> {

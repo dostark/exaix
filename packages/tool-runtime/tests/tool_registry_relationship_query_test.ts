@@ -14,7 +14,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
 import { ToolName } from "@exaix/core";
 import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
-import { PortalAnalysisMode } from "@exaix/core";
+import { ContextResultStatus, ContextUnavailableReason, PortalAnalysisMode } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 const PORTAL_ALIAS = "test-portal";
@@ -50,7 +50,14 @@ function makeMockKnowledgeService(knowledge: IPortalKnowledge): IPortalKnowledge
     isStale: () => Promise.resolve(false),
     updateKnowledge: () => Promise.resolve(knowledge),
     getRelevantContext: () => Promise.resolve(undefined),
-  } as IPortalKnowledgeService;
+    queryContext: () =>
+      Promise.resolve({
+        status: ContextResultStatus.UNAVAILABLE,
+        reason: ContextUnavailableReason.DISABLED,
+        items: [],
+      }),
+    loadCachedKnowledge: () => Promise.resolve(undefined),
+  };
 }
 
 function makeContext(

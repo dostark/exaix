@@ -83,6 +83,12 @@ import type {
 } from "./session_delegation.ts";
 import { SessionDelegationResultStore } from "./session_delegation_result_store.ts";
 import type { ISessionDelegationResultStore } from "./session_delegation_result_store.ts";
+import {
+  ContextRecordAlreadyExistsError,
+  ContextRecordSecurityError,
+  ContextRecordStore,
+} from "./context_record_store.ts";
+import type { IContextRecordPathResolver } from "./context_record_store.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -143,3 +149,5 @@ export type {
 };
 export { SessionDelegationResultStore };
 export type { ISessionDelegationResultStore };
+export { ContextRecordAlreadyExistsError, ContextRecordSecurityError, ContextRecordStore };
+export type { IContextRecordPathResolver };

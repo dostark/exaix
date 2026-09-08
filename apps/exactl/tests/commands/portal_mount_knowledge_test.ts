@@ -14,7 +14,7 @@ import { join } from "@std/path";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";
+import { ContextResultStatus, ContextUnavailableReason, ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
 // Mock helpers
@@ -64,6 +64,13 @@ function makeMockKnowledgeService(
     isStale: (_portalAlias: string) => Promise.resolve(false),
     updateKnowledge: (_portalAlias: string, _portalPath: string) => Promise.resolve(makeKnowledgeResult("mock")),
     getRelevantContext: () => Promise.resolve(undefined),
+    queryContext: () =>
+      Promise.resolve({
+        status: ContextResultStatus.UNAVAILABLE,
+        reason: ContextUnavailableReason.DISABLED,
+        items: [],
+      }),
+    loadCachedKnowledge: () => Promise.resolve(undefined),
   };
 }
 

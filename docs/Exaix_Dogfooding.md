@@ -19,6 +19,7 @@ criteria (the "what" and "why"), the daemon agent executes the mechanical work (
 4. [Writing Requests](#4-writing-requests)
 5. [Skills & Plans](#5-skills--plans)
 6. [Headless Delegation](#6-headless-delegation)
+   - [6.7 Bounded Context Supplement](#67-bounded-context-supplement-dogfoodcontext)
 7. [Configuration](#7-configuration)
 8. [When to Dogfood vs Interactive](#8-when-to-dogfood-vs-interactive)
 9. [Troubleshooting](#9-troubleshooting)
@@ -600,6 +601,52 @@ diverge.
 **E2E scenario:** `session-delegate-hardening-active-live` in `tests/scenario_framework/scenarios/provider_live/`
 validates the pre-flight guard structurally. Source wiring is complete; run against a real daemon
 on demand (requires sandbox deployment, tagged `provider-live`).
+
+### 6.7 Bounded Context Supplement (`dogfood.context`)
+
+Both delegate paths — the cycle handler (§6.3) and the stock `dogfood-loop` CLI-delegate
+strategy — can compose a small, scoped supplement onto the objective before launch: a
+few relevant portal-knowledge chunks and memory items, appended after the original
+prompt text (the original objective/acceptance criteria are always preserved verbatim,
+never trimmed or replaced). This is disabled by default and additive — every other
+caller and every non-dogfood execution path is unaffected.
+
+**Enabling it:** set `[dogfood.context] enabled = true` (the `configs/dogfood.toml`
+template does this) plus a portal in `[[portals]]` whose `alias` matches
+`dogfood.context.portal_alias` (default `"exaix-self"`) — exactly one match is required,
+or the daemon refuses to start.
+
+```toml
+[dogfood.context]
+enabled = true
+# portal_alias, portal_top_k, portal_tokens, memory_top_k, memory_tokens,
+# max_input_tokens, output_reserve_tokens, retention_days, and the query/record byte
+# ceilings all have documented defaults — override only what you need to change.
+```
+
+**What it does:** on each launch/turn, the daemon queries the configured portal's cached
+knowledge index and the portal-scoped memory bank, fits the results into a small token
+budget (skipping anything that doesn't fit rather than truncating it), strips terminal
+control bytes and redacts any known configured credential value, then captures an
+immutable JSON record of the exact bytes sent under
+`Memory/Execution/<trace>/context/<recordId>.json` before the child ever launches — a
+capture failure aborts the launch. Records older than `retention_days` (default 7) are
+pruned at daemon startup and once a day.
+
+**Known limitations, stated plainly:**
+
+- **Activation is config-gated, not flow-verified.** The daemon checks
+  `dogfood.context.enabled` and the portal-alias binding, but does not yet verify the
+  calling flow/role is actually `dogfood-loop`/`dogfood-coder` — treat this as scoped to
+  trusted dogfood sandbox configuration, not a general per-request authorization check.
+- **No live child-query tool yet.** The child cannot ask for additional context mid-task
+  — only the initial bounded supplement is sent. A session-bound MCP query transport
+  (`query_relationships`, `who_depends_on`, `search_memory`) is a separate, not-yet-built
+  phase of this feature.
+- **Inspection CLI not yet built.** The capture records exist on disk (see path above)
+  but `exactl request inspect` does not yet read them.
+- Budget composition is a fixed per-source token ceiling from config, not derived from
+  `PromptBudgetAllocator`'s six-section allocation.
 
 ---
 

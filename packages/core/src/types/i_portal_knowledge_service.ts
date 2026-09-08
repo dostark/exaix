@@ -10,7 +10,12 @@
 
 import type { IPortalKnowledge } from "@exaix/schemas";
 
-import type { PortalAnalysisMode } from "@exaix/core/types";
+import type {
+  ContextItemScoreKind,
+  ContextResultStatus,
+  ContextUnavailableReason,
+  PortalAnalysisMode,
+} from "@exaix/core/types";
 
 /**
  * Configuration for the PortalKnowledgeService.
@@ -52,6 +57,35 @@ export interface IPortalKnowledgeConfig {
   gitHistorySince?: string;
 }
 
+/** One scored, provenance-labelled context candidate. `source` is a portal-relative
+ *  reference or an approved global-learning ID — never a host absolute path. */
+export interface IScoredContextItem {
+  id: string;
+  source: string;
+  text: string;
+  score: number;
+  scoreKind: ContextItemScoreKind;
+}
+
+/** Result of a scoped context query. `unavailable` always carries zero `items` and a
+ *  {@link ContextUnavailableReason}; `ok` may still have zero items when nothing matched
+ *  a real search (use `NO_HITS` for that case instead). */
+export interface IScoredContextResult {
+  status: ContextResultStatus;
+  reason?: ContextUnavailableReason;
+  items: readonly IScoredContextItem[];
+}
+
+/** Bounded structured query against one portal's cached knowledge index. Never triggers
+ *  `analyze`/`getOrAnalyze` — a cold or missing index resolves to `status: "unavailable"`. */
+export interface IPortalContextQuery {
+  portalAlias: string;
+  query: string;
+  limit: number;
+  maxTokens: number;
+  signal?: AbortSignal;
+}
+
 /** Implementations MUST persist results via `IMemoryBankService`, never throw on
  *  partial analysis failure (degrade gracefully), and respect
  *  {@link IPortalKnowledgeConfig.ignorePatterns} during traversal. */
@@ -88,4 +122,12 @@ export interface IPortalKnowledgeService {
     portalPath: string,
     maxTokens: number,
   ): Promise<string | undefined>;
+
+  /** Structured, scored equivalent of {@link getRelevantContext}. Reuses the existing
+   *  index/search/chunk path; never calls `analyze`/`getOrAnalyze` or builds an index. */
+  queryContext(query: IPortalContextQuery): Promise<IScoredContextResult>;
+
+  /** Returns the in-memory cached knowledge for `portalAlias`, or `undefined` if this
+   *  portal has never been analyzed in this process. Never triggers analysis. */
+  loadCachedKnowledge(portalAlias: string): Promise<IPortalKnowledge | undefined>;
 }

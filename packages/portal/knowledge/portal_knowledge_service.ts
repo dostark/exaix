@@ -10,7 +10,7 @@
  * @related-files [packages/portal/knowledge/mod.ts, "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
-import { join } from "@std/path";
+import { join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { analyzeDirectory, walkDirectory } from "./directory_analyzer.ts";
 import { parseConfigFiles } from "./config_parser.ts";
@@ -32,8 +32,11 @@ import type {
   IGitServiceFactory,
   ILogger,
   IMemoryBankService,
+  IPortalContextQuery,
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
+  IScoredContextItem,
+  IScoredContextResult,
   Opt,
   Reason,
 } from "@exaix/core/types";
@@ -44,6 +47,9 @@ import type { IPortalKnowledge } from "@exaix/schemas";
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 
 import {
+  ContextItemScoreKind,
+  ContextResultStatus,
+  ContextUnavailableReason,
   DEFAULT_IGNORE_PATTERNS,
   DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE,
   DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE,
@@ -104,6 +110,10 @@ const CHUNK_SENTENCE_GROUP_SIZE = 2;
 /** Number of sentences to overlap between adjacent groups (keeps context continuity). */
 const CHUNK_SENTENCE_OVERLAP = 1;
 
+/** Sentinel stored in `_aliasByCanonicalPath` when a canonical path is claimed by more
+ * than one alias — resolution rejects (returns undefined) instead of guessing. */
+const AMBIGUOUS_ALIAS = Symbol("ambiguous-portal-alias");
+
 // Service implementation
 
 // PortalKnowledgeService
@@ -135,6 +145,10 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
 
   /** In-memory cache: alias → latest IPortalKnowledge. */
   private readonly _cache: Map<string, IPortalKnowledge> = new Map();
+
+  /** Canonical portal-root path → alias, populated at `analyze()` time; a path claimed
+   * by two different aliases maps to {@link AMBIGUOUS_ALIAS} so resolution rejects it. */
+  private readonly _aliasByCanonicalPath: Map<string, string | typeof AMBIGUOUS_ALIAS> = new Map();
 
   /** Per-portal HNSW index + chunk text cache for relevance retrieval. */
   private readonly _portalIndices: Map<
@@ -428,6 +442,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     };
 
     this._cache.set(portalAlias, knowledge);
+    this._recordAliasForPath(portalAlias, portalPath);
 
     // Build HNSW index for semantic retrieval (no-op if embedding provider is unconfigured)
     await this.indexPortalKnowledge(portalAlias, knowledge);
@@ -548,36 +563,77 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     portalPath: string,
     maxTokens: number,
   ): Promise<string | undefined> {
-    if (!this._config.relevanceSearchEmbeddingEnabled || !this._embeddingProvider) {
-      return undefined;
-    }
-
     const portalAlias = this._resolveAliasFromPath(portalPath);
     if (!portalAlias) return undefined;
 
-    const indexData = await this._loadIndex(portalAlias);
-    if (!indexData || indexData.index.size() === 0) {
-      return undefined;
+    const result = await this.queryContext({
+      portalAlias,
+      query: requestText,
+      limit: HNSW_SEARCH_RESULT_COUNT,
+      maxTokens,
+    });
+
+    if (result.status !== ContextResultStatus.OK || result.items.length === 0) return undefined;
+    return result.items.map((item) => item.text).join("\n\n---\n\n");
+  }
+
+  async queryContext(query: IPortalContextQuery): Promise<IScoredContextResult> {
+    const { portalAlias, query: queryText, limit, maxTokens, signal } = query;
+
+    if (!this._config.relevanceSearchEmbeddingEnabled || !this._embeddingProvider) {
+      return { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.DISABLED, items: [] };
+    }
+    if (signal?.aborted) {
+      return { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.TIMEOUT, items: [] };
     }
 
-    const [queryVector] = await this._embeddingProvider.embed([requestText]);
-    const results = indexData.index.search(queryVector, HNSW_SEARCH_RESULT_COUNT);
+    const indexData = await this._loadIndex(portalAlias);
+    if (!indexData || indexData.index.size() === 0) {
+      return { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.COLD, items: [] };
+    }
 
-    if (results.length === 0) return undefined;
+    let queryVector: number[];
+    try {
+      [queryVector] = await this._embeddingProvider.embed([queryText]);
+    } catch {
+      return { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.PROVIDER_ERROR, items: [] };
+    }
 
-    const chunks: string[] = [];
+    const results = indexData.index.search(queryVector, limit);
+    if (results.length === 0) {
+      return { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.NO_HITS, items: [] };
+    }
+
+    const items: IScoredContextItem[] = [];
     let tokenCount = 0;
-
     for (const result of results) {
       const text = indexData.chunks.get(result.id);
       if (!text) continue;
       const estimatedTokens = Math.ceil(text.length * ESTIMATED_TOKENS_PER_CHAR);
-      if (tokenCount + estimatedTokens > maxTokens) break;
-      chunks.push(text);
+      // Skip an item that doesn't fit the remaining budget and keep trying smaller
+      // ones — never truncate/split a retrieved chunk to make it fit.
+      if (tokenCount + estimatedTokens > maxTokens) continue;
+      items.push({
+        id: result.id,
+        // The chunk index does not track per-chunk file/section provenance separately
+        // from its content-hash id; the analyzed portal itself is the source label.
+        source: portalAlias,
+        text,
+        score: result.similarity,
+        scoreKind: ContextItemScoreKind.COSINE,
+      });
       tokenCount += estimatedTokens;
     }
 
-    return chunks.length > 0 ? chunks.join("\n\n---\n\n") : undefined;
+    if (items.length === 0) {
+      return { status: ContextResultStatus.UNAVAILABLE, reason: ContextUnavailableReason.BUDGET_DENIED, items: [] };
+    }
+
+    return { status: ContextResultStatus.OK, items };
+  }
+
+  loadCachedKnowledge(portalAlias: string): Promise<IPortalKnowledge | undefined> {
+    return Promise.resolve(this._cache.get(portalAlias));
   }
 
   async indexPortalKnowledge(
@@ -610,12 +666,23 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
 
   // Private helpers
 
-  /** Resolve portal alias from a portal path by scanning the cached knowledge. */
-  private _resolveAliasFromPath(_portalPath: string): string | undefined {
-    for (const [alias] of this._cache) {
-      return alias;
+  /** Record which alias owns a canonical portal-root path; marks the path ambiguous
+   * (never resolvable) if a different alias already claimed it. */
+  private _recordAliasForPath(portalAlias: string, portalPath: string): void {
+    const canonicalPath = resolve(portalPath);
+    const existing = this._aliasByCanonicalPath.get(canonicalPath);
+    if (existing !== undefined && existing !== portalAlias) {
+      this._aliasByCanonicalPath.set(canonicalPath, AMBIGUOUS_ALIAS);
+      return;
     }
-    return undefined;
+    this._aliasByCanonicalPath.set(canonicalPath, portalAlias);
+  }
+
+  /** Resolve the portal alias that was actually analyzed at this canonical path.
+   * No first-cache-entry fallback: an unknown or ambiguous path resolves to undefined. */
+  private _resolveAliasFromPath(portalPath: string): string | undefined {
+    const alias = this._aliasByCanonicalPath.get(resolve(portalPath));
+    return typeof alias === "string" ? alias : undefined;
   }
 
   /** Load an in-memory index for the given portal alias, from disk cache first, else undefined. */

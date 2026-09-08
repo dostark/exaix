@@ -56,6 +56,7 @@ export {
 } from "./src/session/session_memory.ts";
 export type {
   EnhancedRequest,
+  IMemoryRetrievalScope,
   Insight,
   MemoryItem,
   SaveInsightResult,

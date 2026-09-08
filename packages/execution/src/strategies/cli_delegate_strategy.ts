@@ -36,7 +36,7 @@
  */
 
 import { isAbsolute, relative } from "@std/path";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -107,6 +107,10 @@ export interface ICliDelegateStrategyDeps {
   model?: string;
   /** Defaults to SafeSubprocess.run. Overridden in tests to avoid real subprocess execution. */
   run?: IRunCliDelegateProcess;
+  /** Optional dogfood bounded-context port. Absent for every non-dogfood/disabled-config
+   *  caller, which preserves the existing objective byte-for-byte. A failure here aborts
+   *  the launch — it never silently falls back to the unaugmented objective. */
+  contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
 }
 
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
@@ -174,6 +178,9 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   private readonly run: IRunCliDelegateProcess;
   /** Session id per plan (trace_id), captured from the first step's response and resumed on every later step. Shape is identical for both tools; only the flag name differs. */
   private readonly sessionIds = new Map<string, string>();
+  /** Turn counter per plan (trace_id) for dogfood context records — a fresh capture per
+   *  turn, independent of the resumed CLI session's own history. */
+  private readonly turnCounts = new Map<string, number>();
 
   constructor(private readonly deps: ICliDelegateStrategyDeps) {
     this.run = deps.run ?? defaultRun;
@@ -194,11 +201,12 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
     const isFirstTurn = !this.sessionIds.has(context.trace_id);
     const objective = this.buildObjective(blueprint, context, isFirstTurn);
+    const finalObjective = await this.applyDogfoodContext(objective, context);
     const isClaude = this.deps.tool === SessionToolSchema.enum["claude-code"];
 
     const parsed: ICliDelegateParsedOutcome = isClaude
-      ? await this.runClaudeStep(context.trace_id, objective, portalPath)
-      : await this.runOpencodeStep(context.trace_id, objective, portalPath);
+      ? await this.runClaudeStep(context.trace_id, finalObjective, portalPath)
+      : await this.runOpencodeStep(context.trace_id, finalObjective, portalPath);
 
     const reportedPaths = toPortalRelativePaths(parsed.toolPaths, portalPath);
     // claude's print-mode stream emits no per-turn tool_use lines, so parsed.toolPaths is
@@ -350,6 +358,39 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       ? `TASK: ${context.request}\n\nFULL PLAN:\n${context.full_plan}\n\nBEGIN WITH THE FIRST STEP BELOW.`
       : `TASK: ${context.request}`;
     return `${blueprint.systemPrompt}\n\n${taskSection}\n\nPLAN STEP: ${context.plan}`;
+  }
+
+  /** Absent contextPort (every non-dogfood/disabled-config caller) returns `objective`
+   *  unchanged — byte-for-byte existing behavior. A prepare() failure aborts the launch;
+   *  it never silently falls back to the unaugmented objective. */
+  private async applyDogfoodContext(objective: string, context: IExecutionContext): Promise<string> {
+    if (!this.deps.contextPort) return objective;
+
+    const turn = this.turnCounts.get(context.trace_id) ?? 0;
+    this.turnCounts.set(context.trace_id, turn + 1);
+
+    try {
+      const handle = await this.deps.contextPort.prepare({
+        executionTraceId: context.trace_id,
+        parentTraceId: context.trace_id,
+        stepId: String(context.step_number ?? 0),
+        sequence: context.step_number ?? 1,
+        turn,
+        attempt: 1,
+        surface: "cli_delegate",
+        model: this.deps.model ?? "",
+        originalPrompt: objective,
+        queryText: objective,
+        acceptanceCriteria: [],
+      });
+      return handle.prompt;
+    } catch (error) {
+      throw new AgentExecutionError(
+        `dogfood context assembly failed: ${error instanceof Error ? error.message : String(error)}`,
+        AgentExecutionErrorType.CONFIGURATION_ERROR,
+        error instanceof Error ? error : undefined,
+      );
+    }
   }
 
   private buildClaudeArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {

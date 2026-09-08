@@ -820,6 +820,95 @@ export const ConfigSchema = z.object({
     git_history_commit_limit: DEFAULTS.GIT_HISTORY_COMMIT_LIMIT,
     git_history_since: DEFAULTS.GIT_HISTORY_SINCE,
   }),
+  /** Dogfood bounded-context supplement: additive, disabled by default. Both the request-
+   *  side injection (`portal_knowledge.injection_enabled`) and the global six-section
+   *  prompt budget schema are unaffected by this block. */
+  dogfood: z.object({
+    context: z.object({
+      /** Only daemon config plus a trusted dogfood-loop binding activate the supplement. */
+      enabled: z.boolean().default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_ENABLED),
+      /** Portal alias the daemon trusts as its own dogfood-context target. */
+      portal_alias: z.string().min(1).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_ALIAS),
+      portal_top_k: z.number().int().min(1).max(20).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOP_K),
+      memory_top_k: z.number().int().min(1).max(20).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOP_K),
+      /** Zero disables the portal-knowledge section entirely. */
+      portal_tokens: z.number().int().min(0).max(8192).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOKENS),
+      /** Zero disables the memory section entirely. */
+      memory_tokens: z.number().int().min(0).max(8192).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOKENS),
+      /** Model/session limits can only lower the effective input budget below this. */
+      max_input_tokens: z.number().int().positive().default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_INPUT_TOKENS),
+      output_reserve_tokens: z.number().int().nonnegative()
+        .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_OUTPUT_RESERVE_TOKENS),
+      query_chars: z.number().int().min(1).max(16_384).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_QUERY_CHARS),
+      query_timeout_ms: z.number().int().min(1).max(30_000)
+        .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_QUERY_TIMEOUT_MS),
+      /** Per child lifetime, including unavailable calls; no reset on MCP reconnect. */
+      max_query_calls: z.number().int().nonnegative().default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_CALLS),
+      max_query_tokens: z.number().int().nonnegative().default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_TOKENS),
+      max_response_bytes: z.number().int().positive()
+        .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RESPONSE_BYTES),
+      /** Excessive requests are rejected before parsing. */
+      max_request_bytes: z.number().int().positive().default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_REQUEST_BYTES),
+      /** Capture over this limit rejects before launch — never silently truncated. */
+      max_record_bytes: z.number().int().positive().default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES),
+      max_records_per_trace: z.number().int().positive()
+        .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE),
+      retention_days: z.number().int().min(1).max(30).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS),
+    }).superRefine((context, ctx) => {
+      if (context.output_reserve_tokens >= context.max_input_tokens) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "dogfood.context.output_reserve_tokens must be less than max_input_tokens",
+          path: ["output_reserve_tokens"],
+        });
+      }
+      if (context.portal_tokens + context.memory_tokens > context.max_input_tokens) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "dogfood.context.portal_tokens + memory_tokens must not exceed max_input_tokens",
+          path: ["portal_tokens"],
+        });
+      }
+    }).optional().default({
+      enabled: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_ENABLED,
+      portal_alias: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_ALIAS,
+      portal_top_k: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOP_K,
+      memory_top_k: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOP_K,
+      portal_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOKENS,
+      memory_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOKENS,
+      max_input_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_INPUT_TOKENS,
+      output_reserve_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_OUTPUT_RESERVE_TOKENS,
+      query_chars: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_QUERY_CHARS,
+      query_timeout_ms: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_QUERY_TIMEOUT_MS,
+      max_query_calls: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_CALLS,
+      max_query_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_TOKENS,
+      max_response_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RESPONSE_BYTES,
+      max_request_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_REQUEST_BYTES,
+      max_record_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES,
+      max_records_per_trace: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE,
+      retention_days: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS,
+    }),
+  }).optional().default({
+    context: {
+      enabled: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_ENABLED,
+      portal_alias: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_ALIAS,
+      portal_top_k: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOP_K,
+      memory_top_k: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOP_K,
+      portal_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_PORTAL_TOKENS,
+      memory_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MEMORY_TOKENS,
+      max_input_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_INPUT_TOKENS,
+      output_reserve_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_OUTPUT_RESERVE_TOKENS,
+      query_chars: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_QUERY_CHARS,
+      query_timeout_ms: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_QUERY_TIMEOUT_MS,
+      max_query_calls: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_CALLS,
+      max_query_tokens: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_QUERY_TOKENS,
+      max_response_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RESPONSE_BYTES,
+      max_request_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_REQUEST_BYTES,
+      max_record_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES,
+      max_records_per_trace: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE,
+      retention_days: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS,
+    },
+  }),
   /** Tokenizer backend configuration */
   tokenizer: z.object({
     backend: z.enum([TokenizerBackend.AUTO, TokenizerBackend.LOCAL, TokenizerBackend.API])
