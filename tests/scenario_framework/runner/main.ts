@@ -21,6 +21,7 @@ import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
+import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
   accumulateRunVerdict,
   computeMultiTrialMetrics,
@@ -309,6 +310,28 @@ await new Command()
             outcomeScore: suiteScore,
             scoreThreshold,
           });
+        }
+      }
+
+      // A real HTTP 400/429 means every remaining scenario would just re-hit the same exhausted
+      // resource — stop the whole run, unconditionally (not gated behind --fail-fast).
+      if (firstTrialWorkspaceRoot) {
+        const exhaustion = computeRunCapacityExhaustion(join(firstTrialWorkspaceRoot, ".exa", "journal.db"));
+        if (exhaustion.detected) {
+          const remaining = selectedEntries.slice(selectedEntries.indexOf(entry) + 1);
+          console.error(
+            `\nCapacity/quota exhaustion detected (HTTP 400/429) after ${entry.id}; stopping the run — ` +
+              `${remaining.length} scenario(s) not run.\nEvidence: ${exhaustion.evidence}`,
+          );
+          for (const skipped of remaining) {
+            scenarioVerdicts.push({
+              scenarioId: `${skipped.id} (skipped: capacity-exhausted)`,
+              pack: "",
+              suiteScore: 0,
+              passed: false,
+            });
+          }
+          break;
         }
       }
 
