@@ -205,6 +205,50 @@ export interface IGuardrailEventPayload {
   error_message?: string;
 }
 
+/** Metric-triple shape shared by every calibration payload below — mirrors
+ *  packages/eval-history's IMetricResult but flattened to a bare number-or-null, since
+ *  event payloads never carry the full undefined-reason detail. */
+export interface ICalibrationMetricOutcome {
+  exact: number | null;
+  kappa: number | null;
+  alpha: number | null;
+}
+
+/** Typed payload for eval.calibration.started. */
+export interface ICalibrationStartedPayload {
+  run_id: string;
+  seed: string;
+  sample_count: number;
+  target_vendor: string;
+  reference_vendor: string;
+}
+
+/** Typed payload for eval.calibration.reference_completed — one per scored item. */
+export interface ICalibrationReferenceCompletedPayload {
+  run_id: string;
+  item_id: string;
+  reference_vendor: string;
+  duration_ms: number;
+}
+
+/** Typed payload for eval.calibration.scored — emitted once, at the end of a successful run. */
+export interface ICalibrationScoredPayload {
+  run_id: string;
+  sample_count: number;
+  excluded_count: number;
+  metric_outcome: ICalibrationMetricOutcome;
+  duration_ms: number;
+}
+
+/** Typed payload for eval.calibration.failed. `error_code` is a sanitized classification
+ *  (e.g. "judge-error", "reference-error"), never the raw error message. */
+export interface ICalibrationFailedPayload {
+  run_id: string;
+  operation: string;
+  error_code: string;
+  duration_ms: number;
+}
+
 export const DomainEventType = {
   // Flow step events
   FlowStepExecuted: "flow.step.executed",
@@ -616,6 +660,13 @@ export const DomainEventType = {
 
   // Agent prompt assembly. Same value as the old raw string constant AGENT_EVENT_PROMPT_ASSEMBLED, now a taxonomy member.
   AgentPromptAssembled: "agent.prompt_assembled",
+
+  // Judge calibration — CalibrationRunner's own lifecycle. Payloads never carry
+  // prompts/auth/rationale, only identity/hashes/vendor/counts/metrics/duration.
+  CalibrationStarted: "eval.calibration.started",
+  CalibrationReferenceCompleted: "eval.calibration.reference_completed",
+  CalibrationScored: "eval.calibration.scored",
+  CalibrationFailed: "eval.calibration.failed",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];
