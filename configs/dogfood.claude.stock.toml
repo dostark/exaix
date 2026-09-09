@@ -1,0 +1,79 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).
+[ai]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+
+# The daemon resolves its analysis provider via `agents.default_model` → `[models.<name>]`, NOT the
+# `[ai]` block above (which is only a fallback). Pin the named models to Anthropic here so this
+# Claude preset truly plans with Claude — mirrors configs/dogfood.claude.toml.
+[models.default]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 60000
+
+[models.fast]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+# Plan JSON for a multi-step request can exceed the 4096-token default, truncating
+# the <content> block and failing schema validation (missing fields).
+[ai_anthropic]
+max_tokens_default = 8192
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+# Bounded, scoped portal-knowledge + memory supplement composed onto both dogfood
+# child-launch paths (Phase 176). Requires the `exaix-self` portal above to be the
+# sole portal configured with this alias — enabled-but-unwired is a startup error.
+[dogfood.context]
+enabled = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# STOCK path (Phase 176 Step 4's stock-claude live cell): per-step execution via a headless
+# CLI tool as an alternative to direct IModelProvider API calls, selected by an agent
+# blueprint's own `strategy: cli_delegate` (e.g. the dogfood-loop flow's `implement` step —
+# Blueprints/Flows/dogfood-loop.flow.yaml), NOT by a plan-review gate. Distinct from
+# [session_delegate] (the governed "cycle" mechanism in configs/dogfood.claude.toml): this
+# selects the execution strategy for a single agent step, not a whole gate — no
+# `[session_delegate]` block in this file, so the code_changes gate (if any plan reaches
+# one) is never delegated headlessly by this preset.
+[cli_delegate]
+enabled = true
+tool = "claude-code"
+model = "anthropic:claude-haiku-4-5-20251001"
+
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = true
+candidates = ["anthropic"]

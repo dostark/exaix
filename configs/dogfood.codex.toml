@@ -32,6 +32,12 @@ default_branch = "main"
 [portal_knowledge]
 auto_analyze_on_mount = true
 
+# Bounded, scoped portal-knowledge + memory supplement composed onto both dogfood
+# child-launch paths (Phase 176). Requires the `exaix-self` portal above to be the
+# sole portal configured with this alias — enabled-but-unwired is a startup error.
+[dogfood.context]
+enabled = true
+
 [quality_gate]
 enabled = false
 

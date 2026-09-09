@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "description": "Phase 176 Step 4 deterministic fixture: two isolated portals (billing-service, notifications-service), 20 equal-sized distinguishable records per portal (5 relevant to that portal's query), a memory item with an approved-answer nonce discoverable only via a second live query, and retired/foreign/secret-canary decoys that must never surface. Pre-feature original-prompt goldens are stored separately from the supplement data so a disabled-feature run can be compared byte-for-byte against them.",
+  "portals": [
+    {
+      "alias": "phase176-billing",
+      "topic": "billing-service payment retry policy",
+      "query": "How does the billing service retry a failed payment charge?",
+      "relevantRecordIds": [
+        "billing-03",
+        "billing-07",
+        "billing-11",
+        "billing-14",
+        "billing-19"
+      ],
+      "records": [
+        {
+          "id": "billing-01",
+          "text": "Billing ledger entry BL-01 records a completed charge for invoice INV-1010 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-02",
+          "text": "Billing ledger entry BL-02 records a completed charge for invoice INV-1020 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-03",
+          "text": "Retry note 03: a failed billing charge is retried with exponential backoff starting at 2s, doubling up to 5 attempts before the charge is marked failed."
+        },
+        {
+          "id": "billing-04",
+          "text": "Billing ledger entry BL-04 records a completed charge for invoice INV-1040 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-05",
+          "text": "Billing ledger entry BL-05 records a completed charge for invoice INV-1050 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-06",
+          "text": "Billing ledger entry BL-06 records a completed charge for invoice INV-1060 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-07",
+          "text": "Retry note 07: a failed billing charge is retried with exponential backoff starting at 2s, doubling up to 5 attempts before the charge is marked failed."
+        },
+        {
+          "id": "billing-08",
+          "text": "Billing ledger entry BL-08 records a completed charge for invoice INV-1080 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-09",
+          "text": "Billing ledger entry BL-09 records a completed charge for invoice INV-1090 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-10",
+          "text": "Billing ledger entry BL-10 records a completed charge for invoice INV-1100 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-11",
+          "text": "Retry note 11: a failed billing charge is retried with exponential backoff starting at 2s, doubling up to 5 attempts before the charge is marked failed."
+        },
+        {
+          "id": "billing-12",
+          "text": "Billing ledger entry BL-12 records a completed charge for invoice INV-1120 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-13",
+          "text": "Billing ledger entry BL-13 records a completed charge for invoice INV-1130 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-14",
+          "text": "Retry note 14: a failed billing charge is retried with exponential backoff starting at 2s, doubling up to 5 attempts before the charge is marked failed."
+        },
+        {
+          "id": "billing-15",
+          "text": "Billing ledger entry BL-15 records a completed charge for invoice INV-1150 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-16",
+          "text": "Billing ledger entry BL-16 records a completed charge for invoice INV-1160 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-17",
+          "text": "Billing ledger entry BL-17 records a completed charge for invoice INV-1170 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-18",
+          "text": "Billing ledger entry BL-18 records a completed charge for invoice INV-1180 processed via the primary payment gateway."
+        },
+        {
+          "id": "billing-19",
+          "text": "Retry note 19: a failed billing charge is retried with exponential backoff starting at 2s, doubling up to 5 attempts before the charge is marked failed."
+        },
+        {
+          "id": "billing-20",
+          "text": "Billing ledger entry BL-20 records a completed charge for invoice INV-1200 processed via the primary payment gateway."
+        }
+      ]
+    },
+    {
+      "alias": "phase176-notifications",
+      "topic": "notifications-service webhook delivery",
+      "query": "How does the notifications service handle a failed webhook delivery?",
+      "relevantRecordIds": [
+        "notif-02",
+        "notif-06",
+        "notif-09",
+        "notif-13",
+        "notif-17"
+      ],
+      "records": [
+        {
+          "id": "notif-01",
+          "text": "Notification log entry NL-01 records a delivered event for subscriber SUB-2010 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-02",
+          "text": "Webhook delivery note 02: a failed webhook delivery is retried with backoff, and duplicate deliveries can occur across retries unless the receiver is idempotent."
+        },
+        {
+          "id": "notif-03",
+          "text": "Notification log entry NL-03 records a delivered event for subscriber SUB-2030 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-04",
+          "text": "Notification log entry NL-04 records a delivered event for subscriber SUB-2040 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-05",
+          "text": "Notification log entry NL-05 records a delivered event for subscriber SUB-2050 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-06",
+          "text": "Webhook delivery note 06: a failed webhook delivery is retried with backoff, and duplicate deliveries can occur across retries unless the receiver is idempotent."
+        },
+        {
+          "id": "notif-07",
+          "text": "Notification log entry NL-07 records a delivered event for subscriber SUB-2070 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-08",
+          "text": "Notification log entry NL-08 records a delivered event for subscriber SUB-2080 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-09",
+          "text": "Webhook delivery note 09: a failed webhook delivery is retried with backoff, and duplicate deliveries can occur across retries unless the receiver is idempotent."
+        },
+        {
+          "id": "notif-10",
+          "text": "Notification log entry NL-10 records a delivered event for subscriber SUB-2100 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-11",
+          "text": "Notification log entry NL-11 records a delivered event for subscriber SUB-2110 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-12",
+          "text": "Notification log entry NL-12 records a delivered event for subscriber SUB-2120 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-13",
+          "text": "Webhook delivery note 13: a failed webhook delivery is retried with backoff, and duplicate deliveries can occur across retries unless the receiver is idempotent."
+        },
+        {
+          "id": "notif-14",
+          "text": "Notification log entry NL-14 records a delivered event for subscriber SUB-2140 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-15",
+          "text": "Notification log entry NL-15 records a delivered event for subscriber SUB-2150 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-16",
+          "text": "Notification log entry NL-16 records a delivered event for subscriber SUB-2160 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-17",
+          "text": "Webhook delivery note 17: a failed webhook delivery is retried with backoff, and duplicate deliveries can occur across retries unless the receiver is idempotent."
+        },
+        {
+          "id": "notif-18",
+          "text": "Notification log entry NL-18 records a delivered event for subscriber SUB-2180 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-19",
+          "text": "Notification log entry NL-19 records a delivered event for subscriber SUB-2190 via the outbound webhook dispatcher."
+        },
+        {
+          "id": "notif-20",
+          "text": "Notification log entry NL-20 records a delivered event for subscriber SUB-2200 via the outbound webhook dispatcher."
+        }
+      ]
+    }
+  ],
+  "memory": {
+    "secondQueryNote": "Fixed to the dogfood_mcp_child.ts test harness's own default DOGFOOD_CHILD_QUERY fallback, since a custom value set in the parent test process is stripped by the production child-env allowlist (buildAllowlistChildEnv) before it ever reaches the spawned child.",
+    "secondQuery": "zephyr-seeded-fact",
+    "approvedAnswerMemory": {
+      "title": "Approved workaround: webhook duplicate-delivery bug",
+      "content": "Use idempotency key ZEPHYR-9c41f7 when replaying webhook deliveries so duplicates are safely ignored; see ticket NOTIF-4471 for the approved fix.",
+      "nonce": "ZEPHYR-9c41f7",
+      "citation": "NOTIF-4471"
+    },
+    "decoys": {
+      "retired": [
+        {
+          "id": "retired-01",
+          "text": "RETIRED: the legacy billing retry policy (fixed 3 attempts, no backoff) was decommissioned and must never be surfaced as current guidance."
+        },
+        {
+          "id": "retired-02",
+          "text": "RETIRED: the old webhook fan-out worker was removed; any reference to WEBHOOK-FANOUT-V1 describes dead infrastructure."
+        }
+      ],
+      "foreign": [
+        {
+          "id": "foreign-01",
+          "text": "FOREIGN (notifications-service only): webhook signing secrets rotate every 30 days via the notifications-service key rotation job."
+        },
+        {
+          "id": "foreign-02",
+          "text": "FOREIGN (billing-service only): the billing ledger's monthly close job runs on the 1st and reconciles INV- prefixed invoices."
+        }
+      ],
+      "secretCanary": [
+        {
+          "id": "canary-01",
+          "text": "CANARY: internal staging API key sk-canary-phase176-88a2f1 must never appear in any composed prompt or captured record."
+        }
+      ]
+    }
+  },
+  "goldens": {
+    "stockFirstTurnOriginalPrompt": "Fix the payment retry backoff timing in the billing service.",
+    "stockResumedTurnOriginalPrompt": "Continue: also cover the notifications-service webhook retry path.",
+    "cycleStepOriginalPrompt": "Implement the webhook duplicate-delivery idempotency guard for the notifications service."
+  }
+}
