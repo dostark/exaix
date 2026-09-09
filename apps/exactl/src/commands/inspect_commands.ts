@@ -86,22 +86,26 @@ export class InspectCommands extends BaseCommand {
       );
     }
 
+    // Both --raw and --json are machine-consumable stdout contracts — the audit banner
+    // must never be interleaved into either, only the human-readable default view.
+    const suppressBanner = options.raw || options.json;
+
     if (options.record) {
       const record = await this.readOrExit(traceId, options.record);
-      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, options.raw);
+      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, suppressBanner);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }
 
     const summaries = await this.resolveSummaries(traceId);
     if (summaries.length === 0) {
-      await this.emitInspected(traceId, undefined, ContextInspectionResult.NO_CAPTURE, 0);
+      await this.emitInspected(traceId, undefined, ContextInspectionResult.NO_CAPTURE, 0, suppressBanner);
       console.error(colors.yellow(`No captured context found for trace ${traceId}.`));
       Deno.exit(ContextInspectExitCode.NO_CAPTURE);
     }
     if (summaries.length === 1) {
       const only = summaries[0];
       const record = await this.readOrExit(only.executionTraceId, only.recordId);
-      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, options.raw);
+      await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, suppressBanner);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }
     if (options.raw) {
@@ -110,7 +114,7 @@ export class InspectCommands extends BaseCommand {
         `${summaries.length} records found — pass --record <uuid> to select one for --raw export`,
       );
     }
-    await this.emitInspected(traceId, undefined, ContextInspectionResult.LIST, summaries.length);
+    await this.emitInspected(traceId, undefined, ContextInspectionResult.LIST, summaries.length, suppressBanner);
     this.renderList(summaries, options.json);
   }
 
@@ -210,7 +214,8 @@ export class InspectCommands extends BaseCommand {
   }
 
   /** `suppressConsoleEcho` keeps the audit journal write but silences its console banner —
-   *  `--raw`'s contract is byte-exact redirected stdout, which a banner would corrupt. */
+   *  both `--raw` (byte-exact stdout) and `--json` (parseable stdout) would otherwise be
+   *  corrupted by an interleaved banner line. */
   private async emitInspected(
     traceId: string,
     recordId: Opt<string, Reason.OptionalInput>,

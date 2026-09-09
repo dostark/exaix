@@ -205,9 +205,62 @@ if (Deno.env.get("RUN_EXACTL_TEST")) {
       await Deno.remove(tempDir, { recursive: true });
     }
   });
+
+  // Regression: a real EventLogger (unlike the stub display used by every other test in
+  // this file) prints emitInspected's audit banner to console.log — a real subprocess is
+  // the only way to catch it polluting --json's own machine-consumable stdout contract.
+  Deno.test("[dispatch] a real `exactl` child process's --json stdout is pure, parseable JSON — no audit banner interleaved", async () => {
+    const tempDir = await Deno.makeTempDir({ prefix: "exactl-inspect-dispatch-json-" });
+    try {
+      await Deno.mkdir(join(tempDir, ExaPathDefaults.memory), { recursive: true });
+      const configPath = join(tempDir, "config.toml");
+      await Deno.writeTextFile(configPath, buildMinimalConfig(tempDir));
+      const configService = new ConfigService(configPath);
+      const store = new ContextRecordStore(new PathResolver(configService.getAll()));
+      await store.save(makeProductionRecord());
+
+      const env = { ...Deno.env.toObject() };
+      delete env.EXA_TEST_MODE;
+      delete env.EXA_TEST_CLI_MODE;
+      env.EXA_CONFIG_PATH = configPath;
+
+      const cliModulePath = toFileUrl(join(Deno.cwd(), "apps/exactl/src/exactl.ts")).href;
+      const command = new Deno.Command(Deno.execPath(), {
+        args: [
+          "run",
+          "-A",
+          "--no-check",
+          cliModulePath,
+          "request",
+          "inspect",
+          TRACE_ID,
+          "--record",
+          RECORD_ID,
+          "--json",
+        ],
+        cwd: Deno.cwd(),
+        env,
+        stdout: "piped",
+        stderr: "piped",
+      });
+
+      const { code, stdout, stderr } = await command.output();
+      assertEquals(code, 0, `exactl exited non-zero. stderr: ${new TextDecoder().decode(stderr)}`);
+      const parsed = JSON.parse(new TextDecoder().decode(stdout));
+      assertEquals(parsed.recordId, RECORD_ID);
+      assertEquals(parsed.promptText, PRODUCTION_PROMPT_BYTES);
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  });
 } else {
   Deno.test({
     name: "[dispatch] a real `exactl` child process returns the exact post-redaction bytes via --raw (skipped)",
+    ignore: true,
+    fn: () => {},
+  });
+  Deno.test({
+    name: "[dispatch] a real `exactl` child process's --json stdout is pure, parseable JSON (skipped)",
     ignore: true,
     fn: () => {},
   });

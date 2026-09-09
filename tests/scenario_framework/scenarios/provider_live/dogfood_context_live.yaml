@@ -178,6 +178,20 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
+  # return.json landing only means the delegate wrote its raw return — reconciliation is
+  # triggered asynchronously by a SessionReturnWatcher reacting to that file, and races
+  # `assert-cycle-reconciled-clean` if run immediately after (observed live, 2026-09-09:
+  # the assertion found zero rows even on an accepted delegate). Poll for the real
+  # terminal signal instead of assuming it is already journaled.
+  - id: "wait-for-cycle-reconciled"
+    type: "exactl"
+    cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]
+    command: "journal"
+    args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
   # Not trace_scoped: session.delegate.* rows are journalled under the CHILD delegate's
   # own trace_id, never the parent request trace `trace_scoped` resolves to (confirmed by
   # a real live run, 2026-09-09) — trace_scoped here always yields zero rows. A single
@@ -218,9 +232,18 @@ steps:
       - "--config"
       - "$FRAMEWORK_HOME/../../deno.json"
       - |
-          const planFiles = [...Deno.readDirSync("Workspace/Plans")]
-            .filter((e) => e.isFile && e.name.endsWith("_plan.md"))
-            .map((e) => `Workspace/Plans/${e.name}`);
+          // A plan moves out of Workspace/Plans/ once approved (to Active/, then Archive/
+          // on completion) — this step runs after approval and full execution, so search
+          // every directory a plan can be in at that point, not just where it started.
+          const planFiles = ["Plans", "Active", "Archive"].flatMap((dir) => {
+            try {
+              return [...Deno.readDirSync(`Workspace/${dir}`)]
+                .filter((e) => e.isFile && e.name.endsWith("_plan.md"))
+                .map((e) => `Workspace/${dir}/${e.name}`);
+            } catch {
+              return [];
+            }
+          });
           if (planFiles.length === 0) {
             console.error("FAILED: no plan file found");
             Deno.exit(1);
