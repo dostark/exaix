@@ -68,7 +68,7 @@ async function seedLinkedPair(bank: MemoryBankService): Promise<{ anchor: ILearn
   await bank.initGlobalMemory();
   await bank.addGlobalLearning(anchor);
   await bank.addGlobalLearning(linked);
-  // Link anchor -> linked (the Step 8 topical producer writes these; seeded directly here).
+  // Seed the topical link directly for the expansion test.
   await bank.updateLearning(anchor.id, { links: [{ target_id: linked.id, type: MemoryLinkType.TOPICAL }] });
   return { anchor, linked };
 }

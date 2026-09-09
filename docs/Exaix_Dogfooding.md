@@ -13,17 +13,17 @@ criteria (the "what" and "why"), the daemon agent executes the mechanical work (
 ## Table of Contents
 
 1. [Prerequisites](#1-prerequisites)
-2. [Quick Start](#2-quick-start)
-3. [The Dogfooding Loop](#3-the-dogfooding-loop)
+1. [Quick Start](#2-quick-start)
+1. [The Dogfooding Loop](#3-the-dogfooding-loop)
    - [3.4 Generating Step Requests from a Plan](#34-generating-step-requests-from-a-plan)
-4. [Writing Requests](#4-writing-requests)
-5. [Skills & Plans](#5-skills--plans)
-6. [Headless Delegation](#6-headless-delegation)
+1. [Writing Requests](#4-writing-requests)
+1. [Skills & Plans](#5-skills--plans)
+1. [Headless Delegation](#6-headless-delegation)
    - [6.7 Bounded Context Supplement](#67-bounded-context-supplement-dogfoodcontext)
    - [6.8 Session-Bound MCP Context Queries](#68-session-bound-mcp-context-queries)
-7. [Configuration](#7-configuration)
-8. [When to Dogfood vs Interactive](#8-when-to-dogfood-vs-interactive)
-9. [Troubleshooting](#9-troubleshooting)
+1. [Configuration](#7-configuration)
+1. [When to Dogfood vs Interactive](#8-when-to-dogfood-vs-interactive)
+1. [Troubleshooting](#9-troubleshooting)
 
 ---
 
@@ -467,13 +467,13 @@ When the daemon delegates to a headless agent:
 
 1. **Brief** — The daemon writes `Session/{traceId}/brief.json` with
    the objective, scope, and acceptance criteria from the request.
-2. **Launch** — The daemon spawns `opencode run` or `claude -p` inside
+1. **Launch** — The daemon spawns `opencode run` or `claude -p` inside
    the worktree, passing the brief as context.
-3. **Work** — The headless agent plans, edits files, and runs commands
+1. **Work** — The headless agent plans, edits files, and runs commands
    inside the isolated worktree.
-4. **Return** — The daemon parses the JSON event stream, computes the
+1. **Return** — The daemon parses the JSON event stream, computes the
    `git diff`, and synthesizes `return.json`.
-5. **Reconcile** — The daemon runs a path-scope check (only worktree
+1. **Reconcile** — The daemon runs a path-scope check (only worktree
    files were touched), attributes costs, and presents the changeset
    for human review.
 

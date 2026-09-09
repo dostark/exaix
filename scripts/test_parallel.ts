@@ -98,9 +98,7 @@ const SEQUENTIAL_FILES: string[] = [
   // output-path override); races with other tests reading that same file under
   // DENO_JOBS parallelism, producing truncated-JSON reads.
   "tests/agents/build_agents_index_test.ts",
-  // Blueprint commands — 30 tests, each doing a full git-repo init/config spawn
-  // (the highest git-subprocess density in the corpus); this file alone oversubscribes
-  // spawn capacity and hits transient "Failed to spawn 'git'" even at hardwareConcurrency.
+  // Its dense git subprocess use can exhaust parallel spawn capacity.
   "apps/exactl/tests/blueprint_commands_test.ts",
   // The hardened delegation test probes the real OpenCode binary. Under Batch 1 spawn
   // pressure, that probe can fail before writing its per-test permission config.
@@ -108,22 +106,13 @@ const SEQUENTIAL_FILES: string[] = [
   // Sequencing assertions advance promise-controlled steps with zero-delay timers. Heavy
   // Batch 1 event-loop pressure can delay the first dispatch past the assertion boundary.
   "packages/flow/tests/session_delegate_cycle_sequencing_test.ts",
-  // DiskSpaceHealthCheck shells out to `df` per check; under Batch 1's spawn
-  // contention that intermittently errors, and critical=true turns the transient
-  // failure into a hard FAIL, breaking assertions expecting "pass"/"warn"/"degraded".
+  // Its `df` subprocess can fail under parallel spawn contention.
   "apps/daemon/tests/health_check_service_test.ts",
-  // Both boot a real daemon via bootRealDaemon(), which spawns `deno run
-  // scripts/setup_db.ts` as a subprocess (daemon_config.ts:migrateDaemonWorkspace).
-  // Same spawn-capacity class as blueprint_commands_test.ts above (not an env-var
-  // leak — PATH is never mutated globally outside child_env_test.ts, which is
-  // already sequential and runs after Batch 1 completes): under Batch 1's
-  // concurrent spawn pressure this subprocess intermittently fails with
-  // "Failed to spawn 'deno': entity not found"; passes reliably standalone.
+  // Both boot a daemon that spawns `deno run scripts/setup_db.ts`.
+  // That subprocess can fail under Batch 1 spawn pressure but passes standalone.
   "apps/daemon/tests/dynamic_step_wiring_test.ts",
   "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
-  // Polls waitForReadiness() with a tight 1000ms timeout checking a live PID.
-  // Under Batch 1's CPU-scheduling pressure on a resource-constrained host, the
-  // poll loop can lose the race and time out before observing the live PID.
+  // Its tight readiness poll can time out under Batch 1 CPU pressure.
   "apps/daemon/tests/readiness_test.ts",
 ];
 

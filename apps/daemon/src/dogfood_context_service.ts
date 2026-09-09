@@ -11,7 +11,13 @@
  * @related-files [packages/core/src/types/i_dogfood_context.ts, packages/session/src/context_record_store.ts, packages/schemas/src/dogfood_context.ts]
  */
 
-import { fitContextItems, type ITokenizer, redactKnownSecrets, stripTerminalControlBytes } from "@exaix/core/func";
+import {
+  DEFAULT_CONTEXT_ITEM_DELIMITER,
+  fitContextItems,
+  type ITokenizer,
+  redactKnownSecrets,
+  stripTerminalControlBytes,
+} from "@exaix/core/func";
 import { ContextResultStatus, DOGFOOD_CONTEXT_BEARER_ENV_VAR } from "@exaix/core";
 import type { ContextConnectionCloseReason } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -202,8 +208,20 @@ export class DogfoodContextService implements IDogfoodContextPort {
     const portalTexts = portalResult.status === ContextResultStatus.OK ? portalResult.items.map((i) => i.text) : [];
     const memoryTexts = memoryItems.map((m) => `${m.title}: ${m.content}`);
 
-    const fittedPortal = await fitContextItems(this.deps.tokenizer, input.model, portalTexts, portalBudget);
-    const fittedMemory = await fitContextItems(this.deps.tokenizer, input.model, memoryTexts, memoryBudget);
+    const fittedPortal = await fitContextItems(
+      this.deps.tokenizer,
+      input.model,
+      portalTexts,
+      portalBudget,
+      DEFAULT_CONTEXT_ITEM_DELIMITER,
+    );
+    const fittedMemory = await fitContextItems(
+      this.deps.tokenizer,
+      input.model,
+      memoryTexts,
+      memoryBudget,
+      DEFAULT_CONTEXT_ITEM_DELIMITER,
+    );
 
     const supplementParts = [...fittedPortal.selected, ...fittedMemory.selected];
     const rawPrompt = supplementParts.length > 0

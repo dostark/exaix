@@ -71,17 +71,15 @@ sequenceDiagram
 | `run_command`          | meta     |      —       |         —         |
 | `exaix_list_plans`     | domain   |      ✅      |         —         |
 | `exaix_query_journal`  | domain   |      ✅      |         —         |
-| `exaix_create_request` | domain   |      —       |         ⚠         |
-| `exaix_approve_plan`   | domain   |      —       |         ⚠         |
+| `exaix_create_request` | domain   |      —       |        Yes        |
+| `exaix_approve_plan`   | domain   |      —       |        Yes        |
 
 ## Activity Logging Events
 
-| Category     | Events                                                                  |
-| ------------ | ----------------------------------------------------------------------- |
-| Detection    | `plan.detected`, `plan.ready_for_execution`, `plan.invalid_frontmatter` |
-| Parsing      | `plan.parsed`, `plan.parsing_failed`, `plan.non_sequential_steps`       |
-| Quality Gate | `request.quality_gate.assessed`, `request.quality_gate.enriched`        |
-| Portal       | `portal.analyzed`                                                       |
+- Detection: `plan.detected`, `plan.ready_for_execution`, `plan.invalid_frontmatter`
+- Parsing: `plan.parsed`, `plan.parsing_failed`, `plan.non_sequential_steps`
+- Quality gate: `request.quality_gate.assessed`, `request.quality_gate.enriched`
+- Portal: `portal.analyzed`
 
 ## Tool Result Validation
 

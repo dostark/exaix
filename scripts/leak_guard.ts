@@ -122,17 +122,11 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
         try {
           const content = await Deno.readTextFile(entry.path);
           for (const leakPath of LEAK_PATHS) {
-            // A file already inside leakPath's own tier referencing that same tier is a
-            // self-reference (e.g. exaix-enterprise/apps/* importing @exaix-enterprise/*),
-            // not a leak into a public mirror — only content OUTSIDE that tier can leak it in.
+            // Same-tier references are not leaks into a public mirror.
             if (relativePath.startsWith(`${leakPath}/`)) continue;
             if (content.includes(leakPath)) {
-              // A reference through the package-scope alias (`@exaix-team/...`,
-              // `@exaix-enterprise/...`) is the CODE_STYLE.md-sanctioned cross-tier
-              // reference (type-only import, or an edition-gated dynamic import) — the
-              // [edition-leak] rule already enforces that it's actually gated. Only a raw
-              // path reference that bypasses the alias reveals structure a public mirror
-              // shouldn't ship, so strip scope-alias occurrences before matching.
+              // Package-scope aliases are checked by the edition-leak rule.
+              // Only raw paths can reveal private structure in a public mirror.
               const packageScope = `@${leakPath}`;
               const lines = content.split("\n");
               for (let i = 0; i < lines.length; i++) {

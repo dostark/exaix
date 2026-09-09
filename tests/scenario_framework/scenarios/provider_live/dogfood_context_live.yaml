@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dogfood-context-live"
 title: "Dogfood Context — Stock/Cycle × Native Tool Matrix (provider-live)"
 pack: "provider_live"
-tags: ["provider-live", "dogfood-context", "subsystem:dogfood-context", "entity:phase-176"]
+tags: ["provider-live", "dogfood-context", "entity:phase-176"]
 request_fixture: "fixtures/requests/provider_live/session_delegate_code_change.md"
 mode_support: ["auto"]
 portals:

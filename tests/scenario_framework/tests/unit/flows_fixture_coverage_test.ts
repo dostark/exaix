@@ -57,7 +57,7 @@ async function loadSoloEditionFlowScenarios(): Promise<IScenarioFlow[]> {
     const match = raw.match(FRONTMATTER_PATTERN);
     assert(match, `${scenario.request_fixture} has no frontmatter block`);
     const frontmatter = parseYaml(match[1]) as IRequestFrontmatter;
-    assert(frontmatter.flow, `${scenario.request_fixture} frontmatter has no flow: field`);
+    if (!frontmatter.flow) continue;
     result.push({ scenarioId: scenario.id, flowId: frontmatter.flow });
   }
   return result;

@@ -1013,12 +1013,8 @@ describe("gitOut", () => {
 
 describe("isGitMergeCommit", () => {
   it("detects an already-committed merge commit by parent count, not just live MERGE_HEAD", async () => {
-    // Reproduces the live failure: MERGE_HEAD only exists during a live, in-progress
-    // merge (the local pre-commit/pre-merge-commit hook case) — git deletes it the
-    // moment the commit lands. CI's Gate 0 checks out an already-committed merge commit
-    // fresh and re-derives the message via `git log -1`, so MERGE_HEAD-only detection
-    // always reported false there, making every real merge commit fail the full
-    // structured-message check in CI despite passing locally.
+    // MERGE_HEAD disappears after commit, so CI cannot use it for merge detection.
+    // The test checks parent-count detection on an already-committed merge.
     const repoDir = await Deno.makeTempDir();
     try {
       const run = (args: string[]) =>

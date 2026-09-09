@@ -18,7 +18,7 @@ export interface IFitContextItemsResult {
   usedTokens: number;
 }
 
-const DEFAULT_CONTEXT_ITEM_DELIMITER = "\n\n---\n\n";
+export const DEFAULT_CONTEXT_ITEM_DELIMITER = "\n\n---\n\n";
 
 /** Selects the order-preserving subset of `items` fitting `budgetTokens`, counting real
  *  tokenizer counts plus inter-item delimiter tokens; an oversized item is skipped, never

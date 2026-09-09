@@ -90,6 +90,7 @@ import {
   isValidUuid,
 } from "./context_record_store.ts";
 import type { IContextRecordPathResolver } from "./context_record_store.ts";
+import { DOGFOOD_MCP_SERVER_KEY } from "./dogfood_mcp_config.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -152,3 +153,4 @@ export { SessionDelegationResultStore };
 export type { ISessionDelegationResultStore };
 export { ContextRecordAlreadyExistsError, ContextRecordSecurityError, ContextRecordStore, isValidUuid };
 export type { IContextRecordPathResolver };
+export { DOGFOOD_MCP_SERVER_KEY };

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dogfood_context"
 title: "Flow blueprint — dogfood_context: real daemon + exactl request inspect round trip"
 pack: "flow_blueprints"
-tags: ["subsystem:dogfood-context", "entity:phase-176"]
+tags: ["dogfood-context", "entity:phase-176"]
 request_fixture: "fixtures/requests/flow_blueprints/dogfood_context.md"
 mode_support: ["auto"]
 portals: []

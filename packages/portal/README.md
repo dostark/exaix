@@ -53,7 +53,7 @@ graph TB
 
 ### Post-mount flow
 
-```
+```text
 Portal Mount
   → ContextCardGenerator.generate()         (context card)
   → PortalKnowledgeService.analyze()        (quick mode by default)

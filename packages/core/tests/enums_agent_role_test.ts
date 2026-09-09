@@ -26,7 +26,7 @@ Deno.test("ActorType enum has correct string values", () => {
   assertEquals(ActorType.MCP_CLIENT, "mcp-client");
   assertEquals(ActorType.SYSTEM, "system");
   assertEquals(ActorType.AGENT, "agent");
-  // IDENTITY was deleted as dead code (Phase 179 Step 3)
+  // IDENTITY is not a live actor type.
   assertFalse("IDENTITY" in ActorType);
 });
 
@@ -35,8 +35,7 @@ Deno.test("RunnerKind (renamed from AgentKind) exposes exactly the live members"
   assertEquals(RunnerKind.AGENT_RUNNER, "agent-runner");
   assertEquals(RunnerKind.REQUEST_ROUTER, "request-router");
   assertEquals(Object.values(RunnerKind).sort(), ["agent-composer", "agent-runner", "request-router"]);
-  // AGENT_EXECUTOR was renamed to AGENT_COMPOSER; IDENTITY_RUNNER, FLOW_AGENT, TOOL_AGENT
-  // were deleted as dead code (Phase 179 Step 3)
+  // The retired runner names are not live enum members.
   assertFalse("AGENT_EXECUTOR" in RunnerKind);
   assertFalse("IDENTITY_RUNNER" in RunnerKind);
   assertFalse("FLOW_AGENT" in RunnerKind);

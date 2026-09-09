@@ -22,7 +22,7 @@ export const TaskSourceSchema = z.object({
 
 export type ITaskSource = z.infer<typeof TaskSourceSchema>;
 
-/** Catalogued adversarial-pack injection vectors (Phase 145). */
+/** Catalogued adversarial-pack injection vectors. */
 export const AttackVectorSchema = z.enum([
   "portal-readme",
   "code-comment",

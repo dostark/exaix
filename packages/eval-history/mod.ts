@@ -26,6 +26,7 @@ export { DEFAULT_CALIBRATION_MAX_ITEM_BYTES, DEFAULT_CALIBRATION_SAMPLE_COUNT } 
 export { CalibrationBaselineSchema, CalibrationDriftEntrySchema } from "./src/calibration/schema.ts";
 export { CalibrationDriftOutcome, CalibrationIdentityBasis } from "./src/calibration/schema.ts";
 export { CalibrationItemSchema, CalibrationManifestSchema, CalibrationReportSchema } from "./src/calibration/schema.ts";
+export { CalibrationRubricCriterionSchema } from "./src/calibration/schema.ts";
 export { CalibrationRubricSchema, CalibrationTransport, CalibrationVendor } from "./src/calibration/schema.ts";
 export { EvaluatorProvenanceSchema, isCalibrationItemLabelConsistent } from "./src/calibration/schema.ts";
 export { CalibrationScoreOptionsSchema } from "./src/calibration/schema.ts";

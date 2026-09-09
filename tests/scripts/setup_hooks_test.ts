@@ -95,12 +95,9 @@ describe("scripts/setup_hooks.ts", () => {
 describe("event coverage visibility via the real pre-commit hook (real subprocess git commit)", () => {
   const REPO_ROOT = Deno.cwd();
 
-  // Extracts the event-coverage block from the REAL installed pre-commit hook so this test
-  // never drifts from what it actually runs. `deno task X` redirects CWD by walking up to find
-  // deno.json, so it's swapped for absolute `deno run`, which correctly scopes to the scratch repo.
-  // Installs hooks first — a CI checkout never runs `deno task hooks:install`, so
-  // `.git/hooks/pre-commit` wouldn't exist there otherwise; a local dev machine's hooks are
-  // idempotently overwritten with the same canonical content.
+  // Read the installed hook so this test follows the real pre-commit command.
+  // Use absolute `deno run` because task CWD discovery escapes the scratch repo.
+  // Install hooks because a CI checkout lacks the local hook file.
   async function extractEventCoverageHook(): Promise<string> {
     await installHooks();
     const proc = await new Deno.Command("git", {

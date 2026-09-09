@@ -14,6 +14,8 @@
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import {
+  ContextResultStatus,
+  ContextUnavailableReason,
   PortalOperation,
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
@@ -23,7 +25,12 @@ import {
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
-import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
+import type {
+  IApplicationContext,
+  IPortalContextQuery,
+  IPortalKnowledgeService,
+  IScoredContextResult,
+} from "@exaix/core/types";
 import {
   BlueprintService,
   ExecutionContextService,
@@ -67,6 +74,18 @@ class SnapshotPortalKnowledgeService implements IPortalKnowledgeService {
 
   getRelevantContext(): Promise<string | undefined> {
     return Promise.resolve(undefined);
+  }
+
+  queryContext(_query: IPortalContextQuery): Promise<IScoredContextResult> {
+    return Promise.resolve({
+      status: ContextResultStatus.UNAVAILABLE,
+      reason: ContextUnavailableReason.COLD,
+      items: [],
+    });
+  }
+
+  loadCachedKnowledge(_portalAlias: string): Promise<IPortalKnowledge | undefined> {
+    return Promise.resolve(this.knowledge);
   }
 }
 
