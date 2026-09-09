@@ -18,8 +18,8 @@ import type {
   SessionTokenBudget,
   SessionTool,
 } from "@exaix/schemas/session_delegate.ts";
-import type { PathResolver } from "@exaix/portal";
 import type { ISessionLaunch } from "./i_session_adapter.ts";
+import type { IDogfoodMcpConnectionInput } from "./dogfood_mcp_config.ts";
 
 /** Monotonic clock seam so deadlines are deterministic under test. */
 export interface ISessionClock {
@@ -79,7 +79,7 @@ export interface ISessionDelegateService {
     brief: SessionBrief,
     mode: SessionLaunchMode,
     config: SessionDelegateConfig,
-    pathResolver: PathResolver,
+    connection?: IDogfoodMcpConnectionInput,
   ): Promise<IHardenedLaunchResult>;
   /** Package-pure — reads no env vars itself; the caller (main.ts) resolves key_env and
    *  passes the value in. */

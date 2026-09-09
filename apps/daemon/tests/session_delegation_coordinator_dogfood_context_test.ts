@@ -1,11 +1,13 @@
 /**
- * @module Phase176ContextCycleTest
- * @path apps/daemon/tests/phase176_context_cycle_test.ts
- * @description Phase 176 Step 1: SessionDelegationCoordinator's dogfood context wiring.
+ * @module SessionDelegationCoordinatorDogfoodContextTest
+ * @path apps/daemon/tests/session_delegation_coordinator_dogfood_context_test.ts
+ * @description SessionDelegationCoordinator's dogfood context wiring.
  * Absent contextPort (every non-dogfood/disabled-config caller) sends the existing
  * objective byte-for-byte; an injected contextPort's returned prompt is what actually
  * reaches prepareBrief; acceptanceCriteria/artifactRef are never altered; a prepare()
  * failure surfaces as the existing launch_failed terminal outcome (no new halt path).
+ * Step 2 extends this: the connection reaches resolveHardenedLaunch and the launcher's
+ * env, and close() is called with a reason matching the delegation's real outcome.
  * @architectural-layer Tests
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts]
  */
@@ -13,7 +15,12 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
-import type { SessionBrief, SessionDelegateConfig, SessionWaitState } from "@exaix/schemas/session_delegate.ts";
+import type {
+  SessionBrief,
+  SessionDelegateConfig,
+  SessionLaunchMode,
+  SessionWaitState,
+} from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import type {
   IHardenedLaunchResult,
@@ -30,7 +37,13 @@ import type {
   ISessionDelegationResultRecord,
   ISessionDelegationResultStore,
 } from "@exaix/session/session_delegation_result_store.ts";
-import type { IDogfoodContextHandle, IDogfoodContextInput, IDogfoodContextPort } from "@exaix/core/types";
+import type {
+  IDogfoodContextConnection,
+  IDogfoodContextHandle,
+  IDogfoodContextInput,
+  IDogfoodContextPort,
+} from "@exaix/core/types";
+import type { IDogfoodMcpConnectionInput } from "@exaix/session/dogfood_mcp_config.ts";
 import {
   type ISessionDelegationCoordinatorDeps,
   SessionDelegationCoordinator,
@@ -51,6 +64,7 @@ const CONFIG: SessionDelegateConfig = {
 
 class RecordingDelegateService implements ISessionDelegateService {
   readonly prepared: IPrepareBriefInput[] = [];
+  readonly hardenedConnections: Array<IDogfoodMcpConnectionInput | undefined> = [];
 
   prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief> {
     this.prepared.push(input);
@@ -78,7 +92,13 @@ class RecordingDelegateService implements ISessionDelegateService {
     return { command: "codex", args: [], cwd: brief.worktree_path ?? "/tmp", env: {} };
   }
 
-  resolveHardenedLaunch(brief: SessionBrief): Promise<IHardenedLaunchResult> {
+  resolveHardenedLaunch(
+    brief: SessionBrief,
+    _mode: SessionLaunchMode,
+    _config: SessionDelegateConfig,
+    connection?: IDogfoodMcpConnectionInput,
+  ): Promise<IHardenedLaunchResult> {
+    this.hardenedConnections.push(connection);
     return Promise.resolve({ launch: this.resolveLaunch(brief), agentNameMismatch: false });
   }
 
@@ -168,8 +188,10 @@ class OutcomeResultStore implements ISessionDelegationResultStore {
 
 class RecordingLauncher {
   calls = 0;
-  launch(): Promise<void> {
+  envs: Array<Record<string, string> | undefined> = [];
+  launch(_launch: ISessionLaunch, _traceId: string, env?: Record<string, string>): Promise<void> {
     this.calls += 1;
+    this.envs.push(env);
     return Promise.resolve();
   }
 }
@@ -187,18 +209,37 @@ function request(): ISessionDelegationRequest {
   };
 }
 
-function makeContextPort(prompt: string): { port: IDogfoodContextPort; inputs: IDogfoodContextInput[] } {
+const TEST_CONNECTION: IDogfoodContextConnection = {
+  connectionId: "conn-1",
+  endpoint: "http://127.0.0.1:9/mcp",
+  bearerEnvVar: "EXAIX_CONTEXT_BEARER",
+  bearerToken: "test-bearer-value",
+  expiresAt: "2026-12-31T00:00:00.000Z",
+  tools: [
+    { name: "query_relationships", description: "d", inputSchema: {}, outputSchema: {}, schemaDigest: "x" },
+    { name: "who_depends_on", description: "d", inputSchema: {}, outputSchema: {}, schemaDigest: "y" },
+    { name: "search_memory", description: "d", inputSchema: {}, outputSchema: {}, schemaDigest: "z" },
+  ],
+};
+
+function makeContextPort(
+  prompt: string,
+  connection?: IDogfoodContextConnection,
+): { port: IDogfoodContextPort; inputs: IDogfoodContextInput[]; closes: Array<{ recordId: string; reason: string }> } {
   const inputs: IDogfoodContextInput[] = [];
+  const closes: Array<{ recordId: string; reason: string }> = [];
   const port: IDogfoodContextPort = {
     prepare(input: IDogfoodContextInput): Promise<IDogfoodContextHandle> {
       inputs.push(input);
-      return Promise.resolve({ recordId: crypto.randomUUID(), prompt });
+      const recordId = crypto.randomUUID();
+      return Promise.resolve({ recordId, prompt, connectionId: connection?.connectionId, connection });
     },
-    close(): Promise<void> {
+    close(recordId: string, reason: string): Promise<void> {
+      closes.push({ recordId, reason });
       return Promise.resolve();
     },
   };
-  return { port, inputs };
+  return { port, inputs, closes };
 }
 
 function makeFailingContextPort(): IDogfoodContextPort {
@@ -311,4 +352,145 @@ Deno.test("[session_delegation_coordinator] a prepare() failure surfaces as the 
   assertEquals(outcome.status, "launch_failed");
   assertEquals(launcher.calls, 0, "the launcher must never run when context assembly fails");
   assertEquals(delegateService.prepared.length, 0, "prepareBrief on the delegate service is never reached");
+});
+
+const HARDENED_CONFIG: SessionDelegateConfig = { ...CONFIG, harden_permissions: true };
+
+function makeHardenedDeps(
+  delegateService: RecordingDelegateService,
+  waitStore: RecordingWaitStore,
+  resultStore: OutcomeResultStore,
+  launcher: RecordingLauncher,
+  contextPort?: IDogfoodContextPort,
+): ISessionDelegationCoordinatorDeps {
+  return { ...makeDeps(delegateService, waitStore, resultStore, launcher, contextPort), config: HARDENED_CONFIG };
+}
+
+Deno.test("[session_delegation_coordinator][mcp] a connection reaches resolveHardenedLaunch as a config-free (no bearerToken) shape", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port } = makeContextPort("objective", TEST_CONNECTION);
+  const coordinator = new SessionDelegationCoordinator(
+    makeHardenedDeps(delegateService, waitStore, resultStore, launcher, port),
+    logger,
+  );
+
+  resultStore.status = "completed";
+  resultStore.request = request();
+  await coordinator.delegate(request());
+
+  assertEquals(delegateService.hardenedConnections.length, 1);
+  const passed = delegateService.hardenedConnections[0];
+  assertEquals(passed?.endpoint, TEST_CONNECTION.endpoint);
+  assertEquals(passed?.bearerEnvVar, TEST_CONNECTION.bearerEnvVar);
+  assertEquals(passed?.toolNames.toSorted(), ["query_relationships", "search_memory", "who_depends_on"]);
+  assertEquals("bearerToken" in (passed ?? {}), false, "the credential VALUE must never reach launch-config builders");
+});
+
+Deno.test("[session_delegation_coordinator][mcp] the bearer credential VALUE reaches the launcher's env, merged with provider env", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port } = makeContextPort("objective", TEST_CONNECTION);
+  const coordinator = new SessionDelegationCoordinator(
+    makeHardenedDeps(delegateService, waitStore, resultStore, launcher, port),
+    logger,
+  );
+
+  resultStore.status = "completed";
+  resultStore.request = request();
+  await coordinator.delegate(request());
+
+  assertEquals(launcher.envs[0]?.[TEST_CONNECTION.bearerEnvVar], TEST_CONNECTION.bearerToken);
+});
+
+Deno.test("[session_delegation_coordinator][mcp] close() is called with COMPLETED when the delegation completes successfully", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port, closes } = makeContextPort("objective", TEST_CONNECTION);
+  const coordinator = new SessionDelegationCoordinator(
+    makeHardenedDeps(delegateService, waitStore, resultStore, launcher, port),
+    logger,
+  );
+
+  resultStore.status = "completed";
+  resultStore.request = request();
+  await coordinator.delegate(request());
+
+  assertEquals(closes.length, 1);
+  assertEquals(closes[0].reason, "completed");
+});
+
+Deno.test("[session_delegation_coordinator][mcp] close() is called with CANCELLED when the delegation is cancelled", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  waitStore.status = "cancelled";
+  const resultStore = new OutcomeResultStore();
+  resultStore.status = null; // no outcome published — outcomeFromWait handles the cancelled wait
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port, closes } = makeContextPort("objective", TEST_CONNECTION);
+  const coordinator = new SessionDelegationCoordinator(
+    makeHardenedDeps(delegateService, waitStore, resultStore, launcher, port),
+    logger,
+  );
+
+  const outcome = await coordinator.delegate(request());
+
+  assertEquals(outcome.status, "cancelled");
+  assertEquals(closes.length, 1);
+  assertEquals(closes[0].reason, "cancelled");
+});
+
+Deno.test("[session_delegation_coordinator][mcp] closeAllOpenContextConnections closes every connection still tracked open", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  waitStore.status = "pending";
+  const resultStore = new OutcomeResultStore();
+  resultStore.status = null;
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port, closes } = makeContextPort("objective", TEST_CONNECTION);
+
+  // A controlled sleep seam: the FIRST poll's sleep() call parks here (not yet
+  // resolved), deterministically pausing awaitTerminal's loop mid-flight — no reliance
+  // on real elapsed time or a race against a tight poll loop.
+  let releaseFirstSleep: (() => void) | undefined;
+  const firstSleep = new Promise<void>((resolve) => {
+    releaseFirstSleep = resolve;
+  });
+  let sleepCalls = 0;
+  const deps = makeHardenedDeps(delegateService, waitStore, resultStore, launcher, port);
+  deps.sleep = () => {
+    sleepCalls++;
+    return sleepCalls === 1 ? firstSleep : Promise.resolve();
+  };
+  const coordinator = new SessionDelegationCoordinator(deps, logger);
+
+  const delegatePromise = coordinator.delegate(request());
+  // Yield the microtask queue until the loop has reached its first sleep() call
+  // (bounded so a wiring regression fails fast instead of hanging the test run).
+  for (let i = 0; i < 1000 && sleepCalls === 0; i++) {
+    await Promise.resolve();
+  }
+  assertEquals(sleepCalls, 1, "awaitTerminal must have reached its first poll sleep by now");
+
+  await coordinator.closeAllOpenContextConnections();
+  assertEquals(closes.length, 1);
+  assertEquals(closes[0].reason, "cancelled");
+
+  // Unblock the parked loop iteration and let it observe a terminal outcome next poll.
+  resultStore.status = "completed";
+  resultStore.request = request();
+  waitStore.status = "resumed";
+  releaseFirstSleep!();
+  await delegatePromise;
 });

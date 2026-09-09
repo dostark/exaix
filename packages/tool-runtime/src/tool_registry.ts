@@ -494,6 +494,10 @@ export class ToolRegistry implements IToolRegistry {
       ToolName.REMEMBER_FACT,
       (p) => this.rememberFactTool(str(p.content), p.tags ? strArr(p.tags) : undefined),
     );
+    this.executors.set(
+      ToolName.SEARCH_MEMORY,
+      (p) => this.searchMemoryTool(str(p.query), p.limit !== undefined ? Number(p.limit) : undefined),
+    );
   }
 
   /**
@@ -681,6 +685,18 @@ export class ToolRegistry implements IToolRegistry {
       });
     }
     return store.appendNote(this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID, content, tags);
+  }
+
+  /** Scoped to the current portal via `currentPortal()` — no caller-supplied portal argument
+   *  is ever honored, matching queryRelationshipsTool/whoDependsOnTool's own scoping. */
+  private async searchMemoryTool(query: string, limit?: Opt<number, Reason.OptionalInput>): Promise<IToolResult> {
+    const memoryService = this.applicationContext?.memory;
+    if (!memoryService) {
+      return { success: false, error: "search_memory requires a memory service, none is configured" };
+    }
+    const portal = this.currentPortal();
+    const results = await memoryService.search(query, { portal: portal?.alias, limit });
+    return this.formatSuccess(results as unknown as JSONValue);
   }
 
   private async whoDependsOnTool(path: string): Promise<IToolResult> {

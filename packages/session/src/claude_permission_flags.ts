@@ -18,13 +18,20 @@ import type { Opt, Reason } from "@exaix/core/types";
 const CLAUDE_PERMISSION_MODE_DEFAULT = "acceptEdits";
 const CLAUDE_ALLOWED_TOOLS_DEFAULT = "Read,Edit,Bash(git *)";
 
+/** `extraAllowedTools` (e.g. the dogfood context MCP tool names) is appended to the
+ *  single `--allowedTools` value — Claude Code accepts only one such flag, so a second
+ *  connection-scoped grant must widen the existing value rather than pass a competing flag. */
 export function deriveClaudeToolFlags(
   _brief?: Opt<SessionBrief, Reason.AbstractBoundary>,
+  extraAllowedTools?: Opt<readonly string[], Reason.OptionalInput>,
 ): string[] {
+  const allowedTools = extraAllowedTools && extraAllowedTools.length > 0
+    ? [CLAUDE_ALLOWED_TOOLS_DEFAULT, ...extraAllowedTools].join(",")
+    : CLAUDE_ALLOWED_TOOLS_DEFAULT;
   return [
     SESSION_FLAG_PERMISSION_MODE,
     CLAUDE_PERMISSION_MODE_DEFAULT,
     SESSION_FLAG_ALLOWED_TOOLS,
-    CLAUDE_ALLOWED_TOOLS_DEFAULT,
+    allowedTools,
   ];
 }

@@ -100,29 +100,46 @@ Catalog Parity" section) — so any manual entry placed inside the markers above
 silently discarded on the next sync. This section is intentionally outside those markers and
 is **not** kept in sync automatically; update it by hand when the tools below change.
 
-**Scope note (phase-175 Step 5):** this section documents only the two Solo-tier tools that
-phase added. `ToolRegistry`'s other 14 tools (`read_file`, `write_file`, `list_directory`,
-`search_files`, `create_directory`, `run_command`, `fetch_url`, `grep_search`, `move_file`,
-`copy_file`, `delete_file`, `git_info`, `deno_task`, `patch_file`) have no representation here
-at all — a real gap, deliberately not fixed by this phase (see phase-175's Step 5 Actions).
-It is worth its own scoped phase, or a `docs-sync-schemas`/`TOOL_MANIFEST` extension that
-enumerates `packages/tool-runtime`'s catalog alongside the Team MCP one.
+**Scope note (phase-175 Step 5, extended by phase-176 Step 2):** this section documents only
+the Solo-tier tools those phases added. `ToolRegistry`'s other 14 tools (`read_file`,
+`write_file`, `list_directory`, `search_files`, `create_directory`, `run_command`,
+`fetch_url`, `grep_search`, `move_file`, `copy_file`, `delete_file`, `git_info`, `deno_task`,
+`patch_file`) have no representation here at all — a real gap, deliberately not fixed by
+these phases (see phase-175's Step 5 Actions). It is worth its own scoped phase, or a
+`docs-sync-schemas`/`TOOL_MANIFEST` extension that enumerates `packages/tool-runtime`'s
+catalog alongside the Team MCP one.
 
 | Tool                  | Description                                                                                                                                                                                                                                 | Side-effect scope | Source                                                                                     |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
 | `query_relationships` | Lists relationship edges leading forward from a layer name or file path in the current portal's knowledge graph — combines persisted `file_imports_file_internal` edges with on-demand `layer_contains_file` edges. Optional `kind` filter. | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
 | `who_depends_on`      | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
 | `remember_fact`       | Persists a lightweight, execution-scoped "worth remembering" note (content + optional tags) into the current execution's scratchpad (`Memory/Execution/{trace_id}/scratchpad.jsonl`), captured raw for later extraction passes.             | `system`          | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
+| `search_memory`       | Searches project and global memory (patterns, decisions, learnings) scoped to the current portal; any caller-supplied `portal` argument is ignored. Optional `limit`.                                                                       | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
 
-Both require a portal-knowledge service to be wired into the `ToolRegistry`'s
-`IApplicationContext` (present in the daemon's real execution `ToolRegistryFactory`) and the
-current execution root to match a configured portal's `target_path` — otherwise they return a
-structured error, never a throw. No Team-tier MCP equivalent exists for either tool; they are
-new Solo-only surface, not a port of `exaix_portal_symbols`.
+`query_relationships`/`who_depends_on` require a portal-knowledge service to be wired into the
+`ToolRegistry`'s `IApplicationContext` (present in the daemon's real execution
+`ToolRegistryFactory`) and the current execution root to match a configured portal's
+`target_path` — otherwise they return a structured error, never a throw. No Team-tier MCP
+equivalent exists for any of these tools; they are new Solo-only surface, not a port of
+`exaix_portal_symbols`.
 
 `remember_fact` instead requires a scratchpad service on the same `IApplicationContext` (wired
 in the daemon's context; the trace is always the registry's own `traceId` — a `trace_id` value
 in the tool-call parameters is never honoured) and is scoped per execution, not per portal.
+
+`search_memory` requires a memory service on the same `IApplicationContext`; when the current
+execution root matches no configured portal it falls back to a global-only search rather than
+erroring, since `IMemoryService.search`'s `portal` option is optional. This is a deliberate
+divergence from `query_relationships`/`who_depends_on`'s hard error in that case — memory
+search has meaningful behavior without a portal, relationship graphs do not.
+
+Note: `search_memory` is also the name of one of the three tools
+[`DogfoodContextServer`](../../packages/mcp/server/dogfood_context_server.ts) grants a
+delegated dogfood child session over a private per-launch MCP connection (see
+[Dogfooding Guide §6.8](../../docs/Exaix_Dogfooding.md#68-session-bound-mcp-context-queries)).
+That server calls the same scoped memory-retrieval path directly — it is a separate, narrower
+transport (loopback-only, bearer-gated, three tools total), not a wrapper around this
+`ToolRegistry` entry, and is never reachable through Solo's own `ToolRegistry.execute()`.
 
 **Why use these instead of reading imports directly:** the underlying graph is built from
 `deno info`'s resolved module graph, not text pattern matching, so it correctly follows import-map

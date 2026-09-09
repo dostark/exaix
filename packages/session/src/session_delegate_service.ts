@@ -45,6 +45,8 @@ import { deriveClaudeToolFlags } from "./claude_permission_flags.ts";
 import { deriveCodexSandboxFlags } from "./codex_sandbox_flags.ts";
 import { generateOpencodePermissionConfig } from "./opencode_permission_generator.ts";
 import { probeDelegateVersion } from "./delegate_version_probe.ts";
+import { buildCodexMcpArgs, claudeMcpAllowedToolEntries, writeClaudeMcpConfig } from "./dogfood_mcp_config.ts";
+import type { IDogfoodMcpConnectionInput } from "./dogfood_mcp_config.ts";
 
 /** Dependencies for SessionDelegateService (constructor DI, all Config-free). */
 export interface ISessionDelegateServiceDeps {
@@ -160,6 +162,7 @@ export class SessionDelegateService implements ISessionDelegateService {
     brief: SessionBrief,
     mode: SessionLaunchMode,
     _config: SessionDelegateConfig,
+    connection?: Opt<IDogfoodMcpConnectionInput, Reason.OptionalDependency>,
   ): Promise<IHardenedLaunchResult> {
     const adapter = this.deps.registry.resolve(brief.tool);
     const launch = adapter.buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
@@ -188,38 +191,74 @@ export class SessionDelegateService implements ISessionDelegateService {
     const versionWarning = probeResult.supported ? undefined : probeResult.warning;
 
     let agentNameMismatch = false;
-
     if (brief.tool === TOOL_OPENCODE) {
-      if (!this.deps.pathResolver) {
-        throw new Error(
-          "resolveHardenedLaunch requires pathResolver in deps for OpenCode permission config generation",
-        );
-      }
-      const permConfig = await generateOpencodePermissionConfig(
-        brief.permitted_paths,
-        brief.worktree_path ?? dirname(this.briefPathFor(brief.trace_id)),
-        this.deps.pathResolver,
-        brief.trace_id,
-        brief.agent_role,
-      );
-      launch.configPath = permConfig.configPath;
-      agentNameMismatch = permConfig.agentKey !== brief.agent_role;
+      agentNameMismatch = await this.applyOpencodeHardening(brief, launch, connection);
     } else if (brief.tool === TOOL_CLAUDE_CODE) {
-      const flags = deriveClaudeToolFlags(brief);
-      launch.args.push(...flags);
+      await this.applyClaudeHardening(brief, launch, connection);
     } else if (brief.tool === TOOL_CODEX) {
-      // The base launch already carries --sandbox read-only; replace its mode in place
-      // rather than appending a second --sandbox pair the CLI would have to arbitrate between.
-      const flags = deriveCodexSandboxFlags(brief);
-      const sandboxFlagIndex = launch.args.indexOf(SESSION_FLAG_SANDBOX);
-      if (sandboxFlagIndex !== -1) {
-        launch.args[sandboxFlagIndex + 1] = flags[1];
-      } else {
-        launch.args.push(...flags);
-      }
+      this.applyCodexHardening(brief, launch, connection);
     }
 
     return { launch, agentNameMismatch, versionWarning };
+  }
+
+  /** Returns true when the generated agent.<agent_role> key mismatches brief.agent_role. */
+  private async applyOpencodeHardening(
+    brief: SessionBrief,
+    launch: ISessionLaunch,
+    connection?: Opt<IDogfoodMcpConnectionInput, Reason.OptionalDependency>,
+  ): Promise<boolean> {
+    if (!this.deps.pathResolver) {
+      throw new Error(
+        "resolveHardenedLaunch requires pathResolver in deps for OpenCode permission config generation",
+      );
+    }
+    const permConfig = await generateOpencodePermissionConfig(
+      brief.permitted_paths,
+      brief.worktree_path ?? dirname(this.briefPathFor(brief.trace_id)),
+      this.deps.pathResolver,
+      brief.trace_id,
+      brief.agent_role,
+      connection,
+    );
+    launch.configPath = permConfig.configPath;
+    return permConfig.agentKey !== brief.agent_role;
+  }
+
+  private async applyClaudeHardening(
+    brief: SessionBrief,
+    launch: ISessionLaunch,
+    connection?: Opt<IDogfoodMcpConnectionInput, Reason.OptionalDependency>,
+  ): Promise<void> {
+    const extraAllowedTools = connection ? claudeMcpAllowedToolEntries(connection) : undefined;
+    launch.args.push(...deriveClaudeToolFlags(brief, extraAllowedTools));
+    if (!connection) return;
+    if (!this.deps.pathResolver) {
+      throw new Error(
+        "resolveHardenedLaunch requires pathResolver in deps to write the Claude MCP connection config",
+      );
+    }
+    const mcpConfigPath = await writeClaudeMcpConfig(connection, this.deps.pathResolver, brief.trace_id);
+    launch.args.push("--mcp-config", mcpConfigPath, "--strict-mcp-config");
+  }
+
+  /** The base launch already carries --sandbox read-only; replaces its mode in place
+   *  rather than appending a second --sandbox pair the CLI would have to arbitrate between. */
+  private applyCodexHardening(
+    brief: SessionBrief,
+    launch: ISessionLaunch,
+    connection?: Opt<IDogfoodMcpConnectionInput, Reason.OptionalDependency>,
+  ): void {
+    const flags = deriveCodexSandboxFlags(brief);
+    const sandboxFlagIndex = launch.args.indexOf(SESSION_FLAG_SANDBOX);
+    if (sandboxFlagIndex !== -1) {
+      launch.args[sandboxFlagIndex + 1] = flags[1];
+    } else {
+      launch.args.push(...flags);
+    }
+    if (connection) {
+      launch.args.push(...buildCodexMcpArgs(connection));
+    }
   }
 
   resolveDelegateEnv(

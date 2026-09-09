@@ -131,6 +131,7 @@ import { SessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_
 import { SessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { ContextRecordStore } from "@exaix/session/context_record_store.ts";
+import { removeOrphanContextClientConfigs } from "@exaix/session/dogfood_mcp_config.ts";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -855,6 +856,21 @@ if (import.meta.main) {
       mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
     }
 
+    // No per-launch MCP config/credential survives a restart, so any leftover
+    // context-client/ dir is an orphan; runs every boot regardless of current enabled state.
+    try {
+      const orphansRemoved = await removeOrphanContextClientConfigs(new PathResolver(config));
+      if (orphansRemoved > 0) {
+        console.log(
+          `[dogfood_context] removed ${orphansRemoved} orphaned context-client config dir(s) from a prior daemon lifetime`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[dogfood_context] orphan config cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
     // Dogfood bounded-context supplement: additive, disabled by default. Enabled-but-
     // unwired (trusted portal alias not uniquely configured) is a startup error, not a
     // silent no-op; every other caller sees contextPort: undefined and is unaffected.
@@ -885,6 +901,12 @@ if (import.meta.main) {
           memoryTokens: dogfoodCfg.memory_tokens,
           maxInputTokens: dogfoodCfg.max_input_tokens,
           outputReserveTokens: dogfoodCfg.output_reserve_tokens,
+          queryChars: dogfoodCfg.query_chars,
+          maxQueryCalls: dogfoodCfg.max_query_calls,
+          maxQueryTokens: dogfoodCfg.max_query_tokens,
+          maxResponseBytes: dogfoodCfg.max_response_bytes,
+          maxRequestBytes: dogfoodCfg.max_request_bytes,
+          connectionTtlMs: dogfoodCfg.connection_ttl_ms,
         },
         knownSecrets,
         now: () => new Date(),
@@ -953,6 +975,12 @@ if (import.meta.main) {
         contextPort: dogfoodContextPort,
       }, logger)
       : undefined;
+    if (sessionDelegationCoordinator) {
+      gracefulShutdown.registerCleanup(
+        "close_dogfood_context_connections",
+        () => sessionDelegationCoordinator.closeAllOpenContextConnections(),
+      );
+    }
     const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider)));
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,

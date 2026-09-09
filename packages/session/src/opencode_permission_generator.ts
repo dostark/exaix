@@ -14,6 +14,9 @@ import type { OpencodeConfig } from "@exaix/schemas/opencode_config.ts";
 import type { PathResolver } from "@exaix/portal";
 import type { OpencodePermissionValue } from "@exaix/schemas/opencode_config.ts";
 import { checkScope } from "./scope_checker.ts";
+import { buildOpencodeMcpFragment } from "./dogfood_mcp_config.ts";
+import type { IDogfoodMcpConnectionInput } from "./dogfood_mcp_config.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IOpencodePermissionConfig {
   config: OpencodeConfig;
@@ -59,9 +62,13 @@ export async function generateOpencodePermissionConfig(
   pathResolver: PathResolver,
   traceId: string,
   agentRole: string,
+  mcpConnection?: Opt<IDogfoodMcpConnectionInput, Reason.OptionalDependency>,
 ): Promise<IOpencodePermissionConfig> {
   assertPathsWithinWorktree(permittedPaths, worktreeRoot);
   const config = buildOpencodePermissionConfig(permittedPaths, agentRole);
+  if (mcpConnection) {
+    config.mcp = buildOpencodeMcpFragment(mcpConnection);
+  }
 
   const parsed = OpencodeConfigSchema.safeParse(config);
   if (!parsed.success) {

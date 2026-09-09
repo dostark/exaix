@@ -11,7 +11,7 @@
  */
 
 import type { ContextConnectionCloseReason } from "./enums.ts";
-import type { ContextRecord, ContextRecordSummary, ContextRecordSurface } from "@exaix/schemas";
+import type { ContextRecord, ContextRecordSummary, ContextRecordSurface, ContextRecordTool } from "@exaix/schemas";
 
 /** Trusted input a launch consumer supplies when requesting a bounded context supplement.
  *  Every field is execution-local and daemon-resolved — never caller-supplied scope. */
@@ -31,12 +31,29 @@ export interface IDogfoodContextInput {
   acceptanceCriteria: readonly string[];
 }
 
+/** Launch-only, ephemeral connection metadata for the child's live MCP session — never
+ *  persisted to a ContextRecord or disk; `bearerToken` reaches the child only as the
+ *  value of the `bearerEnvVar`-named env var in trusted launch construction. */
+export interface IDogfoodContextConnection {
+  connectionId: string;
+  /** `http://127.0.0.1:<port>/mcp` — loopback only, OS-assigned port. */
+  endpoint: string;
+  /** Name of the env var the bearer credential is carried under (e.g. `EXAIX_CONTEXT_BEARER`). */
+  bearerEnvVar: string;
+  bearerToken: string;
+  expiresAt: string;
+  /** The exact three tool definitions the server grants, captured verbatim in the capture record. */
+  tools: readonly ContextRecordTool[];
+}
+
 /** Returned to the launch consumer after `prepare`. `connectionId` is opaque to flow/
- *  request authors and is never persisted alongside the prompt. */
+ *  request authors and is never persisted alongside the prompt. `connection` is present
+ *  only when a live MCP endpoint was started for this launch. */
 export interface IDogfoodContextHandle {
   recordId: string;
   prompt: string;
   connectionId?: string;
+  connection?: IDogfoodContextConnection;
 }
 
 /** Config-free at the package boundary: the app-created implementation closes over a

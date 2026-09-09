@@ -3273,3 +3273,18 @@ export const DEFAULT_DOGFOOD_CONTEXT_PRUNE_INTERVAL_MS: number = configurable({
   min: 60_000,
   swap: SwapClass.RESTART,
 });
+
+/** Wall-clock lifetime of one live child MCP connection — an independent safety net on
+ *  top of explicit close() at completion/failure/timeout/cancellation/parent shutdown. */
+export const DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS: number = configurable({
+  key: "dogfood.context.connection_ttl_ms",
+  default: 1_800_000,
+  type: ConfigValueType.NUMBER,
+  description: "Milliseconds a live dogfood context MCP connection stays valid before auto-expiry",
+  min: 60_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Env var name (not a tunable value — a fixed protocol name, like SESSION_ENV_*) the
+ *  dogfood context MCP connection's bearer credential is carried under in a launch's env. */
+export const DOGFOOD_CONTEXT_BEARER_ENV_VAR = "EXAIX_CONTEXT_BEARER";

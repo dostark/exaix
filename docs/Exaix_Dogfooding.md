@@ -20,6 +20,7 @@ criteria (the "what" and "why"), the daemon agent executes the mechanical work (
 5. [Skills & Plans](#5-skills--plans)
 6. [Headless Delegation](#6-headless-delegation)
    - [6.7 Bounded Context Supplement](#67-bounded-context-supplement-dogfoodcontext)
+   - [6.8 Session-Bound MCP Context Queries](#68-session-bound-mcp-context-queries)
 7. [Configuration](#7-configuration)
 8. [When to Dogfood vs Interactive](#8-when-to-dogfood-vs-interactive)
 9. [Troubleshooting](#9-troubleshooting)
@@ -639,14 +640,66 @@ pruned at daemon startup and once a day.
   `dogfood.context.enabled` and the portal-alias binding, but does not yet verify the
   calling flow/role is actually `dogfood-loop`/`dogfood-coder` — treat this as scoped to
   trusted dogfood sandbox configuration, not a general per-request authorization check.
-- **No live child-query tool yet.** The child cannot ask for additional context mid-task
-  — only the initial bounded supplement is sent. A session-bound MCP query transport
-  (`query_relationships`, `who_depends_on`, `search_memory`) is a separate, not-yet-built
-  phase of this feature.
+- **Live child-query is now available on supported native clients** — see §6.8. The
+  initial bounded supplement above is still the only context sent automatically; the
+  child must actively call one of the three granted MCP tools to ask for more.
 - **Inspection CLI not yet built.** The capture records exist on disk (see path above)
   but `exactl request inspect` does not yet read them.
 - Budget composition is a fixed per-source token ceiling from config, not derived from
   `PromptBudgetAllocator`'s six-section allocation.
+
+---
+
+### 6.8 Session-Bound MCP Context Queries
+
+When `dogfood.context` is enabled, each launch/turn also starts a small, private MCP
+server (`DogfoodContextServer`) bound to `127.0.0.1` on an OS-assigned port, gated by a
+random per-connection bearer capability. It grants the delegated child exactly three
+read-only tools:
+
+| Tool                  | Arguments                                  | Returns                                                        |
+| --------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| `query_relationships` | `from` (layer/path), `kind?` (edge filter) | Forward edges from the bound portal's cached knowledge graph   |
+| `who_depends_on`      | `path`                                     | Reverse edges into that path                                   |
+| `search_memory`       | `query`, `limit?`                          | Scored project/global memory items, scoped to the bound portal |
+
+The server never triggers portal analysis/indexing — it reads only the knowledge
+snapshot already cached at launch time. Every call is subject to a per-connection call
+count, cumulative output budget, single-in-flight limit, and connection TTL; the
+connection is revoked on completion, failure, cancellation, timeout, or daemon shutdown,
+and no credential or connection config survives a daemon restart (leftover config from a
+prior process lifetime is removed at boot).
+
+**Native client wiring** (both launch paths — the governed cycle handler and the
+CLI-delegate strategy — receive the same connection):
+
+- **Claude Code:** a generated `--mcp-config <path> --strict-mcp-config` JSON file with an
+  `mcpServers.exaix_context` HTTP entry; the three tool names are added to the existing
+  `--allowedTools` grant (`mcp__exaix_context__<tool>`), never a competing second flag.
+- **OpenCode:** an `mcp.exaix_context` fragment merged into the same generated permission
+  config (`edit`/`external_directory`/`bash` restrictions are unchanged), supplied via
+  `OPENCODE_CONFIG`.
+- **Codex** (governed cycle only — the CLI-delegate strategy never spawns codex):
+  per-invocation `-c mcp_servers.exaix_context.*` overrides naming the URL, the bearer
+  env-var name, and the three enabled tool IDs; the existing `--sandbox` flag is
+  untouched.
+
+In every case, only an **env-var reference** (`${EXAIX_CONTEXT_BEARER}` /
+`{env:EXAIX_CONTEXT_BEARER}` / `bearer_token_env_var="EXAIX_CONTEXT_BEARER"`) is written
+to config or argv — the actual credential value reaches the child exclusively through its
+explicit launch environment, the same channel provider API keys already use.
+
+**Known limitations, stated plainly:**
+
+- No live MCP round-trip preflight is performed before returning the launch handle —
+  `DogfoodContextServer.start()` binding successfully and returning its three tool
+  definitions is treated as sufficient evidence the endpoint is live, since both outcomes
+  derive from the same in-process call.
+- The CLI-delegate strategy has no `PathResolver`/`@Runtime` access, so its native config
+  files live under a per-turn `Deno.makeTempDir()` cleaned up when the turn ends, rather
+  than the governed path's `@Runtime/<trace>/context-client/` convention.
+- Cursor and VS Code (advisory-only session tools) receive no MCP wiring — the feature
+  targets the three headless-capable CLIs only.
 
 ---
 

@@ -11,3 +11,9 @@
 
 export * from "./local_tool_dispatcher.ts";
 export * from "./tool_handler.ts";
+export { startDogfoodContextServer } from "./dogfood_context_server.ts";
+export type {
+  IDogfoodContextServerDeps,
+  IDogfoodContextServerHandle,
+  IDogfoodContextServerMemorySource,
+} from "./dogfood_context_server.ts";

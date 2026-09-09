@@ -54,12 +54,26 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
   session_delegate_cycles/{flowStepId}.json` mirroring `completedSteps`/`inFlight`/`status` for
   cheap resume without re-scanning claims. Never the authority on its own — the claim store's
   unique key is; the checkpoint is a resume convenience.
-- `context_record_store.ts` (Phase 176) — `ContextRecordStore`, an immutable, owner-only
-  (0700/0600) atomic-write store for dogfood context capture records under
+- `context_record_store.ts` (Phase 176 Step 1) — `ContextRecordStore`, an immutable,
+  owner-only (0700/0600) atomic-write store for dogfood context capture records under
   `Memory/Execution/{traceId}/context/{recordId}.json`. Validates every id before path
   resolution, refuses symlink path components, never overwrites an existing record, implements
   `IContextInspectionReader` for future read-only CLI inspection, and `pruneExpired()` removes
   records older than the configured retention window.
+- `dogfood_mcp_config.ts` (Phase 176 Step 2) — pure builders for the per-launch native MCP
+  connection config a dogfood-context child session uses: `buildClaudeMcpConfig`/
+  `claudeMcpAllowedToolEntries`/`writeClaudeMcpConfig` (Claude Code's `mcpServers` HTTP entry +
+  `--mcp-config`/`--strict-mcp-config`), `buildOpencodeMcpFragment` (merged into the existing
+  `opencode_permission_generator.ts` config, never a standalone file), `buildCodexMcpArgs`
+  (per-invocation `-c mcp_servers.*` overrides). Every builder writes an env-var _reference_
+  (`${VAR}` / `{env:VAR}` / `bearer_token_env_var="VAR"`) — never the credential value, which
+  reaches the child solely through its explicit launch env. `removeOrphanContextClientConfigs`
+  wipes every `@Runtime/<trace>/context-client/` directory at daemon startup, since no
+  connection or its config survives a restart. Wired into `session_delegate_service.ts`'s
+  `resolveHardenedLaunch` (governed cycle, all three tools) and
+  `packages/execution/src/strategies/cli_delegate_strategy.ts` (CLI-delegate, claude/opencode
+  only — codex is governed-cycle-only). See `docs/Exaix_Dogfooding.md` §6.8 and
+  `packages/mcp/server/dogfood_context_server.ts` for the server side.
 
 ### Agent Role Threading (Phase 174)
 

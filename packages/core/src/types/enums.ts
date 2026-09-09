@@ -140,6 +140,7 @@ export enum ToolName {
   QUERY_RELATIONSHIPS = "query_relationships",
   WHO_DEPENDS_ON = "who_depends_on",
   REMEMBER_FACT = "remember_fact",
+  SEARCH_MEMORY = "search_memory",
 }
 
 /** Structured error codes for MCP tool-logic failures, shared by MCP handlers and ToolRegistry without creating an import cycle. */

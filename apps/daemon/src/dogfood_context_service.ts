@@ -12,11 +12,17 @@
  */
 
 import { fitContextItems, type ITokenizer, redactKnownSecrets, stripTerminalControlBytes } from "@exaix/core/func";
-import { type ContextConnectionCloseReason, ContextResultStatus } from "@exaix/core";
+import { ContextResultStatus, DOGFOOD_CONTEXT_BEARER_ENV_VAR } from "@exaix/core";
+import type { ContextConnectionCloseReason } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
-import type { IContextCapturedPayload, IContextCaptureFailedPayload } from "@exaix/core/events";
+import type {
+  IContextCapturedPayload,
+  IContextCaptureFailedPayload,
+  IContextConnectionClosedPayload,
+} from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import type {
+  IDogfoodContextConnection,
   IDogfoodContextHandle,
   IDogfoodContextInput,
   IDogfoodContextPort,
@@ -31,6 +37,8 @@ import {
   type ContextRecordSection,
 } from "@exaix/schemas/dogfood_context.ts";
 import type { IMemoryRetrievalScope, MemoryItem, SessionMemoryConfig } from "@exaix/memory";
+import { startDogfoodContextServer } from "@exaix/mcp/server";
+import type { IDogfoodContextServerDeps, IDogfoodContextServerHandle } from "@exaix/mcp/server";
 
 /** Narrow slice of SessionMemoryService this service depends on. */
 export interface IDogfoodMemorySource {
@@ -54,12 +62,30 @@ export interface IDogfoodContextServiceConfig {
   memoryTokens: number;
   maxInputTokens: number;
   outputReserveTokens: number;
+  /** Max characters accepted in the child's search_memory `query` argument. */
+  queryChars: number;
+  maxQueryCalls: number;
+  maxQueryTokens: number;
+  maxResponseBytes: number;
+  maxRequestBytes: number;
+  /** Wall-clock lifetime of the live MCP connection, independent of explicit close(). */
+  connectionTtlMs: number;
 }
+
+/** Injectable seam over startDogfoodContextServer — defaults to the real implementation;
+ *  overridden in tests to simulate an endpoint-start failure without a real listener. */
+export type IStartDogfoodContextServer = (
+  deps: IDogfoodContextServerDeps,
+  port?: number,
+) => Promise<IDogfoodContextServerHandle>;
+
+/** The narrow slice of IPortalKnowledgeService this service depends on. */
+export type IDogfoodPortalKnowledgeSource = Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge">;
 
 export interface IDogfoodContextServiceDeps {
   /** Trusted, daemon-resolved portal alias — never taken from `prepare`'s input. */
   portalAlias: string;
-  portalKnowledge: Pick<IPortalKnowledgeService, "queryContext">;
+  portalKnowledge: IDogfoodPortalKnowledgeSource;
   memory: IDogfoodMemorySource;
   tokenizer: ITokenizer;
   recordStore: IDogfoodContextRecordWriter;
@@ -68,6 +94,16 @@ export interface IDogfoodContextServiceDeps {
   knownSecrets: readonly string[];
   now(): Date;
   logger?: IEventLogger;
+  startServer?: Opt<IStartDogfoodContextServer, Reason.OptionalDependency>;
+}
+
+/** Thrown when the per-launch MCP endpoint fails to start — the launch aborts rather than
+ *  proceeding without a live connection. */
+export class DogfoodContextEndpointStartError extends Error {
+  constructor(causeMessage: string) {
+    super(`dogfood context MCP endpoint failed to start: ${causeMessage}`);
+    this.name = "DogfoodContextEndpointStartError";
+  }
 }
 
 /** Thrown when the immutable original prompt alone cannot fit the configured input
@@ -94,16 +130,27 @@ async function sha256Hex(text: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** Random 32-byte bearer capability, hex-encoded — minted fresh per connection, never
+ *  derived from any persisted or predictable value. */
+function generateBearerToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /** Daemon-owned bounded-context composer and capturer.
  * @visible
  */
 export class DogfoodContextService implements IDogfoodContextPort {
   private readonly deps: IDogfoodContextServiceDeps;
   private readonly logger?: IEventLogger;
+  private readonly startServer: IStartDogfoodContextServer;
+  /** Live server handles keyed by recordId — populated in doPrepare, consumed by close(). */
+  private readonly connections = new Map<string, { connectionId: string; handle: IDogfoodContextServerHandle }>();
 
   constructor(deps: IDogfoodContextServiceDeps) {
     this.deps = deps;
     this.logger = deps.logger;
+    this.startServer = deps.startServer ?? startDogfoodContextServer;
   }
 
   async prepare(
@@ -192,6 +239,8 @@ export class DogfoodContextService implements IDogfoodContextPort {
       }),
     ];
 
+    const connection = await this.startConnection(input, recordId, signal);
+
     const record: ContextRecord = {
       schemaVersion: CONTEXT_RECORD_SCHEMA_VERSION,
       recordId,
@@ -213,7 +262,7 @@ export class DogfoodContextService implements IDogfoodContextPort {
       effectiveInputLimit,
       effectiveReserveLimit: this.deps.config.outputReserveTokens,
       sections,
-      tools: [],
+      tools: [...connection.tools],
       visibility: "exaix_submission_only",
       nativePrompt: "unknown",
       nativeTools: "unknown",
@@ -221,11 +270,73 @@ export class DogfoodContextService implements IDogfoodContextPort {
     };
 
     // Capture must succeed before child launch — a store failure aborts, it is never a
-    // best-effort warning.
-    await this.deps.recordStore.save(record);
+    // best-effort warning. The just-started endpoint is torn down on a save failure so no
+    // connection outlives its (never-captured) record.
+    try {
+      await this.deps.recordStore.save(record);
+    } catch (error) {
+      const tracked = this.connections.get(recordId);
+      this.connections.delete(recordId);
+      await tracked?.handle.close("failed");
+      throw error;
+    }
     await this.emitCaptured(input, record, this.deps.now().getTime() - startMs);
 
-    return { recordId, prompt: promptText };
+    return {
+      recordId,
+      prompt: promptText,
+      connectionId: connection.connectionId,
+      connection,
+    };
+  }
+
+  /** Starts the per-launch MCP endpoint over a cached-only portal-knowledge snapshot
+   *  (never triggers analysis) and tracks the handle under recordId so close() can revoke
+   *  it; a start failure propagates to prepare()'s own ContextCaptureFailed handling. */
+  private async startConnection(
+    input: IDogfoodContextInput,
+    recordId: string,
+    signal: Opt<AbortSignal, Reason.CancellationOptional>,
+  ): Promise<IDogfoodContextConnection> {
+    const connectionId = crypto.randomUUID();
+    const bearerToken = generateBearerToken();
+    const expiresAt = new Date(this.deps.now().getTime() + this.deps.config.connectionTtlMs);
+    const cachedKnowledge = await this.deps.portalKnowledge.loadCachedKnowledge(this.deps.portalAlias);
+
+    let serverHandle: IDogfoodContextServerHandle;
+    try {
+      serverHandle = await this.startServer({
+        bearerToken,
+        connectionId,
+        parentTraceId: input.parentTraceId,
+        childTraceId: input.executionTraceId,
+        portalAlias: this.deps.portalAlias,
+        knowledge: cachedKnowledge,
+        memory: this.deps.memory,
+        now: () => this.deps.now(),
+        expiresAt,
+        queryChars: this.deps.config.queryChars,
+        memoryTopKDefault: this.deps.config.memoryTopK,
+        maxQueryCalls: this.deps.config.maxQueryCalls,
+        maxQueryTokens: this.deps.config.maxQueryTokens,
+        maxResponseBytes: this.deps.config.maxResponseBytes,
+        maxRequestBytes: this.deps.config.maxRequestBytes,
+        logger: this.logger,
+      });
+    } catch (error) {
+      throw new DogfoodContextEndpointStartError(error instanceof Error ? error.message : String(error));
+    }
+    void signal; // Server startup itself is not cancellable mid-bind; the caller's signal
+    // still governs the surrounding portal/memory queries via queryPortal.
+    this.connections.set(recordId, { connectionId, handle: serverHandle });
+    return {
+      connectionId,
+      endpoint: serverHandle.url,
+      bearerEnvVar: DOGFOOD_CONTEXT_BEARER_ENV_VAR,
+      bearerToken,
+      expiresAt: expiresAt.toISOString(),
+      tools: serverHandle.tools,
+    };
   }
 
   private async emitCaptured(input: IDogfoodContextInput, record: ContextRecord, durationMs: number): Promise<void> {
@@ -271,10 +382,21 @@ export class DogfoodContextService implements IDogfoodContextPort {
     await this.logger.info(DomainEventType.ContextCaptureFailed, recordId, { ...payload }, input.executionTraceId);
   }
 
-  close(_recordId: string, _reason: ContextConnectionCloseReason): Promise<void> {
-    // No live child connection is wired yet; satisfies the port contract so callers can
-    // invoke it unconditionally once a real transport exists.
-    return Promise.resolve();
+  /** No-op for an unknown/already-closed recordId — callers invoke close()
+   *  unconditionally on every terminal path (completion/failure/timeout/cancellation/
+   *  parent shutdown), including ones where no connection was ever started. */
+  async close(recordId: string, reason: ContextConnectionCloseReason): Promise<void> {
+    const tracked = this.connections.get(recordId);
+    if (!tracked) return;
+    this.connections.delete(recordId);
+    await tracked.handle.close(reason);
+    await this.emitConnectionClosed(tracked.connectionId, reason);
+  }
+
+  private async emitConnectionClosed(connectionId: string, reason: string): Promise<void> {
+    if (!this.logger) return;
+    const payload: IContextConnectionClosedPayload = { connection_id: connectionId, reason };
+    await this.logger.info(DomainEventType.ContextConnectionClosed, connectionId, { ...payload });
   }
 
   private containsKnownSecret(text: string): boolean {

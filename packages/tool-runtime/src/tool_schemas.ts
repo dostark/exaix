@@ -654,5 +654,35 @@ export function createCoreToolSchemas(
         },
       },
     },
+    {
+      name: ToolName.SEARCH_MEMORY,
+      description:
+        "Search project and global memory (patterns, decisions, learnings) for the current portal. The portal is always the current execution root — any 'portal' argument is ignored. Use to recall prior decisions, established patterns, or approved cross-project learnings relevant to the task at hand. Returns an array of scored memory results in data, or an error if no memory service is available.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Free-text search query" },
+          limit: { type: "number", description: "Maximum number of results to return" },
+        },
+        required: ["query"],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Searches project and global memory for the current portal, scored by relevance.",
+        when_to_use:
+          "Use to recall prior decisions, established patterns, or approved cross-project learnings before starting or during a task.",
+        when_not_to_use:
+          "Do not use to persist a new note — that's remember_fact. search_memory only reads existing memory.",
+        example: {
+          input: { query: "auth token refresh" },
+          output: '[{"type":"pattern","title":"Refresh token rotation","summary":"..."}]',
+          rationale: "Surfaces prior decisions relevant to the current task before implementing similar logic.",
+        },
+        anti_example: {
+          input: {},
+          why_wrong: "search_memory requires 'query' — there is no default search term.",
+        },
+      },
+    },
   ];
 }

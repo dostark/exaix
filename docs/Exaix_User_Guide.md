@@ -1951,7 +1951,10 @@ and the single-shot `cli_delegate` strategy compose a small, scoped portal-knowl
 supplement onto the objective before each launch, and capture an immutable record of the exact
 bytes sent — disabled by default and additive; see the
 [Dogfooding Guide §6.7](Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext) for
-the full contract and its stated limitations.
+the full contract and its stated limitations. On a supported native client (Claude Code,
+OpenCode, and — governed cycle only — Codex), the same launch also gets a private, per-launch
+MCP connection so the child can actively query for more context mid-task; see
+[Dogfooding Guide §6.8](Exaix_Dogfooding.md#68-session-bound-mcp-context-queries).
 
 #### Flow Step Execution Modes
 

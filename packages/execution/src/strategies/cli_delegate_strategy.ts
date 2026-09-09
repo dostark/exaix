@@ -35,8 +35,15 @@
  * @related-files [packages/execution/src/agent_composer.ts, packages/execution/src/strategies/cli_delegate_stream_parser.ts, packages/session/src/delegate_return_parser.ts, packages/session/src/claude_permission_flags.ts]
  */
 
-import { isAbsolute, relative } from "@std/path";
-import type { IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
+import { isAbsolute, join, relative } from "@std/path";
+import type { IDogfoodContextConnection, IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
+import { ContextConnectionCloseReason } from "@exaix/core/types";
+import {
+  buildClaudeMcpConfig,
+  buildOpencodeMcpFragment,
+  claudeMcpAllowedToolEntries,
+  toMcpConnectionInput,
+} from "@exaix/session/dogfood_mcp_config.ts";
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -146,10 +153,14 @@ const GIT_FLAG_PORCELAIN = "--porcelain";
 const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
 const GIT_STATUS_TIMEOUT_MS = 30_000;
 
-/** Uses the SHARED allowlist child-env policy: ambient secrets (provider keys,
- *  cloud/VCS/SSH credentials) and proxy vars are excluded — the delegate is a foreign
- *  agent and must run fail-closed, unlike the full-inherit mode first-party tools get. */
-function buildDelegateEnv(portalPath: string): Record<string, string> {
+/** Uses the SHARED allowlist child-env policy: ambient secrets and proxy vars are
+ *  excluded, fail-closed. The dogfood context bearer value is injected after that
+ *  filter runs, exactly like DELEGATE_OAUTH_ENV_KEY above it. */
+function buildDelegateEnv(
+  portalPath: string,
+  connection?: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
+  opencodeMcpConfigPath?: Opt<string, Reason.OptionalContext>,
+): Record<string, string> {
   // Deno.Command's `cwd` changes the OS-level spawn directory but does NOT update the
   // inherited `PWD` env var — opencode resolves relative tool-call paths against
   // process.env.PWD, not the kernel cwd, so PWD must be kept in sync with it.
@@ -160,6 +171,12 @@ function buildDelegateEnv(portalPath: string): Record<string, string> {
   }
   const env = buildAllowlistChildEnv(launchEnv, Deno.env.toObject());
   for (const key of STRIPPED_AUTH_ENV_KEYS) delete env[key];
+  if (connection) {
+    env[connection.bearerEnvVar] = connection.bearerToken;
+  }
+  if (opencodeMcpConfigPath) {
+    env.OPENCODE_CONFIG = opencodeMcpConfigPath;
+  }
   return env;
 }
 
@@ -201,12 +218,17 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
     const isFirstTurn = !this.sessionIds.has(context.trace_id);
     const objective = this.buildObjective(blueprint, context, isFirstTurn);
-    const finalObjective = await this.applyDogfoodContext(objective, context);
+    const { objective: finalObjective, recordId, connection } = await this.applyDogfoodContext(objective, context);
     const isClaude = this.deps.tool === SessionToolSchema.enum["claude-code"];
 
-    const parsed: ICliDelegateParsedOutcome = isClaude
-      ? await this.runClaudeStep(context.trace_id, finalObjective, portalPath)
-      : await this.runOpencodeStep(context.trace_id, finalObjective, portalPath);
+    let parsed: ICliDelegateParsedOutcome;
+    try {
+      parsed = isClaude
+        ? await this.runClaudeStep(context.trace_id, finalObjective, portalPath, connection)
+        : await this.runOpencodeStep(context.trace_id, finalObjective, portalPath, connection);
+    } finally {
+      await this.closeDogfoodContext(recordId);
+    }
 
     const reportedPaths = toPortalRelativePaths(parsed.toolPaths, portalPath);
     // claude's print-mode stream emits no per-turn tool_use lines, so parsed.toolPaths is
@@ -241,91 +263,103 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     traceId: string,
     objective: string,
     portalPath: string,
+    connection: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
   ): Promise<ICliDelegateParsedOutcome> {
     const sessionId = this.sessionIds.get(traceId);
-    const args = this.buildClaudeArgs(objective, sessionId);
-
-    let result: ICliDelegateProcessResult;
+    const mcpConfig = connection ? await this.writeClaudeMcpConfigFile(connection) : undefined;
     try {
-      result = await this.run(this.deps.bin, args, {
-        cwd: portalPath,
-        env: buildDelegateEnv(portalPath),
-        clearEnv: true,
-        timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
-      });
-    } catch (error) {
-      throw new AgentExecutionError(
-        `CLI delegate strategy could not run '${this.deps.bin}': ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        AgentExecutionErrorType.CONFIGURATION_ERROR,
-        error instanceof SubprocessError ? error : undefined,
-      );
-    }
+      const args = this.buildClaudeArgs(objective, sessionId, connection, mcpConfig?.configPath);
 
-    if (result.code !== 0) {
-      throw new AgentExecutionError(
-        `CLI delegate '${this.deps.bin}' exited with code ${result.code}: stderr=${
-          result.stderr.trim() || "(empty)"
-        } stdout=${stdoutPreview(result.stdout)}`,
-        AgentExecutionErrorType.CONFIGURATION_ERROR,
-      );
-    }
+      let result: ICliDelegateProcessResult;
+      try {
+        result = await this.run(this.deps.bin, args, {
+          cwd: portalPath,
+          env: buildDelegateEnv(portalPath, connection),
+          clearEnv: true,
+          timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
+        });
+      } catch (error) {
+        throw new AgentExecutionError(
+          `CLI delegate strategy could not run '${this.deps.bin}': ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          AgentExecutionErrorType.CONFIGURATION_ERROR,
+          error instanceof SubprocessError ? error : undefined,
+        );
+      }
 
-    const turn = parseCliDelegateStreamTurn(result.stdout.split("\n"));
-    if (turn.sessionId && !sessionId) {
-      this.sessionIds.set(traceId, turn.sessionId);
+      if (result.code !== 0) {
+        throw new AgentExecutionError(
+          `CLI delegate '${this.deps.bin}' exited with code ${result.code}: stderr=${
+            result.stderr.trim() || "(empty)"
+          } stdout=${stdoutPreview(result.stdout)}`,
+          AgentExecutionErrorType.CONFIGURATION_ERROR,
+        );
+      }
+
+      const turn = parseCliDelegateStreamTurn(result.stdout.split("\n"));
+      if (turn.sessionId && !sessionId) {
+        this.sessionIds.set(traceId, turn.sessionId);
+      }
+      if (turn.isError) {
+        throw new AgentExecutionError(
+          `CLI delegate '${this.deps.bin}' turn returned an error: ${turn.lastText}`,
+          AgentExecutionErrorType.CONFIGURATION_ERROR,
+        );
+      }
+      return turn;
+    } finally {
+      await mcpConfig?.cleanup();
     }
-    if (turn.isError) {
-      throw new AgentExecutionError(
-        `CLI delegate '${this.deps.bin}' turn returned an error: ${turn.lastText}`,
-        AgentExecutionErrorType.CONFIGURATION_ERROR,
-      );
-    }
-    return turn;
   }
 
   private async runOpencodeStep(
     traceId: string,
     objective: string,
     portalPath: string,
+    connection: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
   ): Promise<ICliDelegateParsedOutcome> {
     const sessionId = this.sessionIds.get(traceId);
-    const args = this.buildOpencodeArgs(objective, sessionId);
-
-    let result: ICliDelegateProcessResult;
+    const mcpConfig = connection ? await this.writeOpencodeMcpConfigFile(connection) : undefined;
     try {
-      result = await this.run(this.deps.bin, args, {
-        cwd: portalPath,
-        env: buildDelegateEnv(portalPath),
-        clearEnv: true,
-        timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
-      });
-    } catch (error) {
-      throw new AgentExecutionError(
-        `CLI delegate strategy could not run '${this.deps.bin}': ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-        AgentExecutionErrorType.CONFIGURATION_ERROR,
-        error instanceof SubprocessError ? error : undefined,
-      );
-    }
+      const args = this.buildOpencodeArgs(objective, sessionId);
 
-    if (result.code !== 0) {
-      throw new AgentExecutionError(
-        `CLI delegate '${this.deps.bin}' exited with code ${result.code}: stderr=${
-          result.stderr.trim() || "(empty)"
-        } stdout=${stdoutPreview(result.stdout)}`,
-        AgentExecutionErrorType.CONFIGURATION_ERROR,
-      );
-    }
+      let result: ICliDelegateProcessResult;
+      try {
+        result = await this.run(this.deps.bin, args, {
+          cwd: portalPath,
+          env: buildDelegateEnv(portalPath, connection, mcpConfig?.configPath),
+          clearEnv: true,
+          timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
+        });
+      } catch (error) {
+        throw new AgentExecutionError(
+          `CLI delegate strategy could not run '${this.deps.bin}': ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          AgentExecutionErrorType.CONFIGURATION_ERROR,
+          error instanceof SubprocessError ? error : undefined,
+        );
+      }
 
-    const capturedSessionId = extractOpencodeSessionId(result.stdout);
-    if (capturedSessionId && !sessionId) {
-      this.sessionIds.set(traceId, capturedSessionId);
-    }
+      if (result.code !== 0) {
+        throw new AgentExecutionError(
+          `CLI delegate '${this.deps.bin}' exited with code ${result.code}: stderr=${
+            result.stderr.trim() || "(empty)"
+          } stdout=${stdoutPreview(result.stdout)}`,
+          AgentExecutionErrorType.CONFIGURATION_ERROR,
+        );
+      }
 
-    return parseDelegateStdout(result.stdout, this.deps.tool);
+      const capturedSessionId = extractOpencodeSessionId(result.stdout);
+      if (capturedSessionId && !sessionId) {
+        this.sessionIds.set(traceId, capturedSessionId);
+      }
+
+      return parseDelegateStdout(result.stdout, this.deps.tool);
+    } finally {
+      await mcpConfig?.cleanup();
+    }
   }
 
   /** Fallback for when the CLI tool's stream reported no tool paths (claude); mirrors
@@ -363,8 +397,11 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   /** Absent contextPort (every non-dogfood/disabled-config caller) returns `objective`
    *  unchanged — byte-for-byte existing behavior. A prepare() failure aborts the launch;
    *  it never silently falls back to the unaugmented objective. */
-  private async applyDogfoodContext(objective: string, context: IExecutionContext): Promise<string> {
-    if (!this.deps.contextPort) return objective;
+  private async applyDogfoodContext(
+    objective: string,
+    context: IExecutionContext,
+  ): Promise<{ objective: string; recordId?: string; connection?: IDogfoodContextConnection }> {
+    if (!this.deps.contextPort) return { objective };
 
     const turn = this.turnCounts.get(context.trace_id) ?? 0;
     this.turnCounts.set(context.trace_id, turn + 1);
@@ -383,7 +420,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
         queryText: objective,
         acceptanceCriteria: [],
       });
-      return handle.prompt;
+      return { objective: handle.prompt, recordId: handle.recordId, connection: handle.connection };
     } catch (error) {
       throw new AgentExecutionError(
         `dogfood context assembly failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -393,9 +430,49 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
   }
 
-  private buildClaudeArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
+  /** Closes the connection this turn opened (if any) — never throws, so a close failure
+   *  cannot mask the turn's own real success/failure result. */
+  private async closeDogfoodContext(recordId: Opt<string, Reason.OptionalContext>): Promise<void> {
+    if (!recordId || !this.deps.contextPort) return;
+    try {
+      await this.deps.contextPort.close(recordId, ContextConnectionCloseReason.COMPLETED);
+    } catch {
+      // Best-effort revoke; the connection also expires on its own TTL.
+    }
+  }
+
+  /** Per-turn temp config, cleaned up once the subprocess exits — this path has no
+   *  PathResolver/`@Runtime` access, unlike the governed SessionDelegateService path. */
+  private async writeClaudeMcpConfigFile(
+    connection: IDogfoodContextConnection,
+  ): Promise<{ configPath: string; cleanup: () => Promise<void> }> {
+    const dir = await Deno.makeTempDir({ prefix: "exaix-dogfood-mcp-" });
+    const configPath = join(dir, "claude_mcp_config.json");
+    const config = buildClaudeMcpConfig(toMcpConnectionInput(connection));
+    await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    return { configPath, cleanup: () => Deno.remove(dir, { recursive: true }).catch(() => {}) };
+  }
+
+  private async writeOpencodeMcpConfigFile(
+    connection: IDogfoodContextConnection,
+  ): Promise<{ configPath: string; cleanup: () => Promise<void> }> {
+    const dir = await Deno.makeTempDir({ prefix: "exaix-dogfood-mcp-" });
+    const configPath = join(dir, "opencode_config.json");
+    const config = { mcp: buildOpencodeMcpFragment(toMcpConnectionInput(connection)) };
+    await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    return { configPath, cleanup: () => Deno.remove(dir, { recursive: true }).catch(() => {}) };
+  }
+
+  private buildClaudeArgs(
+    objective: string,
+    sessionId: Opt<string, Reason.TraceAbsent>,
+    connection: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
+    mcpConfigPath: Opt<string, Reason.OptionalContext>,
+  ): string[] {
     const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
+    const extraAllowedTools = connection ? claudeMcpAllowedToolEntries(toMcpConnectionInput(connection)) : undefined;
+    const mcpFlags = connection && mcpConfigPath ? ["--mcp-config", mcpConfigPath, "--strict-mcp-config"] : [];
     return [
       SESSION_FLAG_PRINT,
       objective,
@@ -404,7 +481,8 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       SESSION_FLAG_VERBOSE,
       ...modelFlag,
       ...resumeFlag,
-      ...deriveClaudeToolFlags(),
+      ...deriveClaudeToolFlags(undefined, extraAllowedTools),
+      ...mcpFlags,
     ];
   }
 

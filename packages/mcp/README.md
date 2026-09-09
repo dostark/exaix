@@ -81,6 +81,30 @@ For the full compaction policy and segment kind table, see
 - In interactive CLI contexts, `CliConfirmationInterceptor` prompts inline
 - On denial or timeout, a denial observation is appended to the ReAct loop (not thrown), logging `ToolErrorCode.PERMISSION_DENIED`
 
+## Dogfood Context Server (Phase 176 Step 2)
+
+`server/dogfood_context_server.ts` exports one factory, `startDogfoodContextServer` (the
+class itself is internal) — a small, per-launch loopback MCP server distinct from
+everything else in this package: not the edition-gated Team MCP server, not
+`LocalToolDispatcher`. `apps/daemon/src/dogfood_context_service.ts` starts one instance per
+dogfood-context launch/turn and tears it down when the launch closes.
+
+- **Transport:** official `@modelcontextprotocol/server` SDK (`createMcpHandler`/
+  `McpServer`), bound explicitly to `127.0.0.1` on an OS-assigned port. A random 32-byte
+  bearer capability, validated by the outer `Deno.serve` handler before the request ever
+  reaches SDK dispatch, gates every call.
+- **Scope:** exactly three read-only tools — `query_relationships`, `who_depends_on`,
+  `search_memory` — over a portal-knowledge snapshot resolved once at start (never
+  triggers analysis/indexing) and scoped memory retrieval. No resources, prompts,
+  filesystem writes, or general daemon RPC.
+- **Hardening:** method allowlist, Origin/Host DNS-rebinding guards, request-size cap
+  (rejected before parsing), response-size cap (results are byte-capped, never split),
+  single-in-flight enforcement, per-connection call and cumulative-output-token budgets,
+  and an explicit expiry check on every call.
+- **Native client wiring** (Claude Code, OpenCode, both launch paths; Codex, governed
+  cycle only) lives in `@exaix/session`'s `dogfood_mcp_config.ts` — see that package's
+  README and `docs/Exaix_Dogfooding.md` §6.8.
+
 ## Key Modules
 
 | Module                          | Location                     | Purpose                                 |
@@ -98,4 +122,4 @@ For the full compaction policy and segment kind table, see
 
 - [@exaix/execution](../../packages/execution/) — Tool execution paths, ownership map, remediation behavior
 - [@exaix/tool-runtime](../../packages/tool-runtime/) — Internal tool registry and output validation
-- [MCP Server App](../../apps/mcp-server/) — MCP server entry point
+- [MCP Server App](../../exaix-team/apps/mcp-server/) — MCP server entry point

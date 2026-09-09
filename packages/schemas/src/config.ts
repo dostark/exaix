@@ -854,6 +854,9 @@ export const ConfigSchema = z.object({
       max_records_per_trace: z.number().int().positive()
         .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE),
       retention_days: z.number().int().min(1).max(30).default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS),
+      /** Wall-clock lifetime of one live child MCP connection, independent of explicit close(). */
+      connection_ttl_ms: z.number().int().min(60_000)
+        .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS),
     }).superRefine((context, ctx) => {
       if (context.output_reserve_tokens >= context.max_input_tokens) {
         ctx.addIssue({
@@ -887,6 +890,7 @@ export const ConfigSchema = z.object({
       max_record_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES,
       max_records_per_trace: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE,
       retention_days: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS,
+      connection_ttl_ms: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS,
     }),
   }).optional().default({
     context: {
@@ -907,6 +911,7 @@ export const ConfigSchema = z.object({
       max_record_bytes: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES,
       max_records_per_trace: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE,
       retention_days: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS,
+      connection_ttl_ms: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS,
     },
   }),
   /** Tokenizer backend configuration */

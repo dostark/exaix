@@ -1,29 +1,32 @@
 /**
- * @module Phase176DogfoodContextServiceTest
- * @path apps/daemon/tests/phase176_dogfood_context_service_test.ts
- * @description Phase 176 Step 1: DogfoodContextService composes a bounded portal+memory
- * supplement onto the original prompt, aborts before capture when the immutable original
- * prompt alone exceeds the budget or contains a known secret, tolerates one source
- * failing without discarding the other's result, captures before returning the handle,
- * and emits typed capture/failure events.
+ * @module DogfoodContextServiceTest
+ * @path apps/daemon/tests/dogfood_context_service_test.ts
+ * @description DogfoodContextService composes a bounded portal+memory supplement onto the
+ * original prompt, aborts before capture when the immutable original prompt alone exceeds
+ * the budget or contains a known secret, tolerates one source failing without discarding
+ * the other's result, captures before returning the handle, emits typed capture/failure
+ * events, and (Step 2) starts/tears down the per-launch dogfood-context MCP endpoint.
  * @architectural-layer Tests
  * @related-files [apps/daemon/src/dogfood_context_service.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { ContextResultStatus } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IDogfoodContextInput, IPortalKnowledgeService, IScoredContextResult } from "@exaix/core/types";
-import type { ContextRecord } from "@exaix/schemas/dogfood_context.ts";
+import type { ContextRecord, ContextRecordTool } from "@exaix/schemas/dogfood_context.ts";
 import type { MemoryItem } from "@exaix/memory";
+import type { IDogfoodContextServerHandle } from "@exaix/mcp/server";
 import {
+  DogfoodContextEndpointStartError,
   DogfoodContextInputBudgetExceededError,
   DogfoodContextKnownSecretInPromptError,
   DogfoodContextService,
   type IDogfoodMemorySource,
+  type IStartDogfoodContextServer,
 } from "../src/dogfood_context_service.ts";
 
 /** One token per character — deterministic budget math in assertions. */
@@ -34,8 +37,39 @@ function charCountTokenizer(): ITokenizer {
   };
 }
 
-function makePortal(result: IScoredContextResult): Pick<IPortalKnowledgeService, "queryContext"> {
-  return { queryContext: () => Promise.resolve(result) };
+function makePortal(
+  result: IScoredContextResult,
+): Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge"> {
+  return {
+    queryContext: () => Promise.resolve(result),
+    loadCachedKnowledge: () => Promise.resolve(undefined),
+  };
+}
+
+const FAKE_TOOLS: ContextRecordTool[] = [
+  { name: "query_relationships", description: "d", inputSchema: {}, outputSchema: {}, schemaDigest: "digest-1" },
+  { name: "who_depends_on", description: "d", inputSchema: {}, outputSchema: {}, schemaDigest: "digest-2" },
+  { name: "search_memory", description: "d", inputSchema: {}, outputSchema: {}, schemaDigest: "digest-3" },
+];
+
+/** Fast, no-network fake — the real server is exercised end to end by
+ *  packages/mcp/tests/dogfood_context_server_test.ts and
+ *  apps/daemon/tests/session_delegation_coordinator_dogfood_context_test.ts. */
+function makeFakeStartServer(
+  overrides: Partial<IDogfoodContextServerHandle> = {},
+): { start: IStartDogfoodContextServer; closed: Array<{ reason: string }> } {
+  const closed: Array<{ reason: string }> = [];
+  const start: IStartDogfoodContextServer = (_deps) =>
+    Promise.resolve({
+      url: "http://127.0.0.1:0/mcp",
+      tools: FAKE_TOOLS,
+      close: (reason: string) => {
+        closed.push({ reason });
+        return Promise.resolve();
+      },
+      ...overrides,
+    });
+  return { start, closed };
 }
 
 function makeMemory(items: MemoryItem[]): IDogfoodMemorySource {
@@ -140,10 +174,11 @@ const ONE_MEMORY_ITEM: MemoryItem[] = [
 ];
 
 function makeService(overrides: {
-  portal?: Pick<IPortalKnowledgeService, "queryContext">;
+  portal?: Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge">;
   memory?: IDogfoodMemorySource;
   logger?: IEventLogger;
   knownSecrets?: readonly string[];
+  startServer?: IStartDogfoodContextServer;
 } = {}) {
   const recordStore = makeRecordStore();
   const service = new DogfoodContextService({
@@ -159,10 +194,17 @@ function makeService(overrides: {
       memoryTokens: 200,
       maxInputTokens: 1000,
       outputReserveTokens: 100,
+      queryChars: 2000,
+      maxQueryCalls: 16,
+      maxQueryTokens: 8192,
+      maxResponseBytes: 32_768,
+      maxRequestBytes: 8192,
+      connectionTtlMs: 1_800_000,
     },
     knownSecrets: overrides.knownSecrets ?? [],
     now: () => new Date("2026-01-01T00:00:00.000Z"),
     logger: overrides.logger,
+    startServer: overrides.startServer ?? makeFakeStartServer().start,
   });
   return { service, recordStore };
 }
@@ -266,7 +308,58 @@ Deno.test("[DogfoodContextService] emits ContextCaptureFailed (not ContextCaptur
   assert(failed, "ContextCaptureFailed must be emitted");
 });
 
-Deno.test("[DogfoodContextService] close resolves without throwing (no live connection wired yet)", async () => {
+Deno.test("[DogfoodContextService] close resolves without throwing for an unknown recordId", async () => {
   const { service } = makeService();
   await service.close("some-record-id", "completed" as never);
+});
+
+Deno.test("[DogfoodContextService] prepare starts an MCP endpoint and returns its connection with the granted tool definitions", async () => {
+  const { service, recordStore } = makeService();
+  const handle = await service.prepare(makeInput());
+
+  assertExists(handle.connection);
+  assertEquals(handle.connectionId, handle.connection!.connectionId);
+  assertEquals(handle.connection!.endpoint, "http://127.0.0.1:0/mcp");
+  assertEquals(handle.connection!.bearerEnvVar, "EXAIX_CONTEXT_BEARER");
+  assert(handle.connection!.bearerToken.length > 0);
+  assert(Date.parse(handle.connection!.expiresAt) > Date.parse("2026-01-01T00:00:00.000Z"));
+  assertEquals(handle.connection!.tools.map((t) => t.name).toSorted(), [
+    "query_relationships",
+    "search_memory",
+    "who_depends_on",
+  ]);
+  // The captured record's tools[] matches the endpoint's granted definitions exactly.
+  assertEquals(recordStore.saved[0].tools, handle.connection!.tools);
+});
+
+Deno.test("[DogfoodContextService] close revokes a known connection and emits ContextConnectionClosed", async () => {
+  const { start, closed } = makeFakeStartServer();
+  const logger = makeEventLoggerSpy();
+  const { service } = makeService({ startServer: start, logger });
+  const handle = await service.prepare(makeInput());
+
+  await service.close(handle.recordId, "completed" as never);
+
+  assertEquals(closed, [{ reason: "completed" }]);
+  const closedEvent = logger.calls.find((c) => c.action === DomainEventType.ContextConnectionClosed);
+  assert(closedEvent, "ContextConnectionClosed must be emitted");
+  assertEquals((closedEvent!.payload as { connection_id: string }).connection_id, handle.connectionId);
+});
+
+Deno.test("[DogfoodContextService] an unavailable MCP endpoint aborts prepare() before capture", async () => {
+  const failingStart: IStartDogfoodContextServer = () => Promise.reject(new Error("EADDRINUSE"));
+  const { service, recordStore } = makeService({ startServer: failingStart });
+
+  await assertRejects(() => service.prepare(makeInput()), DogfoodContextEndpointStartError);
+  assertEquals(recordStore.saved.length, 0, "capture must never happen when the endpoint fails to start");
+});
+
+Deno.test("[DogfoodContextService] emits ContextCaptureFailed when the MCP endpoint fails to start", async () => {
+  const failingStart: IStartDogfoodContextServer = () => Promise.reject(new Error("EADDRINUSE"));
+  const logger = makeEventLoggerSpy();
+  const { service } = makeService({ startServer: failingStart, logger });
+
+  await assertRejects(() => service.prepare(makeInput()));
+  const failed = logger.calls.find((c) => c.action === DomainEventType.ContextCaptureFailed);
+  assert(failed, "ContextCaptureFailed must be emitted");
 });
