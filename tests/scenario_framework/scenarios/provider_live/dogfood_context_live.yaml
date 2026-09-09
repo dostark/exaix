@@ -178,10 +178,15 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
+  # Not trace_scoped: session.delegate.* rows are journalled under the CHILD delegate's
+  # own trace_id, never the parent request trace `trace_scoped` resolves to (confirmed by
+  # a real live run, 2026-09-09) — trace_scoped here always yields zero rows. A single
+  # `--cell` invocation runs exactly one delegate per sandbox, so global presence is
+  # unambiguous; matches the proven session_delegate_matrix_live.yaml's own shared (non
+  # per-tool) `assert-reconciled-clean` step, not its `trace_scoped` codex-only steps.
   - id: "assert-cycle-reconciled-clean"
     type: "journal-assert"
     cells: ["cycle-claude", "cycle-opencode", "cycle-codex"]
-    trace_scoped: true
     action_type: "session.delegate.reconciled"
     payload_not_contains: ["rejected"]
     output_criteria:

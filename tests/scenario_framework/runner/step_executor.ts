@@ -637,6 +637,11 @@ interface IRequestFailureCheck {
   readonly payload: string;
 }
 
+/** A re-scan of an already-processed request logs this exact, benign `request.skipped`
+ *  reason (packages/request/src/processor.ts), not a failure — a genuine skip (e.g.
+ *  "processing returned null") never carries this prefix and still fails fast. */
+const BENIGN_REQUEST_SKIPPED_REASON_PREFIX = "Request already has status";
+
 /** Terminal request.failed/request.skipped for `traceId` — the general counterpart to
  *  failure_glob, which only catches a rejected PLAN, never a request that fails outright. */
 function checkRequestDefinitivelyFailed(workspaceRoot: string, traceId: string): IRequestFailureCheck | undefined {
@@ -644,17 +649,29 @@ function checkRequestDefinitivelyFailed(workspaceRoot: string, traceId: string):
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
-    const row = db
+    const rows = db
       .prepare(
-        `SELECT action_type, payload FROM activity WHERE trace_id = ? AND action_type IN ('request.failed', 'request.skipped') ORDER BY rowid ASC LIMIT 1`,
+        `SELECT action_type, payload FROM activity WHERE trace_id = ? AND action_type IN ('request.failed', 'request.skipped') ORDER BY rowid ASC`,
       )
-      .get<{ action_type: string; payload: string }>(traceId);
-    if (!row) return undefined;
-    return { actionType: row.action_type, payload: row.payload };
+      .all<{ action_type: string; payload: string }>(traceId);
+    for (const row of rows) {
+      if (row.action_type === "request.skipped" && isBenignRequestSkip(row.payload)) continue;
+      return { actionType: row.action_type, payload: row.payload };
+    }
+    return undefined;
   } catch {
     return undefined;
   } finally {
     db?.close();
+  }
+}
+
+function isBenignRequestSkip(payload: string): boolean {
+  try {
+    const parsed: { reason?: string } = JSON.parse(payload);
+    return typeof parsed.reason === "string" && parsed.reason.startsWith(BENIGN_REQUEST_SKIPPED_REASON_PREFIX);
+  } catch {
+    return false;
   }
 }
 

@@ -233,6 +233,39 @@ Deno.test("[wait_for_file] fails fast on request.skipped for the current trace",
   );
 });
 
+Deno.test("[wait_for_file] a benign request.skipped ('already has status') never false-positives a wait — the file watcher's own re-scan of an already-processed request, not a failure", async () => {
+  await withJournalWorkspace(
+    [
+      ["trace-current", "request.created", "{}"],
+      [
+        "trace-current",
+        "request.skipped",
+        JSON.stringify({ reason: "Request already has status 'planned'" }),
+      ],
+    ],
+    async (ws) => {
+      await Deno.mkdir(join(ws, "Plans"), { recursive: true });
+      await Deno.writeTextFile(join(ws, "Plans", "request-current_plan.md"), "plan body");
+
+      const result = await executeScenarioStep({
+        step: {
+          id: "wait-for-plan",
+          type: ScenarioStepType.WAIT_FOR_FILE,
+          args: ["**/Plans/*_plan.md"],
+          timeout_sec: 180,
+          input_criteria: [],
+          output_criteria: [],
+          continue_on_failure: false,
+        },
+        cwd: ws,
+        traceBaselineRowid: 0,
+      });
+
+      assertEquals(result.exitCode, 0);
+    },
+  );
+});
+
 Deno.test("[wait_for_file] a PRIOR trace's request.failed (stale, shared sandbox) never false-positives the CURRENT trace's wait", async () => {
   await withJournalWorkspace(
     [

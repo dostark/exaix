@@ -1,16 +1,20 @@
 [system]
 root = "__DOGFOOD_ROOT__"
 log_level = "info"
-allow_net = []
+# 127.0.0.1: the per-launch DogfoodContextServer loopback MCP endpoint (Phase 176) binds
+# Deno.serve({hostname: "127.0.0.1"}) on an OS-assigned port — Deno's own listen permission,
+# required whenever [dogfood.context] is enabled below, independent of any outbound API
+# host. The shipped codex-cli provider itself is still subprocess-based (no direct Deno
+# fetch) — outbound allow_net otherwise stays empty, matching
+# configs/codex-cli-react.toml's posture (Phase 167 Step 3).
+allow_net = ["127.0.0.1"]
 
 [paths]
 workspace = "Workspace"
 portals = "Portals"
 memory = "Memory"
 
-# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate
-# below). The shipped codex-cli provider is subprocess-based (no direct Deno fetch), so
-# allow_net stays empty — matches configs/codex-cli-react.toml's posture (Phase 167 Step 3).
+# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).
 [ai]
 provider = "codex-cli"
 model = "gpt-5.6-terra"

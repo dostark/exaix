@@ -1,7 +1,10 @@
 [system]
 root = "__DOGFOOD_ROOT__"
 log_level = "info"
-allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434"]
+# 127.0.0.1: the per-launch DogfoodContextServer loopback MCP endpoint (Phase 176) binds
+# Deno.serve({hostname: "127.0.0.1"}) on an OS-assigned port — Deno's own listen permission,
+# required whenever [dogfood.context] is enabled below, independent of any outbound API host.
+allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434", "127.0.0.1"]
 
 [paths]
 workspace = "Workspace"
