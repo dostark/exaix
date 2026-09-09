@@ -105,6 +105,20 @@ No shipped skill declares `tools:` yet — the mechanism is fully wired end-to-e
 
 ## Context Budget Manager
 
+### Dogfood launch context
+
+`CliDelegateStrategy` and the governed session-delegate path consume the shared
+`IDogfoodContextPort` immediately before a native launch. When enabled by daemon-owned
+configuration, the port appends a bounded portal/memory supplement without changing the
+original objective, captures the exact post-redaction Exaix submission, and returns a
+per-launch MCP connection. Both paths close that connection on success, failure,
+cancellation, or timeout. The execution package owns the stock strategy integration; the
+daemon owns retrieval, capture, and endpoint lifecycle.
+
+This capture is evidence of bytes Exaix submitted, not of native CLI internals. See
+[`docs/Exaix_Dogfooding.md`](../../docs/Exaix_Dogfooding.md#67-bounded-context-supplement-dogfoodcontext)
+for configuration, privacy boundaries, inspection, and live cutover status.
+
 `packages/execution/src/context/` provides a segment-level compaction layer (Phase 83) that runs inside the ReAct loop before each LLM call.
 
 ### Phase 62 vs Phase 83 Responsibility Split

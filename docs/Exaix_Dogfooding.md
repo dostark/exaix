@@ -643,8 +643,9 @@ pruned at daemon startup and once a day.
 - **Live child-query is now available on supported native clients** — see §6.8. The
   initial bounded supplement above is still the only context sent automatically; the
   child must actively call one of the three granted MCP tools to ask for more.
-- **Inspection CLI not yet built.** The capture records exist on disk (see path above)
-  but `exactl request inspect` does not yet read them.
+- **Inspection covers Exaix-owned submissions only.** `exactl request inspect` reads the
+  immutable capture without repeating retrieval. It cannot expose a native CLI's hidden
+  system prompt, retained conversation history, compaction, or unrelated tool schemas.
 - Budget composition is a fixed per-source token ceiling from config, not derived from
   `PromptBudgetAllocator`'s six-section allocation.
 
@@ -700,6 +701,23 @@ explicit launch environment, the same channel provider API keys already use.
   than the governed path's `@Runtime/<trace>/context-client/` convention.
 - Cursor and VS Code (advisory-only session tools) receive no MCP wiring — the feature
   targets the three headless-capable CLIs only.
+
+### 6.9 Inspection and cutover evidence
+
+Use `exactl request inspect <trace-id>` to list captures for a governing trace and its
+child launches. Add `--record <record-id>` for one record, `--json` for machine-readable
+output, or `--raw` to redirect the exact captured `promptText` bytes. Raw output refuses
+an interactive terminal, and missing, expired, or legacy captures return exit code 3
+instead of reconstructing current context. See the
+[User Guide](Exaix_User_Guide.md#exactl-request-inspect--read-only-dogfood-context-inspection)
+for the complete command contract.
+
+The deterministic cutover suite proves both launch paths, cross-portal isolation,
+supplement bounds, disabled/non-dogfood parity, second-query nonce discovery, and capture
+read-back. The provider-live matrix is intentionally reported separately: as of
+2026-09-09, `cycle-codex` passed a real daemon/delegate/reconciliation/inspection run;
+`stock-claude`, `stock-opencode`, `cycle-claude`, and `cycle-opencode` remain unexecuted.
+This is one verified native cell, not evidence that every supported client has cut over.
 
 ---
 

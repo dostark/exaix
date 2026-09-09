@@ -79,6 +79,15 @@ The embedding points for session tools are the **pipeline gates** where human ju
 
 Session tools are treated as **external delegates** — launched via a configurable tool call, not embedded in the Exaix process. The launch is configured per request, portal, or blueprint via a `session_delegate` section in TOML config.
 
+For trusted dogfood launches, both the governed session-delegate cycle and the stock
+CLI-delegate path can add the same bounded context layer immediately before spawning the
+native client. The daemon selects portal knowledge and approved memory within the bound
+portal, preserves the original objective, and exposes only three read-only context-query
+operations through a short-lived loopback MCP capability. Before launch it stores the
+post-redaction Exaix submission and selection metadata as immutable evidence; inspection
+reads that evidence without recomputing context. This boundary does not claim visibility
+into native-client system prompts, conversation history, compaction, or other MCP servers.
+
 ### Architectural Invariant
 
 Session tool integration **must not introduce session state into Exaix's core pipeline**. The pipeline remains file-driven and asynchronous. The session tool is a transient external process that reads from and writes to the same file system — it does not change how Exaix models work.

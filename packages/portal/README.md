@@ -112,6 +112,18 @@ in a background task, so the call that triggers revalidation does not itself see
 result; and SHA comparison is against `HEAD`, so uncommitted working-tree changes are not
 detected as staleness.
 
+### Scoped dogfood queries
+
+`PortalKnowledgeService.queryContext()` is the structured, read-only query used by the
+dogfood context boundary. It resolves the requested canonical portal path to that portal's
+own alias, scopes candidates before ranking, and returns stable IDs, scores, provenance,
+and explicit unavailable reasons. It never substitutes the first cached portal and never
+triggers analysis; callers must treat a cold or missing snapshot as unavailable.
+
+The daemon snapshots the bound portal knowledge when it creates a child connection. The
+child can query only relationship data from that snapshot through `query_relationships`
+and `who_depends_on`; request text and tool arguments cannot select another portal.
+
 ## CLI Commands
 
 ```text
