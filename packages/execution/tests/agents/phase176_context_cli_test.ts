@@ -227,3 +227,28 @@ Deno.test("[CliDelegateStrategy][security] connected Claude launches keep their 
     await Deno.remove(portalPath, { recursive: true });
   }
 });
+
+Deno.test("[CliDelegateStrategy][security] connected OpenCode launches keep their temporary MCP config inside the portal and remove it afterward", async () => {
+  const portalPath = await Deno.makeTempDir({ prefix: "phase176-context-cli-" });
+  let configPath = "";
+  const run: IRunCliDelegateProcess = (_command, _args, options) => {
+    configPath = options?.env?.OPENCODE_CONFIG ?? "";
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+  const strategy = new CliDelegateStrategy({
+    tool: "opencode",
+    bin: "opencode",
+    resolvePortalPath: () => portalPath,
+    run,
+    contextPort: makeConnectedContextPort(),
+  });
+
+  try {
+    await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+    assertStringIncludes(configPath, `${portalPath}/.exaix-dogfood-mcp-`);
+    const configExists = await Deno.stat(configPath).then(() => true).catch(() => false);
+    assertEquals(configExists, false, "the bearer-bearing MCP config must be removed after the launch");
+  } finally {
+    await Deno.remove(portalPath, { recursive: true });
+  }
+});

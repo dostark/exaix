@@ -450,7 +450,12 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     const dir = await Deno.makeTempDir({ dir: portalPath, prefix: ".exaix-dogfood-mcp-" });
     const configPath = join(dir, "claude_mcp_config.json");
     const config = buildClaudeMcpConfig(toMcpConnectionInput(connection));
-    await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    try {
+      await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    } catch (error) {
+      await Deno.remove(dir, { recursive: true }).catch(() => {});
+      throw error;
+    }
     return { configPath, cleanup: () => Deno.remove(dir, { recursive: true }).catch(() => {}) };
   }
 
@@ -461,7 +466,12 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     const dir = await Deno.makeTempDir({ dir: portalPath, prefix: ".exaix-dogfood-mcp-" });
     const configPath = join(dir, "opencode_config.json");
     const config = { mcp: buildOpencodeMcpFragment(toMcpConnectionInput(connection)) };
-    await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    try {
+      await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+    } catch (error) {
+      await Deno.remove(dir, { recursive: true }).catch(() => {});
+      throw error;
+    }
     return { configPath, cleanup: () => Deno.remove(dir, { recursive: true }).catch(() => {}) };
   }
 
