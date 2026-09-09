@@ -23,7 +23,6 @@ matrix:
       provider: "direct"
       config: "configs/dogfood.claude.stock.toml"
       requires_bin: "claude"
-      requires_key: "ANTHROPIC_API_KEY"
     - tool: "stock-opencode"
       provider: "direct"
       config: "configs/dogfood.opencode.stock.toml"
@@ -33,7 +32,6 @@ matrix:
       provider: "direct"
       config: "configs/dogfood.claude.toml"
       requires_bin: "claude"
-      requires_key: "ANTHROPIC_API_KEY"
     - tool: "cycle-opencode"
       provider: "direct"
       config: "configs/dogfood.toml"
@@ -91,7 +89,12 @@ steps:
     type: "exactl"
     cells: ["stock-claude", "stock-opencode"]
     command: "request"
-    args: ["--file", "fixtures/requests/provider_live/dogfood_context_stock_code_change.md", "--portal", "test-project"]
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/dogfood_context_stock_code_change.md",
+      "--portal",
+      "test-project",
+    ]
     output_criteria:
       - id: "stock-request-submitted"
         score_weight: 0.5

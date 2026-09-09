@@ -28,6 +28,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
   FlowInputSource,
+  FlowOutputFormat,
   FlowStepExecutionMode,
   FlowStepOnErrorAction,
   FlowStepType,
@@ -722,7 +723,8 @@ export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string 
       "the flow's aggregated output and must parse as a plan."
     : "You are a step in a multi-agent flow: your response's <content> block is consumed " +
       "programmatically by the next step.";
-  return `\n\n${purpose}\nRespond exactly in this format — no other text outside the tags:\n` +
+  return `\n\n${purpose}\nThis flow-specific output contract supersedes the agent's default response format. ` +
+    `Respond exactly in this format — no other text outside the tags:\n` +
     `<thought>\nBrief reasoning (1-3 sentences).\n</thought>\n\n` +
     `<content>\n${planShape}\n</content>\n` +
     `The <content> block MUST be valid JSON: the first character after <content> must be ` +
@@ -1985,10 +1987,15 @@ export class FlowRunner implements IFlowRunner {
       });
     }
 
-    // A strategy-declared step (react/cli_delegate/mcp) gets its output-format instruction from the strategy's own
-    // prompt, NOT the flow step's <content> plan-envelope instruction — injecting the latter makes a live model
-    // respond with a JSON plan instead of tool actions. Plain no-strategy agent steps keep the envelope.
-    const userPrompt = step.type === FlowStepType.GATE || step.strategy
+    const outputFrom = flow.output.from;
+    const isFinalJsonStrategyStep = step.strategy !== undefined &&
+      flow.output.format === FlowOutputFormat.JSON &&
+      (outputFrom === step.id || (Array.isArray(outputFrom) && outputFrom.includes(step.id)));
+
+    // Strategy steps normally keep their action-oriented prompt: injecting a plan envelope makes live models return
+    // a plan instead of tool actions. A terminal JSON strategy step is the explicit exception because request flow
+    // routing sends its output to PlanAdapter, which requires the envelope's plan JSON.
+    const userPrompt = step.type === FlowStepType.GATE || (step.strategy && !isFinalJsonStrategyStep)
       ? basePrompt
       : `${basePrompt}${flowStepOutputInstruction(step, flow)}`;
 

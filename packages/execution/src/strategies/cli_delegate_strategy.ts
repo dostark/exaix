@@ -266,7 +266,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     connection: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
   ): Promise<ICliDelegateParsedOutcome> {
     const sessionId = this.sessionIds.get(traceId);
-    const mcpConfig = connection ? await this.writeClaudeMcpConfigFile(connection) : undefined;
+    const mcpConfig = connection ? await this.writeClaudeMcpConfigFile(connection, portalPath) : undefined;
     try {
       const args = this.buildClaudeArgs(objective, sessionId, connection, mcpConfig?.configPath);
 
@@ -320,7 +320,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     connection: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
   ): Promise<ICliDelegateParsedOutcome> {
     const sessionId = this.sessionIds.get(traceId);
-    const mcpConfig = connection ? await this.writeOpencodeMcpConfigFile(connection) : undefined;
+    const mcpConfig = connection ? await this.writeOpencodeMcpConfigFile(connection, portalPath) : undefined;
     try {
       const args = this.buildOpencodeArgs(objective, sessionId);
 
@@ -441,12 +441,13 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
   }
 
-  /** Per-turn temp config, cleaned up once the subprocess exits — this path has no
-   *  PathResolver/`@Runtime` access, unlike the governed SessionDelegateService path. */
+  /** Per-turn config in the already-authorized portal root, removed after the subprocess exits.
+   *  This avoids broadening the daemon's write permission to the OS temp directory. */
   private async writeClaudeMcpConfigFile(
     connection: IDogfoodContextConnection,
+    portalPath: string,
   ): Promise<{ configPath: string; cleanup: () => Promise<void> }> {
-    const dir = await Deno.makeTempDir({ prefix: "exaix-dogfood-mcp-" });
+    const dir = await Deno.makeTempDir({ dir: portalPath, prefix: ".exaix-dogfood-mcp-" });
     const configPath = join(dir, "claude_mcp_config.json");
     const config = buildClaudeMcpConfig(toMcpConnectionInput(connection));
     await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
@@ -455,8 +456,9 @@ export class CliDelegateStrategy implements IExecutionStrategy {
 
   private async writeOpencodeMcpConfigFile(
     connection: IDogfoodContextConnection,
+    portalPath: string,
   ): Promise<{ configPath: string; cleanup: () => Promise<void> }> {
-    const dir = await Deno.makeTempDir({ prefix: "exaix-dogfood-mcp-" });
+    const dir = await Deno.makeTempDir({ dir: portalPath, prefix: ".exaix-dogfood-mcp-" });
     const configPath = join(dir, "opencode_config.json");
     const config = { mcp: buildOpencodeMcpFragment(toMcpConnectionInput(connection)) };
     await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });

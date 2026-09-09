@@ -52,6 +52,7 @@ class CapturingEventLogger implements IFlowEventLogger {
 
 function makeFlow(
   strategy?: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
+  outputFormat: FlowOutputFormat = FlowOutputFormat.MARKDOWN,
 ): IFlow {
   return {
     id: "strategy-journal-flow",
@@ -71,7 +72,7 @@ function makeFlow(
         strategy,
       },
     ],
-    output: { from: "s1", format: FlowOutputFormat.MARKDOWN },
+    output: { from: "s1", format: outputFormat },
     settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
   };
 }
@@ -162,4 +163,25 @@ Deno.test("FlowRunner: a plain no-strategy agent step keeps the <content> plan-e
   assert(prompt.includes("<content>"), "a plain agent step keeps the <content> envelope instruction");
   assert(/must be valid JSON/i.test(prompt), "a plain agent step still demands valid JSON in <content>");
   assert(/step of a multi-agent flow/i.test(prompt), "a plain agent step is still framed as a flow step");
+});
+
+Deno.test("FlowRunner: a final strategy step in a JSON-output flow receives the plan-envelope output instruction", async () => {
+  // A strategy step normally needs an action-oriented prompt. A terminal JSON flow is the
+  // explicit exception: its result is passed to PlanAdapter, so the final response must use
+  // the same envelope and plan shape as a no-strategy terminal step.
+  const executor = new StubAgentExecutor();
+  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new CapturingEventLogger() });
+
+  await runner.execute(makeFlow(ExecutionStrategyName.CLI_DELEGATE, FlowOutputFormat.JSON), {
+    userPrompt: "do the thing",
+    traceId: crypto.randomUUID(),
+    requestId: "req-json-strategy",
+    portal: "workspace",
+  });
+
+  assertEquals(executor.received.length, 1);
+  const prompt = executor.received[0].request.userPrompt;
+  assert(prompt.includes("<content>"), "a terminal JSON strategy step must receive the plan-envelope instruction");
+  assert(/must parse as a plan/i.test(prompt), "a terminal JSON strategy step must be told its output becomes a plan");
+  assert(/must be valid JSON/i.test(prompt), "a terminal JSON strategy step must be told to emit valid JSON");
 });

@@ -316,6 +316,25 @@ Deno.test("[session_delegation_coordinator] an injected contextPort's returned p
   assertStringIncludes(inputs[0].originalPrompt, "Implement the coordinator.");
 });
 
+Deno.test("[session_delegation_coordinator] context lookup receives a bare model while the session brief preserves provider:model", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port, inputs } = makeContextPort("AUGMENTED CYCLE OBJECTIVE");
+  const deps = makeDeps(delegateService, waitStore, resultStore, launcher, port);
+  deps.resolveModel = () => Promise.resolve("claude-cli:claude-haiku-4-5");
+  const coordinator = new SessionDelegationCoordinator(deps, logger);
+
+  resultStore.status = "completed";
+  resultStore.request = request();
+  await coordinator.delegate(request());
+
+  assertEquals(inputs[0].model, "claude-haiku-4-5");
+  assertEquals(delegateService.prepared[0].model, "claude-cli:claude-haiku-4-5");
+});
+
 Deno.test("[session_delegation_coordinator] acceptanceCriteria and artifactRef are never altered by the contextPort", async () => {
   const delegateService = new RecordingDelegateService();
   const waitStore = new RecordingWaitStore();

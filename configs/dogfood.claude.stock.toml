@@ -4,30 +4,32 @@ log_level = "info"
 # 127.0.0.1: the per-launch DogfoodContextServer loopback MCP endpoint (Phase 176) binds
 # Deno.serve({hostname: "127.0.0.1"}) on an OS-assigned port — Deno's own listen permission,
 # required whenever [dogfood.context] is enabled below, independent of any outbound API host.
-allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434", "127.0.0.1"]
+# Only the per-launch DogfoodContextServer needs a daemon network permission. Claude Code
+# performs its subscription-authenticated network traffic in its own child process.
+allow_net = ["127.0.0.1"]
 
 [paths]
 workspace = "Workspace"
 portals = "Portals"
 memory = "Memory"
 
-# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).
+# Every daemon model turn (analysis, planning, and quality-judge review) goes through the
+# subscribed Claude Code CLI. The implement step below also uses Claude Code directly.
 [ai]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
+provider = "claude-cli"
+model = "claude-haiku-4-5"
 
-# The daemon resolves its analysis provider via `agents.default_model` → `[models.<name>]`, NOT the
-# `[ai]` block above (which is only a fallback). Pin the named models to Anthropic here so this
-# Claude preset truly plans with Claude — mirrors configs/dogfood.claude.toml.
+# The daemon resolves analysis and review via `agents.default_model` → `[models.<name>]`,
+# not merely `[ai]`; keep every named model on the CLI provider.
 [models.default]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
-timeout_ms = 60000
+provider = "claude-cli"
+model = "claude-haiku-4-5"
+timeout_ms = 300000
 
 [models.fast]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
-timeout_ms = 60000
+provider = "claude-cli"
+model = "claude-haiku-4-5"
+timeout_ms = 300000
 
 [agents]
 default_model = "default"
@@ -35,11 +37,6 @@ default_model = "default"
 [rate_limiting]
 enabled = true
 max_calls_per_minute = 300
-
-# Plan JSON for a multi-step request can exceed the 4096-token default, truncating
-# the <content> block and failing schema validation (missing fields).
-[ai_anthropic]
-max_tokens_default = 8192
 
 [[portals]]
 alias = "exaix-self"
@@ -73,10 +70,18 @@ enabled = true
 [cli_delegate]
 enabled = true
 tool = "claude-code"
-model = "anthropic:claude-haiku-4-5-20251001"
+model = "claude-haiku-4-5"
 
 [model_presets.M]
-max_cost_per_mtok = 3
+max_cost_per_mtok = 0
 min_context_window = 32000
-supports_thinking = true
-candidates = ["anthropic"]
+supports_thinking = false
+candidates = ["claude-cli"]
+
+# quality-judge declares model_size L; pin it too so review cannot fall back to a
+# direct provider or the mock default.
+[model_presets.L]
+max_cost_per_mtok = 0
+min_context_window = 64000
+supports_thinking = false
+candidates = ["claude-cli"]

@@ -72,7 +72,7 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "generate-architecture-docs": "no-strategy",
     "compile-documentation": "no-strategy",
   },
-  "dogfood-loop": { "implement": "cli_delegate", "review": "react" },
+  "dogfood-loop": { "implement": "cli_delegate", "review": "cli_delegate" },
   "dogfood-meta-workflow": { "pre-gap": "react", "next-steps": "session_delegate_cycle", "post-gap": "react" },
   "feature-development": {
     "analyze-requirements": "cli_delegate",
@@ -197,7 +197,7 @@ Deno.test("Flow strategy audit: every catalog step has an explicit, recorded dec
   assertEquals(totalSteps, 96, `expected 96 steps across the 17-flow catalog, found ${totalSteps}`);
 });
 
-Deno.test("Flow strategy audit: audit table totals match the recorded 22/14/1/58/1 split", () => {
+Deno.test("Flow strategy audit: audit table totals match the recorded 21/15/1/58/1 split", () => {
   const counts: Record<Decision, number> = {
     "react": 0,
     "cli_delegate": 0,
@@ -210,8 +210,8 @@ Deno.test("Flow strategy audit: audit table totals match the recorded 22/14/1/58
       counts[decision]++;
     }
   }
-  assertEquals(counts["react"], 22);
-  assertEquals(counts["cli_delegate"], 14);
+  assertEquals(counts["react"], 21);
+  assertEquals(counts["cli_delegate"], 15);
   assertEquals(counts["n/a-dynamic"], 1);
   assertEquals(counts["no-strategy"], 58);
   assertEquals(counts["session_delegate_cycle"], 1);

@@ -13,6 +13,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
+import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
 import { loadScenarioCatalog, selectScenarioCatalogEntries } from "../../runner/scenario_catalog.ts";
@@ -22,8 +23,10 @@ const TEST_FILE_DIR = dirname(fromFileUrl(import.meta.url));
 const FRAMEWORK_HOME = join(TEST_FILE_DIR, "../..");
 const FLOW_SCENARIO = join(FRAMEWORK_HOME, "scenarios/flow_blueprints/dogfood_context.yaml");
 const LIVE_SCENARIO = join(FRAMEWORK_HOME, "scenarios/provider_live/dogfood_context_live.yaml");
+const REPOSITORY_ROOT = join(FRAMEWORK_HOME, "../..");
 
 const REQUIRED_CELL_NAMES = ["stock-claude", "stock-opencode", "cycle-claude", "cycle-opencode", "cycle-codex"];
+const CLAUDE_CELL_CONFIGS = ["configs/dogfood.claude.stock.toml", "configs/dogfood.claude.toml"];
 
 /** Credential-shaped VALUES that must never appear literally in a committed scenario —
  *  env-var NAMES like "ANTHROPIC_API_KEY" are fine (that's a reference, not a secret). */
@@ -82,13 +85,13 @@ Deno.test("[context_scenario] the live scenario's matrix enumerates exactly the 
   assertEquals(tools, [...REQUIRED_CELL_NAMES].toSorted());
 });
 
-Deno.test("[context_scenario] each live cell requires the correct binary and credential/opt-in", async () => {
+Deno.test("[context_scenario] each live cell requires the correct binary and subscription/opt-in", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
   assert(scenario.matrix, "scenario must have a matrix block");
   const expected: Record<string, { bin: string; hasKey?: string; hasOptin?: string }> = {
-    "stock-claude": { bin: "claude", hasKey: "ANTHROPIC_API_KEY" },
+    "stock-claude": { bin: "claude" },
     "stock-opencode": { bin: "opencode", hasOptin: "EXA_MATRIX_OPENCODE" },
-    "cycle-claude": { bin: "claude", hasKey: "ANTHROPIC_API_KEY" },
+    "cycle-claude": { bin: "claude" },
     "cycle-opencode": { bin: "opencode", hasOptin: "EXA_MATRIX_OPENCODE" },
     "cycle-codex": { bin: "codex", hasOptin: "EXA_MATRIX_CODEX" },
   };
@@ -101,13 +104,48 @@ Deno.test("[context_scenario] each live cell requires the correct binary and cre
   }
 });
 
+Deno.test("[context_scenario] both Claude cells route planning and review through the subscribed Claude CLI", async () => {
+  for (const configPath of CLAUDE_CELL_CONFIGS) {
+    const config = parseToml(await Deno.readTextFile(join(REPOSITORY_ROOT, configPath))) as {
+      ai?: { provider?: string; model?: string };
+      models?: { default?: { provider?: string; model?: string } };
+      model_presets?: { L?: { candidates?: string[] } };
+      session_delegate?: { model?: string };
+    };
+    assertEquals(config.ai?.provider, "claude-cli", `${configPath} [ai] must not call the Anthropic API`);
+    assertEquals(config.ai?.model, "claude-haiku-4-5", `${configPath} must use the subscribed CLI model`);
+    assertEquals(
+      config.models?.default?.provider,
+      "claude-cli",
+      `${configPath} default model must make review turns use Claude Code`,
+    );
+    assertEquals(
+      config.models?.default?.model,
+      "claude-haiku-4-5",
+      `${configPath} default review model must use Claude Code`,
+    );
+    assertEquals(
+      config.model_presets?.L?.candidates,
+      ["claude-cli"],
+      `${configPath} size-L quality-judge turns must not fall back to another provider`,
+    );
+    if (configPath.endsWith("dogfood.claude.toml")) {
+      assertEquals(
+        config.session_delegate?.model,
+        "claude-cli:claude-haiku-4-5",
+        "the cycle delegate must receive the provider:model contract while Claude strips it for --model",
+      );
+    }
+  }
+});
+
 Deno.test("[context_scenario] expandMatrix produces exactly 5 runs, each runnable when its prerequisite is present", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
   assert(scenario.matrix, "scenario must have a matrix block");
   const matrix = MatrixSchema.parse(scenario.matrix);
 
   const runs = expandMatrix(scenario.steps, matrix, {
-    env: { ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1", EXA_MATRIX_CODEX: "1" },
+    env: { EXA_MATRIX_OPENCODE: "1", EXA_MATRIX_CODEX: "1" },
     binOnPath: () => true,
   });
 
@@ -115,22 +153,36 @@ Deno.test("[context_scenario] expandMatrix produces exactly 5 runs, each runnabl
   assertEquals(runs.map((r) => r.status), ["run", "run", "run", "run", "run"]);
 });
 
-Deno.test("[context_scenario] a cell is skipped, not run, when its opt-in/key is absent (matching the existing matrix scenario's default-safe convention)", async () => {
+Deno.test("[context_scenario] only opted-in non-Claude cells are skipped when optional prerequisites are absent", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
   assert(scenario.matrix, "scenario must have a matrix block");
   const matrix = MatrixSchema.parse(scenario.matrix);
 
   const runs = expandMatrix(scenario.steps, matrix, { env: {}, binOnPath: () => true });
 
-  assertEquals(runs.length, 5, "every cell is still enumerated, just recorded skipped");
+  assertEquals(runs.length, 5, "every cell is still enumerated");
   for (const run of runs) {
-    assertEquals(run.status, "skip", `cell ${run.cell.tool} should be skipped with no credentials/opt-ins present`);
+    const expected = run.cell.tool.includes("claude") ? "run" : "skip";
+    assertEquals(run.status, expected, `cell ${run.cell.tool} prerequisite behavior mismatch`);
   }
 });
 
 Deno.test("[context_scenario] stock cells assert flow.step.completed(review) and a real worktree edit, never merely a reconciled journal row", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
   const byId = new Map(scenario.steps.map((s) => [s.id, s]));
+
+  const submitStep = byId.get("submit-request-stock");
+  assert(submitStep, "submit-request-stock step must exist");
+  assertEquals(
+    submitStep.args,
+    [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/dogfood_context_stock_code_change.md",
+      "--portal",
+      "test-project",
+    ],
+    "the stock request fixture must resolve from the runner, not the minted sandbox",
+  );
 
   const reviewStep = byId.get("wait-for-stock-review-complete");
   assert(reviewStep, "wait-for-stock-review-complete step must exist");

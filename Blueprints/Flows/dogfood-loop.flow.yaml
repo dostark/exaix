@@ -22,7 +22,7 @@ steps:
     name: Review the Implementation
     type: agent
     agent_role: quality-judge
-    strategy: react
+    strategy: cli_delegate
     dependsOn:
       - implement
     input:
@@ -35,7 +35,7 @@ steps:
       backoffMs: 1000
 output:
   from: review
-  format: markdown
+  format: json
 settings:
   maxParallelism: 1
   failFast: true

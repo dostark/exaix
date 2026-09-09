@@ -266,6 +266,9 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
     model: Opt<string, Reason.OptionalContext>,
   ): Promise<{ objective: string; recordId?: string; connection?: IDogfoodContextConnection }> {
     if (!this.deps.contextPort) return { objective: input.objective };
+    // Session briefs require provider:model, while DogfoodContextService resolves its
+    // token budget against the bare catalog model identifier.
+    const contextModel = model?.includes(":") ? model.slice(model.indexOf(":") + 1) : model;
 
     const handle = await this.deps.contextPort.prepare({
       executionTraceId: delegationTraceId,
@@ -275,7 +278,7 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
       turn: 0,
       attempt: 1,
       surface: "session_delegate_cycle",
-      model: model ?? "",
+      model: contextModel ?? "",
       originalPrompt: input.objective,
       queryText: input.objective,
       acceptanceCriteria: input.acceptanceCriteria,

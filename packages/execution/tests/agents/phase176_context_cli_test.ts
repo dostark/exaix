@@ -89,6 +89,28 @@ function makeFailingContextPort(): IDogfoodContextPort {
   };
 }
 
+function makeConnectedContextPort(): IDogfoodContextPort {
+  return {
+    prepare(): Promise<IDogfoodContextHandle> {
+      return Promise.resolve({
+        recordId: crypto.randomUUID(),
+        prompt: "prompt",
+        connection: {
+          connectionId: crypto.randomUUID(),
+          endpoint: "http://127.0.0.1:43123/mcp",
+          bearerEnvVar: "EXAIX_CONTEXT_BEARER",
+          bearerToken: "test-bearer",
+          expiresAt: "2099-01-01T00:00:00.000Z",
+          tools: [],
+        },
+      });
+    },
+    close(): Promise<void> {
+      return Promise.resolve();
+    },
+  };
+}
+
 Deno.test("[CliDelegateStrategy] absent contextPort sends the existing objective byte-for-byte (non-dogfood parity)", async () => {
   const { run, calls } = makeFakeRun();
   const strategy = new CliDelegateStrategy({
@@ -178,4 +200,30 @@ Deno.test("[CliDelegateStrategy] first-turn full-plan objective is preserved as 
 
   assertStringIncludes(inputs[0].originalPrompt, "FULL PLAN:");
   assertStringIncludes(inputs[0].originalPrompt, "Step 2: add regression test");
+});
+
+Deno.test("[CliDelegateStrategy][security] connected Claude launches keep their temporary MCP config inside the portal and remove it afterward", async () => {
+  const portalPath = await Deno.makeTempDir({ prefix: "phase176-context-cli-" });
+  let configPath = "";
+  const run: IRunCliDelegateProcess = (_command, args) => {
+    const index = args.indexOf("--mcp-config");
+    configPath = args[index + 1];
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    resolvePortalPath: () => portalPath,
+    run,
+    contextPort: makeConnectedContextPort(),
+  });
+
+  try {
+    await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+    assertStringIncludes(configPath, `${portalPath}/.exaix-dogfood-mcp-`);
+    const configExists = await Deno.stat(configPath).then(() => true).catch(() => false);
+    assertEquals(configExists, false, "the bearer-bearing MCP config must be removed after the launch");
+  } finally {
+    await Deno.remove(portalPath, { recursive: true });
+  }
 });
