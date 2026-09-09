@@ -1351,6 +1351,53 @@ Every request passes through a three-tier quality assessment before the agent ru
 
 **Auto-enrichment:** When a request scores in the _Acceptable_ range and `auto_enrich = true` is configured (default), the gate rewrites the request body into a more structured form. The original body is preserved in `originalBody` and never lost.
 
+#### **`exactl request inspect` — Read-Only Dogfood Context Inspection**
+
+When Exaix delegates work to a headless native agent (Claude Code, OpenCode, Codex),
+what that agent actually saw is captured immutably at launch time (source IDs, section
+budgets, granted tool schemas, the exact post-redaction prompt text). `exactl request
+inspect` reads those captures back — it never re-runs retrieval, never calls a model
+provider, and never reconstructs a prompt that was never captured:
+
+```bash
+# Summaries of every captured record under a trace (or its child launches)
+exactl request inspect <trace-id>
+
+# Full detail for a specific captured record
+exactl request inspect <trace-id> --record <record-id>
+
+# Machine-readable detail/summary output
+exactl request inspect <trace-id> --json
+
+# Export the exact post-redaction bytes sent to the child (for diffing/auditing)
+exactl request inspect <trace-id> --record <record-id> --raw > sent-prompt.txt
+```
+
+**Options:**
+
+| Option     | Description                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `--record` | Inspect one specific captured record by its UUID                                                                                      |
+| `--json`   | Machine-readable summary/detail output                                                                                                |
+| `--raw`    | Export the exact captured `promptText` bytes only — requires `--record` (or a single-record trace) and refuses to write to a terminal |
+
+**Input/output scope:** `<trace-id>` and `--record <uuid>` accept full UUIDs only. With no
+`--record`, a trace with exactly one captured record shows its detail automatically;
+a trace with multiple records shows an ordered summary list instead. A parent
+(governing) trace ID also finds records captured under its child launches. Native
+`prompt`/`tools`/`history` visibility is always reported explicitly as `unknown` when a
+client's own visibility state can't be observed. `--raw` is redirect-safe: nothing but
+the captured bytes is written to stdout.
+
+**Exit codes:**
+
+| Code | Meaning                                                                                                |
+| ---- | ------------------------------------------------------------------------------------------------------ |
+| `0`  | Success — summary or detail printed                                                                    |
+| `1`  | Read failure — the record exists but is corrupt or inaccessible                                        |
+| `2`  | Invalid input — malformed UUID, `--json`+`--raw` together, ambiguous `--raw`, or `--raw` to a terminal |
+| `3`  | No capture — legacy, expired, or never-captured trace/record (never reconstructs a prompt)             |
+
 #### **Plan Commands** - Review AI-generated plans
 
 Review and approve plans before agents execute them:

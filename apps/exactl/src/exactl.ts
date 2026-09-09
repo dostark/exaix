@@ -72,6 +72,7 @@ import {
   handleRequestAnalyze,
   handleRequestClarify,
   handleRequestCreate,
+  handleRequestInspect,
   handleRequestList,
   handleRequestShow,
   type IRequestAnalyzeOptions,
@@ -79,6 +80,7 @@ import {
   type IRequestCreateOptions,
   type IRequestListOptions,
 } from "./command_builders/request_actions.ts";
+import type { IInspectCommandOptions } from "./commands/inspect_commands.ts";
 import {
   handlePlanAmendmentApprove,
   handlePlanAmendmentApproveAll,
@@ -479,6 +481,21 @@ export const __test_command = new Command()
           .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options: IRequestClarifyOptions, ...id: string[]) => {
             await handleRequestClarify({ requestCommands, display, provider: fullContext.provider }, id[0], options);
+          }),
+      )
+      .command(
+        RequestOperation.INSPECT,
+        new Command()
+          .description("Read-only inspection of captured dogfood-context submissions")
+          .arguments("<trace_id:string>")
+          .option("--record <uuid:string>", "Inspect a specific captured record")
+          .option("--json", CLI_OPTION_JSON_HELP)
+          .option(
+            "--raw",
+            "Export the exact post-redaction bytes (requires --record or a single-record trace; refuses TTY)",
+          )
+          .action(async (options: IInspectCommandOptions, traceId: string) => {
+            await handleRequestInspect(fullContext, traceId, options);
           }),
       ),
   )

@@ -10,7 +10,7 @@
  */
 
 import type { EffortTier, IRouteReason, ModelResolutionReason, TaskTypeSource } from "@exaix/schemas";
-import type { HitlRuleSource, HitlSurface, TaskType, VotingStrategy } from "../types/enums.ts";
+import type { ContextInspectionResult, HitlRuleSource, HitlSurface, TaskType, VotingStrategy } from "../types/enums.ts";
 
 /** Guardrail verdict type. */
 export type GuardrailVerdict = "pass" | "violation";
@@ -302,6 +302,23 @@ export interface IContextRecordsPrunedPayload {
   pruned_count: number;
   retention_days: number;
   duration_ms: number;
+}
+
+/** Typed payload for dogfood.context.inspected — `exactl request inspect` successful
+ *  access. Never carries `promptText` or any other captured content. */
+export interface IContextInspectedPayload {
+  trace_id: string;
+  record_id?: string;
+  result: ContextInspectionResult;
+  record_count: number;
+}
+
+/** Typed payload for dogfood.context.inspection_failed — a read/access failure while
+ *  inspecting captured records (corrupt record, permission denied, malformed input). */
+export interface IContextInspectionFailedPayload {
+  trace_id: string;
+  record_id?: string;
+  reason: string;
 }
 
 export const DomainEventType = {
@@ -732,6 +749,8 @@ export const DomainEventType = {
   ContextQueryDenied: "dogfood.context.query_denied",
   ContextConnectionClosed: "dogfood.context.connection_closed",
   ContextRecordsPruned: "dogfood.context.records_pruned",
+  ContextInspected: "dogfood.context.inspected",
+  ContextInspectionFailed: "dogfood.context.inspection_failed",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

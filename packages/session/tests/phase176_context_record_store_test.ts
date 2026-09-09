@@ -247,6 +247,79 @@ Deno.test("[ContextRecordStore] pruneExpired returns 0 when the execution root d
   }
 });
 
+Deno.test("[ContextRecordStore] listByParentTrace returns an empty array when nothing matches", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const store = new ContextRecordStore(makeResolver(tempDir));
+    assertEquals(await store.listByParentTrace(PARENT_TRACE_ID), []);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[ContextRecordStore] listByParentTrace finds records across multiple child execution traces, bounded to the Execution root", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const store = new ContextRecordStore(makeResolver(tempDir));
+    const childA = "88888888-8888-4888-8888-888888888888";
+    const childB = "99999999-9999-4999-8999-999999999999";
+    const recordInChildA = makeRecord({
+      recordId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      executionTraceId: childA,
+      parentTraceId: PARENT_TRACE_ID,
+      sequence: 2,
+    });
+    const recordInChildB = makeRecord({
+      recordId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      executionTraceId: childB,
+      parentTraceId: PARENT_TRACE_ID,
+      sequence: 1,
+    });
+    await store.save(recordInChildA);
+    await store.save(recordInChildB);
+
+    const summaries = await store.listByParentTrace(PARENT_TRACE_ID);
+    // Ordered sequence/turn/attempt/timestamp/recordId — same ordering contract as list().
+    assertEquals(summaries.map((s) => s.recordId), [recordInChildB.recordId, recordInChildA.recordId]);
+    assertEquals(summaries.every((s) => s.parentTraceId === PARENT_TRACE_ID), true);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[ContextRecordStore] listByParentTrace never returns a record belonging to an unrelated parent trace", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const store = new ContextRecordStore(makeResolver(tempDir));
+    const otherParent = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    const unrelated = makeRecord({
+      recordId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      executionTraceId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      parentTraceId: otherParent,
+    });
+    await store.save(unrelated);
+
+    assertEquals(await store.listByParentTrace(PARENT_TRACE_ID), []);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[ContextRecordStore] listByParentTrace never resurrects a pruned record — no reconstruction after expiry", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const store = new ContextRecordStore(makeResolver(tempDir));
+    const now = new Date("2026-06-15T00:00:00.000Z");
+    await store.save(makeRecord({ timestamp: "2026-06-01T00:00:00.000Z" })); // 14 days before `now`
+
+    assertEquals((await store.listByParentTrace(PARENT_TRACE_ID)).length, 1);
+    await store.pruneExpired(7, now);
+    assertEquals(await store.listByParentTrace(PARENT_TRACE_ID), []);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
 Deno.test("[ContextRecordStore] created files/directories are owner-only permissioned (POSIX)", async () => {
   if (Deno.build.os === "windows") return;
   const tempDir = await Deno.makeTempDir();

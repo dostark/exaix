@@ -18,6 +18,16 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 176 (Dogfood Context Management Refinement)
+
+### Added
+
+- `exactl request inspect <trace-id> [--record <uuid>] [--json | --raw]` — read-only
+  inspection of captured dogfood-context submissions (what a headless native agent
+  actually saw at launch): summaries, full detail, or `--raw` export of the exact
+  post-redaction prompt bytes. See
+  [Exaix_User_Guide.md](Exaix_User_Guide.md#exactl-request-inspect--read-only-dogfood-context-inspection).
+
 ## Unreleased — Phase 145 (Adversarial Robustness & Interactive Evaluation)
 
 ### Added

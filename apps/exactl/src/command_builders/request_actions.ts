@@ -8,6 +8,8 @@
  */
 
 import type { RequestCommands } from "../commands/request_commands.ts";
+import { type IInspectCommandOptions, InspectCommands } from "../commands/inspect_commands.ts";
+import type { ICommandContext } from "@exaix/cli/base.ts";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
@@ -421,4 +423,14 @@ export async function handleRequestClarify(
     });
     Deno.exit(1);
   }
+}
+
+/** Thin dispatch wrapper: `InspectCommands.inspect` owns all rendering, exit-code, and
+ *  audit-event logic — this handler only supplies the CLI-resolved arguments. */
+export async function handleRequestInspect(
+  context: ICommandContext,
+  traceId: string,
+  options: IInspectCommandOptions,
+): Promise<void> {
+  await new InspectCommands(context).inspect(traceId, options);
 }

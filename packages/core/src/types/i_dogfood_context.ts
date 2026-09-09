@@ -69,4 +69,8 @@ export interface IDogfoodContextPort {
 export interface IContextInspectionReader {
   list(traceId: string): Promise<readonly ContextRecordSummary[]>;
   read(traceId: string, recordId: string): Promise<ContextRecord>;
+  /** Bounded lookup of every record whose `parentTraceId` matches — for a caller who only
+   *  knows the governing (parent) trace, not the per-launch (child) execution trace. Scans
+   *  only the store's own trusted Execution root, never a caller-supplied path. */
+  listByParentTrace(parentTraceId: string): Promise<readonly ContextRecordSummary[]>;
 }

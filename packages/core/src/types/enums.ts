@@ -364,6 +364,7 @@ export enum RequestOperation {
   DELETE = "delete",
   LIST = "list",
   PLAN = "plan",
+  INSPECT = "inspect",
 }
 
 /**
@@ -1438,4 +1439,19 @@ export enum ContextConnectionCloseReason {
   COMPLETED = "completed",
   FAILED = "failed",
   CANCELLED = "cancelled",
+}
+
+/** Shape of a successful `exactl request inspect` access, for the audit event payload. */
+export enum ContextInspectionResult {
+  LIST = "list",
+  DETAIL = "detail",
+  NO_CAPTURE = "no_capture",
+}
+
+/** `exactl request inspect` process exit codes. */
+export enum ContextInspectExitCode {
+  SUCCESS = 0,
+  READ_FAILURE = 1,
+  INVALID_INPUT = 2,
+  NO_CAPTURE = 3,
 }

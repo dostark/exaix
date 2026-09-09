@@ -48,8 +48,14 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const OWNER_ONLY_DIR_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
 
+/** Shared with `exactl request inspect` so its own input validation uses the exact same
+ *  UUID shape check as the store, never a second regex that could drift from it. */
+export function isValidUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
 function assertValidUuid(value: string, label: string): void {
-  if (!UUID_PATTERN.test(value)) {
+  if (!isValidUuid(value)) {
     throw new ContextRecordSecurityError(`Invalid ${label}: "${value}" — must be a UUID`);
   }
 }
@@ -135,6 +141,52 @@ export class ContextRecordStore implements IContextInspectionReader {
     const contextDir = await this.resolveContextDir(traceId);
     const raw = await Deno.readTextFile(join(contextDir, `${recordId}.json`));
     return ContextRecordSchema.parse(JSON.parse(raw));
+  }
+
+  /** Bounded scan of the store's own `@Memory/Execution` root (never a caller-supplied
+   *  path) for every record whose `parentTraceId` matches — the CLI's fallback when a
+   *  caller supplies the governing trace rather than a specific child execution trace. */
+  async listByParentTrace(parentTraceId: string): Promise<readonly ContextRecordSummary[]> {
+    assertValidUuid(parentTraceId, "parentTraceId");
+    const executionRoot = await this.pathResolver.resolve("@Memory/Execution");
+
+    let traceEntries: Deno.DirEntry[];
+    try {
+      traceEntries = await Array.fromAsync(Deno.readDir(executionRoot));
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) return [];
+      throw error;
+    }
+
+    const summaries: ContextRecordSummary[] = [];
+    for (const traceEntry of traceEntries) {
+      if (!traceEntry.isDirectory) continue;
+      const contextDir = join(executionRoot, traceEntry.name, "context");
+      let recordEntries: Deno.DirEntry[];
+      try {
+        recordEntries = await Array.fromAsync(Deno.readDir(contextDir));
+      } catch (error) {
+        if (error instanceof Deno.errors.NotFound) continue;
+        throw error;
+      }
+      for (const recordEntry of recordEntries) {
+        if (!recordEntry.isFile || !recordEntry.name.endsWith(".json")) continue;
+        const raw = await Deno.readTextFile(join(contextDir, recordEntry.name));
+        const record = ContextRecordSchema.parse(JSON.parse(raw));
+        if (record.parentTraceId === parentTraceId) {
+          summaries.push(toContextRecordSummary(record));
+        }
+      }
+    }
+
+    summaries.sort((a, b) =>
+      a.sequence - b.sequence ||
+      a.turn - b.turn ||
+      a.attempt - b.attempt ||
+      a.timestamp.localeCompare(b.timestamp) ||
+      a.recordId.localeCompare(b.recordId)
+    );
+    return summaries;
   }
 
   /** Removes every captured record older than `retentionDays` (by `timestamp`) across

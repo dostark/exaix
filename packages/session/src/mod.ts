@@ -87,6 +87,7 @@ import {
   ContextRecordAlreadyExistsError,
   ContextRecordSecurityError,
   ContextRecordStore,
+  isValidUuid,
 } from "./context_record_store.ts";
 import type { IContextRecordPathResolver } from "./context_record_store.ts";
 
@@ -149,5 +150,5 @@ export type {
 };
 export { SessionDelegationResultStore };
 export type { ISessionDelegationResultStore };
-export { ContextRecordAlreadyExistsError, ContextRecordSecurityError, ContextRecordStore };
+export { ContextRecordAlreadyExistsError, ContextRecordSecurityError, ContextRecordStore, isValidUuid };
 export type { IContextRecordPathResolver };
