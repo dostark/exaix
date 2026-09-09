@@ -41,24 +41,58 @@ criteria (the "what" and "why"), the daemon agent executes the mechanical work (
 
 ## 2. Quick Start
 
+Choose the cycle before creating a sandbox. The default bootstrap configuration uses
+the governed **session-delegate cycle** with OpenCode. For a Claude Code subscription,
+replace the generated configuration with the Claude template in step 3a below:
+
+| Need                                                                     | Flow                    | Delegate configuration                                                           |
+| ------------------------------------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------- |
+| Execute a prepared, multi-step plan with checkpointing and a review gate | `dogfood-meta-workflow` | `configs/dogfood.toml` (OpenCode) or `configs/dogfood.claude.toml` (Claude Code) |
+| Run the simpler implement-then-review flow through a native CLI          | `dogfood-loop`          | `configs/dogfood.opencode.stock.toml` or `configs/dogfood.claude.stock.toml`     |
+
+The commands below create an isolated worktree and leave the repository checkout unchanged.
+Run them from the Exaix repository root.
+
 ```bash
-# 1. Bootstrap a dogfood sandbox (external directory, not inside the repo)
+# 1. Pick paths that do not already exist. The bootstrap script creates the worktree.
+export DOGFOOD_SANDBOX="$HOME/exa-dogfood"
+export DOGFOOD_WORKTREE="$HOME/exaix-dogfood-worktree"
+
+# 2. Bootstrap an external sandbox and isolated worktree.
 deno run -A scripts/dogfood_bootstrap.ts \
-  --dir ~/exa-dogfood \
-  --worktree /path/to/worktree
+  --dir "$DOGFOOD_SANDBOX" \
+  --worktree "$DOGFOOD_WORKTREE"
 
-# 2. Start the daemon pointing at the sandbox
-export DOGFOOD_SANDBOX=~/exa-dogfood
+# 2a. Give the newly created worktree its own branch before any agent can edit it.
+git -C "$DOGFOOD_WORKTREE" switch -c feature/health-endpoint
+
+# 3. Use the generated default configuration.
 export EXA_CONFIG_PATH=$DOGFOOD_SANDBOX/workspace/exa.config.toml
-deno task dogfood
 
-# 3. Wait for daemon readiness
+# 3a. Optional: use Claude Code through its logged-in subscription instead.
+# This must happen before starting the daemon. It replaces the default OpenCode template
+# while preserving the sandbox-specific paths created above.
+export DOGFOOD_CONFIG_TEMPLATE="$PWD/configs/dogfood.claude.toml"
+deno eval --allow-read --allow-write --allow-env '
+const template = Deno.env.get("DOGFOOD_CONFIG_TEMPLATE")!;
+const config = Deno.env.get("EXA_CONFIG_PATH")!;
+const root = Deno.env.get("DOGFOOD_SANDBOX")!;
+const worktree = Deno.env.get("DOGFOOD_WORKTREE")!;
+const source = await Deno.readTextFile(template);
+await Deno.writeTextFile(
+  config,
+  source.replaceAll("__DOGFOOD_ROOT__", root).replaceAll("__WORKTREE_PATH__", worktree),
+);
+'
+
+# 4. Start the daemon and wait for readiness.
+deno task dogfood
 deno run -A scripts/wait_for_daemon.ts $DOGFOOD_SANDBOX/workspace
 
-# 4. Write a structured request
-cat > $DOGFOOD_SANDBOX/workspace/Workspace/Requests/add-health-endpoint.md << 'REQUEST'
+# 5. Write a request. An unquoted heredoc deliberately expands the UUID and timestamp.
+cat > "$DOGFOOD_SANDBOX/workspace/Workspace/Requests/add-health-endpoint.md" <<REQUEST
 ---
-trace_id: "$(uuidgen)"
+trace_id: "$(deno eval 'console.log(crypto.randomUUID())')"
 created: "$(date -Iseconds)"
 status: pending
 priority: 5
@@ -67,6 +101,7 @@ skills: [tdd-methodology, exaix-conventions]
 portal: "exaix-self"
 target_branch: "feature/health-endpoint"
 tags: ["feature", "phase-121"]
+flow: "dogfood-loop"
 ---
 # Add health endpoint to daemon
 
@@ -85,17 +120,23 @@ that returns `{ "status": "ok" }` and a 200 status code.
 - `deno task test` passes
 REQUEST
 
-# 4. Wait for the plan to appear
+# 6. Wait for the plan, then review it before authorizing any work.
 ls $DOGFOOD_SANDBOX/workspace/Workspace/Plans/
-
-# 5. Review and approve the plan
 deno run -A apps/exactl/main.ts plan list
 deno run -A apps/exactl/main.ts plan show <plan-id>
 deno run -A apps/exactl/main.ts plan approve <plan-id>
 
-# 6. Stop the daemon when done
+# 7. Inspect the final diff and context capture. Stop the daemon when finished.
+git -C "$DOGFOOD_WORKTREE" status
+git -C "$DOGFOOD_WORKTREE" diff
+deno run -A apps/exactl/main.ts request inspect <trace-id>
 deno task dogfood:stop
 ```
+
+This one-off example uses `dogfood-loop`. Its stock loop delegates both implementation
+and review to the selected native CLI. Use `dogfood-meta-workflow` only for an already
+approved phase plan with a usable `plan_context_ref`; it is the governed plan cycle and
+not a drop-in replacement for an ordinary request.
 
 ### Where the sandbox lives
 
@@ -161,6 +202,24 @@ The dogfooding workflow follows a **Brief → Execute → Review** cycle:
 │   restart the cycle)                 │
 └─────────────────────────────────────┘
 ```
+
+### Before each execution
+
+Use this checklist in order. It separates decisions a person must make from work the
+daemon can safely automate:
+
+1. Confirm the worktree is isolated: `git -C "$DOGFOOD_WORKTREE" status` must not be
+   the checkout you use for day-to-day development.
+1. Choose a flow deliberately. Use `dogfood-loop` for one bounded change; use
+   `dogfood-meta-workflow` only when an approved plan supplies `plan_context_ref`.
+1. State the scope, non-goals, and observable acceptance checks in the request. Do not
+   ask the agent to infer a task from a title alone.
+1. Wait for `daemon.ready` before submitting a request after any daemon start or restart.
+   A started process is not necessarily listening to the request queue yet.
+1. Review the generated plan and approve only the intended plan ID. Approval is the
+   human gate that authorizes execution; it is not a formality.
+1. When the flow finishes, inspect the worktree diff and focused checks before merging
+   anything. For a context-enabled delegate, also inspect the capture by trace ID.
 
 ### 3.1 Authoring a Plan (the `/plan` skill)
 
@@ -490,14 +549,28 @@ silent no-ops. See `packages/core/tests/planning/contentless_brief_guard_test.ts
 
 ### 6.4 Config Presets (multi-delegate provider routing)
 
-The daemon ships four `[session_delegate]` presets:
+The repository ships templates for two distinct mechanisms. Do not mix them:
 
-| Preset                   | Tool          | Provider   | File                                                                     |
-| ------------------------ | ------------- | ---------- | ------------------------------------------------------------------------ |
-| OpenCode (default)       | `opencode`    | direct     | `configs/dogfood.toml`                                                   |
-| Claude Code (direct)     | `claude-code` | direct     | `configs/dogfood.claude.toml`                                            |
-| OpenCode + OpenRouter    | `opencode`    | openrouter | `configs/dogfood.openrouter.toml`                                        |
-| Claude Code + OpenRouter | `claude-code` | openrouter | `configs/dogfood.claude.openrouter.toml` (delegate provider live matrix) |
+| Intended use                | Tool                     | Template                              | What it delegates                      |
+| --------------------------- | ------------------------ | ------------------------------------- | -------------------------------------- |
+| Governed plan cycle         | OpenCode                 | `configs/dogfood.toml`                | `session_delegate` `code_changes` gate |
+| Governed plan cycle         | Claude Code subscription | `configs/dogfood.claude.toml`         | `session_delegate` `code_changes` gate |
+| Stock implement/review flow | OpenCode                 | `configs/dogfood.opencode.stock.toml` | Each `dogfood-loop` CLI-delegate step  |
+| Stock implement/review flow | Claude Code subscription | `configs/dogfood.claude.stock.toml`   | Each `dogfood-loop` CLI-delegate step  |
+
+Bootstrap always starts from `configs/dogfood.toml`; it does not select a template.
+Use the replacement command in [Quick Start](#2-quick-start) with the template that
+matches the flow and CLI you intend to run. For Claude Code subscription mode, first
+verify the client is installed and logged in:
+
+```bash
+claude --version
+claude -p "Reply with OK only" --output-format json
+```
+
+Subscription mode does **not** require `ANTHROPIC_API_KEY`. The daemon removes provider
+credentials from the child environment, so setting that key does not create a fallback
+to a metered Anthropic API call.
 
 The `[session_delegate.provider]` block (multi-delegate provider routing) declares which API gateway a tool
 should use. When present, the daemon reads the key from `key_env` and injects it into
@@ -526,7 +599,7 @@ the Anthropic-compatible endpoint with an auth token rather than the standard
 API-key header. The return is parsed from the single `{type:"result"}` JSON object
 that `claude --output-format json` emits.
 
-### 6.5 Running the `provider_live` delegate matrix (delegate provider live matrix)
+### 6.5 Running the `provider_live` delegate matrix (maintainer verification)
 
 The four presets above are exercised end-to-end by a single parametrized scenario,
 `tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml`. It iterates the
@@ -548,12 +621,14 @@ Per-cell requirements — a cell **skips** unless **all** of its predicates hold
 | ------------------------ | ---------------- | ------------------------------------------------------------------------ |
 | opencode / direct        | `opencode`       | `EXA_MATRIX_OPENCODE=1` (opt-in; OpenCode auth lives in its `auth.json`) |
 | opencode / openrouter    | `opencode`       | `EXA_MATRIX_OPENCODE=1` **+** `OPENROUTER_API_KEY`                       |
-| claude-code / direct     | `claude`         | `ANTHROPIC_API_KEY`                                                      |
+| claude-code / direct     | `claude`         | `ANTHROPIC_API_KEY` (legacy provider-routing matrix requirement)         |
 | claude-code / openrouter | `claude`         | `OPENROUTER_API_KEY` (injected as the Anthropic-compatible trio above)   |
 
 > **Why the OpenCode opt-in?** OpenCode authenticates via its own `auth.json`, so there is no
 > API-key env var Exaix can probe to know auth is configured. Set `EXA_MATRIX_OPENCODE=1` to assert
-> "OpenCode is logged in" and enable its cells. The claude-code cells gate on the real provider key.
+> "OpenCode is logged in" and enable its cells. This particular historical routing matrix still
+> gates its Claude direct cell on `ANTHROPIC_API_KEY`; use the subscription-backed
+> `dogfood-context-live` Claude cells for validating the native CLI path without an API key.
 >
 > **Live token-spend.** The deterministic matrix (parse + per-cell RUN/SKIP resolution) is proven and
 > CI-safe; a present cell additionally **spends provider tokens** when it boots a real delegate. The
@@ -714,10 +789,11 @@ for the complete command contract.
 
 The deterministic cutover suite proves both launch paths, cross-portal isolation,
 supplement bounds, disabled/non-dogfood parity, second-query nonce discovery, and capture
-read-back. The provider-live matrix is intentionally reported separately: as of
-2026-09-09, `cycle-codex` passed a real daemon/delegate/reconciliation/inspection run;
-`stock-claude`, `stock-opencode`, `cycle-claude`, and `cycle-opencode` remain unexecuted.
-This is one verified native cell, not evidence that every supported client has cut over.
+read-back. Provider-live evidence is intentionally narrower: as of 2026-09-09,
+`cycle-claude` completed a real daemon/delegate/reconciliation/inspection run, and
+`stock-claude` completed its direct implement and review launches. The latter is not an
+authoritative full-matrix pass because its scenario report did not refresh. Treat these as
+two client-path checks, not proof that OpenCode, Codex, or every matrix cell has cut over.
 
 ---
 

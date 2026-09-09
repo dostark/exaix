@@ -5082,4 +5082,18 @@ architecture overview.
 
 ## 9. Dogfooding & Development
 
-For developers contributing to Exaix itself, see the **[Dogfooding Guide](Exaix_Dogfooding.md)** for a self-hosted workflow using `configs/dogfood.toml`, the daemon lifecycle script, and the bootstrap workflow.
+For developers contributing to Exaix itself, the **[Dogfooding Guide](Exaix_Dogfooding.md)**
+is the step-by-step source of truth. It covers:
+
+1. Creating an external sandbox and isolated Git worktree.
+1. Choosing between the one-off `dogfood-loop` and the governed
+   `dogfood-meta-workflow` plan cycle.
+1. Writing a scoped request, waiting for daemon readiness, reviewing the generated plan,
+   and approving execution.
+1. Using OpenCode or a logged-in Claude Code subscription without silently falling back
+   to a metered provider API.
+1. Reviewing the worktree diff, focused validation, and the immutable context capture
+   with `exactl request inspect <trace-id>`.
+
+Start at [Quick Start](Exaix_Dogfooding.md#2-quick-start). Do not run dogfood work in
+your everyday checkout, and do not merge a result until a person has reviewed it.

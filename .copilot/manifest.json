@@ -677,8 +677,8 @@
     {
       "path": "README.md",
       "title": "Exaix Overview & Quickstart",
-      "short_summary": "Exaix Orchestration Platform - Overview and Quickstart",
-      "version": 2.3
+      "short_summary": "Local-first, governed AI orchestration for auditable code and operational work",
+      "version": 2.4
     },
     {
       "path": "GLOSSARY.md",
