@@ -100,15 +100,17 @@ export const PLAN_WRITTEN_FILES_TRACE_MAX: number = configurable({
   swap: SwapClass.HOT,
 });
 
-/** A native CLI delegate can answer with plain prose instead of `<content>{...}</content>`
- *  JSON, which fails `PlanAdapter.parse` downstream — wraps non-JSON content as a minimal
- *  valid Plan (`description` is `PlanSchema`'s only required field) so it survives instead. */
+/** Wraps non-JSON strategy output as a minimal valid Plan for `PlanAdapter.parse` — its
+ *  cross-field refine requires `steps` (or a specialized field), not `description` alone. */
 function ensurePlanJson(content: string): string {
   try {
     JSON.parse(content);
     return content;
   } catch {
-    return JSON.stringify({ description: content });
+    return JSON.stringify({
+      description: content,
+      steps: [{ step: 1, title: "Review", description: content }],
+    });
   }
 }
 

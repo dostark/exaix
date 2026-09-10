@@ -25,6 +25,7 @@ import { ExecutionStrategyName, PortalExecutionStrategy } from "@exaix/core";
 import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { PlanSchema } from "@exaix/schemas/plan_schema.ts";
 
 async function writeBlueprint(root: string, agentRole: string): Promise<void> {
   const dir = join(root, "Blueprints", "Agents");
@@ -841,11 +842,12 @@ Deno.test("AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in
       ExecutionStrategyName.CLI_DELEGATE,
     );
 
-    // content must be valid Plan-schema JSON — PlanAdapter.parse can consume it — and the
-    // native review text must survive somewhere in the plan rather than being discarded.
-    const parsed = JSON.parse(result.content);
-    assertEquals(typeof parsed.description, "string");
-    assertStringIncludes(parsed.description, "The implementation looks correct.");
+    // content must satisfy the REAL PlanSchema — including its cross-field refine requiring
+    // `steps` or a specialized field — not just be JSON-parseable, or PlanAdapter.parse still
+    // throws downstream despite this bridge believing it produced a valid envelope.
+    const validated = PlanSchema.parse(JSON.parse(result.content));
+    assertEquals(typeof validated.description, "string");
+    assertStringIncludes(validated.description, "The implementation looks correct.");
   } finally {
     await dbService.cleanup();
   }
