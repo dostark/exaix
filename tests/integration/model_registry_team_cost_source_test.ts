@@ -152,7 +152,8 @@ Deno.test({
           Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
           Deno.writeTextFileSync(join(tempDir, "Workspace", "Requests", `${TRACE_ID}.md`), REQUEST_MARKDOWN);
         },
-        afterInjectMs: 3000,
+        afterInjectMs: 12000,
+        waitForAfterInject: async () => (await readCostSource(configPath)) != null,
       });
 
       const costSource = await readCostSource(configPath);
@@ -212,7 +213,8 @@ Deno.test({
             REGISTRY_COMPUTED_REQUEST_MARKDOWN,
           );
         },
-        afterInjectMs: 3000,
+        afterInjectMs: 12000,
+        waitForAfterInject: async () => (await readCostSource(configPath)) === "registry_computed",
       });
 
       const costSource = await readCostSource(configPath);

@@ -104,7 +104,17 @@ export function assertDaemonPidIsDead(pid: number): void {
   }
 }
 
-/** Boots the real daemon, settles, then SIGTERM's it; migrates the workspace first (see {@link migrateDaemonWorkspace}). `midFlight`, if given, runs after settle to inject an external Config DB override the daemon must pick up. */
+/** Polls `check` until true or `maxMs` elapses — a fixed sleep races real CPU contention. */
+async function pollUntil(check: () => Promise<boolean>, maxMs: number, intervalMs = 200): Promise<void> {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
+/** Boots the real daemon, settles, then SIGTERM's it; migrates the workspace first (see {@link migrateDaemonWorkspace}). `midFlight`, if given, runs after settle to inject an external Config DB override the daemon must pick up.
+ *  Pass `waitFor`/`waitForAfterInject` to poll the real condition instead of sleeping `settleMs`/`afterInjectMs` blind. */
 export async function bootRealDaemon(
   configPath: string,
   settleMs: number,
@@ -112,6 +122,10 @@ export async function bootRealDaemon(
     extraEnv?: Record<string, string>;
     midFlight?: () => void;
     afterInjectMs?: number;
+    /** Polled instead of sleeping `settleMs`; resolves true once the daemon is ready for `midFlight`. */
+    waitFor?: () => Promise<boolean>;
+    /** Polled instead of sleeping `afterInjectMs`; resolves true once `midFlight`'s effect is observable. */
+    waitForAfterInject?: () => Promise<boolean>;
   } = {},
 ): Promise<void> {
   await migrateDaemonWorkspace(dirname(configPath));
@@ -123,10 +137,18 @@ export async function bootRealDaemon(
     env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1", ...options.extraEnv },
   }).spawn();
   try {
-    await new Promise((r) => setTimeout(r, settleMs));
+    if (options.waitFor) {
+      await pollUntil(options.waitFor, settleMs);
+    } else {
+      await new Promise((r) => setTimeout(r, settleMs));
+    }
     if (options.midFlight) {
       options.midFlight();
-      await new Promise((r) => setTimeout(r, options.afterInjectMs ?? 0));
+      if (options.waitForAfterInject) {
+        await pollUntil(options.waitForAfterInject, options.afterInjectMs ?? 0);
+      } else {
+        await new Promise((r) => setTimeout(r, options.afterInjectMs ?? 0));
+      }
     }
   } finally {
     try {

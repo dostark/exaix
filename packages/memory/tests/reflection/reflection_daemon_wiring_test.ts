@@ -40,6 +40,17 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Polls `check` until it returns true or `maxMs` elapses — a fixed sleep for "N ticks of a
+ *  10ms interval" assumes a quiet event loop; under full-suite parallel load a tick's async
+ *  work can take longer than the interval, so this waits for the real observable effect. */
+async function pollUntil(check: () => boolean | Promise<boolean>, maxMs: number, intervalMs = 20): Promise<void> {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    if (await check()) return;
+    await delay(intervalMs);
+  }
+}
+
 Deno.test("the real maintenance loop invokes reflection; a synthesized learning is observable after one tick", async () => {
   const { config, db, cleanup } = await initTestDbService();
   try {
@@ -96,7 +107,14 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
       reflectionService: reflection,
     });
 
-    await delay(120);
+    // Both the pending write and the cycle-completed journal event must be observed — a tick's
+    // async work does not guarantee they land in the same order every run.
+    await pollUntil(
+      async () =>
+        (await extractor.listPending()).length >= 1 &&
+        db.getActivitiesByActionType(DomainEventType.MemoryReflectionCycleCompleted).length >= 1,
+      5000,
+    );
     maintenance.stop();
 
     // The synthesized learning is observable in Memory/Pending after one tick.

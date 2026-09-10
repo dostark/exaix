@@ -143,7 +143,13 @@ Add a hello world function.
 `,
           );
         },
-        afterInjectMs: 4000,
+        afterInjectMs: 15000,
+        waitForAfterInject: async () => {
+          const rows = await readActivity(configPath);
+          return rows.some((a) =>
+            a.trace_id === traceId && a.action_type === "agent.execution_started" && a.runner_kind
+          );
+        },
       });
 
       const activities = await readActivity(configPath);

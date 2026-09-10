@@ -271,11 +271,16 @@ Deno.test("[integration][phase-147 cutover] capture → extract → approve → 
       logger,
       intervalMs: 10,
     });
+    // approvePending writes global memory before it removes the pending proposal file
+    // (memory_extractor.ts's addGlobalLearning precedes its Deno.remove), so both must be
+    // observed together — checking only global memory can catch the pending file mid-removal.
     let approvedLearning: ILearning | undefined;
-    for (let i = 0; i < 200 && !approvedLearning; i++) {
+    let pendingDrained = false;
+    for (let i = 0; i < 200 && !(approvedLearning && pendingDrained); i++) {
       await new Promise((resolve) => setTimeout(resolve, 10));
       const global = await memoryBank.getGlobalMemory();
       approvedLearning = global?.learnings.find((l) => l.title === "Rate limiter resets on full restart");
+      pendingDrained = (await memoryExtractor.listPending()).length === 0;
     }
     await maintenance.stop();
     assertExists(approvedLearning, "auto-approval must promote the learning to global memory");

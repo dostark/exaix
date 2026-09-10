@@ -284,7 +284,14 @@ Deno.test({
             EXPLICIT_REQUEST_ID,
             "stub-explicit",
           ),
-        afterInjectMs: 3000,
+        afterInjectMs: 12000,
+        waitForAfterInject: async () => {
+          const events = await readEvents(configPath, "model.admitted");
+          return events.some((e) => {
+            const payload = JSON.parse(e.payload ?? "{}") as { reason?: string; model?: string };
+            return payload.reason === "explicit_use" && payload.model === "claude-stub-explicit-use";
+          });
+        },
       });
 
       const admittedEvents = await readEvents(configPath, "model.admitted");

@@ -119,7 +119,13 @@ Deno.test({
       await runMigrationsIn(tempDir);
       writeTeamConfig(configPath, tempDir, started.adapterBaseUrls, true);
 
-      await bootRealDaemon(configPath, 4000, { extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" } });
+      await bootRealDaemon(configPath, 15000, {
+        extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
+        waitFor: async () => {
+          const failed = await readEvents(configPath, "model.registry.refresh.failed");
+          return failed.some((e) => (e.payload ?? "").includes('"provider":"anthropic"'));
+        },
+      });
 
       const failedEvents = await readEvents(configPath, "model.registry.refresh.failed");
       const anthropicFailure = failedEvents.find((e) => (e.payload ?? "").includes('"provider":"anthropic"'));
