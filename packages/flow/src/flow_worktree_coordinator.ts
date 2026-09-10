@@ -123,6 +123,13 @@ export class FlowWorktreeCoordinator implements IFlowWorktreeCoordinator {
     }
   }
 
+  async releaseAll(): Promise<void> {
+    const trackedPairs = Array.from(this.worktreesByTrace.keys()).map((key) => this.parseKey(key));
+    for (const [portalAlias, traceId] of trackedPairs) {
+      await this.release(portalAlias, traceId);
+    }
+  }
+
   private createKey(portalAlias: string, traceId: string): string {
     return `${portalAlias}:${traceId}`;
   }

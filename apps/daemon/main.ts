@@ -62,6 +62,7 @@ import {
   FlowLoader,
   FlowRunner,
   FlowTraceStore,
+  FlowWorktreeCoordinator,
   GateEvaluator,
   PlanContextResolver,
 } from "@exaix/flow";
@@ -941,6 +942,14 @@ if (import.meta.main) {
       });
     }
 
+    const gitServiceFactory = {
+      createGitService(repoPath: string, traceId: string) {
+        return new GitService({ config, traceId, agentRole: DAEMON_AGENT_ROLE_ID, repoPath, context });
+      },
+    };
+    const flowWorktreeCoordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
+    gracefulShutdown.registerCleanup("release_flow_worktrees", () => flowWorktreeCoordinator.releaseAll());
+
     const agentExecutorAdapter = new AgentComposerAdapter(
       agentRunner,
       blueprintsPath,
@@ -952,6 +961,7 @@ if (import.meta.main) {
         provider: llmProvider,
         modelResolver,
         contextPort: dogfoodContextPort,
+        worktreeCoordinator: flowWorktreeCoordinator,
       },
     );
     // FlowRunner and PlanExecutor share one coordinator as delegation authority.
@@ -1180,12 +1190,6 @@ if (import.meta.main) {
         logger,
       })
       : undefined;
-
-    const gitServiceFactory = {
-      createGitService(repoPath: string, traceId: string) {
-        return new GitService({ config, traceId, agentRole: DAEMON_AGENT_ROLE_ID, repoPath, context });
-      },
-    };
 
     const amendmentService = new PlanAmendmentService(config, llmProvider);
     const amendmentGate = new PlanAmendmentGate(config, amendmentService, undefined, logger);

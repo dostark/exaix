@@ -14,4 +14,7 @@ export interface IFlowWorktreeCoordinator {
 
   /** Best-effort removal for a tracked portal and trace worktree. */
   release(portalAlias: string, traceId: string): Promise<void>;
+
+  /** Best-effort removal for every worktree tracked by this coordinator. */
+  releaseAll(): Promise<void>;
 }

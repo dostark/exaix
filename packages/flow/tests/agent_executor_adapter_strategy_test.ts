@@ -91,6 +91,10 @@ class RecordingWorktreeCoordinator implements IFlowWorktreeCoordinator {
   release(_portalAlias: string, _traceId: string): Promise<void> {
     return Promise.resolve();
   }
+
+  releaseAll(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 Deno.test("AgentComposerAdapter.runWithStrategy: fails fast when construction dependencies are absent", async () => {

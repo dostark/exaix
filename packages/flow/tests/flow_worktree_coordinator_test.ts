@@ -206,6 +206,25 @@ Deno.test("FlowWorktreeCoordinator.release logs removal failures without throwin
   }
 });
 
+Deno.test("FlowWorktreeCoordinator.releaseAll removes every tracked worktree", async () => {
+  const test = await createCoordinator();
+  try {
+    const first = await test.coordinator.resolve("portal", "trace-1", "main");
+    const second = await test.coordinator.resolve("portal", "trace-2", "main");
+
+    await test.coordinator.releaseAll();
+
+    assertEquals(test.gitService.removeCalls, [
+      { worktreePath: first, options: { force: true } },
+      { worktreePath: second, options: { force: true } },
+    ]);
+    await test.coordinator.resolve("portal", "trace-1", "main");
+    assertEquals(test.gitService.addCalls.length, 3);
+  } finally {
+    await cleanup(test.root);
+  }
+});
+
 Deno.test("FlowWorktreeCoordinator evicts the least-recently-touched worktree", async () => {
   const test = await createCoordinator();
   try {
