@@ -99,6 +99,23 @@ Deno.test("ToolRegistry: read_file - successful read", async () => {
   }
 });
 
+Deno.test("ToolRegistry: read_file - accepts file_path as an alias for path (native-CLI param-name guess)", async () => {
+  // Regression: with no per-tool param schema in the prompt, a model can guess Claude Code's
+  // native `file_path` name instead of ours, previously silently resolving to the workspace root.
+  const { helper, cleanup } = await createToolRegistryTestContext("tool-test-read-file-path-alias-");
+
+  try {
+    const testFile = await helper.createMemoryProjectFile("test.txt", "Hello, World!");
+
+    const result = await helper.execute(ToolName.READ_FILE, { file_path: testFile });
+
+    assertEquals(result.success, true);
+    assertEquals((result.data as { content: string })?.content, "Hello, World!");
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[security] ToolRegistry: read_file - rejects path traversal", async () => {
   const { helper, cleanup } = await createToolRegistryTestContext("tool-test-traversal-");
 

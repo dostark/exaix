@@ -440,16 +440,21 @@ export class ToolRegistry implements IToolRegistry {
     const bool = (v: JSONValue): boolean => Boolean(v);
     const strArr = (v: JSONValue): string[] =>
       Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    // Our tools take a bare `path` param, but a model with no per-tool parameter schema (only
+    // the tool name is listed in the ReAct prompt) can guess a native-CLI name like Claude
+    // Code's `file_path` instead — silently defaulting to "" then resolves to the workspace
+    // root rather than failing clearly. Falling back to this alias covers that guess.
+    const strPath = (p: Record<string, JSONValue>): string => str(p.path ?? p.file_path);
 
-    this.executors.set(ToolName.READ_FILE, (p) => this.readFile(str(p.path)));
-    this.executors.set(ToolName.WRITE_FILE, (p) => this.writeFile(str(p.path), str(p.content)));
-    this.executors.set(ToolName.LIST_DIRECTORY, (p) => this.listDirectory(str(p.path)));
-    this.executors.set(ToolName.SEARCH_FILES, (p) => this.searchFiles(str(p.pattern), str(p.path)));
+    this.executors.set(ToolName.READ_FILE, (p) => this.readFile(strPath(p)));
+    this.executors.set(ToolName.WRITE_FILE, (p) => this.writeFile(strPath(p), str(p.content)));
+    this.executors.set(ToolName.LIST_DIRECTORY, (p) => this.listDirectory(strPath(p)));
+    this.executors.set(ToolName.SEARCH_FILES, (p) => this.searchFiles(str(p.pattern), strPath(p)));
     this.executors.set(
       ToolName.RUN_COMMAND,
       (p) => this.runCommand(str(p.command), p.args ? strArr(p.args) : [], p.cwd ? str(p.cwd) : undefined),
     );
-    this.executors.set(ToolName.CREATE_DIRECTORY, (p) => this.createDirectory(str(p.path)));
+    this.executors.set(ToolName.CREATE_DIRECTORY, (p) => this.createDirectory(strPath(p)));
     this.executors.set(
       ToolName.FETCH_URL,
       (p) => this.fetchUrl(str(p.url), p.format ? str(p.format) : undefined),
@@ -472,7 +477,7 @@ export class ToolRegistry implements IToolRegistry {
       (p) =>
         this.copyFile(str(p.source), str(p.destination), p.overwrite !== undefined ? bool(p.overwrite) : undefined),
     );
-    this.executors.set(ToolName.DELETE_FILE, (p) => this.deleteFile(str(p.path)));
+    this.executors.set(ToolName.DELETE_FILE, (p) => this.deleteFile(strPath(p)));
     this.executors.set(
       ToolName.GIT_INFO,
       (p) => this.gitInfo(str(p.repo_path), p.scope ? str(p.scope) : undefined),
