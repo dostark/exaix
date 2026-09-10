@@ -65,6 +65,9 @@ export interface IStepExecutionContext {
     >;
     /** The flow's portal alias; required for a strategy-routed step. */
     readonly portal?: string;
+    /** True for the flow's terminal `output.format: json` step (`flow_runner.isFinalJsonStrategyStep`);
+     *  tells a strategy-routed executor to coerce untagged output into parseable Plan JSON. */
+    readonly expectPlanJsonOutput?: boolean;
   };
 
   /** Unique identifier for this flow run */

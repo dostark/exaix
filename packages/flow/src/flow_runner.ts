@@ -168,6 +168,10 @@ export interface IFlowStepRequest {
    *  Required by a strategy-routed step to resolve `AgentComposer.executeStep`'s mandatory
    *  `options.portal`; absent is fine for a no-strategy step (`AgentRunner.run` never needs one). */
   portal?: string;
+  /** True for the flow's terminal step of a `output.format: json` flow (see
+   *  `isFinalJsonStrategyStep`) — a strategy-routed executor uses this to decide whether a
+   *  raw, untagged response must be coerced into parseable Plan JSON before `PlanAdapter`. */
+  expectPlanJsonOutput?: boolean;
 }
 
 export interface IParallelGroupSummary {
@@ -710,6 +714,16 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
 export function resolveAggregateSources(step: { input: { from?: string[] }; dependsOn?: string[] }): string[] {
   if (step.input.from?.length) return step.input.from;
   return step.dependsOn ?? [];
+}
+
+/** True when `step` is strategy-routed AND is the flow's terminal `output.format: json`
+ *  source — shared by the prompt instruction below and `IFlowStepRequest.expectPlanJsonOutput`
+ *  so the two conditions cannot drift apart. */
+export function isFinalJsonStrategyStep(step: IFlowStep, flow: IFlow): boolean {
+  const outputFrom = flow.output.from;
+  return step.strategy !== undefined &&
+    flow.output.format === FlowOutputFormat.JSON &&
+    (outputFrom === step.id || (Array.isArray(outputFrom) && outputFrom.includes(step.id)));
 }
 
 /** Output-shape instruction appended to every AGENT step prompt. Without it a real model answers in prose, which
@@ -1761,6 +1775,7 @@ export class FlowRunner implements IFlowRunner {
         sharedNamespace: stepRequest.sharedNamespace,
         parallelGroupResults: stepRequest.parallelGroupResults,
         portal: stepRequest.portal,
+        expectPlanJsonOutput: stepRequest.expectPlanJsonOutput,
       },
       flowRunId,
       startedAt,
@@ -1887,6 +1902,7 @@ export class FlowRunner implements IFlowRunner {
       skills,
       requestAnalysis: originalRequest.requestAnalysis,
       portal: originalRequest.portal,
+      expectPlanJsonOutput: isFinalJsonStrategyStep(step, flow),
     };
 
     const stepRequestWithParallelGroups = this.parallelGroupMergeService.attachParallelGroupResults(
@@ -1990,15 +2006,12 @@ export class FlowRunner implements IFlowRunner {
       });
     }
 
-    const outputFrom = flow.output.from;
-    const isFinalJsonStrategyStep = step.strategy !== undefined &&
-      flow.output.format === FlowOutputFormat.JSON &&
-      (outputFrom === step.id || (Array.isArray(outputFrom) && outputFrom.includes(step.id)));
+    const isFinalJsonStep = isFinalJsonStrategyStep(step, flow);
 
     // Strategy steps normally keep their action-oriented prompt: injecting a plan envelope makes live models return
     // a plan instead of tool actions. A terminal JSON strategy step is the explicit exception because request flow
     // routing sends its output to PlanAdapter, which requires the envelope's plan JSON.
-    const userPrompt = step.type === FlowStepType.GATE || (step.strategy && !isFinalJsonStrategyStep)
+    const userPrompt = step.type === FlowStepType.GATE || (step.strategy && !isFinalJsonStep)
       ? basePrompt
       : `${basePrompt}${flowStepOutputInstruction(step, flow)}`;
 

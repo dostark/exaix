@@ -802,6 +802,100 @@ Deno.test("AgentComposerAdapter.runWithStrategy: an actively-touched trace's pla
   }
 });
 
+Deno.test("AgentComposerAdapter.runWithStrategy: wraps a non-JSON description in a minimal Plan envelope when the request declares expectPlanJsonOutput (stock-claude review bug)", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir);
+    const portalAlias = config.portals![0].alias;
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    // Regression: a real Claude Code CLI review answers naturally with Markdown (no
+    // <thought>/<content> tags), which otherwise reaches PlanAdapter.parse as raw prose.
+    const nativeMarkdownReview = "## Code Review\n\nThe implementation looks correct. " +
+      "No blocking issues found.\n\n### Suggestions\n- Consider adding a test for the edge case.";
+    const strategyRegistry = new StrategyRegistry();
+    strategyRegistry.register({
+      name: ExecutionStrategyName.CLI_DELEGATE,
+      execute: () =>
+        Promise.resolve({
+          branch: "",
+          commit_sha: "0".repeat(40),
+          files_changed: [],
+          description: nativeMarkdownReview,
+          tool_calls: 0,
+          execution_time_ms: 10,
+        }),
+    });
+
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    const result = await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: portalAlias, expectPlanJsonOutput: true }),
+      ExecutionStrategyName.CLI_DELEGATE,
+    );
+
+    // content must be valid Plan-schema JSON — PlanAdapter.parse can consume it — and the
+    // native review text must survive somewhere in the plan rather than being discarded.
+    const parsed = JSON.parse(result.content);
+    assertEquals(typeof parsed.description, "string");
+    assertStringIncludes(parsed.description, "The implementation looks correct.");
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: does not wrap non-JSON description when expectPlanJsonOutput is unset (mid-flow step feeding the next step's prompt)", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir);
+    const portalAlias = config.portals![0].alias;
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    const nativeMarkdown = "Implemented the health endpoint in apps/daemon/main.ts.";
+    const strategyRegistry = new StrategyRegistry();
+    strategyRegistry.register({
+      name: ExecutionStrategyName.CLI_DELEGATE,
+      execute: () =>
+        Promise.resolve({
+          branch: "",
+          commit_sha: "0".repeat(40),
+          files_changed: ["apps/daemon/main.ts"],
+          description: nativeMarkdown,
+          tool_calls: 1,
+          execution_time_ms: 10,
+        }),
+    });
+
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    // No expectPlanJsonOutput — this is an intermediate step (e.g. dogfood-loop's
+    // "implement") whose content feeds the next step's prompt verbatim, and must never be
+    // silently rewrapped as JSON.
+    const result = await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: portalAlias }),
+      ExecutionStrategyName.CLI_DELEGATE,
+    );
+
+    assertEquals(result.content, nativeMarkdown);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
 Deno.test("AgentComposerAdapter.run: no-strategy path still calls the wrapped runner unchanged", async () => {
   const dbService = await initTestDbService();
   try {

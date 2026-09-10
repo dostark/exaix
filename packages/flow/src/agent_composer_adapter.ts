@@ -100,6 +100,18 @@ export const PLAN_WRITTEN_FILES_TRACE_MAX: number = configurable({
   swap: SwapClass.HOT,
 });
 
+/** A native CLI delegate can answer with plain prose instead of `<content>{...}</content>`
+ *  JSON, which fails `PlanAdapter.parse` downstream — wraps non-JSON content as a minimal
+ *  valid Plan (`description` is `PlanSchema`'s only required field) so it survives instead. */
+function ensurePlanJson(content: string): string {
+  try {
+    JSON.parse(content);
+    return content;
+  } catch {
+    return JSON.stringify({ description: content });
+  }
+}
+
 /** Wraps an IAgentRunner (or compatible IRunner) into FlowRunner's IAgentExecutor interface. */
 export class AgentComposerAdapter {
   private loader: IBlueprintLoader;
@@ -223,7 +235,7 @@ export class AgentComposerAdapter {
       const { content } = new OutputValidator().parseXMLTags(result.description);
       return {
         thought: `Strategy-routed step completed via ${strategy}`,
-        content,
+        content: request.expectPlanJsonOutput ? ensurePlanJson(content) : content,
         raw: JSON.stringify(result),
       };
     } finally {

@@ -185,3 +185,37 @@ Deno.test("FlowRunner: a final strategy step in a JSON-output flow receives the 
   assert(/must parse as a plan/i.test(prompt), "a terminal JSON strategy step must be told its output becomes a plan");
   assert(/must be valid JSON/i.test(prompt), "a terminal JSON strategy step must be told to emit valid JSON");
 });
+
+Deno.test("FlowRunner: expectPlanJsonOutput is set on the step request exactly for the terminal strategy step of a JSON-output flow (stock-claude review bug)", async () => {
+  // Regression: dogfood-loop's terminal `review` step is strategy:cli_delegate with
+  // format: json — AgentComposerAdapter needs this flag to coerce non-JSON output.
+  const executor = new StubAgentExecutor();
+  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new CapturingEventLogger() });
+
+  await runner.execute(makeFlow(ExecutionStrategyName.CLI_DELEGATE, FlowOutputFormat.JSON), {
+    userPrompt: "do the thing",
+    traceId: crypto.randomUUID(),
+    requestId: "req-expect-plan-json",
+    portal: "workspace",
+  });
+
+  assertEquals(executor.received.length, 1);
+  assertEquals(executor.received[0].request.expectPlanJsonOutput, true);
+});
+
+Deno.test("FlowRunner: expectPlanJsonOutput is unset for a strategy step that is not the flow's terminal JSON step", async () => {
+  const executor = new StubAgentExecutor();
+  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new CapturingEventLogger() });
+
+  // markdown-format flow (the default in makeFlow) — this step's content is not routed to
+  // PlanAdapter as a Plan-JSON envelope, so it must never be silently rewrapped as JSON.
+  await runner.execute(makeFlow(ExecutionStrategyName.CLI_DELEGATE), {
+    userPrompt: "do the thing",
+    traceId: crypto.randomUUID(),
+    requestId: "req-no-expect-plan-json",
+    portal: "workspace",
+  });
+
+  assertEquals(executor.received.length, 1);
+  assertEquals(executor.received[0].request.expectPlanJsonOutput, false);
+});
