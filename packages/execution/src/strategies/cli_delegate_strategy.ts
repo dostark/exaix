@@ -447,6 +447,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     connection: IDogfoodContextConnection,
     portalPath: string,
   ): Promise<{ configPath: string; cleanup: () => Promise<void> }> {
+    await Deno.mkdir(portalPath, { recursive: true });
     const dir = await Deno.makeTempDir({ dir: portalPath, prefix: ".exaix-dogfood-mcp-" });
     const configPath = join(dir, "claude_mcp_config.json");
     const config = buildClaudeMcpConfig(toMcpConnectionInput(connection));
@@ -463,6 +464,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     connection: IDogfoodContextConnection,
     portalPath: string,
   ): Promise<{ configPath: string; cleanup: () => Promise<void> }> {
+    await Deno.mkdir(portalPath, { recursive: true });
     const dir = await Deno.makeTempDir({ dir: portalPath, prefix: ".exaix-dogfood-mcp-" });
     const configPath = join(dir, "opencode_config.json");
     const config = { mcp: buildOpencodeMcpFragment(toMcpConnectionInput(connection)) };
