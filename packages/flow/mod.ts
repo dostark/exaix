@@ -67,6 +67,12 @@ export {
   type IFlowNamespaceOriginalRequest,
 } from "./src/flow_namespace_coordinator.ts";
 export { AgentComposerAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "./src/agent_composer_adapter.ts";
+export {
+  FLOW_WORKTREE_TRACE_MAX,
+  FlowWorktreeCoordinator,
+  FlowWorktreeSetupError,
+  type IFlowWorktreeCoordinatorDeps,
+} from "./src/flow_worktree_coordinator.ts";
 export { GateConfigSchema, GateEvaluator, MockJudgeInvoker } from "./src/gate_evaluator.ts";
 export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 

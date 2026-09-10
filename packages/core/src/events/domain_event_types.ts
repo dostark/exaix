@@ -326,6 +326,8 @@ export const DomainEventType = {
   FlowStepExecuted: "flow.step.executed",
   FlowStepReplayed: "flow.step.replayed",
   FlowStepInvalidated: "flow.step.invalidated",
+  FlowWorktreeCreated: "flow.worktree.created",
+  FlowWorktreeReleased: "flow.worktree.released",
 
   // Execution context events
   ExecutionContextCompacted: "execution.context.compacted",
