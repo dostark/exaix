@@ -21,7 +21,8 @@ import { initTestDbService } from "@exaix/testing";
 import { createMockConfig } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { PortalPermissionsService } from "@exaix/portal";
-import { ExecutionStrategyName } from "@exaix/core";
+import { ExecutionStrategyName, PortalExecutionStrategy } from "@exaix/core";
+import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
@@ -65,6 +66,31 @@ function makeStepRequest(overrides: Partial<IFlowStepRequest> = {}): IFlowStepRe
     requestId: "req-1",
     ...overrides,
   };
+}
+
+interface IWorktreeResolveCall {
+  portalAlias: string;
+  traceId: string;
+  baseBranch: string;
+}
+
+/** Records worktree resolution without invoking git or creating a subprocess. */
+class RecordingWorktreeCoordinator implements IFlowWorktreeCoordinator {
+  readonly resolveCalls: IWorktreeResolveCall[] = [];
+
+  constructor(
+    private readonly worktreePath: string,
+    private readonly resolutionError?: Error,
+  ) {}
+
+  resolve(portalAlias: string, traceId: string, baseBranch: string): Promise<string> {
+    this.resolveCalls.push({ portalAlias, traceId, baseBranch });
+    return this.resolutionError ? Promise.reject(this.resolutionError) : Promise.resolve(this.worktreePath);
+  }
+
+  release(_portalAlias: string, _traceId: string): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 Deno.test("AgentComposerAdapter.runWithStrategy: fails fast when construction dependencies are absent", async () => {
@@ -147,6 +173,218 @@ Deno.test("AgentComposerAdapter.runWithStrategy: dispatches through the forced s
 
     // Output bridge: IChangesetResult.description -> IAgentExecutionResult.content
     assertEquals(result.content, "spy strategy ran for " + portalAlias);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: absent worktreeCoordinator preserves portal execution", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir);
+    const portalAlias = config.portals![0].alias;
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    const calls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
+
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    await adapter.runWithStrategy!("test-agent", makeStepRequest({ portal: portalAlias }), ExecutionStrategyName.REACT);
+
+    assertEquals(calls.length, 1);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: WORKTREE portal resolves through the coordinator", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const traceId = crypto.randomUUID();
+    const worktreePath = join(dbService.tempDir, ".exa", "worktrees", "workspace", traceId);
+    await initGitPortal(worktreePath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [{
+        alias: "workspace",
+        target_path: join(dbService.tempDir, "portal"),
+        default_branch: "main",
+        execution_strategy: PortalExecutionStrategy.WORKTREE,
+        agents_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const coordinator = new RecordingWorktreeCoordinator(worktreePath);
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
+    );
+
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "workspace", traceId }),
+      ExecutionStrategyName.REACT,
+    );
+
+    assertEquals(coordinator.resolveCalls, [{
+      portalAlias: "workspace",
+      traceId,
+      baseBranch: "main",
+    }]);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: BRANCH and undefined strategies preserve portal execution", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const branchPortalPath = join(dbService.tempDir, "branch-portal");
+    const defaultPortalPath = join(dbService.tempDir, "default-portal");
+    await initGitPortal(branchPortalPath);
+    await initGitPortal(defaultPortalPath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [
+        {
+          alias: "branch-portal",
+          target_path: branchPortalPath,
+          default_branch: "main",
+          execution_strategy: PortalExecutionStrategy.BRANCH,
+          agents_allowed: ["*"],
+          operations: [],
+        },
+        {
+          alias: "default-portal",
+          target_path: defaultPortalPath,
+          default_branch: "main",
+          agents_allowed: ["*"],
+          operations: [],
+        },
+      ],
+    });
+    const coordinator = new RecordingWorktreeCoordinator(join(dbService.tempDir, "unexpected-worktree"));
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
+    );
+
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "branch-portal" }),
+      ExecutionStrategyName.REACT,
+    );
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "default-portal" }),
+      ExecutionStrategyName.REACT,
+    );
+
+    assertEquals(coordinator.resolveCalls, []);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: repeated trace resolution reuses the coordinator's worktree path", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const traceId = crypto.randomUUID();
+    const worktreePath = join(dbService.tempDir, ".exa", "worktrees", "workspace", traceId);
+    await initGitPortal(worktreePath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [{
+        alias: "workspace",
+        target_path: join(dbService.tempDir, "portal"),
+        default_branch: "main",
+        execution_strategy: PortalExecutionStrategy.WORKTREE,
+        agents_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const coordinator = new RecordingWorktreeCoordinator(worktreePath);
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
+    );
+
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "workspace", traceId }),
+      ExecutionStrategyName.REACT,
+    );
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "workspace", traceId }),
+      ExecutionStrategyName.REACT,
+    );
+
+    assertEquals(coordinator.resolveCalls, [
+      { portalAlias: "workspace", traceId, baseBranch: "main" },
+      { portalAlias: "workspace", traceId, baseBranch: "main" },
+    ]);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: worktree setup failures propagate without fallback", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [{
+        alias: "workspace",
+        target_path: join(dbService.tempDir, "portal"),
+        default_branch: "main",
+        execution_strategy: PortalExecutionStrategy.WORKTREE,
+        agents_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const coordinator = new RecordingWorktreeCoordinator(
+      join(dbService.tempDir, "failed-worktree"),
+      new Error("worktree setup failed"),
+    );
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, []);
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry, worktreeCoordinator: coordinator },
+    );
+
+    await assertRejects(
+      () =>
+        adapter.runWithStrategy!("test-agent", makeStepRequest({ portal: "workspace" }), ExecutionStrategyName.REACT),
+      Error,
+      "worktree setup failed",
+    );
   } finally {
     await dbService.cleanup();
   }
