@@ -709,12 +709,18 @@ immutable JSON record of the exact bytes sent under
 capture failure aborts the launch. Records older than `retention_days` (default 7) are
 pruned at daemon startup and once a day.
 
+**Trusted-caller binding:** activation checks `dogfood.context.enabled`, the portal-alias
+binding, and — since Phase 176's Step 6 remediation — the calling agent's own daemon-resolved
+`agent_role`, rejected before any context capture or MCP endpoint starts unless it is a
+member of `dogfood.context.trusted_agent_roles` (default `["dogfood-coder",
+"quality-judge"]`, the two roles the shipped `dogfood-loop` and `dogfood-meta-workflow` flows
+actually use). This role is resolved from the flow/step definition, never from prompt or
+request text; a caller outside the set is treated exactly like `dogfood.context.enabled`
+being `false` — the unaugmented objective, no capture, no MCP endpoint, never a launch
+failure.
+
 **Known limitations, stated plainly:**
 
-- **Activation is config-gated, not flow-verified.** The daemon checks
-  `dogfood.context.enabled` and the portal-alias binding, but does not yet verify the
-  calling flow/role is actually `dogfood-loop`/`dogfood-coder` — treat this as scoped to
-  trusted dogfood sandbox configuration, not a general per-request authorization check.
 - **Live child-query is now available on supported native clients** — see §6.8. The
   initial bounded supplement above is still the only context sent automatically; the
   child must actively call one of the three granted MCP tools to ask for more.
