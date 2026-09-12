@@ -105,7 +105,7 @@ Use `#commit` for the structured commit. Type: `fix`. Mandatory fields: `what:`,
 ---
 exaix:
   skill_id: remediate-plan-gaps
-  related_skills: [pre-gap-analysis, test-development]
+  related_skills: [pre-gap-analysis, next-steps, test-development]
   triggers:
     keywords: [remediate-plan, plan-gaps, close-gaps, fix-plan]
     task_types: [planning]

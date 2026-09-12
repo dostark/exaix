@@ -58,7 +58,15 @@
       "short_summary": ""
     },
     {
+      "path": ".copilot/prompts/test-development.prompt.md",
+      "short_summary": ""
+    },
+    {
       "path": ".copilot/prompts/pre-gap-analysis.prompt.md",
+      "short_summary": ""
+    },
+    {
+      "path": ".copilot/prompts/remediate-plan-gaps.prompt.md",
       "short_summary": ""
     },
     {
@@ -93,11 +101,23 @@
       "short_summary": ""
     },
     {
+      "path": ".copilot/prompts/self-improvement.prompt.md",
+      "short_summary": ""
+    },
+    {
+      "path": ".copilot/prompts/dogfood-development.prompt.md",
+      "short_summary": ""
+    },
+    {
       "path": ".copilot/prompts/post-gap-analysis.prompt.md",
       "short_summary": ""
     },
     {
       "path": ".copilot/prompts/tdd-workflow.prompt.md",
+      "short_summary": ""
+    },
+    {
+      "path": ".copilot/prompts/remediate-code-gaps.prompt.md",
       "short_summary": ""
     },
     {
@@ -133,6 +153,10 @@
       "short_summary": ""
     },
     {
+      "path": ".copilot/prompts/next-phase.prompt.md",
+      "short_summary": ""
+    },
+    {
       "path": ".copilot/prompts/coverage.prompt.md",
       "short_summary": ""
     },
@@ -142,6 +166,10 @@
     },
     {
       "path": ".copilot/prompts/refactor-check-magic.prompt.md",
+      "short_summary": ""
+    },
+    {
+      "path": ".copilot/prompts/exaix-development.prompt.md",
       "short_summary": ""
     },
     {

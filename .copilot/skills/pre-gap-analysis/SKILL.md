@@ -168,18 +168,20 @@ Do / Don't
 
 Related skills:
 - #plan             — Draft a new phase planning document from scratch (precedes this skill)
-- #next-steps       — Execute the plan step-by-step after analysis is clean (follows this skill)
+- #remediate-plan-gaps — Closes the gaps this skill finds (follows this skill when gaps are found)
+- #next-steps       — Execute the plan step-by-step after analysis is clean (follows this skill directly when no gaps are found)
 - #post-gap-analysis — Deep post-implementation review (code already written)
 - #commit           — Create a structured commit after gap fixes
 - [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
-  #plan → **#pre-gap-analysis** → #next-steps → #post-gap-analysis → #commit
+  #plan → **#pre-gap-analysis** → #remediate-plan-gaps → #next-steps → #post-gap-analysis → #commit
 ```
 
 ## See also
 
 - [plan](../plan/SKILL.md) — plan structure, gap remediation step format
+- [remediate-plan-gaps](../remediate-plan-gaps/SKILL.md) — closes the gaps this skill finds
 - [post-gap-analysis](../post-gap-analysis/SKILL.md) — complementary post-implementation review
 
 ---
@@ -746,7 +748,7 @@ are written. Format with grep outcome annotations:
 ---
 exaix:
   skill_id: pre-gap-analysis
-  related_skills: [test-development]
+  related_skills: [plan, remediate-plan-gaps, test-development]
   triggers:
     keywords: [pre-gap, plan-review, gap-analysis, gap]
     task_types: [planning]

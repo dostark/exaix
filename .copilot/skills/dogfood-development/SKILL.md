@@ -28,7 +28,7 @@ Key points
 See also
   User guide           →  [docs/Exaix_Dogfooding.md](../../docs/Exaix_Dogfooding.md)
   Dogfood agent role   →  [Blueprints/Agents/dogfood-developer.md](../../Blueprints/Agents/dogfood-developer.md)
-  Dogfood flow         →  [Blueprints/Flows/dogfood_loop.flow.yaml](../../Blueprints/Flows/dogfood_loop.flow.yaml)
+  Dogfood flow         →  [Blueprints/Flows/dogfood-loop.flow.yaml](../../Blueprints/Flows/dogfood-loop.flow.yaml)
 
 Canonical prompt (short):
 "Set up a dogfood sandbox for phase {N}. Bootstrap, write the request,
@@ -57,6 +57,15 @@ The dogfood loop (human + daemon)
   6. Close the loop (merge, or revise request and restart)
 
 Meta-pipeline cycle (daily rhythm)
+
+  This is a deliberately reduced variant of the canonical phase loop (plan ->
+  pre-gap-analysis -> remediate-plan-gaps -> next-steps xN -> post-gap-analysis ->
+  remediate-code-gaps -> self-improvement-retro), sized for a single dogfood day rather
+  than a full phase: it assumes an existing request/plan (skips plan and
+  remediate-plan-gaps), and swaps the terminal remediate-code-gaps + retro steps for
+  clean-codebase to keep the daily loop fast. Gaps found mid-cycle still route through
+  remediate-plan-gaps/remediate-code-gaps on demand (see Related skills below) — this
+  rhythm is the default path, not a replacement for those steps when gaps surface.
 
   pre-gap-analysis  →  next-steps (xN, each with commit)  →  post-gap-analysis  →  clean-codebase
 

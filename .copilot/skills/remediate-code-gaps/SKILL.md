@@ -50,12 +50,13 @@ Do / Don't
 
 Related skills:
 - #post-gap-analysis — Produces the remediation steps this skill executes
+- #self-improvement — Terminal phase-loop step; run after this skill closes
 - #fix-bug — Fix a specific finding discovered during remediation
 - #commit — Structured commit after remediation
 - [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
-  #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps → #post-gap-analysis → **#remediate-code-gaps** → #commit
+  #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps → #post-gap-analysis → **#remediate-code-gaps** → #self-improvement-retro
 ```
 
 ## See also
@@ -172,7 +173,7 @@ it goes through the plan-step gate:
 ---
 exaix:
   skill_id: remediate-code-gaps
-  related_skills: [post-gap-analysis, test-development, exaix-development]
+  related_skills: [post-gap-analysis, test-development, exaix-development, self-improvement]
   triggers:
     keywords: [remediate-code, code-gaps, close-code-gaps, fix-code]
     task_types: [bugfix, refactor]

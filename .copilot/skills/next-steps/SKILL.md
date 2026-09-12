@@ -435,6 +435,7 @@ Do / Don't
 Related skills
 - #plan              — Create or extend a .copilot/planning/ document (precedes this skill)
 - #pre-gap-analysis  — Validate the plan before starting (precedes this skill)
+- #remediate-plan-gaps — Closes plan gaps pre-gap-analysis found (precedes this skill directly when gaps were found)
 - #post-gap-analysis — Deep review when all steps are complete (follows this skill)
 - #commit            — Create a structured commit message (used at end of each step)
 - #tdd-workflow      — Full TDD red-green-refactor reference for individual components (used within each step)
@@ -470,7 +471,7 @@ Workflow chain (typical):
 ---
 exaix:
   skill_id: next-steps
-  related_skills: [plan, tdd-workflow, commit, test-development]
+  related_skills: [remediate-plan-gaps, plan, tdd-workflow, commit, post-gap-analysis, test-development]
   triggers:
     keywords: [next-steps, step-execution, implement, execute]
     task_types: [feature, bugfix, refactor, testing]

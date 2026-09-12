@@ -313,6 +313,7 @@ Do / Don't
 ---
 exaix:
   skill_id: self-improvement
+  related_skills: [remediate-code-gaps, plan, pre-gap-analysis, post-gap-analysis, test-development]
   triggers:
     keywords: [
       self-improvement,

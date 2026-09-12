@@ -492,7 +492,7 @@ coverage:
 ---
 exaix:
   skill_id: plan
-  related_skills: [test-development]
+  related_skills: [pre-gap-analysis, test-development]
   triggers:
     keywords: [plan, phase, planning, design]
     task_types: [planning]
