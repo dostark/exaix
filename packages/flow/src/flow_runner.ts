@@ -282,7 +282,9 @@ type IFlowOriginalRequest = {
   requestId?: string;
   requestAnalysis?: IRequestAnalysis;
   portal?: string;
-  /** Portal-configured worktree root; required by a session_delegate_cycle step. */
+  /** The portal's configured `target_path` verbatim, passed through unmodified as the
+   *  delegated CLI's `cwd` — worktree-isolated only if that path already points at one; no
+   *  code here creates or enforces per-trace isolation. Required by a session_delegate_cycle step. */
   executionRoot?: string;
   /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */
   planContextRef?: string;
