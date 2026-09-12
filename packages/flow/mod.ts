@@ -73,6 +73,7 @@ export {
   FlowWorktreeSetupError,
   type IFlowWorktreeCoordinatorDeps,
 } from "./src/flow_worktree_coordinator.ts";
+export { resolveWorktreeBaseDir } from "./src/resolve_worktree_base_dir.ts";
 export { GateConfigSchema, GateEvaluator, MockJudgeInvoker } from "./src/gate_evaluator.ts";
 export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 

@@ -14,6 +14,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
+import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type {
   SessionBrief,
@@ -253,6 +254,14 @@ function makeFailingContextPort(): IDogfoodContextPort {
   };
 }
 
+/** None of this file's tests set `portalAlias` on their request, so `prepareBrief` never
+ *  calls this — it stands in only to satisfy the mandatory dependency. */
+const NEVER_USED_WORKTREE_COORDINATOR: IFlowWorktreeCoordinator = {
+  resolve: () => Promise.reject(new Error("not used")),
+  release: () => Promise.resolve(),
+  releaseAll: () => Promise.resolve(),
+};
+
 function makeDeps(
   delegateService: RecordingDelegateService,
   waitStore: RecordingWaitStore,
@@ -271,6 +280,8 @@ function makeDeps(
     now: () => FIXED_NOW,
     sleep: () => Promise.resolve(),
     contextPort,
+    portals: [],
+    worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
   };
 }
 

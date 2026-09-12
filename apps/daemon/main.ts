@@ -983,6 +983,8 @@ if (import.meta.main) {
         now: () => new Date(),
         sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
         contextPort: dogfoodContextPort,
+        portals: config.portals,
+        worktreeCoordinator: flowWorktreeCoordinator,
       }, logger)
       : undefined;
     if (sessionDelegationCoordinator) {

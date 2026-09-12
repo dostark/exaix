@@ -21,12 +21,13 @@ import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
 import type { IDatabaseService, JSONValue } from "@exaix/core";
 import type { ExecutionStrategyName } from "@exaix/core";
-import { ConfigValueType, PortalExecutionStrategy, SwapClass } from "@exaix/core";
+import { ConfigValueType, SwapClass } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
 import type { IDogfoodContextPort, IFlowWorktreeCoordinator, Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PathResolver, type PortalPermissionsService } from "@exaix/portal";
 import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
+import { resolveWorktreeBaseDir } from "./resolve_worktree_base_dir.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
@@ -169,7 +170,7 @@ export class AgentComposerAdapter {
     const toolRegistry = new ToolRegistry({
       config,
       traceId,
-      baseDir: await this.resolveWorktreeBaseDir(portalConfig, traceId),
+      baseDir: await resolveWorktreeBaseDir(portalConfig, traceId, this.orchestratorDeps.worktreeCoordinator),
       pathResolver,
     });
     // Bounded, least-recently-touched-evicted map: re-inserting a key moves it to the end of
@@ -228,16 +229,5 @@ export class AgentComposerAdapter {
     } finally {
       orchestrator.dispose();
     }
-  }
-
-  private async resolveWorktreeBaseDir(
-    portalConfig: NonNullable<Config["portals"]>[number],
-    traceId: string,
-  ): Promise<string> {
-    const coordinator = this.orchestratorDeps?.worktreeCoordinator;
-    if (!coordinator || portalConfig.execution_strategy !== PortalExecutionStrategy.WORKTREE) {
-      return portalConfig.target_path;
-    }
-    return await coordinator.resolve(portalConfig.alias, traceId, portalConfig.default_branch);
   }
 }

@@ -11,6 +11,7 @@ import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief, SessionDelegateConfig, SessionWaitState } from "@exaix/schemas/session_delegate.ts";
@@ -194,6 +195,14 @@ function request(): ISessionDelegationRequest {
   };
 }
 
+/** None of this file's tests set `portalAlias` on their request, so `prepareBrief` never
+ *  calls this — it stands in only to satisfy the mandatory dependency. */
+const NEVER_USED_WORKTREE_COORDINATOR: IFlowWorktreeCoordinator = {
+  resolve: () => Promise.reject(new Error("not used")),
+  release: () => Promise.resolve(),
+  releaseAll: () => Promise.resolve(),
+};
+
 function makeDeps(
   delegateService: RecordingDelegateService,
   waitStore: RecordingWaitStore,
@@ -210,6 +219,8 @@ function makeDeps(
     resolveModel: () => Promise.resolve(undefined),
     now: () => FIXED_NOW,
     sleep: () => Promise.resolve(),
+    portals: [],
+    worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
   };
 }
 

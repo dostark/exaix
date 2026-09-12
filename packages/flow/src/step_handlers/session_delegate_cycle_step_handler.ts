@@ -71,6 +71,7 @@ interface IStepDelegationContext {
   parentTraceId: string;
   parentStepId: string;
   agentRole: string;
+  portalAlias: string;
   worktreePath: string;
   artifactRef: string;
 }
@@ -118,7 +119,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
       throw new Error(`session_delegate_cycle step "${ctx.step.id}" has no delegateCycle config`);
     }
 
-    const { executionRoot, planContextRef, traceId } = ctx.request;
+    const { executionRoot, planContextRef, traceId, portal } = ctx.request;
     if (!executionRoot || !planContextRef) {
       throw new Error(
         `session_delegate_cycle step "${ctx.step.id}" requires executionRoot and plan_context_ref on the request`,
@@ -126,6 +127,9 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     }
     if (!traceId) {
       throw new Error(`session_delegate_cycle step "${ctx.step.id}" requires a parent trace id`);
+    }
+    if (!portal) {
+      throw new Error(`session_delegate_cycle step "${ctx.step.id}" requires a portal alias on the request`);
     }
 
     let checkpoint: ISessionDelegateCycleCheckpoint | undefined;
@@ -165,6 +169,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
             parentTraceId: traceId,
             parentStepId: ctx.step.id,
             agentRole: ctx.step.agent_role,
+            portalAlias: portal,
             worktreePath: executionRoot,
             artifactRef: planContextRef,
           },
@@ -361,7 +366,8 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     key: ISessionDelegateCycleClaimKey,
     persist: (claim: ISessionDelegateCycleClaim) => Promise<void>,
   ): Promise<ISessionDelegateCycleClaim> {
-    const { parsedStep, cycleConfig, parentTraceId, parentStepId, agentRole, worktreePath, artifactRef } = step;
+    const { parsedStep, cycleConfig, parentTraceId, parentStepId, agentRole, portalAlias, worktreePath, artifactRef } =
+      step;
     let state = claim.state;
     let outcome = claim.outcome;
     const delegationTraceId = claim.delegationTraceId;
@@ -387,6 +393,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
             ...(parsedStep.manifest?.acceptance?.outcomes ?? []),
           ],
           artifactRef,
+          portalAlias,
           worktreePath,
           delegationTraceId,
         });

@@ -20,6 +20,7 @@ import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { MemoryType } from "@exaix/core";
+import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import type {
   IDogfoodContextHandle,
   IDogfoodContextInput,
@@ -223,6 +224,14 @@ const CONFIG: SessionDelegateConfig = {
   harden_permissions: true,
 };
 
+/** This test's request never sets portalAlias, so prepareBrief never calls this — it
+ *  stands in only to satisfy the mandatory dependency. */
+const NEVER_USED_WORKTREE_COORDINATOR: IFlowWorktreeCoordinator = {
+  resolve: () => Promise.reject(new Error("not used")),
+  release: () => Promise.resolve(),
+  releaseAll: () => Promise.resolve(),
+};
+
 class OneShotDelegateService implements ISessionCoordinatorDelegateService {
   constructor(private readonly pathResolver: PathResolver, private readonly worktreeRoot: string) {}
 
@@ -383,6 +392,8 @@ Deno.test({
         now: () => FIXED_NOW,
         sleep: () => Promise.resolve(),
         contextPort,
+        portals: [],
+        worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
       };
       const coordinator = new SessionDelegationCoordinator(
         deps,

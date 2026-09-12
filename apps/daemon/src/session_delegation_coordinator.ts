@@ -19,7 +19,14 @@ import {
   TIME_MS_PER_HOUR,
 } from "@exaix/core/types";
 import { ContextConnectionCloseReason, ProviderType } from "@exaix/core/types";
-import type { IDogfoodContextConnection, IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
+import type {
+  IDogfoodContextConnection,
+  IDogfoodContextPort,
+  IFlowWorktreeCoordinator,
+  Opt,
+  Reason,
+} from "@exaix/core/types";
+import { resolveWorktreeBaseDir } from "@exaix/flow";
 import { toMcpConnectionInput } from "@exaix/session/dogfood_mcp_config.ts";
 import type { IDogfoodMcpConnectionInput } from "@exaix/session/dogfood_mcp_config.ts";
 import { SessionGateSchema, SessionLaunchModeSchema } from "@exaix/schemas/session_delegate.ts";
@@ -29,6 +36,7 @@ import type {
   SessionTokenStats,
   SessionWaitState,
 } from "@exaix/schemas/session_delegate.ts";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import type { IHardenedLaunchResult, IPrepareBriefInput } from "@exaix/session/i_session_delegate.ts";
 import {
@@ -80,6 +88,13 @@ export interface ISessionDelegationCoordinatorDeps {
   /** Optional dogfood bounded-context port; absent preserves the existing objective
    *  byte-for-byte. A failure surfaces as the existing `launch_failed` terminal outcome. */
   contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
+  /** The daemon's configured portal registry, for resolving `input.portalAlias` in
+   *  `prepareBrief`. Mandatory: an operator wiring this gate without worktree isolation
+   *  must get a loud startup failure, not a silently-unsafe daemon. */
+  portals: IPortalPermissions[];
+  /** Resolves a per-`parentTraceId` isolated worktree for `prepareBrief`. Mandatory for the
+   *  same reason as `portals` above. */
+  worktreeCoordinator: IFlowWorktreeCoordinator;
 }
 
 export interface ICodeChangesDelegateAdapterDeps {
@@ -123,7 +138,19 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
   constructor(
     private readonly deps: ISessionDelegationCoordinatorDeps,
     private readonly logger: IEventLogger,
-  ) {}
+  ) {
+    // Fails loudly here rather than silently at the first delegate() call — a caller
+    // bypassing the type system (a raw JS call, an `as` cast) must not produce a
+    // running-but-unsafe coordinator with no worktree isolation.
+    if (!deps.portals) {
+      throw new Error("SessionDelegationCoordinator requires deps.portals to resolve a request's portalAlias");
+    }
+    if (!deps.worktreeCoordinator) {
+      throw new Error(
+        "SessionDelegationCoordinator requires deps.worktreeCoordinator for per-trace worktree isolation",
+      );
+    }
+  }
 
   async delegate(input: ISessionDelegationRequest): Promise<ISessionDelegationOutcome> {
     const delegationTraceId = input.delegationTraceId ?? crypto.randomUUID();
@@ -222,6 +249,17 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
     }
   }
 
+  /** Resolves `input.portalAlias` against `deps.portals` — a configuration-consistency
+   *  failure, not a runtime data error, so it fails loudly rather than falling back to
+   *  `input.worktreePath` verbatim. */
+  private resolvePortalConfig(portalAlias: string): IPortalPermissions {
+    const portalConfig = this.deps.portals.find((p) => p.alias === portalAlias);
+    if (!portalConfig) {
+      throw new Error(`SessionDelegationCoordinator: portal '${portalAlias}' is not configured`);
+    }
+    return portalConfig;
+  }
+
   private async prepareBrief(
     input: ISessionDelegationRequest,
     delegationTraceId: string,
@@ -233,6 +271,15 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
       this.deps.now().getTime() + SESSION_DEFAULT_DEADLINE_HOURS * TIME_MS_PER_HOUR,
     ).toISOString();
     const contextResult = await this.applyDogfoodContext(input, delegationTraceId, model);
+    // Absent portalAlias means the native PlanExecutor delegate path, which already
+    // resolved its own isolated worktree — input.worktreePath is trusted verbatim there.
+    const worktreePath = input.portalAlias
+      ? await resolveWorktreeBaseDir(
+        this.resolvePortalConfig(input.portalAlias),
+        input.parentTraceId,
+        this.deps.worktreeCoordinator,
+      )
+      : input.worktreePath;
     const brief = await this.deps.delegateService.prepareBrief({
       traceId: delegationTraceId,
       parentTraceId: input.parentTraceId,
@@ -245,7 +292,7 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
       acceptanceCriteria: input.acceptanceCriteria,
       artifactRef: input.artifactRef,
       permittedPaths: config.permitted_paths ?? LEGACY_PERMITTED_PATHS,
-      worktreePath: input.worktreePath,
+      worktreePath,
       tokenBudget: config.token_budget ?? {
         max_input_tokens: SESSION_DEFAULT_MAX_INPUT_TOKENS,
         max_output_tokens: SESSION_DEFAULT_MAX_OUTPUT_TOKENS,

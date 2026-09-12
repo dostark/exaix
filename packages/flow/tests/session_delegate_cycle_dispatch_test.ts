@@ -128,6 +128,7 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
       userPrompt: "run the cycle",
       traceId,
       requestId: "req-cycle-1",
+      portal: "exaix-self",
       executionRoot: root,
       planContextRef: ".exa/PlanContext/phase-174.md",
     });
@@ -136,6 +137,7 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
     assertEquals(coordinator.requests.length, 1);
     assertEquals(coordinator.requests[0].parentTraceId, traceId);
     assertEquals(coordinator.requests[0].sequence, 1);
+    assertEquals(coordinator.requests[0].portalAlias, "exaix-self");
     assertEquals(coordinator.requests[0].worktreePath, root);
     assertEquals(coordinator.requests[0].artifactRef, ".exa/PlanContext/phase-174.md");
   } finally {
@@ -162,6 +164,7 @@ Deno.test("[restart] omitted traceId normalizes to one stable parent trace for t
       await runner.execute(makeCycleFlow(), {
         userPrompt: "run the cycle",
         requestId: "req-cycle-restart",
+        portal: "exaix-self",
         executionRoot: root,
         planContextRef: ".exa/PlanContext/phase-174-restart.md",
       });

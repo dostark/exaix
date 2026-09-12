@@ -22,7 +22,13 @@ import { FlowRunner, PlanContextResolver } from "@exaix/flow";
 import { ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { CostTracker } from "@exaix/core/cost";
-import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
+import type {
+  IApplicationContext,
+  IFlowWorktreeCoordinator,
+  IGateConfig,
+  IGateEvaluator,
+  IGateResult,
+} from "@exaix/core/types";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { SessionBrief, SessionDelegateConfig, SessionWaitState } from "@exaix/schemas/session_delegate.ts";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
@@ -158,6 +164,14 @@ class FakeLauncher {
   }
 }
 
+/** config.portals here has no execution_strategy set, so prepareBrief's branch table
+ *  never calls this — it stands in only to satisfy the mandatory dependency. */
+const NEVER_USED_WORKTREE_COORDINATOR: IFlowWorktreeCoordinator = {
+  resolve: () => Promise.reject(new Error("not used")),
+  release: () => Promise.resolve(),
+  releaseAll: () => Promise.resolve(),
+};
+
 const noopLogger: IEventLogger = {
   log: () => Promise.resolve(),
   info: () => Promise.resolve(),
@@ -256,6 +270,8 @@ Deno.test("[daemon] boot with session_delegate.enabled=true executes the fixture
         resolveProviderApiKey: () => undefined,
         now: () => FIXED_NOW,
         sleep: () => Promise.resolve(),
+        portals: config.portals,
+        worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
       }, noopLogger)
       : undefined;
     assert(sessionDelegationCoordinator, "test setup must actually enable session delegation");

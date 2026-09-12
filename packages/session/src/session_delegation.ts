@@ -26,6 +26,10 @@ export interface ISessionDelegationRequest {
   objective: string;
   acceptanceCriteria: string[];
   artifactRef: string;
+  /** When present, `prepareBrief` resolves a real per-trace worktree path from this alias,
+   *  overriding `worktreePath` below. Absent only for the native PlanExecutor delegate path,
+   *  which already resolved its own isolated worktree and passes it via `worktreePath`. */
+  portalAlias?: string;
   worktreePath: string;
   /** Pre-minted, durably claimed trace id the coordinator must use instead of minting its own; omitted callers get a coordinator-minted id. */
   delegationTraceId?: string;

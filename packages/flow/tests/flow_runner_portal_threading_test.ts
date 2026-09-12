@@ -10,7 +10,14 @@
 
 import { assertEquals } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
-import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
+import {
+  FlowRunner,
+  type IAgentExecutor,
+  type IFlowEventLogger,
+  type IFlowStepHandler,
+  type IFlowStepRequest,
+  type IStepExecutionContext,
+} from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
@@ -78,4 +85,30 @@ Deno.test("FlowRunner.execute: no portal on the request leaves IFlowStepRequest.
 
   assertEquals(agentExecutor.capturedRequests.length, 1);
   assertEquals(agentExecutor.capturedRequests[0].portal, undefined);
+});
+
+class CapturingStepHandler implements IFlowStepHandler {
+  readonly stepType = "agent";
+  capturedContexts: IStepExecutionContext[] = [];
+
+  execute(ctx: IStepExecutionContext): Promise<IAgentExecutionResult> {
+    this.capturedContexts.push(ctx);
+    return Promise.resolve({ thought: "ok", content: "done", raw: "done" });
+  }
+}
+
+Deno.test("FlowRunner.execute: request.portal reaches IStepExecutionContext.request, matching FlowRunner's originalRequest.portal", async () => {
+  const runner = new FlowRunner({ agentExecutor: new CapturingAgentExecutor(), eventLogger: new NoOpEventLogger() });
+  const capturingHandler = new CapturingStepHandler();
+  runner.getStepHandlerRegistry().register(capturingHandler);
+
+  await runner.execute(makeFlow(), {
+    userPrompt: "do the thing",
+    traceId: crypto.randomUUID(),
+    requestId: "req-3",
+    portal: "my-test-portal",
+  });
+
+  assertEquals(capturingHandler.capturedContexts.length, 1);
+  assertEquals(capturingHandler.capturedContexts[0].request.portal, "my-test-portal");
 });

@@ -29,6 +29,8 @@ export interface IStepExecutionContext {
     readonly traceId?: string;
     readonly requestId?: string;
     readonly requestAnalysis?: IRequestAnalysis;
+    /** The flow's portal alias; required by a session_delegate_cycle step to resolve its portal config. */
+    readonly portal?: string;
     /** Portal-configured worktree root; required by a session_delegate_cycle step. */
     readonly executionRoot?: string;
     /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */

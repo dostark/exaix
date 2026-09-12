@@ -118,6 +118,7 @@ Deno.test("[Tier A] cycle lifecycle events carry parent and delegation trace fie
       userPrompt: "run",
       traceId,
       requestId: "req-events",
+      portal: "exaix-self",
       executionRoot: root,
       planContextRef: ".exa/PlanContext/phase-174.md",
     });

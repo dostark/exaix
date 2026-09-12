@@ -148,6 +148,7 @@ function makeCtx(): IStepExecutionContext {
       userPrompt: "run",
       traceId: crypto.randomUUID(),
       requestId: "req-1",
+      portal: "exaix-self",
       executionRoot: "/fake/root",
       planContextRef: ".exa/PlanContext/phase-x.md",
     },

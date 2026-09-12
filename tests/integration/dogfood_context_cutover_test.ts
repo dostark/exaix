@@ -37,6 +37,7 @@ import type {
   IDogfoodContextHandle,
   IDogfoodContextInput,
   IDogfoodContextPort,
+  IFlowWorktreeCoordinator,
   IPortalKnowledgeService,
   IScoredContextResult,
 } from "@exaix/core/types";
@@ -354,6 +355,8 @@ Deno.test("[dogfood_context_cutover] disabled feature (no contextPort): cycle st
       resolveModel: () => Promise.resolve(undefined),
       now: () => FIXED_NOW,
       sleep: () => Promise.resolve(),
+      portals: [],
+      worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
     },
     { info: () => Promise.resolve(), warn: () => Promise.resolve() } as never,
   );
@@ -452,6 +455,8 @@ Deno.test("[dogfood_context_cutover][live-mcp] SessionDelegationCoordinator cycl
         now: () => FIXED_NOW,
         sleep: () => Promise.resolve(),
         contextPort,
+        portals: [],
+        worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
       },
       { info: () => Promise.resolve(), warn: () => Promise.resolve() } as never,
     );
@@ -721,6 +726,14 @@ const CYCLE_CONFIG: SessionDelegateConfig = {
   permitted_paths: ["packages/**"],
   token_budget: { max_input_tokens: 1_000, max_output_tokens: 500, max_total_tokens: 1_500 },
   harden_permissions: true,
+};
+
+/** Neither cycle test below sets portalAlias on its request, so prepareBrief never calls
+ *  this — it stands in only to satisfy the mandatory dependency. */
+const NEVER_USED_WORKTREE_COORDINATOR: IFlowWorktreeCoordinator = {
+  resolve: () => Promise.reject(new Error("not used")),
+  release: () => Promise.resolve(),
+  releaseAll: () => Promise.resolve(),
 };
 
 class OneShotDelegateService implements ISessionCoordinatorDelegateService {

@@ -1744,6 +1744,7 @@ export class FlowRunner implements IFlowRunner {
         traceId: request.traceId,
         requestId: request.requestId,
         requestAnalysis: request.requestAnalysis,
+        portal: request.portal,
         executionRoot: request.executionRoot,
         planContextRef: request.planContextRef,
       },

@@ -123,6 +123,7 @@ function makeCtx(traceId: string, flowRunId = "flow-run-1"): IStepExecutionConte
       userPrompt: "run",
       traceId,
       requestId: "req-1",
+      portal: "exaix-self",
       executionRoot: "/fake/root",
       planContextRef: ".exa/PlanContext/phase-x.md",
     },
