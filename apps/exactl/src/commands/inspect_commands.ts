@@ -91,7 +91,11 @@ export class InspectCommands extends BaseCommand {
     const suppressBanner = options.raw || options.json;
 
     if (options.record) {
-      const record = await this.readOrExit(traceId, options.record);
+      // traceId may be a governing parent trace; resolve the record's real storage trace
+      // via the same lineage-aware lookup the list path uses, rather than assuming it.
+      const summaries = await this.resolveSummaries(traceId);
+      const match = summaries.find((s) => s.recordId === options.record);
+      const record = await this.readOrExit(match?.executionTraceId ?? traceId, options.record);
       await this.emitInspected(traceId, record.recordId, ContextInspectionResult.DETAIL, 1, suppressBanner);
       return options.raw ? await this.writeRaw(record.promptText) : await this.renderDetail(record, options.json);
     }

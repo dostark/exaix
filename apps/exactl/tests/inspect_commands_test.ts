@@ -149,6 +149,25 @@ Deno.test("[inspect] a parent trace_id (no direct records) falls back to bounded
   assertEquals(JSON.parse(out).recordId, RECORD_ID);
 });
 
+Deno.test("[inspect] --record against a parent trace_id resolves via lineage, not the parent trace itself (session_delegate_cycle: each delegation has its own executionTraceId)", async () => {
+  const secondRecordId = "55555555-5555-4555-8555-555555555555";
+  const second = makeRecord({
+    recordId: secondRecordId,
+    executionTraceId: "66666666-6666-4666-8666-666666666666",
+    parentTraceId: PARENT_TRACE_ID,
+    sequence: 2,
+    promptText: "second",
+  });
+  const first = makeRecord({ executionTraceId: CHILD_TRACE_ID, parentTraceId: PARENT_TRACE_ID });
+  const store = new FakeReader(
+    new Map([[CHILD_TRACE_ID, [first]], [second.executionTraceId, [second]]]),
+  );
+  const out = await captureConsoleOutput(() =>
+    inspectCommand(store).inspect(PARENT_TRACE_ID, { record: secondRecordId, json: true })
+  );
+  assertEquals(JSON.parse(out).recordId, secondRecordId);
+});
+
 Deno.test("[inspect] --raw exports the exact promptText bytes, nothing else, no trailing decoration", async () => {
   const store = new FakeReader(new Map([[TRACE_ID, [makeRecord({ promptText: "exact bytes\nwith a newline" })]]]));
   const written: string[] = [];
