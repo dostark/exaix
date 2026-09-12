@@ -17,6 +17,8 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { IFlowWorktreeCoordinator, IGitServiceFactory } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
+const GIT_SUBCOMMAND_REV_PARSE = "rev-parse";
+
 /** Maximum number of trace worktrees retained before least-recently-touched eviction. */
 export const FLOW_WORKTREE_TRACE_MAX: number = configurable({
   key: "flow.worktree_coordinator_trace_max",
@@ -78,7 +80,8 @@ export class FlowWorktreeCoordinator implements IFlowWorktreeCoordinator {
       await Deno.mkdir(dirname(worktreePath), { recursive: true });
       const portalTargetPath = this.resolvePortalTargetPath(portalAlias);
       const gitService = this.deps.gitServiceFactory.createGitService(portalTargetPath, traceId);
-      await gitService.addWorktree(worktreePath, baseBranch);
+      const resolvedBaseBranch = await this.resolveBaseBranch(gitService, portalTargetPath, baseBranch);
+      await gitService.addWorktree(worktreePath, resolvedBaseBranch);
     } catch (error) {
       const cause = error instanceof Error ? error : String(error);
       throw new FlowWorktreeSetupError(worktreePath, baseBranch, cause);
@@ -143,6 +146,18 @@ export class FlowWorktreeCoordinator implements IFlowWorktreeCoordinator {
     const portal = this.deps.config.portals.find((candidate) => candidate.alias === portalAlias);
     if (!portal) throw new Error(`Flow worktree portal is not configured: ${portalAlias}`);
     return portal.target_path;
+  }
+
+  private async resolveBaseBranch(
+    gitService: ReturnType<IGitServiceFactory["createGitService"]>,
+    portalTargetPath: string,
+    configuredBranch: string,
+  ): Promise<string> {
+    const result = await gitService.runGitCommand(
+      ["-C", portalTargetPath, GIT_SUBCOMMAND_REV_PARSE, "--verify", "--quiet", `refs/heads/${configuredBranch}`],
+      { throwOnError: false },
+    );
+    return result.exitCode === 0 ? configuredBranch : await gitService.getDefaultBranch(portalTargetPath);
   }
 
   private assertSafePathSegment(value: string, label: string): void {

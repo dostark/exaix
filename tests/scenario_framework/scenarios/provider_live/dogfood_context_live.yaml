@@ -58,7 +58,7 @@ steps:
   - id: "add-portal"
     type: "exactl"
     command: "portal"
-    args: ["add", "$WORKSPACE_ROOT/test-portal", "test-project"]
+    args: ["add", "$WORKSPACE_ROOT/test-portal", "test-project", "--execution-strategy", "worktree"]
     output_criteria:
       - id: "portal-added"
         score_weight: 0.5
@@ -270,7 +270,31 @@ steps:
             Deno.exit(1);
           }
           const parsed = JSON.parse(new TextDecoder().decode(stdout));
-          const record = Array.isArray(parsed) ? parsed[0] : parsed;
+          const summary = Array.isArray(parsed) ? parsed[0] : parsed;
+          let record = summary;
+          if (summary?.recordId && (typeof summary.promptText !== "string" || !Array.isArray(summary.tools))) {
+            const detailCmd = new Deno.Command(Deno.execPath(), {
+              args: [
+                "run",
+                "-A",
+                "$FRAMEWORK_HOME/../../apps/exactl/src/exactl.ts",
+                "request",
+                "inspect",
+                traceId,
+                "--record",
+                summary.recordId,
+                "--json",
+              ],
+              stdout: "piped",
+              stderr: "piped",
+            });
+            const detail = await detailCmd.output();
+            if (detail.code !== 0) {
+              console.error(`FAILED: expected detail exit 0, got ${detail.code}. stderr: ${new TextDecoder().decode(detail.stderr)}`);
+              Deno.exit(1);
+            }
+            record = JSON.parse(new TextDecoder().decode(detail.stdout));
+          }
           if (!record.recordId || typeof record.promptText !== "string" || !Array.isArray(record.tools)) {
             console.error(`FAILED: unexpected inspect shape: ${JSON.stringify(record)}`);
             Deno.exit(1);

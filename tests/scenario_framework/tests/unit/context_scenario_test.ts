@@ -184,6 +184,14 @@ Deno.test("[context_scenario] stock cells assert flow.step.completed(review) and
     "the stock request fixture must resolve from the runner, not the minted sandbox",
   );
 
+  const addPortalStep = byId.get("add-portal");
+  assert(addPortalStep, "add-portal step must exist");
+  assertEquals(
+    addPortalStep.args,
+    ["add", "$WORKSPACE_ROOT/test-portal", "test-project", "--execution-strategy", "worktree"],
+    "the stock portal must be explicitly registered with worktree isolation",
+  );
+
   const reviewStep = byId.get("wait-for-stock-review-complete");
   assert(reviewStep, "wait-for-stock-review-complete step must exist");
   assertEquals(reviewStep.cells, ["stock-claude", "stock-opencode"]);
@@ -215,4 +223,9 @@ Deno.test("[context_scenario] the inspect step is shared (not cell-scoped) and e
   const inspectStep = scenario.steps.find((s) => s.id === "inspect-produced-trace");
   assert(inspectStep, "inspect-produced-trace step must exist");
   assertEquals(inspectStep.cells, undefined, "the inspect step must run for whichever single cell was selected");
+  const script = inspectStep.args?.at(-1);
+  assert(
+    typeof script === "string" && script.includes('"--record",') && script.includes("summary.recordId"),
+    "the inspect script must load a selected summary as a full record before checking prompt and tools",
+  );
 });

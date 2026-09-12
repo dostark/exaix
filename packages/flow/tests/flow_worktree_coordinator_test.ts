@@ -30,6 +30,8 @@ class FakeGitService implements IGitService {
   removeCalls: IRemoveWorktreeCall[] = [];
   addError?: Error;
   removeError?: Error;
+  branchExists = true;
+  defaultBranch = "main";
 
   setRepository(_repoPath: string): void {}
   getRepository(): string {
@@ -54,7 +56,7 @@ class FakeGitService implements IGitService {
     return Promise.resolve("main");
   }
   getDefaultBranch(): Promise<string> {
-    return Promise.resolve("main");
+    return Promise.resolve(this.defaultBranch);
   }
   addWorktree(worktreePath: string, baseBranch: string): Promise<void> {
     this.addCalls.push({ worktreePath, baseBranch });
@@ -74,7 +76,7 @@ class FakeGitService implements IGitService {
     return Promise.resolve([]);
   }
   runGitCommand(): Promise<{ output: string; exitCode: number }> {
-    return Promise.resolve({ output: "", exitCode: 0 });
+    return Promise.resolve({ output: "", exitCode: this.branchExists ? 0 : 1 });
   }
   validateArgs(): { valid: boolean; reason?: string } {
     return { valid: true };
@@ -127,6 +129,20 @@ Deno.test("FlowWorktreeCoordinator.resolve creates a worktree for a new portal a
     assertEquals(test.logger.events[0]?.action, DomainEventType.FlowWorktreeCreated);
     assertEquals(test.logger.events[0]?.payload, { portalAlias: "portal", traceId: "trace-1" });
     assertEquals(test.logger.events[0]?.traceId, "trace-1");
+  } finally {
+    await cleanup(test.root);
+  }
+});
+
+Deno.test("FlowWorktreeCoordinator.resolve falls back to the repository default when the configured branch is absent", async () => {
+  const test = await createCoordinator();
+  try {
+    test.gitService.branchExists = false;
+    test.gitService.defaultBranch = "master";
+
+    const path = await test.coordinator.resolve("portal", "trace-1", "main");
+
+    assertEquals(test.gitService.addCalls, [{ worktreePath: path, baseBranch: "master" }]);
   } finally {
     await cleanup(test.root);
   }
