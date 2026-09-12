@@ -124,7 +124,10 @@ it goes through the plan-step gate:
    among them. A criterion/test whose module IS the plan doc itself uses the gitlink arrow
    `→` `` `exaix-dev-docs` `` (the path the parent gate sees in `git diff --cached
    --name-only`) — the internal `exaix-dev-docs/planning/<phase>.md` path is NOT a parent
-   staged file and the gate rejects it with "…not among this commit's changed files".
+   staged file and the gate rejects it with "…not among this commit's changed files". A
+   doc-only (§3D) remediation step's criterion often cites BOTH an external file and the
+   plan doc's own gitlink together — combine the two rules with a comma:
+   `→` `` `ARCHITECTURE.md` ``, `` `exaix-dev-docs` `` (Phase 194 Step 11's GAP-8 remediation).
 3. Write the structured message (type `fix`; body has `what:`, `rationale:`, `tests:`,
    `who:`, `impact:`, the gap numbers e.g. `remediation: GAP-1, GAP-3`, and a mandatory
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>` field), then commit both

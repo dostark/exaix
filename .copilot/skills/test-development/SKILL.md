@@ -336,6 +336,24 @@ Advanced testing patterns
   - Paranoid Security Testing: write tests for path traversal, command injection,
     symlink escapes. Whitelists beat blacklists.
   - Performance Testing: don't guess — measure. Write benchmarks or load tests.
+  - Check-then-act concurrency races (same-key `Promise.all` proves it; eviction/LRU
+    interaction needs a gate): a class with a synchronous cache-lookup-then-async-create
+    pattern (`get(key)` miss → `await someAsyncCreate()` → `set(key, result)`) is racy
+    under two concurrent callers for the SAME never-before-seen key — JS's run-to-completion
+    semantics mean both callers can pass the cache-miss check before either commits. Prove
+    it with `await Promise.all([subject.resolve(key), subject.resolve(key)])` against a fake
+    dependency that counts calls; a passing count of 1 proves an existing in-flight-promise
+    cache, a count of 2 proves the race (Phase 194 GAP-7, `FlowWorktreeCoordinator.resolve`).
+    Plain `Promise.all` timing is NOT reliable for testing that an in-flight (unsettled)
+    entry survives concurrent eviction pressure from OTHER keys, because you cannot assert
+    anything about the pending entry's state while it's genuinely unsettled — instead add a
+    manually-releasable gate to the fake dependency (hold one specific call's completion
+    behind an unresolved `Promise` the test controls), start the in-flight call without
+    awaiting it, poll (`for` loop + short `setTimeout`) until the fake records the call was
+    reached, THEN drive the concurrent eviction pressure and assert on the fake's recorded
+    calls, THEN release the gate and await the original call to confirm it still settles
+    correctly (see `packages/flow/tests/flow_worktree_coordinator_test.ts`'s
+    `FakeGitService.addWorktreeGate` for the reusable shape).
 
 Security Tests as First-Class Citizens
   Every security boundary needs explicit tests. Label with [security].
