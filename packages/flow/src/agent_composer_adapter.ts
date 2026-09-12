@@ -84,6 +84,9 @@ export interface IAgentComposerConstructionDeps {
   /** Optional dogfood bounded-context port passed through to AgentComposer's
    *  CliDelegateStrategy; absent for every non-dogfood/disabled-config caller. */
   contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
+  /** Agent-role blueprint IDs trusted to activate contextPort, passed through to
+   *  AgentComposer. Mandatory whenever contextPort is set. */
+  trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   /** Optional per-trace worktree resolver. Its absence preserves each portal's configured target path. */
   worktreeCoordinator?: Opt<IFlowWorktreeCoordinator, Reason.OptionalDependency>;
 }
@@ -172,8 +175,17 @@ export class AgentComposerAdapter {
       );
     }
 
-    const { config, db, logger, permissions, provider, modelResolver, strategyRegistry, contextPort } =
-      this.orchestratorDeps;
+    const {
+      config,
+      db,
+      logger,
+      permissions,
+      provider,
+      modelResolver,
+      strategyRegistry,
+      contextPort,
+      trustedAgentRoles,
+    } = this.orchestratorDeps;
     const portalConfig = config.portals?.find((p) => p.alias === request.portal);
     if (!portalConfig) {
       throw new Error(`runWithStrategy: portal not found in config: ${request.portal}`);
@@ -213,6 +225,7 @@ export class AgentComposerAdapter {
       strategyRegistry,
       planWrittenFiles,
       contextPort,
+      trustedAgentRoles,
     });
 
     try {

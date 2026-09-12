@@ -127,6 +127,9 @@ export interface IAgentComposerDeps {
   /** Optional dogfood bounded-context port passed through to CliDelegateStrategy; absent
    *  for every non-dogfood/disabled-config caller, which preserves existing behavior. */
   contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
+  /** Agent-role blueprint IDs trusted to activate contextPort, passed through to
+   *  CliDelegateStrategy. Mandatory whenever contextPort is set. */
+  trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
 }
 
 /**
@@ -168,6 +171,7 @@ export class AgentComposer {
   private reActAdapter: ReActLoopAdapter;
   private ctx: ExecutionContextService;
   private readonly contextPort?: IDogfoodContextPort;
+  private readonly trustedAgentRoles?: ReadonlySet<string>;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
@@ -215,6 +219,7 @@ export class AgentComposer {
     this._toolRegistry = deps.toolRegistry;
     this._guardrailRunner = deps.guardrailRunner;
     this.contextPort = deps.contextPort;
+    this.trustedAgentRoles = deps.trustedAgentRoles;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
     this.blueprintService = deps.blueprintService ??
@@ -274,6 +279,7 @@ export class AgentComposer {
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
       contextPort: this.contextPort,
+      trustedAgentRoles: this.trustedAgentRoles,
     });
   }
 

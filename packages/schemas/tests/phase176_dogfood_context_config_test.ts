@@ -49,6 +49,25 @@ Deno.test("[ConfigSchema] dogfood.context parses with all documented defaults wh
   assertEquals(ctx.max_record_bytes, DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORD_BYTES);
   assertEquals(ctx.max_records_per_trace, DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE);
   assertEquals(ctx.retention_days, DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS);
+  assertEquals(ctx.trusted_agent_roles, DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES);
+});
+
+Deno.test("[ConfigSchema] dogfood.context.trusted_agent_roles accepts an explicit override", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    dogfood: { context: { trusted_agent_roles: ["custom-role"] } },
+  });
+  assertEquals(result.success, true);
+  if (!result.success) return;
+  assertEquals(result.data.dogfood!.context.trusted_agent_roles, ["custom-role"]);
+});
+
+Deno.test("[ConfigSchema] dogfood.context.trusted_agent_roles rejects an empty-string entry", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    dogfood: { context: { trusted_agent_roles: [""] } },
+  });
+  assertEquals(result.success, false);
 });
 
 Deno.test("[ConfigSchema] dogfood.context.enabled: true overrides the disabled default", () => {

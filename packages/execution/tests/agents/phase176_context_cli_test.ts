@@ -11,7 +11,7 @@
  * @related-files [packages/execution/src/strategies/cli_delegate_strategy.ts]
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { AgentExecutionError, CliDelegateStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint, IRunCliDelegateProcess } from "@exaix/execution";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
@@ -38,14 +38,18 @@ function makeContext(overrides: Partial<IExecutionContext> = {}): IExecutionCont
   };
 }
 
-function makeOptions(): IAgentExecutionOptions {
+/** Mirrors dogfood-loop.flow.yaml's real agent roles (Blueprints/Flows/dogfood-loop.flow.yaml). */
+const TRUSTED_AGENT_ROLES = new Set(["dogfood-coder", "quality-judge"]);
+
+function makeOptions(overrides: Partial<IAgentExecutionOptions> = {}): IAgentExecutionOptions {
   return {
-    agent_role: "senior-coder",
+    agent_role: "dogfood-coder",
     portal: "main",
     security_mode: "sandboxed" as IAgentExecutionOptions["security_mode"],
     timeout_ms: 300000,
     max_tool_calls: 100,
     audit_enabled: true,
+    ...overrides,
   };
 }
 
@@ -135,6 +139,7 @@ Deno.test("[CliDelegateStrategy] an injected contextPort's returned prompt is wh
     resolvePortalPath: () => "/tmp/portal",
     run,
     contextPort: port,
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
   });
 
   await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
@@ -154,6 +159,7 @@ Deno.test("[CliDelegateStrategy] a prepare() failure aborts the launch before th
     resolvePortalPath: () => "/tmp/portal",
     run,
     contextPort: makeFailingContextPort(),
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
   });
 
   await assertRejects(
@@ -172,6 +178,7 @@ Deno.test("[CliDelegateStrategy] turn increments across resumed calls for the sa
     resolvePortalPath: () => "/tmp/portal",
     run,
     contextPort: port,
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
   });
 
   const context = makeContext();
@@ -190,6 +197,7 @@ Deno.test("[CliDelegateStrategy] first-turn full-plan objective is preserved as 
     resolvePortalPath: () => "/tmp/portal",
     run,
     contextPort: port,
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
   });
 
   await strategy.execute(
@@ -216,6 +224,7 @@ Deno.test("[CliDelegateStrategy][security] connected Claude launches keep their 
     resolvePortalPath: () => portalPath,
     run,
     contextPort: makeConnectedContextPort(),
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
   });
 
   try {
@@ -241,6 +250,7 @@ Deno.test("[CliDelegateStrategy][security] connected OpenCode launches keep thei
     resolvePortalPath: () => portalPath,
     run,
     contextPort: makeConnectedContextPort(),
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
   });
 
   try {
@@ -251,4 +261,59 @@ Deno.test("[CliDelegateStrategy][security] connected OpenCode launches keep thei
   } finally {
     await Deno.remove(portalPath, { recursive: true });
   }
+});
+
+Deno.test("[CliDelegateStrategy][security] an agent_role outside the trusted set never reaches contextPort.prepare (Phase 176 GAP-11)", async () => {
+  const { run, calls } = makeFakeRun();
+  const { port, inputs } = makeContextPort("AUGMENTED PROMPT WITH SUPPLEMENT");
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+    contextPort: port,
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions({ agent_role: "senior-coder" }));
+
+  assertEquals(inputs.length, 0, "an untrusted agent_role must never call contextPort.prepare");
+  assertStringIncludes(calls[0][1], "Fix the null-guard bug in renderAvatar");
+  assertEquals(calls[0][1].includes("---"), false, "no dogfood supplement for an untrusted caller");
+});
+
+Deno.test("[CliDelegateStrategy][security] an empty/absent agent_role is never trusted (Phase 176 GAP-11)", async () => {
+  const { run, calls } = makeFakeRun();
+  const { port, inputs } = makeContextPort("AUGMENTED PROMPT WITH SUPPLEMENT");
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+    contextPort: port,
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions({ agent_role: "" }));
+
+  assertEquals(inputs.length, 0, "an absent agent_role must never call contextPort.prepare");
+  assertEquals(calls[0][1].includes("---"), false, "no dogfood supplement for an unbound caller");
+});
+
+Deno.test("[CliDelegateStrategy][security] construction fails loudly when contextPort is set without trustedAgentRoles (Phase 176 GAP-11)", () => {
+  const { run } = makeFakeRun();
+  const { port } = makeContextPort("prompt");
+
+  assertThrows(
+    () =>
+      new CliDelegateStrategy({
+        tool: "claude-code",
+        bin: "claude",
+        resolvePortalPath: () => "/tmp/portal",
+        run,
+        contextPort: port,
+      }),
+    Error,
+    "trustedAgentRoles",
+  );
 });

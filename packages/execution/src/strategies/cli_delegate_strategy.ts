@@ -38,6 +38,7 @@
 import { isAbsolute, join, relative } from "@std/path";
 import type { IDogfoodContextConnection, IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
 import { ContextConnectionCloseReason } from "@exaix/core/types";
+import { isTrustedDogfoodCaller } from "@exaix/core/func";
 import {
   buildClaudeMcpConfig,
   buildOpencodeMcpFragment,
@@ -118,6 +119,10 @@ export interface ICliDelegateStrategyDeps {
    *  caller, which preserves the existing objective byte-for-byte. A failure here aborts
    *  the launch — it never silently falls back to the unaugmented objective. */
   contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
+  /** Agent-role blueprint IDs trusted to activate contextPort — mandatory whenever
+   *  contextPort is set (see the constructor guard); an untrusted options.agent_role is
+   *  treated exactly like contextPort being absent. */
+  trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
 }
 
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
@@ -200,6 +205,11 @@ export class CliDelegateStrategy implements IExecutionStrategy {
   private readonly turnCounts = new Map<string, number>();
 
   constructor(private readonly deps: ICliDelegateStrategyDeps) {
+    if (deps.contextPort && !deps.trustedAgentRoles) {
+      throw new Error(
+        "CliDelegateStrategy requires deps.trustedAgentRoles whenever deps.contextPort is set — an operator wiring dogfood context without an explicit trusted-role allowlist must get a loud startup failure, not a daemon that grants it to every caller",
+      );
+    }
     this.run = deps.run ?? defaultRun;
   }
 
@@ -218,7 +228,11 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
     const isFirstTurn = !this.sessionIds.has(context.trace_id);
     const objective = this.buildObjective(blueprint, context, isFirstTurn);
-    const { objective: finalObjective, recordId, connection } = await this.applyDogfoodContext(objective, context);
+    const { objective: finalObjective, recordId, connection } = await this.applyDogfoodContext(
+      objective,
+      context,
+      options.agent_role,
+    );
     const isClaude = this.deps.tool === SessionToolSchema.enum["claude-code"];
 
     let parsed: ICliDelegateParsedOutcome;
@@ -394,14 +408,17 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     return `${blueprint.systemPrompt}\n\n${taskSection}\n\nPLAN STEP: ${context.plan}`;
   }
 
-  /** Absent contextPort (every non-dogfood/disabled-config caller) returns `objective`
-   *  unchanged — byte-for-byte existing behavior. A prepare() failure aborts the launch;
-   *  it never silently falls back to the unaugmented objective. */
+  /** Absent contextPort, or an untrusted agentRole, returns `objective` unchanged —
+   *  byte-for-byte existing behavior. A prepare() failure for a TRUSTED caller aborts the
+   *  launch; it never silently falls back to the unaugmented objective. */
   private async applyDogfoodContext(
     objective: string,
     context: IExecutionContext,
+    agentRole: string,
   ): Promise<{ objective: string; recordId?: string; connection?: IDogfoodContextConnection }> {
-    if (!this.deps.contextPort) return { objective };
+    if (!this.deps.contextPort || !isTrustedDogfoodCaller(agentRole, this.deps.trustedAgentRoles ?? new Set())) {
+      return { objective };
+    }
 
     const turn = this.turnCounts.get(context.trace_id) ?? 0;
     this.turnCounts.set(context.trace_id, turn + 1);

@@ -12,7 +12,7 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
 import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
@@ -197,16 +197,21 @@ class RecordingLauncher {
   }
 }
 
-function request(): ISessionDelegationRequest {
+/** Mirrors dogfood-meta-workflow.flow.yaml's real session_delegate_cycle agent role
+ *  (Blueprints/Flows/dogfood-meta-workflow.flow.yaml). */
+const TRUSTED_AGENT_ROLES = new Set(["dogfood-coder", "quality-judge"]);
+
+function request(overrides: Partial<ISessionDelegationRequest> = {}): ISessionDelegationRequest {
   return {
     parentTraceId: PARENT_TRACE_ID,
     parentStepId: "1",
     sequence: 1,
-    agentRole: "test-role",
+    agentRole: "dogfood-coder",
     objective: "Implement the coordinator.",
     acceptanceCriteria: ["The coordinator is wired."],
     artifactRef: ".exa/PlanContext/phase-174.md",
     worktreePath: "/tmp/worktree",
+    ...overrides,
   };
 }
 
@@ -280,6 +285,7 @@ function makeDeps(
     now: () => FIXED_NOW,
     sleep: () => Promise.resolve(),
     contextPort,
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
     portals: [],
     worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
   };
@@ -523,4 +529,58 @@ Deno.test("[session_delegation_coordinator][mcp] closeAllOpenContextConnections 
   waitStore.status = "resumed";
   releaseFirstSleep!();
   await delegatePromise;
+});
+
+Deno.test("[session_delegation_coordinator][security] an agentRole outside the trusted set never reaches contextPort.prepare (Phase 176 GAP-11)", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port, inputs } = makeContextPort("AUGMENTED CYCLE OBJECTIVE");
+  const coordinator = new SessionDelegationCoordinator(
+    makeDeps(delegateService, waitStore, resultStore, launcher, port),
+    logger,
+  );
+
+  resultStore.status = "completed";
+  const untrustedRequest = request({ agentRole: "senior-coder" });
+  resultStore.request = untrustedRequest;
+  await coordinator.delegate(untrustedRequest);
+
+  assertEquals(inputs.length, 0, "an untrusted agentRole must never call contextPort.prepare");
+  assertEquals(delegateService.prepared[0].objective, "Implement the coordinator.");
+});
+
+Deno.test("[session_delegation_coordinator][security] an empty/absent agentRole is never trusted (Phase 176 GAP-11)", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port, inputs } = makeContextPort("AUGMENTED CYCLE OBJECTIVE");
+  const coordinator = new SessionDelegationCoordinator(
+    makeDeps(delegateService, waitStore, resultStore, launcher, port),
+    logger,
+  );
+
+  resultStore.status = "completed";
+  const unboundRequest = request({ agentRole: "" });
+  resultStore.request = unboundRequest;
+  await coordinator.delegate(unboundRequest);
+
+  assertEquals(inputs.length, 0, "an absent agentRole must never call contextPort.prepare");
+});
+
+Deno.test("[session_delegation_coordinator][security] construction fails loudly when contextPort is set without trustedAgentRoles (Phase 176 GAP-11)", () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger = new EventLogger({ outputs: [] });
+  const { port } = makeContextPort("objective");
+  const deps = makeDeps(delegateService, waitStore, resultStore, launcher, port);
+  deps.trustedAgentRoles = undefined;
+
+  assertThrows(() => new SessionDelegationCoordinator(deps, logger), Error, "trustedAgentRoles");
 });

@@ -857,6 +857,10 @@ export const ConfigSchema = z.object({
       /** Wall-clock lifetime of one live child MCP connection, independent of explicit close(). */
       connection_ttl_ms: z.number().int().min(60_000)
         .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS),
+      /** Agent-role blueprint IDs trusted to activate this supplement — a caller outside
+       *  this set is treated exactly like dogfood context being disabled. */
+      trusted_agent_roles: z.array(z.string().min(1))
+        .default(DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES as string[]),
     }).superRefine((context, ctx) => {
       if (context.output_reserve_tokens >= context.max_input_tokens) {
         ctx.addIssue({
@@ -891,6 +895,7 @@ export const ConfigSchema = z.object({
       max_records_per_trace: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE,
       retention_days: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS,
       connection_ttl_ms: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS,
+      trusted_agent_roles: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES as string[],
     }),
   }).optional().default({
     context: {
@@ -912,6 +917,7 @@ export const ConfigSchema = z.object({
       max_records_per_trace: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_MAX_RECORDS_PER_TRACE,
       retention_days: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_RETENTION_DAYS,
       connection_ttl_ms: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS,
+      trusted_agent_roles: DEFAULTS.DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES as string[],
     },
   }),
   /** Tokenizer backend configuration */

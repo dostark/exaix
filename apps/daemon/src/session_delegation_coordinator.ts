@@ -11,6 +11,7 @@
 import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { buildDelegateBriefArgs, isContentlessBrief } from "@exaix/core/planning";
+import { isTrustedDogfoodCaller } from "@exaix/core/func";
 import {
   SESSION_DEFAULT_DEADLINE_HOURS,
   SESSION_DEFAULT_MAX_INPUT_TOKENS,
@@ -88,6 +89,10 @@ export interface ISessionDelegationCoordinatorDeps {
   /** Optional dogfood bounded-context port; absent preserves the existing objective
    *  byte-for-byte. A failure surfaces as the existing `launch_failed` terminal outcome. */
   contextPort?: Opt<IDogfoodContextPort, Reason.OptionalDependency>;
+  /** Agent-role blueprint IDs trusted to activate contextPort — mandatory whenever
+   *  contextPort is set (see the constructor guard); an untrusted input.agentRole is
+   *  treated exactly like contextPort being absent. */
+  trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   /** The daemon's configured portal registry, for resolving `input.portalAlias` in
    *  `prepareBrief`. Mandatory: an operator wiring this gate without worktree isolation
    *  must get a loud startup failure, not a silently-unsafe daemon. */
@@ -148,6 +153,11 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
     if (!deps.worktreeCoordinator) {
       throw new Error(
         "SessionDelegationCoordinator requires deps.worktreeCoordinator for per-trace worktree isolation",
+      );
+    }
+    if (deps.contextPort && !deps.trustedAgentRoles) {
+      throw new Error(
+        "SessionDelegationCoordinator requires deps.trustedAgentRoles whenever deps.contextPort is set — an operator wiring dogfood context without an explicit trusted-role allowlist must get a loud startup failure, not a daemon that grants it to every caller",
       );
     }
   }
@@ -304,15 +314,20 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
     return { brief, recordId: contextResult.recordId, connection: contextResult.connection };
   }
 
-  /** Absent contextPort returns `input.objective` unchanged (byte-for-byte); acceptance
-   *  criteria and artifactRef are never touched. A prepare() failure propagates to
-   *  `delegate`'s existing try/catch, mapping to the `launch_failed` terminal outcome. */
+  /** Absent contextPort, or an untrusted agentRole, returns `input.objective` unchanged
+   *  (byte-for-byte); acceptance criteria and artifactRef are never touched. A prepare()
+   *  failure for a TRUSTED caller propagates to `delegate`'s try/catch as `launch_failed`. */
   private async applyDogfoodContext(
     input: ISessionDelegationRequest,
     delegationTraceId: string,
     model: Opt<string, Reason.OptionalContext>,
   ): Promise<{ objective: string; recordId?: string; connection?: IDogfoodContextConnection }> {
-    if (!this.deps.contextPort) return { objective: input.objective };
+    if (
+      !this.deps.contextPort ||
+      !isTrustedDogfoodCaller(input.agentRole, this.deps.trustedAgentRoles ?? new Set())
+    ) {
+      return { objective: input.objective };
+    }
     // Session briefs require provider:model, while DogfoodContextService resolves its
     // token budget against the bare catalog model identifier.
     const contextModel = model?.includes(":") ? model.slice(model.indexOf(":") + 1) : model;

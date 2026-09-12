@@ -3285,6 +3285,16 @@ export const DEFAULT_DOGFOOD_CONTEXT_CONNECTION_TTL_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Agent-role blueprint IDs trusted to activate the dogfood context supplement —
+ *  daemon-resolved from the flow/step definition, never from prompt or request text. */
+export const DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES: readonly string[] = configurable({
+  key: "dogfood.context.trusted_agent_roles",
+  default: ["dogfood-coder", "quality-judge"],
+  type: ConfigValueType.ARRAY,
+  description: "Agent-role blueprint IDs trusted to activate the dogfood bounded-context supplement",
+  swap: SwapClass.RESTART,
+});
+
 /** Env var name (not a tunable value — a fixed protocol name, like SESSION_ENV_*) the
  *  dogfood context MCP connection's bearer credential is carried under in a launch's env. */
 export const DOGFOOD_CONTEXT_BEARER_ENV_VAR = "EXAIX_CONTEXT_BEARER";

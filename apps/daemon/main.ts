@@ -876,6 +876,7 @@ if (import.meta.main) {
     // unwired (trusted portal alias not uniquely configured) is a startup error, not a
     // silent no-op; every other caller sees contextPort: undefined and is unaffected.
     let dogfoodContextPort: DogfoodContextService | undefined;
+    let dogfoodTrustedAgentRoles: ReadonlySet<string> | undefined;
     if (config.dogfood.context.enabled) {
       const dogfoodPortalAlias = config.dogfood.context.portal_alias;
       const matchingPortals = (config.portals ?? []).filter((p) => p.alias === dogfoodPortalAlias);
@@ -885,6 +886,7 @@ if (import.meta.main) {
         );
       }
       const dogfoodCfg = config.dogfood.context;
+      dogfoodTrustedAgentRoles = new Set(dogfoodCfg.trusted_agent_roles);
       const knownSecrets = Object.entries(Deno.env.toObject())
         .filter(([key, value]) => SECRET_ENV_PATTERN.test(key) && value.length > 0)
         .map(([, value]) => value);
@@ -961,6 +963,7 @@ if (import.meta.main) {
         provider: llmProvider,
         modelResolver,
         contextPort: dogfoodContextPort,
+        trustedAgentRoles: dogfoodTrustedAgentRoles,
         worktreeCoordinator: flowWorktreeCoordinator,
       },
     );
@@ -983,6 +986,7 @@ if (import.meta.main) {
         now: () => new Date(),
         sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
         contextPort: dogfoodContextPort,
+        trustedAgentRoles: dogfoodTrustedAgentRoles,
         portals: config.portals,
         worktreeCoordinator: flowWorktreeCoordinator,
       }, logger)

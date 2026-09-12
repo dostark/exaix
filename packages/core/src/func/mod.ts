@@ -19,5 +19,6 @@ export * from "./define_flow.ts";
 export * from "./tokenizer.ts";
 export * from "./context_items.ts";
 export * from "./context_redaction.ts";
+export * from "./dogfood_trusted_caller.ts";
 export { extractKeywords } from "../skills/text_utils.ts";
 export { MiddlewarePipeline } from "./pipeline.ts";
