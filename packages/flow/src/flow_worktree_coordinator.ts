@@ -53,6 +53,7 @@ export class FlowWorktreeSetupError extends Error {
 /** Creates and tracks isolated worktrees for the lifetime of a flow coordinator. */
 export class FlowWorktreeCoordinator implements IFlowWorktreeCoordinator {
   private readonly worktreesByTrace = new Map<string, string>();
+  private readonly pendingCreationsByTrace = new Map<string, Promise<string>>();
 
   constructor(private readonly deps: IFlowWorktreeCoordinatorDeps) {}
 
@@ -67,6 +68,24 @@ export class FlowWorktreeCoordinator implements IFlowWorktreeCoordinator {
       return existing;
     }
 
+    const pending = this.pendingCreationsByTrace.get(key);
+    if (pending) return pending;
+
+    const creation = this.createWorktree(key, portalAlias, traceId, baseBranch);
+    this.pendingCreationsByTrace.set(key, creation);
+    try {
+      return await creation;
+    } finally {
+      this.pendingCreationsByTrace.delete(key);
+    }
+  }
+
+  private async createWorktree(
+    key: string,
+    portalAlias: string,
+    traceId: string,
+    baseBranch: string,
+  ): Promise<string> {
     if (this.worktreesByTrace.size >= FLOW_WORKTREE_TRACE_MAX) {
       const oldestKey = this.worktreesByTrace.keys().next().value;
       if (oldestKey) {

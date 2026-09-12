@@ -32,6 +32,8 @@ class FakeGitService implements IGitService {
   removeError?: Error;
   branchExists = true;
   defaultBranch = "main";
+  /** When set, addWorktree() for this exact path stalls until the gate promise settles — lets a test hold one creation in flight while other resolve() calls race around it. */
+  addWorktreeGate?: { matchPath: string; promise: Promise<void> };
 
   setRepository(_repoPath: string): void {}
   getRepository(): string {
@@ -60,7 +62,11 @@ class FakeGitService implements IGitService {
   }
   addWorktree(worktreePath: string, baseBranch: string): Promise<void> {
     this.addCalls.push({ worktreePath, baseBranch });
-    return this.addError ? Promise.reject(this.addError) : Promise.resolve();
+    const settle = () => this.addError ? Promise.reject(this.addError) : Promise.resolve();
+    if (this.addWorktreeGate && this.addWorktreeGate.matchPath === worktreePath) {
+      return this.addWorktreeGate.promise.then(settle);
+    }
+    return settle();
   }
   removeWorktree(
     worktreePath: string,
@@ -287,3 +293,76 @@ Deno.test("[security] FlowWorktreeCoordinator.resolve rejects a trace ID that es
     await cleanup(test.root);
   }
 });
+
+Deno.test(
+  "[security] FlowWorktreeCoordinator.resolve: two concurrent calls for the SAME never-before-seen (portalAlias, traceId) pair both resolve to the identical path, with exactly one real git worktree add",
+  async () => {
+    const test = await createCoordinator();
+    try {
+      const [first, second] = await Promise.all([
+        test.coordinator.resolve("portal", "concurrent-trace", "main"),
+        test.coordinator.resolve("portal", "concurrent-trace", "main"),
+      ]);
+
+      assertEquals(first, second);
+      assertEquals(test.gitService.addCalls.length, 1);
+      assertEquals(
+        test.logger.events.filter((event) => event.action === DomainEventType.FlowWorktreeCreated).length,
+        1,
+      );
+    } finally {
+      await cleanup(test.root);
+    }
+  },
+);
+
+Deno.test(
+  "FlowWorktreeCoordinator: an in-flight (not yet resolved) resolve() call is never evicted by concurrent LRU pressure from other keys",
+  async () => {
+    const test = await createCoordinator();
+    try {
+      for (let index = 0; index < FLOW_WORKTREE_TRACE_MAX; index++) {
+        await test.coordinator.resolve("portal", `fill-${index}`, "main");
+      }
+
+      const inFlightPath = join(test.root, ".exa", "worktrees", "portal", "in-flight-trace");
+      let releaseGate!: () => void;
+      test.gitService.addWorktreeGate = {
+        matchPath: inFlightPath,
+        promise: new Promise((resolve) => {
+          releaseGate = resolve;
+        }),
+      };
+
+      const inFlight = test.coordinator.resolve("portal", "in-flight-trace", "main");
+      for (
+        let attempt = 0;
+        attempt < 100 && !test.gitService.addCalls.some((call) => call.worktreePath === inFlightPath);
+        attempt++
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+
+      // Concurrent LRU pressure from a different, brand-new key while the above stays unsettled.
+      await test.coordinator.resolve("portal", "pressure-trace", "main");
+
+      assertEquals(
+        test.gitService.removeCalls.some((call) => call.worktreePath === inFlightPath),
+        false,
+        "an in-flight worktree creation must never be selected for LRU eviction",
+      );
+      assertEquals(test.gitService.removeCalls.length, 1, "only the pre-existing oldest entry may be evicted");
+
+      releaseGate();
+      const resolvedPath = await inFlight;
+      assertEquals(resolvedPath, inFlightPath);
+      assertEquals(test.gitService.addCalls.filter((call) => call.worktreePath === inFlightPath).length, 1);
+
+      const reused = await test.coordinator.resolve("portal", "in-flight-trace", "main");
+      assertEquals(reused, inFlightPath);
+      assertEquals(test.gitService.addCalls.filter((call) => call.worktreePath === inFlightPath).length, 1);
+    } finally {
+      await cleanup(test.root);
+    }
+  },
+);

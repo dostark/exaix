@@ -616,6 +616,10 @@ per-trace worktree whenever `execution_strategy = "worktree"` is declared, regar
 portal's `target_path` itself points at — future contributors should not reintroduce a path that
 trusts `target_path` verbatim for either consumer.
 
+Each `(portalAlias, traceId)` entry `FlowWorktreeCoordinator` retains is a real on-disk git
+worktree checkout, not just an in-memory bookkeeping entry, so `flow.worktree_coordinator_trace_max`
+bounds disk usage as well as memory.
+
 ## Per-Action HITL Governance {#hitl-governance}
 
 _Phase 118, Team/Enterprise Edition — gated by `CAP_HITL_GOVERNANCE`._
