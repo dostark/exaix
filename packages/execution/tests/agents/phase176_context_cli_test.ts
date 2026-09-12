@@ -317,3 +317,63 @@ Deno.test("[CliDelegateStrategy][security] construction fails loudly when contex
     "trustedAgentRoles",
   );
 });
+
+async function listTempMcpDirs(portalPath: string): Promise<string[]> {
+  const names: string[] = [];
+  for await (const entry of Deno.readDir(portalPath)) {
+    if (entry.isDirectory && entry.name.startsWith(".exaix-dogfood-mcp-")) names.push(entry.name);
+  }
+  return names;
+}
+
+Deno.test("[CliDelegateStrategy][security] a Claude MCP config write failure removes the temp directory and never spawns the subprocess (Phase 176 GAP-13)", async () => {
+  const portalPath = await Deno.makeTempDir({ prefix: "phase176-context-cli-gap13-" });
+  const { run, calls } = makeFakeRun();
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    resolvePortalPath: () => portalPath,
+    run,
+    contextPort: makeConnectedContextPort(),
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
+    writeConfigFile: () => Promise.reject(new Deno.errors.PermissionDenied("simulated write failure")),
+  });
+
+  try {
+    await assertRejects(() => strategy.execute(makeBlueprint(), makeContext(), makeOptions()));
+    assertEquals(calls.length, 0, "the CLI subprocess must never spawn when the config write fails");
+    assertEquals(
+      await listTempMcpDirs(portalPath),
+      [],
+      "no .exaix-dogfood-mcp-* directory may survive a failed config write",
+    );
+  } finally {
+    await Deno.remove(portalPath, { recursive: true });
+  }
+});
+
+Deno.test("[CliDelegateStrategy][security] an OpenCode MCP config write failure removes the temp directory and never spawns the subprocess (Phase 176 GAP-13/GAP-14)", async () => {
+  const portalPath = await Deno.makeTempDir({ prefix: "phase176-context-cli-gap13-" });
+  const { run, calls } = makeFakeRun();
+  const strategy = new CliDelegateStrategy({
+    tool: "opencode",
+    bin: "opencode",
+    resolvePortalPath: () => portalPath,
+    run,
+    contextPort: makeConnectedContextPort(),
+    trustedAgentRoles: TRUSTED_AGENT_ROLES,
+    writeConfigFile: () => Promise.reject(new Deno.errors.PermissionDenied("simulated write failure")),
+  });
+
+  try {
+    await assertRejects(() => strategy.execute(makeBlueprint(), makeContext(), makeOptions()));
+    assertEquals(calls.length, 0, "the CLI subprocess must never spawn when the config write fails");
+    assertEquals(
+      await listTempMcpDirs(portalPath),
+      [],
+      "no .exaix-dogfood-mcp-* directory may survive a failed config write",
+    );
+  } finally {
+    await Deno.remove(portalPath, { recursive: true });
+  }
+});

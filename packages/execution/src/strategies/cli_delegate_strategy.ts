@@ -103,6 +103,11 @@ export type IRunCliDelegateProcess = (
 /** Resolves a portal alias to its absolute checkout path. Backed by AgentComposer.getPortalConfig. */
 export type IResolvePortalPath = (portalAlias: string) => string | undefined;
 
+/** Injectable seam over Deno.writeTextFile for the MCP config file write — defaults to the
+ *  real implementation; overridden in tests to deterministically simulate a write failure
+ *  without real filesystem permission tricks. */
+export type IWriteConfigFile = (path: string, content: string, options: { mode: number }) => Promise<void>;
+
 /** Dependencies for CliDelegateStrategy (constructor DI, config-free). */
 export interface ICliDelegateStrategyDeps {
   /** Which headless CLI tool to invoke. */
@@ -123,9 +128,13 @@ export interface ICliDelegateStrategyDeps {
    *  contextPort is set (see the constructor guard); an untrusted options.agent_role is
    *  treated exactly like contextPort being absent. */
   trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
+  /** Defaults to Deno.writeTextFile. Overridden in tests to simulate an MCP config write
+   *  failure deterministically. */
+  writeConfigFile?: Opt<IWriteConfigFile, Reason.OptionalDependency>;
 }
 
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
+const defaultWriteConfigFile: IWriteConfigFile = (path, content, options) => Deno.writeTextFile(path, content, options);
 
 /** Cap on how much of a failing CLI's raw stdout an error message quotes. */
 const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
@@ -198,6 +207,7 @@ function toPortalRelativePaths(paths: string[], portalPath: string): string[] {
 export class CliDelegateStrategy implements IExecutionStrategy {
   public readonly name = ExecutionStrategyName.CLI_DELEGATE;
   private readonly run: IRunCliDelegateProcess;
+  private readonly writeConfigFile: IWriteConfigFile;
   /** Session id per plan (trace_id), captured from the first step's response and resumed on every later step. Shape is identical for both tools; only the flag name differs. */
   private readonly sessionIds = new Map<string, string>();
   /** Turn counter per plan (trace_id) for dogfood context records — a fresh capture per
@@ -211,6 +221,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       );
     }
     this.run = deps.run ?? defaultRun;
+    this.writeConfigFile = deps.writeConfigFile ?? defaultWriteConfigFile;
   }
 
   async execute(
@@ -469,7 +480,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     const configPath = join(dir, "claude_mcp_config.json");
     const config = buildClaudeMcpConfig(toMcpConnectionInput(connection));
     try {
-      await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+      await this.writeConfigFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
     } catch (error) {
       await Deno.remove(dir, { recursive: true }).catch(() => {});
       throw error;
@@ -486,7 +497,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     const configPath = join(dir, "opencode_config.json");
     const config = { mcp: buildOpencodeMcpFragment(toMcpConnectionInput(connection)) };
     try {
-      await Deno.writeTextFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
+      await this.writeConfigFile(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
     } catch (error) {
       await Deno.remove(dir, { recursive: true }).catch(() => {});
       throw error;
