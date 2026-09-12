@@ -109,6 +109,7 @@ async function loadFixture(): Promise<IFixture> {
 }
 
 const MODEL = "anthropic:claude-sonnet-5";
+const TRUSTED_AGENT_ROLES = new Set(["dogfood-coder", "quality-judge"]);
 
 /** Returns the fixture portal's 5 relevant records only for its own query (never a leak
  *  to another query); substring match since CliDelegateStrategy embeds the raw request
@@ -255,6 +256,7 @@ for (const portalIndex of [0, 1] as const) {
         resolvePortalPath: () => "/tmp/portal",
         run,
         contextPort: service,
+        trustedAgentRoles: TRUSTED_AGENT_ROLES,
         model: MODEL,
       });
 
@@ -384,6 +386,7 @@ Deno.test("[dogfood_context_cutover][live-mcp] CliDelegateStrategy stock path: a
       bin: CHILD_SCRIPT,
       resolvePortalPath: () => portalDir,
       contextPort,
+      trustedAgentRoles: TRUSTED_AGENT_ROLES,
       model: MODEL,
     });
 
@@ -455,6 +458,7 @@ Deno.test("[dogfood_context_cutover][live-mcp] SessionDelegationCoordinator cycl
         now: () => FIXED_NOW,
         sleep: () => Promise.resolve(),
         contextPort,
+        trustedAgentRoles: TRUSTED_AGENT_ROLES,
         portals: [],
         worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
       },

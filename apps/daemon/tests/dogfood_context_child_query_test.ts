@@ -48,6 +48,7 @@ const CHILD_SCRIPT = fromFileUrl(new URL("./fixtures/dogfood_mcp_child.ts", impo
 const SEEDED_QUERY = "zephyr-seeded-fact";
 const SEEDED_TITLE = "Zephyr rollout gate";
 const SEEDED_CONTENT = "Zephyr feature flags require a staged rollout gate before 100% traffic.";
+const TRUSTED_AGENT_ROLES = new Set(["dogfood-coder", "quality-judge"]);
 
 function makePortalKnowledge(): Pick<IPortalKnowledgeService, "queryContext" | "loadCachedKnowledge"> {
   return {
@@ -163,6 +164,7 @@ Deno.test({
         bin: CHILD_SCRIPT,
         resolvePortalPath: () => portalDir,
         contextPort,
+        trustedAgentRoles: TRUSTED_AGENT_ROLES,
       });
 
       const blueprint: IAgentFileBlueprint = {
@@ -392,6 +394,7 @@ Deno.test({
         now: () => FIXED_NOW,
         sleep: () => Promise.resolve(),
         contextPort,
+        trustedAgentRoles: TRUSTED_AGENT_ROLES,
         portals: [],
         worktreeCoordinator: NEVER_USED_WORKTREE_COORDINATOR,
       };
