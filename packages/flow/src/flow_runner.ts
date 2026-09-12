@@ -282,9 +282,9 @@ type IFlowOriginalRequest = {
   requestId?: string;
   requestAnalysis?: IRequestAnalysis;
   portal?: string;
-  /** The portal's configured `target_path` verbatim, passed through unmodified as the
-   *  delegated CLI's `cwd` — worktree-isolated only if that path already points at one; no
-   *  code here creates or enforces per-trace isolation. Required by a session_delegate_cycle step. */
+  /** The portal's configured `target_path` verbatim — `SessionDelegationCoordinator.
+   *  prepareBrief` resolves it to a real per-trace worktree via `FlowWorktreeCoordinator`
+   *  before use when the portal opts into `execution_strategy: "worktree"`. Required by a session_delegate_cycle step. */
   executionRoot?: string;
   /** Worktree-relative `.exa/PlanContext/<slug>.md` pointer; required by a session_delegate_cycle step. */
   planContextRef?: string;

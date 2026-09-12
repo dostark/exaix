@@ -439,6 +439,51 @@ at validation time (Phase 174 Step 10/GAP-4) — `session_delegate_cycle`'s `rev
 accepts only `halt`, so the schema can never promise a capability the step handler does not
 have. `maxRetries` is still accepted (inherited from the shared schema) but has no effect.
 
+## Worktree Isolation
+
+_Phase 194._ `IFlowWorktreeCoordinator` (`packages/core/src/types/i_flow_worktree_coordinator.ts`),
+implemented by `FlowWorktreeCoordinator` (`packages/flow/src/flow_worktree_coordinator.ts`),
+resolves and lifecycle-manages an isolated git worktree for a delegated code-change execution:
+
+```typescript
+interface IFlowWorktreeCoordinator {
+  /** Idempotent per (portalAlias, traceId): the first call creates the worktree via
+   *  IGitService.addWorktree against the resolved base branch; every later call for the
+   *  same pair returns the same path without touching git again. Throws
+   *  FlowWorktreeSetupError on a git failure — never falls back to the portal's own path. */
+  resolve(portalAlias: string, traceId: string, baseBranch: string): Promise<string>;
+  /** Best-effort removal for one bounded-LRU-evicted (portalAlias, traceId) entry. */
+  release(portalAlias: string, traceId: string): Promise<void>;
+  /** Best-effort removal for every worktree the coordinator still tracks (daemon shutdown). */
+  releaseAll(): Promise<void>;
+}
+```
+
+`resolve` builds the worktree path under the `.exa/worktrees/<portalAlias>/<traceId>` convention
+(the same layout the native plan-execution path's `GitExecutionSetupService` uses, though the two
+services are parallel implementations, not shared code — see ARCHITECTURE.md
+[§Worktree Isolation for Delegated Code Changes](../../ARCHITECTURE.md#worktree-isolation)) and
+evicts the least-recently-touched entry once `FLOW_WORKTREE_TRACE_MAX` distinct pairs are tracked,
+mirroring `AgentComposerAdapter.planWrittenFilesByTrace`'s own eviction discipline.
+
+**One shared instance, two production consumers**, both routed through the shared
+`resolveWorktreeBaseDir` branch-table function (`packages/flow/src/resolve_worktree_base_dir.ts`)
+so their behavior can never silently diverge:
+
+- **`AgentComposerAdapter.runWithStrategy`** (strategy-routed flow steps: `react`/`cli_delegate`/
+  `mcp`) — `worktreeCoordinator` is an optional construction dependency; its absence preserves
+  every existing caller's behavior byte-for-byte (`ToolRegistry`'s `baseDir` resolves to the
+  portal's `target_path`, unchanged).
+- **`SessionDelegationCoordinator.prepareBrief`** (`type: session_delegate_cycle`) —
+  `worktreeCoordinator` (and `portals`) are mandatory construction dependencies; construction
+  fails fast without them, since this coordinator is the codebase's dedicated governed
+  code-change gate and an operator wiring it without worktree isolation must get a loud startup
+  error, not a silently-unsafe daemon.
+
+Both consumers key `resolve`'s `traceId` argument so every step/sequence of one multi-step flow
+run or `session_delegate_cycle` cycle reuses the identical worktree — a later step's writes must
+land alongside an earlier step's still-uncommitted ones, never in a fresh directory.
+
 ## See Also
 
 - [@exaix/session](../../packages/session/) — Session-delegation handoff contract

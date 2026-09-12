@@ -816,7 +816,10 @@ replaced by the bootstrap script:
 
 - `system.root = "__DOGFOOD_ROOT__"` → replaced with `~/exa-dogfood`
 - `ai.provider = "ollama"` — overridable via `EXA_LLM_PROVIDER`
-- `[[portals]]` — worktree portal `exaix-self` with `execution_strategy = "worktree"`
+- `[[portals]]` — worktree portal `exaix-self` with `execution_strategy = "worktree"`,
+  enforced in code by `FlowWorktreeCoordinator` for both a strategy-routed `cli_delegate`
+  flow step and a `session_delegate_cycle` step (Phase 194) — a per-trace worktree is
+  created regardless of what `target_path` itself points at, not merely declared
 - `quality_gate.enabled = false` — disabled for development workflows
 
 The final config is written to `<sandbox>/workspace/exa.config.toml`.

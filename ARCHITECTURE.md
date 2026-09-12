@@ -586,6 +586,36 @@ the same step — one is an `AgentStepHandler` execution mode, the other is a di
 altogether that happens to solve the same "delegate this work to a session tool" problem at a
 different granularity (one whole step vs. N reviewed sub-steps).
 
+### Worktree Isolation for Delegated Code Changes {#worktree-isolation}
+
+_Phase 194._ Both delegated code-change paths above — a `strategy: cli_delegate`/`react`/`mcp`
+flow step (`AgentComposerAdapter.runWithStrategy`) and a `type: session_delegate_cycle` step
+(`SessionDelegationCoordinator.prepareBrief`) — isolate a portal opted into
+`execution_strategy = "worktree"` through **`FlowWorktreeCoordinator`**
+(`packages/flow/src/flow_worktree_coordinator.ts`), which lazily creates and reuses one real
+git worktree per `(portalAlias, traceId)` pair under the daemon's `.exa/worktrees/<portal>/
+<traceId>/` convention. Both consumers resolve their `baseDir`/`worktreePath` through the same
+shared `resolveWorktreeBaseDir` function (`packages/flow/src/resolve_worktree_base_dir.ts`), so
+they can never silently diverge in behavior.
+
+**This is a parallel mechanism, not the same code, as the native plan-execution path's own
+worktree isolation** (`GitExecutionSetupService`, §6a above, forced by
+`PortalExecutionStrategy.WORKTREE` whenever a plan's frontmatter carries a `portal`) — the two
+services share only the `.exa/worktrees/<portal>/<traceId>` path convention and the underlying
+`IGitService.addWorktree`/`removeWorktree` primitives, deliberately reimplemented rather than
+reused, because `GitExecutionSetupService`'s public API is shaped around `PlanFrontmatter` and a
+plan-execution pointer file that neither flow-step nor `session_delegate_cycle` execution has an
+equivalent for. A future reader should not assume changing one mechanism changes the other.
+
+**Security note:** before this phase, neither delegated code-change path enforced worktree
+isolation in code — a strategy-routed flow step's `ToolRegistry` and a `session_delegate_cycle`
+delegation's launch `cwd` both resolved directly to the portal's static `target_path`, with
+safety depending entirely on every deployed config happening to pre-point `target_path` at an
+already-isolated checkout. `FlowWorktreeCoordinator` closes that gap by resolving a real,
+per-trace worktree whenever `execution_strategy = "worktree"` is declared, regardless of what a
+portal's `target_path` itself points at — future contributors should not reintroduce a path that
+trusts `target_path` verbatim for either consumer.
+
 ## Per-Action HITL Governance {#hitl-governance}
 
 _Phase 118, Team/Enterprise Edition — gated by `CAP_HITL_GOVERNANCE`._
