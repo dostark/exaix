@@ -2712,6 +2712,10 @@ exactl eval report --view external
 exactl eval report --view robustness
 exactl eval report --view interactive
 exactl eval report --view robustness --run-ids <id,id,...>   # scope to an exact run set
+
+# Memory evaluation: per-ability retrieval quality plus consolidation/learning-effectiveness
+exactl eval report --view memory
+exactl eval report --view memory --format json
 ```
 
 `eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
@@ -2722,8 +2726,12 @@ against history otherwise; see `docs/Exaix_Evaluation.md` §17 for the methodolo
 caveats), `robustness` (the AgentDojo triple per injection vector — clean utility,
 utility-under-attack, attack-success-rate, robustness gap), and `interactive` (per-persona
 clarification-loop convergence and policy-adherence rate; see `docs/Exaix_Evaluation.md` §18 for
-both views' methodology, safety model, and the `--run-ids` reproducibility option);
-`--format json` gives machine-readable rows. `--max-cost-usd` stops scheduling once
+both views' methodology, safety model, and the `--run-ids` reproducibility option), and `memory`
+(per memory-ability recall/precision/MRR/nDCG/answer-correctness/abstention, plus a second table
+for the cross-cutting consolidation-quality/staleness/learning-effectiveness metrics; see
+`docs/Exaix_Evaluation.md` §19 for the ability taxonomy, metric definitions, and the
+per-corpus/per-provider/per-date positioning caveat); `--format json` gives machine-readable rows.
+`--max-cost-usd` stops scheduling once
 accumulated tracked cost reaches the cap (remaining scenarios skipped, never a task truncated
 mid-run). Full documentation in `docs/Exaix_Evaluation.md`.
 

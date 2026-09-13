@@ -286,6 +286,47 @@ exactl eval run --scenario tests/scenario_framework/scenarios/swe_tasks/fix-bug-
 
 See `docs/Exaix_User_Guide.md` §2.5a for `[cli_delegate]` config and auth setup.
 
+### Memory Evaluation (Phase 148)
+
+Measures the memory bank (extraction, approval, consolidation, retrieval — Phase 147), a
+**sibling axis to harness evaluation, not a subset of it** — see
+[`docs/Exaix_Evaluation.md` §19](../../docs/Exaix_Evaluation.md#19-memory-evaluation) for the
+full methodology, metric definitions, and positioning caveats. This section covers the
+mechanical corpus/pack layout.
+
+**The `memory` pack, tagged by ability.** Every scenario under `scenarios/memory/` declares
+exactly one of five abilities via an `ability:<name>` tag
+(`information-extraction`/`multi-session-reasoning`/`temporal-reasoning`/`knowledge-updates`/
+`abstention`, aligned with the external LongMemEval taxonomy), plus a `memory-corpus-version:
+<value>` tag every memory scenario carries for contamination hygiene (§19.5). A scenario
+whose metric has no ability slot (consolidation-quality, staleness, learning-effectiveness)
+carries a `metric:<name>` tag instead, grouped separately by `eval report --view memory`'s
+second table.
+
+**Ground-truth fixtures** live at `fixtures/memory/<task-id>/task.json`: seeded learnings
+(`session_writes`, each a `{id, title, content}` — `id` must be a valid UUID since a query's
+`ground_truth_ids` references it), and one or more `queries` (`{text, ground_truth_ids,
+expected_answer?}` — `expected_answer` is present only for judge-scored queries, e.g.
+multi-session-reasoning). `assertMemoryAbilityCoverage`
+(`runner/memory_ability_coverage.ts`) fails if any of the five abilities has zero fixture
+coverage; run it via `deno task check:memory-ability-coverage` — an operator-run gate (same
+class as `check_artefact_decision_coverage.ts`), not wired into CI.
+
+```bash
+# Deterministic ci-core memory scenarios (no LLM/provider involved)
+exactl eval run --scenario tests/scenario_framework/scenarios/memory/info-extraction-basic.yaml --eval-mode
+exactl eval run --scenario tests/scenario_framework/scenarios/memory/staleness-basic.yaml --eval-mode
+
+# Gated-cadence scenario (llm-judge criterion — provider-live, costs real tokens/subscription usage)
+exactl eval run --scenario tests/scenario_framework/scenarios/memory/multi-session-reasoning-basic.yaml --eval-mode
+
+# The memory report
+exactl eval report --view memory
+
+# Ability-coverage gate
+deno task check:memory-ability-coverage
+```
+
 ---
 
 ## 2. Validation (Secondary Role)

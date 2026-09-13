@@ -1,7 +1,7 @@
 # Exaix Evaluation Guide
 
-- **Version:** 1.4.0
-- **Date:** 2026-09-06
+- **Version:** 1.5.0
+- **Date:** 2026-09-13
 
 ## 1. Introduction
 
@@ -21,6 +21,7 @@ track scores over time, compare runs, and gate CI on quality thresholds.
 | End-to-end workflows | `integration_e2e`         |
 | Blueprint quality    | `blueprint-eval`          |
 | Eval self-test       | `eval-smoke`              |
+| Memory quality       | `memory`                  |
 
 Packs are also tagged by the **subsystem** they measure — `subsystem:tools`, `subsystem:mcp-server`,
 `subsystem:mcp-client`, `subsystem:agent_roles`, `subsystem:skills`, `subsystem:flows` — which is the
@@ -1575,3 +1576,120 @@ worktree/portal for the run; a vector's write target (e.g. the `filename` vector
 sentinel) is chosen to land inside the disposable per-run sandbox root, never the real repository
 or home directory, even in the case where a live delegate's write actually succeeds. No scenario
 in either pack performs a real destructive or networked action on success.
+
+## 19. Memory Evaluation
+
+Where §§1-18 measure Exaix's execution/harness quality, this section measures a different
+subsystem: the memory bank (extraction, approval, consolidation, retrieval — see
+`ARCHITECTURE.md`'s Memory Subsystem section for the components themselves). Memory evaluation is
+a **sibling axis to harness evaluation, not a replacement for it** — it reuses the same
+`tests/scenario_framework`/`@exaix/eval-history`/`eval report` infrastructure (§§3-4, §9) rather
+than a parallel eval stack, with its own `memory` pack, its own ability taxonomy, and its own
+`--view memory` report.
+
+### 19.1 The five-ability taxonomy
+
+Every memory scenario declares exactly one of five abilities, aligned with the external
+LongMemEval taxonomy so the corpus isn't self-graded against its own blind spots:
+
+| Ability                   | What it tests                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `information-extraction`  | A single seeded fact is retrieved verbatim for a matching query                    |
+| `multi-session-reasoning` | Combining two or more separately-seeded learnings to answer one query              |
+| `temporal-reasoning`      | Reasoning about when a fact was true, not just what it says                        |
+| `knowledge-updates`       | Retrieval prefers a current fact over one that has since been superseded           |
+| `abstention`              | No relevant memory exists; a correct answer is admitting that, not fabricating one |
+
+`tests/scenario_framework/fixtures/memory/<task-id>/task.json` is the ground-truth fixture format:
+seeded learnings (`session_writes`), one or more queries with `ground_truth_ids`, and an optional
+`expected_answer` for judge-scored queries. `assertMemoryAbilityCoverage`
+(`tests/scenario_framework/runner/memory_ability_coverage.ts`, gated by
+`deno task check:memory-ability-coverage`) fails if any of the five abilities has zero fixture
+coverage — an operator-run gate (mirrors `check_artefact_decision_coverage.ts`'s pattern), not a
+CI-blocking one, so a new fixture directory doesn't fail a build before its `ability` field is
+even readable.
+
+### 19.2 Metric families
+
+| Metric                            | Definition                                                                              | Criterion / mechanism                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `recall_at_k`                     | \|relevant ∩ retrieved_top_k\| / \|relevant\|                                           | `recall-at-k` criterion                                                          |
+| `precision_at_k`                  | \|relevant ∩ retrieved_top_k\| / k                                                      | `precision-at-k` criterion                                                       |
+| `mrr`                             | Mean reciprocal rank of the first relevant memory                                       | `mrr` criterion                                                                  |
+| `ndcg_at_k`                       | Normalised discounted cumulative gain over graded relevance                             | `ndcg-at-k` criterion                                                            |
+| `abstention_correct`              | 1 iff nothing is retrieved when nothing relevant was ever seeded, else 0                | `abstention` criterion                                                           |
+| `answer_correctness`              | LLM-judge grade of the retrieved evidence against the fixture's `expected_answer`       | `llm-judge` criterion (gated cadence, §19.4)                                     |
+| `dedup_rate`                      | Fraction of near-duplicate learnings actually removed by a consolidation pass           | `run_memory_consolidation_check.ts` → `eval report --view memory`'s metric table |
+| `contradiction_correct`           | Fraction of update/supersede operations whose resulting store state was correct         | Same script as `dedup_rate`                                                      |
+| `staleness_correct`               | 1 iff retrieval surfaces the current fact and excludes every retired one, else 0        | `run_memory_staleness_check.ts` (also feeds the `knowledge-updates` ability row) |
+| `learning_effectiveness`          | `warm_recall_at_k − cold_recall_at_k` for a freshly-extracted learning (§19.3)          | `run_learning_effectiveness.ts`                                                  |
+| `tokens_per_query`/`ms_per_query` | `total / query_count`, computed report-side (not a persisted field), tolerating absence | `eval_commands.ts`'s `perQuery()`                                                |
+
+`dedup_rate`/`contradiction_correct`/`staleness_correct`/`learning_effectiveness` have **no slot
+in the five-ability taxonomy** — they are cross-cutting corpus-quality signals, not properties of
+one ability, so `exactl eval report --view memory` renders them in a second table
+("Consolidation & Learning-Effectiveness", grouped by a `metric:` scenario tag) rather than
+forcing them into the per-ability columns.
+
+### 19.3 The learning-effectiveness protocol (warm minus cold)
+
+`learning_effectiveness` answers a specific question: **does a task genuinely get easier after
+Exaix learns from a prior run?** The protocol runs two independent, freshly-seeded workspaces:
+
+1. **Cold.** An empty workspace queries task B's text directly through the real
+   `SessionMemoryService.lookupMemories` surface. Nothing has been seeded, so `cold_recall_at_k`
+   is always 0 — the true no-learning baseline, not a synthetic zero.
+1. **Warm.** A separate empty workspace runs task A's `lessons_learned` through the real
+   extraction → approval → consolidation pipeline (`MemoryExtractorService.analyzeExecution` →
+   `createProposal` → `MemoryAutoApprovalService.runApprovalCycle`) — the same production path
+   Phase 147 ships, not a shortcut — then queries task B's text. `warm_recall_at_k` scores the
+   freshly-extracted learning's own id (unknowable in advance; captured from
+   `analyzeExecution`'s return value), not a pre-declared fixture id.
+
+`learning_effectiveness = warm_recall_at_k − cold_recall_at_k`. A score of 1 means the system went
+from "could never have answered this" to "answers perfectly" purely from having run task A once.
+The extraction strategy is swappable: the ci-core tier uses the deterministic, LLM-free
+`HeuristicExtractionStrategy` (verbatim-copies `lessons_learned`); a live tier exists separately
+using the real `LlmLearningExtractor` (subscription-billed `claude-cli`, not a metered API key) for
+the paraphrased-content case, since the deterministic tier alone can't prove extraction survives
+paraphrasing.
+
+### 19.4 Cadence (three-tier, same model as harness evaluation)
+
+Memory scenarios follow the identical three-tier cadence phases 141/142 established for harness
+evaluation (§11) — no separate cadence model was introduced:
+
+- **ci-core (every commit):** every deterministic scenario — the five ability-taxonomy retrieval
+  checks, staleness, consolidation-quality, and the heuristic-extraction leg of
+  learning-effectiveness. None call an LLM; `memory_pipeline_test.ts` is the CI guard proving this
+  (spawns the real runner for all seven, then asserts the resulting eval-history rows carry zero
+  tokens anywhere in the grid).
+- **gated (nightly/manual):** the one scenario with an `llm-judge` criterion
+  (`memory-multi-session-reasoning-basic`, scoring `answer_correctness`) carries a `provider-live`
+  tag, excluding it from a bare `--pack`/`--tag` selection the same way every other live-provider
+  scenario in the framework is excluded (§11).
+
+### 19.5 Corpus versioning and contamination hygiene
+
+Every memory scenario tags its run with `memory-corpus-version:<value>` (currently
+`phase148-v1`), derived into a dedicated `memory_corpus_version` field on the eval-history entry —
+deliberately **not** the existing `benchmark`/`benchmark_version` fields, which are scoped to
+externally-sourced benchmarks (`terminal-bench`/`swe-bench` + an upstream release version, §17);
+this corpus is Exaix-authored with no external benchmark, so reusing those fields would mean
+inventing a fake benchmark name for an internal one. This follows the same contamination-hygiene
+convention as external benchmarks (§17): pin what corpus version produced a number, alongside the
+existing provider/model/date provenance every eval-history entry already carries.
+
+### 19.6 Positioning caveat
+
+**A memory number is per-corpus, per-provider, per-date — never a context-free claim.** As with
+every other headline in this guide (§§17-18), a defensible sentence names all three: _"On the
+`phase148-v1` corpus, `claude-cli`, the `information-extraction`/`temporal-reasoning`/
+`knowledge-updates` abilities each scored a clean 1.000 in isolated single-scenario runs on
+2026-09-13."_ Not: "Exaix's memory scores N" or "Exaix remembers correctly" — no number here
+generalizes past its stated corpus version, provider, and date, and (per §18.3's reproducibility
+caveat, which applies identically to `--view memory`) re-rendering the report later against a
+local history that has accumulated further runs — including ordinary development activity, not
+just intentional benchmark runs — will not reproduce a specific number exactly. Use `--run-ids` to
+scope a citation to an exact run set when reproducibility matters, exactly as §18.3 recommends for
+the robustness/interactive views.
