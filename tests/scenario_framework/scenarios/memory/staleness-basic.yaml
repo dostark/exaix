@@ -1,0 +1,40 @@
+schema_version: "1.0.0"
+# Phase 148 Step 6: staleness (current-over-retired retrieval preference) is Step 3's
+# consolidation-quality metric, but it also directly measures the knowledge-updates
+# ability's real behavior — so this scenario carries BOTH tags: ability:knowledge-updates
+# (contributes to that ability's row in the per-ability table alongside
+# knowledge-updates-basic.yaml's plain recall check) and metric:staleness (for clarity in
+# the Consolidation & Learning-Effectiveness table's grouping). run_memory_staleness_check.ts
+# performs a genuine supersede (real MemoryBankService.supersedeLearning) then queries
+# through the real retrieval surface, scoring the result with Step 3's
+# computeStalenessCorrect — the production call site the Reachability Ledger required.
+id: "memory-staleness-basic"
+title: "Memory evaluation — staleness: retrieval prefers the current fact over the retired one"
+pack: "memory"
+tags: [
+  "domain",
+  "subsystem:memory",
+  "ability:knowledge-updates",
+  "metric:staleness",
+  "memory-corpus-version:phase148-v1",
+]
+request_fixture: "fixtures/requests/memory/staleness_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-staleness-check"
+    type: "run-script"
+    name: "supersede a retired fact with a current one, query, confirm staleness-correct retrieval"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_staleness_check.ts"
+      - "$WORKSPACE_ROOT"
+    output_criteria:
+      - id: "staleness-correct-perfect"
+        kind: "json-query"
+        query: ".staleness_correct"
+        equals: 1

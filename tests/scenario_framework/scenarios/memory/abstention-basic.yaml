@@ -5,7 +5,7 @@ schema_version: "1.0.0"
 id: "memory-abstention-basic"
 title: "Memory evaluation — abstention ability declines when nothing is relevant"
 pack: "memory"
-tags: ["domain", "subsystem:memory", "ability:abstention"]
+tags: ["domain", "subsystem:memory", "ability:abstention", "memory-corpus-version:phase148-v1"]
 request_fixture: "fixtures/requests/memory/abstention_basic.md"
 mode_support: ["auto"]
 portals: []

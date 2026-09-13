@@ -1,0 +1,17 @@
+{
+  "ability": "temporal-reasoning",
+  "session_writes": [
+    {
+      "id": "11111111-0000-4000-8000-000000000001",
+      "title": "Cache TTL current value",
+      "content": "As of the latest deployment, the cache TTL is 300 seconds, updated from the previous 60 second default."
+    }
+  ],
+  "queries": [
+    {
+      "text": "cache TTL is 300 seconds",
+      "ground_truth_ids": ["11111111-0000-4000-8000-000000000001"],
+      "expected_answer": "The current cache TTL is 300 seconds; it was previously 60 seconds."
+    }
+  ]
+}

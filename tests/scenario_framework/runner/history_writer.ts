@@ -39,6 +39,7 @@ export interface IWriteEvalHistoryOptions {
   cellId?: string;
   benchmark?: string;
   benchmarkVersion?: string;
+  memoryCorpusVersion?: string;
 }
 
 // The scenario framework lives at <repo>/tests/scenario_framework; this file is under runner/.
@@ -154,6 +155,7 @@ function buildEvalHistoryEntry(
   if (opts?.cellId !== undefined) entry.cell_id = opts.cellId;
   if (opts?.benchmark !== undefined) entry.benchmark = opts.benchmark;
   if (opts?.benchmarkVersion !== undefined) entry.benchmark_version = opts.benchmarkVersion;
+  if (opts?.memoryCorpusVersion !== undefined) entry.memory_corpus_version = opts.memoryCorpusVersion;
 
   return entry;
 }

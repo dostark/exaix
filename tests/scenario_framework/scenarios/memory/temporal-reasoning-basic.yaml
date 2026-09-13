@@ -1,0 +1,30 @@
+schema_version: "1.0.0"
+# Phase 148 Step 6: ability-coverage exemplar for temporal-reasoning — closes the
+# ability-coverage gate's real-corpus gap (Step 6's Codebase Grounding found only 3/5
+# abilities had a fixture at Step 1-5 time). Reuses run_memory_replay.ts unchanged.
+id: "memory-temporal-reasoning-basic"
+title: "Memory evaluation — temporal-reasoning ability retrieves the current value"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "ability:temporal-reasoning", "memory-corpus-version:phase148-v1"]
+request_fixture: "fixtures/requests/memory/temporal_reasoning_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-replay-temporal-reasoning"
+    type: "run-script"
+    name: "seed a temporally-framed fact, query it, confirm perfect recall"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_replay.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/memory/temporal-reasoning-basic/task.json"
+    output_criteria:
+      - id: "recall-current-value"
+        kind: "recall-at-k"
+        k: 5
+        ground_truth_ids: ["11111111-0000-4000-8000-000000000001"]
+        score_weight: 1.0

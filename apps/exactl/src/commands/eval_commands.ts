@@ -9,6 +9,7 @@
 import { resolve } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { EvalSqliteStore, EXTERNAL_BENCHMARK_CAVEAT, resolveEvalDbPath } from "@exaix/eval-history";
+import { EVAL_MEMORY_PACK } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 interface IRunManifest {
@@ -147,6 +148,10 @@ const EXTERNAL_BENCHMARK_FIXTURE_DIRS: Record<string, string> = {
 const TASKS_COLUMN = "Tasks";
 /** Shared report-table column label (check:magic: appears in 4 renderers). */
 const FAMILY_COLUMN = "Family";
+/** Shared report-table column label (check:magic: appears in 4 renderers). */
+const PROVIDER_COLUMN = "Provider";
+/** Shared report-table column label (check:magic: appears in 4 renderers). */
+const RUNS_COLUMN = "Runs";
 /** The `--format json` output format (check:magic: appears in 3 renderers). */
 const JSON_FORMAT = "json";
 /** Report views that spawn a Test-layer script bridge (never imported into production). */
@@ -433,8 +438,13 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
+    if (view === EVAL_MEMORY_PACK) {
+      this.renderMemoryAbilityReport(options);
+      return;
+    }
+
     console.log(
-      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external, robustness, interactive`,
+      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external, robustness, interactive, memory`,
     );
   }
 
@@ -569,6 +579,29 @@ export class EvalCommands extends BaseCommand {
         console.log(JSON.stringify(rows, null, 2));
       } else {
         renderFrontierTable(rows);
+      }
+    } finally {
+      store.close();
+    }
+  }
+
+  private renderMemoryAbilityReport(options: { last?: number; dbPath?: string; format?: string }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({ pack: EVAL_MEMORY_PACK, last: options.last });
+      const rows = computeMemoryAbilityRows(runs);
+      const metricRows = computeMemoryMetricRows(runs);
+      if (rows.length === 0 && metricRows.length === 0) {
+        console.log("No memory evaluation history found.");
+        return;
+      }
+      if (options.format === JSON_FORMAT) {
+        console.log(JSON.stringify(rows, null, 2));
+      } else {
+        if (rows.length > 0) renderMemoryAbilityTable(rows);
+        renderMemoryMetricTable(metricRows);
       }
     } finally {
       store.close();
@@ -889,7 +922,7 @@ function renderFrontierTable(rows: IFrontierCellRow[]): void {
   console.log("Accuracy vs Cost Frontier");
   console.log("-".repeat(100));
   console.log(
-    `  ${padRight("Cell", 24)} ${padRight("Runs", 6)} ${padRight("Solved", 8)} ${padRight("MeanScore", 10)} ${
+    `  ${padRight("Cell", 24)} ${padRight(RUNS_COLUMN, 6)} ${padRight("Solved", 8)} ${padRight("MeanScore", 10)} ${
       padRight("MeanCost", 10)
     } ${padRight("Cost/Solved", 12)} Pareto`,
   );
@@ -900,6 +933,173 @@ function renderFrontierTable(rows: IFrontierCellRow[]): void {
       } ${padRight(formatNumberOrAbsent(row.meanScore, 3), 10)} ${
         padRight(formatNumberOrAbsent(row.meanCost, 4), 10)
       } ${padRight(formatNumberOrAbsent(row.costPerSolved, 4), 12)} ${row.pareto ? "◀ pareto" : "—"}`,
+    );
+  }
+}
+
+/** Structural subset of the eval-history run row the memory-ability view needs. */
+interface IMemoryAbilityRunRow {
+  tags: string | null;
+  provider: string | null;
+  suite_score: number;
+  passed: number;
+  total_tokens_prompt?: number | null;
+  total_tokens_completion?: number | null;
+  duration_ms?: number | null;
+}
+
+interface IMemoryAbilityRow {
+  ability: string;
+  provider: string;
+  runCount: number;
+  passedCount: number;
+  meanScore: number | undefined;
+  tokensPerQuery: number | undefined;
+  msPerQuery: number | undefined;
+}
+
+/** Cross-cutting memory-quality signals with no `ability:` slot in `MemoryAbilitySchema`
+ *  (consolidation-quality, learning-effectiveness) — grouped by `metric:` tag instead. */
+interface IMemoryMetricRow {
+  metric: string;
+  provider: string;
+  runCount: number;
+  passedCount: number;
+  meanScore: number | undefined;
+}
+
+const ABILITY_TAG_PREFIX = "ability:";
+const METRIC_TAG_PREFIX = "metric:";
+// Not "-": ability/metric names (e.g. "information-extraction") already contain hyphens.
+const MEMORY_ABILITY_GROUP_KEY_SEPARATOR = "::";
+
+function definedNumbers(values: Array<number | null | undefined>): number[] {
+  return values.filter((v): v is number => v != null);
+}
+
+/** `total / queryCount`, or undefined if either input is missing/zero — a report-time
+ *  derivation, not a persisted field. Reimplemented from the scenario framework's
+ *  `memory_efficiency.ts` to avoid an apps/ -> tests/ cross-boundary import. */
+function perQuery(total: Opt<number, Reason.OptionalInput>, queryCount: number): number | undefined {
+  if (total === undefined || queryCount === 0) return undefined;
+  return total / queryCount;
+}
+
+/** Groups seeded history runs by (ability, provider) parsed from the `ability:` tag —
+ *  a run with no such tag is excluded. `tokensPerQuery`/`msPerQuery` treat each run as
+ *  one query, since this corpus's fixtures are one-query-per-task. */
+export function computeMemoryAbilityRows(runs: IMemoryAbilityRunRow[]): IMemoryAbilityRow[] {
+  const groups = new Map<string, IMemoryAbilityRunRow[]>();
+  for (const run of runs) {
+    let tags: string[] = [];
+    try {
+      tags = run.tags ? JSON.parse(run.tags) as string[] : [];
+    } catch {
+      tags = [];
+    }
+    const ability = tags.find((t) => t.startsWith(ABILITY_TAG_PREFIX))?.slice(ABILITY_TAG_PREFIX.length);
+    if (!ability) continue;
+    const provider = run.provider ?? COST_REPORT_UNKNOWN_PROVIDER;
+    const key = `${ability}${MEMORY_ABILITY_GROUP_KEY_SEPARATOR}${provider}`;
+    const group = groups.get(key) ?? [];
+    group.push(run);
+    groups.set(key, group);
+  }
+
+  const rows: IMemoryAbilityRow[] = [];
+  for (const [key, groupRuns] of groups) {
+    const [ability, provider] = key.split(MEMORY_ABILITY_GROUP_KEY_SEPARATOR);
+    const tokensPromptValues = definedNumbers(groupRuns.map((r) => r.total_tokens_prompt));
+    const tokensCompletionValues = definedNumbers(groupRuns.map((r) => r.total_tokens_completion));
+    const durationValues = definedNumbers(groupRuns.map((r) => r.duration_ms));
+    const hasTokenData = tokensPromptValues.length > 0 || tokensCompletionValues.length > 0;
+    const totalTokens = hasTokenData ? sum(tokensPromptValues.concat(tokensCompletionValues)) : undefined;
+    const totalDuration = durationValues.length > 0 ? sum(durationValues) : undefined;
+    rows.push({
+      ability,
+      provider,
+      runCount: groupRuns.length,
+      passedCount: groupRuns.filter((r) => r.passed === 1).length,
+      meanScore: mean(groupRuns.map((r) => r.suite_score)),
+      tokensPerQuery: perQuery(totalTokens, groupRuns.length),
+      msPerQuery: perQuery(totalDuration, groupRuns.length),
+    });
+  }
+  return rows.sort((a, b) => a.ability.localeCompare(b.ability) || a.provider.localeCompare(b.provider));
+}
+
+/** Groups seeded history runs by (metric, provider) parsed from the `metric:` tag — the
+ *  consolidation-quality/learning-effectiveness sibling of `computeMemoryAbilityRows`,
+ *  for signals that aren't one of the five `MemoryAbilitySchema` abilities. */
+export function computeMemoryMetricRows(runs: IMemoryAbilityRunRow[]): IMemoryMetricRow[] {
+  const groups = new Map<string, IMemoryAbilityRunRow[]>();
+  for (const run of runs) {
+    let tags: string[] = [];
+    try {
+      tags = run.tags ? JSON.parse(run.tags) as string[] : [];
+    } catch {
+      tags = [];
+    }
+    const metric = tags.find((t) => t.startsWith(METRIC_TAG_PREFIX))?.slice(METRIC_TAG_PREFIX.length);
+    if (!metric) continue;
+    const provider = run.provider ?? COST_REPORT_UNKNOWN_PROVIDER;
+    const key = `${metric}${MEMORY_ABILITY_GROUP_KEY_SEPARATOR}${provider}`;
+    const group = groups.get(key) ?? [];
+    group.push(run);
+    groups.set(key, group);
+  }
+
+  const rows: IMemoryMetricRow[] = [];
+  for (const [key, groupRuns] of groups) {
+    const [metric, provider] = key.split(MEMORY_ABILITY_GROUP_KEY_SEPARATOR);
+    rows.push({
+      metric,
+      provider,
+      runCount: groupRuns.length,
+      passedCount: groupRuns.filter((r) => r.passed === 1).length,
+      meanScore: mean(groupRuns.map((r) => r.suite_score)),
+    });
+  }
+  return rows.sort((a, b) => a.metric.localeCompare(b.metric) || a.provider.localeCompare(b.provider));
+}
+
+/** Render the memory-ability table: per (ability, provider) score/pass-count/efficiency. */
+function renderMemoryAbilityTable(rows: IMemoryAbilityRow[]): void {
+  console.log("Memory Evaluation — Per Ability");
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Ability", 26)} ${padRight(PROVIDER_COLUMN, 14)} ${padRight(RUNS_COLUMN, 6)} ${
+      padRight("Passed", 8)
+    } ${padRight("MeanScore", 10)} ${padRight("Tokens/Q", 10)} Ms/Q`,
+  );
+  for (const row of rows) {
+    console.log(
+      `  ${padRight(row.ability.slice(0, 26), 26)} ${padRight(row.provider.slice(0, 14), 14)} ${
+        padRight(String(row.runCount), 6)
+      } ${padRight(String(row.passedCount), 8)} ${padRight(formatNumberOrAbsent(row.meanScore, 3), 10)} ${
+        padRight(formatNumberOrAbsent(row.tokensPerQuery, 0), 10)
+      } ${formatNumberOrAbsent(row.msPerQuery, 0)}`,
+    );
+  }
+}
+
+/** Render the memory-metric table: per (metric, provider) score/pass-count for signals
+ *  outside the five-ability taxonomy (consolidation-quality, learning-effectiveness). */
+function renderMemoryMetricTable(rows: IMemoryMetricRow[]): void {
+  if (rows.length === 0) return;
+  console.log();
+  console.log("Memory Evaluation — Consolidation & Learning-Effectiveness");
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Metric", 26)} ${padRight(PROVIDER_COLUMN, 14)} ${padRight(RUNS_COLUMN, 6)} ${
+      padRight("Passed", 8)
+    } MeanScore`,
+  );
+  for (const row of rows) {
+    console.log(
+      `  ${padRight(row.metric.slice(0, 26), 26)} ${padRight(row.provider.slice(0, 14), 14)} ${
+        padRight(String(row.runCount), 6)
+      } ${padRight(String(row.passedCount), 8)} ${formatNumberOrAbsent(row.meanScore, 3)}`,
     );
   }
 }
@@ -1228,9 +1428,9 @@ function renderInteractiveTable(rows: IInteractiveRow[]): void {
   console.log("Interactive Pack Report (per persona)");
   console.log("-".repeat(100));
   console.log(
-    `  ${padRight("Persona", 14)} ${padRight("Runs", 6)} ${padRight("MeanRounds", 11)} ${padRight("NonConverge", 12)} ${
-      padRight("Adherence", 10)
-    } ${padRight("Pass^K", 8)}`,
+    `  ${padRight("Persona", 14)} ${padRight(RUNS_COLUMN, 6)} ${padRight("MeanRounds", 11)} ${
+      padRight("NonConverge", 12)
+    } ${padRight("Adherence", 10)} ${padRight("Pass^K", 8)}`,
   );
   for (const row of rows) {
     console.log(
@@ -1341,11 +1541,11 @@ function renderExternalTable(rows: IExternalCellRow[]): void {
   console.log("External Benchmark Comparability");
   console.log("-".repeat(120));
   console.log(
-    `  ${padRight("Benchmark", 14)} ${padRight("Version", 12)} ${padRight("Cell", 22)} ${padRight("Provider", 10)} ${
-      padRight("Model", 16)
-    } ${padRight(TASKS_COLUMN, 6)} ${padRight("Resolved", 9)} ${padRight("Rate", 7)} ${padRight("Subset", 8)} ${
-      padRight("Coverage", 10)
-    } ${padRight("MeanCost", 10)} RunDate`,
+    `  ${padRight("Benchmark", 14)} ${padRight("Version", 12)} ${padRight("Cell", 22)} ${
+      padRight(PROVIDER_COLUMN, 10)
+    } ${padRight("Model", 16)} ${padRight(TASKS_COLUMN, 6)} ${padRight("Resolved", 9)} ${padRight("Rate", 7)} ${
+      padRight("Subset", 8)
+    } ${padRight("Coverage", 10)} ${padRight("MeanCost", 10)} RunDate`,
   );
   for (const row of rows) {
     const coverage = row.coveragePct === undefined ? COST_REPORT_ABSENT_VALUE : `${row.coveragePct.toFixed(0)}%`;
@@ -1459,9 +1659,9 @@ function renderHarnessLiftTable(stdout: string): void {
   console.log(`Harness Lift Report (${report.arm.kind} / ${report.arm.metric})`);
   console.log("-".repeat(100));
   console.log(
-    `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Tool", 12)} ${padRight("Provider", 10)} ${padRight("Model", 20)} ${
-      padRight(TASKS_COLUMN, 6)
-    } ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
+    `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Tool", 12)} ${padRight(PROVIDER_COLUMN, 10)} ${
+      padRight("Model", 20)
+    } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
   for (const family of report.families) {
     const meanDelta = `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;
@@ -1535,7 +1735,7 @@ function renderAblationTable(stdout: string): void {
   console.log("-".repeat(100));
   console.log(
     `  ${padRight(FAMILY_COLUMN, 24)} ${padRight("Subsystem", 16)} ${padRight("Tool", 12)} ${
-      padRight("Provider", 10)
+      padRight(PROVIDER_COLUMN, 10)
     } ${padRight(TASKS_COLUMN, 6)} ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
   for (const family of report.families) {

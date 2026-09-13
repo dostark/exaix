@@ -3034,7 +3034,7 @@ const evalCommand = new Command()
       .description("Render a cross-cell timing/token/tracked-cost comparison report")
       .option(
         "--view <view:string>",
-        "Report view: cost, families, lift, ablation, frontier, failures, external, robustness, or interactive",
+        "Report view: cost, families, lift, ablation, frontier, failures, external, robustness, interactive, or memory",
         { default: "cost" },
       )
       .option("--scenario <id:string>", "Filter to a single scenario ID")

@@ -38,6 +38,7 @@ export interface IWriteEvalHistoryEntriesOptions {
 
 const BENCHMARK_TAG_PREFIX = "bench:";
 const BENCHMARK_VERSION_TAG_PREFIX = "bench-version:";
+const MEMORY_CORPUS_VERSION_TAG_PREFIX = "memory-corpus-version:";
 
 /** One tag's value shape: benchmark provenance derived from a manifest's `bench:<name>` /
  *  `bench-version:<sha>` tags — the convention `renderExternalBenchTaskTemplate` stamps onto
@@ -56,6 +57,15 @@ function deriveBenchmarkProvenance(tags: Opt<string[], Reason.OptionalInput>): I
     ...(benchmark !== undefined ? { benchmark } : {}),
     ...(benchmarkVersion !== undefined ? { benchmarkVersion } : {}),
   };
+}
+
+/** Exaix-authored memory-corpus version, derived from a manifest's `memory-corpus-version:<tag>`
+ *  tag — the same tag-derivation shape as `deriveBenchmarkProvenance`, but for the internal
+ *  memory corpus (Design Decision 4: not an external benchmark, so a separate field/prefix). */
+function deriveMemoryCorpusVersion(tags: Opt<string[], Reason.OptionalInput>): string | undefined {
+  return tags?.find((t) => t.startsWith(MEMORY_CORPUS_VERSION_TAG_PREFIX))?.slice(
+    MEMORY_CORPUS_VERSION_TAG_PREFIX.length,
+  );
 }
 
 // The sole production call site that projects `manifest.steps` into `EvalSqliteStore.writeRun`'s
@@ -90,6 +100,7 @@ export async function writeEvalHistoryEntries(options: IWriteEvalHistoryEntriesO
         provider: manifest.provider,
         model: manifest.model,
         ...deriveBenchmarkProvenance(manifest.tags),
+        memoryCorpusVersion: deriveMemoryCorpusVersion(manifest.tags),
       });
 
       if (sqliteStore) {

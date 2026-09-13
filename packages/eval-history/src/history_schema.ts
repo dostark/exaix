@@ -79,6 +79,9 @@ export const EvalHistoryEntrySchema = z.object({
   /** External-benchmark provenance present only on external-benchmark runs. */
   benchmark: z.string().min(1).optional(),
   benchmark_version: z.string().min(1).optional(),
+  /** Exaix-authored memory-corpus version tag (NOT an external benchmark — see
+   *  `benchmark`/`benchmark_version` above for that). */
+  memory_corpus_version: z.string().min(1).optional(),
   /** Scoring composition mode; defaults to additive. */
   scoring_mode: z.nativeEnum(EvalScoringMode).default(EvalScoringMode.ADDITIVE),
   component_versions: z.object({

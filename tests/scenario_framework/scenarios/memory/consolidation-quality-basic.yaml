@@ -1,0 +1,38 @@
+schema_version: "1.0.0"
+# Phase 148 Step 6: consolidation-quality metrics (dedup rate + contradiction
+# correctness) are cross-cutting signals with no ability: slot — no MemoryAbilitySchema
+# value covers "consolidation" — so this scenario tags metric:consolidation-quality
+# instead of ability:*, and eval_commands.ts's computeMemoryMetricRows groups it
+# separately from the per-ability table. run_memory_consolidation_check.ts performs a
+# genuine near-duplicate merge (supersedeLearning) and a genuine contradiction update
+# (updateLearning) against a real MemoryBankService, then scores the resulting store
+# state with Step 3's computeDedupRate/computeContradictionCorrect — the production call
+# site the Reachability Ledger required for both functions.
+id: "memory-consolidation-quality-basic"
+title: "Memory evaluation — consolidation-quality: dedup rate and contradiction correctness"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "metric:consolidation-quality", "memory-corpus-version:phase148-v1"]
+request_fixture: "fixtures/requests/memory/consolidation_quality_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-consolidation-check"
+    type: "run-script"
+    name: "merge a near-duplicate and correct a contradicted fact via the real MemoryBankService"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_consolidation_check.ts"
+      - "$WORKSPACE_ROOT"
+    output_criteria:
+      - id: "dedup-rate-perfect"
+        kind: "json-query"
+        query: ".dedup_rate"
+        equals: 1
+      - id: "contradiction-correct-perfect"
+        kind: "json-query"
+        query: ".contradiction_correct"
+        equals: 1

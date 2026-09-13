@@ -1,0 +1,29 @@
+schema_version: "1.0.0"
+# Phase 148 Step 6: ability-coverage exemplar for knowledge-updates — closes the
+# ability-coverage gate's real-corpus gap. Reuses run_memory_replay.ts unchanged.
+id: "memory-knowledge-updates-basic"
+title: "Memory evaluation — knowledge-updates ability retrieves the current value"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "ability:knowledge-updates", "memory-corpus-version:phase148-v1"]
+request_fixture: "fixtures/requests/memory/knowledge_updates_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-replay-knowledge-updates"
+    type: "run-script"
+    name: "seed an updated-knowledge fact, query it, confirm perfect recall"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_replay.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/memory/knowledge-updates-basic/task.json"
+    output_criteria:
+      - id: "recall-current-value"
+        kind: "recall-at-k"
+        k: 5
+        ground_truth_ids: ["22222222-0000-4000-8000-000000000001"]
+        score_weight: 1.0

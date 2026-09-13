@@ -1,0 +1,38 @@
+schema_version: "1.0.0"
+# Phase 148 Step 6: learning-effectiveness (Step 4's self-improvement headline metric) is
+# a cross-cutting signal with no ability: slot, so it's tagged metric:learning-effectiveness
+# instead. run_learning_effectiveness.ts already has its own CLI entry point (built in
+# Step 4): cold workspace queries task B directly (nothing seeded, so recall is always 0);
+# warm workspace runs task A's lesson through the real MemoryExtractorService +
+# HeuristicExtractionStrategy + MemoryAutoApprovalService pipeline, then queries task B.
+# This is the LLM-free, deterministic (ci-core-tier) leg — the live claude-cli leg is
+# covered separately by learning_effectiveness_live_test.ts, not this scenario. This
+# scenario is the production call site the Reachability Ledger required for
+# runLearningEffectiveness (Step 4).
+id: "memory-learning-effectiveness-basic"
+title: "Memory evaluation — learning-effectiveness: warm minus cold recall (heuristic extraction)"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "metric:learning-effectiveness", "memory-corpus-version:phase148-v1"]
+request_fixture: "fixtures/requests/memory/learning_effectiveness_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-learning-effectiveness-check"
+    type: "run-script"
+    name: "cold vs. warm recall of a freshly-extracted learning via the real extraction+approval pipeline"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_learning_effectiveness.ts"
+      - "$WORKSPACE_ROOT/cold"
+      - "$WORKSPACE_ROOT/warm"
+      - "The database connection pool has a maximum of 20 connections."
+      - "maximum of 20 connections"
+    output_criteria:
+      - id: "learning-effectiveness-perfect"
+        kind: "json-query"
+        query: ".learning_effectiveness"
+        equals: 1

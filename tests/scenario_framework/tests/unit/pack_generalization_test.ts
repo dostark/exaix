@@ -43,6 +43,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "interactive",
     "mcp_server",
     "mcp_tools_extended",
+    "memory",
     "portal_knowledge",
     "provider_live",
     "skill_eval",

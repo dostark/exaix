@@ -1,0 +1,17 @@
+{
+  "ability": "knowledge-updates",
+  "session_writes": [
+    {
+      "id": "22222222-0000-4000-8000-000000000001",
+      "title": "Maximum file upload size current value",
+      "content": "The maximum file upload size was increased from 10MB to 50MB in the latest release."
+    }
+  ],
+  "queries": [
+    {
+      "text": "maximum file upload size was increased",
+      "ground_truth_ids": ["22222222-0000-4000-8000-000000000001"],
+      "expected_answer": "The maximum file upload size is now 50MB, up from the previous 10MB limit."
+    }
+  ]
+}

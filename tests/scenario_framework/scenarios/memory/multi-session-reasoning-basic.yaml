@@ -7,7 +7,13 @@ schema_version: "1.0.0"
 id: "memory-multi-session-reasoning-basic"
 title: "Memory evaluation — multi-session-reasoning ability combines two learnings, judged"
 pack: "memory"
-tags: ["domain", "subsystem:memory", "ability:multi-session-reasoning", "provider-live"]
+tags: [
+  "domain",
+  "subsystem:memory",
+  "ability:multi-session-reasoning",
+  "provider-live",
+  "memory-corpus-version:phase148-v1",
+]
 request_fixture: "fixtures/requests/memory/multi_session_reasoning_basic.md"
 mode_support: ["auto"]
 portals: []

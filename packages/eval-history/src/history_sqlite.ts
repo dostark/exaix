@@ -81,6 +81,8 @@ interface IRunRow {
   /** External-benchmark provenance; null on non-external runs. */
   benchmark: string | null;
   benchmark_version: string | null;
+  /** Exaix-authored memory-corpus version tag; null on non-memory runs. */
+  memory_corpus_version: string | null;
 }
 
 interface IStepRow {
@@ -319,6 +321,14 @@ export class EvalSqliteStore {
           "(8, 'Add benchmark/benchmark_version columns to eval_runs for external-benchmark provenance (Phase 144 Step 4)')",
       );
     }
+
+    if (currentVersion < 9) {
+      this.addColumns(EVAL_TABLE_RUNS, ["memory_corpus_version TEXT"]);
+      this.db.exec(
+        EVAL_SCHEMA_VERSION_INSERT +
+          "(9, 'Add memory_corpus_version column to eval_runs (Phase 148 Step 6)')",
+      );
+    }
   }
 
   writeRun(
@@ -353,8 +363,8 @@ export class EvalSqliteStore {
          duration_ms, trace_id, provider, model, cell_id,
          total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
          total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd, scoring_mode,
-         failure_classes, benchmark, benchmark_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         failure_classes, benchmark, benchmark_version, memory_corpus_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -410,6 +420,7 @@ export class EvalSqliteStore {
         entry.failure_classes ? JSON.stringify(entry.failure_classes) : null,
         entry.benchmark ?? null,
         entry.benchmark_version ?? null,
+        entry.memory_corpus_version ?? null,
       );
 
       if (steps) {

@@ -3100,6 +3100,11 @@ export const SUBSYSTEM_EVAL_SCORE_THRESHOLD: number = configurable({
   swap: SwapClass.HOT,
 });
 
+/** Memory-evaluation pack/report-view identifier — shared by the scenario
+ *  framework's `pack: memory` scenario tag, the eval-history `pack` filter, and
+ *  `exactl eval report --view memory`'s dispatch. */
+export const EVAL_MEMORY_PACK = "memory";
+
 // Dogfood Context
 
 /** Only daemon config plus a trusted dogfood-loop binding activate the bounded-context
