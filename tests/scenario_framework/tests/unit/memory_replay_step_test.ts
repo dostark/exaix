@@ -98,3 +98,45 @@ Deno.test("[MemoryReplayStep] throws a clear error when queryIndex is out of ran
     await Deno.remove(workspaceRoot, { recursive: true });
   }
 });
+
+Deno.test("[MemoryReplayStep] returns retrieved_content (title + content) alongside retrieved_ids for judge evidence", async () => {
+  const workspaceRoot = await Deno.makeTempDir();
+  try {
+    const result = await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
+    assertEquals(result.retrieved_content, [
+      {
+        id: EXEMPLAR_LEARNING_ID,
+        title: "Rate limiter reset behavior",
+        content: "The rate limiter fully resets on a process restart, not on a per-request basis.",
+      },
+    ]);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[MemoryReplayStep] writes a query/expected-answer context file when the query has an expected_answer", async () => {
+  const workspaceRoot = await Deno.makeTempDir();
+  try {
+    await runMemoryReplay(workspaceRoot, EXEMPLAR_TASK);
+    const context = await Deno.readTextFile(`${workspaceRoot}/memory-task-context.md`);
+    assertEquals(context.includes(EXEMPLAR_TASK.queries[0].text), true);
+    assertEquals(context.includes(EXEMPLAR_TASK.queries[0].expected_answer!), true);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[MemoryReplayStep] skips the context file when the query has no expected_answer (e.g. abstention)", async () => {
+  const workspaceRoot = await Deno.makeTempDir();
+  try {
+    const abstentionTask: IMemoryTaskJson = {
+      ...EXEMPLAR_TASK,
+      queries: [{ text: "a fact never stored", ground_truth_ids: [] }],
+    };
+    await runMemoryReplay(workspaceRoot, abstentionTask);
+    await assertRejects(() => Deno.readTextFile(`${workspaceRoot}/memory-task-context.md`));
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});

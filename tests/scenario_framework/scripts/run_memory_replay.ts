@@ -24,11 +24,19 @@ import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { MemoryTaskJsonSchema } from "../schema/memory_task_schema.ts";
 import type { IMemoryTaskJson } from "../schema/memory_task_schema.ts";
 
+export interface IRetrievedMemory {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface IMemoryReplayResult {
   retrieved_ids: string[];
+  retrieved_content: IRetrievedMemory[];
 }
 
 const LEARNING_SOURCE_PREFIX = "learning:";
+const CONTEXT_FILE_NAME = "memory-task-context.md";
 
 /** Retrieval runs the keyword-only path deterministically — no vector signal, no provider. */
 const NOOP_EMBEDDING_SERVICE = castAny<IMemoryEmbeddingService>({
@@ -82,12 +90,27 @@ export async function runMemoryReplay(
 
     const sessionMemory = new SessionMemoryService(memoryBank, NOOP_EMBEDDING_SERVICE);
     const memories = await sessionMemory.lookupMemories(query.text);
-    const retrievedIds = memories
-      .map((memory) => memory.source)
-      .filter((source): source is string => typeof source === "string" && source.startsWith(LEARNING_SOURCE_PREFIX))
-      .map((source) => source.slice(LEARNING_SOURCE_PREFIX.length));
+    const retrievedContent = memories
+      .filter((memory): memory is typeof memory & { source: string } =>
+        typeof memory.source === "string" && memory.source.startsWith(LEARNING_SOURCE_PREFIX)
+      )
+      .map((memory) => ({
+        id: memory.source.slice(LEARNING_SOURCE_PREFIX.length),
+        title: memory.title,
+        content: memory.content,
+      }));
 
-    return { retrieved_ids: retrievedIds };
+    // The judge-scored answer-correctness criterion needs the query/expected-answer pair
+    // as context (retrieved_content alone is the evidence, not the question being asked).
+    if (query.expected_answer) {
+      const context = `## Query\n${query.text}\n\n## Expected Answer\n${query.expected_answer}\n`;
+      await Deno.writeTextFile(`${workspaceRoot}/${CONTEXT_FILE_NAME}`, context);
+    }
+
+    return {
+      retrieved_ids: retrievedContent.map((memory) => memory.id),
+      retrieved_content: retrievedContent,
+    };
   } finally {
     await cleanup();
   }

@@ -1,0 +1,16 @@
+{
+  "ability": "abstention",
+  "session_writes": [
+    {
+      "id": "bbbbbbbb-0000-4000-8000-000000000001",
+      "title": "Rate limiter reset behavior",
+      "content": "The rate limiter fully resets on a process restart, not on a per-request basis."
+    }
+  ],
+  "queries": [
+    {
+      "text": "what color is the deployment dashboard background",
+      "ground_truth_ids": []
+    }
+  ]
+}

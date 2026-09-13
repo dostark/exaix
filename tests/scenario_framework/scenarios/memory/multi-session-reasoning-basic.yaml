@@ -1,0 +1,60 @@
+schema_version: "1.0.0"
+# Phase 148 Step 2: a multi-session-reasoning task whose query needs combining two
+# learnings (capacity + restart behavior); recall@2 proves both were retrieved, and the
+# gated llm-judge (Phase 140) grades whether the retrieved evidence supports the
+# expected_answer stated in memory-task-context.md. provider-live: costs real tokens,
+# excluded from a bare --pack/--tag selection.
+id: "memory-multi-session-reasoning-basic"
+title: "Memory evaluation — multi-session-reasoning ability combines two learnings, judged"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "ability:multi-session-reasoning", "provider-live"]
+request_fixture: "fixtures/requests/memory/multi_session_reasoning_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-replay-multi-session-reasoning"
+    type: "run-script"
+    name: "seed two related learnings, query them together, score recall and judged answer correctness"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_replay.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/memory/multi-session-reasoning-basic/task.json"
+    output_criteria:
+      - id: "recall-both-learnings"
+        kind: "recall-at-k"
+        k: 2
+        ground_truth_ids:
+          - "cccccccc-0000-4000-8000-000000000001"
+          - "cccccccc-0000-4000-8000-000000000002"
+        score_weight: 0.2
+      - id: "precision-both-learnings"
+        kind: "precision-at-k"
+        k: 2
+        ground_truth_ids:
+          - "cccccccc-0000-4000-8000-000000000001"
+          - "cccccccc-0000-4000-8000-000000000002"
+        score_weight: 0.1
+      - id: "mrr-first-relevant-hit"
+        kind: "mrr"
+        ground_truth_ids:
+          - "cccccccc-0000-4000-8000-000000000001"
+          - "cccccccc-0000-4000-8000-000000000002"
+        score_weight: 0.1
+      - id: "ndcg-both-learnings"
+        kind: "ndcg-at-k"
+        k: 2
+        ground_truth_relevance:
+          cccccccc-0000-4000-8000-000000000001: 1
+          cccccccc-0000-4000-8000-000000000002: 1
+        score_weight: 0.1
+      - id: "answer-correctness"
+        kind: "llm-judge"
+        context_path: "memory-task-context.md"
+        rubric: "The evidence is a JSON object with a retrieved_content array of {title, content} memory entries. The context states the original Query and its Expected Answer. Score 1.0 if the retrieved_content entries together contain enough information to derive the Expected Answer; score 0.0 if the evidence is irrelevant, missing, or contradicts the Expected Answer; use intermediate scores for partially sufficient evidence."
+        score_threshold: 0.7
+        score_weight: 0.5

@@ -67,6 +67,10 @@ export enum CriterionKind {
   LLM_JUDGE = "llm-judge",
   TRAJECTORY = "trajectory",
   RECALL_AT_K = "recall-at-k",
+  PRECISION_AT_K = "precision-at-k",
+  MRR = "mrr",
+  NDCG_AT_K = "ndcg-at-k",
+  ABSTENTION = "abstention",
 }
 
 export enum CriterionPhase {
@@ -305,6 +309,40 @@ const RecallAtKCriterionSchema = BaseCriterionSchema.extend({
   ground_truth_ids: z.array(NON_EMPTY_STRING).min(1),
 }).strict();
 
+/** Scores a `run-script` step's JSON stdout `retrieved_ids` array against
+ * `ground_truth_ids` with `computePrecisionAtK`. */
+const PrecisionAtKCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.PRECISION_AT_K),
+  k: z.number().int().min(1),
+  ground_truth_ids: z.array(NON_EMPTY_STRING).min(1),
+}).strict();
+
+/** Scores a `run-script` step's JSON stdout `retrieved_ids` array against
+ * `ground_truth_ids` with `computeReciprocalRank` — no `k` cutoff (MRR looks for the
+ * first relevant hit at any rank). */
+const MrrCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.MRR),
+  ground_truth_ids: z.array(NON_EMPTY_STRING).min(1),
+}).strict();
+
+/** Scores a `run-script` step's JSON stdout `retrieved_ids` array with
+ * `computeNdcgAtK` over graded relevance — `ground_truth_relevance` replaces the flat
+ * `ground_truth_ids` list the binary-relevance criteria use. */
+const NdcgAtKCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.NDCG_AT_K),
+  k: z.number().int().min(1),
+  ground_truth_relevance: z.record(NON_EMPTY_STRING, z.number().min(0)).refine(
+    (rel) => Object.keys(rel).length > 0,
+    { message: "ground_truth_relevance must have at least one entry" },
+  ),
+}).strict();
+
+/** Scores a `run-script` step's JSON stdout `retrieved_ids` array with
+ * `computeAbstentionCorrect`: correct (score 1) iff the array is empty. */
+const AbstentionCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.ABSTENTION),
+}).strict();
+
 export const CriterionSchema = z.discriminatedUnion("kind", [
   FileExistsCriterionSchema,
   FileFoundCriterionSchema,
@@ -330,6 +368,10 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   CommandOutputNotContainsCriterionSchema,
   LlmJudgeCriterionSchema,
   RecallAtKCriterionSchema,
+  PrecisionAtKCriterionSchema,
+  MrrCriterionSchema,
+  NdcgAtKCriterionSchema,
+  AbstentionCriterionSchema,
 ]);
 
 export type ICriterion = z.infer<typeof CriterionSchema>;

@@ -1,0 +1,25 @@
+{
+  "ability": "multi-session-reasoning",
+  "session_writes": [
+    {
+      "id": "cccccccc-0000-4000-8000-000000000001",
+      "title": "Rate limiter capacity",
+      "content": "The rate limiter allows 100 requests per minute using a token bucket."
+    },
+    {
+      "id": "cccccccc-0000-4000-8000-000000000002",
+      "title": "Rate limiter restart behavior",
+      "content": "The rate limiter's token bucket fully resets on a process restart, not on a per-request basis."
+    }
+  ],
+  "queries": [
+    {
+      "text": "rate limiter",
+      "ground_truth_ids": [
+        "cccccccc-0000-4000-8000-000000000001",
+        "cccccccc-0000-4000-8000-000000000002"
+      ],
+      "expected_answer": "The rate limiter allows 100 requests per minute using a token bucket, and that bucket fully resets on a process restart rather than per individual request."
+    }
+  ]
+}

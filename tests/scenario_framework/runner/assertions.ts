@@ -24,7 +24,13 @@ import {
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { resolveExecutionBase } from "./step_executor.ts";
-import { computeRecallAtK } from "./retrieval_metrics.ts";
+import {
+  computeAbstentionCorrect,
+  computeNdcgAtK,
+  computePrecisionAtK,
+  computeRecallAtK,
+  computeReciprocalRank,
+} from "./retrieval_metrics.ts";
 import { gitServiceFor } from "./git_helpers.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import {
@@ -141,6 +147,10 @@ type IJsonPathEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_P
 type IJsonPathEqualsAnyCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS_ANY }>;
 type IJsonQueryCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_QUERY }>;
 type IRecallAtKCriterion = Extract<ICriterion, { kind: CriterionKind.RECALL_AT_K }>;
+type IPrecisionAtKCriterion = Extract<ICriterion, { kind: CriterionKind.PRECISION_AT_K }>;
+type IMrrCriterion = Extract<ICriterion, { kind: CriterionKind.MRR }>;
+type INdcgAtKCriterion = Extract<ICriterion, { kind: CriterionKind.NDCG_AT_K }>;
+type IAbstentionCriterion = Extract<ICriterion, { kind: CriterionKind.ABSTENTION }>;
 type IDirExistsCriterion = Extract<ICriterion, { kind: CriterionKind.DIR_EXISTS }>;
 type IFrontmatterFieldExistsCriterion = Extract<ICriterion, { kind: CriterionKind.FRONTMATTER_FIELD_EXISTS }>;
 type IFrontmatterFieldEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.FRONTMATTER_FIELD_EQUALS }>;
@@ -212,6 +222,14 @@ export async function evaluateCriterion(
       return await evaluateLlmJudgeCriterion(options);
     case CriterionKind.RECALL_AT_K:
       return evaluateRecallAtKCriterion(options);
+    case CriterionKind.PRECISION_AT_K:
+      return evaluatePrecisionAtKCriterion(options);
+    case CriterionKind.MRR:
+      return evaluateMrrCriterion(options);
+    case CriterionKind.NDCG_AT_K:
+      return evaluateNdcgAtKCriterion(options);
+    case CriterionKind.ABSTENTION:
+      return evaluateAbstentionCriterion(options);
   }
 }
 
@@ -1294,17 +1312,24 @@ function evaluateJsonQueryCriterion(
   }
 }
 
+/** Parses a memory-replay `run-script` step's JSON stdout for its `retrieved_ids`
+ * array (as `run_memory_replay.ts` prints); throws if the field is missing/malformed
+ * so callers can share one ERROR-result catch block. */
+function parseRetrievedIds(options: IEvaluateCriterionOptions): string[] {
+  const data = JSON.parse(options.executionResult?.stdout || "{}");
+  if (!Array.isArray(data.retrieved_ids)) throw new Error("retrieved_ids missing or not an array");
+  return data.retrieved_ids;
+}
+
 /** Parses the step's JSON stdout for a `retrieved_ids` array and scores it against the
  * criterion's `ground_truth_ids`/`k` via the pure `computeRecallAtK`. */
 function evaluateRecallAtKCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as IRecallAtKCriterion;
-  const outputData = options.executionResult?.stdout || "{}";
 
   try {
-    const data = JSON.parse(outputData);
-    const retrievedIds: string[] = Array.isArray(data.retrieved_ids) ? data.retrieved_ids : [];
+    const retrievedIds = parseRetrievedIds(options);
     const score = computeRecallAtK(retrievedIds, criterion.ground_truth_ids, criterion.k);
 
     return Promise.resolve({
@@ -1319,6 +1344,7 @@ function evaluateRecallAtKCriterion(
       observed_value: retrievedIds,
       expected_value: criterion.ground_truth_ids,
       score,
+      score_weight: criterion.score_weight,
     });
   } catch (_error) {
     return Promise.resolve({
@@ -1328,6 +1354,153 @@ function evaluateRecallAtKCriterion(
       status: CriterionStatus.ERROR,
       message: "Failed to evaluate recall@k — could not parse retrieved_ids from step output",
       evidence_refs: [],
+      score_weight: criterion.score_weight,
+    });
+  }
+}
+
+/** Parses the step's JSON stdout for `retrieved_ids` and scores it against the
+ * criterion's `ground_truth_ids`/`k` via the pure `computePrecisionAtK`. */
+function evaluatePrecisionAtKCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as IPrecisionAtKCriterion;
+
+  try {
+    const retrievedIds = parseRetrievedIds(options);
+    const score = computePrecisionAtK(retrievedIds, criterion.ground_truth_ids, criterion.k);
+
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.PRECISION_AT_K,
+      phase: options.phase,
+      status: CriterionStatus.PASSED,
+      message: `precision@${criterion.k} = ${score.toFixed(2)}`,
+      evidence_refs: [],
+      observed_value: retrievedIds,
+      expected_value: criterion.ground_truth_ids,
+      score,
+      score_weight: criterion.score_weight,
+    });
+  } catch (_error) {
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.PRECISION_AT_K,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "Failed to evaluate precision@k — could not parse retrieved_ids from step output",
+      evidence_refs: [],
+      score_weight: criterion.score_weight,
+    });
+  }
+}
+
+/** Parses the step's JSON stdout for `retrieved_ids` and scores it against the
+ * criterion's `ground_truth_ids` via the pure `computeReciprocalRank`. */
+function evaluateMrrCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as IMrrCriterion;
+
+  try {
+    const retrievedIds = parseRetrievedIds(options);
+    const score = computeReciprocalRank(retrievedIds, criterion.ground_truth_ids);
+
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.MRR,
+      phase: options.phase,
+      status: CriterionStatus.PASSED,
+      message: `reciprocal rank = ${score.toFixed(2)}`,
+      evidence_refs: [],
+      observed_value: retrievedIds,
+      expected_value: criterion.ground_truth_ids,
+      score,
+      score_weight: criterion.score_weight,
+    });
+  } catch (_error) {
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.MRR,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "Failed to evaluate mrr — could not parse retrieved_ids from step output",
+      evidence_refs: [],
+      score_weight: criterion.score_weight,
+    });
+  }
+}
+
+/** Parses the step's JSON stdout for `retrieved_ids` and scores it against the
+ * criterion's graded `ground_truth_relevance`/`k` via the pure `computeNdcgAtK`. */
+function evaluateNdcgAtKCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as INdcgAtKCriterion;
+
+  try {
+    const retrievedIds = parseRetrievedIds(options);
+    const score = computeNdcgAtK(retrievedIds, criterion.ground_truth_relevance, criterion.k);
+
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.NDCG_AT_K,
+      phase: options.phase,
+      status: CriterionStatus.PASSED,
+      message: `ndcg@${criterion.k} = ${score.toFixed(2)}`,
+      evidence_refs: [],
+      observed_value: retrievedIds,
+      expected_value: criterion.ground_truth_relevance,
+      score,
+      score_weight: criterion.score_weight,
+    });
+  } catch (_error) {
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.NDCG_AT_K,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "Failed to evaluate ndcg@k — could not parse retrieved_ids from step output",
+      evidence_refs: [],
+      score_weight: criterion.score_weight,
+    });
+  }
+}
+
+/** Parses the step's JSON stdout for `retrieved_ids` and scores it with the pure
+ * `computeAbstentionCorrect`: correct (score 1) iff nothing was retrieved. */
+function evaluateAbstentionCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as IAbstentionCriterion;
+
+  try {
+    const retrievedIds = parseRetrievedIds(options);
+    const score = computeAbstentionCorrect(retrievedIds);
+
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.ABSTENTION,
+      phase: options.phase,
+      status: score === 1 ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+      message: score === 1
+        ? "correctly declined — no memory retrieved"
+        : `fabricated ${retrievedIds.length} memory(s) when none were relevant`,
+      evidence_refs: [],
+      observed_value: retrievedIds,
+      expected_value: [],
+      score,
+      score_weight: criterion.score_weight,
+    });
+  } catch (_error) {
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.ABSTENTION,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "Failed to evaluate abstention — could not parse retrieved_ids from step output",
+      evidence_refs: [],
+      score_weight: criterion.score_weight,
     });
   }
 }

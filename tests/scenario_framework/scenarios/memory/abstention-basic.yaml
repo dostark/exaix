@@ -1,0 +1,28 @@
+schema_version: "1.0.0"
+# Phase 148 Step 2: an abstention-ability task queries a fact never stored — the system
+# must retrieve nothing rather than fabricate a memory. Reuses run_memory_replay.ts
+# unchanged (an abstention task is just a task with ground_truth_ids: []).
+id: "memory-abstention-basic"
+title: "Memory evaluation — abstention ability declines when nothing is relevant"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "ability:abstention"]
+request_fixture: "fixtures/requests/memory/abstention_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-replay-abstention"
+    type: "run-script"
+    name: "seed one unrelated learning, query an unrelated fact, confirm no fabrication"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_replay.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/memory/abstention-basic/task.json"
+    output_criteria:
+      - id: "abstention-correct"
+        kind: "abstention"
+        score_weight: 1.0
