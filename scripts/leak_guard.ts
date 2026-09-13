@@ -80,6 +80,7 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
     /[/\\]node_modules[/\\]/,
     /[/\\]\.copilot[/\\]/,
     /[/\\]exaix-dev-docs[/\\]/,
+    /[/\\]\.duplication_report[^/\\]*[/\\]/,
   ];
 
   for (const target of scanTargets) {

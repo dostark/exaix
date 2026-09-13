@@ -28,3 +28,36 @@ Deno.test("[leak-guard] the real exaix-team submodule tree scans clean", async (
   assertEquals(result.passed, true);
   assertEquals(result.errors, []);
 });
+
+Deno.test("[leak-guard] a gitignored .duplication_report* artifact directory is not scanned", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "leak_guard_dup_report_" });
+  try {
+    const reportDir = `${tempDir}/.duplication_report_integration_tests`;
+    await Deno.mkdir(reportDir);
+    // jscpd's own report embeds duplicated source snippets verbatim in a "fragment"
+    // field — when the duplicated code itself contains an `import`/`resolve()` line
+    // quoting an exaix-team/ path, the whole escaped fragment lands on one JSON text
+    // line containing both "import" and the quoted path, which is exactly what a real
+    // source leak looks like to the line-based scan below. A real leak-guard finding
+    // here is a false positive against a gitignored, never-published local build
+    // artifact, not an actual source leak.
+    // Built via concatenation so this test file's own source never contains the
+    // literal quoted needle — otherwise this fixture would trip the real leak-guard
+    // scan of the repository itself.
+    const teamDir = "exaix" + "-team";
+    await Deno.writeTextFile(
+      `${reportDir}/jscpd-report.json`,
+      JSON.stringify({
+        duplicates: [{
+          fragment: `import { resolve } from "@std/path";\nconst X = resolve("${teamDir}", "apps");`,
+        }],
+      }),
+    );
+
+    const result = await runLeakGuard({ allowlist: [tempDir] });
+    assertEquals(result.passed, true);
+    assertEquals(result.errors, []);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
