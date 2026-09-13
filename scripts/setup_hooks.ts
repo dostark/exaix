@@ -248,6 +248,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 18b. Skill Ephemera Check (no dated/phase-specific narrative in generic skill guidance)
+deno task check:skill-ephemera
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Dated incident narrative leaked into a general .copilot/skills/ guidance. Route it to the domain doc or phase-doc Retrospective instead."
+  exit 1
+fi
+
 # 19. Event Coverage Visibility Check (@visible-tagged classes must hold zero coverage gaps)
 deno task check:event-coverage:staged:visible
 if [ $? -ne 0 ]; then

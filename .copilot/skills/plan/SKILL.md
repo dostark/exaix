@@ -41,7 +41,7 @@ Key points
 - **Specify exact values**: For every enum, union, or variant field, state which concrete value each component emits and under what conditions — not just the allowed set. Vague "can be one of X, Y, Z" without per-component mapping is a pre-gap.
 - **Trace every output to its consumer**: For every new interface field or event payload name a consuming component and verify the data flow reaches it. Fields with no readers are dead data.
 - **Survey module conventions**: Before committing to a pattern choice (event naming, error handling, DI style), read 5–10 existing examples in the affected module and document the dominant convention. Divergence requires justification in Architecture Notes.
-- **Mechanized event-coverage audit**: `deno task check:event-coverage` AST-scans implemented code for classes/functions that accept an audit-logger dependency but never call it, and for state-changing or cross-component-call methods with no adjacent event. It only has code to scan once a step is implemented — advisory at `#next-steps`, re-verified at `#pre-gap-analysis`/`#post-gap-analysis`. Name the exact event (existing `DomainEventType` member, or the new one to add) in Architecture Notes so those later passes have something to check the code against. `@visible` (a JSDoc tag on a class's leading comment) marks a component explicitly load-bearing for coverage — adoptable now; `--fail-on-tagged` enforcement lands with Phase 168 (`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`). See §2H.
+- **Mechanized event-coverage audit**: `deno task check:event-coverage` AST-scans implemented code for classes/functions that accept an audit-logger dependency but never call it, and for state-changing or cross-component-call methods with no adjacent event. It only has code to scan once a step is implemented — advisory at `#next-steps`, re-verified at `#pre-gap-analysis`/`#post-gap-analysis`. Name the exact event (existing `DomainEventType` member, or the new one to add) in Architecture Notes so those later passes have something to check the code against. `@visible` (a JSDoc tag on a class's leading comment) marks a component explicitly load-bearing for coverage — adoptable now; `--fail-on-tagged` enforcement is wired into `check:event-coverage` (see the event-coverage checker docs). See §2H.
 - **Ground third-party integrations in web research**: When a plan integrates an external service, provider, API, or CLI (an LLM provider, a coding-agent tool, a cloud/SaaS API, a binary), do deep web research on the provider's CURRENT official capability surface FIRST — supported endpoints, auth model, config/routing knobs, limits, versioning — and design to its real first-class mechanism. A wrapper/proxy/scrape/undocumented-flag "integration" is a hack that breaks on the next provider update: flag it and prefer the documented path. Record the doc URLs + research date. See §2F.
 - **Ground every code-facing claim in real source**: Before writing any step that extends an existing interface, calls an existing method, or modifies an existing code path, grep the symbol and read the call site first. The plan must be drafted against real signatures and real behaviour, not memory. See §2G.
 - **Map prose claims to named tests**: Every behavioural claim made in the prose (e.g., "checkpoint preserves data", "service Y calls service Z") must have a named test in Planned Tests. Claims without test names are gaps.
@@ -77,8 +77,8 @@ Do / Don't
 - ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
 - ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
 - ✅ Do give every step-manifest the SAME `target_branch: feat/phase-NN` — never a distinct
-  `feat/phase-NN-step-N` per step (Phase 166's incident: 5 empty placeholder branches
-  created and deleted before this was standardized).
+  `feat/phase-NN-step-N` per step (empty placeholder branches were created and deleted from
+  this per-step pattern before it was standardized).
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
 - ✅ Do author all success criteria and success metric checkboxes as `- [ ] <text>` (no `→` path) at plan-authoring time — these are aspirational targets whose implementing module is not yet known. During execution #next-steps rewrites each done item to the completion form the commit gate requires: `- ✅ <text> → ` `` `<path>` `` (backtick-wrapped, staged file) for a met criterion/test, or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` for one pushed to the Reachability Ledger. The commit gate (`scripts/check_commit_msg.ts` via `commit_plan_step.ts`) BLOCKS any `- [ ]` item left in a step whose commit claims it — so a committed step must have every criterion/test either `✅ → path` or `⚠️ deferred → token`; `[ ]` may only remain on steps not yet implemented.
 - ✅ Do point every `→ ` `` `path` `` at a real repo file that is actually among the commit's
@@ -90,7 +90,7 @@ Do / Don't
   observed clean output" rather than "this file implements/tests it", point `→` at the file the
   command's success actually depends on (e.g. the plan doc itself, or the source file the command
   validates) — not the command string.
-- ✅ Do keep success-metric checkboxes (the `## Success Metrics` section, which are phase-level aspirational targets not tied to one step) as `- [ ]` during normal step-by-step execution — the commit gate only scopes the per-step Success Criteria / Planned Tests blocks, not the Success Metrics section, so there is no need to close them per-step. But do NOT leave them all `- [ ]` once the phase itself is genuinely done: at phase closure (the terminal `#post-gap-analysis`/`#remediate-code-gaps`/`#self-improvement-retro` pass, or whenever the doc's own `**Status**:` header is bumped to done), check off each metric `- [x]` with a one-clause citation to real evidence, and correct any metric whose wording describes a design a later step revised away. An all-`- [ ]` Success Metrics section under a `✅ Complete` header is itself a documentation-trust gap (phase-179's Post-Gap Analysis GAP-6, 2026-09-04) — a future reader has no way to tell the metrics were actually re-verified rather than just forgotten.
+- ✅ Do keep success-metric checkboxes (the `## Success Metrics` section, which are phase-level aspirational targets not tied to one step) as `- [ ]` during normal step-by-step execution — the commit gate only scopes the per-step Success Criteria / Planned Tests blocks, not the Success Metrics section, so there is no need to close them per-step. But do NOT leave them all `- [ ]` once the phase itself is genuinely done: at phase closure (the terminal `#post-gap-analysis`/`#remediate-code-gaps`/`#self-improvement-retro` pass, or whenever the doc's own `**Status**:` header is bumped to done), check off each metric `- [x]` with a one-clause citation to real evidence, and correct any metric whose wording describes a design a later step revised away. An all-`- [ ]` Success Metrics section under a `✅ Complete` header is itself a documentation-trust gap — a future reader has no way to tell the metrics were actually re-verified rather than just forgotten.
 - ✅ Do use plain descriptive prose to summarize a step's outputs at authoring time — never pre-write execution status labels such as `**✅ CORE**` or `**✅ WIRED**`. (#next-steps ADDS those reachability labels during execution once proven; they are execution artifacts, not plan-authoring content.)
 - ✅ Do ensure every h2 section carries its own descriptive content that fulfills the section's stated purpose. A section that is only a heading followed immediately by sub-headings (e.g., `## Current State Analysis` with no prose before `### Key Files`) is a **blank container** — it reads as an unfinished outline placeholder, not a written plan. Every h2 must contain at least one paragraph of content at its own level that introduces, summarizes, or frames the sub-sections below it. This is especially critical for `## Executive Summary`, `## Current State Analysis`, `## Technical Architecture`, and `## Security Constraints` — sections whose heading promises information that must not be deferred entirely to sub-sections.
 - ❌ Don't use 'any' or vague types; use Zod schemas and TypeScript interfaces.
@@ -139,7 +139,7 @@ Follow the structure defined in `exaix-dev-docs/planning/README.md`:
 1. **Reachability Ledger (§E)**: A seeded (initially empty) `## Reachability Ledger (pending production consumers)` table that #next-steps maintains step-by-step; the phase cannot close while any row is ⏳.
 1. **Documentation Updates (§3D)**: Mandatory final step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
 1. **Success Metrics**: Quantitative targets (performance, quality), including an opt-in reachability metric for every `enabled`-style flag.
-1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `agent_role`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. `target_branch` is the SAME value on every step of a phase — `feat/phase-NN`, one shared branch, never `feat/phase-NN-step-N` (Phase 166 created and had to delete 5 empty placeholder branches from that per-step pattern before standardizing; `plan_to_requests.ts` reads `target_branch` as a plain per-step string with no uniqueness assumption, so sharing one value across every step is fully compatible). Example:
+1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `agent_role`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. `target_branch` is the SAME value on every step of a phase — `feat/phase-NN`, one shared branch, never `feat/phase-NN-step-N` (empty placeholder branches were created and deleted from the per-step pattern before standardizing; `plan_to_requests.ts` reads `target_branch` as a plain per-step string with no uniqueness assumption, so sharing one value across every step is fully compatible). Example:
 
    ```yaml
    # step-manifest
@@ -383,8 +383,7 @@ execution → review → memory critical path, or handling security-sensitive op
 name it in Architecture Notes as an `@visible` candidate and have the step's own Actions
 add the tag. The tag costs nothing and is adoptable immediately; the checker's
 `--fail-on-tagged` enforcement and the real pre-commit gate (Gate 19) that blocks a
-violating commit are wired and live, landed by Phase 168
-(`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`) — a
+violating commit are wired and live — a
 `@visible`-tagged class with a coverage gap now fails a real `git commit`, not just an
 advisory CI note.
 
@@ -404,10 +403,10 @@ A step tagging a class `@visible` must also plan a Tier A (package-integration, 
 verification test for that class's highest-value events in its Planned Tests — not rely
 on Gate 19's static check alone. Gate 19 only proves the decorator/logger-call shape
 exists in source; it cannot prove the event actually fires with a real payload at
-runtime, is reached by a real production caller, or carries a correct trace ID. Phase
-169 (`exaix-dev-docs/planning/phase-169-visible-event-runtime-verification.md`) found
-multiple `@visible` components whose events passed Gate 19's static check yet had zero
-real runtime coverage — including one (`RequestAnalyzer`) whose event never fired in
+runtime, is reached by a real production caller, or carries a correct trace ID. Runtime
+verification has repeatedly found
+`@visible` components whose events passed Gate 19's static check yet had zero
+real runtime coverage — including one whose event never fired in
 production at all, because the logger dependency was never injected at either
 production call site. A step is not complete until its named `@visible` events are
 proven to fire, with real field values, against a real `EventLogger`/db (Tier A) or a

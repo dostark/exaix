@@ -80,6 +80,15 @@ Position in the loop — this skill is the terminal step:
      stale cross-links, nits? They count; note them.
 
 3. **Route every finding to a fix** (do not stop at "good to know")
+   - **Classify the finding FIRST: is it a general process/skill defect, or a
+     phase/domain-specific detail?** A general skill (e.g. `post-gap-analysis`,
+     `remediate-code-gaps`, `test-development`) must only carry guidance that is true for
+     every phase and every domain. If the finding describes one phase's scenario shape,
+     one test helper's exact call, one component's event family, or one file's exact
+     behavior — it is domain-specific and does NOT belong in a general skill. Route it to
+     the owning domain doc instead (e.g. `tests/scenario_framework/README.md`,
+     `packages/<pkg>/README.md`, `docs/Exaix_User_Guide.md`), written as general guidance
+     led by the concrete example, or to the phase doc's own Retrospective.
    - Skill defect (wrong or missing guidance) → patch `.copilot/skills/<name>/SKILL.md`
      (canonical). `.agents`, `.claude`, and `.cursor` are repo-root **symlinks to
      `.copilot`** (`ls -la .` shows `.agents -> .copilot` etc.), so
@@ -126,10 +135,9 @@ goes stale far more often than the step-level content: whoever lands the last st
 the last gap-remediation step marks that step `✅`/`WIRED` and moves on without bumping
 the header a few lines above it. It then keeps reading `🚧 Planning` or `🚧 Gap
 Remediation In Progress` — sometimes for months — while every step underneath is done.
-This is a real, repeat-offender pattern: `phase-91-positioning-and-narrative.md`'s own
-Step 1 audit independently found and named it in three other phases (67, 71, 82) before
-this section existed; a full audit of the 166-file corpus (2026-08-15) found 11 more
-(62, 71, 77, 78, 79, 82, 135, 142, 153, 159, 165).
+This is a real, repeat-offender pattern: audits have repeatedly found phases whose
+top-line `**Status**:` still reads `🚧`/Planning/In Progress while every step underneath
+is done — the header is the first thing anyone reads and the last thing updated.
 
 **When**: as part of Phase-loop retro step 4 above (your own just-finished phase), and
 periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` corpus.
@@ -150,7 +158,7 @@ periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` c
    itself block a `✅ Complete` verdict — it is an accepted, ledger-tracked exception.
    Note the caveat in the corrected header instead of hiding it.
 1. When a doc uses neither GFM checkboxes nor `### Step N` headings to track completion
-   (e.g. `phase-132-model-routing.md` at the time of the 2026-08-15 audit), do not guess
+   (e.g. a docs convention that predates the `### Step N` era), do not guess
    from indirect signals — leave the header untouched and say so.
 1. **The prose `**Status**:` header (§Status & Context) and the YAML frontmatter
    `status:` field (line 2 of the doc, inside the opening `---` block) are two separate
@@ -159,9 +167,8 @@ periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` c
    `grep -l '^status: COMPLETED' planning/phase-*.md` — it reads the frontmatter field
    only, never the prose header. A phase whose prose header says `✅ Complete` but whose
    frontmatter still says `status: PLANNING` is invisible to that grep and will keep
-   surfacing as open work. Update both in the same pass (phase-179's own retro,
-   2026-09-04, found and fixed exactly this split — the prose header had been bumped
-   first, the frontmatter field was missed until this checklist item existed).
+   surfacing as open work. Update both in the same pass — a retro that bumps only the prose
+   header and misses the frontmatter field leaves this exact split behind.
 
 **Draft the replacement in the doc's own voice**: cite the concrete evidence you actually
 read (step count, test counts, gap counts, key symbols); never invent numbers the
@@ -169,27 +176,13 @@ document doesn't state. Match the register already used by correctly-labeled pha
 the same corpus (e.g. `✅ Complete — Steps 1–8 + config follow-ups + post-implementation
 remediation Steps 9–12 all implemented and tested (39 passing).`).
 
-**Edit long header lines safely**: some status blocks are a single unwrapped paragraph
-1000+ characters long. `read`/`grep` output silently truncates any displayed line past
-~512–768 chars, ending it with a literal `…`/`...`. Pasting that _displayed_ text into an
-edit body replaces the real line with a truncated one — this happened again during the
-2026-08-15 audit (`phase-142-subsystem-evaluation-packs.md`) despite prior recorded
-lessons about the same trap. Before editing any status line you have not seen in full:
-check its real length in an `eval` cell (`len(line)`) rather than trusting a display that
-ends in `…`; for a small in-place word swap on a long line, recover the untruncated
-original via `git show HEAD:<path>` into a variable, apply a plain string `.replace()`,
-and write the file back from that variable instead of retyping the line by hand; then
-verify immediately with `git diff -- <path>` that only the intended words changed and the
-line length matches expectations.
-
 **A `deno fmt` reflow can split a single backtick span across the new line break it
 introduces**, and `scripts/check_md_paths.ts`'s bare-prose-path detector tracks backtick
 state per line (it strips `` `[^`]+` `` spans one line at a time, like the fence/frontmatter
 state it DOES carry across lines) — so a path that is genuinely, visibly backticked when
 the two lines are read together can still be flagged as an un-backticked bare path once
-`deno fmt` wraps the sentence between them (confirmed 2026-09-06, `docs/Exaix_User_Guide.md`
-via `check_md_paths.ts --staged`). The fix is not to chase the checker: shorten or restructure
-the sentence so no single backtick span straddles a probable wrap point (a long
+`deno fmt` wraps the sentence between them. The fix is not to chase the checker: shorten or
+restructure the sentence so no single backtick span straddles a probable wrap point (a long
 `` `command --flag value` `` inline code span is the usual culprit) — verify with
 `deno fmt <file>` followed by `scripts/check_md_paths.ts . --staged` before treating a
 "bare path" finding on an already-backticked-looking path as evidence of a real typo.
@@ -251,6 +244,11 @@ Do / Don't
 - ✅ Do answer all four retro questions from session evidence — not from memory of "having had a fine session".
 - ✅ Do route every retro finding to PATCHED / DEFERRED / REJECTED — findings without a disposition are not findings, they are noise.
 - ✅ Do remember `.agents`/`.claude`/`.cursor` are top-level symlinks to `.copilot` — editing `.copilot/skills/<name>/SKILL.md` already updates every mirror; verify with `stat -c %i` (or `ls -la .`) before manually copying anything.
+- ✅ Do keep general skills general — a phase/domain-specific detail (one scenario's shape,
+  one test helper's exact call, one event family) belongs in the owning domain doc
+  (`tests/scenario_framework/README.md`, `packages/<pkg>/README.md`, `docs/Exaix_User_Guide.md`)
+  or the phase doc's Retrospective, written as general guidance led by the concrete example,
+  NOT in a general skill that every phase re-reads.
 - ❌ Don't broaden scope into "general best practices" unrelated to Exaix.
 - ❌ Don't update many docs at once without a clear gap list.
 - ❌ Don't rewrite a skill wholesale to fix one friction point — patch the smallest section.
@@ -259,9 +257,6 @@ Do / Don't
 - ✅ Do verify a phase doc's completion at the step level (checkboxes, per-step Status
   markers, Reachability Ledger rows) before trusting or rewriting its top-line Status
   header — see "Phase-doc status hygiene".
-- ❌ Don't copy `read`/`grep` output ending in `…`/`...` into an edit body for a long
-  line — it is display-truncated, not the real content; recover the full line (`git
-  show`, untruncated re-read) before editing it.
 - ❌ Don't trust a `check_md_paths.ts` "bare path" finding at face value when the path
   already looks backticked — a `deno fmt` line-wrap can split one backtick span across
   two lines, desyncing the checker's per-line parser; shorten the sentence instead of
@@ -288,18 +283,17 @@ Do / Don't
 - **Example: Phase-doc status hygiene audit**
   - Task: "Update status of all phases which are actually completed" (a standalone
     audit, not tied to a single phase's own retro).
-  - Method: bulk-scanned all 166 `exaix-dev-docs/planning/phase-*.md` docs for
+  - Method: bulk-scanned every `exaix-dev-docs/planning/phase-*.md` doc for
     open/closed checkbox counts and header text, then individually verified every
     non-obvious candidate against step-level evidence before touching anything.
-  - Findings: 11 confirmed stale headers, including one self-contradicting header
-    (`phase-142`: read "🚧 ... In Progress" while its own next sentence said "all twelve
-    gaps are now closed") and one nuanced case (`phase-153`: steps done, but the doc
-    itself said its Phase-Completion Gate had not yet run — corrected to say exactly
-    that, not flattened to `✅ Complete`). Two suspects were left untouched on
-    inspection: `phase-133` had a genuinely still-`⏳ PENDING` gap; `phase-132` had no
-    reliable step-tracking convention to verify against.
-  - Patch: 11 headers corrected in place; caught and repaired one truncation-copy
-    mistake mid-task via `git show` + a Python splice, verified via `git diff`.
+  - Findings: several confirmed stale headers, including one self-contradicting header
+    (read "🚧 ... In Progress" while its own next sentence said every gap was closed) and
+    one nuanced case (steps done, but the doc itself said its Phase-Completion Gate had
+    not yet run — corrected to say exactly that, not flattened to `✅ Complete`). Some
+    suspects were left untouched on inspection: a genuinely still-`⏳ PENDING` gap, or a
+    doc with no reliable step-tracking convention to verify against.
+  - Patch: corrected the stale headers in place, citing only evidence actually read in
+    each doc's body.
 
 ---
 

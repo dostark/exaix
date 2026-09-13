@@ -62,3 +62,22 @@ Deno.test("Self-improvement loop: terminal retro reconciles the phase registry",
   assert(processMd.includes("remove a completed phase from open/recommended-pickup rows"));
   assert(processMd.includes("search the registry for stale occurrences"));
 });
+
+Deno.test("Self-improvement loop: routes domain-specific findings to domain docs, not general skills", async () => {
+  // Pin the classify-first routing rule: this skill must teach that phase/domain-specific
+  // detail goes to the owning domain doc, not into a general skill every phase re-reads.
+  const processMd = await Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md");
+
+  assert(
+    processMd.includes("Classify the finding FIRST"),
+    "routing step must teach classify-the-finding-first",
+  );
+  assert(
+    processMd.includes("does NOT belong in a general skill"),
+    "routing step must forbid phase/domain-specific detail in general skills",
+  );
+  assert(
+    processMd.includes("tests/scenario_framework/README.md"),
+    "routing step must name the owning domain doc as the correct home",
+  );
+});

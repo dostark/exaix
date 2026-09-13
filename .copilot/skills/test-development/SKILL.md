@@ -272,7 +272,7 @@ Live-daemon subprocess teardown — mandatory precautions
   start`/`restart`) MUST guarantee the daemon process is dead before the test
   function returns — on every exit path, not just the happy path. Two
   independent orphan-daemon bugs were found and fixed by this exact failure
-  mode (2026-07-21, `scripts/test_parallel.ts` and
+  mode (`scripts/test_parallel.ts` and
   `tests/integration/cli_commands_test.ts`); both looked identical at the
   process-list level: a daemon subprocess still running with its own tempDir
   already deleted (confirmed via `readlink /proc/<pid>/cwd` showing
