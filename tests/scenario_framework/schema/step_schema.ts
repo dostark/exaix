@@ -66,6 +66,7 @@ export enum CriterionKind {
   COMMAND_OUTPUT_NOT_CONTAINS = "command-output-not-contains",
   LLM_JUDGE = "llm-judge",
   TRAJECTORY = "trajectory",
+  RECALL_AT_K = "recall-at-k",
 }
 
 export enum CriterionPhase {
@@ -296,6 +297,14 @@ const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   score_threshold: z.number().min(0).max(1).default(0.7),
 }).strict();
 
+/** Scores a `run-script` step's JSON stdout `retrieved_ids` array against
+ * `ground_truth_ids` with `computeRecallAtK`, setting `score` continuously. */
+const RecallAtKCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.RECALL_AT_K),
+  k: z.number().int().min(1),
+  ground_truth_ids: z.array(NON_EMPTY_STRING).min(1),
+}).strict();
+
 export const CriterionSchema = z.discriminatedUnion("kind", [
   FileExistsCriterionSchema,
   FileFoundCriterionSchema,
@@ -320,6 +329,7 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   CommandOutputContainsCriterionSchema,
   CommandOutputNotContainsCriterionSchema,
   LlmJudgeCriterionSchema,
+  RecallAtKCriterionSchema,
 ]);
 
 export type ICriterion = z.infer<typeof CriterionSchema>;

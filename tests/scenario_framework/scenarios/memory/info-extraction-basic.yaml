@@ -1,0 +1,32 @@
+schema_version: "1.0.0"
+# Phase 148 Step 1 vertical slice: seeds a sandboxed SessionMemoryService/MemoryBankService
+# with fixtures/memory/info-extraction-basic's session write, issues its query through the
+# real keyword-retrieval surface (run_memory_replay.ts, the in-process pattern proven by
+# run_memory_full_loop.ts), and scores the retrieved ids with the new recall-at-k criterion —
+# deterministic, no LLM/provider involved.
+id: "memory-info-extraction-basic"
+title: "Memory evaluation — information-extraction ability scores recall@k end-to-end"
+pack: "memory"
+tags: ["domain", "subsystem:memory", "ability:information-extraction"]
+request_fixture: "fixtures/requests/memory/info_extraction_basic.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "memory-replay-info-extraction"
+    type: "run-script"
+    name: "seed one learning, query it, capture retrieved ids via the real retrieval surface"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/run_memory_replay.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/memory/info-extraction-basic/task.json"
+    output_criteria:
+      - id: "recall-at-k-perfect"
+        kind: "recall-at-k"
+        k: 5
+        ground_truth_ids: ["aaaaaaaa-0000-4000-8000-000000000001"]
+        score_weight: 1.0

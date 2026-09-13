@@ -1,0 +1,17 @@
+{
+  "ability": "information-extraction",
+  "session_writes": [
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "title": "Rate limiter reset behavior",
+      "content": "The rate limiter fully resets on a process restart, not on a per-request basis."
+    }
+  ],
+  "queries": [
+    {
+      "text": "rate limiter fully resets on a process restart",
+      "ground_truth_ids": ["aaaaaaaa-0000-4000-8000-000000000001"],
+      "expected_answer": "The rate limiter resets on a full restart, not per request."
+    }
+  ]
+}

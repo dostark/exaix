@@ -24,6 +24,7 @@ import {
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { resolveExecutionBase } from "./step_executor.ts";
+import { computeRecallAtK } from "./retrieval_metrics.ts";
 import { gitServiceFor } from "./git_helpers.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import {
@@ -139,6 +140,7 @@ type IJsonPathExistsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_P
 type IJsonPathEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS }>;
 type IJsonPathEqualsAnyCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS_ANY }>;
 type IJsonQueryCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_QUERY }>;
+type IRecallAtKCriterion = Extract<ICriterion, { kind: CriterionKind.RECALL_AT_K }>;
 type IDirExistsCriterion = Extract<ICriterion, { kind: CriterionKind.DIR_EXISTS }>;
 type IFrontmatterFieldExistsCriterion = Extract<ICriterion, { kind: CriterionKind.FRONTMATTER_FIELD_EXISTS }>;
 type IFrontmatterFieldEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.FRONTMATTER_FIELD_EQUALS }>;
@@ -208,6 +210,8 @@ export async function evaluateCriterion(
       return evaluateCommandOutputNotContainsCriterion(options);
     case CriterionKind.LLM_JUDGE:
       return await evaluateLlmJudgeCriterion(options);
+    case CriterionKind.RECALL_AT_K:
+      return evaluateRecallAtKCriterion(options);
   }
 }
 
@@ -1285,6 +1289,44 @@ function evaluateJsonQueryCriterion(
       phase: options.phase,
       status: CriterionStatus.ERROR,
       message: `Failed to evaluate JSON query`,
+      evidence_refs: [],
+    });
+  }
+}
+
+/** Parses the step's JSON stdout for a `retrieved_ids` array and scores it against the
+ * criterion's `ground_truth_ids`/`k` via the pure `computeRecallAtK`. */
+function evaluateRecallAtKCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as IRecallAtKCriterion;
+  const outputData = options.executionResult?.stdout || "{}";
+
+  try {
+    const data = JSON.parse(outputData);
+    const retrievedIds: string[] = Array.isArray(data.retrieved_ids) ? data.retrieved_ids : [];
+    const score = computeRecallAtK(retrievedIds, criterion.ground_truth_ids, criterion.k);
+
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.RECALL_AT_K,
+      phase: options.phase,
+      status: CriterionStatus.PASSED,
+      message: `recall@${criterion.k} = ${
+        score.toFixed(2)
+      } over ${criterion.ground_truth_ids.length} ground-truth id(s)`,
+      evidence_refs: [],
+      observed_value: retrievedIds,
+      expected_value: criterion.ground_truth_ids,
+      score,
+    });
+  } catch (_error) {
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.RECALL_AT_K,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "Failed to evaluate recall@k — could not parse retrieved_ids from step output",
       evidence_refs: [],
     });
   }
