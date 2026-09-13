@@ -1693,3 +1693,30 @@ local history that has accumulated further runs — including ordinary developme
 just intentional benchmark runs — will not reproduce a specific number exactly. Use `--run-ids` to
 scope a citation to an exact run set when reproducibility matters, exactly as §18.3 recommends for
 the robustness/interactive views.
+
+### 19.7 Scope boundary: keyword-only retrieval
+
+**Every retrieval and consolidation score in this framework runs through a deterministic,
+keyword-only path — never Exaix's real embedding-based semantic search, hybrid retrieval,
+reranking, or automatic duplicate/contradiction detection.** This is a deliberate CI-determinism
+tradeoff (§19.4's ci-core tier needs no provider), not an oversight, but it means the boundary is
+real and worth stating plainly:
+
+- The four memory-facing driver scripts (`run_memory_replay.ts`, used by every retrieval-scored
+  ability; `run_memory_staleness_check.ts`; `run_learning_effectiveness.ts`) construct
+  `SessionMemoryService` with a no-op embedding stub (`searchByEmbedding` always returns `[]`),
+  so every `recall_at_k`/`precision_at_k`/`mrr`/`ndcg_at_k`/`abstention_correct`/
+  `staleness_correct` score in this guide reflects Exaix's keyword-only retrieval surface only.
+- `dedup_rate`/`contradiction_correct` measure the _effect_ of an already-decided merge or
+  supersede (`MemoryBankService.supersedeLearning`/`updateLearning`, called directly), never the
+  system's own _decision_ to merge — `resolveDedupMatch`/`resolveContradiction` (which need the
+  same embedding service) are never exercised by this framework.
+- Concretely, this means the memory subsystem's real hybrid retrieval + reranking, automatic
+  semantic-duplicate detection, and the reflection/consolidation loop's own judgment are **not**
+  regression-fenced by anything in this section — only their deterministic, keyword-only/
+  direct-mutation counterparts are. A future gated or live-tier addition (mirroring how §19.4's
+  judge leg is gated) is the natural place to close this gap; none exists yet.
+
+This boundary was found and disclosed by the 2026-09-13 Post-Gap Analysis in
+`exaix-dev-docs/planning/phase-148-memory-evaluation-framework.md` — see that document's GAP-2
+for the full evidence trail.

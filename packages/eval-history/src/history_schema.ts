@@ -64,7 +64,10 @@ export const EvalHistoryEntrySchema = z.object({
   provider: z.string().optional(),
   model: z.string().optional(),
   cell_id: z.string().optional(),
-  /** Scenario-level aggregates, summed across step_results. */
+  /** Scenario-level aggregates, summed across step_results. `total_duration_ms` covers
+   *  every step's wall-clock time regardless of LLM use; `total_llm_duration_ms` is the
+   *  LLM-call-only subset. */
+  total_duration_ms: z.number().int().min(0).optional(),
   total_llm_duration_ms: z.number().int().min(0).optional(),
   total_tokens_prompt: z.number().int().min(0).optional(),
   total_tokens_completion: z.number().int().min(0).optional(),

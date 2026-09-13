@@ -72,6 +72,9 @@ interface IRunRow {
   provider: string | null;
   model: string | null;
   cell_id: string | null;
+  /** Sum of every step's wall-clock duration_ms — unlike total_llm_duration_ms
+   *  (LLM-call time only), this covers every step regardless of LLM use. */
+  total_duration_ms: number | null;
   total_llm_duration_ms: number | null;
   total_tokens_prompt: number | null;
   total_tokens_completion: number | null;
@@ -329,6 +332,14 @@ export class EvalSqliteStore {
           "(9, 'Add memory_corpus_version column to eval_runs (Phase 148 Step 6)')",
       );
     }
+
+    if (currentVersion < 10) {
+      this.addColumns(EVAL_TABLE_RUNS, ["total_duration_ms INTEGER"]);
+      this.db.exec(
+        EVAL_SCHEMA_VERSION_INSERT +
+          "(10, 'Add total_duration_ms column to eval_runs (Phase 148 Step 8, GAP-1 remediation)')",
+      );
+    }
   }
 
   writeRun(
@@ -361,10 +372,10 @@ export class EvalSqliteStore {
          step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_pow_k, pass_k,
          blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata,
          duration_ms, trace_id, provider, model, cell_id,
-         total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
+         total_duration_ms, total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
          total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd, scoring_mode,
          failure_classes, benchmark, benchmark_version, memory_corpus_version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -410,6 +421,7 @@ export class EvalSqliteStore {
         entry.provider ?? null,
         entry.model ?? null,
         entry.cell_id ?? null,
+        entry.total_duration_ms ?? null,
         entry.total_llm_duration_ms ?? null,
         entry.total_tokens_prompt ?? null,
         entry.total_tokens_completion ?? null,

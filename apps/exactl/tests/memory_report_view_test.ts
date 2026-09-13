@@ -60,7 +60,7 @@ function seedMemoryRun(
     provider: overrides.provider,
     total_tokens_prompt: overrides.tokensPrompt,
     total_tokens_completion: overrides.tokensCompletion,
-    duration_ms: overrides.durationMs,
+    total_duration_ms: overrides.durationMs,
   }, []);
 }
 

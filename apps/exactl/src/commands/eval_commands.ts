@@ -945,7 +945,9 @@ interface IMemoryAbilityRunRow {
   passed: number;
   total_tokens_prompt?: number | null;
   total_tokens_completion?: number | null;
-  duration_ms?: number | null;
+  /** The summed run-level aggregate — NOT the bare `duration_ms` field, which no pack's
+   *  real write path ever populates. */
+  total_duration_ms?: number | null;
 }
 
 interface IMemoryAbilityRow {
@@ -1011,7 +1013,7 @@ export function computeMemoryAbilityRows(runs: IMemoryAbilityRunRow[]): IMemoryA
     const [ability, provider] = key.split(MEMORY_ABILITY_GROUP_KEY_SEPARATOR);
     const tokensPromptValues = definedNumbers(groupRuns.map((r) => r.total_tokens_prompt));
     const tokensCompletionValues = definedNumbers(groupRuns.map((r) => r.total_tokens_completion));
-    const durationValues = definedNumbers(groupRuns.map((r) => r.duration_ms));
+    const durationValues = definedNumbers(groupRuns.map((r) => r.total_duration_ms));
     const hasTokenData = tokensPromptValues.length > 0 || tokensCompletionValues.length > 0;
     const totalTokens = hasTokenData ? sum(tokensPromptValues.concat(tokensCompletionValues)) : undefined;
     const totalDuration = durationValues.length > 0 ? sum(durationValues) : undefined;

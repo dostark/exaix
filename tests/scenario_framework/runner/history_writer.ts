@@ -161,6 +161,7 @@ function buildEvalHistoryEntry(
 }
 
 interface IStepMetricAggregates {
+  total_duration_ms?: number;
   total_llm_duration_ms?: number;
   total_tokens_prompt?: number;
   total_tokens_completion?: number;
@@ -177,6 +178,7 @@ function aggregateStepMetrics(steps: IRunManifestStep[]): IStepMetricAggregates 
   };
 
   return {
+    total_duration_ms: sumOptional(steps.map((s) => s.durationMs)),
     total_llm_duration_ms: sumOptional(steps.map((s) => s.llmDurationMs)),
     total_tokens_prompt: sumOptional(steps.map((s) => s.tokens?.prompt)),
     total_tokens_completion: sumOptional(steps.map((s) => s.tokens?.completion)),
