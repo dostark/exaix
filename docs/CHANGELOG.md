@@ -18,6 +18,19 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 148 (Memory Evaluation Framework)
+
+### Added
+
+- `exactl eval report --view memory` — per-ability score, pass count, and derived
+  tokens/ms per query for the five LongMemEval memory abilities (information extraction,
+  multi-session reasoning, temporal reasoning, knowledge updates, abstention), plus a
+  Consolidation & Learning-Effectiveness section (dedup rate, contradiction-resolution
+  correctness, staleness handling, and whether the system actually gets faster/better
+  after learning from a prior run). Supports `--format json`. See
+  [Exaix_Evaluation.md](Exaix_Evaluation.md) §19 for the full metric methodology and its
+  keyword-only/no-embedding scope boundary.
+
 ## Unreleased — Phase 176 (Dogfood Context Management Refinement)
 
 ### Added
