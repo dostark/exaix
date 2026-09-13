@@ -64,6 +64,24 @@ Deno.test("Agent docs: clean-codebase names the staged md-path ratchet as the en
   );
 });
 
+Deno.test("Agent docs: commit skill warns that impact: consumes text through end-of-message", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
+
+  assert(
+    md.includes("KNOWN_COMMIT_FIELDS"),
+    "commit skill should name the parser's field-boundary mechanism",
+  );
+  assert(
+    md.includes("CI gates:"),
+    "commit skill should give the trailing-summary-block example that actually caused this failure",
+  );
+  assert(
+    md.toLowerCase().includes("blank-line-separated trailing summary paragraph") ||
+      md.toLowerCase().includes("trailing paragraph"),
+    "commit skill should warn that a trailing paragraph after impact: is still parsed as impact content",
+  );
+});
+
 Deno.test("Agent docs: commit skill warns that only ONE backtick span may follow a plan-step arrow", async () => {
   const md = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
 
