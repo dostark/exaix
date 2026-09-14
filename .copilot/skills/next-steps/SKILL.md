@@ -13,7 +13,7 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.6.0"
+version: "1.6.1"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability", "traceability"]
 qwen_skill: next-steps
 ---
@@ -30,6 +30,8 @@ Key points
 - When reading plan references across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 - **Reachability ledger (lives IN THE PLANNING DOC)**: a step that adds a symbol with NO production importer appends a row to a **Reachability Ledger** table kept in the planning doc itself — not just chat/commit, so the debt survives context compaction and is visible to anyone reading the plan. Each later step that wires an item closes its row in the same commit. The PHASE cannot be marked complete while any row is still ⏳ — see VERIFY step 11, the ledger template (step 24a), and the Phase-completion gate. A green package-unit test proves correctness, NOT that production calls the code; the test is the only caller.
 - **Success criteria are NOT the same as tests.** A passing test proves a function works correctly in isolation. A success criterion proves a system behaviour is observable at the right level. Every criterion must be verified independently — do not assume a green test suite means all criteria are met.
+- **If invoked on a plan doc with no next written `### Step N` but the phase's own Success Metrics/outcomes aren't all closed**, this is a genuine stop: drafting a wholly new step's Actions/Architecture Notes/Planned Tests is #plan's job, not this skill's. Surface the specific open metric(s) and ask the user how they want the gap closed (you draft the step now, they draft it, or it's deferred) rather than silently inventing scope or silently declaring the phase done with open metrics.
+- **A live-provider run may surface a real bug in shared/production code unrelated to the current step's own feature scope** (e.g. a step testing memory extraction exposes a bug in the shared AI-provider prompt layer). Fix it as a SEPARATE, ordinary (non-plan-step) commit via TDD — do not fold an unrelated production fix into the plan-step's own commit, and do not let it block that step's closure unless the bug is literally inside the step's declared scope.
 
 Canonical prompt (short):
 "Continue with implementation of next steps one-by-one in TDD red-green-refactor
@@ -289,6 +291,15 @@ Commit (plan-step commit — spans the submodule plan doc + the parent code)
       field naming the doc + step, then commit BOTH repos via the orchestrator, which runs
       the plan-step gate and commits the submodule then the parent pointer bump in sync:
         `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`
+      **Before drafting, (re-)read #commit's "⚠️ CRITICAL: Structured Message Validator
+      Traps" section** — semicolons in `impact:` splitting into spurious components, the
+      component word needing a verbatim match in `what:`, `impact:` silently swallowing
+      unterminated trailing text (put `plan:` immediately after `impact:` to avoid this —
+      the template below already does), and `extractArrowPaths()` scanning every backtick
+      span after the FIRST `→` in a bullet (a criterion's own "capture → extract → ..."
+      pipeline prose can itself be that anchor). These block a plan-step commit on the
+      first attempt far more often than any content issue — re-reading them before writing
+      is faster than a failed `--commit` retry cycle.
       The message body still follows #commit's schema (what/rationale/tests/who/impact)
       plus the mandatory `plan:` field:
        feat(<scope>): implement <What> (Step N)
