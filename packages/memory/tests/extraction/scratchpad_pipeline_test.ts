@@ -41,8 +41,25 @@ Deno.test("[integration] scratchpad appends reach the normal Pending -> approval
       lessons_learned: ["Always validate portal mount paths before file writes"],
     });
 
+    const summaryAndLessonsOnly = await new HeuristicExtractionStrategy().extract(execution);
+    assertEquals(summaryAndLessonsOnly.length, 1);
+    assertEquals(
+      summaryAndLessonsOnly.some((candidate) => candidate.description.includes("Rate limiter")),
+      false,
+      "summary and lessons alone must miss the in-the-moment rate-limiter insight",
+    );
+
     const candidates = await extractorService.analyzeExecution(execution);
-    assertEquals(candidates.length, 2, "scratchpad#1 + shared insight (deduplicated) must yield two candidates");
+    assertEquals(
+      candidates.length,
+      summaryAndLessonsOnly.length + 1,
+      "scratchpad must add one otherwise-missed insight while deduplicating the shared lesson",
+    );
+    assertEquals(
+      candidates.some((candidate) => candidate.description.includes("Rate limiter")),
+      true,
+      "the scratchpad-only insight must surface as an extraction candidate",
+    );
 
     for (const candidate of candidates) {
       await extractorService.createProposal(candidate, execution, "test-role");
