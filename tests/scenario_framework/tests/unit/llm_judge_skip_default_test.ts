@@ -107,12 +107,13 @@ Deno.test({
 
 Deno.test({
   name:
-    "[LlmJudgeSkip] resolveEvalLlmTimeoutMs gives claude-cli/opencode-cli providers the CLI-appropriate timeout, not the generic 30s AI default",
+    "[LlmJudgeSkip] resolveEvalLlmTimeoutMs gives CLI-delegate providers the CLI-appropriate timeout, not the generic 30s AI default",
   fn: () => {
     // ProviderFactory always sets timeoutMs to DEFAULT_AI_TIMEOUT_MS (30s, sized for HTTP
     // calls) before CliDelegateProviderFactory can apply its own 300s CLI-subprocess default —
     // so CLI-delegate providers need this override or a real judge call times out at 30s.
     assertEquals(resolveEvalLlmTimeoutMs(ProviderType.CLAUDE_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
+    assertEquals(resolveEvalLlmTimeoutMs(ProviderType.CODEX_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
     assertEquals(resolveEvalLlmTimeoutMs(ProviderType.OPENCODE_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
     // Non-CLI-delegate providers are untouched — no override needed, undefined lets
     // ProviderFactory's own generic 30s default apply as before.

@@ -30,8 +30,10 @@ import {
 } from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { buildEvaluationPrompt, CriterionResultSchema } from "@exaix/core/evaluation";
 import { HeuristicExtractionStrategy, LlmLearningExtractor } from "@exaix/memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { getCriterionResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import {
@@ -44,13 +46,23 @@ import {
   getTestLlmProvider,
   initTestDbService,
 } from "@exaix/testing";
-import { ProviderType } from "@exaix/core";
+import { EvaluationCategory, ProviderType } from "@exaix/core";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
 const testProvider = getTestLlmProvider();
 const testModel = getTestLlmModel();
+
+const JUDGE_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+  [ProviderType.CLAUDE_CLI]: "claude-sonnet-5",
+  [ProviderType.CODEX_CLI]: "gpt-5.6-terra",
+};
+
+const testJudgeProvider = Deno.env.get("EXA_EVAL_LLM_PROVIDER") ??
+  (testProvider === ProviderType.CODEX_CLI ? ProviderType.CLAUDE_CLI : ProviderType.CODEX_CLI);
+const testJudgeModel = Deno.env.get("EXA_EVAL_LLM_MODEL") ??
+  JUDGE_MODEL_BY_PROVIDER[testJudgeProvider as ProviderType];
 
 /** The env var name carrying the real API key for a given provider's own factory/tests. */
 const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
@@ -96,6 +108,12 @@ function buildTestProvider(provider: string, model: string): IModelProvider {
  * deprioritize — used as the mechanical non-derivability proxy for the evidence file. */
 const STRUCTURAL_FACT_MARKERS = ["imports", "import ", "depends on", "layer contains", "contains file"];
 
+interface IExtractionJudgeInput {
+  summary: string;
+  lessons_learned: string[];
+  scratchpad_notes: string[];
+}
+
 function loadPolicyInstructions(): string {
   const skillPath = join(
     import.meta.dirname ?? ".",
@@ -129,6 +147,31 @@ function evaluateCandidates(candidates: IProposalLearning[]) {
     titles: candidates.map((c) => c.title),
     categories: candidates.map((c) => c.category),
   };
+}
+
+async function judgeCandidateSet(
+  judge: IModelProvider,
+  executionInput: IExtractionJudgeInput,
+  candidates: IProposalLearning[],
+): Promise<number> {
+  const prompt = buildEvaluationPrompt(
+    JSON.stringify({ execution: executionInput, candidates }, null, 2),
+    [{
+      name: "extraction_quality",
+      description:
+        "Reward actionable, specific, non-derivable operational knowledge that would improve a future agent. " +
+        "Penalize generic restatements, redundant structural facts, duplication, and missing important insights. " +
+        "Judge only the supplied fixed execution input and candidate set.",
+      weight: 1,
+      required: true,
+      category: EvaluationCategory.QUALITY,
+    }],
+    undefined,
+    false,
+  );
+  const result = await judge.generate(prompt, { jsonSchema: getCriterionResultJsonSchema() });
+  const cleaned = result.content.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+  return CriterionResultSchema.parse(JSON.parse(cleaned)).score;
 }
 
 function makeExecutionFixture(config: Config, store: ExecutionMemoryStore, traceId: string) {
@@ -225,6 +268,27 @@ Deno.test({
         provider: testProvider,
       };
 
+      assertEquals(
+        testJudgeProvider === testProvider,
+        false,
+        "extraction and judge providers must differ",
+      );
+      assertExists(testJudgeModel, `no default judge model for provider ${testJudgeProvider}`);
+      const judge = buildTestProvider(testJudgeProvider, testJudgeModel);
+      const judgeInput = {
+        summary: execution.summary,
+        lessons_learned: execution.lessons_learned ?? [],
+        scratchpad_notes: fixture.scratchpadNotes,
+      };
+      const baselineJudgeScore = await judgeCandidateSet(judge, judgeInput, baselineCandidates);
+      const treatmentJudgeScore = await judgeCandidateSet(judge, judgeInput, liveCandidates);
+      assertEquals(
+        treatmentJudgeScore > baselineJudgeScore,
+        true,
+        `independent judge must score LLM extraction above heuristic baseline (` +
+          `${treatmentJudgeScore} <= ${baselineJudgeScore})`,
+      );
+
       // Evidence: treatment/control-style comparison, written where the ledger row says.
       const evidence = {
         generated_at: new Date().toISOString(),
@@ -245,8 +309,15 @@ Deno.test({
             (treatment.avg_quality_score - baseline.avg_quality_score) * 1000,
           ) / 1000,
         },
+        judge_evaluation: {
+          provider: testJudgeProvider,
+          model: testJudgeModel ?? null,
+          baseline_score: baselineJudgeScore,
+          treatment_score: treatmentJudgeScore,
+          score_delta: Math.round((treatmentJudgeScore - baselineJudgeScore) * 1000) / 1000,
+        },
         notes:
-          "Mechanical proxies only: avg quality_score is model-reported; structural-fact counts use lexical markers from the policy's Deprioritize list. A real rubric evaluation is out of scope for this evidence run.",
+          "Mechanical proxies are retained alongside an independent real-provider rubric judgment over the same fixed execution input.",
       };
 
       const evidenceDir = join(
