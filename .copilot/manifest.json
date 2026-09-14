@@ -255,7 +255,7 @@
       "scope": "dev",
       "title": "Submodule Workflow Skill (#submodule-workflow)",
       "short_summary": "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "git",
         "submodule",
@@ -441,7 +441,7 @@
       "scope": "dev",
       "title": "Commit Skill (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "topics": [
         "git",
         "commit",

@@ -10,7 +10,7 @@ scope: dev
 title: "Commit Skill (#commit)"
 description: Create a structured commit message for current changes following Exaix conventions
 short_summary: "Enforces structured, informative commit messages for agents and human developers."
-version: "1.0.1"
+version: "1.0.2"
 topics: ["git", "commit", "documentation", "best-practices", "structured-logging"]
 qwen_skill: commit
 ---
@@ -38,7 +38,13 @@ Default commit scope and batching
 - Always work on a feature branch: `git checkout -b <branch> main`.
 - For CI hotfixes, create a `hotfix/<name>` branch from main, fix, PR, and merge.
 - Only bypass the guard when main is already broken: `HOOK_BYPASS_MAIN=1 git commit -m "..."`
-- Always merge feature branches with `--no-ff` to preserve branch topology: `git checkout main && git merge --no-ff <branch>`. Do NOT use fast-forward merges — a merge commit must mark every feature boundary.
+- **Merge feature branches into `main` fast-forward only — never `--no-ff`.** GitHub branch
+  protection on `main` rejects merge commits (rule: "This branch must not contain merge
+  commits") and requires changes through a pull request; a `--no-ff` merge commit only
+  reaches `main` via an admin-privileged rule bypass on push, which is not a normal
+  workflow step. Merge with `git checkout main && git merge --ff-only <branch>` (fails
+  loudly if `main` and `<branch>` have diverged — rebase `<branch>` onto `main` first
+  rather than falling back to a real merge commit).
 
 Plan-step commits (phase-plan implementation)
 - A commit that implements a step of a phase plan doc MUST carry a `plan:` field in its

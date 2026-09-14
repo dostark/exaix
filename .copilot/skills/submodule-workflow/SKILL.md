@@ -12,7 +12,7 @@ scope: dev
 title: "Submodule Workflow Skill (#submodule-workflow)"
 description: Manage simultaneous parent repo and exaix-dev-docs submodule changes safely with correct pointer policy
 short_summary: "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["git", "submodule", "docs", "workflow"]
 qwen_skill: submodule-workflow
 ---
@@ -110,13 +110,15 @@ before you push the parent. **Push submodule main FIRST, then parent.**
 # 1. Merge submodule feature branch into submodule main
 cd exaix-dev-docs
 git checkout main
-git merge --ff-only feat/<feature>   # or --no-ff if preferred
+git merge --ff-only feat/<feature>   # main's branch protection rejects merge commits —
+                                       # --no-ff needs an admin bypass to push; ff-only or rebase first
 
 # 2. Push submodule main FIRST — so the commit is reachable
 git push origin main
 
-# 3. Return to parent and verify pointer matches submodule main
+# 3. Return to parent and stage the pointer — see the checkout trap below first
 cd ..
+git add exaix-dev-docs
 git ls-tree HEAD exaix-dev-docs       # shows committed pointer SHA
 git -C exaix-dev-docs rev-parse HEAD  # should match
 
@@ -132,6 +134,18 @@ been pushed yet), `git submodule update` fails and the build breaks.
 Failing to do the full sequence leaves the parent `main` pointing at a
 submodule commit that only exists on a feature branch — breaking the
 build for anyone cloning with `--recurse-submodules`.
+
+**Checkout-resets-submodule trap.** Any `git checkout <branch>` in the PARENT repo
+silently resets the submodule's checked-out working tree (and `HEAD`) back to whatever
+commit the parent's index recorded for it at that moment — even mid-sequence, even to an
+older commit than what you just merged in step 1. If you `git checkout main` in the
+parent for any reason between merging the submodule and staging its pointer, the
+submodule's `HEAD` silently moves back to the pre-merge commit, and `git add
+exaix-dev-docs` then stages the WRONG (stale) pointer with no error or warning — the
+merge you just made is real and pushed, but the parent never references it. Guard: right
+before `git add exaix-dev-docs`, always run `git -C exaix-dev-docs rev-parse HEAD` and
+compare it to the commit you intended to merge — if they don't match, `git -C
+exaix-dev-docs checkout main` again to restore the working tree before staging.
 
 Verification commands
 
