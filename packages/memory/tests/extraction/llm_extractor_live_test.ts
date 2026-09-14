@@ -10,7 +10,7 @@
  *   (`claude-cli` uses the local subscription-authenticated Claude Code CLI; keyed cloud
  *   providers gate on their own API key env var) and EXA_TEST_LLM_MODEL for model selection.
  * @architectural-layer Services (test)
- * @related-files ["apps/daemon/tests/phase147_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
+ * @related-files ["apps/daemon/tests/memory_maturation_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

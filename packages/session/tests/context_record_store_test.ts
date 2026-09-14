@@ -1,6 +1,6 @@
 /**
- * @module Phase176ContextRecordStoreTest
- * @path packages/session/tests/phase176_context_record_store_test.ts
+ * @module ContextRecordStoreTest
+ * @path packages/session/tests/context_record_store_test.ts
  * @description Phase 176 Step 1: ContextRecordStore persists immutable capture records
  * atomically under @Memory/Execution/<trace>/context/, refuses duplicate ids, partial
  * writes never leave a readable final file, symlink components are refused, and

@@ -1,15 +1,15 @@
 /**
- * @module Phase147CutoverLiveTest
- * @path apps/daemon/tests/phase147_cutover_live_test.ts
+ * @module MemoryMaturationCutoverLiveTest
+ * @path apps/daemon/tests/memory_maturation_cutover_live_test.ts
  * @description [live, operator-run] Phase 147 Step 12: the same memory-maturation chain as
- *   phase147_cutover_test.ts, against a real provider instead of MockProviderFactory.
+ *   memory_maturation_cutover_test.ts, against a real provider instead of MockProviderFactory.
  *   Not CI-run: live-provider convention (EXA_TEST_LLM_PROVIDER / EXA_TEST_LLM_MODEL).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
  *   behavior end-to-end (capture → extract → pending → approval attempt → retrieve → reflect),
  *   not any specific extraction or reflection outcome.
  * @architectural-layer Services (test)
- * @related-files [apps/daemon/tests/phase147_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
+ * @related-files [apps/daemon/tests/memory_maturation_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

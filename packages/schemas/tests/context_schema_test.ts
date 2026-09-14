@@ -1,6 +1,6 @@
 /**
- * @module Phase176ContextSchemaTest
- * @path packages/schemas/tests/phase176_context_schema_test.ts
+ * @module ContextSchemaTest
+ * @path packages/schemas/tests/context_schema_test.ts
  * @description Phase 176 Step 1: ContextRecordSchema is a strict, versioned record —
  * rejects unknown keys, malformed stepId/uuid fields, and non-literal visibility/native
  * fields; toContextRecordSummary derives a lossless projection for the CLI listing view.

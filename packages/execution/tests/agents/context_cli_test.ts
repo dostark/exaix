@@ -1,6 +1,6 @@
 /**
- * @module Phase176ContextCliTest
- * @path packages/execution/tests/agents/phase176_context_cli_test.ts
+ * @module ContextCliTest
+ * @path packages/execution/tests/agents/context_cli_test.ts
  * @description Phase 176 Step 1: CliDelegateStrategy's dogfood context wiring. Absent
  * contextPort (every non-dogfood/disabled-config caller) sends the existing objective
  * byte-for-byte; an injected contextPort's returned prompt is what actually reaches the

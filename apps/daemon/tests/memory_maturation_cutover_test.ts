@@ -1,6 +1,6 @@
 /**
- * @module Phase147CutoverTest
- * @path apps/daemon/tests/phase147_cutover_test.ts
+ * @module MemoryMaturationCutoverTest
+ * @path apps/daemon/tests/memory_maturation_cutover_test.ts
  * @description [integration] Phase 147 Step 12 cutover proof: constructs the real production
  * service graph directly (per session_delegate_cycle_daemon_boot_test.ts's established pattern,
  * with a short intervalMs instead of apps/daemon/main.ts's hardcoded one hour) and drives the

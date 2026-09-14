@@ -1,6 +1,6 @@
 /**
  * @module DeprecatedEnvVarsTest
- * @path packages/ai/tests/phase2_deprecated_env_vars_test.ts
+ * @path packages/ai/tests/deprecated_env_vars_test.ts
  * @related-files []
  * @architectural-layer AI
  * @description Verifies that deprecated environment variables (EXA_OLLAMA_RETRY_*)

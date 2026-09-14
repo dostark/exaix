@@ -1,6 +1,6 @@
 /**
  * @module TestModeEnvVarsTest
- * @path packages/core/tests/phase3_testing_env_vars_test.ts
+ * @path packages/core/tests/testing_env_vars_test.ts
  * @related-files []
  * @architectural-layer Core
  * @description Verifies the logic for test-mode detection helpers exposed by
