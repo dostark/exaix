@@ -83,6 +83,7 @@ import {
 } from "@exaix/core";
 import { join } from "@std/path";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "./constants.ts";
+import type { ICliDelegateProtocolBackend } from "./protocol_backend.ts";
 import { adaptOpencodePlanJson } from "./opencode_plan_schema_adapter.ts";
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
@@ -112,6 +113,8 @@ export interface ICliDelegateModelProviderOptions {
   timeoutMs?: number;
   /** Custom provider id. Defaults to "<tool>-<model>". */
   id?: string;
+  /** Optional tool-specific invocation policy for caller-owned protocols such as ReAct. */
+  protocolBackend?: ICliDelegateProtocolBackend;
   /** Defaults to SafeSubprocess.run. Overridden in tests to avoid real subprocess execution. */
   run?: IRunCliDelegateProcess;
   /** Version probe function for --json-schema support. Defaults to probeDelegateVersion. Overridden in tests. */
@@ -357,6 +360,7 @@ export class CliDelegateModelProvider implements IModelProvider {
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<string[]> {
+    const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
     const jsonSchemaFlag: string[] = [];
     if (jsonSchema) {
@@ -385,6 +389,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_OUTPUT_FORMAT_JSON,
       SESSION_FLAG_MODEL,
       this.options.model,
+      ...backendArgs,
       ...resumeFlag,
       ...jsonSchemaFlag,
     ];
@@ -398,6 +403,7 @@ export class CliDelegateModelProvider implements IModelProvider {
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): string[] {
+    const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
     // codex 0.147.0's --output-schema requires OpenAI strict-mode schemas (no anyOf/oneOf, every
     // property required) that Exaix's zod-to-json-schema output doesn't satisfy, causing
@@ -416,12 +422,14 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_FLAG_SANDBOX,
       SESSION_SANDBOX_READ_ONLY,
       SESSION_FLAG_SKIP_GIT_REPO_CHECK,
+      ...backendArgs,
       ...resumeArgs,
       prompt,
     ];
   }
 
   private buildOpencodeArgs(prompt: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
+    const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
     return [
       SESSION_SUBCMD_RUN,
@@ -429,6 +437,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_OUTPUT_FORMAT_JSON,
       SESSION_FLAG_MODEL,
       this.options.model,
+      ...backendArgs,
       ...sessionFlag,
       prompt,
     ];

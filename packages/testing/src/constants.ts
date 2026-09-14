@@ -301,6 +301,9 @@ const TEST_LLM_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
   [ProviderType.ANTHROPIC]: "claude-haiku-4-5-20251001",
   [ProviderType.OPENAI]: "gpt-5-mini",
   [ProviderType.GOOGLE]: "gemini-flash-latest",
+  [ProviderType.CLAUDE_CLI]: "claude-sonnet-5",
+  [ProviderType.CODEX_CLI]: "gpt-5.6-terra",
+  [ProviderType.OPENCODE_CLI]: "opencode/deepseek-v4-flash-free",
 };
 
 /** The provider a live-provider test should target: EXA_TEST_LLM_PROVIDER, else anthropic. */

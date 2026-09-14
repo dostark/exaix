@@ -21,7 +21,13 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
-import { CliDelegateModelProvider, DEFAULT_CLAUDE_CLI_BIN } from "@exaix/ai-clidelegate";
+import {
+  CliDelegateModelProvider,
+  DEFAULT_CLAUDE_CLI_BIN,
+  DEFAULT_CODEX_CLI_BIN,
+  DEFAULT_OPENCODE_CLI_BIN,
+  TEXT_COMPLETION_PROTOCOL_BACKEND,
+} from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { HeuristicExtractionStrategy, LlmLearningExtractor } from "@exaix/memory";
@@ -55,13 +61,19 @@ const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
 
 function buildTestProvider(provider: string, model: string): IModelProvider {
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
-  if (provider === ProviderType.CLAUDE_CLI) {
+  if (
+    provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
+    provider === ProviderType.OPENCODE_CLI
+  ) {
+    const isClaude = provider === ProviderType.CLAUDE_CLI;
+    const isCodex = provider === ProviderType.CODEX_CLI;
     return new CliDelegateModelProvider({
-      tool: "claude-code",
-      bin: DEFAULT_CLAUDE_CLI_BIN,
+      tool: isClaude ? "claude-code" : isCodex ? "codex" : "opencode",
+      bin: isClaude ? DEFAULT_CLAUDE_CLI_BIN : isCodex ? DEFAULT_CODEX_CLI_BIN : DEFAULT_OPENCODE_CLI_BIN,
       model,
       cwd: Deno.cwd(),
       timeoutMs: 300_000,
+      protocolBackend: TEXT_COMPLETION_PROTOCOL_BACKEND,
     });
   }
   const apiKey = provider === ProviderType.OPENAI
@@ -138,6 +150,8 @@ Deno.test({
   // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
   ignore: !(
     testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
+    testProvider === ProviderType.CODEX_CLI ||
+    testProvider === ProviderType.OPENCODE_CLI ||
     Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
   ),
   sanitizeResources: false,

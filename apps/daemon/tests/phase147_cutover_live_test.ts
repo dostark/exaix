@@ -23,7 +23,13 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
-import { CliDelegateModelProvider, DEFAULT_CLAUDE_CLI_BIN } from "@exaix/ai-clidelegate";
+import {
+  CliDelegateModelProvider,
+  DEFAULT_CLAUDE_CLI_BIN,
+  DEFAULT_CODEX_CLI_BIN,
+  DEFAULT_OPENCODE_CLI_BIN,
+  TEXT_COMPLETION_PROTOCOL_BACKEND,
+} from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
@@ -68,13 +74,19 @@ const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
 
 function buildTestProvider(provider: string, model: string): IModelProvider {
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
-  if (provider === ProviderType.CLAUDE_CLI) {
+  if (
+    provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
+    provider === ProviderType.OPENCODE_CLI
+  ) {
+    const isClaude = provider === ProviderType.CLAUDE_CLI;
+    const isCodex = provider === ProviderType.CODEX_CLI;
     return new CliDelegateModelProvider({
-      tool: "claude-code",
-      bin: DEFAULT_CLAUDE_CLI_BIN,
+      tool: isClaude ? "claude-code" : isCodex ? "codex" : "opencode",
+      bin: isClaude ? DEFAULT_CLAUDE_CLI_BIN : isCodex ? DEFAULT_CODEX_CLI_BIN : DEFAULT_OPENCODE_CLI_BIN,
       model,
       cwd: Deno.cwd(),
       timeoutMs: 300_000,
+      protocolBackend: TEXT_COMPLETION_PROTOCOL_BACKEND,
     });
   }
   const apiKey = provider === ProviderType.OPENAI
@@ -116,6 +128,8 @@ Deno.test({
   // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
   ignore: !(
     testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
+    testProvider === ProviderType.CODEX_CLI ||
+    testProvider === ProviderType.OPENCODE_CLI ||
     Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
   ),
   sanitizeResources: false,
@@ -288,12 +302,12 @@ Deno.test({
       // Embed approved learnings so the retrieval's semantic half is live too.
       await memoryBank.rebuildIndicesWithEmbeddings(embeddingService);
 
-      // The query derives from the promoted learning's own title words: the model's
-      // phrasing of the insight is nondeterministic, so the assertion checks that what
-      // memory holds is retrievable, not that the model echoed a specific phrase.
-      const queryWords = promoted[0].title.split(/[^a-zA-Z]+/).filter((w) => w.length > 3).slice(0, 5);
-      const enhanced = await sessionMemory.enhanceRequest(queryWords.join(" "));
       if (promoted.length > 0) {
+        // The query derives from the promoted learning's own title words: the model's
+        // phrasing of the insight is nondeterministic, so the assertion checks that what
+        // memory holds is retrievable, not that the model echoed a specific phrase.
+        const queryWords = promoted[0].title.split(/[^a-zA-Z]+/).filter((w) => w.length > 3).slice(0, 5);
+        const enhanced = await sessionMemory.enhanceRequest(queryWords.join(" "));
         // Store-level retrievability: the canonical APPROVED-filtered search must surface
         // the promoted learning by its own distinctive words (the model's phrasing of the
         // insight is nondeterministic, so the query comes from the learning itself).
