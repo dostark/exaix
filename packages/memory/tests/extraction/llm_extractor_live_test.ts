@@ -1,14 +1,14 @@
 /**
  * @module LlmExtractorLiveTest
  * @path packages/memory/tests/extraction/llm_extractor_live_test.ts
- * @description [live, operator-run] Extraction-quality evaluation against a real Ollama
- *   provider, closing the Reachability Ledger row `phase147-step2-extraction-quality-live`:
+ * @description [live, operator-run] Extraction-quality evaluation against a real provider,
+ *   closing the Reachability Ledger row `phase147-step2-extraction-quality-live`:
  *   runs the real LlmLearningExtractor (skill-guided, scratchpad-informed) against a real
  *   execution fixture, alongside the deterministic heuristic baseline, and writes the measured
  *   quality evidence to `exaix-dev-docs/evidence/phase-147/step-2-extraction-quality.json`.
  *   Not CI-run: uses the established live-provider convention — EXA_TEST_LLM_PROVIDER
- *   (explicitly set to ollama for a local model; keyed cloud providers gate on their own
- *   API key env var) and EXA_TEST_LLM_MODEL for model selection.
+ *   (`claude-cli` uses the local subscription-authenticated Claude Code CLI; keyed cloud
+ *   providers gate on their own API key env var) and EXA_TEST_LLM_MODEL for model selection.
  * @architectural-layer Services (test)
  * @related-files ["apps/daemon/tests/phase147_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
  */
@@ -21,6 +21,7 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
+import { CliDelegateModelProvider, DEFAULT_CLAUDE_CLI_BIN } from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
 import { HeuristicExtractionStrategy, LlmLearningExtractor } from "@exaix/memory";
@@ -54,6 +55,15 @@ const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
 
 function buildTestProvider(provider: string, model: string): IModelProvider {
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
+  if (provider === ProviderType.CLAUDE_CLI) {
+    return new CliDelegateModelProvider({
+      tool: "claude-code",
+      bin: DEFAULT_CLAUDE_CLI_BIN,
+      model,
+      cwd: Deno.cwd(),
+      timeoutMs: 300_000,
+    });
+  }
   const apiKey = provider === ProviderType.OPENAI
     ? Deno.env.get(ENV_OPENAI_API_KEY)
     : provider === ProviderType.GOOGLE
@@ -125,9 +135,11 @@ const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
 
 Deno.test({
   name: `[live][phase-147] live LLM extraction quality vs heuristic baseline (${testProvider}:${testModel})`,
-  // Live-provider convention: keyed providers require their API key; the local ollama
-  // provider requires EXA_TEST_LLM_PROVIDER=ollama explicitly.
-  ignore: !(testProvider === ProviderType.OLLAMA || Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))),
+  // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
+  ignore: !(
+    testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
+    Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
+  ),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

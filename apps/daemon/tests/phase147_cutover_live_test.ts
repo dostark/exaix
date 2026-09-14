@@ -2,7 +2,7 @@
  * @module Phase147CutoverLiveTest
  * @path apps/daemon/tests/phase147_cutover_live_test.ts
  * @description [live, operator-run] Phase 147 Step 12: the same memory-maturation chain as
- *   phase147_cutover_test.ts, against a real Ollama provider instead of MockProviderFactory.
+ *   phase147_cutover_test.ts, against a real provider instead of MockProviderFactory.
  *   Not CI-run: live-provider convention (EXA_TEST_LLM_PROVIDER / EXA_TEST_LLM_MODEL).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
@@ -23,6 +23,7 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
+import { CliDelegateModelProvider, DEFAULT_CLAUDE_CLI_BIN } from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
@@ -67,6 +68,15 @@ const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
 
 function buildTestProvider(provider: string, model: string): IModelProvider {
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
+  if (provider === ProviderType.CLAUDE_CLI) {
+    return new CliDelegateModelProvider({
+      tool: "claude-code",
+      bin: DEFAULT_CLAUDE_CLI_BIN,
+      model,
+      cwd: Deno.cwd(),
+      timeoutMs: 300_000,
+    });
+  }
   const apiKey = provider === ProviderType.OPENAI
     ? Deno.env.get(ENV_OPENAI_API_KEY)
     : provider === ProviderType.GOOGLE
@@ -103,9 +113,11 @@ const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
 
 Deno.test({
   name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
-  // Live-provider convention: keyed providers require their API key; the local ollama
-  // provider requires EXA_TEST_LLM_PROVIDER=ollama explicitly.
-  ignore: !(testProvider === ProviderType.OLLAMA || Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))),
+  // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
+  ignore: !(
+    testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
+    Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
+  ),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
