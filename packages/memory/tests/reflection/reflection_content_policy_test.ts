@@ -23,8 +23,10 @@ const SKILL_INSTRUCTIONS: string =
 class CapturingProvider implements IModelProvider {
   id = "reflection-policy-test";
   prompt = "";
+  calls = 0;
   constructor(private content: string) {}
   generate(prompt: string) {
+    this.calls++;
     this.prompt = prompt;
     return Promise.resolve({
       content: this.content,
@@ -35,6 +37,36 @@ class CapturingProvider implements IModelProvider {
     });
   }
 }
+
+Deno.test("offline reflection skips the LLM and completes its deterministic pass", async () => {
+  const { config, db, cleanup } = await initTestDbService();
+  try {
+    const bank = new MemoryBankService(config);
+    await bank.initGlobalMemory();
+    const extractor = new MemoryExtractorService(config, db, castAny<IMemoryBankService>(bank));
+    const provider = new CapturingProvider(JSON.stringify({ actions: [] }));
+    const reflection = new MemoryReflectionService({
+      provider,
+      skillsService: skillsService(),
+      memoryBank: bank,
+      embeddingService: embedding(),
+      proposalWriter: extractor,
+      costRouter: castAny({ isRemoteAllowed: () => Promise.resolve(false) }),
+    });
+
+    const result = await reflection.runReflectionCycle();
+
+    assertEquals(provider.calls, 0);
+    assertEquals(result, {
+      run_at: result.run_at,
+      synthesised_count: 0,
+      merged_count: 0,
+      pruned_count: 0,
+    });
+  } finally {
+    await cleanup();
+  }
+});
 
 function skillsService(): Pick<ISkillsService, "getSkill"> {
   return castAny<Pick<ISkillsService, "getSkill">>({
