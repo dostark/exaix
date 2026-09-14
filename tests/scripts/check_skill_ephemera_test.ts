@@ -1,7 +1,7 @@
 /**
  * @module CheckSkillEphemeraTest
  * @path tests/scripts/check_skill_ephemera_test.ts
- * @description Phase 167 2026-08-24 self-improvement retro — guards against "leaked
+ * @description Phase 167 self-improvement-retro finding — guards against "leaked
  *   ephemeral detail" in generic skill guidance: a dated incident-recounting sentence
  *   (`YYYY-MM-DD` + a process verb like "found"/"audit") must not live in a general skill
  *   every phase re-reads. Phase/domain-specific narrative belongs in the owning domain doc
