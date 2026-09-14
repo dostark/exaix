@@ -562,9 +562,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     let newToolCallCount = toolCallCount;
     let lastPriorTurn = nativeToolsPriorTurn;
+    let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
       const action = parsed.actions[a];
       const execResult = await this.executeTool(action, options);
+      allActionsSucceeded &&= execResult.success === true;
       this.recordWrittenFile(action, execResult, writtenFiles);
 
       const toolResultContent = execResult.success
@@ -597,7 +599,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       }
     }
 
-    if (parsed.isComplete) {
+    if (this.shouldFinishActionTurn(parsed.isComplete, allActionsSucceeded)) {
       const result = this.finishLoop(
         response.content,
         context,
@@ -638,6 +640,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolsPriorTurn: lastPriorTurn,
       done: false,
     };
+  }
+
+  private shouldFinishActionTurn(isComplete: boolean, allActionsSucceeded: boolean): boolean {
+    return isComplete && allActionsSucceeded;
   }
 
   /** Parses the provider response into thought, actions, and completion state.

@@ -682,6 +682,9 @@ export class ToolRegistry implements IToolRegistry {
 
   /** Captures a lightweight execution-scoped note into the per-trace execution memory store; traceId is the registry's own, never agent-supplied. */
   private rememberFactTool(content: string, tags?: Opt<string[], Reason.OptionalInput>): Promise<IToolResult> {
+    if (content.trim().length === 0) {
+      return Promise.resolve({ success: false, error: "remember_fact requires non-empty content" });
+    }
     const store = this.applicationContext?.executionMemoryStore;
     if (!store) {
       return Promise.resolve({
