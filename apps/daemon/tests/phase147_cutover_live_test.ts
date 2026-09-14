@@ -6,8 +6,8 @@
  *   Not CI-run: live-provider convention (EXA_TEST_LLM_PROVIDER / EXA_TEST_LLM_MODEL).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
- *   behavior end-to-end (capture → extract → pending → approval attempt → retrieval), not
- *   any specific extraction outcome.
+ *   behavior end-to-end (capture → extract → pending → approval attempt → retrieve → reflect),
+ *   not any specific extraction or reflection outcome.
  * @architectural-layer Services (test)
  * @related-files [apps/daemon/tests/phase147_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
  */
@@ -33,7 +33,7 @@ import {
 import type { IModelProvider } from "@exaix/ai";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
-import { MemoryScope } from "@exaix/core";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope } from "@exaix/core";
 import {
   HeuristicExtractionStrategy,
   initializeMemoryAutoApprovalMaintenance,
@@ -42,6 +42,7 @@ import {
   MemoryBankService,
   MemoryEmbeddingService,
   MemoryExtractorService,
+  MemoryReflectionService,
   SessionMemoryService,
 } from "@exaix/memory";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
@@ -50,6 +51,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import {
   castAny,
   createMinimalExecutionMemory,
+  createSampleLearning,
   ENV_ANTHROPIC_API_KEY,
   ENV_GOOGLE_API_KEY,
   ENV_OPENAI_API_KEY,
@@ -327,6 +329,41 @@ Deno.test({
           enhanced.memories.length,
         );
       }
+
+      // (5) REFLECT: seed a second, related APPROVED learning so reflection has genuine
+      // synthesis/merge/prune material regardless of what extraction promoted, then run
+      // the cycle against the same live provider.
+      await memoryBank.addGlobalLearning(createSampleLearning({
+        id: crypto.randomUUID(),
+        source_id: traceId,
+        scope: MemoryScope.GLOBAL,
+        project: undefined,
+        title: "Rate limiter counters do not survive a process restart",
+        description: "In-memory rate-limiter counters reset on full process restart, not just per request; " +
+          "persist counters or re-derive them on boot to avoid a burst of unthrottled traffic.",
+        category: LearningCategory.PATTERN,
+        tags: ["rate-limiter"],
+        confidence: ConfidenceAssessmentLevel.HIGH,
+        status: MemoryStatus.APPROVED,
+        quality_score: 0.8,
+      }));
+      await memoryBank.rebuildIndicesWithEmbeddings(embeddingService);
+
+      const reflectionService = new MemoryReflectionService({
+        provider,
+        skillsService,
+        memoryBank,
+        embeddingService,
+        proposalWriter: memoryExtractor,
+        logger,
+        costRouter,
+      });
+      const reflectionResult = await reflectionService.runReflectionCycle();
+      console.log(
+        `live reflection: synthesised=${reflectionResult.synthesised_count} ` +
+          `merged=${reflectionResult.merged_count} pruned=${reflectionResult.pruned_count}`,
+      );
+      assertExists(reflectionResult.run_at, "the reflection cycle must complete and report a run timestamp");
     } finally {
       await cleanup();
     }
