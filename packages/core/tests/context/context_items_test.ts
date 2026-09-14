@@ -1,6 +1,6 @@
 /**
- * @module Phase176ContextItemsTest
- * @path packages/core/tests/context/phase176_context_items_test.ts
+ * @module ContextItemsTest
+ * @path packages/core/tests/context/context_items_test.ts
  * @description Phase 176 Step 1: fitContextItems selects the prefix-preserving subset
  * of items that fits an explicit token budget — zero budget yields empty (not
  * "uncapped", unlike PromptBuilder's private applyTokenBudget), an oversized first item

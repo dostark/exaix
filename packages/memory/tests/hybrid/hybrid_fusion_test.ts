@@ -63,6 +63,39 @@ Deno.test("fuseHybridScores: missing signals contribute zero and scoring is dete
   assertEquals(first, second);
 });
 
+Deno.test("hybrid fusion improves recall and precision over either single-signal baseline", () => {
+  const relevantIds = new Set(["keyword-relevant", "vector-relevant"]);
+  const vector = new Map([
+    ["vector-relevant", 0.95],
+    ["vector-noise", 0.8],
+  ]);
+  const keyword = new Map([
+    ["keyword-relevant", 0.95],
+    ["keyword-noise", 0.8],
+  ]);
+  const topK = 2;
+  const score = (rankedIds: string[]) => {
+    const relevantRetrieved = rankedIds.slice(0, topK).filter((id) => relevantIds.has(id)).length;
+    return {
+      recall: relevantRetrieved / relevantIds.size,
+      precision: relevantRetrieved / topK,
+    };
+  };
+  const rank = (scores: Map<string, number>) => [...scores.entries()].sort(([, a], [, b]) => b - a).map(([id]) => id);
+
+  const vectorOnly = score(rank(vector));
+  const keywordOnly = score(rank(keyword));
+  const hybrid = score(rank(fuseHybridScores(vector, keyword, 0.5, 0.5)));
+
+  assertEquals(vectorOnly, { recall: 0.5, precision: 0.5 });
+  assertEquals(keywordOnly, { recall: 0.5, precision: 0.5 });
+  assertEquals(hybrid, { recall: 1, precision: 1 });
+  assertEquals(hybrid.recall > vectorOnly.recall, true);
+  assertEquals(hybrid.recall > keywordOnly.recall, true);
+  assertEquals(hybrid.precision > vectorOnly.precision, true);
+  assertEquals(hybrid.precision > keywordOnly.precision, true);
+});
+
 Deno.test("a fused pattern (both signals) outranks the vector-only and keyword-only patterns", async () => {
   const { config, cleanup } = await initTestDbService();
   try {

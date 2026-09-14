@@ -1,6 +1,6 @@
 /**
- * @module Phase139FoundationsTest
- * @path packages/core/tests/config/phase139_foundations_test.ts
+ * @module ConfigChecksumIntegrityTest
+ * @path packages/core/tests/config/config_checksum_integrity_test.ts
  * @description Step 1 foundations for Phase 139 (configuring Phase 3): the new
  *   config constants (checksum key, configurable integrity poll interval), the
  *   four co-located config `source` consts in db.ts (GAP-5), the five typed

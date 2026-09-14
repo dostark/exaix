@@ -974,7 +974,7 @@ const COMMENT_DATE_PATTERNS: RegExp[] = [
 ];
 
 function reportCommentViolation(
-  rule: "long-comment" | "ephemeral-comment" | "decorative-comment",
+  rule: "long-comment" | "ephemeral-comment" | "decorative-comment" | "ephemeral-filename",
   repoPath: string,
   lineNum: number,
   message: string,
@@ -983,6 +983,31 @@ function reportCommentViolation(
   console.log(`${severity} [${rule}] ${repoPath}:${lineNum} – ${message}`);
   if (convertWarnings) errorCount++;
   else warnCount++;
+}
+
+// Matches only a NUMBERED plan-phase reference ("phase147_", "phase_2_") — bare "phase"
+// and any "step" form are deliberately exempt (see CODE_STYLE.md): "step" is an
+// established domain term here (flow/execution steps, PhaseStepManifestParser) independent
+// of plan-phase numbering, and banning it would flag dozens of correctly-named files.
+const EPHEMERAL_TEST_FILENAME_PATTERN = /(?:^|[_.-])phase[-_]?(\d+)(?:[_.-]|$)/i;
+
+function checkTestFileName(repoPath: string): void {
+  const isTestFile = repoPath.includes("/tests/") || repoPath.endsWith("_test.ts") ||
+    repoPath.endsWith(".test.ts");
+  if (!isTestFile) return;
+  const basename = repoPath.slice(repoPath.lastIndexOf("/") + 1);
+  const match = basename.match(EPHEMERAL_TEST_FILENAME_PATTERN);
+  if (!match) return;
+  reportCommentViolation(
+    "ephemeral-filename",
+    repoPath,
+    1,
+    `Test file name embeds a numbered plan-phase reference ("phase${
+      match[1]
+    }") — this is ephemeral implementation history in the path, same as in a comment. ` +
+      "Name the file after the behavior it verifies; the phase-plan doc is the durable " +
+      "record of which phase introduced it.",
+  );
 }
 
 function checkCommentDates(repoPath: string, text: string): void {
@@ -1126,6 +1151,7 @@ async function checkFile(path: string) {
   checkLayerLeaks(path, text, repoPath);
 
   checkCommentDates(repoPath, text);
+  checkTestFileName(repoPath);
 
   const templateLiteralLines = new Set<number>();
   let templateLiteralState = false;

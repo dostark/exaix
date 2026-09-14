@@ -1,6 +1,6 @@
 /**
- * @module Phase176ScopedRetrievalTest
- * @path packages/memory/tests/session/phase176_scoped_retrieval_test.ts
+ * @module ScopedRetrievalTest
+ * @path packages/memory/tests/session/scoped_retrieval_test.ts
  * @description Phase 176 Step 1 GAP-5: SessionMemoryService.lookupMemories's optional
  * fourth `scope` argument must bind retrieval to one portal's own patterns, decisions,
  * overview and execution summaries plus APPROVED global learnings — denying another

@@ -1,16 +1,16 @@
 /**
  * @module LlmExtractorLiveTest
  * @path packages/memory/tests/extraction/llm_extractor_live_test.ts
- * @description [live, operator-run] Extraction-quality evaluation against a real Ollama
- *   provider, closing the Reachability Ledger row `phase147-step2-extraction-quality-live`:
+ * @description [live, operator-run] Extraction-quality evaluation against a real provider,
+ *   closing the Reachability Ledger row `phase147-step2-extraction-quality-live`:
  *   runs the real LlmLearningExtractor (skill-guided, scratchpad-informed) against a real
  *   execution fixture, alongside the deterministic heuristic baseline, and writes the measured
  *   quality evidence to `exaix-dev-docs/evidence/phase-147/step-2-extraction-quality.json`.
  *   Not CI-run: uses the established live-provider convention — EXA_TEST_LLM_PROVIDER
- *   (explicitly set to ollama for a local model; keyed cloud providers gate on their own
- *   API key env var) and EXA_TEST_LLM_MODEL for model selection.
+ *   (`claude-cli` uses the local subscription-authenticated Claude Code CLI; keyed cloud
+ *   providers gate on their own API key env var) and EXA_TEST_LLM_MODEL for model selection.
  * @architectural-layer Services (test)
- * @related-files ["apps/daemon/tests/phase147_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
+ * @related-files ["apps/daemon/tests/memory_maturation_cutover_live_test.ts", "packages/memory/src/extraction/llm_learning_extractor.ts"]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
@@ -21,10 +21,19 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
+import {
+  CliDelegateModelProvider,
+  DEFAULT_CLAUDE_CLI_BIN,
+  DEFAULT_CODEX_CLI_BIN,
+  DEFAULT_OPENCODE_CLI_BIN,
+  TEXT_COMPLETION_PROTOCOL_BACKEND,
+} from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
+import { buildEvaluationPrompt, CriterionResultSchema } from "@exaix/core/evaluation";
 import { HeuristicExtractionStrategy, LlmLearningExtractor } from "@exaix/memory";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { getCriterionResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import {
@@ -37,13 +46,23 @@ import {
   getTestLlmProvider,
   initTestDbService,
 } from "@exaix/testing";
-import { ProviderType } from "@exaix/core";
+import { EvaluationCategory, ProviderType } from "@exaix/core";
 import type { IMemoryCostRouter, ISkillsService } from "@exaix/core/types";
 
 const POLICY_SKILL_ID = "memory-extraction-content-policy";
 
 const testProvider = getTestLlmProvider();
 const testModel = getTestLlmModel();
+
+const JUDGE_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+  [ProviderType.CLAUDE_CLI]: "claude-sonnet-5",
+  [ProviderType.CODEX_CLI]: "gpt-5.6-terra",
+};
+
+const testJudgeProvider = Deno.env.get("EXA_EVAL_LLM_PROVIDER") ??
+  (testProvider === ProviderType.CODEX_CLI ? ProviderType.CLAUDE_CLI : ProviderType.CODEX_CLI);
+const testJudgeModel = Deno.env.get("EXA_EVAL_LLM_MODEL") ??
+  JUDGE_MODEL_BY_PROVIDER[testJudgeProvider as ProviderType];
 
 /** The env var name carrying the real API key for a given provider's own factory/tests. */
 const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
@@ -54,6 +73,21 @@ const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
 
 function buildTestProvider(provider: string, model: string): IModelProvider {
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
+  if (
+    provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
+    provider === ProviderType.OPENCODE_CLI
+  ) {
+    const isClaude = provider === ProviderType.CLAUDE_CLI;
+    const isCodex = provider === ProviderType.CODEX_CLI;
+    return new CliDelegateModelProvider({
+      tool: isClaude ? "claude-code" : isCodex ? "codex" : "opencode",
+      bin: isClaude ? DEFAULT_CLAUDE_CLI_BIN : isCodex ? DEFAULT_CODEX_CLI_BIN : DEFAULT_OPENCODE_CLI_BIN,
+      model,
+      cwd: Deno.cwd(),
+      timeoutMs: 300_000,
+      protocolBackend: TEXT_COMPLETION_PROTOCOL_BACKEND,
+    });
+  }
   const apiKey = provider === ProviderType.OPENAI
     ? Deno.env.get(ENV_OPENAI_API_KEY)
     : provider === ProviderType.GOOGLE
@@ -73,6 +107,12 @@ function buildTestProvider(provider: string, model: string): IModelProvider {
 /** Lexical markers of structural portal-knowledge facts the content-curation policy says to
  * deprioritize — used as the mechanical non-derivability proxy for the evidence file. */
 const STRUCTURAL_FACT_MARKERS = ["imports", "import ", "depends on", "layer contains", "contains file"];
+
+interface IExtractionJudgeInput {
+  summary: string;
+  lessons_learned: string[];
+  scratchpad_notes: string[];
+}
 
 function loadPolicyInstructions(): string {
   const skillPath = join(
@@ -109,6 +149,31 @@ function evaluateCandidates(candidates: IProposalLearning[]) {
   };
 }
 
+async function judgeCandidateSet(
+  judge: IModelProvider,
+  executionInput: IExtractionJudgeInput,
+  candidates: IProposalLearning[],
+): Promise<number> {
+  const prompt = buildEvaluationPrompt(
+    JSON.stringify({ execution: executionInput, candidates }, null, 2),
+    [{
+      name: "extraction_quality",
+      description:
+        "Reward actionable, specific, non-derivable operational knowledge that would improve a future agent. " +
+        "Penalize generic restatements, redundant structural facts, duplication, and missing important insights. " +
+        "Judge only the supplied fixed execution input and candidate set.",
+      weight: 1,
+      required: true,
+      category: EvaluationCategory.QUALITY,
+    }],
+    undefined,
+    false,
+  );
+  const result = await judge.generate(prompt, { jsonSchema: getCriterionResultJsonSchema() });
+  const cleaned = result.content.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+  return CriterionResultSchema.parse(JSON.parse(cleaned)).score;
+}
+
 function makeExecutionFixture(config: Config, store: ExecutionMemoryStore, traceId: string) {
   const lessons = [
     "Rate limiter resets on full restart, not per request — backoff must be process-lifetime aware",
@@ -125,9 +190,13 @@ const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
 
 Deno.test({
   name: `[live][phase-147] live LLM extraction quality vs heuristic baseline (${testProvider}:${testModel})`,
-  // Live-provider convention: keyed providers require their API key; the local ollama
-  // provider requires EXA_TEST_LLM_PROVIDER=ollama explicitly.
-  ignore: !(testProvider === ProviderType.OLLAMA || Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))),
+  // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
+  ignore: !(
+    testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
+    testProvider === ProviderType.CODEX_CLI ||
+    testProvider === ProviderType.OPENCODE_CLI ||
+    Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
+  ),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
@@ -199,6 +268,27 @@ Deno.test({
         provider: testProvider,
       };
 
+      assertEquals(
+        testJudgeProvider === testProvider,
+        false,
+        "extraction and judge providers must differ",
+      );
+      assertExists(testJudgeModel, `no default judge model for provider ${testJudgeProvider}`);
+      const judge = buildTestProvider(testJudgeProvider, testJudgeModel);
+      const judgeInput = {
+        summary: execution.summary,
+        lessons_learned: execution.lessons_learned ?? [],
+        scratchpad_notes: fixture.scratchpadNotes,
+      };
+      const baselineJudgeScore = await judgeCandidateSet(judge, judgeInput, baselineCandidates);
+      const treatmentJudgeScore = await judgeCandidateSet(judge, judgeInput, liveCandidates);
+      assertEquals(
+        treatmentJudgeScore > baselineJudgeScore,
+        true,
+        `independent judge must score LLM extraction above heuristic baseline (` +
+          `${treatmentJudgeScore} <= ${baselineJudgeScore})`,
+      );
+
       // Evidence: treatment/control-style comparison, written where the ledger row says.
       const evidence = {
         generated_at: new Date().toISOString(),
@@ -219,8 +309,15 @@ Deno.test({
             (treatment.avg_quality_score - baseline.avg_quality_score) * 1000,
           ) / 1000,
         },
+        judge_evaluation: {
+          provider: testJudgeProvider,
+          model: testJudgeModel ?? null,
+          baseline_score: baselineJudgeScore,
+          treatment_score: treatmentJudgeScore,
+          score_delta: Math.round((treatmentJudgeScore - baselineJudgeScore) * 1000) / 1000,
+        },
         notes:
-          "Mechanical proxies only: avg quality_score is model-reported; structural-fact counts use lexical markers from the policy's Deprioritize list. A real rubric evaluation is out of scope for this evidence run.",
+          "Mechanical proxies are retained alongside an independent real-provider rubric judgment over the same fixed execution input.",
       };
 
       const evidenceDir = join(

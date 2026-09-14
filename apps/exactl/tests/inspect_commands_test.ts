@@ -73,7 +73,7 @@ function toSummary(record: ContextRecord): ContextRecordSummary {
 }
 
 /** Deterministic in-memory fake — the real store's own filesystem behavior (symlink
- *  refusal, atomic write, retention) is covered by phase176_context_record_store_test.ts. */
+ *  refusal, atomic write, retention) is covered by context_record_store_test.ts. */
 class FakeReader implements IContextInspectionReader {
   constructor(
     private readonly byExecutionTrace: Map<string, ContextRecord[]> = new Map(),

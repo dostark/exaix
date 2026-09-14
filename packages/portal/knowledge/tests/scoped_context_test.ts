@@ -1,6 +1,6 @@
 /**
- * @module Phase176ScopedContextTest
- * @path packages/portal/knowledge/tests/phase176_scoped_context_test.ts
+ * @module ScopedContextTest
+ * @path packages/portal/knowledge/tests/scoped_context_test.ts
  * @description Phase 176 Step 1: PortalKnowledgeService must resolve a queried portal
  * path to the alias that was actually analyzed at that path (never the first cache
  * entry — GAP-5), and its structured `queryContext`/`loadCachedKnowledge` API must

@@ -1232,6 +1232,17 @@ the next line already says.
   only a record of _what it does now_. This does not apply to the module's
   own header comment, whose Implementation Plan reference is a distinct,
   mandatory field under §7.
+- **No plan-phase numbers in test file names.** A test file's own name
+  (`*_test.ts` / `*.test.ts`, or any file under a `tests/` directory) must
+  not embed a numbered plan-phase reference (`phase147_...`,
+  `phase_2_...`) — the same ephemeral-history problem as in a comment,
+  just moved into the path. Name the file after the behavior it verifies;
+  the phase-plan doc is the durable record of which phase introduced it.
+  This does **not** apply to the bare word "phase" or to "step" in any
+  form (with or without a number) — "step" is an established domain term
+  in this codebase (flow/execution steps, `PhaseStepManifestParser`, step
+  durability) independent of plan-phase numbering, and banning it would
+  flag dozens of correctly-named files.
 - **No calendar dates in any comment.** Dates are ephemeral context and must
   not survive in code comments in numeric, ISO, compact, named-month,
   month/year, quarter/year, or date-time form. Put time-specific history in
@@ -1266,8 +1277,9 @@ applies the remaining rules past a module's own header block:
 | `[long-comment]`       | A block comment or line-comment run longer than three physical lines                                                                          |
 | `[ephemeral-comment]`  | A comment containing a calendar date or mentioning a phase/step number, GAP identifier, pre/post-gap, prior attempt, or `§` section reference |
 | `[decorative-comment]` | A comment line using a repeated-punctuation separator or dash-wrapped text                                                                    |
+| `[ephemeral-filename]` | A test file's own name embeds a numbered plan-phase reference (`phase147_...`) — bare "phase" and any "step" form are exempt                  |
 
-All three are warnings by default (visible, non-blocking) and escalate to
+All four are warnings by default (visible, non-blocking) and escalate to
 errors under `--convert-warnings-to-errors`.
 
 ---

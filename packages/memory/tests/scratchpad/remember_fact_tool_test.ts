@@ -109,6 +109,30 @@ Deno.test("remember_fact forwards tags through the registry to the scratchpad en
   }
 });
 
+Deno.test("[security] remember_fact rejects missing or blank content before writing a scratchpad entry", async () => {
+  const { config, cleanup } = await initTestDbService();
+  try {
+    const executionMemoryStore = new ExecutionMemoryStore(config);
+    const toolConfig = createMockConfig(config.system.root);
+    const registry = new ToolRegistry({
+      config: toolConfig,
+      baseDir: config.system.root,
+      context: makeContext(toolConfig, executionMemoryStore),
+    });
+
+    for (const params of [{}, { content: "   \n\t" }]) {
+      const result = await registry.execute(ToolName.REMEMBER_FACT, params);
+
+      assertEquals(result.success, false);
+      assertEquals(result.error, "remember_fact requires non-empty content");
+    }
+
+    assertEquals(await executionMemoryStore.readNotes(REGISTRY_DEFAULT_TRACE_ID), []);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("remember_fact enforces the per-execution entry-count cap with a clear IToolResult error", async () => {
   const { config, cleanup } = await initTestDbService();
   try {

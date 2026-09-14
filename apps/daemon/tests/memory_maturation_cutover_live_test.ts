@@ -1,15 +1,15 @@
 /**
- * @module Phase147CutoverLiveTest
- * @path apps/daemon/tests/phase147_cutover_live_test.ts
+ * @module MemoryMaturationCutoverLiveTest
+ * @path apps/daemon/tests/memory_maturation_cutover_live_test.ts
  * @description [live, operator-run] Phase 147 Step 12: the same memory-maturation chain as
- *   phase147_cutover_test.ts, against a real Ollama provider instead of MockProviderFactory.
+ *   memory_maturation_cutover_test.ts, against a real provider instead of MockProviderFactory.
  *   Not CI-run: live-provider convention (EXA_TEST_LLM_PROVIDER / EXA_TEST_LLM_MODEL).
  *   Unlike the mock cutover, assertions are intentionally loose — a real model decides what
  *   to extract and how confident it is, so the test proves the WIRING carries real model
- *   behavior end-to-end (capture → extract → pending → approval attempt → retrieval), not
- *   any specific extraction outcome.
+ *   behavior end-to-end (capture → extract → pending → approval attempt → retrieve → reflect),
+ *   not any specific extraction or reflection outcome.
  * @architectural-layer Services (test)
- * @related-files [apps/daemon/tests/phase147_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
+ * @related-files [apps/daemon/tests/memory_maturation_cutover_test.ts, packages/execution/tests/agents/react_loop_strategy_live_test.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
@@ -23,10 +23,17 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AnthropicProvider } from "@exaix/ai-anthropic";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { GoogleProvider } from "@exaix/ai-google";
+import {
+  CliDelegateModelProvider,
+  DEFAULT_CLAUDE_CLI_BIN,
+  DEFAULT_CODEX_CLI_BIN,
+  DEFAULT_OPENCODE_CLI_BIN,
+  TEXT_COMPLETION_PROTOCOL_BACKEND,
+} from "@exaix/ai-clidelegate";
 import type { IModelProvider } from "@exaix/ai";
 import { EventLogger } from "@exaix/core/logger";
 import { MemoryStatus } from "@exaix/core/status";
-import { MemoryScope } from "@exaix/core";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope } from "@exaix/core";
 import {
   HeuristicExtractionStrategy,
   initializeMemoryAutoApprovalMaintenance,
@@ -35,6 +42,7 @@ import {
   MemoryBankService,
   MemoryEmbeddingService,
   MemoryExtractorService,
+  MemoryReflectionService,
   SessionMemoryService,
 } from "@exaix/memory";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
@@ -43,6 +51,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import {
   castAny,
   createMinimalExecutionMemory,
+  createSampleLearning,
   ENV_ANTHROPIC_API_KEY,
   ENV_GOOGLE_API_KEY,
   ENV_OPENAI_API_KEY,
@@ -67,6 +76,21 @@ const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
 
 function buildTestProvider(provider: string, model: string): IModelProvider {
   if (provider === ProviderType.OLLAMA) return new OllamaProvider({ model, timeoutMs: 300_000 });
+  if (
+    provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
+    provider === ProviderType.OPENCODE_CLI
+  ) {
+    const isClaude = provider === ProviderType.CLAUDE_CLI;
+    const isCodex = provider === ProviderType.CODEX_CLI;
+    return new CliDelegateModelProvider({
+      tool: isClaude ? "claude-code" : isCodex ? "codex" : "opencode",
+      bin: isClaude ? DEFAULT_CLAUDE_CLI_BIN : isCodex ? DEFAULT_CODEX_CLI_BIN : DEFAULT_OPENCODE_CLI_BIN,
+      model,
+      cwd: Deno.cwd(),
+      timeoutMs: 300_000,
+      protocolBackend: TEXT_COMPLETION_PROTOCOL_BACKEND,
+    });
+  }
   const apiKey = provider === ProviderType.OPENAI
     ? Deno.env.get(ENV_OPENAI_API_KEY)
     : provider === ProviderType.GOOGLE
@@ -103,9 +127,13 @@ const testApiKeyEnvVar = API_KEY_ENV_BY_PROVIDER[testProvider as ProviderType];
 
 Deno.test({
   name: `[live][phase-147 cutover] the full memory chain runs against a real provider (${testProvider}:${testModel})`,
-  // Live-provider convention: keyed providers require their API key; the local ollama
-  // provider requires EXA_TEST_LLM_PROVIDER=ollama explicitly.
-  ignore: !(testProvider === ProviderType.OLLAMA || Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))),
+  // Local CLI/Ollama providers require explicit selection; keyed providers require their key.
+  ignore: !(
+    testProvider === ProviderType.OLLAMA || testProvider === ProviderType.CLAUDE_CLI ||
+    testProvider === ProviderType.CODEX_CLI ||
+    testProvider === ProviderType.OPENCODE_CLI ||
+    Boolean(testApiKeyEnvVar && Deno.env.get(testApiKeyEnvVar))
+  ),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
@@ -276,12 +304,12 @@ Deno.test({
       // Embed approved learnings so the retrieval's semantic half is live too.
       await memoryBank.rebuildIndicesWithEmbeddings(embeddingService);
 
-      // The query derives from the promoted learning's own title words: the model's
-      // phrasing of the insight is nondeterministic, so the assertion checks that what
-      // memory holds is retrievable, not that the model echoed a specific phrase.
-      const queryWords = promoted[0].title.split(/[^a-zA-Z]+/).filter((w) => w.length > 3).slice(0, 5);
-      const enhanced = await sessionMemory.enhanceRequest(queryWords.join(" "));
       if (promoted.length > 0) {
+        // The query derives from the promoted learning's own title words: the model's
+        // phrasing of the insight is nondeterministic, so the assertion checks that what
+        // memory holds is retrievable, not that the model echoed a specific phrase.
+        const queryWords = promoted[0].title.split(/[^a-zA-Z]+/).filter((w) => w.length > 3).slice(0, 5);
+        const enhanced = await sessionMemory.enhanceRequest(queryWords.join(" "));
         // Store-level retrievability: the canonical APPROVED-filtered search must surface
         // the promoted learning by its own distinctive words (the model's phrasing of the
         // insight is nondeterministic, so the query comes from the learning itself).
@@ -301,6 +329,41 @@ Deno.test({
           enhanced.memories.length,
         );
       }
+
+      // (5) REFLECT: seed a second, related APPROVED learning so reflection has genuine
+      // synthesis/merge/prune material regardless of what extraction promoted, then run
+      // the cycle against the same live provider.
+      await memoryBank.addGlobalLearning(createSampleLearning({
+        id: crypto.randomUUID(),
+        source_id: traceId,
+        scope: MemoryScope.GLOBAL,
+        project: undefined,
+        title: "Rate limiter counters do not survive a process restart",
+        description: "In-memory rate-limiter counters reset on full process restart, not just per request; " +
+          "persist counters or re-derive them on boot to avoid a burst of unthrottled traffic.",
+        category: LearningCategory.PATTERN,
+        tags: ["rate-limiter"],
+        confidence: ConfidenceAssessmentLevel.HIGH,
+        status: MemoryStatus.APPROVED,
+        quality_score: 0.8,
+      }));
+      await memoryBank.rebuildIndicesWithEmbeddings(embeddingService);
+
+      const reflectionService = new MemoryReflectionService({
+        provider,
+        skillsService,
+        memoryBank,
+        embeddingService,
+        proposalWriter: memoryExtractor,
+        logger,
+        costRouter,
+      });
+      const reflectionResult = await reflectionService.runReflectionCycle();
+      console.log(
+        `live reflection: synthesised=${reflectionResult.synthesised_count} ` +
+          `merged=${reflectionResult.merged_count} pruned=${reflectionResult.pruned_count}`,
+      );
+      assertExists(reflectionResult.run_at, "the reflection cycle must complete and report a run timestamp");
     } finally {
       await cleanup();
     }

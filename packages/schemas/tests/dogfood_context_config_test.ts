@@ -1,6 +1,6 @@
 /**
- * @module Phase176DogfoodContextConfigTest
- * @path packages/schemas/tests/phase176_dogfood_context_config_test.ts
+ * @module DogfoodContextConfigTest
+ * @path packages/schemas/tests/dogfood_context_config_test.ts
  * @description Phase 176 Step 1: the dogfood.context config block defaults to disabled,
  * an absent block parses with all documented defaults (old-config compatibility), an
  * explicit enabled: true override round-trips, and cross-field limits (reserve < input

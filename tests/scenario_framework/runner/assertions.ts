@@ -1991,7 +1991,8 @@ export async function evaluateLlmJudgeCriterion(
 // before CliDelegateProviderFactory.create() runs, so its own 300s CLI default never applies
 // once that's already set. A real opencode eval-judge call live-timed-out at exactly 30000ms.
 export function resolveEvalLlmTimeoutMs(provider: string): number | undefined {
-  return provider === ProviderType.CLAUDE_CLI || provider === ProviderType.OPENCODE_CLI
+  return provider === ProviderType.CLAUDE_CLI || provider === ProviderType.CODEX_CLI ||
+      provider === ProviderType.OPENCODE_CLI
     ? DEFAULT_CLI_DELEGATE_TIMEOUT_MS
     : undefined;
 }

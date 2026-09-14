@@ -180,6 +180,11 @@ if you hit a "no such column" error after upgrading.
 - Tags you attach to a `remember_fact` note now carry through onto the learning
   extracted from it — previously they were captured and journalled but silently
   dropped during extraction.
+- `remember_fact` now rejects a missing or blank `content` argument instead of silently
+  capturing an empty note.
+- An agent turn that reports completion in the same step as a failed tool call no longer
+  has that failure masked — the run continues to a corrective turn instead of ending on
+  an unnoticed error.
 
 Defaults are unchanged: memory runs local-first with deterministic fallbacks when no
 cloud model is available, and automatic approval stays off until you enable it.

@@ -441,7 +441,7 @@
       "scope": "dev",
       "title": "Commit Skill (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "git",
         "commit",
@@ -644,7 +644,7 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "topics": [
         "tdd",
         "red-green-refactor",

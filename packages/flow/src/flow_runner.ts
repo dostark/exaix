@@ -719,7 +719,7 @@ export function resolveAggregateSources(step: { input: { from?: string[] }; depe
 /** True when `step` is strategy-routed AND is the flow's terminal `output.format: json`
  *  source — shared by the prompt instruction below and `IFlowStepRequest.expectPlanJsonOutput`
  *  so the two conditions cannot drift apart. */
-export function isFinalJsonStrategyStep(step: IFlowStep, flow: IFlow): boolean {
+function isFinalJsonStrategyStep(step: IFlowStep, flow: IFlow): boolean {
   const outputFrom = flow.output.from;
   return step.strategy !== undefined &&
     flow.output.format === FlowOutputFormat.JSON &&

@@ -213,3 +213,20 @@ Deno.test("ReActLoop history: a failed tool result is replayed so the model can 
     "tool failure detail must reach the model, or it cannot correct course",
   );
 });
+
+Deno.test("ReActLoop ignores a completion marker when an action in the same turn fails", async () => {
+  const actionAndPrematureCompletion = `${READ_ACTION_RESPONSE}
+${REACT_STATUS_COMPLETE}
+${REACT_SUMMARY_PREFIX}Read the config`;
+  const provider = new CapturingMockProvider([actionAndPrematureCompletion, COMPLETE_RESPONSE]);
+  const executor = buildExecutor({
+    [ToolName.READ_FILE]: { success: false, error: "ENOENT: config.json not found" },
+  });
+  const strategy = new ReActLoopStrategy(executor, provider);
+
+  const result = await strategy.execute(testBlueprint, testContext, testOptions);
+
+  assertEquals(provider.prompts.length, 2, "a failed action must force a corrective turn before completion");
+  assertStringIncludes(provider.prompts[1], "ENOENT: config.json not found");
+  assertStringIncludes(result.description, "Patched the port value in config.json");
+});

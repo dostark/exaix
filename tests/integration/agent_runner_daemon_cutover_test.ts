@@ -1,6 +1,6 @@
 /**
- * @module Phase180AgentRunnerDaemonCutoverTest
- * @path tests/integration/phase180_agent_runner_daemon_cutover_test.ts
+ * @module AgentRunnerDaemonCutoverTest
+ * @path tests/integration/agent_runner_daemon_cutover_test.ts
  * @description Phase 180 Step 7 (Integration & Cutover) — proves the phase's rename and new
  *   instrumentation are reachable from real, observable runs, not package-unit tests alone.
  *   (1) A fresh `.exa/journal.db`, migrated for real via `scripts/setup_db.ts`, has `runner_kind`

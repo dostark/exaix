@@ -1,6 +1,6 @@
 /**
- * @module Phase176ContextRedactionTest
- * @path packages/core/tests/context/phase176_context_redaction_test.ts
+ * @module ContextRedactionTest
+ * @path packages/core/tests/context/context_redaction_test.ts
  * @description Phase 176 Step 1: context_redaction strips terminal control bytes
  * (keeping tab/newline), redacts known configured secret values and recognizable
  * private-key/bearer-token blocks, and containsKnownSecret detects an unredactable

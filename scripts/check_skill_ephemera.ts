@@ -9,11 +9,11 @@
  *
  * @description Flags "leaked ephemeral detail" in generic skill guidance: a dated
  *   incident-recounting sentence (a `YYYY-MM-DD` date co-occurring with a process/incident
- *   verb — "2026-08-04 post-gap analysis found", "audit (2026-08-15)", "landed by Phase
+ *   verb — "YYYY-MM-DD post-gap analysis found", "audit (YYYY-MM-DD)", "landed by Phase
  *   168") inside a `.copilot/skills/<name>/SKILL.md`. A general skill every phase re-reads
  *   must carry rules that are true across phases, not a dated recount of one past phase;
  *   phase/domain-specific narrative belongs in the owning domain doc or the phase doc's own
- *   Retrospective (2026-08-24 self-improvement retro finding). The check lets through:
+ *   Retrospective (a self-improvement-retro finding). The check lets through:
  *   - frontmatter and fenced code blocks (commands/examples may legitimately show a date),
  *   - a date without a process/incident verb (a stable citation like a doc filename),
  *   - "Examples" prose that is deliberately illustrative.
@@ -28,7 +28,7 @@
  */
 
 import { walk } from "@std/fs";
-import { join, relative } from "@std/path";
+import { relative } from "@std/path";
 
 /** A flagged line of ephemeral narrative in a skill doc. */
 export interface IEphemeraFinding {
@@ -49,12 +49,9 @@ const DATE_RE = /\b\d{4}-\d{2}-\d{2}\b/;
 const INCIDENT_VERB_RE =
   /\b(audit|audited|found|discover|discovered|hit|landed|land(e|s|ed)?\s+by|finalized|surfaced|recorded|learned|saw|this session|regression|post-gap\s+analysis)\b/i;
 
-/**
- * Return the prose lines of a SKILL.md body: the frontmatter is stripped, and lines inside
- * an inner CODE fence (bash/typescript/yaml/toml/… examples) are exempt. The outer
- * wrapper that frames the whole skill body is PROSE for this check —
- * it carries the guidance narrative, which is exactly what must be scanned.
- */
+/** Prose lines of a SKILL.md body: frontmatter stripped, inner code-fence examples exempt.
+ *  The outer wrapper framing the whole skill body counts as prose — it carries the
+ *  guidance narrative this check scans. */
 export function skillProseLines(skillMarkdown: string): string[] {
   const lines = skillMarkdown.split("\n");
   const out: string[] = [];

@@ -1,6 +1,6 @@
 /**
- * @module Phase147FlowNamespaceCutoverTest
- * @path packages/flow/tests/phase147_flow_namespace_cutover_test.ts
+ * @module FlowNamespaceCutoverTest
+ * @path packages/flow/tests/flow_namespace_cutover_test.ts
  * @description [integration] Phase 147 Step 12 cutover: a real flow run with
  *   `namespace.enabled: true` declaring a from-path write, an append-mode write, and a
  *   required from-path read — driven through FlowNamespaceCoordinator onto the unified
