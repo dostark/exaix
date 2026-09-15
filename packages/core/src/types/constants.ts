@@ -3325,12 +3325,18 @@ export const DEFAULT_OTEL_EXPORT_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Mirrors exaix-team/packages/otel-export/src/types.ts:MAX_OTLP_REQUEST_BYTES, the
+ *  unconditional assembly-time ceiling — doubles as this key's schema upper bound so a
+ *  larger configured value can't silently have no effect. */
+const OTEL_EXPORT_STRUCTURAL_MAX_REQUEST_BYTES = 4_194_304;
+
 export const DEFAULT_OTEL_EXPORT_MAX_REQUEST_BYTES: number = configurable({
   key: "otel_export.max_request_bytes",
-  default: 4_194_304,
+  default: OTEL_EXPORT_STRUCTURAL_MAX_REQUEST_BYTES,
   type: ConfigValueType.NUMBER,
   description: "Maximum encoded OTLP snapshot request size in bytes",
   min: 1,
+  max: OTEL_EXPORT_STRUCTURAL_MAX_REQUEST_BYTES,
   swap: SwapClass.RESTART,
 });
 

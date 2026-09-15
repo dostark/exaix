@@ -43,3 +43,11 @@ Deno.test("OTel export configuration rejects malformed and unbounded values", ()
     assertFalse(OtelExportConfigSchema.safeParse(candidate).success);
   }
 });
+
+Deno.test("OTel export configuration rejects a max_request_bytes above the structural OTLP ceiling", () => {
+  // The structural ceiling (exaix-team/packages/otel-export/src/types.ts:MAX_OTLP_REQUEST_BYTES)
+  // is enforced unconditionally at snapshot-assembly time; a configured value above it can never
+  // have an observable effect, so the schema must reject it rather than silently accepting a no-op.
+  assertFalse(OtelExportConfigSchema.safeParse({ max_request_bytes: 4_194_304 + 1 }).success);
+  assertEquals(OtelExportConfigSchema.safeParse({ max_request_bytes: 4_194_304 }).success, true);
+});

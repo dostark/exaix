@@ -1,5 +1,8 @@
 {
   "name": "@exaix/app-exactl",
   "version": "0.1.0",
-  "exports": "./main.ts"
+  "exports": {
+    ".": "./main.ts",
+    "./exactl": "./src/exactl.ts"
+  }
 }

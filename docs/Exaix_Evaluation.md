@@ -1770,6 +1770,17 @@ exaixTraceId` for the OTel trace ID, `"exaix.otel.root.v1\0" + exaixTraceId` for
 the same journal state always yields the same OTel IDs. Duplicate journal record IDs are rejected
 before transport rather than silently colliding.
 
+**A core-wide, not Team-only, correlation fix underlies "parent-trace."** Making an
+`llm.call.completed` row carry the request's trace ID (rather than a disconnected per-call UUID) so
+it can be selected into an exact-trace snapshot required a real change in the shared, Solo-included
+execution path: `AgentRunner` now passes the request's trace through `IModelOptions.traceId`, and
+`TracedProvider.generate` persists that trace on the completed journal row instead of generating a
+fresh one every call. Every edition benefits from this correlation — `journal --filter
+trace_id=<id>` and any other consumer keying off `llm.call.completed`'s `trace_id` now sees the row
+scoped to its real parent request, not only the Team OTel exporter. A call with no supplied parent
+trace (a standalone or legacy invocation) keeps its own generated trace and is, by design, excluded
+from an exact-trace export snapshot.
+
 ### 20.3 Eval outcome attachment
 
 `--eval-run-id <id>` attaches one explicit evaluation outcome; a trace mismatch between the run and
@@ -1829,6 +1840,12 @@ compatibility, but read only by the Team exporter:
 
 Explicit command invocation is the only opt-in — there is no `enabled` toggle, and CLI flags never
 override the endpoint/header/size security controls above.
+
+`max_request_bytes` can only **tighten** the effective request-size limit, never loosen it: the
+package also enforces an unconditional 4 MiB structural ceiling at snapshot-assembly time
+(`exaix-team/packages/otel-export/src/types.ts:MAX_OTLP_REQUEST_BYTES`), before a request ever
+reaches the transport layer's own configured check. The config schema rejects a value above 4 MiB
+at load time rather than accepting one that would silently have no effect.
 
 ### 20.7 Snapshot vs. future streaming
 

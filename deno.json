@@ -284,6 +284,7 @@
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",
     "@exaix/flow/": "./packages/flow/src/",
+    "@exaix/app-exactl/exactl": "./apps/exactl/src/exactl.ts",
     "@exaix-team/voting": "./exaix-team/packages/voting/mod.ts",
     "@exaix-team/voting/": "./exaix-team/packages/voting/src/",
     "@exaix-team/hitl": "./exaix-team/packages/hitl/mod.ts",

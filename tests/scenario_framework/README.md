@@ -769,6 +769,11 @@ own job (drive the request, assert criteria, write eval-history) fully decoupled
 Team-only observability integration, and matches the exporter's own "explicit invocation is the
 only opt-in" design — it is not something a Solo scenario run can accidentally trigger.
 
+**One underlying fix is not Team-only.** A scenario author asserting on `llm.call.completed`
+journal rows should know that `trace_id` now equals the request's own trace, not a disconnected
+per-call UUID, in every edition — see `docs/Exaix_Evaluation.md` §20.2's "core-wide, not Team-only"
+note.
+
 **Capturing evidence of a real export:**
 
 ```bash
