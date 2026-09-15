@@ -10,7 +10,14 @@
  */
 
 import type { EffortTier, IRouteReason, ModelResolutionReason, TaskTypeSource } from "@exaix/schemas";
-import type { ContextInspectionResult, HitlRuleSource, HitlSurface, TaskType, VotingStrategy } from "../types/enums.ts";
+import type {
+  ContextInspectionResult,
+  HitlRuleSource,
+  HitlSurface,
+  OtelDestinationScheme,
+  TaskType,
+  VotingStrategy,
+} from "../types/enums.ts";
 
 /** Guardrail verdict type. */
 export type GuardrailVerdict = "pass" | "violation";
@@ -319,6 +326,28 @@ export interface IContextInspectionFailedPayload {
   trace_id: string;
   record_id?: string;
   reason: string;
+}
+
+/** Privacy-safe destination metadata shared by OTel export lifecycle events. */
+export interface IOtelExportDestinationPayload {
+  destination_scheme: OtelDestinationScheme;
+  destination_host: string;
+  destination_port: number;
+  record_count: number;
+}
+
+export interface IOtelExportStartedPayload extends IOtelExportDestinationPayload {}
+
+export interface IOtelExportCompletedPayload extends IOtelExportDestinationPayload {
+  span_count: number;
+  duration_ms: number;
+  retry_count: number;
+}
+
+export interface IOtelExportFailedPayload extends IOtelExportDestinationPayload {
+  duration_ms: number;
+  error_code: string;
+  retry_count: number;
 }
 
 export const DomainEventType = {
@@ -656,6 +685,11 @@ export const DomainEventType = {
   LlmStreamCompleted: "llm.stream.completed",
   LlmStreamFailed: "llm.stream.failed",
   LlmStreamCancelled: "llm.stream.cancelled",
+
+  // OpenTelemetry snapshot export lifecycle
+  OtelExportStarted: "otel.export.started",
+  OtelExportCompleted: "otel.export.completed",
+  OtelExportFailed: "otel.export.failed",
 
   // Model resolution events
   ModelResolved: "model.resolved",

@@ -1220,6 +1220,7 @@ Deno.test("[IAgentRunner] passes request.traceId as options.conversationId to pr
   await runner.run(sampleBlueprint, requestWithTrace, undefined);
 
   assertEquals(capturedOptions?.conversationId, "trace-abc-123");
+  assertEquals(capturedOptions?.traceId, "trace-abc-123");
 });
 
 Deno.test("[IAgentRunner] omits conversationId when request has no traceId", async () => {
@@ -1235,4 +1236,5 @@ Deno.test("[IAgentRunner] omits conversationId when request has no traceId", asy
   await runner.run(sampleBlueprint, sampleRequest, undefined);
 
   assertEquals(capturedOptions?.conversationId, undefined);
+  assertEquals(capturedOptions?.traceId, undefined);
 });

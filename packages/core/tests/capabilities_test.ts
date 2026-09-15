@@ -15,6 +15,7 @@ import {
   CAP_MODEL_REGISTRY_GOVERNANCE,
   CAP_MODEL_REGISTRY_LIVE,
   CAP_MODEL_ROUTING_RIGOR,
+  CAP_OTEL_EXPORT,
   CAP_VOTING,
   CAPABILITY_EDITION,
 } from "../src/composer/mod.ts";
@@ -27,6 +28,7 @@ Deno.test("capabilities: all expected capability IDs are defined", () => {
   assertEquals(CAP_MODEL_REGISTRY_LIVE, "model_registry_live");
   assertEquals(CAP_MODEL_ROUTING_RIGOR, "model_routing_rigor");
   assertEquals(CAP_MODEL_REGISTRY_GOVERNANCE, "model_registry_governance");
+  assertEquals(CAP_OTEL_EXPORT, "otel_export");
 });
 
 Deno.test("capabilities: each capability maps to the correct edition tier", () => {
@@ -37,6 +39,7 @@ Deno.test("capabilities: each capability maps to the correct edition tier", () =
   assertEquals(CAPABILITY_EDITION[CAP_MODEL_REGISTRY_LIVE], EDITION_TEAM);
   assertEquals(CAPABILITY_EDITION[CAP_MODEL_ROUTING_RIGOR], EDITION_TEAM);
   assertEquals(CAPABILITY_EDITION[CAP_MODEL_REGISTRY_GOVERNANCE], EDITION_ENTERPRISE);
+  assertEquals(CAPABILITY_EDITION[CAP_OTEL_EXPORT], EDITION_TEAM);
 });
 
 Deno.test("capabilities: OpenRouter is NOT a Team-gated capability (Solo per D5b)", () => {

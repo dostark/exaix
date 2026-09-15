@@ -77,6 +77,8 @@ export interface IProviderTurn {
  * Options for model generation requests.
  */
 export interface IModelOptions {
+  /** Parent Exaix trace used only for cross-layer observability correlation. */
+  traceId?: string;
   temperature?: number;
   max_tokens?: number;
   top_p?: number;

@@ -40,6 +40,7 @@
     "./exaix-team/packages/ai-vertex",
     "./exaix-team/packages/mcp-server",
     "./exaix-team/packages/model-registry-live",
+    "./exaix-team/packages/otel-export",
     "./exaix-team/apps/mcp-server"
   ],
   "lock": true,
@@ -292,7 +293,9 @@
     "@exaix-team/team-composer": "./exaix-team/packages/team-composer/mod.ts",
     "@exaix-team/team-composer/": "./exaix-team/packages/team-composer/",
     "@exaix-team/model-registry-live": "./exaix-team/packages/model-registry-live/mod.ts",
-    "@exaix-team/model-registry-live/": "./exaix-team/packages/model-registry-live/src/"
+    "@exaix-team/model-registry-live/": "./exaix-team/packages/model-registry-live/src/",
+    "@exaix-team/otel-export": "./exaix-team/packages/otel-export/mod.ts",
+    "@exaix-team/otel-export/": "./exaix-team/packages/otel-export/src/"
   },
   "exclude": [
     "cov_profile",

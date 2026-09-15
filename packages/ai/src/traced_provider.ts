@@ -29,7 +29,7 @@ export class TracedProvider implements IModelProvider {
   }
 
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
-    const traceId = crypto.randomUUID();
+    const traceId = options?.traceId ?? crypto.randomUUID();
     const startTime = performance.now();
 
     void this.logger.info(DomainEventType.LlmCallStarted, this.id, {
@@ -42,15 +42,23 @@ export class TracedProvider implements IModelProvider {
       const result = await this.inner.generate(prompt, options);
       const durationMs = performance.now() - startTime;
 
-      void this.logger.info(DomainEventType.LlmCallCompleted, this.id, {
-        duration_ms: Math.round(durationMs),
-        prompt_tokens: result.usage?.promptTokens ?? 0,
-        completion_tokens: result.usage?.completionTokens ?? 0,
-        total_tokens: result.usage?.totalTokens ?? 0,
-        cost_usd: result.cost_usd ?? 0,
-        model: this.id,
-        trace_id: traceId,
-      }, traceId);
+      void this.logger.log({
+        action: DomainEventType.LlmCallCompleted,
+        target: this.id,
+        payload: {
+          duration_ms: Math.round(durationMs),
+          prompt_tokens: result.usage?.promptTokens ?? 0,
+          completion_tokens: result.usage?.completionTokens ?? 0,
+          total_tokens: result.usage?.totalTokens ?? 0,
+          cost_usd: result.cost_usd ?? 0,
+          model: this.id,
+          trace_id: traceId,
+        },
+        traceId,
+        promptTokens: result.usage?.promptTokens,
+        completionTokens: result.usage?.completionTokens,
+        costUsd: result.cost_usd,
+      });
 
       return result;
     } catch (error) {

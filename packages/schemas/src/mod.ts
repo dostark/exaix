@@ -41,6 +41,7 @@ export * from "./tool_result_validator.ts";
 export * from "./tool_result_remediation.ts";
 export * from "./voting.ts";
 export * from "./opencode_config.ts";
+export * from "./otel_export.ts";
 export * from "./evaluation_json_schema.ts";
 export * from "./streaming_event.ts";
 export * from "./milestone_event.ts";

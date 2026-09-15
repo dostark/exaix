@@ -42,6 +42,9 @@ export const CAP_MODEL_ROUTING_RIGOR = "model_routing_rigor";
 /** P134/draft: Enterprise model governance (admission, audit) — Enterprise only, reserved */
 export const CAP_MODEL_REGISTRY_GOVERNANCE = "model_registry_governance";
 
+/** P177: OpenTelemetry trace export — Team/Enterprise only */
+export const CAP_OTEL_EXPORT = "otel_export";
+
 // Edition tier map
 
 /** Maps each capability ID to its required edition tier. */
@@ -55,4 +58,5 @@ export const CAPABILITY_EDITION: Record<string, string> = {
   [CAP_MODEL_REGISTRY_LIVE]: EDITION_TEAM,
   [CAP_MODEL_ROUTING_RIGOR]: EDITION_TEAM,
   [CAP_MODEL_REGISTRY_GOVERNANCE]: EDITION_ENTERPRISE,
+  [CAP_OTEL_EXPORT]: EDITION_TEAM,
 };

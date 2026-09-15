@@ -628,6 +628,7 @@ export class AgentRunner implements IAgentRunner {
     const generateOptions: IModelOptions | undefined = conversationId || jsonSchema || callSite
       ? {
         ...(conversationId ? { conversationId } : {}),
+        ...(conversationId ? { traceId: conversationId } : {}),
         ...(jsonSchema ? { jsonSchema } : {}),
         ...(callSite ? { callSite } : {}),
       }

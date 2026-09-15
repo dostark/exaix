@@ -134,9 +134,29 @@ Deno.test("[TracedProvider] shares a canonical trace ID across generate lifecycl
 
   await traced.generate("prompt");
 
-  assertEquals(logger.info.calls.length, 2);
-  assertEquals(logger.info.calls[0].args[3], logger.info.calls[1].args[3]);
+  assertEquals(logger.info.calls.length, 1);
+  assertEquals(logger.log.calls.length, 1);
+  assertEquals(logger.info.calls[0].args[3], logger.log.calls[0].args[0].traceId);
   assertEquals(typeof logger.info.calls[0].args[3], "string");
+});
+
+Deno.test("[TracedProvider] preserves an injected parent trace ID in lifecycle events", async () => {
+  const logger = createMockLogger();
+  const result = {
+    content: "ok",
+    model: "mock-model",
+    provider: "mock",
+    usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+  };
+  const inner = { ...createInnerProvider([]), generate: () => Promise.resolve(result) };
+  const traced = new TracedProvider(inner, logger);
+
+  await traced.generate("prompt", { traceId: "parent-trace-177" });
+
+  assertEquals(logger.info.calls[0].args[3], "parent-trace-177");
+  assertEquals(logger.log.calls[0].args[0].traceId, "parent-trace-177");
+  assertEquals(logger.log.calls[0].args[0].promptTokens, 1);
+  assertEquals(logger.log.calls[0].args[0].completionTokens, 1);
 });
 
 Deno.test("[TracedProvider.generateStream] emits cancellation with the operation trace ID on early return", async () => {
@@ -166,7 +186,7 @@ Deno.test("[TracedProvider.generate] emits llm.call.started and llm.call.complet
     const inner = { ...createInnerProvider([]), generate: () => Promise.resolve(result) };
     const traced = new TracedProvider(inner, logger);
 
-    await traced.generate("a real prompt");
+    await traced.generate("a real prompt", { traceId: "parent-trace-db-177" });
     await db.waitForFlush();
 
     const startedRows = db.instance.prepare(
@@ -178,14 +198,24 @@ Deno.test("[TracedProvider.generate] emits llm.call.started and llm.call.complet
     assertEquals(startedPayload.model, "mock-model");
 
     const completedRows = db.instance.prepare(
-      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
-    ).all(DomainEventType.LlmCallCompleted) as Array<{ payload: string }>;
+      "SELECT trace_id, payload, prompt_tokens, completion_tokens, cost_usd FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LlmCallCompleted) as Array<{
+      trace_id: string;
+      payload: string;
+      prompt_tokens: number;
+      completion_tokens: number;
+      cost_usd: number;
+    }>;
     assertEquals(completedRows.length, 1, "llm.call.completed must be logged exactly once");
     const completedPayload = JSON.parse(completedRows[0].payload);
     assertEquals(completedPayload.prompt_tokens, 3);
     assertEquals(completedPayload.completion_tokens, 5);
     assertEquals(completedPayload.total_tokens, 8);
     assertEquals(completedPayload.cost_usd, 0.001234);
+    assertEquals(completedRows[0].trace_id, "parent-trace-db-177");
+    assertEquals(completedRows[0].prompt_tokens, 3);
+    assertEquals(completedRows[0].completion_tokens, 5);
+    assertEquals(completedRows[0].cost_usd, 0.001234);
   } finally {
     await cleanup();
   }

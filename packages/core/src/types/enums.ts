@@ -1455,3 +1455,9 @@ export enum ContextInspectExitCode {
   INVALID_INPUT = 2,
   NO_CAPTURE = 3,
 }
+
+/** URL schemes permitted in privacy-safe OTel export lifecycle metadata. */
+export enum OtelDestinationScheme {
+  HTTP = "http",
+  HTTPS = "https",
+}
