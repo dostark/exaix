@@ -5,7 +5,7 @@ template_id: persona-isolation-arm
 scope: tests/scenario_framework
 introduced_by: phase-161-identity-persona-value-isolation.md
 depends_on: phase-158-artefact-value-evaluation.md (ArmKind, computePairedComparison, agent-role-config overlay)
-status: design-template # no code exists yet; this documents the target shape for implementers
+status: active
 ```
 
 ## Overview
@@ -30,8 +30,8 @@ skills/tools/model-size bundle it ships with?"
 
 ## Instructions
 
-1. **Confirm the mechanism exists.** This template targets `ArmKind.PERSONA_ISOLATION`
-   (Phase 161 Step 1). If it hasn't landed yet, this arm cannot be authored — do not fall back
+1. **Use the dedicated mechanism.** This template targets
+   `ArmKind.AGENT_ROLE_PERSONA_ISOLATION` (Phase 161 Step 1). Do not fall back
    to `agent-role-config` and call it a persona test; that arm never touches the persona body.
 1. **Author the three variant bodies** for the agent role under test:
    - **Shipped** — the real, unmodified markdown body from `Blueprints/Agents/<id>.md`.
@@ -45,7 +45,7 @@ skills/tools/model-size bundle it ships with?"
    the markdown body while leaving the frontmatter (`model_size`, `capabilities`,
    `default_skills`, `permitted_tools`) byte-identical across all three variants. Never edit the
    shipped `Blueprints/Agents/<id>.md` file itself.
-1. **Pre-register** the comparison (arm id, `ArmKind.PERSONA_ISOLATION`, the three variant
+1. **Pre-register** the comparison (arm id, `ArmKind.AGENT_ROLE_PERSONA_ISOLATION`, the three variant
    descriptions, the task set, `n=3` trial count, and the one metric) before any trial runs —
    `validatePreregistration` rejects anything outside the declared set, per the house discipline
    `tests/scenario_framework/README.md`'s "Value Evaluation — Arm Authoring" section already
@@ -98,7 +98,7 @@ steps:
 // Illustrative arm registration (Phase 161 Step 1 lands the real ArmKind + builder)
 const armSpec: IArmComparisonSpec = {
   armId: "persona-isolation-senior-coder",
-  kind: ArmKind.PERSONA_ISOLATION,
+  kind: ArmKind.AGENT_ROLE_PERSONA_ISOLATION,
   control: { description: "generic persona, senior-coder skills/tools/model_size" },
   treatment: { description: "shipped senior-coder persona, same skills/tools/model_size" },
   taskIds: ["write-tests-uncovered", "fix-bug-null-guard"],
@@ -117,10 +117,8 @@ const armSpec: IArmComparisonSpec = {
 
 ## Notes
 
-- This template documents a **target design**, not shipped code — `ArmKind.PERSONA_ISOLATION` is
-  introduced by Phase 161 Step 1 (🚧 Planning as of this writing, itself building on Phase 158,
-  ✅ Phase Closed). Re-check Phase 161's current `Status` before treating this as a literal API
-  reference.
+- The executable builder and operator path are implemented by Phase 161 Step 1 on top of
+  Phase 158's completed arm-comparison machinery.
 - Do not conflate this arm with `agent-role-swap` (compares two agent roles, whole bundle
   confounded) or `agent-role-config` (varies `default_skills` only, never the persona body) — see
   `tests/scenario_framework/README.md`'s "Value Evaluation — Arm Authoring & Pre-Registration"

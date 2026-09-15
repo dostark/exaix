@@ -131,17 +131,17 @@ Deno.test("[AblationLift] per-subsystem contribution exact on seeded rows (meanD
     assertEquals(row.basis.unmatchedTaskIds, [T3], "T3 lacks a full-config run on every arm");
   }
 
-  // Skills: deltas +0.3 (T1, latest treatment run 0.9) and +0.4 (T2) → mean 0.35, stdev 0.05.
+  // Skills: two singleton trial pairs are too sparse for the 95% Student-t interval to exclude zero.
   assertAlmostEquals(skills.comparison.meanDelta, 0.35, 1e-9, "skills meanDelta");
   assertAlmostEquals(skills.comparison.stdevDelta, 0.05, 1e-9, "skills stdevDelta");
-  assertEquals(skills.comparison.noEffect, false);
+  assertEquals(skills.comparison.noEffect, true);
   assertEquals(skills.basis.treatmentRunIds, ["r-e1b", "r-e2"], "latest-run-wins on the treatment side");
   assertEquals(skills.basis.controlRunIds, ["r-s1", "r-s2"]);
 
-  // Quality gate: deltas +0.2 (T1) and 0.0 (T2) → mean 0.1, stdev 0.1 — distinguishable.
+  // Quality gate: deltas +0.2 (T1) and 0.0 (T2) produce an interval that includes zero.
   assertAlmostEquals(gate.comparison.meanDelta, 0.1, 1e-9, "gate meanDelta");
   assertAlmostEquals(gate.comparison.stdevDelta, 0.1, 1e-9, "gate stdevDelta");
-  assertEquals(gate.comparison.noEffect, false);
+  assertEquals(gate.comparison.noEffect, true);
 
   // Portal knowledge: deltas +0.05 (T1) and -0.05 (T2) → mean 0, stdev 0.05 → noEffect.
   assertAlmostEquals(pk.comparison.meanDelta, 0, 1e-9, "pk meanDelta");

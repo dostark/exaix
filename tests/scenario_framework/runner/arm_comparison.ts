@@ -2,9 +2,9 @@
  * @module ScenarioFrameworkArmComparison
  * @path tests/scenario_framework/runner/arm_comparison.ts
  * @description The measurement contract for Phase 158's value-evaluation tier: paired
- * treatment/control arms, deltas with variance, value-per-1k-tokens, and pre-registration
- * enforcement. Reuses `computeMultiTrialMetrics` (scoring.ts) for within-task trial
- * variance rather than re-deriving it. Pure computation only — arm mechanics (how a
+ * treatment/control arms, trial-aware confidence intervals, value-per-1k-tokens, and
+ * pre-registration enforcement. Reuses `computeMultiTrialMetrics` (scoring.ts) for
+ * within-task trial variance rather than re-deriving it. Pure computation only — arm mechanics (how a
  * suppression list or catalog overlay actually varies a run) are Step 2's concern; this
  * module only turns already-collected trial scores into a paired delta.
  * @architectural-layer Test
@@ -20,6 +20,7 @@ export enum ArmKind {
   SKILL_VERSION = "skill-version",
   AGENT_ROLE_SWAP = "agent-role-swap",
   AGENT_ROLE_CONFIG = "agent-role-config",
+  AGENT_ROLE_PERSONA_ISOLATION = "agent-role-persona-isolation",
   FLOW_ABLATION = "flow-ablation",
   FLOW_SWAP = "flow-swap",
   /** The harness-lift arm — the full Exaix cell (treatment) vs the bare delegate baseline
@@ -94,11 +95,64 @@ export interface IPairedComparisonResult {
   /** Count of tasks whose delta sign strictly opposes the sign of meanDelta. A
    *  zero-delta task neither agrees nor disagrees. */
   signDisagreementCount: number;
-  /** True when |meanDelta| is smaller than stdevDelta — the aggregate cannot be
-   *  distinguished from noise and must be reported as no effect, not a small effect
-   *  (Measurement contract, "Aggregate across T"). */
+  /** True when the paired-trial confidence interval includes zero or the estimated
+   *  effect is below the declared minimum effect. */
   noEffect: boolean;
+  confidenceLevel: number;
+  confidenceInterval: IConfidenceInterval;
+  minimumEffect: number;
+  pairedTrialCount: number;
+  decisionBasis: PairedDecisionBasis;
 }
+
+export interface IConfidenceInterval {
+  lower: number;
+  upper: number;
+}
+
+export enum PairedDecisionBasis {
+  CONFIDENCE_INTERVAL_INCLUDES_ZERO = "confidence-interval-includes-zero",
+  BELOW_MINIMUM_EFFECT = "below-minimum-effect",
+  MEASURABLE_EFFECT = "measurable-effect",
+}
+
+export const PERSONA_CONFIDENCE_LEVEL = 0.95;
+export const MIN_PERSONA_EFFECT = 0.01;
+
+const NORMAL_CRITICAL_95 = 1.96;
+const STUDENT_T_CRITICAL_95 = [
+  0,
+  12.706,
+  4.303,
+  3.182,
+  2.776,
+  2.571,
+  2.447,
+  2.365,
+  2.306,
+  2.262,
+  2.228,
+  2.201,
+  2.179,
+  2.16,
+  2.145,
+  2.131,
+  2.12,
+  2.11,
+  2.101,
+  2.093,
+  2.086,
+  2.08,
+  2.074,
+  2.069,
+  2.064,
+  2.06,
+  2.056,
+  2.052,
+  2.048,
+  2.045,
+  2.042,
+] as const;
 
 function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
@@ -109,9 +163,34 @@ function populationStdev(values: number[], aroundMean: number): number {
   return Math.sqrt(variance);
 }
 
-/** Computes the paired delta, its cross-task variance, sign-disagreement count, and the no-effect verdict for a set of already-collected per-task trial scores. */
+function sampleStdev(values: number[], aroundMean: number): number {
+  if (values.length < 2) return 0;
+  const variance = values.reduce((sum, value) => sum + (value - aroundMean) ** 2, 0) /
+    (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+function studentTCritical95(degreesOfFreedom: number): number {
+  return STUDENT_T_CRITICAL_95[degreesOfFreedom] ?? NORMAL_CRITICAL_95;
+}
+
+function computeConfidenceInterval(values: number[], valueMean: number): IConfidenceInterval {
+  if (values.length < 2) return { lower: valueMean, upper: valueMean };
+  const margin = studentTCritical95(values.length - 1) * sampleStdev(values, valueMean) /
+    Math.sqrt(values.length);
+  return { lower: valueMean - margin, upper: valueMean + margin };
+}
+
+/** Computes paired deltas, cross-task spread, trial-aware confidence, and the no-effect verdict. */
 export function computePairedComparison(input: IComparisonInput): IPairedComparisonResult {
+  const pairedTrialDeltas: number[] = [];
   const perTask: ITaskPairedResult[] = input.tasks.map((task) => {
+    if (task.control.length === 0 || task.control.length !== task.treatment.length) {
+      throw new Error("Paired comparison requires equal-length, non-empty trial arrays");
+    }
+    for (let index = 0; index < task.control.length; index++) {
+      pairedTrialDeltas.push(task.treatment[index] - task.control[index]);
+    }
     const controlMetrics = computeMultiTrialMetrics(task.control);
     const treatmentMetrics = computeMultiTrialMetrics(task.treatment);
     return {
@@ -132,7 +211,16 @@ export function computePairedComparison(input: IComparisonInput): IPairedCompari
     return taskSign !== 0 && aggregateSign !== 0 && taskSign !== aggregateSign;
   }).length;
 
-  const noEffect = Math.abs(meanDelta) < stdevDelta;
+  const pairedTrialMean = pairedTrialDeltas.length > 0 ? mean(pairedTrialDeltas) : 0;
+  const confidenceInterval = computeConfidenceInterval(pairedTrialDeltas, pairedTrialMean);
+  const intervalIncludesZero = confidenceInterval.lower <= 0 && confidenceInterval.upper >= 0;
+  const belowMinimumEffect = Math.abs(pairedTrialMean) < MIN_PERSONA_EFFECT;
+  const decisionBasis = intervalIncludesZero
+    ? PairedDecisionBasis.CONFIDENCE_INTERVAL_INCLUDES_ZERO
+    : belowMinimumEffect
+    ? PairedDecisionBasis.BELOW_MINIMUM_EFFECT
+    : PairedDecisionBasis.MEASURABLE_EFFECT;
+  const noEffect = intervalIncludesZero || belowMinimumEffect;
 
   return {
     armId: input.armId,
@@ -142,6 +230,11 @@ export function computePairedComparison(input: IComparisonInput): IPairedCompari
     stdevDelta,
     signDisagreementCount,
     noEffect,
+    confidenceLevel: PERSONA_CONFIDENCE_LEVEL,
+    confidenceInterval,
+    minimumEffect: MIN_PERSONA_EFFECT,
+    pairedTrialCount: pairedTrialDeltas.length,
+    decisionBasis,
   };
 }
 

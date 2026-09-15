@@ -1,10 +1,8 @@
 /**
  * @module ScenarioFrameworkNoEffectRuleTest
  * @path tests/scenario_framework/tests/unit/no_effect_rule_test.ts
- * @description Tests for the no-effect rule (Phase 158 Step 1): an aggregate delta
- * smaller in magnitude than its own cross-task standard deviation is noise, not a
- * real effect, and must be reported as "no effect" rather than a small effect. The
- * harness enforces this — it is not left to the reader to eyeball a small number.
+ * @description Regression tests for the trial-aware no-effect rule: a paired confidence
+ * interval containing zero or an effect below the declared minimum is reported as no effect.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/arm_comparison.ts]
  */
@@ -13,7 +11,7 @@ import { assertEquals } from "@std/assert";
 import { computePairedComparison } from "../../runner/arm_comparison.ts";
 import { ComparisonMetric } from "../../runner/arm_comparison.ts";
 
-Deno.test("[NoEffectRule] a small aggregate delta below its own stdev reports no effect", () => {
+Deno.test("[NoEffectRule] an uncertain aggregate delta reports no effect", () => {
   const result = computePairedComparison({
     armId: "skill-noisy",
     metric: ComparisonMetric.JUDGE_SCORE,
@@ -24,11 +22,11 @@ Deno.test("[NoEffectRule] a small aggregate delta below its own stdev reports no
     ],
   });
 
-  // deltas [0.05, -0.05, 0.02]: mean ~0.007, stdev ~0.04 — mean well below stdev
+  // Paired deltas span zero, so the Student-t interval includes zero.
   assertEquals(result.noEffect, true);
 });
 
-Deno.test("[NoEffectRule] a large, consistent aggregate delta exceeding its stdev reports an effect", () => {
+Deno.test("[NoEffectRule] a large, consistent aggregate delta reports an effect", () => {
   const result = computePairedComparison({
     armId: "skill-strong",
     metric: ComparisonMetric.JUDGE_SCORE,
@@ -39,13 +37,12 @@ Deno.test("[NoEffectRule] a large, consistent aggregate delta exceeding its stde
     ],
   });
 
-  // deltas [0.4, 0.45, 0.35]: mean 0.4, stdev ~0.041 — mean well above stdev
+  // The paired confidence interval excludes zero and exceeds the minimum effect.
   assertEquals(result.noEffect, false);
 });
 
 Deno.test("[NoEffectRule] symmetric per-task deltas that cancel to a zero mean report no effect", () => {
-  // Two tasks whose deltas are +d and -d have mean 0 and stdev d>0 — mean(0) < stdev(d)
-  // for any d>0, so a canceled-out mean can never register as an effect.
+  // Two tasks whose deltas are +d and -d center the confidence interval on zero.
   const result = computePairedComparison({
     armId: "skill-boundary",
     metric: ComparisonMetric.JUDGE_SCORE,
@@ -68,8 +65,7 @@ Deno.test("[NoEffectRule] a single task with zero within-arm trial spread and a 
     ],
   });
 
-  // A single task has no cross-task stdev to compare against (stdevDelta = 0 for n=1),
-  // so any nonzero delta registers as an effect.
+  // Three identical paired trials have a zero-width interval away from zero.
   assertEquals(result.stdevDelta, 0);
   assertEquals(result.noEffect, false);
 });
