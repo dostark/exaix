@@ -181,41 +181,47 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
   // Edition determines the entry point and binary name prefix. Solo excludes exaix-team/ +
   // exaix-enterprise; Team includes exaix-team/ but excludes exaix-enterprise. Enterprise's
   // entry lives in its own workspace (exaix-enterprise/deno.json), so its compile needs --config.
-  const editionConfigs: Record<string, { entry: string; prefix: string; config?: string }> = {
-    [EDITION_SOLO]: { entry: "apps/daemon/main.ts", prefix: "exaix" },
-    [EDITION_TEAM]: { entry: "apps/daemon/main.ts", prefix: "exaix-team" },
-    [EDITION_ENTERPRISE]: {
+  const editionConfigs: Record<string, Array<{ entry: string; prefix: string; config?: string }>> = {
+    [EDITION_SOLO]: [
+      { entry: "apps/daemon/main.ts", prefix: "exaix" },
+      { entry: "apps/exactl/main.ts", prefix: "exactl-solo" },
+    ],
+    [EDITION_TEAM]: [
+      { entry: "apps/daemon/main.ts", prefix: "exaix-team" },
+      { entry: "exaix-team/apps/exactl/main.ts", prefix: "exactl-team" },
+    ],
+    [EDITION_ENTERPRISE]: [{
       entry: "exaix-enterprise/apps/enterprise/main.ts",
       prefix: "exaix-enterprise",
       config: "exaix-enterprise/deno.json",
-    },
+    }],
   };
-  const cfg = editionConfigs[edition];
-  const entryPoint = cfg.entry;
-  const binaryPrefix = cfg.prefix;
+  const configs = editionConfigs[edition];
 
   console.log(`\n🏗️  Starting Build Phase (Compiling) [edition: ${edition}] for: ${buildTargets.join(", ")}`);
-  console.log(`   Entry: ${entryPoint}`);
+  console.log(`   Entries: ${configs.map((config) => config.entry).join(", ")}`);
 
-  const tasks = buildTargets.map((target) => {
-    const isWin = target.includes("windows");
-    const output = isWin ? `${binDir}/${binaryPrefix}-${target}.exe` : `${binDir}/${binaryPrefix}-${target}`;
-    const buildArgs = [
-      "deno",
-      "compile",
-      "--allow-all",
-      ...(cfg.config ? ["--config", cfg.config] : []),
-      "--target",
-      target,
-      "--output",
-      output,
-      entryPoint,
-    ];
-    return {
-      cmd: buildArgs,
-      desc: `Compiling ${binaryPrefix} for ${target}`,
-    };
-  });
+  const tasks = buildTargets.flatMap((target) =>
+    configs.map((cfg) => {
+      const isWin = target.includes("windows");
+      const output = isWin ? `${binDir}/${cfg.prefix}-${target}.exe` : `${binDir}/${cfg.prefix}-${target}`;
+      const buildArgs = [
+        "deno",
+        "compile",
+        "--allow-all",
+        ...(cfg.config ? ["--config", cfg.config] : []),
+        "--target",
+        target,
+        "--output",
+        output,
+        cfg.entry,
+      ];
+      return {
+        cmd: buildArgs,
+        desc: `Compiling ${cfg.prefix} for ${target}`,
+      };
+    })
+  );
 
   const success = await runParallel(tasks);
   if (!success) return false;
@@ -226,18 +232,20 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
     for (const target of buildTargets) {
       const isWin = target.includes("windows");
       const binDir = "dist/bin";
-      const output = isWin ? `${binDir}/${binaryPrefix}-${target}.exe` : `${binDir}/${binaryPrefix}-${target}`;
-      try {
-        const stats = await Deno.stat(output);
-        const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
-        console.log(`   ✅ ${output} (${sizeMb} MB)`);
-        if (stats.size < 10 * 1024 * 1024) {
-          console.error(`   ❌ Error: ${output} seems too small!`);
+      for (const cfg of configs) {
+        const output = isWin ? `${binDir}/${cfg.prefix}-${target}.exe` : `${binDir}/${cfg.prefix}-${target}`;
+        try {
+          const stats = await Deno.stat(output);
+          const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
+          console.log(`   ✅ ${output} (${sizeMb} MB)`);
+          if (stats.size < 10 * 1024 * 1024) {
+            console.error(`   ❌ Error: ${output} seems too small!`);
+            return false;
+          }
+        } catch (_e) {
+          console.error(`   ❌ Error: Artifact ${output} was not created.`);
           return false;
         }
-      } catch (_e) {
-        console.error(`   ❌ Error: Artifact ${output} was not created.`);
-        return false;
       }
     }
   }

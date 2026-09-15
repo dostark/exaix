@@ -98,6 +98,10 @@ import {
   type IPlanListOptions,
 } from "./command_builders/plan_actions.ts";
 
+export interface IExaCtlCommandOptions {
+  registerEditionCommands?: (root: typeof baseCommand, context: ICliApplicationContext) => void;
+}
+
 // Allow tests to run the CLI entrypoint without initializing heavy services
 export function isTestMode(): boolean {
   return isTestModeImport();
@@ -374,7 +378,7 @@ function renderReviewShowCommits(cs: IReviewDetails) {
   }
 }
 
-export const __test_command = new Command()
+const baseCommand = new Command()
   .name("exactl")
   .version(BINARY_VERSION)
   .description("Exaix CLI - Human interface for agent orchestration")
@@ -2690,9 +2694,9 @@ const logsCommand = new Command()
     await cmd.show(options as IJournalCommandOptions);
   });
 
-__test_command.command("log", logCommand);
-__test_command.command("logs", logsCommand);
-__test_command.command("journal", journalCommand);
+baseCommand.command("log", logCommand);
+baseCommand.command("logs", logsCommand);
+baseCommand.command("journal", journalCommand);
 
 // models subcommand (Solo model registry display)
 
@@ -2745,7 +2749,7 @@ const modelsCommand = new Command()
       }),
   );
 
-__test_command.command("models", modelsCommand);
+baseCommand.command("models", modelsCommand);
 
 // version subcommand
 
@@ -2819,7 +2823,7 @@ function parseSemVerSegments(v: string): { major: number; minor: number; patch: 
   return { major: major ?? 0, minor: minor ?? 0, patch: patch ?? 0 };
 }
 
-__test_command.command("version", versionCommand);
+baseCommand.command("version", versionCommand);
 
 // migrate subcommand
 
@@ -2836,7 +2840,7 @@ const migrateCommand = new Command()
       }),
   );
 
-__test_command.command("migrate", migrateCommand);
+baseCommand.command("migrate", migrateCommand);
 
 // tool subcommand (Tool Confirmation CLI)
 
@@ -2870,7 +2874,7 @@ const toolCommand = new Command()
       }),
   );
 
-__test_command.command("tool", toolCommand);
+baseCommand.command("tool", toolCommand);
 
 // skills subcommand alias (wires the Skills Service)
 
@@ -2927,7 +2931,7 @@ const skillsCommand = new Command()
       }),
   );
 
-__test_command.command("skills", skillsCommand);
+baseCommand.command("skills", skillsCommand);
 
 // watch subcommand (live execution streaming)
 
@@ -2945,7 +2949,7 @@ const watchCommand = new Command()
     }
   });
 
-__test_command.command("watch", watchCommand);
+baseCommand.command("watch", watchCommand);
 
 // eval subcommand (evaluation framework)
 
@@ -3146,15 +3150,29 @@ const evalCommand = new Command()
       ),
   );
 
-__test_command.command("eval", evalCommand);
+baseCommand.command("eval", evalCommand);
 
-export async function run(): Promise<void> {
+const editionRegistrations = new Set<IExaCtlCommandOptions["registerEditionCommands"]>();
+
+/** Returns the single initialized CLI command tree, applying edition contributions before parsing. */
+export function createExaCtlCommand(options: IExaCtlCommandOptions = {}): typeof baseCommand {
+  const registration = options.registerEditionCommands;
+  if (registration !== undefined && !editionRegistrations.has(registration)) {
+    registration(baseCommand, context);
+    editionRegistrations.add(registration);
+  }
+  return baseCommand;
+}
+
+export const __test_command = createExaCtlCommand();
+
+export async function run(command: typeof baseCommand = createExaCtlCommand()): Promise<void> {
   // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …)
   // before any command dispatch or subprocess spawn — the daemon spawned by
   // `daemon start` inherits this process env, and scrubs its own env too.
   scrubProcessEnv();
 
-  await __test_command.parse(Deno.args);
+  await command.parse(Deno.args);
   if (services.db && services.db.close) {
     await services.db.close();
   }

@@ -239,8 +239,19 @@ export const ToolsConfigSchema = z.object({
   confirmation_timeout_s: z.number().min(10).max(3600).optional(),
 });
 
+/** Additive configuration for the Team-only OTLP snapshot exporter. */
+export const OtelExportConfigSchema = z.object({
+  endpoint: z.string().url().default(DEFAULTS.DEFAULT_OTEL_EXPORT_ENDPOINT),
+  protocol: z.literal(DEFAULTS.DEFAULT_OTEL_EXPORT_PROTOCOL).default(DEFAULTS.DEFAULT_OTEL_EXPORT_PROTOCOL),
+  timeout_ms: c("otel_export.timeout_ms"),
+  max_request_bytes: c("otel_export.max_request_bytes"),
+  max_response_bytes: c("otel_export.max_response_bytes"),
+  headers_env: z.string().regex(/^[A-Z_][A-Z0-9_]*$/).default(DEFAULTS.DEFAULT_OTEL_EXPORT_HEADERS_ENV),
+});
+
 export const ConfigSchema = z.object({
   tools: ToolsConfigSchema.optional().prefault({}),
+  otel_export: OtelExportConfigSchema.optional().prefault({}),
   system: z.object({
     root: z.string().default(getCwdSafe()),
     log_level: z.nativeEnum(LogLevel).default(LogLevel.INFO),

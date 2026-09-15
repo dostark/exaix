@@ -3303,3 +3303,45 @@ export const DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES: readonly string[] = co
 /** Env var name (not a tunable value — a fixed protocol name, like SESSION_ENV_*) the
  *  dogfood context MCP connection's bearer credential is carried under in a launch's env. */
 export const DOGFOOD_CONTEXT_BEARER_ENV_VAR = "EXAIX_CONTEXT_BEARER";
+
+/** Complete local OTLP/HTTP traces endpoint used by snapshot export. */
+export const DEFAULT_OTEL_EXPORT_ENDPOINT: string = configurable({
+  key: "otel_export.endpoint",
+  default: "http://127.0.0.1:4318/v1/traces",
+  type: ConfigValueType.STRING,
+  description: "Complete OTLP HTTP traces endpoint for snapshot export",
+  swap: SwapClass.RESTART,
+});
+
+/** The only supported OTLP wire mapping is the dependency-free HTTP/JSON encoding. */
+export const DEFAULT_OTEL_EXPORT_PROTOCOL = "http/json";
+
+export const DEFAULT_OTEL_EXPORT_TIMEOUT_MS: number = configurable({
+  key: "otel_export.timeout_ms",
+  default: 10_000,
+  type: ConfigValueType.NUMBER,
+  description: "Total OTLP snapshot export timeout in milliseconds",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_OTEL_EXPORT_MAX_REQUEST_BYTES: number = configurable({
+  key: "otel_export.max_request_bytes",
+  default: 4_194_304,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum encoded OTLP snapshot request size in bytes",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+export const DEFAULT_OTEL_EXPORT_MAX_RESPONSE_BYTES: number = configurable({
+  key: "otel_export.max_response_bytes",
+  default: 4_194_304,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum OTLP snapshot response size in bytes",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
+
+/** Fixed name of the environment variable containing OTLP headers. */
+export const DEFAULT_OTEL_EXPORT_HEADERS_ENV = "OTEL_EXPORTER_OTLP_HEADERS";

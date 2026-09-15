@@ -18,13 +18,16 @@ Deno.test({
     // 1. Run build for current target (for speed in test)
     const target = Deno.build.target;
     const isWin = target.includes("windows");
-    const expectedName = isWin ? `exaix-${target}.exe` : `exaix-${target}`;
-    const expectedPath = join(DIST_DIR, expectedName);
+    const expectedNames = [
+      isWin ? `exaix-${target}.exe` : `exaix-${target}`,
+      isWin ? `exactl-solo-${target}.exe` : `exactl-solo-${target}`,
+    ];
+    const expectedPaths = expectedNames.map((name) => join(DIST_DIR, name));
 
     // Clean up first
     try {
-      if (await exists(expectedPath)) {
-        await Deno.remove(expectedPath);
+      for (const expectedPath of expectedPaths) {
+        if (await exists(expectedPath)) await Deno.remove(expectedPath);
       }
     } catch (_e) {
       // ignore
@@ -41,12 +44,14 @@ Deno.test({
     assertEquals(output.code, 0, "Build command should exit with 0");
 
     // 2. Verify file exists
-    const fileExists = await exists(expectedPath);
-    assert(fileExists, `Artifact ${expectedName} should exist in dist/bin/`);
+    for (const [index, expectedPath] of expectedPaths.entries()) {
+      const fileExists = await exists(expectedPath);
+      assert(fileExists, `Artifact ${expectedNames[index]} should exist in dist/bin/`);
+    }
 
     // 3. Verify it's executable and shows version (only for native target)
     if (!isWin) { // Skip execution check on windows if we are on linux runner
-      const verifyCmd = new Deno.Command(expectedPath, {
+      const verifyCmd = new Deno.Command(expectedPaths[1], {
         args: ["--version"],
       });
       const verifyOutput = await verifyCmd.output();

@@ -43,6 +43,21 @@ export interface IOutcomeRunRow {
   outcome_scores: number[];
 }
 
+/** Narrow evaluation outcome consumed by telemetry exporters. */
+export interface IEvalOutcome {
+  run_id: string;
+  trace_id: string | null;
+  suite_score: number;
+  passed: boolean;
+  cell_id: string | null;
+}
+
+/** Read-only evaluation lookup boundary for telemetry enrichment. */
+export interface IEvalOutcomeReader {
+  getByRunId(runId: string): IEvalOutcome | undefined;
+  listByTraceId(traceId: string): IEvalOutcome[];
+}
+
 const EVAL_TABLE_RUNS = "eval_runs";
 const EVAL_SCHEMA_VERSION_INSERT = "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES ";
 const SQL_AND_SEPARATOR = " AND ";
@@ -116,7 +131,7 @@ export function resolveEvalDbPath(workspaceRoot?: Opt<string, Reason.OptionalInp
 
 const SQLITE_DUP_COLUMN_ERR = "duplicate column name";
 
-export class EvalSqliteStore {
+export class EvalSqliteStore implements IEvalOutcomeReader {
   private db: Database;
   private dbPath: string;
   private initialized = false;
@@ -474,6 +489,33 @@ export class EvalSqliteStore {
     });
 
     transaction();
+  }
+
+  getByRunId(runId: string): IEvalOutcome | undefined {
+    if (!this.initialized) this.initialize();
+    const row = this.db.prepare(
+      "SELECT run_id, trace_id, suite_score, passed, cell_id FROM eval_runs WHERE run_id = ?",
+    ).value<[string, string | null, number, number, string | null]>(runId);
+    return row ? this.toEvalOutcome(row) : undefined;
+  }
+
+  listByTraceId(traceId: string): IEvalOutcome[] {
+    if (!this.initialized) this.initialize();
+    return this.db.prepare(
+      "SELECT run_id, trace_id, suite_score, passed, cell_id FROM eval_runs WHERE trace_id = ? ORDER BY run_id ASC",
+    ).values<[string, string | null, number, number, string | null]>(traceId).map((row) => this.toEvalOutcome(row));
+  }
+
+  private toEvalOutcome(
+    row: [string, string | null, number, number, string | null],
+  ): IEvalOutcome {
+    return {
+      run_id: row[0],
+      trace_id: row[1],
+      suite_score: row[2],
+      passed: row[3] === 1,
+      cell_id: row[4],
+    };
   }
 
   queryRuns(options: {
