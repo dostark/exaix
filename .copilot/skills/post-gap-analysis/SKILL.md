@@ -468,6 +468,13 @@ Append at end of planning document using the exact format below.
 
 ## Post-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ IMPLEMENTATION COMPLETE
 
+<!-- GAP-N numbering here starts fresh at GAP-1 and is scoped to THIS Post-Gap Analysis
+     section. A doc that also has an earlier Pre-Gap Analysis section with its own
+     GAP-1..GAP-M entries is a separate, unrelated numbering scope — do not renumber the
+     pre-gap gaps or continue their sequence, and don't assume a reader can tell them
+     apart without this note; the section header (Pre-Gap vs. Post-Gap) is the only
+     disambiguator. -->
+
 ### Required Outcome & Falsification Matrix
 
 | Required outcome             | Production evidence                         | Adversarial case                    | Verdict    |
