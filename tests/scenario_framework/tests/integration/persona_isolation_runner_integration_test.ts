@@ -52,6 +52,12 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
     const cellIndex = output.executionPlan[0].argv.indexOf("--cell");
     assertEquals(output.executionPlan[0].argv[cellIndex + 1], "opencode");
     assertEquals(output.executionPlan[0].env.EXA_LLM_PROVIDER, "mock");
+    // EXA_LLM_MODEL must be the colon-joined "provider:model" form (matching
+    // scripts/run_judge_calibration_live_probe.ts's established convention) — a bare
+    // model name alone reaches ModelResolver.tryResolveBareName(), which only recognizes
+    // a bare name that is ITSELF a registered provider id, so a real model name like
+    // "claude-sonnet-5" throws "Unknown model" for the judge-quality LLM call.
+    assertEquals(output.executionPlan[0].env.EXA_LLM_MODEL, "mock:test-model");
     assertFalse(await exists(join(root, "Memory", "persona-overlays", "coder")));
   } finally {
     await Deno.remove(root, { recursive: true });

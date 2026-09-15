@@ -116,7 +116,12 @@ function buildExecutionPlan(
       env: {
         [EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR]: cell.overlayDir,
         EXA_LLM_PROVIDER: cell.provider,
-        EXA_LLM_MODEL: cell.model,
+        // Colon-joined "provider:model", matching run_judge_calibration_live_probe.ts's
+        // established convention — a bare model name reaches ModelResolver's
+        // tryResolveBareName(), which only succeeds when the bare name is itself a
+        // registered provider id, so a real model name (e.g. "claude-sonnet-5") throws
+        // "Unknown model" for the judge-quality LLM call.
+        EXA_LLM_MODEL: `${cell.provider}:${cell.model}`,
       },
       outputDir,
     };
