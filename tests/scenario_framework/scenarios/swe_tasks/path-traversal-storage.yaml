@@ -18,6 +18,10 @@ matrix:
       provider: "$CELL_PROVIDER"
       config: "configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
+    - tool: "codex"
+      provider: "$CELL_PROVIDER"
+      config: "configs/codex-cli-react.toml"
+      requires_bin: "codex"
     - tool: "claude-haiku-4-5"
       provider: "$CELL_PROVIDER"
       config: "configs/claude-haiku-4-5-delegate-all.toml"
@@ -42,7 +46,7 @@ matrix:
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"
-    blueprint: "senior-coder"
+    blueprint: "security-expert"
     add_capabilities: ["cli_delegate"]
     output_criteria:
       - id: "capability-patched"
@@ -75,7 +79,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--agent-role", "senior-coder"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--agent-role", "security-expert"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"

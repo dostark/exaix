@@ -32,6 +32,7 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
         trials: 3,
         provider: "mock",
         model: "test-model",
+        runnerCell: "opencode",
         sourceBlueprintAlias: "@Blueprints/Agents/coder.md",
         overlayRootAlias: "@Memory/persona-overlays",
         reportOutputAlias: "@Memory/report-input.json",
@@ -48,7 +49,47 @@ Deno.test("[PersonaIsolationRunner] --dry-run writes report input, uses discrete
     assertEquals(output.armComparisons.length, 2);
     assertEquals(output.executionPlan.length, 3);
     assertEquals(output.executionPlan[0].argv.includes("--scenario"), true);
+    const cellIndex = output.executionPlan[0].argv.indexOf("--cell");
+    assertEquals(output.executionPlan[0].argv[cellIndex + 1], "opencode");
+    assertEquals(output.executionPlan[0].env.EXA_LLM_PROVIDER, "mock");
     assertFalse(await exists(join(root, "Memory", "persona-overlays", "coder")));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[PersonaIsolationRunner] --dry-run rejects a scenario id absent from the live catalog", async () => {
+  const root = await Deno.makeTempDir({ prefix: "persona-runner-invalid-" });
+  try {
+    await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+    await Deno.mkdir(join(root, "Memory", "persona-overlays"), { recursive: true });
+    await Deno.writeTextFile(
+      join(root, "Blueprints", "Agents", "coder.md"),
+      "---\nagent_role: coder\n---\nPersona\n",
+    );
+    const manifestPath = join(root, "manifest.json");
+    await Deno.writeTextFile(
+      manifestPath,
+      JSON.stringify({
+        config: createMockConfig(root),
+        agentRoleId: "coder",
+        scenarioIds: ["swe-does-not-exist", "swe-fix-bug-null-guard"],
+        trials: 3,
+        provider: "mock",
+        model: "test-model",
+        runnerCell: "opencode",
+        sourceBlueprintAlias: "@Blueprints/Agents/coder.md",
+        overlayRootAlias: "@Memory/persona-overlays",
+        reportOutputAlias: "@Memory/report-input.json",
+      }),
+    );
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: ["run", "-A", "scripts/run_persona_isolation.ts", "--dry-run", manifestPath],
+      cwd: REPO_ROOT,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    assertEquals(result.success, false);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

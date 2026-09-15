@@ -13,7 +13,7 @@
 import { z } from "zod";
 import { ConfigSchema } from "@exaix/schemas";
 import { PathResolver } from "@exaix/portal";
-import { join } from "@std/path";
+import { fromFileUrl, join, resolve } from "@std/path";
 import { EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR } from "@exaix/request";
 import {
   buildPersonaComparisonInput,
@@ -23,6 +23,7 @@ import {
   materializePersonaVariants,
   type PersonaVariant,
 } from "../tests/scenario_framework/runner/persona_isolation_arm.ts";
+import { loadScenarioCatalog } from "../tests/scenario_framework/runner/scenario_catalog.ts";
 
 export interface IPersonaExecutionCell {
   variant: PersonaVariant;
@@ -44,12 +45,14 @@ const PersonaIsolationManifestSchema = z.object({
   trials: z.number().int().min(3),
   provider: z.string().min(1),
   model: z.string().min(1),
+  runnerCell: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
   sourceBlueprintAlias: z.string().startsWith("@"),
   overlayRootAlias: z.string().startsWith("@"),
   reportOutputAlias: z.string().startsWith("@"),
 }).strict();
 
 type PersonaIsolationManifest = z.infer<typeof PersonaIsolationManifestSchema>;
+const SCENARIO_FRAMEWORK_ROOT = resolve(fromFileUrl(new URL("../tests/scenario_framework", import.meta.url)));
 
 /** Runs a validated manifest, or plans the complete path without spawning in dry-run mode. */
 export async function runPersonaIsolation(
@@ -58,13 +61,15 @@ export async function runPersonaIsolation(
 ): Promise<IPersonaOperatorOutput> {
   const resolver = new PathResolver(manifest.config);
   const plan = await buildPersonaIsolationArmPlan(manifest, resolver);
+  await validateScenarioCatalog(plan.scenarioIds);
   const reportOutputPath = await resolver.resolve(manifest.reportOutputAlias);
   const generatedRoot = join(plan.overlayRoot, plan.agentRoleId);
 
   try {
     await materializePersonaVariants(plan);
-    const executionPlan = buildExecutionPlan(plan, dryRun);
-    const results = dryRun ? buildDryRunResults(plan) : await executeCells(plan, executionPlan);
+    const executionPlan = buildExecutionPlan(plan, manifest.runnerCell, dryRun);
+    await runCells(executionPlan);
+    const results = dryRun ? buildDryRunResults(plan) : await readResults(plan, executionPlan);
     const report = buildPersonaComparisonInput(plan, results);
     const output = { ...report, executionPlan };
     await Deno.writeTextFile(reportOutputPath, `${JSON.stringify(output, null, 2)}\n`);
@@ -76,7 +81,19 @@ export async function runPersonaIsolation(
   }
 }
 
-function buildExecutionPlan(plan: IPersonaIsolationArmPlan, dryRun: boolean): IPersonaExecutionCell[] {
+async function validateScenarioCatalog(scenarioIds: string[]): Promise<void> {
+  const catalog = await loadScenarioCatalog({ frameworkHome: SCENARIO_FRAMEWORK_ROOT });
+  const knownIds = new Set(catalog.map((entry) => entry.id));
+  if (scenarioIds.some((id) => !knownIds.has(id))) {
+    throw new Error("Persona isolation manifest contains an unknown scenario id");
+  }
+}
+
+function buildExecutionPlan(
+  plan: IPersonaIsolationArmPlan,
+  runnerCell: string,
+  dryRun: boolean,
+): IPersonaExecutionCell[] {
   return plan.cells.map((cell) => {
     const outputDir = join(cell.overlayDir, "run-output");
     const argv = [
@@ -89,7 +106,7 @@ function buildExecutionPlan(plan: IPersonaIsolationArmPlan, dryRun: boolean): IP
       "--output",
       outputDir,
       "--cell",
-      cell.provider,
+      runnerCell,
       ...cell.scenarioIds.flatMap((scenarioId) => ["--scenario", scenarioId]),
     ];
     if (dryRun) argv.push("--dry-run");
@@ -106,11 +123,7 @@ function buildExecutionPlan(plan: IPersonaIsolationArmPlan, dryRun: boolean): IP
   });
 }
 
-async function executeCells(
-  plan: IPersonaIsolationArmPlan,
-  cells: IPersonaExecutionCell[],
-): Promise<IPersonaIsolationRunResult[]> {
-  const results: IPersonaIsolationRunResult[] = [];
+async function runCells(cells: IPersonaExecutionCell[]): Promise<void> {
   for (const cell of cells) {
     const command = new Deno.Command(Deno.execPath(), {
       args: cell.argv,
@@ -120,8 +133,15 @@ async function executeCells(
     });
     const status = await command.spawn().status;
     if (!status.success) throw new Error("Persona scenario cell failed");
-    results.push(await readCellResults(plan, cell));
   }
+}
+
+async function readResults(
+  plan: IPersonaIsolationArmPlan,
+  cells: IPersonaExecutionCell[],
+): Promise<IPersonaIsolationRunResult[]> {
+  const results: IPersonaIsolationRunResult[] = [];
+  for (const cell of cells) results.push(await readCellResults(plan, cell));
   return results;
 }
 

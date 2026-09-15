@@ -18,6 +18,10 @@ matrix:
       provider: "$CELL_PROVIDER"
       config: "configs/claude-cli-delegate-all.toml"
       requires_bin: "claude"
+    - tool: "codex"
+      provider: "$CELL_PROVIDER"
+      config: "configs/codex-cli-react.toml"
+      requires_bin: "codex"
     - tool: "opencode"
       provider: "$CELL_PROVIDER"
       config: "configs/opencode-cli-delegate-all.toml"
@@ -56,7 +60,7 @@ steps:
     # execution path — see cli_delegate_dispatch_test.ts), so execution threw "Execution
     # strategy not found: cli_delegate" for every direct-API cell, never reaching
     # ReActLoopStrategy/native tool-calling at all.
-    cells: ["claude-code", "opencode"]
+    cells: ["claude-code", "codex", "opencode"]
     output_criteria:
       - id: "capability-patched"
         kind: "command-exit-code"
@@ -153,7 +157,7 @@ steps:
     # real dynamic_tool_call journal rows. This security gate asserts that no freelance tool calls
     # were made, which is relevant only to CLI delegates (claude-code, opencode) that are expected
     # to run completely without Exaix-side dynamic tool-calling.
-    cells: ["claude-code", "opencode"]
+    cells: ["claude-code", "codex", "opencode"]
     output_criteria:
       - id: "no-dynamic-tool-calls"
         class: "security"
