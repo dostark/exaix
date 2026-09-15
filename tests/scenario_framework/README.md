@@ -24,6 +24,7 @@ every criterion kind** — see **[`SCENARIO_DSL.md`](./SCENARIO_DSL.md)**.
 1. [Directory Structure](#4-directory-structure)
    - [Subsystem Cadence](#4b-subsystem-cadence--which-tier-runs-what)
    - [Adversarial & Interactive Packs](#4c-adversarial--interactive-packs)
+   - [OpenTelemetry Export (Post-Run, Team/Enterprise)](#4d-opentelemetry-export-post-run-teamenterprise)
 1. [Quick Reference](#5-quick-reference)
 
 ---
@@ -750,6 +751,44 @@ deno run -A tests/scenario_framework/runner/main.ts \
 exactl eval report --view robustness
 exactl eval report --view interactive
 ```
+
+## 4d. OpenTelemetry Export (Post-Run, Team/Enterprise)
+
+Unlike every pack above, OTel export (Phase 177) is **not a scenario-runner flag** — there is no
+`--otel-export` option on `main.ts` and no scenario tag that triggers it. It is a separate,
+explicit **Team/Enterprise-only CLI action** run after a scenario (or any other request) has
+already produced journal evidence: `exactl journal export-otel <trace-id>` projects that one
+trace's supported journal rows into OTLP/HTTP JSON spans a Phoenix instance or an OpenTelemetry
+Collector can ingest. Full methodology — the span mapping, identity derivation, privacy allowlist,
+and eval-outcome join — is in `docs/Exaix_Evaluation.md` §20; this section covers only how it
+relates to a scenario run and how to capture evidence of a real export.
+
+**Why post-run, not a runner flag.** The exporter reads an already-written journal snapshot; it
+never runs concurrently with, or as part of, scenario execution. This keeps the scenario runner's
+own job (drive the request, assert criteria, write eval-history) fully decoupled from an unrelated
+Team-only observability integration, and matches the exporter's own "explicit invocation is the
+only opt-in" design — it is not something a Solo scenario run can accidentally trigger.
+
+**Capturing evidence of a real export:**
+
+```bash
+# 1. Run a scenario (or any request) normally and capture its trace ID
+exactl eval run --pack agent_flows --tag smoke
+TRACE_ID=$(exactl journal --filter action_type=llm.call.completed --tail 1 --format json | jq -r '.[0].trace_id')
+
+# 2. (Compiled Team CLI only) point [otel_export] at a real receiver, then export
+exactl journal export-otel "$TRACE_ID" --eval-run-id <run-id>
+
+# 3. Record redacted evidence: the invocation (with any secret/endpoint redacted), the receiver's
+#    config and version, the resolved OTel trace ID, and the spans/attributes it reported — see
+#    exaix-dev-docs/planning/evidence/phase-177/live-cutover.md for the Phase 177 cutover's own
+#    redacted invocation, otel-collector-config.yaml, and receiver-query-output.txt as a template.
+```
+
+The CI-safe path (`export_cli_integration_test.ts` in `exaix-team/packages/otel-export/tests/`)
+exercises the same real compiled Team command factory against an in-process HTTP receiver, so no
+scenario or evidence-capture step is required for ordinary CI runs — only an operator verifying a
+real external receiver needs the redacted-evidence procedure above.
 
 ## 5. Quick Reference
 

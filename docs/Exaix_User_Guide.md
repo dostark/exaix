@@ -4815,6 +4815,76 @@ sqlite3 ~/Exaix/.exa/journal.db "VACUUM;"
 cp ~/Exaix/.exa/journal.db ~/backups/journal_$(date +%Y%m%d).db
 ```
 
+### 10.4 OpenTelemetry Export
+
+> **This is a Team/Enterprise Edition feature.** The command is present only in Team/Enterprise
+> `exactl` builds; a Solo build's compiled help and command graph never mention it.
+
+`exactl journal export-otel <trace-id>` projects one journal trace into OTLP/HTTP JSON spans a
+Phoenix instance, an OpenTelemetry Collector, or any other `/v1/traces` receiver can consume. It is
+explicit and read-only: there is no `enabled` flag, no background exporter, and no change to what
+the journal itself records — invoking the command is the only opt-in, and it never writes to the
+selected records.
+
+**Usage:**
+
+```bash
+exactl journal export-otel <trace-id> [--eval-run-id <id>] [--stdout]
+```
+
+| Option               | Description                                                        |
+| -------------------- | ------------------------------------------------------------------ |
+| `--eval-run-id <id>` | Attach one explicit evaluation outcome; fails if its trace differs |
+| `--stdout`           | Print canonical OTLP JSON and skip the network call entirely       |
+
+```bash
+# Export a trace to the endpoint configured in [otel_export] (default: a local Collector on :4318)
+exactl journal export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+# Attach one specific evaluation outcome
+exactl journal export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --eval-run-id run-042
+
+# Preview the OTLP payload without sending it anywhere
+exactl journal export-otel a1b2c3d4-e5f6-7890-abcd-ef1234567890 --stdout
+```
+
+Without `--eval-run-id`, the export attaches an evaluation outcome only when exactly one eval run
+matches the trace ID — zero matches attaches nothing, and more than one fails with
+`AMBIGUOUS_EVAL_OUTCOME` rather than guessing which run applies.
+
+**Configuration (`[otel_export]`, fully defaulted):**
+
+```toml
+[otel_export]
+endpoint = "http://127.0.0.1:4318/v1/traces"  # Must be HTTPS, or HTTP to a loopback address only
+protocol = "http/json"                          # The only supported wire mapping
+timeout_ms = 10000
+max_request_bytes = 4194304                     # 4 MiB
+max_response_bytes = 4194304                    # 4 MiB
+headers_env = "OTEL_EXPORTER_OTLP_HEADERS"      # Env var holding "name=value,name2=value2" pairs
+```
+
+`http://` endpoints are only accepted for `localhost`/`127.0.0.0/8`/`::1`; any other host must use
+`https://`. The exporter never follows a redirect, and only the model, provider, agent role, tool
+name, and status fields are ever read from a journal record's payload — prompts, tool arguments and
+results, error text, and file paths never leave the export.
+
+**Troubleshooting:**
+
+- `TRACE_NOT_FOUND` — no journal record carries that exact `trace_id`. Check the ID with
+  `exactl journal --filter trace_id=<id>` first.
+- `AMBIGUOUS_EVAL_OUTCOME` — more than one eval run matched the trace; the error lists the
+  candidate run IDs, pass one explicitly with `--eval-run-id`.
+- `UNSUPPORTED_ENDPOINT_SCHEME` / `UNSAFE_ENDPOINT_COMPONENT` / `INSECURE_NON_LOOPBACK_ENDPOINT` —
+  the configured `endpoint` failed a security check (see above); errors never echo the offending
+  credential or query string, only the failure code.
+- No output and a non-zero exit after the configured `timeout_ms` — the receiver is unreachable or
+  too slow; nothing partially exports, since the request is fully assembled before any network
+  call.
+
+Full span mapping, identity derivation, and privacy-attribute allowlist:
+[Exaix_Evaluation.md §20](Exaix_Evaluation.md#20-opentelemetry-export).
+
 ## 11. Cost Tracking (Beta)
 
 Exaix provides comprehensive cost tracking and budget management for AI provider usage. This feature helps you monitor spending, set limits, and optimize your AI usage costs.

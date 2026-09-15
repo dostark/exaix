@@ -1,7 +1,7 @@
 # Exaix Evaluation Guide
 
-- **Version:** 1.5.0
-- **Date:** 2026-09-13
+- **Version:** 1.6.0
+- **Date:** 2026-09-15
 
 ## 1. Introduction
 
@@ -1720,3 +1720,134 @@ real and worth stating plainly:
 This boundary was found and disclosed by the 2026-09-13 Post-Gap Analysis in
 `exaix-dev-docs/planning/phase-148-memory-evaluation-framework.md` — see that document's GAP-2
 for the full evidence trail.
+
+---
+
+## 20. OpenTelemetry Export
+
+**Team/Enterprise only.** `exactl journal export-otel <trace-id>` projects one Activity Journal
+trace into OTLP/HTTP JSON spans an OTel-native tool (Phoenix, an OTel Collector, any `/v1/traces`
+receiver) can consume. It is absent from Solo builds — the exporter module lives in
+`exaix-team/packages/otel-export/`, never `packages/`, and `check:edition-graph` proves no static
+Solo edge reaches it. This closes gap item **N9** from
+`exaix-dev-docs/dev/Exaix_Eval_Comparative_Analysis.md` §8.2.
+
+### 20.1 What it is, and isn't
+
+Export is an **operator-triggered, read-only snapshot**, not a background exporter or streaming
+pipeline:
+
+- There is no `enabled` flag and no daemon hook. Invoking the command is the sole opt-in; nothing
+  runs before it, and the projection never mutates the journal it reads.
+- Each invocation selects the journal rows whose `trace_id` exactly equals the requested trace,
+  sorts them `(timestamp, id)`, and emits a deterministic snapshot — not a live feed. Running the
+  same command twice against an unchanged journal produces byte-identical span/trace IDs.
+- Phase 177 does not stream, poll, or hold a cursor. A future streaming producer can reuse the
+  same pure `OtelRecordProjector`/`OtlpHttpTransport` boundary, but implementing one is out of
+  scope here — see §20.7.
+
+### 20.2 Span mapping (journal → `gen_ai.*`)
+
+The exporter supports a specific, truthful subset of journal evidence rather than inferring a
+complete trace from ambiguous event order:
+
+| Journal evidence                              | OTel span                                   | Notes                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Synthetic run root over the selected snapshot | `invoke_agent {agent_role}` (`INTERNAL`)    | Start/end are the min/max valid record timestamps; carries `gen_ai.agent.name`, `exaix.trace.id`, optional eval attributes |
+| Parent-trace `llm.call.completed` row         | `{operation} {model-or-unknown}` (`CLIENT`) | Point-in-time span; allowlisted model/provider plus typed token/cost fields; no duration or success inferred               |
+| Parent-trace `dynamic_tool_call` row          | `execute_tool {tool}` (`INTERNAL`)          | Point-in-time span; allowlisted tool name; `exaix.otel.incomplete=true`                                                    |
+| Other selected journal record                 | `exaix.event {action_type}` (`INTERNAL`)    | Generic point-in-time child with allowlisted structural attributes only                                                    |
+
+Explicit exclusions: `*.started` milestones are never exported as their own span (they still count
+toward root-timing selection, but produce no child), sequence pairing/duration inference is never
+attempted, disconnected provider calls (a standalone trace ID not injected by `AgentRunner`) are
+excluded by exact-trace selection, and the exporter's own `otel.export.*` audit rows never re-enter
+their own snapshot's selection or root timing.
+
+Identity is deterministic and domain-separated (SHA-256 over `"exaix.otel.trace.v1\0" +
+exaixTraceId` for the OTel trace ID, `"exaix.otel.root.v1\0" + exaixTraceId` for the root span, and
+`"exaix.otel.span.v1\0" + exaixTraceId + "\0" + record.id` per child), so re-running export against
+the same journal state always yields the same OTel IDs. Duplicate journal record IDs are rejected
+before transport rather than silently colliding.
+
+### 20.3 Eval outcome attachment
+
+`--eval-run-id <id>` attaches one explicit evaluation outcome; a trace mismatch between the run and
+the requested export fails the command rather than attaching mismatched data. Without the flag, the
+exporter looks up eval outcomes by trace ID: zero matches attaches nothing, exactly one attaches it,
+and more than one fails with `AMBIGUOUS_EVAL_OUTCOME` (listing the candidate run IDs) rather than
+guessing. When attached, the root span carries exactly three eval attributes —
+`exaix.eval.run_id`, `exaix.eval.score`, and `exaix.eval.passed` — never raw scenario or trial
+detail.
+
+### 20.4 Privacy posture
+
+Attribute projection is **default-deny**: only `model`, `provider`, `agent_role`, `tool`, and
+`status` are read from a journal record's `payload`, as bounded scalar strings; anything malformed,
+nested, oversized, or not on that list is dropped rather than surfaced. Raw prompts, tool
+arguments/results, error text/stacks, filesystem paths, and unrecognized payload keys never reach
+an OTLP attribute or the encoded request body. Size limits (10,000 records per snapshot, 16 KiB per
+record payload, 4 KiB per emitted string attribute, 4 MiB per encoded request) are enforced before
+allocation or transport, and reaching one fails the export rather than truncating silently.
+
+### 20.5 Transport, endpoint, and header controls
+
+The exporter is a dependency-free OTLP/HTTP JSON (`application/json`) client pinned to OTLP
+spec/proto **v1.11.0** and the OpenTelemetry GenAI semantic-conventions commit
+`0c87594975195608dc91b3f702e250a7b240c151` (Development status as of 2026-09-14 — an explicit,
+reviewed pin bump is required before adopting a newer convention revision).
+
+- **Endpoint.** Only `http:`/`https:`, with no user-info, query, or fragment component. `http:` is
+  accepted only when the host resolves to `localhost`, `127.0.0.0/8`, or `::1`; any other host must
+  use `https:`. Every HTTP redirect is rejected outright (`redirect: "manual"`), never followed.
+- **Headers.** `[otel_export].headers_env` names an environment variable (default
+  `OTEL_EXPORTER_OTLP_HEADERS`) parsed with the OTLP comma-separated `name=value` grammar. Control
+  characters, hop-by-hop/forbidden headers (`host`, `content-length`, `connection`, …), duplicates,
+  and malformed percent-encoding are rejected. Header names are never paired with their values in
+  logs or errors.
+- **Retries.** Only connection failures and HTTP 429/502/503/504 are retried, at most twice, with
+  bounded exponential backoff (100 ms then 200 ms plus jitter) honoring a receiver's `Retry-After`
+  only when it fits inside the remaining timeout. Redirects, other 4xx, partial success, a malformed
+  response body, and size violations are never retried.
+- **Response handling.** Only HTTP 200 with a valid `ExportTraceServiceResponse` counts as success;
+  a non-zero `partialSuccess.rejectedSpans` is treated as failure (an omitted `partialSuccess` is
+  the protobuf-JSON default of zero rejected spans, not a failure).
+
+### 20.6 Configuration
+
+`[otel_export]` is additive and fully defaulted — present in the shared config schema for
+compatibility, but read only by the Team exporter:
+
+| Key                  | Default                           | Meaning                                     |
+| -------------------- | --------------------------------- | ------------------------------------------- |
+| `endpoint`           | `http://127.0.0.1:4318/v1/traces` | Complete OTLP `/v1/traces` endpoint         |
+| `protocol`           | `http/json`                       | The only supported wire mapping             |
+| `timeout_ms`         | `10000`                           | Total export timeout                        |
+| `max_request_bytes`  | `4194304` (4 MiB)                 | Maximum encoded request size                |
+| `max_response_bytes` | `4194304` (4 MiB)                 | Maximum response body read                  |
+| `headers_env`        | `OTEL_EXPORTER_OTLP_HEADERS`      | Env var holding OTLP header key/value pairs |
+
+Explicit command invocation is the only opt-in — there is no `enabled` toggle, and CLI flags never
+override the endpoint/header/size security controls above.
+
+### 20.7 Snapshot vs. future streaming
+
+Phase 177 ships a **snapshot** exporter only. `OtelRecordProjector.projectRecord` is stateless and
+produces the same deterministic child span whether called by the snapshot assembler or a future
+incremental producer, but no durable cursor, acknowledged advancement, cross-trace batching,
+backpressure, crash replay, shutdown flush, or terminal-root policy exists yet — a live streaming
+exporter is a separately planned phase, not an implicit consequence of this one. Do not describe
+Phase 177 as providing live or continuous telemetry.
+
+### 20.8 Verifying an export lands
+
+CI proves the wire contract against an in-process receiver
+(`exaix-team/packages/otel-export/tests/export_cli_integration_test.ts`); it does not prove
+delivery to a real OTel-native tool. The Phase 177 live cutover ran the compiled Team CLI against a
+real `otel/opentelemetry-collector-contrib` instance and confirmed the root/child spans and eval
+attributes it received — see
+`exaix-dev-docs/planning/evidence/phase-177/live-cutover.md` for the redacted invocation, collector
+config, and receiver output. Typed `otel.export.started`/`completed`/`failed` audit events (written
+only after the immutable input snapshot is taken) record destination scheme/host/port, record/span
+counts, duration, error code, and retry count for every invocation — never headers, URL user-info,
+payload, or response body.
