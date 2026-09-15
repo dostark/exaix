@@ -258,6 +258,17 @@ function parseEmphasisOnlyLine(trimmed: string): { inner: string } | null {
   return null;
 }
 
+// Returns the 0-based index of the frontmatter's closing `---`/`...` line, or -1 if the file
+// has no frontmatter block. Content-rewriting fixers must treat this block as opaque.
+function computeFrontMatterEndIndex(lines: string[]): number {
+  if (lines.length === 0 || lines[0].trim() !== "---") return -1;
+  for (let i = 1; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed === "---" || trimmed === "...") return i;
+  }
+  return -1;
+}
+
 function parseFenceStart(line: string): Fence | null {
   const trimmed = line.trimStart();
   const match = /^(?<ticks>`{3,})|^(?<tildes>~{3,})/.exec(trimmed);
@@ -608,17 +619,25 @@ export function applySpecificFixes(content: string, findings: IFinding[]): { fix
     text = newLines.join("\n");
   }
 
-  // Fix MD049: emphasis style (convert underscores to asterisks). Fenced code blocks are
-  // skipped and inline backtick code spans are protected via applyOutsideCodeSpans — an
-  // identifier like `CI_EXCLUDED_TAGS` must never be misparsed into `CI*EXCLUDED*TAGS`.
+  // Fix MD049: emphasis style (underscores to asterisks). Fenced code blocks, the YAML
+  // frontmatter block, and inline code spans (applyOutsideCodeSpans) are all skipped —
+  // a bare frontmatter value's underscores must never be misparsed as emphasis markers.
   const md049Fixes = findings.filter((f) => f.rule === "MD049/emphasis-style");
   if (md049Fixes.length > 0) {
     const lines = splitLines(text);
     const newLines: string[] = [];
     let inFenceLocal = false;
     let fenceLocal: Fence | null = null;
+    const frontMatterEndIdx = computeFrontMatterEndIndex(lines);
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (frontMatterEndIdx >= 0 && i <= frontMatterEndIdx) {
+        newLines.push(line);
+        continue;
+      }
+
       const fenceStart = parseFenceStart(line);
       if (fenceStart && !inFenceLocal) {
         inFenceLocal = true;

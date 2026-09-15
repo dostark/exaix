@@ -1,14 +1,13 @@
 /**
  * @module MarkdownLintMd049CodespanTest
  * @path tests/scripts/markdown_lint_md049_codespan_test.ts
- * @description Regression test for a destructive MD049 auto-fix bug from a Phase 144 post-gap
- *   remediation incident: MD049 is only ever DETECTED on a heading using
- *   underscore emphasis, but once triggered anywhere in the file the fixer's underscore-to-
- *   asterisk regex (`/_([^_]+)_/g`) ran across the ENTIRE document's raw line text — including
- *   backtick code spans and fenced code blocks on OTHER, non-heading lines. Any identifier
- *   containing underscores inside backticks (e.g. `` `CI_EXCLUDED_TAGS` ``) was misparsed as
- *   emphasis markup and corrupted into `` `CI*EXCLUDED*TAGS` `` — silently mangling code
- *   identifiers throughout the document, far from the single heading that triggered the fix.
+ * @description Regression tests for destructive MD049 auto-fix bugs: MD049 is only ever
+ *   DETECTED on a heading using underscore emphasis, but once triggered anywhere in the file
+ *   the fixer's underscore-to-asterisk regex (`/_([^_]+)_/g`) runs across the ENTIRE document's
+ *   raw line text — corrupting backtick code spans/fenced blocks (e.g. `` `CI_EXCLUDED_TAGS` ``
+ *   into `` `CI*EXCLUDED*TAGS` ``) and bare (non-backticked) YAML frontmatter values (e.g.
+ *   `short_summary: "...default_skills..."` into `short*summary: "...default*skills..."`,
+ *   breaking YAML parsing) on OTHER, non-heading lines far from the fix's trigger.
  * @architectural-layer Script (test)
  * @dependencies [@std/assert]
  * @related-files [scripts/markdown_lint.ts]
@@ -96,4 +95,35 @@ Deno.test("[md049-fix] a document with no underscore-emphasis heading is left un
   const { fixed, changed } = applySpecificFixes(src, findings);
   assertEquals(changed, false);
   assertEquals(fixed, src);
+});
+
+Deno.test("[md049-fix] YAML frontmatter is never rewritten, even when a heading elsewhere triggers the fix (regression)", () => {
+  // Reproduces the phase-161-identity-persona-value-isolation.md incident (2026-09-15):
+  // a heading's underscore emphasis triggered the fixer, which then ran its whole-document
+  // underscore-to-asterisk regex over the frontmatter block too. Bare (non-backticked)
+  // underscores in a frontmatter string value — `short_summary: "...default_skills/
+  // permitted_tools/model_size..."` — were misparsed as paired emphasis markers and
+  // corrupted into `short*summary: "...default*skills/permitted*tools/model*size..."`,
+  // breaking YAML parsing.
+  const src = [
+    "---",
+    "status: PLANNING",
+    'short_summary: "Holds default_skills/permitted_tools/model_size constant."',
+    "---",
+    "",
+    "# A _stressed_ heading",
+    "",
+    "Body text.",
+    "",
+  ].join("\n");
+
+  const { fixed } = applySpecificFixes(src, md049Findings(src));
+
+  assertStringIncludes(fixed, "# A *stressed* heading", "the heading itself must still convert");
+  assertStringIncludes(
+    fixed,
+    'short_summary: "Holds default_skills/permitted_tools/model_size constant."',
+    `frontmatter must survive byte-for-byte; got:\n${fixed}`,
+  );
+  assert(!fixed.includes("short*summary"), `frontmatter key must not be corrupted; got:\n${fixed}`);
 });
