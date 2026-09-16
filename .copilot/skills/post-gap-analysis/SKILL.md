@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.9.0"
+version: "1.9.1"
 topics: [
   "planning",
   "gap-analysis",
@@ -47,7 +47,7 @@ Key points
 - Gaps must be classified by severity and written INTO the planning document
   itself (appended after existing content), not just reported in chat.
 - New remediation steps must follow the exact TDD-First format required by
-  .copilot/planning/README.md §F: Actions, Architecture Notes, Planned Tests,
+  exaix-dev-docs/planning/README.md §F: Actions, Architecture Notes, Planned Tests,
   Success Criteria. They must be numbered sequentially after the last
   existing step.
 - A documentation update step (matching §3D of the planning README) must be
@@ -83,19 +83,19 @@ Key points
 - When reviewing more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
 
 Canonical prompt (short):
-"Deep-review .copilot/planning/phase-NN-*.md against the actual codebase.
+"Deep-review exaix-dev-docs/planning/phase-NN-*.md against the actual codebase.
 Find all gaps between plan claims and implementation, write them into the
 document with remediation steps."
 
 Examples
-- "#post-gap-analysis .copilot/planning/phase-63-flow-error-recovery.md"
-- "#post-gap-analysis .copilot/planning/phase-64-flow-namespace-blackboard.md
+- "#post-gap-analysis exaix-dev-docs/planning/phase-63-flow-error-recovery.md"
+- "#post-gap-analysis exaix-dev-docs/planning/phase-64-flow-namespace-blackboard.md
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
 - ✅ Do read the actual source files — never trust the plan's description alone.
 - ✅ Do verify every success criterion by inspecting real code and test files.
-- ✅ Do cross-check each step against .copilot/planning/README.md §F
+- ✅ Do cross-check each step against exaix-dev-docs/planning/README.md §F
   requirements (Actions / Architecture Notes / Planned Tests / Success Criteria).
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.

@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.12.0"
+version: "1.12.1"
 topics: [
   "planning",
   "architecture",
@@ -35,7 +35,7 @@ Key points
    3. Configurability: Avoid magic numbers; wrap tunable defaults with `configurable()` from `@exaix/core/config` and override via `exactl config set`.
   4. Security: Proactively perform 'Phase 3b' checks (traversal, injection, auth).
 - Documentation (§3D): Every interface/schema change REQUIRES a matching doc update step.
-- Name the planning document `.copilot/planning/phase-NN-<kebab-slug>.md` (NN = next sequential phase number).
+- Name the planning document `exaix-dev-docs/planning/phase-NN-<kebab-slug>.md` (NN = next sequential phase number).
 - Keep each phase to 8–10 implementation steps maximum — split larger features into two sequential phases.
 - Assess `tests/scenario_framework/` coverage (§3E) whenever the feature touches the request → plan → execution → review → memory → update flow.
 - **Specify exact values**: For every enum, union, or variant field, state which concrete value each component emits and under what conditions — not just the allowed set. Vague "can be one of X, Y, Z" without per-component mapping is a pre-gap.
@@ -125,7 +125,7 @@ Dogfooding chain (alternative, once Phase E tooling ships):
 
 ## Instructions for Agent
 
-Refine the goal into a formal planning document in `.copilot/planning/phase-NN-*.md`.
+Refine the goal into a formal planning document in `exaix-dev-docs/planning/phase-NN-*.md`.
 
 ### 1. Structure Requirements (Mandatory)
 
@@ -477,7 +477,7 @@ coverage:
 1. Brief chat summary of the architectural approach and key identified risks.
 1. The path to the new or updated planning document file.
 1. Each implementation step includes a fenced YAML step-manifest block (for dogfooding compatibility).
-1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`. If re-run with `--fix`, re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
+1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`. If re-run with `--fix`, re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
 1. If the plan integrates a third-party service/provider, a **Sources** block: the provider doc URLs consulted (marked official vs community/unofficial) and the research date (§2F).
 1. Recommendation to run `#pre-gap-analysis` on the new plan to verify its completeness against the codebase.
 1. Commit payload — use `#commit` to stage and commit the new planning document.

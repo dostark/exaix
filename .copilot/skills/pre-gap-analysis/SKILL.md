@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.10.0"
+version: "1.10.1"
 topics: [
   "planning",
   "gap-analysis",
@@ -76,13 +76,13 @@ Key points
 - Bump the document version (e.g., 1.0 → 1.1) after writing all gaps in.
 
 Canonical prompt (short):
-"Pre-gap-analyse .copilot/planning/phase-NN-*.md. Read every source file it
+"Pre-gap-analyse exaix-dev-docs/planning/phase-NN-*.md. Read every source file it
 references and report every ambiguity, missing contract, and implementation
 risk before we start coding. Write the gaps into the document."
 
 Examples
-- "#pre-gap-analysis .copilot/planning/phase-65-flow-scheduler.md"
-- "#pre-gap-analysis .copilot/planning/phase-48-acceptance-criteria-propagation.md
+- "#pre-gap-analysis exaix-dev-docs/planning/phase-65-flow-scheduler.md"
+- "#pre-gap-analysis exaix-dev-docs/planning/phase-48-acceptance-criteria-propagation.md
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
@@ -733,7 +733,7 @@ are written. Format with grep outcome annotations:
 1. **Check step-level marker consistency.** Verify every step has `⏳ pending` markers —
    no code has been written yet. Flag any `✅ CORE`/`✅ WIRED`/`[x]` as premature and
    reset to `⏳`. Exempt only prior-phase steps confirmed shipped via grep.
-1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
+1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
 
 ---
 

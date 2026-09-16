@@ -11,7 +11,7 @@ scope: dev
 title: "Exaix Development Skill (#exaix-development)"
 description: Develop Exaix source code following TDD-first, patterns, and conventions
 short_summary: "Develop Exaix source code — TDD-first, DI patterns, config philosophy, code conventions."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["source", "development", "tdd", "patterns", "architecture"]
 qwen_skill: exaix-development
 ---
@@ -264,7 +264,7 @@ Plan-driven development workflow
 
   I want to work on [feature/fix].
 
-  1. READ PLAN: Open .copilot/planning/phase-XX-*.md or docs/Exaix_Implementation_Plan.md
+  1. READ PLAN: Open exaix-dev-docs/planning/phase-XX-*.md or docs/Exaix_Implementation_Plan.md
   2. UNDERSTAND: Read the step's Action, Success Criteria, referenced docs
   3. IMPLEMENT: TDD if code changes, update docs if needed
   4. VERIFY: Check all success criteria met, run tests, update step status

@@ -319,7 +319,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.12.0",
+      "version": "1.12.1",
       "topics": [
         "planning",
         "architecture",
@@ -339,7 +339,7 @@
       "scope": "dev",
       "title": "Exaix Development Skill (#exaix-development)",
       "short_summary": "Develop Exaix source code — TDD-first, DI patterns, config philosophy, code conventions.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "source",
         "development",
@@ -387,7 +387,7 @@
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
       "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.9.0",
+      "version": "1.9.1",
       "topics": [
         "planning",
         "gap-analysis",
@@ -408,7 +408,7 @@
       "scope": "dev",
       "title": "Remediate Plan Gaps Skill (#remediate-plan-gaps)",
       "short_summary": "Edits phase planning documents to close gaps identified by pre-gap-analysis, then re-runs tests and bumps the document version.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "planning",
         "gap-analysis",
@@ -611,7 +611,7 @@
       "scope": "dev",
       "title": "Remediate Code Gaps Skill (#remediate-code-gaps)",
       "short_summary": "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "topics": [
         "planning",
         "gap-analysis",
@@ -627,7 +627,7 @@
       "scope": "dev",
       "title": "Review-Research-Improvement Skill (#review-research)",
       "short_summary": "Autonomous skill for systematic subsystem review: analyze current state, research best practices, create actionable improvement plan with phase doc and templates.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "topics": [
         "architecture-review",
         "improvement-planning",
@@ -643,8 +643,8 @@
       "agent": "general",
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
-      "short_summary": "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.6.1",
+      "short_summary": "Prompt for iterating through exaix-dev-docs/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
+      "version": "1.6.2",
       "topics": [
         "tdd",
         "red-green-refactor",
@@ -663,7 +663,7 @@
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
       "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "topics": [
         "planning",
         "gap-analysis",

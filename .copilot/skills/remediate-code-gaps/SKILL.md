@@ -11,7 +11,7 @@ scope: dev
 title: "Remediate Code Gaps Skill (#remediate-code-gaps)"
 description: Consumes post-gap-analysis gap findings and edits source code to close each gap — re-runs tests and commits
 short_summary: "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit."
-version: "1.2.0"
+version: "1.2.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "code-quality"]
 qwen_skill: remediate-code-gaps
 ---
@@ -31,11 +31,11 @@ Key points
   and record every process finding as PATCHED, DEFERRED, or REJECTED.
 
 Canonical prompt (short):
-"Remediate the code gaps in .copilot/planning/phase-NN-*.md's Post-Gap Analysis
+"Remediate the code gaps in exaix-dev-docs/planning/phase-NN-*.md's Post-Gap Analysis
 remediation steps. Edit source files to close each gap, re-run tests, CI gates, commit."
 
 Examples
-- "#remediate-code-gaps .copilot/planning/phase-125-dogfood-meta-workflow-skills.md"
+- "#remediate-code-gaps exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md"
 
 Do / Don't
 - ✅ Do read each gap's remediation step (Actions) before editing.

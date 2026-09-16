@@ -12,15 +12,15 @@ tools:
 scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
-short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.6.1"
+short_summary: "Prompt for iterating through exaix-dev-docs/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
+version: "1.6.2"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability", "traceability"]
 qwen_skill: next-steps
 ---
 
 ```text
 Key points
-- Work through .copilot/planning/phase-XX-*.md steps one-by-one
+- Work through exaix-dev-docs/planning/phase-XX-*.md steps one-by-one
 - Each step follows strict RED → GREEN → VERIFY → REFACTOR → CI → DOC cycle
 - After each step: run the Success Criterion Verification Gate (step 14), rewrite each met criterion/test to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` with a ledger row), run fast CI gates, then commit BOTH the submodule plan doc and the parent code via `scripts/commit_plan_step.ts <msg> --commit` (message carries a `plan:` field). No `- [ ]` may remain in a committed step
 - Never skip ahead — complete and commit each step before starting the next
@@ -52,7 +52,7 @@ Validation policy
 
 RED phase
    1. Restate the step context: read the step's "Architecture notes", "Success criteria",
-      and "Planned tests" from the .copilot/planning/ doc. Briefly confirm what will be
+      and "Planned tests" from the exaix-dev-docs/planning/ doc. Briefly confirm what will be
       built (e.g. "Implementing Step 3.2: Add user authentication validation").
    1a. **Verify previous step's completion before starting this one.** Do NOT trust
        the planning doc's status markers alone — re-read the previous step's "Success
@@ -444,7 +444,7 @@ Do / Don't
 - ❌ Don't run full-suite commands for a narrow step — see Validation policy above
 
 Related skills
-- #plan              — Create or extend a .copilot/planning/ document (precedes this skill)
+- #plan              — Create or extend an exaix-dev-docs/planning/ document (precedes this skill)
 - #pre-gap-analysis  — Validate the plan before starting (precedes this skill)
 - #remediate-plan-gaps — Closes plan gaps pre-gap-analysis found (precedes this skill directly when gaps were found)
 - #post-gap-analysis — Deep review when all steps are complete (follows this skill)

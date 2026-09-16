@@ -10,7 +10,7 @@ scope: dev
 title: "Review-Research-Improvement Skill (#review-research)"
 description: Evaluate an Exaix subsystem for weaknesses, compare to best practices, produce a phased improvement plan and concrete artifacts
 short_summary: "Autonomous skill for systematic subsystem review: analyze current state, research best practices, create actionable improvement plan with phase doc and templates."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["architecture-review", "improvement-planning", "patterns", "refactoring", "quality", "planning"]
 qwen_skill: review-research
 ---
@@ -36,7 +36,7 @@ Workflow
 Phase 1 — REVIEW (Analyze Current State)
   1. Documentation review:
      - Read docs/, Blueprints/, and relevant README files for the subsystem.
-     - Read the planning docs in .copilot/planning/ for prior phases on this subsystem.
+     - Read the planning docs in exaix-dev-docs/planning/ for prior phases on this subsystem.
      - List: stated purpose/goals, documented features, TODOs/FIXMEs, acknowledged gaps.
   2. Implementation analysis:
      - Use semantic_search or grep_search for relevant code patterns.
@@ -69,7 +69,7 @@ Phase 2 — RESEARCH (Compare to State-of-the-Art)
   8. Output: numbered weakness list (max ~10) with code evidence.
 
 Phase 3 — PLAN (Create Improvement Roadmap)
-  9. Create a planning document at .copilot/planning/phase-N-<subsystem>-improvements.md
+  9. Create a planning document at exaix-dev-docs/planning/phase-N-<subsystem>-improvements.md
      using this structure:
        # Phase N: <Subsystem> Improvements
        Status: Planning | Priority: High/Medium/Low
@@ -112,7 +112,7 @@ Phase 4 — ARTIFACTS (Create Concrete Deliverables)
        impact: <subsystem> roadmap documented
 
 Verification checklist (before committing)
- - [ ] Planning doc committed to .copilot/planning/
+ - [ ] Planning doc committed to exaix-dev-docs/planning/
  - [ ] Every weakness has code evidence (file:line), not speculation
  - [ ] All sub-phases have success criteria checkboxes
  - [ ] Documentation Update phase is the final sub-phase

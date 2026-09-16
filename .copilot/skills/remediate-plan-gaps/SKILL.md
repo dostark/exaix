@@ -11,7 +11,7 @@ scope: dev
 title: "Remediate Plan Gaps Skill (#remediate-plan-gaps)"
 description: Consumes pre-gap-analysis gap findings and edits plan step definitions to close each gap — re-runs tests and bumps version
 short_summary: "Edits phase planning documents to close gaps identified by pre-gap-analysis, then re-runs tests and bumps the document version."
-version: "1.0.0"
+version: "1.0.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "documentation"]
 qwen_skill: remediate-plan-gaps
 ---
@@ -26,11 +26,11 @@ Key points
 - Work through gaps in severity order: 🔴 → 🔒 → 🟡 → 🟠 → 🔵.
 
 Canonical prompt (short):
-"Remediate the gaps in .copilot/planning/phase-NN-*.md's Pre-Gap Analysis section.
+"Remediate the gaps in exaix-dev-docs/planning/phase-NN-*.md's Pre-Gap Analysis section.
 Edit each step to close its gaps, re-run tests, bump version, update Status."
 
 Examples
-- "#remediate-plan-gaps .copilot/planning/phase-125-dogfood-meta-workflow-skills.md"
+- "#remediate-plan-gaps exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md"
 
 Do / Don't
 - ✅ Do read each gap entry and its Resolution before editing.
@@ -88,7 +88,7 @@ For each gap, in severity order:
 1. Bump the document version (e.g., 1.2 → 1.3).
 2. Update the Status line to `🚧 Gap Remediation In Progress`.
 3. If interfaces or schemas changed, ensure a documentation update step (§3D) exists as the final step.
-4. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
+4. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
 
 ### Phase 5 — Commit
 
