@@ -579,7 +579,15 @@ async function removePath(path: string): Promise<void> {
 /** Recursively copy a fixture directory into the (already-cleared) target. */
 async function copyFixture(source: string, target: string): Promise<void> {
   await ensureDir(dirname(target));
-  await copy(source, target, { overwrite: true });
+  const info = await Deno.stat(source);
+  if (!info.isDirectory) {
+    await Deno.copyFile(source, target);
+    return;
+  }
+  await ensureDir(target);
+  for await (const entry of Deno.readDir(source)) {
+    await copyFixture(join(source, entry.name), join(target, entry.name));
+  }
 }
 
 /** Initialize a git repo with the single initial fixture commit (same identity the scenario

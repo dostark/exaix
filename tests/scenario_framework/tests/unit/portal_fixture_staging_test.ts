@@ -114,3 +114,27 @@ Deno.test({
     }
   },
 });
+
+Deno.test("[scenario-framework] fixture staging materializes sibling-file symlinks before relocation", async () => {
+  const root = await Deno.makeTempDir({ prefix: "exaix-fixture-links-" });
+  const source = join(root, "fixtures", "variant");
+  const shared = join(root, "fixtures", "shared");
+  const workspaceRoot = join(root, "workspace");
+  const target = join(workspaceRoot, "todo-app");
+  try {
+    await ensureDir(source);
+    await ensureDir(shared);
+    await Deno.writeTextFile(join(shared, "api_test.ts"), "export const baseline = true;\n");
+    await Deno.symlink("../shared/api_test.ts", join(source, "api_test.ts"));
+    await resetAndStageFixturePortal(
+      fixturePortal({ source_path: source, target_path: target, git_init: false }),
+      source,
+      target,
+      workspaceRoot,
+    );
+    assertEquals(await Deno.readTextFile(join(target, "api_test.ts")), "export const baseline = true;\n");
+    assertEquals((await Deno.lstat(join(target, "api_test.ts"))).isSymlink, false);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
