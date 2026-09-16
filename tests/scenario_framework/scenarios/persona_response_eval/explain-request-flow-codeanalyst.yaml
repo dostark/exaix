@@ -1,0 +1,145 @@
+schema_version: 1.0.0
+id: swe-persona-response-explain-request-flow-codeanalyst
+title: "Actual role response: explain-request-flow-codeanalyst"
+pack: persona_response_eval
+scoring: gated
+tags:
+  - swe
+  - persona-response
+  - provider-live
+request_fixture: fixtures/requests/swe_tasks/explain-request-flow.md
+portals:
+  - alias: todo-app
+    source_path: $FRAMEWORK_HOME/fixtures/portals/todo_app
+    target_path: $WORKSPACE_ROOT/todo-app
+    git_init: true
+mode_support:
+  - auto
+matrix:
+  cells:
+    - tool: claude-code
+      provider: $CELL_PROVIDER
+      config: configs/persona-response-claude-cli-delegate.toml
+      requires_bin: claude
+    - tool: codex
+      provider: $CELL_PROVIDER
+      config: configs/persona-response-codex-cli-react.toml
+      requires_bin: codex
+steps:
+  - id: patch-blueprint-capability
+    type: patch-blueprint
+    blueprint: code-analyst
+    add_capabilities:
+      - cli_delegate
+    cells:
+      - claude-code
+    output_criteria:
+      - id: capability-patched
+        kind: command-exit-code
+        equals: 0
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args:
+      - start
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains:
+          - daemon.started
+  - id: restart-daemon
+    type: exactl
+    command: daemon
+    args:
+      - restart
+    output_criteria:
+      - id: daemon-restarted
+        kind: command-output-contains
+        contains:
+          - daemon.restarted
+  - id: wait-for-daemon-ready
+    type: exactl
+    command: journal
+    args:
+      - wait
+      - --event
+      - daemon.ready
+      - --since-rowid
+      - $JOURNAL_BASELINE
+      - --timeout
+      - "30"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+  - id: submit-request
+    type: exactl
+    command: request
+    args:
+      - --file
+      - $REQUEST_FIXTURE
+      - --portal
+      - todo-app
+      - --agent-role
+      - code-analyst
+    output_criteria:
+      - id: request-submitted
+        kind: command-output-contains
+        contains:
+          - request.created
+  - id: wait-for-plan
+    type: wait-for-file
+    args:
+      - "**/Plans/*_plan.md"
+    timeout_sec: 180
+    failure_glob: Workspace/Rejected/*_rejected.md
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.15
+  - id: wait-for-accepted-plan
+    type: exactl
+    command: journal
+    args:
+      - wait
+      - --event
+      - request.planned
+      - --since-rowid
+      - $JOURNAL_BASELINE
+      - --timeout
+      - "30"
+    timeout_sec: 30
+  - id: capture-role-response
+    type: capture-role-response
+    response_capture:
+      agent_role: code-analyst
+      output_alias: "@Memory/persona-response.json"
+      content_alias: "@Memory/persona-response.txt"
+    output_criteria:
+      - id: response-captured
+        kind: command-exit-code
+        equals: 0
+  - id: judge-response
+    type: judge
+    env:
+      EXA_EVAL_LLM_MOCK: "false"
+    output_criteria:
+      - id: persona-response-quality
+        kind: llm-judge
+        rubric: Judge the actual response against the task and supplied repository context. Assess accurate
+          code-grounded request flow or dependency explanation, concrete symbols, edges and relevant boundaries,
+          and useful completeness. Distinguish proposed findings from verified observations and avoid invented
+          dependencies. Ignore persona style and metadata. Return a continuous score from 0 to 1 and reasoning.
+        evidence_path: Memory/persona-response.txt
+        context_path: Memory/persona-judge-context.txt
+        score_threshold: 0.5
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args:
+      - stop
+    output_criteria:
+      - id: daemon-stopped
+        kind: command-output-contains
+        contains:
+          - daemon.stopped

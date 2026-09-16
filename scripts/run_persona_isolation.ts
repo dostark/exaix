@@ -24,11 +24,12 @@ import {
   type PersonaVariant,
 } from "../tests/scenario_framework/runner/persona_isolation_arm.ts";
 import { loadScenarioCatalog } from "../tests/scenario_framework/runner/scenario_catalog.ts";
+import { readPersonaResponseTrial } from "../tests/scenario_framework/runner/persona_response_trial.ts";
 
 export interface IPersonaExecutionCell {
   variant: PersonaVariant;
   argv: string[];
-  env: { EXA_EVAL_AGENT_ROLE_OVERLAY_DIR: string; EXA_LLM_PROVIDER: string; EXA_LLM_MODEL: string };
+  env: { [key: string]: string };
   outputDir: string;
 }
 
@@ -49,6 +50,7 @@ const PersonaIsolationManifestSchema = z.object({
   sourceBlueprintAlias: z.string().startsWith("@"),
   overlayRootAlias: z.string().startsWith("@"),
   reportOutputAlias: z.string().startsWith("@"),
+  experimentId: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).optional(),
 }).strict();
 
 type PersonaIsolationManifest = z.infer<typeof PersonaIsolationManifestSchema>;
@@ -64,12 +66,25 @@ export async function runPersonaIsolation(
   await validateScenarioCatalog(plan.scenarioIds);
   const reportOutputPath = await resolver.resolve(manifest.reportOutputAlias);
   const generatedRoot = join(plan.overlayRoot, plan.agentRoleId);
+  if (!dryRun && !manifest.experimentId) {
+    throw new Error("Live persona measurement requires a preregistered experimentId");
+  }
+  const evidenceRoot = `${reportOutputPath}.evidence`;
+  if (evidenceRoot.startsWith(`${plan.overlayRoot}/`)) {
+    throw new Error("Durable evidence must be outside persona overlays");
+  }
 
   try {
     await materializePersonaVariants(plan);
-    const executionPlan = buildExecutionPlan(plan, manifest.runnerCell, dryRun);
+    const executionPlan = buildExecutionPlan(
+      plan,
+      manifest.runnerCell,
+      dryRun,
+      evidenceRoot,
+      manifest.experimentId ?? "dry-run",
+    );
     await runCells(executionPlan);
-    const results = dryRun ? buildDryRunResults(plan) : await readResults(plan, executionPlan);
+    const results = dryRun ? buildDryRunResults(plan) : await readResults(plan, executionPlan, manifest.experimentId!);
     const report = buildPersonaComparisonInput(plan, results);
     const output = { ...report, executionPlan };
     await Deno.writeTextFile(reportOutputPath, `${JSON.stringify(output, null, 2)}\n`);
@@ -93,9 +108,11 @@ function buildExecutionPlan(
   plan: IPersonaIsolationArmPlan,
   runnerCell: string,
   dryRun: boolean,
+  evidenceRoot: string,
+  experimentId: string,
 ): IPersonaExecutionCell[] {
   return plan.cells.map((cell) => {
-    const outputDir = join(cell.overlayDir, "run-output");
+    const outputDir = join(evidenceRoot, cell.variant);
     const argv = [
       "run",
       "-A",
@@ -116,12 +133,11 @@ function buildExecutionPlan(
       env: {
         [EXA_EVAL_AGENT_ROLE_OVERLAY_DIR_ENV_VAR]: cell.overlayDir,
         EXA_LLM_PROVIDER: cell.provider,
-        // Colon-joined "provider:model", matching run_judge_calibration_live_probe.ts's
-        // established convention — a bare model name reaches ModelResolver's
-        // tryResolveBareName(), which only succeeds when the bare name is itself a
-        // registered provider id, so a real model name (e.g. "claude-sonnet-5") throws
-        // "Unknown model" for the judge-quality LLM call.
+        // Colon-joined "provider:model": a bare model name fails ModelResolver's
+        // tryResolveBareName(), which only accepts registered provider ids.
         EXA_LLM_MODEL: `${cell.provider}:${cell.model}`,
+        EXA_PERSONA_EXPERIMENT_ID: experimentId,
+        EXA_PERSONA_VARIANT: cell.variant,
       },
       outputDir,
     };
@@ -149,37 +165,52 @@ export function assertPersonaRunnerExitCode(code: number): void {
 async function readResults(
   plan: IPersonaIsolationArmPlan,
   cells: IPersonaExecutionCell[],
+  experimentId: string,
 ): Promise<IPersonaIsolationRunResult[]> {
   const results: IPersonaIsolationRunResult[] = [];
-  for (const cell of cells) results.push(await readCellResults(plan, cell));
+  for (const cell of cells) results.push(await readCellResults(plan, cell, experimentId));
   return results;
 }
 
 async function readCellResults(
   plan: IPersonaIsolationArmPlan,
   cell: IPersonaExecutionCell,
+  experimentId: string,
 ): Promise<IPersonaIsolationRunResult> {
-  const text = await Deno.readTextFile(join(cell.outputDir, "history", "eval-history.jsonl"));
-  const entries = text.trim().split("\n").map((line) =>
-    z.object({
-      run_id: z.string().min(1),
-      scenario_id: z.string().min(1),
-      trial_scores: z.array(z.number()),
-      provider: z.string().optional(),
-      model: z.string().optional(),
-    }).passthrough().parse(JSON.parse(line))
-  );
+  const tasks = [];
+  const seenRunIds = new Set<string>();
+  const seenTraces = new Set<string>();
+  for (const taskId of plan.scenarioIds) {
+    const scores: number[] = [];
+    const runManifestIds: string[] = [];
+    for (let trialIndex = 0; trialIndex < plan.trials; trialIndex++) {
+      const trial = await readPersonaResponseTrial(
+        join(cell.outputDir, "persona-trials", taskId, `trial-${trialIndex}.json`),
+        {
+          experimentId,
+          taskId,
+          trialIndex,
+          variant: cell.variant,
+          provider: plan.provider,
+          model: plan.model,
+          agentRole: plan.agentRoleId,
+        },
+      );
+      if (seenRunIds.has(trial.runId) || seenTraces.has(trial.traceId)) {
+        throw new Error("Duplicate persona trial provenance");
+      }
+      seenRunIds.add(trial.runId);
+      seenTraces.add(trial.traceId);
+      scores.push(trial.score);
+      runManifestIds.push(trial.runId);
+    }
+    tasks.push({ taskId, scores, runManifestIds });
+  }
   return {
     variant: cell.variant,
     provider: plan.provider,
     model: plan.model,
-    tasks: plan.scenarioIds.map((taskId) => {
-      const entry = entries.find((candidate) => candidate.scenario_id === taskId);
-      if (!entry || entry.provider && entry.provider !== plan.provider || entry?.model && entry.model !== plan.model) {
-        throw new Error("Persona run provenance is missing or drifted");
-      }
-      return { taskId, scores: entry.trial_scores, runManifestIds: [entry.run_id] };
-    }),
+    tasks,
   };
 }
 

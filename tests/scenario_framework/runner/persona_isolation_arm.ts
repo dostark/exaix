@@ -199,7 +199,7 @@ function validateInput(input: IPersonaIsolationArmInput): void {
   if (input.scenarioIds.length < MIN_PERSONA_TASKS) throw new Error("At least two SWE scenarios are required");
   if (new Set(input.scenarioIds).size !== input.scenarioIds.length) throw new Error("Scenario ids must be unique");
   if (input.scenarioIds.some((id) => !id.startsWith(SWE_SCENARIO_PREFIX))) {
-    throw new Error("Persona isolation accepts only swe_tasks scenario ids");
+    throw new Error("Persona isolation accepts only SWE task scenario ids");
   }
   if (!Number.isInteger(input.trials) || input.trials < MIN_PERSONA_TRIALS) {
     throw new Error("Persona isolation requires at least three trials");

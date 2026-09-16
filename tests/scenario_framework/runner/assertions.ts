@@ -1838,11 +1838,14 @@ export async function evaluateLlmJudgeCriterion(
   const contextWithTests = testStatus
     ? `${evalContext ?? ""}\n\n## Test Run Result (${criterion.test_run_source})\n${testStatus}`
     : evalContext;
-  const basePrompt = buildEvaluationPrompt(content, effectiveCriteria, contextWithTests, isMulti);
+  const groundedContext = criterion.rubric && criterion.rubric !== contextWithTests
+    ? `Role evaluation rubric:\n${criterion.rubric}\n\n${contextWithTests ?? ""}`
+    : contextWithTests;
+  const basePrompt = buildEvaluationPrompt(content, effectiveCriteria, groundedContext, isMulti);
   const methodology = await loadJudgeMethodologyInstructions(options.workspaceRoot);
   const promptUsed = prependMethodologyInstructions(basePrompt, methodology);
   const threshold = criterion.score_threshold ?? 0.7;
-  const judgeProvenance = resolveEvalJudgeProvenance(options.env);
+  let judgeProvenance = resolveEvalJudgeProvenance(options.env);
 
   const mockSetting = options.env?.EXA_EVAL_LLM_MOCK ?? Deno.env.get("EXA_EVAL_LLM_MOCK");
 
@@ -1904,10 +1907,11 @@ export async function evaluateLlmJudgeCriterion(
       criterion.id,
       options.workspaceRoot,
     );
-    const captureObserver = calibrationCapture
-      ? async (resolved: ILlmEndpointResolvedMetadata) => {
+    const captureObserver = async (resolved: ILlmEndpointResolvedMetadata) => {
+      judgeProvenance = { provider: resolved.provider, model: resolved.model };
+      if (calibrationCapture) {
         await calibrationCapture({
-          requestContext: contextWithTests ?? "",
+          requestContext: groundedContext ?? "",
           artifact: content,
           rubricMethodology: methodology,
           provider: resolved.provider,
@@ -1916,7 +1920,7 @@ export async function evaluateLlmJudgeCriterion(
           rawResponse: resolved.result.content,
         });
       }
-      : undefined;
+    };
     const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema, captureObserver);
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 

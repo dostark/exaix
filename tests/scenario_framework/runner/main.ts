@@ -20,6 +20,7 @@ import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
+import { writePersonaResponseTrial } from "./persona_response_trial.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
@@ -198,14 +199,19 @@ await new Command()
 
       for (let trial = 0; trial < trials; trial++) {
         const trialLabel = trials > 1 ? `  [trial ${trial + 1}/${trials}]` : "";
-        const trialOutputDir = trials > 1
+        const trialOutputDir = entry.pack === "persona_response_eval"
+          ? resolve(runtimeConfig.output_dir, "task-output", entry.id, `trial-${trial}`)
+          : trials > 1
           ? resolve(runtimeConfig.output_dir, `trial-${trial}`)
           : runtimeConfig.output_dir;
-        const trialWorkspaceRoot = trials > 1
+        const trialWorkspaceRoot = entry.pack === "persona_response_eval"
+          ? resolve(runtimeConfig.workspace_path, "persona-trials", entry.id, `trial-${trial}`)
+          : trials > 1
           ? resolve(runtimeConfig.workspace_path, `trial-${trial}`)
           : runtimeConfig.workspace_path;
 
         console.log(`${trialLabel} Running...`);
+        const personaRunId = crypto.randomUUID();
 
         try {
           const result = await runSyntheticScenario({
@@ -221,7 +227,32 @@ await new Command()
               : resolve(frameworkHome, "bin/exactl"),
             selectedCell: options.cell,
             maxStepTimeoutSec: options.maxStepTimeout,
+            ...(entry.pack === "persona_response_eval"
+              ? {
+                env: {
+                  EXA_PERSONA_EXPERIMENT_ID: Deno.env.get("EXA_PERSONA_EXPERIMENT_ID") ?? "",
+                  EXA_PERSONA_VARIANT: Deno.env.get("EXA_PERSONA_VARIANT") ?? "",
+                  EXA_PERSONA_TASK_ID: entry.id,
+                  EXA_PERSONA_TRIAL_INDEX: String(trial),
+                  EXA_PERSONA_RUN_ID: personaRunId,
+                },
+              }
+              : {}),
           });
+
+          if (entry.pack === "persona_response_eval") {
+            const evidence = JSON.parse(
+              await Deno.readTextFile(join(trialWorkspaceRoot, "Memory/persona-response.json")),
+            );
+            const snapshotDir = join(runtimeConfig.output_dir, "persona-trials", entry.id);
+            await Deno.mkdir(snapshotDir, { recursive: true });
+            await writePersonaResponseTrial(
+              join(snapshotDir, `trial-${trial}.json`),
+              personaRunId,
+              result.manifest,
+              evidence,
+            );
+          }
 
           const suiteScore = result.manifest.suite_score ?? 1.0;
           trialScores.push(suiteScore);

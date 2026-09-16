@@ -19,6 +19,10 @@ import {
 import { copy, ensureDir } from "@std/fs";
 import { dirname, globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
+import { ConfigService } from "@exaix/core/config";
+import { PathResolver } from "@exaix/portal";
+import { capturePersonaRoleResponse } from "./persona_response_evidence.ts";
+import { z } from "zod";
 import type { Opt, Reason } from "@exaix/core/types";
 import {
   captureToolCallsFromJournal,
@@ -147,6 +151,10 @@ export async function executeScenarioStep(
 ): Promise<IScenarioStepExecutionResult> {
   const startedAtEpochMs = Date.now();
   const startedAt = new Date(startedAtEpochMs).toISOString();
+
+  if (options.step.type === ScenarioStepType.CAPTURE_ROLE_RESPONSE) {
+    return await executeCaptureRoleResponseStep(options, startedAt, startedAtEpochMs);
+  }
 
   // Handle wait-for-file step type with polling
   if (options.step.type === ScenarioStepType.WAIT_FOR_FILE) {
@@ -686,12 +694,12 @@ function resolveCurrentTrace(
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
-    const where = baselineRowid ? " AND rowid > ?" : "";
+    const where = " AND rowid > ?";
     const row = db
       .prepare(
         `SELECT trace_id FROM activity WHERE action_type = 'request.created'${where} ORDER BY rowid ASC LIMIT 1`,
       )
-      .get<{ trace_id: string }>(baselineRowid);
+      .get<{ trace_id: string }>(baselineRowid ?? 0);
     return row?.trace_id;
   } catch {
     return undefined;
@@ -742,6 +750,65 @@ async function executePatchBlueprintStep(
     durationMs: completedAtEpochMs - startedAtEpochMs,
     exitCode: ok ? 0 : 1,
     stdout: message,
+    stderr: ok ? "" : message,
+    combinedOutput: message,
+  };
+}
+
+/** Captures trace-bound role content while withholding provenance from the judge input. */
+async function executeCaptureRoleResponseStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): Promise<IScenarioStepExecutionResult> {
+  let message = "";
+  let ok = false;
+  try {
+    const declaration = options.step.response_capture;
+    if (!declaration) throw new Error("Missing response_capture declaration");
+    const root = options.cwd ?? Deno.cwd();
+    const configPath = options.env?.EXA_CONFIG_PATH ?? join(root, "exa.config.toml");
+    const config = new ConfigService(configPath).get();
+    const env = options.env ?? {};
+    const traceId = resolveCurrentTrace(root, options.traceBaselineRowid);
+    if (!traceId) throw new Error("Missing current scenario request trace");
+    const evidence = await capturePersonaRoleResponse({
+      config,
+      traceId,
+      agentRole: declaration.agent_role,
+      outputAlias: declaration.output_alias,
+      provider: env.CELL_PROVIDER ?? "",
+      model: env.CELL_MODEL ?? "",
+      baselineRowid: options.traceBaselineRowid ?? 0,
+      experimentId: env.EXA_PERSONA_EXPERIMENT_ID ?? "",
+      taskId: env.EXA_PERSONA_TASK_ID ?? "",
+      trialIndex: z.coerce.number().int().nonnegative().parse(env.EXA_PERSONA_TRIAL_INDEX),
+      variant: z.enum(["shipped", "generic", "empty"]).parse(env.EXA_PERSONA_VARIANT),
+      runId: env.EXA_PERSONA_RUN_ID ?? "",
+    });
+    const contentPath = await new PathResolver(config).resolve(declaration.content_alias);
+    await ensureDir(dirname(contentPath));
+    try {
+      await Deno.writeTextFile(contentPath, evidence.content, { createNew: true });
+    } catch (error) {
+      if (!(error instanceof Deno.errors.AlreadyExists)) throw error;
+      if (await Deno.readTextFile(contentPath) !== evidence.content) {
+        throw new Error("Blinded response content collision");
+      }
+    }
+    message = JSON.stringify({ responseRowid: evidence.responseRowid, contentHash: evidence.contentHash });
+    ok = true;
+  } catch (error) {
+    message = error instanceof Error ? error.message : String(error);
+  }
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt: new Date().toISOString(),
+    durationMs: Date.now() - startedAtEpochMs,
+    exitCode: ok ? 0 : 1,
+    stdout: ok ? message : "",
     stderr: ok ? "" : message,
     combinedOutput: message,
   };

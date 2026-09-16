@@ -25,6 +25,7 @@ export enum ScenarioStepType {
   TEST_RUN = "test-run",
   PATCH_BLUEPRINT = "patch-blueprint",
   PREPARE_EVIDENCE = "prepare-evidence",
+  CAPTURE_ROLE_RESPONSE = "capture-role-response",
   WRITE_FILE = "write-file",
   REMOVE_FILES = "remove-files",
   RUN_SCRIPT = "run-script",
@@ -460,6 +461,11 @@ export const ScenarioStepSchema = z.object({
   source: z.string().min(1).optional(),
   // prepare-evidence: workspace-relative target for the copied evidence (default llm-judge-input.txt).
   target: z.string().min(1).optional(),
+  response_capture: z.object({
+    agent_role: z.enum(["senior-coder", "code-analyst", "security-expert"]),
+    output_alias: z.string().startsWith("@"),
+    content_alias: z.string().startsWith("@"),
+  }).strict().optional(),
   // write-file: workspace-relative path to write.
   path: z.string().min(1).optional(),
   // write-file: content to write (overwrites); with `append: true` it appends.
@@ -484,6 +490,13 @@ export const ScenarioStepSchema = z.object({
   partial_credit: z.boolean().optional(),
   step_pass_threshold: z.number().min(0).max(1).optional(),
 }).superRefine((step, ctx) => {
+  if (step.type === ScenarioStepType.CAPTURE_ROLE_RESPONSE && !step.response_capture) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "capture-role-response requires response_capture",
+      path: ["response_capture"],
+    });
+  }
   if (step.type === ScenarioStepType.MANUAL_REVIEW && !step.instructions) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

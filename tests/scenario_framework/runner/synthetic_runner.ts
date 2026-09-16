@@ -11,6 +11,8 @@
 import { dirname, join, resolve } from "@std/path";
 import { copy, ensureDir } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
+import { ConfigService } from "@exaix/core/config";
+import { preparePersonaJudgeContext } from "./persona_response_evidence.ts";
 import { parse as parseYaml } from "@std/yaml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
@@ -360,6 +362,14 @@ export async function runSyntheticScenario(
   // daemon actually boots with — mounting before it risks the entry being silently
   // overwritten by the materialized cell config, failing with "Portal not found".
   await prepareDeclaredPortals(loadedScenario.scenario.portals, options, envForExpansion);
+  if (loadedScenario.scenario.pack === "persona_response_eval") {
+    const config = new ConfigService(join(options.workspaceRoot, WORKSPACE_CONFIG_FILE)).get();
+    await preparePersonaJudgeContext(
+      config,
+      await Deno.readTextFile(loadedScenario.requestFixture.absolutePath),
+      loadedScenario.scenario.portals.map((portal) => `@${portal.alias}`),
+    );
+  }
 
   // Exposed as $CELL_PROVIDER/$CELL_MODEL for step $VAR expansion, so a judge-quality step
   // can reference the config's real provider/model instead of hardcoding one.
