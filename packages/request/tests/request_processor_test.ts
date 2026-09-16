@@ -344,6 +344,7 @@ Do something
       const actionTypes = activities.map((a) => a.action_type);
       assert(actionTypes.includes("request.processing"), "Should log processing start");
       assert(actionTypes.includes("request.planned"), "Should log completion");
+      assert(actionTypes.includes("plan.created"), "Should log plan creation");
     });
   });
 

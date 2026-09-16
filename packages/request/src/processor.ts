@@ -215,6 +215,7 @@ export class RequestProcessor {
       includeReasoning: processorConfig.includeReasoning,
       generateWikiLinks: true,
       runtimeRoot: join(this.config.system.root, this.config.paths.runtime),
+      logger: this.logger,
     });
 
     // No flows directory is resolved here: the injected loader already owns that resolution.
