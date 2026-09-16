@@ -19,7 +19,7 @@ matrix:
       requires_bin: "claude"
     - tool: "codex"
       provider: "$CELL_PROVIDER"
-      config: "configs/codex-cli-react.toml"
+      config: "configs/codex-cli-delegate-all.toml"
       requires_bin: "codex"
     - tool: "opencode"
       provider: "$CELL_PROVIDER"

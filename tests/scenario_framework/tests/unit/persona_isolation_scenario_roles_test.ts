@@ -7,6 +7,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
 
@@ -46,6 +47,30 @@ Deno.test("[PersonaIsolationRoles] preregistered scenarios expose Claude CLI and
     assert(tools.includes("codex"), `${scenarioId}: missing Codex CLI cell`);
     for (const step of scenario.steps.filter((candidate) => candidate.add_capabilities?.includes("cli_delegate"))) {
       if (step.cells) assert(step.cells.includes("codex"), `${scenarioId}: Codex excluded from CLI capability patch`);
+    }
+  }
+});
+
+Deno.test("[PersonaIsolationRoles] capability-patched CLI cells enable their execution strategy", async () => {
+  for (const scenarioId of Object.keys(EXPECTED_ROLE_BY_SCENARIO)) {
+    const source = await Deno.readTextFile(
+      join(FRAMEWORK_ROOT, "scenarios", "swe_tasks", scenarioId.slice(4) + ".yaml"),
+    );
+    const scenario = parseYaml(source) as {
+      matrix: { cells: Array<{ tool: string; config: string }> };
+      steps: Array<{ add_capabilities?: string[]; cells?: string[] }>;
+    };
+    for (const cell of scenario.matrix.cells.filter((cell) => ["codex", "claude-code"].includes(cell.tool))) {
+      if (
+        !scenario.steps.some((step) =>
+          step.add_capabilities?.includes("cli_delegate") && (!step.cells || step.cells.includes(cell.tool))
+        )
+      ) continue;
+      const config = parseToml(await Deno.readTextFile(join(FRAMEWORK_ROOT, "../..", cell.config))) as {
+        cli_delegate?: { enabled?: boolean; tool?: string };
+      };
+      assertEquals(config.cli_delegate?.enabled, true, `${scenarioId}: ${cell.tool} execution strategy disabled`);
+      assertEquals(config.cli_delegate?.tool, cell.tool);
     }
   }
 });
