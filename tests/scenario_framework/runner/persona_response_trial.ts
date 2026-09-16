@@ -6,6 +6,7 @@
  * @related-files [scripts/run_persona_isolation.ts, tests/scenario_framework/runner/main.ts]
  */
 import { z } from "zod";
+import { join } from "@std/path";
 import { CriterionResultSchema } from "../schema/step_schema.ts";
 import type { IPersonaRoleResponseEvidence } from "./persona_response_evidence.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
@@ -19,6 +20,12 @@ export interface IPersonaTrialExpectation {
   provider: string;
   model: string;
   agentRole: string;
+}
+
+export interface IPersonaTrialSnapshot {
+  runId: string;
+  manifest: IRunManifest;
+  evidence: IPersonaRoleResponseEvidence;
 }
 
 const EvidenceSchema = z.object({
@@ -92,6 +99,21 @@ export async function readPersonaResponseTrial(
     throw new Error("Invalid or drifted persona response judgment");
   }
   return { score: criterion.score, runId: snapshot.runId, traceId: snapshot.evidence.traceId };
+}
+
+/** Reuses a previously persisted trial instead of re-running a costly, already-completed live trial. */
+export async function readCachedPersonaTrialSnapshot(
+  outputDir: string,
+  taskId: string,
+  trial: number,
+): Promise<IPersonaTrialSnapshot | undefined> {
+  const path = join(outputDir, "persona-trials", taskId, `trial-${trial}.json`);
+  try {
+    return JSON.parse(await Deno.readTextFile(path)) as IPersonaTrialSnapshot;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return undefined;
+    throw error;
+  }
 }
 
 /** Freezes the observed manifest alongside its exact response evidence before output reuse. */

@@ -20,7 +20,7 @@ import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
-import { writePersonaResponseTrial } from "./persona_response_trial.ts";
+import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./persona_response_trial.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
@@ -199,6 +199,18 @@ await new Command()
 
       for (let trial = 0; trial < trials; trial++) {
         const trialLabel = trials > 1 ? `  [trial ${trial + 1}/${trials}]` : "";
+
+        if (entry.pack === "persona_response_eval") {
+          const cached = await readCachedPersonaTrialSnapshot(runtimeConfig.output_dir, entry.id, trial);
+          if (cached) {
+            const cachedScore = cached.manifest.suite_score ?? 1.0;
+            console.log(`${trialLabel} Reusing cached result (score: ${cachedScore.toFixed(3)})`);
+            trialScores.push(cachedScore);
+            if (trial === 0) manifests.set(entry.id, cached.manifest);
+            continue;
+          }
+        }
+
         const trialOutputDir = entry.pack === "persona_response_eval"
           ? resolve(runtimeConfig.output_dir, "task-output", entry.id, `trial-${trial}`)
           : trials > 1
