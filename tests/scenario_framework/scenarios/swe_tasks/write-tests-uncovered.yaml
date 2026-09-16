@@ -20,7 +20,7 @@ matrix:
       requires_bin: "claude"
     - tool: "codex"
       provider: "$CELL_PROVIDER"
-      config: "configs/codex-cli-delegate-all.toml"
+      config: "configs/codex-cli-react.toml"
       requires_bin: "codex"
     - tool: "opencode"
       provider: "$CELL_PROVIDER"
@@ -36,6 +36,7 @@ steps:
     type: "patch-blueprint"
     blueprint: "senior-coder"
     add_capabilities: ["cli_delegate"]
+    cells: ["claude-code", "opencode"]
     output_criteria:
       - id: "capability-patched"
         kind: "command-exit-code"

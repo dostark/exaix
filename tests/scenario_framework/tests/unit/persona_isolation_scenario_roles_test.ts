@@ -46,7 +46,7 @@ Deno.test("[PersonaIsolationRoles] preregistered scenarios expose Claude CLI and
     assert(tools.includes("claude-code"), `${scenarioId}: missing Claude CLI cell`);
     assert(tools.includes("codex"), `${scenarioId}: missing Codex CLI cell`);
     for (const step of scenario.steps.filter((candidate) => candidate.add_capabilities?.includes("cli_delegate"))) {
-      if (step.cells) assert(step.cells.includes("codex"), `${scenarioId}: Codex excluded from CLI capability patch`);
+      assert(step.cells && !step.cells.includes("codex"), `${scenarioId}: Codex must use its ReAct provider path`);
     }
   }
 });
