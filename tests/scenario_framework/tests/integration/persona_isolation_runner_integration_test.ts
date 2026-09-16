@@ -6,9 +6,10 @@
  * @related-files [scripts/run_persona_isolation.ts, tests/scenario_framework/runner/persona_isolation_arm.ts]
  */
 
-import { assertEquals, assertFalse } from "@std/assert";
+import { assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";
+import { assertPersonaRunnerExitCode } from "../../../../scripts/run_persona_isolation.ts";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../../../..");
 
@@ -110,3 +111,9 @@ async function exists(path: string): Promise<boolean> {
     throw error;
   }
 }
+
+Deno.test("[PersonaIsolationRunner] accepts graded failure exits but rejects infrastructure exits", () => {
+  assertPersonaRunnerExitCode(0);
+  assertPersonaRunnerExitCode(1);
+  assertThrows(() => assertPersonaRunnerExitCode(2), Error, "infrastructure failed");
+});

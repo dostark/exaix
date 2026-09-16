@@ -137,8 +137,13 @@ async function runCells(cells: IPersonaExecutionCell[]): Promise<void> {
       stderr: "inherit",
     });
     const status = await command.spawn().status;
-    if (!status.success) throw new Error("Persona scenario cell failed");
+    assertPersonaRunnerExitCode(status.code);
   }
+}
+
+/** Graded scenario failures are measurements; infrastructure failures invalidate the cell. */
+export function assertPersonaRunnerExitCode(code: number): void {
+  if (code !== 0 && code !== 1) throw new Error("Persona scenario infrastructure failed");
 }
 
 async function readResults(
