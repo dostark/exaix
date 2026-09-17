@@ -52,3 +52,9 @@ Deno.test("getEvaluationResultJsonSchema issues field is typed as array (not str
     assertEquals(suggestions.type, "array");
   }
 });
+
+Deno.test("single-criterion judge schema requires every declared field and forbids extra properties for Codex", () => {
+  const schema = getCriterionResultJsonSchema();
+  assertEquals(schema.additionalProperties, false);
+  assertEquals((schema.required as string[]).sort(), ["issues", "name", "passed", "reasoning", "score"]);
+});

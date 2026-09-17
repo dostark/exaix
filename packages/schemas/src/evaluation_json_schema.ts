@@ -22,5 +22,9 @@ export function getEvaluationResultJsonSchema(): Record<string, JSONValue> {
 /** The single-criterion judge response format, used when no preset is configured. Not
  *  cached, so a schema change at runtime is never stale. */
 export function getCriterionResultJsonSchema(): Record<string, JSONValue> {
-  return zodToJsonSchema(CriterionResultSchema);
+  const schema = zodToJsonSchema(CriterionResultSchema);
+  // The requested output includes optional/defaulted fields so both CLIs can enforce it.
+  schema.required = Object.keys(schema.properties as Record<string, JSONValue>);
+  schema.additionalProperties = false;
+  return schema;
 }

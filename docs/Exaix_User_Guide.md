@@ -383,6 +383,10 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 - A stray `OPENAI_API_KEY` or `CODEX_API_KEY` already present in your shell environment is
   never forwarded to the spawned `codex` subprocess — your subscription login always wins
   over an environment-provided metered key.
+- Fresh calls with a closed, flat output schema use Codex's native schema enforcement.
+  Single-criterion evaluation judges use this path to return a numeric score,
+  reasoning, issues, and a pass/fail result. Unsupported schemas and resumed calls
+  warn when native enforcement is unavailable; callers still validate returned data.
 - Every call runs with `--sandbox read-only`, so `codex-cli` calls never write to your
   filesystem — the same read-only posture Exaix already enforces for headless CLI-delegate
   planning calls.

@@ -148,6 +148,35 @@ const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
 const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
 const TOOL_CODEX = SessionToolSchema.enum.codex;
 
+const CODEX_SCHEMA_SCALAR_TYPES: readonly string[] = ["string", "number", "integer", "boolean"];
+
+function isCodexScalarSchema(schema: JSONValue): boolean {
+  return schema !== null && typeof schema === "object" && !Array.isArray(schema) &&
+    typeof schema.type === "string" && CODEX_SCHEMA_SCALAR_TYPES.includes(schema.type) &&
+    schema.anyOf === undefined && schema.oneOf === undefined && schema.$ref === undefined;
+}
+
+// Only the flat, closed schemas used by single-criterion judgments are opted in here.
+function isCodexFlatStrictSchema(schema: Record<string, JSONValue>): boolean {
+  const properties = schema.properties;
+  const required = schema.required;
+  if (
+    schema.type !== "object" || schema.additionalProperties !== false ||
+    properties === null || typeof properties !== "object" || Array.isArray(properties) ||
+    !Array.isArray(required) || schema.anyOf !== undefined || schema.oneOf !== undefined || schema.$ref !== undefined
+  ) return false;
+  const keys = Object.keys(properties);
+  if (required.length !== keys.length || !keys.every((key) => required.includes(key))) return false;
+  return Object.values(properties).every(isCodexFlatPropertySchema);
+}
+
+function isCodexFlatPropertySchema(property: JSONValue): boolean {
+  if (isCodexScalarSchema(property)) return true;
+  return property !== null && typeof property === "object" && !Array.isArray(property) &&
+    property.type === "array" && property.items !== undefined && isCodexScalarSchema(property.items) &&
+    property.anyOf === undefined && property.oneOf === undefined && property.$ref === undefined;
+}
+
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
 
 const OPENCODE_PERMISSION_DENY = OpencodePermissionValueSchema.enum.deny;
@@ -400,20 +429,31 @@ export class CliDelegateModelProvider implements IModelProvider {
   /** Builds `codex exec --json --sandbox read-only --skip-git-repo-check [resume] [--output-schema] <prompt>`.
    * `--skip-git-repo-check` is required since this spawns codex from `config.system.root`, never a Git repo.
    * `resume` and `--output-schema` cannot combine (OpenAI docs); resume wins, schema flag drops with a warning. */
-  private buildCodexArgs(
+  private async buildCodexArgs(
     prompt: string,
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
-  ): string[] {
+  ): Promise<string[]> {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
-    // codex 0.147.0's --output-schema requires OpenAI strict-mode schemas (no anyOf/oneOf, every
-    // property required) that Exaix's zod-to-json-schema output doesn't satisfy, causing
-    // `invalid_json_schema` (400). Dropped for codex; PlanAdapter enforces the shape instead.
-    if (jsonSchema) {
+    const schemaArgs: string[] = [];
+    if (jsonSchema && !sessionId && isCodexFlatStrictSchema(jsonSchema)) {
+      const schemaPath = await Deno.makeTempFile({
+        dir: this.options.cwd,
+        prefix: "codex-output-schema-",
+        suffix: ".json",
+      });
+      try {
+        await Deno.writeTextFile(schemaPath, JSON.stringify(jsonSchema));
+      } catch (error) {
+        await Deno.remove(schemaPath);
+        throw error;
+      }
+      schemaArgs.push(SESSION_FLAG_OUTPUT_SCHEMA, schemaPath);
+    } else if (jsonSchema) {
       console.warn(
-        `[CliDelegateModelProvider] codex --output-schema is dropped (codex requires strict-mode ` +
-          `schemas; PlanAdapter enforces the plan shape after <content> extraction).`,
+        `[CliDelegateModelProvider] codex --output-schema is dropped for resume or an unsupported schema; ` +
+          `the caller must validate the response shape.`,
       );
     }
     return [
@@ -426,6 +466,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_FLAG_SKIP_GIT_REPO_CHECK,
       ...backendArgs,
       ...resumeArgs,
+      ...schemaArgs,
       prompt,
     ];
   }

@@ -15,10 +15,12 @@
  * boolean left claude-code/opencode behavior unchanged.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
+
+import { getCriterionResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 
 const CODEX_MODEL = "gpt-5.6-terra";
 
@@ -382,3 +384,36 @@ Deno.test("CliDelegateModelProvider: codex warns (does not throw) that --output-
     await Deno.remove(cwd, { recursive: true });
   }
 });
+
+for (const exitCode of [0, 1]) {
+  Deno.test(`CliDelegateModelProvider: codex enforces the single-criterion judge schema and removes its file on exit ${exitCode}`, async () => {
+    const cwd = await Deno.makeTempDir();
+    let schemaPath = "";
+    try {
+      const schema = getCriterionResultJsonSchema();
+      const run: IRunCliDelegateProcess = async (_command, args) => {
+        const index = args.indexOf("--output-schema");
+        assertEquals(index >= 0, true, "the actual CLI invocation must carry the judge schema");
+        schemaPath = args[index + 1];
+        const observed = JSON.parse(await Deno.readTextFile(schemaPath));
+        assertEquals(observed, schema);
+        assertEquals(observed.additionalProperties, false);
+        assertEquals([...observed.required].sort(), ["issues", "name", "passed", "reasoning", "score"]);
+        return {
+          code: exitCode,
+          stdout: codexAgentMessageStdout(
+            '{"score":0,"reasoning":"valid low score","passed":false,"name":"task_fulfillment","issues":[]}',
+          ),
+          stderr: "",
+        };
+      };
+      const provider = new CliDelegateModelProvider({ tool: "codex", bin: "codex", model: CODEX_MODEL, cwd, run });
+      if (exitCode === 0) await provider.generate("Judge this response", { jsonSchema: schema });
+      else await assertRejects(() => provider.generate("Judge this response", { jsonSchema: schema }));
+      assertEquals(schemaPath.length > 0, true);
+      await assertRejects(() => Deno.stat(schemaPath), Deno.errors.NotFound);
+    } finally {
+      await Deno.remove(cwd, { recursive: true });
+    }
+  });
+}
