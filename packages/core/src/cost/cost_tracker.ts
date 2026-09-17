@@ -153,6 +153,8 @@ export class CostTracker implements ICostTracker {
       totalTokens: number;
       costUsd?: number;
       costSource?: CostSource;
+      cacheReadTokens?: number;
+      cacheCreationTokens?: number;
     },
     traceId?: Opt<string, Reason.TraceAbsent>,
     portal?: Opt<string, Reason.OptionalContext>,
@@ -171,6 +173,8 @@ export class CostTracker implements ICostTracker {
       portal,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheCreationTokens: usage.cacheCreationTokens,
       resolved: priced, // reuse the resolved cost — do not recompute (avoids double divergence)
     });
     return priced.cost;

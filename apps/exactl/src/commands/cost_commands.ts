@@ -54,6 +54,7 @@ export class CostCommands extends BaseCommand {
         colors.bold("Portal"),
         colors.bold("Provider/Model"),
         colors.bold("Tokens (P/C/T)"),
+        colors.bold("Cache (Read/Create)"),
         colors.bold("Cost (USD)"),
       ])
       .body(records.map((r) => [
@@ -62,6 +63,7 @@ export class CostCommands extends BaseCommand {
         r.portal || "-",
         `${r.provider}/${r.model}`,
         `${r.promptTokens}/${r.completionTokens}/${r.tokens}`,
+        `${r.cacheReadTokens ?? "-"}/${r.cacheCreationTokens ?? "-"}`,
         `$${r.estimatedCostUsd.toFixed(6)}`,
       ]));
 
@@ -74,9 +76,16 @@ export class CostCommands extends BaseCommand {
     const totalTokens = records.reduce((acc, r) => acc + r.tokens, 0);
     const totalPrompt = records.reduce((acc, r) => acc + r.promptTokens, 0);
     const totalCompletion = records.reduce((acc, r) => acc + r.completionTokens, 0);
+    const totalCacheRead = records.reduce((acc, r) => acc + (r.cacheReadTokens ?? 0), 0);
+    const totalCacheCreation = records.reduce((acc, r) => acc + (r.cacheCreationTokens ?? 0), 0);
 
     console.log(colors.bold(`Total Cost:    ${colors.green("$" + totalCost.toFixed(6))}`));
     console.log(colors.bold(`Total Tokens:  ${totalTokens} (Prompt: ${totalPrompt}, Completion: ${totalCompletion})`));
+    if (totalCacheRead > 0 || totalCacheCreation > 0) {
+      console.log(
+        colors.bold(`Total Cache Tokens:  Read: ${totalCacheRead}, Creation: ${totalCacheCreation}`),
+      );
+    }
     console.log("");
   }
 }

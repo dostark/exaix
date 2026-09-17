@@ -27,7 +27,13 @@ export function createStubCostTracker(): ICostTracker {
     trackGeneration: (
       _provider: string,
       _model: string,
-      _usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+      _usage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+        cacheReadTokens?: number;
+        cacheCreationTokens?: number;
+      },
       _traceId?: string,
       _portal?: string,
     ): Promise<number> => {
@@ -43,6 +49,8 @@ export function createStubCostTracker(): ICostTracker {
         traceId: _traceId ?? "",
         timestamp: new Date(),
         estimatedCostUsd,
+        cacheReadTokens: _usage.cacheReadTokens,
+        cacheCreationTokens: _usage.cacheCreationTokens,
       });
       return Promise.resolve(records.length);
     },

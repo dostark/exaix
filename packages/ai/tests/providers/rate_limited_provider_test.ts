@@ -282,6 +282,48 @@ Deno.test("RateLimitedProvider: records cost via tracker using provider name", a
   }
 });
 
+Deno.test("RateLimitedProvider: forwards cacheReadTokens/cacheCreationTokens into the cost tracker", async () => {
+  const { db: _db, cleanup } = await initTestDbService();
+  try {
+    const costTracker = createStubCostTracker();
+    const mockProvider: IModelProvider = {
+      id: "openai-gpt-4",
+      generate: spy((): Promise<IGenerateResult> =>
+        Promise.resolve({
+          content: "ok",
+          usage: {
+            promptTokens: 8,
+            completionTokens: 2428,
+            totalTokens: 2436,
+            cacheReadTokens: 134127,
+            cacheCreationTokens: 19773,
+          },
+          model: "m",
+          provider: "p",
+          cost_usd: 0.1366,
+        })
+      ),
+    };
+
+    const rateLimited = new RateLimitedProvider(mockProvider, {
+      maxCallsPerMinute: 10,
+      maxTokensPerHour: 10000,
+      maxCostPerDay: 10,
+      costPer1kTokens: 0.001,
+      costTracker,
+    });
+
+    await rateLimited.generate("hello");
+    await costTracker.flush();
+
+    const [record] = await costTracker.queryByCriteria({});
+    assertEquals(record.cacheReadTokens, 134127);
+    assertEquals(record.cacheCreationTokens, 19773);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("RateLimitedProvider: blocks when persistent budget exceeded", async () => {
   const { db: _db, cleanup } = await initTestDbService();
   try {

@@ -120,6 +120,8 @@ export class RateLimitedProvider implements IModelProvider {
             // Pass provider-reported cost through (e.g. OpenRouter usage.cost).
             costUsd: result.cost_usd,
             costSource: result.cost_usd !== undefined ? "provider_reported" : undefined,
+            cacheReadTokens: result.usage.cacheReadTokens,
+            cacheCreationTokens: result.usage.cacheCreationTokens,
           },
         );
       }

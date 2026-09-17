@@ -23,6 +23,8 @@ export interface ICostTracker {
       costUsd?: number;
       /** Explicit override for the recorded cost source. */
       costSource?: CostSource;
+      cacheReadTokens?: number;
+      cacheCreationTokens?: number;
     },
     traceId?: string,
     portal?: string,
