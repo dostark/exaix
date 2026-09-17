@@ -49,6 +49,8 @@ export interface IReActLoopExecutor {
       completionTokens: number;
       totalTokens: number;
       costUsd: number;
+      cacheReadTokens?: Opt<number, Reason.OptionalInput>;
+      cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
       durationMs?: Opt<number, Reason.OptionalInput>;
     },
   ): Promise<void>;
@@ -160,6 +162,8 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       completionTokens: number;
       totalTokens: number;
       costUsd: number;
+      cacheReadTokens?: Opt<number, Reason.OptionalInput>;
+      cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
       durationMs?: Opt<number, Reason.OptionalInput>;
     },
   ): Promise<void> {
@@ -175,6 +179,8 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
       costUsd: usage.costUsd,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheCreationTokens: usage.cacheCreationTokens,
       payload: {
         model,
         provider: providerStr,

@@ -3237,7 +3237,7 @@ git pull origin main
 cat CHANGELOG.md
 
 # 5. Run migrations if needed
-deno task migrate
+deno task migrate up
 
 # 6. Clear Deno cache (forces re-compilation)
 deno cache --reload apps/daemon/main.ts
@@ -3248,6 +3248,14 @@ deno task start
 # 8. Verify
 deno task status
 ```
+
+`deno task migrate up` also adds missing activity cache-token columns to an
+existing journal, even when its initialization migration is already recorded.
+Existing rows and cache values are preserved; newly added columns contain NULL
+until a provider reports cache usage. Repeating the command is safe. The
+`scripts/setup_db.ts` setup command performs the same repair. Stop the daemon
+and back up the workspace before running either command against an existing
+journal. Historical payload-only cache values are not backfilled.
 
 ### 5.4 Troubleshooting
 

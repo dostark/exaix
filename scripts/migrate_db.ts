@@ -11,6 +11,7 @@ import { Database } from "@db/sqlite";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { MigrationDirection } from "@exaix/core";
+import { upgradeActivityCacheColumns } from "./activity_cache_schema.ts";
 
 import { ConfigService } from "@exaix/core/config";
 
@@ -89,6 +90,7 @@ async function main() {
           }
         }
       }
+      upgradeActivityCacheColumns(db);
       console.log("All migrations up to date.");
     } else if (command === MigrationDirection.DOWN) {
       const lastApplied = Array.from(applied).pop();

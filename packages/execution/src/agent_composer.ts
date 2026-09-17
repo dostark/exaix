@@ -820,6 +820,8 @@ export class AgentComposer {
       promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
       completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
       costUsd: usagePayload.cost_usd_estimate,
+      cacheReadTokens: usagePayload.cache_read_tokens,
+      cacheCreationTokens: usagePayload.cache_creation_tokens,
       payload: {
         branch: result.branch,
         commit_sha: result.commit_sha,
@@ -883,6 +885,8 @@ export class AgentComposer {
       completionTokens: number;
       totalTokens: number;
       costUsd: number;
+      cacheReadTokens?: Opt<number, Reason.OptionalInput>;
+      cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
       /** Real wall-clock duration of this individual provider.generate() call, ms. */
       durationMs?: Opt<number, Reason.OptionalInput>;
     },
@@ -899,6 +903,8 @@ export class AgentComposer {
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
       costUsd: usage.costUsd,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheCreationTokens: usage.cacheCreationTokens,
       payload: {
         model,
         provider: providerStr,

@@ -76,25 +76,38 @@ export async function readStepLlmMetrics(
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
+    // Execution summaries already aggregate generation usage. Prefer the summary per
+    // trace inside this window, retaining generation-only traces without counting twice.
     const row = db
       .prepare(
-        `SELECT
+        `WITH step_activity AS (
+          SELECT * FROM activity
+          WHERE rowid > ? AND rowid <= ? AND action_type IN (?, ?)
+        ), token_activity AS (
+          SELECT source.* FROM step_activity source
+          WHERE source.action_type = ? OR NOT EXISTS (
+            SELECT 1 FROM step_activity summary
+            WHERE summary.trace_id = source.trace_id AND summary.action_type = ?
+          )
+        )
+        SELECT
           SUM(CASE WHEN action_type = ? THEN json_extract(payload, '$.execution_time_ms') ELSE 0 END) AS execution_time_ms_sum,
           SUM(CASE WHEN action_type = ? THEN json_extract(payload, '$.duration_ms') ELSE 0 END) AS generation_duration_ms_sum,
-          SUM(prompt_tokens) AS prompt_tokens_sum,
-          SUM(completion_tokens) AS completion_tokens_sum,
-          SUM(cache_read_tokens) AS cache_read_tokens_sum,
-          SUM(cache_creation_tokens) AS cache_creation_tokens_sum,
+          (SELECT SUM(prompt_tokens) FROM token_activity) AS prompt_tokens_sum,
+          (SELECT SUM(completion_tokens) FROM token_activity) AS completion_tokens_sum,
+          (SELECT SUM(cache_read_tokens) FROM token_activity) AS cache_read_tokens_sum,
+          (SELECT SUM(cache_creation_tokens) FROM token_activity) AS cache_creation_tokens_sum,
           SUM(CASE WHEN json_extract(payload, '$.usage.cost_source') = 'tracked' THEN json_extract(payload, '$.usage.cost_usd_estimate') ELSE NULL END) AS tracked_cost_usd_sum,
           COUNT(*) AS row_count
-        FROM activity
-        WHERE rowid > ? AND rowid <= ? AND action_type IN (?, ?)`,
+        FROM step_activity`,
       )
       .get<IActivityMetricsRow>(
-        AGENT_EVENT_EXECUTION_COMPLETED,
-        AGENT_GENERATION_COMPLETED,
         sinceRowid,
         untilRowid,
+        AGENT_EVENT_EXECUTION_COMPLETED,
+        AGENT_GENERATION_COMPLETED,
+        AGENT_EVENT_EXECUTION_COMPLETED,
+        AGENT_EVENT_EXECUTION_COMPLETED,
         AGENT_EVENT_EXECUTION_COMPLETED,
         AGENT_GENERATION_COMPLETED,
       );

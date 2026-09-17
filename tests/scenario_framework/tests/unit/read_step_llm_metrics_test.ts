@@ -41,6 +41,7 @@ interface IActivityFixturePayload {
 }
 
 interface IInsertActivityOptions {
+  traceId?: string;
   actionType: string;
   payload: IActivityFixturePayload;
   promptTokens: number;
@@ -52,9 +53,10 @@ interface IInsertActivityOptions {
 function insertActivity(db: Database, options: IInsertActivityOptions): void {
   db.exec(
     `INSERT INTO activity (id, trace_id, actor, action_type, payload, prompt_tokens, completion_tokens, cache_read_tokens, cache_creation_tokens)
-     VALUES (?, 'trace-1', 'agent-executor', ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, 'agent-executor', ?, ?, ?, ?, ?, ?)`,
     [
       crypto.randomUUID(),
+      options.traceId ?? "trace-1",
       options.actionType,
       JSON.stringify(options.payload),
       options.promptTokens,
@@ -183,4 +185,56 @@ Deno.test({
   },
   sanitizeOps: false,
   sanitizeResources: false,
+});
+
+Deno.test("[ReadStepLlmMetrics] summary preference is per trace and confined to the rowid window", async () => {
+  const { workspaceRoot, db, cleanup } = await makeWorkspaceWithJournal("summary-preference");
+  try {
+    insertActivity(db, {
+      traceId: "outside-summary",
+      actionType: "agent.execution_completed",
+      payload: {},
+      promptTokens: 999,
+      completionTokens: 999,
+      cacheReadTokens: 999,
+    });
+    const sinceRowid: number = db.prepare("SELECT MAX(rowid) AS m FROM activity").get<{ m: number }>()!.m;
+    insertActivity(db, {
+      traceId: "outside-summary",
+      actionType: "agent.generation_completed",
+      payload: {},
+      promptTokens: 2,
+      completionTokens: 3,
+      cacheReadTokens: 40,
+    });
+    for (const actionType of ["agent.generation_completed", "agent.execution_completed"]) {
+      insertActivity(db, {
+        traceId: "generation-and-summary",
+        actionType,
+        payload: {},
+        promptTokens: 4,
+        completionTokens: 5,
+        cacheReadTokens: 10,
+      });
+    }
+    insertActivity(db, {
+      traceId: "summary-only",
+      actionType: "agent.execution_completed",
+      payload: {},
+      promptTokens: 1,
+      completionTokens: 1,
+      cacheReadTokens: 0,
+    });
+    const untilRowid: number = db.prepare("SELECT MAX(rowid) AS m FROM activity").get<{ m: number }>()!.m;
+    const metrics = await readStepLlmMetrics(workspaceRoot, sinceRowid, untilRowid);
+    assertEquals(metrics.tokens, {
+      prompt: 7,
+      completion: 9,
+      total: 16,
+      cacheRead: 50,
+      cacheCreation: undefined,
+    });
+  } finally {
+    await cleanup();
+  }
 });
