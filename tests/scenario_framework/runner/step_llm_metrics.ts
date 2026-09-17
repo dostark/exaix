@@ -83,8 +83,8 @@ export async function readStepLlmMetrics(
           SUM(CASE WHEN action_type = ? THEN json_extract(payload, '$.duration_ms') ELSE 0 END) AS generation_duration_ms_sum,
           SUM(prompt_tokens) AS prompt_tokens_sum,
           SUM(completion_tokens) AS completion_tokens_sum,
-          SUM(json_extract(payload, '$.usage.cache_read_tokens')) AS cache_read_tokens_sum,
-          SUM(json_extract(payload, '$.usage.cache_creation_tokens')) AS cache_creation_tokens_sum,
+          SUM(cache_read_tokens) AS cache_read_tokens_sum,
+          SUM(cache_creation_tokens) AS cache_creation_tokens_sum,
           SUM(CASE WHEN json_extract(payload, '$.usage.cost_source') = 'tracked' THEN json_extract(payload, '$.usage.cost_usd_estimate') ELSE NULL END) AS tracked_cost_usd_sum,
           COUNT(*) AS row_count
         FROM activity

@@ -38,20 +38,30 @@ async function makeWorkspaceWithJournal(
 interface IActivityFixturePayload {
   execution_time_ms?: number;
   duration_ms?: number;
-  usage?: { cache_read_tokens?: number; cache_creation_tokens?: number };
 }
 
-function insertActivity(
-  db: Database,
-  actionType: string,
-  payload: IActivityFixturePayload,
-  promptTokens: number,
-  completionTokens: number,
-): void {
+interface IInsertActivityOptions {
+  actionType: string;
+  payload: IActivityFixturePayload;
+  promptTokens: number;
+  completionTokens: number;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
+}
+
+function insertActivity(db: Database, options: IInsertActivityOptions): void {
   db.exec(
-    `INSERT INTO activity (id, trace_id, actor, action_type, payload, prompt_tokens, completion_tokens)
-     VALUES (?, 'trace-1', 'agent-executor', ?, ?, ?, ?)`,
-    [crypto.randomUUID(), actionType, JSON.stringify(payload), promptTokens, completionTokens],
+    `INSERT INTO activity (id, trace_id, actor, action_type, payload, prompt_tokens, completion_tokens, cache_read_tokens, cache_creation_tokens)
+     VALUES (?, 'trace-1', 'agent-executor', ?, ?, ?, ?, ?, ?)`,
+    [
+      crypto.randomUUID(),
+      options.actionType,
+      JSON.stringify(options.payload),
+      options.promptTokens,
+      options.completionTokens,
+      options.cacheReadTokens ?? null,
+      options.cacheCreationTokens ?? null,
+    ],
   );
 }
 
@@ -60,15 +70,35 @@ Deno.test({
   fn: async () => {
     const { workspaceRoot, db, cleanup } = await makeWorkspaceWithJournal("in-window");
     try {
-      insertActivity(db, "agent.execution_completed", { execution_time_ms: 999999, duration_ms: 999999 }, 999, 999);
+      insertActivity(db, {
+        actionType: "agent.execution_completed",
+        payload: { execution_time_ms: 999999, duration_ms: 999999 },
+        promptTokens: 999,
+        completionTokens: 999,
+      });
       const sinceRowid = db.prepare("SELECT MAX(rowid) AS m FROM activity").get<{ m: number }>()!.m;
 
-      insertActivity(db, "agent.execution_completed", { execution_time_ms: 1500, duration_ms: 1500 }, 10, 20);
-      insertActivity(db, "agent.generation_completed", { duration_ms: 300 }, 0, 0);
+      insertActivity(db, {
+        actionType: "agent.execution_completed",
+        payload: { execution_time_ms: 1500, duration_ms: 1500 },
+        promptTokens: 10,
+        completionTokens: 20,
+      });
+      insertActivity(db, {
+        actionType: "agent.generation_completed",
+        payload: { duration_ms: 300 },
+        promptTokens: 0,
+        completionTokens: 0,
+      });
 
       const untilRowid = db.prepare("SELECT MAX(rowid) AS m FROM activity").get<{ m: number }>()!.m;
 
-      insertActivity(db, "agent.execution_completed", { execution_time_ms: 888888, duration_ms: 888888 }, 888, 888);
+      insertActivity(db, {
+        actionType: "agent.execution_completed",
+        payload: { execution_time_ms: 888888, duration_ms: 888888 },
+        promptTokens: 888,
+        completionTokens: 888,
+      });
 
       const metrics = await readStepLlmMetrics(workspaceRoot, sinceRowid, untilRowid);
 
@@ -84,25 +114,27 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[ReadStepLlmMetrics] sums cache_read_tokens/cache_creation_tokens from generation_completed payload usage",
+  name: "[ReadStepLlmMetrics] sums cache_read_tokens/cache_creation_tokens from the activity table's dedicated columns",
   fn: async () => {
     const { workspaceRoot, db, cleanup } = await makeWorkspaceWithJournal("cache-tokens");
     try {
       const sinceRowid = 0;
-      insertActivity(
-        db,
-        "agent.generation_completed",
-        { duration_ms: 100, usage: { cache_read_tokens: 40, cache_creation_tokens: 15 } },
-        50,
-        25,
-      );
-      insertActivity(
-        db,
-        "agent.generation_completed",
-        { duration_ms: 100, usage: { cache_read_tokens: 10, cache_creation_tokens: 5 } },
-        50,
-        25,
-      );
+      insertActivity(db, {
+        actionType: "agent.generation_completed",
+        payload: { duration_ms: 100 },
+        promptTokens: 50,
+        completionTokens: 25,
+        cacheReadTokens: 40,
+        cacheCreationTokens: 15,
+      });
+      insertActivity(db, {
+        actionType: "agent.generation_completed",
+        payload: { duration_ms: 100 },
+        promptTokens: 50,
+        completionTokens: 25,
+        cacheReadTokens: 10,
+        cacheCreationTokens: 5,
+      });
       const untilRowid = db.prepare("SELECT MAX(rowid) AS m FROM activity").get<{ m: number }>()!.m;
 
       const metrics = await readStepLlmMetrics(workspaceRoot, sinceRowid, untilRowid);
