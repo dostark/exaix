@@ -221,6 +221,68 @@ Deno.test("[TracedProvider.generate] emits llm.call.started and llm.call.complet
   }
 });
 
+Deno.test("[TracedProvider.generate] emits llm.call.completed with cache_read_tokens/cache_creation_tokens when the provider reports them", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const result = {
+      content: "ok",
+      model: "mock-model",
+      provider: "mock",
+      usage: {
+        promptTokens: 8,
+        completionTokens: 2428,
+        totalTokens: 2436,
+        cacheReadTokens: 134127,
+        cacheCreationTokens: 19773,
+      },
+      cost_usd: 0.1366,
+    };
+    const inner = { ...createInnerProvider([]), generate: () => Promise.resolve(result) };
+    const traced = new TracedProvider(inner, logger);
+
+    await traced.generate("a real prompt", { traceId: "parent-trace-cache-tokens" });
+    await db.waitForFlush();
+
+    const completedRows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LlmCallCompleted) as Array<{ payload: string }>;
+    const completedPayload = JSON.parse(completedRows[0].payload);
+    assertEquals(completedPayload.cache_read_tokens, 134127);
+    assertEquals(completedPayload.cache_creation_tokens, 19773);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[TracedProvider.generate] emits llm.call.completed with cache_read_tokens/cache_creation_tokens 0 when the provider reports none", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const result = {
+      content: "ok",
+      model: "mock-model",
+      provider: "mock",
+      usage: { promptTokens: 3, completionTokens: 5, totalTokens: 8 },
+      cost_usd: 0.001234,
+    };
+    const inner = { ...createInnerProvider([]), generate: () => Promise.resolve(result) };
+    const traced = new TracedProvider(inner, logger);
+
+    await traced.generate("a real prompt", { traceId: "parent-trace-no-cache-tokens" });
+    await db.waitForFlush();
+
+    const completedRows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LlmCallCompleted) as Array<{ payload: string }>;
+    const completedPayload = JSON.parse(completedRows[0].payload);
+    assertEquals(completedPayload.cache_read_tokens, 0);
+    assertEquals(completedPayload.cache_creation_tokens, 0);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[TracedProvider.generate] emits llm.call.failed with a real field-level payload when the inner provider throws (real EventLogger)", async () => {
   const { db, cleanup } = await initTestDbService();
   try {

@@ -316,6 +316,8 @@ export class CliDelegateModelProvider implements IModelProvider {
         promptTokens: parsed.tokenStats.input,
         completionTokens: parsed.tokenStats.output,
         totalTokens: parsed.tokenStats.total,
+        cacheReadTokens: parsed.tokenStats.cacheRead,
+        cacheCreationTokens: parsed.tokenStats.cacheCreation,
       },
       model: this.options.model,
       provider: this.options.tool,

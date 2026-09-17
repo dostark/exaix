@@ -122,7 +122,14 @@ Deno.test("[delegate_return_parser] [regression] codex dispatch addition leaves 
     `{"type":"result","result":"claude answer","usage":{"input_tokens":10,"output_tokens":5},"total_cost_usd":0.001}`;
   const claudeResult = parseDelegateStdout(claudeStdout, "claude-code");
   assertEquals(claudeResult.lastText, "claude answer");
-  assertEquals(claudeResult.tokenStats, { input: 10, output: 5, total: 15, reasoning: undefined });
+  assertEquals(claudeResult.tokenStats, {
+    input: 10,
+    output: 5,
+    total: 15,
+    cacheRead: undefined,
+    cacheCreation: undefined,
+    reasoning: undefined,
+  });
   assertEquals(claudeResult.costUsd, 0.001);
 
   const opencodeStdout = `{"type":"text","part":{"text":"opencode answer"}}\n`;

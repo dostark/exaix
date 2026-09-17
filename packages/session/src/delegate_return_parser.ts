@@ -253,6 +253,8 @@ function parseClaudeResult(stdout: string): IDelegateParsedReturn {
       input: usage.input_tokens ?? 0,
       output: usage.output_tokens ?? 0,
       total: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0),
+      cacheRead: usage.cache_read_input_tokens,
+      cacheCreation: usage.cache_creation_input_tokens,
       reasoning: usage.output_tokens_details?.thinking_tokens,
     };
     const costUsd = typeof obj.total_cost_usd === "number" ? obj.total_cost_usd : 0;

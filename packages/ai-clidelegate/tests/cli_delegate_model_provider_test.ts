@@ -577,6 +577,38 @@ Deno.test("CliDelegateModelProvider: maps claude result into IGenerateResult (co
   assertEquals(result.cost_usd, 0.0421);
 });
 
+Deno.test("CliDelegateModelProvider: maps claude cache_read/creation_input_tokens into IGenerateResult usage", async () => {
+  const run: IRunCliDelegateProcess = () =>
+    Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({
+        type: "result",
+        result: "The request wants a null-safety fix.",
+        usage: {
+          input_tokens: 8,
+          output_tokens: 2428,
+          cache_read_input_tokens: 134127,
+          cache_creation_input_tokens: 19773,
+        },
+        total_cost_usd: 0.1366,
+      }),
+      stderr: "",
+    });
+
+  const provider = new CliDelegateModelProvider({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-sonnet-5",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  const result = await provider.generate("prompt");
+
+  assertEquals(result.usage.cacheReadTokens, 134127);
+  assertEquals(result.usage.cacheCreationTokens, 19773);
+});
+
 Deno.test("CliDelegateModelProvider: maps opencode JSONL into IGenerateResult (last text + step_finish tokens)", async () => {
   const run: IRunCliDelegateProcess = () =>
     Promise.resolve({

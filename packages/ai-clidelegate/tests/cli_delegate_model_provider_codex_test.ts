@@ -234,7 +234,13 @@ Deno.test("CliDelegateModelProvider: maps codex JSONL into IGenerateResult (last
   const result = await provider.generate("Analyze this request");
 
   assertEquals(result.content, "Analysis complete.");
-  assertEquals(result.usage, { promptTokens: 100, completionTokens: 40, totalTokens: 140 });
+  assertEquals(result.usage, {
+    promptTokens: 100,
+    completionTokens: 40,
+    totalTokens: 140,
+    cacheReadTokens: 10,
+    cacheCreationTokens: undefined,
+  });
   assertEquals(result.model, CODEX_MODEL);
   assertEquals(result.provider, "codex");
   assertEquals(result.cost_usd, 0);
