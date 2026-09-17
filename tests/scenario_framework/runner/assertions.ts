@@ -44,7 +44,7 @@ import {
 } from "@exaix/core/evaluation";
 import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
-import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
+import { getEvaluationResultJsonSchema, getJudgeScoreJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { ICostTracker } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -1901,7 +1901,7 @@ export async function evaluateLlmJudgeCriterion(
 
   // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
-    const judgeJsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
+    const judgeJsonSchema = isMulti ? getEvaluationResultJsonSchema() : getJudgeScoreJsonSchema();
     const calibrationCapture = resolveEffectiveCalibrationCapture(
       options.calibrationCapture,
       criterion.id,
@@ -1954,7 +1954,7 @@ export async function evaluateLlmJudgeCriterion(
       };
     }
 
-    const parsed = JudgeResponseSchema.parse(JSON.parse(cleaned));
+    const parsed = JudgeResponseSchema.pick({ score: true, reasoning: true }).parse(JSON.parse(cleaned));
     const score = parsed.score;
     const passed = score >= threshold;
     console.error(

@@ -20,7 +20,7 @@ import { assertSpyCalls, spy } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 
-import { getCriterionResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
+import { getCriterionResultJsonSchema, getJudgeScoreJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 
 const CODEX_MODEL = "gpt-5.6-terra";
 
@@ -390,13 +390,13 @@ for (const exitCode of [0, 1]) {
     const cwd = await Deno.makeTempDir();
     let schemaPath = "";
     try {
-      const schema = getCriterionResultJsonSchema();
+      const schema = exitCode === 0 ? getJudgeScoreJsonSchema() : getCriterionResultJsonSchema();
       const run: IRunCliDelegateProcess = async (_command, args) => {
         const index = args.indexOf("--output-schema");
         assertEquals(index >= 0, true, "the actual CLI invocation must carry the judge schema");
         schemaPath = args[index + 1];
         const observed = JSON.parse(await Deno.readTextFile(schemaPath));
-        assertEquals(observed, schema);
+        assertEquals(observed, { ...schema, required: observed.required });
         assertEquals(observed.additionalProperties, false);
         assertEquals([...observed.required].sort(), ["issues", "name", "passed", "reasoning", "score"]);
         return {

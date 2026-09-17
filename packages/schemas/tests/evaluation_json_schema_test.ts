@@ -7,7 +7,11 @@
  */
 import type { JSONValue } from "@exaix/core";
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "../src/evaluation_json_schema.ts";
+import {
+  getCriterionResultJsonSchema,
+  getEvaluationResultJsonSchema,
+  getJudgeScoreJsonSchema,
+} from "../src/evaluation_json_schema.ts";
 
 Deno.test("getEvaluationResultJsonSchema returns an object with type: object", () => {
   const schema = getEvaluationResultJsonSchema();
@@ -57,4 +61,11 @@ Deno.test("single-criterion judge schema requires every declared field and forbi
   const schema = getCriterionResultJsonSchema();
   assertEquals(schema.additionalProperties, false);
   assertEquals((schema.required as string[]).sort(), ["issues", "name", "passed", "reasoning", "score"]);
+});
+
+Deno.test("score-only judge schema requires score and reasoning while declaring optional verdict metadata", () => {
+  const schema = getJudgeScoreJsonSchema();
+  assertEquals((schema.required as string[]).sort(), ["reasoning", "score"]);
+  assertEquals(schema.properties, getCriterionResultJsonSchema().properties);
+  assertEquals(schema.additionalProperties, false);
 });

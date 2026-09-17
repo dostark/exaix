@@ -157,7 +157,7 @@ function isCodexScalarSchema(schema: JSONValue): boolean {
 }
 
 // Only the flat, closed schemas used by single-criterion judgments are opted in here.
-function isCodexFlatStrictSchema(schema: Record<string, JSONValue>): boolean {
+function isCodexFlatClosedSchema(schema: Record<string, JSONValue>): boolean {
   const properties = schema.properties;
   const required = schema.required;
   if (
@@ -166,7 +166,7 @@ function isCodexFlatStrictSchema(schema: Record<string, JSONValue>): boolean {
     !Array.isArray(required) || schema.anyOf !== undefined || schema.oneOf !== undefined || schema.$ref !== undefined
   ) return false;
   const keys = Object.keys(properties);
-  if (required.length !== keys.length || !keys.every((key) => required.includes(key))) return false;
+  if (!required.every((key) => typeof key === "string" && keys.includes(key))) return false;
   return Object.values(properties).every(isCodexFlatPropertySchema);
 }
 
@@ -437,14 +437,18 @@ export class CliDelegateModelProvider implements IModelProvider {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
     const schemaArgs: string[] = [];
-    if (jsonSchema && !sessionId && isCodexFlatStrictSchema(jsonSchema)) {
+    if (jsonSchema && !sessionId && isCodexFlatClosedSchema(jsonSchema)) {
       const schemaPath = await Deno.makeTempFile({
         dir: this.options.cwd,
         prefix: "codex-output-schema-",
         suffix: ".json",
       });
       try {
-        await Deno.writeTextFile(schemaPath, JSON.stringify(jsonSchema));
+        const strictSchema = {
+          ...jsonSchema,
+          required: Object.keys(jsonSchema.properties as Record<string, JSONValue>),
+        };
+        await Deno.writeTextFile(schemaPath, JSON.stringify(strictSchema));
       } catch (error) {
         await Deno.remove(schemaPath);
         throw error;

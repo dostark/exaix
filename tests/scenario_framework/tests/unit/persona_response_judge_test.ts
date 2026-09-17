@@ -12,7 +12,7 @@ import { stub } from "@std/testing/mock";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
 import { evaluateLlmJudgeCriterion } from "../../runner/assertions.ts";
-import { CriterionKind, CriterionPhase } from "../../schema/step_schema.ts";
+import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
 
 Deno.test({
   name: "[PersonaResponse] actual judge call receives role rubric alongside frozen task/source context",
@@ -37,7 +37,7 @@ Deno.test({
           () =>
             Promise.resolve(
               new MockProvider(
-                '{"name":"task_fulfillment","score":0,"reasoning":"weak response","issues":[],"passed":false}',
+                '{"score":0,"reasoning":"weak response"}',
               ),
             ),
         );
@@ -59,6 +59,8 @@ Deno.test({
             assertStringIncludes(metadata.promptUsed, "Actual response");
           },
         });
+        assertEquals(result.status, CriterionStatus.FAILED);
+        assertEquals(result.score, 0);
         assertEquals(result.judge?.model, "mock");
       });
     } finally {

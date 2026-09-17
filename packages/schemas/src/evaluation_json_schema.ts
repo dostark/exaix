@@ -28,3 +28,11 @@ export function getCriterionResultJsonSchema(): Record<string, JSONValue> {
   schema.additionalProperties = false;
   return schema;
 }
+
+/** Declares optional verdict metadata but requires only the score and reasoning consumed by a single-score evaluator. */
+export function getJudgeScoreJsonSchema(): Record<string, JSONValue> {
+  const schema = getCriterionResultJsonSchema();
+  const consumed = zodToJsonSchema(CriterionResultSchema.pick({ score: true, reasoning: true }));
+  schema.required = consumed.required;
+  return schema;
+}
