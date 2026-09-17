@@ -26,6 +26,8 @@ export interface IDatabaseService {
     promptTokens?: number,
     completionTokens?: number,
     costUsd?: number,
+    cacheReadTokens?: number,
+    cacheCreationTokens?: number,
   ): void;
 
   /**

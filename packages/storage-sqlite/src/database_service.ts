@@ -39,6 +39,8 @@ const ACTIVITY_TABLE_DDL = `
     prompt_tokens INTEGER DEFAULT 0,
     completion_tokens INTEGER DEFAULT 0,
     cost_usd REAL DEFAULT 0.0,
+    cache_read_tokens INTEGER,
+    cache_creation_tokens INTEGER,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
@@ -63,6 +65,8 @@ const ACTIVITY_COLUMNS: ReadonlySet<string> = new Set([
   "prompt_tokens",
   "completion_tokens",
   "cost_usd",
+  "cache_read_tokens",
+  "cache_creation_tokens",
   "timestamp",
 ]);
 
@@ -79,6 +83,8 @@ interface LogEntry {
   promptTokens: number;
   completionTokens: number;
   costUsd: number;
+  cacheReadTokens: number | null;
+  cacheCreationTokens: number | null;
   timestamp: string;
 }
 
@@ -96,6 +102,8 @@ export const ActivityRecordSchema = z.object({
   prompt_tokens: z.number().int().min(0).optional().default(0),
   completion_tokens: z.number().int().min(0).optional().default(0),
   cost_usd: z.number().min(0).optional().default(0),
+  cache_read_tokens: z.number().int().min(0).nullable().optional(),
+  cache_creation_tokens: z.number().int().min(0).nullable().optional(),
   timestamp: z.string(),
   count: z.number().optional(),
 });
@@ -181,6 +189,8 @@ export class DatabaseService implements IDatabaseService {
     promptTokens?: Opt<number, Reason.OptionalInput>,
     completionTokens?: Opt<number, Reason.OptionalInput>,
     costUsd?: Opt<number, Reason.OptionalInput>,
+    cacheReadTokens?: Opt<number, Reason.OptionalInput>,
+    cacheCreationTokens?: Opt<number, Reason.OptionalInput>,
   ): void {
     if (this.isClosing) {
       console.warn("Cannot log activity: DatabaseService is closing");
@@ -200,6 +210,8 @@ export class DatabaseService implements IDatabaseService {
       promptTokens: promptTokens || 0,
       completionTokens: completionTokens || 0,
       costUsd: costUsd || 0,
+      cacheReadTokens: cacheReadTokens ?? null,
+      cacheCreationTokens: cacheCreationTokens ?? null,
       timestamp: new Date().toISOString(),
     };
 
@@ -290,8 +302,8 @@ export class DatabaseService implements IDatabaseService {
         this.retryTransaction(() => {
           for (const entry of batch) {
             this.db.exec(
-              `INSERT INTO activity (id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+              `INSERT INTO activity (id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
               [
                 entry.activityId ?? null,
                 entry.traceId ?? null,
@@ -305,6 +317,8 @@ export class DatabaseService implements IDatabaseService {
                 entry.promptTokens ?? 0,
                 entry.completionTokens ?? 0,
                 entry.costUsd ?? 0,
+                entry.cacheReadTokens ?? null,
+                entry.cacheCreationTokens ?? null,
                 entry.timestamp ?? null,
               ],
             );
@@ -357,7 +371,7 @@ export class DatabaseService implements IDatabaseService {
     value: string,
   ): Promise<ActivityRecord[]> {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp
        FROM activity
        WHERE ${field} = ?
        ORDER BY timestamp`,
@@ -379,7 +393,7 @@ export class DatabaseService implements IDatabaseService {
 
   getActivitiesByTrace(traceId: string): ActivityRecord[] {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp
        FROM activity
        WHERE trace_id = ?
        ORDER BY timestamp`,
@@ -395,7 +409,7 @@ export class DatabaseService implements IDatabaseService {
 
   getActivitiesByActionType(actionType: string): ActivityRecord[] {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp
        FROM activity
        WHERE action_type = ?
        ORDER BY timestamp`,
@@ -413,7 +427,7 @@ export class DatabaseService implements IDatabaseService {
     await this.flushPendingLogs("getRecentActivity");
 
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
+      `SELECT id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp
        FROM activity
        ORDER BY timestamp DESC
        LIMIT ?`,

@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS activity (
   prompt_tokens INTEGER DEFAULT 0,
   completion_tokens INTEGER DEFAULT 0,
   cost_usd REAL DEFAULT 0.0,
+  -- cache_read_tokens / cache_creation_tokens carry real tool-reported prompt-cache
+  -- usage (e.g. Claude CLI's cache_read_input_tokens/cache_creation_input_tokens);
+  -- NULL means "not reported by this provider", never "reported as zero".
+  cache_read_tokens INTEGER,
+  cache_creation_tokens INTEGER,
   timestamp DATETIME DEFAULT (datetime('now'))
 );
 

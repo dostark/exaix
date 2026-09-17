@@ -41,6 +41,8 @@ export interface IActivityRecord {
   prompt_tokens?: number;
   completion_tokens?: number;
   cost_usd?: number;
+  cache_read_tokens?: number | null;
+  cache_creation_tokens?: number | null;
   timestamp: string;
   count?: number;
 }

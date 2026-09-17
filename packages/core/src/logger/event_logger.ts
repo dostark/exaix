@@ -527,6 +527,8 @@ export class EventLogger implements IEventLogger {
           promptTokens: event.promptTokens,
           completionTokens: event.completionTokens,
           costUsd: event.costUsd,
+          cacheReadTokens: event.cacheReadTokens,
+          cacheCreationTokens: event.cacheCreationTokens,
         });
       } catch (error) {
         // Database write failed - log warning but don't crash
@@ -547,6 +549,8 @@ export class EventLogger implements IEventLogger {
           event.promptTokens,
           event.completionTokens,
           event.costUsd,
+          event.cacheReadTokens,
+          event.cacheCreationTokens,
         );
       } catch (error) {
         // Database write failed - log warning but don't crash

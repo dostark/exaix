@@ -245,11 +245,15 @@ Deno.test("[TracedProvider.generate] emits llm.call.completed with cache_read_to
     await db.waitForFlush();
 
     const completedRows = db.instance.prepare(
-      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
-    ).all(DomainEventType.LlmCallCompleted) as Array<{ payload: string }>;
+      "SELECT payload, cache_read_tokens, cache_creation_tokens FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LlmCallCompleted) as Array<
+      { payload: string; cache_read_tokens: number; cache_creation_tokens: number }
+    >;
     const completedPayload = JSON.parse(completedRows[0].payload);
     assertEquals(completedPayload.cache_read_tokens, 134127);
     assertEquals(completedPayload.cache_creation_tokens, 19773);
+    assertEquals(completedRows[0].cache_read_tokens, 134127);
+    assertEquals(completedRows[0].cache_creation_tokens, 19773);
   } finally {
     await cleanup();
   }

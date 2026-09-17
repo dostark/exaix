@@ -28,6 +28,8 @@ export interface IActivity {
   promptTokens?: number;
   completionTokens?: number;
   costUsd?: number;
+  cacheReadTokens?: number | null;
+  cacheCreationTokens?: number | null;
   timestamp: string;
 }
 
@@ -47,6 +49,8 @@ export interface ILogActivityRequest {
   promptTokens?: number;
   completionTokens?: number;
   costUsd?: number;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
 }
 
 /**
@@ -93,6 +97,8 @@ export class DatabaseActivityRepository implements IActivityRepository {
       request.promptTokens,
       request.completionTokens,
       request.costUsd,
+      request.cacheReadTokens,
+      request.cacheCreationTokens,
     );
 
     // Wait for the activity to be flushed to ensure it's persisted
@@ -141,6 +147,8 @@ export class DatabaseActivityRepository implements IActivityRepository {
       promptTokens: record.prompt_tokens ?? 0,
       completionTokens: record.completion_tokens ?? 0,
       costUsd: record.cost_usd ?? 0,
+      cacheReadTokens: record.cache_read_tokens ?? undefined,
+      cacheCreationTokens: record.cache_creation_tokens ?? undefined,
       timestamp: record.timestamp,
     };
   }

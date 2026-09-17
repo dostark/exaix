@@ -60,6 +60,8 @@ export class TracedProvider implements IModelProvider {
         promptTokens: result.usage?.promptTokens,
         completionTokens: result.usage?.completionTokens,
         costUsd: result.cost_usd,
+        cacheReadTokens: result.usage?.cacheReadTokens,
+        cacheCreationTokens: result.usage?.cacheCreationTokens,
       });
 
       return result;

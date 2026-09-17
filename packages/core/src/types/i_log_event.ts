@@ -52,4 +52,10 @@ export interface ILogEvent {
 
   /** Estimated cost in USD */
   costUsd?: number;
+
+  /** Real tool-reported prompt-cache read tokens (undefined when not reported) */
+  cacheReadTokens?: number;
+
+  /** Real tool-reported prompt-cache creation/write tokens (undefined when not reported) */
+  cacheCreationTokens?: number;
 }
