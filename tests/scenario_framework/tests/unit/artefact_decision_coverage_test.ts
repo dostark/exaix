@@ -12,14 +12,25 @@
  * @related-files [tests/scenario_framework/runner/artefact_decision_coverage.ts, tests/scenario_framework/runner/skill_value_decision.ts]
  */
 
-import { assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import {
   ArtefactDecisionStatus,
   ArtefactKind,
   assertArtefactDecisionCoverage,
   type IArtefactDecisionEntry,
   type IArtefactRef,
+  loadArtefactDecisions,
 } from "../../runner/artefact_decision_coverage.ts";
+
+async function withFixtureFile(content: string, fn: (path: string) => Promise<void>): Promise<void> {
+  const path = await Deno.makeTempFile({ suffix: ".json" });
+  try {
+    await Deno.writeTextFile(path, content);
+    await fn(path);
+  } finally {
+    await Deno.remove(path);
+  }
+}
 
 function catalog(...refs: IArtefactRef[]): IArtefactRef[] {
   return refs;
@@ -155,4 +166,57 @@ Deno.test("[ArtefactDecisionCoverage] the same artefact id under a different kin
     { kind: ArtefactKind.SKILL, artefactId: "code-review", status: ArtefactDecisionStatus.KEEP, rationale: "measured" },
   ];
   assertThrows(() => assertArtefactDecisionCoverage(cat, entries), Error, "code-review");
+});
+
+// loadArtefactDecisions — JSON fixture loader, so recording/updating a decision is a
+// data edit (git-blameable per entry) instead of a TS source edit + full CI gate.
+
+Deno.test("[loadArtefactDecisions] parses a valid JSON fixture into IArtefactDecisionEntry[]", async () => {
+  await withFixtureFile(
+    JSON.stringify([
+      { kind: "skill", artefactId: "response-contract", status: "keep", rationale: "n=3 mean Δ +0.557" },
+      {
+        kind: "flow",
+        artefactId: "feature-development",
+        status: "revise",
+        rationale: "cost premium, no quality gain",
+        cleanMeasurement: true,
+      },
+    ]),
+    async (path) => {
+      const entries = await loadArtefactDecisions(path);
+      assertEquals(entries.length, 2);
+      assertEquals(entries[0], {
+        kind: ArtefactKind.SKILL,
+        artefactId: "response-contract",
+        status: ArtefactDecisionStatus.KEEP,
+        rationale: "n=3 mean Δ +0.557",
+      });
+      assertEquals(entries[1].cleanMeasurement, true);
+    },
+  );
+});
+
+Deno.test("[loadArtefactDecisions] rejects an entry with an invalid status enum value", async () => {
+  await withFixtureFile(
+    JSON.stringify([{ kind: "skill", artefactId: "x", status: "maybe-keep", rationale: "n/a" }]),
+    async (path) => {
+      await assertRejects(() => loadArtefactDecisions(path));
+    },
+  );
+});
+
+Deno.test("[loadArtefactDecisions] rejects an entry missing artefactId", async () => {
+  await withFixtureFile(
+    JSON.stringify([{ kind: "skill", status: "keep", rationale: "n/a" }]),
+    async (path) => {
+      await assertRejects(() => loadArtefactDecisions(path));
+    },
+  );
+});
+
+Deno.test("[loadArtefactDecisions] rejects malformed JSON", async () => {
+  await withFixtureFile("{ not valid json", async (path) => {
+    await assertRejects(() => loadArtefactDecisions(path));
+  });
 });

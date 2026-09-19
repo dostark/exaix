@@ -1,0 +1,379 @@
+[
+  {
+    "kind": "skill",
+    "artefactId": "memory-extraction-content-policy",
+    "status": "non-coverage",
+    "rationale": "programmatic skill loaded directly by a background service (memory extraction), never through agent-role defaults or request/trigger matching (see check_blueprint_integrity.ts's PROGRAMMATIC_SKILLS exemption) — not a swe_tasks-reachable artefact; pre-existing gap found while migrating this fixture from scripts/check_artefact_decision_coverage.ts's hardcoded array"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "response-contract",
+    "status": "keep",
+    "rationale": "n=3 mean Δ +0.557, cost-neutral to cost-saving"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "response-contract-security-analysis",
+    "status": "keep",
+    "rationale": "n=3 mean Δ +0.330, the one strong Go-tier effect, matches its critical flag"
+  },
+  { "kind": "skill", "artefactId": "security-first", "status": "keep", "rationale": "n=3 mean Δ +0.288" },
+  { "kind": "skill", "artefactId": "typescript-patterns", "status": "keep", "rationale": "n=3 mean Δ +0.289" },
+  {
+    "kind": "skill",
+    "artefactId": "tdd-methodology",
+    "status": "keep",
+    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "exaix-conventions",
+    "status": "keep",
+    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "error-handling",
+    "status": "keep",
+    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "fix-bug",
+    "status": "keep",
+    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "code-review",
+    "status": "keep",
+    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "commit-message",
+    "status": "keep",
+    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "documentation-driven",
+    "status": "keep",
+    "rationale": "Δ −0.004 at n=1, no measurable effect"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "response-contract-code-analysis",
+    "status": "non-coverage",
+    "rationale": "no corpus task matches this skill (analysis-domain task needed)"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "response-contract-judge",
+    "status": "non-coverage",
+    "rationale": "no corpus task matches this skill (judge-domain task needed)"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "response-contract-performance",
+    "status": "non-coverage",
+    "rationale": "no corpus task matches this skill (performance-domain task needed)"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "response-contract-qa",
+    "status": "non-coverage",
+    "rationale": "no corpus task matches this skill (QA-domain task needed)"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "verdict-rubric",
+    "status": "non-coverage",
+    "rationale": "no corpus task matches this skill (verdict-domain task needed)"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "architecture-review",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "blueprint-best-practices",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "collaborative-flow",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "conversational-dialogue",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "gap-analysis",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "performance-analysis",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "portal-grounding",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "reflexive-critique",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "requirements-analysis",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "research-methodology",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+  {
+    "kind": "skill",
+    "artefactId": "step-execution",
+    "status": "non-coverage",
+    "rationale": "not matched by any of the 19 swe_tasks corpus tasks run live"
+  },
+
+  {
+    "kind": "agent_role",
+    "artefactId": "aci-react",
+    "status": "non-coverage",
+    "rationale": "model: mock:test-model, created_by: exaix-test-suite — a Phase 112 Step 7 real-daemon ACI-injection test fixture, never a real request target; pre-existing gap found while migrating this fixture from scripts/check_artefact_decision_coverage.ts's hardcoded array"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "senior-coder",
+    "status": "keep",
+    "rationale": "statistically indistinguishable from test-engineer on the measured task (Δ +0.002); no measured harm"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "test-engineer",
+    "status": "keep",
+    "rationale": "same agent-role-swap arm; no measured harm"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "code-analyst",
+    "status": "keep",
+    "rationale": "prune arm Δ 0.000 — the Phase 142 Step 17 portal-grounding prune neither helped nor hurt; kept pruned"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "code-reviewer",
+    "status": "non-coverage",
+    "rationale": "bound only inside the internal dogfood meta-workflow (Blueprints/Flows/dogfood-*.flow.yaml), never dispatched against the generic swe_tasks corpus (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "dogfood-coder",
+    "status": "non-coverage",
+    "rationale": "bound only inside the internal dogfood meta-workflow (Blueprints/Flows/dogfood-*.flow.yaml), never dispatched against the generic swe_tasks corpus (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "dogfood-developer",
+    "status": "non-coverage",
+    "rationale": "bound only inside the internal dogfood meta-workflow, and slated for merge into dogfood-coder in Phase 161 Step 6 (Signal B declared-bundle-equality candidate, Blueprints/Agents/dogfood-developer.md to be deleted) — not worth live-measuring before retirement"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "performance-engineer",
+    "status": "non-coverage",
+    "rationale": "no performance-profiling/optimization task exists in the swe_tasks corpus (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "product-manager",
+    "status": "non-coverage",
+    "rationale": "no requirements-analysis/specification task exists in the swe_tasks corpus (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "qa-engineer",
+    "status": "non-coverage",
+    "rationale": "permitted_tools has no write_file/patch_file, so it cannot satisfy any write-tests-uncovered* task's files_changed gate despite capability overlap with test-engineer (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "quality-judge",
+    "status": "non-coverage",
+    "rationale": "empty permitted_tools; an LLM-as-judge role that scores other agents' output, never a swe_tasks target (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "research-synthesizer",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "security-expert",
+    "status": "keep",
+    "rationale": "agent-role-swap vs senior-coder on injection-sanitisation, n=3 each: senior-coder mean 0.994 (0.994/0.994/0.995), security-expert mean 0.754 (0.995/0.994/0.273) — Δ -0.240, driven entirely by 1/3 trials where the role rejected or hedged its own plan citing a self-perceived file-write permission block that did not actually exist (patch_file is permitted); the other 2/3 trials matched senior-coder's quality (0.994-0.995). Kept: output quality is at parity when the role executes — the gap is a repeatable ~1-in-3 execution-reliability issue, not a quality defect, consistent across 3 independent live samples this session (Phase 161 Step 3), unresolved by a response-contract.skill.md clarification attempt. Founding baseline (n=3, single task); not full statistical power."
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "software-architect",
+    "status": "non-coverage",
+    "rationale": "no dedicated architecture-design task exists in the swe_tasks corpus, and permitted_tools lacks write_file/patch_file so it cannot satisfy any implementation task's files_changed gate either (Phase 161 Step 3)"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "technical-writer",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "agent_role",
+    "artefactId": "voting-judge",
+    "status": "non-coverage",
+    "rationale": "empty permitted_tools; an LLM-as-judge role that scores other agents' output, never a swe_tasks target (Phase 161 Step 3)"
+  },
+
+  {
+    "kind": "flow",
+    "artefactId": "feature-development",
+    "status": "revise",
+    "rationale": "Phase 159 Step 8 clean re-measurement (both arms matched on strategy: cli_delegate, opencode-cli/opencode-go-deepseek-v4-flash, add-feature-endpoint task): quality Δ 0.00 (suite 0.996 both arms, n=1), token Δ +11752 (+430%, 2729→14481 prompt tokens), wall-clock Δ +80959ms (+86%, 94.5s→175.5s) — the flow's 6-step decomposition costs meaningfully more for identical measured quality on this task. Not REMOVE (not broken, no quality regression, decomposition may have unmeasured reviewability value) and not KEEP (a real, non-noise cost premium with no offsetting quality gain deserves an explicit flag, unlike a near-zero Δ at noise level). Revise: reconsider whether all 6 steps need strategy: cli_delegate uniformly (Step 7's audit table already flags analyze-requirements/design-architecture as synthesis-only steps under the general rubric; only Step 8's cross-arm-matching requirement forced them to cli_delegate here) once this flow itself gets remeasured outside a strategy-matching study.",
+    "cleanMeasurement": true
+  },
+  {
+    "kind": "flow",
+    "artefactId": "analyze-codebase",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "api-design",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "api-documentation",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "bug-investigation",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "code-review",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "consensus-review",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "documentation",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "dogfood-loop",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "dogfood-meta-workflow",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "migration-planning",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "onboarding-docs",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "pr-review",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "refactoring",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "research-synthesis",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "security-audit",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "test-generation",
+    "status": "non-coverage",
+    "rationale": "not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "strategy-comparison-cli-delegate",
+    "status": "non-coverage",
+    "rationale": "Phase 159 mechanism-proof fixture (Step 6), not a production task flow subject to a value decision"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "strategy-comparison-react",
+    "status": "non-coverage",
+    "rationale": "Phase 159 mechanism-proof fixture (Step 6), not a production task flow subject to a value decision"
+  },
+  {
+    "kind": "flow",
+    "artefactId": "strategy-routing-smoke",
+    "status": "non-coverage",
+    "rationale": "Phase 159 mechanism-proof fixture (Step 5), not a production task flow subject to a value decision"
+  }
+]

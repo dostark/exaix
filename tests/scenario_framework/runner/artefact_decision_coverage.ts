@@ -9,10 +9,14 @@
  * result this phase produced for feature-development is confounded by
  * execution strategy — see phase-158-artefact-value-evaluation.md's Step 6 caveat.
  * A flow can only be AWAITING_REMEASUREMENT until a Phase-159-clean re-run backs a real
- * decision.
+ * decision. Decisions themselves live in a JSON fixture (`scripts/artefact_decisions.json`),
+ * loaded via `loadArtefactDecisions` — recording or updating one is a data edit, not a
+ * TS source change, so it doesn't require passing the full lint/style/arch commit gate.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/tests/unit/artefact_decision_coverage_test.ts, tests/scenario_framework/runner/skill_value_decision.ts]
  */
+
+import { z } from "zod";
 
 export enum ArtefactKind {
   SKILL = "skill",
@@ -38,6 +42,24 @@ export interface IArtefactDecisionEntry extends IArtefactRef {
   rationale: string;
   /** Required to back a FLOW entry whose status is KEEP/REVISE/REMOVE — a flow decision claiming a real verdict must be backed by a measurement not confounded by execution strategy. */
   cleanMeasurement?: boolean;
+}
+
+/** Shape-validates one JSON fixture entry against IArtefactDecisionEntry. Rationale is not
+ *  required to be non-empty here — assertArtefactDecisionCoverage already enforces that as
+ *  a domain rule, not a parse-time shape check. */
+export const ArtefactDecisionEntrySchema = z.object({
+  kind: z.nativeEnum(ArtefactKind),
+  artefactId: z.string().min(1),
+  status: z.nativeEnum(ArtefactDecisionStatus),
+  rationale: z.string(),
+  cleanMeasurement: z.boolean().optional(),
+});
+
+/** Reads and validates a JSON array of decision entries from `path`. Throws on malformed
+ *  JSON or a shape/enum mismatch — fails closed rather than silently dropping an entry. */
+export async function loadArtefactDecisions(path: string | URL): Promise<IArtefactDecisionEntry[]> {
+  const raw = await Deno.readTextFile(path);
+  return z.array(ArtefactDecisionEntrySchema).parse(JSON.parse(raw));
 }
 
 const CATALOG_KEY_SEPARATOR = "::";
