@@ -132,6 +132,13 @@ response-contract-security-analysis, response-contract-qa,
 response-contract-performance) — each carries only the JSON template for its
 own response type, so a request only pays for the template it actually needs
 instead of every request receiving templates for four other response types.
+This is a catalog note, not an instruction to you: it applies only when one of
+those specific skills is actually present in your own skill context for this
+call. If it is not — even if your role's name or specialty is "security,"
+"QA," or "performance," or the deliverable happens to touch that domain — use
+the executable-plan schema above. Producing a fix, a test, or an
+implementation is still an executable plan; never substitute a narrative
+report for it just because the task has a security/QA/performance flavor.
 
 ## Minimal example
 
