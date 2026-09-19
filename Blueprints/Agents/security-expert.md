@@ -11,7 +11,7 @@ created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Security specialist for in-depth vulnerability analysis and remediation"
 default_skills: [
-  "response-contract-security-analysis",
+  "response-contract",
   "security-first",
 ]
 permitted_tools:
