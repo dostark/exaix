@@ -219,6 +219,9 @@ export const CliDelegateConfigSchema = z.object({
   tool: SessionToolSchema,
   /** Model the CLI tool should use (headless `--model <model>`). Optional; tool default when absent. */
   model: z.string().min(1).optional(),
+  /** Reasoning-effort hint (headless `--effort <level>` on claude, `-c model_reasoning_effort=`
+   *  on codex, `--variant <level>` on opencode). Optional; tool default when absent. */
+  effort: z.string().min(1).optional(),
   /** Absolute paths to additional binaries allowed beyond the built-in claude/opencode bins. */
   bin_overrides: z.array(z.string()).optional(),
 });

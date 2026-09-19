@@ -1238,3 +1238,38 @@ Deno.test("[IAgentRunner] omits conversationId when request has no traceId", asy
   assertEquals(capturedOptions?.conversationId, undefined);
   assertEquals(capturedOptions?.traceId, undefined);
 });
+
+// thinking/effort threading — a blueprint declaring these must reach provider.generate()
+
+Deno.test("[IAgentRunner] passes blueprint.thinking/effort as options.thinking/effort to provider.generate()", async () => {
+  const mockProvider = new MockProvider(wellFormedResponse);
+  let capturedOptions: Parameters<typeof mockProvider.generate>[1];
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string, options?: Parameters<typeof mockProvider.generate>[1]) => {
+    capturedOptions = options;
+    return await originalGenerate(prompt, options);
+  };
+
+  const runner = new AgentRunner(mockProvider);
+  const blueprintWithEffort: IBlueprint = { ...sampleBlueprint, thinking: true, effort: "high" };
+  await runner.run(blueprintWithEffort, sampleRequest, undefined);
+
+  assertEquals(capturedOptions?.thinking, true);
+  assertEquals(capturedOptions?.effort, "high");
+});
+
+Deno.test("[IAgentRunner] omits thinking/effort when the blueprint declares neither", async () => {
+  const mockProvider = new MockProvider(wellFormedResponse);
+  let capturedOptions: Parameters<typeof mockProvider.generate>[1];
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string, options?: Parameters<typeof mockProvider.generate>[1]) => {
+    capturedOptions = options;
+    return await originalGenerate(prompt, options);
+  };
+
+  const runner = new AgentRunner(mockProvider);
+  await runner.run(sampleBlueprint, sampleRequest, undefined);
+
+  assertEquals(capturedOptions?.thinking, undefined);
+  assertEquals(capturedOptions?.effort, undefined);
+});

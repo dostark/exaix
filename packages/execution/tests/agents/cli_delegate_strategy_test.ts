@@ -168,6 +168,69 @@ Deno.test("CliDelegateStrategy: strips a provider-prefixed model before passing 
   assertEquals(capturedArgs[modelIndex + 1], "opencode/deepseek-v4-flash-free");
 });
 
+Deno.test("CliDelegateStrategy: deps.effort passes claude's --effort flag", async () => {
+  let capturedArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args, _options) => {
+    capturedArgs = args;
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    effort: "high",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+  const effortIndex = capturedArgs.indexOf("--effort");
+  assertEquals(effortIndex !== -1, true, "--effort should be present");
+  assertEquals(capturedArgs[effortIndex + 1], "high");
+});
+
+Deno.test("CliDelegateStrategy: omits --effort for claude when deps.effort is absent", async () => {
+  let capturedArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args, _options) => {
+    capturedArgs = args;
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+
+  const strategy = new CliDelegateStrategy({
+    tool: "claude-code",
+    bin: "claude",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+  assertEquals(capturedArgs.includes("--effort"), false);
+});
+
+Deno.test("CliDelegateStrategy: deps.effort passes opencode's --variant flag", async () => {
+  let capturedArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args, _options) => {
+    capturedArgs = args;
+    return Promise.resolve({ code: 0, stdout: JSON.stringify({ sessionID: "s1" }), stderr: "" });
+  };
+
+  const strategy = new CliDelegateStrategy({
+    tool: "opencode",
+    bin: "opencode",
+    effort: "medium",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+  const variantIndex = capturedArgs.indexOf("--variant");
+  assertEquals(variantIndex !== -1, true, "--variant should be present");
+  assertEquals(capturedArgs[variantIndex + 1], "medium");
+});
+
 Deno.test("CliDelegateStrategy: a non-zero exit with empty stderr surfaces stdout in the error instead of an empty reason", async () => {
   // A non-zero exit previously discarded stdout entirely, hiding the CLI's actual JSON error
   // body (e.g. a 404 model-not-found response) behind an uninformative "exited with code 1: ".

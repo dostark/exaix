@@ -64,6 +64,9 @@ import { SafeSubprocess } from "@exaix/core";
 import {
   DEFAULT_RUNTIME_PATH,
   MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA,
+  SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT,
+  SESSION_FLAG_CONFIG_OVERRIDE,
+  SESSION_FLAG_EFFORT,
   SESSION_FLAG_FORMAT,
   SESSION_FLAG_JSON,
   SESSION_FLAG_JSON_SCHEMA,
@@ -75,6 +78,7 @@ import {
   SESSION_FLAG_SANDBOX,
   SESSION_FLAG_SESSION_ID,
   SESSION_FLAG_SKIP_GIT_REPO_CHECK,
+  SESSION_FLAG_VARIANT,
   SESSION_OUTPUT_FORMAT_JSON,
   SESSION_SANDBOX_READ_ONLY,
   SESSION_SUBCMD_EXEC,
@@ -273,7 +277,7 @@ export class CliDelegateModelProvider implements IModelProvider {
     const conversationId = options?.conversationId;
     const sessionId = conversationId ? this.sessionIds.get(conversationId) : undefined;
     const jsonSchema = options?.jsonSchema;
-    const args = await this.buildArgsForTool(prompt, sessionId, jsonSchema);
+    const args = await this.buildArgsForTool(prompt, sessionId, jsonSchema, options?.effort);
 
     const env = buildDelegateEnv();
     if (!this.isTextPassthroughTool()) {
@@ -363,10 +367,13 @@ export class CliDelegateModelProvider implements IModelProvider {
     prompt: string,
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+    effort: Opt<IModelOptions["effort"], Reason.OptionalInput>,
   ): Promise<string[]> {
-    if (this.options.tool === TOOL_CLAUDE_CODE) return await this.buildClaudeArgs(prompt, sessionId, jsonSchema);
-    if (this.options.tool === TOOL_CODEX) return await this.buildCodexArgs(prompt, sessionId, jsonSchema);
-    return this.buildOpencodeArgs(prompt, sessionId);
+    if (this.options.tool === TOOL_CLAUDE_CODE) {
+      return await this.buildClaudeArgs(prompt, sessionId, jsonSchema, effort);
+    }
+    if (this.options.tool === TOOL_CODEX) return await this.buildCodexArgs(prompt, sessionId, jsonSchema, effort);
+    return this.buildOpencodeArgs(prompt, sessionId, effort);
   }
 
   private extractSessionIdForTool(stdout: string): string | undefined {
@@ -390,9 +397,11 @@ export class CliDelegateModelProvider implements IModelProvider {
     prompt: string,
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+    effort: Opt<IModelOptions["effort"], Reason.OptionalInput>,
   ): Promise<string[]> {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
+    const effortFlag = effort ? [SESSION_FLAG_EFFORT, effort] : [];
     const jsonSchemaFlag: string[] = [];
     if (jsonSchema) {
       if (this.jsonSchemaVersionSupported === null) {
@@ -420,6 +429,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_OUTPUT_FORMAT_JSON,
       SESSION_FLAG_MODEL,
       this.options.model,
+      ...effortFlag,
       ...backendArgs,
       ...resumeFlag,
       ...jsonSchemaFlag,
@@ -433,9 +443,15 @@ export class CliDelegateModelProvider implements IModelProvider {
     prompt: string,
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+    effort: Opt<IModelOptions["effort"], Reason.OptionalInput>,
   ): Promise<string[]> {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
+    // codex has no dedicated effort flag — set via -c key=value, quoted like the existing
+    // developer_instructions="..." override (unquoted TOML fails to parse a bare word).
+    const effortArgs = effort
+      ? [SESSION_FLAG_CONFIG_OVERRIDE, `${SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT}="${effort}"`]
+      : [];
     const schemaArgs: string[] = [];
     if (jsonSchema && !sessionId && isCodexFlatClosedSchema(jsonSchema)) {
       const schemaPath = await Deno.makeTempFile({
@@ -468,6 +484,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_FLAG_SANDBOX,
       SESSION_SANDBOX_READ_ONLY,
       SESSION_FLAG_SKIP_GIT_REPO_CHECK,
+      ...effortArgs,
       ...backendArgs,
       ...resumeArgs,
       ...schemaArgs,
@@ -475,15 +492,21 @@ export class CliDelegateModelProvider implements IModelProvider {
     ];
   }
 
-  private buildOpencodeArgs(prompt: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
+  private buildOpencodeArgs(
+    prompt: string,
+    sessionId: Opt<string, Reason.TraceAbsent>,
+    effort: Opt<IModelOptions["effort"], Reason.OptionalInput>,
+  ): string[] {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
+    const variantFlag = effort ? [SESSION_FLAG_VARIANT, effort] : [];
     return [
       SESSION_SUBCMD_RUN,
       SESSION_FLAG_FORMAT,
       SESSION_OUTPUT_FORMAT_JSON,
       SESSION_FLAG_MODEL,
       this.options.model,
+      ...variantFlag,
       ...backendArgs,
       ...sessionFlag,
       prompt,

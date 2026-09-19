@@ -276,6 +276,7 @@ export class AgentComposer {
       tool: cliDelegateConfig.tool,
       bin,
       model: cliDelegateConfig.model,
+      effort: cliDelegateConfig.effort,
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
       contextPort: this.contextPort,

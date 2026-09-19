@@ -52,6 +52,10 @@ export interface IBlueprint {
   agentRole?: string;
   /** Default skills to apply for all requests, sourced from frontmatter.default_skills. */
   defaultSkills?: string[];
+  /** Extended-thinking hint, sourced from frontmatter.thinking. */
+  thinking?: boolean;
+  /** Reasoning-effort hint, sourced from frontmatter.effort. */
+  effort?: string;
 }
 
 export interface IBlueprintLoaderOptions {
@@ -502,6 +506,8 @@ export class IBlueprintLoader {
       systemPrompt: loaded.systemPrompt,
       agentRole: loaded.agentRole,
       defaultSkills: loaded.frontmatter.default_skills,
+      thinking: loaded.frontmatter.thinking,
+      effort: loaded.frontmatter.effort,
     };
   }
 }

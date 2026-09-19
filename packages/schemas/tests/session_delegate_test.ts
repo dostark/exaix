@@ -8,6 +8,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import {
+  CliDelegateConfigSchema,
   isDecisionValidForGate,
   SESSION_GATE_DECISIONS,
   SessionBriefSchema,
@@ -327,4 +328,23 @@ Deno.test("[session_delegate] SessionDelegateConfigSchema rejects an empty permi
       permitted_paths: [],
     })
   );
+});
+
+Deno.test("[session_delegate] CliDelegateConfigSchema accepts an optional effort field alongside model", () => {
+  const parsed = CliDelegateConfigSchema.parse({
+    enabled: true,
+    tool: "claude-code",
+    model: "claude-sonnet-5",
+    effort: "high",
+  });
+  assertEquals(parsed.model, "claude-sonnet-5");
+  assertEquals(parsed.effort, "high");
+});
+
+Deno.test("[session_delegate] CliDelegateConfigSchema leaves effort absent when unset", () => {
+  const parsed = CliDelegateConfigSchema.parse({
+    enabled: true,
+    tool: "claude-code",
+  });
+  assertEquals(parsed.effort, undefined);
 });

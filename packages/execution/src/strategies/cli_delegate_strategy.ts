@@ -58,12 +58,14 @@ import {
   AgentExecutionErrorType,
   CLI_DELEGATE_TURN_TIMEOUT_MS,
   ExecutionStrategyName,
+  SESSION_FLAG_EFFORT,
   SESSION_FLAG_FORMAT,
   SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
   SESSION_FLAG_RESUME,
   SESSION_FLAG_SESSION_ID,
+  SESSION_FLAG_VARIANT,
   SESSION_FLAG_VERBOSE,
   SESSION_INPUT_FORMAT_STREAM_JSON,
   SESSION_OUTPUT_FORMAT_JSON,
@@ -118,6 +120,9 @@ export interface ICliDelegateStrategyDeps {
   resolvePortalPath: IResolvePortalPath;
   /** Optional model override (headless `--model <model>`). */
   model?: string;
+  /** Optional reasoning-effort hint (headless `--effort <level>` on claude, `--variant
+   *  <level>` on opencode — verified against each installed CLI's own --help). */
+  effort?: string;
   /** Defaults to SafeSubprocess.run. Overridden in tests to avoid real subprocess execution. */
   run?: IRunCliDelegateProcess;
   /** Optional dogfood bounded-context port. Absent for every non-dogfood/disabled-config
@@ -512,6 +517,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     mcpConfigPath: Opt<string, Reason.OptionalContext>,
   ): string[] {
     const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
+    const effortFlag = this.deps.effort ? [SESSION_FLAG_EFFORT, this.deps.effort] : [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
     const extraAllowedTools = connection ? claudeMcpAllowedToolEntries(toMcpConnectionInput(connection)) : undefined;
     const mcpFlags = connection && mcpConfigPath ? ["--mcp-config", mcpConfigPath, "--strict-mcp-config"] : [];
@@ -522,6 +528,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       SESSION_INPUT_FORMAT_STREAM_JSON,
       SESSION_FLAG_VERBOSE,
       ...modelFlag,
+      ...effortFlag,
       ...resumeFlag,
       ...deriveClaudeToolFlags(undefined, extraAllowedTools),
       ...mcpFlags,
@@ -530,12 +537,14 @@ export class CliDelegateStrategy implements IExecutionStrategy {
 
   private buildOpencodeArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
     const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
+    const variantFlag = this.deps.effort ? [SESSION_FLAG_VARIANT, this.deps.effort] : [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
     return [
       SESSION_SUBCMD_RUN,
       SESSION_FLAG_FORMAT,
       SESSION_OUTPUT_FORMAT_JSON,
       ...modelFlag,
+      ...variantFlag,
       ...sessionFlag,
       objective,
     ];

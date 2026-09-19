@@ -2968,6 +2968,14 @@ export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
 /** Codex refuses to run outside a directory it trusts or recognizes as a Git repository: `Not inside a trusted directory and --skip-git-repo-check was not specified` (live-verified exit code 1). The embedded ReAct provider spawns codex from `config.system.root` — the daemon's own data root, never a Git repository — so this flag is required on every embedded-provider invocation, not just an opt-in convenience. It only bypasses the Git-repository precondition; `--sandbox read-only` remains the operative execution-permission control. */
 export const SESSION_FLAG_SKIP_GIT_REPO_CHECK = "--skip-git-repo-check";
 
+/** Reasoning-effort flags per CLI, verified against each binary's own --help: claude has
+ *  `--effort <level>`; codex has no dedicated flag, only `-c model_reasoning_effort="<level>"`;
+ *  opencode's equivalent is `--variant <level>`. */
+export const SESSION_FLAG_EFFORT = "--effort";
+export const SESSION_FLAG_CONFIG_OVERRIDE = "-c";
+export const SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT = "model_reasoning_effort";
+export const SESSION_FLAG_VARIANT = "--variant";
+
 /** Minimum supported versions for delegate tool permission-hardening features. Below these, the tool may not support --permission-mode / --allowedTools (Claude Code) or agent-level permission blocks (OpenCode). The probe warns but does not block, allowing users to upgrade at their own pace. */
 export const MINIMUM_VERSION_OPENCODE = "1.0.0";
 export const MINIMUM_VERSION_CLAUDE_CODE = "2.0.0";

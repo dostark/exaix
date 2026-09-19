@@ -404,6 +404,37 @@ System prompt content.
   }
 });
 
+Deno.test("[IBlueprintLoader] toLegacyBlueprint carries thinking/effort through, so AgentRunner.run() can honor them", async () => {
+  // Regression: parsed onto frontmatter but dropped by toLegacyBlueprint's mapping to
+  // IBlueprint, the same class of gap default_skills had above (see previous test).
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+
+  try {
+    // style-exclude:SMALL_FIXTURE_OK - 5-line frontmatter fixture, inline for readability
+    const content = `---
+agent_role: "effort-test"
+name: "Effort Test"
+thinking: true
+effort: "high"
+---
+
+System prompt content.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "effort-test.md"), content);
+
+    const loader = new IBlueprintLoader({ blueprintsPath });
+    const loaded = await loader.load("effort-test");
+
+    assertExists(loaded);
+    const legacy = loader.toLegacyBlueprint(loaded);
+
+    assertEquals(legacy.thinking, true);
+    assertEquals(legacy.effort, "high");
+  } finally {
+    await teardown(testDir);
+  }
+});
+
 Deno.test("[loadBlueprint] standalone function returns legacy Blueprint", async () => {
   const { blueprintsPath, agentRolesDir, testDir } = await setup();
 

@@ -755,3 +755,128 @@ Deno.test("CliDelegateModelProvider: id defaults to '<tool>-<model>'", () => {
 
   assertEquals(provider.id, "opencode-opencode/deepseek-v4-flash-free");
 });
+
+// options.effort mapping — verified against the real installed CLI binaries'
+// --help output (claude --effort, codex -c model_reasoning_effort=, opencode --variant),
+// not guessed. Blueprint-declared effort must actually reach the subprocess.
+
+Deno.test("CliDelegateModelProvider: options.effort maps to claude's --effort flag", async () => {
+  let seenArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args) => {
+    seenArgs = args;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "result", result: "done", usage: {}, total_cost_usd: 0 }),
+      stderr: "",
+    });
+  };
+  const provider = new CliDelegateModelProvider({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-sonnet-5",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  await provider.generate("Analyze this request", { effort: "high" });
+
+  assertEquals(seenArgs, [
+    "-p",
+    "Analyze this request",
+    "--output-format",
+    "json",
+    "--model",
+    "claude-sonnet-5",
+    "--effort",
+    "high",
+  ]);
+});
+
+Deno.test("CliDelegateModelProvider: omits --effort for claude when options.effort is absent", async () => {
+  let seenArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args) => {
+    seenArgs = args;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "result", result: "done", usage: {}, total_cost_usd: 0 }),
+      stderr: "",
+    });
+  };
+  const provider = new CliDelegateModelProvider({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-sonnet-5",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  await provider.generate("Analyze this request");
+
+  assertEquals(seenArgs.includes("--effort"), false);
+});
+
+Deno.test("CliDelegateModelProvider: options.effort maps to codex's -c model_reasoning_effort= config override", async () => {
+  let seenArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args) => {
+    seenArgs = args;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "done" } }),
+      stderr: "",
+    });
+  };
+  const provider = new CliDelegateModelProvider({
+    tool: "codex",
+    bin: "codex",
+    model: "gpt-5.6-terra",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  await provider.generate("Analyze this request", { effort: "low" });
+
+  assertEquals(seenArgs, [
+    "exec",
+    "--json",
+    "--model",
+    "gpt-5.6-terra",
+    "--sandbox",
+    "read-only",
+    "--skip-git-repo-check",
+    "-c",
+    'model_reasoning_effort="low"',
+    "Analyze this request",
+  ]);
+});
+
+Deno.test("CliDelegateModelProvider: options.effort maps to opencode's --variant flag", async () => {
+  let seenArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args) => {
+    seenArgs = args;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "text", part: { text: "done" } }),
+      stderr: "",
+    });
+  };
+  const provider = new CliDelegateModelProvider({
+    tool: "opencode",
+    bin: "opencode",
+    model: "opencode/deepseek-v4-flash-free",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  await provider.generate("Analyze this request", { effort: "medium" });
+
+  assertEquals(seenArgs, [
+    "run",
+    "--format",
+    "json",
+    "--model",
+    "opencode/deepseek-v4-flash-free",
+    "--variant",
+    "medium",
+    "Analyze this request",
+  ]);
+});

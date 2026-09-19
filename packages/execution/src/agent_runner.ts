@@ -64,6 +64,12 @@ export interface IBlueprint {
 
   /** Optional: Default skills to apply for all requests */
   defaultSkills?: string[];
+
+  /** Optional: Extended-thinking hint, sourced from frontmatter.thinking */
+  thinking?: boolean;
+
+  /** Optional: Reasoning-effort hint, sourced from frontmatter.effort */
+  effort?: string;
 }
 
 /**
@@ -194,6 +200,16 @@ export interface IAgentRunner {
     request: IParsedRequest,
     jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<IAgentExecutionResult>;
+}
+
+/** Bundles executeWithRetry's per-call generation hints into one param, keeping it under
+ *  the 7-parameter style limit. */
+interface IGenerationHints {
+  conversationId: Opt<string, Reason.TraceAbsent>;
+  jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>;
+  callSite: Opt<ICallSite, Reason.OptionalContext>;
+  thinking: Opt<boolean, Reason.OptionalContext>;
+  effort: Opt<string, Reason.OptionalContext>;
 }
 
 export interface IPlanAdapter {
@@ -355,7 +371,13 @@ export class AgentRunner implements IAgentRunner {
     // Execute via the model provider (with retry if enabled)
     const callSite = this.resolveCallSite(request);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
-    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId, jsonSchema, callSite);
+    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, {
+      conversationId: traceId,
+      jsonSchema,
+      callSite,
+      thinking: blueprint.thinking,
+      effort: blueprint.effort,
+    });
 
     const duration = Date.now() - startTime;
 
@@ -621,14 +643,16 @@ export class AgentRunner implements IAgentRunner {
   private async executeWithRetry(
     combinedPrompt: string,
     startTime: number,
-    conversationId: Opt<string, Reason.TraceAbsent>,
-    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
-    callSite: Opt<ICallSite, Reason.OptionalContext>,
+    hints: IGenerationHints,
   ): Promise<IRetryResult<IGenerateResult>> {
-    const generateOptions: IModelOptions | undefined = conversationId || jsonSchema || callSite
+    const { conversationId, jsonSchema, callSite, thinking, effort } = hints;
+    const generateOptions: IModelOptions | undefined = conversationId || jsonSchema || callSite ||
+        thinking !== undefined || effort
       ? {
         ...(conversationId ? { conversationId } : {}),
         ...(conversationId ? { traceId: conversationId } : {}),
+        ...(thinking !== undefined ? { thinking } : {}),
+        ...(effort ? { effort: effort as IModelOptions["effort"] } : {}),
         ...(jsonSchema ? { jsonSchema } : {}),
         ...(callSite ? { callSite } : {}),
       }
