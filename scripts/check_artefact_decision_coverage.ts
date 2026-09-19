@@ -42,6 +42,11 @@ function nonCoverage(kind: ArtefactKind, artefactId: string, rationale: string):
 const NO_MEASURABLE_EFFECT_GO_TIER = "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim";
 const NOT_CORPUS_REACHABLE = "not matched by any of the 19 swe_tasks corpus tasks run live";
 const NOT_EXERCISED_BY_AN_ARM = "not exercised by an arm this run";
+const NOT_A_TASK_DOING_JUDGE_ROLE =
+  "empty permitted_tools; an LLM-as-judge role that scores other agents' output, never a swe_tasks target (Phase 161 Step 3)";
+const DOGFOOD_META_WORKFLOW_INTERNAL_ROLE =
+  "bound only inside the internal dogfood meta-workflow (Blueprints/Flows/dogfood-*.flow.yaml), never dispatched " +
+  "against the generic swe_tasks corpus (Phase 161 Step 3)";
 
 /** Skills the live run measured a real effect for (full or screening trials). */
 const SKILL_DECISIONS: IArtefactDecisionEntry[] = [
@@ -106,18 +111,43 @@ const AGENT_ROLE_DECISIONS: IArtefactDecisionEntry[] = [
     "code-analyst",
     "prune arm Δ 0.000 — the Phase 142 Step 17 portal-grounding prune neither helped nor hurt; kept pruned",
   ),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "code-reviewer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "dogfood-coder", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "dogfood-developer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "performance-engineer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "product-manager", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "qa-engineer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "quality-judge", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "code-reviewer", DOGFOOD_META_WORKFLOW_INTERNAL_ROLE),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "dogfood-coder", DOGFOOD_META_WORKFLOW_INTERNAL_ROLE),
+  nonCoverage(
+    ArtefactKind.AGENT_ROLE,
+    "dogfood-developer",
+    "bound only inside the internal dogfood meta-workflow, and slated for merge into dogfood-coder in Phase 161 " +
+      "Step 6 (Signal B declared-bundle-equality candidate, Blueprints/Agents/dogfood-developer.md to be deleted) " +
+      "— not worth live-measuring before retirement",
+  ),
+  nonCoverage(
+    ArtefactKind.AGENT_ROLE,
+    "performance-engineer",
+    "no performance-profiling/optimization task exists in the swe_tasks corpus (Phase 161 Step 3)",
+  ),
+  nonCoverage(
+    ArtefactKind.AGENT_ROLE,
+    "product-manager",
+    "no requirements-analysis/specification task exists in the swe_tasks corpus (Phase 161 Step 3)",
+  ),
+  nonCoverage(
+    ArtefactKind.AGENT_ROLE,
+    "qa-engineer",
+    "permitted_tools has no write_file/patch_file, so it cannot satisfy any write-tests-uncovered* task's " +
+      "files_changed gate despite capability overlap with test-engineer (Phase 161 Step 3)",
+  ),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "quality-judge", NOT_A_TASK_DOING_JUDGE_ROLE),
   nonCoverage(ArtefactKind.AGENT_ROLE, "research-synthesizer", NOT_EXERCISED_BY_AN_ARM),
   nonCoverage(ArtefactKind.AGENT_ROLE, "security-expert", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "software-architect", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(
+    ArtefactKind.AGENT_ROLE,
+    "software-architect",
+    "no dedicated architecture-design task exists in the swe_tasks corpus, and permitted_tools lacks " +
+      "write_file/patch_file so it cannot satisfy any implementation task's files_changed gate either " +
+      "(Phase 161 Step 3)",
+  ),
   nonCoverage(ArtefactKind.AGENT_ROLE, "technical-writer", NOT_EXERCISED_BY_AN_ARM),
-  nonCoverage(ArtefactKind.AGENT_ROLE, "voting-judge", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(ArtefactKind.AGENT_ROLE, "voting-judge", NOT_A_TASK_DOING_JUDGE_ROLE),
 ];
 
 const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
