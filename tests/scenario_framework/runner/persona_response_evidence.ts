@@ -6,11 +6,12 @@
  * @related-files [tests/scenario_framework/tests/unit/persona_response_evidence_test.ts]
  */
 import { Database } from "@db/sqlite";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas";
 import { PathResolver } from "@exaix/portal";
 import { OutputValidator } from "@exaix/tool-runtime";
 import { ensureDir, walk } from "@std/fs";
-import { dirname, relative } from "@std/path";
+import { dirname, isAbsolute, relative } from "@std/path";
 import { z } from "zod";
 import type { PersonaVariant } from "./persona_isolation_arm.ts";
 
@@ -46,6 +47,12 @@ export interface IPersonaRoleResponseEvidence {
   rawResponseHash: string;
 }
 
+/** A source path relative to one declared portal alias's root. */
+export interface IPersonaJudgeContextFile {
+  alias: string;
+  path: string;
+}
+
 const JournalPayloadSchema = z.object({
   agent_role: z.string().optional(),
   full_response: z.string().optional(),
@@ -72,17 +79,33 @@ export async function preparePersonaJudgeContext(
   config: Config,
   request: string,
   portalAliases: string[],
+  relevantFiles?: Opt<readonly IPersonaJudgeContextFile[], Reason.OptionalInput>,
 ): Promise<string> {
   const resolver = new PathResolver(config);
   const sections = [`Task:\n${request}`];
+  for (const file of relevantFiles ?? []) {
+    if (!portalAliases.includes(file.alias) || !file.path || isAbsolute(file.path) || file.path.startsWith("@")) {
+      throw new Error("Judge context file must be relative to a declared portal alias");
+    }
+  }
   for (const alias of [...portalAliases].sort()) {
     const root = await resolver.resolve(alias);
     const files: string[] = [];
-    for await (const entry of walk(root, { includeDirs: false, skip: [/\/.git(?:\/|$)/] })) {
-      if (entry.isFile && entry.path.endsWith(SOURCE_FILE_SUFFIX)) files.push(relative(root, entry.path));
+    if (relevantFiles) {
+      files.push(...relevantFiles.filter((file) => file.alias === alias).map((file) => file.path));
+    } else {
+      for await (const entry of walk(root, { includeDirs: false, skip: [/\/.git(?:\/|$)/] })) {
+        if (entry.isFile && entry.path.endsWith(SOURCE_FILE_SUFFIX)) files.push(relative(root, entry.path));
+      }
     }
     for (const file of files.sort()) {
       const path = await resolver.resolve(`${alias}/${file}`);
+      if (relevantFiles) {
+        const relativeTarget = relative(await Deno.realPath(root), await Deno.realPath(path));
+        if (relativeTarget === ".." || relativeTarget.startsWith("../") || isAbsolute(relativeTarget)) {
+          throw new Error("Judge context file is outside the target portal alias root");
+        }
+      }
       sections.push(`Source ${alias}/${file}:\n${await Deno.readTextFile(path)}`);
     }
   }

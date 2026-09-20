@@ -44,6 +44,69 @@ Deno.test("[PersonaResponse] judge context preserves task and initial source bef
   }
 });
 
+Deno.test("[PersonaResponse] explicit judge files include only the selected source", async () => {
+  const ctx = await createPersonaResponseFixture();
+  try {
+    const root = join(ctx.tempDir, "Portals/task/src");
+    await Deno.mkdir(root, { recursive: true });
+    await Deno.writeTextFile(join(root, "api.ts"), "export const selected = true;");
+    await Deno.writeTextFile(join(root, "storage.ts"), "export const excluded = true;");
+    const contextPath = await preparePersonaJudgeContext(
+      ctx.config,
+      "Inspect the API",
+      ["@Portals/task"],
+      [{ alias: "@Portals/task", path: "src/api.ts" }],
+    );
+    const context = await Deno.readTextFile(contextPath);
+    assertEquals(context.includes("export const selected = true;"), true);
+    assertEquals(context.includes("export const excluded = true;"), false);
+    assertEquals(context.includes("Source @Portals/task/src/api.ts:"), true);
+  } finally {
+    await ctx.cleanup();
+  }
+});
+
+Deno.test("[PersonaResponse] no judge file list still walks every source file", async () => {
+  const ctx = await createPersonaResponseFixture();
+  try {
+    const root = join(ctx.tempDir, "Portals/task/src");
+    await Deno.mkdir(root, { recursive: true });
+    await Deno.writeTextFile(join(root, "api.ts"), "api fixture");
+    await Deno.writeTextFile(join(root, "storage.ts"), "storage fixture");
+    const contextPath = await preparePersonaJudgeContext(ctx.config, "Read both", ["@Portals/task"]);
+    const context = await Deno.readTextFile(contextPath);
+    assertEquals(context.includes("api fixture"), true);
+    assertEquals(context.includes("storage fixture"), true);
+  } finally {
+    await ctx.cleanup();
+  }
+});
+
+Deno.test("[security][PersonaResponse] explicit judge file traversal is rejected before reading", async () => {
+  const ctx = await createPersonaResponseFixture();
+  try {
+    const portalRoot = join(ctx.tempDir, "Portals/task/src");
+    await Deno.mkdir(portalRoot, { recursive: true });
+    await Deno.mkdir(join(ctx.tempDir, "Portals/sibling"), { recursive: true });
+    await Deno.writeTextFile(join(ctx.tempDir, "Portals/sibling/secret.ts"), "must never be read");
+    await assertRejects(
+      () =>
+        preparePersonaJudgeContext(ctx.config, "Read safe files", ["@Portals/task"], [{
+          alias: "@Portals/task",
+          path: "../sibling/secret.ts",
+        }]),
+      Error,
+      "outside",
+    );
+    await assertRejects(
+      () => Deno.stat(join(ctx.tempDir, "Memory/persona-judge-context.txt")),
+      Deno.errors.NotFound,
+    );
+  } finally {
+    await ctx.cleanup();
+  }
+});
+
 Deno.test("[PersonaResponse] selects accepted role response and excludes other traces and downstream reports", async () => {
   const ctx = await createPersonaResponseFixture();
   try {

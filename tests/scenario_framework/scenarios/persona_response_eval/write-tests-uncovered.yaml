@@ -8,6 +8,8 @@ tags:
   - persona-response
   - provider-live
 request_fixture: fixtures/requests/swe_tasks/write-tests-uncovered.md
+judge_context_files:
+  - { alias: "@todo-app", path: src/priority_calculator.ts }
 portals:
   - alias: todo-app
     source_path: $FRAMEWORK_HOME/fixtures/portals/todo_app
@@ -121,6 +123,7 @@ steps:
         equals: 0
   - id: judge-response
     type: judge
+    step_pass_threshold: 0.5
     env:
       EXA_EVAL_LLM_MOCK: "false"
     output_criteria:

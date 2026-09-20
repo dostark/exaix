@@ -368,6 +368,7 @@ export async function runSyntheticScenario(
       config,
       await Deno.readTextFile(loadedScenario.requestFixture.absolutePath),
       loadedScenario.scenario.portals.map((portal) => `@${portal.alias}`),
+      loadedScenario.scenario.judge_context_files,
     );
   }
 

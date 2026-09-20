@@ -26,6 +26,9 @@ export const ScenarioSchema = z.object({
   pack: NON_EMPTY_STRING,
   tags: z.array(z.string().min(1)),
   request_fixture: NON_EMPTY_STRING,
+  /** Optional source files exposed to a persona-response judge, scoped to portal roots. */
+  judge_context_files: z.array(z.object({ alias: NON_EMPTY_STRING, path: NON_EMPTY_STRING }).strict()).min(1)
+    .optional(),
   /** Framework-relative path to a flow YAML the runner stages into the sandbox's
    *  `Blueprints/Flows/<flow-id>.flow.yaml` (named after the flow's own id, not this file's
    *  name) before steps run — see synthetic_runner.ts:stageFlowFixture. */

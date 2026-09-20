@@ -8,7 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 
 Deno.test("[PersonaResponse] six live scenarios capture actual role response before blinded judging", async () => {
   const frameworkHome = fromFileUrl(new URL("../../", import.meta.url));
@@ -16,6 +16,14 @@ Deno.test("[PersonaResponse] six live scenarios capture actual role response bef
   assertEquals(scenarios.length, 6);
   const counts = new Map<string, number>();
   for (const scenario of scenarios) {
+    assert(scenario.judge_context_files?.length, `${scenario.id} needs explicit judge context files`);
+    assert(scenario.judge_context_files.every((file) => file.alias === "@todo-app"));
+    const portal = scenario.portals.find((entry) => entry.alias === "todo-app");
+    assert(portal);
+    const sourceRoot = portal.source_path.replace("$FRAMEWORK_HOME/", "");
+    for (const file of scenario.judge_context_files) {
+      assert((await Deno.stat(join(frameworkHome, sourceRoot, file.path))).isFile, `${scenario.id}: ${file.path}`);
+    }
     const capture = scenario.steps.find((step) => step.type === ScenarioStepType.CAPTURE_ROLE_RESPONSE);
     assert(capture?.response_capture);
     const role = capture.response_capture.agent_role;
@@ -28,6 +36,7 @@ Deno.test("[PersonaResponse] six live scenarios capture actual role response bef
     assert(scenario.steps.indexOf(capture) < scenario.steps.indexOf(judge));
     const criterion = judge.output_criteria.find((item) => item.kind === CriterionKind.LLM_JUDGE);
     assert(criterion?.kind === CriterionKind.LLM_JUDGE);
+    assertEquals(judge.step_pass_threshold, criterion.score_threshold);
     assertEquals(criterion.evidence_path, "Memory/persona-response.txt");
     assert(criterion.rubric?.includes("proposed"));
     if (role !== "senior-coder") {
