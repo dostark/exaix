@@ -1077,6 +1077,15 @@ export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED: boolean = configurable({
   description: "Whether budget enforcement is active for local AI providers",
   swap: SwapClass.RESTART,
 });
+export const DEFAULT_COST_TARGET_TOKENS_PER_REQUEST: number | undefined = configurable({
+  key: "budget.cost_target_tokens_per_request",
+  default: undefined,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Optional hard cap on assembled prompt tokens per request, independent of the model's context window — for cost control on large-context models where overflow is not the risk.",
+  min: 1,
+  swap: SwapClass.RESTART,
+});
 
 /** Default maximum character budget for formatted session memory context. */
 export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT: number = configurable({

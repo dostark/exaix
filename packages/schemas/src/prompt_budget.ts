@@ -40,6 +40,10 @@ export const ZBudgetPolicy = z.object({
   local: z.boolean().default(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED),
   /** When set, overrides per-provider cloud/local sub-fields. */
   enabled: z.boolean().optional(),
+  /** Optional hard cap on assembled prompt tokens per request, independent of the
+   *  model's context window — for cost control on large-context models where overflow
+   *  is not the risk. When unset, behavior is unchanged (context-window-derived only). */
+  costTargetTokens: z.number().int().positive().optional(),
 });
 
 export type IPromptBudgetSections = z.infer<typeof ZPromptBudgetSections>;

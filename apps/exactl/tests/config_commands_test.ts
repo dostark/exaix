@@ -479,3 +479,24 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name: "[configuring-cli] budget.cost_target_tokens_per_request is settable via exactl config set",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-cost-target-tokens-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+      const commands = new ConfigCommands(context);
+
+      await commands.set("budget.cost_target_tokens_per_request", "10000");
+
+      assertEquals(await commands.get("budget.cost_target_tokens_per_request"), 10000);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});

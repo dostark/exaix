@@ -464,3 +464,46 @@ Deno.test("[PromptBudgetAllocator] defaults to AiTokenEstimatorTokenizer when no
   const allocator = new PromptBudgetAllocator({ cloud: true });
   assert(allocator !== null);
 });
+
+// Cost-aware budget ceiling — costTargetTokens, independent of a model's raw context window.
+
+Deno.test("[PromptBudgetAllocator] costTargetTokens caps totalBudgetTokens when smaller than the context-window-derived budget", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, costTargetTokens: 10_000 });
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
+
+  assertEquals(budget.totalBudgetTokens, 10_000);
+});
+
+Deno.test("[PromptBudgetAllocator] costTargetTokens larger than the context-window-derived budget has no effect", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, costTargetTokens: 1_000_000 });
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
+
+  assertEquals(budget.totalBudgetTokens, 128_000);
+});
+
+Deno.test("[PromptBudgetAllocator] unset costTargetTokens reproduces today's exact context-window-derived budget", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
+
+  assertEquals(budget.totalBudgetTokens, 128_000);
+});
+
+Deno.test("[PromptBudgetAllocator] section limits scale proportionally under a cost ceiling, not via a second allocation path", async () => {
+  const unconstrained = await new PromptBudgetAllocator({ cloud: true }).allocate("openai:gpt-4o-mini");
+  const constrained = await new PromptBudgetAllocator({ cloud: true, costTargetTokens: 10_000 }).allocate(
+    "openai:gpt-4o-mini",
+  );
+
+  const unconstrainedUsable = unconstrained.totalBudgetTokens - unconstrained.safetyBufferTokens;
+  const constrainedUsable = constrained.totalBudgetTokens - constrained.safetyBufferTokens;
+
+  // Same weighting logic applied to a smaller usable budget — the section ratios stay
+  // the same (proportional scaling), the absolute section sizes shrink.
+  assert(constrained.sections.plan < unconstrained.sections.plan);
+  const unconstrainedPlanRatio = unconstrained.sections.plan / unconstrainedUsable;
+  const constrainedPlanRatio = constrained.sections.plan / constrainedUsable;
+  assert(
+    Math.abs(unconstrainedPlanRatio - constrainedPlanRatio) < 0.03,
+    `plan ratio should stay roughly constant under the cost ceiling: unconstrained=${unconstrainedPlanRatio}, constrained=${constrainedPlanRatio}`,
+  );
+});

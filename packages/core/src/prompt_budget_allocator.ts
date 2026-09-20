@@ -63,6 +63,7 @@ function normalizeBudgetPolicy(
     cloud: policy?.cloud ?? DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
     local: policy?.local ?? DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
     enabled: policy?.enabled,
+    costTargetTokens: policy?.costTargetTokens,
   };
 }
 
@@ -90,7 +91,10 @@ export class PromptBudgetAllocator {
     analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<IPromptBudget> {
     const isLocalModel = this._isLocalModel(modelId);
-    const totalTokens = await this._resolveTotalTokens(modelId, isLocalModel);
+    const contextWindowTokens = await this._resolveTotalTokens(modelId, isLocalModel);
+    const totalTokens = this.policy.costTargetTokens !== undefined
+      ? Math.min(contextWindowTokens, this.policy.costTargetTokens)
+      : contextWindowTokens;
 
     const enforcementEnabled = this.policy.enabled ??
       (isLocalModel ? this.policy.local : this.policy.cloud);
