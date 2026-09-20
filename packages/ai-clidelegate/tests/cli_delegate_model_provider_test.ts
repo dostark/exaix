@@ -11,7 +11,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
-import { TEXT_COMPLETION_PROTOCOL_BACKEND } from "../src/protocol_backend.ts";
+import { SHELL_ONLY_TOOLS_PROTOCOL_BACKEND, TEXT_COMPLETION_PROTOCOL_BACKEND } from "../src/protocol_backend.ts";
 import { ModelProviderError } from "@exaix/ai/providers";
 
 Deno.test("CliDelegateModelProvider: builds claude argv with -p, prompt, --output-format json, --model", async () => {
@@ -44,6 +44,40 @@ Deno.test("CliDelegateModelProvider: builds claude argv with -p, prompt, --outpu
 
   assertEquals(seenCommand, "claude");
   assertEquals(seenArgs, ["-p", "Analyze this request", "--output-format", "json", "--model", "claude-sonnet-5"]);
+});
+
+Deno.test("CliDelegateModelProvider: shell-only backend exposes Bash in Claude argv", async () => {
+  let seenArgs: string[] = [];
+  const run: IRunCliDelegateProcess = (_command, args) => {
+    seenArgs = args;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "result", result: "pong", usage: {}, total_cost_usd: 0 }),
+      stderr: "",
+    });
+  };
+  const provider = new CliDelegateModelProvider({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-sonnet-5",
+    cwd: "/tmp/portal",
+    protocolBackend: SHELL_ONLY_TOOLS_PROTOCOL_BACKEND,
+    run,
+  });
+
+  await provider.generate("Say pong");
+
+  assertEquals(SHELL_ONLY_TOOLS_PROTOCOL_BACKEND.getInvocationArgs("claude-code"), ["--tools", "Bash"]);
+  assertEquals(seenArgs, [
+    "-p",
+    "Say pong",
+    "--output-format",
+    "json",
+    "--model",
+    "claude-sonnet-5",
+    "--tools",
+    "Bash",
+  ]);
 });
 
 Deno.test("CliDelegateModelProvider: text-completion mode isolates claude from native tools and settings", async () => {

@@ -13,6 +13,7 @@ import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.t
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import { CliDelegateModelProvider } from "./cli_delegate_model_provider.ts";
+import { SHELL_ONLY_TOOLS_PROTOCOL_BACKEND } from "./protocol_backend.ts";
 import {
   DEFAULT_CLAUDE_CLI_BIN,
   DEFAULT_CLAUDE_CLI_MODEL,
@@ -47,6 +48,12 @@ export class CliDelegateProviderFactory extends AbstractProviderFactory {
   }
 
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {
+    const shellOnly = options.config?.cli_delegate?.tool_exposure === "shell_only";
+    if (shellOnly && this.tool !== SessionToolSchema.enum["claude-code"]) {
+      return Promise.reject(
+        new Error(`cli_delegate.tool_exposure=shell_only is unsupported for ${this.tool}; use claude-code`),
+      );
+    }
     const { bin, defaultModel } = BIN_AND_MODEL_BY_TOOL[this.tool] ?? OPENCODE_FALLBACK;
     const model = stripProviderPrefix(options.model || defaultModel);
 
@@ -58,6 +65,7 @@ export class CliDelegateProviderFactory extends AbstractProviderFactory {
         cwd: options.config?.system.root ?? Deno.cwd(),
         timeoutMs: options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
         id: options.id ?? this.generateId(this.tool, model),
+        ...(shellOnly ? { protocolBackend: SHELL_ONLY_TOOLS_PROTOCOL_BACKEND } : {}),
       }),
     );
   }

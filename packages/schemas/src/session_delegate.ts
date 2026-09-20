@@ -222,6 +222,8 @@ export const CliDelegateConfigSchema = z.object({
   /** Reasoning-effort hint (headless `--effort <level>` on claude, `-c model_reasoning_effort=`
    *  on codex, `--variant <level>` on opencode). Optional; tool default when absent. */
   effort: z.string().min(1).optional(),
+  /** Native CLI tool catalog for planning/analysis provider calls; shell_only is Claude-only. */
+  tool_exposure: z.enum(["default", "shell_only"]).default("default").optional(),
   /** Absolute paths to additional binaries allowed beyond the built-in claude/opencode bins. */
   bin_overrides: z.array(z.string()).optional(),
 });

@@ -348,3 +348,11 @@ Deno.test("[session_delegate] CliDelegateConfigSchema leaves effort absent when 
   });
   assertEquals(parsed.effort, undefined);
 });
+
+Deno.test("[cli_delegate] tool exposure defaults to unchanged behavior and validates opt-in", () => {
+  const base = { enabled: true, tool: "claude-code" };
+  assertEquals(CliDelegateConfigSchema.parse(base).tool_exposure, "default");
+  assertEquals(CliDelegateConfigSchema.parse({ ...base, tool_exposure: "default" }).tool_exposure, "default");
+  assertEquals(CliDelegateConfigSchema.parse({ ...base, tool_exposure: "shell_only" }).tool_exposure, "shell_only");
+  assertThrows(() => CliDelegateConfigSchema.parse({ ...base, tool_exposure: "unknown" }));
+});

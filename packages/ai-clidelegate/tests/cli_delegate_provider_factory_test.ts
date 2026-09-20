@@ -7,12 +7,56 @@
  * model per tool and threads resolved options through to the constructed provider.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { CliDelegateProviderFactory } from "../src/cli_delegate_provider_factory.ts";
 import type { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import { DEFAULT_CLAUDE_CLI_MODEL, DEFAULT_OPENCODE_CLI_MODEL } from "../src/constants.ts";
 import type { IResolvedProviderOptions } from "@exaix/ai/types.ts";
 import { ProviderType } from "@exaix/core";
+import { ConfigSchema } from "@exaix/schemas";
+import { SHELL_ONLY_TOOLS_PROTOCOL_BACKEND } from "../src/protocol_backend.ts";
+
+function optionsFor(
+  tool: "claude-code" | "codex" | "opencode",
+  toolExposure?: "default" | "shell_only",
+): IResolvedProviderOptions {
+  return {
+    provider: ProviderType.CLAUDE_CLI,
+    model: "claude-sonnet-5",
+    timeoutMs: 60000,
+    config: ConfigSchema.parse({
+      system: { root: Deno.cwd() },
+      cli_delegate: { enabled: true, tool, ...(toolExposure ? { tool_exposure: toolExposure } : {}) },
+    }),
+  };
+}
+
+Deno.test("CliDelegateProviderFactory: shell-only policy is wired only for explicit Claude opt-in", async () => {
+  const factory = new CliDelegateProviderFactory("claude-code");
+  const shellProvider = await factory.create(optionsFor("claude-code", "shell_only"));
+  assertEquals(Reflect.get(shellProvider, "options").protocolBackend, SHELL_ONLY_TOOLS_PROTOCOL_BACKEND);
+
+  for (const tool of ["claude-code", "codex", "opencode"] as const) {
+    const toolFactory = new CliDelegateProviderFactory(tool);
+    const withoutConfig = await toolFactory.create({
+      provider: ProviderType.CLAUDE_CLI,
+      model: "claude-sonnet-5",
+      timeoutMs: 60000,
+    } as IResolvedProviderOptions);
+    assertEquals(Reflect.get(withoutConfig, "options").protocolBackend, undefined);
+    for (const exposure of [undefined, "default"] as const) {
+      const provider = await toolFactory.create(optionsFor(tool, exposure));
+      assertEquals(Reflect.get(provider, "options").protocolBackend, undefined);
+    }
+  }
+});
+
+Deno.test("CliDelegateProviderFactory: rejects shell-only configuration for unsupported tools", async () => {
+  for (const tool of ["codex", "opencode"] as const) {
+    const factory = new CliDelegateProviderFactory(tool);
+    await assertRejects(() => factory.create(optionsFor(tool, "shell_only")), Error, "shell_only");
+  }
+});
 
 Deno.test("CliDelegateProviderFactory: creates a claude-code provider with the requested model", async () => {
   const factory = new CliDelegateProviderFactory("claude-code");

@@ -569,6 +569,21 @@ tool = "claude-code"          # claude-code | opencode
 model = "claude-sonnet-5"     # optional; tool default when absent
 ```
 
+For planning and analysis calls that use the `claude-cli` model provider, you may
+limit Claude Code's native tool catalog to Bash:
+
+```toml
+[cli_delegate]
+enabled = true
+tool = "claude-code"
+tool_exposure = "shell_only" # optional; default is the full native catalog
+```
+
+This option affects `CliDelegateModelProvider` calls, not the code-writing
+`CliDelegateStrategy` used for per-step execution. `shell_only` passes
+`--tools Bash` to Claude Code. Codex and OpenCode reject this setting because
+their equivalent native tool-catalog restriction has not been established.
+
 ```yaml
 # Blueprints/Agents/<agent-role>.md frontmatter
 capabilities: ["code_generation", "cli_delegate"]

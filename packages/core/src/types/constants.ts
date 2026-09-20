@@ -2970,6 +2970,8 @@ export const SESSION_FLAG_PERMISSION_MODE = "--permission-mode";
 
 /** Claude Code allowed-tools flag. */
 export const SESSION_FLAG_ALLOWED_TOOLS = "--allowedTools";
+/** Claude Code native tool-catalog selection flag. */
+export const SESSION_FLAG_TOOLS = "--tools";
 export const SESSION_FLAG_JSON_SCHEMA = "--json-schema";
 
 /** Default binary names per built-in session adapter (override via config). */

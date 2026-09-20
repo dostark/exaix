@@ -8,6 +8,7 @@
  * @related-files [packages/ai-clidelegate/src/cli_delegate_model_provider.ts]
  */
 
+import { SESSION_FLAG_TOOLS } from "@exaix/core";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 
@@ -44,6 +45,16 @@ const CODEX_TEXT_COMPLETION_ARGS = [
 
 const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
 const TOOL_CODEX = SessionToolSchema.enum.codex;
+
+/** Limits Claude Code's native tool catalog to Bash for opted-in analysis calls. */
+export const SHELL_ONLY_TOOLS_PROTOCOL_BACKEND: ICliDelegateProtocolBackend = {
+  getInvocationArgs(tool) {
+    if (tool !== TOOL_CLAUDE_CODE) {
+      throw new Error(`shell_only tool exposure is unsupported for ${tool}; use claude-code`);
+    }
+    return [SESSION_FLAG_TOOLS, "Bash"];
+  },
+};
 
 /** Built-in backend for ReAct and other caller-owned text protocols. */
 export const TEXT_COMPLETION_PROTOCOL_BACKEND: ICliDelegateProtocolBackend = {
