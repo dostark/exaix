@@ -12,10 +12,11 @@
  * ]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
-import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "@exaix/core";
+import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
+import type { ITokenizer } from "@exaix/core/func";
 import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
 
 // Helpers
@@ -60,6 +61,17 @@ function makeCapturingManager(): { manager: IContextBudgetManager; captured: ICo
     },
   };
   return { manager, captured };
+}
+
+/** A tokenizer stub returning a fixed value no chars/4 heuristic on any real
+ *  segment content would ever produce — proves tokenEstimate came from the
+ *  injected tokenizer, not the fallback estimator. */
+function makeStubTokenizer(): ITokenizer {
+  const DISTINCTIVE_TOKEN_COUNT = 999;
+  return {
+    countTokens: (_text: string, _model: string) => Promise.resolve(DISTINCTIVE_TOKEN_COUNT),
+    countTokensBatch: (texts: string[], _model: string) => Promise.resolve(texts.map(() => DISTINCTIVE_TOKEN_COUNT)),
+  };
 }
 
 function makeDropFirstManager(): IContextBudgetManager {
@@ -215,4 +227,66 @@ Deno.test("[IAgentRunner] filtered segments produce shorter prompt when manager 
   assertEquals(capturedPrompt.includes("SYSTEM_SECTION"), false);
   // User prompt was kept — should appear
   assertStringIncludes(capturedPrompt, "USER_SECTION");
+});
+
+// Real PromptBudgetAllocator/ITokenizer wiring, replacing the hand-built
+// Number.MAX_SAFE_INTEGER budget and the chars/4 tokenEstimate heuristic.
+
+Deno.test("[IAgentRunner] constructPrompt uses a real allocator-produced budget when promptBudgetAllocator is injected", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const allocator = new PromptBudgetAllocator();
+
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager, promptBudgetAllocator: allocator },
+  );
+
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
+
+  // A real allocator's budget is derived from a model's finite context window —
+  // never the hand-built Number.MAX_SAFE_INTEGER placeholder.
+  assertNotEquals(captured[0].promptBudget.totalBudgetTokens, Number.MAX_SAFE_INTEGER);
+});
+
+Deno.test("[IAgentRunner] constructPrompt falls back to the hand-built infinite budget when promptBudgetAllocator is absent", async () => {
+  const { manager, captured } = makeCapturingManager();
+
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager }, // no promptBudgetAllocator
+  );
+
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
+
+  assertEquals(captured[0].promptBudget.totalBudgetTokens, Number.MAX_SAFE_INTEGER);
+  assertEquals(captured[0].promptBudget.sections.system, Number.MAX_SAFE_INTEGER);
+});
+
+Deno.test("[IAgentRunner] segment tokenEstimate comes from the injected tokenizer, not content.length / 4", async () => {
+  const { manager, captured } = makeCapturingManager();
+
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager, tokenizer: makeStubTokenizer() },
+  );
+
+  await runner.run(makeBlueprint("SYSTEM_TEXT"), makeRequest(), undefined);
+
+  const systemSeg = captured[0].segments.find((s) => s.content === "SYSTEM_TEXT");
+  assertEquals(systemSeg?.tokenEstimate, 999);
+});
+
+Deno.test("[IAgentRunner] segment tokenEstimate falls back to TOKEN_ESTIMATION_CHARS_PER_TOKEN-based estimation when no tokenizer is injected", async () => {
+  const { manager, captured } = makeCapturingManager();
+
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager }, // no tokenizer
+  );
+
+  await runner.run(makeBlueprint("SYSTEM_TEXT"), makeRequest(), undefined);
+
+  const systemSeg = captured[0].segments.find((s) => s.content === "SYSTEM_TEXT");
+  // "SYSTEM_TEXT" is 11 chars; chars/4 estimation ceils to 3.
+  assertEquals(systemSeg?.tokenEstimate, Math.ceil("SYSTEM_TEXT".length / 4));
 });

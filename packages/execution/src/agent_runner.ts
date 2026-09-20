@@ -26,6 +26,9 @@ import type { IContextBudgetManager } from "./context/context_budget_manager.ts"
 import type { IContextSegment } from "./context/context_segment.ts";
 import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { PromptBudgetAllocator } from "@exaix/core";
+import type { ITokenizer } from "@exaix/core/func";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "@exaix/core/func";
@@ -186,6 +189,16 @@ export interface IAgentRunnerConfig {
   /** Optional: Segment-level context budget manager. When present, called in
    *  constructPrompt() after all prompt parts are collected, before joining. */
   contextBudgetManager?: IContextBudgetManager;
+
+  /** Optional: Real, model-aware prompt budget allocator. When present, constructPrompt()
+   *  uses its output as the IPromptBudget passed to contextBudgetManager.prepare(); when
+   *  absent, falls back to today's hand-built Number.MAX_SAFE_INTEGER budget. */
+  promptBudgetAllocator?: PromptBudgetAllocator;
+
+  /** Optional: Real tokenizer for segment tokenEstimate. When present, constructPrompt()
+   *  calls tokenizer.countTokens() per segment; when absent, falls back to a
+   *  TOKEN_ESTIMATION_CHARS_PER_TOKEN-based estimate. */
+  tokenizer?: ITokenizer;
 
   /** Optional: Milestone emitter for semantic progress events. No-op when omitted. */
   milestoneEmitter?: IMilestoneEmitter;
@@ -805,16 +818,20 @@ export class AgentRunner implements IAgentRunner {
     const manager = this.config?.contextBudgetManager;
     if (!manager) return entries.map((e) => e.content).join("\n\n");
 
-    const segments: IContextSegment[] = entries.map((e, i) => ({
-      segmentId: `prompt-part-${i}`,
-      content: e.content,
-      kind: e.kind,
-      priority: e.priority,
-      tokenEstimate: Math.ceil(e.content.length / 4),
-      metadata: { nonCompactable: e.nonCompactable },
-    }));
+    const tokenizer = this.config?.tokenizer;
+    const segments: IContextSegment[] = await Promise.all(
+      entries.map(async (e, i) => ({
+        segmentId: `prompt-part-${i}`,
+        content: e.content,
+        kind: e.kind,
+        priority: e.priority,
+        tokenEstimate: await tokenizer?.countTokens(e.content, DEFAULT_MODEL_FALLBACK) ??
+          Math.ceil(e.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        metadata: { nonCompactable: e.nonCompactable },
+      })),
+    );
 
-    const budget: IPromptBudget = {
+    const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(DEFAULT_MODEL_FALLBACK) ?? {
       model: DEFAULT_MODEL_FALLBACK,
       totalBudgetTokens: Number.MAX_SAFE_INTEGER,
       safetyBufferTokens: 0,

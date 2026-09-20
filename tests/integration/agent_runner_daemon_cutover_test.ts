@@ -16,6 +16,9 @@
  *   flow YAML's per-step `strategy` field to route through `AgentComposerAdapter.runWithStrategy`
  *   rather than its default `IAgentRunner`-delegating bridge), a disproportionate lift given
  *   Steps 2/3 already fully verify `AgentComposer`'s tagging correctness at the class level.
+ *   (4) A real daemon boot also emits `context.budget.allocated` with a real, model-derived
+ *   `maxContextTokens` for the planning call — proving `apps/daemon/main.ts`'s real
+ *   `PromptBudgetAllocator`/`ContextBudgetManager` wiring is reachable, not just unit-tested.
  * @architectural-layer Integration
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/request/src/router.ts, packages/execution/src/agent_composer.ts]
  */
@@ -62,6 +65,7 @@ interface IActivityRow {
   action_type: string;
   runner_kind: string | null;
   trace_id: string | null;
+  payload: string;
 }
 
 async function readActivity(configPath: string): Promise<IActivityRow[]> {
@@ -69,7 +73,7 @@ async function readActivity(configPath: string): Promise<IActivityRow[]> {
   const db = new DatabaseService(configService.getAll());
   try {
     return await db.preparedAll<IActivityRow>(
-      "SELECT action_type, runner_kind, trace_id FROM activity ORDER BY rowid ASC",
+      "SELECT action_type, runner_kind, trace_id, payload FROM activity ORDER BY rowid ASC",
     );
   } finally {
     await db.close();
@@ -165,6 +169,75 @@ Add a hello world function.
       assert(
         started!.runner_kind === "agent-runner",
         `expected runner_kind "agent-runner", got "${started!.runner_kind}"`,
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[context-budget-cutover] a real daemon boot processing a real Request file emits context.budget.allocated for the planning call, with a model-derived maxContextTokens",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "context-budget-cutover-" });
+    const configPath = join(tempDir, "exa.config.toml");
+    writeDaemonConfigWithMockAiNoQualityGate(configPath, tempDir);
+
+    try {
+      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await Deno.copyFile(
+        join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+      );
+
+      const traceId = crypto.randomUUID();
+      const requestPath = join(tempDir, "Workspace", "Requests", `request-${traceId.slice(0, 8)}.md`);
+
+      await bootRealDaemon(configPath, 2000, {
+        midFlight: () => {
+          Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+          Deno.writeTextFileSync(
+            requestPath,
+            `---
+trace_id: "${traceId}"
+created: "${new Date().toISOString()}"
+status: pending
+priority: normal
+agent_role: mock-agent
+source: cli
+created_by: "test@example.com"
+subject: "context-budget cutover test request"
+---
+
+# Request
+
+Add a hello world function.
+`,
+          );
+        },
+        afterInjectMs: 15000,
+        waitForAfterInject: async () => {
+          const rows = await readActivity(configPath);
+          return rows.some((a) => a.trace_id === traceId && a.action_type === "context.budget.allocated");
+        },
+      });
+
+      const activities = await readActivity(configPath);
+      const allocated = activities.find((a) => a.trace_id === traceId && a.action_type === "context.budget.allocated");
+      assert(
+        allocated,
+        `a queryable context.budget.allocated activity row scoped to trace_id ${traceId} must exist. got: ${
+          JSON.stringify(activities)
+        }`,
+      );
+      const payload = JSON.parse(allocated!.payload) as { maxContextTokens: number };
+      assert(
+        payload.maxContextTokens !== Number.MAX_SAFE_INTEGER && typeof payload.maxContextTokens === "number",
+        `expected a real, model-derived maxContextTokens, got ${payload.maxContextTokens}`,
       );
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});

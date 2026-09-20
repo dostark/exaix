@@ -53,7 +53,7 @@ import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
-import { AgentRunner, ExecutionLoop } from "@exaix/execution";
+import { AgentRunner, ContextBudgetManager, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import {
@@ -79,7 +79,7 @@ import {
   SessionMemoryService,
 } from "@exaix/memory";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
+import { ConfidenceAssessmentLevel, ConfidenceLevel, PromptBudgetAllocator } from "@exaix/core";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
 import { createMemoryEmbeddingProvider } from "../common/embedding_provider_bootstrap.ts";
 import { NotificationService } from "@exaix/core/notification";
@@ -841,6 +841,21 @@ if (import.meta.main) {
       config.paths.blueprints,
       DEFAULT_AGENTS_PATH,
     );
+    // Without this, constructPrompt's own `if (!manager) return ...` early-return
+    // silently skips the real budget system for the planning call.
+    const agentRunnerTokenizer = new AiTokenEstimatorTokenizer();
+    const agentRunnerPromptBudgetAllocator = new PromptBudgetAllocator(
+      config.budget_enforcement,
+      agentRunnerTokenizer,
+      logger,
+      modelRegistry,
+    );
+    const agentRunnerContextBudgetManager = new ContextBudgetManager(
+      agentRunnerTokenizer,
+      undefined,
+      undefined,
+      logger,
+    );
     // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the agent role's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
     const agentRunner = new AgentRunner(llmProvider, {
       milestoneEmitter: buildMilestoneEmitterFromConfig(config),
@@ -848,6 +863,9 @@ if (import.meta.main) {
       logger,
       // Disabling prompt injection also disables skill matching and its journal events.
       disableSkills: !config.skills.inject_in_prompt,
+      tokenizer: agentRunnerTokenizer,
+      promptBudgetAllocator: agentRunnerPromptBudgetAllocator,
+      contextBudgetManager: agentRunnerContextBudgetManager,
     });
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
     // Team composition provides dynamic-step dispatch; initialization failure
