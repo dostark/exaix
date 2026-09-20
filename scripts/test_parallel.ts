@@ -114,6 +114,12 @@ const SEQUENTIAL_FILES: string[] = [
   "apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts",
   // Its tight readiness poll can time out under Batch 1 CPU pressure.
   "apps/daemon/tests/readiness_test.ts",
+  // Boots a real daemon; loses its startup race under Batch 1 spawn pressure.
+  "tests/integration/agent_runner_daemon_cutover_test.ts",
+  // Both `deno compile` to the identical dist/bin/exactl-solo-<target> path;
+  // running together under Batch 1 races two writers on the same output file.
+  "tests/infra/build_test.ts",
+  "tests/infra/exactl_edition_build_test.ts",
 ];
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */

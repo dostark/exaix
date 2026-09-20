@@ -5,9 +5,9 @@
  * builds `ArmKind.HARNESS_ABLATION` paired comparisons over a seeded eval-history store via
  * `queryOutcomeRuns`: per-task control (bare cell) vs treatment (Exaix cell) outcome-channel
  * scores from the latest run set, matched on (task, tool, provider, model). Unmatched tasks
- * (only one side present) are excluded with a warning count. `noEffect` is asserted where
- * |meanDelta| < stdevDelta (Phase 158 measurement contract), and `validatePreregistration`
- * rejects post-hoc task cherry-picking.
+ * (only one side present) are excluded with a warning count. `noEffect` is the paired-trial
+ * 95% confidence interval verdict from `computePairedComparison` (arm_comparison.ts), and
+ * `validatePreregistration` rejects post-hoc task cherry-picking.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/harness_lift.ts, tests/scenario_framework/runner/arm_comparison.ts, packages/eval-history/src/history_sqlite.ts]
  */
@@ -131,7 +131,10 @@ Deno.test("[PairedLift] computes meanDelta/stdevDelta over matched tasks, exclud
     // deltas: T1 0.8-0.6=0.2, T2 0.9-0.5=0.4 → mean 0.3, population stdev 0.1
     assertAlmostEquals(family.comparison.meanDelta, 0.3);
     assertAlmostEquals(family.comparison.stdevDelta, 0.1);
-    assertEquals(family.comparison.noEffect, false, "|0.3| < 0.1 is false — an effect");
+    // noEffect is now the paired-trial 95% confidence interval verdict (arm_comparison.ts),
+    // not the old |meanDelta| < stdevDelta heuristic: with only 2 single-trial tasks the
+    // Student-t interval on [0.2, 0.4] is wide enough to include zero.
+    assertEquals(family.comparison.noEffect, true, "n=2 single-trial paired CI includes zero");
     assertEquals(family.comparison.armId, "harness-lift");
     assertEquals(family.comparison.metric, ComparisonMetric.OBJECTIVE_OUTCOME);
     assertEquals(

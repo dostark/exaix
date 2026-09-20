@@ -39,6 +39,7 @@ const EXPECTED_SW_TASKS_IDS = [
   "swe-fix-bug-null-guard-legacy",
   "swe-injection-sanitisation",
   "swe-injection-sanitisation-free",
+  "swe-injection-sanitisation-seniorcoder",
   "swe-map-dependencies",
   "swe-path-traversal-storage",
   "swe-refactor-extract-function",
@@ -81,10 +82,10 @@ async function resolveGroups(scenarioPath: string, env: Record<string, string>, 
   });
 }
 
-Deno.test("[SweTasksPackE2e] multi-cell scenario has all 5 cell entries", async () => {
+Deno.test("[SweTasksPackE2e] multi-cell scenario has all 6 cell entries", async () => {
   const groups = await resolveGroups(MULTI_CELL_SCENARIO, {});
   const tools = groups.map((g) => g.cell?.tool).sort();
-  assertEquals(tools, ["claude-code", "exactl", "exactl", "exactl", "opencode"]);
+  assertEquals(tools, ["claude-code", "codex", "exactl", "exactl", "exactl", "opencode"]);
 });
 
 Deno.test("[SweTasksPackE2e] --cell claude-code selects only the claude-code cell", async () => {

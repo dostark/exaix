@@ -26,6 +26,8 @@ const ACTIVITY_TABLE_SQL = `
     prompt_tokens INTEGER DEFAULT 0,
     completion_tokens INTEGER DEFAULT 0,
     cost_usd REAL DEFAULT 0.0,
+    cache_read_tokens INTEGER,
+    cache_creation_tokens INTEGER,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
 `;

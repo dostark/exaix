@@ -130,7 +130,13 @@ async function main() {
   await copyWorkspaceDirs(repoRoot, dest, copyOpts);
 
   // Copy runtime scripts
-  const scriptFiles = ["setup_db.ts", "migrate_db.ts", "scaffold.ts", "deploy_workspace.ts"];
+  const scriptFiles = [
+    "setup_db.ts",
+    "migrate_db.ts",
+    "scaffold.ts",
+    "deploy_workspace.ts",
+    "activity_cache_schema.ts",
+  ];
   await ensureDir(join(dest, "scripts"));
   for (const f of scriptFiles) {
     try {
