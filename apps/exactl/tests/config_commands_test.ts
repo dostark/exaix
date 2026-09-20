@@ -500,3 +500,24 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name: "[configuring-cli] budget.skill_size_warning_chars is settable via exactl config set",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-skill-size-warning-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+      const commands = new ConfigCommands(context);
+
+      await commands.set("budget.skill_size_warning_chars", "3000");
+
+      assertEquals(await commands.get("budget.skill_size_warning_chars"), 3000);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});

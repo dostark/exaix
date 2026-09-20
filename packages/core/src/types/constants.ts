@@ -1108,6 +1108,19 @@ export const DEFAULT_SKILL_CONTEXT_CHAR_BUDGET: number = configurable({
   max: 50_000,
   swap: SwapClass.RESTART,
 });
+
+/** Advisory threshold for `deno task check:skill-size` — a skill's rendered
+ *  `instructions` length above this is reported (not blocked) as oversized. */
+export const DEFAULT_SKILL_SIZE_WARNING_CHARS: number = configurable({
+  key: "budget.skill_size_warning_chars",
+  default: 5_000,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Advisory character threshold above which a skill's rendered instructions are reported as oversized by check:skill-size",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_SKILLS_MAX_PER_REQUEST: number = configurable({
   key: "skills.max_per_request",
   default: 5,
