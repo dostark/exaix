@@ -54,6 +54,30 @@ export interface IParsedCliArgs {
   check: boolean;
 }
 
+/** The one canonical heading marker `splitInstructionsAndExamples` splits a skill body on. */
+export const SKILL_EXAMPLES_HEADING = "## Examples";
+
+/** Splits a body at the first `## Examples` heading into `instructions` (everything else,
+ *  in original order — content after the heading is kept, not truncated) and `examples`
+ *  (the heading's own section). No heading is a lossless no-op: `examples` is `undefined`. */
+export function splitInstructionsAndExamples(body: string): { instructions: string; examples?: string } {
+  const headingMatch = /^## Examples$/m.exec(body);
+  if (!headingMatch) return { instructions: body };
+
+  const before = body.slice(0, headingMatch.index).replace(/\n+$/, "");
+  const afterHeading = body.slice(headingMatch.index + headingMatch[0].length).replace(/^\n+/, "");
+  const nextHeadingMatch = /\n##\s/.exec(afterHeading);
+
+  if (!nextHeadingMatch) {
+    return { instructions: before, examples: afterHeading.replace(/\n+$/, "") };
+  }
+
+  const examples = afterHeading.slice(0, nextHeadingMatch.index).replace(/\n+$/, "");
+  const after = afterHeading.slice(nextHeadingMatch.index).replace(/^\n+/, "");
+  const instructions = before && after ? `${before}\n\n${after}` : (before || after);
+  return { instructions, examples };
+}
+
 /** Splits a `.skill.md` file into YAML frontmatter and markdown body; the body
  * (trimmed, leading H1 retained) becomes `instructions`. */
 function parseSkillMd(content: string): { frontmatter: ISkillMdFrontmatter; body: string } | null {
@@ -70,15 +94,17 @@ function parseSkillMd(content: string): { frontmatter: ISkillMdFrontmatter; body
   }
 }
 
-/** Composes a SkillSchema object from frontmatter + body; `instructions` comes
- * from the body. Only managed fields that are DEFINED override the frontmatter,
- * so an absent existing JSON leaves the frontmatter's own id/created_at intact. */
+/** Composes a SkillSchema object from frontmatter + body; `instructions`/`examples` are
+ * both derived from the body, never authored in frontmatter. Only DEFINED managed fields
+ * override the frontmatter, so an absent existing JSON keeps its own id/created_at. */
 function composeSkill(
   frontmatter: ISkillMdFrontmatter,
   body: string,
   managed?: Opt<IManagedSkillFields, Reason.OptionalInput>,
 ): ISkill {
-  const overrides: ISkillMdFrontmatter = { instructions: body };
+  const { instructions, examples } = splitInstructionsAndExamples(body);
+  const overrides: ISkillMdFrontmatter = { instructions };
+  if (examples !== undefined) overrides.examples = examples;
   if (managed?.id !== undefined) overrides.id = managed.id;
   if (managed?.created_at !== undefined) overrides.created_at = managed.created_at;
   if (managed?.usage_count !== undefined) overrides.usage_count = managed.usage_count;

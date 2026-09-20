@@ -11,8 +11,14 @@ import type { ISkillsContext } from "@exaix/core/types";
 /** A single matched-skill entry (element of `ISkillsContext.matched`). */
 type ISkillMatchEntry = ISkillsContext["matched"][number];
 
-/** Renders a heading + the supplied skill matches as a markdown block. */
-function renderSkillBlock(heading: string, intro: string, skills: ISkillMatchEntry[]): string {
+/** Renders a heading + the supplied skill matches; `examples` appends after Instructions
+ *  only when present and `includeExamples` is true. */
+function renderSkillBlock(
+  heading: string,
+  intro: string,
+  skills: ISkillMatchEntry[],
+  includeExamples: boolean,
+): string {
   if (skills.length === 0) return "";
 
   let output = `### ${heading}\n${intro}\n\n`;
@@ -20,6 +26,9 @@ function renderSkillBlock(heading: string, intro: string, skills: ISkillMatchEnt
     output += `#### ${skill.title}\n`;
     output += `${skill.description}\n\n`;
     output += `**Instructions:**\n${skill.content}\n\n`;
+    if (includeExamples && skill.examples) {
+      output += `**Examples:**\n${skill.examples}\n\n`;
+    }
     if (skill.tags.length > 0) {
       output += `*Tags: ${skill.tags.join(", ")}*\n\n`;
     }
@@ -28,8 +37,9 @@ function renderSkillBlock(heading: string, intro: string, skills: ISkillMatchEnt
 }
 
 /** Critical skills are rendered separately by {@link renderCriticalSkillsSection} so the
- *  prompt assembler can place them in a protected, non-droppable segment. */
-export function renderSkillsSection(context: ISkillsContext | null): string {
+ *  prompt assembler can place them in a protected, non-droppable segment. `trimmed`
+ *  (default `false`) omits each ordinary skill's `examples` content, leaving Instructions untouched. */
+export function renderSkillsSection(context: ISkillsContext | null, trimmed = false): string {
   if (!context || context.matched.length === 0) return "";
 
   const ordinary = context.matched.filter((s) => !s.critical);
@@ -37,6 +47,7 @@ export function renderSkillsSection(context: ISkillsContext | null): string {
     "APPLICABLE SKILLS & PROCEDURES",
     "The following specialized procedures should be applied to this task:",
     ordinary,
+    !trimmed,
   );
 
   if (output && context.matched.length < context.totalAvailable) {
@@ -49,12 +60,14 @@ export function renderSkillsSection(context: ISkillsContext | null): string {
 }
 
 /** The prompt assembler places this in a protected, non-compactable segment so the
- *  output contract and hard constraints survive context-budget pressure. */
+ *  output contract and hard constraints survive context-budget pressure. `examples`
+ *  is always included when present — critical skill content is never trimmed. */
 export function renderCriticalSkillsSection(context: ISkillsContext | null): string {
   if (!context || context.matched.length === 0) return "";
   return renderSkillBlock(
     "REQUIRED SKILLS & CONTRACT",
     "The following procedures are MANDATORY and must be applied in full:",
     context.matched.filter((s) => s.critical),
+    true,
   ).trim();
 }

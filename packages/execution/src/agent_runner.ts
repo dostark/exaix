@@ -52,6 +52,7 @@ import {
   SKILL_EVENT_RESOLVED,
   SKILL_EVENT_RETRIEVAL_FAILED,
   SKILL_EVENT_RETRIEVAL_TIMEOUT,
+  SkillRenderMode,
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
@@ -343,7 +344,8 @@ export class AgentRunner implements IAgentRunner {
     // Construct the combined prompt (with skill context). Critical skills render into a
     // separate, protected segment so the output contract and hard constraints survive
     // context-budget pressure.
-    const skillContextString = renderSkillsSection(skillsContext);
+    const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
+    const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
     const combinedPrompt = await this.constructPrompt(
       blueprint,
@@ -580,6 +582,7 @@ export class AgentRunner implements IAgentRunner {
         matchScore: matchScores.get(s.id) ?? 0.5,
         tags: s.triggers.tags || [],
         critical: s.critical ?? false,
+        examples: s.examples,
       })),
       totalAvailable,
       retrievalLatencyMs: Date.now() - startTime,

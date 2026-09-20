@@ -371,6 +371,11 @@ export const SkillSchema = z.object({
 
   // Procedural Knowledge
   instructions: z.string().min(10).describe("The procedural instructions (markdown)"),
+  /** Illustrative content split from `instructions` at generation time — managed like
+   *  `instructions` itself, never authored directly. */
+  examples: z.string().optional().describe(
+    "Illustrative content split from instructions at a canonical heading; dropped from the prompt in trimmed render mode",
+  ),
 
   // Constraints and Quality
   constraints: z.array(z.string()).optional().describe("Rules that must be followed"),

@@ -32,6 +32,10 @@ export const ZSkillMatch = z.object({
   /** Criticality flag carried from the skill so the prompt formatter can render critical
    * skills as a protected segment. */
   critical: z.boolean().default(false),
+  /** Illustrative content split from `content` at generation time, carried from
+   *  `ISkill.examples`. Rendered by the prompt formatter after Instructions, omitted in
+   *  trimmed render mode for ordinary (non-critical) skills. */
+  examples: z.string().optional(),
 });
 
 /**

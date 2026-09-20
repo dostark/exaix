@@ -46,6 +46,7 @@ import {
   PortalAnalysisMode,
   ProviderCostTier,
   QualityGateMode,
+  SkillRenderMode,
   SqliteJournalMode,
 } from "@exaix/core";
 import type { PortalOperation } from "@exaix/core";
@@ -385,12 +386,14 @@ export const ConfigSchema = z.object({
     inject_in_prompt: z.boolean().default(DEFAULTS.DEFAULT_SKILLS_INJECT_IN_PROMPT),
     log_matched_ids: z.boolean().default(DEFAULTS.DEFAULT_SKILLS_LOG_MATCHED_IDS),
     context_budget_chars: z.number().int().min(0).default(DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET),
+    render_mode: z.nativeEnum(SkillRenderMode).default(DEFAULTS.DEFAULT_SKILL_RENDER_MODE).optional(),
   }).default({
     max_per_request: DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST,
     match_threshold: DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD,
     inject_in_prompt: DEFAULTS.DEFAULT_SKILLS_INJECT_IN_PROMPT,
     log_matched_ids: DEFAULTS.DEFAULT_SKILLS_LOG_MATCHED_IDS,
     context_budget_chars: DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
+    render_mode: DEFAULTS.DEFAULT_SKILL_RENDER_MODE,
   }),
   portals: z.array(PortalPermissionsSchema).default([]),
   /** AI/LLM provider configuration (legacy/single) */

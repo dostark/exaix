@@ -14,6 +14,7 @@ import {
   MockStrategy,
   ProviderType,
   RequestPriority,
+  SkillRenderMode,
   SwapClass,
   TaskType,
 } from "./enums.ts";
@@ -1161,6 +1162,17 @@ export const DEFAULT_SKILLS_LOG_MATCHED_IDS: boolean = configurable({
   default: true,
   type: ConfigValueType.BOOLEAN,
   description: "Whether matched skill IDs are logged for audit",
+  swap: SwapClass.RESTART,
+});
+/** "trimmed" omits each ordinary (non-critical) matched skill's `examples` content from
+ *  the rendered prompt; "full" (default) includes it. Critical skill content is always
+ *  rendered in full regardless of this setting. */
+export const DEFAULT_SKILL_RENDER_MODE: SkillRenderMode = configurable({
+  key: "skills.render_mode",
+  default: SkillRenderMode.FULL,
+  type: ConfigValueType.STRING,
+  description: "Skill rendering mode: 'full' includes examples, 'trimmed' omits them for ordinary skills",
+  enum: Object.values(SkillRenderMode) as readonly string[],
   swap: SwapClass.RESTART,
 });
 

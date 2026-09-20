@@ -12,9 +12,13 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { ensureDir } from "@std/fs";
+import { ensureDir, walk } from "@std/fs";
 import { join, resolve } from "@std/path";
-import { buildSkillsIndex } from "../../scripts/build_skills_index.ts";
+import {
+  buildSkillsIndex,
+  SKILL_EXAMPLES_HEADING,
+  splitInstructionsAndExamples,
+} from "../../scripts/build_skills_index.ts";
 import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "@exaix/testing";
@@ -70,6 +74,115 @@ Deno.test("[build_skills_index] generated JSON ends with a trailing newline (den
     assertEquals(raw.endsWith("}\n\n"), false, "must have exactly one trailing newline, not two");
   } finally {
     cleanup();
+  }
+});
+
+// Schema-defined examples field, split from instructions at generation time.
+
+Deno.test("[splitInstructionsAndExamples] splits a body containing the canonical heading into instructions and examples", () => {
+  const body = "Do the thing.\n\n## Examples\n\nHere is an example.";
+  const { instructions, examples } = splitInstructionsAndExamples(body);
+  assertEquals(instructions, "Do the thing.");
+  assertEquals(examples, "Here is an example.");
+});
+
+Deno.test("[splitInstructionsAndExamples] a body with no canonical heading is a lossless no-op", () => {
+  const body = "Do the thing.\n\n## API Reference\n\nMore stuff.";
+  const { instructions, examples } = splitInstructionsAndExamples(body);
+  assertEquals(instructions, body);
+  assertEquals(examples, undefined);
+});
+
+Deno.test("[splitInstructionsAndExamples] the examples section runs to end-of-document when it is the last heading", () => {
+  const body = "Do the thing.\n\n## Examples\n\nHere is an example.\nAnd more.";
+  const { instructions, examples } = splitInstructionsAndExamples(body);
+  assertEquals(instructions, "Do the thing.");
+  assertEquals(examples, "Here is an example.\nAnd more.");
+});
+
+Deno.test("[splitInstructionsAndExamples] SKILL_EXAMPLES_HEADING is the exported canonical marker", () => {
+  assertEquals(SKILL_EXAMPLES_HEADING, "## Examples");
+});
+
+Deno.test("[composeSkill via buildSkillsIndex] a skill with a canonical ## Examples heading produces a populated examples field", async () => {
+  const sandboxRoot = await Deno.makeTempDir({ prefix: "build_skills_idx_examples_" });
+  const skillsDir = join(sandboxRoot, "Blueprints", "Skills");
+  const targetDir = join(sandboxRoot, "Memory", "Skills");
+  await ensureDir(skillsDir);
+  try {
+    Deno.writeTextFileSync(
+      join(skillsDir, "with-examples.skill.md"),
+      `---
+id: "22222222-2222-4222-8222-222222222222"
+created_at: "2026-01-01T00:00:00.000Z"
+skill_id: with-examples
+name: With Examples
+version: "1.0.0"
+description: A skill with an examples section.
+triggers: {}
+scope: global
+source: user
+status: active
+---
+Do the thing carefully.
+
+## Examples
+
+Example one.
+`,
+    );
+
+    const result = await buildSkillsIndex(skillsDir, targetDir, sandboxRoot);
+    assert(result.success, `expected success, errors: ${result.errors.join("; ")}`);
+
+    const generated = JSON.parse(Deno.readTextFileSync(join(targetDir, "global", "with-examples.json")));
+    const parsed = SkillSchema.parse(generated);
+    assertEquals(parsed.instructions, "Do the thing carefully.");
+    assertEquals(parsed.examples, "Example one.");
+  } finally {
+    await Deno.remove(sandboxRoot, { recursive: true });
+  }
+});
+
+Deno.test("[composeSkill via buildSkillsIndex] a skill with no examples heading produces examples: undefined (lossless no-op)", async () => {
+  const { skillsDir, targetDir, sandboxRoot, cleanup } = await makeFixture();
+  try {
+    const result = await buildSkillsIndex(skillsDir, targetDir, sandboxRoot);
+    assert(result.success);
+    const generated = JSON.parse(Deno.readTextFileSync(join(targetDir, "global", "test-global-skill.json")));
+    const parsed = SkillSchema.parse(generated);
+    assertEquals(parsed.examples, undefined);
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[splitInstructionsAndExamples] a body whose Examples section is followed by more headings keeps that trailing content in instructions", () => {
+  const body = "Do the thing.\n\n## Examples\n\nHere is an example.\n\n## Later Section\n\nTrailing content survives.";
+  const { instructions, examples } = splitInstructionsAndExamples(body);
+  assertEquals(examples, "Here is an example.");
+  assert(instructions.includes("Do the thing."));
+  assert(
+    instructions.includes("## Later Section\n\nTrailing content survives."),
+    "content after the Examples section must not be silently dropped",
+  );
+  assert(!instructions.includes("## Examples"), "the heading marker itself is not duplicated into instructions");
+});
+
+Deno.test("[splitInstructionsAndExamples] regeneration drops no non-whitespace content for every real Blueprints/Skills/*.skill.md body", async () => {
+  const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
+  const skillsDir = join(REPO_ROOT, "Blueprints", "Skills");
+  // Multiset, not string equality: Examples always renders after Instructions, so byte
+  // order legitimately differs — only "no character lost or duplicated" is guaranteed.
+  const charMultiset = (s: string) => s.replace(/\s+/g, "").split("").sort().join("");
+  for await (const entry of walk(skillsDir, { includeDirs: false, exts: [".skill.md"] })) {
+    const content = Deno.readTextFileSync(entry.path);
+    const endFmIndex = content.indexOf("\n---\n", 4);
+    const body = content.slice(endFmIndex + 5).trim();
+    const { instructions, examples } = splitInstructionsAndExamples(body);
+    const combined = examples !== undefined ? `${instructions} ${examples}` : instructions;
+    const expected = charMultiset(body.replace(SKILL_EXAMPLES_HEADING, ""));
+    assertEquals(charMultiset(combined), expected, `content dropped or duplicated for ${entry.path}`);
   }
 });
 

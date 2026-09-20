@@ -1461,3 +1461,10 @@ export enum OtelDestinationScheme {
   HTTP = "http",
   HTTPS = "https",
 }
+
+/** "trimmed" omits an ordinary matched skill's `examples` content from the rendered
+ *  prompt; "full" (default) includes it. Critical skill content always renders in full. */
+export enum SkillRenderMode {
+  FULL = "full",
+  TRIMMED = "trimmed",
+}

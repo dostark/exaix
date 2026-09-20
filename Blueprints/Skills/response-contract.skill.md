@@ -140,7 +140,7 @@ the executable-plan schema above. Producing a fix, a test, or an
 implementation is still an executable plan; never substitute a narrative
 report for it just because the task has a security/QA/performance flavor.
 
-## Minimal example
+## Examples
 
 ```xml
 <thought>
