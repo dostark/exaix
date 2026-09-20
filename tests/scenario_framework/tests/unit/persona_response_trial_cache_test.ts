@@ -5,9 +5,10 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_response_trial.ts]
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "../../runner/persona_response_trial.ts";
+import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
 
 Deno.test("[PersonaResponseTrialCache] returns undefined when no cached trial exists", async () => {
@@ -31,7 +32,33 @@ Deno.test("[PersonaResponseTrialCache] reuses a previously persisted trial snaps
       suite_score: 0.72,
       provider: "claude-cli",
       model: "claude-sonnet-5",
-      steps: [],
+      steps: [{
+        stepId: "capture-role-response",
+        stepType: ScenarioStepType.CAPTURE_ROLE_RESPONSE,
+        executionStatus: "success",
+        criterionResults: [{
+          criterion_id: "response-captured",
+          kind: CriterionKind.COMMAND_EXIT_CODE,
+          phase: CriterionPhase.OUTPUT,
+          status: CriterionStatus.PASSED,
+          message: "captured",
+          evidence_refs: [],
+        }],
+      }, {
+        stepId: "judge-response",
+        stepType: ScenarioStepType.JUDGE,
+        executionStatus: "success",
+        criterionResults: [{
+          criterion_id: "persona-response-quality",
+          kind: CriterionKind.LLM_JUDGE,
+          phase: CriterionPhase.OUTPUT,
+          status: CriterionStatus.PASSED,
+          message: "judged",
+          evidence_refs: [],
+          score: 0.72,
+          judge: { provider: "claude-cli", model: "claude-sonnet-5" },
+        }],
+      }],
     };
     const evidence = {
       traceId: "11111111-1111-4111-8111-111111111111",
@@ -46,16 +73,35 @@ Deno.test("[PersonaResponseTrialCache] reuses a previously persisted trial snaps
       responseRowid: 1,
       planPath: "Workspace/Plans/current_plan.md",
       content: "accepted content",
-      contentHash: "a".repeat(64),
+      contentHash: Array.from(
+        new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("accepted content"))),
+        (byte) => byte.toString(16).padStart(2, "0"),
+      ).join(""),
       rawResponseHash: "b".repeat(64),
     } as const;
     const path = join(dir, "persona-trials", "swe-persona-response-fix-bug-null-guard", "trial-0.json");
     await Deno.mkdir(join(dir, "persona-trials", "swe-persona-response-fix-bug-null-guard"), { recursive: true });
-    await writePersonaResponseTrial(path, "33333333-3333-4333-8333-333333333333", manifest, evidence);
+    await writePersonaResponseTrial(path, "22222222-2222-4222-8222-222222222222", manifest, evidence);
 
     const cached = await readCachedPersonaTrialSnapshot(dir, "swe-persona-response-fix-bug-null-guard", 0);
     assertEquals(cached?.manifest.suite_score, 0.72);
-    assertEquals(cached?.runId, "33333333-3333-4333-8333-333333333333");
+    assertEquals(cached?.runId, "22222222-2222-4222-8222-222222222222");
+    const invalidManifest: IRunManifest = {
+      ...manifest,
+      steps: [manifest.steps[0], {
+        ...manifest.steps[1],
+        criterionResults: [{
+          ...manifest.steps[1].criterionResults[0],
+          status: CriterionStatus.ERROR,
+          score: undefined,
+        }],
+      }],
+    };
+    await assertRejects(
+      () => writePersonaResponseTrial(join(dir, "invalid-trial.json"), evidence.runId, invalidManifest, evidence),
+      Error,
+      "Invalid or drifted persona response judgment",
+    );
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

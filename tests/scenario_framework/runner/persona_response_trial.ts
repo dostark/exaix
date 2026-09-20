@@ -49,8 +49,8 @@ const SnapshotSchema = z.object({
   evidence: EvidenceSchema,
   manifest: z.object({
     scenarioId: z.string(),
-    provider: z.string(),
-    model: z.string(),
+    provider: z.string().optional(),
+    model: z.string().optional(),
     steps: z.array(
       z.object({
         stepId: z.string(),
@@ -66,12 +66,20 @@ export async function readPersonaResponseTrial(
   expected: IPersonaTrialExpectation,
 ): Promise<{ score: number; runId: string; traceId: string }> {
   const snapshot = SnapshotSchema.parse(JSON.parse(await Deno.readTextFile(path)));
+  return await validatePersonaResponseTrial(snapshot, expected);
+}
+
+async function validatePersonaResponseTrial(
+  snapshot: z.infer<typeof SnapshotSchema>,
+  expected: IPersonaTrialExpectation,
+): Promise<{ score: number; runId: string; traceId: string }> {
   for (const key of Object.keys(expected) as (keyof IPersonaTrialExpectation)[]) {
     if (snapshot.evidence[key] !== expected[key]) throw new Error(`Persona trial provenance drift: ${key}`);
   }
   if (
     snapshot.runId !== snapshot.evidence.runId || snapshot.manifest.scenarioId !== expected.taskId ||
-    snapshot.manifest.provider !== expected.provider || snapshot.manifest.model !== expected.model
+    (snapshot.manifest.provider !== undefined && snapshot.manifest.provider !== expected.provider) ||
+    (snapshot.manifest.model !== undefined && snapshot.manifest.model !== expected.model)
   ) {
     throw new Error("Persona manifest provenance drift");
   }
@@ -109,7 +117,17 @@ export async function readCachedPersonaTrialSnapshot(
 ): Promise<IPersonaTrialSnapshot | undefined> {
   const path = join(outputDir, "persona-trials", taskId, `trial-${trial}.json`);
   try {
-    return JSON.parse(await Deno.readTextFile(path)) as IPersonaTrialSnapshot;
+    const snapshot: IPersonaTrialSnapshot = JSON.parse(await Deno.readTextFile(path));
+    await validatePersonaResponseTrial(SnapshotSchema.parse(snapshot), {
+      experimentId: snapshot.evidence.experimentId,
+      taskId,
+      trialIndex: trial,
+      variant: snapshot.evidence.variant,
+      provider: snapshot.evidence.provider,
+      model: snapshot.evidence.model,
+      agentRole: snapshot.evidence.agentRole,
+    });
+    return snapshot;
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) return undefined;
     throw error;
@@ -123,5 +141,15 @@ export async function writePersonaResponseTrial(
   manifest: IRunManifest,
   evidence: IPersonaRoleResponseEvidence,
 ): Promise<void> {
-  await Deno.writeTextFile(path, JSON.stringify({ runId, manifest, evidence }, null, 2), { createNew: true });
+  const snapshot = { runId, manifest, evidence };
+  await validatePersonaResponseTrial(SnapshotSchema.parse(snapshot), {
+    experimentId: evidence.experimentId,
+    taskId: evidence.taskId,
+    trialIndex: evidence.trialIndex,
+    variant: evidence.variant,
+    provider: evidence.provider,
+    model: evidence.model,
+    agentRole: evidence.agentRole,
+  });
+  await Deno.writeTextFile(path, JSON.stringify(snapshot, null, 2), { createNew: true });
 }

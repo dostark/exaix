@@ -30,6 +30,10 @@ Deno.test("[PersonaResponse] six live scenarios capture actual role response bef
     assert(criterion?.kind === CriterionKind.LLM_JUDGE);
     assertEquals(criterion.evidence_path, "Memory/persona-response.txt");
     assert(criterion.rubric?.includes("proposed"));
+    if (role !== "senior-coder") {
+      assert(criterion.rubric?.includes("Do not require file writes or executed fixes"));
+      assert(criterion.rubric?.includes("Missing substantive analysis"));
+    }
     assertEquals(scenario.steps.some((step) => step.args?.includes("approve-all")), false);
   }
   assertEquals(Object.fromEntries(counts), { "senior-coder": 2, "code-analyst": 2, "security-expert": 2 });

@@ -129,7 +129,10 @@ steps:
         rubric: Judge the actual response against the task and supplied repository context. Assess accurate
           code-grounded request flow or dependency explanation, concrete symbols, edges and relevant boundaries,
           and useful completeness. Distinguish proposed findings from verified observations and avoid invented
-          dependencies. Ignore persona style and metadata. Return a continuous score from 0 to 1 and reasoning.
+          dependencies. Do not require file writes or executed fixes; score the explanation in the response,
+          including structured analysis, independently of requested output-file creation and tool permissions.
+          Missing substantive analysis, symbols, requested examples or relevant findings reduces the score.
+          Ignore persona style and metadata. Return a continuous score from 0 to 1 and reasoning.
         evidence_path: Memory/persona-response.txt
         context_path: Memory/persona-judge-context.txt
         score_threshold: 0.5

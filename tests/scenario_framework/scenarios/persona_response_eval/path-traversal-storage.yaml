@@ -130,6 +130,9 @@ steps:
           vulnerability and exploit reasoning, concrete trust boundaries, technically sound bounded remediation,
           and meaningful regression cases. Distinguish proposed remediation from executed or verified fixes;
           unsupported security or passing-test claims reduce the score. Ignore persona style and metadata.
+          Do not require file writes or executed fixes; score the vulnerability analysis and remediation
+          guidance in the response independently of requested source-file changes and tool permissions.
+          Missing substantive analysis, exploit reasoning or relevant remediation reduces the score.
           Return a continuous score from 0 to 1 and reasoning.
         evidence_path: Memory/persona-response.txt
         context_path: Memory/persona-judge-context.txt

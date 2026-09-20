@@ -201,13 +201,19 @@ await new Command()
         const trialLabel = trials > 1 ? `  [trial ${trial + 1}/${trials}]` : "";
 
         if (entry.pack === "persona_response_eval") {
-          const cached = await readCachedPersonaTrialSnapshot(runtimeConfig.output_dir, entry.id, trial);
-          if (cached) {
-            const cachedScore = cached.manifest.suite_score ?? 1.0;
-            console.log(`${trialLabel} Reusing cached result (score: ${cachedScore.toFixed(3)})`);
-            trialScores.push(cachedScore);
-            if (trial === 0) manifests.set(entry.id, cached.manifest);
-            continue;
+          try {
+            const cached = await readCachedPersonaTrialSnapshot(runtimeConfig.output_dir, entry.id, trial);
+            if (cached) {
+              const cachedScore = cached.manifest.suite_score ?? 1.0;
+              console.log(`${trialLabel} Reusing cached result (score: ${cachedScore.toFixed(3)})`);
+              trialScores.push(cachedScore);
+              if (trial === 0) manifests.set(entry.id, cached.manifest);
+              continue;
+            }
+          } catch (error) {
+            console.error(`${trialLabel} Invalid cached persona trial:`, error);
+            trialInfraError = true;
+            break;
           }
         }
 
@@ -283,6 +289,7 @@ await new Command()
         } catch (error) {
           console.error(`${trialLabel} Error executing scenario ${entry.id}:`, error);
           trialInfraError = true;
+          if (entry.pack === "persona_response_eval") break;
           trialScores.push(0);
         }
       }

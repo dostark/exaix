@@ -5,8 +5,8 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/persona_response_trial.ts]
  */
-import { assertEquals, assertRejects } from "@std/assert";
-import { readPersonaResponseTrial } from "../../runner/persona_response_trial.ts";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { readCachedPersonaTrialSnapshot, readPersonaResponseTrial } from "../../runner/persona_response_trial.ts";
 import { createPersonaResponseFixture, personaCaptureInput } from "../helpers/persona_response_fixture.ts";
 import { capturePersonaRoleResponse } from "../../runner/persona_response_evidence.ts";
 import { join } from "@std/path";
@@ -15,7 +15,10 @@ Deno.test("[PersonaResponse] pairing retains zero judge score and rejects missin
   const ctx = await createPersonaResponseFixture();
   try {
     ctx.seed("accepted response");
-    const input = personaCaptureInput(ctx.config);
+    const input = {
+      ...personaCaptureInput(ctx.config),
+      taskId: "swe-persona-response-explain-request-flow-codeanalyst",
+    };
     const evidence = await capturePersonaRoleResponse(input);
     const criterion = {
       criterion_id: "persona-response-quality",
@@ -33,8 +36,6 @@ Deno.test("[PersonaResponse] pairing retains zero judge score and rejects missin
       mode: "auto",
       outcome: "failure",
       suite_score: 0.8,
-      provider: input.provider,
-      model: input.model,
       steps: [{
         stepId: "capture-role-response",
         stepType: "capture-role-response",
@@ -49,7 +50,9 @@ Deno.test("[PersonaResponse] pairing retains zero judge score and rejects missin
         }],
       }, { stepId: "judge-response", stepType: "judge", executionStatus: "failure", criterionResults: [criterion] }],
     };
-    const path = join(ctx.tempDir, "trial.json");
+    const outputDir = join(ctx.tempDir, "persona-trials", input.taskId);
+    await Deno.mkdir(outputDir, { recursive: true });
+    const path = join(outputDir, "trial-0.json");
     const snapshot = { runId: input.runId, manifest, evidence };
     await Deno.writeTextFile(path, JSON.stringify(snapshot));
     const expected = {
@@ -62,8 +65,21 @@ Deno.test("[PersonaResponse] pairing retains zero judge score and rejects missin
       agentRole: input.agentRole,
     };
     assertEquals((await readPersonaResponseTrial(path, expected)).score, 0);
+    assertEquals((await readCachedPersonaTrialSnapshot(ctx.tempDir, input.taskId, 0))?.runId, input.runId);
     for (
       const change of [
+        {
+          ...snapshot,
+          manifest: {
+            ...manifest,
+            steps: [manifest.steps[0], {
+              ...manifest.steps[1],
+              criterionResults: [{ ...criterion, status: "error", score: undefined }],
+            }],
+          },
+        },
+        { ...snapshot, manifest: { ...manifest, provider: "wrong" } },
+        { ...snapshot, manifest: { ...manifest, model: "wrong" } },
         { ...snapshot, evidence: { ...evidence, provider: "wrong" } },
         { ...snapshot, evidence: { ...evidence, content: "tampered" } },
         { ...snapshot, runId: crypto.randomUUID() },
@@ -73,7 +89,33 @@ Deno.test("[PersonaResponse] pairing retains zero judge score and rejects missin
     ) {
       await Deno.writeTextFile(path, JSON.stringify(change));
       await assertRejects(() => readPersonaResponseTrial(path, expected));
+      await assertRejects(() => readCachedPersonaTrialSnapshot(ctx.tempDir, input.taskId, 0));
     }
+    const result = await new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "-A",
+        "tests/scenario_framework/runner/main.ts",
+        "--eval-mode",
+        "--trials",
+        "3",
+        "--workspace",
+        ctx.tempDir,
+        "--output",
+        ctx.tempDir,
+        "--cell",
+        "claude-code",
+        "--scenario",
+        input.taskId,
+      ],
+      cwd: Deno.cwd(),
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
+    assertStringIncludes(output, "Executing 1 scenarios");
+    assertEquals(result.code, 2, output);
+    assertEquals(output.includes("[trial 2/3] Running"), false);
   } finally {
     await ctx.cleanup();
   }
