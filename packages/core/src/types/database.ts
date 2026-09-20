@@ -65,6 +65,8 @@ export interface IProviderCostRecord {
   estimatedCostUsd: number;
   traceId?: string;
   portal?: string;
+  /** Optional attribution for future role-aware tracking. */
+  agentRole?: string;
   timestamp: Date;
   /** Prompt-cache read tokens. undefined when the tool doesn't report cache usage —
    *  never 0 for "unknown". */
@@ -78,6 +80,24 @@ export interface IProviderCostRecord {
   /** How this record's cost was priced (provider_costs.cost_source):
    *  undefined means the legacy blended estimate (no reported or computed figure). */
   costSource?: CostSource;
+}
+
+/** Supported dimensions for cost reports. */
+export enum CostGroupBy {
+  MODEL = "model",
+  PORTAL = "portal",
+  ROLE = "role",
+}
+
+/** Aggregate of persisted generation calls for one dimension value. */
+export interface IGroupedCostRecord {
+  group: string;
+  calls: number;
+  promptTokens: number;
+  completionTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  estimatedCostUsd: number;
 }
 
 /**

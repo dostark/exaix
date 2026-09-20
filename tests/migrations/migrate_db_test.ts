@@ -148,6 +148,26 @@ Deno.test("migrate_db.ts up creates database and applies migrations", async () =
   }
 });
 
+Deno.test("[phase196] provider cost role migration adds and reverses nullable attribution", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    const up = await runMigrate(tmp, ["up"]);
+    assertEquals(up.code, 0, up.stderr);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const columns = await queryDb(dbPath, "PRAGMA table_info(provider_costs);");
+    assertStringIncludes(columns, "agent_role");
+    const migration = await queryDb(dbPath, "SELECT version FROM schema_migrations ORDER BY id DESC LIMIT 1;");
+    assertEquals(migration, "002_provider_cost_role.sql");
+
+    const down = await runMigrate(tmp, ["down"]);
+    assertEquals(down.code, 0, down.stderr);
+    const revertedColumns = await queryDb(dbPath, "PRAGMA table_info(provider_costs);");
+    assert(!revertedColumns.includes("agent_role"));
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
 Deno.test("[phase179] migrate_db.ts up creates activity/leases with agent_role columns and renamed indexes, no identity_id", async () => {
   const tmp = await setupTestWorkspace();
   try {

@@ -173,6 +173,7 @@ export const PROVIDER_COSTS_TABLE_SQL = `
     cost_source TEXT,
     cache_read_tokens INTEGER,
     cache_creation_tokens INTEGER,
+    agent_role TEXT,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);

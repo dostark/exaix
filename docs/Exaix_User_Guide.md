@@ -4901,6 +4901,24 @@ Full span mapping, identity derivation, and privacy-attribute allowlist:
 
 Exaix provides comprehensive cost tracking and budget management for AI provider usage. This feature helps you monitor spending, set limits, and optimize your AI usage costs.
 
+## exactl cost
+
+Use `exactl cost` to inspect persisted provider calls. Add `--group-by model` or
+`--group-by portal` for per-group call counts, prompt/completion tokens,
+cache-read/cache-creation tokens, and total USD cost. The same view is available
+as `exactl log cost`. Filters such as `--portal`, `--model`, `--trace-id`, and
+`--since` apply before grouping. Without `--group-by`, the command shows the
+existing per-call table and totals.
+
+```bash
+exactl cost --group-by model
+exactl cost --group-by portal --since 2026-09-01
+```
+
+`--group-by role` reports that role attribution is not available in this build.
+The database has a nullable `agent_role` column for future attribution, but
+generation calls do not yet populate it.
+
 ### 11.1 How Cost Tracking Works
 
 Cost tracking operates at multiple levels:

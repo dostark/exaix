@@ -6,7 +6,7 @@
  * @related-files [packages/core/src/cost/cost_tracker.ts, packages/storage-sqlite/src/database_service.ts]
  */
 
-import type { CostSource, ICostFilter, IProviderCostRecord } from "@exaix/core/types";
+import type { CostGroupBy, CostSource, ICostFilter, IGroupedCostRecord, IProviderCostRecord } from "@exaix/core/types";
 
 export interface ICostTracker {
   /**
@@ -39,6 +39,9 @@ export interface ICostTracker {
    * Query cost records based on criteria
    */
   queryByCriteria(filter: ICostFilter): Promise<IProviderCostRecord[]>;
+
+  /** Sum persisted generation calls by model or portal. */
+  queryGroupedByCriteria?(filter: ICostFilter, groupBy: CostGroupBy): Promise<IGroupedCostRecord[]>;
 
   /**
    * Get total cost for a provider/model

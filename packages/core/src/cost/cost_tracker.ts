@@ -9,7 +9,14 @@ import type { SqliteParam } from "../types/mod.ts";
 import type { IDatabaseService } from "../types/mod.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ICostTracker } from "../types/mod.ts";
-import type { CostSource, ICostFilter, IModelPricingLookup, IProviderCostRecord } from "../types/mod.ts";
+import {
+  CostGroupBy,
+  type CostSource,
+  type ICostFilter,
+  type IGroupedCostRecord,
+  type IModelPricingLookup,
+  type IProviderCostRecord,
+} from "../types/mod.ts";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
@@ -298,7 +305,7 @@ export class CostTracker implements ICostTracker {
     const query = `
       SELECT id, provider, model, requests, tokens, prompt_tokens as promptTokens,
              completion_tokens as completionTokens, estimated_cost_usd as estimatedCostUsd,
-             trace_id as traceId, portal, timestamp, cost_source as costSource,
+             trace_id as traceId, portal, agent_role as agentRole, timestamp, cost_source as costSource,
              cache_read_tokens as cacheReadTokens, cache_creation_tokens as cacheCreationTokens
       FROM provider_costs
       ${whereClause}
@@ -316,6 +323,7 @@ export class CostTracker implements ICostTracker {
       estimatedCostUsd: number;
       traceId: string | null;
       portal: string | null;
+      agentRole: string | null;
       timestamp: string;
       costSource: CostSource | null;
       cacheReadTokens: number | null;
@@ -326,6 +334,7 @@ export class CostTracker implements ICostTracker {
       ...row,
       traceId: row.traceId ?? undefined,
       portal: row.portal ?? undefined,
+      agentRole: row.agentRole ?? undefined,
       timestamp: new Date(row.timestamp),
       costSource: row.costSource ?? undefined,
       cacheReadTokens: row.cacheReadTokens ?? undefined,
@@ -340,6 +349,37 @@ export class CostTracker implements ICostTracker {
     });
 
     return results;
+  }
+
+  async queryGroupedByCriteria(filter: ICostFilter, groupBy: CostGroupBy): Promise<IGroupedCostRecord[]> {
+    if (groupBy === CostGroupBy.ROLE) {
+      throw new Error("Role cost grouping is not available in this build: generation calls have no role attribution.");
+    }
+    if (groupBy !== CostGroupBy.MODEL && groupBy !== CostGroupBy.PORTAL) {
+      throw new Error(`Invalid cost group: ${groupBy}`);
+    }
+    const records = await this.queryByCriteria(filter);
+    const grouped = new Map<string, IGroupedCostRecord>();
+    for (const record of records) {
+      const group = groupBy === CostGroupBy.MODEL ? record.model : record.portal ?? "(unknown)";
+      const row = grouped.get(group) ?? {
+        group,
+        calls: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+        estimatedCostUsd: 0,
+      };
+      row.calls++;
+      row.promptTokens += record.promptTokens;
+      row.completionTokens += record.completionTokens;
+      row.cacheReadTokens += record.cacheReadTokens ?? 0;
+      row.cacheCreationTokens += record.cacheCreationTokens ?? 0;
+      row.estimatedCostUsd += record.estimatedCostUsd;
+      grouped.set(group, row);
+    }
+    return [...grouped.values()].sort((a, b) => a.group.localeCompare(b.group));
   }
 
   getTotalCost(

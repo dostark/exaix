@@ -9,12 +9,13 @@
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
-import type { ICostTracker } from "@exaix/core/types";
+import { CostGroupBy, type ICostFilter, type ICostTracker } from "@exaix/core/types";
 export interface ICostCommandOptions {
   traceId?: string;
   portal?: string;
   since?: string;
   model?: string;
+  groupBy?: string;
 }
 
 /**
@@ -33,14 +34,30 @@ export class CostCommands extends BaseCommand {
    * Display aggregated cost reports
    */
   async show(options: ICostCommandOptions): Promise<void> {
+    if (options.groupBy === CostGroupBy.ROLE) {
+      throw new Error("Role cost grouping is not available in this build: generation calls have no role attribution.");
+    }
+    if (options.groupBy && options.groupBy !== CostGroupBy.MODEL && options.groupBy !== CostGroupBy.PORTAL) {
+      throw new Error(`Invalid cost group: ${options.groupBy}. Use model or portal.`);
+    }
     const sinceDate = options.since ? new Date(options.since) : undefined;
+    if (options.since && Number.isNaN(sinceDate?.getTime())) {
+      throw new Error("Invalid --since date. Use an ISO date.");
+    }
 
-    const records = await this.costTracker.queryByCriteria({
+    const criteria = {
       traceId: options.traceId,
       portal: options.portal,
       since: sinceDate,
       model: options.model,
-    });
+    };
+
+    if (options.groupBy) {
+      await this.showGrouped(criteria, options.groupBy as CostGroupBy);
+      return;
+    }
+
+    const records = await this.costTracker.queryByCriteria(criteria);
 
     if (records.length === 0) {
       console.log(colors.yellow("No cost records found matching the criteria."));
@@ -87,5 +104,30 @@ export class CostCommands extends BaseCommand {
       );
     }
     console.log("");
+  }
+
+  private async showGrouped(criteria: ICostFilter, groupBy: CostGroupBy): Promise<void> {
+    const tracker = this.costTracker;
+    if (!tracker.queryGroupedByCriteria) {
+      throw new Error("Grouped cost reporting is not available in this build.");
+    }
+    const groups = await tracker.queryGroupedByCriteria(criteria, groupBy);
+    if (groups.length === 0) {
+      console.log(colors.yellow("No cost records found matching the criteria."));
+      return;
+    }
+    const table = new Table()
+      .header(["Group", "Calls", "Prompt", "Completion", "Cache Read", "Cache Create", "Cost (USD)"])
+      .body(groups.map((group) => [
+        group.group,
+        String(group.calls),
+        String(group.promptTokens),
+        String(group.completionTokens),
+        String(group.cacheReadTokens),
+        String(group.cacheCreationTokens),
+        `$${group.estimatedCostUsd.toFixed(6)}`,
+      ]));
+    console.log(colors.cyan(colors.bold(`\nLLM Cost by ${groupBy}`)));
+    table.render();
   }
 }

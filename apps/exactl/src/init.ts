@@ -8,6 +8,7 @@
 
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
+import { CostTracker } from "@exaix/core/cost";
 import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
@@ -262,6 +263,7 @@ export async function initializeServices(
 
     const context: ICliApplicationContext = {
       db: dbLocal,
+      cost: new CostTracker(dbLocal, cfg, displayLogger),
       git: gitLocal,
       provider: providerLocal,
       display: displayAdapter,

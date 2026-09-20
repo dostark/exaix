@@ -2660,21 +2660,25 @@ const journalCommand = new Command()
       }),
   );
 
-const costCommand = new Command()
-  .description("Display aggregated cost reports")
-  .option("-t, --trace-id <id:string>", "Filter by trace ID")
-  .option(CLI_OPTION_PORTAL, "Filter by portal alias")
-  .option("-s, --since <date:string>", "Filter by date (ISO string)")
-  .option(CLI_OPTION_MODEL, "Filter by model")
-  .action(async (options) => {
-    const cmd = new CostCommands(context);
-    await cmd.show(options);
-  });
+const createCostCommand = () =>
+  new Command()
+    .description("Display aggregated cost reports")
+    .option("-t, --trace-id <id:string>", "Filter by trace ID")
+    .option(CLI_OPTION_PORTAL, "Filter by portal alias")
+    .option("-s, --since <date:string>", "Filter by date (ISO string)")
+    .option(CLI_OPTION_MODEL, "Filter by model")
+    .option("--group-by <dimension:string>", "Group costs by model, portal, or role")
+    .action(async (options) => {
+      const cmd = new CostCommands(context);
+      await cmd.show(options);
+    });
 
 const logCommand = new Command()
   .description("Access system logs, activity journal and cost tracking")
   .command("journal", journalCommand)
-  .command("cost", costCommand);
+  .command("cost", createCostCommand());
+
+baseCommand.command("cost", createCostCommand());
 
 const logsCommand = new Command()
   .description("Query system activity logs (alias for 'log journal')")
