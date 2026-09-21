@@ -18,11 +18,44 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
-## Unreleased — Phase 148 (Memory Evaluation Framework)
+## Unreleased — Phase 196 (Agent Context & Cost Budget Enforcement)
 
 ### Added
 
-- `exactl eval report --view memory` — per-ability score, pass count, and derived
+- `exactl request create --dry-run-context` — print a projected per-segment input-token
+  breakdown (token estimates per section, budget ceiling, compaction trigger, and
+  prompt-only cost) for a request without writing a request file or invoking a real LLM
+  call; honors `skills.render_mode`, `disableSkills`, and portal-knowledge settings exactly
+  as the daemon would, and reports a cold/stale portal as `Portal knowledge: stale/unavailable`
+  instead of computing from pre-compaction numbers. See the `exactl request create`
+  options table in [Exaix_User_Guide.md](Exaix_User_Guide.md).
+- `[budget] cost_target_tokens_per_request` config key — optional hard cap on assembled
+  prompt tokens per request, enforced by both the planning call and the ReAct loop; set
+  via `exactl config set budget.cost_target_tokens_per_request <n>` or the TOML `[budget]`
+  section, effective on the next daemon restart; values below the allocator's minimum
+  feasible total are rejected at config time. See
+  [Exaix_User_Guide.md](Exaix_User_Guide.md#113-budget-enforcement).
+- `skills.render_mode = "trimmed"` — drop each ordinary matched skill's `examples` section
+  from the rendered prompt (critical skills always render in full); default `"full"` keeps
+  the skill body in its original order. See
+  [Exaix_User_Guide.md](Exaix_User_Guide.md#configuration).
+- `deno task check:skill-size` — advisory skill content-size governance that reports the
+  per-skill rendered contribution (including `examples`) in the selected render mode.
+- `exactl cost --group-by model|portal` — grouped call counts now sum each persisted row's
+  request cardinality, so batched/aggregate rows report the true number of requests rather
+  than the row count.
+
+### Fixed
+
+- The prompt-cost ceiling is now actually applied: the documented `budget.cost_target_tokens_per_request`
+  key reaches the daemon's allocator at restart, protected-content overflow fails closed
+  before any provider call (emitting `context.budget.exceeded`), and both planning and
+  ReAct prompts are trimmed to the ceiling instead of silently ignoring it.
+- `--dry-run-context` is read-only: it no longer triggers portal analysis, cache/index
+  writes, journal events, or an LLM call for a cold or stale portal, and its projected
+  totals reflect the final trimmed prompt rather than pre-compaction numbers.
+- Skills with a middle `## Examples` section (e.g. commit-message) now render in their
+  original order in full mode instead of moving Examples to the end.
   tokens/ms per query for the five LongMemEval memory abilities (information extraction,
   multi-session reasoning, temporal reasoning, knowledge updates, abstention), plus a
   Consolidation & Learning-Effectiveness section (dedup rate, contradiction-resolution
