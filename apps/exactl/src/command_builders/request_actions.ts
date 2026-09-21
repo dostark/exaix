@@ -32,9 +32,10 @@ import { ClarificationEngine } from "@exaix/quality-gate";
 import { createOutputValidator } from "@exaix/tool-runtime";
 import { join } from "@std/path";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
-import { PromptBudgetAllocator } from "@exaix/core";
+import { PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
 import { loadBlueprint } from "@exaix/core/blueprint";
-import { AgentRunner, ContextBudgetManager } from "@exaix/execution";
+import { AgentRunner, ContextBudgetManager, type IParsedRequest } from "@exaix/execution";
+import { PortalContextBuilder } from "@exaix/request";
 import type { IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
 
 export interface IRequestActionContext {
@@ -148,16 +149,20 @@ function formatPromptPreviewTable(preview: IPromptPreview): string {
     "Projected Prompt Breakdown",
     "═".repeat(80),
     "",
-    "Kind".padEnd(20) + "Priority".padEnd(10) + "Tokens".padEnd(10) + "Bytes".padEnd(10) + "Included",
+    "Kind".padEnd(20) + "Priority".padEnd(10) + "Tokens".padEnd(10) + "Bytes".padEnd(10) +
+    "Pct%".padEnd(10) + "Included",
     "─".repeat(80),
   ];
 
+  const total = preview.totalTokenEstimate;
   for (const segment of preview.segments) {
+    const pct = total > 0 ? ((segment.tokenEstimate / total) * 100).toFixed(1) : "0.0";
     lines.push(
       segment.kind.padEnd(20) +
         String(segment.priority).padEnd(10) +
         String(segment.tokenEstimate).padEnd(10) +
         String(segment.byteLength).padEnd(10) +
+        `${pct}%`.padEnd(10) +
         (segment.included ? "yes" : "no"),
     );
   }
@@ -219,7 +224,29 @@ async function handleRequestCreateDryRunContext(
       contextBudgetManager,
     });
 
-    const preview = await runner.previewPrompt(blueprint, { userPrompt, context: {} });
+    // Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): when the request
+    // references a configured portal, inject the SAME portal_context (file listing) and
+    // portal_knowledge (knowledge summary) segments the daemon would assemble — a preview that
+    // skips them would report numbers that contradict the real request's prompt.
+    const requestContext: IParsedRequest["context"] = {};
+    if (options.portal && appContext.portalKnowledge && appContext.portals) {
+      const portalDetails = await appContext.portals.show(options.portal);
+      const knowledge = await appContext.portalKnowledge.getOrAnalyze(options.portal, portalDetails.targetPath);
+      const portalContextBuilder = new PortalContextBuilder({
+        config: appContext.config.getAll() as never,
+        portalKnowledgeService: appContext.portalKnowledge,
+      });
+      const fileContext = await portalContextBuilder.buildFileContext(options.portal);
+      if (fileContext) requestContext[PORTAL_CONTEXT_KEY] = fileContext;
+      const summary = await portalContextBuilder.resolveKnowledgeContext(
+        userPrompt,
+        options.portal,
+        knowledge,
+      );
+      requestContext[PORTAL_KNOWLEDGE_KEY] = summary;
+    }
+
+    const preview = await runner.previewPrompt(blueprint, { userPrompt, context: requestContext });
 
     console.log(formatPromptPreviewTable(preview));
   } catch (error) {
