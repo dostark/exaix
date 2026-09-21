@@ -28,6 +28,7 @@ import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budge
 import type { IPromptBudget, IPromptPreview, IPromptPreviewSegment } from "@exaix/schemas/prompt_budget.ts";
 import type { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
+import type { IPlanAdapter } from "@exaix/core/planning";
 import { DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
@@ -225,12 +226,6 @@ interface IGenerationHints {
   callSite: Opt<ICallSite, Reason.OptionalContext>;
   thinking: Opt<boolean, Reason.OptionalContext>;
   effort: Opt<string, Reason.OptionalContext>;
-}
-
-export interface IPlanAdapter {
-  parseAndValidate(blueprint: IBlueprint, request: IParsedRequest): Promise<IAgentExecutionResult>;
-  formatForModel?(blueprint: IBlueprint, request: IParsedRequest): string;
-  getSchemaInstructions(): string;
 }
 
 /** Comma-separated skill ids to exclude from the resolved set for this process's lifetime.
@@ -1062,7 +1057,6 @@ export class AgentRunner implements IAgentRunner {
 
 function createNoopPlanAdapter(): IPlanAdapter {
   return {
-    parseAndValidate: () => Promise.resolve({ thought: "", content: "", raw: "" }),
     getSchemaInstructions: () => "",
   };
 }

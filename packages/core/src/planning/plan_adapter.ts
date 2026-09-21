@@ -20,6 +20,13 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { extractTomlActionBlocks } from "./toml_action_blocks.ts";
 import { tryParseXmlPlan } from "./xml_plan_parser.ts";
 
+/** The planning-call prompt contract `AgentRunner` needs from its planner adapter. Kept to the
+ *  single method `constructPrompt` actually invokes — the legacy `parseAndValidate`/`formatForModel`
+ *  members were never called by any production path. */
+export interface IPlanAdapter {
+  getSchemaInstructions(): string;
+}
+
 // Types
 
 interface QACase {
@@ -71,7 +78,7 @@ export class PlanValidationError extends Error {
 /**
  * PlanAdapter validates JSON plans and converts them to markdown
  */
-export class PlanAdapter {
+export class PlanAdapter implements IPlanAdapter {
   private validator: OutputValidator;
 
   constructor() {

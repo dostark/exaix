@@ -33,6 +33,7 @@ import { createOutputValidator } from "@exaix/tool-runtime";
 import { join } from "@std/path";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
+import { PlanAdapter } from "@exaix/core/planning";
 import { loadBlueprint } from "@exaix/core/blueprint";
 import { AgentRunner, ContextBudgetManager, type IParsedRequest } from "@exaix/execution";
 import { PortalContextBuilder } from "@exaix/request";
@@ -217,12 +218,16 @@ async function handleRequestCreateDryRunContext(
     );
     const contextBudgetManager = new ContextBudgetManager(tokenizer);
 
-    const runner = new AgentRunner(appContext.provider, {
-      skillsService: appContext.skills,
-      tokenizer,
-      promptBudgetAllocator,
-      contextBudgetManager,
-    });
+    const runner = new AgentRunner(
+      new PlanAdapter(),
+      appContext.provider,
+      {
+        skillsService: appContext.skills,
+        tokenizer,
+        promptBudgetAllocator,
+        contextBudgetManager,
+      },
+    );
 
     // Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): when the request
     // references a configured portal, inject the SAME portal_context (file listing) and

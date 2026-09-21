@@ -12,10 +12,11 @@
  * ]
  */
 
-import { assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
+import { PlanAdapter } from "@exaix/core/planning";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
 
@@ -289,4 +290,31 @@ Deno.test("[IAgentRunner] segment tokenEstimate falls back to TOKEN_ESTIMATION_C
   const systemSeg = captured[0].segments.find((s) => s.content === "SYSTEM_TEXT");
   // "SYSTEM_TEXT" is 11 chars; chars/4 estimation ceils to 3.
   assertEquals(systemSeg?.tokenEstimate, Math.ceil("SYSTEM_TEXT".length / 4));
+});
+
+Deno.test("[IAgentRunner] the 2-arg provider form leaves schema instructions empty (the gap this fix closes)", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager }, // 2-arg form: real PlanAdapter never wired
+  );
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
+  const schemaSeg = captured[0].segments.find((s) => s.kind === "acceptance_criteria");
+  assert(schemaSeg, "schema-instructions segment must exist in the planning call");
+  assertEquals(schemaSeg.content.length, 0, "noop adapter leaves schema instructions empty");
+});
+
+Deno.test("[IAgentRunner] the 3-arg form with a real PlanAdapter injects the planning schema instructions into the prompt", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const planAdapter = new PlanAdapter();
+  const runner = new AgentRunner(
+    planAdapter, // 3-arg form: real adapter is wired through
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
+  const schemaSeg = captured[0].segments.find((s) => s.kind === "acceptance_criteria");
+  assert(schemaSeg, "schema-instructions segment must exist in the planning call");
+  assertEquals(schemaSeg.content.length > 0, true, "a real PlanAdapter must inject its schema instructions");
+  assertStringIncludes(schemaSeg.content, "PLANNING phase", "instructions must describe the planning phase");
 });

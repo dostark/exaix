@@ -35,7 +35,7 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
-import { PlanAmendmentGate, PlanAmendmentService } from "@exaix/core/planning";
+import { PlanAdapter, PlanAmendmentGate, PlanAmendmentService } from "@exaix/core/planning";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -857,16 +857,20 @@ if (import.meta.main) {
       logger,
     );
     // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the agent role's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
-    const agentRunner = new AgentRunner(llmProvider, {
-      milestoneEmitter: buildMilestoneEmitterFromConfig(config),
-      skillsService,
-      logger,
-      // Disabling prompt injection also disables skill matching and its journal events.
-      disableSkills: !config.skills.inject_in_prompt,
-      tokenizer: agentRunnerTokenizer,
-      promptBudgetAllocator: agentRunnerPromptBudgetAllocator,
-      contextBudgetManager: agentRunnerContextBudgetManager,
-    });
+    const agentRunner = new AgentRunner(
+      new PlanAdapter(),
+      llmProvider,
+      {
+        milestoneEmitter: buildMilestoneEmitterFromConfig(config),
+        skillsService,
+        logger,
+        // Disabling prompt injection also disables skill matching and its journal events.
+        disableSkills: !config.skills.inject_in_prompt,
+        tokenizer: agentRunnerTokenizer,
+        promptBudgetAllocator: agentRunnerPromptBudgetAllocator,
+        contextBudgetManager: agentRunnerContextBudgetManager,
+      },
+    );
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
     // Team composition provides dynamic-step dispatch; initialization failure
     // degrades to execution without dynamic steps.
