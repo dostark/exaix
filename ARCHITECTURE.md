@@ -1003,10 +1003,15 @@ Dynamic execution is bounded by a two-layer context budget system:
    `IContextSegment[]` units, applies a priority-driven keep / trim / drop policy within each
    section's token limit, and records every decision as an `IContextBudgetDecision`.
 
-Every compaction decision is persisted to `Memory/Execution/{traceId}/` as an
-`IContextBudgetSnapshot` and emitted as a `context.budget.compacted` journal event, making
-prompt-state hygiene observable and auditable. Protected segment classes (`"system"`,
-`"request"`, `"acceptance_criteria"`, `metadata.nonCompactable = true`) are never dropped.
+Compaction decisions are observable as Activity Journal events, not a blanket persisted
+snapshot. `IContextBudgetManager.prepare()` emits `context.budget.consumed` (aggregate
+`usedInputTokens`/`droppedSegmentCount`) via `DomainEventType.ContextBudgetConsumed` and
+`context.section.truncated` per trimmed segment (`ContextSectionTruncated`); snapshot
+files under `Memory/Execution/{traceId}/` are written **only when a `snapshotStore` is
+injected** into the executors/manager that own one — the planning-call manager the daemon
+constructs carries no snapshot store, so a planning-call compaction proves itself through
+the event stream, not a snapshot file. Protected segment classes (`"system"`, `"request"`,
+`"acceptance_criteria"`, `metadata.nonCompactable = true`) are never dropped.
 
 `AgentRunner`'s planning call applies the same two-layer pipeline as the ReAct execution
 loop. `constructPrompt()` (`packages/execution/src/agent_runner.ts:AgentRunner.constructPrompt`)
@@ -1021,7 +1026,20 @@ events, so a cost-ceiling-triggered planning-call compaction is observable via t
 exactly as a ReAct-loop compaction is. `AgentRunner.previewPrompt()` reuses the same assembly
 path non-mutatingly for `exactl request create --dry-run-context`.
 When `promptBudgetAllocator` is absent, the planning call falls back to an unbounded budget
-(today's pre-step-1 behavior) and skips compaction.
+(today's pre-wiring behavior) and skips compaction.
+
+**Hard-ceiling failure semantics.** `budget.cost_target_tokens_per_request` (the public key,
+persisted via `exactl config set` / the Config DB and merged by
+`resolveEffectiveBudgetPolicy`, `@exaix/core/config`) is an optional strict upper bound. When
+protected content alone (system, request, acceptance criteria, critical skill contract)
+exceeds the ceiling, `ContextBudgetManager.prepare()` **fails closed before any provider
+call**: it emits `context.budget.exceeded` (`DomainEventType.ContextBudgetExceeded`) carrying
+the trace id, selected model, configured ceiling, and the protected token total, then throws
+`ContextBudgetExceededError`. Protected content is never silently dropped to fit a ceiling,
+and no prompt above an enabled hard ceiling reaches the provider. The config boundary rejects
+feasibility failures early: `ConfigSchema`/`ZBudgetPolicy` enforce the allocator's minimum
+feasible ceiling (`MIN_COST_TARGET_TOKENS_PER_REQUEST`), turning an impossible setting into a
+startup-time rejection rather than a per-request failure.
 
 Context budget management is activated by injecting `contextBudgetManager` and (optionally)
 `snapshotStore` as the 12th and 13th constructor parameters of `AgentExecutor`. Without that injection the

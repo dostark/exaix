@@ -93,6 +93,7 @@ export class MemoryCostRouter implements IMemoryCostRouter {
       promptTokens: 0,
       completionTokens: 0,
       estimatedCostUsd: costUsd,
+      requests: 1,
       timestamp: new Date(),
     });
 

@@ -109,3 +109,46 @@ Deno.test("[security] cost grouping rejects unknown dimensions before querying",
     await cleanup();
   }
 });
+
+Deno.test("exactl cost --group-by model reports persisted request cardinality, not row count (GAP-13)", async () => {
+  const { context, db, cleanup } = await createCliTestContext();
+  try {
+    const tracker = new CostTracker(db);
+    context.cost = tracker;
+    await db.preparedRun(
+      `INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp, cache_read_tokens, cache_creation_tokens)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        crypto.randomUUID(),
+        "anthropic",
+        "sonnet",
+        5,
+        12,
+        10,
+        2,
+        0.1,
+        "test",
+        null,
+        null,
+        new Date().toISOString(),
+        0,
+        0,
+      ],
+    );
+    await db.waitForFlush();
+    const output: string[] = [];
+    const originalLog = console.log;
+    console.log = (...args) => output.push(args.join(" "));
+    try {
+      await new CostCommands(context).show({ groupBy: "model" });
+    } finally {
+      console.log = originalLog;
+    }
+    const rendered = output.join("\n");
+    assertStringIncludes(rendered, "sonnet");
+    // The grouped table must show the 5 persisted requests, not the single row.
+    assertStringIncludes(rendered, "5");
+  } finally {
+    await cleanup();
+  }
+});

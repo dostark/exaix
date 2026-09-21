@@ -103,6 +103,59 @@ Deno.test("[AgentRunner.previewPrompt] reports compactionTriggered: true and the
   assertEquals(preview.compactionTriggered, true);
   const portalSeg = preview.segments.find((s) => s.kind === "portal_knowledge");
   assert(portalSeg, "the portal_knowledge segment must be present in the full breakdown even when trimmed");
+  assert(portalSeg.originalTokenEstimate > portalSeg.resultingTokenEstimate);
+  assertEquals(
+    preview.totalTokenEstimate,
+    preview.segments.reduce((sum, segment) => sum + segment.resultingTokenEstimate, 0),
+  );
+});
+
+Deno.test("[AgentRunner.previewPrompt] dropped segments contribute zero final tokens and bytes", async () => {
+  const droppingManager: IContextBudgetManager = {
+    prepare(input) {
+      return Promise.resolve({
+        segments: input.segments.filter((segment) => segment.kind !== "system"),
+        snapshot: {
+          traceId: input.traceId,
+          stepId: input.stepId,
+          model: input.model,
+          maxContextTokens: input.promptBudget.totalBudgetTokens,
+          usedInputTokens: 0,
+          decisions: [],
+          overflowRecovered: false,
+        },
+      });
+    },
+  };
+  const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
+    contextBudgetManager: droppingManager,
+  });
+
+  const preview = await runner.previewPrompt(
+    { systemPrompt: "system content" },
+    { userPrompt: "task", context: {} },
+  );
+  const system = preview.segments.find((segment) => segment.kind === "system");
+
+  assert(system);
+  assert(system.originalTokenEstimate > 0);
+  assertEquals(system.resultingTokenEstimate, 0);
+  assertEquals(system.resultingByteLength, 0);
+  assertEquals(system.included, false);
+});
+
+Deno.test("[AgentRunner.previewPrompt] selected model pricing produces a prompt-only estimate", async () => {
+  const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
+    selectedModel: { provider: "openai", model: "gpt-4o-mini" },
+  });
+
+  const preview = await runner.previewPrompt(
+    { systemPrompt: "system content" },
+    { userPrompt: "task", context: {} },
+  );
+
+  assert(preview.estimatedCostUsd !== undefined);
+  assert(preview.estimatedCostUsd > 0);
 });
 
 Deno.test("[AgentRunner.previewPrompt] compactionTriggered is false and all segments included when the budget is not tight", async () => {

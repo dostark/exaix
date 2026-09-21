@@ -1063,6 +1063,36 @@ export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as con
 /** Conservative fallback context window for local models when model-specific window is unknown. */
 export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 
+/** Minimum reserved tokens for critical prompt sections. */
+export const SECTION_FLOORS = {
+  system: 1_000,
+  plan: 2_000,
+} as const;
+
+/** Safety buffer deducted from total context window before budget allocation. */
+export const SAFETY_BUFFER_RATIO = 0.1;
+
+/** Base section weights before request-adaptive reallocation. */
+export const SECTION_BASE_WEIGHTS = {
+  system: 0.20,
+  plan: 0.35,
+  portalKnowledge: 0.20,
+  memory: 0.10,
+  skills: 0.10,
+  loopHistory: 0.05,
+} as const;
+
+const NON_FLOORED_SECTION_WEIGHT = SECTION_BASE_WEIGHTS.portalKnowledge +
+  SECTION_BASE_WEIGHTS.memory + SECTION_BASE_WEIGHTS.skills +
+  SECTION_BASE_WEIGHTS.loopHistory;
+
+/** Smallest ceiling whose usable allocation can satisfy both critical floors and all
+ * ratio-allocated non-critical sections. */
+export const MIN_COST_TARGET_TOKENS_PER_REQUEST = Math.ceil(
+  (SECTION_FLOORS.system + SECTION_FLOORS.plan) /
+    (1 - (1 - SAFETY_BUFFER_RATIO) * NON_FLOORED_SECTION_WEIGHT),
+);
+
 /** Default budget enforcement policy by provider category. */
 export const DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED: boolean = configurable({
   key: "budget.cloud_enforcement_enabled",
@@ -1084,7 +1114,7 @@ export const DEFAULT_COST_TARGET_TOKENS_PER_REQUEST: number | undefined = config
   type: ConfigValueType.NUMBER,
   description:
     "Optional hard cap on assembled prompt tokens per request, independent of the model's context window — for cost control on large-context models where overflow is not the risk.",
-  min: 1,
+  min: MIN_COST_TARGET_TOKENS_PER_REQUEST,
   swap: SwapClass.RESTART,
 });
 
@@ -1186,20 +1216,11 @@ export const TOKENIZER_BACKEND_AUTO = "auto" as const;
 export const TOKENIZER_BACKEND_LOCAL = "local" as const;
 export const TOKENIZER_BACKEND_API = "api" as const;
 
-/** Minimum reserved tokens for critical prompt sections. */
-export const SECTION_FLOORS = {
-  system: 1_000,
-  plan: 2_000,
-} as const;
-
 /** Ratio-based weight floors for adaptive reallocation (0.0–1.0 scale, NOT token counts). */
 export const SECTION_WEIGHT_RATIO_FLOORS = {
   system: 0.20,
   plan: 0.35,
 } as const;
-
-/** Safety buffer deducted from total context window before budget allocation. */
-export const SAFETY_BUFFER_RATIO = 0.1;
 
 /** Surplus redistribution ratios after waterfall reallocation. */
 export const SURPLUS_PLAN_RATIO = 0.5;
@@ -1261,16 +1282,6 @@ export const MEMORY_TIER_PROMOTION_SCORE_MEDIUM = 50;
 
 /** Initial promotion score for low-confidence tiered memory entries. */
 export const MEMORY_TIER_PROMOTION_SCORE_LOW = 20;
-
-/** Base allocation weights for prompt budget sections (as proportions of usable context). Sum should equal 1.0 after waterfall reallocation. */
-export const SECTION_BASE_WEIGHTS = {
-  system: 0.20,
-  plan: 0.35,
-  portalKnowledge: 0.20,
-  memory: 0.10,
-  skills: 0.10,
-  loopHistory: 0.05,
-} as const;
 
 // Cost Tracking Validation Limits
 export const COST_TRACKING_BATCH_DELAY_MS_MIN = 100;
@@ -2208,12 +2219,8 @@ export const PORTAL_KNOWLEDGE_PROMPT_MAX_LINES: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Hard token cap on the `portal_knowledge` segment at the prompt-assembly boundary, applied
- *  independent of any budget ceiling. Closes the bypass where `request.context.portal_knowledge`
- *  is set directly (agent/eval/CLI-supplied) and would otherwise enter the prompt at unbounded
- *  size even with no `ContextBudgetManager` pressure. The default (3,000) matches the retrieval
- *  path's existing effective bound (`PORTAL_KNOWLEDGE_PROMPT_MAX_LINES * 50`), so production
- *  requests behave as today while the direct-set path is structurally bounded too. */
+/** Hard token cap on the `portal_knowledge` segment at assembly, independent of any budget
+ *  ceiling — closes the direct-set bypass; 3,000 matches the retrieval path's existing bound. */
 export const DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS: number = configurable({
   key: "portal_knowledge.max_tokens",
   default: 3_000,

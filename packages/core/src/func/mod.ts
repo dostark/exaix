@@ -11,6 +11,7 @@ export * from "./code_parser.ts";
 export * from "./prompt_context.ts";
 export * from "./agent_capabilities.ts";
 export * from "./prompt_formatter.ts";
+export * from "./skill_body.ts";
 export * from "./json_repair.ts";
 export * from "./async_utils.ts";
 export * from "./secure_random.ts";

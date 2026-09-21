@@ -580,6 +580,12 @@ export const ConfigSchema = z.object({
   }),
   /** Prompt budget enforcement policy overrides */
   budget_enforcement: ZBudgetPolicy.optional(),
+  /** Public prompt-cost budget configuration. */
+  budget: z.object({
+    cost_target_tokens_per_request: z.number().int()
+      .min(DEFAULTS.MIN_COST_TARGET_TOKENS_PER_REQUEST)
+      .optional(),
+  }).optional(),
   /** Flow retry cost budget guard. Omit or set to 0 to disable. */
   max_flow_retry_cost_usd: z.number().min(0).optional(),
   /** Request intent analysis configuration */

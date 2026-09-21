@@ -20,11 +20,12 @@
  * @dependencies [@exaix/schemas, @std/yaml]
  * @related-files [tests/eval/runtime_skill_scopes.ts, scripts/generate_skill_json.ts]
  */
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { walk } from "@std/fs";
 import { resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { SkillSchema } from "@exaix/schemas";
+import { splitInstructionsAndExamples } from "../../scripts/build_skills_index.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 import { type IRuntimeSkillDocument, readRuntimeSkills } from "./runtime_skill_scopes.ts";
 
@@ -111,8 +112,12 @@ Deno.test("skill_seed_runtime_integrity — the seed→runtime field mapping is 
         drift.push(`${seed.skillId}.${field}: seed ${seedValue} ≠ runtime ${runtimeValue}`);
       }
     }
-    if (String(document.instructions ?? "").trim() !== seed.body) {
+    const split = splitInstructionsAndExamples(seed.body);
+    if (document.instructions !== split.instructions) {
       drift.push(`${seed.skillId}.instructions: runtime body differs from the seed's markdown body`);
+    }
+    if ((document.examples ?? undefined) !== split.examples) {
+      drift.push(`${seed.skillId}.examples: runtime examples section differs from the seed's markdown body`);
     }
   }
   assertEquals(
@@ -122,6 +127,20 @@ Deno.test("skill_seed_runtime_integrity — the seed→runtime field mapping is 
       drift.join("\n  ")
     }`,
   );
+});
+
+Deno.test("skill_seed_runtime_integrity — commit-message keeps Examples before Subject Line Rules in full-mode rendering (GAP-7)", async () => {
+  const runtime = await readRuntimeSkills(MEMORY_SKILLS);
+  const seed = (await readSeedSkills()).find((s) => s.skillId === "commit-message");
+  assert(seed, "commit-message seed must exist");
+  const document = runtime.get("commit-message");
+  assert(document, "commit-message runtime document must exist");
+  // Full-mode rendering uses `instructions` verbatim — Examples in their authored position.
+  const instructions = String(document.instructions ?? "");
+  const examplesAt = instructions.indexOf("## Examples");
+  const subjectAt = instructions.indexOf("## Subject Line Rules");
+  assert(examplesAt >= 0, "Examples heading must be present in full instructions");
+  assert(subjectAt > examplesAt, "Examples must precede Subject Line Rules in full mode (original ordering)");
 });
 
 Deno.test("skill_seed_runtime_integrity — no skill needs a runtime-JSON exclusion", () => {

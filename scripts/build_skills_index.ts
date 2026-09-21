@@ -24,8 +24,9 @@ import { ensureDir } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { type ISkill, SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryScope } from "@exaix/core/types";
-
 import type { Opt, Reason } from "@exaix/core/types";
+import * as skillBodyModule from "@exaix/core/func";
+
 /** Result of a single generator run. */
 export interface IBuildSkillsIndexResult {
   success: boolean;
@@ -55,28 +56,11 @@ export interface IParsedCliArgs {
 }
 
 /** The one canonical heading marker `splitInstructionsAndExamples` splits a skill body on. */
-export const SKILL_EXAMPLES_HEADING = "## Examples";
-
-/** Splits a body at the first `## Examples` heading into `instructions` (everything else,
- *  in original order — content after the heading is kept, not truncated) and `examples`
- *  (the heading's own section). No heading is a lossless no-op: `examples` is `undefined`. */
-export function splitInstructionsAndExamples(body: string): { instructions: string; examples?: string } {
-  const headingMatch = /^## Examples$/m.exec(body);
-  if (!headingMatch) return { instructions: body };
-
-  const before = body.slice(0, headingMatch.index).replace(/\n+$/, "");
-  const afterHeading = body.slice(headingMatch.index + headingMatch[0].length).replace(/^\n+/, "");
-  const nextHeadingMatch = /\n##\s/.exec(afterHeading);
-
-  if (!nextHeadingMatch) {
-    return { instructions: before, examples: afterHeading.replace(/\n+$/, "") };
-  }
-
-  const examples = afterHeading.slice(0, nextHeadingMatch.index).replace(/\n+$/, "");
-  const after = afterHeading.slice(nextHeadingMatch.index).replace(/^\n+/, "");
-  const instructions = before && after ? `${before}\n\n${after}` : (before || after);
-  return { instructions, examples };
-}
+export const SKILL_EXAMPLES_HEADING = skillBodyModule.SKILL_EXAMPLES_HEADING;
+/** Re-exported for parity with this script's own call sites. */
+export const splitInstructionsAndExamples = skillBodyModule.splitInstructionsAndExamples;
+/** Re-exported for trimmed-mode governance consumers (e.g. check_skill_size). */
+export const stripExamplesSection = skillBodyModule.stripExamplesSection;
 
 /** Splits a `.skill.md` file into YAML frontmatter and markdown body; the body
  * (trimmed, leading H1 retained) becomes `instructions`. */

@@ -10,7 +10,7 @@
  * ]
  */
 
-import { assert, assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
+import { assert, assertEquals, assertGreater, assertLessOrEqual, assertRejects } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
@@ -29,6 +29,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { EventLogger } from "@exaix/core/logger";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 
 // Helpers
 
@@ -128,7 +129,7 @@ Deno.test("[ContextBudgetManager] never drops segments with priority >= CONTEXT_
     makeSegment({
       kind: "acceptance_criteria",
       priority: CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
-      tokenEstimate: 999_999, // intentionally huge
+      tokenEstimate: 100_000, // above the plan section, below the aggregate hard ceiling
     }),
     makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
   ];
@@ -814,4 +815,102 @@ Deno.test("[ContextBudgetManager] trim re-estimates with the real tokenizer so r
   // no chars/4 guess that diverges from what the tokenizer would say.
   assertEquals(kept!.tokenEstimate, 38);
   assertEquals(kept!.tokenEstimate, await makeCharCountingTokenizer().countTokens(kept!.content));
+});
+
+Deno.test("[ContextBudgetManager] a single long line is tokenizer-bounded after fallback truncation", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager(makeCharCountingTokenizer());
+  const tightBudget = {
+    ...makePromptBudget(10),
+    sections: {
+      system: 0,
+      plan: 0,
+      portalKnowledge: 0,
+      memory: 0,
+      skills: 0,
+      loopHistory: 10,
+    },
+  };
+  const segment = makeSegment({
+    kind: "tool_result",
+    priority: CONTEXT_PRIORITY_TOOL_RESULT,
+    tokenEstimate: 100,
+    content: "x".repeat(100),
+  });
+
+  const { segments } = await manager.prepare({
+    traceId: "trace-long-line",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: tightBudget,
+    segments: [segment],
+  });
+
+  assertEquals(segments[0].content, "x".repeat(10));
+  assertEquals(segments[0].tokenEstimate, 10);
+});
+
+Deno.test("[ContextBudgetManager] protected-only overflow fails closed and records the trace", async () => {
+  const captured: ICapturedBudgetEvent[] = [];
+  const manager: IContextBudgetManager = new ContextBudgetManager(
+    makeCharCountingTokenizer(),
+    undefined,
+    undefined,
+    createCapturingBudgetLogger(captured),
+  );
+  const protectedSegment = makeSegment({
+    kind: "request",
+    priority: CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
+    tokenEstimate: 11,
+    content: "x".repeat(11),
+    metadata: { nonCompactable: true },
+  });
+
+  await assertRejects(
+    () =>
+      manager.prepare({
+        traceId: "trace-protected-overflow",
+        stepId: "step-1",
+        model: "anthropic:claude-sonnet-5",
+        promptBudget: { ...makePromptBudget(10), totalBudgetTokens: 10 },
+        segments: [protectedSegment],
+      }),
+    ContextBudgetExceededError,
+  );
+
+  const exceeded = captured.find((event) => event.action === DomainEventType.ContextBudgetExceeded);
+  assertEquals(exceeded?.payload?.traceId, "trace-protected-overflow");
+  assertEquals(exceeded?.payload?.model, "anthropic:claude-sonnet-5");
+  assertEquals(exceeded?.payload?.estimatedTokens, 11);
+});
+
+Deno.test("[ContextBudgetManager] ordinary skill segments consume the skills section and remain droppable", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager(makeCharCountingTokenizer());
+  const skill = makeSegment({
+    kind: "skills",
+    priority: 50,
+    tokenEstimate: 20,
+    content: "x".repeat(20),
+  });
+  const budget = {
+    ...makePromptBudget(100),
+    sections: {
+      system: 100,
+      plan: 100,
+      portalKnowledge: 100,
+      memory: 100,
+      skills: 10,
+      loopHistory: 100,
+    },
+  };
+
+  const { segments, snapshot } = await manager.prepare({
+    traceId: "trace-skill-budget",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: budget,
+    segments: [skill],
+  });
+
+  assertEquals(segments[0].tokenEstimate, 10);
+  assertEquals(snapshot.decisions[0].action, "trim");
 });

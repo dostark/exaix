@@ -19,6 +19,7 @@ export const ContextSegmentKindSchema = z.enum([
   "tool_result",
   "portal_knowledge",
   "reflection",
+  "skills",
   "summary",
 ]);
 

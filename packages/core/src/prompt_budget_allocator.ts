@@ -18,7 +18,6 @@ import {
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   LOCAL_PROVIDER_PREFIXES,
-  MINIMUM_HINT_THRESHOLD,
   SAFETY_BUFFER_RATIO,
   SECTION_BASE_WEIGHTS,
   SECTION_FLOORS,
@@ -225,17 +224,17 @@ export class PromptBudgetAllocator {
   ): number {
     let surplus = 0;
 
-    if (!hints?.memoryUsedTokens || hints.memoryUsedTokens < MINIMUM_HINT_THRESHOLD) {
+    if (!hints?.memoryUsedTokens) {
       surplus += sections.memory;
       sections.memory = 0;
     }
 
-    if (!hints?.skillsUsedTokens || hints.skillsUsedTokens < MINIMUM_HINT_THRESHOLD) {
+    if (!hints?.skillsUsedTokens) {
       surplus += sections.skills;
       sections.skills = 0;
     }
 
-    if (!hints?.loopHistoryUsedTokens || hints.loopHistoryUsedTokens < MINIMUM_HINT_THRESHOLD) {
+    if (!hints?.loopHistoryUsedTokens) {
       surplus += sections.loopHistory;
       sections.loopHistory = 0;
     }

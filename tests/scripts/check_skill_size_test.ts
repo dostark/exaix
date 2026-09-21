@@ -65,3 +65,45 @@ Deno.test("[check-skill-size] threshold is read from the configurable() constant
     await Deno.remove(dir, { recursive: true });
   }
 });
+
+Deno.test("[check-skill-size] a small-instructions large-examples skill is flagged in full mode but not trimmed (GAP-9)", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "check-skill-size-examples-" });
+  try {
+    // Short instructions + a large `## Examples` section: the default (full) renderer
+    // injects the whole body, so full-mode contribution exceeds the threshold even though
+    // the authored instructions alone are tiny.
+    const examplesBlock = "\n\n## Examples\n\n" + "y".repeat(DEFAULT_SKILL_SIZE_WARNING_CHARS);
+    const skill = {
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      source: "user",
+      scope: "global",
+      status: "active",
+      skill_id: "example-heavy-skill",
+      name: "example-heavy-skill",
+      version: "1.0.0",
+      description: "example-heavy-skill",
+      triggers: {},
+      instructions: "Do the thing." + examplesBlock,
+      examples: "y".repeat(DEFAULT_SKILL_SIZE_WARNING_CHARS),
+      constraints: [],
+      output_requirements: [],
+      quality_criteria: [],
+      compatible_with: { agents: ["*"] },
+      usage_count: 0,
+    };
+    Deno.writeTextFileSync(`${dir}/example-heavy-skill.json`, JSON.stringify(skill));
+
+    const fullFindings = await scanSkillSizes(dir);
+    assertEquals(fullFindings.length, 1, "full render mode must flag the examples-heavy skill");
+    assertEquals(fullFindings[0].mode, "full");
+    assertEquals(fullFindings[0].skillId, "example-heavy-skill");
+    assertEquals(fullFindings[0].length, skill.instructions.length, "full-mode length is the complete rendered body");
+
+    // Trimmed mode strips the Examples section, so the same skill is under the threshold.
+    const trimmedFindings = await scanSkillSizes(dir, DEFAULT_SKILL_SIZE_WARNING_CHARS, "trimmed");
+    assertEquals(trimmedFindings.length, 0, "trimmed render mode must not flag the examples-heavy skill");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});

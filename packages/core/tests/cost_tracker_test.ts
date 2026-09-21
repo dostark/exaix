@@ -12,6 +12,7 @@ import { CostTracker } from "@exaix/core/cost";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
+import { CostGroupBy } from "@exaix/core/types";
 import { COST_RATE_ANTHROPIC, COST_RATE_OPENAI, TOKENS_PER_COST_UNIT } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
@@ -483,6 +484,74 @@ Deno.test("CostTracker: pricing and query events persist through a real EventLog
     assertEquals(JSON.parse(summaryRows[0].payload).resultCount, 1);
     assertEquals(JSON.parse(summaryRows[0].payload).startDate, startDate.toISOString());
     assertEquals(JSON.parse(summaryRows[0].payload).endDate, endDate.toISOString());
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: grouped calls sum persisted request cardinality, not row count (GAP-13)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const tracker = new CostTracker(db);
+    // A single aggregate persisted row representing 5 requests for the same model.
+    await db.preparedRun(
+      `INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp, cache_read_tokens, cache_creation_tokens)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        crypto.randomUUID(),
+        PROVIDER_OPENAI,
+        "gpt-4",
+        5,
+        1000,
+        500,
+        500,
+        0.001,
+        "test",
+        null,
+        "portal-a",
+        new Date().toISOString(),
+        0,
+        0,
+      ],
+    );
+    // A second row representing 2 requests for the same model.
+    await db.preparedRun(
+      `INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp, cache_read_tokens, cache_creation_tokens)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        crypto.randomUUID(),
+        PROVIDER_OPENAI,
+        "gpt-4",
+        2,
+        400,
+        200,
+        200,
+        0.0004,
+        "test",
+        null,
+        "portal-a",
+        new Date().toISOString(),
+        0,
+        0,
+      ],
+    );
+    await db.waitForFlush();
+
+    const byModel = await tracker.queryGroupedByCriteria(
+      { model: "gpt-4" },
+      CostGroupBy.MODEL,
+    );
+    assertEquals(byModel.length, 1);
+    assertEquals(byModel[0].calls, 7, "two rows summing requests 5 + 2 must report 7 calls, not 2 rows");
+    assertEquals(byModel[0].promptTokens, 700, "prompt tokens still sum across rows");
+    assertEquals(byModel[0].estimatedCostUsd, 0.0014, "cost still sums across rows");
+
+    const byPortal = await tracker.queryGroupedByCriteria(
+      { portal: "portal-a" },
+      CostGroupBy.PORTAL,
+    );
+    assertEquals(byPortal.length, 1);
+    assertEquals(byPortal[0].calls, 7, "portal grouping must also sum persisted requests");
   } finally {
     await cleanup();
   }

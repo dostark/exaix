@@ -96,3 +96,15 @@ Deno.test("[AgentRunner] portal_knowledge cap uses the real tokenizer estimate w
   assert(seg);
   assertLessOrEqual(seg.tokenEstimate, 250, `capped portal_knowledge must not exceed the 250-token cap`);
 });
+
+Deno.test("[AgentRunner] a single-line portal_knowledge value is tokenizer-bounded", async () => {
+  const runner = makeRunner(10, makeCharCountingTokenizer());
+  const preview = await runner.previewPrompt(
+    mockAgentBlueprint,
+    makeRequest({ context: { [PORTAL_KNOWLEDGE_KEY]: "x".repeat(100) } }),
+  );
+
+  const segment = preview.segments.find((candidate) => candidate.kind === "portal_knowledge");
+  assert(segment);
+  assertEquals(segment.tokenEstimate, 10);
+});

@@ -32,7 +32,9 @@ function makeSkillsService(skill: { id: string; critical: boolean; examples?: st
         id,
         name: id,
         description: "A test skill.",
-        instructions: "Do the thing.",
+        instructions: skill.examples
+          ? `Do the thing.\n\n## Examples\n\n${skill.examples}\n\n## Later\n\nKept in order.`
+          : "Do the thing.",
         examples: skill.examples,
         triggers: {},
         critical: skill.critical,

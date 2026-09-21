@@ -32,6 +32,7 @@ import {
   getRegisteredDefaults,
   InMemoryConfigStore,
   migrateConfigDb,
+  resolveEffectiveBudgetPolicy,
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
@@ -309,6 +310,7 @@ if (import.meta.main) {
     // createConfigAdapter's PID-file detection (built for CLI/MCP callers to detect whether a
     // daemon is up); at boot the PID isn't written yet, so detection would wrongly fall back.
     const configAdapter = new DaemonConfigAdapter(configStore, configDb, logger);
+    config.budget_enforcement = resolveEffectiveBudgetPolicy(config, configAdapter);
     logger.info(DomainEventType.ConfigUpdated, "config_db_store", {
       keys: effectiveValues.size,
       adapterMode: configAdapter.mode,
@@ -861,6 +863,8 @@ if (import.meta.main) {
       new PlanAdapter(),
       llmProvider,
       {
+        selectedModel: { provider: providerInfo.id, model: providerInfo.model },
+        context,
         milestoneEmitter: buildMilestoneEmitterFromConfig(config),
         skillsService,
         logger,

@@ -5012,9 +5012,23 @@ When set, `AgentRunner`'s planning call and the ReAct execution loop both route 
 assembled prompt through the shared `PromptBudgetAllocator`/`ContextBudgetManager`
 pipeline, trimming lower-priority segments (memory, portal knowledge, skills) until the
 assembled prompt fits the cap. Compactions are observable via `context.budget.consumed`
-journal events (with `droppedSegmentCount > 0`). When unset (the default), today's
-behavior is preserved. `local_enforcement_enabled` gates enforcement for local/self-hosted
-models; see `exactl config` for the full `budget` key surface.
+journal events (with `droppedSegmentCount > 0`) and per-trim `context.section.truncated`
+events. When unset (the default), enforcement keeps today's behavior. The ceiling is a
+**hard upper bound**: if protected content (the user request plus critical skill contract)
+alone exceeds it, the planning call fails closed before any provider call, emitting
+`context.budget.exceeded` and surfacing the configured ceiling and protected-token total —
+protected content is never silently dropped to fit a cap.
+
+The ceiling is validated at configuration time against the allocator's minimum feasible
+total (`MIN_COST_TARGET_TOKENS_PER_REQUEST`) — a value below it is rejected when the config
+is loaded rather than deferred to failure on every request. The effective ceiling is
+resolved at config load as Config-DB override (set via
+`exactl config set budget.cost_target_tokens_per_request <n>`)
+
+> TOML > the legacy `budget_enforcement.costTargetTokens` field, and takes effect on the
+> next daemon restart (its swap class is RESTART); `budget.cloud_enforcement_enabled` /
+> `budget.local_enforcement_enabled` gate enforcement for hosted vs local models. See
+> `exactl config` for the full `budget` key surface.
 
 ### 11.4 Monitoring Usage
 

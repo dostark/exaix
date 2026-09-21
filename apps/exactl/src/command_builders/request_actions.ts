@@ -26,6 +26,7 @@ import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
 import type { ICliApplicationContext, IDisplayService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
+import { ProviderFactory } from "@exaix/ai";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ClarificationEngine } from "@exaix/quality-gate";
@@ -38,6 +39,7 @@ import { loadBlueprint } from "@exaix/core/blueprint";
 import { AgentRunner, ContextBudgetManager, type IParsedRequest } from "@exaix/execution";
 import { PortalContextBuilder } from "@exaix/request";
 import type { IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
+import { resolveEffectiveBudgetPolicy } from "@exaix/core/config";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -99,6 +101,9 @@ export interface IRequestClarifyOptions {
   json?: boolean;
 }
 
+/** Availability of a portal's cached knowledge for a read-only dry-run preview. */
+type IPortalKnowledgeStatus = "available" | "stale" | "unavailable";
+
 /**
  * Handle request analyze action
  */
@@ -150,8 +155,8 @@ function formatPromptPreviewTable(preview: IPromptPreview): string {
     "Projected Prompt Breakdown",
     "═".repeat(80),
     "",
-    "Kind".padEnd(20) + "Priority".padEnd(10) + "Tokens".padEnd(10) + "Bytes".padEnd(10) +
-    "Pct%".padEnd(10) + "Included",
+    "Kind".padEnd(20) + "Priority".padEnd(10) + "Original".padEnd(10) + "Final".padEnd(10) +
+    "Bytes".padEnd(10) + "Pct%".padEnd(10) + "Included",
     "─".repeat(80),
   ];
 
@@ -161,8 +166,9 @@ function formatPromptPreviewTable(preview: IPromptPreview): string {
     lines.push(
       segment.kind.padEnd(20) +
         String(segment.priority).padEnd(10) +
-        String(segment.tokenEstimate).padEnd(10) +
-        String(segment.byteLength).padEnd(10) +
+        String(segment.originalTokenEstimate).padEnd(10) +
+        String(segment.resultingTokenEstimate).padEnd(10) +
+        String(segment.resultingByteLength).padEnd(10) +
         `${pct}%`.padEnd(10) +
         (segment.included ? "yes" : "no"),
     );
@@ -179,6 +185,37 @@ function formatPromptPreviewTable(preview: IPromptPreview): string {
   }
 
   return lines.join("\n");
+}
+
+/** Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): inject the same
+ *  portal_context + portal_knowledge segments the daemon would assemble, from a read-only
+ *  cached knowledge lookup — never triggers analysis, persistence, or an LLM call. Returns
+ *  the context segments and the portal-knowledge availability for the preview note. */
+async function resolvePortalPreviewContext(
+  options: IRequestCreateOptions,
+  appContext: ICliApplicationContext,
+  userPrompt: string,
+  requestContext: IParsedRequest["context"],
+): Promise<IPortalKnowledgeStatus | undefined> {
+  if (!options.portal || !appContext.portalKnowledge || !appContext.portals) return undefined;
+  // Validate the portal exists (throws for unknown aliases) before read-only use.
+  await appContext.portals.show(options.portal);
+  const portalContextBuilder = new PortalContextBuilder({
+    config: appContext.config.getAll() as never,
+    portalKnowledgeService: appContext.portalKnowledge,
+  });
+  const fileContext = await portalContextBuilder.buildFileContext(options.portal);
+  if (fileContext) requestContext[PORTAL_CONTEXT_KEY] = fileContext;
+  const knowledge = await appContext.portalKnowledge.loadCachedKnowledge(options.portal);
+  if (!knowledge) return "unavailable";
+  const stale = await appContext.portalKnowledge.isStale(options.portal);
+  if (stale) return "stale";
+  requestContext[PORTAL_KNOWLEDGE_KEY] = await portalContextBuilder.resolveKnowledgeContext(
+    userPrompt,
+    options.portal,
+    knowledge,
+  );
+  return "available";
 }
 
 /** Non-mutating `--dry-run-context` path: constructs an in-process `AgentRunner`
@@ -203,6 +240,8 @@ async function handleRequestCreateDryRunContext(
     const agentRole = options.agentRole ?? "default";
 
     const config = appContext.config.getAll();
+    const effectiveBudgetPolicy = resolveEffectiveBudgetPolicy(config, appContext.configAdapter);
+    const providerInfo = ProviderFactory.getProviderInfoByName(config, config.agents.default_model);
     const blueprintsPath = join(config.system.root, config.paths.blueprints, DEFAULT_AGENTS_PATH);
     const blueprint = await loadBlueprint(blueprintsPath, agentRole);
     if (!blueprint) {
@@ -211,7 +250,7 @@ async function handleRequestCreateDryRunContext(
 
     const tokenizer = new AiTokenEstimatorTokenizer();
     const promptBudgetAllocator = new PromptBudgetAllocator(
-      config.budget_enforcement,
+      effectiveBudgetPolicy,
       tokenizer,
       undefined,
       appContext.modelRegistry,
@@ -222,38 +261,32 @@ async function handleRequestCreateDryRunContext(
       new PlanAdapter(),
       appContext.provider,
       {
+        selectedModel: { provider: providerInfo.id, model: providerInfo.model },
+        context: appContext,
         skillsService: appContext.skills,
+        disableSkills: !config.skills.inject_in_prompt,
         tokenizer,
         promptBudgetAllocator,
         contextBudgetManager,
       },
     );
 
-    // Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): when the request
-    // references a configured portal, inject the SAME portal_context (file listing) and
-    // portal_knowledge (knowledge summary) segments the daemon would assemble — a preview that
-    // skips them would report numbers that contradict the real request's prompt.
+    // Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): inject the same
+    // portal_context + portal_knowledge segments the daemon would assemble.
     const requestContext: IParsedRequest["context"] = {};
-    if (options.portal && appContext.portalKnowledge && appContext.portals) {
-      const portalDetails = await appContext.portals.show(options.portal);
-      const knowledge = await appContext.portalKnowledge.getOrAnalyze(options.portal, portalDetails.targetPath);
-      const portalContextBuilder = new PortalContextBuilder({
-        config: appContext.config.getAll() as never,
-        portalKnowledgeService: appContext.portalKnowledge,
-      });
-      const fileContext = await portalContextBuilder.buildFileContext(options.portal);
-      if (fileContext) requestContext[PORTAL_CONTEXT_KEY] = fileContext;
-      const summary = await portalContextBuilder.resolveKnowledgeContext(
-        userPrompt,
-        options.portal,
-        knowledge,
-      );
-      requestContext[PORTAL_KNOWLEDGE_KEY] = summary;
-    }
+    const portalKnowledgeStatus = await resolvePortalPreviewContext(
+      options,
+      appContext,
+      userPrompt,
+      requestContext,
+    );
 
     const preview = await runner.previewPrompt(blueprint, { userPrompt, context: requestContext });
 
     console.log(formatPromptPreviewTable(preview));
+    if (portalKnowledgeStatus && portalKnowledgeStatus !== "available") {
+      console.log(`Portal knowledge: ${portalKnowledgeStatus}`);
+    }
   } catch (error) {
     display.error("cli.error", FlowInputSource.REQUEST, {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

@@ -371,7 +371,7 @@ export class CostTracker implements ICostTracker {
         cacheCreationTokens: 0,
         estimatedCostUsd: 0,
       };
-      row.calls++;
+      row.calls += record.requests ?? 1;
       row.promptTokens += record.promptTokens;
       row.completionTokens += record.completionTokens;
       row.cacheReadTokens += record.cacheReadTokens ?? 0;

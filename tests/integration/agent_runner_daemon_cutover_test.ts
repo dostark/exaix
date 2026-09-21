@@ -26,12 +26,11 @@
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { ConfigService } from "@exaix/core/config";
+import { ConfigService, createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
+import { Database } from "@db/sqlite";
 import { EventLogger } from "@exaix/core/logger";
 import { AgentComposer } from "@exaix/execution";
-import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
-import { PromptBudgetAllocator } from "@exaix/core";
-import { PortalContextBuilder } from "@exaix/request";
+import { MIN_COST_TARGET_TOKENS_PER_REQUEST } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import {
   bootRealDaemon,
@@ -282,25 +281,30 @@ Deno.test(
   },
 );
 
-/** Phase 196 Step 9 — real daemon boot proves cost-ceiling enforcement for the planning call.
- *  Boots a real daemon twice against the same real request + portal fixture: once with
- *  `budget.cost_target_tokens_per_request` set so the portalKnowledge section budget exactly
- *  equals the injected file-listing tokens (forcing the knowledge-summary portal segment to be
- *  DROPPED — `droppedSegmentCount > 0`), once with the ceiling unset (`droppedSegmentCount === 0`,
- *  today's behavior). The exact-fit (costTarget, file-count) pair is found at runtime against the
- *  actual fixture (the section budget is a step function of T ≈ listingTokens/0.2475 under the
- *  allocator's base weights, so a small file-count sweep guarantees a pair whose per-line boundary
- *  lands exactly on a reachable budget), making the drop deterministic rather than a token-guess. */
+/** Real daemon-boot proof of cost-ceiling enforcement for the planning call under IDENTICAL
+ *  inputs through the PUBLIC config path: the constrained run must produce a strictly smaller
+ *  final prompt (`usedInputTokens`) than the unconstrained run on identical fixture + request. */
 
 const EXACT_FIT_PORTAL_FILE_COUNT = 140;
 
-function writeDaemonConfigWithPortalAndCeiling(
-  configPath: string,
-  root: string,
-  portalDir: string,
-  costTarget: number | null,
-): void {
-  const budgetLine = costTarget !== null ? `[budget_enforcement]\ncostTargetTokens = ${costTarget}\n\n` : "";
+/** Writes the shared portal fixture once; both runs reuse it. The file count is high enough
+ *  that the assembled portal listing exceeds the section budget a validated low ceiling
+ *  allocates, guaranteeing the strict final-token reduction the cutover asserts. */
+async function writeSharedPortalFixture(portalDir: string): Promise<void> {
+  await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+  for (let i = 0; i < EXACT_FIT_PORTAL_FILE_COUNT; i++) {
+    await Deno.writeTextFile(
+      join(portalDir, "src", `${String(i).padStart(4, "0")}-module-file.ts`),
+      "// fixture module with a meaningful body so the listing segment is non-trivial.\n" +
+        "export function moduleFunction(): string { return `module-${Date.now()}`; }\n",
+    );
+  }
+}
+
+/** Daemon TOML with a portal mount and NO budget section — the cost ceiling is applied
+ *  exclusively through the persisted public `budget.cost_target_tokens_per_request` key in
+ *  `.exa/config.db` (the `exactl config set` surface), never a private camelCase TOML field. */
+function writeDaemonConfigWithPortal(configPath: string, root: string, portalDir: string): void {
   const cfg = [
     ...daemonConfigSections(root, ""),
     "",
@@ -318,35 +322,8 @@ function writeDaemonConfigWithPortalAndCeiling(
     'alias = "cutover-portal"',
     `target_path = "${portalDir}"`,
     "",
-    budgetLine,
   ].join("\n");
   Deno.writeTextFileSync(configPath, cfg);
-}
-
-/** Counts the file-listing `portal_context` block tokens exactly the way the daemon's
- *  `PortalContextBuilder.buildFileContext` will at request time, so the exact-fit ceiling can be
- *  computed deterministically. */
-async function countPortalContextTokens(portalDir: string): Promise<number> {
-  const tokenizer = new AiTokenEstimatorTokenizer();
-  const builder = new PortalContextBuilder({
-    config: { portals: [{ alias: "cutover-portal", target_path: portalDir }] } as never,
-  });
-  const block = (await builder.buildFileContext("cutover-portal")) ?? "";
-  return tokenizer.countTokens(block, "default");
-}
-
-/** Portal-knowledge section budget under `costTargetTokens`, via the real allocator (base weights,
- *  no analysis hints — exactly what `assemblePromptSegments` passes). `allocate` rejects
- *  (`ContextBudgetExceededError`) when the ceiling is below the allocator's floor-derived section
- *  sum (~5042), so a sub-floor T returns -1 rather than throwing. */
-async function portalKnowledgeBudgetFor(costTarget: number): Promise<number> {
-  const allocator = new PromptBudgetAllocator({ costTargetTokens: costTarget });
-  try {
-    const budget = await allocator.allocate("default");
-    return budget.sections.portalKnowledge;
-  } catch {
-    return -1;
-  }
 }
 
 /** Parsed `context.budget.consumed` payload fields this cutover test asserts on. */
@@ -358,6 +335,14 @@ interface IBudgetConsumedPayload {
 interface IBudgetEventRow {
   action_type: string;
   payload: IBudgetConsumedPayload;
+}
+
+/** Parses trace-scoped compaction evidence: whether ANY segment was dropped or trimmed
+ *  under the configured ceiling, plus the final usedInputTokens total. */
+interface IBudgetCampaignEvidence {
+  campaignEvents: IBudgetEventRow[];
+  consumed: IBudgetConsumedPayload;
+  anyCompaction: boolean;
 }
 
 async function collectBudgetEvents(
@@ -386,72 +371,49 @@ function makePortalRequestAndBoot(
   return { traceId, requestPath };
 }
 
-Deno.test({
-  name:
-    "[phase196-costcutover] a real daemon boot with budget.cost_target_tokens_per_request set tight DROPS the portal-knowledge section segment for the planning call, while the unset run keeps every segment",
-  ignore: Deno.env.get("CI") === "true",
-  sanitizeOps: false,
-  sanitizeResources: false,
-  async fn() {
-    for (const scenarioLabel of ["constrained", "unconstrained"] as const) {
-      const tempDir = await Deno.makeTempDir({ prefix: `step9-${scenarioLabel}-` });
-      const portalDir = join(tempDir, "fixture-portal");
-      // The exact-fit depends on the listing token count landing on a reachable allocator step;
-      // the `Portal Root:` path length shifts the count per run, so find a file-count × costTarget
-      // whose budget equals the listing for THIS dir (deterministic for the fixed tokenizer).
-      let nFiles = EXACT_FIT_PORTAL_FILE_COUNT;
-      let exactFitT: number | undefined;
-      if (scenarioLabel === "constrained") {
-        await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-        for (let attempt = 0; attempt < 40 && exactFitT === undefined; attempt++) {
-          for await (const f of Deno.readDir(join(portalDir, "src"))) {
-            await Deno.remove(join(portalDir, "src", f.name)).catch(() => {});
-          }
-          for (let i = 0; i < nFiles; i++) {
-            await Deno.writeTextFile(
-              join(portalDir, "src", `${String(i).padStart(4, "0")}-module-file.ts`),
-              "// fixture\n",
-            );
-          }
-          const listingTokens = await countPortalContextTokens(portalDir);
-          // `portalKnowledgeBudgetFor` is monotone non-decreasing in T above the allocator's
-          // floor (~5042); scan the full safe band so the exact fit is found for the current dir.
-          for (let t = 5_100; t <= 12_000; t++) {
-            if (await portalKnowledgeBudgetFor(t) === listingTokens) {
-              exactFitT = t;
-              break;
-            }
-          }
-          if (exactFitT === undefined) nFiles += 3;
-        }
-        assert(
-          exactFitT !== undefined,
-          "no (file-count × costTarget) exact-fit found for the portal fixture in the safe band",
-        );
-      } else {
-        await Deno.mkdir(join(portalDir, "src"), { recursive: true });
-        for (let i = 0; i < EXACT_FIT_PORTAL_FILE_COUNT; i++) {
-          await Deno.writeTextFile(
-            join(portalDir, "src", `${String(i).padStart(4, "0")}-module-file.ts`),
-            "// fixture\n",
-          );
-        }
-      }
-      const configPath = join(tempDir, "exa.config.toml");
-      writeDaemonConfigWithPortalAndCeiling(configPath, tempDir, portalDir, exactFitT ?? null);
-      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
-      await Deno.copyFile(
-        join(Deno.cwd(), "Blueprints", "Agents", "mock-agent.md"),
-        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
-      );
-      const { traceId, requestPath } = makePortalRequestAndBoot(tempDir);
-      try {
-        await bootRealDaemon(configPath, 2000, {
-          midFlight: () => {
-            Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
-            Deno.writeTextFileSync(
-              requestPath,
-              `---
+/** Same immutable portal fixture + byte-identical Request for both the constrained and
+ *  unconstrained runs, so any observed difference is attributable to the ceiling alone.
+ *  Both runs mount the SAME absolute fixture path, so the listing token counts match exactly. */
+async function bootPortalRequestRun(
+  tempDir: string,
+  sharedPortalDir: string,
+  publicCostTarget: number | null,
+): Promise<IBudgetCampaignEvidence> {
+  const configPath = join(tempDir, "exa.config.toml");
+  // The ceiling is applied ONLY via the persisted public config key, never a TOML field.
+  writeDaemonConfigWithPortal(configPath, tempDir, sharedPortalDir);
+
+  if (publicCostTarget !== null) {
+    // Mirrors `exactl config set` against an already-booted workspace: seed the Config DB
+    // first (as a prior boot would), then write the override — a fresh-DB set would be
+    // masked by the boot-time seed's higher-id NULL init row.
+    const configDbPath = ensureConfigDb(tempDir);
+    const db = new Database(configDbPath);
+    try {
+      migrateConfigDb(db);
+      seedConfigDb(db);
+    } finally {
+      db.close();
+    }
+    const adapter = createConfigAdapter(configDbPath);
+    await adapter.set("budget.cost_target_tokens_per_request", publicCostTarget, {
+      swap_class: "restart",
+    });
+    (adapter as { close?: () => void }).close?.();
+  }
+
+  await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+  await Deno.copyFile(
+    join(Deno.cwd(), "Blueprints", "Agents", "mock-agent.md"),
+    join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+  );
+  const { traceId, requestPath } = makePortalRequestAndBoot(tempDir);
+  await bootRealDaemon(configPath, 2000, {
+    midFlight: () => {
+      Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+      Deno.writeTextFileSync(
+        requestPath,
+        `---
 trace_id: "${traceId}"
 created: "${new Date().toISOString()}"
 status: pending
@@ -467,35 +429,96 @@ subject: "cost ceiling cutover probe"
 
 Add a hello world function to src/0000-module-file.ts.
 `,
-            );
-          },
-          afterInjectMs: 25000,
-          waitForAfterInject: async () => (await collectBudgetEvents(configPath)).length > 0,
-        });
-        const events = await collectBudgetEvents(configPath);
-        const consumed = events.find((e) => e.action_type === "context.budget.consumed");
-        assert(consumed, `${scenarioLabel} run must journal context.budget.consumed for the planning call`);
-        const dropped = Number(consumed.payload["droppedSegmentCount"]);
-        const used = Number(consumed.payload["usedInputTokens"]);
-        if (scenarioLabel === "constrained") {
-          assert(
-            dropped > 0,
-            `constrained run (costTarget=${exactFitT}) must drop a planning-call segment, got droppedSegmentCount=${dropped}, usedInputTokens=${used}`,
-          );
-        } else {
-          assert(
-            dropped === 0,
-            `unconstrained run must keep every segment (droppedSegmentCount=0), got ${dropped}`,
-          );
-        }
-        console.log(
-          `[phase196-costcutover] ${scenarioLabel}: costTarget=${
-            exactFitT ?? null
-          }, droppedSegmentCount=${dropped}, usedInputTokens=${used}`,
-        );
-      } finally {
-        await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-      }
+      );
+    },
+    afterInjectMs: 25000,
+    waitForAfterInject: async () => (await collectBudgetEvents(configPath)).length > 0,
+  });
+  const campaignEvents = await collectBudgetEvents(configPath);
+  const consumed = campaignEvents.find((e) => e.action_type === "context.budget.consumed");
+  assert(consumed, `run (costTarget=${publicCostTarget}) must journal context.budget.consumed for the planning call`);
+  return {
+    campaignEvents,
+    consumed: {
+      droppedSegmentCount: Number(consumed.payload["droppedSegmentCount"]),
+      usedInputTokens: Number(consumed.payload["usedInputTokens"]),
+    },
+    anyCompaction: campaignEvents.some((e) =>
+      e.action_type === "context.section.truncated" || Number(e.payload["droppedSegmentCount"]) > 0
+    ),
+  };
+}
+
+Deno.test({
+  name:
+    "[phase196-costcutover] identical-input daemon pair shows the constrained run's final assembled prompt strictly below the unconstrained run via the public config path + restart boundary",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const sharedDir = await Deno.makeTempDir({ prefix: "step16-run-" });
+    const constrainedDir = await Deno.makeTempDir({ prefix: "step16-constrained-" });
+    const unconstrainedDir = await Deno.makeTempDir({ prefix: "step16-unconstrained-" });
+    try {
+      // ONE shared fixture mounted at the SAME absolute path by both daemons — byte-identical
+      // portal contents and request, so any observed difference is attributable to the ceiling.
+      const sharedPortal = join(sharedDir, "fixture-portal");
+      await writeSharedPortalFixture(sharedPortal);
+
+      // Validated low ceiling (>= MIN_COST_TARGET_TOKENS_PER_REQUEST) low enough that the large
+      // portal listing overflows its section budget — the constrained run must compact a segment.
+      const publicTarget = MIN_COST_TARGET_TOKENS_PER_REQUEST;
+      assert(
+        publicTarget >= 5043,
+        "the public ceiling must be a validated feasible value (above the allocator section-floor total)",
+      );
+
+      const constrained = await bootPortalRequestRun(
+        constrainedDir,
+        sharedPortal,
+        publicTarget,
+      );
+      const unconstrained = await bootPortalRequestRun(
+        unconstrainedDir,
+        sharedPortal,
+        null,
+      );
+
+      // Strict final-token reduction on identical inputs (the primary observable, not just
+      // a non-zero drop count).
+      assert(
+        constrained.consumed.usedInputTokens < unconstrained.consumed.usedInputTokens,
+        `constrained usedInputTokens (${constrained.consumed.usedInputTokens}) must be strictly below the ` +
+          `unconstrained total (${unconstrained.consumed.usedInputTokens}) for identical inputs`,
+      );
+      // The constrained run actually compacted a planning segment (dropped OR trimmed under
+      // the low ceiling — evidenced by a truncated-section event), while the unconstrained
+      // run keeps every segment.
+      assert(
+        constrained.anyCompaction,
+        `constrained run (public costTarget=${publicTarget}) must compact a planning-call segment ` +
+          `(drop or trim), got dropped=${constrained.consumed.droppedSegmentCount}, events=${
+            JSON.stringify(
+              constrained.campaignEvents.map((e) => e.action_type),
+            )
+          }`,
+      );
+      assert(
+        !unconstrained.anyCompaction,
+        `unconstrained run must keep every segment (no drop/trim), got events=${
+          JSON.stringify(
+            unconstrained.campaignEvents.map((e) => e.action_type),
+          )
+        }`,
+      );
+      console.log(
+        `[phase196-costcutover] constrained public costTarget=${publicTarget} → usedInputTokens=${constrained.consumed.usedInputTokens} (dropped ${constrained.consumed.droppedSegmentCount}); ` +
+          `unconstrained → ${unconstrained.consumed.usedInputTokens} (dropped ${unconstrained.consumed.droppedSegmentCount})`,
+      );
+    } finally {
+      await Deno.remove(sharedDir, { recursive: true }).catch(() => {});
+      await Deno.remove(constrainedDir, { recursive: true }).catch(() => {});
+      await Deno.remove(unconstrainedDir, { recursive: true }).catch(() => {});
     }
   },
 });

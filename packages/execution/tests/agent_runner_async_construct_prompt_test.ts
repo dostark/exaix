@@ -19,6 +19,7 @@ import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from 
 import { PlanAdapter } from "@exaix/core/planning";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
+import { ContextBudgetManager } from "@exaix/execution";
 
 // Helpers
 
@@ -275,6 +276,81 @@ Deno.test("[IAgentRunner] segment tokenEstimate comes from the injected tokenize
 
   const systemSeg = captured[0].segments.find((s) => s.content === "SYSTEM_TEXT");
   assertEquals(systemSeg?.tokenEstimate, 999);
+});
+
+Deno.test("[IAgentRunner] selected model identity reaches tokenizer, allocator, and manager", async () => {
+  const models: string[] = [];
+  const tokenizer: ITokenizer = {
+    countTokens: (_text, model) => {
+      models.push(model);
+      return Promise.resolve(1);
+    },
+    countTokensBatch: (texts, model) => {
+      models.push(model);
+      return Promise.resolve(texts.map(() => 1));
+    },
+  };
+  const modelRegistry = {
+    getContextWindow(provider: string, model: string) {
+      assertEquals(provider, "anthropic");
+      assertEquals(model, "claude-sonnet-5");
+      return Promise.resolve(200_000);
+    },
+  } as never;
+  const allocator = new PromptBudgetAllocator(undefined, tokenizer, undefined, modelRegistry);
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
+    selectedModel: { provider: "anthropic", model: "claude-sonnet-5" },
+    tokenizer,
+    promptBudgetAllocator: allocator,
+    contextBudgetManager: manager,
+  });
+
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
+
+  assertEquals(models.every((model) => model === "anthropic:claude-sonnet-5"), true);
+  assertEquals(captured[0].model, "anthropic:claude-sonnet-5");
+  assertEquals(captured[0].promptBudget.model, "anthropic:claude-sonnet-5");
+  assertEquals(captured[0].promptBudget.totalBudgetTokens, 200_000);
+});
+
+Deno.test("[IAgentRunner] allocation hints preserve present memory and ordinary skills", async () => {
+  const allocator = new PromptBudgetAllocator();
+  const runner = new AgentRunner(new MockProvider(WELL_FORMED_RESPONSE), {
+    selectedModel: { provider: "openai", model: "gpt-4o-mini" },
+    skillsService: {
+      recordSkillUsage: () => Promise.resolve(),
+      matchSkills: () =>
+        Promise.resolve({
+          matches: [{ skillId: "ordinary", confidence: 1, matchedTriggers: {} }],
+          totalAvailable: 1,
+        }),
+      buildSkillContext: () => Promise.resolve("ordinary skill instructions"),
+      getSkill: () =>
+        Promise.resolve({
+          id: "ordinary",
+          name: "Ordinary",
+          description: "Ordinary skill",
+          instructions: "ordinary skill instructions",
+          triggers: {},
+          critical: false,
+        } as never),
+      initialize: () => Promise.resolve(),
+    } as never,
+    promptBudgetAllocator: allocator,
+    contextBudgetManager: new ContextBudgetManager(),
+  });
+
+  const preview = await runner.previewPrompt(
+    makeBlueprint(),
+    makeRequest({
+      skills: ["ordinary"],
+      context: { [MEMORY_CONTEXT_KEY]: "remember this" },
+    }),
+  );
+
+  assertEquals(preview.segments.find((segment) => segment.kind === "reflection")?.included, true);
+  assertEquals(preview.segments.find((segment) => segment.kind === "skills")?.included, true);
 });
 
 Deno.test("[IAgentRunner] segment tokenEstimate falls back to TOKEN_ESTIMATION_CHARS_PER_TOKEN-based estimation when no tokenizer is injected", async () => {

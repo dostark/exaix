@@ -156,6 +156,39 @@ Deno.test("ConfigSchema: accepts omitted budget_enforcement (backward compat)", 
   }
 });
 
+Deno.test("ConfigSchema accepts the public budget.cost_target_tokens_per_request TOML shape", () => {
+  const result = ConfigSchema.safeParse({
+    system: {},
+    budget: { cost_target_tokens_per_request: 10_000 },
+  });
+
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.budget?.cost_target_tokens_per_request, 10_000);
+  }
+});
+
+Deno.test("ConfigSchema preserves the legacy budget_enforcement.costTargetTokens spelling", () => {
+  const result = ConfigSchema.safeParse({
+    system: {},
+    budget_enforcement: { costTargetTokens: 10_000 },
+  });
+
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.budget_enforcement?.costTargetTokens, 10_000);
+  }
+});
+
+Deno.test("ConfigSchema rejects a cost ceiling below the allocator minimum", () => {
+  const result = ConfigSchema.safeParse({
+    system: {},
+    budget: { cost_target_tokens_per_request: 1 },
+  });
+
+  assertEquals(result.success, false);
+});
+
 Deno.test("ConfigSchema accepts max_flow_retry_cost_usd", () => {
   const result = ConfigSchema.safeParse({
     system: {

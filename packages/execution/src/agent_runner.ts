@@ -59,6 +59,12 @@ import {
 import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
+import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
+
+export interface ISelectedModelIdentity {
+  provider: string;
+  model: string;
+}
 
 /** Blueprint defines the agent's persona and system instructions. Initially just a
  *  system prompt, can be extended later. */
@@ -165,6 +171,8 @@ export interface IAgentExecutionResult {
  * Configuration for IAgentRunner
  */
 export interface IAgentRunnerConfig {
+  /** Canonical provider/model identity used by planning-call budgeting and pricing. */
+  selectedModel?: ISelectedModelIdentity;
   /** Optional: Event logger for activity routing (preferred over db) */
   logger?: IEventLogger;
 
@@ -791,7 +799,7 @@ export class AgentRunner implements IAgentRunner {
       entries.push({ content: criticalSkillContext, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
     }
     if (skillContext?.trim()) {
-      entries.push({ content: skillContext, kind: k.request, priority: 50, nonCompactable: false });
+      entries.push({ content: skillContext, kind: k.skills, priority: 50, nonCompactable: false });
     }
     const schemaInstructions = this.planAdapter.getSchemaInstructions();
     entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
@@ -822,20 +830,22 @@ export class AgentRunner implements IAgentRunner {
     }
 
     const tokenizer = this.config?.tokenizer;
+    const modelId = this.selectedModelId();
     const allSegments: IContextSegment[] = await Promise.all(
       entries.map(async (e, i) => ({
         segmentId: `prompt-part-${i}`,
         content: e.content,
         kind: e.kind,
         priority: e.priority,
-        tokenEstimate: await tokenizer?.countTokens(e.content, DEFAULT_MODEL_FALLBACK) ??
+        tokenEstimate: await tokenizer?.countTokens(e.content, modelId) ??
           Math.ceil(e.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
         metadata: { nonCompactable: e.nonCompactable },
       })),
     );
 
-    const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(DEFAULT_MODEL_FALLBACK) ?? {
-      model: DEFAULT_MODEL_FALLBACK,
+    const allocationHints = this.buildAllocationHints(allSegments);
+    const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, allocationHints) ?? {
+      model: modelId,
       totalBudgetTokens: Number.MAX_SAFE_INTEGER,
       safetyBufferTokens: 0,
       sections: {
@@ -856,7 +866,7 @@ export class AgentRunner implements IAgentRunner {
     const { segments: includedSegments } = await manager.prepare({
       traceId: request.traceId ?? "unknown",
       stepId: "agent-runner",
-      model: DEFAULT_MODEL_FALLBACK,
+      model: modelId,
       promptBudget: budget,
       segments: allSegments,
     });
@@ -879,18 +889,15 @@ export class AgentRunner implements IAgentRunner {
     return includedSegments.map((s) => s.content).join("\n\n");
   }
 
-  /** Hard token cap on `portal_knowledge` at the assembly boundary, independent of any budget
-   *  ceiling (a direct-set `portal_knowledge` would otherwise bypass `ContextBudgetManager`
-   *  entirely under an infinite/unset budget). Truncates at a whole-line boundary so the kept
-   *  prefix is never a mid-line cut; estimates the cumulative joined string with the real
-   *  tokenizer when wired (chars/4 otherwise) so the kept content's actual tokenEstimate is
-   *  guaranteed to fit the cap. */
+  /** Hard token cap on `portal_knowledge` at assembly (a direct-set block bypasses
+   *  `ContextBudgetManager` under an infinite/unset budget); keeps whole lines and uses the
+   *  real tokenizer to guarantee the kept prefix's estimate fits the cap. */
   private async capPortalKnowledge(content: string): Promise<string> {
     const maxTokens = this.config?.context?.config.get().portal_knowledge?.max_tokens ??
       DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS;
     const tokenizer = this.config?.tokenizer;
     const estimate = async (text: string): Promise<number> =>
-      await tokenizer?.countTokens(text, DEFAULT_MODEL_FALLBACK) ??
+      await tokenizer?.countTokens(text, this.selectedModelId()) ??
         Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
     if (await estimate(content) <= maxTokens) return content;
@@ -904,9 +911,7 @@ export class AgentRunner implements IAgentRunner {
       kept.push(line);
     }
     if (kept.length === 0) {
-      // Even a single line exceeds the cap — keep its leading slice so the segment is never empty.
-      const keepChars = Math.max(maxTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN, 1);
-      return content.slice(0, keepChars);
+      return await tokenBoundedPrefix(content, maxTokens, estimate);
     }
     return kept.join("\n");
   }
@@ -916,7 +921,8 @@ export class AgentRunner implements IAgentRunner {
   async previewPrompt(blueprint: IBlueprint, request: IParsedRequest): Promise<IPromptPreview> {
     const agentRole = blueprint.agentRole || "unknown";
     const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole);
-    const skillContextString = renderSkillsSection(skillsContext);
+    const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
+    const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
 
     const { allSegments, includedSegments, budget } = await this.assemblePromptSegments(
@@ -926,35 +932,103 @@ export class AgentRunner implements IAgentRunner {
       criticalSkillContext,
     );
 
-    const includedContentById = new Map(includedSegments.map((s) => [s.segmentId, s.content]));
-    const segments: IPromptPreviewSegment[] = allSegments.map((s) => ({
-      segmentId: s.segmentId,
-      kind: s.kind,
-      priority: s.priority,
-      tokenEstimate: s.tokenEstimate,
-      byteLength: new TextEncoder().encode(s.content).length,
-      nonCompactable: s.metadata.nonCompactable ?? false,
-      included: includedContentById.has(s.segmentId),
-    }));
+    const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));
+    const encoder = new TextEncoder();
+    const segments: IPromptPreviewSegment[] = allSegments.map((segment) => {
+      const resulting = includedById.get(segment.segmentId);
+      const resultingTokens = resulting?.tokenEstimate ?? 0;
+      const resultingBytes = resulting ? encoder.encode(resulting.content).length : 0;
+      return {
+        segmentId: segment.segmentId,
+        kind: segment.kind,
+        priority: segment.priority,
+        originalTokenEstimate: segment.tokenEstimate,
+        resultingTokenEstimate: resultingTokens,
+        tokenEstimate: resultingTokens,
+        originalByteLength: encoder.encode(segment.content).length,
+        resultingByteLength: resultingBytes,
+        byteLength: resultingBytes,
+        nonCompactable: segment.metadata.nonCompactable ?? false,
+        included: resulting !== undefined,
+      };
+    });
 
     // A dropped segment is absent from includedContentById; a trimmed segment (same
     // section's only occupant, still present but shortened) has different content — both
     // count as real compaction, unlike a bare segment-count comparison would catch.
-    const compactionTriggered = allSegments.some((s) => includedContentById.get(s.segmentId) !== s.content);
+    const compactionTriggered = allSegments.some((segment) =>
+      includedById.get(segment.segmentId)?.content !== segment.content
+    );
 
-    const estimatedCostUsd = computeRegistryPredictedCost(DEFAULT_MODEL_FALLBACK, DEFAULT_MODEL_FALLBACK, {
-      promptTokens: segments.reduce((sum, s) => sum + s.tokenEstimate, 0),
+    const selectedModel = this.selectedModelIdentity();
+    const totalTokenEstimate = segments.reduce((sum, segment) => sum + segment.resultingTokenEstimate, 0);
+    const estimatedCostUsd = computeRegistryPredictedCost(selectedModel.provider, selectedModel.model, {
+      promptTokens: totalTokenEstimate,
       completionTokens: 0,
     });
 
     return {
       segments,
-      totalTokenEstimate: segments.reduce((sum, s) => sum + s.tokenEstimate, 0),
+      totalTokenEstimate,
       budgetTotalTokens: budget.totalBudgetTokens,
       compactionTriggered,
       matchedSkillIds: skillIds,
       ...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}),
     };
+  }
+
+  private selectedModelIdentity(): ISelectedModelIdentity {
+    return this.config?.selectedModel ?? {
+      provider: DEFAULT_MODEL_FALLBACK,
+      model: DEFAULT_MODEL_FALLBACK,
+    };
+  }
+
+  private selectedModelId(): string {
+    const selected = this.selectedModelIdentity();
+    return `${selected.provider}:${selected.model}`;
+  }
+
+  private buildAllocationHints(segments: IContextSegment[]): Record<
+    | "systemUsedTokens"
+    | "planUsedTokens"
+    | "portalKnowledgeUsedTokens"
+    | "memoryUsedTokens"
+    | "skillsUsedTokens"
+    | "loopHistoryUsedTokens",
+    number
+  > {
+    const hints = {
+      systemUsedTokens: 0,
+      planUsedTokens: 0,
+      portalKnowledgeUsedTokens: 0,
+      memoryUsedTokens: 0,
+      skillsUsedTokens: 0,
+      loopHistoryUsedTokens: 0,
+    };
+    for (const segment of segments) {
+      switch (segment.kind) {
+        case ContextSegmentKindSchema.enum.system:
+          hints.systemUsedTokens += segment.tokenEstimate;
+          break;
+        case ContextSegmentKindSchema.enum.portal_knowledge:
+          hints.portalKnowledgeUsedTokens += segment.tokenEstimate;
+          break;
+        case ContextSegmentKindSchema.enum.reflection:
+          hints.memoryUsedTokens += segment.tokenEstimate;
+          break;
+        case ContextSegmentKindSchema.enum.skills:
+          hints.skillsUsedTokens += segment.tokenEstimate;
+          break;
+        case ContextSegmentKindSchema.enum.tool_result:
+        case ContextSegmentKindSchema.enum.summary:
+          hints.loopHistoryUsedTokens += segment.tokenEstimate;
+          break;
+        default:
+          hints.planUsedTokens += segment.tokenEstimate;
+      }
+    }
+    return hints;
   }
 
   /** Extracts keywords from text for skill matching. */

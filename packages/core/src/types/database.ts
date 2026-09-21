@@ -63,6 +63,10 @@ export interface IProviderCostRecord {
   promptTokens: number;
   completionTokens: number;
   estimatedCostUsd: number;
+  /** Number of requests this record represents (provider_costs.requests); an aggregate or
+   *  batched row can carry more than one, so grouped reports must sum this, not rows. Absent
+   *  on legacy/mock records, which represent a single request. */
+  requests?: number;
   traceId?: string;
   portal?: string;
   /** Optional attribution for future role-aware tracking. */

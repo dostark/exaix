@@ -147,8 +147,7 @@ Deno.test("[exactl request create --dry-run] (existing flag) behavior is complet
 
 /// Real-portal variant: `--dry-run-context --portal <alias>` must inject the same
 /// `portal_context` (file listing) + `portal_knowledge` (knowledge summary) segments the
-/// daemon's real request path injects — the preview is only honest if it mirrors
-/// `buildRequestContext` (processor.ts:862-871).
+/// daemon's real request path injects (mirrors `buildRequestContext`).
 
 // style-exclude:SMALL_FIXTURE_OK - 4-file mock portal fixture, inline for readability
 const MOCK_PORTAL_FILES: Array<[string, string]> = [
@@ -197,6 +196,7 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
       memoryBank: null as never,
       projectsDir: join(tempDir, "Memory", "Projects"),
     });
+    await portalKnowledge.analyze("mock-portal", portalDir, PortalAnalysisMode.QUICK);
     (context as IApplicationContext).portalKnowledge = portalKnowledge;
     // Register the portal so the handler (via appContext.portals.show) can resolve its target_path.
     await context.portals!.add(portalDir, "mock-portal");
@@ -223,6 +223,57 @@ Deno.test("[exactl request create --dry-run-context] with --portal injects the r
       `expected two portal_knowledge rows (file listing + knowledge summary), got:\n${rendered}`,
     );
     assertStringIncludes(rendered, "Matched skills: None", "preview must still render its aggregate row");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[exactl request create --dry-run-context] a cold portal never triggers analysis or persistence", async () => {
+  const { context, tempDir, cleanup } = await createCliTestContext({ createDirs: ["Workspace/Requests"] });
+  try {
+    await Deno.writeTextFile(join(tempDir, "Blueprints", "Agents", "mock-agent.md"), MOCK_AGENT_BLUEPRINT);
+    const portalDir = join(tempDir, "cold-portal");
+    await ensureDir(portalDir);
+    await Deno.writeTextFile(join(portalDir, "README.md"), "# Cold portal\n");
+    const projectsDir = join(tempDir, "Memory", "Projects");
+    const portalKnowledge = new PortalKnowledgeService({
+      config: makePortalKnowledgeConfig(),
+      memoryBank: null as never,
+      projectsDir,
+    });
+    let analyzeCalls = 0;
+    portalKnowledge.analyze = () => {
+      analyzeCalls += 1;
+      return Promise.reject(new Error("preview must not analyze"));
+    };
+    (context as IApplicationContext).portalKnowledge = portalKnowledge;
+    await context.portals!.add(portalDir, "cold-portal");
+
+    const requestCommands = new RequestCommands(context);
+    const { output, restore } = captureConsoleLog();
+    try {
+      await handleRequestCreate(
+        { requestCommands, display: context.display, appContext: context },
+        { agentRole: "mock-agent", dryRunContext: true, portal: "cold-portal" },
+        "Inspect the cold portal.",
+      );
+    } finally {
+      restore();
+    }
+
+    assertEquals(analyzeCalls, 0);
+    assertStringIncludes(output.join("\n"), "Portal knowledge: unavailable");
+    // `portals.add()` writes a context card here, so the dir is not empty — the invariant
+    // is that the PREVIEW creates no knowledge artifact.
+    const knowledgeJson = join(projectsDir, "cold-portal", "knowledge.json");
+    await Deno.stat(knowledgeJson).then(
+      () => {
+        throw new Error("preview must not persist knowledge.json for a cold portal");
+      },
+      (error) => {
+        if (!(error instanceof Deno.errors.NotFound)) throw error;
+      },
+    );
   } finally {
     await cleanup();
   }

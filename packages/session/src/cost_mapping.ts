@@ -48,6 +48,7 @@ export function sessionReturnToCostRecord(input: ISessionCostInput): IProviderCo
     traceId: input.traceId,
     portal: input.portal,
     timestamp: input.timestamp,
+    requests: 1,
     cacheReadTokens: stats.cache_read_tokens,
     cacheCreationTokens: stats.cache_creation_tokens,
     reasoningTokens: stats.reasoning_tokens,

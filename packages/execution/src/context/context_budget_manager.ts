@@ -28,6 +28,7 @@ import {
   CONTEXT_SECTION_MEMORY,
   CONTEXT_SECTION_PLAN,
   CONTEXT_SECTION_PORTAL_KNOWLEDGE,
+  CONTEXT_SECTION_SKILLS,
   CONTEXT_SECTION_SYSTEM,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
@@ -39,6 +40,8 @@ import type { IContextSegment } from "./context_segment.ts";
 import type { IContextCompactor } from "./context_compactor.ts";
 import type { ISnapshotStore } from "./snapshot_store.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
+import { tokenBoundedPrefix } from "./token_bounded_prefix.ts";
 
 export interface IContextBudgetManagerInput {
   traceId: string;
@@ -95,6 +98,8 @@ function sectionNameFor(kind: IContextSegment["kind"]): string {
       return CONTEXT_SECTION_PORTAL_KNOWLEDGE;
     case k.reflection:
       return CONTEXT_SECTION_MEMORY;
+    case k.skills:
+      return CONTEXT_SECTION_SKILLS;
     case k.tool_result:
     case k.summary:
     default:
@@ -146,6 +151,8 @@ export class ContextBudgetManager implements IContextBudgetManager {
 
     const decisions: IContextBudgetDecision[] = [];
     const kept: IContextSegment[] = [];
+
+    this._assertProtectedFitsCeiling({ segments, promptBudget, traceId, stepId, model });
 
     // Track consumed tokens per section key to respect section limits.
     const consumed: Record<string, number> = {};
@@ -205,10 +212,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
           createdAt: new Date().toISOString(),
         });
       } else {
-        // Trim: truncate content to fit the remaining section budget, keeping whole lines so the
-        // kept prefix is never a mid-line cut, and re-estimating with the real tokenizer when wired
-        // (chars/4 otherwise) so resultingTokens matches what the tokenizer would report for the
-        // kept content — never a divergent chars/4 guess.
+        // Keep whole lines where possible, then recount any fallback slice.
         const trimmed = await this._trimToBudget(segment, remaining, model);
         kept.push(trimmed.segment);
         consumed[sectionKey] = used + trimmed.segment.tokenEstimate;
@@ -309,10 +313,44 @@ export class ContextBudgetManager implements IContextBudgetManager {
     return { segments: kept, snapshot };
   }
 
-  /** Truncate a segment to fit `remainingTokens`, keeping whole lines (never a mid-line cut) and
-   *  re-estimating with the real tokenizer when wired (chars/4 otherwise) so the resulting token
-   *  count matches the estimate used for the segment's own accounting. Falls back to a leading
-   *  slice when even a single line exceeds the budget, so the segment is never empty. */
+  /** Fail closed when protected content alone cannot fit the hard ceiling: no provider call
+   *  is made, protected segments are never silently dropped, and the failure carries the
+   *  trace id, selected model, configured ceiling, and protected-token total. */
+  private _assertProtectedFitsCeiling(input: {
+    segments: IContextSegment[];
+    promptBudget: IPromptBudget;
+    traceId: string;
+    stepId: string;
+    model: string;
+  }): void {
+    const { segments, promptBudget, traceId, stepId, model } = input;
+    const protectedTokens = segments
+      .filter(isProtected)
+      .reduce((sum, segment) => sum + segment.tokenEstimate, 0);
+    if (protectedTokens <= promptBudget.totalBudgetTokens) return;
+    const sectionBreakdown = Object.fromEntries(
+      Object.entries(promptBudget.sections).map(([section, tokens]) => [section, tokens]),
+    );
+    void this.logger?.info(DomainEventType.ContextBudgetExceeded, null, {
+      traceId,
+      stepId,
+      model,
+      contextWindow: promptBudget.totalBudgetTokens,
+      estimatedTokens: protectedTokens,
+      protectedTokens,
+      sectionBreakdown,
+      tokenSource: this._tokenizer ? "bpe" : "heuristic",
+    }, traceId);
+    throw new ContextBudgetExceededError(
+      `Protected context for ${model} requires ${protectedTokens} tokens, exceeding the ${promptBudget.totalBudgetTokens}-token hard ceiling`,
+      model,
+      promptBudget.totalBudgetTokens,
+      protectedTokens,
+      sectionBreakdown,
+    );
+  }
+
+  /** Truncate to the requested token bound, preferring whole-line prefixes. */
   private async _trimToBudget(
     segment: IContextSegment,
     remainingTokens: number,
@@ -331,7 +369,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
       kept.push(line);
     }
     const content = kept.length === 0
-      ? segment.content.slice(0, Math.max(remainingTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN, 1))
+      ? await tokenBoundedPrefix(segment.content, remainingTokens, estimate)
       : kept.join("\n");
 
     return { segment: { ...segment, content, tokenEstimate: await estimate(content) } };

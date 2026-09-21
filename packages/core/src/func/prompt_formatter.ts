@@ -7,12 +7,14 @@
  */
 
 import type { ISkillsContext } from "@exaix/core/types";
+import { stripExamplesSection } from "./skill_body.ts";
 
 /** A single matched-skill entry (element of `ISkillsContext.matched`). */
 type ISkillMatchEntry = ISkillsContext["matched"][number];
 
-/** Renders a heading + the supplied skill matches; `examples` appends after Instructions
- *  only when present and `includeExamples` is true. */
+/** Renders a heading + skill matches. `instructions` carry the full body byte-identically
+ *  (ordering is a compatibility contract), so examples are never re-appended; `false` strips
+ *  the Examples section for trimmed mode. */
 function renderSkillBlock(
   heading: string,
   intro: string,
@@ -25,10 +27,8 @@ function renderSkillBlock(
   for (const skill of skills) {
     output += `#### ${skill.title}\n`;
     output += `${skill.description}\n\n`;
-    output += `**Instructions:**\n${skill.content}\n\n`;
-    if (includeExamples && skill.examples) {
-      output += `**Examples:**\n${skill.examples}\n\n`;
-    }
+    const instructions = includeExamples ? skill.content : stripExamplesSection(skill.content);
+    output += `**Instructions:**\n${instructions}\n\n`;
     if (skill.tags.length > 0) {
       output += `*Tags: ${skill.tags.join(", ")}*\n\n`;
     }
@@ -36,9 +36,9 @@ function renderSkillBlock(
   return output;
 }
 
-/** Critical skills are rendered separately by {@link renderCriticalSkillsSection} so the
- *  prompt assembler can place them in a protected, non-droppable segment. `trimmed`
- *  (default `false`) omits each ordinary skill's `examples` content, leaving Instructions untouched. */
+/** Ordinary skills render in a compactable segment via {@link renderSkillsSection};
+ *  `trimmed` (default `false`) strips each ordinary skill's Examples section, leaving all
+ *  other content untouched and in original order. */
 export function renderSkillsSection(context: ISkillsContext | null, trimmed = false): string {
   if (!context || context.matched.length === 0) return "";
 
@@ -59,9 +59,8 @@ export function renderSkillsSection(context: ISkillsContext | null, trimmed = fa
   return output.trim();
 }
 
-/** The prompt assembler places this in a protected, non-compactable segment so the
- *  output contract and hard constraints survive context-budget pressure. `examples`
- *  is always included when present — critical skill content is never trimmed. */
+/** Critical skills render in the protected, non-compactable segment; always full (never
+ *  trimmed), so the output contract and hard constraints survive budget pressure. */
 export function renderCriticalSkillsSection(context: ISkillsContext | null): string {
   if (!context || context.matched.length === 0) return "";
   return renderSkillBlock(

@@ -7,14 +7,28 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED, DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED } from "@exaix/core";
+import {
+  DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
+  DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
+  MIN_COST_TARGET_TOKENS_PER_REQUEST,
+} from "@exaix/core";
 
 /** One segment's breakdown in a non-mutating `AgentRunner.previewPrompt()` result. */
 export interface IPromptPreviewSegment {
   segmentId: string;
   kind: string;
   priority: number;
+  /** Original pre-budget token count. */
+  originalTokenEstimate: number;
+  /** Final token count; zero when dropped. */
+  resultingTokenEstimate: number;
+  /** Backward-compatible alias for resultingTokenEstimate. */
   tokenEstimate: number;
+  /** Original pre-budget byte count. */
+  originalByteLength: number;
+  /** Final byte count; zero when dropped. */
+  resultingByteLength: number;
+  /** Backward-compatible alias for resultingByteLength. */
   byteLength: number;
   nonCompactable: boolean;
   /** Whether this segment survived `ContextBudgetManager.prepare()` into the final prompt. */
@@ -71,7 +85,7 @@ export const ZBudgetPolicy = z.object({
   /** Optional hard cap on assembled prompt tokens per request, independent of the
    *  model's context window — for cost control on large-context models where overflow
    *  is not the risk. When unset, behavior is unchanged (context-window-derived only). */
-  costTargetTokens: z.number().int().positive().optional(),
+  costTargetTokens: z.number().int().min(MIN_COST_TARGET_TOKENS_PER_REQUEST).optional(),
 });
 
 export type IPromptBudgetSections = z.infer<typeof ZPromptBudgetSections>;

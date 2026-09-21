@@ -17,3 +17,4 @@ export * from "./db.ts";
 export * from "./adapter.ts";
 export * from "./store.ts";
 export * from "./db_watcher_handler.ts";
+export * from "./effective_budget_policy.ts";
