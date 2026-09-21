@@ -59,10 +59,11 @@ export type PlanFrontmatter = z.infer<typeof PlanFrontmatterSchema>;
  * Zod schema for individual tool actions within a step
  */
 export const PlanActionSchema = z.object({
-  /** Tool name to invoke — must be an execution-reachable tool (`EXECUTION_TOOL_NAMES`), the
-   *  set `ToolRegistry`/`createCoreToolSchemas` executes. Not `McpToolName`: admin/config
-   *  (`exaix_*`) tools are not runnable as plan actions and must not be advertised. */
-  tool: z.enum(EXECUTION_TOOL_NAMES),
+  /** Tool name to invoke — an execution-reachable tool. The model discovers allowed values via
+   *  the read-only `list_available_tools` catalog tool; validation re-checks the execution set. */
+  tool: z.string().min(1).refine((t) => (EXECUTION_TOOL_NAMES as readonly string[]).includes(t), {
+    message: `tool must be one of ${EXECUTION_TOOL_NAMES.join(", ")}`,
+  }),
 
   /** Parameters for the tool invocation */
   params: z.record(z.string(), JSONValueSchema),

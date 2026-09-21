@@ -503,6 +503,7 @@ export class ToolRegistry implements IToolRegistry {
       ToolName.SEARCH_MEMORY,
       (p) => this.searchMemoryTool(str(p.query), p.limit !== undefined ? Number(p.limit) : undefined),
     );
+    this.executors.set(ToolName.LIST_AVAILABLE_TOOLS, () => this.listAvailableToolsTool());
   }
 
   /**
@@ -705,6 +706,18 @@ export class ToolRegistry implements IToolRegistry {
     const portal = this.currentPortal();
     const results = await memoryService.search(query, { portal: portal?.alias, limit });
     return this.formatSuccess(results as unknown as JSONValue);
+  }
+
+  /** Read-only discovery: return the catalog of every registered tool with its functional
+   *  description and parameter schema, so a planning or execution model selects a tool by what
+   *  it does rather than by guessing from a bare name. */
+  private listAvailableToolsTool(): Promise<IToolResult> {
+    const catalog = Array.from(this.tools.values()).map((t) => ({
+      name: t.name,
+      description: t.nativeDescription ?? t.description,
+      parameters: t.parameters,
+    }));
+    return Promise.resolve(this.formatSuccess(catalog as unknown as JSONValue));
   }
 
   private async whoDependsOnTool(path: string): Promise<IToolResult> {

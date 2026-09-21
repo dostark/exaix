@@ -112,11 +112,9 @@ export enum TaskType {
   UNKNOWN = "unknown",
 }
 
-/** The single canonical source of tool names that can actually be executed as a plan action —
- *  the exact set `packages/tool-runtime/src/tool_schemas.ts`'s `createCoreToolSchemas()`
- *  registers with the `ToolRegistry`. The plan-action schema derives its `tool` enum from this
- *  list instead of the wider `McpToolName` MCP catalog, so the enum can't drift from what
- *  executes and never leaks the admin/config (`exaix_*`) tool surface into a generated plan. */
+/** The single canonical source of execution-reachable tool names — the set
+ *  `createCoreToolSchemas()`/`ToolRegistry` actually executes. Plan actions and the registry's
+ *  catalog are validated against this list, never the wider `McpToolName` MCP catalog. */
 export const EXECUTION_TOOL_NAMES = [
   "read_file",
   "write_file",
@@ -169,6 +167,10 @@ export enum ToolName {
   WHO_DEPENDS_ON = "who_depends_on",
   REMEMBER_FACT = "remember_fact",
   SEARCH_MEMORY = "search_memory",
+  /** Read-only discovery: returns the catalog of registered tools with their functional
+   *  descriptions, so a planning/analysis model can choose which tool to use instead of
+   *  guessing from bare names baked into a prompt. */
+  LIST_AVAILABLE_TOOLS = "list_available_tools",
 }
 
 /** Structured error codes for MCP tool-logic failures, shared by MCP handlers and ToolRegistry without creating an import cycle. */

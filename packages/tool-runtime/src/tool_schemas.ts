@@ -684,5 +684,33 @@ export function createCoreToolSchemas(
         },
       },
     },
+    {
+      name: ToolName.LIST_AVAILABLE_TOOLS,
+      description:
+        "Return the full catalog of registered Exaix tools with each tool's name, functional description, and parameter schema. Use before choosing which tool to run for a task — especially in the planning phase — so you select by what a tool actually does rather than guessing from the name. Read-only; never mutates anything. Returns an array of { name, description, parameters } in data.",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Lists every registered tool with its functional description and parameters.",
+        when_to_use:
+          "Use when you need to decide which tool to invoke for a task and are not certain which one fits — or when you are in the planning phase and must name the tool a plan step will execute.",
+        when_not_to_use:
+          "Do not use to check whether a specific tool exists — that is confirmed by the tool being offered to you. Do not use to persist or change anything.",
+        example: {
+          input: {},
+          output:
+            '[{"name":"read_file","description":"Return the full text content of a file...","parameters":{...},"sideEffectScope":"NONE"}]',
+          rationale:
+            "Surfaces the tool catalog so the model can pick the right tool by function, not by guessing from its name.",
+        },
+        anti_example: {
+          input: { limit: "5" },
+          why_wrong: "list_available_tools takes no arguments — it always returns the full catalog.",
+        },
+      },
+    },
   ];
 }

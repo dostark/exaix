@@ -252,6 +252,10 @@ Common Requirements:
 - "title": string (1-200 chars, the plan name)
 - "description": string
 - "steps": array of objects (if this is an execution plan)
+- "steps[].actions[].tool" must name a real Exaix tool. To choose the right tool, call the
+  read-only "list_available_tools" tool first — it returns every available tool with a
+  functional description and its parameter schema. Select by what a tool does, not by guessing
+  from its name.
 - analysis, security, qa, performance: objects (if this is an analysis report)
 
 Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
