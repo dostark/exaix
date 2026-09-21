@@ -1008,6 +1008,21 @@ Every compaction decision is persisted to `Memory/Execution/{traceId}/` as an
 prompt-state hygiene observable and auditable. Protected segment classes (`"system"`,
 `"request"`, `"acceptance_criteria"`, `metadata.nonCompactable = true`) are never dropped.
 
+`AgentRunner`'s planning call applies the same two-layer pipeline as the ReAct execution
+loop. `constructPrompt()` (`packages/execution/src/agent_runner.ts:AgentRunner.constructPrompt`)
+assembles the prompt via `assemblePromptSegments()`, which resolves the budget with the
+injected `promptBudgetAllocator.allocate()` and trims the assembled segments with the injected
+`contextBudgetManager.prepare()` — the identical `PromptBudgetAllocator`/`IContextBudgetManager`
+contracts the ReAct loop drives in `ReActLoopStrategy.applyContextBudget()`
+(`packages/execution/src/strategies/react_loop_strategy.ts:ReActLoopStrategy.applyContextBudget`).
+Both call sites emit `context.budget.allocated` / `context.budget.consumed`
+(`DomainEventType` at `packages/core/src/events/domain_event_types.ts:ContextBudgetAllocated`)
+events, so a cost-ceiling-triggered planning-call compaction is observable via the journal
+exactly as a ReAct-loop compaction is. `AgentRunner.previewPrompt()` reuses the same assembly
+path non-mutatingly for `exactl request create --dry-run-context`.
+When `promptBudgetAllocator` is absent, the planning call falls back to an unbounded budget
+(today's pre-step-1 behavior) and skips compaction.
+
 Context budget management is activated by injecting `contextBudgetManager` and (optionally)
 `snapshotStore` as the 12th and 13th constructor parameters of `AgentExecutor`. Without that injection the
 `_contextBudgetManager` field is `undefined` and budget compaction is silently skipped on

@@ -808,7 +808,22 @@ You can tune skill matching in your `exa.config.toml`:
 max_per_request = 5        # Max skills to inject per request
 match_threshold = 0.3      # Minimum confidence score (0.0 to 1.0)
 context_budget_chars = 4000 # Max characters for skills context
+render_mode = "trimmed"    # "full" (default) includes each ordinary skill's examples; "trimmed" omits them
 ```
+
+`render_mode = "trimmed"` drops each ordinary matched skill's `examples` content from the
+rendered prompt, reducing assembled-prompt tokens without losing the skill's instructions.
+Critical skill content always renders in full regardless of this setting.
+
+To keep skills themselves within a healthy size, run the skill content-size governance check:
+
+```bash
+deno task check:skill-size
+```
+
+It reports any skill whose rendered `instructions` length exceeds the size threshold
+(default: `DEFAULT_SKILL_SIZE_WARNING_CHARS`) — advisory output only (always exits 0);
+see `scripts/check_skill_size.ts`.
 
 #### Skill Tools
 
@@ -1099,27 +1114,28 @@ exactl request analyze "Existing Request Subject" --engine llm
 
 **Options:**
 
-| Option                  | Short | Description                                                                                                                 |
-| ----------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--agent-role`          | `-a`  | Target agent role blueprint (default: `default`, mutually exclusive with --flow)                                            |
-| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent-role)                                                              |
-| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                                               |
-| `--portal`              |       | Portal alias for project context                                                                                            |
-| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                                                 |
-| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`)                                            |
-| `--file`                | `-f`  | Read description from file                                                                                                  |
-| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`                                             |
-| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`                                                   |
-| `--interactive`         | `-i`  | Interactive mode with prompts                                                                                               |
-| `--dry-run`             |       | Preview without creating                                                                                                    |
-| `--json`                |       | Machine-readable output                                                                                                     |
-| `--analyze`             |       | Trigger immediate intent analysis                                                                                           |
-| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                                               |
-| `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (model resolution and intent)          |
-| `--thinking`            |       | Require extended reasoning (thinking-capable model, model resolution and intent)                                            |
-| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high` (only with `--thinking`, model resolution and intent)                       |
-| `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (model resolution and intent) |
-| `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (model resolution and intent)                    |
+| Option                  | Short | Description                                                                                                                                                  |
+| ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--agent-role`          | `-a`  | Target agent role blueprint (default: `default`, mutually exclusive with --flow)                                                                             |
+| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent-role)                                                                                               |
+| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                                                                                |
+| `--portal`              |       | Portal alias for project context                                                                                                                             |
+| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                                                                                  |
+| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`)                                                                             |
+| `--file`                | `-f`  | Read description from file                                                                                                                                   |
+| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`                                                                              |
+| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`                                                                                    |
+| `--interactive`         | `-i`  | Interactive mode with prompts                                                                                                                                |
+| `--dry-run`             |       | Preview without creating                                                                                                                                     |
+| `--dry-run-context`     |       | Print a projected input-token breakdown (per-segment token estimates, budget, compaction trigger, cost) without writing a request file or calling a real LLM |
+| `--json`                |       | Machine-readable output                                                                                                                                      |
+| `--analyze`             |       | Trigger immediate intent analysis                                                                                                                            |
+| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                                                                                |
+| `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (model resolution and intent)                                           |
+| `--thinking`            |       | Require extended reasoning (thinking-capable model, model resolution and intent)                                                                             |
+| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high` (only with `--thinking`, model resolution and intent)                                                        |
+| `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (model resolution and intent)                                  |
+| `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (model resolution and intent)                                                     |
 
 **Example workflow:**
 
@@ -4981,6 +4997,24 @@ Before each agent execution, Exaix checks:
 3. **Provider Limits**: Any provider-specific restrictions
 
 If a request would exceed your budget, it's rejected with a clear error message.
+
+Beyond monetary caps, Exaix applies a **prompt-token budget ceiling** that caps the
+assembled prompt size per request independently of the model's context window. This
+targets cost control on large-context models (202K+ tokens) where overflow is not the
+risk but spend per request still is:
+
+```toml
+[budget]
+cost_target_tokens_per_request = 40000  # optional hard cap on assembled prompt tokens per request
+```
+
+When set, `AgentRunner`'s planning call and the ReAct execution loop both route the
+assembled prompt through the shared `PromptBudgetAllocator`/`ContextBudgetManager`
+pipeline, trimming lower-priority segments (memory, portal knowledge, skills) until the
+assembled prompt fits the cap. Compactions are observable via `context.budget.consumed`
+journal events (with `droppedSegmentCount > 0`). When unset (the default), today's
+behavior is preserved. `local_enforcement_enabled` gates enforcement for local/self-hosted
+models; see `exactl config` for the full `budget` key surface.
 
 ### 11.4 Monitoring Usage
 
