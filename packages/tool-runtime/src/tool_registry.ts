@@ -708,15 +708,20 @@ export class ToolRegistry implements IToolRegistry {
     return this.formatSuccess(results as unknown as JSONValue);
   }
 
-  /** Read-only discovery: return the catalog of every registered tool with its functional
+  /** Read-only discovery: return the catalog of registered tools with their functional
    *  description and parameter schema, so a planning or execution model selects a tool by what
-   *  it does rather than by guessing from a bare name. */
+   *  it does rather than by guessing from a bare name. When `cli_delegate.tool_exposure` is
+   *  `"shell_only"`, the effective catalog collapses to the shell tool (`run_command`) — the
+   *  only tool that deployment's CLI provider exposes. */
   private listAvailableToolsTool(): Promise<IToolResult> {
-    const catalog = Array.from(this.tools.values()).map((t) => ({
-      name: t.name,
-      description: t.nativeDescription ?? t.description,
-      parameters: t.parameters,
-    }));
+    const shellOnly = this.config.cli_delegate?.tool_exposure === "shell_only";
+    const catalog = Array.from(this.tools.values())
+      .filter((t) => !shellOnly || t.name === ToolName.RUN_COMMAND)
+      .map((t) => ({
+        name: t.name,
+        description: t.nativeDescription ?? t.description,
+        parameters: t.parameters,
+      }));
     return Promise.resolve(this.formatSuccess(catalog as unknown as JSONValue));
   }
 

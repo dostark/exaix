@@ -77,3 +77,21 @@ Deno.test("[list_available_tools] is read-only (NONE scope) and takes no argumen
   const withArgs = await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, { limit: 5 });
   assertEquals(withArgs.success, true, "unexpected args are tolerated (no required params)");
 });
+
+Deno.test("[list_available_tools] under cli_delegate.tool_exposure=shell_only returns only the shell tool (run_command)", async () => {
+  const config = createMockConfig(Deno.cwd(), {
+    cli_delegate: { enabled: true, tool: "claude-code", tool_exposure: "shell_only" },
+  });
+  const registry = new ToolRegistry({ config });
+  const result = await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, {});
+  assertEquals(result.success, true, result.error ?? "expected success");
+
+  const catalog = readCatalog(result.data);
+  assertEquals(
+    catalog.map((t) => t.name),
+    [ToolName.RUN_COMMAND],
+    "shell_only exposure must collapse the catalog to the shell tool",
+  );
+  const runCommand = catalog[0];
+  assert(runCommand.description.length > 40, "the shell tool entry must carry its functional description");
+});
