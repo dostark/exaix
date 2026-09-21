@@ -66,6 +66,12 @@ Doc quality checklist
   [ ] Links to related docs/commands are included
   [ ] Runs deno fmt --check (for .md files with embedded code blocks where applicable)
   [ ] No dead links
+  [ ] Every runtime claim is implemented: grep the code for each documented event name,
+      config key, persistence behavior, and CLI flag the doc asserts exists before writing
+      it (a doc stating an event name, "every decision is persisted to disk", or a config
+      key that the schema strips is a doc of a system that does not exist). "Behaves this
+      way" is only writable when the code path is real and reachable; otherwise describe
+      the actual behavior or omit the claim.
 
 Do / Don't
 - ✅ Do run deno task docs-sync-schemas after MCP handler changes

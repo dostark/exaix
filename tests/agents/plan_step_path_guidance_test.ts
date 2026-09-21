@@ -98,3 +98,97 @@ Deno.test("Agent docs: commit skill warns that only ONE backtick span may follow
     "commit skill should tell the agent where to put incidental code mentions instead",
   );
 });
+
+Deno.test("Agent docs: remediate-code-gaps documents the arrow sweep trap for its own marking step", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/remediate-code-gaps/SKILL.md");
+
+  assert(
+    md.includes("extractArrowPaths()"),
+    "remediate-code-gaps should name the parser whose arrow-sweep blocks the plan-step commit",
+  );
+  assert(
+    md.includes("BEFORE the arrow"),
+    "remediate-code-gaps should direct incidental mentions before the arrow, not after it",
+  );
+  assert(
+    md.includes("put ONLY the real source/test paths after"),
+    "remediate-code-gaps should state the real-paths-only rule for the arrow tail",
+  );
+});
+
+Deno.test("Agent docs: clean-codebase warns the optional-params gate is a file-level staged ratchet", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/clean-codebase/SKILL.md");
+
+  assert(
+    md.includes("FILE-LEVEL RATCHET"),
+    "clean-codebase should warn that check:optional-params --staged is a file-level ratchet",
+  );
+  assert(
+    md.includes("Opt<T, Reason.*>"),
+    "clean-codebase should direct wrapping bare optionals in Opt<T, Reason.*>",
+  );
+});
+
+Deno.test("Agent docs: next-steps distinguishes presence from value propagation in wiring checks", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
+
+  assert(
+    md.includes("PRESENCE ≠ PROPAGATION"),
+    "next-steps should warn that a dependency name appearing in a call site is not wiring",
+  );
+  assert(
+    md.includes("STORED-BUT-NEVER-READ") || md.includes("Stored-but-never-read"),
+    "next-steps should name the stored-but-never-read config signature",
+  );
+  assert(
+    md.includes("storage\n proof ≠ consumption proof") ||
+      md.includes("storage proof ≠ consumption proof") ||
+      md.includes("storage\n            proof ≠ consumption proof"),
+    "next-steps should contrast storage proof with consumption proof",
+  );
+});
+
+Deno.test("Agent docs: test-development warns against proxy assertions that survive a property violation", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+
+  assert(
+    md.includes("proxy assertion"),
+    "test-development should name the proxy-assertion defect class",
+  );
+  assert(
+    md.includes("ORDER, BYTE-IDENTITY, or a STRICT\n       REDUCTION") ||
+      md.includes("ORDER, BYTE-IDENTITY, or a STRICT REDUCTION") ||
+      md.includes("ORDER, BYTE-IDENTITY, or a STRICT"),
+    "test-development should scope the rule to order/byte-identity/strict-reduction claims",
+  );
+  assert(
+    md.includes("multiset"),
+    "test-development should cite the character-multiset proxy as a recurring example",
+  );
+});
+
+Deno.test("Agent docs: doc skill requires runtime claims be implemented before documented", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/doc/SKILL.md");
+
+  assert(
+    md.includes("Every runtime claim is implemented"),
+    "doc skill should require grepping the code for each documented event/key/flag",
+  );
+  assert(
+    md.includes("grep the code for each documented event name"),
+    "doc skill should tell the agent to grep for documented event names/config keys",
+  );
+});
+
+Deno.test("Agent docs: security warns read-only/dry-run paths must not invoke a mutating getter", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/security/SKILL.md");
+
+  assert(
+    md.includes("advertised as read-only"),
+    "security should warn a read-only/dry-run path must not invoke a mutating getter",
+  );
+  assert(
+    md.includes("a pure cached"),
+    "security should direct exposing a pure cached lookup for read-only access",
+  );
+});

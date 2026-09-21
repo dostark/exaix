@@ -149,6 +149,16 @@ Assertion sensitivity — a test that cannot fail is worse than no test
        ModelResolver" in a file that imports no FlowRunner; a test named
        "malformed JSON produces parse error" that sends WELL-FORMED JSON and
        asserts it succeeds. Reviewers and later agents trust the name and never
+
+    7. A proxy assertion that can pass while the claimed property is violated
+       When the success criterion/claim is about ORDER, BYTE-IDENTITY, or a STRICT
+       REDUCTION, the regression must assert exactly that property — not a surrogate
+       that survives the violation. Recurring proxies: a character-multiset comparison
+       on a "byte-identical / lossless" claim (order can change while the multiset stays
+       equal), or a non-zero drop-count on a "strictly smaller final total" claim (a
+       fixture can drop non-final content and the reduction is never compared). An
+       exact-order/equality assertion, or a strict `<` on the final totals, is the honest
+       check; a fuzzy proxy is a gap.
        read the body, so the named branch stays untested indefinitely. The name
        is a claim — make the body honour it, or rename it.
 

@@ -106,6 +106,24 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       - If a production consumer exists now: verify the class is injected via
         constructor DI into that consumer, or registered in the appropriate
         factory / registry / bootstrap module (e.g. apps/daemon/main.ts).
+      - **PRESENCE ≠ PROPAGATION**: constructor DI wiring is not done when the dependency
+        name merely appears in the production call-site's source. Verify the composition
+        root actually passes a REAL value through, not a fallback literal, an unconditional
+        default, or a branch that only tests exercise. Two failure signatures recur and a
+        grep for the field name passes both:
+          * **Fallback/literal at the source**: the arg is `DEFAULT_X` / a hardcoded constant
+            instead of a runtime-computed value (e.g. budget calls pinned to a model fallback
+            literal, so the selected model never reaches the tokenizer).
+          * **Stored-but-never-read**: a config key is settable and round-trips through the
+            DB/CLI, but no runtime consumer reads it into the constructed service (storage
+            proof ≠ consumption proof).
+        To confirm real wiring, trace the value's producer → the specific arg position → the
+        consumer's use inside the called method (read all three, not just the call line), and
+        assert the constructor is fed a produced value, not a fallback. If the only non-fallback
+        wiring lives in a test helper, the ledger row stays ⏳ and the step is **✅ CORE**, not
+        **✅ WIRED** — this exact confusion (a green package-unit test proving the wiring
+        "works" while production feeds fallbacks) is a real, recurring gap source, not a
+        missing caller.
       - If NO production consumer exists yet: append a ⏳ row to the **Reachability
         Ledger** section of the planning doc (create the section if absent — see the
         template in step 24a), naming the symbol, the step that added it, and the

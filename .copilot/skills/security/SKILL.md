@@ -210,6 +210,11 @@ sub-processes, or touches shared mutable state.
   permissions before executing?
 - Is the permission check performed **after** path resolution (not before)?
 - Can a caller bypass the permission check by passing a pre-resolved path?
+- A path advertised as read-only or "dry-run"/preview must not invoke a getter that
+  mutates (e.g. an analyze-on-miss or persist-on-read call): a read diagnostic that
+  triggers persistence, cache writes, or an LLM call is a side-effect operation hiding
+  behind a read-only name. If a read-only API does not exist, expose one (a pure cached
+  lookup) rather than calling the mutating one under a read-only guard.
 - **In Exaix:** portal writes go through the permission model before mutation, and
   the path is realPath-resolved first (S1/S3) so a symlink can't smuggle the write
   outside the portal. New local HTTP routes (S5) must pass the Host/Origin guard

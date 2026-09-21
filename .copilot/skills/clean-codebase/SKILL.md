@@ -205,6 +205,12 @@ Phase 15 — Event string hygiene
 
 Phase 16 — Optional parameter conventions
   33. Run `deno task check:optional-params` — verifies optional parameters follow conventions.
+      Note the `--staged` run (which the pre-commit hook and plan-step gate also invoke) is a
+      FILE-LEVEL RATCHET: a bare `?`/`| undefined` param anywhere in a staged file fails the
+      gate — even when that file's edit is unrelated to the optional param (e.g. a generated
+      file, a stale param, or a param added by an earlier uncommitted change). Wrap it in
+      `Opt<T, Reason.*>` (`import { Opt, Reason } from "@exaix/core/types"`) before staging;
+      `Opt<T, Reason.*>` unwraps transparently (`param?.field` still type-checks).
   34. Fix violations, re-run until 0 errors.
 
 Phase 17 — Edition leak guard

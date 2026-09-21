@@ -106,12 +106,20 @@ For each remediation step, in order:
    re-`read` a narrow line range and confirm no trailing `...` before editing, or do a
    targeted Python/sed string-replace on the exact original substring and verify with
    `git diff` that only the intended text changed before moving on.
-7. If the remediation closes an exhaustive observability claim, generate a source event
+7. **Arrow sweep trap**: `check_commit_msg.ts`'s `extractArrowPaths()` demands EVERY
+   backtick-wrapped span after the `→` on a `- ✅`/`- ⚠️ deferred` line be a staged parent
+   file — not just the first one. A backticked test name, symbol, or event mention written
+   after the arrow (e.g. `→ \`file.ts\` (\`selectedModel\`, \`[context-budget-cutover]\`)`)
+   makes the gate demand those as changed files and blocks the commit. Put incidental
+   code/test/symbol mentions BEFORE the arrow; put ONLY the real source/test paths after
+   it (multiple real paths: comma-separated backtick spans). Re-read #commit's
+   "Structured Message Validator Traps" before marking.
+8. If the remediation closes an exhaustive observability claim, generate a source event
    inventory and reconcile its total with the runtime-evidence matrix. Each event needs an
    attributable test that drives the production component through the real `EventLogger`;
    mock capture, global lookup, field presence without semantic value checks, and one event
    standing in for a multi-event component are insufficient.
-8. Run `#self-improvement-retro` before the final completion claim. It owns terminal phase
+9. Run `#self-improvement-retro` before the final completion claim. It owns terminal phase
    status and `PHASE_REGISTRY.md` hygiene and must disposition every workflow finding.
 
 ### Phase 4 — Commit (plan-step commit)
