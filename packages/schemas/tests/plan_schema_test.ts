@@ -8,13 +8,18 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
+import { EXECUTION_TOOL_NAMES } from "@exaix/core";
 import { describe, it } from "@std/testing/bdd";
 
 import { assertEquals, assertExists } from "@std/assert";
 import type { ZodError } from "zod";
 import type { IPlanStep, Plan } from "@exaix/schemas";
 
-import { PlanSchema, PlanStepSchema } from "@exaix/schemas";
+import { PlanActionSchema, PlanSchema, PlanStepSchema } from "@exaix/schemas";
+
+/** Widens a parsed step to check that passthrough-only legacy keys are not surfaced on the
+ *  typed result. */
+type IPlanStepWithLegacyKeys = IPlanStep & { tools?: string[]; successCriteria?: string[] };
 
 describe("PlanStepSchema", () => {
   describe("Valid Steps", () => {
@@ -23,7 +28,10 @@ describe("PlanStepSchema", () => {
         step: 1,
         title: "Create User Database Schema",
         description: "Create migration file for users table with columns: id, email, password_hash, created_at",
-        tools: [McpToolName.WRITE_FILE, McpToolName.RUN_COMMAND],
+        actions: [
+          { tool: McpToolName.WRITE_FILE, params: { path: "db/migrations/001_create_users.ts" } },
+          { tool: McpToolName.RUN_COMMAND, params: { command: "deno task migrate" } },
+        ],
         successCriteria: [
           "Migration file created in db/migrations/",
           "Schema includes unique constraint on email",
@@ -40,10 +48,12 @@ describe("PlanStepSchema", () => {
         assertEquals(step.step, 1);
         assertEquals(step.title, "Create User Database Schema");
         assertEquals(step.description.includes("migration file"), true);
-        assertEquals(step.tools?.length, 2);
+        assertEquals(step.actions?.length, 2);
         assertEquals(step.successCriteria?.length, 3);
         assertEquals(step.dependencies?.length, 2);
         assertEquals(step.rollback, "Drop users table");
+        // The redundant legacy `tools` list is gone — actions[].tool is the single tool source.
+        assertEquals((result.data as IPlanStepWithLegacyKeys).tools, undefined);
       }
     });
 
@@ -75,8 +85,8 @@ describe("PlanStepSchema", () => {
       if (result.success) {
         assertEquals(result.data.step, 1);
         assertEquals(result.data.title, "Simple Step");
-        assertEquals(result.data.tools, undefined);
-        assertEquals(result.data.successCriteria, undefined);
+        assertEquals((result.data as IPlanStepWithLegacyKeys).tools, undefined);
+        assertEquals(result.data.actions, undefined);
       }
     });
   });
@@ -118,12 +128,12 @@ describe("PlanStepSchema", () => {
       assertEquals(result.success, false);
     });
 
-    it("should reject step with invalid tool enum value", () => {
+    it("should reject step with invalid action tool value", () => {
       const stepData = {
         step: 1,
         title: "Invalid Tools",
         description: "Tools must be from valid enum",
-        tools: ["invalid_tool", McpToolName.WRITE_FILE],
+        actions: [{ tool: "invalid_tool", params: {} }],
       };
 
       const result = PlanStepSchema.safeParse(stepData);
@@ -164,8 +174,8 @@ describe("PlanStepSchema", () => {
     });
   });
 
-  describe("Tools Enum Validation", () => {
-    it("should accept all valid tool values", () => {
+  describe("Action Tool Enum Validation", () => {
+    it("should accept all valid action tool values", () => {
       const validTools = [
         McpToolName.READ_FILE,
         McpToolName.WRITE_FILE,
@@ -178,13 +188,13 @@ describe("PlanStepSchema", () => {
         step: 1,
         title: "Tool Test",
         description: "Testing all valid tools",
-        tools: validTools,
+        actions: validTools.map((tool) => ({ tool, params: {} })),
       };
 
       const result = PlanStepSchema.safeParse(stepData);
       assertEquals(result.success, true);
       if (result.success) {
-        assertEquals(result.data.tools?.length, 5);
+        assertEquals(result.data.actions?.length, 5);
       }
     });
   });
@@ -255,14 +265,17 @@ describe("PlanSchema", () => {
             step: 1,
             title: "Create User Database Schema",
             description: "Create migration file for users table",
-            tools: [McpToolName.WRITE_FILE, McpToolName.RUN_COMMAND],
+            actions: [
+              { tool: McpToolName.WRITE_FILE, params: { path: "db/migrations/001.ts" } },
+              { tool: McpToolName.RUN_COMMAND, params: { command: "deno task migrate" } },
+            ],
             successCriteria: ["Migration file created"],
           },
           {
             step: 2,
             title: "Implement Password Hashing",
             description: "Create utility functions for password hashing",
-            tools: [McpToolName.WRITE_FILE],
+            actions: [{ tool: McpToolName.WRITE_FILE, params: { path: "src/hash.ts" } }],
             dependencies: [1],
           },
         ],
@@ -426,6 +439,48 @@ describe("PlanSchema", () => {
       const result = PlanSchema.safeParse(planData);
       assertEquals(result.success, false);
     });
+  });
+});
+
+describe("PlanActionSchema - tool enum is the execution-reachable set (EXECUTION_TOOL_NAMES)", () => {
+  it("accepts every canonical execution tool name", () => {
+    for (const tool of EXECUTION_TOOL_NAMES) {
+      const result = PlanActionSchema.safeParse({ tool, params: {} });
+      assertEquals(result.success, true, `expected "${tool}" to be a valid plan action tool`);
+    }
+  });
+
+  it("accepts a git/read action tool that the ToolRegistry executes", () => {
+    const result = PlanActionSchema.safeParse({ tool: "read_file", params: { path: "src/a.ts" } });
+    assertEquals(result.success, true);
+  });
+
+  it("rejects admin/config MCP tools that are NOT execution-reachable as plan actions", () => {
+    // `exaix_config_set` exists in McpToolName but is not a runnable plan action; the plan
+    // action enum must not advertise it to the planner or accept it.
+    const result = PlanActionSchema.safeParse({ tool: McpToolName.CONFIG_SET, params: {} });
+    assertEquals(result.success, false);
+  });
+
+  it("rejects an unknown tool name", () => {
+    const result = PlanActionSchema.safeParse({ tool: "not_a_real_tool", params: {} });
+    assertEquals(result.success, false);
+  });
+});
+
+describe("PlanStepSchema - no redundant `tools` field", () => {
+  it("does not expose/validate a `tools` list (actions[].tool is the single tool source)", () => {
+    const result = PlanStepSchema.safeParse({
+      step: 1,
+      title: "Step",
+      description: "desc",
+      // Legacy field: passthrough means the key is accepted but NOT surfaced on the typed result.
+      tools: [McpToolName.WRITE_FILE],
+    });
+    assertEquals(result.success, true);
+    if (result.success) {
+      assertEquals((result.data as IPlanStepWithLegacyKeys).tools, undefined);
+    }
   });
 });
 

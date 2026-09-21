@@ -328,11 +328,6 @@ and will fail parsing even when the JSON itself is correct.
           sections.push("");
         }
 
-        if (step.tools && step.tools.length > 0) {
-          sections.push(`**Tools:** ${step.tools.join(", ")}`);
-          sections.push("");
-        }
-
         if (step.successCriteria && step.successCriteria.length > 0) {
           sections.push("**Success Criteria:**");
           step.successCriteria.forEach((criteria) => sections.push(`- ${criteria}`));

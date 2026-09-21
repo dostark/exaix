@@ -112,6 +112,34 @@ export enum TaskType {
   UNKNOWN = "unknown",
 }
 
+/** The single canonical source of tool names that can actually be executed as a plan action —
+ *  the exact set `packages/tool-runtime/src/tool_schemas.ts`'s `createCoreToolSchemas()`
+ *  registers with the `ToolRegistry`. The plan-action schema derives its `tool` enum from this
+ *  list instead of the wider `McpToolName` MCP catalog, so the enum can't drift from what
+ *  executes and never leaks the admin/config (`exaix_*`) tool surface into a generated plan. */
+export const EXECUTION_TOOL_NAMES = [
+  "read_file",
+  "write_file",
+  "list_directory",
+  "search_files",
+  "create_directory",
+  "run_command",
+  "fetch_url",
+  "grep_search",
+  "move_file",
+  "copy_file",
+  "delete_file",
+  "git_info",
+  "deno_task",
+  "patch_file",
+  "query_relationships",
+  "who_depends_on",
+  "remember_fact",
+  "search_memory",
+] as const;
+
+export type ExecutionToolName = typeof EXECUTION_TOOL_NAMES[number];
+
 /**
  * Canonical names for built-in tools.
  */

@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_QUERY_LIMIT, JSONValueSchema, McpToolName } from "@exaix/core";
+import { DEFAULT_QUERY_LIMIT, EXECUTION_TOOL_NAMES, JSONValueSchema } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 
 import { RequestAnalysisSchema } from "./request_analysis.ts";
@@ -59,8 +59,10 @@ export type PlanFrontmatter = z.infer<typeof PlanFrontmatterSchema>;
  * Zod schema for individual tool actions within a step
  */
 export const PlanActionSchema = z.object({
-  /** Tool name to invoke */
-  tool: z.nativeEnum(McpToolName),
+  /** Tool name to invoke — must be an execution-reachable tool (`EXECUTION_TOOL_NAMES`), the
+   *  set `ToolRegistry`/`createCoreToolSchemas` executes. Not `McpToolName`: admin/config
+   *  (`exaix_*`) tools are not runnable as plan actions and must not be advertised. */
+  tool: z.enum(EXECUTION_TOOL_NAMES),
 
   /** Parameters for the tool invocation */
   params: z.record(z.string(), JSONValueSchema),
@@ -86,9 +88,6 @@ export const PlanStepSchema = z.object({
 
   /** Optional: Ordered list of tool actions to execute for this step */
   actions: z.array(PlanActionSchema).optional(),
-
-  /** Optional: Tools required for this step (legacy/high-level list) */
-  tools: z.array(z.nativeEnum(McpToolName)).optional(),
 
   /** Optional: Success criteria to validate step completion */
   successCriteria: z.array(z.string()).optional(),
