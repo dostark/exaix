@@ -2208,6 +2208,23 @@ export const PORTAL_KNOWLEDGE_PROMPT_MAX_LINES: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Hard token cap on the `portal_knowledge` segment at the prompt-assembly boundary, applied
+ *  independent of any budget ceiling. Closes the bypass where `request.context.portal_knowledge`
+ *  is set directly (agent/eval/CLI-supplied) and would otherwise enter the prompt at unbounded
+ *  size even with no `ContextBudgetManager` pressure. The default (3,000) matches the retrieval
+ *  path's existing effective bound (`PORTAL_KNOWLEDGE_PROMPT_MAX_LINES * 50`), so production
+ *  requests behave as today while the direct-set path is structurally bounded too. */
+export const DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS: number = configurable({
+  key: "portal_knowledge.max_tokens",
+  default: 3_000,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Hard cap on portal-knowledge tokens injected per request, applied at prompt assembly independent of any budget ceiling",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
+
 /** Max ISymbolEntry records stored in symbolMap. */
 export const DEFAULT_SYMBOL_MAP_LIMIT: number = configurable({
   key: "tools.symbol_map_limit",

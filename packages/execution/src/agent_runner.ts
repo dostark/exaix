@@ -28,7 +28,7 @@ import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budge
 import type { IPromptBudget, IPromptPreview, IPromptPreviewSegment } from "@exaix/schemas/prompt_budget.ts";
 import type { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
@@ -807,7 +807,12 @@ export class AgentRunner implements IAgentRunner {
     }
     const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
     if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
-      entries.push({ content: portalKnowledge, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
+      entries.push({
+        content: await this.capPortalKnowledge(portalKnowledge),
+        kind: k.portal_knowledge,
+        priority: 60,
+        nonCompactable: false,
+      });
     }
     const memoryContext = request.context?.[MEMORY_CONTEXT_KEY];
     if (typeof memoryContext === "string" && memoryContext.trim()) {
@@ -877,6 +882,38 @@ export class AgentRunner implements IAgentRunner {
       criticalSkillContext,
     );
     return includedSegments.map((s) => s.content).join("\n\n");
+  }
+
+  /** Hard token cap on `portal_knowledge` at the assembly boundary, independent of any budget
+   *  ceiling (a direct-set `portal_knowledge` would otherwise bypass `ContextBudgetManager`
+   *  entirely under an infinite/unset budget). Truncates at a whole-line boundary so the kept
+   *  prefix is never a mid-line cut; estimates the cumulative joined string with the real
+   *  tokenizer when wired (chars/4 otherwise) so the kept content's actual tokenEstimate is
+   *  guaranteed to fit the cap. */
+  private async capPortalKnowledge(content: string): Promise<string> {
+    const maxTokens = this.config?.context?.config.get().portal_knowledge?.max_tokens ??
+      DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS;
+    const tokenizer = this.config?.tokenizer;
+    const estimate = async (text: string): Promise<number> =>
+      await tokenizer?.countTokens(text, DEFAULT_MODEL_FALLBACK) ??
+        Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+
+    if (await estimate(content) <= maxTokens) return content;
+
+    const lines = content.split("\n");
+    const kept: string[] = [];
+    for (const line of lines) {
+      const candidate = kept.length === 0 ? line : `${kept.join("\n")}\n${line}`;
+      const candidateTokens = await estimate(candidate);
+      if (candidateTokens > maxTokens) break;
+      kept.push(line);
+    }
+    if (kept.length === 0) {
+      // Even a single line exceeds the cap — keep its leading slice so the segment is never empty.
+      const keepChars = Math.max(maxTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN, 1);
+      return content.slice(0, keepChars);
+    }
+    return kept.join("\n");
   }
 
   /** Non-mutating preview of `constructPrompt`'s assembly — a per-segment breakdown, not

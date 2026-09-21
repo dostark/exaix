@@ -132,7 +132,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
     private readonly milestoneEmitter?: Opt<IMilestoneEmitter, Reason.OptionalDependency>,
   ) {}
 
-  prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
+  async prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
     const startedAt = Date.now();
     const { traceId, stepId, model, promptBudget, segments } = input;
 
@@ -205,24 +205,20 @@ export class ContextBudgetManager implements IContextBudgetManager {
           createdAt: new Date().toISOString(),
         });
       } else {
-        // Trim: truncate content to remaining budget (chars approximation).
-        const maxChars = remaining * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
-        const trimmedContent = segment.content.slice(0, maxChars);
-        const trimmedTokens = Math.floor(trimmedContent.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
-        const trimmed: IContextSegment = {
-          ...segment,
-          content: trimmedContent,
-          tokenEstimate: trimmedTokens,
-        };
-        kept.push(trimmed);
-        consumed[sectionKey] = used + trimmedTokens;
+        // Trim: truncate content to fit the remaining section budget, keeping whole lines so the
+        // kept prefix is never a mid-line cut, and re-estimating with the real tokenizer when wired
+        // (chars/4 otherwise) so resultingTokens matches what the tokenizer would report for the
+        // kept content — never a divergent chars/4 guess.
+        const trimmed = await this._trimToBudget(segment, remaining, model);
+        kept.push(trimmed.segment);
+        consumed[sectionKey] = used + trimmed.segment.tokenEstimate;
         decisions.push({
           segmentId: segment.segmentId,
           kind: segment.kind,
           action: "trim",
           originalTokens: segment.tokenEstimate,
-          resultingTokens: trimmedTokens,
-          reason: `truncated to fit remaining section budget (${remaining} tokens)`,
+          resultingTokens: trimmed.segment.tokenEstimate,
+          reason: `truncated at a line boundary to fit remaining section budget (${remaining} tokens)`,
           createdAt: new Date().toISOString(),
         });
         void this.logger?.info(DomainEventType.ContextSectionTruncated, segment.segmentId, {
@@ -232,7 +228,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
           kind: segment.kind,
           sectionKey,
           originalTokens: segment.tokenEstimate,
-          resultingTokens: trimmedTokens,
+          resultingTokens: trimmed.segment.tokenEstimate,
           remainingBudget: remaining,
         }, traceId);
       }
@@ -310,6 +306,34 @@ export class ContextBudgetManager implements IContextBudgetManager {
       });
     }
 
-    return Promise.resolve({ segments: kept, snapshot });
+    return { segments: kept, snapshot };
+  }
+
+  /** Truncate a segment to fit `remainingTokens`, keeping whole lines (never a mid-line cut) and
+   *  re-estimating with the real tokenizer when wired (chars/4 otherwise) so the resulting token
+   *  count matches the estimate used for the segment's own accounting. Falls back to a leading
+   *  slice when even a single line exceeds the budget, so the segment is never empty. */
+  private async _trimToBudget(
+    segment: IContextSegment,
+    remainingTokens: number,
+    model: string,
+  ): Promise<{ segment: IContextSegment }> {
+    const estimate = async (text: string): Promise<number> =>
+      await this._tokenizer?.countTokens(text, model) ??
+        Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+
+    const lines = segment.content.split("\n");
+    const kept: string[] = [];
+    for (const line of lines) {
+      const candidate = kept.length === 0 ? line : `${kept.join("\n")}\n${line}`;
+      const candidateTokens = await estimate(candidate);
+      if (candidateTokens > remainingTokens) break;
+      kept.push(line);
+    }
+    const content = kept.length === 0
+      ? segment.content.slice(0, Math.max(remainingTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN, 1))
+      : kept.join("\n");
+
+    return { segment: { ...segment, content, tokenEstimate: await estimate(content) } };
   }
 }

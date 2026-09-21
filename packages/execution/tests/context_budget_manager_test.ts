@@ -10,7 +10,7 @@
  * ]
  */
 
-import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
+import { assert, assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import {
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
@@ -711,3 +711,107 @@ Deno.test(
     }
   },
 );
+
+// Fix B — line-boundary, tokenizer-consistent trimming
+
+/** A char-counting tokenizer stub (each char = 1 token) that the manager can use to
+ *  estimate. Deterministic for whole-line-boundary assertions. */
+function makeCharCountingTokenizer() {
+  return {
+    countTokens: (text: string) => Promise.resolve(text.length),
+    countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((t) => t.length)),
+  };
+}
+
+Deno.test("[ContextBudgetManager] trim keeps whole lines, never a mid-line cut, when a tokenizer is present", async () => {
+  const captured: ICapturedBudgetEvent[] = [];
+  const mockLogger = createCapturingBudgetLogger(captured);
+  const manager: IContextBudgetManager = new ContextBudgetManager(
+    makeCharCountingTokenizer(),
+    undefined,
+    undefined,
+    mockLogger,
+  );
+
+  const tightBudget = {
+    ...makePromptBudget(),
+    sections: {
+      system: 0,
+      plan: 0,
+      portalKnowledge: 0,
+      memory: 0,
+      skills: 0,
+      loopHistory: 40,
+    },
+  };
+  // 5 whole lines of 12 chars each = 60 chars/60 tokens. loopHistory budget = 40,
+  // so the trim must keep whole lines until the next line would overflow.
+  const multiLine = Array.from({ length: 5 }, () => "aaaaaaaaaaaa\n").join("");
+  const segment = makeSegment({
+    kind: "tool_result",
+    priority: CONTEXT_PRIORITY_TOOL_RESULT,
+    tokenEstimate: 60,
+    content: multiLine,
+  });
+
+  const { segments, snapshot } = await manager.prepare({
+    traceId: "trace-line-trim",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: tightBudget,
+    segments: [segment],
+  });
+
+  const kept = segments.find((s) => s.segmentId === segment.segmentId);
+  assert(kept, "the trimmed segment must still be present");
+  // 3 whole lines (12 chars each) + 2 newlines = 38 tokens — the 4th line would be 51 > 40.
+  assertEquals(kept!.content, "aaaaaaaaaaaa\naaaaaaaaaaaa\naaaaaaaaaaaa");
+  assertLessOrEqual(kept!.tokenEstimate, 40);
+  const trimDecision = snapshot.decisions.find((d) => d.segmentId === segment.segmentId);
+  assertEquals(trimDecision?.action, "trim");
+});
+
+Deno.test("[ContextBudgetManager] trim re-estimates with the real tokenizer so resultingTokens match kept content", async () => {
+  const captured: ICapturedBudgetEvent[] = [];
+  const mockLogger = createCapturingBudgetLogger(captured);
+  const manager: IContextBudgetManager = new ContextBudgetManager(
+    makeCharCountingTokenizer(),
+    undefined,
+    undefined,
+    mockLogger,
+  );
+
+  const tightBudget = {
+    ...makePromptBudget(),
+    sections: {
+      system: 0,
+      plan: 0,
+      portalKnowledge: 0,
+      memory: 0,
+      skills: 0,
+      loopHistory: 40,
+    },
+  };
+  const multiLine = Array.from({ length: 5 }, () => "aaaaaaaaaaaa\n").join("");
+  const segment = makeSegment({
+    kind: "tool_result",
+    priority: CONTEXT_PRIORITY_TOOL_RESULT,
+    tokenEstimate: 60,
+    content: multiLine,
+  });
+
+  const { segments } = await manager.prepare({
+    traceId: "trace-tokenizer-trim",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: tightBudget,
+    segments: [segment],
+  });
+
+  const kept = segments.find((s) => s.segmentId === segment.segmentId);
+  assert(kept);
+  // The manager's own tokenizer count of the kept content must equal its reported tokenEstimate —
+  // no chars/4 guess that diverges from what the tokenizer would say.
+  assertEquals(kept!.tokenEstimate, 38);
+  assertEquals(kept!.tokenEstimate, await makeCharCountingTokenizer().countTokens(kept!.content));
+});

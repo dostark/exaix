@@ -775,6 +775,9 @@ export const ConfigSchema = z.object({
   portal_knowledge: z.object({
     /** Whether request-time portal knowledge resolution/injection runs at all (ablation switch; default on, off disables the request-side injection only). */
     injection_enabled: z.boolean().default(true),
+    /** Hard cap on portal-knowledge tokens injected per request, applied at prompt assembly independent of any budget ceiling. */
+    max_tokens: z.number().int().min(100).max(100_000)
+      .default(DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS),
     /** Automatically trigger knowledge analysis after portal mount. */
     auto_analyze_on_mount: z.boolean().default(false),
     /** Default analysis depth when not overridden per-call. */
@@ -817,6 +820,7 @@ export const ConfigSchema = z.object({
     git_history_since: z.string().optional().default(DEFAULTS.GIT_HISTORY_SINCE),
   }).optional().default({
     injection_enabled: true,
+    max_tokens: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS,
     auto_analyze_on_mount: false,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
     quick_scan_limit: DEFAULTS.DEFAULT_QUICK_SCAN_LIMIT,
