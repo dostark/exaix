@@ -12,6 +12,7 @@ import { type IInspectCommandOptions, InspectCommands } from "../commands/inspec
 import type { ICommandContext } from "@exaix/cli/base.ts";
 import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import {
+  DEFAULT_AGENTS_PATH,
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_NONE_LABEL,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -23,12 +24,18 @@ import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
 import type { RequestStatus } from "@exaix/core/status";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
-import type { IDisplayService } from "@exaix/core/types";
+import type { ICliApplicationContext, IDisplayService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ClarificationEngine } from "@exaix/quality-gate";
 import { createOutputValidator } from "@exaix/tool-runtime";
+import { join } from "@std/path";
+import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
+import { PromptBudgetAllocator } from "@exaix/core";
+import { loadBlueprint } from "@exaix/core/blueprint";
+import { AgentRunner, ContextBudgetManager } from "@exaix/execution";
+import type { IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -36,6 +43,10 @@ export interface IRequestActionContext {
   /** Real model provider — only needed by `handleRequestClarify` to construct a live
    *  `ClarificationEngine` when answers are supplied. Absent in every other action. */
   provider?: Opt<IModelProvider, Reason.OptionalDependency>;
+  /** Full application context — only needed by `--dry-run-context` to construct an
+   *  in-process `AgentRunner` mirroring the daemon's real construction. Absent in every
+   *  other action. */
+  appContext?: Opt<ICliApplicationContext, Reason.OptionalDependency>;
 }
 
 export interface IRequestCreateOptions {
@@ -55,6 +66,10 @@ export interface IRequestCreateOptions {
   subject?: string;
   json?: boolean;
   dryRun?: boolean;
+  /** Non-mutating projected input-token breakdown — distinct from `dryRun` (which still
+   *  writes a request file today; see `printRequestResult`). Never writes a file, never
+   *  invokes a real LLM call. */
+  dryRunContext?: boolean;
   analyze?: boolean;
   engine?: string;
   acceptanceCriteria?: string[];
@@ -125,6 +140,96 @@ export async function handleRequestAnalyze(
   }
 }
 
+/** Renders `previewPrompt()`'s per-segment breakdown as a formatted table, following
+ *  `MemoryFormatter.formatPendingDryRunTable`'s precedent (header + separator + rows +
+ *  summary line). */
+function formatPromptPreviewTable(preview: IPromptPreview): string {
+  const lines: string[] = [
+    "Projected Prompt Breakdown",
+    "═".repeat(80),
+    "",
+    "Kind".padEnd(20) + "Priority".padEnd(10) + "Tokens".padEnd(10) + "Bytes".padEnd(10) + "Included",
+    "─".repeat(80),
+  ];
+
+  for (const segment of preview.segments) {
+    lines.push(
+      segment.kind.padEnd(20) +
+        String(segment.priority).padEnd(10) +
+        String(segment.tokenEstimate).padEnd(10) +
+        String(segment.byteLength).padEnd(10) +
+        (segment.included ? "yes" : "no"),
+    );
+  }
+
+  lines.push("");
+  lines.push(`Total tokens: ${preview.totalTokenEstimate} / budget ${preview.budgetTotalTokens}`);
+  lines.push(`Compaction triggered: ${preview.compactionTriggered ? "yes" : "no"}`);
+  lines.push(
+    `Matched skills: ${preview.matchedSkillIds.length > 0 ? preview.matchedSkillIds.join(", ") : DEFAULT_NONE_LABEL}`,
+  );
+  if (preview.estimatedCostUsd !== undefined) {
+    lines.push(`Estimated prompt cost: $${preview.estimatedCostUsd.toFixed(6)}`);
+  }
+
+  return lines.join("\n");
+}
+
+/** Non-mutating `--dry-run-context` path: constructs an in-process `AgentRunner`
+ *  mirroring `apps/daemon/main.ts`'s real budget wiring, calls `previewPrompt()`, and
+ *  prints the breakdown — never writes a request file, never invokes a real LLM call. */
+async function handleRequestCreateDryRunContext(
+  context: IRequestActionContext,
+  options: IRequestCreateOptions,
+  description?: Opt<string, Reason.OptionalInput>,
+): Promise<void> {
+  const { display, appContext } = context;
+
+  try {
+    if (!appContext) {
+      throw new Error("--dry-run-context requires the full application context (appContext)");
+    }
+    if (!description && !options.file) {
+      throw new Error('Description required. Usage: exactl request "<description>" --dry-run-context');
+    }
+
+    const userPrompt = description ?? (options.file ? await Deno.readTextFile(options.file) : "");
+    const agentRole = options.agentRole ?? "default";
+
+    const config = appContext.config.getAll();
+    const blueprintsPath = join(config.system.root, config.paths.blueprints, DEFAULT_AGENTS_PATH);
+    const blueprint = await loadBlueprint(blueprintsPath, agentRole);
+    if (!blueprint) {
+      throw new Error(`No blueprint found for agent role "${agentRole}" at ${blueprintsPath}`);
+    }
+
+    const tokenizer = new AiTokenEstimatorTokenizer();
+    const promptBudgetAllocator = new PromptBudgetAllocator(
+      config.budget_enforcement,
+      tokenizer,
+      undefined,
+      appContext.modelRegistry,
+    );
+    const contextBudgetManager = new ContextBudgetManager(tokenizer);
+
+    const runner = new AgentRunner(appContext.provider, {
+      skillsService: appContext.skills,
+      tokenizer,
+      promptBudgetAllocator,
+      contextBudgetManager,
+    });
+
+    const preview = await runner.previewPrompt(blueprint, { userPrompt, context: {} });
+
+    console.log(formatPromptPreviewTable(preview));
+  } catch (error) {
+    display.error("cli.error", FlowInputSource.REQUEST, {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    Deno.exit(1);
+  }
+}
+
 /**
  * Handle request create action
  */
@@ -134,6 +239,11 @@ export async function handleRequestCreate(
   description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
   const { requestCommands, display } = context;
+
+  if (options.dryRunContext) {
+    await handleRequestCreateDryRunContext(context, options, description);
+    return;
+  }
 
   try {
     const agentRole = options.agentRole;

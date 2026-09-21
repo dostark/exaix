@@ -25,10 +25,11 @@ import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { IContextSegment } from "./context/context_segment.ts";
 import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
-import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { IPromptBudget, IPromptPreview, IPromptPreviewSegment } from "@exaix/schemas/prompt_budget.ts";
 import type { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "@exaix/core/func";
@@ -773,12 +774,14 @@ export class AgentRunner implements IAgentRunner {
   }
 
   /** Constructs the combined prompt from blueprint, request, and optional skill context. */
-  private async constructPrompt(
+  /** Builds every prompt segment through the budget pipeline; the one shared place
+   *  `constructPrompt` and `previewPrompt` both assemble from, so they can't diverge. */
+  private async assemblePromptSegments(
     blueprint: IBlueprint,
     request: IParsedRequest,
     skillContext?: Opt<string, Reason.OptionalContext>,
     criticalSkillContext?: Opt<string, Reason.OptionalContext>,
-  ): Promise<string> {
+  ): Promise<{ allSegments: IContextSegment[]; includedSegments: IContextSegment[]; budget: IPromptBudget }> {
     const k = ContextSegmentKindSchema.enum;
     type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
     const entries: SegmentEntry[] = [];
@@ -818,11 +821,8 @@ export class AgentRunner implements IAgentRunner {
       entries.push({ content: labeledRequest, kind: k.request, priority: 75, nonCompactable: true });
     }
 
-    const manager = this.config?.contextBudgetManager;
-    if (!manager) return entries.map((e) => e.content).join("\n\n");
-
     const tokenizer = this.config?.tokenizer;
-    const segments: IContextSegment[] = await Promise.all(
+    const allSegments: IContextSegment[] = await Promise.all(
       entries.map(async (e, i) => ({
         segmentId: `prompt-part-${i}`,
         content: e.content,
@@ -848,15 +848,81 @@ export class AgentRunner implements IAgentRunner {
       },
     };
 
-    const { segments: filtered } = await manager.prepare({
+    const manager = this.config?.contextBudgetManager;
+    if (!manager) {
+      return { allSegments, includedSegments: allSegments, budget };
+    }
+
+    const { segments: includedSegments } = await manager.prepare({
       traceId: request.traceId ?? "unknown",
       stepId: "agent-runner",
       model: DEFAULT_MODEL_FALLBACK,
       promptBudget: budget,
-      segments,
+      segments: allSegments,
     });
 
-    return filtered.map((s) => s.content).join("\n\n");
+    return { allSegments, includedSegments, budget };
+  }
+
+  private async constructPrompt(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    skillContext?: Opt<string, Reason.OptionalContext>,
+    criticalSkillContext?: Opt<string, Reason.OptionalContext>,
+  ): Promise<string> {
+    const { includedSegments } = await this.assemblePromptSegments(
+      blueprint,
+      request,
+      skillContext,
+      criticalSkillContext,
+    );
+    return includedSegments.map((s) => s.content).join("\n\n");
+  }
+
+  /** Non-mutating preview of `constructPrompt`'s assembly — a per-segment breakdown, not
+   *  a joined string, and never a real LLM call. Runs its own skill matching (like `run()`). */
+  async previewPrompt(blueprint: IBlueprint, request: IParsedRequest): Promise<IPromptPreview> {
+    const agentRole = blueprint.agentRole || "unknown";
+    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, agentRole);
+    const skillContextString = renderSkillsSection(skillsContext);
+    const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
+
+    const { allSegments, includedSegments, budget } = await this.assemblePromptSegments(
+      blueprint,
+      request,
+      skillContextString,
+      criticalSkillContext,
+    );
+
+    const includedContentById = new Map(includedSegments.map((s) => [s.segmentId, s.content]));
+    const segments: IPromptPreviewSegment[] = allSegments.map((s) => ({
+      segmentId: s.segmentId,
+      kind: s.kind,
+      priority: s.priority,
+      tokenEstimate: s.tokenEstimate,
+      byteLength: new TextEncoder().encode(s.content).length,
+      nonCompactable: s.metadata.nonCompactable ?? false,
+      included: includedContentById.has(s.segmentId),
+    }));
+
+    // A dropped segment is absent from includedContentById; a trimmed segment (same
+    // section's only occupant, still present but shortened) has different content — both
+    // count as real compaction, unlike a bare segment-count comparison would catch.
+    const compactionTriggered = allSegments.some((s) => includedContentById.get(s.segmentId) !== s.content);
+
+    const estimatedCostUsd = computeRegistryPredictedCost(DEFAULT_MODEL_FALLBACK, DEFAULT_MODEL_FALLBACK, {
+      promptTokens: segments.reduce((sum, s) => sum + s.tokenEstimate, 0),
+      completionTokens: 0,
+    });
+
+    return {
+      segments,
+      totalTokenEstimate: segments.reduce((sum, s) => sum + s.tokenEstimate, 0),
+      budgetTotalTokens: budget.totalBudgetTokens,
+      compactionTriggered,
+      matchedSkillIds: skillIds,
+      ...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}),
+    };
   }
 
   /** Extracts keywords from text for skill matching. */

@@ -422,13 +422,21 @@ const baseCommand = new Command()
       )
       .option("-f, --file <file:string>", "Read description from file")
       .option("--dry-run", "Show what would be created without writing")
+      .option(
+        "--dry-run-context",
+        "Print a projected input-token breakdown without writing a request file or calling a real LLM",
+      )
       .option("--json", CLI_OPTION_JSON_HELP)
       .option("--analyze", "Trigger immediate intent analysis for the request")
       .option("-e, --engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
         default: AnalysisMode.HEURISTIC,
       })
       .action(async (options, description?: Opt<string, Reason.OptionalInput>) => {
-        await handleRequestCreate({ requestCommands, display }, options as IRequestCreateOptions, description);
+        await handleRequestCreate(
+          { requestCommands, display, appContext: context },
+          options as IRequestCreateOptions,
+          description,
+        );
       })
       .example(
         "Create a request for a specific agent role",
