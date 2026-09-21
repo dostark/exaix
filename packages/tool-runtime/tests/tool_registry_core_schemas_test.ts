@@ -33,6 +33,7 @@ const EXPECTED_CORE_TOOL_NAMES = [
   "who_depends_on",
   "remember_fact",
   "search_memory",
+  "list_available_tools",
 ].sort();
 
 function registryTools() {

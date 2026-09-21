@@ -2,10 +2,11 @@
 -- Exaix Database Schema - Complete Initialization
 -- The single source of truth for the journal DB schema: every table and column is
 -- declared here in its current shape. There is no incremental migration history — the
--- former 002 (model registry) and 003 (provider_costs cache tokens) files were folded
--- in, and their ALTER TABLE steps became plain columns on the CREATE TABLE below.
--- Keeping the whole file to CREATE ... IF NOT EXISTS makes it idempotent, so it can be
--- re-applied over a database that a test helper already partially seeded.
+-- former 002 (model registry), 003 (provider_costs cache tokens), and 004
+-- (provider_costs agent_role) migrations were folded in, and their ALTER TABLE steps
+-- became plain columns on the CREATE TABLE below. Keeping the whole file to
+-- CREATE ... IF NOT EXISTS makes it idempotent, so it can be re-applied over a
+-- database that a test helper already partially seeded.
 
 -- ============================================================================
 -- Activity Tracking
@@ -150,6 +151,7 @@ CREATE TABLE IF NOT EXISTS provider_costs (
   cost_source TEXT,
   cache_read_tokens INTEGER,
   cache_creation_tokens INTEGER,
+  agent_role TEXT,
   trace_id TEXT,
   portal TEXT,
   timestamp DATETIME DEFAULT (datetime('now'))

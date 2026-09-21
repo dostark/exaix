@@ -155,10 +155,10 @@ Deno.test("[validateAciDocs] output is sorted by tool name regardless of input o
   assertEquals(result.issues.map((i) => i.tool), ["aaa_tool", "zzz_tool"]);
 });
 
-Deno.test("[validateAciDocs] real createCoreToolSchemas() catalog is fully compliant (18/18)", () => {
+Deno.test("[validateAciDocs] real createCoreToolSchemas() catalog is fully compliant (19/19)", () => {
   const result = validateAciDocs(createCoreToolSchemas());
   assertEquals(result.issues, []);
-  assertEquals(result.checkedTools, 18);
+  assertEquals(result.checkedTools, 19);
 });
 
 // runCli: exit-code wrapper
