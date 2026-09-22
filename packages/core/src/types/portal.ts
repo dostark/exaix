@@ -62,3 +62,8 @@ export enum PortalStatus {
   INACTIVE = "inactive",
   BROKEN = "broken",
 }
+
+export enum PortalKnowledgeInclusion {
+  SUMMARY = "summary",
+  ADAPTIVE = "adaptive",
+}

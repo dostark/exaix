@@ -17,6 +17,7 @@ export type { IServiceContext } from "./src/types/service_context.ts";
 export * from "./src/version.ts";
 export type { IPortalDetails, IPortalInfo, IVerificationResult } from "./src/types/portal.ts";
 export { PortalAnalysisMode, PortalExecutionStrategy, PortalOperation, PortalStatus } from "./src/types/portal.ts";
+export { PortalKnowledgeInclusion } from "./src/types/portal.ts";
 
 export type { JSONArray, JSONObject, JSONValue, LogMetadata } from "./src/types/json.ts";
 export { jsonExtract, JSONValueSchema, toSafeJson } from "./src/types/json.ts";

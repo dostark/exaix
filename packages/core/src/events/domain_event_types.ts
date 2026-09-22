@@ -66,6 +66,16 @@ export type IAgentPromptAssembledPayload =
   | IAgentPromptAssembledPlanningPayload
   | IAgentPromptAssembledReactPayload;
 
+/** Typed payload for portal.knowledge.selection_applied events. */
+export interface IPortalKnowledgeSelectionAppliedPayload {
+  inclusion: "adaptive";
+  availableTokens: number;
+  coreTokens: number;
+  selectedEntryIds: string[];
+  selectedTokens: number;
+  includedTokens: number;
+}
+
 /** Typed payload for hitl.policy.matched events. */
 export interface IHitlPolicyMatchedPayload {
   traceId: string;
@@ -635,6 +645,7 @@ export const DomainEventType = {
   PathInvalidAlias: "path.invalid_alias",
   PathAccessDenied: "path.access_denied",
   PortalAnalyzed: "portal.analyzed",
+  PortalKnowledgeSelectionApplied: "portal.knowledge.selection_applied",
 
   // Request processing — status and provider events
   RequestStatusUpdateFailed: "request.status_update_failed",

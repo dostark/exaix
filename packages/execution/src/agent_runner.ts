@@ -18,6 +18,10 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
+import type { IPortalKnowledgeSelectionAppliedPayload } from "@exaix/core/events";
+import { buildAdaptivePortalKnowledge } from "@exaix/core/func";
+import type { IPortalKnowledgeRequestSignals } from "@exaix/core/func";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IExecutionMilestone } from "@exaix/schemas";
@@ -29,7 +33,13 @@ import type { IPromptBudget, IPromptPreview, IPromptPreviewSegment } from "@exai
 import type { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IPlanAdapter } from "@exaix/core/planning";
-import { DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import {
+  DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS,
+  DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS,
+  DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES,
+  PortalKnowledgeInclusion,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+} from "@exaix/core";
 import { computeRegistryPredictedCost } from "./registry_computed_cost.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
@@ -65,6 +75,8 @@ export interface ISelectedModelIdentity {
   provider: string;
   model: string;
 }
+
+type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
 
 /** Blueprint defines the agent's persona and system instructions. Initially just a
  *  system prompt, can be extended later. */
@@ -148,6 +160,12 @@ export interface IParsedRequest {
    *  scopes call-index assignment per flow step so concurrent steps in the same parallel
    *  wave cannot collide on the same index. Absent for non-flow calls. */
   flowStepId?: string;
+
+  /** Resolved portal knowledge snapshot for adaptive inclusion (`portal_knowledge.inclusion
+   *  === "adaptive"`). Ephemeral — never persisted to the request file or `knowledge.json`;
+   *  set once by `RequestProcessor.buildRequestContext` and consumed by
+   *  `assemblePromptSegments`. Absent in `summary` mode and outside the request pipeline. */
+  portalKnowledgeSnapshot?: IPortalKnowledge;
 }
 
 /**
@@ -779,14 +797,32 @@ export class AgentRunner implements IAgentRunner {
   /** Constructs the combined prompt from blueprint, request, and optional skill context. */
   /** Builds every prompt segment through the budget pipeline; the one shared place
    *  `constructPrompt` and `previewPrompt` both assemble from, so they can't diverge. */
-  private async assemblePromptSegments(
+  private defaultPromptBudget(modelId: string): IPromptBudget {
+    return {
+      model: modelId,
+      totalBudgetTokens: Number.MAX_SAFE_INTEGER,
+      safetyBufferTokens: 0,
+      sections: {
+        system: Number.MAX_SAFE_INTEGER,
+        plan: Number.MAX_SAFE_INTEGER,
+        portalKnowledge: Number.MAX_SAFE_INTEGER,
+        memory: Number.MAX_SAFE_INTEGER,
+        skills: Number.MAX_SAFE_INTEGER,
+        loopHistory: Number.MAX_SAFE_INTEGER,
+      },
+    };
+  }
+
+  /** Builds every segment except adaptive mode's knowledge entry, which the caller sizes
+   *  separately (needs a preliminary budget pass) and appends itself. */
+  private async buildBaseEntries(
     blueprint: IBlueprint,
     request: IParsedRequest,
+    inclusionMode: string,
     skillContext?: Opt<string, Reason.OptionalContext>,
     criticalSkillContext?: Opt<string, Reason.OptionalContext>,
-  ): Promise<{ allSegments: IContextSegment[]; includedSegments: IContextSegment[]; budget: IPromptBudget }> {
+  ): Promise<{ entries: SegmentEntry[]; directoryListingEntryIndex: number }> {
     const k = ContextSegmentKindSchema.enum;
-    type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
     const entries: SegmentEntry[] = [];
 
     if (blueprint.systemPrompt.trim()) {
@@ -804,18 +840,23 @@ export class AgentRunner implements IAgentRunner {
     const schemaInstructions = this.planAdapter.getSchemaInstructions();
     entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
 
+    let directoryListingEntryIndex = -1;
     const portalContext = request.context?.[PORTAL_CONTEXT_KEY];
     if (typeof portalContext === "string" && portalContext.trim()) {
+      directoryListingEntryIndex = entries.length;
       entries.push({ content: portalContext, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
     }
-    const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
-    if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
-      entries.push({
-        content: await this.capPortalKnowledge(portalKnowledge),
-        kind: k.portal_knowledge,
-        priority: 60,
-        nonCompactable: false,
-      });
+
+    if (inclusionMode !== PortalKnowledgeInclusion.ADAPTIVE || !request.portalKnowledgeSnapshot) {
+      const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
+      if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
+        entries.push({
+          content: await this.capPortalKnowledge(portalKnowledge),
+          kind: k.portal_knowledge,
+          priority: 60,
+          nonCompactable: false,
+        });
+      }
     }
     const memoryContext = request.context?.[MEMORY_CONTEXT_KEY];
     if (typeof memoryContext === "string" && memoryContext.trim()) {
@@ -829,49 +870,152 @@ export class AgentRunner implements IAgentRunner {
       entries.push({ content: labeledRequest, kind: k.request, priority: 75, nonCompactable: true });
     }
 
-    const tokenizer = this.config?.tokenizer;
-    const modelId = this.selectedModelId();
-    const allSegments: IContextSegment[] = await Promise.all(
-      entries.map(async (e, i) => ({
-        segmentId: `prompt-part-${i}`,
-        content: e.content,
-        kind: e.kind,
-        priority: e.priority,
-        tokenEstimate: await tokenizer?.countTokens(e.content, modelId) ??
-          Math.ceil(e.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
-        metadata: { nonCompactable: e.nonCompactable },
-      })),
+    return { entries, directoryListingEntryIndex };
+  }
+
+  private async assemblePromptSegments(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    skillContext?: Opt<string, Reason.OptionalContext>,
+    criticalSkillContext?: Opt<string, Reason.OptionalContext>,
+    opts?: Opt<{ journal?: boolean }, Reason.OptionalContext>,
+  ): Promise<{ allSegments: IContextSegment[]; includedSegments: IContextSegment[]; budget: IPromptBudget }> {
+    const k = ContextSegmentKindSchema.enum;
+    const portalKnowledgeConfig = this.config?.context?.config.get().portal_knowledge;
+    const inclusionMode = portalKnowledgeConfig?.inclusion ?? "summary";
+    const { entries, directoryListingEntryIndex } = await this.buildBaseEntries(
+      blueprint,
+      request,
+      inclusionMode,
+      skillContext,
+      criticalSkillContext,
     );
 
-    const allocationHints = this.buildAllocationHints(allSegments);
-    const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, allocationHints) ?? {
-      model: modelId,
-      totalBudgetTokens: Number.MAX_SAFE_INTEGER,
-      safetyBufferTokens: 0,
-      sections: {
-        system: Number.MAX_SAFE_INTEGER,
-        plan: Number.MAX_SAFE_INTEGER,
-        portalKnowledge: Number.MAX_SAFE_INTEGER,
-        memory: Number.MAX_SAFE_INTEGER,
-        skills: Number.MAX_SAFE_INTEGER,
-        loopHistory: Number.MAX_SAFE_INTEGER,
-      },
-    };
+    const tokenizer = this.config?.tokenizer;
+    const modelId = this.selectedModelId();
+    const toSegments = async (list: SegmentEntry[]): Promise<IContextSegment[]> =>
+      await Promise.all(
+        list.map(async (e, i) => ({
+          segmentId: `prompt-part-${i}`,
+          content: e.content,
+          kind: e.kind,
+          priority: e.priority,
+          tokenEstimate: await tokenizer?.countTokens(e.content, modelId) ??
+            Math.ceil(e.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+          metadata: { nonCompactable: e.nonCompactable },
+        })),
+      );
 
-    const manager = this.config?.contextBudgetManager;
-    if (!manager) {
-      return { allSegments, includedSegments: allSegments, budget };
+    let adaptiveEntryIndex = -1;
+    let adaptivePayload: IPortalKnowledgeSelectionAppliedPayload | undefined;
+    if (inclusionMode === PortalKnowledgeInclusion.ADAPTIVE && request.portalKnowledgeSnapshot && tokenizer) {
+      const adaptive = await this.buildAdaptiveKnowledgeEntry({
+        request,
+        entries,
+        directoryListingEntryIndex,
+        portalKnowledgeConfig,
+        tokenizer,
+        modelId,
+        toSegments,
+      });
+      if (adaptive) {
+        adaptiveEntryIndex = entries.length;
+        entries.push({ content: adaptive.content, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
+        adaptivePayload = adaptive.payload;
+      }
     }
 
-    const { segments: includedSegments } = await manager.prepare({
-      traceId: request.traceId ?? "unknown",
-      stepId: "agent-runner",
-      model: modelId,
-      promptBudget: budget,
-      segments: allSegments,
-    });
+    const allSegments = await toSegments(entries);
+    const allocationHints = this.buildAllocationHints(allSegments);
+    const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, allocationHints) ??
+      this.defaultPromptBudget(modelId);
+
+    const manager = this.config?.contextBudgetManager;
+    const includedSegments = manager
+      ? (await manager.prepare({
+        traceId: request.traceId ?? "unknown",
+        stepId: "agent-runner",
+        model: modelId,
+        promptBudget: budget,
+        segments: allSegments,
+      })).segments
+      : allSegments;
+
+    if (adaptivePayload) {
+      const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));
+      adaptivePayload.includedTokens = includedById.get(`prompt-part-${adaptiveEntryIndex}`)?.tokenEstimate ?? 0;
+      if (opts?.journal !== false) {
+        this.logActivity(
+          ACTIVITY_ACTOR_AGENT,
+          DomainEventType.PortalKnowledgeSelectionApplied,
+          request.requestId ?? null,
+          { ...adaptivePayload },
+          request.traceId,
+        );
+      }
+    }
 
     return { allSegments, includedSegments, budget };
+  }
+
+  /** Sizes and renders adaptive mode's knowledge entry: a preliminary allocation (without
+   *  this entry) yields the shared `portalKnowledge` section budget, then
+   *  `buildAdaptivePortalKnowledge` fills whatever remains after the directory listing. */
+  private async buildAdaptiveKnowledgeEntry(args: {
+    request: IParsedRequest;
+    entries: SegmentEntry[];
+    directoryListingEntryIndex: number;
+    portalKnowledgeConfig: { max_tokens?: number; core_max_tokens?: number; relevant_max_entries?: number } | undefined;
+    tokenizer: ITokenizer;
+    modelId: string;
+    toSegments: (list: SegmentEntry[]) => Promise<IContextSegment[]>;
+  }): Promise<{ content: string; payload: IPortalKnowledgeSelectionAppliedPayload } | undefined> {
+    const { request, entries, directoryListingEntryIndex, portalKnowledgeConfig, tokenizer, modelId, toSegments } =
+      args;
+    const preliminarySegments = await toSegments(entries);
+    const preliminaryHints = this.buildAllocationHints(preliminarySegments);
+    const preliminaryBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, preliminaryHints) ??
+      this.defaultPromptBudget(modelId);
+    const directoryListingTokens = directoryListingEntryIndex >= 0
+      ? preliminarySegments[directoryListingEntryIndex].tokenEstimate
+      : 0;
+    const maxTokens = portalKnowledgeConfig?.max_tokens ?? DEFAULT_PORTAL_KNOWLEDGE_MAX_TOKENS;
+    const coreMaxTokens = portalKnowledgeConfig?.core_max_tokens ?? DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS;
+    const relevantMaxEntries = portalKnowledgeConfig?.relevant_max_entries ??
+      DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES;
+    const availableTokens = Math.max(
+      0,
+      Math.min(maxTokens, preliminaryBudget.sections.portalKnowledge - directoryListingTokens),
+    );
+    if (availableTokens === 0) return undefined;
+
+    const signals: IPortalKnowledgeRequestSignals = {
+      userPrompt: request.userPrompt,
+      filePaths: request.filePaths,
+      taskType: request.taskType,
+      tags: request.tags,
+    };
+    // Non-null: caller only invokes this when request.portalKnowledgeSnapshot is set.
+    const result = await buildAdaptivePortalKnowledge(request.portalKnowledgeSnapshot!, signals, {
+      tokenizer,
+      modelId,
+      availableTokens,
+      coreMaxTokens,
+      relevantMaxEntries,
+    });
+    if (!result.content.trim()) return undefined;
+
+    return {
+      content: result.content,
+      payload: {
+        inclusion: PortalKnowledgeInclusion.ADAPTIVE,
+        availableTokens,
+        coreTokens: await tokenizer.countTokens(result.core, modelId),
+        selectedEntryIds: result.relevant.map((entry) => entry.id),
+        selectedTokens: result.budgetUsedTokens,
+        includedTokens: result.budgetUsedTokens,
+      },
+    };
   }
 
   private async constructPrompt(
@@ -930,6 +1074,7 @@ export class AgentRunner implements IAgentRunner {
       request,
       skillContextString,
       criticalSkillContext,
+      { journal: false },
     );
 
     const includedById = new Map(includedSegments.map((segment) => [segment.segmentId, segment]));

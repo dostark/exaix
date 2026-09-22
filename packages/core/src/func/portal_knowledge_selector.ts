@@ -14,6 +14,7 @@ import {
   PortalKnowledgeRelevanceResultSchema,
 } from "@exaix/schemas/portal_knowledge.ts";
 import { PORTAL_KNOWLEDGE_CORE_KEY_FILE_LIMIT, PORTAL_KNOWLEDGE_DETAIL_MAX_TOKENS } from "../types/constants.ts";
+import { PortalKnowledgeInclusion } from "../types/portal.ts";
 import {
   type IPortalKnowledgeRequestSignals,
   normalizePortalPath,
@@ -53,7 +54,7 @@ function emptyResult(): IPortalKnowledgeRelevanceResult {
     relevant: [],
     content: "",
     budgetUsedTokens: 0,
-    inclusion: "adaptive",
+    inclusion: PortalKnowledgeInclusion.ADAPTIVE,
   });
 }
 
@@ -176,6 +177,6 @@ export async function buildAdaptivePortalKnowledge(
     relevant: included,
     content,
     budgetUsedTokens: await opts.tokenizer.countTokens(content, opts.modelId),
-    inclusion: "adaptive",
+    inclusion: PortalKnowledgeInclusion.ADAPTIVE,
   });
 }

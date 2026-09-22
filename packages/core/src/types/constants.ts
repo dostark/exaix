@@ -19,6 +19,7 @@ import {
   TaskType,
 } from "./enums.ts";
 import { configurable } from "../config/registry.ts";
+import { PortalKnowledgeInclusion } from "./portal.ts";
 
 // HTTP Status Codes
 export const HTTP_UNAUTHORIZED = 401;
@@ -2240,6 +2241,40 @@ export const DEFAULT_SYMBOL_MAP_LIMIT: number = configurable({
   description: "Maximum ISymbolEntry records stored in symbol map",
   min: 10,
   max: 10_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Default portal-knowledge inclusion strategy: "summary" (today's HNSW/text summary) or
+ *  "adaptive" (request-scored core + relevant-entries assembly). */
+export const DEFAULT_PORTAL_KNOWLEDGE_INCLUSION: string = configurable({
+  key: "portal_knowledge.inclusion",
+  default: PortalKnowledgeInclusion.SUMMARY,
+  type: ConfigValueType.STRING,
+  description: "Portal knowledge inclusion strategy: 'summary' (default) or 'adaptive'",
+  enum: Object.values(PortalKnowledgeInclusion) as readonly string[],
+  swap: SwapClass.RESTART,
+});
+
+/** Token budget for adaptive mode's always-included Layer 1 core (tech stack, architecture
+ *  overview, key-file index) before the section's live allocator budget is applied. */
+export const DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS: number = configurable({
+  key: "portal_knowledge.core_max_tokens",
+  default: 512,
+  type: ConfigValueType.NUMBER,
+  description: "Token budget for adaptive portal knowledge's always-included core segment",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Max ranked relevant entries adaptive mode renders after the core segment. */
+export const DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES: number = configurable({
+  key: "portal_knowledge.relevant_max_entries",
+  default: 20,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum ranked relevant entries adaptive portal knowledge renders",
+  min: 1,
+  max: 500,
   swap: SwapClass.RESTART,
 });
 

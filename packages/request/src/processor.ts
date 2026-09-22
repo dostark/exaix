@@ -61,7 +61,7 @@ import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { FlowStepType, ProviderType, RequestKind } from "@exaix/core";
+import { FlowStepType, PortalKnowledgeInclusion, ProviderType, RequestKind } from "@exaix/core";
 import { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 import { BlueprintResolver, type IBlueprintResolver } from "./blueprint_resolver.ts";
 import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_context_builder.ts";
@@ -862,12 +862,19 @@ export class RequestProcessor {
     const portalContext = await this.portalContextBuilder.buildFileContext(frontmatter.portal, traceLogger);
     if (portalContext) request.context[PORTAL_CONTEXT_KEY] = portalContext;
     if (portalKnowledge) {
-      const summary = await this.portalContextBuilder.resolveKnowledgeContext(
-        body,
-        frontmatter.portal,
-        portalKnowledge,
-      );
-      request.context[PORTAL_KNOWLEDGE_KEY] = summary;
+      if (this.config.portal_knowledge?.inclusion === PortalKnowledgeInclusion.ADAPTIVE) {
+        // Adaptive mode carries the resolved snapshot to AgentRunner.assemblePromptSegments,
+        // which scores and budgets it per request; resolveKnowledgeContext's fixed HNSW/text
+        // summary is skipped so getOrAnalyze is never called a second time here.
+        request.portalKnowledgeSnapshot = portalKnowledge;
+      } else {
+        const summary = await this.portalContextBuilder.resolveKnowledgeContext(
+          body,
+          frontmatter.portal,
+          portalKnowledge,
+        );
+        request.context[PORTAL_KNOWLEDGE_KEY] = summary;
+      }
     }
     if (memoryContext?.memoryContext) request.context[MEMORY_CONTEXT_KEY] = memoryContext.memoryContext;
     return request;
