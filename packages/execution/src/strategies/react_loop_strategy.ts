@@ -194,7 +194,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let nativeToolDefinitions: IToolDefinition[] | undefined;
     let nativeToolsUsed = false;
     if (useNativeTools) {
-      const tools = this.executor.toolRegistry?.getTools() ?? [];
+      const visibleToolIds = this.deriveVisibleToolIds(options);
+      const tools = (this.executor.toolRegistry?.getTools() ?? []).filter((t) => visibleToolIds.includes(t.name));
       nativeToolDefinitions = this.buildNativeToolDefinitions(tools);
       nativeToolsUsed = true;
     }

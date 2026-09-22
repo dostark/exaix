@@ -3781,7 +3781,8 @@ permitted_tools:
   - get_module_dependencies
 ```
 
-`permitted_tools` controls both what the ReAct prompt shows and what the
+`permitted_tools` controls what the ReAct prompt shows, what native
+provider tool-call definitions the model receives, and what the
 execution loop will dispatch. A model-supplied call to an unlisted tool is
 denied before `ToolRegistry` runs it. The Team MCP tool
 `exaix_portal_symbols` is a separate interface; it is not this Solo

@@ -15,8 +15,12 @@ import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import {
   ExecutionStrategyName,
+  PricingTier,
+  ProviderCostTier,
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
@@ -24,16 +28,20 @@ import {
   ToolName,
 } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { JSONValue } from "@exaix/core/types";
+import type { ITool, JSONValue } from "@exaix/core/types";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
 class ScriptedProvider implements IModelProvider {
-  readonly id = "mock-permissions-provider";
   private callCount = 0;
-  constructor(private responses: string[]) {}
-  async generate(): Promise<IGenerateResult> {
+  constructor(
+    private responses: string[],
+    private capturedToolNames?: string[][],
+    readonly id: string = "mock-permissions-provider",
+  ) {}
+  async generate(_prompt: string, options?: { tools?: Array<{ name: string }> }): Promise<IGenerateResult> {
     await Promise.resolve();
+    this.capturedToolNames?.push((options?.tools ?? []).map((t) => t.name));
     const content = this.responses[this.callCount++] ?? `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`;
     return {
       content,
@@ -45,7 +53,18 @@ class ScriptedProvider implements IModelProvider {
   }
 }
 
-function buildExecutor(executedTools: string[], executedParams?: Array<Record<string, JSONValue>>): ReActExecutor {
+const NATIVE_TOOL_FIXTURES: ITool[] = [ToolName.READ_FILE, ToolName.QUERY_SYMBOLS, ToolName.GET_MODULE_DEPENDENCIES]
+  .map((name) => ({
+    name,
+    description: `${name} description`,
+    parameters: { type: "object", properties: {} },
+  }));
+
+function buildExecutor(
+  executedTools: string[],
+  executedParams?: Array<Record<string, JSONValue>>,
+  toolsForNativeDefinitions: ITool[] = [],
+): ReActExecutor {
   return {
     logAgentOutput: async () => {
       await Promise.resolve();
@@ -72,10 +91,32 @@ function buildExecutor(executedTools: string[], executedParams?: Array<Record<st
         await Promise.resolve();
         return { success: true, data: { symbols: [], truncated: false } };
       },
-      getTools: () => [],
+      getTools: () => toolsForNativeDefinitions,
       getBaseDir: () => "/nonexistent-test-basedir",
     },
   } as ReActExecutor;
+}
+
+const NATIVE_PROVIDER_ID = "native-permissions-provider";
+
+function registerNativeToolsCapableProvider(): void {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata(NATIVE_PROVIDER_ID, new MockProviderFactory(), {
+    name: NATIVE_PROVIDER_ID,
+    description: "Native-tools-capable fixture provider for GAP-1 remediation tests",
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.PAID,
+    pricingTier: PricingTier.MEDIUM,
+    strengths: [],
+    supportsNativeTools: true,
+  });
+}
+
+function makeNativeOptions(permitted_tools?: string[]): IAgentExecutionOptions {
+  return {
+    ...makeOptions(permitted_tools),
+    native_tools_enabled: true,
+  };
 }
 
 function toolAction(tool: string): string {
@@ -217,3 +258,69 @@ Deno.test("[ReAct permissions] AVAILABLE TOOLS prompt text excludes an unlisted 
   assertEquals(unlistedPrompt.includes(ToolName.QUERY_SYMBOLS), false);
   assertEquals(listedPrompt.includes(ToolName.QUERY_SYMBOLS), true);
 });
+
+Deno.test(
+  "[ReAct permissions] native tool definitions exclude an unlisted graph tool",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerNativeToolsCapableProvider();
+    const capturedToolNames: string[][] = [];
+    const provider = new ScriptedProvider(
+      [`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`],
+      capturedToolNames,
+      NATIVE_PROVIDER_ID,
+    );
+    const strategy = new ReActLoopStrategy(buildExecutor([], undefined, NATIVE_TOOL_FIXTURES), provider);
+
+    await strategy.execute(blueprint, context, makeNativeOptions([ToolName.READ_FILE]));
+
+    assertEquals(capturedToolNames.length, 1);
+    assertEquals(capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS), false);
+    assertEquals(capturedToolNames[0]?.includes(ToolName.GET_MODULE_DEPENDENCIES), false);
+  },
+);
+
+Deno.test(
+  "[ReAct permissions] native tool definitions include a listed graph tool",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerNativeToolsCapableProvider();
+    const capturedToolNames: string[][] = [];
+    const provider = new ScriptedProvider(
+      [`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`],
+      capturedToolNames,
+      NATIVE_PROVIDER_ID,
+    );
+    const strategy = new ReActLoopStrategy(buildExecutor([], undefined, NATIVE_TOOL_FIXTURES), provider);
+
+    await strategy.execute(blueprint, context, makeNativeOptions([ToolName.QUERY_SYMBOLS]));
+
+    assertEquals(capturedToolNames.length, 1);
+    assertEquals(capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS), true);
+  },
+);
+
+Deno.test(
+  "[ReAct permissions] default (no permitted_tools) native tool definitions match the default five-tool exposure",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerNativeToolsCapableProvider();
+    const capturedToolNames: string[][] = [];
+    const provider = new ScriptedProvider(
+      [`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`],
+      capturedToolNames,
+      NATIVE_PROVIDER_ID,
+    );
+    const strategy = new ReActLoopStrategy(buildExecutor([], undefined, NATIVE_TOOL_FIXTURES), provider);
+
+    await strategy.execute(blueprint, context, makeNativeOptions(undefined));
+
+    assertEquals(capturedToolNames.length, 1);
+    assertEquals(
+      capturedToolNames[0]?.includes(ToolName.QUERY_SYMBOLS),
+      false,
+      "the default five visible tools do not include query_symbols",
+    );
+    assertEquals(capturedToolNames[0]?.includes(ToolName.GET_MODULE_DEPENDENCIES), false);
+  },
+);
