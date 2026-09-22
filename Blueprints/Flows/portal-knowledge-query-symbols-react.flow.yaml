@@ -2,6 +2,8 @@ id: portal-knowledge-query-symbols-react
 name: Portal Knowledge query_symbols ReAct Cutover
 description: Single-step live scenario for the code-analyst graph tool boundary
 version: "1.0"
+defaultSkills:
+  - response-contract-code-analysis
 steps:
   - id: query-symbols
     name: Query cached portal symbols

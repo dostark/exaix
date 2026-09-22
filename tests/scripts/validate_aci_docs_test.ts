@@ -155,10 +155,13 @@ Deno.test("[validateAciDocs] output is sorted by tool name regardless of input o
   assertEquals(result.issues.map((i) => i.tool), ["aaa_tool", "zzz_tool"]);
 });
 
-Deno.test("[validateAciDocs] real createCoreToolSchemas() catalog is fully compliant (19/19)", () => {
-  const result = validateAciDocs(createCoreToolSchemas());
+Deno.test("[validateAciDocs] real createCoreToolSchemas() catalog is fully compliant", () => {
+  const catalog = createCoreToolSchemas();
+  const result = validateAciDocs(catalog);
   assertEquals(result.issues, []);
-  assertEquals(result.checkedTools, 19);
+  // Self-consistent against the live catalog rather than a hardcoded count: every tool the
+  // catalog ships must have been checked, no more and no fewer.
+  assertEquals(result.checkedTools, catalog.length);
 });
 
 // runCli: exit-code wrapper
@@ -195,6 +198,6 @@ Deno.test("[runCli] a catalog-load failure exits 1 regardless of strict mode", (
   assertEquals(runCli(load, true), 1);
 });
 
-Deno.test("[runCli] strict mode passes for the real 18-tool catalog", () => {
+Deno.test("[runCli] strict mode passes for the real tool catalog", () => {
   assertEquals(runCli(createCoreToolSchemas, true), 0);
 });

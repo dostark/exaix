@@ -117,19 +117,19 @@ Deno.test("[ArtefactCatalog] flow templates under Flows/templates/ are not enume
   }
 });
 
-Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts (16/28/20)", async () => {
+Deno.test("[ArtefactCatalog] the real repo catalog enumerates each kind with no duplicate ids", async () => {
   const repoRoot = join(new URL("../../../../", import.meta.url).pathname);
   const catalog = await loadArtefactCatalog(join(repoRoot, "Blueprints"));
 
-  const byKind = (kind: ArtefactKind) => catalog.filter((r) => r.kind === kind).length;
-
-  // Blueprints/Agents/aci-react.md (a real-daemon scenario fixture agent role) is included,
-  // bringing the curated count to 16.
-  assertEquals(byKind(ArtefactKind.AGENT_ROLE), 16, "curated agent roles (excluding README, mock-agent, default)");
-  // memory-extraction-content-policy.skill.md is included, bringing the count to 28.
-  assertEquals(byKind(ArtefactKind.SKILL), 28, "skills");
-  // Includes 3 mechanism-proof fixture flows (strategy-comparison-cli-delegate,
-  // strategy-comparison-react, strategy-routing-smoke), each with NON_COVERAGE entries in
-  // scripts/check_artefact_decision_coverage.ts's FLOW_DECISIONS.
-  assertEquals(byKind(ArtefactKind.FLOW), 20, "runnable flows (excluding templates/)");
+  // A hardcoded per-kind count is a pure magic-number tax on every new agent role/skill/flow
+  // with zero bug-catching power beyond what check_artefact_decision_coverage_test.ts (every
+  // artefact has a recorded decision) and flow_eval_parity_test.ts (every flow has a scenario
+  // or exclusion) already enforce structurally. What IS worth asserting here, without a
+  // literal count: the reader actually found something in each kind, and never double-counts
+  // the same id under the same kind.
+  for (const kind of [ArtefactKind.AGENT_ROLE, ArtefactKind.SKILL, ArtefactKind.FLOW]) {
+    const ids = catalog.filter((r) => r.kind === kind).map((r) => r.artefactId);
+    assertEquals(ids.length > 0, true, `expected at least one ${kind} artefact`);
+    assertEquals(ids.length, new Set(ids).size, `${kind} catalog has a duplicate id: ${ids.join(", ")}`);
+  }
 });

@@ -4,7 +4,16 @@ title: "A code-analyst ReAct turn calls query_symbols through the real registry,
 pack: "agent_flows"
 # The live model chooses the tool; deterministic role-denial coverage lives in
 # packages/execution/tests/agents/react_loop_portal_graph_permissions_test.ts.
-tags: ["portal", "tools", "query_symbols", "subsystem:mcp-client", "entity:query_symbols", "provider-live"]
+tags: [
+  "portal",
+  "tools",
+  "query_symbols",
+  "subsystem:mcp-client",
+  "subsystem:flows",
+  "entity:query_symbols",
+  "entity:portal-knowledge-query-symbols-react.flow",
+  "provider-live",
+]
 request_fixture: "fixtures/requests/agent_flows/portal_knowledge_query_symbols.md"
 mode_support: ["auto"]
 portals:

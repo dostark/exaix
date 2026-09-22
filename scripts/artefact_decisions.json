@@ -330,6 +330,12 @@
   },
   {
     "kind": "flow",
+    "artefactId": "portal-knowledge-query-symbols-react",
+    "status": "non-coverage",
+    "rationale": "Phase 198 Step 6 live graph-tool cutover fixture, not exercised by an arm this run"
+  },
+  {
+    "kind": "flow",
     "artefactId": "pr-review",
     "status": "non-coverage",
     "rationale": "not exercised by an arm this run"

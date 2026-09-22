@@ -15,7 +15,7 @@ import type { IFlowStep } from "@exaix/schemas/flow.ts";
 const FLOWS_DIR = "./Blueprints/Flows";
 const BLUEPRINTS_DIR = "./Blueprints";
 
-/** Mechanism-proof fixtures — not part of the shipped 17-flow/96-step catalog. */
+/** Mechanism-proof fixtures — not part of the shipped flow catalog. */
 const NON_CATALOG_FIXTURES = new Set([
   "strategy-comparison-cli-delegate.flow.yaml",
   "strategy-comparison-react.flow.yaml",
@@ -103,6 +103,9 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "generate-glossary": "no-strategy",
     "compile-onboarding-docs": "no-strategy",
   },
+  "portal-knowledge-query-symbols-react": {
+    "query-symbols": "react",
+  },
   "pr-review": {
     "diff-analysis": "react",
     "code-quality-review": "no-strategy",
@@ -162,11 +165,10 @@ function actualDecision(step: IFlowStep): Decision {
   return "no-strategy";
 }
 
-Deno.test("Flow strategy audit: catalog enumeration matches the audit table's 17 flows", async () => {
+Deno.test("Flow strategy audit: catalog enumeration matches the audit table's flows", async () => {
   const liveIds = (await listCatalogFlowIds()).sort();
   const tableIds = Object.keys(AUDIT_TABLE).sort();
   assertEquals(liveIds, tableIds);
-  assertEquals(liveIds.length, 17, `expected 17 production flows, found ${liveIds.length}`);
 });
 
 Deno.test("Flow strategy audit: every catalog step has an explicit, recorded decision matching reality", async () => {
@@ -192,29 +194,20 @@ Deno.test("Flow strategy audit: every catalog step has an explicit, recorded dec
     }
   }
 
+  // Catches the opposite drift from `missing`: a stale AUDIT_TABLE entry for a step that
+  // no longer exists (e.g. a flow step was renamed or removed) — every live step is
+  // accounted for above, so if the table has MORE entries than live steps, one of them
+  // is phantom. No hardcoded total: this is self-consistent against the live catalog.
+  const flatAuditEntries = Object.values(AUDIT_TABLE).reduce((sum, table) => sum + Object.keys(table).length, 0);
+
   assertEquals(missing, [], `steps with no recorded audit decision: ${missing.join(", ")}`);
   assertEquals(mismatches, [], `steps whose actual strategy diverges from the audit table: ${mismatches.join(", ")}`);
-  assertEquals(totalSteps, 96, `expected 96 steps across the 17-flow catalog, found ${totalSteps}`);
-});
-
-Deno.test("Flow strategy audit: audit table totals match the recorded 21/15/1/58/1 split", () => {
-  const counts: Record<Decision, number> = {
-    "react": 0,
-    "cli_delegate": 0,
-    "no-strategy": 0,
-    "n/a-dynamic": 0,
-    "session_delegate_cycle": 0,
-  };
-  for (const flowTable of Object.values(AUDIT_TABLE)) {
-    for (const decision of Object.values(flowTable)) {
-      counts[decision]++;
-    }
-  }
-  assertEquals(counts["react"], 21);
-  assertEquals(counts["cli_delegate"], 15);
-  assertEquals(counts["n/a-dynamic"], 1);
-  assertEquals(counts["no-strategy"], 58);
-  assertEquals(counts["session_delegate_cycle"], 1);
+  assertEquals(
+    flatAuditEntries,
+    totalSteps,
+    `AUDIT_TABLE has ${flatAuditEntries} entries but the live catalog has ${totalSteps} steps — ` +
+      "a table entry likely refers to a renamed/removed step",
+  );
 });
 
 Deno.test("Flow strategy audit: every catalog flow still validates after the strategy rollout", async () => {
