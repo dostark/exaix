@@ -64,7 +64,7 @@ function makeAdaptiveRequest(overrides: Partial<IParsedRequest> = {}): IParsedRe
 }
 
 function makeAdaptiveRunner(
-  opts: { maxTokens: number; costTargetTokens?: number; logger?: EventLogger },
+  opts: { maxTokens: number; coreMaxTokens?: number; costTargetTokens?: number; logger?: EventLogger },
 ): AgentRunner {
   const tokenizer = new AiTokenEstimatorTokenizer();
   const promptBudgetAllocator = new PromptBudgetAllocator(
@@ -81,7 +81,7 @@ function makeAdaptiveRunner(
           portal_knowledge: {
             inclusion: "adaptive",
             max_tokens: opts.maxTokens,
-            core_max_tokens: opts.maxTokens,
+            core_max_tokens: opts.coreMaxTokens ?? opts.maxTokens,
             relevant_max_entries: 20,
           },
         }),
@@ -130,6 +130,21 @@ Deno.test("[AgentRunner adaptive] a lower max_tokens clamps the assembled conten
   );
   assert(generousAdaptive);
   assert(tightAdaptive, "the tight max_tokens run must clamp its adaptive segment to <= 40 tokens");
+});
+
+Deno.test("[AgentRunner adaptive] max_tokens clamps the effective runtime core even when core_max_tokens is set higher", async () => {
+  const runner = makeAdaptiveRunner({ maxTokens: 40, coreMaxTokens: 3_000, costTargetTokens: 20_000 });
+  const preview = await runner.previewPrompt(mockAgentBlueprint, makeAdaptiveRequest());
+
+  const adaptiveSegment = preview.segments.find((s) =>
+    s.kind === "portal_knowledge" && s.resultingTokenEstimate > 0 && s.included
+  );
+  assert(adaptiveSegment, "an adaptive knowledge segment should still be included");
+  assertLessOrEqual(
+    adaptiveSegment.resultingTokenEstimate,
+    40,
+    "max_tokens=40 must win over a larger core_max_tokens=3000",
+  );
 });
 
 Deno.test("[AgentRunner adaptive] previewPrompt performs the same assembly but journals no selection event", async () => {

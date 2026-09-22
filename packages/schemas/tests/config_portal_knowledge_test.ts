@@ -68,6 +68,29 @@ Deno.test("[ConfigSchema] uses defaults when portal_knowledge is absent", () => 
     assertEquals(pk.max_files_to_read, DEFAULTS.DEFAULT_MAX_FILES_TO_READ);
     assertEquals(pk.staleness_hours, DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS);
     assertEquals(pk.use_llm_inference, true);
+    assertEquals(pk.inclusion, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_INCLUSION);
+    assertEquals(pk.core_max_tokens, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS);
+    assertEquals(pk.relevant_max_entries, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES);
+  }
+});
+
+Deno.test("[ConfigSchema] a partial portal_knowledge block (other keys set) still fills in inclusion/core_max_tokens/relevant_max_entries defaults", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    portal_knowledge: {
+      auto_analyze_on_mount: true,
+      quick_scan_limit: 42,
+    },
+  });
+
+  assertEquals(result.success, true);
+  if (result.success) {
+    const pk = result.data.portal_knowledge!;
+    assertEquals(pk.auto_analyze_on_mount, true);
+    assertEquals(pk.quick_scan_limit, 42);
+    assertEquals(pk.inclusion, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_INCLUSION);
+    assertEquals(pk.core_max_tokens, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS);
+    assertEquals(pk.relevant_max_entries, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES);
   }
 });
 

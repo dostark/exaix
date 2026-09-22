@@ -16,6 +16,7 @@ import { buildHandlers } from "@exaix-team/mcp-server";
 import { McpToolName } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
+import * as DEFAULTS from "@exaix/core";
 
 function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
   const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
@@ -516,6 +517,62 @@ Deno.test({
       await commands.set("budget.skill_size_warning_chars", "3000");
 
       assertEquals(await commands.get("budget.skill_size_warning_chars"), 3000);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[configuring-cli] portal_knowledge.inclusion/.core_max_tokens/.relevant_max_entries round-trip via exactl config set/get",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-portal-knowledge-inclusion-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+      const commands = new ConfigCommands(context);
+
+      await commands.set("portal_knowledge.inclusion", "adaptive");
+      await commands.set("portal_knowledge.core_max_tokens", "600");
+      await commands.set("portal_knowledge.relevant_max_entries", "15");
+
+      assertEquals(await commands.get("portal_knowledge.inclusion"), "adaptive");
+      assertEquals(await commands.get("portal_knowledge.core_max_tokens"), 600);
+      assertEquals(await commands.get("portal_knowledge.relevant_max_entries"), 15);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[configuring-cli] an omitted portal_knowledge block retains all three inclusion defaults through exactl config get",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-portal-knowledge-defaults-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+      const commands = new ConfigCommands(context);
+
+      // No `set` calls — the seeded config DB never overrides portal_knowledge, so
+      // reads must resolve through ConfigSchema's own defaults, not a stored value.
+      assertEquals(await commands.get("portal_knowledge.inclusion"), DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_INCLUSION);
+      assertEquals(
+        await commands.get("portal_knowledge.core_max_tokens"),
+        DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_CORE_MAX_TOKENS,
+      );
+      assertEquals(
+        await commands.get("portal_knowledge.relevant_max_entries"),
+        DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_RELEVANT_MAX_ENTRIES,
+      );
     } finally {
       Deno.removeSync(dir, { recursive: true });
     }
