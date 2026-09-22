@@ -988,6 +988,7 @@ if (import.meta.main) {
         permissions: portalPermissions,
         provider: llmProvider,
         modelResolver,
+        applicationContext: context,
         contextPort: dogfoodContextPort,
         trustedAgentRoles: dogfoodTrustedAgentRoles,
         worktreeCoordinator: flowWorktreeCoordinator,

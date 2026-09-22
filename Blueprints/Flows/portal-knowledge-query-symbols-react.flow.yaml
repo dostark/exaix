@@ -1,0 +1,25 @@
+id: portal-knowledge-query-symbols-react
+name: Portal Knowledge query_symbols ReAct Cutover
+description: Single-step live scenario for the code-analyst graph tool boundary
+version: "1.0"
+steps:
+  - id: query-symbols
+    name: Query cached portal symbols
+    agent_role: code-analyst
+    execution_mode: declared
+    strategy: react
+    input:
+      source: request
+      transform: passthrough
+    timeout: 300000
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+
+output:
+  from: query-symbols
+  format: markdown
+
+settings:
+  maxParallelism: 1
+  failFast: true

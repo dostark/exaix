@@ -873,6 +873,9 @@ Deno.test({
       );
       assert(summarySegment, "summary preview must include a portal_knowledge segment");
       assert(adaptiveSegment, "adaptive preview must include an included portal_knowledge segment");
+      console.log(
+        `[phase198-cutover] portal-knowledge post-prepare tokens: summary=${summarySegment.resultingTokenEstimate}, adaptive=${adaptiveSegment.resultingTokenEstimate}; fixture=${PAYMENT_ROUTER_SYMBOL}; tokenizer=AiTokenEstimatorTokenizer`,
+      );
       assert(
         adaptiveSegment.resultingTokenEstimate < summarySegment.resultingTokenEstimate,
         `adaptive tokens (${adaptiveSegment.resultingTokenEstimate}) must be fewer than summary tokens (${summarySegment.resultingTokenEstimate}) for a request naming a narrow subset`,

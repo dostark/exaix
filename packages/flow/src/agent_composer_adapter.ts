@@ -23,7 +23,13 @@ import type { IDatabaseService, JSONValue } from "@exaix/core";
 import type { ExecutionStrategyName } from "@exaix/core";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
-import type { IDogfoodContextPort, IFlowWorktreeCoordinator, Opt, Reason } from "@exaix/core/types";
+import type {
+  IApplicationContext,
+  IDogfoodContextPort,
+  IFlowWorktreeCoordinator,
+  Opt,
+  Reason,
+} from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PathResolver, type PortalPermissionsService } from "@exaix/portal";
 import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
@@ -78,6 +84,7 @@ export interface IAgentComposerConstructionDeps {
   permissions: PortalPermissionsService;
   provider?: IModelProvider;
   modelResolver?: ModelResolver;
+  applicationContext?: IApplicationContext;
   /** Test-only escape hatch: inject a custom `StrategyRegistry` (e.g. spy strategies) to
    *  avoid a live provider/subprocess; production never sets this. */
   strategyRegistry?: StrategyRegistry;
@@ -182,6 +189,7 @@ export class AgentComposerAdapter {
       permissions,
       provider,
       modelResolver,
+      applicationContext,
       strategyRegistry,
       contextPort,
       trustedAgentRoles,
@@ -198,6 +206,7 @@ export class AgentComposerAdapter {
       traceId,
       baseDir: await resolveWorktreeBaseDir(portalConfig, traceId, this.orchestratorDeps.worktreeCoordinator),
       pathResolver,
+      context: applicationContext,
     });
     // Bounded, least-recently-touched-evicted map: re-inserting a key moves it to the end of
     // the Map's iteration order, so an actively-touched trace is never the oldest entry and
