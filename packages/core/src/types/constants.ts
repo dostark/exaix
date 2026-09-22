@@ -2289,6 +2289,14 @@ export const PORTAL_KNOWLEDGE_DETAIL_MAX_TOKENS = 64;
 /** Keeps the always-visible key-file index short. */
 export const PORTAL_KNOWLEDGE_CORE_KEY_FILE_LIMIT = 5;
 
+/** Internal safety bounds for the read-only AST graph tools (query_symbols,
+ *  get_module_dependencies) — caller-supplied limit/depth are clamped to these. */
+export const MAX_GRAPH_TOOL_RESULTS = 50;
+export const MAX_GRAPH_TOOL_DEPTH = 3;
+export const MAX_GRAPH_TOOL_RESULT_TOKENS = 2_000;
+/** Per-symbol doc-field cap before the whole-result token budget above is applied. */
+export const MAX_GRAPH_TOOL_DOC_TOKENS = 40;
+
 /** Subprocess timeout for `deno doc --json` call in milliseconds. */
 export const DENO_DOC_TIMEOUT_MS: number = configurable({
   key: "tools.deno_doc_timeout_ms",

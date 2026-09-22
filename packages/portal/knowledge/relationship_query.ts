@@ -57,3 +57,31 @@ export function queryRelationships(
 export function whoDependsOn(knowledge: IPortalKnowledge, path: string): IRelationshipEdge[] {
   return allEdges(knowledge).filter((edge) => edge.to === path);
 }
+
+/** Breadth-first traverses persisted `file_imports_file_internal` edges forward from `from`,
+ *  up to `maxDepth` hops. Each node is visited at most once, so cycles terminate naturally;
+ *  each hop's edges are sorted by `from` then `to` for deterministic output. */
+export function traverseModuleDependencies(
+  knowledge: IPortalKnowledge,
+  from: string,
+  maxDepth: number,
+): IRelationshipEdge[] {
+  const fileEdges = (knowledge.relationships ?? []) as IRelationshipEdge[];
+  const visited = new Set<string>([from]);
+  const result: IRelationshipEdge[] = [];
+  let frontier = [from];
+  for (let depth = 0; depth < maxDepth && frontier.length > 0; depth++) {
+    const hopEdges = fileEdges
+      .filter((edge) => frontier.includes(edge.from) && !visited.has(edge.to))
+      .sort((a, b) => a.from === b.from ? a.to.localeCompare(b.to) : a.from.localeCompare(b.from));
+    const nextFrontier: string[] = [];
+    for (const edge of hopEdges) {
+      if (visited.has(edge.to)) continue;
+      visited.add(edge.to);
+      result.push(edge);
+      nextFrontier.push(edge.to);
+    }
+    frontier = nextFrontier;
+  }
+  return result;
+}

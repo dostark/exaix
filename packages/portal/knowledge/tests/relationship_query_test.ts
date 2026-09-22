@@ -12,7 +12,12 @@
 import { assertEquals } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { deriveLayerContainsFileEdges, queryRelationships, whoDependsOn } from "../relationship_query.ts";
+import {
+  deriveLayerContainsFileEdges,
+  queryRelationships,
+  traverseModuleDependencies,
+  whoDependsOn,
+} from "../relationship_query.ts";
 
 function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowledge {
   return {
@@ -151,4 +156,61 @@ Deno.test("queryRelationships and whoDependsOn: handle a portal with zero persis
   // file_imports_file_internal-sourced results are simply empty, not an error.
   assertEquals(queryRelationships(knowledge, "main.ts"), []);
   assertEquals(whoDependsOn(knowledge, "util.ts"), []);
+});
+
+Deno.test("traverseModuleDependencies: returns forward multi-hop file_imports_file_internal edges within maxDepth", () => {
+  const knowledge = makeKnowledge({
+    relationships: [
+      { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+      { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+      { from: "c.ts", to: "d.ts", kind: "file_imports_file_internal" },
+    ],
+  });
+
+  assertEquals(traverseModuleDependencies(knowledge, "a.ts", 1), [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+  ]);
+  assertEquals(traverseModuleDependencies(knowledge, "a.ts", 2), [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+    { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+  ]);
+  assertEquals(traverseModuleDependencies(knowledge, "a.ts", 10), [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+    { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+    { from: "c.ts", to: "d.ts", kind: "file_imports_file_internal" },
+  ]);
+});
+
+Deno.test("traverseModuleDependencies: deduplicates cycles — each node visited at most once", () => {
+  const knowledge = makeKnowledge({
+    relationships: [
+      { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+      { from: "b.ts", to: "a.ts", kind: "file_imports_file_internal" },
+      { from: "a.ts", to: "c.ts", kind: "file_imports_file_internal" },
+      { from: "b.ts", to: "c.ts", kind: "file_imports_file_internal" },
+    ],
+  });
+
+  const edges = traverseModuleDependencies(knowledge, "a.ts", 5);
+
+  assertEquals(edges, [
+    { from: "a.ts", to: "b.ts", kind: "file_imports_file_internal" },
+    { from: "a.ts", to: "c.ts", kind: "file_imports_file_internal" },
+  ]);
+});
+
+Deno.test("traverseModuleDependencies: sorts each hop's edges by from then to, and returns [] for an unknown or leaf node", () => {
+  const knowledge = makeKnowledge({
+    relationships: [
+      { from: "a.ts", to: "z.ts", kind: "file_imports_file_internal" },
+      { from: "a.ts", to: "m.ts", kind: "file_imports_file_internal" },
+    ],
+  });
+
+  assertEquals(traverseModuleDependencies(knowledge, "a.ts", 1), [
+    { from: "a.ts", to: "m.ts", kind: "file_imports_file_internal" },
+    { from: "a.ts", to: "z.ts", kind: "file_imports_file_internal" },
+  ]);
+  assertEquals(traverseModuleDependencies(knowledge, "unknown.ts", 3), []);
+  assertEquals(traverseModuleDependencies(knowledge, "z.ts", 3), []);
 });

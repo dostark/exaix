@@ -31,6 +31,8 @@ const EXPECTED_CORE_TOOL_NAMES = [
   "patch_file",
   "query_relationships",
   "who_depends_on",
+  "query_symbols",
+  "get_module_dependencies",
   "remember_fact",
   "search_memory",
   "list_available_tools",

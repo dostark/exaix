@@ -10,8 +10,21 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { BYTES_PER_KB, LogLevel, PORTAL_PREFIX_PATTERN, SystemCommand, ToolName } from "@exaix/core";
+import {
+  BYTES_PER_KB,
+  DEFAULT_AI_MODEL,
+  LogLevel,
+  MAX_GRAPH_TOOL_DEPTH,
+  MAX_GRAPH_TOOL_DOC_TOKENS,
+  MAX_GRAPH_TOOL_RESULT_TOKENS,
+  MAX_GRAPH_TOOL_RESULTS,
+  PORTAL_PREFIX_PATTERN,
+  ProviderType,
+  SystemCommand,
+  ToolName,
+} from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID, type IGitServiceFactory } from "@exaix/core/types";
+import { AiTokenEstimatorTokenizer, type ITokenizer, normalizePortalPath } from "@exaix/core/func";
 import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
 import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
@@ -23,7 +36,13 @@ import type {
   IToolRegistry,
   IToolResult,
 } from "@exaix/core/types";
-import { queryRelationships, type RelationshipEdgeKind, whoDependsOn } from "@exaix/portal/knowledge";
+import {
+  queryRelationships,
+  type RelationshipEdgeKind,
+  traverseModuleDependencies,
+  whoDependsOn,
+} from "@exaix/portal/knowledge";
+import type { IPortalKnowledge, ISymbolEntry } from "@exaix/schemas/portal_knowledge.ts";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -254,6 +273,8 @@ export class ToolRegistry implements IToolRegistry {
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   private hitlBlueprintRules?: HitlRule[];
+  /** Bounds query_symbols/get_module_dependencies results to MAX_GRAPH_TOOL_RESULT_TOKENS. */
+  private readonly graphToolTokenizer: ITokenizer = new AiTokenEstimatorTokenizer();
 
   constructor(
     middlewarePipelineOrOptions?: Opt<
@@ -504,6 +525,29 @@ export class ToolRegistry implements IToolRegistry {
       (p) => this.searchMemoryTool(str(p.query), p.limit !== undefined ? Number(p.limit) : undefined),
     );
     this.executors.set(ToolName.LIST_AVAILABLE_TOOLS, () => this.listAvailableToolsTool());
+    this.registerGraphToolExecutors(str, optStr);
+  }
+
+  /** Read-only AST graph tools, split out of registerCoreExecutors to keep it under the
+   *  complexity threshold. */
+  private registerGraphToolExecutors(
+    str: (v: JSONValue) => string,
+    optStr: (v: JSONValue) => string | undefined,
+  ): void {
+    this.executors.set(
+      ToolName.QUERY_SYMBOLS,
+      (p) =>
+        this.querySymbolsTool(
+          optStr(p.name),
+          optStr(p.kind),
+          optStr(p.file),
+          p.limit !== undefined ? Number(p.limit) : undefined,
+        ),
+    );
+    this.executors.set(
+      ToolName.GET_MODULE_DEPENDENCIES,
+      (p) => this.getModuleDependenciesTool(str(p.path), p.depth !== undefined ? Number(p.depth) : undefined),
+    );
   }
 
   /**
@@ -736,6 +780,174 @@ export class ToolRegistry implements IToolRegistry {
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
     return this.formatSuccess(whoDependsOn(knowledge, path) as unknown as JSONValue);
+  }
+
+  /** Model identity for graph-tool result token counting — mirrors the configured AI provider/model. */
+  private graphToolModelId(): string {
+    return `${this.config.ai?.provider ?? ProviderType.MOCK}:${this.config.ai?.model ?? DEFAULT_AI_MODEL}`;
+  }
+
+  /** Binary-search prefix fit, mirroring portal_knowledge_selector.ts's tokenBoundedPrefix —
+   *  duplicated locally since tool-runtime cannot import execution/core func internals across
+   *  that boundary for a single helper. */
+  private async fitToTokenBudget(text: string, maxTokens: number, modelId: string): Promise<string> {
+    if (await this.graphToolTokenizer.countTokens(text, modelId) <= maxTokens) return text;
+    let low = 1;
+    let high = text.length;
+    let best = "";
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const candidate = text.slice(0, mid);
+      if (await this.graphToolTokenizer.countTokens(candidate, modelId) <= maxTokens) {
+        best = candidate;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return best;
+  }
+
+  /** Drops trailing records until the whole serialized result fits
+   *  MAX_GRAPH_TOOL_RESULT_TOKENS. Never breaks JSON — a dropped array element is still
+   *  valid JSON. */
+  private async boundGraphResult<T>(records: T[]): Promise<{ records: T[]; truncated: boolean }> {
+    const modelId = this.graphToolModelId();
+    let candidate = records;
+    let truncated = false;
+    while (candidate.length > 0) {
+      const tokens = await this.graphToolTokenizer.countTokens(JSON.stringify(candidate), modelId);
+      if (tokens <= MAX_GRAPH_TOOL_RESULT_TOKENS) break;
+      candidate = candidate.slice(0, -1);
+      truncated = true;
+    }
+    return { records: candidate, truncated };
+  }
+
+  /** Shortens each symbol's `doc` field to MAX_GRAPH_TOOL_DOC_TOKENS before the whole-result
+   *  budget in boundGraphResult is applied — keeps one oversized doc from crowding out every
+   *  other symbol in the result. */
+  private async shortenSymbolDocs(
+    symbols: ISymbolEntry[],
+  ): Promise<{ records: ISymbolEntry[]; truncated: boolean }> {
+    const modelId = this.graphToolModelId();
+    let truncated = false;
+    const records = await Promise.all(symbols.map(async (symbol) => {
+      if (!symbol.doc) return symbol;
+      const shortDoc = await this.fitToTokenBudget(symbol.doc, MAX_GRAPH_TOOL_DOC_TOKENS, modelId);
+      if (shortDoc === symbol.doc) return symbol;
+      truncated = true;
+      return { ...symbol, doc: shortDoc };
+    }));
+    return { records, truncated };
+  }
+
+  /** Shared portal + cached-knowledge resolution for the read-only graph tools — service
+   *  configured, current root is a portal, cache is warm, and the cache matches this portal. */
+  private async resolveGraphToolKnowledge(
+    toolLabel: string,
+  ): Promise<{ knowledge: IPortalKnowledge } | { error: string }> {
+    const portalKnowledgeService = this.applicationContext?.portalKnowledge;
+    if (!portalKnowledgeService) {
+      return { error: `${toolLabel} requires a portal-knowledge service, none is configured` };
+    }
+    const portal = this.currentPortal();
+    if (!portal) {
+      return { error: `${toolLabel}: current execution root is not a configured portal` };
+    }
+    const knowledge = await portalKnowledgeService.loadCachedKnowledge(portal.alias);
+    if (!knowledge) {
+      return { error: `${toolLabel}: no cached knowledge for this portal — run 'portal analyze' first` };
+    }
+    if (knowledge.portal !== portal.alias) {
+      return { error: `${toolLabel}: cached knowledge portal mismatch` };
+    }
+    return { knowledge };
+  }
+
+  /** Filters symbolMap by name substring/kind/file, then ranks by pageRankScore descending,
+   *  then name/file ascending. */
+  private rankSymbols(
+    symbolMap: ISymbolEntry[],
+    name?: Opt<string, Reason.QueryFilter>,
+    kind?: Opt<string, Reason.QueryFilter>,
+    file?: Opt<string, Reason.QueryFilter>,
+  ): ISymbolEntry[] {
+    const nameLower = name?.toLowerCase();
+    return symbolMap
+      .filter((symbol) =>
+        (nameLower === undefined || symbol.name.toLowerCase().includes(nameLower)) &&
+        (kind === undefined || symbol.kind === kind) &&
+        (file === undefined || symbol.file === file)
+      )
+      .sort((a, b) => {
+        const scoreDiff = (b.pageRankScore ?? 0) - (a.pageRankScore ?? 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return a.name === b.name ? a.file.localeCompare(b.file) : a.name.localeCompare(b.name);
+      });
+  }
+
+  private async querySymbolsTool(
+    name?: Opt<string, Reason.QueryFilter>,
+    kind?: Opt<string, Reason.QueryFilter>,
+    file?: Opt<string, Reason.QueryFilter>,
+    limit?: Opt<number, Reason.QueryFilter>,
+  ): Promise<IToolResult> {
+    let normalizedFile: string | undefined;
+    if (file !== undefined) {
+      normalizedFile = normalizePortalPath(file);
+      if (!normalizedFile) {
+        return { success: false, error: "query_symbols: file must be a portal-relative path with no '..' segments" };
+      }
+    }
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit <= 0)) {
+      return { success: false, error: "query_symbols: limit must be a positive integer" };
+    }
+    const resolved = await this.resolveGraphToolKnowledge("query_symbols");
+    if (!("knowledge" in resolved)) return { success: false, error: resolved.error };
+
+    const ranked = this.rankSymbols(resolved.knowledge.symbolMap, name, kind, normalizedFile);
+    const effectiveLimit = Math.min(limit ?? MAX_GRAPH_TOOL_RESULTS, MAX_GRAPH_TOOL_RESULTS);
+    const { records: shortened, truncated: docsShortened } = await this.shortenSymbolDocs(
+      ranked.slice(0, effectiveLimit),
+    );
+    const { records, truncated: recordsDropped } = await this.boundGraphResult(shortened);
+    return this.formatSuccess({ symbols: records, truncated: docsShortened || recordsDropped } as unknown as JSONValue);
+  }
+
+  /** Validates path/depth before any cache lookup; returns the effective depth or an error. */
+  private validateModuleDependenciesArgs(
+    path: string,
+    depth: Opt<number, Reason.QueryFilter>,
+  ): { path: string; depth: number } | { error: string } {
+    const normalizedPath = normalizePortalPath(path);
+    if (!normalizedPath) {
+      return { error: "get_module_dependencies: path must be a non-empty portal-relative path with no '..' segments" };
+    }
+    const effectiveDepth = depth ?? 1;
+    if (!Number.isSafeInteger(effectiveDepth) || effectiveDepth <= 0) {
+      return { error: "get_module_dependencies: depth must be a positive integer" };
+    }
+    if (effectiveDepth > MAX_GRAPH_TOOL_DEPTH) {
+      return { error: `get_module_dependencies: depth must not exceed ${MAX_GRAPH_TOOL_DEPTH}` };
+    }
+    return { path: normalizedPath, depth: effectiveDepth };
+  }
+
+  private async getModuleDependenciesTool(
+    path: string,
+    depth?: Opt<number, Reason.QueryFilter>,
+  ): Promise<IToolResult> {
+    const validated = this.validateModuleDependenciesArgs(path, depth);
+    if (!("path" in validated)) return { success: false, error: validated.error };
+
+    const resolved = await this.resolveGraphToolKnowledge("get_module_dependencies");
+    if (!("knowledge" in resolved)) return { success: false, error: resolved.error };
+
+    const edges = traverseModuleDependencies(resolved.knowledge, validated.path, validated.depth)
+      .slice(0, MAX_GRAPH_TOOL_RESULTS);
+    const { records, truncated } = await this.boundGraphResult(edges);
+    return this.formatSuccess({ edges: records, truncated } as unknown as JSONValue);
   }
 
   /**

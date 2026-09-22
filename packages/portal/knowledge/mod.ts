@@ -40,7 +40,12 @@ export { AstAnalyzer } from "./ast_analyzer.ts";
 export type { IAstDiagnostics } from "./ast_analyzer.ts";
 export { InternalImportGraphBuilder } from "./internal_import_graph.ts";
 export type { IDroppedInternalImport, IInternalImportGraphResult } from "./internal_import_graph.ts";
-export { deriveLayerContainsFileEdges, queryRelationships, whoDependsOn } from "./relationship_query.ts";
+export {
+  deriveLayerContainsFileEdges,
+  queryRelationships,
+  traverseModuleDependencies,
+  whoDependsOn,
+} from "./relationship_query.ts";
 export type { IRelationshipEdge, RelationshipEdgeKind } from "./relationship_query.ts";
 export { ArchitectureInferrer, buildFallbackOverview } from "./architecture_inferrer.ts";
 export type { IArchitectureInferrerInput, IArchitectureValidator } from "./architecture_inferrer.ts";

@@ -19,6 +19,8 @@ permitted_tools:
   - grep_search
   - query_relationships
   - who_depends_on
+  - query_symbols
+  - get_module_dependencies
   - fetch_url
   - git_info
 ---

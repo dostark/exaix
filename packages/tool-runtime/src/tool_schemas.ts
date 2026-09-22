@@ -615,6 +615,89 @@ export function createCoreToolSchemas(
       },
     },
     {
+      name: ToolName.QUERY_SYMBOLS,
+      description:
+        "List cached AST symbols (functions, classes, interfaces, consts, types, enums) from the current portal's knowledge graph, ranked by connectivity. Reads only the last cached analysis — never triggers a new one. Use when you need to discover exported symbols by name, kind, or file without reading files directly. Optionally filter by a case-insensitive name substring, exact kind, or exact portal-relative file. For module-to-module import edges use get_module_dependencies instead. Returns an array of symbol records (name, kind, file, signature, doc, pageRankScore) in data.symbols, capped at 50 and possibly truncated (data.truncated), or an error if no cached knowledge exists for this portal.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "Optional case-insensitive substring to match against symbol names",
+          },
+          kind: {
+            type: "string",
+            enum: ["function", "class", "interface", "const", "type", "enum"],
+            description: "Optional exact symbol-kind filter",
+          },
+          file: {
+            type: "string",
+            description: "Optional exact portal-relative file path filter",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum symbols to return (default and cap: 50)",
+          },
+        },
+        required: [],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Lists cached AST symbols from the portal's knowledge graph, ranked by connectivity.",
+        when_to_use:
+          "Use to discover exported functions/classes/types by name, kind, or file without reading files directly.",
+        when_not_to_use:
+          "Do not use to list import edges between files — that's get_module_dependencies. Do not use if no 'portal analyze' has ever run for this portal; it returns an error, not an empty list.",
+        example: {
+          input: { name: "Router", kind: "class" },
+          output:
+            '{"symbols":[{"name":"PaymentRouter","kind":"class","file":"src/router.ts","signature":"class PaymentRouter"}],"truncated":false}',
+          rationale: "Finds every cached class whose name contains 'Router' without opening any files.",
+        },
+        anti_example: {
+          input: { limit: "many" },
+          why_wrong: "limit must be a number — a string like 'many' fails validation before the query ever runs.",
+        },
+      },
+    },
+    {
+      name: ToolName.GET_MODULE_DEPENDENCIES,
+      description:
+        "Breadth-first traverse cached internal import edges (file_imports_file_internal) forward from a portal-relative file path, up to a bounded depth. Reads only the last cached analysis — never triggers a new one. Use to understand what a file transitively depends on before changing it. For the reverse direction (who imports a file) use who_depends_on, which is single-hop only. Returns an array of edge records in data.edges, capped at 50 and possibly truncated (data.truncated), or an error if no cached knowledge exists for this portal.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: {
+            type: "string",
+            description: "A portal-relative file path to traverse import edges from",
+          },
+          depth: {
+            type: "number",
+            description: "Maximum hops to traverse forward (default 1, cap 3)",
+          },
+        },
+        required: ["path"],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Breadth-first traverses cached internal import edges forward from a file, up to a bounded depth.",
+        when_to_use:
+          "Use to understand what a file (transitively) depends on before changing it, without reading every file in the chain.",
+        when_not_to_use:
+          "Do not use to find who imports a file — that's the reverse direction, use who_depends_on. Do not request a depth beyond 3, it is rejected.",
+        example: {
+          input: { path: "src/router.ts", depth: 2 },
+          output:
+            '{"edges":[{"from":"src/router.ts","to":"src/auth.ts","kind":"file_imports_file_internal"}],"truncated":false}',
+          rationale: "Traces the import chain two hops forward from router.ts without opening any files.",
+        },
+        anti_example: {
+          input: { depth: 2 },
+          why_wrong: "get_module_dependencies requires 'path' — there is no default file to traverse edges from.",
+        },
+      },
+    },
+    {
       name: ToolName.REMEMBER_FACT,
       description:
         "Persist a lightweight, execution-scoped 'worth remembering' note into the current execution's scratchpad so it survives beyond the current reasoning step. Use the moment you notice something useful (a gotcha, a constraint, a user preference, a debugging insight). Notes are captured raw — no scoring, no embedding — and are reviewed by later extraction passes, so keep each note self-contained and specific. Returns data.entry_id on success.",

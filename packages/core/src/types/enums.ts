@@ -132,6 +132,8 @@ export const EXECUTION_TOOL_NAMES = [
   "patch_file",
   "query_relationships",
   "who_depends_on",
+  "query_symbols",
+  "get_module_dependencies",
   "remember_fact",
   "search_memory",
 ] as const;
@@ -165,6 +167,8 @@ export enum ToolName {
   GIT_STASH = "git_stash",
   QUERY_RELATIONSHIPS = "query_relationships",
   WHO_DEPENDS_ON = "who_depends_on",
+  QUERY_SYMBOLS = "query_symbols",
+  GET_MODULE_DEPENDENCIES = "get_module_dependencies",
   REMEMBER_FACT = "remember_fact",
   SEARCH_MEMORY = "search_memory",
   /** Read-only discovery: returns the catalog of registered tools with their functional

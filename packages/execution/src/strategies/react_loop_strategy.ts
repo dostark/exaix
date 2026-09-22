@@ -680,6 +680,14 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     action: IReActAction,
     options: IAgentExecutionOptions,
   ): Promise<IToolExecutionResult> {
+    // Enforced here, not just in prompt/ACI rendering: deriveVisibleToolIds already governs
+    // what the model is shown, but nothing previously stopped a hallucinated or copied call
+    // to an unlisted tool name from reaching ToolRegistry.execute.
+    const visibleToolIds = this.deriveVisibleToolIds(options);
+    if (!visibleToolIds.includes(action.tool)) {
+      return { success: false, error: `Tool '${action.tool}' is not in this role's permitted_tools` };
+    }
+
     if (!this.executor.toolRegistry) {
       throw new AgentExecutionError(
         "ToolRegistry not available",
