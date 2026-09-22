@@ -100,7 +100,7 @@ Catalog Parity" section) — so any manual entry placed inside the markers above
 silently discarded on the next sync. This section is intentionally outside those markers and
 is **not** kept in sync automatically; update it by hand when the tools below change.
 
-**Scope note (phase-175 Step 5, extended by phase-176 Step 2):** this section documents only
+**Scope note (phase-175 Step 5, extended by phases 176 and 198):** this section documents only
 the Solo-tier tools those phases added. `ToolRegistry`'s other 14 tools (`read_file`,
 `write_file`, `list_directory`, `search_files`, `create_directory`, `run_command`,
 `fetch_url`, `grep_search`, `move_file`, `copy_file`, `delete_file`, `git_info`, `deno_task`,
@@ -109,19 +109,31 @@ these phases (see phase-175's Step 5 Actions). It is worth its own scoped phase,
 `docs-sync-schemas`/`TOOL_MANIFEST` extension that enumerates `packages/tool-runtime`'s
 catalog alongside the Team MCP one.
 
-| Tool                  | Description                                                                                                                                                                                                                                 | Side-effect scope | Source                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
-| `query_relationships` | Lists relationship edges leading forward from a layer name or file path in the current portal's knowledge graph — combines persisted `file_imports_file_internal` edges with on-demand `layer_contains_file` edges. Optional `kind` filter. | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
-| `who_depends_on`      | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
-| `remember_fact`       | Persists a lightweight, execution-scoped "worth remembering" note (content + optional tags) into the current execution's scratchpad (`Memory/Execution/{trace_id}/scratchpad.jsonl`), captured raw for later extraction passes.             | `system`          | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
-| `search_memory`       | Searches project and global memory (patterns, decisions, learnings) scoped to the current portal; any caller-supplied `portal` argument is ignored. Optional `limit`.                                                                       | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts) |
+| Tool                      | Description                                                                                                                                                                                                                                 | Side-effect scope | Source                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------- |
+| `query_relationships`     | Lists relationship edges leading forward from a layer name or file path in the current portal's knowledge graph — combines persisted `file_imports_file_internal` edges with on-demand `layer_contains_file` edges. Optional `kind` filter. | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
+| `who_depends_on`          | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
+| `query_symbols`           | Lists cached AST symbols by optional name substring, kind, or portal-relative file. Returns at most 50 records and 2,000 result tokens; each symbol's documentation is capped at 40 tokens.                                                 | `none`            | [`ToolRegistry.querySymbolsTool`](../../packages/tool-runtime/src/tool_registry.ts)          |
+| `get_module_dependencies` | Traverses cached internal imports forward from a portal-relative path, with depth 1 by default and 3 at most. Returns at most 50 edges and 2,000 result tokens.                                                                             | `none`            | [`ToolRegistry.getModuleDependenciesTool`](../../packages/tool-runtime/src/tool_registry.ts) |
+| `remember_fact`           | Persists a lightweight, execution-scoped "worth remembering" note (content + optional tags) into the current execution's scratchpad (`Memory/Execution/{trace_id}/scratchpad.jsonl`), captured raw for later extraction passes.             | `system`          | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
+| `search_memory`           | Searches project and global memory (patterns, decisions, learnings) scoped to the current portal; any caller-supplied `portal` argument is ignored. Optional `limit`.                                                                       | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
 
 `query_relationships`/`who_depends_on` require a portal-knowledge service to be wired into the
-`ToolRegistry`'s `IApplicationContext` (present in the daemon's real execution
-`ToolRegistryFactory`) and the current execution root to match a configured portal's
-`target_path` — otherwise they return a structured error, never a throw. No Team-tier MCP
-equivalent exists for any of these tools; they are new Solo-only surface, not a port of
-`exaix_portal_symbols`.
+`ToolRegistry`'s `IApplicationContext` (present in the daemon's plan execution
+factory and flow strategy adapter) and the current execution root to match a
+configured portal's `target_path` — otherwise they return a structured error,
+never a throw. These in-process entries are separate from Team MCP tool
+registrations.
+
+`query_symbols` and `get_module_dependencies` use the same current-portal check,
+but read only `loadCachedKnowledge`: a cold or mismatched cache returns an error
+and neither tool starts analysis. Both are registered in the Solo catalog with
+`none` side effects. In a ReAct turn, the effective `permitted_tools` list
+governs tool definitions, ACI text, and dispatch; a fabricated call to an
+unlisted graph tool is rejected before registry execution. The default ReAct
+five-tool list does not include either new tool. A role such as `code-analyst`
+must list them explicitly. Team MCP's `exaix_portal_symbols` has its own
+registration and permission surface.
 
 `remember_fact` instead requires a scratchpad service on the same `IApplicationContext` (wired
 in the daemon's context; the trace is always the registry's own `traceId` — a `trace_id` value

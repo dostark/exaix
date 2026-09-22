@@ -390,17 +390,17 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 - Every call runs with `--sandbox read-only`, so `codex-cli` calls never write to your
   filesystem — the same read-only posture Exaix already enforces for headless CLI-delegate
   planning calls.
-- **Execution-loop tools are not substituted through these CLI providers.** Exaix's own
-  execution tools (`read_file`, `grep_search`, `query_symbols`,
-  `get_module_dependencies`, ...) are executed through its `ToolRegistry` **only when the
-  model provider is a direct API** (anthropic/openai/google/openrouter with
-  `native_tools_enabled`). `codex-cli`/`claude-cli`/`opencode-cli` do not expose
-  `supportsNativeTools`, so inside an Exaix ReAct loop they fall back to a text tool-call
-  protocol that the CLI subprocess is not steered to follow — the effective result is the
-  CLI running with its _own_ native tools. For execution steps that must explore an
-  Exaix capability by tool name, prefer `[cli_delegate]` for whole-step delegation or a
-  direct-API provider for in-loop tool substitution (see §2.5a and the flow-strategy
-  guidance).
+- **CLI providers do not receive native Exaix tool definitions.**
+  `codex-cli`/`claude-cli`/`opencode-cli` do not advertise `supportsNativeTools`.
+  A forced Exaix ReAct step instead describes available `ToolRegistry` tools and
+  the text action format in its prompt. Exaix executes any parsed action that
+  passes the role's `permitted_tools` check. A live Codex CLI run called
+  `query_symbols` through this text path when its request specified the TOML
+  action; tool choice from an unsteered CLI response is not guaranteed. The
+  CLI's own native tools remain separate. Direct-API providers can receive
+  native Exaix tool definitions when `native_tools_enabled` is on; a
+  `[cli_delegate]` step hands the whole task to the CLI's own loop (see §2.5a
+  and the flow-strategy guidance).
 
 `[session_delegate] tool = "codex"` (Mode 3 headless session delegation) is a **separate**
 Codex integration path with its own sandbox model — see
@@ -3730,6 +3730,62 @@ of its request context, without it needing to ask for them.
   a portal's first 5 entrypoints, severely undercounting large monorepos. This is
   fixed — the limit is now a much higher, configurable default (500), with a
   visible warning logged if a portal's entrypoint count ever exceeds it.
+
+## Portal knowledge inclusion
+
+By default, Exaix includes the existing fixed portal summary in a planning prompt.
+Set `portal_knowledge.inclusion` to `"adaptive"` to select a small core of portal
+facts and then add entries ranked for the request's task, tags, and referenced
+files. This uses the analyzed portal knowledge snapshot; it does not analyze
+source files during prompt assembly. The default `"summary"` path preserves its
+existing prompt content.
+
+```toml
+[portal_knowledge]
+inclusion = "adaptive"       # default: "summary"
+max_tokens = 3000           # existing hard cap on this knowledge segment
+core_max_tokens = 512       # cap for the core within the available section
+relevant_max_entries = 20   # maximum ranked entries after the core
+```
+
+The portal directory listing uses the same prompt-budget section. Adaptive
+knowledge gets at most the smaller of `max_tokens` and the section's remaining
+tokens after that listing. If no tokens remain, Exaix adds no adaptive knowledge
+segment. A selection that does run records `portal.knowledge.selection_applied`
+on the request trace with selected and finally included token counts. In the
+Phase 198 cutover fixture, a request naming `PaymentRouter` kept that symbol
+while the included knowledge segment used 76–77 adaptive tokens versus 85
+summary tokens across focused runs. The saving depends on the request and portal.
+
+Two read-only Solo ReAct tools let an authorized role inspect the cached graph
+when the prompt does not contain enough detail:
+
+| Tool                      | Input                                                                        | Bound and result                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `query_symbols`           | Optional `name` substring, `kind`, exact portal-relative `file`, and `limit` | Returns ranked cached symbol records; at most 50 records and 2,000 result tokens. Each symbol's documentation is capped at 40 tokens. |
+| `get_module_dependencies` | Portal-relative `path`; optional `depth` (default 1, maximum 3)              | Traverses cached internal imports forward; at most 50 edges and 2,000 result tokens.                                                  |
+
+Both tools require cached knowledge for the current portal. They return an error
+if the execution root is not that portal or the cache is missing or mismatched;
+they never trigger a new analysis. Use `standard` or `deep` portal analysis to
+populate AST symbols. The `query_symbols` file filter compares the stored
+`symbolMap.file` value exactly; current analysis may store an absolute file URL,
+so use name or kind filters if a portal-relative file filter finds nothing.
+To allow the tools in a ReAct agent role, list their IDs in its
+frontmatter:
+
+```yaml
+capabilities: ["react"]
+permitted_tools:
+  - query_symbols
+  - get_module_dependencies
+```
+
+`permitted_tools` controls both what the ReAct prompt shows and what the
+execution loop will dispatch. A model-supplied call to an unlisted tool is
+denied before `ToolRegistry` runs it. The Team MCP tool
+`exaix_portal_symbols` is a separate interface; it is not this Solo
+`query_symbols` entry.
 
 ---
 

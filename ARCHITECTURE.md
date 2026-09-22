@@ -478,6 +478,7 @@ For analysis mode details, data flow steps, and hardening additions, see `packag
     "RequestProcessor validates and initializes context",
     "RequestAnalyzer extracts intent and requirements",
     "RequestProcessor routes internally: agent requests to AgentRunner, flow requests to FlowRunner",
+    "AgentRunner selects default summary or request-adaptive portal knowledge within the shared prompt budget",
     "AgentRunner executes agent task and generates Plan via AI Provider (ProviderFactory chain)",
     "FlowRunner executes multi-agent flow with declared/dynamic steps via AgentExecutorAdapter",
     "PlanWriter materializes Plan to Workspace/Plans",
@@ -490,6 +491,16 @@ For analysis mode details, data flow steps, and hardening additions, see `packag
 For the step table (component→file path mapping), sequence diagram, and analysis mode details, see `packages/request/README.md`.
 
 For frontmatter YAML examples, request type samples, flow validation rules, routing policy audit events, and CLI inspection commands, see `packages/request/README.md#request-routing`.
+
+The request processor passes the analyzed portal snapshot to the agent runner
+when adaptive inclusion is configured. The runner selects relevant cached facts
+within the knowledge section's remaining budget after the portal directory
+listing, and journals the applied selection on the request trace. The default
+summary route keeps the existing prompt content. During execution, the Solo
+ReAct registry exposes bounded cached-symbol and forward-dependency queries;
+the role's effective tool allowlist is enforced before a model-supplied call
+reaches the registry. These in-process tools are separate from Team MCP's
+portal-symbol surface.
 
 ---
 
@@ -907,7 +918,16 @@ The `IModelProvider.generate()` interface (`packages/ai/src/types.ts`) accepts a
 
 **Scope boundary:** `AnthropicProvider`, `OpenAIProvider`, `GoogleProvider`, and `OpenRouterProvider` (reusing OpenAI's byte-for-byte-compatible serialization) all implement native tool serialization; only `ReActLoopStrategy` (`packages/execution/src/strategies/react_loop_strategy.ts`) reads the capability gate (`IProviderMetadata.supportsNativeTools`). `LegacyAgentStrategy` and `LlmClient.reasonNextAction()` are explicitly out of scope.
 
-**CLI-delegate providers do not participate in native tool calling, and their ReAct text path is unsteered.** `claude-cli`, `codex-cli`, and `opencode-cli` (`CliDelegateModelProvider`, `packages/ai-clidelegate/`) have `supportsNativeTools` unset in their metadata (`packages/ai-clidelegate/src/constants.ts`), so `ReActLoopStrategy.execute()`'s gate (`options.native_tools_enabled` AND `supportsNativeTools === true`) never turns native tools on for them — no `IToolDefinition[]` is sent, no `IModelOptions.tools`, and any response surfaces only through `IGenerateResult.content`. The ReAct loop therefore falls to its **text/TOML-block branch** (`parseResponse(response.content)`, `react_loop_strategy.ts:671-682`): the Exaix catalog is rendered as `AVAILABLE TOOLS:` prose and the model must emit `<action>`/TOML blocks that `executeTool()` dispatches through `ToolRegistry.execute()` (with `permitted_tools` + portal-path confinement, `react_loop_strategy.ts:695-719`). This means Exaix execution-loop tools (`read_file`, `query_symbols`, `get_module_dependencies`, ...) are only reachable under a cli-delegate provider **if the spawned CLI model faithfully emits that text protocol**. But the steering that would make that reliable — `TEXT_COMPLETION_PROTOCOL_BACKEND` (claude: `--tools ""` + a "virtual calls only, no native tools" system prompt; codex: `--ephemeral` + `developer_instructions` treating outer-catalogue names as plain-text labels) — is **defined (`packages/ai-clidelegate/src/protocol_backend.ts`) but never wired into the provider-factory ReAct path** (`CliDelegateProviderFactory` attaches only `SHELL_ONLY_TOOLS_PROTOCOL_BACKEND`, claude-only, `shell_only` opt-in). In practice a claude/codex subprocess inside a ReAct loop therefore runs **its own native tools** with no instruction to express Exaix virtual calls — effectively bare-delegation behaviour happening inside the ReAct loop, not Exaix tool substitution. `<action>`-less output correctly surfaces as `No actions generated in ReAct iteration` (hard failure, not a silent pass — verified live by `flow_strategy_react.yaml`). Contrast: only API providers (anthropic/openai/google/openrouter) get true Exaix-native tool substitution — the direct `generate()` serialization + `ToolRegistry.execute()` loop. `CliDelegateStrategy` is a separate, intentional bare-delegation path (the CLI owns its own tool loop; Exaix reconciles the diff). Planned: opening Exaix execution-loop tools to the opencode CLI via `.opencode/tools` custom tools + an `exactl tool run` bridge (as planned in the opencode-native-tools design); that mechanism is opencode-specific today and does not change claude/codex, which would need `TEXT_COMPLETION_PROTOCOL_BACKEND` wired into the ReAct provider path or an equivalent bridge of their own.
+**CLI providers and ReAct tools:** `codex-cli`, `claude-cli`, and `opencode-cli`
+do not advertise native Exaix tool calling. A forced ReAct step instead lists
+the effective tool catalog in its prompt and parses text actions before
+authorization and registry dispatch. A live Codex CLI turn has called the
+Solo `query_symbols` tool through this path when the request explicitly
+specified the action format. This is an observed text-protocol result, not a
+provider capability guarantee: an unsteered CLI response may use its own
+tools or omit a parseable action. Direct-API providers can receive native
+Exaix tool definitions when enabled. Whole-step CLI delegation remains a
+separate path in which the CLI owns its tool loop.
 
 **Flow:** `ReActLoopStrategy.execute()` → checks `options.native_tools_enabled` + `ProviderRegistry.getProviderMetadata(provider.id)?.supportsNativeTools` → builds `IToolDefinition[]` from `ToolRegistry.getTools()` → calls `provider.generate(prompt, {tools, toolChoice: {type: "any" | "tool", name?}, priorTurn?})` → the resolved provider serializes into its own wire format (`AnthropicRequestBody.tools[]`/`tool_choice`, OpenAI/OpenRouter `tools[].function`/`tool_choice`, Google `tools[].functionDeclarations[]`/`toolConfig`) → response tool-call blocks surfaced as `IGenerateResult.toolCalls[]` → executed via `ToolRegistry.execute()`. Tool results fed back as native tool-result content via `priorTurn` on the next iteration.
 
