@@ -390,6 +390,17 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 - Every call runs with `--sandbox read-only`, so `codex-cli` calls never write to your
   filesystem — the same read-only posture Exaix already enforces for headless CLI-delegate
   planning calls.
+- **Execution-loop tools are not substituted through these CLI providers.** Exaix's own
+  execution tools (`read_file`, `grep_search`, `query_symbols`,
+  `get_module_dependencies`, ...) are executed through its `ToolRegistry` **only when the
+  model provider is a direct API** (anthropic/openai/google/openrouter with
+  `native_tools_enabled`). `codex-cli`/`claude-cli`/`opencode-cli` do not expose
+  `supportsNativeTools`, so inside an Exaix ReAct loop they fall back to a text tool-call
+  protocol that the CLI subprocess is not steered to follow — the effective result is the
+  CLI running with its _own_ native tools. For execution steps that must explore an
+  Exaix capability by tool name, prefer `[cli_delegate]` for whole-step delegation or a
+  direct-API provider for in-loop tool substitution (see §2.5a and the flow-strategy
+  guidance).
 
 `[session_delegate] tool = "codex"` (Mode 3 headless session delegation) is a **separate**
 Codex integration path with its own sandbox model — see
