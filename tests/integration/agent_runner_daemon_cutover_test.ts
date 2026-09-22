@@ -23,15 +23,24 @@
  * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/request/src/router.ts, packages/execution/src/agent_composer.ts]
  */
 
-import { assert } from "@std/assert";
+import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService, createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { Database } from "@db/sqlite";
 import { EventLogger } from "@exaix/core/logger";
-import { AgentComposer } from "@exaix/execution";
-import { MIN_COST_TARGET_TOKENS_PER_REQUEST } from "@exaix/core";
+import { AgentComposer, AgentRunner } from "@exaix/execution";
+import {
+  MIN_COST_TARGET_TOKENS_PER_REQUEST,
+  PORTAL_KNOWLEDGE_KEY,
+  PortalAnalysisMode,
+  PromptBudgetAllocator,
+} from "@exaix/core";
+import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { initTestDbService } from "@exaix/testing";
+import { MockProvider } from "@exaix/ai/providers.ts";
+import { PortalKnowledgeService } from "@exaix/portal/knowledge";
+import { buildPortalKnowledgeSummary } from "@exaix/request";
 import {
   bootRealDaemon,
   daemonConfigSections,
@@ -519,6 +528,358 @@ Deno.test({
       await Deno.remove(sharedDir, { recursive: true }).catch(() => {});
       await Deno.remove(constrainedDir, { recursive: true }).catch(() => {});
       await Deno.remove(unconstrainedDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+/** A real portal fixture (a `PaymentRouter` class) is analyzed for real on the daemon's own
+ *  first request — `RequestProcessor.resolvePortalKnowledge` calls `getOrAnalyze`, which runs a
+ *  full analysis on a cold in-process cache, so no pre-analysis step is needed. */
+const PAYMENT_ROUTER_SYMBOL = "PaymentRouter";
+
+/** Distractor `*.service.ts` files so the full-portal summary is larger than a narrow adaptive
+ *  query naming only PaymentRouter. */
+const DISTRACTOR_SERVICES = [
+  "auth",
+  "billing",
+  "notification",
+  "inventory",
+  "shipping",
+  "catalog",
+  "search",
+  "audit",
+];
+
+/** `detectPatterns` recognizes these naming keywords as separate conventions, none of which
+ *  score against a "PaymentRouter" query — they inflate the summary's always-included
+ *  conventions list without inflating adaptive's relevant-entries list. */
+const DISTRACTOR_REPOSITORIES = ["user", "order", "product"];
+const DISTRACTOR_CONTROLLERS = ["api", "admin", "webhook"];
+const DISTRACTOR_HANDLERS = ["event", "message", "job"];
+
+async function writeSymbolFixturePortal(portalDir: string): Promise<void> {
+  await Deno.mkdir(join(portalDir, "services"), { recursive: true });
+  await Deno.writeTextFile(
+    join(portalDir, "services", "router.service.ts"),
+    `/** Routes payment requests to the configured provider. */\nexport class ${PAYMENT_ROUTER_SYMBOL} {\n  route(): string {\n    return "routed";\n  }\n}\n`,
+  );
+  for (const name of DISTRACTOR_SERVICES) {
+    const className = `${name[0].toUpperCase()}${name.slice(1)}Service`;
+    await Deno.writeTextFile(
+      join(portalDir, "services", `${name}.service.ts`),
+      `/** Handles ${name} domain logic — one of several unrelated services in this fixture. */\nexport class ${className} {\n  handle(): string {\n    return "${name}-handled";\n  }\n}\n`,
+    );
+  }
+  for (const name of DISTRACTOR_REPOSITORIES) {
+    const className = `${name[0].toUpperCase()}${name.slice(1)}Repository`;
+    await Deno.writeTextFile(
+      join(portalDir, `${name}.repository.ts`),
+      `export class ${className} {\n  find(): string {\n    return "found";\n  }\n}\n`,
+    );
+  }
+  for (const name of DISTRACTOR_CONTROLLERS) {
+    const className = `${name[0].toUpperCase()}${name.slice(1)}Controller`;
+    await Deno.writeTextFile(
+      join(portalDir, `${name}.controller.ts`),
+      `export class ${className} {\n  handle(): string {\n    return "ok";\n  }\n}\n`,
+    );
+  }
+  for (const name of DISTRACTOR_HANDLERS) {
+    const className = `${name[0].toUpperCase()}${name.slice(1)}Handler`;
+    await Deno.writeTextFile(
+      join(portalDir, `${name}.handler.ts`),
+      `export class ${className} {\n  process(): string {\n    return "processed";\n  }\n}\n`,
+    );
+  }
+  await Deno.writeTextFile(
+    join(portalDir, "main.ts"),
+    `import { ${PAYMENT_ROUTER_SYMBOL} } from "./services/router.service.ts";\nnew ${PAYMENT_ROUTER_SYMBOL}().route();\n`,
+  );
+}
+
+/** `inclusion` is written directly into `[portal_knowledge]` — unlike `budget.*` keys,
+ *  `ConfigService` parses the TOML only and never merges Config DB overrides;
+ *  `resolveEffectiveBudgetPolicy` is a budget-only special case, not a general mechanism. */
+function writeDaemonConfigForAdaptiveCutover(
+  configPath: string,
+  root: string,
+  portalDir: string,
+  inclusion: "summary" | "adaptive",
+): void {
+  const cfg = [
+    "[system]",
+    `root = "${root}"`,
+    'log_level = "debug"',
+    "",
+    "[paths]",
+    'workspace = "./Workspace"',
+    'blueprints = "./Blueprints"',
+    'runtime = "./.exa"',
+    'memory = "./Memory"',
+    'portals = "./Portals"',
+    "",
+    "[ai]",
+    'provider = "mock"',
+    'model = "test"',
+    "",
+    "[ai.mock]",
+    "timeout_ms = 30000",
+    "",
+    "[quality_gate]",
+    "enabled = false",
+    "",
+    "[portal_knowledge]",
+    'default_mode = "standard"',
+    "use_llm_inference = false",
+    ...(inclusion === "adaptive" ? ['inclusion = "adaptive"'] : []),
+    "",
+    "[[portals]]",
+    'alias = "payment-portal"',
+    `target_path = "${portalDir}"`,
+    "",
+  ].join("\n");
+  Deno.writeTextFileSync(configPath, cfg);
+}
+
+interface IStep6ActivityRow {
+  action_type: string;
+  payload: string;
+}
+
+async function readStep6Activity(configPath: string, traceId: string): Promise<IStep6ActivityRow[]> {
+  const configService = new ConfigService(configPath);
+  const db = new DatabaseService(configService.getAll());
+  try {
+    return await db.preparedAll<IStep6ActivityRow>(
+      "SELECT action_type, payload FROM activity WHERE trace_id = ? ORDER BY rowid ASC",
+      [traceId],
+    );
+  } finally {
+    await db.close();
+  }
+}
+
+async function bootCutoverRun(
+  tempDir: string,
+  sharedPortalDir: string,
+  inclusion: "summary" | "adaptive",
+): Promise<{ traceId: string; activities: IStep6ActivityRow[] }> {
+  const configPath = join(tempDir, "exa.config.toml");
+  writeDaemonConfigForAdaptiveCutover(configPath, tempDir, sharedPortalDir, inclusion);
+
+  await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+  await Deno.copyFile(
+    join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+    join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+  );
+
+  const traceId = crypto.randomUUID();
+  const requestPath = join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
+
+  await bootRealDaemon(configPath, 2000, {
+    midFlight: () => {
+      Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+      Deno.writeTextFileSync(
+        requestPath,
+        `---
+trace_id: "${traceId}"
+created: "${new Date().toISOString()}"
+status: pending
+priority: normal
+agent_role: mock-agent
+portal: payment-portal
+source: cli
+created_by: "test@example.com"
+subject: "phase198 step6 cutover probe"
+---
+
+# Request
+
+Investigate ${PAYMENT_ROUTER_SYMBOL} behavior.
+`,
+      );
+    },
+    afterInjectMs: 25000,
+    waitForAfterInject: async () => {
+      const rows = await readStep6Activity(configPath, traceId);
+      return rows.some((r) => r.action_type === "agent.prompt_debug_dump");
+    },
+  });
+
+  return { traceId, activities: await readStep6Activity(configPath, traceId) };
+}
+
+Deno.test({
+  name:
+    "[phase198-cutover] a real adaptive daemon request journals a trace-linked portal.knowledge.selection_applied event and retains the named fixture symbol in the accepted prompt",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase198-adaptive-cutover-" });
+    const portalDir = join(tempDir, "fixture-portal");
+    try {
+      await writeSymbolFixturePortal(portalDir);
+      const { traceId, activities } = await bootCutoverRun(tempDir, portalDir, "adaptive");
+
+      const selection = activities.find((a) => a.action_type === "portal.knowledge.selection_applied");
+      assert(
+        selection,
+        `a portal.knowledge.selection_applied row scoped to trace_id ${traceId} must exist. got: ${
+          JSON.stringify(activities.map((a) => a.action_type))
+        }`,
+      );
+      const selectionPayload = JSON.parse(selection!.payload) as {
+        inclusion: string;
+        selectedTokens: number;
+        includedTokens: number;
+        availableTokens: number;
+      };
+      assertEquals(selectionPayload.inclusion, "adaptive");
+      assert(selectionPayload.selectedTokens > 0, "selectedTokens must be a real positive count");
+      assertLessOrEqual(selectionPayload.includedTokens, selectionPayload.availableTokens);
+
+      const promptDump = activities.find((a) => a.action_type === "agent.prompt_debug_dump");
+      assert(promptDump, "agent.prompt_debug_dump must be journaled at log_level=debug");
+      const promptPayload = JSON.parse(promptDump!.payload) as { full_prompt: string };
+      assert(
+        promptPayload.full_prompt.includes(PAYMENT_ROUTER_SYMBOL),
+        `the accepted final prompt must include the named fixture symbol '${PAYMENT_ROUTER_SYMBOL}'`,
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase198-cutover] the default summary daemon request runs the unchanged resolveKnowledgeContext path and never journals a selection event",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase198-summary-cutover-" });
+    const portalDir = join(tempDir, "fixture-portal");
+    try {
+      await writeSymbolFixturePortal(portalDir);
+      const { activities } = await bootCutoverRun(tempDir, portalDir, "summary");
+
+      assertEquals(
+        activities.some((a) => a.action_type === "portal.knowledge.selection_applied"),
+        false,
+        "summary mode must never journal a selection event",
+      );
+      const promptDump = activities.find((a) => a.action_type === "agent.prompt_debug_dump");
+      assert(promptDump, "agent.prompt_debug_dump must be journaled at log_level=debug");
+      const promptPayload = JSON.parse(promptDump!.payload) as { full_prompt: string };
+      assert(
+        promptPayload.full_prompt.includes("## Portal Knowledge Summary"),
+        "summary mode must still run the pre-phase-198 resolveKnowledgeContext fallback unchanged",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+/** No second daemon boot needed — `previewPrompt` is the same production assembly path
+ *  `AgentRunner.run` calls, so this measures real post-prepare tokens directly against a real
+ *  `PortalKnowledgeService.analyze()` result, without a second LLM call. */
+Deno.test({
+  name:
+    "[phase198-cutover] the production preview reports fewer post-prepare portal_knowledge tokens for adaptive than summary, on identical real-analyzed knowledge",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const portalDir = await Deno.makeTempDir({ prefix: "phase198-preview-fixture-" });
+    try {
+      await writeSymbolFixturePortal(portalDir);
+
+      const service = new PortalKnowledgeService({
+        config: {
+          autoAnalyzeOnMount: false,
+          defaultMode: PortalAnalysisMode.STANDARD,
+          quickScanLimit: 100,
+          maxFilesToRead: 20,
+          ignorePatterns: [],
+          staleness: 168,
+          useLlmInference: false,
+          relevanceSearchEmbeddingEnabled: false,
+          enableAstAnalysis: true,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+          enableGitHistoryAnalysis: false,
+          gitHistoryCommitLimit: 500,
+          gitHistorySince: "1.year",
+        },
+        memoryBank: {
+          getProjectMemory: () => Promise.resolve(null),
+          createProjectMemory: () => Promise.resolve(undefined),
+          updateProjectMemory: () => Promise.resolve(undefined),
+          listProjectMemories: () => Promise.resolve([]),
+        } as never,
+      });
+      const knowledge = await service.analyze("payment-portal", portalDir, PortalAnalysisMode.STANDARD);
+      assert(
+        knowledge.symbolMap.some((s) => s.name === PAYMENT_ROUTER_SYMBOL),
+        `real AST analysis must extract the ${PAYMENT_ROUTER_SYMBOL} symbol; got symbolMap=${
+          JSON.stringify(knowledge.symbolMap)
+        }`,
+      );
+
+      const tokenizer = new AiTokenEstimatorTokenizer();
+      const promptBudgetAllocator = new PromptBudgetAllocator({ costTargetTokens: 20_000 }, tokenizer);
+      const blueprint = { systemPrompt: "You are a test agent." };
+      const traceId = crypto.randomUUID();
+
+      const summaryRunner = new AgentRunner(new MockProvider("<thought>ok</thought><content>done</content>"), {
+        tokenizer,
+        promptBudgetAllocator,
+      });
+      const summaryPreview = await summaryRunner.previewPrompt(blueprint, {
+        userPrompt: `Investigate ${PAYMENT_ROUTER_SYMBOL}`,
+        context: { [PORTAL_KNOWLEDGE_KEY]: buildPortalKnowledgeSummary(knowledge) },
+        traceId,
+      });
+
+      const adaptiveRunner = new AgentRunner(new MockProvider("<thought>ok</thought><content>done</content>"), {
+        tokenizer,
+        promptBudgetAllocator,
+        context: {
+          config: {
+            get: () => ({
+              portal_knowledge: {
+                inclusion: "adaptive",
+                max_tokens: 3_000,
+                core_max_tokens: 512,
+                relevant_max_entries: 20,
+              },
+            }),
+          },
+        } as never,
+      });
+      const adaptivePreview = await adaptiveRunner.previewPrompt(blueprint, {
+        userPrompt: `Investigate ${PAYMENT_ROUTER_SYMBOL}`,
+        context: {},
+        portalKnowledgeSnapshot: knowledge,
+        traceId,
+      });
+
+      const summarySegment = summaryPreview.segments.find((s) => s.kind === "portal_knowledge");
+      const adaptiveSegment = adaptivePreview.segments.find((s) =>
+        s.kind === "portal_knowledge" && s.included && s.resultingTokenEstimate > 0
+      );
+      assert(summarySegment, "summary preview must include a portal_knowledge segment");
+      assert(adaptiveSegment, "adaptive preview must include an included portal_knowledge segment");
+      assert(
+        adaptiveSegment.resultingTokenEstimate < summarySegment.resultingTokenEstimate,
+        `adaptive tokens (${adaptiveSegment.resultingTokenEstimate}) must be fewer than summary tokens (${summarySegment.resultingTokenEstimate}) for a request naming a narrow subset`,
+      );
+      assertLessOrEqual(adaptiveSegment.resultingTokenEstimate, 3_000);
+    } finally {
+      await Deno.remove(portalDir, { recursive: true }).catch(() => {});
     }
   },
 });

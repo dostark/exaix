@@ -90,6 +90,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "memory-full-loop",
       "model-registry-team-cutover",
       "plan-amendment-lifecycle",
+      "portal-knowledge-adaptive-tools",
       "portal-knowledge-snapshot",
       "quality-gate-clarification",
       "request-analysis-smoke",
@@ -120,6 +121,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
           "prepare-evidence",
           "judge",
           "test-run",
+          "trajectory-assert",
         ].includes(step.type) ||
         ((step.input_criteria?.length ?? 0) + (step.output_criteria?.length ?? 0) > 0)
       ),

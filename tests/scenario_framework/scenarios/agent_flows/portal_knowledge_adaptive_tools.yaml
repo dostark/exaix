@@ -1,0 +1,74 @@
+schema_version: "1.0.0"
+id: "portal-knowledge-adaptive-tools"
+title: "A code-analyst ReAct turn calls query_symbols through the real registry, past the permitted_tools allowlist"
+pack: "agent_flows"
+# Every scenario asserting WHICH tool a model calls lives in the provider-live tier in this
+# framework (see selection-search-vs-list.yaml / selection-negative-missing-permission.yaml):
+# the mock provider makes no tool-selection decisions, so dynamic_tool_call rows are 0 under
+# every mock configuration and trajectory-assert would just report "matched 0/1" with nothing
+# to score. Package-unit coverage for the negative case (an unlisted role's call is rejected
+# before ToolRegistry.execute, deterministically) already exists in
+# packages/execution/tests/agents/react_loop_portal_graph_permissions_test.ts — this scenario
+# covers only the piece that requires a live model: a real native/ACI tool call actually
+# reaching ReActLoopStrategy.executeTool and ToolRegistry.execute end to end.
+tags: ["portal", "tools", "query_symbols", "subsystem:mcp-client", "entity:query_symbols", "provider-live"]
+request_fixture: "fixtures/requests/agent_flows/portal_knowledge_query_symbols.md"
+mode_support: ["auto"]
+portals:
+  - alias: "todo-app"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/todo_app"
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--agent-role", "code-analyst"]
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.3
+
+  # Lenient like selection-search-vs-list.yaml: a live model's tool choice is not guaranteed,
+  # so extra tools and partial credit are allowed — the assertion's whole point is proving
+  # query_symbols is REACHABLE for a role that lists it, not that the model always reaches for
+  # it first.
+  - id: "assert-query-symbols-called"
+    type: "trajectory-assert"
+    name: "Verify code-analyst (which lists query_symbols) actually called it"
+    source_step: "submit-request"
+    expected_sequence:
+      - tool: "query_symbols"
+    order_matters: false
+    allow_extra_tools: true
+    partial_credit: true
+    input_criteria: []
+    output_criteria: []
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0
