@@ -2249,6 +2249,10 @@ export const PORTAL_KNOWLEDGE_SCORE_BASENAME = 40;
 export const PORTAL_KNOWLEDGE_SCORE_SYMBOL_NAME = 20;
 export const PORTAL_KNOWLEDGE_SCORE_TAG_OR_TASK = 12;
 export const PORTAL_KNOWLEDGE_SCORE_BODY_TERM = 1;
+/** Bounds individual portal-authored details before prompt assembly. */
+export const PORTAL_KNOWLEDGE_DETAIL_MAX_TOKENS = 64;
+/** Keeps the always-visible key-file index short. */
+export const PORTAL_KNOWLEDGE_CORE_KEY_FILE_LIMIT = 5;
 
 /** Subprocess timeout for `deno doc --json` call in milliseconds. */
 export const DENO_DOC_TIMEOUT_MS: number = configurable({

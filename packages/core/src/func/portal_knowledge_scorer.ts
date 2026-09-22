@@ -29,7 +29,8 @@ interface IScoringSignals {
   taskTerms: Set<string>;
 }
 
-function normalizePath(path: string): string | undefined {
+/** Normalize a portal-relative path without resolving or reading the filesystem. */
+export function normalizePortalPath(path: string): string | undefined {
   const slashPath = path.normalize("NFKC").replaceAll("\\", "/");
   if (/^(?:\/|[a-zA-Z]:)/.test(slashPath) || /[\p{Cc}\p{Cf}]/u.test(slashPath)) {
     return undefined;
@@ -67,7 +68,7 @@ function scoreFields(
   signals: IScoringSignals,
   symbolName: string | null,
 ): number {
-  const normalizedPaths = paths.map(normalizePath).filter((path): path is string => !!path);
+  const normalizedPaths = paths.map(normalizePortalPath).filter((path): path is string => !!path);
   const exact = normalizedPaths.some((path) =>
     signals.paths.some((signal) => signal.toLowerCase() === path.toLowerCase())
   );
@@ -110,7 +111,7 @@ function compareCodePoint(left: string, right: string): number {
 function scoreSymbols(knowledge: IPortalKnowledge, signals: IScoringSignals): IPortalKnowledgeRelevanceEntry[] {
   const entries: IPortalKnowledgeRelevanceEntry[] = [];
   for (const symbol of knowledge.symbolMap) {
-    const path = normalizePath(symbol.file);
+    const path = normalizePortalPath(symbol.file);
     if (!path) continue;
     const fields = [symbol.name, symbol.signature, symbol.doc ?? "", path];
     const entry = candidate(
@@ -128,7 +129,7 @@ function scoreSymbols(knowledge: IPortalKnowledge, signals: IScoringSignals): IP
 function scoreKeyFiles(knowledge: IPortalKnowledge, signals: IScoringSignals): IPortalKnowledgeRelevanceEntry[] {
   const entries: IPortalKnowledgeRelevanceEntry[] = [];
   for (const file of knowledge.keyFiles) {
-    const path = normalizePath(file.path);
+    const path = normalizePortalPath(file.path);
     if (!path) continue;
     const entry = candidate(
       "key_file",
@@ -145,7 +146,7 @@ function scoreKeyFiles(knowledge: IPortalKnowledge, signals: IScoringSignals): I
 function scoreLayers(knowledge: IPortalKnowledge, signals: IScoringSignals): IPortalKnowledgeRelevanceEntry[] {
   const entries: IPortalKnowledgeRelevanceEntry[] = [];
   for (const layer of knowledge.layers) {
-    const paths = [...layer.paths, ...layer.keyFiles].map(normalizePath)
+    const paths = [...layer.paths, ...layer.keyFiles].map(normalizePortalPath)
       .filter((path): path is string => !!path);
     const entry = candidate(
       "layer",
@@ -162,7 +163,7 @@ function scoreLayers(knowledge: IPortalKnowledge, signals: IScoringSignals): IPo
 function scoreConventions(knowledge: IPortalKnowledge, signals: IScoringSignals): IPortalKnowledgeRelevanceEntry[] {
   const entries: IPortalKnowledgeRelevanceEntry[] = [];
   for (const convention of knowledge.conventions) {
-    const paths = convention.examples.map(normalizePath)
+    const paths = convention.examples.map(normalizePortalPath)
       .filter((path): path is string => !!path);
     const entry = candidate(
       "convention",
@@ -182,7 +183,7 @@ export function scorePortalKnowledge(
   request: IPortalKnowledgeRequestSignals,
 ): IPortalKnowledgeRelevanceEntry[] {
   const signals: IScoringSignals = {
-    paths: (request.filePaths ?? []).map(normalizePath).filter((path): path is string => !!path),
+    paths: (request.filePaths ?? []).map(normalizePortalPath).filter((path): path is string => !!path),
     bodyTerms: terms(request.userPrompt),
     taskTerms: terms([request.taskType, ...(request.tags ?? [])].filter(Boolean).join(" ")),
   };
