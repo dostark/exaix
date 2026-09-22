@@ -2243,6 +2243,13 @@ export const DEFAULT_SYMBOL_MAP_LIMIT: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Fixed relevance weights for request-scored portal knowledge. */
+export const PORTAL_KNOWLEDGE_SCORE_EXACT_PATH = 100;
+export const PORTAL_KNOWLEDGE_SCORE_BASENAME = 40;
+export const PORTAL_KNOWLEDGE_SCORE_SYMBOL_NAME = 20;
+export const PORTAL_KNOWLEDGE_SCORE_TAG_OR_TASK = 12;
+export const PORTAL_KNOWLEDGE_SCORE_BODY_TERM = 1;
+
 /** Subprocess timeout for `deno doc --json` call in milliseconds. */
 export const DENO_DOC_TIMEOUT_MS: number = configurable({
   key: "tools.deno_doc_timeout_ms",

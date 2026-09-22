@@ -290,3 +290,26 @@ export const PortalKnowledgeSchema = z.object({
 });
 
 export type IPortalKnowledge = z.infer<typeof PortalKnowledgeSchema>;
+
+/** A request-scored knowledge item available for adaptive prompt inclusion. */
+export const PortalKnowledgeRelevanceEntrySchema = z.object({
+  kind: z.enum(["symbol", "key_file", "layer", "convention"]),
+  id: z.string().min(1),
+  label: z.string().min(1),
+  detail: z.string().min(1),
+  score: z.number().min(0),
+  reference: z.string().min(1),
+});
+
+export type IPortalKnowledgeRelevanceEntry = z.infer<typeof PortalKnowledgeRelevanceEntrySchema>;
+
+/** The complete adaptive block returned by the budgeted builder. */
+export const PortalKnowledgeRelevanceResultSchema = z.object({
+  core: z.string(),
+  relevant: z.array(PortalKnowledgeRelevanceEntrySchema),
+  content: z.string(),
+  budgetUsedTokens: z.number().int().min(0),
+  inclusion: z.enum(["summary", "adaptive"]),
+});
+
+export type IPortalKnowledgeRelevanceResult = z.infer<typeof PortalKnowledgeRelevanceResultSchema>;
