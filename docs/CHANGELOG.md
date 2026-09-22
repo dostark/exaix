@@ -18,6 +18,31 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 198 (Request-Adaptive Portal Knowledge Inclusion & AST-Graph Exploration)
+
+### Added
+
+- `portal_knowledge.inclusion = "adaptive"` config key — selects a small core of portal
+  facts plus request-scored relevant entries (ranked against task type, tags, and
+  referenced files) instead of the fixed portal summary; default `"summary"` preserves
+  today's prompt content byte-for-byte. See
+  [Portal knowledge inclusion](Exaix_User_Guide.md#portal-knowledge-inclusion).
+- `portal_knowledge.core_max_tokens` / `portal_knowledge.relevant_max_entries` config
+  keys — bound adaptive mode's always-included core segment and the maximum ranked
+  relevant entries added after it. See
+  [Portal knowledge inclusion](Exaix_User_Guide.md#portal-knowledge-inclusion).
+- `query_symbols` / `get_module_dependencies` — two read-only Solo ReAct tools that let
+  an authorized agent role inspect the cached portal AST graph (ranked symbol lookup;
+  forward import-dependency traversal) when adaptive knowledge doesn't cover what the
+  request needs; list their names in a role's `permitted_tools` to enable them. See
+  [Portal knowledge inclusion](Exaix_User_Guide.md#portal-knowledge-inclusion).
+
+### Fixed
+
+- `permitted_tools` now also governs the native provider tool-call definitions a
+  ReAct role's model receives, not only the prompt text and dispatch-time check — an
+  unlisted role's model no longer sees a native tool definition it isn't allowed to call.
+
 ## Unreleased — Phase 196 (Agent Context & Cost Budget Enforcement)
 
 ### Added
