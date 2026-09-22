@@ -284,6 +284,61 @@ Deno.test("[ToolRegistry] query_symbols and get_module_dependencies error gracef
   }
 });
 
+Deno.test("[ToolRegistry] query_symbols and get_module_dependencies tokenize results with a CLI-delegate provider's bare model name, not a provider-prefixed composite", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "tool-graph-cli-delegate-model-" });
+  try {
+    const config = createMockConfig(dir, {
+      ai: { provider: "claude-cli", model: "claude-haiku-4-5", timeout_ms: 60000 },
+      portals: [{
+        alias: PORTAL_ALIAS,
+        target_path: dir,
+        default_branch: "main",
+        agents_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const service = makeMockKnowledgeService(makeKnowledge());
+    const context = makeContext(config, service);
+    const registry = new ToolRegistry({ config, baseDir: dir, context });
+
+    const symbols = await registry.execute(ToolName.QUERY_SYMBOLS, {});
+    assertEquals(symbols.success, true, `query_symbols must not fail on a claude-cli model id: ${symbols.error}`);
+
+    const deps = await registry.execute(ToolName.GET_MODULE_DEPENDENCIES, { path: "src/router.ts" });
+    assertEquals(
+      deps.success,
+      true,
+      `get_module_dependencies must not fail on a claude-cli model id: ${deps.error}`,
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("[ToolRegistry] query_symbols falls back to a chars-per-token estimate instead of failing when the configured model is outside the tokenizer's catalog", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "tool-graph-unknown-model-" });
+  try {
+    const config = createMockConfig(dir, {
+      ai: { provider: "mock", model: "not-a-real-model-xyz", timeout_ms: 60000 },
+      portals: [{
+        alias: PORTAL_ALIAS,
+        target_path: dir,
+        default_branch: "main",
+        agents_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const service = makeMockKnowledgeService(makeKnowledge());
+    const context = makeContext(config, service);
+    const registry = new ToolRegistry({ config, baseDir: dir, context });
+
+    const result = await registry.execute(ToolName.QUERY_SYMBOLS, {});
+    assertEquals(result.success, true, `query_symbols must not fail on an unrecognized model id: ${result.error}`);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("[ToolRegistry][security] query_symbols bounds an oversized result to MAX_GRAPH_TOOL_RESULT_TOKENS and reports truncation", async () => {
   const dir = await Deno.makeTempDir({ prefix: "tool-graph-oversized-" });
   try {

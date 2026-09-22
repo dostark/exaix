@@ -19,8 +19,8 @@ import {
   MAX_GRAPH_TOOL_RESULT_TOKENS,
   MAX_GRAPH_TOOL_RESULTS,
   PORTAL_PREFIX_PATTERN,
-  ProviderType,
   SystemCommand,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolName,
 } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID, type IGitServiceFactory } from "@exaix/core/types";
@@ -782,23 +782,38 @@ export class ToolRegistry implements IToolRegistry {
     return this.formatSuccess(whoDependsOn(knowledge, path) as unknown as JSONValue);
   }
 
-  /** Model identity for graph-tool result token counting — mirrors the configured AI provider/model. */
+  /** Model identity for graph-tool result token counting — the bare configured AI model name.
+   *  ai-token-estimator's catalog keys are bare model names (e.g. "claude-haiku-4-5"); a
+   *  provider-prefixed composite ("claude-cli:claude-haiku-4-5") does not match any entry
+   *  and throws "Unknown model" even for a real, supported model. */
   private graphToolModelId(): string {
-    return `${this.config.ai?.provider ?? ProviderType.MOCK}:${this.config.ai?.model ?? DEFAULT_AI_MODEL}`;
+    return this.config.ai?.model ?? DEFAULT_AI_MODEL;
+  }
+
+  /** graphToolTokenizer.countTokens, but never throws: ai-token-estimator rejects any model
+   *  id outside its own hardcoded catalog (e.g. a next-gen or CLI-delegate model name it
+   *  doesn't yet know), and a bounding utility must not crash the tool call over that — falls
+   *  back to the same chars-per-token heuristic TokenCounter already uses elsewhere. */
+  private async safeCountTokens(text: string, modelId: string): Promise<number> {
+    try {
+      return await this.graphToolTokenizer.countTokens(text, modelId);
+    } catch {
+      return Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+    }
   }
 
   /** Binary-search prefix fit, mirroring portal_knowledge_selector.ts's tokenBoundedPrefix —
    *  duplicated locally since tool-runtime cannot import execution/core func internals across
    *  that boundary for a single helper. */
   private async fitToTokenBudget(text: string, maxTokens: number, modelId: string): Promise<string> {
-    if (await this.graphToolTokenizer.countTokens(text, modelId) <= maxTokens) return text;
+    if (await this.safeCountTokens(text, modelId) <= maxTokens) return text;
     let low = 1;
     let high = text.length;
     let best = "";
     while (low <= high) {
       const mid = Math.floor((low + high) / 2);
       const candidate = text.slice(0, mid);
-      if (await this.graphToolTokenizer.countTokens(candidate, modelId) <= maxTokens) {
+      if (await this.safeCountTokens(candidate, modelId) <= maxTokens) {
         best = candidate;
         low = mid + 1;
       } else {
@@ -816,7 +831,7 @@ export class ToolRegistry implements IToolRegistry {
     let candidate = records;
     let truncated = false;
     while (candidate.length > 0) {
-      const tokens = await this.graphToolTokenizer.countTokens(JSON.stringify(candidate), modelId);
+      const tokens = await this.safeCountTokens(JSON.stringify(candidate), modelId);
       if (tokens <= MAX_GRAPH_TOOL_RESULT_TOKENS) break;
       candidate = candidate.slice(0, -1);
       truncated = true;
