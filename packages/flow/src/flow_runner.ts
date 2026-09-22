@@ -13,12 +13,12 @@ import type {
   IGateEvaluate,
   ISessionDelegateCycleRejectionReason,
 } from "@exaix/schemas/flow.ts";
-import { encodeHex } from "@std/encoding/hex";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
 import { RetryBudgetService } from "./retry_budget_service.ts";
 import { CompensationService } from "./compensation_service.ts";
 import { WaveOrchestrator } from "./wave_orchestrator.ts";
+import { StepContentHasher } from "./step_content_hasher.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import type { JSONValue } from "@exaix/core";
@@ -29,7 +29,6 @@ import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers
 import {
   FlowInputSource,
   FlowOutputFormat,
-  FlowStepExecutionMode,
   FlowStepOnErrorAction,
   FlowStepType,
   StepAttemptClass,
@@ -776,6 +775,7 @@ export class FlowRunner implements IFlowRunner {
   private compensationService!: CompensationService;
   private waveOrchestrator!: WaveOrchestrator;
   private flowTraceStore?: IFlowTraceStore;
+  private readonly stepContentHasher = new StepContentHasher();
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -1108,7 +1108,7 @@ export class FlowRunner implements IFlowRunner {
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
     const startedAt = new Date();
-    const flowContentHash = await this.computeFlowContentHash(flow);
+    const flowContentHash = await this.stepContentHasher.computeFlowContentHash(flow);
 
     if (flow.steps.some((step) => step.type === FlowStepType.SESSION_DELEGATE_CYCLE)) {
       request = { ...request, traceId: await this.normalizeCycleParentTraceId(request, flowRunId) };
@@ -1426,12 +1426,12 @@ export class FlowRunner implements IFlowRunner {
   ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
     const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
     const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
-    const inputHash = await this.computeStepInputHash(stepRequest);
+    const inputHash = await this.stepContentHasher.computeStepInputHash(stepRequest);
     const stepId = step.id;
     const traceId = request.traceId ?? flowRunId;
 
-    const toolPolicyHash = await this.computeStringHash(JSON.stringify(step.permitted_tools ?? []));
-    const portalScopeHash = await this.computeStringHash(JSON.stringify([]));
+    const toolPolicyHash = await this.stepContentHasher.computeStringHash(JSON.stringify(step.permitted_tools ?? []));
+    const portalScopeHash = await this.stepContentHasher.computeStringHash(JSON.stringify([]));
 
     const priorRecord = await this.stepDurabilityStore.findReplayCandidate({
       traceId,
@@ -1494,7 +1494,7 @@ export class FlowRunner implements IFlowRunner {
       replayEligible: false,
     };
 
-    record.sideEffectClass = this.computeSideEffectClass(step);
+    record.sideEffectClass = this.stepContentHasher.computeSideEffectClass(step);
 
     await this.stepDurabilityStore.save(record);
 
@@ -2057,49 +2057,6 @@ export class FlowRunner implements IFlowRunner {
         completedAt: new Date(),
       };
     }
-  }
-
-  private async computeFlowContentHash(flow: IFlow): Promise<string> {
-    const serialized = JSON.stringify(flow, (_key, value) => {
-      return typeof value === "function" ? "__function__" : value;
-    });
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
-    return encodeHex(digest);
-  }
-
-  private async computeStepInputHash(stepRequest: IFlowStepRequest): Promise<string> {
-    const serialized = JSON.stringify({
-      userPrompt: stepRequest.userPrompt,
-      context: stepRequest.context,
-      skills: stepRequest.skills,
-    });
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
-    return encodeHex(digest);
-  }
-
-  private async computeStringHash(value: string): Promise<string> {
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-    return encodeHex(digest);
-  }
-
-  private computeSideEffectClass(step: IFlowStep): StepSideEffectClass {
-    if (step.type === FlowStepType.GATE) {
-      return StepSideEffectClass.NONE;
-    }
-
-    const hasTools = step.permitted_tools && step.permitted_tools.length > 0;
-    const isDynamic = step.execution_mode === FlowStepExecutionMode.DYNAMIC;
-
-    if (isDynamic && hasTools) {
-      const hasGitTools = step.permitted_tools!.some((t) => t.startsWith("git_"));
-      return hasGitTools ? StepSideEffectClass.GIT : StepSideEffectClass.TOOL;
-    }
-
-    if (!isDynamic && !hasTools) {
-      return StepSideEffectClass.LLM;
-    }
-
-    return StepSideEffectClass.MIXED;
   }
 
   /**
