@@ -45,7 +45,7 @@ class ScriptedProvider implements IModelProvider {
   }
 }
 
-function buildExecutor(executedTools: string[]): ReActExecutor {
+function buildExecutor(executedTools: string[], executedParams?: Array<Record<string, JSONValue>>): ReActExecutor {
   return {
     logAgentOutput: async () => {
       await Promise.resolve();
@@ -66,8 +66,9 @@ function buildExecutor(executedTools: string[]): ReActExecutor {
       await Promise.resolve();
     },
     toolRegistry: {
-      execute: async (tool: string, _params: Record<string, JSONValue>) => {
+      execute: async (tool: string, params: Record<string, JSONValue>) => {
         executedTools.push(tool);
+        executedParams?.push(params);
         await Promise.resolve();
         return { success: true, data: { symbols: [], truncated: false } };
       },
@@ -159,6 +160,21 @@ Deno.test("[ReAct permissions] get_module_dependencies is rejected the same way 
   const allowStrategy = new ReActLoopStrategy(buildExecutor(allowedTools), allowProvider);
   await allowStrategy.execute(blueprint, context, makeOptions([ToolName.GET_MODULE_DEPENDENCIES]));
   assertEquals(allowedTools, [ToolName.GET_MODULE_DEPENDENCIES]);
+});
+
+Deno.test("[ReAct graph tools] get_module_dependencies keeps its portal-relative path at dispatch", async () => {
+  const executedTools: string[] = [];
+  const executedParams: Array<Record<string, JSONValue>> = [];
+  const provider = new ScriptedProvider([
+    `${REACT_THOUGHT_PREFIX}Inspect imports.\n\`\`\`toml\n[[actions]]\ntool = "get_module_dependencies"\n[actions.params]\npath = "src/router.ts"\ndepth = 2\n\`\`\``,
+    `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+  ]);
+  const strategy = new ReActLoopStrategy(buildExecutor(executedTools, executedParams), provider);
+
+  await strategy.execute(blueprint, context, makeOptions([ToolName.GET_MODULE_DEPENDENCIES]));
+
+  assertEquals(executedTools, [ToolName.GET_MODULE_DEPENDENCIES]);
+  assertEquals(executedParams, [{ path: "src/router.ts", depth: 2 }]);
 });
 
 Deno.test("[ReAct permissions] default (no permitted_tools) five-tool exposure is unchanged — query_symbols is not in it", async () => {

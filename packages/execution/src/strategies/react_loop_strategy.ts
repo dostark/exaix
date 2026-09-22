@@ -695,9 +695,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
     }
 
-    // Ensure portal isolation via path prefixing (consistent with McpAgentStrategy)
+    // Filesystem tools use a portal alias; cached graph edges use portal-relative paths.
     const enrichedParams = { ...action.params };
     if (
+      action.tool !== ToolName.GET_MODULE_DEPENDENCIES &&
       options.portal && enrichedParams.path &&
       typeof enrichedParams.path === "string" &&
       !enrichedParams.path.startsWith("@")
