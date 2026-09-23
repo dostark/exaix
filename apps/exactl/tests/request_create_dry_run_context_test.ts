@@ -4,15 +4,19 @@
  * @description Phase 196 Step 8 — `exactl request create --dry-run-context` prints a real
  *   per-segment token breakdown without writing a request file or invoking a real LLM call,
  *   and the existing `--dry-run` flag's behavior is completely unchanged by this step.
+ *   Phase 199 Step 4 adds the planning read-only tool preview: with `[planning]
+ *   tools_enabled = true` the same command also prints the `Available read-only planning
+ *   tools:` catalog (with an `(inactive: ...)` suffix for non-native-tools providers) and a
+ *   `Planning tools worst case: +<N> tokens` cost line; flag off keeps the output unchanged.
  * @architectural-layer CLI
- * @related-files [apps/exactl/src/command_builders/request_actions.ts, packages/execution/src/agent_runner.ts]
+ * @related-files [apps/exactl/src/command_builders/request_actions.ts, packages/execution/src/agent_runner.ts, packages/execution/src/native_tool_turns.ts]
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { PortalAnalysisMode } from "@exaix/core";
-import type { IApplicationContext, IPortalKnowledgeConfig } from "@exaix/core/types";
+import type { IApplicationContext, ICliApplicationContext, IPortalKnowledgeConfig } from "@exaix/core/types";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import {
   handleRequestCreate,
@@ -277,4 +281,84 @@ Deno.test("[exactl request create --dry-run-context] a cold portal never trigger
   } finally {
     await cleanup();
   }
+});
+
+/// With `[planning] tools_enabled = true` the dry-run preview also shows the planner's
+/// read-only tool catalog, its activation state and the worst-case extra cost.
+
+/** Rewrites the fixture's `config.toml` with a `[planning]` block and reloads the context
+ *  config so `handleRequestCreateDryRunContext` sees the effective flag value. */
+async function writePlanningToolsConfigBlock(
+  tempDir: string,
+  appContext: ICliApplicationContext,
+  toolsEnabled: boolean,
+): Promise<void> {
+  await Deno.writeTextFile(
+    join(tempDir, "config.toml"),
+    `[system]\nroot = "."\n\n[planning]\ntools_enabled = ${toolsEnabled}\nmax_tool_rounds = 2\nmax_tool_result_tokens = 2000\n`,
+  );
+  appContext.config.reload();
+}
+
+async function runDryRunContextPreview(
+  context: IRequestActionContext,
+  description = "Add a hello world function.",
+): Promise<string> {
+  const { output, restore } = captureConsoleLog();
+  try {
+    await handleRequestCreate(
+      context,
+      { agentRole: "mock-agent", dryRunContext: true } as IRequestCreateOptions,
+      description,
+    );
+  } finally {
+    restore();
+  }
+  return output.join("\n");
+}
+
+Deno.test("[exactl request create --dry-run-context] with planning.tools_enabled=true prints the available read-only planning tools line", async () => {
+  await withDryRunContextFixture(async ({ context, tempDir }) => {
+    await writePlanningToolsConfigBlock(tempDir, context.appContext!, true);
+    const rendered = await runDryRunContextPreview(context);
+
+    assertStringIncludes(rendered, "Projected Prompt Breakdown", "flag-on must still preview the prompt");
+    assertStringIncludes(rendered, "Available read-only planning tools:");
+    // Two real NONE-scope catalog members must appear; write tools must not.
+    assertStringIncludes(rendered, "read_file");
+    assertStringIncludes(rendered, "query_relationships");
+    assert(!rendered.includes("write_file"), "a write tool must never be advertised to the planner preview");
+  });
+});
+
+Deno.test("[exactl request create --dry-run-context] with a non-native-tools default model the tools line carries the (inactive: ...) suffix", async () => {
+  await withDryRunContextFixture(async ({ context, tempDir }) => {
+    await writePlanningToolsConfigBlock(tempDir, context.appContext!, true);
+    const rendered = await runDryRunContextPreview(context);
+
+    assertStringIncludes(rendered, "(inactive: provider", "non-native provider must be flagged inactive (GAP-8)");
+    assertStringIncludes(rendered, "lacks native tools");
+  });
+});
+
+Deno.test("[exactl request create --dry-run-context] with the flag on prints a positive worst-case extra token count", async () => {
+  await withDryRunContextFixture(async ({ context, tempDir }) => {
+    await writePlanningToolsConfigBlock(tempDir, context.appContext!, true);
+    const rendered = await runDryRunContextPreview(context);
+
+    const match = rendered.match(/Planning tools worst case: \+(\d+) tokens/);
+    assert(match, `expected a worst-case token line, got:\n${rendered}`);
+    assert(Number(match[1]) > 0, `worst-case token count must be positive, got ${match[1]}`);
+  });
+});
+
+Deno.test("[exactl request create --dry-run-context] flag off prints no planning tools line (regression)", async () => {
+  await withDryRunContextFixture(async ({ context, tempDir }) => {
+    await writePlanningToolsConfigBlock(tempDir, context.appContext!, false);
+    const rendered = await runDryRunContextPreview(context);
+
+    assertStringIncludes(rendered, "Projected Prompt Breakdown", "flag-off preview still renders");
+    assert(!rendered.includes("Available read-only planning tools:"), "no tools line when planning tools are off");
+    assert(!rendered.includes("Planning tools worst case:"), "no worst-case line when planning tools are off");
+  });
 });

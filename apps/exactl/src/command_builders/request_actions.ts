@@ -15,9 +15,12 @@ import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_NONE_LABEL,
+  DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS,
+  DEFAULT_PLANNING_MAX_TOOL_ROUNDS,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   FlowInputSource,
   type JSONValue,
+  PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
   type RequestPriority,
 } from "@exaix/core";
 import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
@@ -30,13 +33,19 @@ import { ProviderFactory } from "@exaix/ai";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { ClarificationEngine } from "@exaix/quality-gate";
-import { createOutputValidator } from "@exaix/tool-runtime";
+import { createOutputValidator, readOnlyEditorTools } from "@exaix/tool-runtime";
 import { join } from "@std/path";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY, PromptBudgetAllocator } from "@exaix/core";
 import { PlanAdapter } from "@exaix/core/planning";
 import { loadBlueprint } from "@exaix/core/blueprint";
-import { AgentRunner, ContextBudgetManager, type IParsedRequest } from "@exaix/execution";
+import {
+  AgentRunner,
+  computeRegistryPredictedCost,
+  ContextBudgetManager,
+  type IParsedRequest,
+  providerSupportsNativeTools,
+} from "@exaix/execution";
 import { PortalContextBuilder } from "@exaix/request";
 import type { IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
 import { resolveEffectiveBudgetPolicy } from "@exaix/core/config";
@@ -187,6 +196,17 @@ function formatPromptPreviewTable(preview: IPromptPreview): string {
   return lines.join("\n");
 }
 
+/** The planner's read-only catalog names the dry-run advertises: `readOnlyEditorTools()`
+ *  intersected with the real CLI registry's registered tools so a tool the registry doesn't
+ *  actually offer is never advertised. Falls back to the full structural catalog when the
+ *  context carries no registry (its absence is optional by contract). */
+function planningToolsCatalogNames(toolRegistry: ICliApplicationContext["toolRegistry"]): string[] {
+  const catalog = readOnlyEditorTools();
+  if (!toolRegistry) return catalog.map((t) => t.name);
+  const registered = new Set(toolRegistry.getTools().map((t) => t.name));
+  return catalog.filter((t) => registered.has(t.name)).map((t) => t.name);
+}
+
 /** Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): inject the same
  *  portal_context + portal_knowledge segments the daemon would assemble, from a read-only
  *  cached knowledge lookup — never triggers analysis, persistence, or an LLM call. Returns
@@ -286,6 +306,33 @@ async function handleRequestCreateDryRunContext(
     console.log(formatPromptPreviewTable(preview));
     if (portalKnowledgeStatus && portalKnowledgeStatus !== "available") {
       console.log(`Portal knowledge: ${portalKnowledgeStatus}`);
+    }
+
+    // When planning read-only tools are enabled, print the same preview the daemon
+    // honors — catalog, activation state and worst-case cost. The effective read mirrors
+    // AgentRunner's `context.config.get().planning`.
+    const planning = config.planning ?? {};
+    if (planning.tools_enabled === true) {
+      const toolNames = planningToolsCatalogNames(appContext.toolRegistry);
+      const nativeTools = providerSupportsNativeTools(providerInfo.id);
+      const inactiveSuffix = nativeTools ? "" : ` (inactive: provider ${providerInfo.id} lacks native tools)`;
+      console.log(`Available read-only planning tools: ${toolNames.join(", ")}${inactiveSuffix}`);
+
+      const maxRounds = planning.max_tool_rounds ?? DEFAULT_PLANNING_MAX_TOOL_ROUNDS;
+      const maxResultTokens = planning.max_tool_result_tokens ?? DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS;
+      const resends = maxRounds - 1;
+      const extraTokens = resends *
+        (preview.totalTokenEstimate + maxResultTokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
+      const extraCostUsd = computeRegistryPredictedCost(providerInfo.id, providerInfo.model, {
+        promptTokens: extraTokens,
+        completionTokens: 0,
+      });
+      const costLabel = extraCostUsd === undefined ? "cost n/a" : `+$${extraCostUsd.toFixed(6)}`;
+      // maxRounds generate calls per run() — with the processor's up-to-2 plan-validation
+      // feedback retries, worst case is 3 run() calls, hence "(×3 …)".
+      console.log(
+        `Planning tools worst case: +${extraTokens} tokens, ${costLabel} per run (×3 with plan-validation retries)`,
+      );
     }
   } catch (error) {
     display.error("cli.error", FlowInputSource.REQUEST, {
