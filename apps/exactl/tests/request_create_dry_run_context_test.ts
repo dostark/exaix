@@ -15,7 +15,8 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { PortalAnalysisMode } from "@exaix/core";
+import { PortalAnalysisMode, PricingTier, ProviderType } from "@exaix/core";
+import { ProviderRegistry } from "@exaix/ai";
 import type { IApplicationContext, ICliApplicationContext, IPortalKnowledgeConfig } from "@exaix/core/types";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import {
@@ -333,10 +334,30 @@ Deno.test("[exactl request create --dry-run-context] with planning.tools_enabled
 
 Deno.test("[exactl request create --dry-run-context] with a non-native-tools default model the tools line carries the (inactive: ...) suffix", async () => {
   await withDryRunContextFixture(async ({ context, tempDir }) => {
-    await writePlanningToolsConfigBlock(tempDir, context.appContext!, true);
+    // A locally-registered ProviderType without supportsNativeTools: deterministic — the mock
+    // provider became native-capable, and this key is in the supported set, so resolution
+    // cannot fall back to mock.
+    ProviderRegistry.registerWithMetadata(
+      ProviderType.OPENAI_CHAT,
+      { create: () => Promise.reject(new Error("unused")) } as never,
+      {
+        name: ProviderType.OPENAI_CHAT,
+        description: "non-native fixture provider",
+        capabilities: ["chat"],
+        costTier: 0 as never,
+        pricingTier: PricingTier.FREE,
+        strengths: [],
+      },
+    );
+    await Deno.writeTextFile(
+      join(tempDir, "config.toml"),
+      `[system]\nroot = "."\n\n[agents]\ndefault_model = "fixture"\n\n[models.fixture]\nprovider = "openai-chat"\nmodel = "x"\n\n[planning]\ntools_enabled = true\nmax_tool_rounds = 2\nmax_tool_result_tokens = 2000\n`,
+    );
+    context.appContext!.config.reload();
     const rendered = await runDryRunContextPreview(context);
 
     assertStringIncludes(rendered, "(inactive: provider", "non-native provider must be flagged inactive (GAP-8)");
+    assertStringIncludes(rendered, "openai-chat", "the flagged provider id must be named");
     assertStringIncludes(rendered, "lacks native tools");
   });
 });

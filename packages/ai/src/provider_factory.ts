@@ -438,6 +438,9 @@ export function initializeRegistry(): void {
       costTier: DEFAULTS.PROVIDER_COST_TIER_FREE,
       pricingTier: PricingTier.FREE,
       strengths: DEFAULTS.PROVIDER_MOCK_STRENGTHS,
+      // The mock replays recorded toolCalls, so native-tools gates admit it; a
+      // recording without toolCalls stays a plain text response (isComplete).
+      supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(DEFAULTS.PROVIDER_MOCK, new MockProviderFactory(), mockMetadata);
   }

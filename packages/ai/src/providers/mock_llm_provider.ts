@@ -14,7 +14,7 @@
 import { MockStrategy, ProviderType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { ICallSite, IModelOptions, IModelProvider } from "../types.ts";
-import type { IGenerateResult } from "./common.ts";
+import type { IGenerateResult, IProviderToolCall } from "./common.ts";
 import {
   DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
   MOCK_DELAY_MS,
@@ -45,10 +45,20 @@ export interface IRecordedResponse {
   /** Where this recording was captured. When present, lookup addresses by call site instead
    *  of prompt hash; the hash is still compared on replay to detect drift. */
   callSite?: ICallSite;
+  /** Native tool calls the recorded model made. Surfaced on IGenerateResult.toolCalls only
+   *  when the caller requested tools via IModelOptions.tools; otherwise ignored (matches the
+   *  IGenerateResult.toolCalls contract). */
+  toolCalls?: IProviderToolCall[];
   /** Retry metadata from capture: how many attempts it took to get a contract-satisfying
    *  response, and why the earlier ones were refused. The rate this represents across a
    *  fixture set is a product finding, not noise to smooth away. */
   capture?: { attempts: number; failures: string[] };
+}
+
+/** A replayed recording: the recorded text response plus any native tool calls it carried. */
+interface IRecordedReplay {
+  response: string;
+  toolCalls?: IProviderToolCall[];
 }
 
 /** A call-site hit whose current prompt hash no longer matches the recorded fixture. It still
@@ -194,6 +204,25 @@ function isValidCallSite(value: Opt<Partial<ICallSite>, Reason.OptionalInput>): 
     typeof value.callIndex === "number";
 }
 
+/** Validates a recording's toolCalls field, returning a describeable failure or null when
+ *  it is a well-formed array of `{ id: string, name: string, input: object }` entries. */
+function toolCallsValidationError(
+  value: Opt<IProviderToolCall[], Reason.OptionalInput>,
+): string | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) return "toolCalls is present but not an array";
+  for (let index = 0; index < value.length; index++) {
+    const call = value[index];
+    if (
+      typeof call !== "object" || call === null || typeof call.id !== "string" ||
+      typeof call.name !== "string" || typeof call.input !== "object" || call.input === null
+    ) {
+      return `toolCalls[${index}] is malformed — expected { id: string, name: string, input: object }`;
+    }
+  }
+  return null;
+}
+
 /** Validate a loaded fixture file against the IRecordedResponse contract, so a corrupt or
  *  schema-violating recording fails loudly at load time — naming the file — instead of an
  *  unvalidated JSON.parse crash or a silently-malformed recording that can never replay correctly. */
@@ -217,6 +246,8 @@ function validateRecordedResponse(value: JSONValue, filePath: string): IRecorded
   if (candidate.callSite !== undefined && !isValidCallSite(candidate.callSite)) {
     fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex, flowStepId? }");
   }
+  const toolCallsError = toolCallsValidationError(candidate.toolCalls);
+  if (toolCallsError) fail(toolCallsError);
   return candidate as IRecordedResponse;
 }
 
@@ -345,10 +376,15 @@ export class MockLLMProvider implements IModelProvider {
 
     const timestamp = new Date();
     let response: string;
+    let toolCalls: IProviderToolCall[] | undefined;
     switch (this.strategy) {
-      case MockStrategy.RECORDED:
-        response = await this.generateRecorded(prompt, options);
+      case MockStrategy.RECORDED: {
+        const replay = this.generateRecorded(prompt, options);
+        response = replay.response;
+        // IGenerateResult.toolCalls is produced only when the caller requested tools.
+        toolCalls = options?.tools && replay.toolCalls && replay.toolCalls.length > 0 ? replay.toolCalls : undefined;
         break;
+      }
       case MockStrategy.SCRIPTED:
         response = await this.generateScripted();
         break;
@@ -380,14 +416,16 @@ export class MockLLMProvider implements IModelProvider {
       },
       model: "mock-model",
       provider: this.id,
+      ...(toolCalls !== undefined ? { toolCalls } : {}),
     };
   }
 
   // Strategy Implementations
 
-  /** Recorded strategy: look up a response by call site when the caller supplies one, falling
-   *  back to the whole-prompt-hash lookup otherwise — unchanged for calls without options.callSite. */
-  private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): string {
+  /** Recorded strategy: look up a response (and any native tool calls) by call site when the
+   *  caller supplies one, falling back to the whole-prompt-hash lookup otherwise — unchanged
+   *  for calls without options.callSite. */
+  private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): IRecordedReplay {
     if (options?.callSite) {
       return this.generateRecordedByCallSite(prompt, options.callSite);
     }
@@ -397,7 +435,7 @@ export class MockLLMProvider implements IModelProvider {
     // Try exact hash match first
     const recording = this.recordings.find((r) => r.promptHash === hash);
     if (recording) {
-      return recording.response;
+      return { response: recording.response, toolCalls: recording.toolCalls };
     }
 
     // Try matching by prompt preview (partial match)
@@ -405,7 +443,7 @@ export class MockLLMProvider implements IModelProvider {
       prompt.startsWith(r.promptPreview) || r.promptPreview.startsWith(prompt)
     );
     if (previewMatch) {
-      return previewMatch.response;
+      return { response: previewMatch.response, toolCalls: previewMatch.toolCalls };
     }
 
     // A miss under `recorded` is a hole in the fixture set, and silently answering it from a
@@ -426,7 +464,7 @@ export class MockLLMProvider implements IModelProvider {
           `Hash: ${hash}\n` +
           `Preview: "${prompt.substring(0, 50)}..."`,
       );
-      return this.generatePattern(prompt);
+      return { response: this.generatePattern(prompt) };
     }
 
     throw new MockLLMError(
@@ -440,7 +478,7 @@ export class MockLLMProvider implements IModelProvider {
   /** Look up a recording by call site. A hit whose prompt hash no longer matches still replays
    *  but is reported as drift. A miss is fatal under strictRecordings, naming the call site so
    *  the missing fixture can be captured; otherwise it falls back to pattern matching. */
-  private generateRecordedByCallSite(prompt: string, callSite: ICallSite): string {
+  private generateRecordedByCallSite(prompt: string, callSite: ICallSite): IRecordedReplay {
     const key = callSiteKey(callSite);
     const recording = this.recordings.find((r) => r.callSite && callSiteKey(r.callSite) === key);
 
@@ -455,7 +493,7 @@ export class MockLLMProvider implements IModelProvider {
             `it still represents the current prompt.`,
         );
       }
-      return recording.response;
+      return { response: recording.response, toolCalls: recording.toolCalls };
     }
 
     if (this.strictRecordings) {
@@ -470,7 +508,7 @@ export class MockLLMProvider implements IModelProvider {
       console.warn(
         `No recording for call site ${describeCallSite(callSite)}, falling back to pattern matching.`,
       );
-      return this.generatePattern(prompt);
+      return { response: this.generatePattern(prompt) };
     }
 
     throw new MockLLMError(
