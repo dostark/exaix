@@ -7,7 +7,7 @@
  * @related-files ["packages/core/src/planning/plan_executor.ts", exaix-team/packages/mcp-server/tools.ts]
  */
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { join, resolve } from "@std/path";
+import { isAbsolute, join, resolve, SEPARATOR } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
@@ -1025,11 +1025,15 @@ export class ToolRegistry implements IToolRegistry {
       const resolvedPath = await this.resolvePath(searchPath);
       const files: string[] = [];
 
-      // Construct glob pattern
+      // A pattern may only descend from the search root; `..` or an absolute prefix would
+      // make join() glob above it and list files the root never contained.
+      if (isAbsolute(pattern) || pattern.split(/[\\/]/).includes("..")) {
+        throw new Error("Access denied: Path traversal detected");
+      }
       const globPattern = join(resolvedPath, pattern);
 
       for await (const entry of expandGlob(globPattern)) {
-        if (entry.isFile) {
+        if (entry.isFile && entry.path.startsWith(resolvedPath + SEPARATOR)) {
           files.push(entry.path);
         }
       }
