@@ -7,7 +7,7 @@ request_fixture: "fixtures/requests/provider_live/planning_read_only_live.md"
 mode_support: ["auto"]
 portals:
   - alias: "live-portal"
-    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/planning_marker_repo"
     target_path: "$WORKSPACE_ROOT/live-portal"
     git_init: true
 matrix:
@@ -99,7 +99,9 @@ steps:
     cells: ["exactl"]
     action_type: "planning.tools.completed"
     trace_scoped: true
-    expect_count: 1
+    expect_sum:
+      path: "toolCalls"
+      gt: 0
     output_criteria:
       - id: "loop-completed-live"
         score_weight: 0.5
@@ -111,13 +113,23 @@ steps:
     cells: ["exactl"]
     action_type: "dynamic_tool_call"
     trace_scoped: true
-    payload_contains: ["\"phase\":\"planning\""]
-    expect_count: 1
+    expect_contains: ["\"phase\":\"planning\""]
     output_criteria:
       - id: "planning-tool-call-live"
         score_weight: 1.0
         kind: "command-exit-code"
         equals: 0
+
+  # The written plan must carry the value only a tool read of src/limits.ts can reveal.
+  - id: "assert-plan-carries-marker"
+    type: "file-contains"
+    cells: ["exactl"]
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "marker-in-live-plan"
+        score_weight: 1.0
+        kind: "text-contains"
+        contains: "EXAIX_LIVE_MARKER_c9a41"
 
   - id: "assert-no-skip-native"
     type: "journal-assert"

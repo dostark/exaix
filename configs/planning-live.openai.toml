@@ -30,7 +30,7 @@ enabled = false
 
 [planning]
 tools_enabled = true
-max_tool_rounds = 2
+max_tool_rounds = 3
 max_tool_result_tokens = 2000
 
 [[portals]]

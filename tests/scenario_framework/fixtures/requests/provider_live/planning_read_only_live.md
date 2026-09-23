@@ -1,13 +1,13 @@
-# Plan: refactor the portal entry to a Greeter with a unit test
+# Plan: raise the request limit constant
 
-Inspect the `live-portal` portal and produce a plan to refactor `src/main.ts` into a
-`Greeter` class with a Deno unit test.
+Inspect the `live-portal` portal and produce a plan to change the constant
+`PLANNING_MARKER_LIMIT` defined in `src/limits.ts` and to add a Deno unit test for it.
 
-Use the available read-only exploration tools to actually read the source files under the
-portal before committing to the plan, so the plan is grounded in the real code.
+Use the available read-only exploration tools to read `src/limits.ts` before planning. The
+first plan step must quote the constant's exact current value.
 
 Acceptance criteria:
 
-- The plan has a step that refactors `src/main.ts` to export a `Greeter` class.
-- The plan has a step that adds a Deno test for `Greeter`.
-- The plan's steps are concrete and reference the portal's actual file layout.
+- The first plan step quotes the exact current value of `PLANNING_MARKER_LIMIT`.
+- The plan has a step that adds a Deno test covering the constant.
+- The plan's steps reference the portal's actual file layout.
