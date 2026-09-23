@@ -142,7 +142,7 @@ Related
 - #tdd-workflow         — when refactor requires adding tests first
 - #security             — full security audit when refactor exposes 3+ control gaps
 - [Blueprints/Skills/security-first.skill.md](../../../Blueprints/Skills/security-first.skill.md) — secure coding checklist for portal code; consult when refactor touches input, path, injection, or auth boundaries
-- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - CODE_STYLE.md         — authoritative naming, type, import, and constants rules
 ```
 

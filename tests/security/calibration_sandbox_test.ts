@@ -49,7 +49,7 @@ Deno.test({
   name: "[CalibrationSandbox][security] the sandbox cannot read a file from the actual repository",
   ignore: Deno.env.get("CI") === "true",
   fn: async () => {
-    const claudeMdPath = resolve(REPO_ROOT, "CLAUDE.md");
+    const claudeMdPath = resolve(REPO_ROOT, "AGENTS.md");
     const result = await runSandboxed("cat", [claudeMdPath], SCRATCH_ROOT);
     assertEquals(result.code, 1, "cat of a real repo file must fail inside the sandbox");
     assertStringIncludes(result.stderr, "No such file or directory");

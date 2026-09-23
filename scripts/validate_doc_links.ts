@@ -14,7 +14,7 @@ const ROOT_DOCS = [
   "README.md",
   "ARCHITECTURE.md",
   "CODE_STYLE.md",
-  "CLAUDE.md",
+  "AGENTS.md",
   "CONTRIBUTING.md",
 ];
 

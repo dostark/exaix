@@ -47,10 +47,10 @@ topics: ["reference", "docs", "catalog"]
 | Pre-Gap Analysis Skill (#pre-gap-analysis) | [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md) |
 | Doc Catalog | [DOCS.md](DOCS.md) |
 | ARCHITECTURE.md | [../ARCHITECTURE.md](../ARCHITECTURE.md) |
-| Agent Instructions | [../CLAUDE.md](../CLAUDE.md) |
 | Exaix Overview & Quickstart | [../README.md](../README.md) |
 | Exaix Glossary | [../GLOSSARY.md](../GLOSSARY.md) |
 | Code Style & Standards | [../CODE_STYLE.md](../CODE_STYLE.md) |
+| Agent Instructions | [../AGENTS.md](../AGENTS.md) |
 | CONTRIBUTING.md | [../CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## Search by Topic

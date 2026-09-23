@@ -10,7 +10,7 @@ flow: "onboarding-docs"
 
 # Write the first-week orientation for a new contributor
 
-Write orientation documentation for someone joining this codebase, using `ARCHITECTURE.md` and `CLAUDE.md` as source. Cover:
+Write orientation documentation for someone joining this codebase, using `ARCHITECTURE.md` and `AGENTS.md` as source. Cover:
 
 - The request lifecycle end to end, in one page
 - Where the boundaries are: packages versus apps, and why

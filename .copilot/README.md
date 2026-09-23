@@ -142,7 +142,7 @@ The `description:` field is mandatory for files in `prompts/` — it powers slas
 
 ### Root-level `.md` files
 
-Root-level files (README.md, TOOLS.md, CLAUDE.md, CONTRIBUTING.md, etc.) use a different set of fields. To include a root-level file in the agent knowledge base, add `copilot_knowledge_base: true` — the build script uses this as the inclusion filter:
+Root-level files (README.md, TOOLS.md, AGENTS.md, CONTRIBUTING.md, etc.) use a different set of fields. To include a root-level file in the agent knowledge base, add `copilot_knowledge_base: true` — the build script uses this as the inclusion filter:
 
 ```yaml
 ---

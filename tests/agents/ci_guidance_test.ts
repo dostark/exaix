@@ -41,7 +41,7 @@ Deno.test("Agent docs: completion evidence must survive session restarts", async
 });
 
 Deno.test("Agent docs: local completion validation is focused by default", async () => {
-  const agentInstructions = await Deno.readTextFile("CLAUDE.md");
+  const agentInstructions = await Deno.readTextFile("AGENTS.md");
   const nextSteps = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");
 
   assert(agentInstructions.includes("focused, file-scoped validation"));

@@ -788,7 +788,7 @@ These rules are enforced by:
 
 This file is the single authoritative source for code style. The following documents reference it but do not duplicate its content:
 
-- [`CLAUDE.md`](CLAUDE.md) — delegates to this file for all style rules
+- [`AGENTS.md`](AGENTS.md) — delegates to this file for all style rules
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
 - [`scripts/check_code_style.md`](scripts/check_code_style.md) — companion reference for the code-style checker and boundary-oriented import rules
 - [`.copilot/skills/exaix-development/SKILL.md`](.copilot/skills/exaix-development/SKILL.md)

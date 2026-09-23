@@ -120,7 +120,7 @@ Workflow chain (typical):
 
 ## Related
 
-- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format

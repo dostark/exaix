@@ -36,7 +36,7 @@ const DEFAULT_ROOTS: readonly string[] = [
   "Blueprints",
   "README.md",
   "CONTRIBUTING.md",
-  "CLAUDE.md",
+  "AGENTS.md",
 ];
 
 const SKIP_DIRS = new Set([

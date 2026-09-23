@@ -11,7 +11,7 @@
  * SANDBOXED buildAgentArgs *must* include --allow-read and --allow-net — i.e. that document
  * treats "no write access" as SANDBOXED's actual contract for this MCP-transport-carrying
  * strategy (the spawned process needs --allow-net to reach the MCP daemon), not the broader
- * CLAUDE.md "no network, no file access" SecurityMode vocabulary. That is a genuine,
+ * AGENTS.md "no network, no file access" SecurityMode vocabulary. That is a genuine,
  * unresolved design-intent question (which SecurityMode definition applies to this
  * out-of-process MCP strategy specifically) this test file must not silently decide by
  * asserting a behavior a named prior-phase test already asserts the opposite of — two tests
@@ -66,7 +66,7 @@ Deno.test("[security] McpAgentStrategy: HYBRID must not grant unrestricted --all
 
     assert(
       !args.includes("--allow-all"),
-      `SecurityMode.HYBRID must not include --allow-all (CLAUDE.md: "read-only Portal paths", ` +
+      `SecurityMode.HYBRID must not include --allow-all (AGENTS.md: "read-only Portal paths", ` +
         `not unrestricted access); got: ${args.join(" ")}`,
     );
   } finally {

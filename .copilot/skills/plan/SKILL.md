@@ -476,7 +476,7 @@ coverage:
 
 ## Related
 
-- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 
 ## Output format
 

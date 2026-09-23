@@ -4,7 +4,7 @@
 
 **Before ANY code modification, you MUST:**
 
-1. **Read `CLAUDE.md`** completely for project orientation
+1. **Read `AGENTS.md`** completely for project orientation
 2. **Consult `.copilot/cross-reference.md`** for task-specific guidance
 3. **Read matching `.copilot/` documentation:**
    - Writing tests? → `.copilot/tests/testing.md`
