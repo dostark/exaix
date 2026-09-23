@@ -42,7 +42,7 @@ export type GoogleProviderOptions = IBaseProviderOptions;
 type GoogleContent =
   | {
     role: "model";
-    parts: [{ functionCall: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string } }];
+    parts: [{ functionCall: { name: string; args: Record<string, JSONValue> }; thoughtSignature?: string }];
   }
   | { role: "user"; parts: [{ functionResponse: { name: string; response: { content: JSONValue } } }] }
   | { role: "user"; parts: [{ text: string }] };
@@ -114,13 +114,10 @@ export class GoogleProvider extends BaseProvider {
       const priorTurn = options.priorTurn;
       contents.push({
         role: "model",
-        // Gemini requires replaying the original thought_signature on a replayed functionCall.
+        // Gemini requires the original thoughtSignature on the replayed part, beside functionCall.
         parts: [{
-          functionCall: {
-            name: priorTurn.toolName,
-            args: priorTurn.toolInput,
-            ...(priorTurn.thoughtSignature !== undefined ? { thoughtSignature: priorTurn.thoughtSignature } : {}),
-          },
+          functionCall: { name: priorTurn.toolName, args: priorTurn.toolInput },
+          ...(priorTurn.thoughtSignature !== undefined ? { thoughtSignature: priorTurn.thoughtSignature } : {}),
         }],
       });
       contents.push({

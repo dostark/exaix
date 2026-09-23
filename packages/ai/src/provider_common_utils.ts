@@ -128,7 +128,9 @@ export type GoogleResponse = {
         /** Present when Gemini selects a tool. `args` is already a PARSED object on
          *  the wire (unlike OpenAI's JSON-encoded string). No `id` field -
          *  extractGoogleToolCalls() generates one. */
-        functionCall?: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string };
+        functionCall?: { name: string; args: Record<string, JSONValue> };
+        /** Sibling of functionCall on the part, not nested inside it. */
+        thoughtSignature?: string;
       }>;
     };
   }>;
@@ -504,7 +506,7 @@ export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] |
   const calls = parts
     .filter((
       part,
-    ): part is { functionCall: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string } } =>
+    ): part is { functionCall: { name: string; args: Record<string, JSONValue> }; thoughtSignature?: string } =>
       part.functionCall !== undefined
     )
     .map((part) => ({
@@ -513,9 +515,7 @@ export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] |
       input: part.functionCall.args,
       type: "function",
       // Gemini requires the thought signature on the next function-call turn.
-      ...(part.functionCall.thoughtSignature !== undefined
-        ? { thoughtSignature: part.functionCall.thoughtSignature }
-        : {}),
+      ...(part.thoughtSignature !== undefined ? { thoughtSignature: part.thoughtSignature } : {}),
     }));
   return calls.length > 0 ? calls : undefined;
 }

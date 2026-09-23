@@ -29,7 +29,8 @@ interface CapturedToolConfig {
 
 interface CapturedPart {
   text?: string;
-  functionCall?: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string };
+  functionCall?: { name: string; args: Record<string, JSONValue> };
+  thoughtSignature?: string;
   functionResponse?: { name: string; response: { content: JSONValue } };
 }
 
@@ -160,11 +161,11 @@ Deno.test("GoogleProvider.attemptGenerate replays priorTurn thoughtSignature in 
 
   assertExists(body.contents);
   // Gemini requires the model's replayed functionCall to carry the original
-  // thought_signature; without it Gemini returns an HTTP 400 ("Function call is
-  // missing a thought_signature in functionCall parts").
+  // thoughtSignature as a sibling of functionCall on the part; without it Gemini returns
+  // an HTTP 400 ("Function call is missing a thought_signature in functionCall parts").
   assertEquals(body.contents[1].role, "model");
   assertEquals(body.contents[1].parts[0].functionCall!.name, "patch_file");
-  assertEquals(body.contents[1].parts[0].functionCall!.thoughtSignature, "sig-abc123");
+  assertEquals(body.contents[1].parts[0].thoughtSignature, "sig-abc123");
 });
 
 Deno.test("[regression] GoogleProvider.attemptGenerate without priorTurn produces a single content entry", async () => {

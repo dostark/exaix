@@ -97,7 +97,7 @@ Deno.test('extractGoogleToolCalls sets type to "function" on each entry', () => 
 Deno.test("extractGoogleToolCalls carries thoughtSignature when the functionCall part provides it (GAP-153-E)", () => {
   const response: GoogleResponse = {
     candidates: [{
-      content: { parts: [{ functionCall: { name: "patch_file", args: { path: "a.ts" }, thoughtSignature: "sig-x" } }] },
+      content: { parts: [{ functionCall: { name: "patch_file", args: { path: "a.ts" } }, thoughtSignature: "sig-x" }] },
     }],
   };
   const result = extractGoogleToolCalls(response);
