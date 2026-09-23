@@ -9,6 +9,7 @@
 
 import { countTokens as aiCountTokens } from "ai-token-estimator";
 
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../types/constants.ts";
 import { TokenizerBackend } from "../types/enums.ts";
 
 export interface ITokenizer {
@@ -25,8 +26,14 @@ export class AiTokenEstimatorTokenizer implements ITokenizer {
     if (this.backend === TokenizerBackend.LOCAL) {
       options.mode = "local";
     }
-    const result = await aiCountTokens(options as { text: string; model: string });
-    return result.tokens;
+    try {
+      const result = await aiCountTokens(options as { text: string; model: string });
+      return result.tokens;
+    } catch {
+      // ai-token-estimator throws on any model id outside its catalog (e.g. a CLI-delegate
+      // "claude-cli:..." composite id); a token estimate must never fail the request.
+      return Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+    }
   }
 
   countTokensBatch(texts: string[], model: string): Promise<number[]> {
