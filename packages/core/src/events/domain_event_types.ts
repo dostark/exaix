@@ -15,6 +15,7 @@ import type {
   HitlRuleSource,
   HitlSurface,
   OtelDestinationScheme,
+  PlanningToolLoopStopReason,
   TaskType,
   VotingStrategy,
 } from "../types/enums.ts";
@@ -65,6 +66,15 @@ export interface IAgentPromptAssembledReactPayload {
 export type IAgentPromptAssembledPayload =
   | IAgentPromptAssembledPlanningPayload
   | IAgentPromptAssembledReactPayload;
+
+/** Typed payload for planning.tools.completed events — one per PlanningToolLoop.run() call. */
+export interface IPlanningToolLoopCompletedPayload {
+  rounds: number;
+  toolCalls: number;
+  stopReason: PlanningToolLoopStopReason;
+  promptTokens: number;
+  completionTokens: number;
+}
 
 /** Typed payload for portal.knowledge.selection_applied events. */
 export interface IPortalKnowledgeSelectionAppliedPayload {
@@ -433,6 +443,8 @@ export const DomainEventType = {
   // types/constants.ts) — trajectory_evaluator.ts still queries by that constant's string
   // value, so this registers the identical value under DomainEventType rather than changing it.
   AgentDynamicToolCall: "dynamic_tool_call",
+  /** Emitted once per PlanningToolLoop.run() call, carrying IPlanningToolLoopCompletedPayload. */
+  PlanningToolLoopCompleted: "planning.tools.completed",
 
   // Execution lifecycle events (execution_loop.ts)
   ExecutionSkipped: "execution.skipped",

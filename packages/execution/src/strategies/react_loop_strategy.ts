@@ -13,9 +13,14 @@ import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from
 import type { IModelProvider, IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { ITool, IToolResult } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
+import {
+  buildNativeToolDefinitions,
+  buildPriorTurn,
+  enrichPortalPathParam,
+  providerSupportsNativeTools,
+} from "../native_tool_turns.ts";
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
@@ -176,20 +181,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCacheCreationTokens = 0;
     let totalReasoningTokens = 0;
 
-    // Native-tools gate requires both the opt-in flag and provider capability. Provider ids
-    // are composite "<type>-<model>" but ProviderRegistry is keyed by the bare type, so look
-    // up the composite id first, then fall back to the prefix before the first "-".
-    const providerIdForGate = this.provider!.id;
-    let supportsNativeTools = providerIdForGate !== undefined &&
-      ProviderRegistry.getProviderMetadata(providerIdForGate)?.supportsNativeTools === true;
-    if (!supportsNativeTools && providerIdForGate !== undefined) {
-      const sep = providerIdForGate.indexOf("-");
-      if (sep !== -1) {
-        supportsNativeTools =
-          ProviderRegistry.getProviderMetadata(providerIdForGate.slice(0, sep))?.supportsNativeTools === true;
-      }
-    }
-    const useNativeTools = options.native_tools_enabled === true && supportsNativeTools;
+    // Native-tools gate requires both the opt-in flag and provider capability.
+    const useNativeTools = options.native_tools_enabled === true && providerSupportsNativeTools(this.provider!.id);
     let nativeToolsPriorTurn: IProviderTurn | undefined;
     let nativeToolDefinitions: IToolDefinition[] | undefined;
     let nativeToolsUsed = false;
@@ -696,16 +689,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
     }
 
-    // Filesystem tools use a portal alias; cached graph edges use portal-relative paths.
-    const enrichedParams = { ...action.params };
-    if (
-      action.tool !== ToolName.GET_MODULE_DEPENDENCIES &&
-      options.portal && enrichedParams.path &&
-      typeof enrichedParams.path === "string" &&
-      !enrichedParams.path.startsWith("@")
-    ) {
-      enrichedParams.path = `@${options.portal}/${enrichedParams.path}`;
-    }
+    const enrichedParams = enrichPortalPathParam(action.tool, action.params, options.portal);
 
     return await this.executor.toolRegistry.execute(
       action.tool,
@@ -1067,34 +1051,15 @@ When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SU
     return jsonResult;
   }
 
-  /**
-   * Map ToolRegistry's ITool[] to provider-agnostic IToolDefinition[].
-   * Pure transformation — no I/O, no side effects.
-   */
+  /** Delegates to the shared `native_tool_turns.ts` implementation (kept as an instance
+   *  method for its existing direct-call test coverage). */
   private buildNativeToolDefinitions(tools: ITool[]): IToolDefinition[] {
-    return tools.map((t) => ({
-      name: t.name,
-      description: t.nativeDescription ?? t.description,
-      inputSchema: t.parameters as never,
-    }));
+    return buildNativeToolDefinitions(tools);
   }
 
-  /**
-   * Build an IProviderTurn from a completed tool call and its result.
-   * Pure transformation — no I/O, no side effects.
-   */
+  /** Delegates to the shared `native_tool_turns.ts` implementation (kept as an instance
+   *  method for its existing direct-call test coverage). */
   private buildPriorTurn(toolCall: IProviderToolCall, result: IToolResult): IProviderTurn {
-    return {
-      toolUseId: toolCall.id,
-      toolName: toolCall.name,
-      toolInput: toolCall.input,
-      toolResultContent: JSON.stringify(result.data ?? result.error ?? {}),
-      toolResultIsError: !result.success,
-      // GAP-153-E/GAP-153-F/GAP-153-G: forward every provider reasoning artifact the model
-      // returned so the provider can replay it verbatim on the next turn.
-      ...(toolCall.thoughtSignature !== undefined ? { thoughtSignature: toolCall.thoughtSignature } : {}),
-      ...(toolCall.thinkingBlocks !== undefined ? { thinkingBlocks: toolCall.thinkingBlocks } : {}),
-      ...(toolCall.reasoningContent !== undefined ? { reasoningContent: toolCall.reasoningContent } : {}),
-    };
+    return buildPriorTurn(toolCall, result);
   }
 }

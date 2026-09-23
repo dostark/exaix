@@ -33,3 +33,5 @@ export * from "./src/context/context_budget_manager.ts";
 export * from "./src/context/context_budget_event_types.ts";
 export * from "./src/context/context_compactor.ts";
 export * from "./src/context/snapshot_store.ts";
+export * from "./src/native_tool_turns.ts";
+export * from "./src/planning_tool_loop.ts";

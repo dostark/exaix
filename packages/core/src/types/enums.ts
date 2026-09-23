@@ -1502,3 +1502,13 @@ export enum SkillRenderMode {
   FULL = "full",
   TRIMMED = "trimmed",
 }
+
+/** Why a PlanningToolLoop round returned its final response. */
+export enum PlanningToolLoopStopReason {
+  /** The most recent round returned no toolCalls — the single-call-equivalent path. */
+  NO_TOOL_CALLS = "no_tool_calls",
+  /** The mandatory tool-less final round was reached. */
+  ROUND_CAP = "round_cap",
+  /** A guardrail blocking violation on a tool result forced the final round early. */
+  GUARDRAIL_BLOCKED = "guardrail_blocked",
+}
