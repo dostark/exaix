@@ -221,8 +221,10 @@ export class PlanningToolLoop {
     return guardrailForced ? PlanningToolLoopStopReason.GUARDRAIL_BLOCKED : PlanningToolLoopStopReason.ROUND_CAP;
   }
 
-  /** Runs one round's calls up to the per-round cap. The last call becomes the next priorTurn;
-   *  earlier ones are returned as transcript blocks so their results are not lost. */
+  /** Runs one round's calls up to the per-round cap. One call becomes the next priorTurn:
+   *  the one carrying a provider signature (Gemini attaches thoughtSignature to the first call
+   *  of a parallel batch only and rejects an unsigned replay), else the last. The others are
+   *  returned as transcript blocks so their results are not lost. */
   private async executeRoundCalls(
     calls: IProviderToolCall[],
     options: IPlanningToolLoopOptions,
@@ -234,6 +236,8 @@ export class PlanningToolLoop {
     transcript: string;
     guardrailBlocked: boolean;
   }> {
+    const signedIndex = calls.findIndex((call) => call.thoughtSignature !== undefined);
+    const replayIndex = signedIndex === -1 ? calls.length - 1 : signedIndex;
     let transcript = "";
     let guardrailBlocked = false;
     let lastTurn: Opt<IProviderTurn, Reason.OptionalInput> = undefined;
@@ -244,7 +248,7 @@ export class PlanningToolLoop {
       const outcome = withinCap ? await this.executeCall(call, options, round) : this.refuseCall(call, round, options);
       if (withinCap) progress.toolCalls++;
       guardrailBlocked ||= outcome.guardrailBlocked;
-      if (i === calls.length - 1) {
+      if (i === replayIndex) {
         lastTurn = outcome.turn;
         lastTool = call.name;
       } else {

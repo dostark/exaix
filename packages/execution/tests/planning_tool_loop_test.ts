@@ -255,6 +255,30 @@ Deno.test("[planning_tool_loop] parallel toolCalls in one round are all executed
   );
 });
 
+Deno.test("[planning_tool_loop] in a parallel round the signed call (Gemini thoughtSignature on the first call only) becomes priorTurn and the rest join the transcript", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file")], {
+    read_file: (p) => ({ success: true, data: { content: `contents of ${p.path}` } }),
+  });
+  const round1 = makeGenerateResult("", {
+    toolCalls: [
+      { id: "t1", name: "read_file", input: { path: "a.ts" }, thoughtSignature: "sig-first" },
+      { id: "t2", name: "read_file", input: { path: "b.ts" } },
+      { id: "t3", name: "read_file", input: { path: "c.ts" } },
+    ],
+  });
+  const round2 = makeGenerateResult("<thought>t</thought><content>plan</content>");
+  const generate = new ScriptedGenerate([round1, round2]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+
+  await loop.run(makeOptions({ maxRounds: 2 }));
+
+  const priorTurn = generate.calls[1].options.priorTurn;
+  assertEquals(priorTurn?.thoughtSignature, "sig-first");
+  assert(String(priorTurn?.toolResultContent).includes("contents of @myportal/a.ts"));
+  assert(generate.calls[1].prompt.includes("contents of @myportal/b.ts"));
+  assert(generate.calls[1].prompt.includes("contents of @myportal/c.ts"));
+});
+
 Deno.test("[planning_tool_loop] calls beyond maxToolCallsPerRound are answered with an error result and never executed", async () => {
   const registry = new StubToolRegistry([fixtureTool("read_file")], {
     read_file: (p) => ({ success: true, data: { content: `contents of ${p.path}` } }),
