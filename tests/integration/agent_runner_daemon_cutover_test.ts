@@ -946,6 +946,7 @@ function writePlanningToolsCutoverConfig(
   portalDir: string,
   fixturesDir: string,
   toolsEnabled: boolean,
+  maxCallsPerRound?: number,
 ): void {
   const cfg = [
     ...daemonConfigSections(root, ""),
@@ -976,6 +977,7 @@ function writePlanningToolsCutoverConfig(
         "tools_enabled = true",
         "max_tool_rounds = 2",
         "max_tool_result_tokens = 2000",
+        ...(maxCallsPerRound !== undefined ? [`max_tool_calls_per_round = ${maxCallsPerRound}`] : []),
         "",
       ]
       : []),
@@ -993,6 +995,7 @@ async function writePlanningCutoverFixtures(
   fixturesDir: string,
   marker: string,
   toolsEnabled: boolean,
+  parallelCalls = false,
 ): Promise<void> {
   await Deno.mkdir(fixturesDir, { recursive: true });
   const plan = planningToolsPlanBody(marker);
@@ -1017,7 +1020,10 @@ async function writePlanningCutoverFixtures(
           tokens: { input: 1000, output: 0 },
           recordedAt: "2026-09-23T00:00:00.000Z",
           callSite: { scenarioId: "phase199", stepId: "planning", callIndex: 0 },
-          toolCalls: [{ id: "toolu_01", name: "read_file", input: { path: "src/target.ts" } }],
+          toolCalls: [
+            { id: "toolu_01", name: "read_file", input: { path: "src/target.ts" } },
+            ...(parallelCalls ? [{ id: "toolu_02", name: "read_file", input: { path: "src/target.ts" } }] : []),
+          ],
         },
         null,
         2,
@@ -1050,6 +1056,7 @@ async function writePlanningCutoverFixtures(
 async function bootPlanningToolsCutoverRun(
   tempDir: string,
   toolsEnabled: boolean,
+  variant: { parallelCalls?: boolean; maxCallsPerRound?: number } = {},
 ): Promise<{ traceId: string; rows: IPlanningCutoverRow[]; planText: string }> {
   const configPath = join(tempDir, "exa.config.toml");
   const portalDir = join(tempDir, "fixture-portal");
@@ -1061,8 +1068,8 @@ async function bootPlanningToolsCutoverRun(
     join(portalDir, "src", "target.ts"),
     "// The marker below is the ONLY source of the marker string.\n// " + marker + '\nexport const target = "read";\n',
   );
-  await writePlanningCutoverFixtures(fixturesDir, marker, toolsEnabled);
-  writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, toolsEnabled);
+  await writePlanningCutoverFixtures(fixturesDir, marker, toolsEnabled, variant.parallelCalls);
+  writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, toolsEnabled, variant.maxCallsPerRound);
 
   await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
   await Deno.copyFile(
@@ -1163,6 +1170,36 @@ Deno.test({
 
       assert(planText.includes("EXAIX_PHASE199_MARKER_"), "the written plan must carry the fixture marker");
       assert(planText.includes(traceId.slice(0, 8)), "the plan file must be the run's own (trace-prefixed)");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase199-planning-tools-cutover] planning.max_tool_calls_per_round from the real config caps a parallel round: one call executes and the extra is refused",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase199-planning-tools-cap-" });
+    try {
+      const { rows } = await bootPlanningToolsCutoverRun(tempDir, true, { parallelCalls: true, maxCallsPerRound: 1 });
+
+      const toolPayloads = rows
+        .filter((r) => r.action_type === "dynamic_tool_call")
+        .map((r) => JSON.parse(r.payload) as { phase: string; resultSummary: string });
+      assertEquals(toolPayloads.length, 2, "both parallel calls are journaled");
+      assertEquals(toolPayloads.filter((p) => p.resultSummary.includes("EXAIX_PHASE199_MARKER_")).length, 1);
+      assertEquals(toolPayloads.filter((p) => p.resultSummary.includes("tool call limit")).length, 1);
+
+      const completed = rows.find((r) => r.action_type === "planning.tools.completed");
+      assert(
+        completed,
+        `a planning.tools.completed row must exist. got: ${JSON.stringify(rows.map((r) => r.action_type))}`,
+      );
+      assertEquals((JSON.parse(completed!.payload) as { toolCalls: number }).toolCalls, 1);
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }

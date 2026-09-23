@@ -17,7 +17,9 @@ import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/pla
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
-import { makeGenerateResult } from "@exaix/testing";
+import { initTestDbService, makeGenerateResult } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { GuardrailIncident } from "@exaix/schemas";
 import type { IGuardrailRunner } from "../src/guardrail_runner.ts";
 
@@ -146,6 +148,33 @@ Deno.test("[planning_tool_loop][security] a path prefixed with another portal's 
     assertEquals(turnIsError, true);
     assert(turnContent.includes("Access denied"));
   } finally {
+    fixture.cleanup();
+  }
+});
+
+Deno.test("[planning_tool_loop][security][integration] a denied path journals one security.path_access_denied row with the trace id through a real EventLogger", async () => {
+  const fixture = makePortalFixture();
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const registry = new StubToolRegistry([fixtureTool("read_file")]);
+    const deps = makeDeps({ toolRegistry: registry, logger });
+    const traceId = crypto.randomUUID();
+    const options = makeOptions(fixture.portalRoot, { traceId });
+
+    await runOneToolRound(deps, options, "read_file", { path: "../outside/secret.txt" });
+    await db.waitForFlush();
+
+    const denied = db.getActivitiesByTrace(traceId).filter((r) =>
+      r.action_type === DomainEventType.SecurityPathAccessDenied
+    );
+    assertEquals(denied.length, 1);
+    const payload = JSON.parse(denied[0].payload) as { tool: string; error: string };
+    assertEquals(payload.tool, "read_file");
+    assert(payload.error.includes("Access denied"));
+    assertEquals(registry.calls.length, 0);
+  } finally {
+    await cleanup();
     fixture.cleanup();
   }
 });
