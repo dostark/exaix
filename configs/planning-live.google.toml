@@ -1,0 +1,48 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["generativelanguage.googleapis.com"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+[ai]
+provider = "google"
+model = "gemini-flash-latest"
+
+[models.default]
+provider = "google"
+model = "gemini-flash-latest"
+timeout_ms = 60000
+
+[models.fast]
+provider = "google"
+model = "gemini-flash-latest"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[quality_gate]
+enabled = false
+
+[planning]
+tools_enabled = true
+max_tool_rounds = 2
+max_tool_result_tokens = 2000
+
+[[portals]]
+alias = "live-portal"
+target_path = "__DOGFOOD_ROOT__/live-portal"
+
+[model_presets.M]
+min_context_window = 32000
+supports_thinking = false
+candidates = ["google"]
+
+[model_presets.L]
+min_context_window = 64000
+supports_thinking = false
+candidates = ["google"]

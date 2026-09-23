@@ -1,0 +1,50 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = []
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+[ai]
+provider = "opencode-cli"
+model = "opencode-go/deepseek-v4-flash"
+
+[models.default]
+provider = "opencode-cli"
+model = "opencode-go/deepseek-v4-flash"
+timeout_ms = 300000
+
+[models.fast]
+provider = "opencode-cli"
+model = "opencode-go/deepseek-v4-flash"
+timeout_ms = 300000
+
+[agents]
+default_model = "default"
+
+[quality_gate]
+enabled = false
+
+[planning]
+tools_enabled = true
+max_tool_rounds = 2
+max_tool_result_tokens = 2000
+
+[[portals]]
+alias = "live-portal"
+target_path = "__DOGFOOD_ROOT__/live-portal"
+
+[model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["opencode-cli"]
+
+[model_presets.L]
+max_cost_per_mtok = 0
+min_context_window = 64000
+supports_thinking = false
+candidates = ["opencode-cli"]

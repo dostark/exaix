@@ -1,0 +1,177 @@
+schema_version: "1.0.0"
+id: "planning-read-only-tools-live"
+title: "Planning call vs live provider: native cells drive the read-only tool loop; claude-code/codex/opencode cells skip with provider_unsupported"
+pack: "provider_live"
+tags: ["provider-live", "planning", "subsystem:agent_roles", "entity:planning-read-only-tools"]
+request_fixture: "fixtures/requests/provider_live/planning_read_only_live.md"
+mode_support: ["auto"]
+portals:
+  - alias: "live-portal"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/live-portal"
+    git_init: true
+matrix:
+  cells:
+    # CLI-delegate tools (subscription-billed): the planning gate SKIPS planning tools with
+    # reason=provider_unsupported (Phase 199 R5 / GAP-8) and the plan comes from a single-call
+    # CLI run. These are the "run with claude-code/codex/opencode" forms.
+    - tool: "claude-code"
+      provider: "claude-cli"
+      config: "configs/planning-live.claude.toml"
+      requires_bin: "claude"
+    - tool: "codex"
+      provider: "codex-cli"
+      config: "configs/planning-live.codex.toml"
+      requires_bin: "codex"
+      requires_optin: "EXA_MATRIX_CODEX"
+    - tool: "opencode"
+      provider: "opencode-cli"
+      config: "configs/planning-live.opencode.toml"
+      requires_bin: "opencode"
+      requires_optin: "EXA_MATRIX_OPENCODE"
+    # Native-tools HTTP providers: the planning call ENGAGES the read-only tool loop and a
+    # real model decides to read the portal. Each cell pins its provider+model via its config
+    # and is gated on the provider's API key (requires_key) — the same convention swe_tasks'
+    # direct-API cells use.
+    - tool: "exactl"
+      provider: "anthropic"
+      config: "configs/planning-live.anthropic.toml"
+      requires_bin: "true"
+      requires_key: "ANTHROPIC_API_KEY"
+    - tool: "exactl"
+      provider: "openai"
+      config: "configs/planning-live.openai.toml"
+      requires_bin: "true"
+      requires_key: "OPENAI_API_KEY"
+    - tool: "exactl"
+      provider: "google"
+      config: "configs/planning-live.google.toml"
+      requires_bin: "true"
+      requires_key: "GOOGLE_API_KEY"
+    - tool: "exactl"
+      provider: "openrouter"
+      config: "configs/planning-live.openrouter.toml"
+      requires_bin: "true"
+      requires_key: "OPENROUTER_API_KEY"
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "live-portal", "--agent-role", "mock-agent", "--plan-only"]
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.5
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 240
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "plan-produced"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  # --- Native-tools cells: the live model's planning call drives the read-only tool loop ---
+  - id: "assert-loop-completed"
+    type: "journal-assert"
+    cells: ["exactl"]
+    action_type: "planning.tools.completed"
+    trace_scoped: true
+    expect_count: 1
+    output_criteria:
+      - id: "loop-completed-live"
+        score_weight: 0.5
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-planning-tool-call"
+    type: "journal-assert"
+    cells: ["exactl"]
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    payload_contains: ["\"phase\":\"planning\""]
+    expect_count: 1
+    output_criteria:
+      - id: "planning-tool-call-live"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-no-skip-native"
+    type: "journal-assert"
+    cells: ["exactl"]
+    action_type: "planning.tools.skipped"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "no-skip-native"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- CLI-delegate cells: the SAME flag-on boot must skip planning tools and stay single-call ---
+  - id: "assert-skip-delegate"
+    type: "journal-assert"
+    cells: ["claude-code", "codex", "opencode"]
+    action_type: "planning.tools.skipped"
+    trace_scoped: true
+    payload_contains: ["\"reason\":\"provider_unsupported\""]
+    expect_count: 1
+    output_criteria:
+      - id: "delegate-skip-journaled"
+        class: "security"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-no-tool-round-delegate"
+    type: "journal-assert"
+    cells: ["claude-code", "codex", "opencode"]
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "no-planning-tool-round-delegate"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-no-loop-delegate"
+    type: "journal-assert"
+    cells: ["claude-code", "codex", "opencode"]
+    action_type: "planning.tools.completed"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "no-loop-delegate"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]
