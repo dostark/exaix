@@ -299,6 +299,12 @@ real, supported, first-class mechanism:
 - **Capture caveats + versions.** Record provider-stated caveats ("only guaranteed with
   X"), minimum binary/API versions, and auth-env gotchas, so the plan is implementable
   exactly as written.
+- **Probe the multiplicity and edge shapes, not just the happy path.** Docs pages often omit what
+  differs when a response holds several items (parallel tool calls, multiple choices, chunked
+  output) or when a required opaque token is present on only some of them. For each response shape
+  the design depends on, make one real, cheap call and record what came back (a Gemini parallel
+  batch signs only its first call, which no fetched doc page stated and which only a live probe
+  showed). Record the probe date and model in the Sources block.
 - **Cite sources, date the research.** List the consulted doc URLs and the research date
   in a **Sources** block in the plan, marking each as official vs community/unofficial;
   re-verify if the plan is implemented much later.

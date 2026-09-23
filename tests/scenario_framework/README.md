@@ -267,6 +267,17 @@ CLI-delegate tool (`claude-code`, `opencode`); the runner only ever executes the
 runnable cell, so use `--cell <tool>` to pick one explicitly rather than relying on whichever
 binary happens to be on PATH first.
 
+**Direct-API matrix cells** (several cells sharing `tool: exactl`, one per HTTP provider) need three things
+the CLI-delegate cells do not:
+
+- Each cell's config pins `[model_presets.M]` and `[model_presets.L]` with `candidates = ["<provider>"]` and
+  a `max_cost_per_mtok` value (the config schema requires it, and without the presets the resolver rejects
+  the model id).
+- `--cell exactl` matches every cell with that `tool`, and each cell is gated only by its `requires_key`, so
+  unset the other providers' API keys in the shell to run exactly one.
+- Journal assertions on a model-driven run must not use an exact `expect_count`: a plan-validation retry re-runs
+  the whole tool loop, so counts vary. Prefer `expect_sum` (`gt: 0`) or `expect_contains` on trace-scoped rows.
+
 > [!TIP]
 > **Prefer the `-cli-all` scenario for repeated or nightly live runs** if you already pay for
 > a Claude Code subscription (or use opencode's free tier) — the work is covered by the flat

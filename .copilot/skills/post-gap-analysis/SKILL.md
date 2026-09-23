@@ -117,6 +117,7 @@ Do / Don't
 - ✅ Do add a documentation update step last (§3D) when interfaces or
   schemas change.
 - ✅ Do bump the document version and update the Status field in the frontmatter.
+- ✅ Do end every new remediation step with a fenced `step-manifest` YAML block (the commit gate blocks a step without one); verify with `deno run --allow-read scripts/check_step_manifests.ts <plan>`.
 - ✅ Do use any additionally supplied documents as context.
 - ✅ Do run Phase 6 traceability & configurability checks on every step — run
   `deno task check:event-coverage` as a mechanized first pass, then verify findings
@@ -463,7 +464,7 @@ Append at end of planning document using the exact format below.
 
 #### Required markdown format
 
-```markdown
+````markdown
 ---
 
 ## Post-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ IMPLEMENTATION COMPLETE
@@ -516,7 +517,27 @@ Append at end of planning document using the exact format below.
 **Success Criteria:**
 
 - <measurable criterion>
+
+```yaml
+# step-manifest
+step: <N+1>
+title: "<remediation step title>"
+agent_role: senior-coder
+skills: [exaix-conventions]
+portal: exaix-self
+target_branch: feat/phase-NN
+depends_on: [<previous step>]
+acceptance:
+  tests:
+    - "<the step's key planned test>"
+  outcomes:
+    - "<the observable outcome>"
 ```
+````
+
+Every remediation step MUST end with a `step-manifest` block like the one above (same shared
+`target_branch` as the phase's other steps). The pre-commit gate rejects the commit with "A phase
+plan step is missing or has an invalid step-manifest" otherwise, and it fires only at commit time.
 
 Author criteria as `- [ ] <text>` and tests as `` `<name>` `` (aspirational, no `→` path — the
 implementing module is decided during execution). When #next-steps implements the remediation

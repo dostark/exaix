@@ -59,3 +59,23 @@ Deno.test("Agent docs: event coverage claims require exhaustive attributable run
     "gap remediation must hand off to the terminal retrospective before completion",
   );
 });
+
+Deno.test("Agent docs: remediation-step template requires a step-manifest and the plan skill requires multiplicity probes", async () => {
+  const postGap = await Deno.readTextFile(SKILL_PATH);
+  const plan = await Deno.readTextFile(".copilot/skills/plan/SKILL.md");
+  const commit = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
+
+  assert(
+    postGap.includes("A phase\nplan step is missing or has an invalid step-manifest"),
+    "post-gap-analysis should warn that a remediation step without a step-manifest blocks the commit",
+  );
+  assert(postGap.includes("# step-manifest"), "the remediation-step template should carry a step-manifest block");
+  assert(
+    plan.includes("Probe the multiplicity and edge shapes"),
+    "plan §2F should require probing multi-item response shapes against the real API",
+  );
+  assert(
+    commit.includes("Adding one new bullet to an already-completed step is not a plan-step commit"),
+    "commit skill should explain that appending to a completed step needs an ordinary docs commit",
+  );
+});
