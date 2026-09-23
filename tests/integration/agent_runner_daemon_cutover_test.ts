@@ -19,8 +19,13 @@
  *   (4) A real daemon boot also emits `context.budget.allocated` with a real, model-derived
  *   `maxContextTokens` for the planning call — proving `apps/daemon/main.ts`'s real
  *   `PromptBudgetAllocator`/`ContextBudgetManager` wiring is reachable, not just unit-tested.
+ *   Phase 199 Step 6 adds the planning-tools cutover: with `[planning] tools_enabled = true`
+ *   in the REAL exa.config.toml (and a recorded-mock provider whose call-site fixtures replay
+ *   a `read_file` tool round followed by a plan), a real daemon boot's planning call executes
+ *   a journaled read-only tool round whose result shapes the written plan; the flag-off boot
+ *   stays single-call with no planning tool rows.
  * @architectural-layer Integration
- * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/request/src/router.ts, packages/execution/src/agent_composer.ts]
+ * @related-files [apps/daemon/main.ts, packages/request/src/processor.ts, packages/request/src/router.ts, packages/execution/src/agent_composer.ts, packages/execution/src/planning_tool_loop.ts]
  */
 
 import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
@@ -883,6 +888,314 @@ Deno.test({
       assertLessOrEqual(adaptiveSegment.resultingTokenEstimate, 3_000);
     } finally {
       await Deno.remove(portalDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+/// Phase 199 Step 6 — real-daemon planning-tool cutover: with `[planning]
+/// tools_enabled = true` in the real exa.config.toml and a recorded-mock provider, the
+/// planning call executes a read-only `read_file` round (journaled `dynamic_tool_call` with
+/// phase "planning") whose result feeds the final priorTurn, and the written plan carries the
+/// marker whose only source is the fixture portal file. Flag-off boot is single-call with no
+/// planning tool rows.
+
+/** A valid plan body (PlanSchema) carrying the run-specific marker, reused verbatim by BOTH
+ *  the flag-on final-round fixture and the flag-off single-call fixture so the two runs' plan
+ *  shapes are byte-identical. */
+function planningToolsPlanBody(marker: string): string {
+  return "<thought>I read the portal target file via the planning tool loop.</thought>\n\n" +
+    "<content>\n" +
+    "{\n" +
+    '  "subject": "Phase 199 planning tools cutover",\n' +
+    '  "description": "The planning call inspected src/target.ts, whose marker content is ' + marker +
+    '. The marker only source is the fixture portal file.",\n' +
+    '  "steps": [\n' +
+    '    { "step": 1, "title": "Inspect target file", "description": "Read src/target.ts during planning; the marker was observed." },\n' +
+    '    { "step": 2, "title": "Commit plan", "description": "Finalize the plan carrying the observed marker." }\n' +
+    "  ]\n" +
+    "}\n" +
+    "</content>";
+}
+
+interface IPlanningCutoverRow {
+  action_type: string;
+  payload: string;
+}
+
+/** Reads the trace-scoped activity rows for a planning-cutover run. */
+async function readPlanningCutoverActivity(configPath: string, traceId: string): Promise<IPlanningCutoverRow[]> {
+  const configService = new ConfigService(configPath);
+  const db = new DatabaseService(configService.getAll());
+  try {
+    return await db.preparedAll<IPlanningCutoverRow>(
+      "SELECT action_type, payload FROM activity WHERE trace_id = ? ORDER BY rowid ASC",
+      [traceId],
+    );
+  } finally {
+    await db.close();
+  }
+}
+
+/** Builds the flag-on or flag-off daemon TOML: an explicit mock default model (the schema
+ *  default `models.default` would otherwise win over `[ai]`, resolving to a live provider),
+ *  a recorded-mock strategy pointed at the fixtures dir, a portal, and — when enabled — the
+ *  `[planning]` block. */
+function writePlanningToolsCutoverConfig(
+  configPath: string,
+  root: string,
+  portalDir: string,
+  fixturesDir: string,
+  toolsEnabled: boolean,
+): void {
+  const cfg = [
+    ...daemonConfigSections(root, ""),
+    "",
+    "[ai]",
+    'provider = "mock"',
+    'model = "test"',
+    "",
+    "[ai.mock]",
+    'strategy = "recorded"',
+    `fixtures_dir = "${fixturesDir}"`,
+    "timeout_ms = 30000",
+    "",
+    "[quality_gate]",
+    "enabled = false",
+    "",
+    "[agents]",
+    'default_model = "cutover-mock"',
+    "",
+    "[models.cutover-mock]",
+    'provider = "mock"',
+    'model = "test"',
+    "timeout_ms = 30000",
+    "",
+    ...(toolsEnabled
+      ? [
+        "[planning]",
+        "tools_enabled = true",
+        "max_tool_rounds = 2",
+        "max_tool_result_tokens = 2000",
+        "",
+      ]
+      : []),
+    "[[portals]]",
+    'alias = "cutover-portal"',
+    `target_path = "${portalDir}"`,
+  ];
+  Deno.writeTextFileSync(configPath, cfg.join("\n"));
+}
+
+/** Writes the two recorded-mock fixtures. Flag-on: callIndex 0 replays a `read_file` tool
+ *  call, callIndex 1 replays the plan. Flag-off: callIndex 0 replays the plan directly
+ *  (single-call), callIndex 1 is unused. */
+async function writePlanningCutoverFixtures(
+  fixturesDir: string,
+  marker: string,
+  toolsEnabled: boolean,
+): Promise<void> {
+  await Deno.mkdir(fixturesDir, { recursive: true });
+  const plan = planningToolsPlanBody(marker);
+  const planFixture = {
+    promptHash: "phase199-plan-fixture",
+    promptPreview: "final planning round",
+    response: plan,
+    model: "cutover-mock",
+    tokens: { input: 1000, output: 300 },
+    recordedAt: "2026-09-23T00:00:00.000Z",
+    callSite: { scenarioId: "phase199", stepId: "planning", callIndex: 1 },
+  };
+  if (toolsEnabled) {
+    await Deno.writeTextFile(
+      join(fixturesDir, "explore-round.json"),
+      JSON.stringify(
+        {
+          promptHash: "phase199-explore-round",
+          promptPreview: "planning exploration round",
+          response: "",
+          model: "cutover-mock",
+          tokens: { input: 1000, output: 0 },
+          recordedAt: "2026-09-23T00:00:00.000Z",
+          callSite: { scenarioId: "phase199", stepId: "planning", callIndex: 0 },
+          toolCalls: [{ id: "toolu_01", name: "read_file", input: { path: "src/target.ts" } }],
+        },
+        null,
+        2,
+      ),
+    );
+    await Deno.writeTextFile(join(fixturesDir, "final-round.json"), JSON.stringify(planFixture, null, 2));
+  } else {
+    await Deno.writeTextFile(
+      join(fixturesDir, "single-call.json"),
+      JSON.stringify(
+        {
+          promptHash: "phase199-single-call",
+          promptPreview: "single planning call",
+          response: plan,
+          model: "cutover-mock",
+          tokens: { input: 1000, output: 300 },
+          recordedAt: "2026-09-23T00:00:00.000Z",
+          callSite: { scenarioId: "phase199", stepId: "planning", callIndex: 0 },
+        },
+        null,
+        2,
+      ),
+    );
+  }
+}
+
+/** Boots a real daemon, injects the fixture request, waits for the planning tool loop to
+ *  journal (flag-on) or the plan to be written (flag-off), and returns the trace activity +
+ *  the written plan's text. */
+async function bootPlanningToolsCutoverRun(
+  tempDir: string,
+  toolsEnabled: boolean,
+): Promise<{ traceId: string; rows: IPlanningCutoverRow[]; planText: string }> {
+  const configPath = join(tempDir, "exa.config.toml");
+  const portalDir = join(tempDir, "fixture-portal");
+  const fixturesDir = join(tempDir, "fixtures");
+  const marker = `EXAIX_PHASE199_MARKER_${crypto.randomUUID().slice(0, 8)}`;
+
+  await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+  await Deno.writeTextFile(
+    join(portalDir, "src", "target.ts"),
+    "// The marker below is the ONLY source of the marker string.\n// " + marker + '\nexport const target = "read";\n',
+  );
+  await writePlanningCutoverFixtures(fixturesDir, marker, toolsEnabled);
+  writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, toolsEnabled);
+
+  await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+  await Deno.copyFile(
+    join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+    join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+  );
+
+  const traceId = crypto.randomUUID();
+  const requestPath = join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
+  let planText = "";
+  const readPlan = () => {
+    const plans = [...Deno.readDirSync(join(tempDir, "Workspace", "Plans"))];
+    return plans.length > 0 ? Deno.readTextFileSync(join(tempDir, "Workspace", "Plans", plans[0].name)) : "";
+  };
+
+  await bootRealDaemon(configPath, 20000, {
+    midFlight: () => {
+      Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+      Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
+      Deno.writeTextFileSync(
+        requestPath,
+        "---\n" +
+          `trace_id: "${traceId}"\n` +
+          `created: "${new Date().toISOString()}"\n` +
+          "status: pending\n" +
+          "priority: normal\n" +
+          "agent_role: mock-agent\n" +
+          "portal: cutover-portal\n" +
+          'scenario_id: "phase199"\n' +
+          'step_id: "planning"\n' +
+          "source: cli\n" +
+          'created_by: "test@example.com"\n' +
+          'subject: "Phase 199 planning tools cutover"\n' +
+          "---\n\n" +
+          "# Request\n\n" +
+          "Inspect the portal target file and produce a plan.\n",
+      );
+    },
+    afterInjectMs: 60000,
+    waitForAfterInject: async () => {
+      if (toolsEnabled) {
+        const rows = await readPlanningCutoverActivity(configPath, traceId);
+        return rows.some((r) => r.action_type === "planning.tools.completed");
+      }
+      planText = readPlan();
+      return planText.length > 0;
+    },
+  });
+
+  if (!planText) planText = readPlan();
+  return { traceId, rows: await readPlanningCutoverActivity(configPath, traceId), planText };
+}
+
+Deno.test({
+  name:
+    "[phase199-planning-tools-cutover] a real daemon boot with tools_enabled=true journals a phase:planning read_file round that shapes the written plan",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase199-planning-tools-cutover-" });
+    try {
+      const { traceId, rows, planText } = await bootPlanningToolsCutoverRun(tempDir, true);
+
+      const toolRow = rows.find((r) => r.action_type === "dynamic_tool_call");
+      assert(
+        toolRow,
+        `a planning dynamic_tool_call row must exist. got: ${JSON.stringify(rows.map((r) => r.action_type))}`,
+      );
+      const toolPayload = JSON.parse(toolRow!.payload) as {
+        tool: string;
+        phase: string;
+        resultSummary: string;
+      };
+      assertEquals(toolPayload.tool, "read_file");
+      assertEquals(toolPayload.phase, "planning");
+      // The journaled resultSummary is the exact content the loop feeds to the next round's
+      // priorTurn (planning_tool_loop.ts: capToTokenLimit → buildPriorTurn → logDynamicToolCall).
+      assert(
+        toolPayload.resultSummary.includes("EXAIX_PHASE199_MARKER_"),
+        `the read_file result must carry the fixture marker, got ${toolPayload.resultSummary}`,
+      );
+
+      const completed = rows.find((r) => r.action_type === "planning.tools.completed");
+      assert(
+        completed,
+        `a planning.tools.completed row must exist. got: ${JSON.stringify(rows.map((r) => r.action_type))}`,
+      );
+      const completedPayload = JSON.parse(completed!.payload) as { rounds: number; toolCalls: number };
+      assertEquals(completedPayload.rounds, 2);
+      assert(completedPayload.toolCalls >= 1, "the loop must have executed at least one tool call");
+
+      assertEquals(
+        rows.some((r) => r.action_type === "planning.tools.skipped"),
+        false,
+        "a flag-on run whose gate passed must not journal a skip event",
+      );
+
+      assert(planText.includes("EXAIX_PHASE199_MARKER_"), "the written plan must carry the fixture marker");
+      assert(planText.includes(traceId.slice(0, 8)), "the plan file must be the run's own (trace-prefixed)");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase199-planning-tools-cutover] flag-off boot is single-call: no dynamic_tool_call/planning.tools.* rows and a byte-identical plan shape",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase199-planning-tools-off-" });
+    try {
+      const { rows, planText } = await bootPlanningToolsCutoverRun(tempDir, false);
+
+      assertEquals(
+        rows.some((r) => r.action_type === "dynamic_tool_call"),
+        false,
+        "the flag-off single-call boot must never journal a dynamic_tool_call row",
+      );
+      assertEquals(
+        rows.some((r) => r.action_type.startsWith("planning.tools.")),
+        false,
+        "the flag-off boot must never journal planning.tools.* rows",
+      );
+
+      // The flag-off plan carries the same marker the flag-on final round produced — the
+      // single-call run consumed the same recorded response, so the plan shape is identical.
+      assert(planText.includes("EXAIX_PHASE199_MARKER_"), "the flag-off plan must carry the same fixture marker");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
   },
 });

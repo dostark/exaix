@@ -1,0 +1,106 @@
+schema_version: "1.0.0"
+id: "planning-read-only-tools"
+title: "The planning call makes a read-only tool round on the request portal"
+pack: "portal_knowledge"
+scoring: "gated"
+tags: ["planning", "tools", "task:planning", "entity:planning-read-only-tools"]
+request_fixture: "fixtures/requests/portal_knowledge/planning_read_only.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  # Seed the recorded-mock planning config (+ portal + call-site fixtures) into the workspace.
+  - id: "seed-planning-config"
+    type: "run-script"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_planning_tools.ts"
+      - "$WORKSPACE_ROOT"
+      - "planning-read-only-tools"
+      - "submit-request"
+      - "read"
+    output_criteria:
+      - id: "config-seeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  # The daemon must read the planning config (EXA_CONFIG_PATH) so `[planning] tools_enabled
+  # = true` and the recorded-mock default model are live.
+  - id: "start-planning-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/planning.config.toml"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "planning-portal", "--agent-role", "mock-agent"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-planning-tool-call"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    payload_contains: ["\"phase\":\"planning\"", "read_file"]
+    expect_count: 1
+    output_criteria:
+      - id: "planning-tool-call-journaled"
+        class: "security"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-loop-completed"
+    type: "journal-assert"
+    action_type: "planning.tools.completed"
+    trace_scoped: true
+    expect_count: 1
+    output_criteria:
+      - id: "loop-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-plan-carries-marker"
+    type: "file-contains"
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "marker-in-plan"
+        kind: "text-contains"
+        contains: "EXAIX_PHASE199_MARKER_"
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0
