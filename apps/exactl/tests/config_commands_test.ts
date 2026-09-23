@@ -578,3 +578,26 @@ Deno.test({
     }
   },
 });
+
+// planning.* round-trip
+
+Deno.test("[configuring-cli] planning.tools_enabled/.max_tool_rounds/.max_tool_result_tokens round-trip via set/get", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("planning.tools_enabled", "true");
+    await commands.set("planning.max_tool_rounds", "4");
+    await commands.set("planning.max_tool_result_tokens", "5000");
+
+    assertEquals(await commands.get("planning.tools_enabled"), true);
+    assertEquals(await commands.get("planning.max_tool_rounds"), 4);
+    assertEquals(await commands.get("planning.max_tool_result_tokens"), 5000);
+  });
+});
+
+Deno.test("[configuring-cli] planning.max_tool_rounds rejects a value above the max (11)", async () => {
+  await withProfileCommands(async (commands) => {
+    await assertRejects(
+      () => commands.set("planning.max_tool_rounds", "11"),
+      ConfigValidationError,
+    );
+  });
+});

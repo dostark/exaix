@@ -8,9 +8,18 @@
  * @architectural-layer Services
  * @related-files ["packages/tool-runtime/src/tool_registry.ts"]
  */
-import { JsonSchemaType, ToolName, ToolSideEffectScope } from "@exaix/core";
+import { JsonSchemaType, PLANNING_TOOLS_EXCLUDED, ToolName, ToolSideEffectScope } from "@exaix/core";
 import type { ITool } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
+
+/** The read-only tool catalog offered to the planning LLM call: every NONE-scope entry
+ *  of `createCoreToolSchemas()` minus `PLANNING_TOOLS_EXCLUDED`. */
+export function readOnlyEditorTools(): ITool[] {
+  const excluded = new Set(PLANNING_TOOLS_EXCLUDED);
+  return createCoreToolSchemas().filter((tool) =>
+    tool.sideEffectScope === ToolSideEffectScope.NONE && !excluded.has(tool.name)
+  );
+}
 
 export function createCoreToolSchemas(
   gitScopeValues?: Opt<{ status: string; branch: string }, Reason.OptionalInput>,

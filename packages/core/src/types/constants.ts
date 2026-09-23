@@ -17,6 +17,7 @@ import {
   SkillRenderMode,
   SwapClass,
   TaskType,
+  ToolName,
 } from "./enums.ts";
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
@@ -3473,3 +3474,44 @@ export const DEFAULT_OTEL_EXPORT_MAX_RESPONSE_BYTES: number = configurable({
 
 /** Fixed name of the environment variable containing OTLP headers. */
 export const DEFAULT_OTEL_EXPORT_HEADERS_ENV = "OTEL_EXPORTER_OTLP_HEADERS";
+
+// Planning Read-Only Tools
+
+/** Tool names excluded from `readOnlyEditorTools()`'s NONE-scope filter even though they
+ *  themselves are NONE-scope. `list_available_tools` would advertise write tools the
+ *  planning LLM call can never call, since only the read-only catalog is offered to it. */
+export const PLANNING_TOOLS_EXCLUDED: readonly string[] = [ToolName.LIST_AVAILABLE_TOOLS];
+
+/** Read-only exploration tools for the planning LLM call. OFF = single-call (today's
+ *  behavior) — AgentRunner.run reads this live per request, so it is SwapClass.HOT. */
+export const DEFAULT_PLANNING_TOOLS_ENABLED: boolean = configurable({
+  key: "planning.tools_enabled",
+  default: false,
+  type: ConfigValueType.BOOLEAN,
+  description: "Enable the bounded read-only tool loop in the planning LLM call",
+  swap: SwapClass.HOT,
+});
+
+/** Max generate rounds in the planning tool loop, including the mandatory tool-less
+ *  final round. `max_tool_rounds = 1` means no tools at all (single-call equivalence). */
+export const DEFAULT_PLANNING_MAX_TOOL_ROUNDS: number = configurable({
+  key: "planning.max_tool_rounds",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description: "Max generate rounds in the planning tool loop (including the final tool-less round)",
+  min: 1,
+  max: 10,
+  swap: SwapClass.HOT,
+});
+
+/** Max tokens of a single tool_result (or transcript block) prepended back to the
+ *  planning model on a later round; longer results are truncated, never dropped. */
+export const DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS: number = configurable({
+  key: "planning.max_tool_result_tokens",
+  default: 2_000,
+  type: ConfigValueType.NUMBER,
+  description: "Max tokens of a planning tool_result prepended back to the model on the next round",
+  min: 256,
+  max: 50_000,
+  swap: SwapClass.HOT,
+});

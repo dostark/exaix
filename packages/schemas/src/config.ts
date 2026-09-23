@@ -975,6 +975,15 @@ export const ConfigSchema = z.object({
      *  instead of TOML-block prose. Defaults to false. */
     native_tools_enabled: z.boolean().optional().default(false),
   }).optional().prefault({ summarization_model: undefined, native_tools_enabled: false }),
+  /** Read-only exploration tools for the planning LLM call. */
+  planning: z.object({
+    /** Enable the bounded read-only tool loop in the planning LLM call. OFF = today's single-call behavior. */
+    tools_enabled: z.boolean().default(DEFAULTS.DEFAULT_PLANNING_TOOLS_ENABLED),
+    /** Max generate rounds in the planning tool loop (incl. the mandatory final tool-less round). */
+    max_tool_rounds: c("planning.max_tool_rounds"),
+    /** Max tokens of a tool_result prepended back to the model on the next round. */
+    max_tool_result_tokens: c("planning.max_tool_result_tokens"),
+  }).optional().prefault({}),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;
