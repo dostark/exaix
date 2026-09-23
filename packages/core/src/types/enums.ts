@@ -1511,6 +1511,8 @@ export enum PlanningToolLoopStopReason {
   ROUND_CAP = "round_cap",
   /** A guardrail blocking violation on a tool result forced the final round early. */
   GUARDRAIL_BLOCKED = "guardrail_blocked",
+  /** The final round returned no text (a provider ignored toolChoice none); the caller falls back to a single call. */
+  EMPTY_FINAL = "empty_final",
 }
 
 /** Why AgentRunner.run skipped the planning tools path despite `planning.tools_enabled`. */

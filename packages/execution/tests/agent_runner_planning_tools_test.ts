@@ -28,6 +28,7 @@ import { makeGenerateResult } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";
 import {
   PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
+  PlanningToolLoopStopReason,
   PlanningToolsSkipReason,
   PricingTier,
   ProviderCostTier,
@@ -79,11 +80,12 @@ interface ICapturedEvent {
   action: string;
   target: string | null;
   payload?: LogMetadata;
+  traceId?: string;
 }
 
 function createCapturingLogger(captured: ICapturedEvent[]): IEventLogger {
-  const record = (action: string, target: string | null, payload?: LogMetadata): Promise<void> => {
-    captured.push({ action, target, payload });
+  const record = (action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> => {
+    captured.push({ action, target, payload, traceId });
     return Promise.resolve();
   };
   const logger: IEventLogger = {
@@ -109,6 +111,7 @@ interface ITestPlanningConfig {
   tools_enabled: boolean;
   max_tool_rounds: number;
   max_tool_result_tokens: number;
+  max_tool_calls_per_round: number;
 }
 
 interface ITestPortalConfig {
@@ -150,7 +153,12 @@ function registerProviders(): void {
   });
 }
 
-const TWO_ROUND_PLANNING = { tools_enabled: true, max_tool_rounds: 2, max_tool_result_tokens: 2000 };
+const TWO_ROUND_PLANNING = {
+  tools_enabled: true,
+  max_tool_rounds: 2,
+  max_tool_result_tokens: 2000,
+  max_tool_calls_per_round: 3,
+};
 
 function twoRoundResponses(): IGenerateResult[] {
   return [
@@ -243,7 +251,7 @@ Deno.test("[AgentRunner planning tools][regression] planning absent/tools_enable
   ]);
   const runnerOff = new AgentRunner(providerOff, {
     context: makeContext({
-      planning: { tools_enabled: false, max_tool_rounds: 2, max_tool_result_tokens: 2000 },
+      planning: { ...TWO_ROUND_PLANNING, tools_enabled: false },
       portals: [],
     }),
   });
@@ -358,6 +366,7 @@ Deno.test("[AgentRunner planning tools] flipping planning.tools_enabled live bet
       tools_enabled: false,
       max_tool_rounds: 2,
       max_tool_result_tokens: 2000,
+      max_tool_calls_per_round: 3,
     };
     const context = makeContext({
       planning: planningState,
@@ -442,7 +451,7 @@ Deno.test("[AgentRunner planning tools] enabling planning tools reserves loopHis
       providerOff,
       {
         context: makeContext({
-          planning: { tools_enabled: false, max_tool_rounds: 2, max_tool_result_tokens: 2000 },
+          planning: { ...TWO_ROUND_PLANNING, tools_enabled: false },
           portals: [],
         }),
         tokenizer: stubTokenizer,
@@ -453,9 +462,49 @@ Deno.test("[AgentRunner planning tools] enabling planning tools reserves loopHis
 
     const onHints = capturedHintsOn[0];
     const offHints = capturedHintsOff[0];
-    const expectedReserved = (TWO_ROUND_PLANNING.max_tool_rounds - 1) *
+    const expectedReserved = (TWO_ROUND_PLANNING.max_tool_rounds - 1) * TWO_ROUND_PLANNING.max_tool_calls_per_round *
       (TWO_ROUND_PLANNING.max_tool_result_tokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
     assertEquals((onHints.loopHistoryUsedTokens ?? 0) - (offHints.loopHistoryUsedTokens ?? 0), expectedReserved);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+Deno.test("[AgentRunner planning tools] an empty final round falls back to one single-call generate and journals empty_final", async () => {
+  registerProviders();
+  const fixture = makePortalFixture();
+  try {
+    const toolCall = { id: "t1", name: "read_file", input: { path: "src/a.ts" } };
+    const provider = new ScriptedProvider(NATIVE_PROVIDER_ID, [
+      makeGenerateResult("", { toolCalls: [toolCall] }),
+      makeGenerateResult("", { toolCalls: [{ ...toolCall, id: "t2" }] }),
+      makeGenerateResult("<thought>t</thought><content>single-call plan</content>"),
+    ]);
+    const captured: ICapturedEvent[] = [];
+    const request: IParsedRequest = { userPrompt: "do it", context: {}, portal: "myportal", traceId: "trace-7" };
+    const context = makeContext({
+      planning: TWO_ROUND_PLANNING,
+      portals: [{ alias: "myportal", target_path: fixture.root, agents_allowed: ["*"], operations: ["read"] }],
+    });
+    const runner = new AgentRunner(
+      provider,
+      {
+        context,
+        selectedModel: { provider: NATIVE_PROVIDER_ID, model: "test-model" },
+        tokenizer: stubTokenizer,
+        logger: createCapturingLogger(captured),
+        plannerToolRegistryFactory: { createToolRegistry: () => new StubToolRegistry(fixture.root) },
+      } satisfies IAgentRunnerConfig,
+    );
+
+    const result = await runner.run(blueprint, request, undefined);
+
+    assertEquals(result.content, "single-call plan");
+    assertEquals(provider.calls.length, 3);
+    assert(provider.calls[2].options?.tools === undefined, "the fallback call is a plain single call");
+    const completed = captured.find((e) => e.action === DomainEventType.PlanningToolLoopCompleted);
+    assertEquals(completed?.payload?.stopReason, PlanningToolLoopStopReason.EMPTY_FINAL);
+    assertEquals(completed?.traceId, "trace-7");
   } finally {
     fixture.cleanup();
   }

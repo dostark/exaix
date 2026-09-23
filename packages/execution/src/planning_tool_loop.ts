@@ -20,7 +20,11 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
-import { DomainEventType, type IPlanningToolLoopCompletedPayload } from "@exaix/core/events";
+import {
+  DomainEventType,
+  type IPlanningToolLoopAbortedPayload,
+  type IPlanningToolLoopCompletedPayload,
+} from "@exaix/core/events";
 import {
   PLANNING_TOOL_RESULT_TAG,
   PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX,
@@ -63,7 +67,17 @@ export interface IPlanningToolLoopOptions {
   allowedTools: ReadonlySet<string>;
   maxRounds: number;
   maxToolResultTokens: number;
+  /** Calls executed per round; the rest are answered with an error result. */
+  maxToolCallsPerRound: number;
   traceId: string;
+}
+
+/** Totals accumulated across rounds, kept outside the loop body so an abort can report them. */
+interface ILoopProgress {
+  rounds: number;
+  toolCalls: number;
+  promptTokens: number;
+  completionTokens: number;
 }
 
 export interface IPlanningToolLoopResult {
@@ -81,6 +95,9 @@ const CONFINED_PARAM_NAMES = ["path", "repo_path", "from", "file"] as const;
 
 const CONFINEMENT_DENIED_MESSAGE = "Access denied: path is outside the request portal";
 const GUARDRAIL_BLOCKED_MESSAGE = "blocked by guardrail";
+/** Journal target and `phase` payload value that mark planning-call tool rows. */
+const PLANNING_LOG_PHASE = "planning";
+const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; call skipped";
 
 /** Maps ToolRegistry's ITool[] to the provider-agnostic IToolDefinition[] the planner may
  *  call, filtered to the read-only catalog names AgentRunner resolved for this request. */
@@ -101,14 +118,27 @@ export class PlanningToolLoop {
   }
 
   async run(options: IPlanningToolLoopOptions): Promise<IPlanningToolLoopResult> {
+    const progress: ILoopProgress = { rounds: 0, toolCalls: 0, promptTokens: 0, completionTokens: 0 };
+    try {
+      return await this.runRounds(options, progress);
+    } catch (error) {
+      this.logLoopAborted(
+        { ...progress, error: error instanceof Error ? error.message : String(error) },
+        options.traceId,
+      );
+      throw error;
+    }
+  }
+
+  private async runRounds(
+    options: IPlanningToolLoopOptions,
+    progress: ILoopProgress,
+  ): Promise<IPlanningToolLoopResult> {
     const allowedToolDefs = buildAllowedToolDefinitions(this.deps.toolRegistry.getTools(), options.allowedTools);
     const basePrompt = options.maxRounds === 1
       ? options.prompt
       : `${options.prompt}\n\n${PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE}`;
 
-    let totalPromptTokens = 0;
-    let totalCompletionTokens = 0;
-    let toolCallsExecuted = 0;
     let transcript = "";
     let priorTurn: Opt<IProviderTurn, Reason.OptionalInput> = undefined;
     let priorTurnTool = "";
@@ -117,6 +147,7 @@ export class PlanningToolLoop {
     let guardrailForced = false;
 
     for (let round = 1; round <= finalRoundIndex; round++) {
+      progress.rounds = round;
       const isFinalRound = round === finalRoundIndex;
       const callSite = options.nextCallSite();
       let roundPrompt = basePrompt;
@@ -134,21 +165,19 @@ export class PlanningToolLoop {
       );
 
       const response = await this.deps.generate(roundPrompt, roundOptions);
-      totalPromptTokens += response.usage.promptTokens;
-      totalCompletionTokens += response.usage.completionTokens;
+      progress.promptTokens += response.usage.promptTokens;
+      progress.completionTokens += response.usage.completionTokens;
 
       if (isFinalRound) {
         // Never execute tools on the final round, even if the provider still returned some.
-        const stopReason = guardrailForced
-          ? PlanningToolLoopStopReason.GUARDRAIL_BLOCKED
-          : PlanningToolLoopStopReason.ROUND_CAP;
+        const stopReason = this.finalStopReason(response, guardrailForced);
         return this.finish({
           response,
           rounds: round,
-          toolCalls: toolCallsExecuted,
+          toolCalls: progress.toolCalls,
           stopReason,
-          promptTokens: totalPromptTokens,
-          completionTokens: totalCompletionTokens,
+          promptTokens: progress.promptTokens,
+          completionTokens: progress.completionTokens,
         }, options.traceId);
       }
 
@@ -156,39 +185,26 @@ export class PlanningToolLoop {
         return this.finish({
           response,
           rounds: round,
-          toolCalls: toolCallsExecuted,
+          toolCalls: progress.toolCalls,
           stopReason: PlanningToolLoopStopReason.NO_TOOL_CALLS,
-          promptTokens: totalPromptTokens,
-          completionTokens: totalCompletionTokens,
+          promptTokens: progress.promptTokens,
+          completionTokens: progress.completionTokens,
         }, options.traceId);
       }
 
-      let roundGuardrailBlocked = false;
-      let lastTurn: Opt<IProviderTurn, Reason.OptionalInput> = undefined;
-      let lastTool = "";
-      for (let i = 0; i < response.toolCalls.length; i++) {
-        const call = response.toolCalls[i];
-        const { turn, guardrailBlocked } = await this.executeCall(call, options, round);
-        toolCallsExecuted++;
-        if (guardrailBlocked) roundGuardrailBlocked = true;
-        if (i === response.toolCalls.length - 1) {
-          lastTurn = turn;
-          lastTool = call.name;
-        } else {
-          transcript += this.buildTranscriptBlock(call.name, round, String(turn.toolResultContent));
-        }
-      }
+      const executed = await this.executeRoundCalls(response.toolCalls, options, round, progress);
+      transcript += executed.transcript;
 
       // A prior round's priorTurn is about to be superseded by this round's — age it into
       // the transcript (tagged with the round it actually came from) so it is not lost.
       if (priorTurn !== undefined) {
         transcript += this.buildTranscriptBlock(priorTurnTool, priorTurnRound, String(priorTurn.toolResultContent));
       }
-      priorTurn = lastTurn;
-      priorTurnTool = lastTool;
+      priorTurn = executed.lastTurn;
+      priorTurnTool = executed.lastTool;
       priorTurnRound = round;
 
-      if (roundGuardrailBlocked) {
+      if (executed.guardrailBlocked) {
         guardrailForced = true;
         finalRoundIndex = Math.min(finalRoundIndex, round + 1);
       }
@@ -197,6 +213,44 @@ export class PlanningToolLoop {
     // Unreachable: the loop always returns from inside the for-body (isFinalRound is always
     // hit by round === finalRoundIndex, since finalRoundIndex only ever shrinks toward round+1).
     throw new Error("PlanningToolLoop.run: exited without a final response");
+  }
+
+  private finalStopReason(response: IGenerateResult, guardrailForced: boolean): PlanningToolLoopStopReason {
+    if (response.content.trim().length === 0) return PlanningToolLoopStopReason.EMPTY_FINAL;
+    return guardrailForced ? PlanningToolLoopStopReason.GUARDRAIL_BLOCKED : PlanningToolLoopStopReason.ROUND_CAP;
+  }
+
+  /** Runs one round's calls up to the per-round cap. The last call becomes the next priorTurn;
+   *  earlier ones are returned as transcript blocks so their results are not lost. */
+  private async executeRoundCalls(
+    calls: IProviderToolCall[],
+    options: IPlanningToolLoopOptions,
+    round: number,
+    progress: ILoopProgress,
+  ): Promise<{
+    lastTurn: Opt<IProviderTurn, Reason.OptionalInput>;
+    lastTool: string;
+    transcript: string;
+    guardrailBlocked: boolean;
+  }> {
+    let transcript = "";
+    let guardrailBlocked = false;
+    let lastTurn: Opt<IProviderTurn, Reason.OptionalInput> = undefined;
+    let lastTool = "";
+    for (let i = 0; i < calls.length; i++) {
+      const call = calls[i];
+      const withinCap = i < options.maxToolCallsPerRound;
+      const outcome = withinCap ? await this.executeCall(call, options, round) : this.refuseCall(call, round, options);
+      if (withinCap) progress.toolCalls++;
+      guardrailBlocked ||= outcome.guardrailBlocked;
+      if (i === calls.length - 1) {
+        lastTurn = outcome.turn;
+        lastTool = call.name;
+      } else {
+        transcript += this.buildTranscriptBlock(call.name, round, String(outcome.turn.toolResultContent));
+      }
+    }
+    return { lastTurn, lastTool, transcript, guardrailBlocked };
   }
 
   private buildRoundOptions(
@@ -258,6 +312,17 @@ export class PlanningToolLoop {
     const turn: IProviderTurn = { ...built, toolResultContent: cappedContent };
     this.logDynamicToolCall(call.name, call.input, cappedContent, round, options.traceId);
     return { turn, guardrailBlocked };
+  }
+
+  /** Answers a call past the per-round cap with an error result without executing it. */
+  private refuseCall(
+    call: IProviderToolCall,
+    round: number,
+    options: IPlanningToolLoopOptions,
+  ): { turn: IProviderTurn; guardrailBlocked: boolean } {
+    const turn = buildPriorTurn(call, { success: false, error: TOOL_CALL_LIMIT_MESSAGE });
+    this.logDynamicToolCall(call.name, call.input, String(turn.toolResultContent), round, options.traceId);
+    return { turn, guardrailBlocked: false };
   }
 
   /** Confines every CONFINED_PARAM_NAMES string param to portalRoot. Returns an error
@@ -325,13 +390,13 @@ export class PlanningToolLoop {
     if (!this.logger) return;
     void this.logger.info(
       DomainEventType.AgentDynamicToolCall,
-      "planning",
+      PLANNING_LOG_PHASE,
       {
         tool,
         args,
         resultSummary: resultSummary.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
         iteration,
-        phase: "planning",
+        phase: PLANNING_LOG_PHASE,
       },
       traceId,
     );
@@ -352,9 +417,14 @@ export class PlanningToolLoop {
     );
   }
 
+  private logLoopAborted(payload: IPlanningToolLoopAbortedPayload, traceId: string): void {
+    if (!this.logger) return;
+    void this.logger.warn(DomainEventType.PlanningToolLoopAborted, PLANNING_LOG_PHASE, { ...payload }, traceId);
+  }
+
   private logLoopCompleted(payload: IPlanningToolLoopCompletedPayload, traceId: string): void {
     if (!this.logger) return;
-    void this.logger.info(DomainEventType.PlanningToolLoopCompleted, "planning", { ...payload }, traceId);
+    void this.logger.info(DomainEventType.PlanningToolLoopCompleted, PLANNING_LOG_PHASE, { ...payload }, traceId);
   }
 
   private finish(

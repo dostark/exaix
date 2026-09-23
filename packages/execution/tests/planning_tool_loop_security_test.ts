@@ -88,6 +88,7 @@ function makeOptions(portalRoot: string, overrides: Partial<IPlanningToolLoopOpt
     allowedTools: new Set(["read_file", "git_info"]),
     maxRounds: 2,
     maxToolResultTokens: 2000,
+    maxToolCallsPerRound: 10,
     traceId: "trace-1",
     ...overrides,
   };

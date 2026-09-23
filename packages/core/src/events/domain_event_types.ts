@@ -77,6 +77,16 @@ export interface IPlanningToolLoopCompletedPayload {
   completionTokens: number;
 }
 
+/** Typed payload for planning.tools.aborted events — one per PlanningToolLoop.run() call that
+ *  threw after starting, carrying the totals accumulated before the failure. */
+export interface IPlanningToolLoopAbortedPayload {
+  rounds: number;
+  toolCalls: number;
+  promptTokens: number;
+  completionTokens: number;
+  error: string;
+}
+
 /** Typed payload for planning.tools.skipped events — one per AgentRunner.run() call where
  *  `planning.tools_enabled` is on but a gate denied the tools path. */
 export interface IPlanningToolsSkippedPayload {
@@ -452,6 +462,8 @@ export const DomainEventType = {
   AgentDynamicToolCall: "dynamic_tool_call",
   /** Emitted once per PlanningToolLoop.run() call, carrying IPlanningToolLoopCompletedPayload. */
   PlanningToolLoopCompleted: "planning.tools.completed",
+  /** Emitted once when PlanningToolLoop.run() throws mid-loop, carrying IPlanningToolLoopAbortedPayload. */
+  PlanningToolLoopAborted: "planning.tools.aborted",
   /** Emitted once per AgentRunner.run() call where `planning.tools_enabled` is on but a
    *  gate denied the tools path, carrying IPlanningToolsSkippedPayload. */
   PlanningToolsSkipped: "planning.tools.skipped",

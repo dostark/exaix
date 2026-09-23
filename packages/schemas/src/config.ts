@@ -983,6 +983,8 @@ export const ConfigSchema = z.object({
     max_tool_rounds: c("planning.max_tool_rounds"),
     /** Max tokens of a tool_result prepended back to the model on the next round. */
     max_tool_result_tokens: c("planning.max_tool_result_tokens"),
+    /** Max tool calls executed in one planning round; extra parallel calls get an error result. */
+    max_tool_calls_per_round: c("planning.max_tool_calls_per_round"),
   }).optional().prefault({}),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference

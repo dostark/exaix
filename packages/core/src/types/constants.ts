@@ -3516,6 +3516,18 @@ export const DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS: number = configurable({
   swap: SwapClass.HOT,
 });
 
+/** Max tool calls executed in one planning round. Providers may return parallel calls
+ *  despite `disable_parallel_tool_use`; calls past this cap get an error result. */
+export const DEFAULT_PLANNING_MAX_TOOL_CALLS_PER_ROUND: number = configurable({
+  key: "planning.max_tool_calls_per_round",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Max tool calls executed per planning round; extra parallel calls receive an error result",
+  min: 1,
+  max: 20,
+  swap: SwapClass.HOT,
+});
+
 /** XML tag name wrapping a planning tool_result carried forward in the base prompt
  *  (rounds before the most recent, which instead becomes IModelOptions.priorTurn). */
 export const PLANNING_TOOL_RESULT_TAG = "planning_tool_result";

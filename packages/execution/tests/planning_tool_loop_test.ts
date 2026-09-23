@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/planning_tool_loop.ts, packages/execution/src/native_tool_turns.ts]
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
@@ -22,6 +22,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "@exaix/testing";
 import { makeGenerateResult } from "@exaix/testing";
+import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS, PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION } from "@exaix/core";
 
 // Test doubles
 
@@ -106,6 +107,7 @@ function makeOptions(overrides: Partial<IPlanningToolLoopOptions> = {}): IPlanni
     allowedTools: new Set(["read_file"]),
     maxRounds: 2,
     maxToolResultTokens: 2000,
+    maxToolCallsPerRound: 10,
     traceId: "trace-1",
     ...overrides,
   };
@@ -251,6 +253,72 @@ Deno.test("[planning_tool_loop] parallel toolCalls in one round are all executed
     generate.calls[1].prompt.includes("contents of @myportal/a.ts"),
     "the earlier parallel call's result must not be lost",
   );
+});
+
+Deno.test("[planning_tool_loop] calls beyond maxToolCallsPerRound are answered with an error result and never executed", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file")], {
+    read_file: (p) => ({ success: true, data: { content: `contents of ${p.path}` } }),
+  });
+  const round1 = makeGenerateResult("", {
+    toolCalls: [
+      { id: "t1", name: "read_file", input: { path: "a.ts" } },
+      { id: "t2", name: "read_file", input: { path: "b.ts" } },
+      { id: "t3", name: "read_file", input: { path: "c.ts" } },
+    ],
+  });
+  const round2 = makeGenerateResult("<thought>t</thought><content>plan</content>");
+  const generate = new ScriptedGenerate([round1, round2]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+
+  const result = await loop.run(makeOptions({ maxRounds: 2, maxToolCallsPerRound: 2 }));
+
+  assertEquals(registry.calls.map((c) => c.params.path), ["@myportal/a.ts", "@myportal/b.ts"]);
+  assertEquals(result.toolCalls, 2);
+  const priorTurn = generate.calls[1].options.priorTurn;
+  assertEquals(priorTurn?.toolResultIsError, true);
+  assert(String(priorTurn?.toolResultContent).includes("tool call limit"));
+});
+
+Deno.test("[planning_tool_loop] final-round prompt growth stays within the per-call headroom (cap x (result tokens + overhead))", async () => {
+  const bigResult = "x".repeat(40_000);
+  const registry = new StubToolRegistry([fixtureTool("read_file")], {
+    read_file: () => ({ success: true, data: { content: bigResult } }),
+  });
+  const calls = ["a", "b", "c", "d"].map((id) => ({ id, name: "read_file", input: { path: `${id}.ts` } }));
+  const generate = new ScriptedGenerate([
+    makeGenerateResult("", { toolCalls: calls }),
+    makeGenerateResult("<thought>t</thought><content>plan</content>"),
+  ]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+  const maxToolResultTokens = 256;
+  const maxToolCallsPerRound = 2;
+
+  await loop.run(makeOptions({ maxRounds: 2, maxToolResultTokens, maxToolCallsPerRound }));
+
+  const [firstRound, finalRound] = generate.calls;
+  const transcriptTokens = await stubTokenizer.countTokens(finalRound.prompt) -
+    await stubTokenizer.countTokens(firstRound.prompt) -
+    await stubTokenizer.countTokens(`\n\n${PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION}`);
+  const priorTurnTokens = await stubTokenizer.countTokens(String(finalRound.options.priorTurn?.toolResultContent));
+  const headroom = maxToolCallsPerRound * (maxToolResultTokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
+  assert(
+    transcriptTokens + priorTurnTokens <= headroom,
+    `grew ${transcriptTokens + priorTurnTokens} tokens, headroom ${headroom}`,
+  );
+});
+
+Deno.test("[planning_tool_loop] a final round with no text (provider ignored toolChoice none) ends with the empty_final stop reason", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file")]);
+  const toolCall = { id: "t1", name: "read_file", input: { path: "a.ts" } };
+  const round1 = makeGenerateResult("", { toolCalls: [toolCall] });
+  const round2 = makeGenerateResult("", { toolCalls: [{ ...toolCall, id: "t2" }] });
+  const generate = new ScriptedGenerate([round1, round2]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+
+  const result = await loop.run(makeOptions({ maxRounds: 2 }));
+
+  assertEquals(result.stopReason, PlanningToolLoopStopReason.EMPTY_FINAL);
+  assertEquals(registry.calls.length, 1, "the final round's tool calls are never executed");
 });
 
 // Truncation
@@ -433,6 +501,45 @@ Deno.test("[planning_tool_loop][integration] a real EventLogger journals dynamic
     assertEquals(completedPayload.toolCalls, 1);
     assertEquals(completedPayload.promptTokens, 30);
     assertEquals(completedPayload.completionTokens, 13);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[planning_tool_loop][integration] a round that throws journals one planning.tools.aborted row with the partial totals and trace id, then rethrows", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const registry = new StubToolRegistry([fixtureTool("read_file")]);
+    const round1: IGenerateResult = {
+      ...makeGenerateResult("", { toolCalls: [{ id: "t1", name: "read_file", input: { path: "a.ts" } }] }),
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+    };
+    let calls = 0;
+    const generate = (): Promise<IGenerateResult> => {
+      calls++;
+      return calls === 1 ? Promise.resolve(round1) : Promise.reject(new Error("provider exploded"));
+    };
+    const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate, logger }));
+    const traceId = crypto.randomUUID();
+
+    await assertRejects(() => loop.run(makeOptions({ maxRounds: 2, traceId })), Error, "provider exploded");
+    await db.waitForFlush();
+
+    const rows = db.getActivitiesByTrace(traceId);
+    const abortedRows = rows.filter((r) => r.action_type === DomainEventType.PlanningToolLoopAborted);
+    assertEquals(abortedRows.length, 1);
+    const payload = JSON.parse(abortedRows[0].payload) as {
+      rounds: number;
+      toolCalls: number;
+      promptTokens: number;
+      error: string;
+    };
+    assertEquals(payload.rounds, 2);
+    assertEquals(payload.toolCalls, 1);
+    assertEquals(payload.promptTokens, 10);
+    assertEquals(payload.error, "provider exploded");
+    assertEquals(rows.filter((r) => r.action_type === DomainEventType.PlanningToolLoopCompleted).length, 0);
   } finally {
     await cleanup();
   }

@@ -91,3 +91,14 @@ Deno.test("[ConfigSchema] rejects max_tool_result_tokens above the max (50_001)"
 
   assertEquals(result.success, false);
 });
+
+Deno.test("[ConfigSchema] planning.max_tool_calls_per_round defaults to the constant and rejects 0", () => {
+  const ok = ConfigSchema.safeParse(baseConfig());
+  assertEquals(ok.success, true);
+  if (ok.success) {
+    assertEquals(ok.data.planning!.max_tool_calls_per_round, DEFAULTS.DEFAULT_PLANNING_MAX_TOOL_CALLS_PER_ROUND);
+  }
+
+  const bad = ConfigSchema.safeParse({ ...baseConfig(), planning: { max_tool_calls_per_round: 0 } });
+  assertEquals(bad.success, false);
+});

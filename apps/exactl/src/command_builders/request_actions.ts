@@ -15,6 +15,7 @@ import {
   DEFAULT_AGENTS_PATH,
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_NONE_LABEL,
+  DEFAULT_PLANNING_MAX_TOOL_CALLS_PER_ROUND,
   DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS,
   DEFAULT_PLANNING_MAX_TOOL_ROUNDS,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -320,9 +321,10 @@ async function handleRequestCreateDryRunContext(
 
       const maxRounds = planning.max_tool_rounds ?? DEFAULT_PLANNING_MAX_TOOL_ROUNDS;
       const maxResultTokens = planning.max_tool_result_tokens ?? DEFAULT_PLANNING_MAX_TOOL_RESULT_TOKENS;
+      const maxCalls = planning.max_tool_calls_per_round ?? DEFAULT_PLANNING_MAX_TOOL_CALLS_PER_ROUND;
       const resends = maxRounds - 1;
       const extraTokens = resends *
-        (preview.totalTokenEstimate + maxResultTokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
+        (preview.totalTokenEstimate + maxCalls * (maxResultTokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS));
       const extraCostUsd = computeRegistryPredictedCost(providerInfo.id, providerInfo.model, {
         promptTokens: extraTokens,
         completionTokens: 0,

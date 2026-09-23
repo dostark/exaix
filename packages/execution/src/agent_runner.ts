@@ -18,7 +18,7 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import { PlanningToolsSkipReason, PortalOperation } from "@exaix/core";
+import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation } from "@exaix/core";
 import { PortalPermissionsService } from "@exaix/portal";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
@@ -850,9 +850,14 @@ export class AgentRunner implements IAgentRunner {
       allowedTools,
       maxRounds: planning.max_tool_rounds,
       maxToolResultTokens: planning.max_tool_result_tokens,
+      maxToolCallsPerRound: planning.max_tool_calls_per_round,
       traceId: traceId ?? "",
     });
     this.markCallSiteConsumed(lastCallSite);
+
+    // A provider that ignored toolChoice none left no plan text; retrying the whole loop would
+    // repeat the failure, so hand back to the single-call path.
+    if (result.stopReason === PlanningToolLoopStopReason.EMPTY_FINAL) return undefined;
 
     return {
       success: true,
@@ -1070,7 +1075,7 @@ export class AgentRunner implements IAgentRunner {
     const planningGate = this.resolvePlanningGate(request, blueprint.agentRole || "unknown");
     if (planningGate.engage) {
       const planning = this.config!.context!.config.get().planning!;
-      allocationHints.loopHistoryUsedTokens += (planning.max_tool_rounds - 1) *
+      allocationHints.loopHistoryUsedTokens += (planning.max_tool_rounds - 1) * planning.max_tool_calls_per_round *
         (planning.max_tool_result_tokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
     }
     const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, allocationHints) ??
