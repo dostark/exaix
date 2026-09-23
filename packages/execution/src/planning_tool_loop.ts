@@ -90,8 +90,9 @@ export interface IPlanningToolLoopResult {
 }
 
 /** Tool call parameter names the confinement guard checks — every string value under these
- *  keys must resolve inside the request portal before the tool call reaches ToolRegistry. */
-const CONFINED_PARAM_NAMES = ["path", "repo_path", "from", "file"] as const;
+ *  keys must resolve inside the request portal before the tool call reaches ToolRegistry.
+ *  `file_path` is the alias ToolRegistry accepts in place of `path`. */
+const CONFINED_PARAM_NAMES = ["path", "file_path", "repo_path", "from", "file"] as const;
 
 const CONFINEMENT_DENIED_MESSAGE = "Access denied: path is outside the request portal";
 const GUARDRAIL_BLOCKED_MESSAGE = "blocked by guardrail";

@@ -14,15 +14,20 @@ import { createMockConfig, makeGenerateResult } from "@exaix/testing";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
+import type { JSONValue } from "@exaix/core/types";
 
-Deno.test("[security] PlanningToolLoop feeds an error result for a traversing search_files pattern", async () => {
+/** Runs one real-registry planning round for `toolName`/`input` over a portal that has a sibling
+ *  secret file, and returns the content the loop fed back to the model. */
+async function feedBackFor(toolName: string, input: Record<string, JSONValue>): Promise<string> {
   const root = await Deno.makeTempDir();
   try {
-    await Deno.mkdir(`${root}/portal`, { recursive: true });
+    await Deno.mkdir(`${root}/portal/src`, { recursive: true });
+    await Deno.writeTextFile(`${root}/portal/src/a.ts`, "export const a = 1;\n");
     await Deno.writeTextFile(`${root}/secret.txt`, "OUTSIDE\n");
     const config = createMockConfig(root);
     config.portals = [{ alias: "p", target_path: `${root}/portal` } as never];
     const registry = new ToolRegistry({ config, baseDir: `${root}/portal` });
+    const resolved = JSON.parse(JSON.stringify(input).replaceAll("$ROOT", root)) as Record<string, JSONValue>;
 
     let round = 0;
     let fedBack = "";
@@ -33,9 +38,7 @@ Deno.test("[security] PlanningToolLoop feeds an error result for a traversing se
       generate: (_prompt, options): Promise<IGenerateResult> => {
         round++;
         if (round === 1) {
-          return Promise.resolve(makeGenerateResult("", {
-            toolCalls: [{ id: "1", name: "search_files", input: { pattern: "../*.txt", path: "." } }],
-          }));
+          return Promise.resolve(makeGenerateResult("", { toolCalls: [{ id: "1", name: toolName, input: resolved }] }));
         }
         fedBack = String(options.priorTurn?.toolResultContent);
         return Promise.resolve(makeGenerateResult("done"));
@@ -47,16 +50,37 @@ Deno.test("[security] PlanningToolLoop feeds an error result for a traversing se
       nextCallSite: () => undefined,
       portalAlias: "p",
       portalRoot: `${root}/portal`,
-      allowedTools: new Set(["search_files"]),
+      allowedTools: new Set([toolName]),
       maxRounds: 2,
       maxToolResultTokens: 2000,
       maxToolCallsPerRound: 3,
       traceId: "t",
     });
-
-    assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
-    assertEquals(fedBack.includes("secret.txt"), false);
+    return fedBack;
   } finally {
     await Deno.remove(root, { recursive: true });
   }
+}
+
+Deno.test("[security] PlanningToolLoop feeds an error result for a traversing search_files pattern", async () => {
+  const fedBack = await feedBackFor("search_files", { pattern: "../*.txt", path: "." });
+  assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
+  assertEquals(fedBack.includes("secret.txt"), false);
+});
+
+Deno.test("[security] PlanningToolLoop denies an absolute file_path alias outside the portal", async () => {
+  const fedBack = await feedBackFor("read_file", { file_path: "$ROOT/secret.txt" });
+  assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
+  assertEquals(fedBack.includes("OUTSIDE"), false);
+});
+
+Deno.test("[security] PlanningToolLoop denies a ../ file_path alias outside the portal", async () => {
+  const fedBack = await feedBackFor("read_file", { file_path: "../secret.txt" });
+  assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
+  assertEquals(fedBack.includes("OUTSIDE"), false);
+});
+
+Deno.test("PlanningToolLoop still reads an in-portal file through the file_path alias", async () => {
+  const fedBack = await feedBackFor("read_file", { file_path: "src/a.ts" });
+  assert(fedBack.includes("export const a = 1;"), `expected file content, got ${fedBack}`);
 });
