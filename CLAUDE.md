@@ -27,7 +27,7 @@ links:
 
 1. **NEVER merge any branch into `main`** unless the user explicitly and directly requests it.
 2. **NEVER push to any remote** (origin, upstream, or any other) unless the user explicitly and directly requests it.
-3. All git operations (commit, push, merge, create PR) require an explicit user command. Do not infer intent.
+3. Local commits on a non-`main` branch need no separate user command when the task or an invoked skill calls for them (for example one commit per step under `#next-steps`). Creating a PR still requires an explicit user command; merging and pushing are covered by rules 1 and 2.
 4. If a pre-push hook or CI gate prompts a push, **do not proceed** — tell the user you are blocked waiting for their instruction.
 
 ---
