@@ -18,6 +18,39 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 199 (Read-Only Exploration Tools in the Planning Call)
+
+### Added
+
+- `planning.tools_enabled` config key — opt the planning/analysis call into a bounded, read-only
+  tool loop so the model can open files, list directories, search, and query the portal's
+  relationship/knowledge graph before committing to a plan; default `false` keeps today's
+  single-call behavior byte-for-byte, and the key is live-read so `exactl config set` takes effect
+  on the next request (see [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+- `planning.max_tool_rounds`, `planning.max_tool_result_tokens`, and `planning.max_tool_calls_per_round`
+  config keys — bound the planning loop's generate rounds, per-result token carry-over, and tool
+  calls executed per round, so an enabled loop's latency, context, and cost stay capped (see
+  [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+- `exactl request create --dry-run-context` now prints the available read-only planning tools,
+  whether the planning loop would actually activate for the selected provider, and the worst-case
+  extra tokens/cost per run (see [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+- `planning.tools.completed`, `planning.tools.skipped`, and `planning.tools.aborted` journal events
+  — record when an enabled planning loop finishes (rounds, tool-call count, stop reason, summed
+  tokens), is skipped for a named reason (provider without native tool support, no portal, portal
+  read denied), or aborts mid-loop (see [Planning read-only tools](Exaix_User_Guide.md#planning-read-only-tools)).
+
+### Security
+
+- An enabled planning loop is confined to the request portal: absolute paths, cross-portal aliases,
+  symlink escapes, `../` traversal, `search_files` patterns with `..` or an absolute prefix, and the
+  `file_path` parameter alias are all rejected with an access-denied journal event, so the planner
+  can never read outside the portal it is planning against.
+- Planning tool results are treated as untrusted repository data (never instructions), wrapped in
+  delimited blocks, and screened by the guardrail runner when one is configured, so a crafted portal
+  file cannot inject instructions into the written plan.
+- Only read-only tools are ever offered to the planning call — write, patch, delete, move, and
+  command-execution tools are structurally excluded rather than described as off-limits.
+
 ## Unreleased — Phase 198 (Request-Adaptive Portal Knowledge Inclusion & AST-Graph Exploration)
 
 ### Added
