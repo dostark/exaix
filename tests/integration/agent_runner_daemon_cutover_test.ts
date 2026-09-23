@@ -892,12 +892,9 @@ Deno.test({
   },
 });
 
-/// Phase 199 Step 6 — real-daemon planning-tool cutover: with `[planning]
-/// tools_enabled = true` in the real exa.config.toml and a recorded-mock provider, the
-/// planning call executes a read-only `read_file` round (journaled `dynamic_tool_call` with
-/// phase "planning") whose result feeds the final priorTurn, and the written plan carries the
-/// marker whose only source is the fixture portal file. Flag-off boot is single-call with no
-/// planning tool rows.
+/// Phase 199 Step 6 — real-daemon planning-tool cutover: with `[planning] tools_enabled =
+/// true` and a recorded-mock provider, the planning call runs a read-only `read_file` round
+/// (journaled `dynamic_tool_call` phase "planning") whose result reaches the written plan.
 
 /** A valid plan body (PlanSchema) carrying the run-specific marker, reused verbatim by BOTH
  *  the flag-on final-round fixture and the flag-off single-call fixture so the two runs' plan
@@ -937,9 +934,8 @@ async function readPlanningCutoverActivity(configPath: string, traceId: string):
 }
 
 /** Builds the flag-on or flag-off daemon TOML: an explicit mock default model (the schema
- *  default `models.default` would otherwise win over `[ai]`, resolving to a live provider),
- *  a recorded-mock strategy pointed at the fixtures dir, a portal, and — when enabled — the
- *  `[planning]` block. */
+ *  default wins over `[ai]` otherwise), a recorded-mock strategy, a portal, and — when
+ *  enabled — the `[planning]` block. */
 function writePlanningToolsCutoverConfig(
   configPath: string,
   root: string,

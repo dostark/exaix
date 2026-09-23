@@ -198,9 +198,8 @@ function formatPromptPreviewTable(preview: IPromptPreview): string {
 }
 
 /** The planner's read-only catalog names the dry-run advertises: `readOnlyEditorTools()`
- *  intersected with the real CLI registry's registered tools so a tool the registry doesn't
- *  actually offer is never advertised. Falls back to the full structural catalog when the
- *  context carries no registry (its absence is optional by contract). */
+ *  intersected with the current registry's tools, so one the registry doesn't offer is never
+ *  advertised; absent a registry (optional by contract) it falls back to the full catalog. */
 function planningToolsCatalogNames(toolRegistry: ICliApplicationContext["toolRegistry"]): string[] {
   const catalog = readOnlyEditorTools();
   if (!toolRegistry) return catalog.map((t) => t.name);
@@ -208,10 +207,9 @@ function planningToolsCatalogNames(toolRegistry: ICliApplicationContext["toolReg
   return catalog.filter((t) => registered.has(t.name)).map((t) => t.name);
 }
 
-/** Mirror RequestProcessor.buildRequestContext (processor.ts:862-871): inject the same
- *  portal_context + portal_knowledge segments the daemon would assemble, from a read-only
- *  cached knowledge lookup — never triggers analysis, persistence, or an LLM call. Returns
- *  the context segments and the portal-knowledge availability for the preview note. */
+/** Mirrors RequestProcessor.buildRequestContext: inject the same portal_context +
+ *  portal_knowledge segments the daemon would assemble, from a read-only cached lookup —
+ *  never analysis, persistence, or an LLM call. */
 async function resolvePortalPreviewContext(
   options: IRequestCreateOptions,
   appContext: ICliApplicationContext,

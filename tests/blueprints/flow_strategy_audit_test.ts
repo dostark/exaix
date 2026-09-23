@@ -194,10 +194,9 @@ Deno.test("Flow strategy audit: every catalog step has an explicit, recorded dec
     }
   }
 
-  // Catches the opposite drift from `missing`: a stale AUDIT_TABLE entry for a step that
-  // no longer exists (e.g. a flow step was renamed or removed) — every live step is
-  // accounted for above, so if the table has MORE entries than live steps, one of them
-  // is phantom. No hardcoded total: this is self-consistent against the live catalog.
+  // Catches the opposite drift from `missing`: a stale AUDIT_TABLE entry for a step that no
+  // longer exists — more entries than live steps means one is phantom. No hardcoded total:
+  // this stays self-consistent against the live catalog.
   const flatAuditEntries = Object.values(AUDIT_TABLE).reduce((sum, table) => sum + Object.keys(table).length, 0);
 
   assertEquals(missing, [], `steps with no recorded audit decision: ${missing.join(", ")}`);

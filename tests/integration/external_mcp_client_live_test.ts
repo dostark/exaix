@@ -101,10 +101,9 @@ Deno.test({
       if (result.code !== 0) {
         throw new Error(`exactl exited ${result.code}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
       }
-      // Assert connectivity and a real, multi-tool response was parsed — not a specific
-      // third-party tool name, which DeepWiki (outside our control) has already renamed
-      // once ("ask_question" -> "ask_wiki_question"). "read_wiki_" is DeepWiki's own stable
-      // naming convention across its tool set, not a single pinned tool.
+      // Assert connectivity + a real multi-tool parse, not a pinned tool name — DeepWiki already
+      // renamed one ("ask_question" -> "ask_wiki_question"); "read_wiki_" is its stable prefix —
+      // the same convention across its tool set, not a single pinned tool.
       assertStringIncludes(result.stdout, "read_wiki_");
       const toolCount = (result.stdout.match(/^\S+ — /gm) ?? []).length;
       if (toolCount < 2) {

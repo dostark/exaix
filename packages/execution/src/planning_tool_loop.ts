@@ -221,10 +221,9 @@ export class PlanningToolLoop {
     return guardrailForced ? PlanningToolLoopStopReason.GUARDRAIL_BLOCKED : PlanningToolLoopStopReason.ROUND_CAP;
   }
 
-  /** Runs one round's calls up to the per-round cap. One call becomes the next priorTurn:
-   *  the one carrying a provider signature (Gemini attaches thoughtSignature to the first call
-   *  of a parallel batch only and rejects an unsigned replay), else the last. The others are
-   *  returned as transcript blocks so their results are not lost. */
+  /** Runs one round's calls up to the per-round cap: one becomes the next priorTurn — the
+   *  signed one (Gemini annotates only the first call of a parallel batch), else the last;
+   *  the others return as transcript blocks so their results are never lost. */
   private async executeRoundCalls(
     calls: IProviderToolCall[],
     options: IPlanningToolLoopOptions,

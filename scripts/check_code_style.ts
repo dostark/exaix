@@ -141,9 +141,12 @@ function isTeamDynamicImportLine(line: string): boolean {
   return /\bimport\s*\(\s*["'](@exaix-team\/|\.\/src\/bootstrap_team)/.test(line);
 }
 
-/** True when the import sits in one of the two sanctioned edition-dispatch entry points. */
+/** True when the import sits in one of the two sanctioned edition-dispatch entry points —
+ *  including their Team-edition counterparts under exaix-team/, which are the same dispatch
+ *  mechanism for the Team app and carry the same edition-gated dynamic `@exaix-team/*` import. */
 function isEditionDispatchEntry(repoPath: string): boolean {
-  return repoPath.startsWith("apps/daemon/") || repoPath.startsWith("apps/exactl/");
+  return repoPath.startsWith("apps/daemon/") || repoPath.startsWith("apps/exactl/") ||
+    repoPath.startsWith("exaix-team/apps/daemon/") || repoPath.startsWith("exaix-team/apps/exactl/");
 }
 
 /**
@@ -518,6 +521,11 @@ const LAYER_LEAK_EXEMPT = new Set([
   // instance would violate the documented invariant that AgentComposer's mutable
   // planWrittenFiles state must never survive past one call.
   "packages/flow/src/agent_composer_adapter.ts",
+  // agent_runner.ts builds a PortalPermissionsService per request from the request-matched
+  // portal object (resolvePlanningGate finds `config.portals` by `request.portal` alias at
+  // call time), the same legitimately-per-call construction pattern as the two entries above —
+  // a boot-time DI-injected service would either duplicate that lookup or pin the wrong portal.
+  "packages/execution/src/agent_runner.ts",
 ]);
 
 /**

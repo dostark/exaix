@@ -121,12 +121,9 @@ Deno.test("[ArtefactCatalog] the real repo catalog enumerates each kind with no 
   const repoRoot = join(new URL("../../../../", import.meta.url).pathname);
   const catalog = await loadArtefactCatalog(join(repoRoot, "Blueprints"));
 
-  // A hardcoded per-kind count is a pure magic-number tax on every new agent role/skill/flow
-  // with zero bug-catching power beyond what check_artefact_decision_coverage_test.ts (every
-  // artefact has a recorded decision) and flow_eval_parity_test.ts (every flow has a scenario
-  // or exclusion) already enforce structurally. What IS worth asserting here, without a
-  // literal count: the reader actually found something in each kind, and never double-counts
-  // the same id under the same kind.
+  // A hardcoded per-kind count adds nothing beyond the structural coverage tests already
+  // enforce — what matters here is that each kind found something and ids never double-count
+  // under the same kind.
   for (const kind of [ArtefactKind.AGENT_ROLE, ArtefactKind.SKILL, ArtefactKind.FLOW]) {
     const ids = catalog.filter((r) => r.kind === kind).map((r) => r.artefactId);
     assertEquals(ids.length > 0, true, `expected at least one ${kind} artefact`);
