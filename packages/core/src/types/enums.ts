@@ -1512,3 +1512,15 @@ export enum PlanningToolLoopStopReason {
   /** A guardrail blocking violation on a tool result forced the final round early. */
   GUARDRAIL_BLOCKED = "guardrail_blocked",
 }
+
+/** Why AgentRunner.run skipped the planning tools path despite `planning.tools_enabled`. */
+export enum PlanningToolsSkipReason {
+  /** The selected provider does not support native tool-calling. */
+  PROVIDER_UNSUPPORTED = "provider_unsupported",
+  /** The request has no portal, or its alias isn't in `config.portals`. */
+  NO_PORTAL = "no_portal",
+  /** No `plannerToolRegistryFactory` (or tokenizer) is configured. */
+  NO_REGISTRY = "no_registry",
+  /** The portal's `operations`/`agents_allowed` deny read access to this agent role. */
+  PORTAL_READ_DENIED = "portal_read_denied",
+}

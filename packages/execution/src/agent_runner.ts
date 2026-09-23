@@ -16,7 +16,15 @@
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { toSafeJson } from "@exaix/core/types";
+import type { IToolRegistryFactory } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import { PlanningToolsSkipReason, PortalOperation } from "@exaix/core";
+import { PortalPermissionsService } from "@exaix/portal";
+import { readOnlyEditorTools } from "@exaix/tool-runtime";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
+import { PlanningToolLoop } from "./planning_tool_loop.ts";
+import type { IGuardrailRunner } from "./guardrail_runner.ts";
+import { providerSupportsNativeTools } from "./native_tool_turns.ts";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalKnowledgeSelectionAppliedPayload } from "@exaix/core/events";
@@ -58,6 +66,7 @@ import {
   MEMORY_CONTEXT_KEY,
   MILESTONE_LLM_CALL_COMPLETED,
   MILESTONE_LLM_CALL_STARTED,
+  PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
   RESPONSE_STOP_REASON_MAX_TOKENS,
@@ -150,6 +159,10 @@ export interface IParsedRequest {
   effort?: string;
   characteristics?: string[];
 
+  /** Portal alias from request frontmatter. Required for the planning tools path —
+   *  absent means the tools path is skipped (`planning.tools.skipped{reason:"no_portal"}`). */
+  portal?: string;
+
   /** Scenario id from request frontmatter, for fixture replay call-site addressing.
    *  Absent outside the scenario framework. */
   scenarioId?: string;
@@ -231,6 +244,14 @@ export interface IAgentRunnerConfig {
 
   /** Optional: Milestone emitter for semantic progress events. No-op when omitted. */
   milestoneEmitter?: IMilestoneEmitter;
+
+  /** Optional: creates a per-run, portal-rooted IToolRegistry for the planning tools path.
+   *  Same interface ExecutionLoop consumes — the daemon shares one instance between both.
+   *  Absent means the tools path is always skipped (`no_registry`). */
+  plannerToolRegistryFactory?: IToolRegistryFactory;
+
+  /** Optional: screens planning tool results for blocking violations. No-op/absent in Solo. */
+  guardrailRunner?: IGuardrailRunner;
 }
 
 /**
@@ -408,13 +429,15 @@ export class AgentRunner implements IAgentRunner {
     // Execute via the model provider (with retry if enabled)
     const callSite = this.resolveCallSite(request);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
-    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, {
+    const hints: IGenerationHints = {
       conversationId: traceId,
       jsonSchema,
       callSite,
       thinking: blueprint.thinking,
       effort: blueprint.effort,
-    });
+    };
+    const toolsResult = await this.runPlanningToolsIfGated(request, agentRole, combinedPrompt, startTime, hints);
+    const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints);
 
     const duration = Date.now() - startTime;
 
@@ -422,7 +445,7 @@ export class AgentRunner implements IAgentRunner {
     if (!retryResult.success) {
       this.handleExecutionFailure(retryResult, requestId, agentRole, traceId, duration);
     }
-    this.markCallSiteConsumed(callSite);
+    if (!toolsResult) this.markCallSiteConsumed(callSite);
 
     // Parse the response to extract thought and content
     const generateResult = retryResult.value;
@@ -675,17 +698,12 @@ export class AgentRunner implements IAgentRunner {
     return `${scenarioId}::${stepId}::${flowStepId ?? ""}`;
   }
 
-  /**
-   * Execute the model generation with retry logic
-   */
-  private async executeWithRetry(
-    combinedPrompt: string,
-    startTime: number,
-    hints: IGenerationHints,
-  ): Promise<IRetryResult<IGenerateResult>> {
+  /** Builds the IModelOptions overlay executeWithRetry passes to the provider from a set of
+   *  generation hints — extracted so the planning-tools path (PlanningToolLoop's baseOptions)
+   *  builds the identical conversationId/jsonSchema/thinking/effort shape. */
+  private buildGenerateOptions(hints: IGenerationHints): IModelOptions | undefined {
     const { conversationId, jsonSchema, callSite, thinking, effort } = hints;
-    const generateOptions: IModelOptions | undefined = conversationId || jsonSchema || callSite ||
-        thinking !== undefined || effort
+    return conversationId || jsonSchema || callSite || thinking !== undefined || effort
       ? {
         ...(conversationId ? { conversationId } : {}),
         ...(conversationId ? { traceId: conversationId } : {}),
@@ -695,10 +713,29 @@ export class AgentRunner implements IAgentRunner {
         ...(callSite ? { callSite } : {}),
       }
       : undefined;
+  }
+
+  /**
+   * Execute the model generation with retry logic
+   */
+  private async executeWithRetry(
+    combinedPrompt: string,
+    startTime: number,
+    hints: IGenerationHints,
+  ): Promise<IRetryResult<IGenerateResult>> {
+    const generateOptions = this.buildGenerateOptions(hints);
+    return await this.runGeneration(() => this.modelProvider.generate(combinedPrompt, generateOptions), startTime);
+  }
+
+  /** Shared retry-wrapping used by both executeWithRetry and the planning tools loop's
+   *  per-round `generate` callback, so retry behavior never diverges between the two. */
+  private async runGeneration(
+    fn: () => Promise<IGenerateResult>,
+    startTime: number,
+  ): Promise<IRetryResult<IGenerateResult>> {
     if (this.disableRetry) {
-      // Direct execution without retry
       try {
-        const rawResponse = await this.modelProvider.generate(combinedPrompt, generateOptions);
+        const rawResponse = await fn();
         return {
           success: true,
           value: rawResponse,
@@ -715,12 +752,115 @@ export class AgentRunner implements IAgentRunner {
           retryHistory: [],
         };
       }
-    } else {
-      // Execute with retry policy
-      return await this.retryPolicy.execute(
-        async () => await this.modelProvider.generate(combinedPrompt, generateOptions),
-      );
     }
+    return await this.retryPolicy.execute(fn);
+  }
+
+  /** Bundles a planning-gate decision: either the request engages the tools path with a
+   *  resolved portal, or it doesn't (optionally with a reason worth journaling). */
+  private resolvePlanningGate(
+    request: IParsedRequest,
+    agentRole: string,
+  ): { engage: true; portal: IPortalPermissions } | { engage: false; reason?: PlanningToolsSkipReason } {
+    const planning = this.config?.context?.config.get().planning;
+    if (!planning?.tools_enabled || planning.max_tool_rounds <= 1) return { engage: false };
+
+    const providerId = this.config?.selectedModel?.provider ?? this.modelProvider.id;
+    if (!providerSupportsNativeTools(providerId)) {
+      return { engage: false, reason: PlanningToolsSkipReason.PROVIDER_UNSUPPORTED };
+    }
+
+    if (!request.portal) return { engage: false, reason: PlanningToolsSkipReason.NO_PORTAL };
+    const portals = this.config?.context?.config.get().portals ?? [];
+    const portal = portals.find((p) => p.alias === request.portal);
+    if (!portal) return { engage: false, reason: PlanningToolsSkipReason.NO_PORTAL };
+
+    if (!this.config?.plannerToolRegistryFactory || !this.config?.tokenizer) {
+      return { engage: false, reason: PlanningToolsSkipReason.NO_REGISTRY };
+    }
+
+    const permission = new PortalPermissionsService([portal]).checkOperationAllowed(
+      portal.alias,
+      agentRole,
+      PortalOperation.READ,
+    );
+    if (!permission.allowed) return { engage: false, reason: PlanningToolsSkipReason.PORTAL_READ_DENIED };
+
+    return { engage: true, portal };
+  }
+
+  /** Drives PlanningToolLoop when gated, returning an IRetryResult-shaped success (or
+   *  undefined, falling back to executeWithRetry); journals `planning.tools.skipped` when
+   *  a gate denied a flag-on request. */
+  private async runPlanningToolsIfGated(
+    request: IParsedRequest,
+    agentRole: string,
+    combinedPrompt: string,
+    startTime: number,
+    hints: IGenerationHints,
+  ): Promise<IRetryResult<IGenerateResult> | undefined> {
+    const gate = this.resolvePlanningGate(request, agentRole);
+    const traceId = hints.conversationId;
+    if (!gate.engage) {
+      if (gate.reason) {
+        this.logActivity(
+          ACTIVITY_ACTOR_AGENT,
+          DomainEventType.PlanningToolsSkipped,
+          request.requestId ?? null,
+          { reason: gate.reason },
+          traceId,
+          agentRole,
+        );
+      }
+      return undefined;
+    }
+
+    const planning = this.config!.context!.config.get().planning!;
+    const registry = this.config!.plannerToolRegistryFactory!.createToolRegistry(
+      traceId ?? "",
+      gate.portal.target_path,
+    );
+    const allowedTools = new Set(readOnlyEditorTools().map((t) => t.name));
+    const baseOptions = this.buildGenerateOptions({ ...hints, callSite: undefined }) ?? {};
+
+    const loop = new PlanningToolLoop({
+      toolRegistry: registry,
+      tokenizer: this.config!.tokenizer!,
+      modelId: this.selectedModelId(),
+      generate: (prompt, options) =>
+        this.runGeneration(() => this.modelProvider.generate(prompt, options), startTime).then((r) => {
+          if (!r.success) throw r.error ?? new Error("Planning tool round failed");
+          return r.value!;
+        }),
+      logger: this.logger,
+      guardrailRunner: this.config!.guardrailRunner,
+    });
+
+    let lastCallSite: Opt<ICallSite, Reason.TraceAbsent> = undefined;
+    const result = await loop.run({
+      prompt: combinedPrompt,
+      baseOptions,
+      nextCallSite: () => {
+        if (lastCallSite) this.markCallSiteConsumed(lastCallSite);
+        lastCallSite = this.resolveCallSite(request);
+        return lastCallSite;
+      },
+      portalAlias: gate.portal.alias,
+      portalRoot: gate.portal.target_path,
+      allowedTools,
+      maxRounds: planning.max_tool_rounds,
+      maxToolResultTokens: planning.max_tool_result_tokens,
+      traceId: traceId ?? "",
+    });
+    this.markCallSiteConsumed(lastCallSite);
+
+    return {
+      success: true,
+      value: result.final,
+      totalAttempts: result.rounds,
+      totalTimeMs: Date.now() - startTime,
+      retryHistory: [],
+    };
   }
 
   /**
@@ -927,6 +1067,12 @@ export class AgentRunner implements IAgentRunner {
 
     const allSegments = await toSegments(entries);
     const allocationHints = this.buildAllocationHints(allSegments);
+    const planningGate = this.resolvePlanningGate(request, blueprint.agentRole || "unknown");
+    if (planningGate.engage) {
+      const planning = this.config!.context!.config.get().planning!;
+      allocationHints.loopHistoryUsedTokens += (planning.max_tool_rounds - 1) *
+        (planning.max_tool_result_tokens + PLANNING_TOOL_CALL_OVERHEAD_TOKENS);
+    }
     const budget: IPromptBudget = await this.config?.promptBudgetAllocator?.allocate(modelId, allocationHints) ??
       this.defaultPromptBudget(modelId);
 

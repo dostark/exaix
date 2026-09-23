@@ -16,6 +16,7 @@ import type {
   HitlSurface,
   OtelDestinationScheme,
   PlanningToolLoopStopReason,
+  PlanningToolsSkipReason,
   TaskType,
   VotingStrategy,
 } from "../types/enums.ts";
@@ -74,6 +75,12 @@ export interface IPlanningToolLoopCompletedPayload {
   stopReason: PlanningToolLoopStopReason;
   promptTokens: number;
   completionTokens: number;
+}
+
+/** Typed payload for planning.tools.skipped events — one per AgentRunner.run() call where
+ *  `planning.tools_enabled` is on but a gate denied the tools path. */
+export interface IPlanningToolsSkippedPayload {
+  reason: PlanningToolsSkipReason;
 }
 
 /** Typed payload for portal.knowledge.selection_applied events. */
@@ -445,6 +452,9 @@ export const DomainEventType = {
   AgentDynamicToolCall: "dynamic_tool_call",
   /** Emitted once per PlanningToolLoop.run() call, carrying IPlanningToolLoopCompletedPayload. */
   PlanningToolLoopCompleted: "planning.tools.completed",
+  /** Emitted once per AgentRunner.run() call where `planning.tools_enabled` is on but a
+   *  gate denied the tools path, carrying IPlanningToolsSkippedPayload. */
+  PlanningToolsSkipped: "planning.tools.skipped",
 
   // Execution lifecycle events (execution_loop.ts)
   ExecutionSkipped: "execution.skipped",

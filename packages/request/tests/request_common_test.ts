@@ -64,3 +64,19 @@ Deno.test("buildParsedRequest: trims body and parses skills", () => {
   assertEquals(req.traceId, "trace");
   assertEquals(req.skills, ["a", "b"]);
 });
+
+Deno.test("buildParsedRequest: propagates frontmatter.portal onto IParsedRequest.portal", () => {
+  const frontmatter: IRequestFrontmatter = {
+    trace_id: "t1",
+    created: new Date().toISOString(),
+    status: "pending",
+    priority: "p1",
+    source: "src",
+    created_by: "user",
+    portal: "myportal",
+  };
+
+  const req = buildParsedRequest("hello", frontmatter, "req", "trace");
+
+  assertEquals(req.portal, "myportal");
+});

@@ -3537,3 +3537,7 @@ export const PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION =
  *  `planning.max_tool_result_tokens` — signals to the model that content was cut, not that
  *  the tool call failed or the file legitimately ends there. */
 export const PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX = " [truncated]";
+
+/** Per-round token overhead reserved in the prompt budget's `loopHistory` section when the
+ *  planning tools path is gated on. Not user-configurable, unlike the `planning.*` knobs above. */
+export const PLANNING_TOOL_CALL_OVERHEAD_TOKENS = 200;

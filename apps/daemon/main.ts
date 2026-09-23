@@ -858,6 +858,27 @@ if (import.meta.main) {
       undefined,
       logger,
     );
+    const gitServiceFactory = {
+      createGitService(repoPath: string, traceId: string) {
+        return new GitService({ config, traceId, agentRole: DAEMON_AGENT_ROLE_ID, repoPath, context });
+      },
+    };
+    // Shared with ExecutionLoop below (same instance, not a duplicate literal) — AgentRunner's
+    // planning tools path and ExecutionLoop's action execution both create per-run, per-portal
+    // registries the same way.
+    const toolRegistryFactory = {
+      createToolRegistry(traceId: string, baseDir: string) {
+        return new ToolRegistry({
+          config,
+          traceId,
+          agentRole: DAEMON_AGENT_ROLE_ID,
+          baseDir,
+          context,
+          hitlPolicyEvaluator,
+          gitServiceFactory,
+        });
+      },
+    };
     // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the agent role's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
     const agentRunner = new AgentRunner(
       new PlanAdapter(),
@@ -873,6 +894,8 @@ if (import.meta.main) {
         tokenizer: agentRunnerTokenizer,
         promptBudgetAllocator: agentRunnerPromptBudgetAllocator,
         contextBudgetManager: agentRunnerContextBudgetManager,
+        plannerToolRegistryFactory: toolRegistryFactory,
+        guardrailRunner,
       },
     );
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
@@ -970,11 +993,6 @@ if (import.meta.main) {
       });
     }
 
-    const gitServiceFactory = {
-      createGitService(repoPath: string, traceId: string) {
-        return new GitService({ config, traceId, agentRole: DAEMON_AGENT_ROLE_ID, repoPath, context });
-      },
-    };
     const flowWorktreeCoordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
     gracefulShutdown.registerCleanup("release_flow_worktrees", () => flowWorktreeCoordinator.releaseAll());
 
@@ -1242,19 +1260,7 @@ if (import.meta.main) {
       memoryBank,
       onCodeChangesDelegate,
       gitServiceFactory,
-      toolRegistryFactory: {
-        createToolRegistry(traceId: string, baseDir: string) {
-          return new ToolRegistry({
-            config,
-            traceId,
-            agentRole: DAEMON_AGENT_ROLE_ID,
-            baseDir,
-            context,
-            hitlPolicyEvaluator,
-            gitServiceFactory,
-          });
-        },
-      },
+      toolRegistryFactory,
       // Share the daemon logger so execution and model-routing events reach the journal.
       logger,
       // Share the configured resolver so plan execution uses the same routing policy.
