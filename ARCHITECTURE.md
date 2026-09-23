@@ -502,6 +502,20 @@ the role's effective tool allowlist is enforced before a model-supplied call
 reaches the registry. These in-process tools are separate from Team MCP's
 portal-symbol surface.
 
+When the opt-in `planning.tools_enabled` is set, the planning/analysis call —
+normally a single tool-less generate — becomes a bounded, read-only tool loop
+(`PlanningToolLoop`): within the shared prompt budget the runner offers only the
+`sideEffectScope: NONE` `ToolRegistry` catalog (minus `list_available_tools`),
+executes each model-requested call through the same per-run registry the
+execution loop uses, feeds results back as untrusted repository data, and ends
+with a mandatory tool-less final round before `parseResponse`. The path requires
+a native tool-calling provider (`anthropic`/`openai`/`google`/`openrouter`) and a
+portal the request may `read`; each tool round is journaled as a
+`dynamic_tool_call` row with `phase: "planning"`, loop completion as
+`planning.tools.completed`, and any gate denial as `planning.tools.skipped` with
+its reason. Tools are read-only by construction, so planning can inspect but
+never mutate the portal.
+
 ---
 
 ## Request Quality Gate

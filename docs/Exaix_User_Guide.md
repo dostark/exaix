@@ -4444,6 +4444,82 @@ computation, and no `agent.prompt_assembled` event with `prompt_kind: "react"` i
 at all for that iteration. Existing deployments upgrade with no prompt or behavior change
 until the flag is explicitly enabled.
 
+### Planning read-only tools
+
+By default the planning/analysis call every request makes before any execution-loop code runs is
+**single and tool-less**: the model sees a file listing plus a bounded portal-knowledge summary,
+but cannot open a file or follow a relationship to inspect the portal it is about to plan against.
+The `[planning]` block makes that call a bounded, **read-only** tool loop instead, so the model can
+read files and query the portal's knowledge graph before committing to a plan.
+
+```toml
+# exa.config.toml — NEW, additive
+[planning]
+# Enable the bounded read-only tool loop in the planning LLM call.
+# Default: false (single-call planning — today's behavior, byte-identical).
+tools_enabled = false
+
+# Max generate rounds, including the mandatory tool-less final round. 1 = no tools.
+# Range: 1-10. Default: 2.
+max_tool_rounds = 2
+
+# Max tokens of a single tool result prepended back to the model on a later round.
+# Longer results are truncated (never dropped). Range: 256-50000. Default: 2000.
+max_tool_result_tokens = 2000
+```
+
+**Opt-in and live.** `tools_enabled` defaults to `false`; an unset or disabled deployment produces
+exactly the single-call planning request it did before. All three keys are live-read (`SwapClass.HOT`),
+so `exactl config set` takes effect on the next request — no daemon restart:
+
+```bash
+exactl config set planning.tools_enabled true
+exactl config set planning.max_tool_rounds 3
+exactl config set planning.max_tool_result_tokens 4000
+```
+
+**Read-only by construction.** Only tools whose side-effect scope is `none` are offered, minus
+`list_available_tools` (which would advertise write tools the planner can never call). A planning
+call can never write, patch, delete, move, or run a command. The ten offered tools are:
+`read_file`, `list_directory`, `search_files`, `grep_search`, `git_info`, `query_relationships`,
+`who_depends_on`, `query_symbols`, `get_module_dependencies`, and `search_memory`. Adding a new
+`none`-scoped tool to the Solo catalog automatically extends this list.
+
+**Requirements.** The loop activates only when every gate below holds:
+
+- The selected model's provider supports native tool-calling — `anthropic`, `openai`, `google`, or
+  `openrouter`. Subscription-CLI providers (`claude`, `opencode`, `codex`), `ollama`, and the
+  `mock` provider's default path do not.
+- The request names a portal whose `operations` include `read` and whose `agents_allowed` permits
+  the request's agent role.
+- The daemon has a planner tool-registry factory and tokenizer (the default daemon boot always has).
+
+When `tools_enabled` is on but a requirement fails, the request still runs single-call and the
+journal records a `planning.tools.skipped` event whose payload `reason` is one of:
+
+| Reason                 | Meaning                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `provider_unsupported` | The selected provider has no native tool-calling support           |
+| `no_portal`            | The request has no portal, or its alias is not in `config.portals` |
+| `no_registry`          | No planner tool-registry factory or tokenizer is configured        |
+| `portal_read_denied`   | The portal denies `read`, or `agents_allowed` excludes the role    |
+
+**Cost.** Enabling the loop multiplies the generate calls for a request: up to `max_tool_rounds` per
+`AgentRunner.run()`, and up to three runs when the request processor's plan-validation feedback
+retries apply — a worst case of `3 × max_tool_rounds` generate calls per request. Each round resends
+the prompt, so prompt tokens also scale with the round count. The prompt-budget allocator reserves
+headroom for tool results when the flag is on, each result is capped by `max_tool_result_tokens`, and
+`exactl request create --dry-run-context` prints the catalog, its activation state, and the
+worst-case extra tokens/cost per run without sending a request.
+
+**Visibility and confinement.** Every executed planning tool call is journaled as a
+`dynamic_tool_call` event with `phase: "planning"` and target `"planning"`, and each loop emits one
+`planning.tools.completed` event with the round/tool-call count, stop reason, and summed tokens.
+Tool results are treated as untrusted repository data (never instructions), are screened through the
+guardrail runner when one is configured, and are confined to the request portal's real path — any
+absolute, cross-portal, symlinked, or `../`-escaping path is rejected with a
+`security.path_access_denied` event.
+
 ## 8. Model Context Protocol (MCP) Server
 
 Exaix includes a built-in MCP server, allowing generic AI clients (like Claude Desktop or IDE extensions) to interact with your workspace using standardized tools.

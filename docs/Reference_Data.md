@@ -520,6 +520,8 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `PlanAmendmentRejected`                  | `plan.amendment.rejected`                     | Plan                            |
 | `PlanAmendmentExpired`                   | `plan.amendment.expired`                      | Plan                            |
 | `PlanAmendmentApplied`                   | `plan.amendment.applied`                      | Plan                            |
+| `PlanningToolLoopCompleted`              | `planning.tools.completed`                    | Planning                        |
+| `PlanningToolsSkipped`                   | `planning.tools.skipped`                      | Planning                        |
 | `RequestProcessStarted`                  | `request.process.started`                     | Request                         |
 | `RequestProcessing`                      | `request.processing`                          | Request                         |
 | `RequestSkipped`                         | `request.skipped`                             | Request                         |

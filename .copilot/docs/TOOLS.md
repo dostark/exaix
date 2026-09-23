@@ -118,6 +118,17 @@ catalog alongside the Team MCP one.
 | `remember_fact`           | Persists a lightweight, execution-scoped "worth remembering" note (content + optional tags) into the current execution's scratchpad (`Memory/Execution/{trace_id}/scratchpad.jsonl`), captured raw for later extraction passes.             | `system`          | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
 | `search_memory`           | Searches project and global memory (patterns, decisions, learnings) scoped to the current portal; any caller-supplied `portal` argument is ignored. Optional `limit`.                                                                       | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
 
+**Planning-call catalog (Phase 199).** `AgentRunner`'s planning/analysis LLM call — the single
+call every request makes before any execution-loop code runs — is offered the same read-only
+catalog when `planning.tools_enabled` is on: exactly the `ToolRegistry` entries with
+`sideEffectScope: none` (including the graph tools above), minus `list_available_tools` (which
+would advertise write tools the planner can never call). The ten tools offered are `read_file`,
+`list_directory`, `search_files`, `grep_search`, `git_info`, `query_relationships`,
+`who_depends_on`, `query_symbols`, `get_module_dependencies`, and `search_memory`. A planning call
+therefore has no `write_file`/`patch_file`/`run_command`/`remember_fact` access, its tool rounds
+are confined to the request portal's real path, and each round is journaled as a
+`dynamic_tool_call` row with `phase: "planning"`.
+
 `query_relationships`/`who_depends_on` require a portal-knowledge service to be wired into the
 `ToolRegistry`'s `IApplicationContext` (present in the daemon's plan execution
 factory and flow strategy adapter) and the current execution root to match a
