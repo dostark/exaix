@@ -513,8 +513,10 @@ a native tool-calling provider (`anthropic`/`openai`/`google`/`openrouter`) and 
 portal the request may `read`; each tool round is journaled as a
 `dynamic_tool_call` row with `phase: "planning"`, loop completion as
 `planning.tools.completed`, and any gate denial as `planning.tools.skipped` with
-its reason. Tools are read-only by construction, so planning can inspect but
-never mutate the portal.
+its reason. At most `planning.max_tool_calls_per_round` calls run per round, an
+empty final round falls back to a single call, and a loop that throws emits
+`planning.tools.aborted`. Tools are read-only by construction, so planning can
+inspect but never mutate the portal.
 
 ---
 

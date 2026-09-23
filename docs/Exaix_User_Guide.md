@@ -4466,16 +4466,22 @@ max_tool_rounds = 2
 # Max tokens of a single tool result prepended back to the model on a later round.
 # Longer results are truncated (never dropped). Range: 256-50000. Default: 2000.
 max_tool_result_tokens = 2000
+
+# Max tool calls executed in one round. Providers may return parallel calls even when the
+# request disables them; calls past the cap get an error result and are not executed.
+# Range: 1-20. Default: 3.
+max_tool_calls_per_round = 3
 ```
 
 **Opt-in and live.** `tools_enabled` defaults to `false`; an unset or disabled deployment produces
-exactly the single-call planning request it did before. All three keys are live-read (`SwapClass.HOT`),
+exactly the single-call planning request it did before. All four keys are live-read (`SwapClass.HOT`),
 so `exactl config set` takes effect on the next request — no daemon restart:
 
 ```bash
 exactl config set planning.tools_enabled true
 exactl config set planning.max_tool_rounds 3
 exactl config set planning.max_tool_result_tokens 4000
+exactl config set planning.max_tool_calls_per_round 5
 ```
 
 **Read-only by construction.** Only tools whose side-effect scope is `none` are offered, minus
@@ -4508,7 +4514,8 @@ journal records a `planning.tools.skipped` event whose payload `reason` is one o
 `AgentRunner.run()`, and up to three runs when the request processor's plan-validation feedback
 retries apply — a worst case of `3 × max_tool_rounds` generate calls per request. Each round resends
 the prompt, so prompt tokens also scale with the round count. The prompt-budget allocator reserves
-headroom for tool results when the flag is on, each result is capped by `max_tool_result_tokens`, and
+headroom for tool results when the flag is on (`max_tool_calls_per_round` results per round), each
+result is capped by `max_tool_result_tokens`, and
 `exactl request create --dry-run-context` prints the catalog, its activation state, and the
 worst-case extra tokens/cost per run without sending a request.
 
@@ -4518,7 +4525,14 @@ worst-case extra tokens/cost per run without sending a request.
 Tool results are treated as untrusted repository data (never instructions), are screened through the
 guardrail runner when one is configured, and are confined to the request portal's real path — any
 absolute, cross-portal, symlinked, or `../`-escaping path is rejected with a
-`security.path_access_denied` event.
+`security.path_access_denied` event. `search_files` also rejects a `pattern` containing `..`
+segments or an absolute prefix and never lists a path outside its search root.
+
+**Failure handling.** If the final round returns no text (some providers ignore `toolChoice: none`),
+the loop records `planning.tools.completed` with `stopReason: "empty_final"` and the request falls
+back to one single-call plan instead of repeating the loop. If a round throws, the loop emits one
+`planning.tools.aborted` event with the rounds, tool calls and tokens spent before the failure, then
+re-raises the error.
 
 ## 8. Model Context Protocol (MCP) Server
 

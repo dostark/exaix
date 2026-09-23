@@ -521,6 +521,7 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `PlanAmendmentExpired`                   | `plan.amendment.expired`                      | Plan                            |
 | `PlanAmendmentApplied`                   | `plan.amendment.applied`                      | Plan                            |
 | `PlanningToolLoopCompleted`              | `planning.tools.completed`                    | Planning                        |
+| `PlanningToolLoopAborted`                | `planning.tools.aborted`                      | Planning                        |
 | `PlanningToolsSkipped`                   | `planning.tools.skipped`                      | Planning                        |
 | `RequestProcessStarted`                  | `request.process.started`                     | Request                         |
 | `RequestProcessing`                      | `request.processing`                          | Request                         |
