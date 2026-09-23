@@ -44,7 +44,10 @@ type GoogleContent =
     role: "model";
     parts: [{ functionCall: { name: string; args: Record<string, JSONValue> }; thoughtSignature?: string }];
   }
-  | { role: "user"; parts: [{ functionResponse: { name: string; response: { content: JSONValue } } }] }
+  | {
+    role: "user";
+    parts: Array<{ functionResponse: { name: string; response: { content: JSONValue } } } | { text: string }>;
+  }
   | { role: "user"; parts: [{ text: string }] };
 
 /** Map IToolDefinition to Gemini's wire-format function declaration. */
@@ -64,6 +67,10 @@ type GoogleToolConfig = { functionCallingConfig: { mode: "AUTO" | "ANY" | "NONE"
 const GOOGLE_FUNCTION_CALLING_MODE_AUTO = "AUTO";
 const GOOGLE_FUNCTION_CALLING_MODE_ANY = "ANY";
 const GOOGLE_FUNCTION_CALLING_MODE_NONE = "NONE";
+
+/** Gemini 3 ignores functionCallingConfig mode NONE and calls another tool, so a no-tools
+ *  turn also asks for a text answer beside the functionResponse. */
+const GOOGLE_NO_TOOLS_TEXT_INSTRUCTION = "Answer now in text only. Do not call any tool.";
 
 /**
  * Maps tool choice to Gemini; parallel-tool disabling has no API equivalent.
@@ -122,12 +129,15 @@ export class GoogleProvider extends BaseProvider {
       });
       contents.push({
         role: "user",
-        parts: [{
-          functionResponse: {
-            name: priorTurn.toolName,
-            response: { content: priorTurn.toolResultContent as JSONValue },
+        parts: [
+          {
+            functionResponse: {
+              name: priorTurn.toolName,
+              response: { content: priorTurn.toolResultContent as JSONValue },
+            },
           },
-        }],
+          ...(options.toolChoice?.type === TOOL_CHOICE_TYPE_NONE ? [{ text: GOOGLE_NO_TOOLS_TEXT_INSTRUCTION }] : []),
+        ],
       });
     }
 

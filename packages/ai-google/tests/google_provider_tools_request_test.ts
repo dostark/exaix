@@ -168,6 +168,24 @@ Deno.test("GoogleProvider.attemptGenerate replays priorTurn thoughtSignature in 
   assertEquals(body.contents[1].parts[0].thoughtSignature, "sig-abc123");
 });
 
+Deno.test("GoogleProvider.attemptGenerate asks for a text answer beside the functionResponse when tool choice is none", async () => {
+  const body = await capturedBodyOf({
+    toolChoice: { type: "none" },
+    priorTurn: {
+      toolUseId: "call_1",
+      toolName: "read_file",
+      toolInput: { path: "a.ts" },
+      toolResultContent: "contents",
+      toolResultIsError: false,
+    },
+  });
+
+  // Gemini 3 ignores functionCallingConfig mode NONE and calls another tool, leaving no text.
+  const parts = body.contents![2].parts;
+  assertExists(parts[0].functionResponse);
+  assertEquals(typeof parts[1].text, "string");
+});
+
 Deno.test("[regression] GoogleProvider.attemptGenerate without priorTurn produces a single content entry", async () => {
   const body = await capturedBodyOf({});
   assertEquals(body.contents?.length, 1);
