@@ -76,6 +76,25 @@
   ReAct role's model receives, not only the prompt text and dispatch-time check — an
   unlisted role's model no longer sees a native tool definition it isn't allowed to call.
 
+## Unreleased — Phase 195 (ASD-STE100 Agent Prose & Code Comment Standard)
+
+### Added
+
+- Communication requirement — all agent instructions, skill guidance, structured
+  responses, and code comments follow ASD-STE100 plus the five Exaix STE Extension v1
+  rules (result-first, omit needless detail and self-reflection, prefer bullets), with
+  documentation deliverables exempt. See [Communication requirement](Exaix_User_Guide.md#communication-requirement).
+- `deno task check:agent-prose` — local authoring gate that reviews instruction prose in
+  `.copilot` and `Blueprints` against the shared ASD-STE100 / Exaix STE Extension v1 rule
+  set (available in the CLI, not enabled in CI).
+- `deno task check:ste100-comments` and `check:ste100-comments:staged` — comment-prose
+  gates: the staged variant runs in the pre-commit hook and CI and grades only comment
+  lines added or modified by a staged change, so pre-existing non-compliant comments stay
+  grandfathered and never block unrelated commits.
+- `CODE_STYLE.md` Comment Discipline now requires ASD-STE100 prose for line/block
+  comments, module headers, and JSDoc descriptions (20-word sentences, no semicolons,
+  six-sentence paragraph limit), preserving directives, tags, identifiers, and literals.
+
 ## Unreleased — Phase 196 (Agent Context & Cost Budget Enforcement)
 
 ### Added
