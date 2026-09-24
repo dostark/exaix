@@ -1266,6 +1266,17 @@ the next line already says.
   past what these rules allow, either delete it — most code is clear
   without it — or rewrite it as a short, concrete statement of the one
   non-obvious fact a reader needs.
+- **Comment prose follows ASD-STE100 and Exaix STE Extension v1.** Write
+  line/block comments, module headers, and JSDoc descriptions as concise,
+  result-first prose under the shared Issue 9 limits: at most 20 words per
+  sentence, no semicolons in eligible prose, and at most six descriptive
+  sentences per paragraph.
+  Preserve directives, JSDoc tags, identifiers, commands, one-line literal
+  spans, and exact quotations. Keep necessary invariants and rationale;
+  omit self-reflection and facts already clear from the code. Bullets are
+  allowed when they make steps easier to scan, within the existing
+  three-line limit. Documentation-file exemptions do **not** exempt
+  source-comment prose.
 
 ### Automated enforcement
 

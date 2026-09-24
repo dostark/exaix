@@ -97,6 +97,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
   { cmd: ["deno", "task", "check:md-path:staged"], desc: "Stale Markdown Path Check" },
   { cmd: ["deno", "task", "check:doc-section-refs:staged"], desc: "Doc Section-Reference Check" },
+  { cmd: ["deno", "task", "check:ste100-comments:staged"], desc: "Comment STE Ratchet (staged TS/TSX)" },
   { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
   { cmd: ["deno", "task", "check:qwen-skills-sync"], desc: "Qwen Skills Sync Check" },
   { cmd: ["deno", "task", "check:skill-ephemera"], desc: "Skill Ephemera Check" },

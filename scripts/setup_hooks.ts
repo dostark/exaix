@@ -234,6 +234,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 16d. Comment STE Ratchet (diff-aware: comments added/modified by the staged change
+# must follow ASD-STE100 / Exaix STE Extension v1; pre-existing untouched comments grandfathered)
+deno task check:ste100-comments:staged
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A comment line introduced or modified by this change violates the comment STE rules."
+  echo "    See scripts/check_ste100_comments.md for scope; fix the flagged comment before committing."
+  exit 1
+fi
+
 # 17. Agent Docs Integrity Check
 deno task check:agent-docs-integrity
 if [ $? -ne 0 ]; then

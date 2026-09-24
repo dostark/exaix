@@ -112,6 +112,8 @@
     "check:scenario-declarative": "deno run -A scripts/check_scenario_declarative.ts",
     "check:constant-restatement": "deno run --allow-read scripts/check_constant_restatement.ts",
     "check:agent-prose": "deno run -A scripts/check_agent_prose.ts",
+    "check:ste100-comments": "deno run -A scripts/check_ste100_comments.ts",
+    "check:ste100-comments:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_ste100_comments.ts --staged",
     "check:skill-duplication": "deno run --allow-read scripts/check_skill_duplication.ts --repo-root . --policy scripts/config/skill_duplication_policy.json",
     "verify:pack-mutations": "deno run -A scripts/verify_pack_mutations.ts",
     "check:leak-guard": "deno run --allow-read scripts/leak_guard.ts",
