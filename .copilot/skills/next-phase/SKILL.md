@@ -13,27 +13,19 @@ qwen_skill: next-phase
 ```text
 Key points
 
-- Use when the user has NOT already named a phase — "what should I work on next", "which
-  phase is most productive", "pick the next phase" — not for executing an already-chosen
-  phase (that's #next-steps) or drafting a brand-new one from scratch (that's #plan).
+- Not this skill: executing a chosen phase (#next-steps) or drafting brand-new work (#plan).
 - Cheap path first: read `exaix-dev-docs/planning/PHASE_REGISTRY.md`. It caches the
-  dependency/risk/scope/environment verdict for every still-open phase so you don't
-  re-scan all 166+ docs every time. Refresh only the rows that are stale or missing.
-- Reconcile `docs/CHANGELOG.md` against `planning/` on every run: a phase that shipped
-  (`## Unreleased — Phase <N>`) is commonly marked `status: COMPLETED` while still
-  carrying open waived items and open ledger rows — it is NOT completely closed. Keep the
-  dedicated `## Not-fully-closed phases (from docs/CHANGELOG.md)` section in the registry
-  current; these are real residual backlog, just not this run's ranking candidates.
-- Never trust a phase doc's `**Status**:` header alone — verify real completion at the
-  step level. This is exactly the self-improvement skill's "Phase-doc status hygiene"
-  procedure; reuse it, don't re-derive it.
-- Rank ready candidates on: dependency-unblocked (hard deps all ✅) > bounded scope > low
-  risk > environment-executable right now (required binaries/API keys actually present,
-  not just assumed) > unblocks further phases.
-- Deliver ONE clear top pick with full evidence, plus 2-3 named runners-up with an
-  explicit reason each is not the top pick. Never hand back a bare list.
-- Update the registry with what you found before finishing — the next run should be
-  cheaper than this one, not the same cost again.
+  dependency/risk/scope/environment verdict for still-open phases. Refresh only stale or
+  missing rows.
+- Reconcile `docs/CHANGELOG.md` with `planning/` every run: a shipped phase marked
+  `status: COMPLETED` can still carry open waived/ledger items — it is NOT fully closed.
+  Keep the `## Not-fully-closed phases (from docs/CHANGELOG.md)` registry section current.
+- Never trust a doc's `**Status**:` header — verify completion at the step level
+  (self-improvement's "Phase-doc status hygiene"; reuse, don't re-derive).
+- Rank: dependency-unblocked (hard deps ✅) > bounded scope > low risk >
+  environment-executable now (real binaries/keys) > unblocks further phases.
+- Deliver ONE top pick with evidence plus 2-3 runners-up, each with a reason. Never a bare
+  list. Update the registry before finishing — the next run must be cheaper.
 
 Canonical prompt (short):
 "Read exaix-dev-docs/planning/PHASE_REGISTRY.md, refresh any stale/missing rows against
@@ -45,176 +37,123 @@ with what changed."
 
 ## When to use
 
-- The user asks a variant of "what should I build next", "which phase is most productive
-  to implement", "what's the highest-priority open work" — with no phase already named.
-- Before starting `#plan` for genuinely new work, to confirm there isn't already a
-  drafted-but-unstarted phase that covers the same need.
-- Periodically, to keep `PHASE_REGISTRY.md` from drifting (treat like the
-  self-improvement Phase-loop retro: run this after closing a phase, not just when asked),
-  including the `docs/CHANGELOG.md` → planning reconciliation of not-fully-closed phases.
-
-Not this skill: implementing the chosen phase's steps (`#next-steps`), drafting a new plan
-from a blank page (`#plan`), or auditing/repairing a doc's own stale header once you already
-know which phase you're touching (`#self-improvement`'s Phase-doc status hygiene).
+- The user asks a variant of "what should I build next" with no phase named.
+- Before `#plan` for new work, to confirm no drafted-but-unstarted phase covers it.
+- Periodically, to stop `PHASE_REGISTRY.md` drifting (like the self-improvement retro —
+  after closing a phase, not just when asked), including the CHANGELOG → planning
+  reconciliation.
 
 ## The registry: `exaix-dev-docs/planning/PHASE_REGISTRY.md`
 
-A hand-maintained (agent-maintained) index of every **not-yet-complete** phase — complete,
-cancelled, and postponed phases are dropped from it entirely (they're not candidates, and
-keeping them bloats the file for no benefit). Columns:
+Agent-maintained index of every **not-yet-complete** phase; complete/cancelled/postponed
+phases are dropped (not candidates, and they bloat the file). Columns:
 
-| Column         | Meaning                                                                                                                                       |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase          | `NNN`                                                                                                                                         |
-| Title          | short title                                                                                                                                   |
-| Real status    | the VERIFIED state (may differ from the doc's own header text)                                                                                |
-| Hard deps      | phase numbers that must be ✅ before this can start; `None` if unblocked                                                                      |
-| Blocking?      | `Ready` / `Blocked on <N>` / `Needs <resource>` (e.g. an env var, a GPU runner)                                                               |
-| Risk           | L / M / M-H / H, from the doc's own Risk Level line                                                                                           |
-| Scope          | step count or size signal (rough sizing, not a promise)                                                                                       |
-| Env-executable | can this be implemented AND live-verified in a typical session right now, or does it need something absent (API key, binary, external infra)? |
-| Notes          | the one sentence that matters — why it's ready, why it's not, what's odd about it                                                             |
-| Verified       | date this row's verdict was checked against the real doc                                                                                      |
+| Column         | Meaning |
+| -------------- | ------- |
+| Phase          | `NNN` |
+| Title          | short title |
+| Real status    | the VERIFIED state (may differ from the doc header) |
+| Hard deps      | phases that must be ✅ before start; `None` if unblocked |
+| Blocking?      | `Ready` / `Blocked on <N>` / `Needs <resource>` |
+| Risk           | L / M / M-H / H (from the doc's Risk Level line) |
+| Scope          | step count or size signal |
+| Env-executable | implementable AND live-verifiable now, or needs something absent? |
+| Notes          | the one sentence that matters |
+| Verified       | date the verdict was checked |
 
-A row is **stale** the moment `git log -1 --format=%H -- planning/<file>` (run inside the
-`exaix-dev-docs` submodule) returns a commit newer than the row's `Verified` date, or a
-listed dependency's own status changed. Re-audit stale rows before relying on them for a
-recommendation; don't just trust old prose.
+A row is **stale** when `git log -1 --format=%H -- planning/<file>` (in the submodule)
+postdates its `Verified`, or a listed dependency's status changed. Re-audit stale rows.
 
-**Bootstrapping** (registry missing or badly out of date): scan `exaix-dev-docs/planning/`
-for every phase doc, classify each via self-improvement's Phase-doc status hygiene rules,
-drop everything Complete/Cancelled/Postponed, and write one row per survivor. Full-corpus
-scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
+**Bootstrapping** (registry missing/out of date): scan `planning/`, classify each via the
+status-hygiene rules, drop Complete/Cancelled/Postponed, write one row per survivor.
+Full-corpus scans are expensive (166+ files) — prefer incremental refresh.
 
 ## Not-fully-closed phases (from `docs/CHANGELOG.md`)
 
-Independent of the "what's next" ranking, every run must reconcile `docs/CHANGELOG.md`
-against the planning corpus. The CHANGELOG names the phases that shipped user-facing
-changes (`## Unreleased — Phase <N>` headings). A shipped phase is routinely marked
-`status: COMPLETED` (frontmatter and prose header) while still carrying **open waived
-items** or **open ledger items** — meaning it is NOT completely closed. These phases are
-not open-work candidates (they don't belong in the Registry table above or in the pickup
-order — they're kept out for ranking purposes), but their residual items are real debt:
-list them in the dedicated registry section
-`## Not-fully-closed phases (from docs/CHANGELOG.md)`. Columns:
+The CHANGELOG names shipped phases (`## Unreleased — Phase <N>`). A shipped phase marked
+`status: COMPLETED` can still carry open waived or open ledger items. Such phases are not
+ranking candidates but their residual debt belongs in the dedicated
+`## Not-fully-closed phases (from docs/CHANGELOG.md)` section. Columns:
 
-| Column            | Meaning                                                                                                           |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Phase             | `NNN` (the CHANGELOG heading)                                                                                     |
-| Title             | short title from the phase doc                                                                                    |
-| Open waived items | success criteria / ledger entries marked `waived` / `waived by the user`, verbatim                                |
-| Open ledger items | Reachability Ledger / Deferred Items rows with a non-`✅` Status column (⏳, ⏳ POSTPONED, ⚠️ deferred), verbatim |
-| Verified          | date this phase's item list was re-scanned                                                                        |
+| Column | Meaning |
+| ------ | ------- |
+| Phase | `NNN` (CHANGELOG heading) |
+| Title | short title |
+| Open waived items | criteria/ledger entries marked `waived` / `waived by the user`, verbatim |
+| Open ledger items | ledger/deferred rows with a non-`✅` Status (⏳, ⏳ POSTPONED, ⚠️ deferred), verbatim |
+| Verified | date the item list was re-scanned |
 
-Classify each item precisely:
+Classify precisely:
 
-1. **Parse the list.** `rg '^## .*— Phase ([0-9a-z]+)' docs/CHANGELOG.md` gives the phase
-   IDs (match `140a`-style suffixed numbers too).
-1. **Open ledger item** = a row in the phase doc's `## Reachability Ledger (pending
-   production consumers)` (or its `Deferred Items`) table whose Status column is anything
-   other than `✅` — e.g. `⏳`, `⏳ POSTPONED`, `⚠️ deferred`, a credit/credential-gated
-   label, or a non-`✅` prose status. A `⏳`/`⚠️` marker **in prose outside a
-   ledger/deferred-items table is NOT an item** — resolved-finding narratives legitimately
-   keep historical pending markers while every ledger row is `✅`.
-1. **Open waived item** = any success criterion / live-verification / ledger entry whose
-   text says `waived` / `waived by the user` / `closed as waived`, **even when the row's
-   status column reads `✅`** — the requirement was accepted-but-not-met, so the phase is
-   not fully closed. Example: Phase 199's `PLANNING_LIVE_NATIVE_CELLS` (Step 11 marker run
-   on a second native provider) is closed _as waived_, not met.
-1. **Confirm the item is still open** — don't take a `⏳`/`waived` marker at face value. A
-   row annotated "closed by Phase N" (e.g. Phase 134's rows → 135, Phase 136's → 137)
-   counts as closed once that named successor actually implemented the consumer; a
-   closure note saying `POSTPONED` / "deferred indefinitely" / "blocked on credits" stays
-   open regardless of the phase's `status: COMPLETED` frontmatter.
-1. **Remove a phase row** the moment every item closes — a phase appears in this section
-   and NOT in the open-work Registry when it is complete-but-not-closed, and in NEITHER
-   when fully closed.
+1. **Parse.** `rg '^## .*— Phase ([0-9a-z]+)' docs/CHANGELOG.md` (match `140a` too).
+1. **Open ledger item** = a row in `## Reachability Ledger (pending production
+   consumers)`/`Deferred Items` whose Status is not `✅` (⏳, ⏳ POSTPONED, ⚠️ deferred,
+   credit-gated label, or non-`✅` prose). A `⏳`/`⚠️` in prose outside such a table is
+   NOT an item — resolved narratives keep historical markers while rows are `✅`.
+1. **Open waived item** = a criterion/live-verification/ledger entry saying `waived` /
+   `waived by the user` / `closed as waived`, even when the row status reads `✅` — the
+   requirement was accepted-but-not-met. Example: Phase 199's `PLANNING_LIVE_NATIVE_CELLS`.
+1. **Confirm it is still open.** A row annotated "closed by Phase N" is closed once that
+   successor implemented the consumer; `POSTPONED` / "deferred indefinitely" /
+   "blocked on credits" stays open regardless of `status: COMPLETED`.
+1. **Remove the row** when every item closes — such a phase appears in this section but
+   not the open-work Registry; fully closed in NEITHER.
 
 ## Procedure
 
-1. **Read the registry.** If it doesn't exist, bootstrap it (above).
-1. **Cross-check `docs/CHANGELOG.md`** for not-fully-closed phases (procedure in the
-   section above): parse the `## ... — Phase <N>` headings, scan each named phase doc's
-   Reachability Ledger / Deferred Items table for non-`✅` rows and any `waived` markers,
-   confirm each finding is still open, and keep the
-   `## Not-fully-closed phases (from docs/CHANGELOG.md)` registry section current.
-1. **Find drift**: `glob exaix-dev-docs/planning/phase-*.md` and diff the filename set
-   against the registry's `Phase` column — new docs since the last run, and any registry
-   row whose file no longer exists (renamed/retired), both need reconciling.
-1. **Refresh stale rows** using self-improvement's Phase-doc status hygiene checklist:
-   step-level checkbox/status-marker evidence (mind the checkbox-era difference), explicit
-   blocking language that survives a checked box (e.g. an unrun completion gate), accepted
-   `⚠️ deferred`/`🗄️ Postponed` exceptions that don't block readiness.
-1. **Resolve the dependency graph.** A candidate's hard deps must show `✅`/Complete in the
-   registry (or be freshly confirmed) — a dependency that is itself only "code complete,
-   live-verification deferred" (see phase-143's pattern) usually still counts as unblocking
-   unless the depending phase specifically needs the deferred part.
-1. **Check environment-executability, don't assume it.** Run `which <bin>` / check for a
-   required env var the same way you'd check any tool precondition — a phase that "should"
-   be runnable on paper but needs a credential this environment doesn't have (e.g. an
-   OpenRouter API key) is still worth doing, but say so plainly rather than silently
-   overselling it as immediately live-verifiable.
-1. **Rank** every genuinely open, unblocked candidate: fewest hard blockers first, then
-   scope (steps), then risk, then environment-executable-now, then "unblocks N other
-   phases" as a tiebreaker.
-1. **Recommend**: one top pick with the full evidence table, 2-3 runners-up each with one
-   concrete reason they rank below the top pick — never a bare ranked list with no
-   rationale.
-1. **Update the registry**: write/refresh every row you touched, bump `Verified`, refresh
-   the `## Not-fully-closed phases (from docs/CHANGELOG.md)` section, and keep
-   the "Recommended pickup order" section current at the top of the file so a future run
-   (or a human skimming the file) gets the answer without re-running this skill.
-1. **No good candidate?** Say so explicitly — don't force a recommendation. Point to
-   `#plan` if the real need requires drafting new work, or name the specific blocker
-   (missing dependency, missing external resource) that must clear first.
+1. **Read the registry** (bootstrap if absent).
+1. **Cross-check `docs/CHANGELOG.md`** for not-fully-closed phases (above): parse the
+   `## ... — Phase <N>` headings, scan each phase's ledger/deferred rows + `waived`
+   markers, confirm they are open, keep the registry section current.
+1. **Find drift**: `glob planning/phase-*.md` vs the registry's `Phase` column — new docs
+   and retired rows both need reconciling.
+1. **Refresh stale rows** via the status-hygiene checklist (step-level evidence, blocking
+   language surviving a checked box, accepted ⚠️/🗄️ exceptions).
+1. **Resolve the dependency graph**: hard deps show `✅`/Complete or are freshly
+   confirmed. A dep that is "code complete, live-verification deferred" (phase-143's
+   pattern) usually unblocks unless the dependent needs the deferred part.
+1. **Check environment-executability, don't assume it**: `which <bin>` / env var — a
+   phase needing a credential this env lacks is still worth doing, but say so plainly.
+1. **Rank** open, unblocked candidates: fewest blockers, then scope, risk,
+   environment-executable-now, then "unblocks N phases".
+1. **Recommend**: one top pick with full evidence; 2-3 runners-up each with a reason they
+   rank lower — never a bare ranked list.
+1. **Update the registry**: refresh touched rows, bump `Verified`, keep the
+   not-fully-closed section and "Recommended pickup order" current.
+1. **No good candidate?** Say so; point to `#plan` or name the blocker that must clear.
 
 ## Do / Don't
 
-- ✅ Do read `PHASE_REGISTRY.md` before scanning the corpus — a fresh registry makes this
-  a few-file lookup, not a 166-file audit.
-- ✅ Do verify at the step level before trusting any row you're about to act on — a stale
-  registry row is exactly as misleading as a stale doc header.
-- ✅ Do actually check environment-executability (`which`, env vars) rather than inferring
-  it from the plan's prose.
-- ✅ Do reconcile `docs/CHANGELOG.md` phases against their leftover open ledger/waived
-  items on every run and keep the "Not-fully-closed phases" registry section current.
-- ✅ Do name the tradeoff for every runner-up, not just the top pick.
-- ✅ Do update the registry before finishing, even if the answer was "nothing changed."
-- ❌ Don't recommend a phase whose hard dependencies aren't actually done — check, don't
-  trust a doc's own "Phase Dependencies" line without confirming those phases' real state.
-- ❌ Don't treat "0 steps checked" and "this doc doesn't track completion with
-  checkboxes at all" as the same signal — the latter needs a different doc-open, not a
-  confident verdict either way.
-- ❌ Don't drop completed/cancelled/postponed phases' history — they simply don't belong
-  in this registry (it exists to answer "what's next", not "what happened").
-- ❌ Don't lose a `status: COMPLETED` phase's open ledger/waived items when it exits the
-  open-work Registry — capture them under "Not-fully-closed phases".
-- ❌ Don't hand back a plain list of candidates with no ranking rationale — every entry
-  needs the "why this rank" sentence.
+- ✅ Read `PHASE_REGISTRY.md` before scanning the corpus.
+- ✅ Verify at the step level before trusting any row you act on.
+- ✅ Check environment-executability with a real command (`which`/env), not inference.
+- ✅ Reconcile `docs/CHANGELOG.md` open ledger/waived items each run.
+- ✅ Name the tradeoff for every runner-up.
+- ✅ Update the registry before finishing, even if nothing changed.
+- ❌ Recommend a phase whose hard deps aren't actually done — confirm, don't trust the
+  "Phase Dependencies" line.
+- ❌ Treat "0 steps checked" and "no checkboxes in the doc" as the same signal.
+- ❌ Drop completed phases' history — they don't belong here ("what's next", not "what happened").
+- ❌ Lose a `status: COMPLETED` phase's open items — capture them under "Not-fully-closed".
+- ❌ Hand back a candidate list without the "why this rank" sentence.
 
 ## Examples
 
-- Session: asked "which planning phase is most productive to take next".
-  Audited the active frontier plus spot-checked earlier phases; recommended the
-  next phase with zero dependencies, a bounded step count, low risk, and a CLI
-  binary confirmed present on PATH (so it was both implementable and live-verifiable
-  in the same session). Runners-up were ranked lower for a real architectural-decision
-  ambiguity, or a need for paid multi-trial live LLM runs, or being a multi-step
-  strategic initiative better suited to a dedicated push than a single "what's next"
-  pick — the ranking prose must justify every position.
+- Session: asked "which planning phase is most productive to take next". Audited the
+  frontier, recommended a zero-dependency, bounded-scope, low-risk phase whose CLI binary
+  was on PATH (implementable and live-verifiable in one session). Runners-up ranked lower
+  on an architectural-decision ambiguity, paid multi-trial live LLM runs, or a multi-step
+  strategic effort better served by a dedicated push.
 
 ## Related
 
-- [self-improvement](../self-improvement/SKILL.md) — Phase-doc status hygiene: the
-  step-level verification procedure this skill depends on for every registry row
-- [plan](../plan/SKILL.md) — drafts a new phase when no existing candidate fits
-- [next-steps](../next-steps/SKILL.md) — implements the chosen phase's steps once picked
-- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — validates the chosen phase's plan
-  before implementation begins
-- [submodule-workflow](../submodule-workflow/SKILL.md) — `PHASE_REGISTRY.md` lives in the
-  `exaix-dev-docs` submodule; commit/pointer-bump discipline applies
-- [docs/CHANGELOG.md](../../../docs/CHANGELOG.md) — the shipped-phase list the
-  "Not-fully-closed phases" registry section is reconciled against every run
+- [self-improvement](../self-improvement/SKILL.md) — Phase-doc status hygiene (verification
+  this skill relies on)
+- [plan](../plan/SKILL.md) — drafts a new phase when no candidate fits
+- [next-steps](../next-steps/SKILL.md) — implements the chosen phase
+- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — validates the chosen plan
+- [submodule-workflow](../submodule-workflow/SKILL.md) — registry lives in the submodule
+- [docs/CHANGELOG.md](../../../docs/CHANGELOG.md) — the shipped-phase list reconciled against
 
 ---
 exaix:

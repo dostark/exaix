@@ -534,6 +534,70 @@
         "Guard the pointer with the checkout-resets-submodule rule",
         "Initialize submodules with git submodule update --init --recursive"
       ]
+    },
+    {
+      "id": "copilot-next-phase",
+      "canonicalPath": ".copilot/skills/next-phase/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "When to use",
+          "The registry",
+          "Not-fully-closed phases",
+          "Procedure"
+        ],
+        "revised": [
+          "Key points",
+          "When to use",
+          "The registry",
+          "Not-fully-closed phases",
+          "Procedure"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "low",
+      "evidence": "review-only",
+      "obligations": [
+        "Read PHASE_REGISTRY.md first and refresh only stale or missing rows",
+        "Verify real completion at the step level, never from the header text",
+        "Reconcile docs/CHANGELOG.md open waived and ledger items into the registry section",
+        "Rank by unblocked dependencies, scope, risk, environment-executability, then unblocks",
+        "Give one top pick with evidence and 2-3 runners-up, each with a reason",
+        "Update the registry and Verified dates before finishing"
+      ]
+    },
+    {
+      "id": "copilot-comparative-analysis",
+      "canonicalPath": ".copilot/skills/comparative-analysis/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "MANDATORY \u2014 Phase 0",
+          "Analysis methodology",
+          "Feature comparison dimensions"
+        ],
+        "revised": [
+          "Key points",
+          "MANDATORY \u2014 Phase 0",
+          "Analysis methodology",
+          "Feature comparison dimensions"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Complete Phase 0 by reading ARCHITECTURE.md, GLOSSARY.md, the White Paper, and the System Architecture Diagram",
+        "Read competitor source code, not marketing nomenclature",
+        "Preserve all 9 Exaix core invariants",
+        "Include a rejected-patterns section and tier suggestions by priority",
+        "Build a feature matrix of at least 10 dimensions",
+        "Use correct Actor, Agent, Agent Role terminology and cite doc sections"
+      ]
     }
   ]
 }

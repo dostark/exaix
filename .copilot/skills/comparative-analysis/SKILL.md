@@ -19,14 +19,19 @@ qwen_skill: comparative-analysis
 
 ```text
 Key points
-- Always start by identifying the competitor/product/topic to compare against
-- Read canonical comparative analyses as reference patterns before producing new ones
-- Use the standard Exaix positioning framework: governance-first, local-first, file-as-API, mandatory human gate
-- Output must include: differentiators, feature matrix, gap analysis, improvement suggestions, rejected patterns
-- All suggestions must preserve Exaix's 9 core invariants (File-as-API, Mandatory Human Gate, Forensic Trace Chain, Portal Isolation, Daemon-Based Async, Declarative Blueprints, MCP-Native Both Ways, Local-First Operation, Governance-First)
-- After producing analysis, update the relevant exaix-dev-docs/dev/ file or create a new one
-- Follow submodule-workflow skill for changes spanning parent repo and submodule
-- **Ignore marketing nomenclature — map actual architecture and functionality.** When a competitor calls itself an "agentic OS" or "meta-harness", disregard the label and examine their actual code: what interfaces define the execution loop, how are tools registered and dispatched, what is the policy evaluation mechanism, how is state persisted, what is the sandbox boundary. A product's README positioning is a signal; its source code and runtime behavior are the ground truth.
+- Identify the competitor/product/topic to compare against first.
+- Read canonical comparative analyses as reference patterns first.
+- Use the Exaix positioning framework: governance-first, local-first, file-as-API, mandatory human gate.
+- Output: differentiators, feature matrix, gap analysis, improvement suggestions, rejected patterns.
+- Preserve the 9 core invariants (File-as-API, Mandatory Human Gate, Forensic Trace Chain,
+  Portal Isolation, Daemon-Based Async, Declarative Blueprints, MCP-Native Both Ways,
+  Local-First Operation, Governance-First).
+- Update or create the relevant exaix-dev-docs/dev/ file after the analysis.
+- Follow submodule-workflow for parent + submodule changes.
+- **Ignore marketing nomenclature — map actual architecture.** When a competitor calls
+  itself an "agentic OS" or "meta-harness", disregard the label and read its code: the
+  execution loop, tool registration/dispatch, policy evaluation, state persistence, and
+  sandbox boundary. README positioning is a signal; source and runtime are ground truth.
 
 Canonical prompt (short):
 "Produce a comparative analysis of Exaix vs {competitor/topic}.
@@ -43,9 +48,9 @@ Reference sources (canonical comparative analyses):
   Ruflo                     → exaix-dev-docs/dev/Exaix_Ruflo_Comparative_Analysis.md
 
 MANDATORY — Phase 0: Comprehend Exaix's Own Architecture
-  BEFORE any analysis, read ALL four of these documents to internalize Exaix's
-  architecture, invariants, terminology, and positioning. The analysis quality
-  depends on accurate self-knowledge.
+  BEFORE any analysis, read all four documents below so Exaix's architecture, invariants,
+  terminology, and positioning are internalized. A quality analysis needs accurate
+  self-knowledge.
 
   0a. ARCHITECTURE.md (repo root) — system architecture, component boundaries,
       edition model, execution semantics, pipeline flow, AI provider architecture,
@@ -267,3 +272,4 @@ exaix:
       description: Competitor claims verified against real source material; Exaix capabilities cited with correct doc references
       weight: 10
 ---
+
