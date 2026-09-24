@@ -9,47 +9,47 @@ topics: ["reference", "docs", "catalog"]
 
 ## Task → Doc
 
-| Task Type                                            | Primary Doc                                                                  |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Agent Reference Corpus                               | [docs/README.md](docs/README.md)                                             |
-| MCP Agent Tool Index                                 | [docs/TOOLS.md](docs/TOOLS.md)                                               |
-| Exaix Developer Glossary                             | [docs/GLOSSARY.md](docs/GLOSSARY.md)                                         |
-| .copilot/prompts/ — Chat Routing Wrappers            | [prompts/README.md](prompts/README.md)                                       |
-| .copilot/ — AI Agent Knowledge Base                  | [README.md](README.md)                                                       |
-| Pre-Gap Analysis Skill (#review-phase-plan)          | [skills/review-phase-plan/SKILL.md](skills/review-phase-plan/SKILL.md)       |
-| Audit-Security Skill (#audit-security)               | [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)             |
-| Documentation Skill (#doc)                           | [skills/doc/SKILL.md](skills/doc/SKILL.md)                                   |
-| Coverage Skill (#coverage)                           | [skills/coverage/SKILL.md](skills/coverage/SKILL.md)                         |
-| Edition Development Skill (#edition-development)     | [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)   |
-| Submodule Workflow Skill (#submodule-workflow)       | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)     |
-| Fix Bug Skill (#fix-bug)                             | [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)                           |
-| Review-Code Skill (#review-code)                     | [skills/review-code/SKILL.md](skills/review-code/SKILL.md)                   |
-| Infrastructure/Config Skill (#infra)                 | [skills/infra/SKILL.md](skills/infra/SKILL.md)                               |
-| Plan Skill (#plan)                                   | [skills/plan/SKILL.md](skills/plan/SKILL.md)                                 |
-| Exaix Development Skill (#exaix-development)         | [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md)       |
-| Refactoring Skill (#refactor)                        | [skills/refactor/SKILL.md](skills/refactor/SKILL.md)                         |
-| Upgrade-Version Skill (#upgrade-version)             | [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md)           |
-| Clean Codebase Skill (#clean-codebase)               | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)             |
-| Remediate Plan Gaps Skill (#remediate-plan-gaps)     | [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md)   |
-| Commit Skill (#commit)                               | [skills/commit/SKILL.md](skills/commit/SKILL.md)                             |
-| Dogfood Development Skill (#dogfood-development)     | [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)   |
-| Test Development Skill (#test-development)           | [skills/test-development/SKILL.md](skills/test-development/SKILL.md)         |
-| Next Phase Selection (#next-phase)                   | [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)                     |
-| Codebase Exploration (#explore)                      | [skills/explore/SKILL.md](skills/explore/SKILL.md)                           |
-| Comparative Analysis Skill (#comparative-analysis)   | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
-| Post-Gap Analysis Skill (#review-phase-code)         | [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md)       |
-| Self-Improvement Loop (#self-improvement)            | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)         |
-| TDD Workflow Skill (#tdd-workflow)                   | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)                 |
-| Remediate Code Gaps Skill (#remediate-code-gaps)     | [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)   |
-| Review-Research-Improvement Skill (#review-research) | [skills/review-research/SKILL.md](skills/review-research/SKILL.md)           |
-| Next-Steps Skill (#next-steps)                       | [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)                     |
-| Doc Catalog                                          | [DOCS.md](DOCS.md)                                                           |
-| ARCHITECTURE.md                                      | [../ARCHITECTURE.md](../ARCHITECTURE.md)                                     |
-| Exaix Overview & Quickstart                          | [../README.md](../README.md)                                                 |
-| Exaix Glossary                                       | [../GLOSSARY.md](../GLOSSARY.md)                                             |
-| Code Style & Standards                               | [../CODE_STYLE.md](../CODE_STYLE.md)                                         |
-| Agent Instructions                                   | [../AGENTS.md](../AGENTS.md)                                                 |
-| CONTRIBUTING.md                                      | [../CONTRIBUTING.md](../CONTRIBUTING.md)                                     |
+| Task Type | Primary Doc |
+| --- | --- |
+| Agent Reference Corpus | [docs/README.md](docs/README.md) |
+| MCP Agent Tool Index | [docs/TOOLS.md](docs/TOOLS.md) |
+| Exaix Developer Glossary | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
+| .copilot/prompts/ — Chat Routing Wrappers | [prompts/README.md](prompts/README.md) |
+| .copilot/ — AI Agent Knowledge Base | [README.md](README.md) |
+| Pre-Gap Analysis Skill (#review-phase-plan) | [skills/review-phase-plan/SKILL.md](skills/review-phase-plan/SKILL.md) |
+| Audit-Security Skill (#audit-security) | [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md) |
+| Documentation Skill (#doc) | [skills/doc/SKILL.md](skills/doc/SKILL.md) |
+| Coverage Skill (#coverage) | [skills/coverage/SKILL.md](skills/coverage/SKILL.md) |
+| Edition Development Skill (#edition-development) | [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md) |
+| Submodule Workflow Skill (#submodule-workflow) | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md) |
+| Fix Bug Skill (#fix-bug) | [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md) |
+| Review-Code Skill (#review-code) | [skills/review-code/SKILL.md](skills/review-code/SKILL.md) |
+| Infrastructure/Config Skill (#infra) | [skills/infra/SKILL.md](skills/infra/SKILL.md) |
+| Plan Skill (#plan) | [skills/plan/SKILL.md](skills/plan/SKILL.md) |
+| Exaix Development Skill (#exaix-development) | [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md) |
+| Refactoring Skill (#refactor) | [skills/refactor/SKILL.md](skills/refactor/SKILL.md) |
+| Upgrade-Version Skill (#upgrade-version) | [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md) |
+| Clean Codebase Skill (#clean-codebase) | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md) |
+| Remediate Plan Gaps Skill (#remediate-plan-gaps) | [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md) |
+| Commit Skill (#commit) | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
+| Dogfood Development Skill (#dogfood-development) | [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md) |
+| Test Development Skill (#test-development) | [skills/test-development/SKILL.md](skills/test-development/SKILL.md) |
+| Next Phase Selection (#next-phase) | [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md) |
+| Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) |
+| Comparative Analysis Skill (#comparative-analysis) | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
+| Post-Gap Analysis Skill (#review-phase-code) | [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md) |
+| Self-Improvement Loop (#self-improvement) | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md) |
+| TDD Workflow Skill (#tdd-workflow) | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md) |
+| Remediate Code Gaps Skill (#remediate-code-gaps) | [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md) |
+| Review-Research-Improvement Skill (#review-research) | [skills/review-research/SKILL.md](skills/review-research/SKILL.md) |
+| Next-Steps Skill (#next-steps) | [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md) |
+| Doc Catalog | [DOCS.md](DOCS.md) |
+| ARCHITECTURE.md | [../ARCHITECTURE.md](../ARCHITECTURE.md) |
+| Exaix Overview & Quickstart | [../README.md](../README.md) |
+| Exaix Glossary | [../GLOSSARY.md](../GLOSSARY.md) |
+| Code Style & Standards | [../CODE_STYLE.md](../CODE_STYLE.md) |
+| Agent Instructions | [../AGENTS.md](../AGENTS.md) |
+| CONTRIBUTING.md | [../CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## Search by Topic
 
@@ -172,3 +172,4 @@ topics: ["reference", "docs", "catalog"]
 - **`workflow`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`wrappers`** → [prompts/README.md](prompts/README.md)
 - **`writing`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)
+
