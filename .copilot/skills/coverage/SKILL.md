@@ -18,12 +18,13 @@ qwen_skill: coverage
 
 ```text
 Key points
-- Always start by measuring — never guess which paths are uncovered.
-- Write real behavioural tests — not trivial pass-through tests to game the numbers.
+
+- Start by measuring — never guess which paths are uncovered.
+- Write real behavioural tests, not trivial pass-throughs that game the numbers.
 - CI thresholds: Line ≥ 70%, Branch ≥ 60% (enforced by scripts/measure_coverage.ts).
-- Focus on untested business logic, error paths, and edge cases — not boilerplate.
-- Tests must follow the same quality bar as production tests (helpers, naming, etc.).
-- When the scope involves more than ~20 files, work in batches of 5–10: measure a batch, record gaps, then continue.
+- Target untested business logic, error paths, and edge cases — not boilerplate.
+- Tests meet the same quality bar as production tests (helpers, naming).
+- Scope > ~20 files: batches of 5–10. Measure a batch, record gaps, continue.
 
 Canonical prompt (short):
 "Improve coverage for <module or full suite>. Measure first, identify the
@@ -35,112 +36,93 @@ Examples
 - "#coverage packages/core/src/vault_service.ts — missing error-path tests"
 
 Do / Don't
-- ✅ Do run measure_coverage.ts first to get the baseline.
-- ✅ Do target functions/branches with real logic — not trivial getters.
-- ✅ Do write tests that verify behaviour, not just call count.
-- ✅ Do use Exaix test helpers (initTestDbService, createCliTestContext, etc.).
-- ✅ Do re-run measure_coverage.ts after each batch to confirm improvement.
-- ✅ Do check branch coverage separately — a file can have 90% line but 30% branch.
-- ❌ Don't add empty assertions or trivial tests to inflate numbers.
-- ❌ Don't suppress coverage via ignore comments without documented justification.
-- ❌ Don't skip CI gates (lint, type-check) when adding test files.
+- ✅ Run measure_coverage.ts first for the baseline.
+- ✅ Target functions/branches with real logic — not trivial getters.
+- ✅ Verify behaviour, not call count.
+- ✅ Use Exaix helpers (initTestDbService, createCliTestContext, etc.).
+- ✅ Re-run measure_coverage.ts after each batch.
+- ✅ Check branch coverage separately — 90% line with 30% branch is common.
+- ❌ Add empty assertions or trivial tests to inflate numbers.
+- ❌ Suppress coverage via ignore comments without documented justification.
+- ❌ Skip CI gates (lint, type-check) when adding test files.
 
-Related skills:
-- #fix-bug   — If coverage reveals an untested bug, fix it first
-- #next-steps — If coverage is tracked as a phase success criterion
-- #commit    — Structured commit after coverage improvements
+Related: #fix-bug (untested bug found — fix first); #next-steps (coverage as a phase
+criterion); #commit.
 
-Workflow chain:
-  #next-steps (phase complete) → **#coverage** → #commit
+Workflow chain: #next-steps (phase complete) → **#coverage** → #commit
 ```
 
 ## See also
 
-- [test-development](../test-development/SKILL.md) — test helpers, coverage targets, placement rules
+- [test-development](../test-development/SKILL.md) — test helpers, coverage targets, placement
 - [tdd-workflow](../tdd-workflow/SKILL.md) — TDD red-green-refactor cycle
 
 ---
 
 ## Instructions for Agent
 
-Improve Exaix test coverage: measure the baseline, identify high-value uncovered paths, write targeted tests, and re-measure until the CI thresholds pass.
+Improve Exaix test coverage: measure the baseline, identify high-value uncovered paths, write targeted tests, re-measure until thresholds pass.
 
 ### Phase 1 — Measure Baseline
 
-Run coverage measurement:
-
 ```bash
 deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
 ```
 
-Capture:
-
-- Overall line coverage % and branch coverage %.
-- Per-file breakdown: identify files with the lowest line or branch percentages.
-- The current thresholds: Line ≥ 70%, Branch ≥ 60%.
-
-Report the baseline in the chat output before proceeding.
+Capture overall line % and branch %, the per-file breakdown (lowest first), and the
+thresholds (Line ≥ 70%, Branch ≥ 60%). Report the baseline before proceeding.
 
 ### Phase 2 — Identify High-Value Gaps
 
-For each low-coverage file (start with the bottom 10 by line%):
+Per low-coverage file (start with the bottom 10 by line %):
 
-1. Read the source file.
-2. Identify functions and branches that are **not** covered, focusing on:
-   - Error handling paths (`catch` blocks, early `return` with error).
-   - Edge case branches (`if (!x)`, `x === null`, empty array, max size).
-   - Business logic branches (state machine transitions, conditional feature paths).
-   - Skip trivial auto-generated code or pure delegation methods.
+1. Read the source.
+1. Find uncovered functions/branches — focus on:
+   - Error handling (`catch` blocks, early `return` with error)
+   - Edge cases (`if (!x)`, `x === null`, empty array, max size)
+   - Business logic (state transitions, conditional feature paths)
+   - Skip trivial auto-generated code or pure delegation.
+1. Prioritise by impact: could the uncovered path fail silently in production?
 
-3. Prioritise by **impact**: does the uncovered path contain real business logic
-   that could silently fail in production?
+### Phase 3 — Write Targeted Tests (TDD)
 
-### Phase 3 — Write Targeted Tests (TDD style)
+Per selected gap:
 
-For each selected gap:
-
-1. Write a named test that exercises the uncovered path.
-   - Name format: `"<module>: <path description>"` e.g.,
+1. Write a named test exercising the uncovered path.
+   - Name: `"<module>: <path description>"`, e.g.
      `"VaultService: throws on missing encryption key"`.
-   - Use `initTestDbService` / `createCliTestContext` / `TestEnvironment.create()` as needed.
-   - For timer-based TUI tests: add `sanitizeOps: false, sanitizeResources: false`.
-2. Run the test file to confirm the test passes (it should pass — coverage tests verify
-   existing behaviour, not introduce new requirements).
+   - Helpers: `initTestDbService` / `createCliTestContext` / `TestEnvironment.create()`.
+   - Timer-based TUI tests: `sanitizeOps: false, sanitizeResources: false`.
+1. Run the file; the test passes (coverage tests verify existing behaviour, not new
+   requirements):
    ```bash
    deno test --allow-all <test-file>
    ```
-3. If the test reveals a bug, pause and use `#fix-bug` before continuing.
+1. Test reveals a bug? Pause and use `#fix-bug` first.
 
 ### Phase 4 — Re-measure
 
-After each batch of new tests:
+After each batch:
 
 ```bash
 deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
 ```
 
-Report the delta (before vs. after) for each modified file.
-
-Repeat Phase 2–4 until:
-
-- Overall line coverage ≥ 70% AND branch coverage ≥ 60%.
-- Or diminishing returns (remaining uncovered paths are intentionally excluded
-  or untestable without live infrastructure).
+Report the delta per modified file. Repeat Phases 2–4 until line ≥ 70% AND branch ≥ 60%,
+or diminishing returns (remaining paths intentionally excluded or untestable without live
+infrastructure).
 
 ### Phase 5 — Exclusion Documentation
 
-If any paths remain uncovered because they are:
+Unexposed paths:
 
-- Live-infrastructure-dependent (LLM calls, real DB) → add a comment in the test
-  file explaining why, and tag the test with `provider-live`.
-- Truly unreachable code → remove the dead code or add a comment explaining the
-  invariant that makes it unreachable.
-- Auto-generated / schema boilerplate → document the exclusion in `measure_coverage.ts`
+- Live-infrastructure-dependent (LLM calls, real DB) → comment why in the test file and
+  tag the test `provider-live`.
+- Truly unreachable code → remove it, or comment the invariant that makes it unreachable.
+- Auto-generated/schema boilerplate → document the exclusion in `measure_coverage.ts`
   under `COVERAGE_EXCLUDE_PATTERNS`.
 
 ### Phase 6 — CI Gates
-
-Before committing:
 
 ```bash
 deno lint <new-test-files>
@@ -149,20 +131,17 @@ deno fmt <new-test-files>
 deno task check:arch
 ```
 
-Confirm no new UNGROUNDED files and no lint errors.
-
----
+No new UNGROUNDED files, no lint errors.
 
 ## Output Format
 
-1. **Baseline** — overall line%, branch%, and bottom-10 files by line coverage.
-2. **Gaps selected** — which functions/branches were chosen and why.
-3. **Tests written** — file paths and test names.
-4. **Coverage delta** — before/after per file and overall.
-5. **Residual gaps** — any remaining low-coverage paths and the reason they are
-   deferred or excluded.
-6. **CI gate results** — lint, type-check, arch status.
-7. **Commit payload** — use `#commit` to generate the final structured message.
+1. **Baseline** — overall line%, branch%, bottom-10 files.
+1. **Gaps selected** — which functions/branches and why.
+1. **Tests written** — file paths and test names.
+1. **Coverage delta** — before/after per file and overall.
+1. **Residual gaps** — remaining low-coverage paths and why deferred/excluded.
+1. **CI gate results** — lint, type-check, arch.
+1. **Commit payload** — use `#commit`.
 
 ## Workflow Chain
 
@@ -170,7 +149,7 @@ Confirm no new UNGROUNDED files and no lint errors.
 
 ## Related
 
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules for any new test code
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules for test code
 
 ---
 exaix:

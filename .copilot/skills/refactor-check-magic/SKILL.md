@@ -18,13 +18,8 @@ qwen_skill: refactor-check-magic
 
 ## Purpose
 
-Use this skill to drive a full, disciplined refactor pass for violations reported by:
-
-```bash
-deno task check:magic
-```
-
-The goal is to reduce true magic-value violations while preserving behavior and avoiding suppression tricks.
+Drive a disciplined refactor pass for violations reported by `deno task check:magic`.
+Reduce true magic-value violations while preserving behavior — no suppression tricks.
 
 ## Canonical Prompt
 
@@ -32,49 +27,55 @@ Reduce `deno task check:magic` violations through real code improvements.
 
 Hard constraints:
 
-1. Do not cheat by broad literal whitelisting.
-1. Do not hide findings by weakening core detection logic unless it is a narrowly justified structural false-positive rule.
-1. Prefer extracting shared constants/enums over local ad-hoc constants when literals are reused across files.
+1. No broad literal whitelisting to cheat.
+1. No weakening core detection logic, unless a narrowly justified structural
+   false-positive rule.
+1. Prefer shared constants/enums over local ad-hoc constants when literals repeat across
+   files.
 1. Preserve runtime behavior and public interfaces unless explicitly required otherwise.
-1. Keep changes minimal, targeted, and readable.
+1. Keep changes minimal, targeted, readable.
 1. Keep tests and CI quality gates passing.
 
 Process:
 
-1. Run `deno task check:magic` and capture the ranked offenders.
+1. Run `deno task check:magic`; capture the ranked offenders.
 1. Triage the top 10 by category:
    - Refactorable domain literals (best target)
-   - Structural/tooling literals (may require narrow heuristic suppression)
+   - Structural/tooling literals (may need narrow heuristic suppression)
    - Legitimate protocol/CLI/schema literals (document and defer if needed)
-1. Per batch: pick 1–3 high-impact literals with a clear refactor path. Implement
-   targeted changes, re-run `deno task check:magic`, and report delta.
+1. Per batch: pick 1–3 high-impact literals with a clear path. Implement targeted
+   changes, re-run `deno task check:magic`, report the delta.
 1. Refactor by:
-   - Reusing existing constants/enums from `packages/core/src/types/constants.ts` and package-owned enums
-   - Introducing new shared constants/enums only when justified by multi-file reuse
-   - Replacing hardcoded fallbacks (e.g., status/actor/scope labels) with canonical symbols
-1. Stop when further changes are mostly noise or would require policy-level checker changes.
+   - Reusing existing constants/enums from `packages/core/src/types/constants.ts` and
+     package-owned enums
+   - Introducing new shared constants/enums only when multi-file reuse justifies it
+   - Replacing hardcoded fallbacks (status/actor/scope labels) with canonical symbols
+1. Stop when further changes are mostly noise or need policy-level checker changes.
 
 Output requirements:
 
-- Show a concise before/after for top offenders and total violations.
-- List all files changed and why each change was safe.
-- Call out any literals intentionally left unchanged with rationale.
+- Concise before/after for top offenders and total violations.
+- All files changed and why each change was safe.
+- Literals intentionally left unchanged, with rationale.
 
 ## Refactoring Heuristics (Do)
 
-1. Consolidate repeated CLI option/help strings into shared constants when repeated many times in one module.
-1. Replace repeated actor/scope/state literals with existing enums (for example, activity actor or memory scope values).
+1. Consolidate repeated CLI option/help strings into shared constants when repeated
+   many times in one module.
+1. Replace repeated actor/scope/state literals with existing enums (activity actor,
+   memory scope).
 1. Replace repeated node-type literals in TUI trees with canonical enum values.
-1. Extract shared fallback labels (for example, unknown/default labels) into shared constants if reused across multiple modules.
-1. Prefer existing canonical definitions over introducing duplicates.
+1. Extract shared fallback labels (unknown/default) into shared constants when reused
+   across modules.
+1. Prefer existing canonical definitions over duplicates.
 1. Keep naming explicit and domain-driven.
 
 ## Anti-Patterns (Do Not)
 
-1. Adding many value-based whitelist entries solely to make the checker quiet.
-1. Blanket ignore rules that hide real findings.
-1. Over-generalizing constants that make code less clear.
-1. Refactors that alter behavior, CLI semantics, or schema contracts without tests.
+1. Many value-based whitelist entries just to quiet the checker.
+1. Blanket ignore rules hiding real findings.
+1. Over-generalized constants that make code less clear.
+1. Refactors altering behavior, CLI semantics, or schema contracts without tests.
 
 ## Required Validation
 
@@ -85,20 +86,20 @@ deno task check:arch
 deno test --allow-all
 ```
 
-If scope is large, run focused tests first, then full suite.
-If any test fails after a refactor batch, revert the batch and narrow scope before retrying.
+Large scope: focused tests first, then the full suite. A failing test after a batch?
+Revert the batch and narrow scope.
 
 ## Deliverable Format
 
 - Summary: what improved and by how much.
 - Findings addressed: literal → strategy → files.
-- Residual high-score literals: reason not addressed yet.
-- Next best 3 candidates for follow-up.
+- Residual high-score literals: reason not addressed.
+- Next 3 best candidates for follow-up.
 
 ## Duplication Detection
 
-In addition to magic-value violations, run `scripts/measure_duplication.ts` (task
-`deno task check:duplication`, Gate 9) to detect code duplication:
+Beyond magic values, run `scripts/measure_duplication.ts` (`deno task check:duplication`,
+Gate 9):
 
 ```bash
 deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts --threshold 2.0
@@ -107,63 +108,53 @@ deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts -
 ### Duplication Thresholds
 
 | Level | Percentage | Action |
-|
-
-## See also
-
-- [exaix-development](../exaix-development/SKILL.md) — config constants guide, DEFAULT_/TEST_ prefix convention
-- [test-development](../test-development/SKILL.md) — test helpers for validating constant changes
-  ----------- | ---------- | --------------------------------- |
-  | 🟢 Good | < 2% | No action needed |
-  | 🟡 Warning | 2-5% | Monitor, refactor when convenient |
-  | 🟠 High | 5-10% | Plan refactoring phase |
-  | 🔴 Critical | > 10% | Immediate attention required |
+| ----- | ---------- | ------ |
+| 🟢 Good | < 2% | No action needed |
+| 🟡 Warning | 2-5% | Monitor, refactor when convenient |
+| 🟠 High | 5-10% | Plan a refactoring phase |
+| 🔴 Critical | > 10% | Immediate attention |
 
 ### Common Duplication Patterns
 
-1. **Test setup duplication** — Repeated test fixtures across files → extract to test helpers.
-2. **Provider pattern duplication** — Same constructor patterns in multiple providers → base class.
-3. **Test assertion patterns** — Repeated assertion blocks → custom assertion helpers.
+1. **Test setup duplication** — repeated fixtures → extract to test helpers.
+1. **Provider pattern duplication** — same constructor patterns → base class.
+1. **Test assertion patterns** — repeated assertion blocks → custom helpers.
 
 ### When NOT to Deduplicate
 
-1. **Intentional isolation** — Security tests should be standalone.
-2. **Test clarity** — Some repetition improves test readability.
-3. **Evolution** — Tests that may diverge should stay separate.
-4. **Small clones** — < 50 tokens rarely worth extracting.
+1. **Intentional isolation** — security tests stay standalone.
+1. **Test clarity** — some repetition improves readability.
+1. **Evolution** — tests that may diverge stay separate.
+1. **Small clones** — < 50 tokens rarely worth extracting.
 
 ## Notes for Exaix Conventions
 
 - Prefer symbols from `packages/core/src/types/constants.ts` and package-owned enums.
-- Keep imports top-level and type-safe.
-- Avoid introducing magic numbers/strings in new code.
-- Maintain strict TypeScript compatibility and existing architecture patterns.
+- Keep imports top-level and type-safe. No new magic numbers/strings.
 - After renaming symbols or moving constants, re-run `deno task check:arch` — renaming
   can break module JSDoc grounding and produce UNGROUNDED files.
-- When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
+- Scope > ~20 files: batches of 5–10. Read a batch, record findings, continue.
 
 ## Related Skills
 
-- `#commit` — Create a structured commit after a successful refactor batch.
-- `#plan` — If this analysis reveals a systemic issue requiring architectural
-  changes, start a new phase document with `#plan`.
-- `#next-steps` — If this refactor is part of an active phase, continue via `#next-steps`.
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- `#commit` — structured commit after a successful refactor batch.
+- `#plan` — systemic issue needing architectural work → start a phase doc.
+- `#next-steps` — refactor part of an active phase → continue via #next-steps.
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules.
 
 ## Output Format
 
-1. **Violation delta** — total count before vs. after each batch.
+1. **Violation delta** — total before vs. after each batch.
 1. **Findings addressed** — literal → strategy → files changed.
-1. **Residual high-score literals** — reason not addressed (e.g., protocol constraint,
-   legitimate schema literal, requires policy-level checker change).
-1. **Next 3 candidates** — best remaining targets for a follow-up session.
-1. **CI gate results** — `check:magic`, `lint`, `check:arch`, `deno check` status.
-1. **Commit payload** — use `#commit` to generate the final structured message.
+1. **Residual high-score literals** — reason not addressed.
+1. **Next 3 candidates** — best follow-up targets.
+1. **CI gate results** — check:magic, lint, check:arch, deno check.
+1. **Commit payload** — use `#commit`.
 
 ## Examples
 
-- `#refactor-check-magic` — address all current check:magic violations
-- `#refactor-check-magic` scoped to a single file — fix magic values in just that file
+- `#refactor-check-magic` — all current check:magic violations
+- `#refactor-check-magic` scoped to one file
 - `#refactor-check-magic — top 10 highest-score literals only`
 
 ---
