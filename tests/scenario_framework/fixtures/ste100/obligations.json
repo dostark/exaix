@@ -965,6 +965,41 @@
         "Delegate code quality to review-code",
         "Write gaps and TDD remediation steps with step-manifests into the plan"
       ]
+    },
+    {
+      "id": "copilot-pre-gap-analysis",
+      "canonicalPath": ".copilot/skills/pre-gap-analysis/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 2 \u2014 Architectural Alignment & Necessity Check",
+          "Phase 8 \u2014 Integration Feasibility & Reachability Check",
+          "Phase 9 \u2014 Gap Classification",
+          "Phase 10 \u2014 Apply In-Place Fixes"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Architectural Alignment & Necessity Check",
+          "Integration Feasibility & Reachability",
+          "Gap Classification",
+          "Apply In-Place Fixes and Write Gaps"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Survey the subsystem independently before accepting the plan",
+        "Verify interfaces, call sites, and side effects against real source",
+        "Apply security, traceability, and reachability checks to every step",
+        "Classify gaps by severity and write them into the document",
+        "Fix trivial gaps in place and list them under In-Place Fixes",
+        "Grep-verify every code-change resolution before marking it applied"
+      ]
     }
   ]
 }
