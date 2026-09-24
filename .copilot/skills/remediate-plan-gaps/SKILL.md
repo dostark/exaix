@@ -18,12 +18,16 @@ qwen_skill: remediate-plan-gaps
 
 ```text
 Key points
-- This skill consumes a Pre-Gap Analysis section in a planning document and closes every non-trivial gap by editing the plan's step definitions (Actions, Architecture Notes, Planned Tests, Success Criteria).
-- Only close gaps that the pre-gap analysis explicitly opened. Do NOT add new analysis or scope-creep beyond the named gaps.
-- For each gap: read the existing step text, then edit it to satisfy the gap's Resolution. If the resolution is imprecise, clarify it, but stay within the gap's scope.
-- After all gaps are remediated: re-run the plan's planned tests (they must still pass or be updated), bump the document version, and update the Status line to reflect remediation.
-- A documentation update step must be added as the final step when interfaces or schemas change (matching §3D).
-- Work through gaps in severity order: 🔴 → 🔒 → 🟡 → 🟠 → 🔵.
+
+- Consume the plan's Pre-Gap Analysis section; close every non-trivial gap by editing the
+  step definitions (Actions, Architecture Notes, Planned Tests, Success Criteria).
+- Close only gaps the analysis explicitly opened. No new analysis or scope creep.
+- Per gap: read the step text, then edit it to satisfy the gap's Resolution. Clarify an
+  imprecise resolution, but stay in the gap's scope.
+- After remediation: re-run the planned tests (they must still pass or be updated), bump
+  the document version, and update the Status line.
+- Interfaces or schemas changed? Add a documentation update step as the final step (§3D).
+- Work gaps in severity order: 🔴 → 🔒 → 🟡 → 🟠 → 🔵.
 
 Canonical prompt (short):
 "Remediate the gaps in exaix-dev-docs/planning/phase-NN-*.md's Pre-Gap Analysis section.
@@ -33,23 +37,20 @@ Examples
 - "#remediate-plan-gaps exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md"
 
 Do / Don't
-- ✅ Do read each gap entry and its Resolution before editing.
-- ✅ Do scope edits to exactly what the gap resolution requires.
-- ✅ Do re-run all planned tests after each edit to confirm they still pass.
-- ✅ Do bump the document version and update Status to "🚧 Gap Remediation In Progress".
-- ✅ Do add a documentation update step (§3D) if interfaces or schemas were changed.
-- ❌ Don't add new analysis or gaps — only close existing ones.
-- ❌ Don't change steps that have no open gaps.
-- ❌ Don't edit code files — only the planning document.
+- ✅ Read each gap entry and its Resolution before editing.
+- ✅ Scope edits to exactly what the gap resolution requires.
+- ✅ Re-run all planned tests after each edit.
+- ✅ Bump the version and set Status to "🚧 Gap Remediation In Progress".
+- ✅ Add a documentation update step (§3D) if interfaces or schemas changed.
+- ❌ Add new analysis or gaps — only close existing ones.
+- ❌ Change steps with no open gaps.
+- ❌ Edit code files — only the planning document.
 
-Related skills:
-- #pre-gap-analysis — Produces the gaps this skill closes
-- #next-steps — Executes the plan after gaps are remediated
-- #commit — Structured commit after remediation
-- [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
+Related: #pre-gap-analysis (produces the gaps); #next-steps; #commit;
+[test-development](../test-development/SKILL.md) — edge cases, helpers, placement.
 
-Workflow chain (typical):
-  #plan → #pre-gap-analysis → **#remediate-plan-gaps** → #next-steps → #post-gap-analysis → #remediate-code-gaps → #commit
+Workflow chain: #plan → #pre-gap-analysis → **#remediate-plan-gaps** → #next-steps →
+#post-gap-analysis → #remediate-code-gaps → #commit
 ```
 
 ## See also
@@ -60,47 +61,52 @@ Workflow chain (typical):
 
 ## Instructions for Agent
 
-Close every gap identified in the plan's Pre-Gap Analysis section by editing the plan's step definitions.
+Close every gap in the plan's Pre-Gap Analysis by editing its step definitions.
 
 ### Phase 1 — Ingest
 
-1. Read the planning document in full — version, status, every step, and the Pre-Gap Analysis section.
-2. Read each gap entry (Finding, Impact, Resolution).
-3. Identify which steps are affected by which gaps.
+1. Read the document in full — version, status, every step, the Pre-Gap Analysis.
+1. Read each gap entry (Finding, Impact, Resolution).
+1. Identify which steps each gap affects.
 
-### Phase 2 — Remediate Gaps
+### Phase 2 — Remediate
 
-For each gap, in severity order:
+Severity order; per gap:
 
 1. Locate the affected step(s).
-2. Apply the Resolution from the gap entry to the step's Actions, Architecture Notes, Planned Tests, or Success Criteria.
-3. If the Resolution is ambiguous, clarify it using the Finding description, but stay within scope.
-4. Do NOT change any step that has no open gap.
+1. Apply the Resolution to the step's Actions, Architecture Notes, Planned Tests, or
+   Success Criteria.
+1. Ambiguous Resolution? Clarify from the Finding, stay in scope.
+1. Do NOT change a step with no open gap.
 
 ### Phase 3 — Validate
 
-1. Re-run each step's Planned Tests (in the test file) and confirm they still pass.
-2. If a test no longer passes because the gap resolution changed the behaviour, update the test.
-3. Run `deno task check clean` to confirm no regressions.
+1. Re-run each step's Planned Tests; confirm they pass.
+1. A test now fails because the resolution changed behavior? Update the test.
+1. Run `deno task check clean` — no regressions.
 
 ### Phase 4 — Finalize
 
-1. Bump the document version (e.g., 1.2 → 1.3).
-2. Update the Status line to `🚧 Gap Remediation In Progress`.
-3. If interfaces or schemas changed, ensure a documentation update step (§3D) exists as the final step.
-4. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
+1. Bump the document version (e.g. 1.2 → 1.3).
+1. Set Status to `🚧 Gap Remediation In Progress`.
+1. Interfaces or schemas changed? Ensure a §3D documentation step is final.
+1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`.
+   Re-ran with `--fix`? Immediately re-verify every `# step-manifest` yaml fence still
+   has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>`
+   — `--fix`'s heading-blank-line rule has historically misread a `# step-manifest`
+   comment inside a fence as a heading and dropped the following key.
 
 ### Phase 5 — Commit
 
-Use `#commit` for the structured commit. Type: `fix`. Mandatory fields: `what:`, `rationale:`, `tests:`, `who:`, `impact:`.
+Use `#commit`. Type: `fix`. Fields: `what:`, `rationale:`, `tests:`, `who:`, `impact:`.
 
 ## Output Format
 
-1. Summary of gaps closed (count by severity).
-2. List of steps edited with what changed in each.
-3. Confirmation that planned tests still pass.
-4. Version bump and Status update confirmation.
-5. Commit payload.
+1. Gaps closed (count by severity).
+1. Steps edited, and what changed in each.
+1. Confirmation that planned tests pass.
+1. Version bump and Status update.
+1. Commit payload.
 
 ---
 exaix:

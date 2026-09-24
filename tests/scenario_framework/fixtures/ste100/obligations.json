@@ -19,7 +19,11 @@
           "## Reserved structured content contract"
         ]
       },
-      "evidenceCaseIds": ["ste-runtime-contract", "ste-documentation-exempt", "ste-status-prose"],
+      "evidenceCaseIds": [
+        "ste-runtime-contract",
+        "ste-documentation-exempt",
+        "ste-status-prose"
+      ],
       "risk": "medium",
       "evidence": "review-only",
       "obligations": [
@@ -41,7 +45,9 @@
           "## Reviewed body equivalent"
         ]
       },
-      "evidenceCaseIds": ["ste-metadata-body-delivery"],
+      "evidenceCaseIds": [
+        "ste-metadata-body-delivery"
+      ],
       "risk": "low",
       "evidence": "delivery",
       "obligations": [
@@ -67,7 +73,10 @@
           "Do / Don't"
         ]
       },
-      "evidenceCaseIds": ["tdd-red-green", "tdd-coverage-gate"],
+      "evidenceCaseIds": [
+        "tdd-red-green",
+        "tdd-coverage-gate"
+      ],
       "risk": "completion-critical",
       "evidence": "review-only",
       "obligations": [
@@ -99,7 +108,10 @@
           "ARCHITECTURE.md vs Package READMEs"
         ]
       },
-      "evidenceCaseIds": ["doc-sync-gate", "doc-runtime-claims"],
+      "evidenceCaseIds": [
+        "doc-sync-gate",
+        "doc-runtime-claims"
+      ],
       "risk": "medium",
       "evidence": "review-only",
       "obligations": [
@@ -125,8 +137,8 @@
         ],
         "revised": [
           "Key points",
-          "Exaix navigation toolkit",
-          "Key architectural invariants",
+          "Navigation toolkit",
+          "Architectural invariants",
           "Output format"
         ]
       },
@@ -155,7 +167,7 @@
         ],
         "revised": [
           "Key points",
-          "Exaix config patterns",
+          "Config patterns",
           "Validation checklist",
           "Do / Don't"
         ]
@@ -181,12 +193,12 @@
         "original": [
           "Key points",
           "Instructions for Agent",
-          "Phase 4 — Finalize"
+          "Phase 4 \u2014 Finalize"
         ],
         "revised": [
           "Key points",
           "Instructions for Agent",
-          "Phase 4 — Finalize"
+          "Phase 4 \u2014 Finalize"
         ]
       },
       "evidenceCaseIds": [],
@@ -217,7 +229,7 @@
           "Key points",
           "Quickstart",
           "The dogfood loop",
-          "Meta-pipeline cycle"
+          "Daily meta-pipeline"
         ]
       },
       "evidenceCaseIds": [],
@@ -241,13 +253,13 @@
         "original": [
           "Key points",
           "Workflow",
-          "Phase 4 — Full validation",
+          "Phase 4 \u2014 Full validation",
           "Do / Don't"
         ],
         "revised": [
           "Key points",
           "Workflow",
-          "Phase 4 — Full validation",
+          "Phase 4 \u2014 Validate",
           "Do / Don't"
         ]
       },
@@ -277,7 +289,7 @@
         ],
         "revised": [
           "Key points",
-          "Exaix refactoring patterns",
+          "Patterns",
           "Security check",
           "Do / Don't"
         ]
@@ -309,7 +321,6 @@
         "revised": [
           "Key points",
           "Workflow",
-          "Instructions for Agent",
           "Do / Don't"
         ]
       },
@@ -370,14 +381,14 @@
         "original": [
           "Key points",
           "Instructions for Agent",
-          "Phase 1 — Measure Baseline",
-          "Phase 5 — Exclusion Documentation"
+          "Phase 1 \u2014 Measure Baseline",
+          "Phase 5 \u2014 Exclusion Documentation"
         ],
         "revised": [
           "Key points",
           "Instructions for Agent",
-          "Phase 1 — Measure Baseline",
-          "Phase 5 — Exclusion Documentation"
+          "Phase 1 \u2014 Measure Baseline",
+          "Phase 5 \u2014 Exclusion Documentation"
         ]
       },
       "evidenceCaseIds": [],
@@ -434,16 +445,16 @@
         "original": [
           "Key points",
           "Instructions for Agent",
-          "Phase 3 — Security",
-          "Phase 4 — Architecture, Style & Conventions",
-          "Phase 8 — Test Coverage"
+          "Phase 3 \u2014 Security",
+          "Phase 4 \u2014 Architecture, Style & Conventions",
+          "Phase 8 \u2014 Test Coverage"
         ],
         "revised": [
           "Key points",
           "Instructions for Agent",
-          "Phase 3 — Security",
-          "Phase 4 — Architecture, Style & Conventions",
-          "Phase 8 — Test Coverage"
+          "Phase 3 \u2014 Security",
+          "Phase 4 \u2014 Architecture, Style & Conventions",
+          "Phase 8 \u2014 Test Coverage"
         ]
       },
       "evidenceCaseIds": [],
@@ -467,15 +478,15 @@
         "original": [
           "Key points",
           "Workflow",
-          "Phase 2 — RESEARCH",
-          "Phase 4 — ARTIFACTS",
+          "Phase 2 \u2014 RESEARCH",
+          "Phase 4 \u2014 ARTIFACTS",
           "Verification checklist"
         ],
         "revised": [
           "Key points",
           "Workflow",
-          "Phase 2 — RESEARCH",
-          "Phase 4 — ARTIFACTS",
+          "Phase 2 \u2014 RESEARCH",
+          "Phase 4 \u2014 ARTIFACTS",
           "Verification checklist"
         ]
       },

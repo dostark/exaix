@@ -16,49 +16,36 @@ qwen_skill: explore
 
 ```text
 Key points
-- Start with the ARCHITECTURE.md AGENT_LOGIC YAML block — it carries the invariants and data flow
-- Use .copilot/manifest.json for the authoritative doc index (short_summary per doc)
-- Prefer semantic_search for behavioral questions, rg for exact symbol/string matches
-- Read module-header @module blocks first: they declare @architectural-layer and @dependencies without a full-file read
-- check:arch groundedness map is the authoritative module-layer registry
+
+- Start with the ARCHITECTURE.md AGENT_LOGIC YAML block: it carries the invariants and data flow.
+- Use .copilot/manifest.json as the authoritative doc index (short_summary per doc).
+- Prefer semantic_search for behavior questions; rg for exact symbol/string matches.
+- Read module-header @module blocks first: they declare @architectural-layer and @dependencies without a full-file read.
+- check:arch groundedness map is the authoritative module-layer registry.
 
 Canonical prompt (short):
 "Explore {scope: module | flow | service | feature} to answer: {question}.
 Map dependencies, data flow, and ownership layer."
 
-Exaix navigation toolkit
-  # Find a symbol across the codebase
-  rg "symbolName" packages/ apps/
-
-  # List exported symbols of a module
-  deno doc packages/<package>/src/<module>.ts
-
-  # Find files by name
-  fd <pattern> packages/ apps/
-
-  # Check which layer a file belongs to
-  deno task check:arch   # lists GROUNDED + layer for every file
-
-  # Read the authoritative doc index
+Navigation toolkit
+  rg "symbolName" packages/ apps/                          # find a symbol
+  deno doc packages/<package>/src/<module>.ts             # exported symbols
+  fd <pattern> packages/ apps/                            # files by name
+  deno task check:arch                                    # layer + GROUNDED per file
   cat .copilot/manifest.json | jq '.[] | {title, short_summary, path}'
 
-Project layer map (from check:arch)
-  CLI base       →  packages/cli/src/
-  CLI app        →  apps/exactl/src/
-  Services       →  packages/*/src/
-  AI providers   →  packages/ai/src/, packages/ai-*/src/
-  Schemas        →  packages/schemas/src/
-  Parsers        →  packages/core/src/parsing/
-  Config         →  packages/core/src/config/
-  Entry point    →  apps/daemon/main.ts
-  TUI base       →  packages/tui/src/
-  TUI app        →  apps/tui/src/
+Layer map (from check:arch)
+  CLI base     → packages/cli/src/     Services → packages/*/src/
+  CLI app      → apps/exactl/src/      AI       → packages/ai/src/, packages/ai-*/src/
+  Schemas      → packages/schemas/src/ Parsers  → packages/core/src/parsing/
+  Config       → packages/core/src/config/       Entry   → apps/daemon/main.ts
+  TUI base     → packages/tui/src/     TUI app  → apps/tui/src/
 
-Key architectural invariants (from ARCHITECTURE.md)
+Architectural invariants (from ARCHITECTURE.md)
   - File system IS the database: Workspace/Active, Workspace/Requests, Workspace/Plans
-  - All side-effects MUST log to Activity Journal via EventLogger
+  - All side-effects log to the Activity Journal via EventLogger
   - PathResolver validates all paths before access
-  - MCP tools are the only write path in Hybrid mode (for auditability)
+  - MCP tools are the only Hybrid-mode write path — keeps the audit trail
 
 Output format
   1. Scope confirmed (files/modules in scope)
@@ -69,11 +56,11 @@ Output format
   6. Suggested next steps (if any)
 
 Do / Don't
-- ✅ Do read the ARCHITECTURE.md AGENT_LOGIC block before any architectural conclusion
-- ✅ Do use .copilot/manifest.json as the doc index (not just file listing)
-- ✅ Do prefer deno doc for public API surface over reading full implementation files
-- ❌ Don't draw architectural conclusions from a single file — check the layer map
-- ❌ Don't conflate "file exists" with "actively used" — check for dead code paths
+- ✅ Read the ARCHITECTURE.md AGENT_LOGIC block before any architectural conclusion.
+- ✅ Use .copilot/manifest.json as the doc index, not a file listing.
+- ✅ Prefer deno doc for public API surface over full implementation files.
+- ❌ Draw architectural conclusions from a single file — check the layer map.
+- ❌ Conflate "file exists" with "actively used" — check for dead code paths.
 
 Related
 - CODE_STYLE.md — authoritative naming, type, import, and layer-boundary rules

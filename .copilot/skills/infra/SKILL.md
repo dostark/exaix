@@ -18,19 +18,21 @@ qwen_skill: infra
 
 ```text
 Key points
-- Config DB (.exa/config.db) is the canonical store; TOML (exa.config.toml) is bootstrap-only (system.root)
-- Tunable DEFAULT_* constants use `configurable()` from `@exaix/core/config` — override via `exactl config set`
-- Validate new env vars via Zod: use getValidatedEnvOverrides() for EXA_LLM_* overrides
-- Send all new file paths through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation
-- Run deno check packages/ apps/ tests/ after any config-schema change to catch type propagation early
-- Define the rollback path before any shared-config change
+
+- Config DB (.exa/config.db) is the canonical store; TOML (exa.config.toml) is bootstrap-only (system.root).
+- Tunable DEFAULT_* constants use `configurable()` from `@exaix/core/config`; override via `exactl config set`.
+- Validate new env vars via Zod: getValidatedEnvOverrides() for EXA_LLM_* overrides.
+- Send all new file paths through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation.
+- Run `deno check packages/ apps/ tests/` after any config-schema change — catches type propagation early.
+- Define the rollback path before any shared-config change.
 
 Canonical prompt (short):
 "Implement infrastructure/config change: {goal}.
 Register new configurable() key + add Zod validation, add PathResolver for any new paths,
 write tests, run deno check + deno task check:style, document rollback."
 
-Exaix config patterns
+Config patterns
+
   # configurable() registry → Config DB → exactl config set
   # packages/core/src/types/constants.ts
   export const MY_SETTING: number = configurable({
@@ -53,8 +55,7 @@ Exaix config patterns
 
   # Supported production env vars (validated, typed):
   # EXA_LLM_PROVIDER  EXA_LLM_MODEL  EXA_LLM_BASE_URL  EXA_LLM_TIMEOUT_MS
-
-  # Test/CI env vars use EXA_TEST_* prefix; use isTestMode() / isCIMode() helpers
+  # Test/CI env vars use EXA_TEST_*; use isTestMode() / isCIMode()
 
 Validation checklist
   [ ] deno check packages/ apps/ tests/   — no type errors from schema changes
@@ -63,17 +64,16 @@ Validation checklist
   [ ] deno test --allow-all <test-file>   — config tests pass
   [ ] Rollback documented (revert TOML + schema, re-run deno check)
 
-For submodule config changes
-  See .copilot/skills/submodule-workflow/SKILL.md for safe handling of exaix-dev-docs changes.
+Submodule config changes → .copilot/skills/submodule-workflow/SKILL.md
 
 Do / Don't
-- ✅ Do add a Zod schema for every new TOML section
-- ✅ Do use PathSecurity.resolveAndValidate() for any new configurable path
-- ✅ Do use getValidatedEnvOverrides() for EXA_LLM_* env vars
-- ✅ Do document the rollback steps before applying
-- ❌ Don't use Deno.env.get("EXA_LLM_*") without validation
-- ❌ Don't add raw numeric/string defaults in TOML without corresponding Zod defaults
-- ❌ Don't skip deno check after schema changes — type errors cascade silently
+- ✅ Add a Zod schema for every new TOML section.
+- ✅ Use PathSecurity.resolveAndValidate() for any new configurable path.
+- ✅ Use getValidatedEnvOverrides() for EXA_LLM_* env vars.
+- ✅ Document rollback steps before applying.
+- ❌ Use Deno.env.get("EXA_LLM_*") without validation.
+- ❌ Add raw numeric/string defaults in TOML without corresponding Zod defaults.
+- ❌ Skip deno check after schema changes — type errors cascade silently.
 
 Related
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
@@ -81,11 +81,11 @@ Related
 
 ## Output Format
 
-1. **Change summary** — what config or infra was added/changed, with rollback path.
+1. **Change summary** — what config or infra changed, with rollback path.
 1. **Validation results** — `deno check`, `deno lint`, `check:style`, config tests.
-1. **Submodule handling** — if any exaix-dev-docs changes were needed.
+1. **Submodule handling** — any exaix-dev-docs changes.
 1. **CI gate results** — all gates passing.
-1. **Commit payload** — use `#commit` for the structured commit message.
+1. **Commit payload** — use `#commit`.
 
 ## Examples
 

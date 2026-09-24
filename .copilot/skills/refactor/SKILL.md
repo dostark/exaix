@@ -18,20 +18,21 @@ qwen_skill: refactor
 
 ```text
 Key points
-- No behavior change: tests must pass before AND after (run them both times)
-- For magic-value refactoring specifically, use #refactor-check-magic instead
-- Follow Interface-first + constructor DI: every class Foo → export interface IFoo;
-  consumers depend on IFoo, never on Foo
+
+- No behavior change: tests pass BEFORE and AFTER (run both).
+- Magic-value refactoring specifically → use #refactor-check-magic.
+- Interface-first + constructor DI: every class Foo → export interface IFoo; consumers
+  depend on IFoo, never Foo.
 - Extract numeric/string literals to named constants in the right location:
     Production code → @exaix/core/config
     Test code       → tests/config/constants.ts (TEST_ prefix)
-- PathResolver must wrap all file path operations — never raw string concatenation
+- PathResolver wraps all file path operations — never raw string concatenation.
 
 Canonical prompt (short):
 "Refactor {component} for {goal: clarity | performance | DI compliance | interface extraction}.
 No behavior change. Tests must pass before and after."
 
-Exaix refactoring patterns
+Patterns
   1. Interface extraction
      Before: export class FooService { ... }
      After:  export interface IFooService { methodA(): Promise<void>; }
@@ -55,104 +56,89 @@ Exaix refactoring patterns
      Before: const p = `${base}/${userInput}`;
      After:  const p = await PathSecurity.resolveAndValidate(userInput, [base]);
 
-  6. God object decomposition — facade extraction
-     When a class has > 500 lines, > 10 deps, or mixed concerns, decompose by
-     extracting cohesive sub-domains into their own services:
+  6. God-object decomposition — facade extraction
+     Class > 500 lines, > 10 deps, or mixed concerns: extract cohesive sub-domains.
 
-     a. **Detect** — run `deno task check:god-objects` to score candidates
-        on 6 metrics: line count, method count, constructor params, max
-        method length, import count, field count.
-
-     b. **Analyze boundaries** — group the class's fields and methods by
-        concern. Each group that reads/writes its own subset of fields and
-        forms a coherent responsibility is an extraction candidate.
-
-     c. **Parameter object (safe first step)** — replace N-positional
-        constructor params with a single deps interface. This satisfies
-        style gates without architectural change:
+     a. **Detect** — `deno task check:god-objects` scores on 6 metrics: line count,
+        method count, constructor params, max method length, import count, field count.
+     b. **Analyze boundaries** — group fields/methods by concern. A group that owns its
+        own field subset and forms a coherent responsibility is an extraction candidate.
+     c. **Parameter object (safe first step)** — replace N positional constructor params
+        with one deps interface. Satisfies style gates with no architectural change:
         Before: constructor(a: A, b: B, c: C, d: D, e: E, f: F) {}
         After:  constructor(deps: IFooDeps) {}
         interface IFooDeps { a: A; b: B; c: C; d: D; e: E; f: F; }
-
-     d. **Extract service** — move one cohesive group to a new class.
-        The new class owns its fields and behavior; the original class
-        delegates to it:
-        Before: class Foo {
-                  private x: X;
-                  private y: Y;
-                  doThing() { /* uses x and y */ }
-                }
+     d. **Extract service** — move one cohesive group to a new class that owns its
+        fields/behavior; the original delegates:
+        Before: class Foo { private x: X; private y: Y; doThing() { /* uses x and y */ } }
         After:  class Foo { private barService: BarService; }
                 class BarService { private x: X; private y: Y; doThing(): void; }
-
-     e. **Composition root** — the original class's constructor becomes
-        the single place where all services are wired. Each injected
-        service declares its own deps, not the orchestrator's:
+     e. **Composition root** — the original constructor becomes the single wiring spot.
+        Each service declares its own deps, not the orchestrator's:
         interface IFooDeps {
           barService?: BarService;  // defaults created if omitted
           bazService?: BazService;
         }
-
-     f. **Interface decoupling** — if the original class implements an
-        interface consumed by another class, extract an adapter that
-        composes the services instead:
+     f. **Interface decoupling** — an interface another class consumes? Extract an adapter
+        that composes the services:
         Before: class Foo implements IFoo { /* 10 methods */ }
         After:  class Foo { private adapter: FooAdapter; }
                 class FooAdapter implements IFoo { /* composes services */ }
 
      Example: AgentExecutor went from ~1750 lines / 16 deps to ~950 lines / 11 deps by
      extracting 7 services (ExecutionContext, Blueprint, PromptBuilder, GitAudit,
-     OutputParser, HistoryManager, ReActLoopAdapter). Each extraction used TDD, removing
-     100-250 lines at a time.
+     OutputParser, HistoryManager, ReActLoopAdapter), each with TDD, 100-250 lines at a time.
 
-Security check (apply when the refactor touches portal code or any boundary:
-  input parsing, file paths, SQL queries, subprocesses, HTTP handlers, auth, secrets)
-  - Before restructuring, verify the existing control routes through the canonical
-    primitive (PathSecurity.resolveWithinRoots, parameterized queries, argument
-    arrays). Refactoring must not silently downgrade a boundary — e.g. inlining a
-    path check as a string comparison instead of keeping PathResolver.
-  - If the refactor changes error messages, confirm access-denied messages remain
-    generic (no host paths echoed to callers).
-  - Consult Blueprints/Skills/security-first.skill.md for the full checklist when
-    the refactor's scope covers input, path, injection, or auth surfaces.
+Security check (refactor touching portal code or any boundary: input parsing, file paths,
+SQL queries, subprocesses, HTTP handlers, auth, secrets)
+  - Before restructuring, verify control routes through the canonical primitive
+    (PathSecurity.resolveWithinRoots, parameterized queries, argument arrays). Never
+    silently downgrade a boundary — e.g. inlining a path check as a string comparison
+    instead of keeping PathResolver.
+  - Error messages changed? Keep access-denied messages generic (no host paths echoed).
+  - Full checklist: Blueprints/Skills/security-first.skill.md when scope covers input,
+    path, injection, or auth surfaces.
 
 Validation
-  deno test --allow-all <test-file>     # before refactor (baseline GREEN)
+  deno test --allow-all <test-file>     # before (baseline GREEN)
   # ... apply refactor ...
-  deno test --allow-all <test-file>     # after refactor (still GREEN)
+  deno test --allow-all <test-file>     # after (still GREEN)
   deno lint <files>
   deno task check:style
   deno task check:arch
   deno fmt <files>
 
 Do / Don't
-- ✅ Do run tests before AND after refactor to prove zero behavior change
-- ✅ Do use IFoo naming for all extracted interfaces
-- ✅ Do place constants in the correct file (prod vs. test)
-- ❌ Don't use `as any` to resolve type errors introduced by the refactor
-- ❌ Don't fix layer-violating constant imports by duplicating constants locally. The correct fix is to inject the service interface that owns the constant — the consumer calls a method on the service, never imports the constant directly. Local duplication creates a maintenance hazard (two sources of truth diverge over time) and is flagged as `[layer-constant-leak]` in style checks.
-- ❌ Don't fix layer-violating constant imports by inlining the raw string/number value. The value IS the constant — inlining creates the exact same maintenance hazard as a named local duplicate (divergence risk, no single source of truth), while also losing the self-documenting name. The fix is to inject the owning service's interface, not to erase the identifier.
-- ❌ Don't refactor and add new features in the same commit
-- ❌ Don't skip #refactor-check-magic when magic violations are the primary goal
+- ✅ Run tests before AND after — proves zero behavior change.
+- ✅ Use IFoo naming for extracted interfaces.
+- ✅ Place constants in the correct file (prod vs. test).
+- ❌ Use `as any` to resolve refactor-introduced type errors.
+- ❌ Fix layer-violating constant imports by duplicating the constant locally. Inject the
+  service interface that owns it — the consumer calls a method, never imports the
+  constant. Local duplication diverges (`[layer-constant-leak]`).
+- ❌ Fix them by inlining the raw value. The value IS the constant; inlining loses the
+  name and creates the same divergence. Inject the owning service's interface instead.
+- ❌ Refactor and add features in the same commit.
+- ❌ Skip #refactor-check-magic when magic violations are the primary goal.
 
 Related
-- #refactor-check-magic — targeted magic-value reduction workflow
-- #clean-codebase       — full CI-green sweep including style + arch
-- #tdd-workflow         — when refactor requires adding tests first
-- #security             — full security audit when refactor exposes 3+ control gaps
-- [Blueprints/Skills/security-first.skill.md](../../../Blueprints/Skills/security-first.skill.md) — secure coding checklist for portal code; consult when refactor touches input, path, injection, or auth boundaries
-- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
-- CODE_STYLE.md         — authoritative naming, type, import, and constants rules
+- #refactor-check-magic — targeted magic-value reduction
+- #clean-codebase — full CI-green sweep
+- #tdd-workflow — when the refactor needs tests first
+- #security — full audit when refactor exposes 3+ control gaps
+- Blueprints/Skills/security-first.skill.md — portal code checklist (input/path/injection/auth)
+- AGENTS.md#behavioral-guidelines — think before coding, simplicity, surgical changes
+- CODE_STYLE.md — naming, type, import, constants rules
 ```
 
 ## Output Format
 
-1. **Refactoring type** — interface extraction / DI injection / constants extraction / path hardening.
-1. **Files changed** — list of source files modified.
-1. **Baseline evidence** — tests pass before refactor.
-1. **Verification evidence** — tests pass after refactor (same count).
+1. **Refactoring type** — interface extraction / DI / constants / path hardening.
+1. **Files changed** — source files modified.
+1. **Baseline evidence** — tests pass before.
+1. **Verification evidence** — tests pass after (same count).
 1. **CI gate results** — lint, type-check, style, arch, fmt.
-1. **Commit payload** — use `#commit` for the structured commit message.
+1. **Commit payload** — use `#commit`.
 
 ## Examples
 
@@ -162,7 +148,7 @@ Related
 
 ## See also
 
-- [test-development](../test-development/SKILL.md) — test patterns, helpers, coverage verification
+- [test-development](../test-development/SKILL.md) — test patterns, helpers, coverage
 - [exaix-development](../exaix-development/SKILL.md) — required patterns, prohibited anti-patterns
 
 ---
