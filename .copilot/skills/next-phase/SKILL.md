@@ -3,9 +3,9 @@ name: next-phase
 agent: general
 scope: dev
 title: "Next Phase Selection (#next-phase)"
-description: "Analyze exaix-dev-docs/planning/ to pick the single most productive not-yet-complete phase to implement next — verifies real completion state at the step level, checks the dependency graph, risk, scope, and environment-executability, and maintains PHASE_REGISTRY.md so repeat runs are cheap"
-short_summary: "Pick the most productive next phase from exaix-dev-docs/planning/ by dependency/risk/scope/environment-executability, backed by a maintained PHASE_REGISTRY.md cache."
-version: "1.0.0"
+description: "Analyze exaix-dev-docs/planning/ to pick the single most productive not-yet-complete phase to implement next — verifies real completion state at the step level, checks the dependency graph, risk, scope, and environment-executability, reconciles every phase named in docs/CHANGELOG.md against its leftover open waived/ledger items, and maintains PHASE_REGISTRY.md so repeat runs are cheap"
+short_summary: "Pick the most productive next phase from exaix-dev-docs/planning/ by dependency/risk/scope/environment-executability, reconcile CHANGELOG-named phases' open waived/ledger items, and keep PHASE_REGISTRY.md current."
+version: "1.1.0"
 topics: ["planning", "roadmap", "phase-selection", "dependencies", "prioritization", "process"]
 qwen_skill: next-phase
 ---
@@ -19,6 +19,11 @@ Key points
 - Cheap path first: read `exaix-dev-docs/planning/PHASE_REGISTRY.md`. It caches the
   dependency/risk/scope/environment verdict for every still-open phase so you don't
   re-scan all 166+ docs every time. Refresh only the rows that are stale or missing.
+- Reconcile `docs/CHANGELOG.md` against `planning/` on every run: a phase that shipped
+  (`## Unreleased — Phase <N>`) is commonly marked `status: COMPLETED` while still
+  carrying open waived items and open ledger rows — it is NOT completely closed. Keep the
+  dedicated `## Not-fully-closed phases (from docs/CHANGELOG.md)` section in the registry
+  current; these are real residual backlog, just not this run's ranking candidates.
 - Never trust a phase doc's `**Status**:` header alone — verify real completion at the
   step level. This is exactly the self-improvement skill's "Phase-doc status hygiene"
   procedure; reuse it, don't re-derive it.
@@ -45,7 +50,8 @@ with what changed."
 - Before starting `#plan` for genuinely new work, to confirm there isn't already a
   drafted-but-unstarted phase that covers the same need.
 - Periodically, to keep `PHASE_REGISTRY.md` from drifting (treat like the
-  self-improvement Phase-loop retro: run this after closing a phase, not just when asked).
+  self-improvement Phase-loop retro: run this after closing a phase, not just when asked),
+  including the `docs/CHANGELOG.md` → planning reconciliation of not-fully-closed phases.
 
 Not this skill: implementing the chosen phase's steps (`#next-steps`), drafting a new plan
 from a blank page (`#plan`), or auditing/repairing a doc's own stale header once you already
@@ -80,9 +86,58 @@ for every phase doc, classify each via self-improvement's Phase-doc status hygie
 drop everything Complete/Cancelled/Postponed, and write one row per survivor. Full-corpus
 scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
 
+## Not-fully-closed phases (from `docs/CHANGELOG.md`)
+
+Independent of the "what's next" ranking, every run must reconcile `docs/CHANGELOG.md`
+against the planning corpus. The CHANGELOG names the phases that shipped user-facing
+changes (`## Unreleased — Phase <N>` headings). A shipped phase is routinely marked
+`status: COMPLETED` (frontmatter and prose header) while still carrying **open waived
+items** or **open ledger items** — meaning it is NOT completely closed. These phases are
+not open-work candidates (they don't belong in the Registry table above or in the pickup
+order — they're kept out for ranking purposes), but their residual items are real debt:
+list them in the dedicated registry section
+`## Not-fully-closed phases (from docs/CHANGELOG.md)`. Columns:
+
+| Column            | Meaning                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Phase             | `NNN` (the CHANGELOG heading)                                                                                     |
+| Title             | short title from the phase doc                                                                                    |
+| Open waived items | success criteria / ledger entries marked `waived` / `waived by the user`, verbatim                                |
+| Open ledger items | Reachability Ledger / Deferred Items rows with a non-`✅` Status column (⏳, ⏳ POSTPONED, ⚠️ deferred), verbatim |
+| Verified          | date this phase's item list was re-scanned                                                                        |
+
+Classify each item precisely:
+
+1. **Parse the list.** `rg '^## .*— Phase ([0-9a-z]+)' docs/CHANGELOG.md` gives the phase
+   IDs (match `140a`-style suffixed numbers too).
+1. **Open ledger item** = a row in the phase doc's `## Reachability Ledger (pending
+   production consumers)` (or its `Deferred Items`) table whose Status column is anything
+   other than `✅` — e.g. `⏳`, `⏳ POSTPONED`, `⚠️ deferred`, a credit/credential-gated
+   label, or a non-`✅` prose status. A `⏳`/`⚠️` marker **in prose outside a
+   ledger/deferred-items table is NOT an item** — resolved-finding narratives legitimately
+   keep historical pending markers while every ledger row is `✅`.
+1. **Open waived item** = any success criterion / live-verification / ledger entry whose
+   text says `waived` / `waived by the user` / `closed as waived`, **even when the row's
+   status column reads `✅`** — the requirement was accepted-but-not-met, so the phase is
+   not fully closed. Example: Phase 199's `PLANNING_LIVE_NATIVE_CELLS` (Step 11 marker run
+   on a second native provider) is closed _as waived_, not met.
+1. **Confirm the item is still open** — don't take a `⏳`/`waived` marker at face value. A
+   row annotated "closed by Phase N" (e.g. Phase 134's rows → 135, Phase 136's → 137)
+   counts as closed once that named successor actually implemented the consumer; a
+   closure note saying `POSTPONED` / "deferred indefinitely" / "blocked on credits" stays
+   open regardless of the phase's `status: COMPLETED` frontmatter.
+1. **Remove a phase row** the moment every item closes — a phase appears in this section
+   and NOT in the open-work Registry when it is complete-but-not-closed, and in NEITHER
+   when fully closed.
+
 ## Procedure
 
 1. **Read the registry.** If it doesn't exist, bootstrap it (above).
+1. **Cross-check `docs/CHANGELOG.md`** for not-fully-closed phases (procedure in the
+   section above): parse the `## ... — Phase <N>` headings, scan each named phase doc's
+   Reachability Ledger / Deferred Items table for non-`✅` rows and any `waived` markers,
+   confirm each finding is still open, and keep the
+   `## Not-fully-closed phases (from docs/CHANGELOG.md)` registry section current.
 1. **Find drift**: `glob exaix-dev-docs/planning/phase-*.md` and diff the filename set
    against the registry's `Phase` column — new docs since the last run, and any registry
    row whose file no longer exists (renamed/retired), both need reconciling.
@@ -105,7 +160,8 @@ scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
 1. **Recommend**: one top pick with the full evidence table, 2-3 runners-up each with one
    concrete reason they rank below the top pick — never a bare ranked list with no
    rationale.
-1. **Update the registry**: write/refresh every row you touched, bump `Verified`, and keep
+1. **Update the registry**: write/refresh every row you touched, bump `Verified`, refresh
+   the `## Not-fully-closed phases (from docs/CHANGELOG.md)` section, and keep
    the "Recommended pickup order" section current at the top of the file so a future run
    (or a human skimming the file) gets the answer without re-running this skill.
 1. **No good candidate?** Say so explicitly — don't force a recommendation. Point to
@@ -120,6 +176,8 @@ scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
   registry row is exactly as misleading as a stale doc header.
 - ✅ Do actually check environment-executability (`which`, env vars) rather than inferring
   it from the plan's prose.
+- ✅ Do reconcile `docs/CHANGELOG.md` phases against their leftover open ledger/waived
+  items on every run and keep the "Not-fully-closed phases" registry section current.
 - ✅ Do name the tradeoff for every runner-up, not just the top pick.
 - ✅ Do update the registry before finishing, even if the answer was "nothing changed."
 - ❌ Don't recommend a phase whose hard dependencies aren't actually done — check, don't
@@ -129,6 +187,8 @@ scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
   confident verdict either way.
 - ❌ Don't drop completed/cancelled/postponed phases' history — they simply don't belong
   in this registry (it exists to answer "what's next", not "what happened").
+- ❌ Don't lose a `status: COMPLETED` phase's open ledger/waived items when it exits the
+  open-work Registry — capture them under "Not-fully-closed phases".
 - ❌ Don't hand back a plain list of candidates with no ranking rationale — every entry
   needs the "why this rank" sentence.
 
@@ -153,6 +213,8 @@ scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
   before implementation begins
 - [submodule-workflow](../submodule-workflow/SKILL.md) — `PHASE_REGISTRY.md` lives in the
   `exaix-dev-docs` submodule; commit/pointer-bump discipline applies
+- [docs/CHANGELOG.md](../../../docs/CHANGELOG.md) — the shipped-phase list the
+  "Not-fully-closed phases" registry section is reconciled against every run
 
 ---
 exaix:
@@ -175,19 +237,21 @@ exaix:
     - "Read PHASE_REGISTRY.md before scanning the full planning/ corpus"
     - "Verify real completion at the step level before trusting any registry row"
     - "Check environment-executability with a real command, not inference"
+    - "Reconcile docs/CHANGELOG.md phases with their open waived/ledger items every run"
     - "Recommend one top pick plus 2-3 ranked runners-up, each with a stated reason"
     - "Update PHASE_REGISTRY.md with every row touched before finishing"
   output_requirements:
     - "One clear top-pick recommendation with evidence"
     - "2-3 named runners-up, each with a reason it ranks lower"
     - "PHASE_REGISTRY.md updated to reflect the audit"
+    - "Not-fully-closed registry section kept current (phases and items added/removed as items close)"
     - "Explicit statement when no candidate is ready, naming the blocker"
   quality_criteria:
     - name: evidence_grounding
       description: Every readiness/risk/scope claim is backed by something actually read, not inferred
       weight: 30
     - name: registry_freshness
-      description: PHASE_REGISTRY.md is left current, not stale, after the run
+      description: PHASE_REGISTRY.md is left current, not stale, after the run — including the Not-fully-closed CHANGELOG section
       weight: 25
     - name: ranking_rationale
       description: Every candidate's rank (including runners-up) has a stated reason

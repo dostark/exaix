@@ -512,8 +512,8 @@
       "agent": "general",
       "scope": "dev",
       "title": "Next Phase Selection (#next-phase)",
-      "short_summary": "Pick the most productive next phase from exaix-dev-docs/planning/ by dependency/risk/scope/environment-executability, backed by a maintained PHASE_REGISTRY.md cache.",
-      "version": "1.0.0",
+      "short_summary": "Pick the most productive next phase from exaix-dev-docs/planning/ by dependency/risk/scope/environment-executability, reconcile CHANGELOG-named phases' open waived/ledger items, and keep PHASE_REGISTRY.md current.",
+      "version": "1.1.0",
       "topics": [
         "planning",
         "roadmap",
