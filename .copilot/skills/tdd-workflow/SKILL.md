@@ -19,117 +19,113 @@ qwen_skill: tdd-workflow
 ```text
 Key points
 
-- Write the failing test BEFORE any source code. RED must come first.
-- Use Exaix test helpers: initTestDbService(), createCliTestContext(), withEnv(), MockLLMProvider.
+- Write the failing test BEFORE source code. RED must come first.
+- Use the Exaix helpers: initTestDbService(), createCliTestContext(), withEnv(), MockLLMProvider.
 - Use TestEnvironment.create() for full integration scaffolding.
-- Verify coverage does not drop after implementation.
+- Keep coverage after implementation.
 - TDD is non-negotiable: no implementation without a prior failing test.
-- For existing source, add tests to the existing test file — failing test first, then modify the source.
-- For scope above ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
-- If GREEN is unreachable after 2 implementation attempts, revert to the pre-RED state and use `#review-research` or `#plan` to re-analyse the design before retrying.
+- Existing source: add tests to the existing file — failing test first, then modify the source.
+- Scope > ~20 files: work in batches of 5–10. Read a batch, record findings, continue.
+- No GREEN after 2 attempts: revert to pre-RED, use `#review-research` or `#plan`, retry.
 
 Canonical prompt (short):
 "Apply TDD to [feature/bug/refactor] for [component]. Write failing test first,
-implement minimal code, refactor, verify coverage. Use Exaix test helpers and
-inject context for the relevant domain."
+implement minimal code, refactor, verify coverage. Use Exaix test helpers."
 
 Workflow
 ────────
-CONTEXT phase
-  1. Identify the component, domain, and relevant test helpers.
-     - DB + tempdir: use initTestDbService()
-     - CLI commands: use createCliTestContext()
-     - Temporary env vars: use withEnv()
-     - LLM/AI behavior: use MockLLMProvider (never real API calls in tests)
-     - Full integration workspace: use TestEnvironment.create()
-  2. Read existing tests for the component to understand patterns already in use.
-  3. Determine the test file path: package-owned code → `packages/<package>/tests/`; integration tests → `tests/`.
+CONTEXT
+  1. Identify component, domain, and helpers.
+     - DB + tempdir: initTestDbService()
+     - CLI: createCliTestContext()
+     - Env vars: withEnv()
+     - LLM/AI: MockLLMProvider (never real API calls in tests)
+     - Integration workspace: TestEnvironment.create()
+  2. Read existing tests for the component's patterns.
+  3. Choose the test path: package code → `packages/<package>/tests/`; integration → `tests/`.
 
-RED phase
-  4. Write the failing test(s) that define the desired behavior:
-     - New source file: import from the not-yet-existing module; RED = TS2307 (module not found).
-     - Existing source modification: add tests to the existing test file; RED = assertion failure.
-     - Use descriptive test names: what behavior is expected under what conditions.
-     - Cover: happy path, edge cases, error cases.
-     - For new test files, add a module-header JSDoc block (required by check:arch):
+RED
+  4. Write the failing test.
+     - New file: import the not-yet-existing module. RED = TS2307.
+     - Existing file: add tests there. RED = assertion failure.
+     - Name tests by expected behavior and conditions.
+     - Cover happy path, edge cases, errors.
+     - New test files need a module-header JSDoc (check:arch):
          /** @module XxxTest @path tests/... @description ... */
-  5. Confirm RED: run `deno test --allow-all <test-file>` and verify it fails —
-     never skip this step.
+  5. Confirm RED. Run `deno test --allow-all <test-file>`. Never skip.
 
-GREEN phase
-  6. Create or modify the source file at the appropriate `packages/<package>/src/...` or `apps/<app>/src/...`
-     path with the minimum implementation needed to pass all tests (no over-engineering).
-     - New files must include module-header with @module, @path, @description,
+GREEN
+  6. Create/modify the source at `packages/<package>/src/...` or `apps/<app>/src/...`.
+     Minimum change for all tests. No over-engineering.
+     - New files need module-header with @module, @path, @description,
        @architectural-layer, @dependencies, @related-files.
-  7. Run `deno test --allow-all <test-file>` — all tests must pass.
-  8. Fix test failures; do not suppress or skip tests.
+  7. Run `deno test --allow-all <test-file>`. All tests pass.
+  8. Fix failures. Do not suppress or skip tests.
 
-REFACTOR phase
-  9. Improve code quality without changing behavior (tests must stay green):
+REFACTOR
+  9. Improve quality with tests green:
      - Extract magic numbers/strings into named constants
-     - Apply Interface-first / constructor-injection patterns (see IFoo naming)
-     - Remove any duplicate logic
- 10. Run `deno test --allow-all <test-file>` again after refactor — still green.
+     - Apply Interface-first / constructor injection (IFoo naming)
+     - Remove duplicate logic
+ 10. Run the test again. Still green.
 
-CI gates
+CI
  11. deno lint <src-file> <test-file>
  12. deno check <src-file>
  13. deno task check:style   → fix interface naming (IFoo), no magic unions
  14. deno task check:arch    → all files GROUNDED, 0 UNGROUNDED
  15. deno fmt <src-file> <test-file>
- 16. deno task check:magic   → reduce violations if new literals were added
- 17. (when relevant) deno task check:complexity — refactor if threshold exceeded
+ 16. deno task check:magic   → reduce violations if new literals added
+ 17. deno task check:complexity — refactor if threshold exceeded (when relevant)
 
-Coverage check
- 18. Run `deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts` — confirm:
-     - Line coverage ≥ 70%
-     - Branch coverage ≥ 60%
-     If coverage dropped, add targeted tests for uncovered branches
-     (see #coverage for the full coverage improvement workflow).
+Coverage
+ 18. Run `deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts`:
+     - Line ≥ 70%
+     - Branch ≥ 60%
+     Dropped? Add targeted tests for uncovered branches (see #coverage).
 
 COMMIT
- 19. Use #commit for the structured commit. Suggested type: `feat` or `fix`.
-     Mandatory fields: what:, rationale:, tests:, who:, impact:.
+ 19. Use #commit. Type: `feat` or `fix`. Fields: what:, rationale:, tests:, who:, impact:.
 
 Do / Don't
-- ✅ Do write the test file BEFORE the source file (RED first, always)
-- ✅ Do use initTestDbService() for DB tests, not raw SQLite setup
-- ✅ Do use withEnv() for environment variable changes — never mutate globally
-- ✅ Do add module-header JSDoc to every new file (src and test)
-- ✅ Do use MockLLMProvider for deterministic AI tests
-- ✅ Do run deno fmt before git add
-- ✅ Do cover error paths, not just the happy path
-- ✅ Do use sanitizeOps: false, sanitizeResources: false for timer-based tests
-- ✅ Do skip setTimeout in test mode: if (Deno.env.get("DENO_TEST") !== "1") setTimeout(...)
-- ❌ Don't write source code before the test (no exceptions)
-- ❌ Don't call real LLM APIs in tests — use MockLLMProvider
-- ❌ Don't use `as any` to fake a service — implement the full IFoo interface
-- ❌ Don't leave suppressed or skipped tests in the committed state
-- ❌ Don't reduce coverage thresholds — add tests instead
+- ✅ Write the test file BEFORE the source file. RED first, always.
+- ✅ Use initTestDbService() for DB tests, not raw SQLite setup.
+- ✅ Use withEnv() for env changes — never mutate globally.
+- ✅ Add module-header JSDoc to every new file (src and test).
+- ✅ Use MockLLMProvider for deterministic AI tests.
+- ✅ Run deno fmt before git add.
+- ✅ Cover error paths, not just the happy path.
+- ✅ Use sanitizeOps: false, sanitizeResources: false for timer-based tests.
+- ✅ Skip setTimeout in test mode: if (Deno.env.get("DENO_TEST") !== "1") setTimeout(...)
+- ❌ Write source before the test. No exceptions.
+- ❌ Call real LLM APIs in tests. Use MockLLMProvider.
+- ❌ Use `as any` to fake a service. Implement the full IFoo interface.
+- ❌ Leave suppressed or skipped tests in the commit.
+- ❌ Reduce coverage thresholds. Add tests instead.
 
-Related skills
-- #next-steps         — Multi-step plan execution using this TDD cycle per step
-- #coverage           — When coverage has dropped, run the full coverage improvement loop
-- #fix-bug            — When a bug is found, this skill mandates regression tests first
-- #refactor-check-magic — Run when check:magic violations are non-trivial
-- #plan               — Create the feature plan before starting (precedes this skill)
-- #commit             — Create a structured commit message after CI gates pass
+Related
+- #next-steps — multi-step plan execution uses this TDD cycle per step
+- #coverage — dropped coverage: run the full improvement loop
+- #fix-bug — bug found: regression tests first
+- #refactor-check-magic — non-trivial magic violations
+- #plan — create the feature plan first (precedes this skill)
+- #commit — structured commit message after CI gates pass
 
-Workflow chain (typical):
+Workflow chain:
   #plan → #pre-gap-analysis → **#tdd-workflow** (per step, via #next-steps) → #post-gap-analysis
 ```
 
 ## Related
 
-- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
-- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [AGENTS.md](../../../AGENTS.md#behavioral-guidelines) — behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — naming, type, import, constants rules
 
 ## Output format
 
-1. CONTEXT: Component, test helper selection, test file path.
-1. RED evidence: failing test run output (error type and line).
-1. GREEN evidence: passing test run summary (N/N tests passing).
-1. REFACTOR summary: changes made (constants extracted, interfaces applied, etc.).
+1. CONTEXT: Component, helper selection, test file path.
+1. RED evidence: failing test output (error type and line).
+1. GREEN evidence: passing test summary (N/N tests passing).
+1. REFACTOR summary: constants extracted, interfaces applied, etc.
 1. CI gate results: lint, type-check, style, arch, fmt, magic.
 1. Coverage delta: before vs. after line/branch percentages.
 1. Commit payload (use #commit).

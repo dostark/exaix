@@ -63,7 +63,7 @@
         "revised": [
           "Key points",
           "Workflow",
-          "Coverage check",
+          "Coverage",
           "Do / Don't"
         ]
       },
@@ -95,7 +95,7 @@
         "revised": [
           "Key points",
           "Doc update gate",
-          "Doc quality checklist",
+          "Quality checklist",
           "ARCHITECTURE.md vs Package READMEs"
         ]
       },
@@ -489,6 +489,39 @@
         "Make Documentation Update the final sub-phase",
         "Commit planning doc, templates, and README updates together",
         "Write the improvement plan to the canonical exaix-dev-docs planning path"
+      ]
+    },
+    {
+      "id": "copilot-submodule-workflow",
+      "canonicalPath": ".copilot/skills/submodule-workflow/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Core policy",
+          "Plan-step commits",
+          "Post-merge push order",
+          "Verification"
+        ],
+        "revised": [
+          "Key points",
+          "Core policy",
+          "Plan-step commits",
+          "Post-merge push order",
+          "Verification"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Commit submodule changes first, then update the parent pointer",
+        "Commit plan-step docs together via commit_plan_step.ts",
+        "Push submodule main before parent main so CI resolves the pointer",
+        "Verify with git status --submodule=summary and git ls-tree",
+        "Guard the pointer with the checkout-resets-submodule rule",
+        "Initialize submodules with git submodule update --init --recursive"
       ]
     }
   ]

@@ -18,104 +18,96 @@ qwen_skill: doc
 
 ```text
 Key points
-- Write for the intended audience: user-facing docs in docs/, agent guidance in .copilot/
-- After modifying MCP tool handlers in packages/mcp/src/handlers/, run
-  deno task docs-sync-schemas to keep TOOLS.md in sync
-- exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md
-  for any changes that span the parent repo and the submodule
-- ARCHITECTURE.md is strategic: describe what and why, not where.
-  Never include implementation-specific file paths or module locations there.
-  Move those details into the relevant package README (e.g.,
-  packages/<name>/README.md) and reference the package from ARCHITECTURE.md.
-- docs/CHANGELOG.md covers user-facing changes only (CLI flags, config, deprecations,
-  behavior changes). Never list internal refactors, test additions, or internal file
-  paths. Each entry is a single sentence, no internal module paths. Follow Keep a
-  Changelog conventions. See the header in docs/CHANGELOG.md for the full format guide.
+
+- Write for the audience: user-facing docs in docs/, agent guidance in .copilot/.
+- MCP handler changes: run `deno task docs-sync-schemas` for TOOLS.md.
+- exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md for cross-repo changes.
+- ARCHITECTURE.md is strategic: what and why, not where. No implementation paths or module locations there. Move them to the package README and reference the package.
+- docs/CHANGELOG.md: user-facing changes only (CLI flags, config, deprecations, behavior). No internal refactors, test additions, or paths. One sentence per entry. Keep a Changelog conventions.
 
 Canonical prompt (short):
 "Create/update documentation for {component/feature}.
 Target file: {see map below}. Include: purpose, usage, code examples, edge cases."
 
 Doc target map
-  User-facing feature docs     →  docs/Exaix_User_Guide.md
-  Architecture / design        →  ARCHITECTURE.md  (update AGENT_LOGIC YAML block)
-  Agent patterns + field guide →  docs/Building_with_AI_Agents.md
-  Developer setup              →  docs/dev/Exaix_Developer_Setup.md
-  Tool quick-reference         →  TOOLS.md  (MCP section auto-managed by docs-sync-schemas)
-  API / implementation plan    →  docs/Exaix_Implementation_Plan.md
-  Agent guidance               →  .copilot/docs/<topic>.md
-  Submodule docs               →  exaix-dev-docs/ (see submodule-workflow skill)
+  User-facing features  →  docs/Exaix_User_Guide.md
+  Architecture/design   →  ARCHITECTURE.md  (update AGENT_LOGIC YAML block)
+  Agent patterns        →  docs/Building_with_AI_Agents.md
+  Developer setup       →  docs/dev/Exaix_Developer_Setup.md
+  Tool quick-reference  →  TOOLS.md  (MCP section auto-managed by docs-sync-schemas)
+  API/implementation    →  docs/Exaix_Implementation_Plan.md
+  Agent guidance        →  .copilot/docs/<topic>.md
+  Submodule docs        →  exaix-dev-docs/ (see submodule-workflow skill)
 
-Doc update gate: before closing any step that adds a user-visible CLI flag, config key,
-or behavioural change, grep `docs/Exaix_User_Guide.md` for the command or feature name.
-If absent, the User Guide MUST be updated in the same step's commit. "Not documented yet"
-is a blocking gap. This affects CLI subcommands, config keys, env vars, flag changes, and
-any output format change a user might rely on.
+Doc update gate: before closing any step with a user-visible CLI flag, config key, or
+behavioral change, grep `docs/Exaix_User_Guide.md` for the command or feature. Missing?
+Update the User Guide in the same commit. "Not documented yet" blocks the step. Covers CLI
+subcommands, config keys, env vars, flag changes, and output-format changes users rely on.
 
-Special sync commands
-  # After changing MCP handler schemas in packages/mcp/src/handlers/
+Sync commands
+  # After MCP handler schema changes in packages/mcp/src/handlers/
   deno task docs-sync-schemas
 
   # After adding/changing .copilot/ files
   deno run --allow-read --allow-write scripts/build_agents_index.ts
 
-  # Verify all .copilot/ docs meet schema requirements (frontmatter, Canonical prompt, Examples)
+  # Validate .copilot/ docs against schema (frontmatter, Canonical prompt, Examples)
   deno run -A scripts/validate_agents_docs.ts
 
-Doc quality checklist
-  [ ] Purpose is clearly stated in the first paragraph
-  [ ] Each feature has at least one code example
-  [ ] Edge cases and error behavior are covered
-  [ ] Links to related docs/commands are included
-  [ ] Runs deno fmt --check (for .md files with embedded code blocks where applicable)
+Quality checklist
+  [ ] Purpose stated in the first paragraph
+  [ ] Each feature has a code example
+  [ ] Edge cases and error behavior covered
+  [ ] Related docs/commands linked
+  [ ] deno fmt --check passes (for .md with embedded code blocks where applicable)
   [ ] No dead links
-  [ ] Every runtime claim is implemented: grep the code for each documented event name,
-      config key, persistence behavior, and CLI flag the doc asserts exists before writing
-      it. "Behaves this way" is writable only when the code path is real and reachable;
-      otherwise describe the actual behavior or omit the claim.
+  [ ] Every runtime claim implemented: grep the code for each documented event name,
+      config key, persistence behavior, and CLI flag before writing. "Behaves this way"
+      is writable only when the code path is real and reachable; otherwise describe the
+      actual behavior or omit the claim.
 
 Do / Don't
-- ✅ Do run deno task docs-sync-schemas after MCP handler changes
-- ✅ Do follow submodule-workflow skill for exaix-dev-docs changes
-- ✅ Do link back to the implementation plan step the doc covers
-- ❌ Don't edit TOOLS.md MCP section manually — it is auto-generated
-- ❌ Don't create new docs/ files without matching entries in the implementation plan
+- ✅ Run deno task docs-sync-schemas after MCP handler changes.
+- ✅ Follow submodule-workflow skill for exaix-dev-docs changes.
+- ✅ Link back to the implementation plan step the doc covers.
+- ❌ Edit TOOLS.md MCP section manually — it is auto-generated.
+- ❌ Create new docs/ files without matching implementation-plan entries.
 ```
 
 ## Structure & Role
 
-- **`docs/`** — Source of Truth for Humans. User guides, architecture docs, API references, security policies.
+- **`docs/`** — Source of Truth for Humans. Guides, architecture, API references, security policies.
 - **`.copilot/`** — Source of Truth for Agents. Context, prompts, workflows, manifests, schemas.
-- **`exaix-dev-docs/`** — Git submodule for planning docs and dev-only content. Follow [submodule-workflow](../submodule-workflow/SKILL.md) for changes.
+- **`exaix-dev-docs/`** — Submodule for planning docs and dev-only content. Follow [submodule-workflow](../submodule-workflow/SKILL.md).
 
-> Read `.copilot/` for coding patterns and prompts; read `docs/` for architectural understanding. If a conflict exists between `docs/` and source code, follow `docs/` but verify with the user.
+> Read `.copilot/` for coding patterns; `docs/` for architecture. Docs conflict with source? Follow `docs/`, verify with the user.
 
 ## ARCHITECTURE.md vs Package READMEs
 
-**ARCHITECTURE.md** is a strategic document — describe what and why, not where. Never include implementation-specific file paths or module locations. Reference packages by name (e.g. "the `@exaix-team/voting` package") and point to ARCHITECTURE.md sections by anchor.
+**ARCHITECTURE.md** is strategic: what and why, not where. No implementation paths or module locations. Reference packages by name (e.g. "the `@exaix-team/voting` package") and point to ARCHITECTURE.md anchors.
 
-**Package READMEs** (`packages/<name>/README.md`) are the home for implementation details: key files, module paths, contracts, and wiring diagrams. Reference the corresponding ARCHITECTURE.md section from the README so readers can find the strategic context.
+**Package READMEs** (`packages/<name>/README.md`) hold implementation details: key files, module paths, contracts, wiring diagrams. Reference the ARCHITECTURE.md section from the README.
 
 ## Style Guide
 
-- Headers must include version, release date, status, and references
-- Use fenced code blocks with language identifiers
-- Use consistent table formatting
-- Use relative paths for internal links; include file paths when referencing code
-- Keep documentation changes minimal and tied to Implementation Plan steps
-- Maintain consistent capitalization; add new terms to the Terminology Reference
+- Headers include version, release date, status, references
+- Fenced code blocks use language identifiers
+- Consistent table formatting
+- Relative paths for internal links; file paths when referencing code
+- Changes bound to Implementation Plan steps
+- Consistent capitalization; add new terms to the Terminology Reference
 
 ## Version Synchronization
 
-Documents that share version numbers MUST be updated together. Add a checklist for updating versions and release dates.
+Documents sharing version numbers MUST update together. Add a checklist for versions and release dates.
 
 ## Output Format
 
-1. **Target file** — which file was created or updated.
-1. **Summary** — what was added or changed.
+1. **Target file** — created or updated.
+1. **Summary** — what changed.
 1. **Sync commands run** — docs-sync-schemas, build_agents_index, etc.
-1. **Quality checklist results** — code examples, edge cases, links, formatting.
-1. **Commit payload** — use `#commit` to generate the final structured message.
+1. **Quality checklist results** — examples, edge cases, links, formatting.
+1. **Commit payload** — use `#commit`.
 
 ## Examples
 
@@ -125,7 +117,7 @@ Documents that share version numbers MUST be updated together. Add a checklist f
 
 ## See also
 
-- [exaix-development](../exaix-development/SKILL.md) — service patterns, code conventions for docs
+- [exaix-development](../exaix-development/SKILL.md) — service patterns, doc conventions
 - [submodule-workflow](../submodule-workflow/SKILL.md) — exaix-dev-docs submodule changes
 
 ---
