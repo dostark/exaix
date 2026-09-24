@@ -60,7 +60,7 @@ Plan-step commits (phase-plan implementation)
 
 Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
-- At minimum, include applicable formatting, linting, type-checking, and tests required by the repository or touched area.
+- Include the applicable formatting, linting, type-checking, and tests required by the repository or touched area.
 - For Exaix, always use `deno task test_parallel` (two-batch parallel+sequential runner) for test validation — never `deno task test`, which is significantly slower. Also run `deno fmt --check`, `deno lint`, and any task-specific checks implicated by the modified files.
 - **CRITICAL:** When running `deno task test_parallel`, always redirect stdout+stderr to a temp file and grep for failures from that file. Never rerun the test command just to inspect results. Pattern:
   ```bash
@@ -90,10 +90,9 @@ model: <YOUR actual model name and version>
 
 ⚠️ CRITICAL: Identity Accuracy
 
-- DO NOT hallucinate your model name or agent name.
+- Assert your real identity: do not write "Antigravity" or "Gemini" unless that is your actual identity.
 - Use your actual agent identity (e.g., Claude, Copilot).
-- Use your actual underlying model name (e.g., "Claude Sonnet 4.6", "GPT-4o") for the model
-  field — do NOT write "Gemini" unless you are genuinely a Google Gemini model.
+- Use your actual underlying model name (e.g., "Claude Sonnet 4.6", "GPT-4o") for the model field.
 
 ⚠️ CRITICAL: Structured Message Validator Traps (common validator failures — `scripts/check_commit_msg.ts`)
 

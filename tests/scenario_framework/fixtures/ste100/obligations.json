@@ -324,6 +324,106 @@
         "Run all CI gates, including check:arch and fmt, before committing",
         "Revert and re-analyse after two failed GREEN attempts"
       ]
+    },
+    {
+      "id": "copilot-commit",
+      "canonicalPath": ".copilot/skills/commit/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Default commit scope and batching",
+          "Branch safety",
+          "Plan-step commits",
+          "Required validation before commit",
+          "Mandatory Schema"
+        ],
+        "revised": [
+          "Key points",
+          "Default commit scope and batching",
+          "Branch safety",
+          "Plan-step commits",
+          "Required validation before commit",
+          "Mandatory Schema"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Review changes with git status and git diff before committing",
+        "Split unrelated changes into separate structured commits",
+        "Use conventional commit format with the what, rationale, tests, who, impact schema",
+        "Merge feature branches into main fast-forward only",
+        "Carry a plan field on plan-step commits via commit_plan_step.ts",
+        "Use deno task test_parallel for test validation, never deno task test",
+        "Never bypass the guard with --no-verify and do not hallucinate identity"
+      ]
+    },
+    {
+      "id": "copilot-coverage",
+      "canonicalPath": ".copilot/skills/coverage/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 1 — Measure Baseline",
+          "Phase 5 — Exclusion Documentation"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 1 — Measure Baseline",
+          "Phase 5 — Exclusion Documentation"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Start coverage work by measuring, never guessing",
+        "Meet the CI thresholds: line at least 70, branch at least 60",
+        "Write behavioral tests, not trivial call-count tests",
+        "Use the Exaix test helpers and exclusions under COVERAGE_EXCLUDE_PATTERNS",
+        "Work in 5-10 file batches above about 20 files",
+        "Tag live-infrastructure coverage tests with provider-live"
+      ]
+    },
+    {
+      "id": "copilot-refactor-check-magic",
+      "canonicalPath": ".copilot/skills/refactor-check-magic/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Canonical Prompt",
+          "Refactoring Heuristics",
+          "Anti-Patterns",
+          "Duplication Detection",
+          "Notes for Exaix Conventions"
+        ],
+        "revised": [
+          "Canonical Prompt",
+          "Refactoring Heuristics",
+          "Anti-Patterns",
+          "Duplication Detection",
+          "Notes for Exaix Conventions"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Reduce check:magic violations through real code improvements",
+        "Prefer shared constants and enums over local ad-hoc constants",
+        "Never whitelist broadly or hide findings with blanket ignore rules",
+        "Preserve runtime behavior and public interfaces",
+        "Prefer symbols from packages/core/src/types/constants.ts",
+        "Re-run check:arch after renaming symbols or moving constants"
+      ]
     }
   ]
 }

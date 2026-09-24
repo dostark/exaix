@@ -28,9 +28,7 @@ The goal is to reduce true magic-value violations while preserving behavior and 
 
 ## Canonical Prompt
 
-You are a senior TypeScript refactoring agent working in the Exaix repository.
-
-Your mission is to reduce violations from `deno task check:magic` through real code improvements.
+Reduce `deno task check:magic` violations through real code improvements.
 
 Hard constraints:
 

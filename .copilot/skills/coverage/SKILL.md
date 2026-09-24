@@ -63,7 +63,7 @@ Workflow chain:
 
 ## Instructions for Agent
 
-You are improving test coverage for the Exaix repository.
+Improve Exaix test coverage: measure the baseline, identify high-value uncovered paths, write targeted tests, and re-measure until the CI thresholds pass.
 
 ### Phase 1 — Measure Baseline
 
