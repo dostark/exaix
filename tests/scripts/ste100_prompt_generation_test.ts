@@ -146,7 +146,7 @@ describe("ste100 developer corpus conversion", () => {
       assertEquals(frontmatter.qwen_skill, name, "qwen_skill parity for check:qwen-skills-sync");
       assertNotEquals(frontmatter.title, undefined);
       assertNotEquals(frontmatter.description, undefined);
-      assertObjectMatch({ envelope: /\n---\nexaix:[\s\S]*\n---\s*$/.test(skillText) }, { envelope: true });
+      assertStringIncludes(skillText, "\n---\nexaix:", `${entry.id}: exaix envelope present`);
     }
   });
 

@@ -110,6 +110,127 @@
         "Verify every runtime claim against source before writing it",
         "Keep ARCHITECTURE.md strategic: what and why, not where"
       ]
+    },
+    {
+      "id": "copilot-explore",
+      "canonicalPath": ".copilot/skills/explore/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Exaix navigation toolkit",
+          "Key architectural invariants",
+          "Output format"
+        ],
+        "revised": [
+          "Key points",
+          "Exaix navigation toolkit",
+          "Key architectural invariants",
+          "Output format"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "low",
+      "evidence": "review-only",
+      "obligations": [
+        "Start with the ARCHITECTURE.md AGENT_LOGIC YAML block",
+        "Use .copilot/manifest.json as the authoritative doc index",
+        "Use check:arch as the authoritative module-layer registry",
+        "Use deno doc for public API surface",
+        "Keep the architectural invariants: filesystem database, EventLogger journal, PathResolver, MCP-only write path"
+      ]
+    },
+    {
+      "id": "copilot-infra",
+      "canonicalPath": ".copilot/skills/infra/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Exaix config patterns",
+          "Validation checklist",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Exaix config patterns",
+          "Validation checklist",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Treat .exa/config.db as the canonical store and TOML as bootstrap-only",
+        "Use configurable() for tunable constants, overridable via exactl config set",
+        "Validate EXA_LLM_* env vars via getValidatedEnvOverrides()",
+        "Route all new file paths through PathSecurity.resolveAndValidate()",
+        "Run deno check packages/ apps/ tests/ after config-schema changes",
+        "Document the rollback path before any shared-config change"
+      ]
+    },
+    {
+      "id": "copilot-remediate-plan-gaps",
+      "canonicalPath": ".copilot/skills/remediate-plan-gaps/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 4 — Finalize"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 4 — Finalize"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Close only gaps opened by the Pre-Gap Analysis section",
+        "Work through gaps in severity order",
+        "Re-run planned tests after each edit",
+        "Bump the document version and update the Status line",
+        "Add a documentation update step when interfaces or schemas change",
+        "Verify step-manifest integrity after markdown_lint --fix"
+      ]
+    },
+    {
+      "id": "copilot-dogfood-development",
+      "canonicalPath": ".copilot/skills/dogfood-development/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Quickstart",
+          "The dogfood loop",
+          "Meta-pipeline cycle"
+        ],
+        "revised": [
+          "Key points",
+          "Quickstart",
+          "The dogfood loop",
+          "Meta-pipeline cycle"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Work in an isolated git worktree, never the live checkout",
+        "Use deno task dogfood:bootstrap for one-time sandbox setup",
+        "Gate plan approval and result review with HITL secondary approval",
+        "Recover crashes automatically via journal replay",
+        "Follow the dogfood loop request-to-close ordering with depends_on",
+        "Run the daily meta-pipeline: pre-gap, next-steps, post-gap, clean-codebase"
+      ]
     }
   ]
 }

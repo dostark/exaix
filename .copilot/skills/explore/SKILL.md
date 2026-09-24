@@ -16,11 +16,10 @@ qwen_skill: explore
 
 ```text
 Key points
-- Start with ARCHITECTURE.md AGENT_LOGIC YAML block — it describes invariants and data flow
+- Start with the ARCHITECTURE.md AGENT_LOGIC YAML block — it carries the invariants and data flow
 - Use .copilot/manifest.json for the authoritative doc index (short_summary per doc)
 - Prefer semantic_search for behavioral questions, rg for exact symbol/string matches
-- Module headers (JSDoc @module blocks) declare @architectural-layer and @dependencies —
-  read them to understand layer ownership without reading full files
+- Read module-header @module blocks first: they declare @architectural-layer and @dependencies without a full-file read
 - check:arch groundedness map is the authoritative module-layer registry
 
 Canonical prompt (short):
@@ -70,7 +69,7 @@ Output format
   6. Suggested next steps (if any)
 
 Do / Don't
-- ✅ Do read ARCHITECTURE.md AGENT_LOGIC block before any architectural conclusion
+- ✅ Do read the ARCHITECTURE.md AGENT_LOGIC block before any architectural conclusion
 - ✅ Do use .copilot/manifest.json as the doc index (not just file listing)
 - ✅ Do prefer deno doc for public API surface over reading full implementation files
 - ❌ Don't draw architectural conclusions from a single file — check the layer map

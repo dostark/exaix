@@ -60,7 +60,7 @@ Workflow chain (typical):
 
 ## Instructions for Agent
 
-You are performing a **plan-gap remediation** of a phase planning document. Your goal is to close every gap identified in the Pre-Gap Analysis section by editing the plan's step definitions.
+Close every gap identified in the plan's Pre-Gap Analysis section by editing the plan's step definitions.
 
 ### Phase 1 — Ingest
 

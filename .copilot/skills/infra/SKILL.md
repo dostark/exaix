@@ -20,10 +20,10 @@ qwen_skill: infra
 Key points
 - Config DB (.exa/config.db) is the canonical store; TOML (exa.config.toml) is bootstrap-only (system.root)
 - Tunable DEFAULT_* constants use `configurable()` from `@exaix/core/config` — override via `exactl config set`
-- Always validate new env vars via Zod: use getValidatedEnvOverrides() for EXA_LLM_* overrides
-- All new file paths MUST go through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation
-- Run deno check packages/ apps/ tests/ after any config-schema change to catch type propagation errors early
-- Have an explicit rollback path before applying any change to shared config
+- Validate new env vars via Zod: use getValidatedEnvOverrides() for EXA_LLM_* overrides
+- Send all new file paths through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation
+- Run deno check packages/ apps/ tests/ after any config-schema change to catch type propagation early
+- Define the rollback path before any shared-config change
 
 Canonical prompt (short):
 "Implement infrastructure/config change: {goal}.
@@ -91,6 +91,7 @@ Related
 
 - `#infra Add new TOML section [llm_cache] with Zod schema and env override`
 - `#infra Move hardcoded timeout to exa.config.toml with validated default`
+- `#infra Add PathSecurity.resolveAndValidate() for user-supplied log path`
 
 ---
 exaix:
@@ -121,5 +122,3 @@ exaix:
       description: Path security applied for user-supplied paths
       weight: 30
 ---
-
-- `#infra Add PathSecurity.resolveAndValidate() for user-supplied log path`
