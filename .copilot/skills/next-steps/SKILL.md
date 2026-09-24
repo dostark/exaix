@@ -137,7 +137,7 @@ REFACTOR + CI gates
   17. deno task check:style   → fix (I* naming, no magic unions)
   18. deno task check:arch    → all GROUNDED, 0 UNGROUNDED
   19. deno fmt <src> <test>   (before commit, not after)
-  20. deno task check:magic   → reduce new literals (use #refactor-check-magic if many)
+  20. deno task check:magic   → reduce new literals (use the #refactor check:magic pass if many)
   21. (optional) deno task check:complexity if non-trivial (threshold 15)
   22. (exception) full-suite only per Validation policy.
 
@@ -263,7 +263,7 @@ Related skills
 - #commit — structured message per step
 - #tdd-workflow — full TDD reference per component
 - test-development — edge cases, helpers, placement
-- #refactor-check-magic — when check:magic count is non-trivial
+- #refactor — its check:magic & duplication pass covers non-trivial counts
 - #fix-bug — for bugs found during implementation
 - #security — when 3+ security findings
 - Blueprints/Skills/security-first.skill.md — secure portal-code practices (step 13a)

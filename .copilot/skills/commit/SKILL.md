@@ -170,7 +170,7 @@ Do / Don't
 - ❌ Use `--no-verify`.
 - ❌ Hallucinate model versions or agent names.
 
-Related skills: #next-steps, #post-gap-analysis, #refactor-check-magic
+Related skills: #next-steps, #post-gap-analysis, #refactor
 
 Workflow chain: #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → **#commit**
 

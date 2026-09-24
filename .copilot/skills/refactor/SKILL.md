@@ -20,13 +20,13 @@ qwen_skill: refactor
 Key points
 
 - No behavior change: tests pass BEFORE and AFTER (run both).
-- Magic-value refactoring specifically → use #refactor-check-magic.
 - Interface-first + constructor DI: every class Foo → export interface IFoo; consumers
   depend on IFoo, never Foo.
 - Extract numeric/string literals to named constants in the right location:
     Production code → @exaix/core/config
     Test code       → tests/config/constants.ts (TEST_ prefix)
 - PathResolver wraps all file path operations — never raw string concatenation.
+- Magic-value and duplication cleanup is a first-class pass here (see below).
 
 Canonical prompt (short):
 "Refactor {component} for {goal: clarity | performance | DI compliance | interface extraction}.
@@ -99,6 +99,60 @@ SQL queries, subprocesses, HTTP handlers, auth, secrets)
   - Full checklist: Blueprints/Skills/security-first.skill.md when scope covers input,
     path, injection, or auth surfaces.
 
+Magic-value & duplication pass (check:magic)
+  Goal: reduce TRUE magic-value violations from `deno task check:magic` through real code
+  improvements — no suppression tricks. Hard constraints: no broad literal whitelisting;
+  no weakening core detection logic (except a narrowly justified structural false-positive
+  rule); prefer shared constants/enums over local ad-hoc ones when literals repeat across
+  files; preserve runtime behavior and public interfaces; keep changes minimal; keep gates
+  passing.
+
+  Process:
+    1. Run `deno task check:magic`; capture the ranked offenders.
+    1. Triage the top 10: refactorable domain literals (best target); structural/tooling
+       literals (may need narrow heuristic suppression); legitimate protocol/CLI/schema
+       literals (document and defer).
+    1. Per batch, pick 1–3 high-impact literals with a clear path; implement, re-run
+       check:magic, report the delta. Stop when further changes are mostly noise or need
+       policy-level checker changes.
+    1. Refactor by: reusing existing constants/enums from
+       `packages/core/src/types/constants.ts` and package-owned enums; introducing new
+       shared constants only when multi-file reuse justifies it; replacing hardcoded
+       fallbacks (status/actor/scope labels) with canonical symbols.
+
+  Heuristics (do): consolidate repeated CLI option/help strings into shared constants;
+  replace repeated actor/scope/state literals with existing enums; replace repeated TUI
+  node-type literals with canonical enum values; extract shared fallback labels
+  (unknown/default) reused across modules; prefer canonical definitions; keep names
+  explicit and domain-driven.
+
+  Anti-patterns (don't): many value-based whitelist entries to quiet the checker; blanket
+  ignore rules hiding real findings; over-generalized constants that obscure; refactors
+  altering behavior/CLI semantics/schema contracts without tests.
+
+  Validation: `deno task check:magic`, `deno lint`, `deno task check:arch`,
+  `deno test --allow-all`. Large scope: focused first, then full suite. A failing test
+  after a batch? Revert the batch and narrow the scope.
+
+  Deliverable: before/after for top offenders and total violations; every file changed and
+  why safe; literals left unchanged with a reason; next 3 candidates.
+
+  Duplication detection (Gate 9): `deno run --allow-run --allow-read --allow-write
+  scripts/measure_duplication.ts --threshold 2.0`.
+    | Level | Percentage | Action |
+    | ----- | ---------- | ------ |
+    | 🟢 Good | < 2% | No action needed |
+    | 🟡 Warning | 2-5% | Monitor, refactor when convenient |
+    | 🟠 High | 5-10% | Plan a refactoring phase |
+    | 🔴 Critical | > 10% | Immediate attention |
+  Common patterns to extract: repeated test setup → helpers; same constructor patterns →
+  base class; repeated assertion blocks → custom helpers. DO NOT deduplicate: intentional
+  isolation (security tests standalone), test clarity, tests that may diverge, small clones
+  (< 50 tokens).
+
+  Conventions: after renaming symbols or moving constants, re-run `deno task check:arch`
+  (renames break module JSDoc grounding → UNGROUNDED). Scope > ~20 files: batches of 5–10.
+
 Validation
   deno test --allow-all <test-file>     # before (baseline GREEN)
   # ... apply refactor ...
@@ -119,10 +173,9 @@ Do / Don't
 - ❌ Fix them by inlining the raw value. The value IS the constant; inlining loses the
   name and creates the same divergence. Inject the owning service's interface instead.
 - ❌ Refactor and add features in the same commit.
-- ❌ Skip #refactor-check-magic when magic violations are the primary goal.
+- ✅ Run the magic-value & duplication pass above when check:magic violations are the goal.
 
 Related
-- #refactor-check-magic — targeted magic-value reduction
 - #clean-codebase — full CI-green sweep
 - #tdd-workflow — when the refactor needs tests first
 - #security — full audit when refactor exposes 3+ control gaps

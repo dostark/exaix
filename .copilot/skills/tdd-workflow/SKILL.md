@@ -107,7 +107,7 @@ Related
 - #next-steps — multi-step plan execution uses this TDD cycle per step
 - #coverage — dropped coverage: run the full improvement loop
 - #fix-bug — bug found: regression tests first
-- #refactor-check-magic — non-trivial magic violations
+- #refactor — magic-value & duplication pass (check:magic)
 - #plan — create the feature plan first (precedes this skill)
 - #commit — structured commit message after CI gates pass
 

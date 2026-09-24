@@ -44,7 +44,6 @@ Every file in this directory must have a corresponding `.copilot/skills/<name>/S
 | `post-gap-analysis.prompt.md`    | `.copilot/skills/post-gap-analysis/`    |
 | `pre-gap-analysis.prompt.md`     | `.copilot/skills/pre-gap-analysis/`     |
 | `refactor.prompt.md`             | `.copilot/skills/refactor/`             |
-| `refactor-check-magic.prompt.md` | `.copilot/skills/refactor-check-magic/` |
 | `remediate-code-gaps.prompt.md`  | `.copilot/skills/remediate-code-gaps/`  |
 | `remediate-plan-gaps.prompt.md`  | `.copilot/skills/remediate-plan-gaps/`  |
 | `review-code.prompt.md`          | `.copilot/skills/review-code/`          |

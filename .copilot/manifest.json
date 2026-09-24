@@ -157,10 +157,6 @@
       "short_summary": ""
     },
     {
-      "path": ".copilot/prompts/refactor-check-magic.prompt.md",
-      "short_summary": ""
-    },
-    {
       "path": ".copilot/prompts/upgrade-version.prompt.md",
       "short_summary": ""
     },
@@ -412,23 +408,6 @@
         "documentation"
       ],
       "qwen_skill": "remediate-plan-gaps"
-    },
-    {
-      "path": ".copilot/skills/refactor-check-magic/SKILL.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Refactor-Check-Magic Skill (#refactor-check-magic)",
-      "short_summary": "Execution prompt for reducing magic value violations using principled refactoring, shared constants/enums, and behavior-preserving changes.",
-      "version": "1.0.0",
-      "topics": [
-        "refactoring",
-        "magic-values",
-        "constants",
-        "enums",
-        "code-quality",
-        "tdd"
-      ],
-      "qwen_skill": "refactor-check-magic"
     },
     {
       "path": ".copilot/skills/commit/SKILL.md",

@@ -92,7 +92,7 @@ Phase 6 — Architecture grounding
  14. Re-run — 0 UNGROUNDED.
 
 Phase 7 — Magic values
- 15. Count > 5 → use #refactor-check-magic; small counts → extract named constants.
+ 15. Count > 5 → run the #refactor check:magic & duplication pass; small counts → extract named constants.
  16. Re-run `check:magic` — target 0.
 
 Phase 8 — Duplication
@@ -221,7 +221,7 @@ Do / Don't
 - ❌ Suppress lint rules without a documented reason.
 - ❌ Add `EXAIX_EDITION` conditionals outside allowed paths — use edition-composer.
 
-Related: #refactor-check-magic (> 5 magic violations); #refactor (god-object decomposition);
+Related: #refactor (check:magic & duplication pass, god-object decomposition);
 #fix-bug (regressions); #next-steps (cleanup as a gated step); #commit;
 #edition-development (edition-separation cleanup).
 
