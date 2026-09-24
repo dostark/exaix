@@ -341,11 +341,11 @@
         ],
         "revised": [
           "Key points",
-          "Default commit scope and batching",
+          "Default scope and batching",
           "Branch safety",
           "Plan-step commits",
           "Required validation before commit",
-          "Mandatory Schema"
+          "Mandatory schema"
         ]
       },
       "evidenceCaseIds": [],
