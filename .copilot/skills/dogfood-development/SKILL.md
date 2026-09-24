@@ -58,14 +58,14 @@ The dogfood loop (human + daemon)
 
 Daily meta-pipeline
 
-  Reduced variant of the canonical loop (plan -> pre-gap-analysis ->
-  remediate-plan-gaps -> next-steps xN -> post-gap-analysis -> remediate-code-gaps ->
+  Reduced variant of the canonical loop (plan -> review-phase-plan ->
+  remediate-plan-gaps -> next-steps xN -> review-phase-code -> remediate-code-gaps ->
   self-improvement-retro), sized for one day: it assumes an existing request/plan (skips
   plan and remediate-plan-gaps) and swaps the terminal remediate-code-gaps + retro steps
   for clean-codebase to keep the daily loop fast. Gaps surfaced mid-cycle still route
   through remediate-plan-gaps/remediate-code-gaps on demand.
 
-  pre-gap-analysis → next-steps (xN, each with commit) → post-gap-analysis → clean-codebase
+  review-phase-plan → next-steps (xN, each with commit) → review-phase-code → clean-codebase
 
   Request mapping (depends_on ordering):
 
@@ -87,7 +87,7 @@ Key configuration
   - Permissions: HITL secondary approval for writes and run_command.
 
 Related skills
-  plan, pre-gap-analysis, post-gap-analysis, next-steps, remediate-plan-gaps,
+  plan, review-phase-plan, review-phase-code, next-steps, remediate-plan-gaps,
   remediate-code-gaps, clean-codebase
 
 Examples

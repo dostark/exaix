@@ -130,10 +130,10 @@ Do / Don't
   import-map alias (lint rejects the prefixes).
 
 Prototypes & validation:
-- #pre-gap-analysis re-verifies the plan against the codebase (a second pass, not first
-  discovery). #post-gap-analysis verifies the implementation against the plan.
+- #review-phase-plan re-verifies the plan against the codebase (a second pass, not first
+  discovery). #review-phase-code verifies the implementation against the plan.
 
-Workflow chain: #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → #commit
+Workflow chain: #plan → #review-phase-plan → #next-steps → #review-phase-code → #commit
 
 Dogfooding chain (once Phase E tooling ships):
   #plan (step-manifests) → #plan_to_requests (request queue) → daemon executes in the sandbox
@@ -142,8 +142,8 @@ Dogfooding chain (once Phase E tooling ships):
 ## See also
 
 - [next-steps](../next-steps/SKILL.md) — step-by-step execution
-- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — plan validation
-- [post-gap-analysis](../post-gap-analysis/SKILL.md) — post-implementation review
+- [review-phase-plan](../review-phase-plan/SKILL.md) — plan validation
+- [review-phase-code](../review-phase-code/SKILL.md) — post-implementation review
 - [test-development](../test-development/SKILL.md) — edge cases, helpers
 
 ---
@@ -195,10 +195,12 @@ Refine the goal into a formal planning document at `exaix-dev-docs/planning/phas
 ### 2. Core principles
 
 #### A. Security (Phase 3b)
+
 Per step verify: input validation (Zod), path resolution (PathResolver), auth boundary
 (permission before each side effect), and secrets (never logged or plain-text).
 
 #### B. Traceability & configurability
+
 - Timeouts, thresholds, toggles wrapped with `configurable()` in
   `packages/core/src/types/constants.ts`, overridable via `exactl config set`.
 - Every state transition/cross-component call names its exact event in Architecture Notes.
@@ -208,17 +210,21 @@ Per step verify: input validation (Zod), path resolution (PathResolver), auth bo
   the gap analyses invoke it, #plan only names the events).
 
 #### C. Durability & atomic changes
+
 Group file modifications into approved Changesets; wrap DB ops in transactions where
 atomicity is required.
 
 #### D. Field specification & consumer tracing
+
 For every new/modified interface, payload, or schema field: exact per-component values and
 conditions; name the reading component; document the end-to-end flow and require a named
 test exercising the complete chain.
 
 #### E. Reachability & integration anchoring (the production-dead guard)
+
 TDD/coverage/grounding all pass on production-dead code — a test-only consumer keeps it
 "alive". Guard in the plan:
+
 - **Vertical slice first.** First deliverable = one complete end-to-end path, then breadth.
 - **Integration anchor.** Every runtime-claiming step names the call-site (`file:Symbol`)
   and an integration/scenario test driving it.
@@ -239,18 +245,21 @@ TDD/coverage/grounding all pass on production-dead code — a test-only consumer
   runtime behavior.
 
 #### F. Third-party integration research (capability grounding)
+
 Provider capabilities drift — research the CURRENT official surface, don't design from
 memory: fetch official docs (endpoints/shape, auth model, official "use with" recipes).
 Prefer the documented first-class path; a proxy/scrape/undocumented-flag is a hack that
 breaks on the next release — if none exists, say so and justify the stop-gap. Surface the
 provider's real knobs through config (routing, fallback, caching, rate/cost, retention),
-keep model/provider/endpoint/auth-realm distinct, capture caveats + minimum versions, PROBE
-the edge shapes (a live call — a Gemini parallel batch signs only its first call, which no
+keep model/provider/endpoint/auth-realm distinct, capture caveats + minimum versions, Probe the multiplicity and edge shapes, not just the happy path (a Gemini parallel batch
+signs only its first call, which no
 doc page stated) and record what came back + date, and cite the doc URLs (official vs
 community) in a Sources block.
 
 #### G. Codebase grounding — pre-draft (§2G)
+
 Run before writing any step's Actions/Notes (mandatory, like §2F):
+
 1. **Interface verification** — grep each existing interface the plan extends: EXISTS-MATCH
    (proceed), EXISTS-MISMATCH (read the real signature, adjust), NOT-FOUND (must be a new
    interface or the name is wrong).
@@ -264,6 +273,7 @@ Run before writing any step's Actions/Notes (mandatory, like §2F):
    listing interfaces (MATCH/MISMATCH/NOT-FOUND), call sites read, side effects + disposition.
 
 #### H. Event coverage verification (§2H)
+
 Name the exact audit event per state-changing/cross-component step so the AST check has a
 target. `check:event-coverage` is advisory; a finding means verify by hand. `@visible`
 promotes the class to required coverage: the JSDoc tag sits above `export class Foo`.
@@ -279,6 +289,7 @@ See `tests/scenario_framework/scenarios/framework_test/smoke-validation.yaml`'s
 `check-journal` step and `packages/core/tests/cost_tracker_test.ts` for the pattern.
 
 ### 3. Documentation update protocol (§3D)
+
 Final step covering: `ARCHITECTURE.md` (new components/flows); `docs/Exaix_User_Guide.md`
 (REQUIRED for every user-facing CLI/config/env change — Planned Tests must include "User
 Guide updated", and the commit must include the edit; grep the guide before closing);
@@ -286,6 +297,7 @@ Guide updated", and the commit must include the edit; grep the guide before clos
 patterns).
 
 ### 3E. Scenario framework coverage
+
 Change touches request → plan → execution → review → memory → update? Review
 `tests/scenario_framework/scenarios/agent_flows/`, add steps for observable
 CLI/daemon checkpoints, create a new scenario for a distinct observable phase, tag
@@ -293,6 +305,7 @@ CLI/daemon checkpoints, create a new scenario for a distinct observable phase, t
 invariants).
 
 ### 4. Derived best practices
+
 - Phase Dependencies listed; Risk L/M/H with justification; `file:Symbol` references.
 - Convention survey: 5–10 examples in the module before choosing a shape; divergence noted.
 - Claim-to-test mapping: every prose behavioral claim has a named test.
@@ -317,7 +330,7 @@ invariants).
    key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix` has
    misread a `# step-manifest` comment in a fence as a heading and dropped the key.
 1. Third-party integration? A Sources block (URLs, official vs community, date).
-1. Recommend `#pre-gap-analysis`.
+1. Recommend `#review-phase-plan`.
 1. Commit payload — use `#commit`.
 
 ## Examples
@@ -329,7 +342,7 @@ invariants).
 ---
 exaix:
   skill_id: plan
-  related_skills: [pre-gap-analysis, test-development]
+  related_skills: [review-phase-plan, test-development]
   triggers:
     keywords: [plan, phase, planning, design]
     task_types: [planning]

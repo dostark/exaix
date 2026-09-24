@@ -54,15 +54,19 @@
       "short_summary": ""
     },
     {
+      "path": ".copilot/prompts/review-phase-plan.prompt.md",
+      "short_summary": ""
+    },
+    {
       "path": ".copilot/prompts/test-development.prompt.md",
       "short_summary": ""
     },
     {
-      "path": ".copilot/prompts/pre-gap-analysis.prompt.md",
+      "path": ".copilot/prompts/remediate-plan-gaps.prompt.md",
       "short_summary": ""
     },
     {
-      "path": ".copilot/prompts/remediate-plan-gaps.prompt.md",
+      "path": ".copilot/prompts/review-phase-code.prompt.md",
       "short_summary": ""
     },
     {
@@ -102,10 +106,6 @@
     },
     {
       "path": ".copilot/prompts/dogfood-development.prompt.md",
-      "short_summary": ""
-    },
-    {
-      "path": ".copilot/prompts/post-gap-analysis.prompt.md",
       "short_summary": ""
     },
     {
@@ -171,6 +171,26 @@
       "title": ".copilot/ — AI Agent Knowledge Base",
       "short_summary": "Overview of the .copilot/ directory: prompts, skills, and docs for multi-agent Exaix development.",
       "version": "2.0"
+    },
+    {
+      "path": ".copilot/skills/review-phase-plan/SKILL.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Pre-Gap Analysis Skill (#review-phase-plan)",
+      "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
+      "version": "1.10.1",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "architecture",
+        "risk",
+        "quality",
+        "security",
+        "tdd",
+        "reachability",
+        "integration"
+      ],
+      "qwen_skill": "review-phase-plan"
     },
     {
       "path": ".copilot/skills/doc/SKILL.md",
@@ -373,32 +393,11 @@
       "qwen_skill": "clean-codebase"
     },
     {
-      "path": ".copilot/skills/post-gap-analysis/SKILL.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
-      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.9.1",
-      "topics": [
-        "planning",
-        "gap-analysis",
-        "review",
-        "tdd",
-        "architecture",
-        "quality",
-        "security",
-        "code-style",
-        "typescript",
-        "performance"
-      ],
-      "qwen_skill": "post-gap-analysis"
-    },
-    {
       "path": ".copilot/skills/remediate-plan-gaps/SKILL.md",
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Remediate Plan Gaps Skill (#remediate-plan-gaps)",
-      "short_summary": "Edits phase planning documents to close gaps identified by pre-gap-analysis, then re-runs tests and bumps the document version.",
+      "short_summary": "Edits phase planning documents to close gaps identified by review-phase-plan, then re-runs tests and bumps the document version.",
       "version": "1.0.1",
       "topics": [
         "planning",
@@ -530,6 +529,27 @@
       "qwen_skill": "comparative-analysis"
     },
     {
+      "path": ".copilot/skills/review-phase-code/SKILL.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Post-Gap Analysis Skill (#review-phase-code)",
+      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
+      "version": "1.9.1",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "review",
+        "tdd",
+        "architecture",
+        "quality",
+        "security",
+        "code-style",
+        "typescript",
+        "performance"
+      ],
+      "qwen_skill": "review-phase-code"
+    },
+    {
       "path": ".copilot/skills/self-improvement/SKILL.md",
       "agent": "general",
       "scope": "dev",
@@ -568,7 +588,7 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Remediate Code Gaps Skill (#remediate-code-gaps)",
-      "short_summary": "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit.",
+      "short_summary": "Edits source files to close code-level gaps identified by review-phase-code, then re-runs tests and creates a structured commit.",
       "version": "1.2.1",
       "topics": [
         "planning",
@@ -614,26 +634,6 @@
         "traceability"
       ],
       "qwen_skill": "next-steps"
-    },
-    {
-      "path": ".copilot/skills/pre-gap-analysis/SKILL.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
-      "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.10.1",
-      "topics": [
-        "planning",
-        "gap-analysis",
-        "architecture",
-        "risk",
-        "quality",
-        "security",
-        "tdd",
-        "reachability",
-        "integration"
-      ],
-      "qwen_skill": "pre-gap-analysis"
     },
     {
       "path": ".copilot/DOCS.md",

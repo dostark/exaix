@@ -1,5 +1,5 @@
 ---
-name: post-gap-analysis
+name: review-phase-code
 agent: senior-coder
 tools:
   - read_file
@@ -7,7 +7,7 @@ tools:
   - search_files
   - run_command
 scope: dev
-title: "Post-Gap Analysis Skill (#post-gap-analysis)"
+title: "Post-Gap Analysis Skill (#review-phase-code)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
 version: "1.9.1"
@@ -23,15 +23,15 @@ topics: [
   "typescript",
   "performance",
 ]
-qwen_skill: post-gap-analysis
+qwen_skill: review-phase-code
 ---
 
 ```text
 Key points
 
 - POST-implementation review: verify what was built against what the plan promised.
-- Derive the required outcomes from the problem statement INDEPENDENTLY of completed step
-  criteria; falsify each with production evidence + an adversarial case.
+- Derive the required outcomes from the problem statement independently of the plan's completed step criteria;
+  falsify each with production evidence + an adversarial case.
 - A documented limitation/deferral/workaround is NOT resolved just because it is tracked —
   it stays a gap when it prevents a required outcome.
 - Read the plan, then every source file it references.
@@ -45,7 +45,7 @@ Key points
 - Bump the doc version and set Status to "🚧 Gap Remediation In Progress".
 - Phase 2a semantic value verification on every step adding event/schema/response fields —
   values correct, not just present. Correlation/identity/provenance/status: verify the
-  canonical persisted/indexed field, not an identically named payload.
+  canonical persisted or indexed field, not an identically named payload.
 - Phase 2b integration-surface audit on every new interface/output field — dead fields are
   gaps. Run `deno task check:reachability-ledger <plan-doc>` first as a mechanized pass.
 - Phase 2c module-convention probe on modified/created files.
@@ -63,8 +63,8 @@ Find all gaps between plan claims and implementation, write them into the
 document with remediation steps."
 
 Examples
-- "#post-gap-analysis exaix-dev-docs/planning/phase-63-flow-error-recovery.md"
-- "#post-gap-analysis exaix-dev-docs/planning/phase-64-flow-namespace-blackboard.md
+- "#review-phase-code exaix-dev-docs/planning/phase-63-flow-error-recovery.md"
+- "#review-phase-code exaix-dev-docs/planning/phase-64-flow-namespace-blackboard.md
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
@@ -107,16 +107,16 @@ Do / Don't
 - ❌ Skip event payload typing.
 - ❌ Re-run #review-code's checklists — use its report.
 
-Related: #pre-gap-analysis; #plan; #next-steps; #commit; #review-code (Phase 7);
+Related: #review-phase-plan; #plan; #next-steps; #commit; #review-code (Phase 7);
 test-development.
 
-Workflow chain: #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit
+Workflow chain: #plan → #review-phase-plan → #next-steps → **#review-phase-code** → #commit
 ```
 
 ## See also
 
 - [plan](../plan/SKILL.md) — structure, remediation step format
-- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — pre-implementation analysis
+- [review-phase-plan](../review-phase-plan/SKILL.md) — pre-implementation analysis
 - [remediate-code-gaps](../remediate-code-gaps/SKILL.md) — closing code-level steps
 
 ---
@@ -137,12 +137,12 @@ goal, and success metrics as requirements in their own right — not superseded 
 Derive the system-level outcomes the problem statement requires, INDEPENDENTLY of done
 criteria:
 
-| Required outcome | Production evidence | Adversarial case | Verdict |
-| ---------------- | ------------------- | ---------------- | ------- |
+| Required outcome      | Production evidence                        | Adversarial case      | Verdict     |
+| --------------------- | ------------------------------------------ | --------------------- | ----------- |
 | <observable property> | <real call path / stored value / consumer> | <the way it can fail> | ✅ / gap ID |
 
 Use outcomes materially implied by the phase's problem statement, executive summary, goal,
-interfaces, or metrics. Example adversarial cases: cancellation/abandonment/early exit for a
+interfaces, or metrics. Example adversarial cases: cancellation, abandonment, and early exit for a
 lifecycle; partial completion for multi-stage; invalid-but-well-typed value for a
 constrained output. A done step does not prove an outcome — if an outcome can fail while
 every criterion passes, it needs its own trace + probe. A tracked limitation stays a gap if
@@ -157,6 +157,7 @@ implemented anyway with the plan un-updated (🔵 Conceptual).
 ### Phase 2a — Semantic Value Verification
 
 Per new/modified field in events, schemas, config, API responses:
+
 1. Value correct, not just present — consistent with injected deps, config, state.
 1. Cross-validate against component capabilities — trace constructor → emission.
 1. Canonical storage/lookup: for correlation/identity/provenance/status/routing/auth,
@@ -165,6 +166,7 @@ Per new/modified field in events, schemas, config, API responses:
 ### Phase 2b — Integration Surface Audit
 
 Per new interface/type/output field:
+
 1. Grep for consumers; zero readers = dead data (🟠 if test-only, 🔵 if prod-unused).
 1. Trace each consumer end-to-end; a claimed adjacent-service integration must be wired.
 1. Orphaned interface slices: plan says component X reads the field but it never does —
@@ -193,10 +195,10 @@ Check every step has all §F sub-sections and §3D doc compliance.
 
 For flow-affecting steps: verify scenarios exercise the behavior, check assertions, decide
 on new scenarios. Journal/event assertions: a missing required field must FAIL the assertion
-(no non-empty container holding `undefined`); scope to the request trace — a globally found
+(no non-empty container holding `undefined`); require request-trace scoping whenever the scenario claims correlation — a globally found
 event is not evidence the request under test emitted it. Exhaustive-event claims: build an
 exact inventory from production declarations; add a reconciliation table; every row cites a
-test driving the real component through the real EventLogger asserting action + trace +
+test driving the real component through the real `EventLogger` asserting action + trace +
 semantic payload; totals reconcile. For lifecycle/streaming/transaction/retry operations,
 enumerate terminal alternatives (completion, failure, cancellation, abandonment, early
 exit) and verify each has its observable outcome + test where behavior is new.
@@ -228,13 +230,13 @@ not re-evaluate.
 
 ### Phase 8 — Gap Classification
 
-| Symbol | Meaning |
-| ------ | ------- |
-| 🔴 Critical | Blocks correctness; fail-open security; circular dependency; type-safety runtime error |
-| 🔒 Security | OWASP violation; missing control; leak without cleanup; unbounded memory; missing timeout; traversal; silent swallow in sensitive path |
-| 🟡 Feasibility | Unverifiable/risky claim; sync I/O in async path; missing fallback crash; redundant I/O |
-| 🟠 Testing | Missing/underspecified test; bare catch{}; budget-check after completion; uncovered edge |
-| 🔵 Conceptual | Minor mismatch; missing doc marker; style divergence; unused export; flattenable import; missing import type |
+| Symbol         | Meaning                                                                                                                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔴 Critical    | Blocks correctness; fail-open security; circular dependency; type-safety runtime error                                                 |
+| 🔒 Security    | OWASP violation; missing control; leak without cleanup; unbounded memory; missing timeout; traversal; silent swallow in sensitive path |
+| 🟡 Feasibility | Unverifiable/risky claim; sync I/O in async path; missing fallback crash; redundant I/O                                                |
+| 🟠 Testing     | Missing/underspecified test; bare catch{}; budget-check after completion; uncovered edge                                               |
+| 🔵 Conceptual  | Minor mismatch; missing doc marker; style divergence; unused export; flattenable import; missing import type                           |
 
 Build a gap summary table before detailed entries.
 
@@ -276,11 +278,12 @@ Append using exactly:
 ### Step <N+1>: Remediate GAP-1 — <title>
 
 **Actions:**
+
 - <file>: <specific change>
-**Architecture Notes:** <DI / pattern rationale>
-**Planned Tests:**
+  **Architecture Notes:** <DI / pattern rationale>
+  **Planned Tests:**
 - `<test name>` — <what it verifies>
-**Success Criteria:**
+  **Success Criteria:**
 - <measurable criterion>
 
 ```yaml
@@ -301,7 +304,8 @@ acceptance:
 ````
 
 Every remediation step MUST end with a step-manifest (same shared `target_branch`); the
-pre-commit gate rejects the commit otherwise, at commit time only. Author criteria as
+pre-commit gate rejects the commit with "A phase
+plan step is missing or has an invalid step-manifest" otherwise, at commit time only. Author criteria as
 `- [ ] <text>` and tests as `` `<name>` `` (aspirational, no `→` path) — #next-steps rewrites
 met items to the done form; the gate blocks any `- [ ]` left in a committed step.
 
@@ -323,7 +327,7 @@ met items to the done form; the gate blocks any `- [ ]` left in a committed step
 
 ---
 exaix:
-  skill_id: post-gap-analysis
+  skill_id: review-phase-code
   related_skills: [review-code, remediate-code-gaps, test-development]
   triggers:
     keywords: [post-gap, implementation-review, post-implementation]

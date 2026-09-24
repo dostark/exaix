@@ -4,7 +4,7 @@
  * @path scripts/check_event_coverage.ts
  * @description Advisory AST audit for ARCHITECTURE.md's "Visibility" guarantee ("every
  *   significant runtime transition emits a typed, versioned, trace-linked domain event")
- *   and the `plan`/`pre-gap-analysis`/`next-steps`/`post-gap-analysis` skills' Traceability
+ *   and the `plan`/`review-phase-plan`/`next-steps`/`review-phase-code` skills' Traceability
  *   principle. Flags classes wired to an audit logger that never call it, and exported
  *   functions/methods with a state change or cross-component call and no adjacent event.
  *

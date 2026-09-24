@@ -112,7 +112,7 @@ Related
 - #commit — structured commit message after CI gates pass
 
 Workflow chain:
-  #plan → #pre-gap-analysis → **#tdd-workflow** (per step, via #next-steps) → #post-gap-analysis
+  #plan → #review-phase-plan → **#tdd-workflow** (per step, via #next-steps) → #review-phase-code
 ```
 
 ## Related

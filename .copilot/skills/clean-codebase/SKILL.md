@@ -196,7 +196,7 @@ Phase 25 — Pre-commit-hook parity gates
      `check:qwen-skills-sync` (add/update the missing qwen_skill entry);
      `check:config-keys` (two `configurable()` same key — rename; CODE_STYLE.md §2);
      `check:event-coverage --fail-on-tagged` (`@visible` gap — add the DomainEventType or
-     verify by hand, see #post-gap-analysis Phase 6);
+     verify by hand, see #review-phase-code Phase 6);
      `docs-bench` (doc drifted from encoded ground truth — fix the doc, not the test).
  52. Re-run `deno run -A scripts/ci.ts check` — all clean.
 

@@ -151,14 +151,14 @@ Classify precisely:
   this skill relies on)
 - [plan](../plan/SKILL.md) — drafts a new phase when no candidate fits
 - [next-steps](../next-steps/SKILL.md) — implements the chosen phase
-- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — validates the chosen plan
+- [review-phase-plan](../review-phase-plan/SKILL.md) — validates the chosen plan
 - [submodule-workflow](../submodule-workflow/SKILL.md) — registry lives in the submodule
 - [docs/CHANGELOG.md](../../../docs/CHANGELOG.md) — the shipped-phase list reconciled against
 
 ---
 exaix:
   skill_id: next-phase
-  related_skills: [self-improvement, plan, next-steps, pre-gap-analysis, submodule-workflow]
+  related_skills: [self-improvement, plan, next-steps, review-phase-plan, submodule-workflow]
   triggers:
     keywords: [
       next-phase,

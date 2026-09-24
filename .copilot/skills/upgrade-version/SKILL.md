@@ -91,7 +91,7 @@ Do / Don't
 
 Related: #coverage; #fix-bug; #next-steps; #commit.
 
-Workflow chain: #pre-gap-analysis (if part of a phase) → **#upgrade-version** → #commit
+Workflow chain: #review-phase-plan (if part of a phase) → **#upgrade-version** → #commit
 ```
 
 ## Related

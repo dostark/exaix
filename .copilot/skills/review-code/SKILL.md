@@ -26,7 +26,7 @@ Key points
 - Every new source file needs a module-header JSDoc and must pass `deno task check:arch`.
 - Findings are categorised, actionable items — never vague suggestions.
 - Plan-level gap analysis (plan vs. reality, semantic values, integration surface): use
-  #post-gap-analysis, not this skill.
+  #review-phase-code, not this skill.
 - Reviewing > ~20 files: batches of 5–10. Read a batch, record findings, continue.
 
 Canonical prompt (short):
@@ -55,10 +55,10 @@ Do / Don't
 - ❌ Approve a change with no tests for new logic.
 - ❌ Skip security checks, even for "small" changes.
 - ❌ Suggest out-of-scope refactors unless they block correctness.
-- ❌ Use this skill for plan-level gap analysis — use #post-gap-analysis.
+- ❌ Use this skill for plan-level gap analysis — use #review-phase-code.
 
 Related: #fix-bug (implement a Critical fix); #security (3+ security findings); #commit;
-#review-research (subsystem-level review); #post-gap-analysis (plan-level).
+#review-research (subsystem-level review); #review-phase-code (plan-level).
 
 Workflow chain: #next-steps (implement) → **#review-code** → #fix-bug (if needed) → #commit
 ```
@@ -157,7 +157,7 @@ conventions in the existing file:
      only normal completion and thrown errors — a `finally` block or equivalent fires one
      terminal event across all three exit paths.
    A `@visible`-tagged class also needs a real Tier A/B runtime test proving its primary
-   events fire, not only a clean static pass — see `#plan` §2H and `#post-gap-analysis`
+   events fire, not only a clean static pass — see `#plan` §2H and `#review-phase-code`
    Phase 6.
 1. **Exports.** Every new interface/type is exported from the appropriate index file.
 1. **check:arch.** Would it pass? All new files GROUNDED (or explicitly tagged

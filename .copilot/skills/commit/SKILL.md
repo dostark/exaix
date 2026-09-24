@@ -122,7 +122,7 @@ Optional fields: conversation_id, links, prompt, tool_audit, model.
 - **Fast-fail**: validate a plan-step message first with
   `deno run --allow-read --allow-run=git scripts/check_commit_msg.ts <msg>` (~0.2s) before
   `commit_plan_step.ts --commit` (~10-15s). One exception below.
-- **Added bullet to a completed step ≠ plan-step commit**: a `plan:` field makes the check
+- **Adding one new bullet to an already-completed step is not a plan-step commit**: a `plan:` field makes the check
   require the changed file of EVERY ✅ item in that step. Commit such an addition as an
   ordinary docs commit without `plan:` (submodule first, then pointer bump).
 - **Gitlink-only arrow paths (false negative)**: a step whose only `→` path is
@@ -170,9 +170,9 @@ Do / Don't
 - ❌ Use `--no-verify`.
 - ❌ Hallucinate model versions or agent names.
 
-Related skills: #next-steps, #post-gap-analysis, #refactor
+Related skills: #next-steps, #review-phase-code, #refactor
 
-Workflow chain: #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → **#commit**
+Workflow chain: #plan → #review-phase-plan → #next-steps → #review-phase-code → **#commit**
 
 Expected response pattern:
 
@@ -181,8 +181,8 @@ Expected response pattern:
 1. Show the `git add` commands for the full intended scope.
 1. Show the structured `git commit` command per batch.
 1. Verify all mandatory headers; list any blocking validation issue.
-
 ````
+
 ## Related
 
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
@@ -191,6 +191,7 @@ Expected response pattern:
 
 - [next-steps](../next-steps/SKILL.md) — step-based workflow that commits per step
 - [exaix-development](../exaix-development/SKILL.md) — CI gate conventions, branch rules
+
 ---
 exaix:
   skill_id: commit

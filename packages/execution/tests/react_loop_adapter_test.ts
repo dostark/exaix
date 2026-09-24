@@ -5,7 +5,7 @@
  * agent.output and dynamic_tool_call with real, field-level payloads through a real
  * EventLogger/db — the first test file of any kind for this class, and the first
  * positive (non-zero-count), field-level verification of dynamic_tool_call anywhere
- * in the suite (Phase 169 Step 3 / pre-gap-analysis GAP-2: moved off the provider-live
+ * in the suite (Phase 169 Step 3 / review-phase-plan GAP-2: moved off the provider-live
  * flow_strategy_react.yaml scenario since both methods are directly callable).
  * @architectural-layer Execution
  * @related-files ["packages/execution/src/react_loop_adapter.ts"]

@@ -1,6 +1,6 @@
 ---
 name: remediate-plan-gaps
-description: "Consumes pre-gap-analysis gap findings and edits plan step definitions to close each gap — re-runs tests and bumps version"
+description: "Consumes review-phase-plan gap findings and edits plan step definitions to close each gap — re-runs tests and bumps version"
 ---
 
 # Routing prompt — canonical source

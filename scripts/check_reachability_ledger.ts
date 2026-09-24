@@ -22,10 +22,10 @@
  *   symbols (e.g. wired only via dynamic dispatch or a string-keyed registry) and surface
  *   ones worth a human's second look, so it is not wired into `scripts/ci.ts` or any
  *   pre-commit gate. A finding here is exactly the class of gap G2 in the `next-steps` and
- *   `post-gap-analysis` skills says must never be marked ✅ without a verifiable call-site.
+ *   `review-phase-code` skills says must never be marked ✅ without a verifiable call-site.
  * @architectural-layer Script
  * @dependencies [@std/fs, @std/path]
- * @related-files [tests/scripts/check_reachability_ledger_test.ts, scripts/check_step_manifests.ts, scripts/check_blueprint_integrity.ts, .claude/skills/next-steps/SKILL.md, .claude/skills/post-gap-analysis/SKILL.md]
+ * @related-files [tests/scripts/check_reachability_ledger_test.ts, scripts/check_step_manifests.ts, scripts/check_blueprint_integrity.ts, .claude/skills/next-steps/SKILL.md, .claude/skills/review-phase-code/SKILL.md]
  */
 
 import { expandGlob, walk } from "@std/fs";

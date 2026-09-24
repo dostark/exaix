@@ -6,8 +6,8 @@
  *   calls that occur with no adjacent `IEventLogger`/`IEventRegistry` emission, and flags
  *   classes that accept a logger but never call it ("wired but silent"). Exists because
  *   ARCHITECTURE.md's "Visibility" guarantee ("every significant runtime transition emits a
- *   typed, versioned, trace-linked domain event") and the `plan`/`pre-gap-analysis`/
- *   `next-steps`/`post-gap-analysis` skills' Traceability principle had no mechanized check —
+ *   typed, versioned, trace-linked domain event") and the `plan`/`review-phase-plan`/
+ *   `next-steps`/`review-phase-code` skills' Traceability principle had no mechanized check —
  *   only prose review could catch a missing event.
  * @architectural-layer Script (test)
  * @dependencies [@std/assert, typescript]

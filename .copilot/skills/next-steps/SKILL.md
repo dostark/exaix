@@ -257,9 +257,9 @@ Do / Don't
 
 Related skills
 - #plan — create/extend the planning doc (precedes)
-- #pre-gap-analysis — validate the plan (precedes)
+- #review-phase-plan — validate the plan (precedes)
 - #remediate-plan-gaps — close pre-gap findings (precedes when found)
-- #post-gap-analysis — deep review after all steps (follows)
+- #review-phase-code — deep review after all steps (follows)
 - #commit — structured message per step
 - #tdd-workflow — full TDD reference per component
 - test-development — edge cases, helpers, placement
@@ -269,7 +269,7 @@ Related skills
 - Blueprints/Skills/security-first.skill.md — secure portal-code practices (step 13a)
 
 Workflow chain (typical):
-  #plan → #pre-gap-analysis → **#next-steps** → #post-gap-analysis → #commit
+  #plan → #review-phase-plan → **#next-steps** → #review-phase-code → #commit
 ```
 
 ## Related
@@ -294,7 +294,7 @@ Workflow chain (typical):
 ---
 exaix:
   skill_id: next-steps
-  related_skills: [remediate-plan-gaps, plan, tdd-workflow, commit, post-gap-analysis, test-development]
+  related_skills: [remediate-plan-gaps, plan, tdd-workflow, commit, review-phase-code, test-development]
   triggers:
     keywords: [next-steps, step-execution, implement, execute]
     task_types: [feature, bugfix, refactor, testing]

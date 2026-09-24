@@ -1,6 +1,6 @@
 ---
 name: remediate-code-gaps
-description: "Consumes post-gap-analysis gap findings and edits source code to close each gap — re-runs tests and commits"
+description: "Consumes review-phase-code gap findings and edits source code to close each gap — re-runs tests and commits"
 ---
 
 # Routing prompt — canonical source

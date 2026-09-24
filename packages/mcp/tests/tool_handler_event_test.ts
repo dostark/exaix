@@ -6,7 +6,7 @@
  * EventLogger/db, using a minimal concrete subclass — the same pattern already used by
  * ProbeToolHandler (tool_handler_git_test.ts) and StubReadHandler
  * (flow_runner_confirmation_wiring_test.ts) — deterministic, no daemon, no live
- * provider (Phase 169 Step 3 / pre-gap-analysis GAP-2).
+ * provider (Phase 169 Step 3 / review-phase-plan GAP-2).
  * @architectural-layer MCP
  * @related-files ["packages/mcp/server/tool_handler.ts"]
  */

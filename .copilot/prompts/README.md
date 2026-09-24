@@ -41,8 +41,8 @@ Every file in this directory must have a corresponding `.copilot/skills/<name>/S
 | `next-phase.prompt.md`           | `.copilot/skills/next-phase/`           |
 | `next-steps.prompt.md`           | `.copilot/skills/next-steps/`           |
 | `plan.prompt.md`                 | `.copilot/skills/plan/`                 |
-| `post-gap-analysis.prompt.md`    | `.copilot/skills/post-gap-analysis/`    |
-| `pre-gap-analysis.prompt.md`     | `.copilot/skills/pre-gap-analysis/`     |
+| `review-phase-code.prompt.md`    | `.copilot/skills/review-phase-code/`    |
+| `review-phase-plan.prompt.md`     | `.copilot/skills/review-phase-plan/`     |
 | `refactor.prompt.md`             | `.copilot/skills/refactor/`             |
 | `remediate-code-gaps.prompt.md`  | `.copilot/skills/remediate-code-gaps/`  |
 | `remediate-plan-gaps.prompt.md`  | `.copilot/skills/remediate-plan-gaps/`  |

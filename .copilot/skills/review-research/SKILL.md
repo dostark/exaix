@@ -113,10 +113,10 @@ Do / Don't
 - ❌ Skip the Documentation Update phase.
 - ❌ Start implementation here — this skill produces a plan only.
 
-Related: #plan; #pre-gap-analysis; #review-code (code-level, not subsystem); #next-steps;
+Related: #plan; #review-phase-plan; #review-code (code-level, not subsystem); #next-steps;
 #commit.
 
-Workflow chain: **#review-research** → #pre-gap-analysis → #next-steps → #post-gap-analysis
+Workflow chain: **#review-research** → #review-phase-plan → #next-steps → #review-phase-code
 ```
 
 ## Output format

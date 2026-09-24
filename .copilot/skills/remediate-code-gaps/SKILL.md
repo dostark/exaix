@@ -9,8 +9,8 @@ tools:
   - run_command
 scope: dev
 title: "Remediate Code Gaps Skill (#remediate-code-gaps)"
-description: Consumes post-gap-analysis gap findings and edits source code to close each gap — re-runs tests and commits
-short_summary: "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit."
+description: Consumes review-phase-code gap findings and edits source code to close each gap — re-runs tests and commits
+short_summary: "Edits source files to close code-level gaps identified by review-phase-code, then re-runs tests and creates a structured commit."
 version: "1.2.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "code-quality"]
 qwen_skill: remediate-code-gaps
@@ -22,9 +22,9 @@ Key points
 - Consume the plan's Post-Gap Analysis; close every code gap by editing source files.
 - Close only gaps the analysis explicitly opened. No extra refactoring or polish.
 - Per gap: read the affected source, then edit it to satisfy the gap's Resolution (the
-  remediation step added by post-gap-analysis).
+  remediation step added by review-phase-code).
 - TDD: new behavior → write the test first, then implement.
-- Do NOT rewrite the remediation step's Actions/notes — post-gap-analysis owns those. The
+- Do NOT rewrite the remediation step's Actions/notes — review-phase-code owns those. The
   ONLY plan-doc edit is marking its Success Criteria / Planned Tests done:
   `- ✅ <text> → \`<staged-path>\`` (or `- ⚠️ deferred <text> → \`<LedgerSymbol>\` + a
   Reachability Ledger row). This is a plan-step completion → the plan-step commit gate.
@@ -60,11 +60,11 @@ Do / Don't
 - ❌ Run a bare `git commit` for a remediation that flips plan-doc criteria — the gate
   blocks it or the plan doc + parent fall out of sync.
 
-Related: #post-gap-analysis (produces the steps); #self-improvement (terminal retro);
+Related: #review-phase-code (produces the steps); #self-improvement (terminal retro);
 #fix-bug (findings during remediation); #commit; test-development.
 
-Workflow chain: #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps →
-#post-gap-analysis → **#remediate-code-gaps** → #self-improvement-retro
+Workflow chain: #plan → #review-phase-plan → #remediate-plan-gaps → #next-steps →
+#review-phase-code → **#remediate-code-gaps** → #self-improvement-retro
 ```
 
 ## See also
@@ -157,7 +157,7 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
 ---
 exaix:
   skill_id: remediate-code-gaps
-  related_skills: [post-gap-analysis, test-development, exaix-development, self-improvement]
+  related_skills: [review-phase-code, test-development, exaix-development, self-improvement]
   triggers:
     keywords: [remediate-code, code-gaps, close-code-gaps, fix-code]
     task_types: [bugfix, refactor]

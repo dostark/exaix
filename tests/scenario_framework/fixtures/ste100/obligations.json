@@ -868,8 +868,8 @@
       ]
     },
     {
-      "id": "copilot-post-gap-analysis",
-      "canonicalPath": ".copilot/skills/post-gap-analysis/SKILL.md",
+      "id": "copilot-review-phase-code",
+      "canonicalPath": ".copilot/skills/review-phase-code/SKILL.md",
       "critical": false,
       "supportPaths": [],
       "selectors": {
@@ -903,8 +903,8 @@
       ]
     },
     {
-      "id": "copilot-pre-gap-analysis",
-      "canonicalPath": ".copilot/skills/pre-gap-analysis/SKILL.md",
+      "id": "copilot-review-phase-plan",
+      "canonicalPath": ".copilot/skills/review-phase-plan/SKILL.md",
       "critical": false,
       "supportPaths": [],
       "selectors": {

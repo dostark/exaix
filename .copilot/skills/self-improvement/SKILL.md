@@ -18,8 +18,8 @@ Key points
      act and verify? If not, run a **Doc Patch Loop** — the smallest task-scoped `.copilot/`
      update, rebuild/validate, continue the task.
   2. **Phase-loop retro (#self-improvement-retro)** (terminal step): after `#remediate-code-gaps`
-     closes, review the completed loop (plan → pre-gap-analysis → remediate-plan-gaps →
-     next-steps ×N → post-gap-analysis → remediate-code-gaps) and fix every problem it
+     closes, review the completed loop (plan → review-phase-plan → remediate-plan-gaps →
+     next-steps ×N → review-phase-code → remediate-code-gaps) and fix every problem it
      revealed: skill defects, confusing instructions, missing commands, structural gaps.
 - Keep updates grounded: checklists, examples, commands — no speculative "nice-to-have" prose.
 - Treat doc changes like code: minimal diff, clear success criteria, a regression test where
@@ -29,7 +29,7 @@ Key points
 
 Canonical prompt (short):
 - Mid-task: "Before implementing changes, run an Instruction Adequacy Check against .copilot/. If instructions are insufficient, patch .copilot/ with the smallest update needed (doc/template/cross-reference), rebuild/validate artifacts, then proceed with the primary task using the improved instructions."
-- Retro (terminal, phase loop): "Run the self-improvement-retro for phase-NN: review the loop we just ran (plan → pre-gap-analysis → remediate-plan-gaps → next-steps → post-gap-analysis → remediate-code-gaps), answer the four retro questions from the session evidence, list every gap in the skills / instructions / .copilot structure it revealed, patch the smallest fix for each, add regression tests where friction recurred, rebuild/validate .copilot artifacts, and write the Retrospective into the phase doc."
+- Retro (terminal, phase loop): "Run the self-improvement-retro for phase-NN: review the loop we just ran (plan → review-phase-plan → remediate-plan-gaps → next-steps → review-phase-code → remediate-code-gaps), answer the four retro questions from the session evidence, list every gap in the skills / instructions / .copilot structure it revealed, patch the smallest fix for each, add regression tests where friction recurred, rebuild/validate .copilot artifacts, and write the Retrospective into the phase doc."
 ```
 
 ## Instruction adequacy check
@@ -63,8 +63,8 @@ loop just completed becomes a concrete improvement to the agent instructions.
 Position in the loop — this skill is the terminal step:
 
 ```
-#plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps (×N) →
-#post-gap-analysis → #remediate-code-gaps → #self-improvement-retro
+#plan → #review-phase-plan → #remediate-plan-gaps → #next-steps (×N) →
+#review-phase-code → #remediate-code-gaps → #self-improvement-retro
 ```
 
 1. **Gather the session evidence**
@@ -85,7 +85,7 @@ Position in the loop — this skill is the terminal step:
 
 3. **Route every finding to a fix** (do not stop at "good to know")
    - **Classify the finding FIRST: is it a general process/skill defect, or a
-     phase/domain-specific detail?** A general skill (e.g. `post-gap-analysis`,
+     phase/domain-specific detail?** A general skill (e.g. `review-phase-code`,
      `remediate-code-gaps`, `test-development`) must only carry guidance that is true for
      every phase and every domain. If the finding describes one phase's scenario shape,
      one test helper's exact call, one component's event family, or one file's exact
@@ -279,9 +279,9 @@ Do / Don't
   - Patch: add/update a skill under `.copilot/skills/` requiring Files → Plan → Diffs → Verification, and regenerate the prompt wrapper with `scripts/generate_prompt.ts --skill <name>`.
 
 - **Example: Phase-loop retro finding**
-  - Session: during #next-steps the agent twice mis-ran the plan-step commit because the `→`-path rule was buried mid-document; the #post-gap-analysis "re-read every Resolution" rule was also missed once.
+  - Session: during #next-steps the agent twice mis-ran the plan-step commit because the `→`-path rule was buried mid-document; the #review-phase-code "re-read every Resolution" rule was also missed once.
   - Q1 answer: "blocked commits twice on the plan-step gate; the commit rule was hard to find."
-  - Gaps: (1) next-steps buries the `→`-path staging rule; (2) post-gap-analysis' re-verify rule is easy to skip.
+  - Gaps: (1) next-steps buries the `→`-path staging rule; (2) review-phase-code' re-verify rule is easy to skip.
   - Patch: move each rule into its skill's Do/Don't list; add `tests/agents/` assertions that the bullets exist; append the Retrospective section to the phase doc.
 
 - **Example: Phase-doc status hygiene audit**
@@ -304,14 +304,14 @@ Do / Don't
 ## Related
 
 - [plan](../plan/SKILL.md) — phase planning documents (precedes the loop)
-- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — plan validation before implementation
-- [post-gap-analysis](../post-gap-analysis/SKILL.md) — post-implementation review against plan
+- [review-phase-plan](../review-phase-plan/SKILL.md) — plan validation before implementation
+- [review-phase-code](../review-phase-code/SKILL.md) — post-implementation review against plan
 - [test-development](../test-development/SKILL.md) — regression-test placement for doc fixes
 
 ---
 exaix:
   skill_id: self-improvement
-  related_skills: [remediate-code-gaps, plan, pre-gap-analysis, post-gap-analysis, test-development]
+  related_skills: [remediate-code-gaps, plan, review-phase-plan, review-phase-code, test-development]
   triggers:
     keywords: [
       self-improvement,

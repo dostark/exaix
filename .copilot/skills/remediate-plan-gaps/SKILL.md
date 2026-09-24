@@ -9,8 +9,8 @@ tools:
   - run_command
 scope: dev
 title: "Remediate Plan Gaps Skill (#remediate-plan-gaps)"
-description: Consumes pre-gap-analysis gap findings and edits plan step definitions to close each gap — re-runs tests and bumps version
-short_summary: "Edits phase planning documents to close gaps identified by pre-gap-analysis, then re-runs tests and bumps the document version."
+description: Consumes review-phase-plan gap findings and edits plan step definitions to close each gap — re-runs tests and bumps version
+short_summary: "Edits phase planning documents to close gaps identified by review-phase-plan, then re-runs tests and bumps the document version."
 version: "1.0.1"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "documentation"]
 qwen_skill: remediate-plan-gaps
@@ -46,11 +46,11 @@ Do / Don't
 - ❌ Change steps with no open gaps.
 - ❌ Edit code files — only the planning document.
 
-Related: #pre-gap-analysis (produces the gaps); #next-steps; #commit;
+Related: #review-phase-plan (produces the gaps); #next-steps; #commit;
 [test-development](../test-development/SKILL.md) — edge cases, helpers, placement.
 
-Workflow chain: #plan → #pre-gap-analysis → **#remediate-plan-gaps** → #next-steps →
-#post-gap-analysis → #remediate-code-gaps → #commit
+Workflow chain: #plan → #review-phase-plan → **#remediate-plan-gaps** → #next-steps →
+#review-phase-code → #remediate-code-gaps → #commit
 ```
 
 ## See also
@@ -111,7 +111,7 @@ Use `#commit`. Type: `fix`. Fields: `what:`, `rationale:`, `tests:`, `who:`, `im
 ---
 exaix:
   skill_id: remediate-plan-gaps
-  related_skills: [pre-gap-analysis, next-steps, test-development]
+  related_skills: [review-phase-plan, next-steps, test-development]
   triggers:
     keywords: [remediate-plan, plan-gaps, close-gaps, fix-plan]
     task_types: [planning]

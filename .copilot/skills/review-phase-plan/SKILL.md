@@ -1,5 +1,5 @@
 ---
-name: pre-gap-analysis
+name: review-phase-plan
 agent: senior-coder
 tools:
   - read_file
@@ -7,7 +7,7 @@ tools:
   - search_files
   - run_command
 scope: dev
-title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
+title: "Pre-Gap Analysis Skill (#review-phase-plan)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
 version: "1.10.1"
@@ -22,7 +22,7 @@ topics: [
   "reachability",
   "integration",
 ]
-qwen_skill: pre-gap-analysis
+qwen_skill: review-phase-plan
 ---
 
 ```text
@@ -64,8 +64,8 @@ references and report every ambiguity, missing contract, and implementation
 risk before we start coding. Write the gaps into the document."
 
 Examples
-- "#pre-gap-analysis exaix-dev-docs/planning/phase-65-flow-scheduler.md"
-- "#pre-gap-analysis exaix-dev-docs/planning/phase-48-acceptance-criteria-propagation.md
+- "#review-phase-plan exaix-dev-docs/planning/phase-65-flow-scheduler.md"
+- "#review-phase-plan exaix-dev-docs/planning/phase-48-acceptance-criteria-propagation.md
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
@@ -123,18 +123,18 @@ Do / Don't
 - ❌ Skip event payload typing.
 - ❌ Register trivial gaps as full entries — fix in-place, note in "In-Place Fixes".
 
-Related: #plan; #remediate-plan-gaps (closes what this finds); #next-steps; #post-gap-analysis;
+Related: #plan; #remediate-plan-gaps (closes what this finds); #next-steps; #review-phase-code;
 #commit; test-development.
 
-Workflow chain: #plan → **#pre-gap-analysis** → #remediate-plan-gaps → #next-steps →
-#post-gap-analysis → #commit
+Workflow chain: #plan → **#review-phase-plan** → #remediate-plan-gaps → #next-steps →
+#review-phase-code → #commit
 ```
 
 ## See also
 
 - [plan](../plan/SKILL.md) — structure, remediation format
 - [remediate-plan-gaps](../remediate-plan-gaps/SKILL.md) — closes these gaps
-- [post-gap-analysis](../post-gap-analysis/SKILL.md) — post-implementation review
+- [review-phase-code](../review-phase-code/SKILL.md) — post-implementation review
 
 ---
 
@@ -151,6 +151,7 @@ path/symbol/field/constant). Read supplied documents as ground truth; note confl
 ### Phase 2 — Architectural Alignment & Necessity Check
 
 BEFORE verifying source. Failure → 🟡 Feasibility (or recommend cancellation).
+
 1. **Independently survey the subsystem first** — never answer "does it already exist"
    from the plan or memory. Map where the capability would ALREADY be represented: the
    canonical catalog/schema/registry (DomainEventType, storage migrations, Zod schemas,
@@ -172,12 +173,13 @@ BEFORE verifying source. Failure → 🟡 Feasibility (or recommend cancellation
    Works identically solo vs multi-user?
 1. **Complexity-to-value ratio**: implementation surface vs how often exercised. Poor
    ratio → 🟡 + simpler alternative or postponement.
-A "should not proceed" conclusion → 🟡 Feasibility with
-`Resolution: "Recommend cancellation — see Phase 2 findings"`, written into the doc.
+   A "should not proceed" conclusion → 🟡 Feasibility with
+   `Resolution: "Recommend cancellation — see Phase 2 findings"`, written into the doc.
 
 ### Phase 2A — Interface Verification (codebase-level)
 
 Verify every interface/type/schema the plan creates or extends actually exists and matches:
+
 1. Catalogue create/extend/add-to references; grep each.
    Classify: 🟢 EXISTS-MATCH; 🟡 EXISTS-MISMATCH (real signature → gap); 🔴 NOT-FOUND-NEW
    (expected); 🔴 NOT-FOUND-EXTEND (says "extend", doesn't exist → Critical — create it or
@@ -244,6 +246,7 @@ checklist items. Findings are 🔒, triaged above 🟡.
 ### Phase 7 — Traceability & Configurability
 
 Per new-behavior step:
+
 - **Coverage, not typing**: a state change or cross-component call the Actions describe
   with NO named event is a gap — don't only type-check events the plan does mention.
 - **`@visible` candidacy**: a load-bearing class (request→plan→execution→review→memory
@@ -267,6 +270,7 @@ The most expensive gap: components buildable/testable but never wired into a liv
 Run on every plan. Default 🟡 Feasibility; **🔴 Critical when a step's runtime criteria
 have no wiring path anywhere** (internally contradictory). Caught here is cheapest
 (#next-steps' gate and #post-gap re-run it).
+
 1. **Reachability anchor** — every runtime-claiming step names (a) the call-site
    (`file:Symbol`, e.g. `apps/daemon/main.ts`) and (b) an integration/scenario test driving
    it. Package-unit-only or no call-site = gap (the test is the only caller).
@@ -286,13 +290,13 @@ have no wiring path anywhere** (internally contradictory). Caught here is cheape
 
 ### Phase 9 — Gap Classification
 
-| Symbol | Meaning |
-| ------ | ------- |
-| 🔴 Critical | Blocks implementation — contradictory plan or missing required symbol |
-| 🔒 Security | Control unspecified/missing (OWASP) |
-| 🟡 Feasibility | Risky assumption or unspecified algorithm — needs a decision |
-| 🟠 Testing | Missing/under-specified test |
-| 🔵 Conceptual | Minor ambiguity or style — low risk, clarify |
+| Symbol         | Meaning                                                               |
+| -------------- | --------------------------------------------------------------------- |
+| 🔴 Critical    | Blocks implementation — contradictory plan or missing required symbol |
+| 🔒 Security    | Control unspecified/missing (OWASP)                                   |
+| 🟡 Feasibility | Risky assumption or unspecified algorithm — needs a decision          |
+| 🟠 Testing     | Missing/under-specified test                                          |
+| 🔵 Conceptual  | Minor ambiguity or style — low risk, clarify                          |
 
 Reachability → 🟡 by default, 🔴 when a runtime criterion has no wiring path. An open 🔴
 blocks `✅ READY TO IMPLEMENT`. A Resolution deferring the decision to implementation time
@@ -314,7 +318,7 @@ Build the gap summary table before detailed entries.
    ```
 1. Register non-trivial gaps. Required format:
 
-````markdown
+```markdown
 ---
 
 ## Pre-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ READY TO IMPLEMENT
@@ -341,7 +345,7 @@ Build the gap summary table before detailed entries.
 1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` in `file.ts:N`]
 2. 🟡 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
 3. 🔴 [GAP-3] <action deferring the choice> — ⏳ DEFERRED-TO-IMPLEMENTATION
-````
+```
 
 Verification rules: (1) grep every code-change claim — missing symbol = `⛔ UNVERIFIED`,
 step ⏳; (2) cross-reference step markers — "implemented" on a CORE step = contradiction;
@@ -370,7 +374,7 @@ edits = not closed.
 
 ---
 exaix:
-  skill_id: pre-gap-analysis
+  skill_id: review-phase-plan
   related_skills: [plan, remediate-plan-gaps, test-development]
   triggers:
     keywords: [pre-gap, plan-review, gap-analysis, gap]
