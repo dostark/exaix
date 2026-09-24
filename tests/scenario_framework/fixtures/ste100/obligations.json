@@ -231,6 +231,99 @@
         "Follow the dogfood loop request-to-close ordering with depends_on",
         "Run the daily meta-pipeline: pre-gap, next-steps, post-gap, clean-codebase"
       ]
+    },
+    {
+      "id": "copilot-upgrade",
+      "canonicalPath": ".copilot/skills/upgrade/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow",
+          "Phase 4 — Full validation",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow",
+          "Phase 4 — Full validation",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Read the changelog and identify breaking changes before upgrading",
+        "Write or update regression tests before applying the upgrade",
+        "Keep the upgrade atomic: one dependency per commit",
+        "Keep a verified rollback path before merging; revert and confirm the GREEN baseline if blocked",
+        "Run the full suite after a version bump and rerun coverage via scripts/ci.ts",
+        "Prefer minimal call-site changes; never use as any to suppress type errors"
+      ]
+    },
+    {
+      "id": "copilot-refactor",
+      "canonicalPath": ".copilot/skills/refactor/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Exaix refactoring patterns",
+          "Security check",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Exaix refactoring patterns",
+          "Security check",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Keep zero behavior change: tests must pass before and after",
+        "Extract interfaces with IFoo naming and inject via constructor",
+        "Place constants in the correct file, production or test",
+        "Route file paths through PathSecurity.resolveAndValidate",
+        "Decompose god objects with the six-step pattern and check:god-objects",
+        "Do not fix layer-constant leaks by duplicating or inlining values"
+      ]
+    },
+    {
+      "id": "copilot-fix-bug",
+      "canonicalPath": ".copilot/skills/fix-bug/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow",
+          "Instructions for Agent",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow",
+          "Instructions for Agent",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Write the failing regression test before the fix; RED must come first",
+        "Fix only the root cause and keep the diff minimal",
+        "Use the established test helpers: initTestDbService, createCliTestContext",
+        "Identify a single root cause before writing regression tests",
+        "Run all CI gates, including check:arch and fmt, before committing",
+        "Revert and re-analyse after two failed GREEN attempts"
+      ]
     }
   ]
 }

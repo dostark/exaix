@@ -100,11 +100,10 @@ Exaix refactoring patterns
         After:  class Foo { private adapter: FooAdapter; }
                 class FooAdapter implements IFoo { /* composes services */ }
 
-     Example: AgentExecutor was decomposed from ~1750 lines / 16 deps
-     to ~950 lines / 11 deps by extracting 7 services (ExecutionContext,
-     Blueprint, PromptBuilder, GitAudit, OutputParser, HistoryManager,
-     ReActLoopAdapter). Each extraction was done with TDD, removing
-     100-250 lines at a time over a single weekend session.
+     Example: AgentExecutor went from ~1750 lines / 16 deps to ~950 lines / 11 deps by
+     extracting 7 services (ExecutionContext, Blueprint, PromptBuilder, GitAudit,
+     OutputParser, HistoryManager, ReActLoopAdapter). Each extraction used TDD, removing
+     100-250 lines at a time.
 
 Security check (apply when the refactor touches portal code or any boundary:
   input parsing, file paths, SQL queries, subprocesses, HTTP handlers, auth, secrets)

@@ -104,7 +104,7 @@ Related skills:
 
 ## Instructions for Agent
 
-You are performing a **systematic bug fix** following the TDD root-cause loop.
+Fix the bug by the TDD root-cause loop: reproduce, write a failing regression test, apply the minimal fix, pass the CI gates, commit.
 
 ### Phase 1 — Reproduce
 

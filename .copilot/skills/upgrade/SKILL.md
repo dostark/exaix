@@ -18,12 +18,12 @@ qwen_skill: upgrade
 
 ```text
 Key points
-- Never upgrade blindly — read the changelog and identify breaking changes first
+- Do not upgrade blindly — read the changelog and identify breaking changes first
 - Write or update regression tests BEFORE applying the upgrade
 - Keep the upgrade atomic: one dependency per commit where possible
-- Always have a verified rollback path before merging
+- Have a verified rollback path before merging
 - Run the full test suite (deno task test) after any version bump — blast radius is unknown
-- When auditing call sites across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
+- For call-site audits above ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 
 Canonical prompt (short):
 "Upgrade [dependency/runtime] from [current version] to [target version].
