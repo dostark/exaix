@@ -290,7 +290,10 @@ async function addedLinesForFile(file: string): Promise<Set<number>> {
   return parseChangedLinesFromUnifiedDiff(new TextDecoder().decode(out.stdout));
 }
 
-async function checkFile(file: string, addedLines?: Opt<Set<number>, Reason.OptionalContext>): Promise<ICommentFinding[]> {
+async function checkFile(
+  file: string,
+  addedLines?: Opt<Set<number>, Reason.OptionalContext>,
+): Promise<ICommentFinding[]> {
   const source = await Deno.readTextFile(file);
   const { findings } = checkText(source, file, addedLines);
   return findings;
