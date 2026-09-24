@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-skills: [tdd-methodology, security-first, code-review, exaix-conventions, portal-grounding]
+skills: [tdd-methodology, security-first, code-review, portal-grounding]
 ---
 
 # Review the request-file path handling for traversal and injection defects

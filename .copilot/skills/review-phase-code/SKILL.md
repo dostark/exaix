@@ -291,7 +291,7 @@ Append using exactly:
 step: <N+1>
 title: "<remediation step title>"
 agent_role: senior-coder
-skills: [exaix-conventions]
+skills: [portal-grounding]
 portal: exaix-self
 target_branch: feat/phase-NN
 depends_on: [<previous step>]

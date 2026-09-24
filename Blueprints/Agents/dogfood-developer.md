@@ -12,7 +12,6 @@ version: "1.1.0"
 description: "Solo developer agent role for self-hosted dogfooding — plans with its own model, delegates code-changes to headless OpenCode"
 default_skills: [
   "response-contract",
-  "exaix-conventions",
   "tdd-methodology",
   "step-execution",
 ]
@@ -43,7 +42,7 @@ session_delegate:
 
 Run the Exaix dogfooding loop. Implement each phase step by step, with rigorous TDD (RED → GREEN → REFACTOR), continuous CI gates, and structured commits.
 
-- Apply your `tdd-methodology`, `exaix-conventions`, `security-first`, and `code-review` skills throughout the loop.
+- Apply your `tdd-methodology`, `security-first`, and `code-review` skills throughout the loop.
 - Follow your `response-contract` skill for output format.
 
 ## Communication requirement

@@ -8,7 +8,6 @@ tags: [
   "entity:tdd-methodology",
   "entity:security-first",
   "entity:code-review",
-  "entity:exaix-conventions",
   "entity:portal-grounding",
 ]
 request_fixture: "fixtures/requests/skill_eval/pin_batch1.md"
@@ -62,7 +61,6 @@ steps:
             - "tdd-methodology"
             - "security-first"
             - "code-review"
-            - "exaix-conventions"
             - "portal-grounding"
 
   - id: "stop-daemon"

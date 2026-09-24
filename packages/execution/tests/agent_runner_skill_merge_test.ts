@@ -82,11 +82,11 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
 
   const blueprint: IBlueprint = {
     systemPrompt: "test",
-    defaultSkills: ["tdd-methodology", "exaix-conventions", "portal-grounding", "security-first", "code-review"],
+    defaultSkills: ["tdd-methodology", "security-first", "portal-grounding", "code-review"],
   };
 
   const request = {
-    skills: ["exaix-conventions"],
+    skills: ["security-first"],
     userPrompt: "implement feature",
     taskType: "feature",
   };
@@ -101,10 +101,10 @@ Deno.test("[agent-runner-merge] default_skills union into resolved set when requ
   const resolved: string[] = result.skillIds;
 
   // Must contain the explicit request skill
-  assertEquals(resolved.includes("exaix-conventions"), true);
+  assertEquals(resolved.includes("security-first"), true);
 
-  // Must ALSO contain all 5 default_skills from the agent role
-  const rigorSkills = ["tdd-methodology", "exaix-conventions", "portal-grounding", "security-first", "code-review"];
+  // Must ALSO contain all default_skills from the agent role
+  const rigorSkills = ["tdd-methodology", "security-first", "portal-grounding", "code-review"];
   for (const skill of rigorSkills) {
     assertEquals(resolved.includes(skill), true, `resolved set must include '${skill}'`);
   }
@@ -163,12 +163,12 @@ Deno.test("[step17] explicit pin concatenates with every agent-role default", as
     systemPrompt: "test",
     defaultSkills: ["response-contract", "error-handling", "portal-grounding"],
   };
-  const request = { skills: ["exaix-conventions"], userPrompt: "do the thing", taskType: "feature" };
+  const request = { skills: ["portal-grounding"], userPrompt: "do the thing", taskType: "feature" };
 
   const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
   const resolved: string[] = result.skillIds;
 
-  assertEquals(resolved.includes("exaix-conventions"), true, "the pinned skill is present");
+  assertEquals(resolved.includes("portal-grounding"), true, "the pinned skill is present");
   for (const id of blueprint.defaultSkills!) {
     assertEquals(resolved.includes(id), true, `default ${id} must be concatenated, critical or not`);
   }

@@ -101,7 +101,7 @@ Deno.test("[step17e] a pinned request journals skills.resolved even though match
   const captured: ICapturedEvent[] = [];
   const runner = createRunner(captured);
   const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["response-contract", "error-handling"] };
-  const request = { skills: ["exaix-conventions"], userPrompt: "do the thing", taskType: "feature" };
+  const request = { skills: ["portal-grounding"], userPrompt: "do the thing", taskType: "feature" };
 
   await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
 
@@ -109,10 +109,10 @@ Deno.test("[step17e] a pinned request journals skills.resolved even though match
   assertEquals(events.length, 1, "exactly one resolution event per skill-management pass");
 
   const payload = events[0].payload as IResolutionPayload;
-  assertEquals(payload.pinned_skill_ids, ["exaix-conventions"]);
+  assertEquals(payload.pinned_skill_ids, ["portal-grounding"]);
   assertEquals(payload.matched_skill_ids, []);
   assertEquals(payload.default_skill_ids, ["response-contract", "error-handling"]);
-  assertEquals(payload.skill_ids, ["exaix-conventions", "response-contract", "error-handling"]);
+  assertEquals(payload.skill_ids, ["portal-grounding", "response-contract", "error-handling"]);
   assertEquals(payload.skill_count, 3);
 });
 

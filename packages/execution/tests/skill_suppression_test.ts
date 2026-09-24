@@ -116,16 +116,16 @@ Deno.test("[SkillSuppression] a suppressed default skill is absent from the reso
 });
 
 Deno.test("[SkillSuppression] a suppressed pinned skill is absent from the resolved set", async () => {
-  await withSuppressedSkills("exaix-conventions", async () => {
+  await withSuppressedSkills("portal-grounding", async () => {
     const captured: ICapturedEvent[] = [];
     const runner = createRunner(captured);
     const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: [] };
-    const request = { skills: ["exaix-conventions"], userPrompt: "do the thing", taskType: "feature" };
+    const request = { skills: ["portal-grounding"], userPrompt: "do the thing", taskType: "feature" };
 
     const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-role");
     const resolved: string[] = result.skillIds;
 
-    assertEquals(resolved.includes("exaix-conventions"), false, "a pin does not override suppression");
+    assertEquals(resolved.includes("portal-grounding"), false, "a pin does not override suppression");
   });
 });
 

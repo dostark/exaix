@@ -60,7 +60,7 @@ export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "product-manager": ["response-contract", "requirements-analysis"],
   "software-architect": ["response-contract", "architecture-review"],
   "senior-coder": ["response-contract", "tdd-methodology"],
-  "dogfood-developer": ["response-contract", "exaix-conventions", "tdd-methodology"],
+  "dogfood-developer": ["response-contract", "tdd-methodology"],
   "qa-engineer": ["response-contract-qa", "tdd-methodology"],
   "test-engineer": ["response-contract", "tdd-methodology"],
   "security-expert": ["response-contract", "security-first"],
@@ -69,7 +69,7 @@ export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "quality-judge": ["response-contract-judge", "verdict-rubric"],
   "voting-judge": ["response-contract-judge", "verdict-rubric"],
   "research-synthesizer": ["response-contract", "research-methodology"],
-  "dogfood-coder": ["response-contract", "exaix-conventions", "tdd-methodology"],
+  "dogfood-coder": ["response-contract", "tdd-methodology"],
   "code-reviewer": ["response-contract", "code-review"],
 };
 

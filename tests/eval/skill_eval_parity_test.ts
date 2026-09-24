@@ -23,7 +23,7 @@ async function readShippedSkillIds(): Promise<string[]> {
   return ids.sort();
 }
 
-const BATCH_SKILLS_1 = ["tdd-methodology", "security-first", "code-review", "exaix-conventions", "portal-grounding"];
+const BATCH_SKILLS_1 = ["tdd-methodology", "security-first", "code-review", "portal-grounding"];
 const BATCH_SKILLS_2 = [
   "architecture-review",
   "blueprint-best-practices",

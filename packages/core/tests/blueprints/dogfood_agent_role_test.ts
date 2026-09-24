@@ -28,7 +28,7 @@ Deno.test("[dogfood-agent-role] dogfood-developer loads through IBlueprintLoader
 /** Skills this agent role cannot do its job without, whatever else it carries — deliberately
  *  a SUBSET, not an exact list or count, both of which break on any legitimate curation
  *  without saying what the agent role actually needs. */
-const DOGFOOD_REQUIRED_SKILLS = ["response-contract", "exaix-conventions", "tdd-methodology"];
+const DOGFOOD_REQUIRED_SKILLS = ["response-contract", "tdd-methodology"];
 
 Deno.test("[dogfood-agent-role] dogfood-developer carries the skills its role requires", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: AGENTS_PATH });

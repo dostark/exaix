@@ -8,26 +8,22 @@ skill_id: "blueprint-best-practices"
 name: "Blueprint Best Practices"
 version: "1.0.0"
 description: "Guidelines for generating high-quality, executable plans — precision, grounding, executability, minimal change, and risk awareness"
-
 triggers:
   tags:
     - best-practices
     - plan-quality
     - blueprint
-
 constraints:
   - "Never overwrite unrelated changes — use patch_file for targeted edits to large files"
   - "Only cite files and symbols that exist in the provided portal context; verify before acting"
   - "Every plan step must have concrete successCriteria and explicit tools/actions"
   - "Solve the task with the fewest edits that satisfy the requirements"
-
 output_requirements:
   - "Precision: use patch_file for targeted edits, write_file only for new or small files"
   - "Ground references: verify file/symbol existence before acting"
   - "Executable steps: each step has concrete successCriteria and explicit tools/actions"
   - "Minimal change: solve with the fewest edits that satisfy requirements"
   - "Assumptions and risks: surface ambiguity and destructive actions explicitly"
-
 quality_criteria:
   - name: "Grounding"
     description: "Every referenced file and symbol is verified to exist"
@@ -41,7 +37,6 @@ quality_criteria:
   - name: "Risk Transparency"
     description: "Ambiguities and destructive actions are surfaced explicitly"
     weight: 20
-
 compatible_with:
   agents:
     - "*"
@@ -49,14 +44,31 @@ compatible_with:
 
 # Blueprint Best Practices
 
-A good plan is precise, grounded, executable, minimal, and honest about risk. Apply these five practices to every plan you produce.
+A good plan is precise, grounded, executable, minimal, and honest about risk.
+Apply these five practices to every plan you produce.
 
-1. **Precision**: Use `patch_file` for targeted edits to large files; reserve `write_file` for new or small files so you never overwrite unrelated changes. Touching only the lines that must change keeps diffs reviewable and avoids regressions in code you did not intend to modify. When `write_file` is genuinely required for a large new file, use the `TOML_BLOCK:N` pattern from `response-contract` rather than inline JSON.
+1. **Precision**: Use `patch_file` for targeted edits to large files; reserve
+   `write_file` for new or small files so you never overwrite unrelated changes.
+   Touching only the lines that must change keeps diffs reviewable and avoids
+   regressions in code you did not intend to modify. When `write_file` is
+   genuinely required for a large new file, use the `TOML_BLOCK:N` pattern from
+   `response-contract` rather than inline JSON.
 
-2. **Ground every reference**: Only cite files and symbols that exist in the provided portal context; verify with `read_file`/`grep_search` before acting, and never invent paths or modules. A plan built on a hallucinated path fails the moment an agent tries to execute it.
+2. **Ground every reference**: Only cite files and symbols that exist in the
+   provided portal context; verify with `read_file`/`grep_search` before acting,
+   and never invent paths or modules. A plan built on a hallucinated path fails
+   the moment an agent tries to execute it.
 
-3. **Make steps executable**: Each plan step needs concrete `successCriteria` and, where it changes the workspace, explicit `tools`/`actions` — a step a reader cannot verify or run is not done. Prefer one verifiable outcome per step over a vague paragraph of intent.
+3. **Make steps executable**: Each plan step needs concrete `successCriteria`
+   and, where it changes the workspace, explicit `tools`/`actions` — a step a
+   reader cannot verify or run is not done. Prefer one verifiable outcome per
+   step over a vague paragraph of intent.
 
-4. **Prefer the smallest change**: Solve the task with the fewest edits that satisfy the requirements; avoid speculative refactors or unrequested scope. Extra scope is extra risk and extra review; defer it to its own request.
+4. **Prefer the smallest change**: Solve the task with the fewest edits that
+   satisfy the requirements; avoid speculative refactors or unrequested scope.
+   Extra scope is extra risk and extra review; defer it to its own request.
 
-5. **State assumptions and risks**: If a requirement is ambiguous or an action is destructive, surface it in `<thought>` and list it under the plan's `risks` rather than guessing silently. Naming a risk lets the reviewer accept or redirect it before any change is made.
+5. **State assumptions and risks**: If a requirement is ambiguous or an action
+   is destructive, surface it in `<thought>` and list it under the plan's
+   `risks` rather than guessing silently. Naming a risk lets the reviewer accept
+   or redirect it before any change is made.

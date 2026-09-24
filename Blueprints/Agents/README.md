@@ -41,7 +41,7 @@ Apply your `code-review` skill for systematic review; follow your
 `response-contract` skill for output format.
 ```
 
-- `capabilities` are **behavioural tags** (e.g. `evaluation`, `analysis`), never  tool names. Tools of an agent role may invoke go in `permitted_tools` (valid
+- `capabilities` are **behavioural tags** (e.g. `evaluation`, `analysis`), never tool names. Tools of an agent role may invoke go in `permitted_tools` (valid
   `McpToolName` / `ToolName` values), kept least-privilege — read-only roles
   (analysts, judges, reviewers) carry no `write_file`/`run_command`/`delete_file`.
 - Every agent role should include `response-contract` in `default_skills` — it
@@ -52,7 +52,7 @@ for the authoritative field reference.
 
 ## Available agent roles
 
-| Agent Role              | Use case                                        |
+| Agent Role             | Use case                                        |
 | ---------------------- | ----------------------------------------------- |
 | `default`              | General-purpose coding assistant                |
 | `senior-coder`         | Complex, expert-level implementations           |
@@ -68,7 +68,7 @@ for the authoritative field reference.
 | `quality-judge`        | LLM-as-a-Judge quality evaluation               |
 | `voting-judge`         | LLM-as-a-Judge multi-candidate voting consensus |
 | `dogfood-developer`    | Self-hosted dogfooding (TDD loop)               |
-| `mock-agent`           | Deterministic agent role for tests/CI             |
+| `mock-agent`           | Deterministic agent role for tests/CI           |
 
 ## Using an agent role
 

@@ -30,7 +30,7 @@ permitted_tools:
 
 Design scalable, maintainable systems that align with business requirements.
 
-- Apply your `exaix-conventions` and `architecture-review` skills for systematic architecture evaluation.
+- Apply your `architecture-review` skill for systematic architecture evaluation.
 - Follow your `response-contract` skill for output format.
 
 ## Communication requirement

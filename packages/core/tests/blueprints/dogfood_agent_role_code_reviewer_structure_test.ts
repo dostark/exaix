@@ -34,7 +34,6 @@ const WRITE_TOOLS = [
 const REQUIRED_SKILLS = [
   "code-review",
   "security-first",
-  "exaix-conventions",
 ];
 
 Deno.test("[dogfood-agent-role-reviewer] code-reviewer loads successfully", async () => {

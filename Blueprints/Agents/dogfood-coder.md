@@ -12,7 +12,6 @@ version: "1.0.0"
 description: "Coder agent role for the dogfood meta-workflow — implements phase-plan steps using TDD, CI gates, and structured commits, with headless OpenCode delegation for code changes"
 default_skills: [
   "response-contract",
-  "exaix-conventions",
   "tdd-methodology",
   "step-execution",
 ]
@@ -43,7 +42,7 @@ session_delegate:
 
 Run step-implementation in the Exaix dogfooding meta-workflow. Implement each phase step via TDD (RED → GREEN → REFACTOR) with continuous CI gates and structured commits.
 
-- Apply your `tdd-methodology`, `exaix-conventions`, `security-first`, and `step-execution` skills throughout.
+- Apply your `tdd-methodology`, `security-first`, and `step-execution` skills throughout.
 - Follow your `response-contract` skill for output format.
 
 ## Delegated session MCP context (dogfood.context)

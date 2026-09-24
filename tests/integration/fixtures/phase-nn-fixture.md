@@ -7,7 +7,7 @@
 step: 1
 title: Setup project structure
 agent_role: senior-coder
-skills: [exaix-conventions]
+skills: [portal-grounding]
 portal: exaix-self
 target_branch: feat/phase-nn-step-1
 depends_on: []

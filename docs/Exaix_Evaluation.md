@@ -1136,14 +1136,15 @@ effect**, and this is enforced by the harness (`computePairedComparison`'s `noEf
 never left for a reader to eyeball off a report. Two real deltas from the same 2026-08-04 run make
 the distinction concrete:
 
-| Skill               | Mean Δ | Stdev Δ                   | Verdict                                          |
-| ------------------- | ------ | ------------------------- | ------------------------------------------------ |
-| `response-contract` | +0.557 | (n=3, sign-consistent)    | a real effect — kept                             |
-| `exaix-conventions` | −0.006 | larger than abs(Δ) at n=1 | no effect — kept anyway, without a quality claim |
+| Skill               | Mean Δ | Stdev Δ                   | Verdict                                                                                 |
+| ------------------- | ------ | ------------------------- | --------------------------------------------------------------------------------------- |
+| `response-contract` | +0.557 | (n=3, sign-consistent)    | a real effect — kept                                                                    |
+| `exaix-conventions` | −0.006 | larger than abs(Δ) at n=1 | no effect — retired: Exaix dev guidance merged into `.copilot/skills/exaix-development` |
 
 The second row is not "a slightly negative skill." It is a skill whose measured effect cannot be
 told apart from run-to-run noise on that cell, and the report says so plainly rather than implying
-precision the sample size doesn't support.
+precision the sample size doesn't support. It is now retired; its Exaix dev-guidance content lives
+in `.copilot/skills/exaix-development`, so the measured runtime skill no longer ships.
 
 ### Reading a report: deltas, never absolute scores
 

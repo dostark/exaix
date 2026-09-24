@@ -97,7 +97,7 @@ created: "$(date -Iseconds)"
 status: pending
 priority: 5
 agent_role: senior-coder
-skills: [tdd-methodology, exaix-conventions]
+skills: [tdd-methodology, portal-grounding]
 portal: "exaix-self"
 target_branch: "feature/health-endpoint"
 tags: ["feature", "phase-121"]
@@ -332,15 +332,14 @@ CI gates and other measurable outcomes.
 Define skills by name in the `skills` frontmatter field. Each skill
 auto-injects its instructions into the agent's prompt:
 
-| Skill               | What it enforces                                    |
-| ------------------- | --------------------------------------------------- |
-| `tdd-methodology`   | RED→GREEN→REFACTOR cycle; tests before code         |
-| `exaix-conventions` | Code style, import rules, DI patterns               |
-| `security-first`    | OWASP Top 10 checks; path traversal, injection      |
-| `portal-grounding`  | Portal-aware path resolution via `PathResolver`     |
-| `code-review`       | Systematic correctness, security, coverage review   |
-| `gap-analysis`      | Pre-implementation plan validation against codebase |
-| `step-execution`    | TDD step-by-step workflow with CI gates per step    |
+| Skill              | What it enforces                                    |
+| ------------------ | --------------------------------------------------- |
+| `tdd-methodology`  | RED→GREEN→REFACTOR cycle; tests before code         |
+| `security-first`   | OWASP Top 10 checks; path traversal, injection      |
+| `portal-grounding` | Portal-aware path resolution via `PathResolver`     |
+| `code-review`      | Systematic correctness, security, coverage review   |
+| `gap-analysis`     | Pre-implementation plan validation against codebase |
+| `step-execution`   | TDD step-by-step workflow with CI gates per step    |
 
 Skills live in `Blueprints/Skills/<name>.skill.md` (source) and
 `Memory/Skills/global/<name>.json` (runtime, loaded by `SkillsService`).

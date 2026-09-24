@@ -177,7 +177,7 @@ Refine the goal into a formal planning document at `exaix-dev-docs/planning/phas
    step: 1
    title: Capability + constants
    agent_role: senior-coder
-   skills: [tdd-methodology, exaix-conventions, portal-grounding, security-first]
+   skills: [tdd-methodology, portal-grounding, security-first]
    portal: exaix-self
    target_branch: feat/phase-NN
    depends_on: []

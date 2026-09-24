@@ -153,6 +153,15 @@ Environment variables
   const envOverrides = getValidatedEnvOverrides();
   const provider = envOverrides.EXA_LLM_PROVIDER ?? config.ai?.provider ?? DEFAULT;
 
+Config DB, schema-first design, and event names
+
+  - Settings live in the Config DB (.exa/config.db). Use `exactl config set <key> <value>`;
+    the bootstrap TOML carries only system.root. Run `exactl config --help` for subcommands.
+  - Schema-first: define the Zod schema in packages/schemas before the implementation,
+    infer the type with `z.infer<typeof ExampleSchema>` rather than duplicating an interface.
+  - Event names follow category.entity.action (memory.project.created, flow.started,
+    agent.invoked). Log every side-effect through EventLogger per that name.
+
 Required patterns
 
   1. Non-blocking async: never setTimeout/setInterval with magic durations. Use

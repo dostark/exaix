@@ -4,8 +4,8 @@
  * @description Phase 131 Step 5 — deep skill-content quality (W18). Every curated
  *   skill must have a non-trivial instructions body, at least one constraint and
  *   one quality criterion, no two skills may share an identical instruction block,
- *   the thin portal-grounding skill is expanded, and exaix-conventions no longer
- *   references stale paths (tests_infra/, the retired flow examples).
+ *   the thin portal-grounding skill is expanded, and the retired exaix-conventions
+ *   skill has no file and no agent reference.
  * @architectural-layer Skill (test)
  * @dependencies [@std/assert, @std/path, @std/yaml]
  * @related-files [packages/schemas/src/memory_bank.ts, scripts/build_skills_index.ts]
@@ -14,7 +14,7 @@
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { SKILLS_DIR } from "./test_helpers.ts";
+import { AGENTS_DIR, SKILLS_DIR } from "./test_helpers.ts";
 
 /** YAML-parsed skill frontmatter (structurally permissive — fields are asserted in-test). */
 interface ISkillFrontmatter {
@@ -75,8 +75,17 @@ Deno.test("[step5] portal-grounding (the most-referenced skill) is expanded, not
   assert(bodyLines >= 25, `portal-grounding still thin (${bodyLines} lines)`);
 });
 
-Deno.test("[step5] exaix-conventions references no stale paths (tests_infra/, retired flow examples)", () => {
-  const s = loadSkills().find((x) => x.id === "exaix-conventions")!;
-  assert(!s.body.includes("tests_infra"), "exaix-conventions must not reference the non-existent tests_infra/");
-  assert(s.body.includes("@exaix/testing"), "exaix-conventions should teach the real @exaix/testing import");
+Deno.test("[step5] exaix-conventions is retired: no skill file and no agent bundles it", () => {
+  assert(
+    !loadSkills().some((s) => s.id === "exaix-conventions"),
+    "exaix-conventions is Exaix dev guidance owned by .copilot/skills/exaix-development; the runtime skill file must be removed",
+  );
+  for (const entry of Deno.readDirSync(AGENTS_DIR)) {
+    if (!entry.isFile || !entry.name.endsWith(".md")) continue;
+    const content = Deno.readTextFileSync(join(AGENTS_DIR, entry.name));
+    assert(
+      !content.includes("exaix-conventions"),
+      `${entry.name} still references the retired exaix-conventions skill`,
+    );
+  }
 });

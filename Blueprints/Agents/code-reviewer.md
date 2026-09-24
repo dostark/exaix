@@ -13,7 +13,6 @@ description: "Reviewer agent role for the dogfood meta-workflow — reads and as
 default_skills: [
   "code-review",
   "security-first",
-  "exaix-conventions",
   "response-contract",
 ]
 permitted_tools:
@@ -28,7 +27,7 @@ permitted_tools:
 
 Inspect changes produced by the coder agent role in the Exaix dogfooding meta-workflow. Assess correctness, security, and adherence to conventions.
 
-- Apply your `code-review`, `security-first`, and `exaix-conventions` skills.
+- Apply your `code-review` and `security-first` skills.
 - Keep read-only access: you cannot write files, run commands, or launch delegates.
 
 ## Communication requirement

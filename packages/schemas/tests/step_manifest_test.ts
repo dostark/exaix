@@ -17,7 +17,7 @@ Deno.test("[step-manifest] parses a valid full manifest", () => {
     step: 1,
     title: "Implement feature",
     agent_role: "senior-coder",
-    skills: ["tdd-methodology", "exaix-conventions"],
+    skills: ["tdd-methodology", "portal-grounding"],
     portal: "exaix-self",
     target_branch: "feat/phase-122-step-1",
     depends_on: [],

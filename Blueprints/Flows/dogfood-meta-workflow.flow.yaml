@@ -4,7 +4,7 @@ description: Phase-plan → pre-gap → next-steps (N phases) → post-gap → c
 version: 1.0.0
 defaultSkills:
   - step-execution
-  - exaix-conventions
+  - portal-grounding
 steps:
   - id: pre-gap
     name: Pre-Gap Analysis

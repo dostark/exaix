@@ -13,7 +13,6 @@ const AGENTS_PATH = join(REPO_ROOT, "Blueprints", "Agents");
 
 const DOGFOOD_CODER_REQUIRED_SKILLS = [
   "response-contract",
-  "exaix-conventions",
   "tdd-methodology",
 ];
 
