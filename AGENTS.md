@@ -251,7 +251,7 @@ Package and app names change as the codebase evolves — list them directly (`ls
 
 The `.copilot/` folder is machine-readable guidance for AI assistants: `manifest.json` (auto-generated doc index), `prompts/` (chat routing wrappers), `skills/` (autonomous workflows), `docs/` (on-demand reference docs). Full structure, role distinction, and maintenance commands: [.copilot/README.md](.copilot/README.md).
 
-For a security audit, go directly to [.copilot/skills/security/SKILL.md](.copilot/skills/security/SKILL.md).
+For a security audit, go directly to [.copilot/skills/audit-security/SKILL.md](.copilot/skills/audit-security/SKILL.md).
 
 ## Current Project Status
 

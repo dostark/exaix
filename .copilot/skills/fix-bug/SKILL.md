@@ -89,7 +89,7 @@ Do / Don't
 - ❌ Suppress a test to make it "pass".
 - ❌ Use --no-verify.
 
-Related: #next-steps (return after the fix); #commit (structured commit); #security
+Related: #next-steps (return after the fix); #commit (structured commit); #audit-security
 (security-related bugs first); #refactor-check-magic (new literals).
 ```
 

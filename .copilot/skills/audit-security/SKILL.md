@@ -1,5 +1,5 @@
 ---
-name: security
+name: audit-security
 agent: senior-coder
 tools:
   - read_file
@@ -7,7 +7,7 @@ tools:
   - run_command
   - patch_file
 scope: dev
-title: "Security Skill (#security)"
+title: "Audit-Security Skill (#audit-security)"
 description: Systematic security audit mapping the OWASP-Top-10 checklist (path traversal, injection, auth, secrets) onto Exaix's concrete trust boundaries, reusing its canonical security primitives
 short_summary: "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps."
 version: "1.1.0"
@@ -27,7 +27,7 @@ topics: [
   "sandbox",
   "webhook",
 ]
-qwen_skill: security
+qwen_skill: audit-security
 ---
 
 ```text
@@ -77,9 +77,9 @@ Do / Don't
 - ❌ Accept "will fix later" for 🔒 Security findings — they block merge.
 - ❌ Skip test requirements — a control without a test is as good as none.
 
-Related: #review-code (general review; use #security at 3+ findings); #fix-bug; #commit.
+Related: #review-code (general review; use #audit-security at 3+ findings); #fix-bug; #commit.
 
-Workflow chain: #review-code (found security issues) → **#security** → #fix-bug → #commit
+Workflow chain: #review-code (found security issues) → **#audit-security** → #fix-bug → #commit
 ```
 
 ## See also
@@ -105,17 +105,17 @@ Exaix is a **local-first, single-user** agent harness whose threat model is
 paths, shell commands, and flow expressions; the security boundary is the code
 that **validates those proposals before they take effect**. Audit the boundary.
 
-| #  | Surface                                                      | Entry point                                                                         | Canonical control                                                                                                                                                             | Regression test                                                                                              |
-| -- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| S1 | **MCP file tools** (read/write/move/delete/patch/mkdir/list) | `exaix-team/packages/mcp-server/handlers/*_tool.ts` → `tool_handler.ts:resolvePortalPath` | `PathSecurity.resolveWithinRoots(rel, [realRoot], realRoot)` over `await Deno.realPath(portalPath)`                                                                           | `exaix-team/packages/mcp-server/tests/mcp_symlink_traversal_security_test.ts`                                      |
-| S2 | **`run_command` tool**                                       | `packages/tool-runtime/src/tool_registry.ts:execute`                                | `validateGitArguments` + `validateRuntimeArguments`; cwd scoped via `getAllowedRoots()` + `resolveWithinRoots`                                                                | `packages/tool-runtime/tests/run_command_security_test.ts`, `tests/security/git_security_regression_test.ts` |
-| S3 | **Portal filesystem** (Workspace/Portals path access)        | `packages/portal/src/path_resolver.ts:PathResolver.validatePath`                    | realPath of target (or nearest existing ancestor) checked within allowed roots                                                                                                | `packages/portal/tests/path_resolver_symlink_security_test.ts`                                               |
-| S4 | **Flow condition expressions**                               | `packages/flow/src/condition_evaluator.ts` → `safe_expression.ts`                   | `validateExpression` / `evaluateExpression` over a JSON-projected context; allowlisted roots `results`/`request`/`flow`; NO `new Function`/`eval`                             | `tests/security/condition_evaluator_sandbox_test.ts`                                                         |
-| S5 | **Local HTTP / SSE endpoint**                                | ``exaix-team/packages/mcp-server/server.ts`:handleHTTPRequest`, `sse_handler.ts`          | 127.0.0.1 bind + `isLoopbackHost`/`rejectUnsafeOrigin` (DNS-rebind/CSRF); SSE `validateTraceId` (UUID) + concurrent-stream cap                                                | `exaix-team/packages/mcp-server/tests/http_security_test.ts`, `tests/integration/api/sse_handler_test.ts`          |
-| S6 | **External triggers** (webhooks)                             | `packages/triggers/adapters/webhook_adapter.ts:parse`                               | MANDATORY HMAC-SHA256, fail-closed (no secret ⇒ reject every payload); size cap                                                                                               | `packages/triggers/tests/external_adapters_test.ts`                                                          |
-| S7 | **Activity journal / storage**                               | `packages/storage-sqlite/src/database_service.ts`                                   | Parameterized queries everywhere; identifiers (e.g. `filter.distinct`) allowlisted via `ACTIVITY_COLUMNS`                                                                     | `packages/storage-sqlite/tests/db_journal_test.ts`                                                           |
-| S8 | **Secrets in memory**                                        | `packages/core/src/helpers/credential_security.ts:SecureCredentialStore`            | Best-effort in-memory obfuscation — **NOT a hard boundary**; never logged/serialized                                                                                          | `tests/security/credential_security_test.ts`                                                                 |
-| S9 | **Process containment**                                      | `deno.json` tasks, `Dockerfile`, `compose.sandbox.yaml`                             | Scoped `--allow-run` allowlist + `*:unsafe` opt-ins (defense-in-depth); container = authoritative (cap-drop, read-only rootfs, no-new-privileges, non-root, `--network none`) | `tests/security/deno_permissions_policy_test.ts`, `tests/security/subprocess_isolation_test.ts`              |
+| #  | Surface                                                      | Entry point                                                                               | Canonical control                                                                                                                                                             | Regression test                                                                                              |
+| -- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| S1 | **MCP file tools** (read/write/move/delete/patch/mkdir/list) | `exaix-team/packages/mcp-server/handlers/*_tool.ts` → `tool_handler.ts:resolvePortalPath` | `PathSecurity.resolveWithinRoots(rel, [realRoot], realRoot)` over `await Deno.realPath(portalPath)`                                                                           | `exaix-team/packages/mcp-server/tests/mcp_symlink_traversal_security_test.ts`                                |
+| S2 | **`run_command` tool**                                       | `packages/tool-runtime/src/tool_registry.ts:execute`                                      | `validateGitArguments` + `validateRuntimeArguments`; cwd scoped via `getAllowedRoots()` + `resolveWithinRoots`                                                                | `packages/tool-runtime/tests/run_command_security_test.ts`, `tests/security/git_security_regression_test.ts` |
+| S3 | **Portal filesystem** (Workspace/Portals path access)        | `packages/portal/src/path_resolver.ts:PathResolver.validatePath`                          | realPath of target (or nearest existing ancestor) checked within allowed roots                                                                                                | `packages/portal/tests/path_resolver_symlink_security_test.ts`                                               |
+| S4 | **Flow condition expressions**                               | `packages/flow/src/condition_evaluator.ts` → `safe_expression.ts`                         | `validateExpression` / `evaluateExpression` over a JSON-projected context; allowlisted roots `results`/`request`/`flow`; NO `new Function`/`eval`                             | `tests/security/condition_evaluator_sandbox_test.ts`                                                         |
+| S5 | **Local HTTP / SSE endpoint**                                | ``exaix-team/packages/mcp-server/server.ts`:handleHTTPRequest`, `sse_handler.ts`          | 127.0.0.1 bind + `isLoopbackHost`/`rejectUnsafeOrigin` (DNS-rebind/CSRF); SSE `validateTraceId` (UUID) + concurrent-stream cap                                                | `exaix-team/packages/mcp-server/tests/http_security_test.ts`, `tests/integration/api/sse_handler_test.ts`    |
+| S6 | **External triggers** (webhooks)                             | `packages/triggers/adapters/webhook_adapter.ts:parse`                                     | MANDATORY HMAC-SHA256, fail-closed (no secret ⇒ reject every payload); size cap                                                                                               | `packages/triggers/tests/external_adapters_test.ts`                                                          |
+| S7 | **Activity journal / storage**                               | `packages/storage-sqlite/src/database_service.ts`                                         | Parameterized queries everywhere; identifiers (e.g. `filter.distinct`) allowlisted via `ACTIVITY_COLUMNS`                                                                     | `packages/storage-sqlite/tests/db_journal_test.ts`                                                           |
+| S8 | **Secrets in memory**                                        | `packages/core/src/helpers/credential_security.ts:SecureCredentialStore`                  | Best-effort in-memory obfuscation — **NOT a hard boundary**; never logged/serialized                                                                                          | `tests/security/credential_security_test.ts`                                                                 |
+| S9 | **Process containment**                                      | `deno.json` tasks, `Dockerfile`, `compose.sandbox.yaml`                                   | Scoped `--allow-run` allowlist + `*:unsafe` opt-ins (defense-in-depth); container = authoritative (cap-drop, read-only rootfs, no-new-privileges, non-root, `--network none`) | `tests/security/deno_permissions_policy_test.ts`, `tests/security/subprocess_isolation_test.ts`              |
 
 **Boundary invariant:** because the SQLite journal binds native code (`@db/sqlite`
 → `Deno.dlopen`) the daemon currently REQUIRES `--allow-ffi`, so the Deno
@@ -131,7 +131,7 @@ dependency is tracked in `exaix-dev-docs/planning/phase-110-security-hardening-f
 | `PathResolver.validatePath`                              | `packages/portal/src/path_resolver.ts`            | Workspace/Portal path validation in services                                                     |
 | `validateGitArguments` / `validateRuntimeArguments`      | `packages/tool-runtime/src/tool_registry.ts`      | Vetting `run_command` argv before spawn                                                          |
 | `validateExpression` / `evaluateExpression`              | `packages/flow/src/safe_expression.ts`            | Evaluating any agent/flow-authored boolean expression — never `new Function`                     |
-| `MCPServer.isLoopbackHost` / `rejectUnsafeOrigin`        | `exaix-team/packages/mcp-server/server.ts`              | Guarding any new local HTTP route (Host/Origin)                                                  |
+| `MCPServer.isLoopbackHost` / `rejectUnsafeOrigin`        | `exaix-team/packages/mcp-server/server.ts`        | Guarding any new local HTTP route (Host/Origin)                                                  |
 | `ACTIVITY_COLUMNS` allowlist pattern                     | `packages/storage-sqlite/src/database_service.ts` | Any SQL where an identifier (column/table) comes from input — identifiers can't be parameterized |
 | Mandatory-HMAC fail-closed pattern                       | `packages/triggers/adapters/webhook_adapter.ts`   | Any new external-event ingestion adapter                                                         |
 
@@ -408,4 +408,3 @@ exaix:
       description: Findings reference specific file:line
       weight: 30
 ---
-

@@ -181,7 +181,7 @@ Deno.test("Agent docs: doc skill requires runtime claims be implemented before d
 });
 
 Deno.test("Agent docs: security warns read-only/dry-run paths must not invoke a mutating getter", async () => {
-  const md = await Deno.readTextFile(".copilot/skills/security/SKILL.md");
+  const md = await Deno.readTextFile(".copilot/skills/audit-security/SKILL.md");
 
   assert(
     md.includes("advertised as read-only"),

@@ -48,7 +48,7 @@ Every file in this directory must have a corresponding `.copilot/skills/<name>/S
 | `remediate-plan-gaps.prompt.md`  | `.copilot/skills/remediate-plan-gaps/`  |
 | `review-code.prompt.md`          | `.copilot/skills/review-code/`          |
 | `review-research.prompt.md`      | `.copilot/skills/review-research/`      |
-| `security.prompt.md`             | `.copilot/skills/security/`             |
+| `audit-security.prompt.md`        | `.copilot/skills/audit-security/`       |
 | `self-improvement.prompt.md`     | `.copilot/skills/self-improvement/`     |
 | `submodule-workflow.prompt.md`   | `.copilot/skills/submodule-workflow/`   |
 | `tdd-workflow.prompt.md`         | `.copilot/skills/tdd-workflow/`         |

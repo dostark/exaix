@@ -57,7 +57,7 @@ Do / Don't
 - ❌ Suggest out-of-scope refactors unless they block correctness.
 - ❌ Use this skill for plan-level gap analysis — use #review-phase-code.
 
-Related: #fix-bug (implement a Critical fix); #security (3+ security findings); #commit;
+Related: #fix-bug (implement a Critical fix); #audit-security (3+ security findings); #commit;
 #review-research (subsystem-level review); #review-phase-code (plan-level).
 
 Workflow chain: #next-steps (implement) → **#review-code** → #fix-bug (if needed) → #commit
@@ -66,7 +66,7 @@ Workflow chain: #next-steps (implement) → **#review-code** → #fix-bug (if ne
 ## See also
 
 - [exaix-development](../exaix-development/SKILL.md) — required patterns, prohibited anti-patterns
-- [security](../security/SKILL.md) — OWASP checklist, security boundaries
+- [security](../audit-security/SKILL.md) — OWASP checklist, security boundaries
 
 ---
 
@@ -156,9 +156,9 @@ conventions in the existing file:
      cancellation (caller `break`/`return()`s out of `for await` before exhaustion), not
      only normal completion and thrown errors — a `finally` block or equivalent fires one
      terminal event across all three exit paths.
-   A `@visible`-tagged class also needs a real Tier A/B runtime test proving its primary
-   events fire, not only a clean static pass — see `#plan` §2H and `#review-phase-code`
-   Phase 6.
+     A `@visible`-tagged class also needs a real Tier A/B runtime test proving its primary
+     events fire, not only a clean static pass — see `#plan` §2H and `#review-phase-code`
+     Phase 6.
 1. **Exports.** Every new interface/type is exported from the appropriate index file.
 1. **check:arch.** Would it pass? All new files GROUNDED (or explicitly tagged
    `@ungrounded`) — `@visible` uses the same JSDoc-tag mechanism for observability
@@ -244,19 +244,19 @@ Missing User Guide updates: 🔴 Critical (blocking). Other missing doc updates:
 
 Findings table:
 
-| # | File | Line/Symbol | Severity | Finding |
-| - | ---- | ----------- | -------- | ------- |
+| # | File                                 | Line/Symbol    | Severity    | Finding       |
+| - | ------------------------------------ | -------------- | ----------- | ------------- |
 | 1 | `packages/<package>/src/<module>.ts` | `functionName` | 🔴 Critical | <description> |
 
 Severity scale:
 
-| Symbol | Meaning |
-| ------ | ------- |
-| 🔴 Critical | Blocks correctness or breaks an invariant — fix before merge |
-| 🔒 Security | Security control missing or bypassed (OWASP Top 10) |
-| 🟡 Major | Significant quality or coverage gap — should fix before merge |
-| 🟠 Testing | Missing or inadequate test — may ship without coverage |
-| 🔵 Minor | Style, naming, or low-risk omission — fix in follow-up |
+| Symbol      | Meaning                                                       |
+| ----------- | ------------------------------------------------------------- |
+| 🔴 Critical | Blocks correctness or breaks an invariant — fix before merge  |
+| 🔒 Security | Security control missing or bypassed (OWASP Top 10)           |
+| 🟡 Major    | Significant quality or coverage gap — should fix before merge |
+| 🟠 Testing  | Missing or inadequate test — may ship without coverage        |
+| 🔵 Minor    | Style, naming, or low-risk omission — fix in follow-up        |
 
 ## Related
 

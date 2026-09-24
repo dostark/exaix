@@ -693,8 +693,8 @@
       ]
     },
     {
-      "id": "copilot-security",
-      "canonicalPath": ".copilot/skills/security/SKILL.md",
+      "id": "copilot-audit-security",
+      "canonicalPath": ".copilot/skills/audit-security/SKILL.md",
       "critical": true,
       "supportPaths": [],
       "selectors": {

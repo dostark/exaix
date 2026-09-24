@@ -178,7 +178,7 @@ Do / Don't
 Related
 - #clean-codebase — full CI-green sweep
 - #tdd-workflow — when the refactor needs tests first
-- #security — full audit when refactor exposes 3+ control gaps
+- #audit-security — full audit when refactor exposes 3+ control gaps
 - Blueprints/Skills/security-first.skill.md — portal code checklist (input/path/injection/auth)
 - AGENTS.md#behavioral-guidelines — think before coding, simplicity, surgical changes
 - CODE_STYLE.md — naming, type, import, constants rules
