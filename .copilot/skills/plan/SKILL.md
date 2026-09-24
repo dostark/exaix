@@ -104,11 +104,11 @@ Do / Don't
   `feat/phase-NN-step-N` (empty placeholder branches preceded this standardization).
 - ✅ Author criteria/metric checkboxes as `- [ ] <text>` (no `→` path) at authoring time —
   implementation timestamps come later. #next-steps rewrites each to
-  `- ✅ <text> → \`<path>\`` or `- ⚠️ deferred <text> → \`<LedgerSymbol>\``. The gate blocks
+  `- ✅ <text> → `<path>`` or `- ⚠️ deferred <text> → `<LedgerSymbol>``. The gate blocks
   any `- [ ]` in a committed step — [ ] may remain only on unimplemented steps.
-- ✅ Point every `→ \`path\`` at a real changed repo file — never a command/task/prose. The
+- ✅ Point every `→ `path`` at a real changed repo file — never a command/task/prose. The
   gate extracts the backticked text after `→` verbatim and requires it to match a changed
-  file; `→ \`deno task docs-agent-validate\`` fails. Command-verified? Point `→` at the file
+  file; `→ `deno task docs-agent-validate`` fails. Command-verified? Point `→` at the file
   the command's success depends on.
 - ✅ Keep Success Metrics checkboxes `- [ ]` during step execution (the gate scopes only
   per-step criteria/tests). At phase closure, check each `- [x]` with a citation and correct

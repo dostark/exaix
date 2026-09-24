@@ -47,7 +47,7 @@ message carries `plan:`, e.g. `plan: exaix-dev-docs/planning/phase-134-model-reg
 For these, do NOT commit the submodule first:
 
 1. Stage the plan-doc changes in the submodule (`git -C exaix-dev-docs add planning/<phase>.md`).
-   The step's `✅ … → \`path\`` / `⚠️ deferred … → \`token\`` lines must be staged there.
+   The step's `✅ … →`path``/ `⚠️ deferred … → `token`` lines must be staged there.
 2. Stage the implementing code + tests in the parent (the `→` paths must be staged files).
 3. Run `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`. It validates
    cross-repo consistency (every ✅/deferred line is an added staged-plan line; `→` paths
@@ -137,6 +137,7 @@ Validation
 - Missing submodule content in CI: fail fast, not an incomplete pointer update.
 
 Do / Don't
+
 - ✅ Commit submodule changes first — EXCEPT plan-step commits, staged both and committed via `scripts/commit_plan_step.ts --commit`.
 - ✅ Verify pointer state with `git status --submodule=summary`.
 - ✅ Document the submodule SHA in the parent PR description.

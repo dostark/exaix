@@ -24,7 +24,7 @@ Key points
 - Work through planning/phase-XX-*.md steps one by one. Never skip ahead.
 - Each step is RED → GREEN → VERIFY → REFACTOR → CI → DOC.
 - After each step: run the Success Criterion Verification Gate (step 14), rewrite each met
-  criterion/test to `- ✅ <text> → \`<staged-path>\`` (or `- ⚠️ deferred <text> → \`<token>\` +
+  criterion/test to `- ✅ <text> → `<staged-path>`` (or `- ⚠️ deferred <text> → `<token>` +
   a ledger row), run fast CI gates, commit submodule plan doc + parent code via
   `scripts/commit_plan_step.ts <msg> --commit` (message carries `plan:`). No `- [ ]` stays.
 - Interrupted? **Chat memory is not reliable evidence.** Cross-check `git log --oneline -N`
@@ -106,7 +106,10 @@ VERIFY phase — value correctness, wiring, consumers, conventions
         happen — verify by hand; if it wrongly flags a genuinely-✅ row, append a
         `(tool false-positive: verified <date> — <reason>)` note).
       Every ledger row must be ✅ before the phase closes (gate G2).
-  12. Trace every new output field to a consumer. Zero readers = dead data.
+  12. Trace every new output field to a consumer. Zero readers = dead data. Wire check:
+      PRESENCE ≠ PROPAGATION — a dependency name appearing in a call site is not wiring;
+      verify the value actually flows and is read (storage proof ≠ consumption proof), and
+      flag a STORED-BUT-NEVER-READ field.
   13. Check conventions (survey 5–10 same-concern examples; flag divergence without a
       documented justification). Verify event coverage for state-changing/cross-component
       methods per §2H — "no event needed" must be an explicit documented decision. Run
@@ -147,12 +150,12 @@ Planning doc update
       environment (daemon + real binaries) and assert steps pass. A test that was parsed/
       type-checked but never run does NOT satisfy this gate. Environment unavailable? Do
       NOT mark criteria done on source-level validation alone — (a) DEFER the criterion
-      (`- ⚠️ deferred <text> → \`<token>\` + ledger row`) or (b) don't commit yet. Never
+      (`- ⚠️ deferred <text> → `<token>` + ledger row`) or (b) don't commit yet. Never
       flip an unverified criterion to ✅ to pass the gate.
-  23. Rewrite each met criterion to `- ✅ <text> → \`<path>\`` (backticked, a staged file of
+  23. Rewrite each met criterion to `- ✅ <text> → `<path>`` (backticked, a staged file of
       this commit; multiple modules comma-separated). A deferred criterion becomes
-      `- ⚠️ deferred <text> → \`<LedgerSymbol>\`` + a ledger row. No `- [ ]` remains.
-  24. Rewrite each planned-test bullet to `- ✅ <name> → \`<test-path>\`` only after the test
+      `- ⚠️ deferred <text> → `<LedgerSymbol>`` + a ledger row. No `- [ ]` remains.
+  24. Rewrite each planned-test bullet to `- ✅ <name> → `<test-path>`` only after the test
       runs and passes. Inspect the done-mark in the SAME change that implements it.
   24. Add the reachability status line after the tests:
       - **✅ WIRED** — `<src path>`, N/N tests passing, reached by `<call-site file:Symbol>`
@@ -167,7 +170,7 @@ Planning doc update
 
          | Symbol | Added in | Wiring step | Production call-site | Status |
          | ------ | -------- | ----------- | -------------------- | ------ |
-         | \`SessionReturnWatcher\` | Step 6 | Step 9 | \`apps/daemon/main.ts\` | ⏳ |
+         | `SessionReturnWatcher` | Step 6 | Step 9 | `apps/daemon/main.ts` | ⏳ |
 
       Append ⏳ on production-dead symbols; flip ✅ + fill the call-site when wired. Stage
       the doc edit in the same commit. The ledger is the residual to-do list — the phase
@@ -176,8 +179,9 @@ Planning doc update
 Commit (plan-step — spans submodule plan doc + parent code)
   25. Stage BOTH repos: submodule plan doc (the ✅/deferred lines must be added lines of this
       diff) AND the parent src/test files (every `→ path` a staged file). Criterion/test
-      whose module IS the plan doc uses the gitlink arrow `→ \`exaix-dev-docs\`` — never the
-      internal `exaix-dev-docs/planning/<phase>.md` path (not a parent staged file).
+      whose module IS the plan doc uses the gitlink arrow `→ `exaix-dev-docs`` — never the
+      internal `exaix-dev-docs/planning/<phase>.md` path (not a parent staged file — the
+      gate rejects it with "not among this commit's changed files").
   26. Do NOT run a bare `git commit`. Write the structured message (with `plan:`:
       `exaix-dev-docs/planning/<phase>.md#<N>`) and commit both repos via
       `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`, which runs the
@@ -227,7 +231,7 @@ Do / Don't
   load-bearing classes `@visible`.
 - ✅ Add module-header JSDoc to every new file.
 - ✅ Run deno fmt before git add.
-- ✅ Rewrite met criteria/tests to `- ✅ … → \`path\`` (or deferred + ledger) with the
+- ✅ Rewrite met criteria/tests to `- ✅ … → `path`` (or deferred + ledger) with the
   WIRED/CORE label before commit; stage the doc edit with the plan-step commit.
 - ✅ Use IFoo naming; `ICodeConvention["confidence"]`, not literal unions.
 - ✅ Keep test execution proportional to scope.
@@ -265,7 +269,7 @@ Related skills
 - test-development — edge cases, helpers, placement
 - #refactor — its check:magic & duplication pass covers non-trivial counts
 - #fix-bug — for bugs found during implementation
-- #security — when 3+ security findings
+- #audit-security — when 3+ security findings
 - Blueprints/Skills/security-first.skill.md — secure portal-code practices (step 13a)
 
 Workflow chain (typical):

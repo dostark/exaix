@@ -150,8 +150,8 @@ periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` c
 
 1. Locate every step's own completion marker. The convention differs by document era:
    older docs use `- [ ]` / `- [x]` GFM checkboxes; newer docs (~phase-140+) use prose
-   bullets instead — `- ✅ <done text> → \`path\``/`- ⚠️ deferred <text> → <token>`plus
-   a per-step` **Status**: ✅ WIRED`/`✅ IMPLEMENTED`line. Zero`- [ ]`matches is NOT
+   bullets instead — `- ✅ <done text> →`path``/`- ⚠️ deferred <text> → <token>`plus
+   a per-step`**Status**: ✅ WIRED`/`✅ IMPLEMENTED`line. Zero`- [ ]`matches is NOT
    proof of completion in a prose-bullet doc — check for`⚠️` instead.
 1. A doc can have every step checked and still be honestly not-closeable. Search for
    blocking language that survives past the last checked box — `⏳ PENDING`,
@@ -355,4 +355,3 @@ exaix:
       description: All four retro questions answered; every finding routed to PATCHED / DEFERRED / REJECTED
       weight: 20
 ---
-

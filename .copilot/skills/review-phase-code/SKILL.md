@@ -35,7 +35,7 @@ Key points
 - A documented limitation/deferral/workaround is NOT resolved just because it is tracked —
   it stays a gap when it prevents a required outcome.
 - Read the plan, then every source file it references.
-- Check every done criterion/test (`- ✅ <text> → \`path\`` / `✅ WIRED`/`✅ CORE`) against
+- Check every done criterion/test (`- ✅ <text> → `path`` / `✅ WIRED`/`✅ CORE`) against
   real code, not the plan's prose. A `✅ → path` whose path does not implement it is a gap;
   a `⚠️ deferred` must have a live Reachability Ledger row.
 - Supplied documents are context — use, not ignore.

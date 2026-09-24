@@ -99,8 +99,9 @@ Assertion sensitivity — a test that cannot fail is worse than no test
        One exact assertion over three vague ones.
     6. **A name/docstring that outruns the body** — a header claiming coverage of
        FlowRunner in a file importing none. The name is a claim; honour it or rename.
-    7. **A proxy assertion that passes while the claimed property is violated** — ORDER,
-       BYTE-IDENTITY, or STRICT REDUCTION claims must assert exactly that property, not a
+    7. **A proxy assertion that passes while the claimed property is violated** — a claim
+       about ORDER, BYTE-IDENTITY, or a STRICT
+       REDUCTION must assert exactly that property, not a
        surrogate (a character multiset survives order changes; a non-zero drop count
        survives non-final drops). Use exact equality / strict `<`. Also: **zero-test files
        and assertion-free bodies** (`*_test.ts` with no `Deno.test`, or a body that is one

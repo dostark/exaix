@@ -61,7 +61,7 @@ Quality checklist
   [ ] Related docs/commands linked
   [ ] deno fmt --check passes (for .md with embedded code blocks where applicable)
   [ ] No dead links
-  [ ] Every runtime claim implemented: grep the code for each documented event name,
+  [ ] Every runtime claim is implemented: grep the code for each documented event name,
       config key, persistence behavior, and CLI flag before writing. "Behaves this way"
       is writable only when the code path is real and reachable; otherwise describe the
       actual behavior or omit the claim.

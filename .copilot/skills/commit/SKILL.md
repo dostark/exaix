@@ -50,8 +50,8 @@ Plan-step commits (phase-plan implementation)
 - Do NOT run a bare `git commit`. Stage the plan-doc changes in the submodule AND the
   code/tests in the parent, then commit both via
   `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`.
-  It enforces traceability + cross-repo sync: every `✅ … → \`path\`` / `⚠️ deferred … →
-  \`token\`` line is an added staged-plan line; each `→` path is a staged parent file;
+  It enforces traceability + cross-repo sync: every `✅ … → `path`` / `⚠️ deferred … →
+  `token`` line is an added staged-plan line; each `→` path is a staged parent file;
   deferrals have a Reachability Ledger row; no `- [ ]` stays open. It commits the
   submodule first, bumps the parent pointer, then commits the parent.
 
@@ -105,12 +105,15 @@ Optional fields: conversation_id, links, prompt, tool_audit, model.
 - **Semicolons in `impact:`** separate `Component: detail` entries only. Appending a plain
   clause after `;` (e.g. `; no runtime changes.`) misreads it as a component. Put such
   notes inside the detail.
-- **`impact:` swallows trailing text**: the field runs to end-of-message. A trailing
-  `CI gates: …` paragraph folds into `impact:` and its `;` splits become spurious
-  components. Put CI/test status in `tests:`; keep any trailing block colon-free.
+- **`impact:` swallows trailing text**: the parser starts a new field only on a line
+  beginning with a KNOWN_COMMIT_FIELDS name, so the field runs to end-of-message. A
+  blank-line-separated trailing paragraph (e.g. a `CI gates: ...` block) is still parsed
+  as impact content and its `;` splits become spurious components. Put CI/test status in
+  `tests:`; keep any trailing block colon-free.
 - **Arrow paths**: `extractArrowPaths()` treats every backtick token AFTER the first `→`
-  on a `- ✅ …`/`- ⚠️ deferred …` line as a required staged file. Put incidental
-  backticked mentions BEFORE the arrow; only real paths after it.
+  on a `- ✅ …`/`- ⚠️ deferred …` line as a required staged file — exactly ONE backtick-wrapped path after the arrow
+  counts (nothing else). Put any incidental backtick-wrapped code/type mentions in the sentence BEFORE the arrow;
+  only the real source/test paths go after it.
 - **First `→` anchors**: the parser anchors on the FIRST `→` in the bullet, scanning
   everything after it. A criterion narrating a pipeline (`capture → extract → …`) with any
   other backticked text after it sweeps those in as required paths. Keep such bullets free
@@ -126,7 +129,7 @@ Optional fields: conversation_id, links, prompt, tool_audit, model.
   require the changed file of EVERY ✅ item in that step. Commit such an addition as an
   ordinary docs commit without `plan:` (submodule first, then pointer bump).
 - **Gitlink-only arrow paths (false negative)**: a step whose only `→` path is
-  `→ \`exaix-dev-docs\`` fails the fast pre-check (it reads staged parent files only, and
+  `→ `exaix-dev-docs`` fails the fast pre-check (it reads staged parent files only, and
   the pointer is staged later). Skip the fast pre-check in that case and go straight to
   `commit_plan_step.ts --commit`.
 

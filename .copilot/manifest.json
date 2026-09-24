@@ -109,6 +109,10 @@
       "short_summary": ""
     },
     {
+      "path": ".copilot/prompts/audit-security.prompt.md",
+      "short_summary": ""
+    },
+    {
       "path": ".copilot/prompts/tdd-workflow.prompt.md",
       "short_summary": ""
     },
@@ -134,10 +138,6 @@
     },
     {
       "path": ".copilot/prompts/fix-bug.prompt.md",
-      "short_summary": ""
-    },
-    {
-      "path": ".copilot/prompts/security.prompt.md",
       "short_summary": ""
     },
     {
@@ -191,6 +191,31 @@
         "integration"
       ],
       "qwen_skill": "review-phase-plan"
+    },
+    {
+      "path": ".copilot/skills/audit-security/SKILL.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Audit-Security Skill (#audit-security)",
+      "short_summary": "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps.",
+      "version": "1.1.0",
+      "topics": [
+        "security",
+        "owasp",
+        "audit",
+        "path-traversal",
+        "injection",
+        "auth",
+        "secrets",
+        "tdd",
+        "mcp",
+        "portal",
+        "run-command",
+        "deno-permissions",
+        "sandbox",
+        "webhook"
+      ],
+      "qwen_skill": "audit-security"
     },
     {
       "path": ".copilot/skills/doc/SKILL.md",
@@ -423,31 +448,6 @@
         "structured-logging"
       ],
       "qwen_skill": "commit"
-    },
-    {
-      "path": ".copilot/skills/security/SKILL.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Security Skill (#security)",
-      "short_summary": "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps.",
-      "version": "1.1.0",
-      "topics": [
-        "security",
-        "owasp",
-        "audit",
-        "path-traversal",
-        "injection",
-        "auth",
-        "secrets",
-        "tdd",
-        "mcp",
-        "portal",
-        "run-command",
-        "deno-permissions",
-        "sandbox",
-        "webhook"
-      ],
-      "qwen_skill": "security"
     },
     {
       "path": ".copilot/skills/dogfood-development/SKILL.md",

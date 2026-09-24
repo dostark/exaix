@@ -26,7 +26,7 @@ Key points
 - TDD: new behavior → write the test first, then implement.
 - Do NOT rewrite the remediation step's Actions/notes — review-phase-code owns those. The
   ONLY plan-doc edit is marking its Success Criteria / Planned Tests done:
-  `- ✅ <text> → \`<staged-path>\`` (or `- ⚠️ deferred <text> → \`<LedgerSymbol>\` + a
+  `- ✅ <text> → `<staged-path>`` (or `- ⚠️ deferred <text> → `<LedgerSymbol>` + a
   Reachability Ledger row). This is a plan-step completion → the plan-step commit gate.
 - Done: re-run affected tests, CI gates, then commit submodule plan doc + parent source via
   `scripts/commit_plan_step.ts <msg> --commit` (`plan: <doc>#<remediation-step-N>`). No
@@ -98,9 +98,8 @@ Per remediation step, in order:
 1. Confirmed regression-free with `deno run -A scripts/ci.ts check` — NEVER a bare
    `deno task check` or a hand-picked subset (both silently missed a regression before).
 1. Re-read the source to confirm the Finding is resolved.
-1. In the plan doc, rewrite each satisfied criterion/test to `- ✅ <text> → \`<staged-path>\``;
-   a deferred one becomes `- ⚠️ deferred <text> → \`<LedgerSymbol>\` + a ledger row. No
-   `- [ ]` in a claimed step.
+1. In the plan doc, rewrite each satisfied criterion/test to `- ✅ <text> →`<staged-path>``;
+   a deferred one becomes `- ⚠️ deferred <text> →`<LedgerSymbol>`+ a ledger row. No`- [ ]` in a claimed step.
 1. **Canary trap**: a criterion satisfied by a canary (break source → confirm RED →
    restore byte-identical) cites the TEST file as `→ path`, never the canaried source — a
    byte-identical restore has zero net diff and is not stageable. Verify with
@@ -111,7 +110,7 @@ Per remediation step, in order:
    substring and verify with `git diff`.
 1. **Arrow sweep trap**: `extractArrowPaths()` demands EVERY backticked span after `→` on a
    `- ✅`/`- ⚠️ deferred` line be a staged parent file. A backticked test name/symbol after
-   the arrow blocks the commit. Put incidental mentions BEFORE the arrow; only real paths
+   the arrow blocks the commit. Put incidental mentions BEFORE the arrow; put ONLY the real source/test paths after
    after (comma-separated spans). Re-read #commit's validator-traps first.
 1. Exhaustive observability claim? Generate a source event inventory and reconcile it with
    the runtime-evidence matrix. Each event needs an attributable test driving production
@@ -127,8 +126,8 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
 1. Stage the plan doc in the submodule (`git -C exaix-dev-docs add <planning-doc>`); the
    ✅/deferred lines must be added lines of this diff.
 1. Stage the edited source + test files in the parent — every `→ path` must be among them.
-   A criterion whose module IS the plan doc uses the gitlink arrow `→ \`exaix-dev-docs\``;
-   a doc-only (§3D) step often cites both: `→ \`ARCHITECTURE.md\`, \`exaix-dev-docs\``.
+   A criterion whose module IS the plan doc uses the gitlink arrow `→`exaix-dev-docs``;
+   a doc-only (§3D) step often cites both: `→ `ARCHITECTURE.md`, `exaix-dev-docs``.
 1. Write the structured message (`fix`; what:, rationale:, tests:, who:, impact:; the gap
    numbers e.g. `remediation: GAP-1, GAP-3`; mandatory
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>`), then
