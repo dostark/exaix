@@ -689,6 +689,37 @@
         "Keep edition conditionals only in the allowed paths",
         "Run check:no-edition-conditionals, leak_guard, and build:solo|team|enterprise"
       ]
+    },
+    {
+      "id": "copilot-remediate-code-gaps",
+      "canonicalPath": ".copilot/skills/remediate-code-gaps/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 3 \u2014 Validate & mark done",
+          "Phase 4 \u2014 Commit"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 3 \u2014 Validate & mark done",
+          "Phase 4 \u2014 Commit"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Close only gaps opened by the Post-Gap Analysis",
+        "Write tests first for new behavior",
+        "Run deno run -A scripts/ci.ts check before committing, never a bare deno task check",
+        "Flip only the remediation step's criteria and tests to the done form",
+        "Commit plan-step flips via commit_plan_step.ts with a plan field",
+        "Respect the canary, truncation, and arrow-sweep traps when marking criteria"
+      ]
     }
   ]
 }

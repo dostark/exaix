@@ -18,17 +18,24 @@ qwen_skill: remediate-code-gaps
 
 ```text
 Key points
-- This skill consumes a Post-Gap Analysis section in a planning document and closes every code-level gap by editing source files.
-- Only close gaps that the post-gap analysis explicitly opened. Do NOT add new refactoring or polish beyond the named gaps.
-- For each gap: read the affected source file, then edit it to satisfy the gap's Resolution (documented in the remediation step that the post-gap analysis added to the plan).
-- Tests come first (TDD): if the gap remediation adds new behaviour, write the test first, then implement.
-- Do NOT rewrite the remediation step's Actions/Architecture Notes/prose — those were authored by post-gap-analysis. The ONLY plan-doc edit you make is marking that step's Success Criteria / Planned Tests DONE once satisfied: rewrite each to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` + a Reachability Ledger row). This is a plan-step completion, so it goes through the plan-step commit gate (below).
-- After all gaps are remediated: re-run all affected tests, run CI gates, then commit BOTH the submodule plan doc (the ✅/deferred marks) and the parent source via `scripts/commit_plan_step.ts <msg> --commit` — the message carries a `plan: <doc>#<remediation-step-N>` field. No `- [ ]` may remain in a remediation step this commit claims.
-- If the phase claims exhaustive event coverage, reconcile every source-declared event
-  against attributable real-`EventLogger` scenario or integration/package-test evidence;
-  representative component coverage is not completion.
-- Before declaring the phase done, run `#self-improvement-retro`, update the phase registry,
-  and record every process finding as PATCHED, DEFERRED, or REJECTED.
+
+- Consume the plan's Post-Gap Analysis; close every code gap by editing source files.
+- Close only gaps the analysis explicitly opened. No extra refactoring or polish.
+- Per gap: read the affected source, then edit it to satisfy the gap's Resolution (the
+  remediation step added by post-gap-analysis).
+- TDD: new behavior → write the test first, then implement.
+- Do NOT rewrite the remediation step's Actions/notes — post-gap-analysis owns those. The
+  ONLY plan-doc edit is marking its Success Criteria / Planned Tests done:
+  `- ✅ <text> → \`<staged-path>\`` (or `- ⚠️ deferred <text> → \`<LedgerSymbol>\` + a
+  Reachability Ledger row). This is a plan-step completion → the plan-step commit gate.
+- Done: re-run affected tests, CI gates, then commit submodule plan doc + parent source via
+  `scripts/commit_plan_step.ts <msg> --commit` (`plan: <doc>#<remediation-step-N>`). No
+  `- [ ]` may remain in a claimed remediation step.
+- Exhaustive event coverage claimed? Reconcile every source-declared event against
+  attributable real-`EventLogger` scenario/integration/package-test evidence — representative
+  component coverage is not completion.
+- Before the phase is done: run #self-improvement-retro, update the phase registry, and
+  disposition every process finding PATCHED / DEFERRED / REJECTED.
 
 Canonical prompt (short):
 "Remediate the code gaps in exaix-dev-docs/planning/phase-NN-*.md's Post-Gap Analysis
@@ -38,145 +45,114 @@ Examples
 - "#remediate-code-gaps exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md"
 
 Do / Don't
-- ✅ Do read each gap's remediation step (Actions) before editing.
-- ✅ Do scope edits to exactly what the gap resolution requires.
-- ✅ Do write tests first (TDD) when adding new behaviour.
-- ✅ Do run `deno run -A scripts/ci.ts check` before committing — the single canonical command covering every real pre-commit gate (lint, style, magic, complexity, arch, event-coverage, etc.); a bare `deno task check` is ONLY the type-checker and will NOT catch a magic-value, event-coverage, or event-strings regression (Phase 168 self-improvement-retro finding — a remediation that only ran `deno task check` shipped two real regressions this way).
-- ✅ Do mark the remediation step's Success Criteria / Planned Tests done in the plan doc (`- ✅ <text> → ` `` `<staged-path>` ``) and commit via `scripts/commit_plan_step.ts <msg> --commit` with a `plan:` field.
-- ❌ Don't add new refactoring or polish beyond the named gaps.
-- ❌ Don't rewrite the remediation step's Actions/prose in the plan doc — only flip its Success Criteria / Planned Tests to the done form.
-- ❌ Don't skip tests for any remediation.
-- ❌ Don't run a bare `git commit` for a remediation that flips plan-doc criteria — it is a plan-step commit and must go through `commit_plan_step.ts` (else the gate blocks it or the plan doc + parent fall out of sync).
+- ✅ Read each gap's remediation step (Actions) before editing.
+- ✅ Scope edits to exactly the gap resolution.
+- ✅ Write tests first when adding behavior.
+- ✅ Run `deno run -A scripts/ci.ts check` before committing — ONE command covering every
+  real pre-commit gate (lint, style, magic, complexity, arch, event-coverage). A bare
+  `deno task check` is ONLY the type-checker and misses the rest (Phase 168 retro: a
+  remediation using only it shipped two regressions).
+- ✅ Mark the remediation step's criteria/tests done in the plan doc and commit via
+  `scripts/commit_plan_step.ts` with a `plan:` field.
+- ❌ Add refactoring or polish beyond the named gaps.
+- ❌ Rewrite the remediation step's Actions/prose — flip only its criteria/tests.
+- ❌ Skip tests for any remediation.
+- ❌ Run a bare `git commit` for a remediation that flips plan-doc criteria — the gate
+  blocks it or the plan doc + parent fall out of sync.
 
-Related skills:
-- #post-gap-analysis — Produces the remediation steps this skill executes
-- #self-improvement — Terminal phase-loop step; run after this skill closes
-- #fix-bug — Fix a specific finding discovered during remediation
-- #commit — Structured commit after remediation
-- [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
+Related: #post-gap-analysis (produces the steps); #self-improvement (terminal retro);
+#fix-bug (findings during remediation); #commit; test-development.
 
-Workflow chain (typical):
-  #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps → #post-gap-analysis → **#remediate-code-gaps** → #self-improvement-retro
+Workflow chain: #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps →
+#post-gap-analysis → **#remediate-code-gaps** → #self-improvement-retro
 ```
 
 ## See also
 
-- [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, coding conventions
+- [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, conventions
 
 ---
 
 ## Instructions for Agent
 
-You are performing a **code-gap remediation** of source files. Your goal is to close every gap identified in the Post-Gap Analysis remediation steps.
+Close every code gap in the Post-Gap Analysis remediation steps by editing source files.
 
 ### Phase 1 — Ingest
 
-1. Read the planning document's Post-Gap Analysis section — each remediation step has Actions, Architecture Notes, Planned Tests, Success Criteria.
-2. Read every source file referenced in the Actions.
-3. Read the code at each affected symbol to understand the current state.
+1. Read the Post-Gap Analysis section — each remediation step has Actions, Architecture
+   Notes, Planned Tests, Success Criteria.
+1. Read every source file referenced in the Actions.
+1. Read the code at each affected symbol.
 
-### Phase 2 — Remediate Gaps (TDD)
+### Phase 2 — Remediate (TDD)
 
-For each remediation step, in order:
+Per remediation step, in order:
 
-1. **RED**: If the remediation adds new behaviour, write the failing test first at the test path specified in Planned Tests.
-2. **GREEN**: Edit the source file to satisfy the remediation step's Actions. Stay exactly within scope.
-3. **REFACTOR**: Run `deno run -A scripts/ci.ts check` (covers lint, style, magic, complexity, arch, event-coverage, and every other real pre-commit gate in one command).
+1. **RED**: new behavior → write the failing test at the path Planned Tests names.
+1. **GREEN**: edit the source to satisfy the step's Actions, strictly in scope.
+1. **REFACTOR**: run `deno run -A scripts/ci.ts check` (all real pre-commit gates).
 
 ### Phase 3 — Validate & mark done
 
-1. Re-run all tests mentioned in the remediation step's Planned Tests.
-2. Run `deno run -A scripts/ci.ts check` to confirm no regressions — do NOT substitute a bare `deno task check` (type-checker only) or a hand-picked subset; both have silently missed a real regression before (see the Do/Don't list above).
-3. Verify the gap's Finding is now resolved by re-reading the source.
-4. In the plan doc's remediation step, rewrite each satisfied Success Criterion / Planned
-   Test to `- ✅ <text> →` `` `<staged-path>` `` (the source/test module you edited,
-   backtick-wrapped and a staged file). If a criterion is being deferred rather than closed,
-   write `- ⚠️ deferred <text> →` `` `<LedgerSymbol>` `` and add a Reachability Ledger row.
-   Leave no `- [ ]` in a remediation step this commit claims.
-5. **Canary trap**: a Success Criterion satisfied by a canary (temporarily break the
-   source, confirm the new test goes RED, then restore the source byte-identical) must
-   cite the TEST file as its `→ path`, never the canaried source file — a byte-identical
-   restore has zero net diff and is therefore not a staged file, so citing it fails the
-   "not among this commit's changed files" check. Verify with `git status --short
-   <source-file>` before writing the citation; empty output means it is not stageable.
-6. **Truncation trap when editing long single-line criteria/status lines**: plan-doc
-   criterion lines routinely exceed the `read` tool's per-line display cap and get shown
-   ending in `...`. NEVER copy that truncated text into an edit body — it permanently
-   deletes the rest of the line. For a small substitution inside a long line, either
-   re-`read` a narrow line range and confirm no trailing `...` before editing, or do a
-   targeted Python/sed string-replace on the exact original substring and verify with
-   `git diff` that only the intended text changed before moving on.
-7. **Arrow sweep trap**: `check_commit_msg.ts`'s `extractArrowPaths()` demands EVERY
-   backtick-wrapped span after the `→` on a `- ✅`/`- ⚠️ deferred` line be a staged parent
-   file — not just the first one. A backticked test name, symbol, or event mention written
-   after the arrow (e.g. `→ \`file.ts\` (\`selectedModel\`, \`[context-budget-cutover]\`)`)
-   makes the gate demand those as changed files and blocks the commit. Put incidental
-   code/test/symbol mentions BEFORE the arrow; put ONLY the real source/test paths after
-   it (multiple real paths: comma-separated backtick spans). Re-read #commit's
-   "Structured Message Validator Traps" before marking.
-8. If the remediation closes an exhaustive observability claim, generate a source event
-   inventory and reconcile its total with the runtime-evidence matrix. Each event needs an
-   attributable test that drives the production component through the real `EventLogger`;
-   mock capture, global lookup, field presence without semantic value checks, and one event
-   standing in for a multi-event component are insufficient.
-9. Run `#self-improvement-retro` before the final completion claim. It owns terminal phase
-   status and `PHASE_REGISTRY.md` hygiene and must disposition every workflow finding.
+1. Re-run every test in the step's Planned Tests.
+1. Confirmed regression-free with `deno run -A scripts/ci.ts check` — NEVER a bare
+   `deno task check` or a hand-picked subset (both silently missed a regression before).
+1. Re-read the source to confirm the Finding is resolved.
+1. In the plan doc, rewrite each satisfied criterion/test to `- ✅ <text> → \`<staged-path>\``;
+   a deferred one becomes `- ⚠️ deferred <text> → \`<LedgerSymbol>\` + a ledger row. No
+   `- [ ]` in a claimed step.
+1. **Canary trap**: a criterion satisfied by a canary (break source → confirm RED →
+   restore byte-identical) cites the TEST file as `→ path`, never the canaried source — a
+   byte-identical restore has zero net diff and is not stageable. Verify with
+   `git status --short <source-file>` before writing the citation.
+1. **Truncation trap**: long single-line criteria are shown with trailing `...` by the read
+   tool. NEVER copy truncated text into an edit — it deletes the rest of the line. Re-read a
+   narrow range and confirm no `...`, or do a targeted Python/sed replace on the exact
+   substring and verify with `git diff`.
+1. **Arrow sweep trap**: `extractArrowPaths()` demands EVERY backticked span after `→` on a
+   `- ✅`/`- ⚠️ deferred` line be a staged parent file. A backticked test name/symbol after
+   the arrow blocks the commit. Put incidental mentions BEFORE the arrow; only real paths
+   after (comma-separated spans). Re-read #commit's validator-traps first.
+1. Exhaustive observability claim? Generate a source event inventory and reconcile it with
+   the runtime-evidence matrix. Each event needs an attributable test driving production
+   through the real `EventLogger`; mocks, global lookup, presence-without-value, and one
+   event standing in for a multi-event component are insufficient.
+1. Run #self-improvement-retro before the final completion claim — it owns terminal status,
+   `PHASE_REGISTRY.md` hygiene, and dispositions.
 
-### Phase 4 — Commit (plan-step commit)
+### Phase 4 — Commit (plan-step)
 
-The commit spans the submodule plan doc (the ✅/deferred marks) and the parent source, so
-it goes through the plan-step gate:
+Spans the submodule plan doc (the ✅/deferred marks) and the parent source → plan-step gate:
 
-1. Stage the plan doc in the submodule (`git -C exaix-dev-docs add <planning-doc>`) — the
+1. Stage the plan doc in the submodule (`git -C exaix-dev-docs add <planning-doc>`); the
    ✅/deferred lines must be added lines of this diff.
-2. Stage the edited source + test files in the parent — every `→ path` you wrote must be
-   among them. A criterion/test whose module IS the plan doc itself uses the gitlink arrow
-   `→` `` `exaix-dev-docs` `` (the path the parent gate sees in `git diff --cached
-   --name-only`) — the internal `exaix-dev-docs/planning/<phase>.md` path is NOT a parent
-   staged file and the gate rejects it with "…not among this commit's changed files". A
-   doc-only (§3D) remediation step's criterion often cites BOTH an external file and the
-   plan doc's own gitlink together — combine the two rules with a comma:
-   `→` `` `ARCHITECTURE.md` ``, `` `exaix-dev-docs` `` (Phase 194 Step 11's GAP-8 remediation).
-3. Write the structured message (type `fix`; body has `what:`, `rationale:`, `tests:`,
-   `who:`, `impact:`, the gap numbers e.g. `remediation: GAP-1, GAP-3`, and a mandatory
-   `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>` field), then commit both
-   repos via `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`. Before
-   writing the message, read `#commit`'s "Structured Message Validator Traps" section
-   (Structural Bloom bullet-count rule, Impact component-word-must-appear-in-`what:` rule,
-   semicolon-in-`impact:` rule) — these block commits mid-remediation just as often as a
-   missing `plan:` field does.
-4. **Multiple remediation steps touching the SAME source file**: don't force one commit
-   per step if their edits land in the same file(s) — hunk-splitting an already-applied
-   multi-step diff is expensive and error-prone. Group those steps into ONE commit whose
-   `plan:` field names any one of them, mark ALL of the grouped steps' Success Criteria
-   done in the plan doc in that same commit, and name every covered GAP/step in the
-   message body. This is honest (every cited `→ path` really is a changed file of that
-   commit) and dramatically cheaper than manual `git apply --cached` hunk surgery.
-5. If `commit_plan_step.ts --commit` blocks BEFORE touching git (preflight error asking
-   to roll back the submodule's last commit), the submodule was committed separately,
-   breaking the commit-together flow: run `git -C exaix-dev-docs reset --soft HEAD~1` and
-   re-run so the plan doc + parent land in sync.
-6. If instead the submodule commit SUCCEEDS and only the PARENT's `check_commit_msg.ts`
-   validation rejects the message (Structural Bloom, Component Traceability, etc.) — do
-   NOT roll back the submodule, it is already valid. Confirm with
-   `git -C exaix-dev-docs log --oneline -1`, then fix the message text and commit the
-   parent directly: `git add exaix-dev-docs <parent files already staged> && git commit -F
-   <fixed-msg-file>` (skip re-running the orchestrator — it would try to commit the
-   submodule a second time with nothing staged there). See the submodule-workflow skill's
-   matching recipe.
-   If instead the parent rejects the plan-doc `→ path` convention itself (criterion/test
-   not among the parent's changed files), do NOT add a follow-up submodule commit — AMEND
-   the existing one (`git -C exaix-dev-docs add <planning-doc> && git -C exaix-dev-docs
-   commit --amend --no-edit`) so every item line stays an added line of `HEAD~1..HEAD`
-   (`validatePlanStepDiff` drops unchanged lines from a second commit's diff), re-stage the
-   pointer (`git add exaix-dev-docs`), then commit the parent directly.
+1. Stage the edited source + test files in the parent — every `→ path` must be among them.
+   A criterion whose module IS the plan doc uses the gitlink arrow `→ \`exaix-dev-docs\``;
+   a doc-only (§3D) step often cites both: `→ \`ARCHITECTURE.md\`, \`exaix-dev-docs\``.
+1. Write the structured message (`fix`; what:, rationale:, tests:, who:, impact:; the gap
+   numbers e.g. `remediation: GAP-1, GAP-3`; mandatory
+   `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>`), then
+   `deno run -A scripts/commit_plan_step.ts <msg-file> --commit`. Read #commit's validator
+   traps first (Structural Bloom, impact-component-word-in-what, semicolon-in-impact).
+1. Multiple steps touching the SAME source file: group them into ONE commit whose `plan:`
+   names any one step, mark ALL grouped steps' criteria done in that same commit, and name
+   every covered GAP/step in the body — honest (every cited `→ path` is a changed file) and
+   far cheaper than hunk surgery.
+1. Preflight blocks with "roll back the submodule's last commit"? The submodule was
+   committed separately: `git -C exaix-dev-docs reset --soft HEAD~1`, re-run.
+1. Submodule commit SUCCEEDED but the PARENT's `check_commit_msg.ts` rejects the message?
+   Do NOT roll back the submodule (it is valid). Confirm `git -C exaix-dev-docs log --oneline
+   -1`, fix the message, commit the parent directly. Parent rejects the `→ path`
+   convention itself? AMEND the submodule commit (`git -C exaix-dev-docs add <planning-doc>
+   && git -C exaix-dev-docs commit --amend --no-edit`) so every item line stays an added
+   line of `HEAD~1..HEAD`, re-stage the pointer, commit the parent directly.
 
 ## Output Format
 
-1. Summary of gaps closed (count by severity).
-2. List of files edited with what changed.
-3. Confirmation that all tests pass and CI gates are clean.
-4. Commit payload.
+1. Gaps closed (count by severity).
+1. Files edited, with what changed.
+1. All tests pass and CI gates clean.
+1. Commit payload.
 
 ---
 exaix:
