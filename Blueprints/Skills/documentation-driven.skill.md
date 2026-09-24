@@ -64,11 +64,11 @@ usage_count: 0
 
 # Documentation-Driven Development
 
-Write documentation first to clarify design before implementation:
+Write documentation first to clarify design before implementation.
 
 ## 1. Start with README
 
-Before writing code, document what you're building:
+Document what you are building before writing code:
 
 `````markdown
 # Feature Name
@@ -219,10 +219,10 @@ Domain Events → Event Handlers
 
 Documentation debt is technical debt:
 
-- **Code reviews** should include doc reviews
-- **Automated checks** for doc coverage
-- **Living documentation** generated from code
-- **Version docs** alongside code changes
+- Include doc reviews in code reviews.
+- Run automated checks for doc coverage.
+- Generate living documentation from code.
+- Version docs alongside code changes.
 
 ## 6. Documentation Types
 

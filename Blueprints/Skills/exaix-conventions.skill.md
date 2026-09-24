@@ -62,7 +62,7 @@ usage_count: 0
 
 # Exaix Development Conventions
 
-Follow these Exaix-specific patterns and conventions:
+Follow these Exaix-specific patterns and conventions.
 
 ## 1. Project Structure
 

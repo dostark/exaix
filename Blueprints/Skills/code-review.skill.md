@@ -60,7 +60,7 @@ usage_count: 0
 
 # Code Review Checklist
 
-Follow this systematic approach for thorough code reviews:
+Review code with this systematic approach.
 
 ## 1. Understand the Context
 

@@ -902,7 +902,7 @@
         "Write gaps and TDD remediation steps with step-manifests into the plan"
       ]
     },
-    {
+{
       "id": "copilot-review-phase-plan",
       "canonicalPath": ".copilot/skills/review-phase-plan/SKILL.md",
       "critical": false,
@@ -911,10 +911,10 @@
         "original": [
           "Key points",
           "Instructions for Agent",
-          "Phase 2 \u2014 Architectural Alignment & Necessity Check",
-          "Phase 8 \u2014 Integration Feasibility & Reachability Check",
-          "Phase 9 \u2014 Gap Classification",
-          "Phase 10 \u2014 Apply In-Place Fixes"
+          "Architectural Alignment & Necessity Check",
+          "Integration Feasibility & Reachability",
+          "Gap Classification",
+          "Apply In-Place Fixes and Write Gaps"
         ],
         "revised": [
           "Key points",
@@ -935,6 +935,279 @@
         "Classify gaps by severity and write them into the document",
         "Fix trivial gaps in place and list them under In-Place Fixes",
         "Grep-verify every code-change resolution before marking it applied"
+      ]
+    },
+    {
+      "id": "bp-response-contract",
+      "canonicalPath": "Blueprints/Skills/response-contract.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "## Agent Thought Standardization",
+          "## Executable-plan JSON schema",
+          "## Examples"
+        ],
+        "revised": [
+          "## Agent Thought Standardization",
+          "## Executable-plan JSON schema",
+          "## Examples"
+        ]
+      },
+      "evidenceCaseIds": [
+        "bp-response-contract",
+        "bp-response-budget",
+        "bp-response-trimmed"
+      ],
+      "risk": "high",
+      "evidence": "delivery",
+      "obligations": [
+        "Respond with exactly a <thought> block and a <content> block; ignore everything outside them",
+        "<content> must be a single valid JSON object with no surrounding commentary",
+        "Never wrap the JSON in a markdown code fence",
+        "Keep the six required thought sections verbatim",
+        "Preserve the executable-plan JSON schema fields title, description, steps, successCriteria"
+      ]
+    },
+    {
+      "id": "bp-response-judge",
+      "canonicalPath": "Blueprints/Skills/response-contract-judge.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "## How to judge",
+          "## Scoring scale",
+          "## Output contract",
+          "### Single-criterion shape",
+          "### Multi-criteria shape"
+        ],
+        "revised": [
+          "## How to judge",
+          "## Scoring scale",
+          "## Output contract",
+          "### Single-criterion shape",
+          "### Multi-criteria shape"
+        ]
+      },
+      "evidenceCaseIds": [
+        "bp-judge-json"
+      ],
+      "risk": "high",
+      "evidence": "delivery",
+      "obligations": [
+        "Return one JSON object and nothing else; do not use <thought>/<content> tags",
+        "Put reasoning inside the object's reasoning/feedback fields",
+        "Ground every score in quoted or cited evidence",
+        "Score each criterion independently; avoid halo and horn effects",
+        "Judge substance, not surface; a longer or more confident answer is not better"
+      ]
+    },
+    {
+      "id": "bp-response-code-analysis",
+      "canonicalPath": "Blueprints/Skills/response-contract-code-analysis.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Response Contract — Code Analysis"
+        ],
+        "revised": [
+          "# Response Contract — Code Analysis"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "high",
+      "evidence": "review-only",
+      "obligations": [
+        "When the deliverable is a codebase analysis, the <content> block matches the Code Analysis Report schema",
+        "Present modules, patterns, metrics, and recommendations grounded in the actual codebase"
+      ]
+    },
+    {
+      "id": "bp-response-security-analysis",
+      "canonicalPath": "Blueprints/Skills/response-contract-security-analysis.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Response Contract — Security Analysis"
+        ],
+        "revised": [
+          "# Response Contract — Security Analysis"
+        ]
+      },
+      "evidenceCaseIds": [
+        "bp-specialist-json"
+      ],
+      "risk": "high",
+      "evidence": "delivery",
+      "obligations": [
+        "When the deliverable is a security assessment, the <content> block matches the Security Analysis Report schema",
+        "Reflect real vulnerabilities in findings, remediation, and compliance"
+      ]
+    },
+    {
+      "id": "bp-response-qa",
+      "canonicalPath": "Blueprints/Skills/response-contract-qa.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Response Contract — QA/Testing"
+        ],
+        "revised": [
+          "# Response Contract — QA/Testing"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "high",
+      "evidence": "review-only",
+      "obligations": [
+        "When the deliverable is a QA/testing assessment, the <content> block matches the QA Assessment Report schema",
+        "Reflect real test results in testSummary, coverage, and issues"
+      ]
+    },
+    {
+      "id": "bp-response-performance",
+      "canonicalPath": "Blueprints/Skills/response-contract-performance.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Response Contract — Performance Analysis"
+        ],
+        "revised": [
+          "# Response Contract — Performance Analysis"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "high",
+      "evidence": "review-only",
+      "obligations": [
+        "When the deliverable is a performance/scalability assessment, the <content> block matches the Performance Analysis Report schema",
+        "Reflect real bottlenecks in findings, priorities, and scalability assessment"
+      ]
+    },
+    {
+      "id": "bp-documentation-driven",
+      "canonicalPath": "Blueprints/Skills/documentation-driven.skill.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "## 1. Start with README",
+          "## 5. Keep Docs Updated"
+        ],
+        "revised": [
+          "## 1. Start with README",
+          "## 5. Keep Docs Updated"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Write documentation first to clarify design before implementation",
+        "Start with a README that states purpose, usage, and API reference",
+        "Keep documentation close to code and update it when code changes",
+        "Documentation deliverables are exempt from the STE obligation"
+      ]
+    },
+    {
+      "id": "bp-conversational-dialogue",
+      "canonicalPath": "Blueprints/Skills/conversational-dialogue.skill.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "## Interaction principles",
+          "## Turn protocol"
+        ],
+        "revised": [
+          "## Interaction principles",
+          "## Turn protocol"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Review the conversation history before each response; never contradict an established fact",
+        "Answer the direct question first, then add context or follow-ups",
+        "Each turn must advance the conversation; do not restate settled points",
+        "Signal clearly when a topic is concluded versus continuing"
+      ]
+    },
+    {
+      "id": "bp-agent-default",
+      "canonicalPath": "Blueprints/Agents/default.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Default Coding Agent"
+        ],
+        "revised": [
+          "# Default Coding Agent",
+          "## Communication requirement"
+        ]
+      },
+      "evidenceCaseIds": [
+        "bp-agent-rule-absent-skills"
+      ],
+      "risk": "medium",
+      "evidence": "delivery",
+      "obligations": [
+        "Analyse each request and create a detailed implementation plan",
+        "Carry the compact ASD-STE100 and Exaix STE Extension v1 requirement so optional skill matching is unnecessary",
+        "Follow response-contract and error-handling skill obligations"
+      ]
+    },
+    {
+      "id": "bp-agent-senior-coder",
+      "canonicalPath": "Blueprints/Agents/senior-coder.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Senior Software Engineer Agent"
+        ],
+        "revised": [
+          "# Senior Software Engineer Agent",
+          "## Communication requirement"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Break down complex problems into well-structured, maintainable solutions",
+        "Carry the compact ASD-STE100 and Exaix STE Extension v1 requirement",
+        "Follow typescript-patterns, error-handling, code-review, and response-contract obligations"
+      ]
+    },
+    {
+      "id": "bp-agent-quality-judge",
+      "canonicalPath": "Blueprints/Agents/quality-judge.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Quality Judge Agent"
+        ],
+        "revised": [
+          "# Quality Judge Agent",
+          "## Communication requirement"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Evaluate outputs via structured, objective assessments; do not generate content",
+        "Emit a single raw JSON verdict through response-contract-judge, never a <thought>/<content> wrapper",
+        "Carry the compact ASD-STE100 and Exaix STE Extension v1 requirement"
       ]
     }
   ]

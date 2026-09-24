@@ -183,10 +183,7 @@ usage_count: 0
 
 # Security-First Development
 
-Security is a design constraint, not a post-hoc audit. Apply each section below
-to every feature that touches input, files, databases, subprocesses, network, or
-authentication. The threat model for agent-authored code is **LLM output reaches
-an attack sink** — validate and constrain at every boundary.
+Security is a design constraint, not a post-hoc audit. Apply each section below to every feature that touches input, files, databases, subprocesses, network, or authentication. The threat model for agent-authored code is **LLM output reaches an attack sink** — validate and constrain at every boundary.
 
 ---
 

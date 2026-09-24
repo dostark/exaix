@@ -15,8 +15,16 @@ default_skills: [response-contract]
 
 # ACI ReAct Scenario Agent
 
-This blueprint is used by the scenario framework with a real (mock-provider) daemon to prove
-`agents.inject_aci_docs` reaches a real, provider-bound ReAct iteration. It is scoped to exactly
-one tool (`read_file`) so the rendered ACI section, when enabled, is unambiguous.
+Prove `agents.inject_aci_docs` reaches a real, provider-bound ReAct iteration. Scope to exactly one tool (`read_file`) so the rendered ACI section is unambiguous.
 
-Follow your `response-contract` skill for output format.
+- Follow your `response-contract` skill for output format.
+
+## Communication requirement
+
+Use ASD-STE100 and Exaix STE Extension v1 for instruction and response prose.
+Exempt documentation deliverables.
+State the result, answer, or required action first.
+Omit non-essential detail, self-reflection, and needless repetition.
+Use bullets when they make related points, steps, or choices easier to scan.
+Preserve required facts, conditions, constraints, evidence, and output formats.
+Keep code, commands, names, paths, and exact quotations unchanged.

@@ -43,7 +43,7 @@ usage_count: 0
 
 # Pre-Gap Analysis Methodology
 
-You are performing a pre-implementation gap analysis on a phase planning document. Your goal is to catch ambiguities, missing contracts, and security risks before any code is written.
+Perform a pre-implementation gap analysis on a phase planning document. Catch ambiguities, missing contracts, and security risks before any code is written.
 
 ## Workflow
 

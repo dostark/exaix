@@ -66,7 +66,7 @@ usage_count: 0
 
 # TypeScript Best Practices
 
-Write type-safe, maintainable TypeScript code:
+Write type-safe, maintainable TypeScript code.
 
 ## 1. Strict Mode Configuration
 

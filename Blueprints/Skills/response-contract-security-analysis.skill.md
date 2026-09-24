@@ -44,8 +44,7 @@ usage_count: 0
 
 # Response Contract — Security Analysis
 
-When the deliverable is a security assessment (not an executable plan), the
-`<content>` block must match this schema:
+When the deliverable is a security assessment (not an executable plan), the `<content>` block must match this schema:
 
 ```json
 {

@@ -46,9 +46,7 @@ usage_count: 0
 
 # Memory Extraction Content Policy
 
-Use this policy when selecting or synthesizing durable learnings from execution
-results. Memory should preserve the project knowledge an agent cannot cheaply
-reconstruct from the current source tree.
+Use this policy when selecting or synthesizing durable learnings from execution results. Memory should preserve the project knowledge an agent cannot cheaply reconstruct from the current source tree.
 
 ## Capture
 

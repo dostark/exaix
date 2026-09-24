@@ -60,7 +60,7 @@ usage_count: 0
 
 # Conventional Commit Messages
 
-Follow the Conventional Commits specification for consistent, parseable commit history:
+Follow the Conventional Commits specification for consistent, parseable commit history.
 
 ## Format
 

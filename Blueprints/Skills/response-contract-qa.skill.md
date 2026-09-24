@@ -45,8 +45,7 @@ usage_count: 0
 
 # Response Contract — QA/Testing
 
-When the deliverable is a QA/testing assessment (not an executable plan), the
-`<content>` block must match this schema:
+When the deliverable is a QA/testing assessment (not an executable plan), the `<content>` block must match this schema:
 
 ```json
 {

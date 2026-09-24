@@ -1,0 +1,37 @@
+{
+  "version": "1",
+  "allowlist": [
+    {
+      "text": "use sanitizeops false sanitizeresources false for timer based tests",
+      "reason": "Shared Exaix test-runner flag guidance repeated verbatim in multiple developer skills; identical operational command, not EXAIX-04 repetition of authored prose."
+    },
+    {
+      "text": "timer based tui tests sanitizeops false sanitizeresources false",
+      "reason": "Same canonical flag pair referenced by several developer skills for timer-based TUI tests; preserved as an exact operational command reference."
+    },
+    {
+      "text": "deno run allow read allow write scripts markdown lint ts exaix dev docs planning doc",
+      "reason": "The one canonical markdown-lint command, intentionally restated in plan authoring skills so the command is usable without a cross-skill fetch; documented shared command, not prose repetition."
+    },
+    {
+      "text": "run deno run allow read allow write scripts markdown lint ts exaix dev docs planning doc",
+      "reason": "Same canonical markdown-lint command with a directive prefix; intentional shared command reference across plan-authoring skills."
+    },
+    {
+      "text": "set status to gap remediation in progress",
+      "reason": "Shared workflow transition verb shared by gap-remediation skills; a fixed status value, not authored prose."
+    },
+    {
+      "text": "1 gaps closed count by severity",
+      "reason": "Shared finalization step of the gap-remediation workflow, restated by each owning skill so the step runs standalone; documented shared transition."
+    },
+    {
+      "text": "1 set status to gap remediation in progress",
+      "reason": "Shared status transition step of the gap-remediation workflow, intentionally repeated across the sibling skills; not EXAIX-04 prose repetition."
+    },
+    {
+      "text": "1 bump the frontmatter version",
+      "reason": "Shared version-bump step of the review/gap workflow, intentionally repeated so each skill is self-contained; documented shared transition."
+    }
+  ]
+}

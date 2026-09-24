@@ -45,24 +45,12 @@ usage_count: 0
 
 # Response Output Contract
 
-You MUST respond with exactly two sections, each wrapped in XML-like tags. Any
-text outside these tags is ignored.
+Respond with exactly two sections, each wrapped in XML-like tags. The runtime ignores any text outside these tags.
 
-1. `<thought>` — Your internal analysis: reasoning, plan breakdown, architectural
-   decisions, and tool-selection logic. Not parsed as structured data.
+1. `<thought>` — Your analysis: reasoning, plan breakdown, architectural decisions, and tool-selection logic. Not parsed as structured data.
+2. `<content>` — Your deliverable. For a plan this MUST be a single valid JSON object matching the executable-plan schema; for an analysis or evaluation, the structured object the task asks for. The runtime extracts and parses the `<content>` block, so it must be valid, self-contained, and free of commentary.
 
-2. `<content>` — Your deliverable. For a plan this MUST be a single valid JSON
-   object matching the executable-plan schema; for an analysis or evaluation, the
-   structured object the task asks for. The `<content>` block is extracted and
-   parsed by the runtime, so it must be valid, self-contained, and free of
-   commentary.
-
-   **Never wrap the JSON in a markdown code fence.** The runtime takes the exact
-   text between `<content>` and `</content>` and passes it directly to a JSON
-   parser — a leading/trailing `` ```json `` or `` ``` `` line is not JSON and
-   causes parsing to fail immediately, even though the JSON itself may be
-   correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right:
-   `<content>` followed immediately by the raw `{ ... }` object, nothing else.
+**Never wrap the JSON in a markdown code fence.** The runtime takes the exact text between `<content>` and `</content>` and passes it directly to a JSON parser. A leading/trailing `` ```json `` or `` ``` `` line is not JSON and fails parsing immediately, even though the JSON itself may be correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right: `<content>` followed immediately by the raw `{ ... }` object, nothing else.
 
 ## Agent Thought Standardization
 

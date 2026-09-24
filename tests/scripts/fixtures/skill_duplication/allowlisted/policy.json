@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "allowlist": [
+    {
+      "text": "use sanitizeops false sanitizeresources false for timer based tests",
+      "reason": "Test fixture: shared operational command reference."
+    }
+  ]
+}

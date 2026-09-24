@@ -77,12 +77,9 @@ usage_count: 0
 
 # Bug Fix
 
-Apply this skill when the task is to fix a bug, make a failing test pass, investigate an
-error, or explain why something is behaving incorrectly.
+Apply this skill when the task is to fix a bug, make a failing test pass, investigate an error, or explain why something is behaving incorrectly.
 
-The goal is **not** to guess a cause and patch code quickly. The goal is to **reproduce,
-isolate, apply the smallest safe fix, and verify**. This skill is language-agnostic —
-adapt each step to the project's stack.
+The goal is **not** to guess a cause and patch code quickly. The goal is to **reproduce, isolate, apply the smallest safe fix, and verify**. This skill is language-agnostic — adapt each step to the project's stack.
 
 ## 1. Understand the defect
 
@@ -92,20 +89,17 @@ Before changing anything, establish:
 - What evidence exists — an error message, stack trace, log, or failing test?
 - Under what conditions does it happen (inputs, environment, version)?
 
-If the report is vague and no evidence points at a failing path, gather that first.
-Do not begin editing on a hunch.
+If the report is vague and no evidence points at a failing path, gather that first. Do not begin editing on a hunch.
 
 ## 2. Reproduce or clearly reason about the failure
 
-Do not fix a bug you have not reproduced or cannot clearly explain. **Don't "fix" code
-that isn't actually broken** — confirm the defect is real first. Prefer, in order:
+Do not fix a bug you have not reproduced or cannot clearly explain. **Don't "fix" code that isn't actually broken** — confirm the defect is real first. Prefer, in order:
 
 - A failing test (unit or integration) that captures the wrong behavior.
 - A minimal manual reproduction.
 - A stack trace or log that unambiguously identifies the failing path.
 
-If reproduction is genuinely impossible in this environment, say so explicitly and base
-the fix on the strongest available evidence.
+If reproduction is genuinely impossible in this environment, say so explicitly and base the fix on the strongest available evidence.
 
 ## 3. Isolate the root cause
 

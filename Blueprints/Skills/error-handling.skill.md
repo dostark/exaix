@@ -66,7 +66,7 @@ usage_count: 0
 
 # Robust Error Handling
 
-Implement comprehensive error handling for reliable applications:
+Implement comprehensive error handling for reliable applications.
 
 ## 1. Error Types
 

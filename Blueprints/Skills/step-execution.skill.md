@@ -46,7 +46,7 @@ usage_count: 0
 
 # Step Execution Methodology (TDD)
 
-You are implementing a single step of a phase planning document. Follow the strict RED → GREEN → REFACTOR cycle.
+Implement a single step of a phase planning document. Follow the strict RED → GREEN → REFACTOR cycle.
 
 ## Workflow
 

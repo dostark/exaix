@@ -30,7 +30,7 @@ steps:
   - id: "review-clarification"
     type: "manual-review"
     checkpoint: "clarification-needed"
-    instructions: "Review the clarification prompts and confirm the request remains blocked pending answers."
+    instructions: "Review the clarification prompts. Confirm the request stays blocked pending answers."
     input_criteria:
       - id: "clarification-artifact"
         score_weight: 0.4

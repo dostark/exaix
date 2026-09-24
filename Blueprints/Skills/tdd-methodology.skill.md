@@ -66,7 +66,7 @@ usage_count: 0
 
 # Test-Driven Development Methodology
 
-You MUST follow the Red-Green-Refactor cycle for all code changes:
+Follow the Red-Green-Refactor cycle for all code changes.
 
 ## Phase 1: Red (Write Failing Test)
 
