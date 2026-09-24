@@ -598,6 +598,97 @@
         "Build a feature matrix of at least 10 dimensions",
         "Use correct Actor, Agent, Agent Role terminology and cite doc sections"
       ]
+    },
+    {
+      "id": "copilot-package-extraction",
+      "canonicalPath": ".copilot/skills/package-extraction/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow",
+          "Decision rules",
+          "Instructions for Agent"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow",
+          "Decision rules",
+          "Instructions for Agent"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "low",
+      "evidence": "review-only",
+      "obligations": [
+        "Apply the placement one-question test before extracting a module",
+        "Keep all *_test.ts in packages/<package>/tests/",
+        "Share package test support via a testing/ subpath, never a test folder",
+        "Refactor runtime-coupled source to constructor DI with injectable interfaces",
+        "Rewrite every import to canonical package paths and delete all legacy src/ modules",
+        "Use package_dependency_graph, package_import_migration, and package_import_canonize correctly"
+      ]
+    },
+    {
+      "id": "copilot-clean-codebase",
+      "canonicalPath": ".copilot/skills/clean-codebase/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "low",
+      "evidence": "review-only",
+      "obligations": [
+        "Fix in dependency order, type errors first",
+        "Run deno task check first and validate after each batch",
+        "Use deno run -A scripts/ci.ts check for the static gates and run the extras separately",
+        "Keep cleanup behavioral-neutral and never use as any",
+        "Run check:arch, check:magic, and the parity gates to zero violations",
+        "Work in 5-10 file batches above about 20 files"
+      ]
+    },
+    {
+      "id": "copilot-edition-development",
+      "canonicalPath": ".copilot/skills/edition-development/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Step 1 \u2014 Determine the correct directory",
+          "Step 5 \u2014 Build and verify",
+          "Guardrails to follow"
+        ],
+        "revised": [
+          "Key points",
+          "Step 1 \u2014 Determine the correct directory",
+          "Step 5 \u2014 Build and verify",
+          "Guardrails to follow"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Use the Option-C layout: packages, exaix-team, exaix-enterprise",
+        "Wire edition features through ICapabilityModule hooks and the composer",
+        "Resolve registry types via ISeamRegistryPlaceholder at the app entry",
+        "Invoke module hooks post-construction against the seam registry",
+        "Keep edition conditionals only in the allowed paths",
+        "Run check:no-edition-conditionals, leak_guard, and build:solo|team|enterprise"
+      ]
     }
   ]
 }

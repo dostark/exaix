@@ -33,17 +33,27 @@ qwen_skill: edition-development
 
 Key points
 
-- Exaix ships **three tiers**: Solo (Apache 2.0), Team (BSL), Enterprise (private submodule)
-- **Option-C layout:** `packages/` (Solo, always compiled) · `exaix-team/` (BSL, private submodule, internal `packages/`+`apps/` split) · `exaix-enterprise/` (private submodule, never published)
-- **`IEditionComposer`** + **`ICapabilityModule`** seam shipped in **Phase 115**. `SoloComposer` stores modules but invokes no hooks; `TeamComposer` (Phase 116) is wired in the daemon when `EXAIX_EDITION=team`.
-- **`ISeamRegistryPlaceholder`** avoids circular deps between `@exaix/core` and consumer packages. Concrete types are resolved at the app-entry level via `as unknown as ISeamRegistryPlaceholder` — this is the intended bridge (the placeholder is replaced by a concrete type when the first consumer exists, per the JSDoc).
-- **Module hooks are invoked post-construction.** Build the seam owner first (e.g., `FlowRunner`), then iterate `composer.getModules()` and call each hook with the concrete registry cast to `ISeamRegistryPlaceholder`.
-- Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside `apps/daemon/main.ts`, `apps/exactl/src/init.ts`, `exaix-team/`, `exaix-enterprise/`, `scripts/`, and `apps/common/`. Enforced by `deno task check:no-edition-conditionals`.
-- **Leak-guard** (`scripts/leak_guard.ts`) blocks enterprise paths/headers before OSS publishing.
-- **build:solo|team|enterprise** (`deno.json` lines 105-107) compile distinct binaries via `scripts/ci.ts build --edition <name>`.
+- Exaix ships **three tiers**: Solo (Apache 2.0), Team (BSL), Enterprise (private submodule).
+- **Option-C layout:** `packages/` (Solo, always compiled) · `exaix-team/` (BSL, private
+  submodule, internal `packages/`+`apps/` split) · `exaix-enterprise/` (private, never published).
+- **`IEditionComposer` + `ICapabilityModule` seam** shipped in Phase 115. `SoloComposer`
+  stores modules, invokes no hooks; `TeamComposer` (Phase 116) is wired when
+  `EXAIX_EDITION=team`.
+- **`ISeamRegistryPlaceholder`** avoids circular deps between `@exaix/core` and consumers;
+  concrete types are resolved at the app entry via `as unknown as ISeamRegistryPlaceholder` —
+  the intended bridge (replaced by a concrete type once a consumer exists).
+- **Hooks are invoked post-construction**: build the seam owner (e.g. `FlowRunner`), then
+  iterate `composer.getModules()` and call each hook with the registry cast to the placeholder.
+- Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside
+  `apps/daemon/main.ts`, `apps/exactl/src/init.ts`, `exaix-team/`, `exaix-enterprise/`,
+  `scripts/`, `apps/common/` (`check:no-edition-conditionals`).
+- **Leak-guard** (`scripts/leak_guard.ts`) blocks enterprise paths/headers before publishing.
+- **build:solo|team|enterprise** compile distinct binaries via
+  `scripts/ci.ts build --edition <name>`.
 
 Canonical prompt (short):
-"Implement a {edition-tier} feature for Exaix. Determine the correct directory, create an ICapabilityModule, wire it through the composer, add build support, and write tests."
+"Implement a {edition-tier} feature for Exaix. Determine the correct directory, create an
+ICapabilityModule, wire it through the composer, add build support, and write tests."
 
 ---
 
@@ -207,9 +217,11 @@ export class VotingCapabilityModule implements ICapabilityModule {
 
 ### Why post-construction instead of constructor injection?
 
-- `GateStepHandler` receives `gateEvaluator` via `FlowRunner` options because `gateEvaluator` is available at construction time.
-- Voting and other Team features need `FlowRunner`'s registry _after_ construction — they register handlers externally via `getStepHandlerRegistry()`.
-- The `ICapabilityModule` seam is the single attach point: the module receives the registry, not the FlowRunner constructor options.
+- `GateStepHandler` takes `gateEvaluator` in `FlowRunner` options — available at construction.
+- Voting and other Team features need the registry AFTER construction; they register
+  handlers externally via `getStepHandlerRegistry()`.
+- `ICapabilityModule` is the single attach point: the module receives the registry, not
+  the FlowRunner constructor options.
 
 **App entries to update:** `apps/daemon/main.ts` (primary), `apps/exactl/src/init.ts` (CLI).
 
@@ -409,3 +421,4 @@ exaix:
       description: Shared code paths contain no edition-specific branching
       weight: 30
 ---
+
