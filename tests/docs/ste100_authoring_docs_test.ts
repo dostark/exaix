@@ -16,6 +16,8 @@ const COMMENTS_DOC_PATH = "scripts/check_ste100_comments.md";
 const SCENARIO_README_PATH = "tests/scenario_framework/README.md";
 const BLUEPRINTS_SKILLS_README_PATH = "Blueprints/Skills/README.md";
 const DENO_JSON_PATH = "deno.json";
+const DOT_COPILOT_README_PATH = ".copilot/README.md";
+const BUILDING_WITH_AI_AGENTS_PATH = "exaix-dev-docs/dev/Building_with_AI_Agents.md";
 
 async function read(path: string): Promise<string> {
   return await Deno.readTextFile(path);
@@ -97,5 +99,23 @@ Deno.test("Blueprints/Skills README states the authoring communication rule", as
   assert(
     lower.includes("communication") && (lower.includes("ste") || lower.includes("concise")),
     "Blueprints/Skills README must state the concise communication authoring rule",
+  );
+});
+
+Deno.test(".copilot/README mentions the STE authoring rule and the check command", async () => {
+  const readme = await read(DOT_COPILOT_README_PATH);
+  const lower = readme.toLowerCase();
+  assert(
+    lower.includes("asd-ste100") && lower.includes("check:agent-prose"),
+    ".copilot/README must mention the STE requirement and the check:agent-prose command",
+  );
+});
+
+Deno.test("Building_with_AI_Agents points to the communication requirement and check command", async () => {
+  const readme = await read(BUILDING_WITH_AI_AGENTS_PATH);
+  const lower = readme.toLowerCase();
+  assert(
+    lower.includes("asd-ste100") && lower.includes("check:agent-prose"),
+    "Building_with_AI_Agents must point to the STE requirement and the check command",
   );
 });

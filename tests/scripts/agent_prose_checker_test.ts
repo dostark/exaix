@@ -18,7 +18,7 @@
  * ]
  */
 
-import { assertEquals, assertMatch, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertMatch, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { copy } from "@std/fs";
 import { join } from "@std/path";
 import {
@@ -82,6 +82,7 @@ async function makeFixture(
     extension: "Exaix STE Extension v1",
     roots: ["owned"],
     exclusions: [],
+    escapeAllowlist: [],
     sources: [],
     technicalTerms: [],
   };
@@ -337,6 +338,38 @@ Deno.test("Instruction checker rejects outside roots escaped aliases cycles and 
   await Deno.writeTextFile(malformed, "{ not json");
   const cli = await runCli(malformed);
   assertEquals(cli.code, 2);
+});
+
+Deno.test("Allowlisted escaping reference symlink passes without error entry", async () => {
+  const allowed = await makeFixture({
+    mutate: async ({ ownedDir, policy }) => {
+      const outsideTarget = join(ownedDir, "..", "outside-target");
+      await writeFileAt(outsideTarget, "leak.md", "not owned prose\n");
+      await Deno.symlink(outsideTarget, join(ownedDir, ".copilot", "allowed-ref.md"));
+      policy.escapeAllowlist = [
+        { path: ".copilot/allowed-ref.md", reason: "known backward-compat reference alias" },
+      ];
+    },
+  });
+  const result = await runAgentProseCheck({ policyPath: allowed.policyPath });
+  assert(
+    result.errors.every((e) => !e.includes("Escaping symlink")),
+    "an allowlisted escaping symlink must not be reported as an escaping-symlink error",
+  );
+  assertEquals(result.exitCode, 0, "allowlisted escape must not fail the check");
+});
+
+Deno.test("Non-allowlisted escaping symlink is still reported as an error", async () => {
+  const blocked = await makeFixture({
+    mutate: async ({ ownedDir }) => {
+      const outsideTarget = join(ownedDir, "..", "outside-target");
+      await writeFileAt(outsideTarget, "leak.md", "not owned prose\n");
+      await Deno.symlink(outsideTarget, join(ownedDir, ".copilot", "leak"));
+    },
+  });
+  const result = await runAgentProseCheck({ policyPath: blocked.policyPath });
+  assertStringIncludes(result.errors.join(" "), "Escaping symlink");
+  assertEquals(result.exitCode, 1, "a non-allowlisted escaping symlink must fail the check");
 });
 
 Deno.test("Review invalidates when rules terminology classifications or supporting context change", async () => {

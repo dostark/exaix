@@ -66,6 +66,15 @@ deno run --allow-read --allow-write scripts/build_agents_index.ts
 deno run --allow-read scripts/validate_agents_docs.ts
 ```
 
+### Communication rule
+
+`.copilot` instruction and response prose (skills, prompts, and reference docs read as
+model guidance) follows ASD-STE100 and Exaix STE Extension v1: state the result or action
+first, omit needless detail and self-reflection, and prefer bullets. Documentation
+deliverables are exempt from the mandatory rule. The local instruction-prose authoring
+gate is `deno task check:agent-prose` (deno.json, available but not enabled in
+CI/hooks).
+
 ## How to Add a New Agent Doc
 
 ### 1. Create File in Appropriate Subfolder

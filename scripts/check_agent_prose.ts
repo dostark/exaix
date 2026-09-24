@@ -110,6 +110,7 @@ const AgentProsePolicySchema = z.object({
   extension: z.literal("Exaix STE Extension v1"),
   roots: z.array(z.string().min(1)),
   exclusions: z.array(z.object({ path: z.string().min(1), reason: z.string().min(1) })).default([]),
+  escapeAllowlist: z.array(z.object({ path: z.string().min(1), reason: z.string().min(1) })).default([]),
   sources: z.array(ProseSourceSchema),
   technicalTerms: z.array(TechnicalTermSchema),
 });
@@ -253,9 +254,15 @@ interface ICandidateFile {
   absPath: string;
 }
 
+/** True when a relative path is a known, documented escape (back-compat symlink alias)
+ *  allowed by the policy. An allowlisted escape is skipped silently, not errored. */
+function isAllowlistedEscape(policy: IAgentProsePolicy, relPath: string): boolean {
+  return policy.escapeAllowlist.some((e) => relPath === e.path);
+}
+
 /** Cycle-safe discovery: each real directory is visited at most once, aliases and
  *  symlinks collapse through realpath, and an escaping symlink is reported rather than
- *  silently skipped. */
+ *  silently skipped — unless it is an allowlisted, documented back-compat alias. */
 export async function discoverProseCandidates(
   policy: IAgentProsePolicy,
   roots: string[],
@@ -307,7 +314,9 @@ export async function discoverProseCandidates(
             continue;
           }
           if (relativeSafe(root, realTarget) === null) {
-            escapes.push(abs);
+            if (!isAllowlistedEscape(policy, rel)) {
+              escapes.push(abs);
+            }
             continue;
           }
           let targetStat: Deno.FileInfo;

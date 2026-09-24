@@ -13,5 +13,15 @@
     }
   ],
   "sources": [],
-  "technicalTerms": []
+  "technicalTerms": [],
+  "escapeAllowlist": [
+    {
+      "path": "references/ARCHITECTURE.md",
+      "reason": "Backward-compat alias to the repo-root ARCHITECTURE.md (documentation, exempt)."
+    },
+    {
+      "path": "references/CODE_STYLE.md",
+      "reason": "Backward-compat alias to the repo-root CODE_STYLE.md (documentation, exempt)."
+    }
+  ]
 }
