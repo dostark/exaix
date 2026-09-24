@@ -27,7 +27,7 @@
     ".copilot/skills/submodule-workflow",
     ".copilot/skills/tdd-workflow",
     ".copilot/skills/test-development",
-    ".copilot/skills/upgrade"
+    ".copilot/skills/upgrade-version"
   ],
   "permissions": {
     "allow": [

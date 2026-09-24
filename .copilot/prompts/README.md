@@ -54,7 +54,7 @@ Every file in this directory must have a corresponding `.copilot/skills/<name>/S
 | `submodule-workflow.prompt.md`   | `.copilot/skills/submodule-workflow/`   |
 | `tdd-workflow.prompt.md`         | `.copilot/skills/tdd-workflow/`         |
 | `test-development.prompt.md`     | `.copilot/skills/test-development/`     |
-| `upgrade.prompt.md`              | `.copilot/skills/upgrade/`              |
+| `upgrade-version.prompt.md`              | `.copilot/skills/upgrade-version/`              |
 
 ## Adding a new skill
 

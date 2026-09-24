@@ -157,11 +157,11 @@
       "short_summary": ""
     },
     {
-      "path": ".copilot/prompts/upgrade.prompt.md",
+      "path": ".copilot/prompts/refactor-check-magic.prompt.md",
       "short_summary": ""
     },
     {
-      "path": ".copilot/prompts/refactor-check-magic.prompt.md",
+      "path": ".copilot/prompts/upgrade-version.prompt.md",
       "short_summary": ""
     },
     {
@@ -341,6 +341,22 @@
         "maintenance"
       ],
       "qwen_skill": "refactor"
+    },
+    {
+      "path": ".copilot/skills/upgrade-version/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Upgrade-Version Skill (#upgrade-version)",
+      "short_summary": "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage.",
+      "version": "1.0.0",
+      "topics": [
+        "upgrade",
+        "dependencies",
+        "version",
+        "maintenance",
+        "regression"
+      ],
+      "qwen_skill": "upgrade-version"
     },
     {
       "path": ".copilot/skills/clean-codebase/SKILL.md",
@@ -551,22 +567,6 @@
         "process"
       ],
       "qwen_skill": "self-improvement"
-    },
-    {
-      "path": ".copilot/skills/upgrade/SKILL.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Upgrade Skill (#upgrade)",
-      "short_summary": "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage.",
-      "version": "1.0.0",
-      "topics": [
-        "upgrade",
-        "dependencies",
-        "version",
-        "maintenance",
-        "regression"
-      ],
-      "qwen_skill": "upgrade"
     },
     {
       "path": ".copilot/skills/tdd-workflow/SKILL.md",

@@ -1,5 +1,5 @@
 ---
-name: upgrade
+name: upgrade-version
 agent: general
 tools:
   - read_file
@@ -8,12 +8,12 @@ tools:
   - search_files
   - run_command
 scope: dev
-title: "Upgrade Skill (#upgrade)"
+title: "Upgrade-Version Skill (#upgrade-version)"
 description: Safely upgrade a dependency or runtime version — semver audit, compatibility check, regression validation, breaking-change docs
 short_summary: "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage."
 version: "1.0.0"
 topics: ["upgrade", "dependencies", "version", "maintenance", "regression"]
-qwen_skill: upgrade
+qwen_skill: upgrade-version
 ---
 
 ```text
@@ -91,7 +91,7 @@ Do / Don't
 
 Related: #coverage; #fix-bug; #next-steps; #commit.
 
-Workflow chain: #pre-gap-analysis (if part of a phase) → **#upgrade** → #commit
+Workflow chain: #pre-gap-analysis (if part of a phase) → **#upgrade-version** → #commit
 ```
 
 ## Related
@@ -111,9 +111,9 @@ Workflow chain: #pre-gap-analysis (if part of a phase) → **#upgrade** → #com
 
 ## Examples
 
-- `#upgrade Deno runtime from 1.44 to 2.x`
-- `#upgrade @std/path to latest — check for breaking API changes`
-- `#upgrade openai SDK — write regression tests on current version first`
+- `#upgrade-version Deno runtime from 1.44 to 2.x`
+- `#upgrade-version @std/path to latest — check for breaking API changes`
+- `#upgrade-version openai SDK — write regression tests on current version first`
 
 ---
 exaix:
