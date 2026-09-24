@@ -895,6 +895,41 @@
         "Ground third-party integrations in current official docs",
         "End with a documentation update step and check step manifests"
       ]
+    },
+    {
+      "id": "copilot-test-development",
+      "canonicalPath": ".copilot/skills/test-development/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Assertion sensitivity",
+          "Edge case coverage",
+          "Live-daemon subprocess teardown",
+          "Advanced testing patterns",
+          "CI pitfalls"
+        ],
+        "revised": [
+          "Key points",
+          "Assertion sensitivity",
+          "Edge case coverage",
+          "Live-daemon subprocess teardown",
+          "Advanced patterns",
+          "CI pitfalls"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Use the unified helpers initTestDbService and createCliTestContext",
+        "Place tests per the owning boundary",
+        "Canary every new or edited test and avoid the tautology anti-patterns",
+        "Cover the six mandatory edge case dimensions",
+        "Guarantee daemon subprocess teardown on every exit path",
+        "Label security tests and use the EXA_TEST env helpers"
+      ]
     }
   ]
 }
