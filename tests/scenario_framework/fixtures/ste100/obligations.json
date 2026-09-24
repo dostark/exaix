@@ -825,6 +825,39 @@
         "Rebuild and validate the .copilot manifest after doc edits",
         "Bump both the prose Status and frontmatter status when closing a phase"
       ]
+    },
+    {
+      "id": "copilot-next-steps",
+      "canonicalPath": ".copilot/skills/next-steps/SKILL.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow per step",
+          "Success Criterion Verification Gate",
+          "PHASE-COMPLETION GATE",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow per step",
+          "Success Criterion Verification Gate",
+          "PHASE-COMPLETION GATE",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Complete each planning step in sequence with TDD red-green-refactor",
+        "Verify the previous step's criteria before starting",
+        "Keep the Reachability Ledger in the planning doc and wire production consumers",
+        "Rewrite met criteria and tests to the done form and commit via commit_plan_step",
+        "Run the Success Criterion Verification Gate before marking done",
+        "Run the Phase-Completion Gate G1-G7 before closing the phase"
+      ]
     }
   ]
 }
