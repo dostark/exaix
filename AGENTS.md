@@ -90,6 +90,15 @@ Touch only what you must. Don't "improve" adjacent code, comments, or formatting
 
 Ask "what exactly am I being asked to deliver?" before starting. Build exactly that. Don't deliver a solution to a problem no one asked about. If scope creeps, flag it — don't implement it.
 
+### 5. Communication (ASD-STE100 + Exaix STE Extension v1)
+
+Use ASD-STE100 and Exaix STE Extension v1 for instruction and response prose. Cover skills, task analysis, status, code comments, and prose in structured responses. Exempt documentation deliverables.
+State the result, answer, or required action first.
+Omit non-essential detail, self-reflection, and needless repetition.
+Use bullets when they make related points, steps, or choices easier to scan.
+Preserve required facts, conditions, constraints, evidence, and output formats.
+Keep code, commands, names, paths, and exact quotations unchanged.
+
 ## Agent Quick Facts
 
 Key facts about the Exaix system:

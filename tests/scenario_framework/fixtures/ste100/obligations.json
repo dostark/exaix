@@ -1,0 +1,48 @@
+{
+  "version": "1",
+  "seed": "phase-195-step-1",
+  "entries": [
+    {
+      "id": "ste-contract",
+      "canonicalPath": "tests/scenario_framework/fixtures/ste100/skills/ste-contract.skill.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "# Canonical Communication requirement",
+          "## Exaix STE Extension v1",
+          "## Reserved structured content contract"
+        ],
+        "revised": [
+          "# Canonical Communication requirement",
+          "## Exaix STE Extension v1",
+          "## Reserved structured content contract"
+        ]
+      },
+      "evidenceCaseIds": ["ste-runtime-contract", "ste-documentation-exempt", "ste-status-prose"],
+      "obligations": [
+        "Deliver ASD-STE100 and the five Exaix extension rules in the compiled contract",
+        "Preserve structured content, thought sections, and tags verbatim",
+        "Exempt documentation deliverables and cover status prose"
+      ]
+    },
+    {
+      "id": "ste-metadata-only",
+      "canonicalPath": "tests/scenario_framework/fixtures/ste100/skills/ste-metadata-only.skill.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "## Reviewed body equivalent"
+        ],
+        "revised": [
+          "## Reviewed body equivalent"
+        ]
+      },
+      "evidenceCaseIds": ["ste-metadata-body-delivery"],
+      "obligations": [
+        "Deliver metadata obligations in the body through the production formatter"
+      ]
+    }
+  ]
+}
