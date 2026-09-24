@@ -930,6 +930,41 @@
         "Guarantee daemon subprocess teardown on every exit path",
         "Label security tests and use the EXA_TEST env helpers"
       ]
+    },
+    {
+      "id": "copilot-post-gap-analysis",
+      "canonicalPath": ".copilot/skills/post-gap-analysis/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 1b \u2014 Required Outcome & Falsification Matrix",
+          "Phase 2a \u2014 Semantic Value Verification",
+          "Phase 9 \u2014 Write Gaps and Remediation Steps",
+          "Phase 8 \u2014 Gap Classification"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Required Outcome & Falsification Matrix",
+          "Semantic Value Verification",
+          "Write Gaps and Remediation Steps",
+          "Gap Classification"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Verify completed steps against real code, not the plan prose",
+        "Falsify required outcomes independently with production evidence and adversarial cases",
+        "Run semantic value verification and the integration-surface audit with check:reachability-ledger",
+        "Check event coverage and traceability, escalating @visible findings",
+        "Delegate code quality to review-code",
+        "Write gaps and TDD remediation steps with step-manifests into the plan"
+      ]
     }
   ]
 }

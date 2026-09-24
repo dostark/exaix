@@ -28,59 +28,34 @@ qwen_skill: post-gap-analysis
 
 ```text
 Key points
-- This is a POST-implementation review, not a pre-implementation gap analysis.
-  Verify what was actually built against what the plan promised.
-- Derive the problem statement's required outcomes independently of the plan's completed step criteria,
-  then try to falsify each outcome with production evidence and an applicable adversarial case.
-- A documented limitation, deferral, or workaround is not accepted merely because it is
-  tracked: it remains a gap when it prevents a required outcome.
-- Read the planning document first, then read every source file it references.
-- Check every step whose criteria/tests are marked done (`- ✅ <text> → ` `` `path` ``)
-  or that carries a `✅ WIRED`/`✅ CORE` status label against the real
-  code, not against the plan's description. A criterion/test marked `✅ → path` whose
-  named path does not actually implement it (or is not the file that was changed) is a
-  gap. A `- ⚠️ deferred <text> → ` `` `token` `` item must have a live Reachability
-  Ledger row for that token — a deferral with no ledger row (or a ledger row silently
-  dropped) is a gap.
-- Any additionally supplied documents (architecture references, prior phase
-  plans, design specs) must be used as context — not ignored.
-- Gaps must be classified by severity and written INTO the planning document
-  itself (appended after existing content), not just reported in chat.
-- New remediation steps must follow the exact TDD-First format required by
-  exaix-dev-docs/planning/README.md §F: Actions, Architecture Notes, Planned Tests,
-  Success Criteria. They must be numbered sequentially after the last
-  existing step.
-- A documentation update step (matching §3D of the planning README) must be
-  included as the final new step whenever interface, schema, or CLI behaviour
-  gaps are remediated.
-- Bump the document version (e.g., 1.2 → 1.3) and update the Status line
-  to "🚧 Gap Remediation In Progress" after writing gaps into it.
-- Run a semantic value verification (Phase 2a) on every step that adds fields
-  to events, schemas, or responses — verify values are correct, not just present.
-- For correlation, identity, provenance, or status values, verify the canonical persisted or indexed field,
-  not just an identically named payload or intermediate value.
-- Run an integration surface audit (Phase 2b) on every step that introduces a
-  new interface or output field — dead fields with no consumers are gaps.
-  Run `deno task check:reachability-ledger <plan-doc-path>` first, as a mechanized
-  first pass over every ✅ Reachability Ledger row — advisory, not a replacement for
-  the manual grep.
-- Run a module convention probe (Phase 2c) on every step that modifies or
-  creates source files — new code should match the existing module's dominant
-  style.
-- Run a security gap check (Phase 5) on every step that touches input
-  handling, auth, path resolution, secrets, or external data.
-- Run a traceability & configurability check (Phase 6) on every step — not only ones
-  that already mention new EventLogger events. Run `deno task check:event-coverage`
-  first as a mechanized first pass (advisory, like `check:reachability-ledger`); for
-  every finding on a file the step touched, verify by hand whether the step's state
-  change or cross-component call really lacks an event, or new hardcoded thresholds/
-  opt-in flags exist. If a step built a component load-bearing for observability with no
-  `@visible` tag proposed anywhere in the plan, flag a 🔵 Conceptual gap — see #plan §2H.
-  Any coverage finding on a class that IS `@visible`-tagged is 🔴 Critical, not advisory —
-  the tag is an explicit, already-made commitment.
-- Delegate code quality review to #review-code (Phase 7) instead of
-  duplicating style/TS/defensive/perf checks here.
-- When reviewing more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
+
+- POST-implementation review: verify what was built against what the plan promised.
+- Derive the required outcomes from the problem statement INDEPENDENTLY of completed step
+  criteria; falsify each with production evidence + an adversarial case.
+- A documented limitation/deferral/workaround is NOT resolved just because it is tracked —
+  it stays a gap when it prevents a required outcome.
+- Read the plan, then every source file it references.
+- Check every done criterion/test (`- ✅ <text> → \`path\`` / `✅ WIRED`/`✅ CORE`) against
+  real code, not the plan's prose. A `✅ → path` whose path does not implement it is a gap;
+  a `⚠️ deferred` must have a live Reachability Ledger row.
+- Supplied documents are context — use, not ignore.
+- Classify gaps by severity and write them INTO the plan (appended), not just chat.
+- New remediation steps use the planning README §F TDD-First format, numbered after the
+  last existing step; a §3D documentation step is last when interfaces/schemas/CLI change.
+- Bump the doc version and set Status to "🚧 Gap Remediation In Progress".
+- Phase 2a semantic value verification on every step adding event/schema/response fields —
+  values correct, not just present. Correlation/identity/provenance/status: verify the
+  canonical persisted/indexed field, not an identically named payload.
+- Phase 2b integration-surface audit on every new interface/output field — dead fields are
+  gaps. Run `deno task check:reachability-ledger <plan-doc>` first as a mechanized pass.
+- Phase 2c module-convention probe on modified/created files.
+- Phase 5 security check on input/auth/path/secrets/external-data steps.
+- Phase 6 traceability & configurability on EVERY step — run `check:event-coverage` first
+  (advisory), verify findings by hand; a state change/cross-component call with no event is
+  a gap even if the step never claimed one. A load-bearing component with no `@visible` tag
+  proposed → 🔵 Conceptual. A finding on an `@visible`-tagged class is 🔴 Critical.
+- Delegate code-quality review to #review-code (Phase 7) — don't duplicate.
+- Reviewing > ~20 source files: batches of 5–10.
 
 Canonical prompt (short):
 "Deep-review exaix-dev-docs/planning/phase-NN-*.md against the actual codebase.
@@ -93,401 +68,197 @@ Examples
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
-- ✅ Do read the actual source files — never trust the plan's description alone.
-- ✅ Do verify every success criterion by inspecting real code and test files.
-- ✅ Do cross-check each step against exaix-dev-docs/planning/README.md §F
-  requirements (Actions / Architecture Notes / Planned Tests / Success Criteria).
-- ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
-  🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
-- ✅ Do verify values, not just presence — a field existing with the wrong value is a gap (Phase 2a).
-- ✅ Do derive required outcomes from the problem statement independently of the plan's completed step criteria,
-  and record the falsification evidence for each one.
-- ✅ Do exercise applicable lifecycle alternatives — success, failure, cancellation, abandonment, and early exit —
-  rather than treating the happy path and a thrown error as complete coverage.
-- ✅ Do verify correlation, identity, provenance, and status values at their canonical persisted or indexed field,
-  not only in a payload or temporary representation.
-- ✅ Do trace output fields to their consumers — dead fields with no readers are gaps (Phase 2b).
-- ✅ Do run `check:reachability-ledger` as a first pass on every ✅ ledger row, then verify its findings by hand
-  (Phase 2b) — it is advisory, not authoritative.
-- ✅ Do check new code against existing module conventions — inconsistency within a file is a gap (Phase 2c).
-- ✅ Do run Phase 5 security checks on every step touching input handling,
-  auth/authorisation, path resolution, secrets, or external payloads.
-- ✅ Do include a numbered gap summary table before the detailed gap entries.
-- ✅ Do write new remediation steps using the full §F TDD-First template.
-- ✅ Do add a documentation update step last (§3D) when interfaces or
-  schemas change.
-- ✅ Do bump the document version and update the Status field in the frontmatter.
-- ✅ Do end every new remediation step with a fenced `step-manifest` YAML block (the commit gate blocks a step without one); verify with `deno run --allow-read scripts/check_step_manifests.ts <plan>`.
-- ✅ Do use any additionally supplied documents as context.
-- ✅ Do run Phase 6 traceability & configurability checks on every step — run
-  `deno task check:event-coverage` as a mechanized first pass, then verify findings
-  on the step's touched files by hand; a state change or cross-component call with no
-  event is a gap even if the step's Success Criteria never claimed to add one. Escalate
-  any finding on an `@visible`-tagged class to 🔴 Critical — it fails the real
-  pre-commit hook (Gate 19), not just this review. For a tagged class specifically: a
-  logger call whose action isn't a registered `DomainEventType` member is a gap even
-  though a call exists; an operation with multiple lifecycle events must pass its trace
-  ID as the logger call's fourth argument on each one (not only in the payload); and a
-  streaming/generator method must have a terminal event for early consumer
-  cancellation, not only normal completion and a thrown error.
-- ✅ Do run Phase 4 scenario framework coverage verification on every step that
-  affects the request → plan → execution → review → memory → update flow.
-- ✅ Do derive the source-declared event inventory independently when a phase
-  claims exhaustive event or observability coverage, then reconcile it one-for-one
-  against attributable runtime evidence. A representative event per component
-  does not prove every implemented event.
-- ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive
-  programming, performance, dep hygiene) to #review-code Phase 7 — do not
-  re-check from scratch.
-- ❌ Don't mark a plan step as gap-free unless you verified its test files.
-- ❌ Don't skip Phase 5 for steps that handle external data or file paths.
-- ❌ Don't invent remediation steps for code that already exists and passes.
-- ❌ Don't report gaps only in chat — they MUST be written into the document.
-- ❌ Don't skip the gap summary table — it is required for agent traceability.
-- ❌ Don't renumber existing steps — new steps continue from the last existing
-  step number.
-- ❌ Don't accept hardcoded threshold or timeout literals — they must be named
-  constants in `packages/core/src/types/constants.ts` or config-schema fields.
-- ❌ Don't accept a documented limitation, deferral, or workaround as resolved when it prevents a required outcome
-  stated by the problem statement, executive summary, goal, or success metrics.
-- ❌ Don't skip event payload typing — untyped events block audit chain
-  verification and make integration tests fragile.
-- ❌ Don't re-run the #review-code checklists in Phase 7 — delegate to
-  #review-code and use its report; duplicating creates inconsistency.
+- ✅ Read actual source — never trust the plan's description.
+- ✅ Verify every criterion against real code and test files.
+- ✅ Cross-check each step against README §F (Actions/Notes/Tests/Criteria).
+- ✅ Classify gaps 🔴 Critical / 🔒 Security / 🟡 Feasibility / 🟠 Testing / 🔵 Conceptual.
+- ✅ Verify values, not presence (Phase 2a).
+- ✅ Derive outcomes independently and record falsification evidence.
+- ✅ Exercise lifecycle alternatives — success, failure, cancellation, abandonment, early
+  exit — not just happy path + thrown error.
+- ✅ Verify canonical persisted/indexed values for correlation/identity/provenance/status.
+- ✅ Trace output fields to consumers (Phase 2b); run `check:reachability-ledger` first.
+- ✅ Check new code against module conventions (Phase 2c).
+- ✅ Run Phase 5 on input/auth/path/secrets/external-payload steps.
+- ✅ Include a numbered gap summary table.
+- ✅ Write remediation steps in the full §F template.
+- ✅ Add a §3D documentation step last on interface/schema changes.
+- ✅ Bump the version and update frontmatter Status.
+- ✅ End every remediation step with a step-manifest; verify with
+  `deno run --allow-read scripts/check_step_manifests.ts <plan>`.
+- ✅ Use supplied documents as context.
+- ✅ Run Phase 6 on every step (`check:event-coverage` first, hand-verify findings; an
+  `@visible` finding is 🔴). For a tagged class: a non-DomainEventType action is a gap even
+  with a call; multi-event operations pass the trace ID as the logger's 4th arg each time;
+  streaming/generator methods have a terminal event for early cancellation.
+- ✅ Run Phase 4 scenario coverage on flow-affecting steps.
+- ✅ Derive the source-declared event inventory independently when the phase claims
+  exhaustive observability coverage and reconcile it one-for-one against runtime evidence —
+  one representative event per component is not enough.
+- ✅ Delegate Phase 7 (lint/fmt/TS/defensive/perf/deps) to #review-code — do not re-check.
+- ❌ Mark a step gap-free without verifying its test files.
+- ❌ Skip Phase 5 on external-data/path steps.
+- ❌ Invent remediation steps for code that exists and passes.
+- ❌ Report gaps only in chat — write them into the doc.
+- ❌ Skip the gap summary table.
+- ❌ Renumber existing steps — new ones continue the sequence.
+- ❌ Accept hardcoded thresholds/timeouts — named constants or config fields.
+- ❌ Accept a tracked limitation that prevents a required outcome.
+- ❌ Skip event payload typing.
+- ❌ Re-run #review-code's checklists — use its report.
 
-Related skills:
-- #pre-gap-analysis — Pre-implementation gap analysis (no code to check yet)
-- #plan              — Draft a new phase planning document from scratch
-- #next-steps        — Re-enter the TDD loop to remediate gaps found here
-- #commit            — Create a structured commit after remediation
-- #review-code       — Code quality review (style, TS idiomacy, defensive,
-                       performance, deps) — Phase 7 delegates here
-- [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
+Related: #pre-gap-analysis; #plan; #next-steps; #commit; #review-code (Phase 7);
+test-development.
 
-Workflow chain (typical):
-  #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit
+Workflow chain: #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit
 ```
 
 ## See also
 
-- [plan](../plan/SKILL.md) — plan structure, remediation step format
-- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — complementary pre-implementation analysis
-- [remediate-code-gaps](../remediate-code-gaps/SKILL.md) — closing code-level remediation steps
+- [plan](../plan/SKILL.md) — structure, remediation step format
+- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — pre-implementation analysis
+- [remediate-code-gaps](../remediate-code-gaps/SKILL.md) — closing code-level steps
 
 ---
 
 ## Instructions for Agent
 
-You are performing a **deep post-implementation review** of the phase planning
-document provided. Your output has two parts:
-
-1. **A chat summary** — brief findings overview.
-1. **Edits written directly into the planning document** — gap table, detailed
-   gap entries, and numbered remediation steps appended after the last existing
-   section.
-
----
+Deep post-implementation review. Output: (1) a chat summary; (2) edits written directly
+into the plan — gap table, detailed gap entries, and numbered remediation steps appended.
 
 ### Phase 1 — Ingest
 
-Read the planning document in full: version, status, every step and its
-completion marker, every file path and symbol. Read all additionally supplied
-documents as ground-truth context. Read the problem statement, executive
-summary, goal, and quantitative success metrics as requirements in their own
-right — they are not superseded by a plan step that happens to be marked done.
-
----
+Read the whole plan: version, status, every step + completion marker, every path/symbol.
+Read supplied documents as ground-truth. Read the problem statement, executive summary,
+goal, and success metrics as requirements in their own right — not superseded by a done step.
 
 ### Phase 1b — Required Outcome & Falsification Matrix
 
-Before accepting any completed step, derive a compact list of the system-level
-outcomes the problem statement requires independently of the plan's completed step criteria.
-For each outcome, record:
+Derive the system-level outcomes the problem statement requires, INDEPENDENTLY of done
+criteria:
 
-| Required outcome             | Production evidence                         | Adversarial case                 | Verdict     |
-| ---------------------------- | ------------------------------------------- | -------------------------------- | ----------- |
-| <observable system property> | <real call path, stored value, or consumer> | <the applicable way it can fail> | ✅ / gap ID |
+| Required outcome | Production evidence | Adversarial case | Verdict |
+| ---------------- | ------------------- | ---------------- | ------- |
+| <observable property> | <real call path / stored value / consumer> | <the way it can fail> | ✅ / gap ID |
 
-Use only outcomes that are materially implied by the phase's problem statement,
-executive summary, goal, interfaces, or success metrics. Examples of generally
-applicable adversarial cases include cancellation, abandonment, and early exit
-for a lifecycle operation; partial completion for a multi-stage operation; and
-an invalid-but-well-typed value for a constrained output.
-
-A completed step does not prove an outcome: if an outcome can fail while every
-listed criterion passes, the outcome needs its own production trace and
-adversarial probe. A documented limitation, deferral, or workaround remains a
-gap when it prevents a required outcome, even if it has a ledger entry.
-
----
+Use outcomes materially implied by the phase's problem statement, executive summary, goal,
+interfaces, or metrics. Example adversarial cases: cancellation/abandonment/early exit for a
+lifecycle; partial completion for multi-stage; invalid-but-well-typed value for a
+constrained output. A done step does not prove an outcome — if an outcome can fail while
+every criterion passes, it needs its own trace + probe. A tracked limitation stays a gap if
+it prevents a required outcome.
 
 ### Phase 2 — Implementation Verification
 
-For **every completed step**: verify the actual implementation exists, the
-planned tests exist and pass, and every success criterion is met by inspecting
-real code.
-
-For **every incomplete step**: check whether it was implemented anyway but the
-plan not updated (document gap, 🔵 Conceptual).
-
----
+Every completed step: verify the implementation exists, the planned tests exist and pass,
+and each criterion is met against real code. Every incomplete step: check it wasn't
+implemented anyway with the plan un-updated (🔵 Conceptual).
 
 ### Phase 2a — Semantic Value Verification
 
-For **every field** in events, schemas, config, or API responses introduced
-or modified by the step:
-
-1. **Verify the value is correct, not just present.**
-   Confirm each field's runtime value is consistent with the component's
-   injected dependencies, configuration, and operational state. A field
-   that always resolves to a specific value due to the component's
-   construction should not report a contradictory value. Presence alone
-   is insufficient.
-
-1. **Cross-validate against component capabilities.**
-   For every field whose value depends on a dependency or configuration flag:
-   trace the dependency chain from constructor to emission point and verify
-   the field's value matches what the dependency chain dictates.
-
-1. **Verify canonical storage and lookup semantics.**
-   When a value is used for correlation, identity, provenance, status, routing,
-   or authorization, trace it through the write and read/query boundary. Verify
-   the canonical persisted or indexed field holds the intended value; a matching
-   payload field, log message, cache entry, or intermediate object is not proof.
-
----
+Per new/modified field in events, schemas, config, API responses:
+1. Value correct, not just present — consistent with injected deps, config, state.
+1. Cross-validate against component capabilities — trace constructor → emission.
+1. Canonical storage/lookup: for correlation/identity/provenance/status/routing/auth,
+   trace through the write and read boundary; a payload/log/cache match is not proof.
 
 ### Phase 2b — Integration Surface Audit
 
-For **every interface, type, or output field** the step introduces:
-
-1. **Grep the codebase for consumers.**
-   For each exported symbol or field the step adds, search the codebase for
-   importers, callers, and readers. A symbol with zero consumers is dead data
-   and should be flagged (🟠 Testing if unused in tests, 🔵 Conceptual if
-   unused in production).
-
-1. **Trace every consumer path end-to-end.**
-   For each consumer found, verify the data flow completes — the consumer
-   receives the value in the expected format and can act on it. If a path
-   claims integration with an adjacent service, verify that service is
-   actually wired and called.
-
-1. **Flag orphaned interface slices.**
-   If the step defines a field that the plan's prose says will be consumed by
-   a specific component, but that component never reads the field, flag the
-   gap (🔴 Critical if a required integration is missing, 🔵 Conceptual if
-   the field is forward-compatibility-only).
-
-1. **Verify constructor wiring for new services and classes.**
-   For every new class, service, or data structure the step introduces:
-   - Grep the production codebase (excluding tests and test helpers) for
-     importers and instantiation sites. The class must be imported and its
-     constructor called by at least one production consumer.
-   - If the class is only instantiated in tests, it is production-dead code
-     and should be flagged (🔴 Critical if the integration is required by
-     the plan, 🔵 Conceptual if intentional but undocumented).
-   - If the class is a service, verify it is either injected via constructor
-     DI into a production consumer or registered in the appropriate factory /
-     registry / bootstrap module. Services that exist solely as definitions
-     with no wiring path are dead regardless of how many tests create them.
-
-1. **Audit the plan doc's Reachability Ledger against real call-sites, not against its
-   own prose.** Run `deno task check:reachability-ledger <plan-doc-path>`
-   (`scripts/check_reachability_ledger.ts`) first — it parses every ✅ ledger row's
-   "Production call-site" cell for identifier/filename mentions and greps for a real
-   non-test reference outside the definition file. This mechanizes a past manual grep
-   that caught several ✅ rows whose narrated call-site was never actually invoked by any
-   committed code, so the check does not depend on remembering to do it by hand. It is
-   advisory (free-text heuristics
-   both miss dynamic-dispatch/registry-based wiring and can false-positive on an
-   entrypoint script that omits the `import.meta.main` guard), so every finding still
-   needs the manual G1-style verification above before it becomes a GAP entry — but a
-   row the tool flags is a row to check first, not last.
-
-1. **Reconcile declared limitations with required outcomes.**
-   A Reachability Ledger row, deferral, compatibility note, or implementation
-   workaround explains why something is absent; it does not establish that the
-   phase still solves its stated problem. If the absence prevents a required
-   outcome in the Phase 1b matrix, record a gap with the appropriate severity.
-
----
+Per new interface/type/output field:
+1. Grep for consumers; zero readers = dead data (🟠 if test-only, 🔵 if prod-unused).
+1. Trace each consumer end-to-end; a claimed adjacent-service integration must be wired.
+1. Orphaned interface slices: plan says component X reads the field but it never does —
+   🔴 if a required integration, 🔵 if forward-compat-only.
+1. Verify constructor wiring: every new class imported + instantiated by a production
+   consumer. Test-only instantiation = production-dead (🔴 if the plan requires it, 🔵 if
+   intentional-undocumented). Services inject via DI or register in factory/registry/
+   bootstrap, or they are dead regardless of test counts.
+1. Audit the Reachability Ledger against real call-sites, not its own prose: run
+   `deno task check:reachability-ledger <plan-doc>` first — it greps ✅ rows' call-site cells
+   for non-test references. Advisory (misses dynamic dispatch, can false-positive on an
+   unguarded entrypoint) — verify flagged rows by hand, first not last.
+1. Reconcile declared limitations with required outcomes — a deferral explains absence, it
+   does not prove the phase solves its problem.
 
 ### Phase 2c — Module Convention Probe
 
-For **every file the step modifies or creates**:
+Per modified/created file: survey 5–10 same-concern examples; divergence = 🔵 Conceptual;
+intentional divergence needs an Architecture-Note justification or it is underspecified.
 
-1. **Survey the dominant convention in the existing file.**
-   Before evaluating whether the new code is well-structured, read 5–10
-   existing examples of the same concern (event emission, error handling,
-   import style, type usage) in the same file or module.
+### Phase 3 — Standards Compliance
 
-1. **Check the new code against that convention.**
-   If the existing file uses one pattern for a concern (event emission,
-   error handling, type usage, import style) and the new code uses a
-   different pattern, flag divergence (🔵 Conceptual). Both approaches
-   may be syntactically valid and pass lint, but inconsistency within a
-   module creates maintenance debt.
+Check every step has all §F sub-sections and §3D doc compliance.
 
-1. **Justify intentional divergence.**
-   If the plan explicitly chooses a different convention, verify the
-   Architecture Notes justify why. Without justification, flag as
-   underspecified (🔵 Conceptual).
+### Phase 4 — Scenario Framework Coverage
 
----
-
-### Phase 3 — Standards Compliance Check
-
-Check every step for all four §F sub-sections (Actions / Architecture Notes /
-Planned Tests / Success Criteria). Check §3D documentation update compliance.
-
----
-
-### Phase 4 — Scenario Framework Coverage Verification
-
-For every step affecting the request → plan → execution → review → memory → update
-flow: verify existing scenarios exercise the behaviour, check scenario assertions,
-determine if new scenarios are needed.
-
-For journal/event assertions, prove that a missing required field fails the assertion
-(do not accept a non-empty container that contains `undefined`) and require request-trace
-scoping whenever the scenario claims correlation to the current request. A globally found
-event is not evidence that the request under test emitted it.
-
-When the phase claims all implemented events are covered, build an exact inventory from
-the production declarations/emission sites and add a final reconciliation table. Every
-inventory row must cite a scenario or integration/package test that drives the real
-component path, persists through the real `EventLogger`, and asserts the named action plus
-canonical trace and semantic payload fields. Totals must reconcile; missing rows remain
-gaps even when each component has one representative event test.
-
-For every introduced or changed lifecycle, streaming, transaction, retry, or
-multi-stage operation, enumerate its applicable terminal alternatives: normal
-completion, failure, cancellation, abandonment, and early exit. Verify each
-alternative has the required observable outcome (including cleanup, terminal
-state, and externally visible record) and a focused test where the behaviour is
-new. Do not require inapplicable alternatives; state why they do not apply.
-
----
+For flow-affecting steps: verify scenarios exercise the behavior, check assertions, decide
+on new scenarios. Journal/event assertions: a missing required field must FAIL the assertion
+(no non-empty container holding `undefined`); scope to the request trace — a globally found
+event is not evidence the request under test emitted it. Exhaustive-event claims: build an
+exact inventory from production declarations; add a reconciliation table; every row cites a
+test driving the real component through the real EventLogger asserting action + trace +
+semantic payload; totals reconcile. For lifecycle/streaming/transaction/retry operations,
+enumerate terminal alternatives (completion, failure, cancellation, abandonment, early
+exit) and verify each has its observable outcome + test where behavior is new.
 
 ### Phase 5 — Security Gap Analysis
 
-For every step touching input parsing, file-system access, auth, secrets,
-network calls, process execution, or shared mutable state — verify the nine
-security checklist items. Each failure is a 🔒 Security gap.
+Per step touching input, FS, auth, secrets, network, process, shared state: verify the nine
+checklist items; each failure is 🔒.
 
----
+### Phase 6 — Traceability & Configurability
 
-### Phase 6 — Traceability & Configurability Check
-
-Run `deno task check:event-coverage` (`scripts/check_event_coverage.ts`) as a
-mechanized first pass — it AST-scans the step's touched files for (a) a class wired
-to an `IEventLogger`/`IEventRegistry` dependency that never calls it, and (b) a
-state-changing or cross-component-call method with no adjacent event. It is advisory,
-like `check:reachability-ledger` (see the script's module header for known
-false-positive sources: an event emitted by a caller instead of the flagged method, a
-private helper one level removed, dynamic dispatch) — every finding needs manual
-verification before it becomes a GAP entry, UNLESS the flagged class carries the
-`@visible` JSDoc tag (#plan §2H) — a finding there is 🔴 Critical without further
-triage, since the tag is the codebase's own explicit declaration that this component's
-coverage is required, not a heuristic guess.
-
-The `@visible`-tagged escalation is not limited to `check:event-coverage`'s own
-findings: also flag 🔴 Critical when a tagged class's primary events have no real Tier
-A/B runtime test (#plan §2H) proving they fire with a real payload — even when the
-static check itself passes cleanly. Gate 19 only proves the decorator/logger-call
-shape exists in source; it cannot prove the event is reached by a real production
-caller, fires with a sane payload, or carries a correct trace ID. Runtime verification
-is the precedent: it has repeatedly found `@visible` components with a clean static pass
-yet zero real runtime coverage, including one whose event never actually fired in production —
-a static-only pass is not sufficient proof of a working `@visible` contract.
-
-For every step introducing new behaviour, whether or not the tool flagged it: verify
-event naming, payload typing, audit chain completeness, event assertions in tests;
-verify config-driven vs. constant-driven values, config schema declaration, feature
-enable/disable path, config validation tests. A state change or cross-component call
-the plan's Actions describe with no corresponding event anywhere in the
-implementation is a gap, independent of whether the step's own Success Criteria
-claimed to add one. Also verify: did the step build a component that is genuinely
-load-bearing for observability (critical-path or security-sensitive) without proposing
-the `@visible` tag? Flag as 🔵 Conceptual — the implementation should have made this
-decision explicit, matching #plan §2H's own guidance.
-
----
+Run `deno task check:event-coverage` as the mechanized first pass (wired-but-silent logger;
+state-changing/cross-component method with no adjacent event). Advisory (see the module
+header's false-positive sources) — verify by hand UNLESS the class is `@visible` (then 🔴
+without further triage). The `@visible` escalation also covers a tagged class whose primary
+events lack a real Tier A/B runtime test — Gate 19 proves only the static shape, not that
+the event fires with a real payload/trace (one component's events never fired because the
+logger was never injected). For every new-behavior step: verify event naming, typed
+payloads, audit chain completeness, test assertions, and config-driven vs constant values,
+schema declaration, enable/disable path, validation tests. A described state change with no
+implemented event is a gap even if the criteria never claimed one. A load-bearing component
+with no `@visible` awareness → 🔵 Conceptual.
 
 ### Phase 7 — Code Quality Review
 
-> **Delegated to `#review-code`.** The detailed code quality dimensions (style
-> conventions, TypeScript idiomacy, defensive programming, performance, and
-> dependency hygiene) are owned by the `#review-code` skill. Run it on every
-> source file the step modifies or creates:
->
-> ```
-> #review-code packages/<package>/src/<file>.ts
-> ```
->
-> The `#review-code` skill checks, in order:
->
-> - **Phase 4** — Architecture, Style & Conventions (module headers, interface
->   naming, import style, magic values, Record types, EventLogger, exports)
-> - **Phase 5** — TypeScript Idiomacy & Type Safety (type annotations,
->   exhaustive conditionals, async/await hygiene, null safety, discriminated unions)
-> - **Phase 6** — Defensive Programming & Error Robustness (input validation,
->   fail-closed, fallback chains, resource cleanup, timeout enforcement)
-> - **Phase 7** — Performance & Dependency Hygiene (sync I/O, redundant parsing,
->   memory bounds, unused imports, circular deps, dependency footprint)
->
-> A finding in any of these dimensions that was **introduced by this phase's
-> implementation** is a gap — classify using the severity table in Phase 8 below.
-> Use the gap classification from `#review-code`'s report directly; do not
-> re-evaluate from scratch.
-
----
+Delegated to `#review-code`. Run it on every touched source file; a finding INTRODUCED by
+this phase's implementation is a gap classified per below — use #review-code's report, do
+not re-evaluate.
 
 ### Phase 8 — Gap Classification
 
-| Symbol         | Meaning                                                                                                                                                                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🔴 Critical    | Blocks correctness — code diverges from plan in a breaking way. Also: fail-open on security check, circular dependency, missing type safety that causes runtime error.                                                                |
-| 🔒 Security    | Security vulnerability or missing security control (OWASP Top 10). Also: resource leak without cleanup, unbounded memory on untrusted input, missing timeout, path traversal bypass, silent error swallow in security-sensitive path. |
-| 🟡 Feasibility | Plan claim is unverifiable or implementation-risky. Also: sync I/O in async path blocking event loop, missing fallback causing hard crash, unnecessary parser initialisation, redundant I/O.                                          |
-| 🟠 Testing     | Missing or under-specified test; implementation may ship uncovered. Also: bare `catch {}` discarding diagnostic info, budget-check running after completion, uncovered edge case.                                                     |
-| 🔵 Conceptual  | Minor mismatch, missing doc marker, or style divergence. Also: unused export without consumer, multi-line import that fmt would flatten, missing `import type`.                                                                       |
+| Symbol | Meaning |
+| ------ | ------- |
+| 🔴 Critical | Blocks correctness; fail-open security; circular dependency; type-safety runtime error |
+| 🔒 Security | OWASP violation; missing control; leak without cleanup; unbounded memory; missing timeout; traversal; silent swallow in sensitive path |
+| 🟡 Feasibility | Unverifiable/risky claim; sync I/O in async path; missing fallback crash; redundant I/O |
+| 🟠 Testing | Missing/underspecified test; bare catch{}; budget-check after completion; uncovered edge |
+| 🔵 Conceptual | Minor mismatch; missing doc marker; style divergence; unused export; flattenable import; missing import type |
 
 Build a gap summary table before detailed entries.
 
----
-
 ### Phase 9 — Write Gaps and Remediation Steps Into the Document
 
-Append at end of planning document using the exact format below.
-
-#### Required markdown format
+Append using exactly:
 
 ````markdown
 ---
 
 ## Post-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ IMPLEMENTATION COMPLETE
 
-<!-- GAP-N numbering here starts fresh at GAP-1 and is scoped to THIS Post-Gap Analysis
-     section. A doc that also has an earlier Pre-Gap Analysis section with its own
-     GAP-1..GAP-M entries is a separate, unrelated numbering scope — do not renumber the
-     pre-gap gaps or continue their sequence, and don't assume a reader can tell them
-     apart without this note; the section header (Pre-Gap vs. Post-Gap) is the only
-     disambiguator. -->
+<!-- GAP-N numbering is scoped to THIS Post-Gap section; a pre-existing Pre-Gap section's
+     GAP-1..GAP-M is a separate numbering scope — do not renumber or continue it. -->
 
 ### Required Outcome & Falsification Matrix
 
-| Required outcome             | Production evidence                         | Adversarial case                    | Verdict    |
-| ---------------------------- | ------------------------------------------- | ----------------------------------- | ---------- |
-| <observable system property> | <real call path, stored value, or consumer> | <applicable failure mode exercised> | ✅ / GAP-N |
+| Required outcome | Production evidence | Adversarial case | Verdict |
+| ---------------- | ------------------- | ---------------- | ------- |
 
 ### Gap Summary
 
-| # | Step   | Severity    | Description            |
-| - | ------ | ----------- | ---------------------- |
-| 1 | Step N | 🔴 Critical | <one-line description> |
-| 2 | Step N | 🔒 Security | <one-line description> |
+| # | Step | Severity | Description |
+| - | ---- | -------- | ----------- |
 
 ### Gap Detail
 
@@ -495,7 +266,7 @@ Append at end of planning document using the exact format below.
 
 **Finding:** <detailed explanation>
 **Expected (plan says):** <quoted plan text>
-**Actual (code shows):** <what is actually in the code>
+**Actual (code shows):** <reality>
 **Impact:** <consequence if not fixed>
 
 ---
@@ -505,17 +276,11 @@ Append at end of planning document using the exact format below.
 ### Step <N+1>: Remediate GAP-1 — <title>
 
 **Actions:**
-
 - <file>: <specific change>
-
 **Architecture Notes:** <DI / pattern rationale>
-
 **Planned Tests:**
-
 - `<test name>` — <what it verifies>
-
 **Success Criteria:**
-
 - <measurable criterion>
 
 ```yaml
@@ -535,41 +300,26 @@ acceptance:
 ```
 ````
 
-Every remediation step MUST end with a `step-manifest` block like the one above (same shared
-`target_branch` as the phase's other steps). The pre-commit gate rejects the commit with "A phase
-plan step is missing or has an invalid step-manifest" otherwise, and it fires only at commit time.
-
-Author criteria as `- [ ] <text>` and tests as `` `<name>` `` (aspirational, no `→` path — the
-implementing module is decided during execution). When #next-steps implements the remediation
-step it rewrites each met item to `- ✅ <text> →` `` `<staged-path>` `` (or `- ⚠️ deferred
-<text> →` `` `<LedgerSymbol>` ``), and the plan-step commit gate blocks any `- [ ]` left in the
-committed step. See #next-steps steps 23–26.
-
----
+Every remediation step MUST end with a step-manifest (same shared `target_branch`); the
+pre-commit gate rejects the commit otherwise, at commit time only. Author criteria as
+`- [ ] <text>` and tests as `` `<name>` `` (aspirational, no `→` path) — #next-steps rewrites
+met items to the done form; the gate blocks any `- [ ]` left in a committed step.
 
 ### Phase 10 — Finalize
 
-1. Bump document version in frontmatter.
-1. Update Status line to `🚧 Gap Remediation In Progress`.
+1. Bump the frontmatter version.
+1. Set Status to `🚧 Gap Remediation In Progress`.
 1. Run markdown lint.
-
----
 
 ## Output format
 
-1. Brief chat summary: total gaps by severity and overall plan health.
-1. Gap summary table — one row per gap (step, severity, description).
-1. Confirmation that the planning document was updated with remediation steps in §F TDD-First format.
-1. Any blocking critical or security gap requiring immediate attention.
-1. Commit payload — after all remediation steps are written into the document, use
-   `#commit` for the structured message. If the commit only appends gap findings /
-   remediation-step definitions to the plan doc (no code implementing a step, no
-   criterion/test flipped to `✅`), commit it as a normal docs commit (submodule-first per
-   the submodule-workflow skill). But if a remediation commit ALSO implements a step —
-   marking any criterion/test `- ✅ <text> →` `` `path` `` or `- ⚠️ deferred →` `` `token` `` —
-   it is a plan-step commit: it MUST carry a `plan: <doc>#<step>` field and be committed via
-   `scripts/commit_plan_step.ts <msg> --commit` so the plan-step gate runs (paths staged +
-   backticked + added diff lines, ledger rows, no lingering `- [ ]`). See #next-steps step 26.
+1. Chat summary: gaps by severity + plan health.
+1. Gap summary table.
+1. Confirmation the plan got §F remediation steps.
+1. Blocking critical/security gaps needing immediate attention.
+1. Commit payload. Findings-only doc edit → normal docs commit (submodule-first). A
+   remediation commit that ALSO marks criteria/tests done → plan-step commit with
+   `plan: <doc>#<step>` via `scripts/commit_plan_step.ts <msg> --commit`.
 
 ---
 exaix:
