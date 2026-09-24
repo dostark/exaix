@@ -20,6 +20,37 @@ for typing, imports, dependency injection, constants, environment variables,
 and related topics. Please review it before making any changes to source
 code.
 
+### 1.1 Communication and Prose
+
+Model-facing and agent-authored prose — skill instructions, agent bodies,
+response-contract guidance, structured status prose, and source comments —
+follow **ASD-STE100** and the **Exaix STE Extension v1**: state the result or
+action first, omit non-essential detail, self-reflection, and repetition, and
+use bullets when they make steps easier to scan. See
+[AGENTS.md](./AGENTS.md) §5 and `CODE_STYLE.md` §16 (Comment Discipline).
+
+Two authoring gates enforce the shared rule set:
+
+- `deno task check:agent-prose` — instruction prose in `.copilot` and
+  `Blueprints` (available in `deno.json`, not enabled in CI/hooks).
+- `deno task check:ste100-comments` and `check:ste100-comments:staged` —
+  TS/TSX comment prose; the staged variant gates added/changed comment lines
+  in the pre-commit hook and `scripts/ci.ts`.
+
+**Documentation deliverables are exempt** from the mandatory rule: `docs/`,
+`exaix-dev-docs/`, README files, architecture/API/design documentation, and
+documentation spans embedded in skill examples are not bulk-converted. The
+exception covers the deliverable, not the authoring of it; eligibility stays
+with the instruction or comment prose around the span. CLI output, plan files,
+and model responses remain eligible.
+
+The shared rule catalog (`scripts/config/ste100_rule_catalog.json`) names each
+supported rule and its technical terms. To review or extend a term or a rule
+decision, update the catalog, regenerate the classification, and record the
+decision next to the entry — see
+`exaix-dev-docs/planning/phase-195-asd-ste100-agent-prose.md` (§ Pre-registration
+and the rule catalog) for the review process and obligation evidence.
+
 (Sections 1.1–1.6 have been removed and relocated to the central guide.)
 
 ## 2. Testing
@@ -49,6 +80,18 @@ Before submitting a PR, drive the codebase to a fully green state:
    ```bash
    deno task test_parallel
    ```
+
+3. **Run the prose and comment STE gates** on the files you changed:
+
+   ```bash
+   deno task check:agent-prose
+   deno task check:ste100-comments
+   deno task check:ste100-comments:staged
+   ```
+
+   The comment gate is staged-aware: it grades only comment lines your diff
+   adds or modifies, so pre-existing non-compliant comments stay
+   grandfathered.
 
 ## 3. Migration Guide
 

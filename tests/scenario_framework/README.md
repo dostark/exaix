@@ -35,6 +35,20 @@ The framework's primary purpose is **quantitative evaluation** of Exaix componen
 It provides weighted scoring, history tracking, LLM-as-judge, trajectory evaluation,
 and multi-trial metrics.
 
+### STE Authoring Gates
+
+Repository prose passes through the Phase 195 authoring gates before scenario work:
+
+```bash
+deno task check:agent-prose          # instruction prose in .copilot/ and Blueprints/
+deno task check:ste100-comments      # TS/TSX comment prose (full scan, report)
+deno task check:ste100-comments:staged  # added/changed comment lines (CI + pre-commit)
+```
+
+Both gates share one deterministic rule core. The shared limits are
+documented in `scripts/check_ste100_comments.md`; documentation deliverables
+are exempt from the mandatory rule.
+
 ### Quick Start
 
 ```bash

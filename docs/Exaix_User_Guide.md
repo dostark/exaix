@@ -822,6 +822,27 @@ context_budget_chars = 4000 # Max characters for skills context
 render_mode = "trimmed"    # "full" (default) includes each ordinary skill's examples; "trimmed" omits them
 ```
 
+#### Communication Requirement
+
+Exaix instructs its agents to write concise, result-first prose under
+**ASD-STE100** and the **Exaix STE Extension v1**: state the result or action
+first, omit needless detail and self-reflection, and use bullets when they
+help scanning. This directive shapes agent instructions, skill guidance, and
+source comments.
+
+Two limits apply to what the requirement can promise:
+
+- **No guaranteed token savings.** Writing under the requirement reduces
+  wording, but a prompt instruction does not guarantee a provider bills fewer
+  tokens. Provider pricing, reasoning-effort settings, and repetition vary.
+- **No private-reasoning control.** The requirement governs authored
+  instruction and status prose. It does not inspect, rewrite, or claim
+  control over a provider's private reasoning or signed thinking blocks.
+
+Documentation deliverables (guides, design docs, READMEs, changelogs) are
+exempt from the mandatory rule, though the surrounding instructions remain
+eligible.
+
 `render_mode = "trimmed"` drops each ordinary matched skill's `examples` content from the
 rendered prompt, reducing assembled-prompt tokens without losing the skill's instructions.
 Critical skill content always renders in full regardless of this setting.

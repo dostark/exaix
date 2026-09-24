@@ -45,3 +45,14 @@ delta from the value tier described in
 it cannot be measured yet (e.g. no corpus task reaches it). A skill with neither is
 presence-tested but never shown to help — see that phase's Executive Summary for why
 that distinction matters.
+
+## Contributor rule: communication
+
+Skill and agent-body instruction prose follows **ASD-STE100** and the **Exaix STE
+Extension v1** (result-first, omit needless detail and self-reflection, prefer
+bullets). The runtime compiles these files to the `Memory/Skills/` JSON the agent
+prompt actually renders, so authoring prose is model-facing and must be concise.
+Useful rationale stays; repeated facts and narration of process drop out.
+Documentation deliverables embedded in skill examples remain exempt as spans, but the
+surrounding instruction prose stays eligible. `deno task check:agent-prose` reviews
+instruction prose against the same shared rules.

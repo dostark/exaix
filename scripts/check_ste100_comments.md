@@ -54,6 +54,31 @@ existing codebase rather than blocking every change on the historical comment co
   gap for `check:ste100-comments`.
 - A comment's first prose line is the reported location; column is best-effort.
 
+## Documentation exception and preservation
+
+The gate preserves directives, JSDoc tags, identifiers, commands, one-line literal spans,
+and exact quotations. It never rewrites comment text — findings only, no auto-fix.
+Documentation deliverables (`docs/`, `exaix-dev-docs/`, README files, and documentation
+spans embedded in skill examples) are exempt from the mandatory rule and are not scanned
+as comment prose. The exemption covers the deliverable, not source-comment prose: code
+comments remain eligible even inside a documentation-owned module.
+
+## Manual migration
+
+This gate is a ratchet, not a migration tool. Pre-existing comment lines that already
+violate the rules are grandfathered by design and never block an unrelated staged change.
+Migration of the historical corpus is a manual, owned process:
+
+1. Run the full scan to enumerate findings: `deno task check:ste100-comments`.
+2. Rewrite each confirmed finding by hand, preserving directives and literal spans.
+3. Re-run the focused mode on the changed file:
+   `deno run -A scripts/check_ste100_comments.ts --focused <path>`.
+4. Stage the change; the `--staged` ratchet confirms every new/modified comment line
+   complies before commit.
+
+The historical corpus was deliberately left in place (Phase 195 gate-only scope); a
+repository-wide migration is out of scope for this gate.
+
 ## See also
 
 - `scripts/check_agent_prose.ts` — the companion instruction-prose gate (same rule core).
