@@ -858,6 +858,43 @@
         "Run the Success Criterion Verification Gate before marking done",
         "Run the Phase-Completion Gate G1-G7 before closing the phase"
       ]
+    },
+    {
+      "id": "copilot-plan",
+      "canonicalPath": ".copilot/skills/plan/SKILL.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "1. Structure",
+          "2. Core principles",
+          "3. Documentation Update Protocol",
+          "3E. Scenario Framework Coverage",
+          "4. Derived Best Practices"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Structure",
+          "Core principles",
+          "Documentation update protocol",
+          "Scenario framework coverage",
+          "Derived best practices"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Follow the planning README structure with a step-manifest per step",
+        "Seed the vertical slice and integration anchoring with a non-deferrable cutover",
+        "Name the exact event per state-changing step and use configurable constants",
+        "Ground every code-facing claim in source before drafting",
+        "Ground third-party integrations in current official docs",
+        "End with a documentation update step and check step manifests"
+      ]
     }
   ]
 }
