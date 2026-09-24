@@ -50,6 +50,44 @@ Project structure (key packages)
   .copilot/                 Developer-agent guidance
   Blueprints/               Runtime agent definitions (agent roles, skills, flows)
 
+Package ownership, layout, and authoring (create new / refine existing)
+
+  PLACEMENT — the one-question test (ARCHITECTURE.md "Packages vs. Services — Placement
+  Model"; ownership map in exaix-dev-docs/dev/Exaix_Packages.md): could an external
+  consumer use the module without knowing the Exaix daemon exists? If NO, it is not
+  package-owned — it belongs in apps/daemon, apps/exactl, or apps/common wiring. If YES:
+  shared contracts, schemas, statuses, constants, config helpers, reusable parsing and
+  helper logic are package candidates.
+
+  LAYOUT — organise packages by intent, not history:
+  - Use intent-clear subfolders under `packages/<name>/src/` (types, status, config,
+    registry, handlers, repositories). One clear responsibility per module; split a
+    mixed-responsibility file during extraction rather than copying its ambiguity.
+  - Interface-first: export `IFoo` from `packages/<name>/mod.ts` (or a subfolder barrel);
+    consumers depend on the alias, never deep relative paths into sibling packages.
+  - New packages: register in `deno.json` `workspace` + the `imports` map, then reference
+    as `@exaix/<package>` / `@exaix/<package>/<subpath>`. No inline `npm:`/`jsr:`/`https:`
+    specifiers (lint `no-import-prefix`); normalise direct package-file imports with
+    `deno run --allow-read --allow-write scripts/package_import_canonize.ts --edit`.
+  - Every new file needs the module-header JSDoc (@module, @path, @architectural-layer,
+    @dependencies, @related-files) so check:arch stays grounded.
+
+  TESTS —
+  - `packages/<package>/tests/` is the ONLY package test folder. All `*_test.ts` live there
+    or in root `tests/`.
+  - Package-specific test support shared with tests OUTSIDE the package lives in
+    `packages/<package>/testing/`, exported as `@exaix/<package>/testing` — a published
+    support API, NEVER a test folder (no `*_test.ts`), never replaced by deep imports into
+    `tests/` or root-helper duplication.
+
+  REFINING EXISTING PACKAGES — preserve ownership boundaries:
+  - Do not move concrete runtime/transport wiring (daemon boot, HTTP/SSE servers, process
+    lifecycle) into a low-level package; keep adapters at the composition root.
+  - Fix a layer-violating constant import by injecting the owning service's interface, not
+    by duplicating or inlining the constant.
+  - Move code between packages via canonical aliases and canonize the direct-file imports
+    afterwards; re-run check:arch after any move so module headers stay grounded.
+
 Service pattern — Interface-first, Constructor Injection
 
   Every injectable service exposes an interface (class Foo → interface IFoo). Consumers
@@ -303,4 +341,3 @@ exaix:
       weight: 30
 ---
 ```
-

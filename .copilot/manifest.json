@@ -46,10 +46,6 @@
       "short_summary": ""
     },
     {
-      "path": ".copilot/prompts/package-extraction.prompt.md",
-      "short_summary": ""
-    },
-    {
       "path": ".copilot/prompts/review-code.prompt.md",
       "short_summary": ""
     },
@@ -231,23 +227,6 @@
         "architecture"
       ],
       "qwen_skill": "edition-development"
-    },
-    {
-      "path": ".copilot/skills/package-extraction/SKILL.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Package Extraction Skill (#package-extraction)",
-      "short_summary": "Retired skill describing the guided workflow that selected and extracted package-owned slices from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement.",
-      "version": "2.0.0",
-      "topics": [
-        "packages",
-        "migration",
-        "refactor",
-        "tdd",
-        "architecture",
-        "workspace"
-      ],
-      "qwen_skill": "package-extraction"
     },
     {
       "path": ".copilot/skills/submodule-workflow/SKILL.md",

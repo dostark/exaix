@@ -600,37 +600,6 @@
       ]
     },
     {
-      "id": "copilot-package-extraction",
-      "canonicalPath": ".copilot/skills/package-extraction/SKILL.md",
-      "critical": false,
-      "supportPaths": [],
-      "selectors": {
-        "original": [
-          "Key points",
-          "Workflow",
-          "Decision rules",
-          "Instructions for Agent"
-        ],
-        "revised": [
-          "Key points",
-          "Workflow",
-          "Decision rules",
-          "Instructions for Agent"
-        ]
-      },
-      "evidenceCaseIds": [],
-      "risk": "low",
-      "evidence": "review-only",
-      "obligations": [
-        "Apply the placement one-question test before extracting a module",
-        "Keep all *_test.ts in packages/<package>/tests/",
-        "Share package test support via a testing/ subpath, never a test folder",
-        "Refactor runtime-coupled source to constructor DI with injectable interfaces",
-        "Rewrite every import to canonical package paths and delete all legacy src/ modules",
-        "Use package_dependency_graph, package_import_migration, and package_import_canonize correctly"
-      ]
-    },
-    {
       "id": "copilot-clean-codebase",
       "canonicalPath": ".copilot/skills/clean-codebase/SKILL.md",
       "critical": false,

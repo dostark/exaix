@@ -40,7 +40,7 @@ Content is organized by **role**, not by provider.
 ## Quick Navigation
 
 - **Find the right doc for a task**: [manifest.json](manifest.json)
-- **Skills**: [skills/](skills/) — commit, plan, review, fix-bug, clean-codebase, coverage, security, package-extraction, and more
+- **Skills**: [skills/](skills/) — commit, plan, review, fix-bug, clean-codebase, coverage, security, and more
 - **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
 - **Reference docs**: [docs/](docs/) — user guide, SDD methodology, evaluation, reference data, and more
 

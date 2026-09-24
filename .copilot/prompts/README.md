@@ -40,7 +40,6 @@ Every file in this directory must have a corresponding `.copilot/skills/<name>/S
 | `infra.prompt.md`                | `.copilot/skills/infra/`                |
 | `next-phase.prompt.md`           | `.copilot/skills/next-phase/`           |
 | `next-steps.prompt.md`           | `.copilot/skills/next-steps/`           |
-| `package-extraction.prompt.md`   | `.copilot/skills/package-extraction/`   |
 | `plan.prompt.md`                 | `.copilot/skills/plan/`                 |
 | `post-gap-analysis.prompt.md`    | `.copilot/skills/post-gap-analysis/`    |
 | `pre-gap-analysis.prompt.md`     | `.copilot/skills/pre-gap-analysis/`     |
