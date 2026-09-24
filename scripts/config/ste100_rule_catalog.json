@@ -1,0 +1,119 @@
+{
+  "version": "1",
+  "standard": "ASD-STE100 Issue 9",
+  "extension": "Exaix STE Extension v1",
+  "normalizationVersion": "norm-v1",
+  "rules": [
+    {
+      "ruleId": "STE-5.1",
+      "officialRuleId": "STE-5.1",
+      "appliesTo": "procedural",
+      "detection": "deterministic",
+      "reason": "Procedural sentence word limit (20 words), confirmed by official counting."
+    },
+    {
+      "ruleId": "STE-6.3",
+      "officialRuleId": "STE-6.3",
+      "appliesTo": "descriptive",
+      "detection": "deterministic",
+      "reason": "Descriptive sentence word limit (20 words), confirmed by official counting."
+    },
+    {
+      "ruleId": "STE-6.6",
+      "officialRuleId": "STE-6.6",
+      "appliesTo": "descriptive",
+      "detection": "deterministic",
+      "reason": "Descriptive paragraph sentence limit (6 sentences)."
+    },
+    {
+      "ruleId": "STE-8.1",
+      "officialRuleId": "STE-8.1",
+      "appliesTo": "procedural",
+      "detection": "deterministic",
+      "reason": "Semicolon in eligible prose is an error; preserved literals are excluded."
+    },
+    {
+      "ruleId": "STE-8.4",
+      "officialRuleId": "STE-8.4",
+      "appliesTo": "descriptive",
+      "detection": "deterministic",
+      "reason": "Shared counting mechanics for lists, parentheses, identifiers, quotations, and hyphenation."
+    },
+    {
+      "ruleId": "STE-8.5",
+      "officialRuleId": "STE-8.5",
+      "appliesTo": "procedural",
+      "detection": "deterministic",
+      "reason": "Shared counting mechanics for imperative steps and numbered procedures."
+    },
+    {
+      "ruleId": "STE-8.6",
+      "officialRuleId": "STE-8.6",
+      "appliesTo": "descriptive",
+      "detection": "deterministic",
+      "reason": "Shared counting mechanics for descriptive explanations and definitions."
+    },
+    {
+      "ruleId": "STE-8.7",
+      "officialRuleId": "STE-8.7",
+      "appliesTo": "descriptive",
+      "detection": "deterministic",
+      "reason": "Shared counting mechanics for sentence and word counts under nested structures."
+    },
+    {
+      "ruleId": "EXAIX-01",
+      "officialRuleId": "EXAIX-01",
+      "appliesTo": "procedural",
+      "detection": "review",
+      "reason": "Lead with the answer, result, or next required action."
+    },
+    {
+      "ruleId": "EXAIX-02",
+      "officialRuleId": "EXAIX-02",
+      "appliesTo": "descriptive",
+      "detection": "review",
+      "reason": "Omit non-essential details and needless words."
+    },
+    {
+      "ruleId": "EXAIX-03",
+      "officialRuleId": "EXAIX-03",
+      "appliesTo": "procedural",
+      "detection": "review",
+      "reason": "Omit self-reflection and narration of the thinking process."
+    },
+    {
+      "ruleId": "EXAIX-04",
+      "officialRuleId": "EXAIX-04",
+      "appliesTo": "descriptive",
+      "detection": "review",
+      "reason": "Do not repeat information already delivered."
+    },
+    {
+      "ruleId": "EXAIX-05",
+      "officialRuleId": "EXAIX-05",
+      "appliesTo": "procedural",
+      "detection": "review",
+      "reason": "Prefer useful bullet lists to long prose."
+    }
+  ],
+  "technicalTerms": [
+    {
+      "term": "agent role",
+      "partOfSpeech": "noun",
+      "meaning": "The LLM persona blueprint that governs a request.",
+      "example": "Select the agent role for this request."
+    },
+    {
+      "term": "portal",
+      "partOfSpeech": "noun",
+      "meaning": "A user project tracked as an Exaix workspace portal.",
+      "example": "Run the change inside the portal worktree."
+    },
+    {
+      "term": "trace ID",
+      "partOfSpeech": "noun",
+      "meaning": "The correlation identifier for a request execution.",
+      "example": "Keep the trace ID in the journal row."
+    }
+  ]
+}

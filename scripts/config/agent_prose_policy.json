@@ -1,0 +1,17 @@
+{
+  "version": "2",
+  "standard": "ASD-STE100 Issue 9",
+  "extension": "Exaix STE Extension v1",
+  "roots": [
+    "../../.copilot",
+    "../../Blueprints"
+  ],
+  "exclusions": [
+    {
+      "path": "../../.copilot/prompts",
+      "reason": "Routing wrappers are generator-owned; their prose is covered by their generator source."
+    }
+  ],
+  "sources": [],
+  "technicalTerms": []
+}
