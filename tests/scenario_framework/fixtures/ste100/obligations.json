@@ -720,6 +720,111 @@
         "Commit plan-step flips via commit_plan_step.ts with a plan field",
         "Respect the canary, truncation, and arrow-sweep traps when marking criteria"
       ]
+    },
+    {
+      "id": "copilot-exaix-development",
+      "canonicalPath": ".copilot/skills/exaix-development/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Service pattern",
+          "System constraints",
+          "Required patterns",
+          "God object prevention",
+          "Prohibited anti-patterns"
+        ],
+        "revised": [
+          "Key points",
+          "Service pattern",
+          "System constraints",
+          "Required patterns",
+          "God object prevention",
+          "Prohibited anti-patterns"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "low",
+      "evidence": "review-only",
+      "obligations": [
+        "Write failing tests first",
+        "Use interface-first constructor injection with IFoo naming",
+        "Keep all numeric literals as named constants",
+        "Validate paths with PathResolver and timeouts with AbortSignal",
+        "Prevent god objects with the one-service-per-concern rule",
+        "Use EventLogger and the canonical security and config primitives"
+      ]
+    },
+    {
+      "id": "copilot-security",
+      "canonicalPath": ".copilot/skills/security/SKILL.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Exaix Attack Surface Map",
+          "Reusable Security Primitives",
+          "Known Anti-Patterns",
+          "Phase 4 \u2014 Classify Findings"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Exaix Attack Surface Map",
+          "Reusable Security Primitives",
+          "Known Anti-Patterns",
+          "Phase 4 \u2014 Classify Findings"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "high",
+      "evidence": "review-only",
+      "obligations": [
+        "Start from the Exaix Attack Surface Map",
+        "Reuse the canonical primitives, including PathSecurity.resolveWithinRoots",
+        "Apply the Phase 3b nine-item checklist",
+        "Assert rejection by validation in security tests",
+        "Classify findings as Security with OWASP references and TDD remediation",
+        "Treat the container as the authoritative boundary, Deno permissions as defense-in-depth"
+      ]
+    },
+    {
+      "id": "copilot-self-improvement",
+      "canonicalPath": ".copilot/skills/self-improvement/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instruction adequacy check",
+          "Phase-loop retro",
+          "Phase-doc status hygiene",
+          "Doc patch loop",
+          "Gap taxonomy"
+        ],
+        "revised": [
+          "Key points",
+          "Instruction adequacy check",
+          "Phase-loop retro",
+          "Phase-doc status hygiene",
+          "Doc patch loop",
+          "Gap taxonomy"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "low",
+      "evidence": "review-only",
+      "obligations": [
+        "Run the Instruction Adequacy Check before non-trivial work",
+        "Run the retro once per phase after remediate-code-gaps",
+        "Answer the four retro questions from session evidence",
+        "Route every finding to PATCHED, DEFERRED, or REJECTED",
+        "Rebuild and validate the .copilot manifest after doc edits",
+        "Bump both the prose Status and frontmatter status when closing a phase"
+      ]
     }
   ]
 }

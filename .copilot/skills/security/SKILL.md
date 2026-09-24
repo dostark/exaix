@@ -32,31 +32,29 @@ qwen_skill: security
 
 ```text
 Key points
-- This is a security-first audit — not a general code review.
-- Exaix's core threat model is MALICIOUS LLM OUTPUT: every tool call, path,
-  command, and expression the agent emits is attacker-influenced. Audit the
-  boundary that constrains agent output, not the agent's good intentions.
-- Start from the Exaix Attack Surface Map below — it lists every trust boundary,
-  the canonical control that defends it, and the regression test that proves it.
-- Apply the Phase 3b nine-item checklist to every step that touches input,
-  file paths, auth, secrets, network, or process execution.
+- Security-first audit — not a general code review.
+- Exaix's core threat model is MALICIOUS LLM OUTPUT: every tool call, path, command,
+  and expression the agent emits is attacker-influenced. Audit the boundary that
+  constrains agent output, not the agent's good intentions.
+- Start from the Exaix Attack Surface Map: every trust boundary, its canonical control,
+  and the regression test that proves it.
+- Apply the Phase 3b nine-item checklist to every step touching input, file paths, auth,
+  secrets, network, or process execution.
 - REUSE the canonical primitives (PathSecurity.resolveWithinRoots, PathResolver,
-  validateGitArguments/validateRuntimeArguments, safe_expression, the Host/Origin
-  guard, the ACTIVITY_COLUMNS allowlist). A new bespoke check is a smell — prefer
-  routing through the existing boundary.
-- Containment is two-layer and asymmetric: the Deno permission set is
-  DEFENSE-IN-DEPTH only (it is not a hard boundary while `--allow-ffi` is
-  required by the SQLite journal); the container (Dockerfile / compose.sandbox)
-  is the AUTHORITATIVE boundary. Never argue a control is safe "because the Deno
-  sandbox would catch it."
-- Every finding must be classified 🔒 Security and written to a findings report.
-- Findings require remediation steps in TDD-First format — tests before fixes.
-  A security test must assert rejection-by-VALIDATION, not rejection-by-runtime
-  -failure (a missing file or a thrown native error is not proof the control fired).
+  validateGitArguments/validateRuntimeArguments, safe_expression, the Host/Origin guard,
+  the ACTIVITY_COLUMNS allowlist). A new bespoke check is a smell.
+- Containment is two-layer and asymmetric: the Deno permission set is DEFENSE-IN-DEPTH
+  only (not a hard boundary while `--allow-ffi` is required by the SQLite journal); the
+  container (Dockerfile / compose.sandbox) is the AUTHORITATIVE boundary. Never argue a
+  control is safe "because the Deno sandbox would catch it."
+- Every finding is classified 🔒 Security and written to a findings report with TDD-First
+  remediation steps. A security test must assert rejection-by-VALIDATION, not
+  rejection-by-runtime-failure (a missing file or a native throw is not proof the control
+  fired).
 - Use PathResolver / PathSecurity for all file paths; never raw string `..` checks.
-- Never log, print, or store secrets; never include secrets in error messages.
-  Access-denied errors must be GENERIC — never echo the host path that was denied.
-- When auditing more than ~20 files, work in batches of 5–10: audit a batch, record findings, then continue.
+- Never log, print, or store secrets; never include them in errors. Access-denied errors
+  are GENERIC — never echo the denied host path.
+- Auditing > ~20 files: batches of 5–10. Audit a batch, record findings, continue.
 
 Canonical prompt (short):
 "Run a Phase 3b security audit on <files or feature>. Map it to the Exaix Attack
@@ -69,23 +67,19 @@ Examples
 - "#security — audit all changes in the current PR for security gaps"
 
 Do / Don't
-- ✅ Do read the source — never trust the plan's description of security controls.
-- ✅ Do check every input path (CLI args, config files, JSON payloads, env vars).
-- ✅ Do verify PathResolver is used for every file-system operation.
-- ✅ Do check that secrets are scoped to the minimal necessary lifetime.
-- ✅ Do require at least one security test per finding's security control.
-- ✅ Do include OWASP reference for each finding (e.g., A01 Broken Access Control).
-- ❌ Don't flag style issues as security — keep the report focused.
-- ❌ Don't accept "will fix later" for 🔒 Security findings — they block merge.
-- ❌ Don't skip test requirements — a control without a test is as good as no control.
+- ✅ Read the source — never trust the plan's description of security controls.
+- ✅ Check every input path (CLI args, config files, JSON payloads, env vars).
+- ✅ Verify PathResolver for every file-system operation.
+- ✅ Check secrets are scoped to the minimal necessary lifetime.
+- ✅ Require at least one security test per finding's control.
+- ✅ Include the OWASP reference per finding (e.g. A01 Broken Access Control).
+- ❌ Flag style issues as security — keep the report focused.
+- ❌ Accept "will fix later" for 🔒 Security findings — they block merge.
+- ❌ Skip test requirements — a control without a test is as good as none.
 
-Related skills:
-- #review-code — General code review (use #security when 3+ security findings exist)
-- #fix-bug  — Implement the fix for a specific finding
-- #commit   — Structured commit after all security findings are remediated
+Related: #review-code (general review; use #security at 3+ findings); #fix-bug; #commit.
 
-Workflow chain:
-  #review-code (found security issues) → **#security** → #fix-bug → #commit
+Workflow chain: #review-code (found security issues) → **#security** → #fix-bug → #commit
 ```
 
 ## See also
@@ -97,12 +91,10 @@ Workflow chain:
 
 ## Instructions for Agent
 
-You are performing a **systematic security audit** of the files or feature provided.
-
-The order of operations is: **(1)** locate the change on the Exaix Attack Surface Map,
-**(2)** confirm it routes through that surface's canonical control (or flag that it
-doesn't), **(3)** apply the Phase 3b checklist, **(4)** classify and write TDD
-remediation that reuses the primitives.
+Audit the provided files or feature systematically: **(1)** locate the change on the Exaix
+Attack Surface Map, **(2)** confirm it routes through that surface's canonical control (or
+flag that it doesn't), **(3)** apply the Phase 3b checklist, **(4)** classify and write TDD
+remediation reusing the primitives.
 
 ---
 
@@ -416,3 +408,4 @@ exaix:
       description: Findings reference specific file:line
       weight: 30
 ---
+

@@ -52,12 +52,11 @@ Project structure (key packages)
 
 Service pattern — Interface-first, Constructor Injection
 
-  Every injectable service exposes an interface: class Foo → interface IFoo.
-  Consumers depend on IFoo, never on Foo. Constructor injection only — pass
-  config, db, provider via constructors. No module-level singletons or static
-  accessors. Test mocks implement the full interface — never use `as any` or
-  object-literals to fake a service. Prefer narrow interfaces (only methods a
-  consumer actually calls).
+  Every injectable service exposes an interface (class Foo → interface IFoo). Consumers
+  depend on IFoo, never Foo. Constructor injection only — config, db, provider pass via
+  constructors. No module-level singletons or static accessors. Test mocks implement the
+  full interface — never `as any` or object literals to fake a service. Prefer narrow
+  interfaces (only methods a consumer calls).
 
   // GOOD
   interface IGitService { commit(msg: string): Promise<void>; }
@@ -144,23 +143,19 @@ Required patterns
 
 God object prevention
 
-   A god object is a class that embodies multiple distinct responsibilities.
-   Preventing god objects is cheaper than refactoring them. Follow these rules:
+   A god object is a class embodying multiple distinct responsibilities. Preventing one is
+   cheaper than refactoring it.
 
-   a. **One service per concern** — before adding a method to an existing class,
-      ask: "does this belong to a different concern?" If yes, create a new service.
-      The AgentExecutor decomposition extracted 7 services from one class:
-      ExecutionContext, Blueprint, PromptBuilder, GitAudit, OutputParser,
-      HistoryManager, and a ReActLoopAdapter — each with a single concern.
+   a. **One service per concern** — before adding a method to a class, ask: does this
+      belong to a different concern? If yes, create a new service. The AgentExecutor
+      decomposition extracted 7 services (ExecutionContext, Blueprint, PromptBuilder,
+      GitAudit, OutputParser, HistoryManager, ReActLoopAdapter), each single-concern.
 
-   b. **Constructor param limit** — 7 params is a hard style-gate limit. If you
-      reach 7, the design is telling you something. Extract a parameter object
-      or split the class. Never add an 8th param — not even "just this once."
-
-   c. **The composition root pattern** — every class's constructor should be its
-      composition root: all dependencies are declared as typed constructor params
-      with `Opt<T, Reason.*>` fallbacks, and the class delegates to services
-      rather than implementing logic inline:
+   b. **Constructor param limit** — 7 params is the hard style-gate limit. At 7, extract
+      a parameter object or split the class. Never add an 8th — not "just this once."
+   c. **Composition root pattern** — every constructor is its composition root: typed
+      constructor params with `Opt<T, Reason.*>` fallbacks; the class delegates to
+      services rather than inlining logic:
 
       ```typescript
       // GOOD — composition root with delegation
@@ -187,22 +182,16 @@ God object prevention
       }
       ```
 
-   d. **Interface-first design** — before writing a class, define its interface.
-      This forces you to think about the boundary before implementation. A class
-      with a 3-method interface is harder to turn into a god object than one
-      with no interface at all.
-
-   e. **Check:god-objects as a health check** — run `deno task check:god-objects`
-      weekly. The script scores every class on 6 metrics and reports candidates.
-      A rising score on an existing class is a warning sign:
+   d. **Interface-first design** — define the interface before the class; it forces the
+      boundary first. A 3-method interface resists god-object growth better than none.
+   e. **check:god-objects as health check** — run weekly; the script scores every class
+      on 6 metrics and reports candidates. A rising score is a warning:
       ```bash
       deno task check:god-objects -- --threshold=50
       ```
-
-   f. **Extract adapters at interface boundaries** — when a class implements an
-      interface consumed by another subsystem, extract an adapter class that
-      composes the required services. This prevents the interface from pulling
-      unrelated dependencies into the class:
+   f. **Extract adapters at interface boundaries** — a class implementing an interface
+      consumed by another subsystem gets an adapter composing the required services, so
+      the interface does not pull unrelated deps into the class:
 
       ```typescript
       // GOOD — adapter at boundary
@@ -314,3 +303,4 @@ exaix:
       weight: 30
 ---
 ```
+

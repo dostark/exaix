@@ -13,12 +13,19 @@ qwen_skill: self-improvement
 ```text
 Key points
 
-- Two complementary modes:
-  1. **Instruction Adequacy Check** (before or mid-task): do we have enough Exaix-specific guidance to act and verify? If guidance is missing, do a **Doc Patch Loop** — the smallest task-scoped `.copilot/` update, then rebuild/validate, then continue the primary task.
-  2. **Phase-loop retro (#self-improvement-retro)** (terminal step of the phase loop): after `#remediate-code-gaps` closes, review the whole loop just completed — plan → pre-gap-analysis → remediate-plan-gaps → next-steps (×N) → post-gap-analysis → remediate-code-gaps — and fix every problematic place it revealed: skill defects, confusing instructions, missing commands, structural gaps in `.copilot/`.
-- Keep updates grounded: add checklists, examples, and commands; avoid speculative "nice-to-have" prose.
-- Treat doc changes like code changes: minimal diff, clear success criteria, and a regression test when appropriate.
-- The retro is what makes the phase loop self-improving: it must close with real patches (or an explicit no-fix rationale per finding) — never with a summary alone.
+- Two modes:
+  1. **Instruction Adequacy Check** (before or mid-task): enough Exaix-specific guidance to
+     act and verify? If not, run a **Doc Patch Loop** — the smallest task-scoped `.copilot/`
+     update, rebuild/validate, continue the task.
+  2. **Phase-loop retro (#self-improvement-retro)** (terminal step): after `#remediate-code-gaps`
+     closes, review the completed loop (plan → pre-gap-analysis → remediate-plan-gaps →
+     next-steps ×N → post-gap-analysis → remediate-code-gaps) and fix every problem it
+     revealed: skill defects, confusing instructions, missing commands, structural gaps.
+- Keep updates grounded: checklists, examples, commands — no speculative "nice-to-have" prose.
+- Treat doc changes like code: minimal diff, clear success criteria, a regression test where
+  appropriate.
+- The retro is what makes the loop self-improving: it must close with real patches (or an
+  explicit no-fix rationale per finding) — never a summary alone.
 
 Canonical prompt (short):
 - Mid-task: "Before implementing changes, run an Instruction Adequacy Check against .copilot/. If instructions are insufficient, patch .copilot/ with the smallest update needed (doc/template/cross-reference), rebuild/validate artifacts, then proceed with the primary task using the improved instructions."
@@ -69,15 +76,12 @@ Position in the loop — this skill is the terminal step:
      docs predicted.
 
 2. **Answer the four retro questions (mandatory — one honest answer each)**
-   - **Q1 — Session issues**: Did you run into any issues during this session that could
-     be improved? Include failed tool calls, blocked/rolled-back commits, CI gate
-     surprises, and wrong assumptions that cost rework.
-   - **Q2 — Confusing guidance**: Any confusing docs/prompts or tricky wording that took
-     effort to figure out? Name the exact file and the exact wording.
-   - **Q3 — Final thoughts**: Anything about the phase process worth raising that the
-     other questions missed?
-   - **Q4 — Minor items**: Anything minor you didn't mention — small inconsistencies,
-     stale cross-links, nits? They count; note them.
+   - **Q1 — Session issues**: What slowed this session — failed tool calls, blocked/
+     rolled-back commits, CI surprises, wrong assumptions that cost rework?
+   - **Q2 — Confusing guidance**: Which docs/prompts or wording took effort to figure out?
+     Name the exact file and wording.
+   - **Q3 — Final thoughts**: Anything about the phase process the other questions missed?
+   - **Q4 — Minor items**: Small inconsistencies, stale cross-links, nits? They count.
 
 3. **Route every finding to a fix** (do not stop at "good to know")
    - **Classify the finding FIRST: is it a general process/skill defect, or a
@@ -351,3 +355,4 @@ exaix:
       description: All four retro questions answered; every finding routed to PATCHED / DEFERRED / REJECTED
       weight: 20
 ---
+
