@@ -19,15 +19,18 @@ qwen_skill: doc
 ```text
 Key points
 - Write for the intended audience: user-facing docs in docs/, agent guidance in .copilot/
-- After modifying MCP tool handlers in packages/mcp/src/handlers/, always run
+- After modifying MCP tool handlers in packages/mcp/src/handlers/, run
   deno task docs-sync-schemas to keep TOOLS.md in sync
 - exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md
   for any changes that span the parent repo and the submodule
-- ARCHITECTURE.md is a strategic document — describe what and why, not where.
+- ARCHITECTURE.md is strategic: describe what and why, not where.
   Never include implementation-specific file paths or module locations there.
   Move those details into the relevant package README (e.g.,
   packages/<name>/README.md) and reference the package from ARCHITECTURE.md.
-- docs/CHANGELOG.md is for user-facing changes only (CLI flags, config, deprecations, behavior changes). Never list internal refactors, test additions, or internal file paths. Each entry must be a single sentence, no internal module paths. Follow Keep a Changelog conventions. See the header in docs/CHANGELOG.md for the full format guide.
+- docs/CHANGELOG.md covers user-facing changes only (CLI flags, config, deprecations,
+  behavior changes). Never list internal refactors, test additions, or internal file
+  paths. Each entry is a single sentence, no internal module paths. Follow Keep a
+  Changelog conventions. See the header in docs/CHANGELOG.md for the full format guide.
 
 Canonical prompt (short):
 "Create/update documentation for {component/feature}.
@@ -43,11 +46,11 @@ Doc target map
   Agent guidance               →  .copilot/docs/<topic>.md
   Submodule docs               →  exaix-dev-docs/ (see submodule-workflow skill)
 
-Doc update gate: BEFORE declaring any step complete that adds a user-visible CLI flag, config
-key, or behavioural change, grep `docs/Exaix_User_Guide.md` for the command or feature name.
-If absent, the User Guide MUST be updated in the same step's commit — "not documented yet" is a
-blocking gap. This affects CLI subcommands, config keys, env vars, flag changes, and any output
-format change a user might rely on.
+Doc update gate: before closing any step that adds a user-visible CLI flag, config key,
+or behavioural change, grep `docs/Exaix_User_Guide.md` for the command or feature name.
+If absent, the User Guide MUST be updated in the same step's commit. "Not documented yet"
+is a blocking gap. This affects CLI subcommands, config keys, env vars, flag changes, and
+any output format change a user might rely on.
 
 Special sync commands
   # After changing MCP handler schemas in packages/mcp/src/handlers/
@@ -68,10 +71,8 @@ Doc quality checklist
   [ ] No dead links
   [ ] Every runtime claim is implemented: grep the code for each documented event name,
       config key, persistence behavior, and CLI flag the doc asserts exists before writing
-      it (a doc stating an event name, "every decision is persisted to disk", or a config
-      key that the schema strips is a doc of a system that does not exist). "Behaves this
-      way" is only writable when the code path is real and reachable; otherwise describe
-      the actual behavior or omit the claim.
+      it. "Behaves this way" is writable only when the code path is real and reachable;
+      otherwise describe the actual behavior or omit the claim.
 
 Do / Don't
 - ✅ Do run deno task docs-sync-schemas after MCP handler changes
@@ -87,7 +88,7 @@ Do / Don't
 - **`.copilot/`** — Source of Truth for Agents. Context, prompts, workflows, manifests, schemas.
 - **`exaix-dev-docs/`** — Git submodule for planning docs and dev-only content. Follow [submodule-workflow](../submodule-workflow/SKILL.md) for changes.
 
-> Agents should read `.copilot/` for coding patterns and prompts, `docs/` for architectural understanding. If a conflict exists between `docs/` and source code, follow `docs/` but verify with the user.
+> Read `.copilot/` for coding patterns and prompts; read `docs/` for architectural understanding. If a conflict exists between `docs/` and source code, follow `docs/` but verify with the user.
 
 ## ARCHITECTURE.md vs Package READMEs
 

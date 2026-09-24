@@ -1,21 +1,17 @@
 ---
 name: package-extraction
-description: "Extracted package-owned slices from src/ into packages/, rewrote imports to canonical package paths, and retired the old src modules — RETIRED"
+description: "Extracted package-owned slices from src/ into packages/, rewired imports to canonical package paths, and retired the legacy src modules"
 ---
 
-> **⚠️ RETIRED:** The `src/` migration to packages is complete. This prompt is retained for historical reference only.
+# Routing prompt — canonical source
 
-# ⚠️ THIN WRAPPER — Chat Routing Prompt
-
-> **CRITICAL**: This is an auto-generated routing prompt.
-> The true canonical source for this skill is located at:
-> `.copilot/skills/package-extraction/SKILL.md`
+> Auto-generated routing prompt.
+> Canonical source: `.copilot/skills/package-extraction/SKILL.md`
 
 ## Instructions
 
-1. **DO NOT** execute based on this file.
-2. **MUST** read the canonical source before proceeding.
-3. Read `.copilot/skills/package-extraction/SKILL.md` for the full workflow.
-4. Follow all instructions and constraints defined in the canonical source.
-5. If the canonical source instructs you to read additional files or blueprints,
-   you MUST read those as well.
+1. Do not execute from this file.
+1. Read the canonical source before proceeding.
+1. Read `.copilot/skills/package-extraction/SKILL.md` for the full workflow.
+1. Follow all instructions and constraints in the canonical source.
+1. Read any additional files or blueprints the canonical source directs.

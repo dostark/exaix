@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "seed": "phase-195-step-1",
+  "seed": "phase-195-step-3",
   "entries": [
     {
       "id": "ste-contract",
@@ -20,6 +20,8 @@
         ]
       },
       "evidenceCaseIds": ["ste-runtime-contract", "ste-documentation-exempt", "ste-status-prose"],
+      "risk": "medium",
+      "evidence": "review-only",
       "obligations": [
         "Deliver ASD-STE100 and the five Exaix extension rules in the compiled contract",
         "Preserve structured content, thought sections, and tags verbatim",
@@ -40,8 +42,73 @@
         ]
       },
       "evidenceCaseIds": ["ste-metadata-body-delivery"],
+      "risk": "low",
+      "evidence": "delivery",
       "obligations": [
         "Deliver metadata obligations in the body through the production formatter"
+      ]
+    },
+    {
+      "id": "copilot-tdd-workflow",
+      "canonicalPath": ".copilot/skills/tdd-workflow/SKILL.md",
+      "critical": true,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow",
+          "Coverage check",
+          "Do / Don't"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow",
+          "Coverage check",
+          "Do / Don't"
+        ]
+      },
+      "evidenceCaseIds": ["tdd-red-green", "tdd-coverage-gate"],
+      "risk": "completion-critical",
+      "evidence": "review-only",
+      "obligations": [
+        "Write the failing test before any source code; RED must come first",
+        "Use Exaix test helpers: initTestDbService, createCliTestContext, withEnv, MockLLMProvider, TestEnvironment.create",
+        "Keep coverage at line >= 70 and branch >= 60; add tests, never lower the threshold",
+        "Revert to the pre-RED state after two failed GREEN attempts and re-analyse the design",
+        "Add a module-header JSDoc block to new test and source files",
+        "Run the CI gates: lint, check, check:style, check:arch, fmt, check:magic",
+        "Keep 5-10 file batches when the scope exceeds about 20 files"
+      ]
+    },
+    {
+      "id": "copilot-doc",
+      "canonicalPath": ".copilot/skills/doc/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Doc update gate",
+          "Doc quality checklist",
+          "ARCHITECTURE.md vs Package READMEs"
+        ],
+        "revised": [
+          "Key points",
+          "Doc update gate",
+          "Doc quality checklist",
+          "ARCHITECTURE.md vs Package READMEs"
+        ]
+      },
+      "evidenceCaseIds": ["doc-sync-gate", "doc-runtime-claims"],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Run deno task docs-sync-schemas after MCP handler changes",
+        "Follow the submodule-workflow skill for exaix-dev-docs changes",
+        "Keep docs/CHANGELOG.md to user-facing changes, one sentence per entry",
+        "Gate every user-visible step on a docs/Exaix_User_Guide.md grep before closing",
+        "Verify every runtime claim against source before writing it",
+        "Keep ARCHITECTURE.md strategic: what and why, not where"
       ]
     }
   ]

@@ -18,14 +18,15 @@ qwen_skill: tdd-workflow
 
 ```text
 Key points
-- Always write the failing test BEFORE writing any source code (RED must come first)
-- Use Exaix test helpers: initTestDbService(), createCliTestContext(), withEnv(), MockLLMProvider
-- Use TestEnvironment.create() for full integration scaffolding
-- Verify coverage doesn't drop after implementation
-- TDD is non-negotiable — no implementation without a prior failing test
-- When modifying existing source code, add tests to the existing test file — write the failing test first, then modify the source
-- When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
-- If GREEN cannot be reached after 2 implementation attempts, revert to the pre-RED state and use `#review-research` or `#plan` to re-analyse the design before retrying.
+
+- Write the failing test BEFORE any source code. RED must come first.
+- Use Exaix test helpers: initTestDbService(), createCliTestContext(), withEnv(), MockLLMProvider.
+- Use TestEnvironment.create() for full integration scaffolding.
+- Verify coverage does not drop after implementation.
+- TDD is non-negotiable: no implementation without a prior failing test.
+- For existing source, add tests to the existing test file — failing test first, then modify the source.
+- For scope above ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
+- If GREEN is unreachable after 2 implementation attempts, revert to the pre-RED state and use `#review-research` or `#plan` to re-analyse the design before retrying.
 
 Canonical prompt (short):
 "Apply TDD to [feature/bug/refactor] for [component]. Write failing test first,

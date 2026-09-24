@@ -3,17 +3,15 @@ name: remediate-code-gaps
 description: "Consumes post-gap-analysis gap findings and edits source code to close each gap — re-runs tests and commits"
 ---
 
-# ⚠️ THIN WRAPPER — Chat Routing Prompt
+# Routing prompt — canonical source
 
-> **CRITICAL**: This is an auto-generated routing prompt.
-> The true canonical source for this skill is located at:
-> `.copilot/skills/remediate-code-gaps/SKILL.md`
+> Auto-generated routing prompt.
+> Canonical source: `.copilot/skills/remediate-code-gaps/SKILL.md`
 
 ## Instructions
 
-1. **DO NOT** execute based on this file.
-2. **MUST** read the canonical source before proceeding.
-3. Read `.copilot/skills/remediate-code-gaps/SKILL.md` for the full workflow.
-4. Follow all instructions and constraints defined in the canonical source.
-5. If the canonical source instructs you to read additional files or blueprints,
-   you MUST read those as well.
+1. Do not execute from this file.
+1. Read the canonical source before proceeding.
+1. Read `.copilot/skills/remediate-code-gaps/SKILL.md` for the full workflow.
+1. Follow all instructions and constraints in the canonical source.
+1. Read any additional files or blueprints the canonical source directs.
