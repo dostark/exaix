@@ -424,6 +424,72 @@
         "Prefer symbols from packages/core/src/types/constants.ts",
         "Re-run check:arch after renaming symbols or moving constants"
       ]
+    },
+    {
+      "id": "copilot-review-code",
+      "canonicalPath": ".copilot/skills/review-code/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 3 — Security",
+          "Phase 4 — Architecture, Style & Conventions",
+          "Phase 8 — Test Coverage"
+        ],
+        "revised": [
+          "Key points",
+          "Instructions for Agent",
+          "Phase 3 — Security",
+          "Phase 4 — Architecture, Style & Conventions",
+          "Phase 8 — Test Coverage"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Review against Exaix standards through the ten phases in order",
+        "Apply the Phase 3b security checks to input, paths, auth, secrets, network",
+        "Require a named test for every new code path and full check:arch grounding",
+        "Route file paths through PathResolver with no raw string concatenation",
+        "Verify event coverage through deno task check:event-coverage; an @visible-tagged class gap is critical",
+        "Categorise every finding on the severity scale and block without user-guide updates where required"
+      ]
+    },
+    {
+      "id": "copilot-review-research",
+      "canonicalPath": ".copilot/skills/review-research/SKILL.md",
+      "critical": false,
+      "supportPaths": [],
+      "selectors": {
+        "original": [
+          "Key points",
+          "Workflow",
+          "Phase 2 — RESEARCH",
+          "Phase 4 — ARTIFACTS",
+          "Verification checklist"
+        ],
+        "revised": [
+          "Key points",
+          "Workflow",
+          "Phase 2 — RESEARCH",
+          "Phase 4 — ARTIFACTS",
+          "Verification checklist"
+        ]
+      },
+      "evidenceCaseIds": [],
+      "risk": "medium",
+      "evidence": "review-only",
+      "obligations": [
+        "Follow the four-phase loop: REVIEW, RESEARCH, PLAN, ARTIFACTS",
+        "Require file:line code evidence for every weakness",
+        "Keep the improvement plan to 6-8 sub-phases",
+        "Make Documentation Update the final sub-phase",
+        "Commit planning doc, templates, and README updates together",
+        "Write the improvement plan to the canonical exaix-dev-docs planning path"
+      ]
     }
   ]
 }

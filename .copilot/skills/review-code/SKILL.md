@@ -77,7 +77,7 @@ Workflow chain:
 
 ## Instructions for Agent
 
-You are performing a **systematic code review** of the files or diff provided.
+Review the provided files or diff through the ten phases in order: Ingest → Correctness → Security → Style → TS quality → Defensive → Performance/Deps → Tests → Docs → Reports. Findings are categorised and actionable, never vague.
 
 ### Phase 1 — Ingest
 

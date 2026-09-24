@@ -19,7 +19,7 @@ qwen_skill: review-research
 Key points
 - Follow the four-phase loop: REVIEW → RESEARCH → PLAN → ARTIFACTS
 - Every identified weakness must have code evidence (file:line reference), not speculation
-- Limit the improvement plan to 6–8 sub-phases; any broader and it needs splitting
+- Keep the plan to 6–8 sub-phases; beyond that, split it
 - Every improvement plan MUST include a Documentation Update phase (always last)
 - Commit all artifacts (planning doc + templates + README updates) together
 - When reading more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
