@@ -27,12 +27,6 @@
   },
   {
     "kind": "skill",
-    "artefactId": "exaix-conventions",
-    "status": "keep",
-    "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
-  },
-  {
-    "kind": "skill",
     "artefactId": "error-handling",
     "status": "keep",
     "rationale": "abs(Δ) < 0.01 at n=1 on the Go tier; kept without a positive quality claim"
