@@ -18,7 +18,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { adaptOpencodePlanJson } from "../src/opencode_plan_schema_adapter.ts";
+import { ToolName } from "@exaix/core";
+import { adaptOpencodePlanJson, OPENCODE_STRUCTURAL_TOOL_MAP } from "../src/opencode_plan_schema_adapter.ts";
 
 Deno.test("[opencode_plan_schema_adapter] remaps edit_file + oldString/newString to patch_file + flat search/replace (the live-observed case)", () => {
   const raw = JSON.stringify({
@@ -85,7 +86,7 @@ Deno.test("[opencode_plan_schema_adapter] remaps opencode's native 'edit' tool t
   });
 });
 
-Deno.test("[opencode_plan_schema_adapter] remaps read/write/bash/grep/list to their McpToolName equivalents", () => {
+Deno.test("[opencode_plan_schema_adapter] remaps read/write/bash/grep/list to their canonical tool names", () => {
   const raw = JSON.stringify({
     title: "t",
     description: "d",
@@ -106,7 +107,9 @@ Deno.test("[opencode_plan_schema_adapter] remaps read/write/bash/grep/list to th
   const result = adaptOpencodePlanJson(raw);
   const parsed = JSON.parse(result.json);
   const tools = parsed.steps[0].actions.map((a: { tool: string }) => a.tool);
-  assertEquals(tools, ["read_file", "write_file", "run_command", "search_files", "list_directory"]);
+  // grep is content search. It resolves through TOOL_ALIASES to the text-search tool,
+  // like a direct `grep` call. It previously mapped to search_files.
+  assertEquals(tools, ["read_file", "write_file", "run_command", ToolName.GREP_SEARCH, "list_directory"]);
   assertEquals(parsed.steps[0].actions[0].params, { path: "a.ts" });
   assertEquals(parsed.steps[0].actions[1].params, { path: "b.ts", content: "x" });
 });
@@ -172,4 +175,31 @@ Deno.test("[opencode_plan_schema_adapter] top-level tools list on a step is rema
   const result = adaptOpencodePlanJson(raw);
   const parsed = JSON.parse(result.json);
   assertEquals(parsed.steps[0].tools, ["patch_file", "run_command"]);
+});
+
+Deno.test("[opencode_plan_schema_adapter] a canonical read_file with opencode's filePath key is renamed to path", () => {
+  const raw = JSON.stringify({
+    title: "t",
+    description: "d",
+    steps: [{
+      step: 1,
+      title: "t1",
+      description: "d1",
+      actions: [{ tool: "read_file", params: { filePath: "a.ts" } }],
+    }],
+  });
+
+  const result = adaptOpencodePlanJson(raw);
+  assertEquals(result.changed, true);
+  assertEquals(JSON.parse(result.json).steps[0].actions[0], { tool: "read_file", params: { path: "a.ts" } });
+});
+
+Deno.test("[opencode_plan_schema_adapter][parity] OPENCODE_TOOL_NAME_MAP contains no name mapping except the documented edit/edit_file and bash entries; opencode grep resolves to search_text", () => {
+  assertEquals([...OPENCODE_STRUCTURAL_TOOL_MAP.keys()].sort(), ["bash", "edit", "edit_file"]);
+  const raw = JSON.stringify({
+    title: "t",
+    description: "d",
+    steps: [{ step: 1, title: "t1", description: "d1", actions: [{ tool: "grep", params: { pattern: "x" } }] }],
+  });
+  assertEquals(JSON.parse(adaptOpencodePlanJson(raw).json).steps[0].actions[0].tool, ToolName.GREP_SEARCH);
 });

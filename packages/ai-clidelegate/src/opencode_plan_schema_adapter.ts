@@ -2,9 +2,10 @@
  * @module OpencodePlanSchemaAdapter
  * @path packages/ai-clidelegate/src/opencode_plan_schema_adapter.ts
  * @description Normalizes a plan-JSON response from an opencode-cli planning call
- *   (CliDelegateModelProvider, tool="opencode") onto Exaix's McpToolName vocabulary and
+ *   (CliDelegateModelProvider, tool="opencode") onto Exaix's canonical tool names and
  *   each tool's real params contract, before the text reaches PlanAdapter/plan_schema.ts
- *   validation.
+ *   validation. Plain name and path-key renames come from the shared TOOL_ALIASES table
+ *   (packages/core/src/types/tool_aliases.ts); only the structural edit remap and bash stay here.
  *
  *   Root cause (live-verified, sandbox mrudl4zj-f6d1059f, trace
  *   340a896b-74fe-4d85-bccf-2d045a564455): opencode's planning call runs with
@@ -22,10 +23,10 @@
  *   malformed input are returned unchanged so real validation still rejects genuinely
  *   unknown tools — it only closes the specific, observed vocabulary gap.
  * @architectural-layer AI
- * @related-files [packages/ai-clidelegate/src/cli_delegate_model_provider.ts, packages/schemas/src/plan_schema.ts, packages/core/src/types/enums.ts]
+ * @related-files [packages/core/src/types/tool_aliases.ts, packages/ai-clidelegate/src/cli_delegate_model_provider.ts, packages/schemas/src/plan_schema.ts, packages/core/src/types/enums.ts]
  */
 
-import { McpToolName } from "@exaix/core";
+import { canonicalizeToolCall, canonicalizeToolName, ToolName } from "@exaix/core";
 import type { JSONObject, JSONValue } from "@exaix/core";
 
 /** Result of running a plan-JSON string through the adapter. */
@@ -50,9 +51,8 @@ interface IRawPlan extends JSONObject {
   steps?: IRawPlanStep[];
 }
 
-/** Only "edit"-family tools need structural remapping (opencode's flat
- *  oldString/newString → Exaix's flat search/replace); every other mapped tool already
- *  uses matching param key names. */
+/** Only "edit"-family tools need a structural remap: oldString/newString become search/replace.
+ *  Plain name and path-key renames go through the shared TOOL_ALIASES table. */
 type ParamsRemapper = (params: JSONObject) => JSONObject;
 
 function remapEditParams(params: JSONObject): JSONObject {
@@ -63,47 +63,54 @@ function remapEditParams(params: JSONObject): JSONObject {
   return { path, search: params.oldString, replace: params.newString };
 }
 
-function remapPathAlias(params: JSONObject): JSONObject {
-  if (!("filePath" in params)) return params;
-  const { filePath, ...rest } = params;
-  return { path: filePath, ...rest };
-}
-
-/** Only "edit_file"/"edit" is live-verified; the other five entries are a best-effort
- *  guess at opencode's undocumented param field names — safe no-ops if wrong, since an
- *  unrecognized shape just flows through unchanged. */
-type ToolMapEntry = readonly [McpToolName, ParamsRemapper];
+type ToolMapEntry = readonly [ToolName, ParamsRemapper];
 
 const identityRemapper: ParamsRemapper = (p) => p;
 
-const OPENCODE_TOOL_NAME_MAP: ReadonlyMap<string, ToolMapEntry> = new Map<string, ToolMapEntry>([
-  ["edit_file", [McpToolName.PATCH_FILE, remapEditParams]],
-  ["edit", [McpToolName.PATCH_FILE, remapEditParams]],
-  ["read", [McpToolName.READ_FILE, remapPathAlias]],
-  ["read_file", [McpToolName.READ_FILE, remapPathAlias]],
-  ["write", [McpToolName.WRITE_FILE, remapPathAlias]],
-  ["bash", [McpToolName.RUN_COMMAND, identityRemapper]],
-  ["grep", [McpToolName.SEARCH_FILES, identityRemapper]],
-  ["list", [McpToolName.LIST_DIRECTORY, remapPathAlias]],
+/** Plan-JSON-only entries that TOOL_ALIASES deliberately lacks. `edit`/`edit_file` need the
+ *  structural remap above. `bash` maps to run_command only here. A person approves plan actions. */
+export const OPENCODE_STRUCTURAL_TOOL_MAP: ReadonlyMap<string, ToolMapEntry> = new Map<string, ToolMapEntry>([
+  ["edit_file", [ToolName.PATCH_FILE, remapEditParams]],
+  ["edit", [ToolName.PATCH_FILE, remapEditParams]],
+  ["bash", [ToolName.RUN_COMMAND, identityRemapper]],
 ]);
 
-function remapToolName(name: string): McpToolName | undefined {
-  const mapped = OPENCODE_TOOL_NAME_MAP.get(name);
-  return mapped?.[0];
+/** Tools whose path key opencode spells `filePath`. The adapter has no registry schema, so
+ *  this set names the tools where common path aliases apply. */
+const OPENCODE_PATH_TOOLS: ReadonlySet<string> = new Set<string>([
+  ToolName.READ_FILE,
+  ToolName.WRITE_FILE,
+  ToolName.LIST_DIRECTORY,
+  ToolName.SEARCH_FILES,
+  ToolName.GREP_SEARCH,
+  ToolName.CREATE_DIRECTORY,
+  ToolName.DELETE_FILE,
+]);
+
+const PATH_ONLY_PARAMS: ReadonlySet<string> = new Set(["path"]);
+const NO_PARAMS: ReadonlySet<string> = new Set();
+
+function remapToolName(name: string): string | undefined {
+  const structural = OPENCODE_STRUCTURAL_TOOL_MAP.get(name);
+  if (structural) return structural[0];
+  const canonical = canonicalizeToolName(name);
+  return canonical !== name ? canonical : undefined;
 }
 
 function remapAction(action: IRawPlanAction): { action: IRawPlanAction; changed: boolean } {
   if (typeof action.tool !== "string") return { action, changed: false };
 
-  const mapped = OPENCODE_TOOL_NAME_MAP.get(action.tool);
-  if (!mapped) return { action, changed: false };
-
-  const [targetTool, remapParams] = mapped;
   const params = action.params ?? {};
-  return {
-    action: { ...action, tool: targetTool, params: remapParams(params) },
-    changed: true,
-  };
+  const structural = OPENCODE_STRUCTURAL_TOOL_MAP.get(action.tool);
+  if (structural) {
+    const [targetTool, remapParams] = structural;
+    return { action: { ...action, tool: targetTool, params: remapParams(params) }, changed: true };
+  }
+
+  const accepted = OPENCODE_PATH_TOOLS.has(canonicalizeToolName(action.tool)) ? PATH_ONLY_PARAMS : NO_PARAMS;
+  const canonical = canonicalizeToolCall(action.tool, params, accepted);
+  if (!canonical.rewritten) return { action, changed: false };
+  return { action: { ...action, tool: canonical.name, params: canonical.params as JSONObject }, changed: true };
 }
 
 function remapStep(step: IRawPlanStep): { step: IRawPlanStep; changed: boolean } {

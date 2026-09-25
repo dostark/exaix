@@ -10,6 +10,7 @@ import {
   AmendmentTimeoutAction,
   ConfigValueType,
   LogLevel,
+  McpToolName,
   McpTransportType,
   MockStrategy,
   ProviderType,
@@ -3553,3 +3554,37 @@ export const PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX = " [truncated]";
 /** Per-round token overhead reserved in the prompt budget's `loopHistory` section when the
  *  planning tools path is gated on. Not user-configurable, unlike the `planning.*` knobs above. */
 export const PLANNING_TOOL_CALL_OVERHEAD_TOKENS = 200;
+
+/** MCP-exported tool names with no registry equivalent. `check:tool-naming` accepts them as
+ *  MCP-only, without a matching ToolName. */
+export const MCP_ONLY_TOOL_NAMES: readonly McpToolName[] = [
+  McpToolName.GIT_STATUS,
+  McpToolName.GIT_LOG,
+  McpToolName.GIT_WORKTREE,
+];
+
+/** Allowed first tokens of a `<verb>_<object>` tool name (`exaix` is the MCP-only
+ *  control-plane namespace). */
+export const TOOL_NAME_VERBS: readonly string[] = [
+  "read",
+  "write",
+  "list",
+  "search",
+  "create",
+  "run",
+  "fetch",
+  "move",
+  "copy",
+  "delete",
+  "patch",
+  "find",
+  "query",
+  "get",
+  "remember",
+  "git",
+  "exaix",
+];
+
+/** Parameters every portal-scoped tool accepts implicitly (the portal and agent-role context).
+ *  Checks of a tool's declared parameter keys exclude them. */
+export const TOOL_AUTH_ONLY_PARAMS: readonly string[] = ["portal", "agent_role"];

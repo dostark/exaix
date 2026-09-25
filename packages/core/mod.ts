@@ -8,6 +8,7 @@
 
 export * from "./src/types/enums.ts";
 export * from "./src/types/constants.ts";
+export * from "./src/types/tool_aliases.ts";
 export { ActorType } from "./src/types/actor.ts";
 export type { Actor } from "./src/types/actor.ts";
 export type { ILogEvent } from "./src/types/i_log_event.ts";

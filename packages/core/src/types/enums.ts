@@ -177,6 +177,16 @@ export enum ToolName {
   LIST_AVAILABLE_TOOLS = "list_available_tools",
 }
 
+/** The entry point that canonicalized an aliased tool call, journaled on
+ *  `tool.alias.rewritten`. Load-time allowlist/schema canonicalization has no value here:
+ *  it rewrites static configuration, not a model call. */
+export enum ToolCallEntryPoint {
+  REGISTRY = "registry",
+  PLANNING_LOOP = "planning_loop",
+  REACT_LOOP = "react_loop",
+  MCP = "mcp",
+}
+
 /** Structured error codes for MCP tool-logic failures, shared by MCP handlers and ToolRegistry without creating an import cycle. */
 export enum ToolErrorCode {
   PERMISSION_DENIED = "PERMISSION_DENIED",
