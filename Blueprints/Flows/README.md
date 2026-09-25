@@ -80,6 +80,29 @@ selects its own tools at runtime. See `docs/Exaix_User_Guide.md`'s "Flow Step Ex
 Strategy" section for the full field documentation and the `react` vs `cli_delegate`
 control-axis tradeoff.
 
+## Per-step effort/thinking
+
+A declared agent step may additionally override reasoning depth per step with optional
+`effort` and `thinking` fields (concrete values or `auto`), giving an "analyze cheap,
+implement deep" split without changing the bound role's own default:
+
+```yaml
+steps:
+  - id: analyze
+    name: Analyze
+    agent_role: senior-coder
+    effort: low
+  - id: implement
+    name: Implement
+    agent_role: senior-coder
+    effort: high
+```
+
+They sit beside `strategy` (which exists for the dispatch-depth axis). Both are valid only
+on an `agent`-type step. Flow-bound roles now also send their own declared
+`effort`/`thinking`/`default_skills` (the adapter bridges them via the blueprint loader),
+and a judge role bound as a step is subject to its effort floor.
+
 ### Rollout rubric — should a new step opt in?
 
 Bias toward leaving `strategy` unset; opt a step in only when its task genuinely needs it:

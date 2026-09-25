@@ -1164,8 +1164,8 @@ exactl request analyze "Existing Request Subject" --engine llm
 | `--analyze`             |       | Trigger immediate intent analysis                                                                                                                            |
 | `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                                                                                |
 | `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (model resolution and intent)                                           |
-| `--thinking`            |       | Require extended reasoning (thinking-capable model, model resolution and intent)                                                                             |
-| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high` (only with `--thinking`, model resolution and intent)                                                        |
+| `--thinking`            |       | Extended thinking: bare `--thinking` means `true`; accepts `true`, `false`, or `auto` (model resolution and intent)                                          |
+| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high`, or `auto` — `auto` asks the system to decide per request (model resolution and intent)                      |
 | `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (model resolution and intent)                                  |
 | `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (model resolution and intent)                                                     |
 
@@ -1216,6 +1216,9 @@ Explicit criteria improve request quality in three ways: they raise the analyzer
 ```bash
 # Large model with extended reasoning for complex tasks
 exactl request "Design authentication architecture" --model-size L --thinking --effort high
+
+# Let the system decide the effort tier from task complexity (auto resolution)
+exactl request "Design authentication architecture" --effort auto
 
 # Quick, cheap task — small model, no thinking
 exactl request "Format all files" --model-size S --characteristic cheapest

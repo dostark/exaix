@@ -616,7 +616,7 @@ different granularity (one whole step vs. N reviewed sub-steps).
 ### Worktree Isolation for Delegated Code Changes {#worktree-isolation}
 
 _Phase 194._ Both delegated code-change paths above — a `strategy: cli_delegate`/`react`/`mcp`
-flow step (`AgentComposerAdapter.runWithStrategy`) and a `type: session_delegate_cycle` step
+flow step (`AgentComposerAdapter.runWithStrategy`) and a `type: session_delegate_cycle` step. Declared flow steps run through `AgentComposerAdapter.run`, which bridges via the blueprint loader so a flow-bound role's declared `effort`/`thinking`/`default_skills` reach the agent for the first time
 (`SessionDelegationCoordinator.prepareBrief`) — isolate a portal opted into
 `execution_strategy = "worktree"` through **`FlowWorktreeCoordinator`**
 (`packages/flow/src/flow_worktree_coordinator.ts`), which lazily creates and reuses one real
@@ -736,6 +736,30 @@ Provider integrations are organized as independent packages (`@exaix/ai-anthropi
 `@exaix/ai-clidelegate` registers a distinct kind of `IModelProvider`: `CliDelegateModelProvider` implements ReAct-loop `generate()` by spawning a headless CLI subprocess (`codex exec --json`, `claude --print`, or `opencode run`) and parsing its stdout, rather than calling a metered HTTP API. It backs three providers — `codex-cli`, `claude-cli`, `opencode-cli` — selectable via `[ai].provider` / `[models.<name>].provider` like any other provider, but billed against the CLI's own subscription (`cost_usd` always `0`). This is independent of the `[session_delegate]`/Mode 3 session-delegation contract above, which hands an entire pipeline gate — not a single `generate()` call — to the same external tools.
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
+
+### Effort/Thinking Resolution (`EffortResolver`)
+
+Declaration-time `effort`/`thinking` across request/CLI, blueprint, flow-step and skill
+surfaces accept an `auto` value that is resolved once per call to a concrete,
+provider-facing value by the pure `EffortResolver` (`packages/ai/src/effort_resolver.ts`),
+consumed at exactly two production sites: `AgentRunner.run` (plan generation / declared
+flow steps) and `AgentComposer.executeStep` (plan-step execution / strategy-routed steps).
+The literal `"auto"` never reaches `ModelResolver`, a provider option, or a CLI flag.
+
+Two strategies:
+
+- **native-adaptive** (`thinking: "auto"` only): on Anthropic providers, when the model
+  matches a native-adaptive prefix (`claude-fable-5`, `claude-mythos-5`, `claude-opus-5`,
+  `claude-sonnet-5`), when `ai_anthropic.thinking_default` is not `false`, the `thinking`
+  field is omitted so the model's own adaptive default runs.
+- **heuristic** (every other case, and always for effort): a concrete tier from the
+  request's `TaskComplexity` signal (`EFFORT_AUTO_HEURISTIC`; COMPLEX/EPIC → `high`),
+  capped at `medium` for `model_size: S`; `thinking` resolves to `true` only for
+  COMPLEX/EPIC on a thinking-capable provider.
+
+Precedence: a concrete request-level value is final, then request `auto` → flow step →
+role (the most specific declaration wins); skill floors and the judge-role floor then
+raise (never lower), skipped only for an explicit concrete request value.
 
 ### LLM Routing Architecture
 
@@ -922,7 +946,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
 
 **Team live model registry (`exaix-team/packages/model-registry-live/`, `model_registry.enabled` config gate):** a `RegistryRefreshScheduler` periodically fetches each provider's catalog through a per-provider adapter (`exaix-team/packages/model-registry-live/src/adapters/`) and admits a filtered subset — curated, first-party/native, previously-used, or top-N of a tracked benchmark — persisting to SQLite (`model_catalog`, `model_pricing`, `model_benchmark` tables). `validateExplicit` re-fetches and auto-admits a real-but-unadmitted explicit model on first use rather than rejecting it. `selectRoute` applies a configurable route policy (`cheapest`/`reliability`/`native_first`/`user_order`) when a model has 2+ provider routes. `scoreBest` looks up each candidate's benchmark score for the request's derived `TaskType` (`packages/execution/src/task_type_derivation.ts:deriveTaskType`, a 5-tier precedence: frontmatter > agent role > skill > static map > analyzer). Cost records (`packages/core/src/cost/cost_tracker.ts:CostTracker.resolveCost`) carry `cost_source: "registry_computed"` when the resolved `provider:model` has a live-registry price and no provider-reported cost exists, replacing the legacy blended estimate; a reported-vs-computed divergence beyond `model_registry.cost_divergence_tolerance_pct` emits `model.cost.divergence`. Solo's `DefaultModelRegistry` (`packages/model-registry/`) is a static offline floor with no scheduler and no live hooks — selected instead of the Team service via the edition-composer seam (`apps/daemon/main.ts:getModelRegistryProvider`) whenever `model_registry.enabled` is `false` or the Team module isn't present.
 
-**Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason (`explicit_override`/`preferred_list`/`preset_default`/`characteristics_scored`/`best_ranked`/`usage_ranked`/`fallback`/…), attempt count, and duration; Team additionally journals `model.admitted`/`model.retired` (catalog changes), `model.route.selected` (multi-route decisions), `model.catalog.refreshed`/`model.pricing.refreshed`/`model.benchmark.refreshed` (scheduler cycles), and `model.cost.divergence`.
+**Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason (`explicit_override`/`preferred_list`/`preset_default`/`characteristics_scored`/`best_ranked`/`usage_ranked`/`fallback`/…), attempt count, and duration; Team additionally journals `model.admitted`/`model.retired` (catalog changes), `model.route.selected` (multi-route decisions), `model.catalog.refreshed`/`model.pricing.refreshed`/`model.benchmark.refreshed` (scheduler cycles), and `model.cost.divergence`. Every effort/thinking resolution additionally emits `agent.effort_resolved` (`DomainEventType.AgentEffortResolved`) with the resolved value, basis (`heuristic`/`native-adaptive`/`declared`/`role-floor`/`skill-floor`/`unset`), the declared surface pairs, heuristic inputs including `complexity_source`, floors applied, provider and model — joinable by `traceId` from both the plan-generation and plan-execution sites.
 
 **Testing determinism:** `EXA_MODEL_PRESET_OVERRIDE` env var pins all model sizes to `mock:mock-model` for any registered preset name (e.g., `test`), enabling hermetic CI tests. `model_registry.adapter_base_urls` (Team, test-only) lets a real daemon subprocess point its catalog adapters at local stub HTTP servers instead of vendor hosts.
 

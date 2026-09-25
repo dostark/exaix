@@ -56,3 +56,20 @@ Useful rationale stays; repeated facts and narration of process drop out.
 Documentation deliverables embedded in skill examples remain exempt as spans, but the
 surrounding instruction prose stays eligible. `deno task check:agent-prose` reviews
 instruction prose against the same shared rules.
+
+## Effort/thinking floors
+
+A skill may declare an optional `effort` (a concrete tier: `low`/`medium`/`high`) and
+`thinking` (a boolean) floor in its frontmatter. When the skill is matched onto a
+request, the resolved reasoning depth is raised to at least the floor — a floor never
+lowers a value, never changes an explicit request-level concrete value, and `auto` is
+not a valid floor. Example:
+
+```yaml
+effort: medium # this deliverable needs at least medium reasoning
+thinking: true
+```
+
+`response-contract-security-analysis` declares `effort: medium`, so a security
+analysis that would otherwise resolve to `low`/`unset` runs at `medium`. Skills are
+`critical`-style protected segments only when `critical: true`.

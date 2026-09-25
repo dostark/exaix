@@ -21,8 +21,8 @@ agent_role: "my-agent"
 name: "My Agent"
 model: "" # deprecated — use model_size + characteristics instead
 model_size: "M" # S, M, L, XL — maps to capability profile via ModelResolver
-thinking: true # enable extended reasoning
-effort: "high" # reasoning token budget (low, medium, high)
+thinking: true # extended thinking: true | false | auto (auto lets the system decide)
+effort: "high" # reasoning token budget: low | medium | high | auto (auto resolves from task complexity)
 characteristics: [] # ["fastest", "cheapest"] — soft ranking hints
 preferred_provider: "" # narrow candidate pool to a specific provider
 capabilities: ["analysis", "review"] # behavioural tags, NOT tool names
@@ -166,3 +166,15 @@ A plan's `<content>` block is a single JSON object matching the executable-plan
 schema (`title`, `description`, `steps[]`, …). See `packages/schemas/src/plan_schema.ts`
 for the complete schema, and the `response-contract` skill for the contract every
 agent role must emit. Generated plans land in `Workspace/Plans/`.
+
+## `auto` effort/thinking
+
+`effort` and `thinking` accept `auto` — the system resolves a concrete value per
+request via `EffortResolver` (a heuristic from task complexity for most providers;
+native-adaptive omission for Anthropic models that adapt natively). A concrete
+value is always final. The resolution is journaled as `agent.effort_resolved`.
+
+Judge roles (`quality-judge`, `voting-judge`) never resolve below
+`effort.judge_floor` (default `medium`) through the flow path, so scoring depth is
+not silently cost-optimized away; an explicit request-level `--effort` value is
+honored regardless.
