@@ -3,15 +3,15 @@ id: "effort-auto-resolution"
 title: "Phase 197 Step 7 — auto effort/thinking resolve to concrete journaled values in a real daemon run"
 pack: "agent_flows"
 tags: ["provider-live", "cost", "subsystem:request"]
-request_fixture: "fixtures/requests/agent_flows/effort_auto_complex.md"
+request_fixture: "fixtures/requests/agent_flows/effort_flow_live.md"
 mode_support: ["auto"]
 portals: []
 
 steps:
   # --- Heuristic leg: claude-cli (subscription-billed), --effort auto on a COMPLEX request.
   # The exact scalar values (effort_basis == "heuristic", effort == "high") are asserted by the
-  # non-live Step 1/2/6 integration tests; this live leg proves the real daemon emits the event
-  # on the true provider path. ---
+  # non-live Steps 1/2/6 integration tests; this live leg proves a real daemon on the real
+  # provider path emits the event. ---
   - id: "write-config-heuristic"
     type: "write-file"
     path: "exa.config.toml"
@@ -29,13 +29,40 @@ steps:
       [agents]
       default_model = "claude-cli-sonnet"
 
+      [models."claude-cli-sonnet"]
+      provider = "claude-cli"
+      model = "sonnet"
+
       [quality_gate]
       enabled = false
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
 
   - id: "request-effort-auto-heuristic"
     type: "exactl"
     command: "request"
-    args: ["$REQUEST_DESCRIPTION", "--agent-role", "senior-coder", "--effort", "auto"]
+    args: [
+      "Refactor the authentication module: replace the session store, update the storage layer, change the API boundary contract, migrate the DB schema, adjust the client SDK, update the docs, run the migration, add regression tests, and coordinate the deployment across ten modules",
+      "--agent-role",
+      "senior-coder",
+      "--effort",
+      "auto",
+    ]
     input_criteria: []
     output_criteria:
       - id: "request-exit-heuristic"
@@ -43,6 +70,17 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  - id: "wait-effort-heuristic"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "300"]
+    timeout_sec: 300
+    input_criteria: []
+    output_criteria:
+      - id: "effort-waited-heuristic"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
   - id: "journal-heuristic"
     type: "journal-assert"
     input_criteria:
@@ -56,12 +94,10 @@ steps:
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
 
-  # --- Native-adaptive leg: Claude Code CLI with a subscription (not metered API),
-  # model claude-sonnet-5, --thinking auto. The claude-cli provider is native-adaptive-
-  # capable (EffortResolver NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES), so thinking_basis ==
-  # "native-adaptive" is journaled and no thinking-disabling flag is sent to the CLI.
-  # thinking_basis == "native-adaptive" is asserted non-live in Step 6; this leg proves the
-  # real subscription-billed path emits the event. ---
+  # --- Native-adaptive leg: Claude Code CLI with a subscription (not metered API), model
+  # claude-sonnet-5, --thinking auto. EffortResolver's native-adaptive set includes CLAUDE_CLI,
+  # so thinking_basis == "native-adaptive" is journaled and no thinking-disabling flag reaches
+  # the CLI. ---
   - id: "write-config-native"
     type: "write-file"
     path: "exa.config.toml"
@@ -86,10 +122,33 @@ steps:
       [quality_gate]
       enabled = false
 
+  - id: "restart-daemon-native"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted-native"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready-native"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
   - id: "request-thinking-auto-native"
     type: "exactl"
     command: "request"
-    args: ["$REQUEST_DESCRIPTION", "--agent-role", "senior-coder", "--thinking", "auto"]
+    args: [
+      "Refactor the authentication module: replace the session store, update the storage layer, change the API boundary contract, migrate the DB schema, adjust the client SDK, update the docs, run the migration, add regression tests, and coordinate the deployment across ten modules",
+      "--agent-role",
+      "senior-coder",
+      "--thinking",
+      "auto",
+    ]
     input_criteria: []
     output_criteria:
       - id: "request-exit-native"
@@ -97,6 +156,17 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  - id: "wait-effort-native"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "300"]
+    timeout_sec: 300
+    input_criteria: []
+    output_criteria:
+      - id: "effort-waited-native"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
   - id: "journal-native"
     type: "journal-assert"
     input_criteria:
@@ -110,9 +180,10 @@ steps:
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
 
-  # --- Flow + judge floor leg: a flow with two declared steps (effort low / effort high) and
-  # a voting-judge step whose fixture blueprint declares effort auto. The judge role-floor is
-  # provable in-journal via the array-typed floors_applied field. ---
+  # --- Flow + judge floor leg: a self-contained fixture flow with two declared steps
+  # (effort low / effort high, same role) and a quality-judge step whose blueprint declares
+  # effort: low — the judge role floor raises it, so floors_applied contains
+  # role:quality-judge in the journaled agent.effort_resolved. No portal required. ---
   - id: "write-config-flow"
     type: "write-file"
     path: "exa.config.toml"
@@ -130,16 +201,102 @@ steps:
       [agents]
       default_model = "claude-cli-sonnet"
 
+      [models."claude-cli-sonnet"]
+      provider = "claude-cli"
+      model = "sonnet"
+
       [quality_gate]
       enabled = false
+
+  - id: "write-flow-effort-live"
+    type: "write-file"
+    path: "Blueprints/Flows/effort-live.flow.yaml"
+    content: |
+      id: effort-live
+      name: Effort Live
+      description: Two declared steps with per-step effort plus a judge step
+      version: "1.0.0"
+      settings:
+        maxParallelism: 1
+        failFast: false
+      steps:
+        - id: analyze
+          name: Analyze
+          agent_role: senior-coder
+          execution_mode: declared
+          effort: low
+          dependsOn: []
+          input:
+            source: request
+            transform: passthrough
+        - id: implement
+          name: Implement
+          agent_role: senior-coder
+          execution_mode: declared
+          effort: high
+          dependsOn: [analyze]
+          input:
+            source: step
+            stepId: analyze
+        - id: judge
+          name: Judge
+          agent_role: quality-judge
+          execution_mode: declared
+          dependsOn: [implement]
+          input:
+            source: step
+            stepId: implement
+      output:
+        from: judge
+        format: markdown
+
+  - id: "write-judge-blueprint-low"
+    type: "write-file"
+    path: "Blueprints/Agents/quality-judge.md"
+    content: |
+      ---
+      agent_role: quality-judge
+      name: Quality Judge
+      effort: low
+      ---
+      You are a quality judge. Evaluate the deliverable against the acceptance criteria.
+
+  - id: "restart-daemon-flow"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted-flow"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready-flow"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
 
   - id: "request-flow"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--flow", "pr-review"]
+    args: ["--file", "$REQUEST_FIXTURE"]
     input_criteria: []
     output_criteria:
       - id: "flow-request-exit"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-flow-completed"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "flow.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "600"]
+    timeout_sec: 600
+    input_criteria: []
+    output_criteria:
+      - id: "flow-waited"
         score_weight: 1.0
         kind: "command-exit-code"
         equals: 0
@@ -153,4 +310,49 @@ steps:
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
         payload_includes:
-          floors_applied: ["role:voting-judge"]
+          floors_applied: ["role:quality-judge"]
+
+  # --- Skill-floor leg: a SIMPLE request pinned to the response-contract-security-analysis
+  # skill with --effort auto resolves to low heuristically, then the skill's `effort: medium`
+  # floor raises it — floors_applied contains the skill id. ---
+  - id: "request-effort-skill-floor"
+    type: "exactl"
+    command: "request"
+    args: [
+      "Fix the login handling on the endpoint.",
+      "--agent-role",
+      "senior-coder",
+      "--effort",
+      "auto",
+      "--skills",
+      "response-contract-security-analysis",
+    ]
+    input_criteria: []
+    output_criteria:
+      - id: "skill-request-exit"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-effort-skill-floor"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "300"]
+    timeout_sec: 300
+    input_criteria: []
+    output_criteria:
+      - id: "skill-effort-waited"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "journal-skill-floor"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "skill-floor-applied"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+        payload_includes:
+          floors_applied: ["550e8400-e29b-41d4-a716-446655440014"]
