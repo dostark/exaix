@@ -14,6 +14,11 @@ import type { JSONObject } from "@exaix/core/types";
 
 const AGENTS_DIR = ".copilot";
 
+function containsToken(text: string, token: string): boolean {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^\\p{L}\\p{N}_])${escaped}(?:$|[^\\p{L}\\p{N}_])`, "u").test(text);
+}
+
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
   return match ? match[1] : null;
@@ -30,7 +35,7 @@ function scoreField(text: string, query: string, exactMatchWeight: number, token
 
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
   for (const token of tokens) {
-    if (normalizedText.includes(token)) score += tokenWeight;
+    if (containsToken(normalizedText, token)) score += tokenWeight;
   }
 
   return score;
@@ -44,7 +49,7 @@ function getMatchedTokenCount(text: string, query: string): number {
   let count = 0;
 
   for (const token of tokens) {
-    if (normalizedText.includes(token)) count += 1;
+    if (containsToken(normalizedText, token)) count += 1;
   }
 
   return count;

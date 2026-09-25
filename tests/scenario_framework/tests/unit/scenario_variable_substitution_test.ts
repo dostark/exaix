@@ -44,6 +44,7 @@ type YamlNode = string | number | boolean | null | undefined | YamlNode[] | { [k
 interface IScenarioDoc {
   id?: string;
   flow_fixture?: string;
+  steps?: YamlNode[];
   [key: string]: YamlNode;
 }
 
@@ -219,7 +220,11 @@ Deno.test("[flow-fixture] a scenario whose request names a flow must declare tha
     if (!named) continue;
     // A flow in the shipped catalog is seeded for every scenario; only fixture flows need staging.
     if (shippedFlows.has(named)) continue;
-    if (!doc?.flow_fixture) undeclared.push(`${id} -> needs flow "${named}" staged`);
+    const inlineFlow = Array.isArray(doc.steps) && doc.steps.some((step) => {
+      if (!step || typeof step !== "object" || Array.isArray(step)) return false;
+      return step.type === "write-file" && step.path === `Blueprints/Flows/${named}.flow.yaml`;
+    });
+    if (!doc?.flow_fixture && !inlineFlow) undeclared.push(`${id} -> needs flow "${named}" staged`);
   }
 
   assertEquals(

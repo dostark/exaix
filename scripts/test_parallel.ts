@@ -55,6 +55,12 @@ type TestReporter = typeof SUPPORTED_REPORTERS[number];
 
 /** Sequential because they spawn CLI sub-processes sensitive to environment-variable cross-contamination. */
 const SEQUENTIAL_FILES: string[] = [
+  // exactl_all_test.ts changes process mode flags while reading its context.
+  // Run it sequentially to prevent state changes from racing across test files.
+  "apps/exactl/tests/exactl_all_test.ts",
+  // The Claude trial can produce fewer approved candidates under parallel load.
+  // Keep this live provider test sequential.
+  "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
   // Tests that launch daemon subprocesses or heavy I/O — these do not
   // parallelize safely due to Deno cache races on direct `deno run` calls
   // and resource contention from multiple concurrent daemon instances.

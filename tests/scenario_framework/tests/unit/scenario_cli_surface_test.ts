@@ -79,18 +79,22 @@ async function collectInvocations(): Promise<IExactlInvocation[]> {
 /** Walks the argv down the command tree, returning the failing prefix or null — stops at the first non-bare-word token or a childless command, since the remainder is arguments, not names. */
 function firstUnknownPrefix(argv: string[]): string | null {
   let candidates: CommandNode[] = __test_command.getCommands();
+  let current: CommandNode | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     if (candidates.length === 0) return null;
     const token = argv[index];
     if (!isBareWord(token)) return null;
     const child = candidates.find((candidate) => candidate.getName() === token);
     if (!child) {
+      // Some commands accept free-form positional arguments alongside subcommands (for example
+      // `request [description:string]`). Once the token is not a known child, the rest is input.
+      if (current?.getArguments().length) return null;
       // A bare word where a subcommand is required and none matches is the fiction we are after —
-      // unless the parent takes a positional, which only the root never does.
       const known = namesOf(candidates);
       if (index === 0) return `exactl ${token} (top-level; has: ${known.sort().join(", ")})`;
       return `exactl ${argv.slice(0, index + 1).join(" ")} (has: ${known.join(", ")})`;
     }
+    current = child;
     candidates = child.getCommands();
   }
   return null;

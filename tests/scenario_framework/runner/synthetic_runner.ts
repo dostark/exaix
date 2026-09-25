@@ -770,6 +770,8 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   // Substituted at step-execution time with the scenario's journal rowid baseline, so an
   // `exactl journal wait --since-rowid $JOURNAL_BASELINE` step ignores a prior scenario's events.
   "JOURNAL_BASELINE",
+  // Substituted per step by `step_executor.ts` so waits can ignore events before that step.
+  "STEP_BASELINE",
   // Substituted at step-execution time by expandFileContentSentinels — an exact-match
   // args-element swap to the request fixture's raw bytes, never shell-interpolated.
   "REQUEST_FIXTURE_CONTENT",

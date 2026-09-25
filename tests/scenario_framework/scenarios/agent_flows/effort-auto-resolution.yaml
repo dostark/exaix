@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "effort-auto-resolution"
 title: "Phase 197 Step 7 — auto effort/thinking resolve to concrete journaled values in a real daemon run"
 pack: "agent_flows"
-tags: ["provider-live", "cost", "subsystem:request"]
+tags: ["provider-live", "cost", "subsystem:agent_roles"]
 request_fixture: "fixtures/requests/agent_flows/effort_flow_live.md"
 mode_support: ["auto"]
 portals: []
