@@ -29,6 +29,13 @@ Deno.test("[ci_wiring] scripts/ci.ts check action includes check:manifests", () 
   );
 });
 
+Deno.test("[ci_wiring] skill duplication is a unified CI static check", () => {
+  assert(
+    CI_SOURCE.includes('{ cmd: ["deno", "task", "check:skill-duplication"]'),
+    "check:skill-duplication must be declared in STATIC_CHECK_TASKS",
+  );
+});
+
 Deno.test("[ci_wiring] both gates are wired via the shared static-check task list", () => {
   // checkCommand and allCommand both reference ONE shared STATIC_CHECK_TASKS array instead of
   // each duplicating its own inline list, so "wired in both" is a structural guarantee (same

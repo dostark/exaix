@@ -18,7 +18,7 @@ const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Gate 0: Block direct commits on 'main'
 #         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
-# Gates 1-19: Format, lint, style, magic, runtime-artifacts, scenario-declarative, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync, event-coverage-visible
+# Gates 1-20: Format, lint, style, magic, runtime-artifacts, scenario-declarative, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync, event-coverage-visible
 # ============================================
 
 # --- Gate 0: Main branch guard ---
@@ -261,6 +261,13 @@ fi
 deno task check:skill-ephemera
 if [ $? -ne 0 ]; then
   echo "❌ Error: Dated incident narrative leaked into a general .copilot/skills/ guidance. Route it to the domain doc or phase-doc Retrospective instead."
+  exit 1
+fi
+
+# 18c. Skill Instruction Duplication Check
+deno task check:skill-duplication
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Repeated skill instruction prose found. Consolidate duplicated guidance before committing."
   exit 1
 fi
 
@@ -556,7 +563,7 @@ export async function installHooks() {
 
   console.log("✅ Hooks installed successfully in .git/hooks/");
   console.log(
-    "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture, scenario declarative-purity",
+    "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture, scenario declarative-purity, skill duplication",
   );
   console.log("   - pre-push: regenerate .copilot/manifest.json, type-check, security tests");
   console.log("   - pre-merge-commit: regenerate .copilot/manifest.json for merge commits");

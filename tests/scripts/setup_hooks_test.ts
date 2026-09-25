@@ -71,6 +71,14 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes("deno task check:scenario-declarative -- --fail"),
       "pre-commit hook should run the scenario declarative-purity check (rejects procedural shell steps in scenario YAML)",
     );
+    assert(
+      denoConfig.tasks["check:skill-duplication"],
+      "deno.json should have check:skill-duplication task",
+    );
+    assert(
+      hookInstaller.includes("deno task check:skill-duplication"),
+      "pre-commit hook should run the fast skill-instruction duplication check",
+    );
   });
 
   it("clears git-hook-injected GIT_* env vars before running the pre-push security suite", async () => {

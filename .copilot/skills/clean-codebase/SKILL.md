@@ -54,9 +54,14 @@ Phase 1 — Baseline
      check:god-objects (advisory); check:edition-graph; check:runtime-artifacts;
      check:agent-docs-integrity; check:blueprint-integrity; check:skill-index;
      check:qwen-skills-sync; check:skill-ephemera; check:config-keys;
-     check:event-coverage --fail-on-tagged; docs-bench; docs-agent-validate.
+     check:skill-duplication; check:event-coverage --fail-on-tagged;
+     docs-bench; docs-agent-validate.
   3. Tally totals per category.
   4. Process one category per batch — never all at once.
+
+  Run `check:phase-references` and `check:agent-prose` as baseline diagnostics. The current
+  repository has existing findings in both, so record their output and treat them as not yet
+  CI gates. Do not report either baseline as clean until its findings are resolved.
 
   Edition note: `check:style`'s `edition-conditional-outside-composer` rule allows
   `EXAIX_EDITION`/`edition ===` only in: `exaix-team/`, `apps/daemon/`, `apps/exactl/`,
