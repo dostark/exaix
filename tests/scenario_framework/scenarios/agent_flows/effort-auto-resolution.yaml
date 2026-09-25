@@ -62,7 +62,7 @@ steps:
     type: "exactl"
     command: "request"
     args: [
-      "Refactor the authentication module: replace the session store, update the storage layer, change the API boundary contract, migrate the DB schema, adjust the client SDK, update the docs, run the migration, add regression tests, and coordinate the deployment across ten modules",
+      "Refactor the authentication module: replace the session store in src/auth/session_store.ts, update the storage layer in src/auth/storage_layer.ts, change the API boundary in src/api/contract.ts, migrate the schema in src/db/migrations.ts, adjust the client SDK in src/sdk/client.ts, update the documentation in docs/auth.md, run the migration, add regression tests in tests/auth_test.ts, and coordinate the deployment across ten modules in src/deploy/orchestrator.ts",
       "--agent-role",
       "senior-coder",
       "--effort",
@@ -155,7 +155,7 @@ steps:
     type: "exactl"
     command: "request"
     args: [
-      "Refactor the authentication module: replace the session store, update the storage layer, change the API boundary contract, migrate the DB schema, adjust the client SDK, update the docs, run the migration, add regression tests, and coordinate the deployment across ten modules",
+      "Refactor the authentication module: replace the session store in src/auth/session_store.ts, update the storage layer in src/auth/storage_layer.ts, change the API boundary in src/api/contract.ts, migrate the schema in src/db/migrations.ts, adjust the client SDK in src/sdk/client.ts, update the documentation in docs/auth.md, run the migration, add regression tests in tests/auth_test.ts, and coordinate the deployment across ten modules in src/deploy/orchestrator.ts",
       "--agent-role",
       "senior-coder",
       "--thinking",
