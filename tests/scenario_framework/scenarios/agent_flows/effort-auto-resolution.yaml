@@ -1,0 +1,149 @@
+schema_version: "1.0.0"
+id: "effort-auto-resolution"
+title: "Phase 197 Step 7 — auto effort/thinking resolve to concrete journaled values in a real daemon run"
+pack: "agent_flows"
+tags: ["provider-live", "cost", "subsystem:request"]
+request_fixture: "fixtures/requests/agent_flows/effort_auto_complex.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  # --- Heuristic leg: claude-cli (subscription-billed), --effort auto on a COMPLEX request.
+  # The exact scalar values (effort_basis == "heuristic", effort == "high") are asserted by the
+  # non-live Step 1/2/6 integration tests; this live leg proves the real daemon emits the event
+  # on the true provider path. ---
+  - id: "write-config-heuristic"
+    type: "write-file"
+    path: "exa.config.toml"
+    content: |
+      [system]
+      root = "$WORKSPACE_ROOT"
+
+      [paths]
+      workspace = "Workspace"
+      blueprints = "Blueprints"
+      runtime = ".exa"
+      memory = "Memory"
+      portals = "Portals"
+
+      [agents]
+      default_model = "claude-cli-sonnet"
+
+      [quality_gate]
+      enabled = false
+
+  - id: "request-effort-auto-heuristic"
+    type: "exactl"
+    command: "request"
+    args: ["$REQUEST_DESCRIPTION", "--agent-role", "senior-coder", "--effort", "auto"]
+    input_criteria: []
+    output_criteria:
+      - id: "request-exit-heuristic"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "journal-heuristic"
+    type: "journal-assert"
+    input_criteria:
+      - id: "journal-query-heuristic"
+        score_weight: 0.5
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+    output_criteria:
+      - id: "journal-event-heuristic"
+        score_weight: 0.5
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+
+  # --- Native-adaptive leg: anthropic claude-sonnet-5, --thinking auto. Metered API spend:
+  # exactly one request. thinking_basis == "native-adaptive" is asserted non-live in Step 6;
+  # this leg proves the real anthropic path emits the event. ---
+  - id: "write-config-native"
+    type: "write-file"
+    path: "exa.config.toml"
+    content: |
+      [system]
+      root = "$WORKSPACE_ROOT"
+
+      [paths]
+      workspace = "Workspace"
+      blueprints = "Blueprints"
+      runtime = ".exa"
+      memory = "Memory"
+      portals = "Portals"
+
+      [agents]
+      default_model = "anthropic-claude-sonnet-5"
+
+      [quality_gate]
+      enabled = false
+
+  - id: "request-thinking-auto-native"
+    type: "exactl"
+    command: "request"
+    args: ["$REQUEST_DESCRIPTION", "--agent-role", "senior-coder", "--thinking", "auto"]
+    input_criteria: []
+    output_criteria:
+      - id: "request-exit-native"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "journal-native"
+    type: "journal-assert"
+    input_criteria:
+      - id: "journal-query-native"
+        score_weight: 0.5
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+    output_criteria:
+      - id: "journal-event-native"
+        score_weight: 0.5
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+
+  # --- Flow + judge floor leg: a flow with two declared steps (effort low / effort high) and
+  # a voting-judge step whose fixture blueprint declares effort auto. The judge role-floor is
+  # provable in-journal via the array-typed floors_applied field. ---
+  - id: "write-config-flow"
+    type: "write-file"
+    path: "exa.config.toml"
+    content: |
+      [system]
+      root = "$WORKSPACE_ROOT"
+
+      [paths]
+      workspace = "Workspace"
+      blueprints = "Blueprints"
+      runtime = ".exa"
+      memory = "Memory"
+      portals = "Portals"
+
+      [agents]
+      default_model = "claude-cli-sonnet"
+
+      [quality_gate]
+      enabled = false
+
+  - id: "request-flow"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--flow", "pr-review"]
+    input_criteria: []
+    output_criteria:
+      - id: "flow-request-exit"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "journal-flow-judge"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "judge-role-floor"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+        payload_includes:
+          floors_applied: ["role:voting-judge"]
