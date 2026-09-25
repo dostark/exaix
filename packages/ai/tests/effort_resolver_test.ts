@@ -227,3 +227,28 @@ Deno.test("EffortResolver: an invalid judgeEffortFloor override throws at constr
   }
   assertEquals(threw, true);
 });
+
+Deno.test("EffortResolver: thinking auto + CLAUDE_CLI (subscription Claude Code) + claude-sonnet-5 resolves native-adaptive", () => {
+  const result = resolve(
+    { thinking: "auto" },
+    { providerType: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5" },
+  );
+  assertEquals(result.thinking, undefined);
+  assertEquals(result.thinkingBasis, "native-adaptive");
+});
+
+Deno.test("EffortResolver: thinking auto + CLAUDE_CLI + a non-adaptive model falls back to the heuristic", () => {
+  const result = resolve(
+    { thinking: "auto" },
+    { providerType: ProviderType.CLAUDE_CLI, model: "claude-haiku-4-5-20251001" },
+  );
+  assertEquals(result.thinkingBasis, "heuristic");
+});
+
+Deno.test("EffortResolver: thinking auto + CLAUDE_CLI + adaptive model + thinking_default false falls back to the heuristic", () => {
+  const result = resolve(
+    { thinking: "auto" },
+    { providerType: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5", anthropicThinkingDefault: false },
+  );
+  assertEquals(result.thinkingBasis, "heuristic");
+});

@@ -56,9 +56,12 @@ steps:
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
 
-  # --- Native-adaptive leg: anthropic claude-sonnet-5, --thinking auto. Metered API spend:
-  # exactly one request. thinking_basis == "native-adaptive" is asserted non-live in Step 6;
-  # this leg proves the real anthropic path emits the event. ---
+  # --- Native-adaptive leg: Claude Code CLI with a subscription (not metered API),
+  # model claude-sonnet-5, --thinking auto. The claude-cli provider is native-adaptive-
+  # capable (EffortResolver NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES), so thinking_basis ==
+  # "native-adaptive" is journaled and no thinking-disabling flag is sent to the CLI.
+  # thinking_basis == "native-adaptive" is asserted non-live in Step 6; this leg proves the
+  # real subscription-billed path emits the event. ---
   - id: "write-config-native"
     type: "write-file"
     path: "exa.config.toml"
@@ -74,7 +77,11 @@ steps:
       portals = "Portals"
 
       [agents]
-      default_model = "anthropic-claude-sonnet-5"
+      default_model = "claude-cli-sonnet"
+
+      [models."claude-cli-sonnet"]
+      provider = "claude-cli"
+      model = "claude-sonnet-5"
 
       [quality_gate]
       enabled = false

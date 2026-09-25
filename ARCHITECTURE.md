@@ -748,10 +748,11 @@ The literal `"auto"` never reaches `ModelResolver`, a provider option, or a CLI 
 
 Two strategies:
 
-- **native-adaptive** (`thinking: "auto"` only): on Anthropic providers, when the model
-  matches a native-adaptive prefix (`claude-fable-5`, `claude-mythos-5`, `claude-opus-5`,
-  `claude-sonnet-5`), when `ai_anthropic.thinking_default` is not `false`, the `thinking`
-  field is omitted so the model's own adaptive default runs.
+- **native-adaptive** (`thinking: "auto"` only): on Anthropic and the Claude Code CLI
+  (`claude-cli`, subscription-billed) providers, when the model matches a native-adaptive
+  prefix (`claude-fable-5`, `claude-mythos-5`, `claude-opus-5`, `claude-sonnet-5`), when
+  `ai_anthropic.thinking_default` is not `false`, the `thinking` field is omitted so the
+  model's own adaptive default runs.
 - **heuristic** (every other case, and always for effort): a concrete tier from the
   request's `TaskComplexity` signal (`EFFORT_AUTO_HEURISTIC`; COMPLEX/EPIC → `high`),
   capped at `medium` for `model_size: S`; `thinking` resolves to `true` only for

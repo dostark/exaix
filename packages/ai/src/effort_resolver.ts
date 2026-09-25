@@ -224,8 +224,18 @@ function effortRank(tier: Opt<EffortTier, Reason.OptionalContext>): number {
 
 /** True only when all three hold: Anthropic provider, `thinking_default` not false, and
  *  the concrete model id matches a native-adaptive prefix. */
+/** Provider types whose calls can host Anthropic native-adaptive thinking: the metered
+ *  API (ANTHROPIC) and the subscription-billed Claude Code CLI (CLAUDE_CLI), which mirrors
+ *  the API's adaptive default when no thinking control is sent. */
+const NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES: ReadonlySet<ProviderType> = new Set([
+  ProviderType.ANTHROPIC,
+  ProviderType.CLAUDE_CLI,
+]);
+
 function isNativeAdaptiveThinking(signals: IEffortResolutionSignals): boolean {
-  if (signals.providerType !== ProviderType.ANTHROPIC) return false;
+  if (signals.providerType === undefined || !NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES.has(signals.providerType)) {
+    return false;
+  }
   if (signals.anthropicThinkingDefault === false) return false;
   if (signals.model === undefined) return false;
   return NATIVE_ADAPTIVE_THINKING_MODEL_PREFIXES.some((prefix) => signals.model!.startsWith(prefix));
