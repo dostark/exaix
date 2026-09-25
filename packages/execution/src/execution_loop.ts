@@ -41,9 +41,15 @@ import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/co
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
-import type { EffortDeclaration, IModelIntent, ThinkingDeclaration } from "@exaix/schemas";
+import type { IModelIntent } from "@exaix/schemas";
 import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
-import type { IEffortDeclarationPair } from "@exaix/ai";
+import {
+  DECLARATION_FIELD_EFFORT,
+  DECLARATION_FIELD_THINKING,
+  EffortDeclarationSchema,
+  ThinkingDeclarationSchema,
+} from "@exaix/schemas/model_intent.ts";
+import type { IEffortDeclarationPair, IEffortResolver } from "@exaix/ai";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
 import {
@@ -72,6 +78,9 @@ export interface IExecutionLoopConfig {
   logger?: IEventLogger;
   agentRole: string;
   llmProvider?: IModelProvider;
+  /** The EffortResolver instance threaded into execution-path resolution (GAP-9); PlanExecutor
+   *  and AgentComposer fall back to their own default when absent. */
+  effortResolver?: IEffortResolver;
   amendmentService?: IPlanAmendmentService;
   amendmentGate?: IPlanAmendmentGate;
   /** Threaded into PlanExecutor's IPlanExecutorOptions so
@@ -177,6 +186,7 @@ export class ExecutionLoop {
   private amendmentGate?: IPlanAmendmentGate;
   private sessionMemory?: SessionMemoryService;
   private guardrailRunner?: IGuardrailRunner;
+  private effortResolver?: IEffortResolver;
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlBlueprintRules?: HitlRule[];
@@ -211,6 +221,7 @@ export class ExecutionLoop {
     this.hitlPolicyEvaluator = config.hitlPolicyEvaluator;
     this.confirmationInterceptor = config.confirmationInterceptor;
     this.hitlBlueprintRules = config.hitlBlueprintRules;
+    this.effortResolver = config.effortResolver;
     this.onCodeChangesDelegate = config.onCodeChangesDelegate;
     this.gitServiceFactory = config.gitServiceFactory;
     this.toolRegistryFactory = config.toolRegistryFactory;
@@ -330,6 +341,7 @@ export class ExecutionLoop {
         requireActions,
         traceId,
         requestId,
+        planPath,
         frontmatter,
         executionRoot: gitSetup.executionRoot,
         executionGitService: gitSetup.executionGitService,
@@ -449,6 +461,7 @@ export class ExecutionLoop {
     requireActions: boolean;
     traceId: string;
     requestId: string;
+    planPath: string;
     executionRoot: string;
     executionGitService: IGitService;
     frontmatter: PlanFrontmatter;
@@ -467,6 +480,7 @@ export class ExecutionLoop {
         args.executionRoot,
         args.executionGitService,
         args.frontmatter,
+        args.planPath,
         { enableGit: !args.isReadOnly, generateReport: args.isReadOnly },
       );
 
@@ -622,18 +636,49 @@ export class ExecutionLoop {
   }
 
   /** Reads the plan frontmatter's request_effort_declaration passthrough (written by
-   *  PlanWriter) and surfaces it as typed declaration values for the execution path. */
-  private requestDeclarationFromPlanFrontmatter(frontmatter: PlanFrontmatter): IEffortDeclarationPair | undefined {
+   *  PlanWriter) and surfaces it as typed declaration values for the execution path.
+   *  The plan file is an on-disk, editable parse boundary like the request file (GAP-1):
+   *  each field is validated against the declaration schemas — an invalid value is
+   *  DROPPED (never cast through) and journaled as execution.declaration_invalid. */
+  private requestDeclarationFromPlanFrontmatter(
+    frontmatter: PlanFrontmatter,
+    traceId: string,
+    planPath: string,
+  ): IEffortDeclarationPair | undefined {
     const raw = this.toSafeFrontmatter(frontmatter);
     const decl = raw.request_effort_declaration;
     if (decl === undefined || decl === null || typeof decl !== "object") return undefined;
-    const pair = decl as { effort?: string; thinking?: string | boolean };
-    return {
-      ...(typeof pair.effort === "string" ? { effort: pair.effort as EffortDeclaration } : {}),
-      ...(typeof pair.thinking === "boolean" || pair.thinking === EFFORT_AUTO
-        ? { thinking: pair.thinking as ThinkingDeclaration }
-        : {}),
-    };
+    const pair = decl as { effort?: JSONValue; thinking?: JSONValue };
+    const result: IEffortDeclarationPair = {};
+    if (pair.effort !== undefined) {
+      const parsed = EffortDeclarationSchema.safeParse(pair.effort);
+      if (parsed.success) result.effort = parsed.data;
+      else this.logDeclarationDropped(traceId, planPath, DECLARATION_FIELD_EFFORT, pair.effort);
+    }
+    if (pair.thinking !== undefined) {
+      const parsed = ThinkingDeclarationSchema.safeParse(pair.thinking);
+      if (parsed.success) result.thinking = parsed.data;
+      else this.logDeclarationDropped(traceId, planPath, DECLARATION_FIELD_THINKING, pair.thinking);
+    }
+    if (result.effort === undefined && result.thinking === undefined) return undefined;
+    return result;
+  }
+
+  /** Journals a plan-frontmatter declaration dropped at the parse boundary: the value
+   *  never reaches EffortResolver / _resolvedCallOptions / agent.effort_resolved. */
+  private logDeclarationDropped(
+    traceId: string,
+    planPath: string,
+    field: string,
+    value: JSONValue,
+  ): void {
+    if (!this.logger) return;
+    void this.logger.warn(
+      DomainEventType.ExecutionDeclarationInvalid,
+      null,
+      { field, plan_path: planPath, value: String(value) },
+      traceId,
+    );
   }
 
   /** Parses action blocks from plan content: code blocks with tool invocations in TOML format. */
@@ -740,6 +785,7 @@ export class ExecutionLoop {
     executionRoot: string,
     _gitService: IGitService,
     frontmatter: PlanFrontmatter,
+    planPath: string,
     options?: Opt<{ enableGit?: boolean; generateReport?: boolean }, Reason.ExecutionConfig>,
   ): Promise<{ report?: string }> {
     if (!this.llmProvider) {
@@ -762,7 +808,8 @@ export class ExecutionLoop {
       // Phase 132 (GAP-4): request-level intent flags ride the plan frontmatter
       // (written by PlanWriter) so native execution overrides blueprint values.
       requestIntent: this.requestIntentFromPlanFrontmatter(frontmatter),
-      requestDeclaration: this.requestDeclarationFromPlanFrontmatter(frontmatter),
+      requestDeclaration: this.requestDeclarationFromPlanFrontmatter(frontmatter, frontmatter.trace_id ?? "", planPath),
+      ...(this.effortResolver !== undefined ? { effortResolver: this.effortResolver } : {}),
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;

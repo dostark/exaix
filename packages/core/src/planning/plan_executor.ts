@@ -35,7 +35,7 @@ import {
 import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_ERROR_NOTHING_TO_COMMIT, GitService } from "@exaix/git";
 import { GIT_CMD_REV_PARSE } from "@exaix/git/constants.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } from "@exaix/core/types";
+import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService, ISkillsService } from "@exaix/core/types";
 import type { IDatabaseService, IModelRegistry } from "@exaix/core/types";
 import { TaskType } from "@exaix/core/types";
 import {
@@ -45,6 +45,7 @@ import {
   type IAgentComposerOptions,
   type IGuardrailRunner,
 } from "@exaix/execution";
+import type { IEffortResolver } from "@exaix/ai";
 import { PromptBudgetAllocator } from "@exaix/core";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
@@ -88,6 +89,9 @@ export interface IPlanExecutorOptions {
   /** The request's declaration-time effort/thinking pair, threaded from the plan frontmatter
    *  passthrough (GAP-3) so the execution path resolves "auto" after provider selection. */
   requestDeclaration?: IEffortDeclarationPair;
+  /** The EffortResolver instance forwarded into AgentComposer so the execution path uses
+   *  the same injected instance as the planning path (GAP-9); defaults inside AgentComposer. */
+  effortResolver?: IEffortResolver;
   /** Resolver threaded into AgentComposer so resolveModelFromBlueprint's
    *  ModelResolver.resolve() branch is reachable during real execution — without it,
    *  best/route/auto-admit/task_type derivation never fires, regardless of blueprint content. */
@@ -133,6 +137,17 @@ function frontmatterTags(context: IPlanContext): string[] | undefined {
   }
   if (typeof raw === "string" && raw.trim().length > 0) return [raw.trim()];
   return undefined;
+}
+
+/** Validates and deduplicates the plan frontmatter's `resolved_skill_ids` passthrough (the
+ *  planning run's final resolved skill set) — non-string entries are ignored. */
+function resolvedSkillIdsFromFrontmatter(rawResolved: Opt<JSONValue, Reason.OptionalInput>): string[] {
+  if (!Array.isArray(rawResolved)) return [];
+  const ids: string[] = [];
+  for (const id of rawResolved) {
+    if (typeof id === "string" && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
 }
 
 /** Concatenates every step's title and content into one document, passed as
@@ -338,6 +353,7 @@ export class PlanExecutor {
       }),
       options,
       modelResolver: this.options.modelResolver,
+      effortResolver: this.options.effortResolver,
       executionContext: new ExecutionContextService(this.config, this.logger, {
         promptBudgetAllocator,
         contextBudgetManager: new ContextBudgetManager(undefined, undefined, undefined, this.logger),
@@ -369,30 +385,30 @@ export class PlanExecutor {
     return candidateTaskTypes.filter((value): value is TaskType => knownTaskTypes.has(value));
   }
 
-  /** Re-runs the same skill match as deriveTopSkillTaskTypes (kept separate to leave that
-   *  one-hot path untouched) and returns each matched skill's declared effort/thinking
-   *  floor, so the execution path can raise a resolution that a request matches (GAP-11). */
+  /** Builds the execution path's skill floors from the UNION of the planning run's final
+   *  resolved skill set (persisted on the plan frontmatter — pinned ∪ matched ∪ defaults,
+   *  order first) and the dynamic trigger matches re-run here. Deduplicated, resolved ids
+   *  first; each id is validated as a string before the getSkill lookup. */
   private async deriveMatchedSkillFloors(
     context: IPlanContext,
   ): Promise<Array<{ skillId: string; effort?: EffortTier; thinking?: boolean }>> {
     const skills = this.options.context?.skills;
-    const requestText = context.frontmatter.subject;
-    if (!skills || typeof requestText !== "string" || requestText.length === 0) {
-      return [];
-    }
+    if (!skills) return [];
 
-    const { matches } = await skills.matchSkills({
-      requestText,
-      tags: frontmatterTags(context),
-      agentRole: context.agent_role,
-    });
+    const resolvedSkillIds = resolvedSkillIdsFromFrontmatter(context.frontmatter.resolved_skill_ids);
+    const matchedSkillIds = typeof context.frontmatter.subject === "string" &&
+        context.frontmatter.subject.length > 0
+      ? await this.dynamicMatchedSkillIds(context, skills)
+      : [];
+    const unionSkillIds = [...resolvedSkillIds, ...matchedSkillIds.filter((id) => !resolvedSkillIds.includes(id))];
+    if (unionSkillIds.length === 0) return [];
 
     return await Promise.all(
-      matches.map(async (match) => {
-        const skill = await skills.getSkill(match.skillId);
+      unionSkillIds.map(async (skillId) => {
+        const skill = await skills.getSkill(skillId);
         if (!skill || (skill.effort === undefined && skill.thinking === undefined)) return null;
         return {
-          skillId: match.skillId,
+          skillId,
           ...(skill.effort !== undefined ? { effort: skill.effort } : {}),
           ...(skill.thinking !== undefined ? { thinking: skill.thinking } : {}),
         };
@@ -404,6 +420,24 @@ export class PlanExecutor {
         thinking?: boolean;
       }>
     );
+  }
+
+  /** Re-runs the dynamic skill match against the plan's request subject and returns the
+   *  matched skill ids in match order, deduplicated. */
+  private async dynamicMatchedSkillIds(
+    context: IPlanContext,
+    skills: ISkillsService,
+  ): Promise<string[]> {
+    const { matches } = await skills.matchSkills({
+      requestText: String(context.frontmatter.subject),
+      tags: frontmatterTags(context),
+      agentRole: context.agent_role,
+    });
+    const ids: string[] = [];
+    for (const match of matches) {
+      if (!ids.includes(match.skillId)) ids.push(match.skillId);
+    }
+    return ids;
   }
 
   /** Re-runs the same skill match as deriveTopSkillTaskTypes (that one-hot path stays

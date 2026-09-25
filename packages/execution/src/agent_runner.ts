@@ -17,6 +17,7 @@ import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.t
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { COMPLEXITY_SOURCE_DEFAULT, EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
 import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
+import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
@@ -535,9 +536,10 @@ export class AgentRunner implements IAgentRunner {
   }
 
   /** Resolves declaration-time effort/thinking through EffortResolver, keyed on the
-   *  selected model's provider identity and the request's TaskComplexity signal. */
-  /** Journals the resolved effort/thinking with its basis and inputs as
-   *  agent.effort_resolved, joinable by traceId (Step 6 of phase-197). */
+   *  selected model's provider identity and the request's TaskComplexity signal, and
+   *  journals the outcome as agent.effort_resolved, joinable by traceId (Step 6 of
+   *  phase-197). The payload is built by buildAgentEffortResolvedPayload — the single
+   *  typed owner of the event's shape (GAP-4). */
   private journalEffortResolution(
     blueprint: IBlueprint,
     request: IParsedRequest,
@@ -547,14 +549,10 @@ export class AgentRunner implements IAgentRunner {
     requestId: Opt<string, Reason.TraceAbsent>,
   ): void {
     const selectedModelId = this.selectedModelIdentity();
-    const payload: Record<string, JSONValue> = {
+    const payload = buildAgentEffortResolvedPayload({
       path: request.flowStepId ? "flow_step" : "planning",
-      agent_role: agentRole,
-      ...(resolution.effort !== undefined ? { effort: resolution.effort } : {}),
-      ...(resolution.thinking !== undefined ? { thinking: resolution.thinking } : {}),
-      effort_basis: resolution.effortBasis,
-      thinking_basis: resolution.thinkingBasis,
-      declaration_source: resolution.declarationSource,
+      resolution,
+      agentRole,
       declared: {
         ...(request.effort !== undefined || request.thinking !== undefined
           ? { request: { effort: request.effort, thinking: request.thinking } }
@@ -566,21 +564,9 @@ export class AgentRunner implements IAgentRunner {
           ? { role: { effort: blueprint.effort, thinking: blueprint.thinking } }
           : {}),
       },
-      ...(resolution.heuristicInputs
-        ? {
-          heuristic_inputs: {
-            task_complexity: resolution.heuristicInputs.taskComplexity,
-            complexity_source: resolution.heuristicInputs.complexitySource,
-            ...(resolution.heuristicInputs.modelSize !== undefined
-              ? { model_size: resolution.heuristicInputs.modelSize }
-              : {}),
-          },
-        }
-        : {}),
-      floors_applied: resolution.floorsApplied,
-      ...(selectedModelId.providerType !== undefined ? { provider_type: selectedModelId.providerType } : {}),
+      providerType: selectedModelId.providerType,
       model: selectedModelId.model,
-    };
+    });
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
       DomainEventType.AgentEffortResolved,

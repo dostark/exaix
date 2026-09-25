@@ -10,11 +10,12 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { captureConsoleOutput, expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import type { ExaCtlTestContext } from "../src/exactl.ts";
-import type { IRequestOptions } from "@exaix/core/request";
+import type { IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
 import type { RequestSource } from "@exaix/core";
 import { FlowInputSource, RequestPriority } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 
 function stubCreate(ctx: ExaCtlTestContext) {
   const received: Array<{ description: string; opts: IRequestOptions }> = [];
@@ -79,5 +80,33 @@ Deno.test("request --thinking maybe is rejected with an actionable error", async
       errors.some((e) => e.includes("thinking") && e.includes("true, false or auto")),
       `expected an actionable thinking error, got: ${errors.join(" | ")}`,
     );
+  });
+});
+
+Deno.test("request show reports a rejected file as failed with its error (GAP-7)", async () => {
+  await withTestMod(async (mod, ctx) => {
+    const failedMetadata: IRequestMetadata = {
+      trace_id: "trace-rejected-1",
+      filename: "request-rejected.md",
+      status: RequestStatus.FAILED,
+      priority: RequestPriority.NORMAL,
+      agent_role: "default",
+      created: "2026-09-25T00:00:00.000Z",
+      created_by: "tester",
+      source: "cli" as RequestSource,
+      subject: "Rejected Request",
+      error: "Invalid 'effort' frontmatter value",
+    } as IRequestMetadata;
+    ctx.requestCommands.show = (id: string): Promise<IRequestShowResult> =>
+      Promise.resolve({
+        metadata: { ...failedMetadata, filename: id } as IRequestMetadata,
+        content: "# Rejected Request",
+      });
+
+    const output = await captureConsoleOutput(async () => {
+      await mod.__test_command.parse([FlowInputSource.REQUEST, "show", "request-rejected"]);
+    });
+    assert(output.includes("failed"), `request show must report the failed status: ${output}`);
+    assert(output.includes("effort"), `request show must surface the offending field: ${output}`);
   });
 });

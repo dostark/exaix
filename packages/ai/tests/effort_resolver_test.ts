@@ -112,7 +112,8 @@ Deno.test("EffortResolver: no declaration anywhere resolves unset (field omitted
   assertEquals(result.thinking, undefined);
   assertEquals(result.effortBasis, "unset");
   assertEquals(result.thinkingBasis, "unset");
-  assertEquals(result.declarationSource, "none");
+  assertEquals(result.effortDeclarationSource, "none");
+  assertEquals(result.thinkingDeclarationSource, "none");
 });
 
 Deno.test("EffortResolver: a concrete role effort with thinking empty resolves effort declared and thinking unset", () => {
@@ -177,7 +178,7 @@ Deno.test("EffortResolver: an explicit request-level low is NOT raised by a skil
   );
   assertEquals(result.effort, "low" as EffortTier);
   assertEquals(result.effortBasis, "declared");
-  assertEquals(result.declarationSource, "request");
+  assertEquals(result.effortDeclarationSource, "request");
   assertEquals(result.floorsApplied, []);
 });
 
@@ -187,7 +188,8 @@ Deno.test("EffortResolver: flowStep beats role precedence", () => {
     baseSignals(),
   );
   assertEquals(result.effort, "low" as EffortTier);
-  assertEquals(result.declarationSource, "flow_step");
+  assertEquals(result.effortDeclarationSource, "flow_step");
+  assertEquals(result.thinkingDeclarationSource, "none");
 });
 
 Deno.test("EffortResolver: quality-judge with effort auto + SIMPLE resolves to medium via role floor", () => {
@@ -245,10 +247,46 @@ Deno.test("EffortResolver: thinking auto + CLAUDE_CLI + a non-adaptive model fal
   assertEquals(result.thinkingBasis, "heuristic");
 });
 
-Deno.test("EffortResolver: thinking auto + CLAUDE_CLI + adaptive model + thinking_default false falls back to the heuristic", () => {
+Deno.test("EffortResolver: thinking auto + CLAUDE_CLI + adaptive model + thinking_default false stays native-adaptive (CLAUDE_CLI does not read that config)", () => {
   const result = resolve(
     { thinking: "auto" },
     { providerType: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5", anthropicThinkingDefault: false },
   );
-  assertEquals(result.thinkingBasis, "heuristic");
+  assertEquals(result.thinkingBasis, "native-adaptive");
+});
+
+Deno.test("EffortResolver: a skill floor over an auto heuristic result keeps heuristicInputs", () => {
+  const signals = baseSignals({ taskComplexity: TaskComplexity.SIMPLE });
+  const result = resolver.resolve(
+    { role: { effort: "auto" } },
+    { ...signals, skillFloors: [{ skillId: "sc", effort: "medium" }] },
+  );
+  assertEquals(result.effort, "medium" as EffortTier);
+  assertEquals(result.effortBasis, "skill-floor");
+  assertEquals(result.heuristicInputs?.taskComplexity, TaskComplexity.SIMPLE);
+  assertEquals(result.heuristicInputs?.complexitySource, "analysis");
+});
+
+Deno.test("EffortResolver: a judge role floor over an auto heuristic result keeps heuristicInputs", () => {
+  const signals = baseSignals({ taskComplexity: TaskComplexity.SIMPLE });
+  const result = resolver.resolve(
+    { role: { effort: "auto" } },
+    { ...signals, agentRole: "quality-judge" },
+  );
+  assertEquals(result.effort, "medium" as EffortTier);
+  assertEquals(result.effortBasis, "role-floor");
+  assertEquals(result.heuristicInputs?.taskComplexity, TaskComplexity.SIMPLE);
+});
+
+Deno.test("EffortResolver: a mixed request-thinking / role-effort declaration journals per-field sources", () => {
+  const result = resolver.resolve(
+    { request: { thinking: true }, role: { effort: "low" } },
+    baseSignals(),
+  );
+  assertEquals(result.effort, "low" as EffortTier);
+  assertEquals(result.effortDeclarationSource, "role");
+  assertEquals(result.effortBasis, "declared");
+  assertEquals(result.thinking, true);
+  assertEquals(result.thinkingDeclarationSource, "request");
+  assertEquals(result.thinkingBasis, "declared");
 });

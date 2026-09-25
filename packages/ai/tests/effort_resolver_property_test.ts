@@ -107,3 +107,52 @@ Deno.test("EffortResolver property: a skill floor never lowers effort or thinkin
     }
   }
 });
+
+Deno.test("EffortResolver property: heuristicInputs is present iff at least one auto declaration resolved through the heuristic before floors", () => {
+  for (const effortDecl of EFFORT_DECLARATIONS) {
+    for (const thinkingDecl of THINKING_DECLARATIONS) {
+      if (effortDecl !== "auto" && thinkingDecl !== "auto") continue; // heuristic needs an auto declaration
+      for (const complexity of COMPLEXITIES) {
+        for (const model of ["claude-sonnet-5", "claude-haiku-4-5-20251001"]) {
+          for (const withFloor of [false, true]) {
+            const result = resolver.resolve(
+              { role: { effort: effortDecl, thinking: thinkingDecl } },
+              {
+                taskComplexity: complexity,
+                complexitySource: "analysis",
+                providerType: ProviderType.ANTHROPIC,
+                model,
+                providerSupportsThinking: true,
+                skillFloors: withFloor ? [{ skillId: "s", effort: "high", thinking: true }] : [],
+              },
+            );
+            const preFloorHeuristic = (effortDecl === "auto" && !isNativeAdaptiveModel(model)) ||
+              (thinkingDecl === "auto" && !isNativeAdaptiveModel(model));
+            if (effortDecl === "auto") {
+              // effort auto ALWAYS resolves through the heuristic
+              assert(
+                result.heuristicInputs !== undefined,
+                `effort auto must keep heuristicInputs even under a floor (${effortDecl}/${thinkingDecl}/${complexity}/${model}/${withFloor})`,
+              );
+            } else if (thinkingDecl === "auto" && !isNativeAdaptiveModel(model)) {
+              assert(
+                result.heuristicInputs !== undefined,
+                `thinking auto on a non-adaptive model must keep heuristicInputs (${model}/${withFloor})`,
+              );
+            } else if (thinkingDecl === "auto") {
+              assert(
+                result.heuristicInputs === undefined,
+                `thinking auto native-adaptive must not fabricate heuristicInputs (${model}/${withFloor})`,
+              );
+            }
+            void preFloorHeuristic;
+          }
+        }
+      }
+    }
+  }
+});
+
+function isNativeAdaptiveModel(model: string): boolean {
+  return model.startsWith("claude-sonnet-5");
+}

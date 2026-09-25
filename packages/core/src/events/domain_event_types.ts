@@ -17,6 +17,7 @@ import type {
   TaskTypeSource,
 } from "@exaix/schemas";
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
+import type { JSONValue } from "@exaix/core/types";
 import type {
   ContextInspectionResult,
   HitlRuleSource,
@@ -77,12 +78,15 @@ export type IAgentPromptAssembledPayload =
   | IAgentPromptAssembledPlanningPayload
   | IAgentPromptAssembledReactPayload;
 
-/** Typed payload for agent.effort_resolved — the journaled EffortResolver outcome with
- *  its basis, inputs and floors, joinable by traceId for measurement reproducibility. */
 /** Which resolution call-site produced an agent.effort_resolved event. */
 export type EffortResolutionPath = "planning" | "execution" | "flow_step";
 
-export interface IAgentEffortResolvedPayload {
+/** Typed payload for agent.effort_resolved — the journaled EffortResolver outcome with
+ *  its basis, inputs and floors, joinable by traceId for measurement reproducibility.
+ *  Declaration sources are PER FIELD (effort/thinking) so a mixed request-thinking /
+ *  role-effort declaration journals each field's own governing surface (GAP-4).
+ *  Extends Record<string, JSONValue> so a typed instance passes directly to an EventLogger. */
+export interface IAgentEffortResolvedPayload extends Record<string, JSONValue> {
   /** Which resolution call-site produced the event. */
   path: EffortResolutionPath;
   agent_role: string;
@@ -90,7 +94,8 @@ export interface IAgentEffortResolvedPayload {
   thinking?: boolean;
   effort_basis: EffortResolutionBasis;
   thinking_basis: EffortResolutionBasis;
-  declaration_source: EffortDeclarationSource;
+  effort_declaration_source: EffortDeclarationSource;
+  thinking_declaration_source: EffortDeclarationSource;
   declared: {
     request?: IEffortDeclarationPair;
     flow_step?: IEffortDeclarationPair;
@@ -854,6 +859,10 @@ export const DomainEventType = {
 
   // Effort resolution outcome — journals EffortResolver's value, basis and inputs.
   AgentEffortResolved: "agent.effort_resolved",
+
+  // A plan frontmatter declaration (request_effort_declaration) failed the parse-boundary
+  // schema and was dropped before any resolution — the value never reaches a provider.
+  ExecutionDeclarationInvalid: "execution.declaration_invalid",
 
   // Judge calibration — CalibrationRunner's own lifecycle. Payloads never carry
   // prompts/auth/rationale, only identity/hashes/vendor/counts/metrics/duration.

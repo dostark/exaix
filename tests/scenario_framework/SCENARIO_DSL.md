@@ -124,6 +124,7 @@ The runner defines these `$VAR` names for every step (expanded at load time unle
 | `$TRACE_ID`         | Current request's trace (first `request.created` above baseline)     | execution   |
 | `$REQUEST_ID`       | `request-<trace[0:8]>` — review/plan approve key                     | execution   |
 | `$JOURNAL_BASELINE` | The scenario's journal rowid baseline                                | execution   |
+| `$STEP_BASELINE`    | The current step's barrier baseline (rowid before the previous step) | execution   |
 
 Environment the runner injects into every step subprocess: `REQUEST_FIXTURE`,
 `WORKSPACE_ROOT`, `EXA_SYSTEM_ROOT`, `FRAMEWORK_HOME`, `EXA_CONFIG_PATH`,
@@ -442,9 +443,22 @@ Every criterion has `id` and `kind`, plus optional `score_weight` (0–1, defaul
 
 ### Journal
 
-| kind                   | fields                                                                | asserts                                                                      |
-| ---------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `journal-event-exists` | `event_type`, `journal_file?`, `payload_absent?`, `payload_includes?` | an activity event of that type exists (optionally with/without payload keys) |
+| kind                   | fields                                                                                                   | asserts                                                                                                                                   |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `journal-event-exists` | `event_type`, `journal_file?`, `payload_absent?`, `payload_includes?`, `payload_equals?`, `trace_scope?` | an activity event of that type exists (optionally with/without payload keys, equal scalars, or restricted to the current request's trace) |
+
+**`payload_equals`** (additive, Step 15): a record of dotted-path keys to scalar
+values (e.g. `effort_basis: "heuristic"`, `heuristic_inputs.complexity_source:
+"analysis"`). A matching event must carry, at EVERY key, a scalar equal to the given
+value — a MISSING key fails (a value assertion, unlike the presence-only bare match).
+
+**`trace_scope: "current"`** (additive, Step 15): restricts matches to the CURRENT
+scenario request's trace — the first `request.created` above the scenario's journal
+baseline (the per-step barrier baseline rises above the request and resolves to nothing).
+A globally-found event is NOT evidence the request under test emitted it; use
+`trace_scope: current` when the scenario drives a single request, and value-distinct
+`payload_equals`/`payload_includes` when a scenario drives several sequential requests.
+When `trace_scope` is absent the criterion keeps its original global semantics.
 
 ### Command output
 

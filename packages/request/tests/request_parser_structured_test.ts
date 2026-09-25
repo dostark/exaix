@@ -8,7 +8,7 @@
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
-import { RequestParser } from "@exaix/request";
+import { isRequestParseRejection, RequestParser } from "@exaix/request";
 import type { EventLogger } from "@exaix/core/logger";
 import type { JSONObject } from "@exaix/core/types";
 import type { IParsedRequestFile } from "@exaix/core/request";
@@ -71,10 +71,18 @@ async function parseRequestWithFields(
     await Deno.writeTextFile(tmpPath, content);
     const result = await parser.parse(tmpPath);
     assertExists(result);
-    return { frontmatter: result.frontmatter, logs };
+    return { frontmatter: parsedFile(result).frontmatter, logs };
   } finally {
     await Deno.remove(tmpPath);
   }
+}
+
+/** The parse() result is a parsed file (never a rejection) for these fixtures. */
+function parsedFile(result: Awaited<ReturnType<RequestParser["parse"]>>): IParsedRequestFile {
+  if (result === null || isRequestParseRejection(result)) {
+    throw new Error("expected a parsed request file");
+  }
+  return result;
 }
 
 // Extraction tests (GREEN — fields present and valid)
@@ -119,7 +127,7 @@ Deno.test(
       const result = await parser.parse(path);
       assertExists(result);
       // Field must be stripped (undefined), not passed through as a string
-      assertEquals(result.frontmatter.acceptance_criteria, undefined);
+      assertEquals(parsedFile(result).frontmatter.acceptance_criteria, undefined);
       // A warning must be logged
       assertEquals(logs.filter((l) => l.level === "warn").length >= 1, true);
     });
@@ -136,7 +144,7 @@ Deno.test(
     await withTempFile(content, async (path) => {
       const result = await parser.parse(path);
       assertExists(result);
-      assertEquals(result.frontmatter.expected_outcomes, undefined);
+      assertEquals(parsedFile(result).frontmatter.expected_outcomes, undefined);
       assertEquals(logs.filter((l) => l.level === "warn").length >= 1, true);
     });
   },
@@ -153,7 +161,7 @@ Deno.test(
     await withTempFile(content, async (path) => {
       const result = await parser.parse(path);
       assertExists(result);
-      assertEquals(result.frontmatter.scope, undefined);
+      assertEquals(parsedFile(result).frontmatter.scope, undefined);
       assertEquals(logs.filter((l) => l.level === "warn").length >= 1, true);
     });
   },
@@ -170,7 +178,7 @@ Deno.test(
     await withTempFile(content, async (path) => {
       const result = await parser.parse(path);
       assertExists(result);
-      assertEquals(result.frontmatter.scope, undefined);
+      assertEquals(parsedFile(result).frontmatter.scope, undefined);
       assertEquals(logs.filter((l) => l.level === "warn").length >= 1, true);
     });
   },
@@ -186,10 +194,10 @@ Deno.test("[RequestParser] parses existing files without new fields unchanged", 
   await withTempFile(content, async (path) => {
     const result = await parser.parse(path);
     assertExists(result);
-    assertEquals(result.frontmatter.trace_id, "test-001");
-    assertEquals(result.frontmatter.acceptance_criteria, undefined);
-    assertEquals(result.frontmatter.expected_outcomes, undefined);
-    assertEquals(result.frontmatter.scope, undefined);
+    assertEquals(parsedFile(result).frontmatter.trace_id, "test-001");
+    assertEquals(parsedFile(result).frontmatter.acceptance_criteria, undefined);
+    assertEquals(parsedFile(result).frontmatter.expected_outcomes, undefined);
+    assertEquals(parsedFile(result).frontmatter.scope, undefined);
     assertEquals(logs.filter((l) => l.level === "warn").length, 0);
   });
 });

@@ -81,6 +81,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "aci-doc-injection-enabled",
       "context-budget-react-overflow",
       "edition-smoke",
+      "effort-auto-resolution",
       "flow-strategy-cli-delegate",
       "flow-strategy-react",
       "flow-strategy-routing",

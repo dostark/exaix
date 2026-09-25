@@ -32,10 +32,13 @@ export type TaskComplexitySource = "analysis" | "content_heuristic" | "agent_rol
 /** The surface whose declaration governs a field — the precedence rule's source. */
 export type EffortDeclarationSource = "request" | "flow_step" | "role" | "none";
 
-export interface IEffortDeclarationPair {
+/** A declaration pair (one surface): a reason-effort and/or thinking declaration. A type
+ *  alias (not an interface) so an object of this shape gets JSONValue-implicit-index
+ *  compatibility where the journaled payload type needs it. */
+export type IEffortDeclarationPair = {
   effort?: EffortDeclaration;
   thinking?: ThinkingDeclaration;
-}
+};
 
 /** One pair per surface; the resolver applies the Constraints precedence rule. */
 export interface IEffortDeclarations {
@@ -67,11 +70,16 @@ export interface IEffortResolution {
   thinking: boolean | undefined; // undefined = omit the field
   effortBasis: EffortResolutionBasis;
   thinkingBasis: EffortResolutionBasis;
-  declarationSource: EffortDeclarationSource;
+  /** The surface whose declaration governs the effort field — per-field, so a mixed
+   *  request-thinking / role-effort declaration journals each field's own source (GAP-4). */
+  effortDeclarationSource: EffortDeclarationSource;
+  /** The surface whose declaration governs the thinking field. */
+  thinkingDeclarationSource: EffortDeclarationSource;
   /** True when the governing declaration was concrete — the only case where the
    *  execution path sets max_tokens from EFFORT_MAX_TOKENS. */
   concreteDeclaration: boolean;
-  /** Present whenever an `auto` declaration was resolved by the heuristic. */
+  /** Present whenever an `auto` declaration resolved through the heuristic BEFORE any
+   *  floor ran — computed from pre-floor bases so a skill/role floor never drops it (GAP-3). */
   heuristicInputs?: {
     taskComplexity: TaskComplexity;
     complexitySource: TaskComplexitySource;
@@ -222,11 +230,14 @@ function effortRank(tier: Opt<EffortTier, Reason.OptionalContext>): number {
   return tier === undefined ? -1 : EFFORT_TIER_ORDER.indexOf(tier);
 }
 
-/** True only when all three hold: Anthropic provider, `thinking_default` not false, and
- *  the concrete model id matches a native-adaptive prefix. */
-/** Provider types whose calls can host Anthropic native-adaptive thinking: the metered
- *  API (ANTHROPIC) and the subscription-billed Claude Code CLI (CLAUDE_CLI), which mirrors
- *  the API's adaptive default when no thinking control is sent. */
+/** Provider types whose calls can host Anthropic native-adaptive thinking: the metered API
+ *  (ANTHROPIC) and the subscription-billed Claude Code CLI (CLAUDE_CLI). For CLAUDE_CLI the
+ *  evidence is the installed Claude Code binary (2.1.269): it ships the Claude API docs whose
+ *  model table says omitting `thinking` runs adaptive on the native-adaptive models, exposes
+ *  a `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` env var (i.e. adaptive is the DEFAULT, not the
+ *  opt-in), and its `--help` shows no thinking control flag Exaix could send — opencode's
+ *  adapter sends no thinking control either way, so the label only names what the CLI does
+ *  by default. See plan Sources (Step 11). */
 const NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES: ReadonlySet<ProviderType> = new Set([
   ProviderType.ANTHROPIC,
   ProviderType.CLAUDE_CLI,
@@ -236,7 +247,9 @@ function isNativeAdaptiveThinking(signals: IEffortResolutionSignals): boolean {
   if (signals.providerType === undefined || !NATIVE_ADAPTIVE_THINKING_PROVIDER_TYPES.has(signals.providerType)) {
     return false;
   }
-  if (signals.anthropicThinkingDefault === false) return false;
+  // ai_anthropic.thinking_default is read only by AnthropicProvider (the metered API). The
+  // claude-cli provider never reads that config, so the gate applies to ANTHROPIC only (GAP-2).
+  if (signals.providerType === ProviderType.ANTHROPIC && signals.anthropicThinkingDefault === false) return false;
   if (signals.model === undefined) return false;
   return NATIVE_ADAPTIVE_THINKING_MODEL_PREFIXES.some((prefix) => signals.model!.startsWith(prefix));
 }
@@ -257,16 +270,6 @@ function governingDeclaration(
     if (value !== undefined) return { declaration: value, source };
   }
   return { declaration: undefined, source: SOURCE_NONE };
-}
-
-/** The precedence-highest surface that declared anything — journaled as declarationSource. */
-function declaredSource(declarations: IEffortDeclarations): EffortDeclarationSource {
-  if (declarations.request?.effort !== undefined || declarations.request?.thinking !== undefined) return SOURCE_REQUEST;
-  if (declarations.flowStep?.effort !== undefined || declarations.flowStep?.thinking !== undefined) {
-    return SOURCE_FLOW_STEP;
-  }
-  if (declarations.role?.effort !== undefined || declarations.role?.thinking !== undefined) return SOURCE_ROLE;
-  return SOURCE_NONE;
 }
 
 /** Whether a floor skip applies to a field: the governing declaration was a concrete
@@ -295,20 +298,25 @@ export class EffortResolver implements IEffortResolver {
   resolve(declarations: IEffortDeclarations, signals: IEffortResolutionSignals): IEffortResolution {
     const effortResult = this.resolveField(declarations, FIELD_EFFORT, signals);
     const thinkingResult = this.resolveField(declarations, FIELD_THINKING, signals);
+
+    // GAP-3: the heuristic flag is captured from the PRE-FLOOR bases — a skill/role floor
+    // later overwrites a basis in place, and a floor-raised auto resolution must still
+    // journal the heuristic inputs a measurement needs to reproduce it.
+    const heuristicUsed = effortResult.basis === BASIS_HEURISTIC || thinkingResult.basis === BASIS_HEURISTIC;
+
     const floorsApplied = this.applyFloors(
       { effort: effortResult, thinking: thinkingResult },
       declarations,
       signals,
     );
 
-    const heuristicUsed = effortResult.basis === BASIS_HEURISTIC || thinkingResult.basis === BASIS_HEURISTIC;
-
     return {
       effort: effortResult.value as EffortTier | undefined,
       thinking: thinkingResult.value as boolean | undefined,
       effortBasis: effortResult.basis,
       thinkingBasis: thinkingResult.basis,
-      declarationSource: declaredSource(declarations),
+      effortDeclarationSource: govSource(declarations, FIELD_EFFORT),
+      thinkingDeclarationSource: govSource(declarations, FIELD_THINKING),
       concreteDeclaration: effortResult.governingDeclaration.concrete,
       ...(heuristicUsed
         ? {

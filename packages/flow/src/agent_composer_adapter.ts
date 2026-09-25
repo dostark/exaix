@@ -36,7 +36,7 @@ import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import { resolveWorktreeBaseDir } from "./resolve_worktree_base_dir.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { ModelResolver } from "@exaix/ai";
+import type { IEffortResolver, ModelResolver } from "@exaix/ai";
 import { COMPLEXITY_SOURCE_ANALYSIS, COMPLEXITY_SOURCE_DEFAULT, taskComplexityFromAnalysis } from "@exaix/ai";
 import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
@@ -103,6 +103,9 @@ export interface IAgentComposerConstructionDeps {
   trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
   /** Optional per-trace worktree resolver. Its absence preserves each portal's configured target path. */
   worktreeCoordinator?: Opt<IFlowWorktreeCoordinator, Reason.OptionalDependency>;
+  /** The EffortResolver instance forwarded into AgentComposer's execution resolution so
+   *  the flow path shares the planning path's injected instance (GAP-9). */
+  effortResolver?: IEffortResolver;
 }
 
 /** Bounds `planWrittenFiles` Map growth for this long-lived singleton (mirrors `apps/daemon/main.ts`'s `traceModelCache`). */
@@ -204,6 +207,7 @@ export class AgentComposerAdapter {
       strategyRegistry,
       contextPort,
       trustedAgentRoles,
+      effortResolver,
     } = this.orchestratorDeps;
     const portalConfig = config.portals?.find((p) => p.alias === request.portal);
     if (!portalConfig) {
@@ -246,6 +250,7 @@ export class AgentComposerAdapter {
       planWrittenFiles,
       contextPort,
       trustedAgentRoles,
+      effortResolver,
     });
 
     try {

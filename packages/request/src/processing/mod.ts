@@ -1,10 +1,9 @@
 /**
  * @module RequestProcessing
  * @path packages/request/src/processing/mod.ts
- * @related-files []
+ * @related-files [packages/request/src/processing/parser.ts, packages/request/src/processing/status.ts]
  * @architectural-layer Services
- * @ungrounded
  * @description Barrel exports for request processing: RequestParser and StatusManager.
  */
-export { RequestParser } from "./parser.ts";
+export { type IRequestParseRejection, isRequestParseRejection, RequestParser } from "./parser.ts";
 export { StatusManager } from "./status.ts";

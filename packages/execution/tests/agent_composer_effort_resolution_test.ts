@@ -227,3 +227,53 @@ Deno.test("AgentComposer.executeStep: thinking auto never appears in the ModelRe
     await cleanup();
   }
 });
+
+Deno.test("AgentComposer.executeStep: a failsafe blueprint thinking false sends thinking false and applies no thinking constraint", async () => {
+  // GAP-6 (Step 13): on main, `thinking: false` arrived from failsafe YAML as the truthy
+  // string "false", so the intent carried `thinking: true`. The declaration preprocess now
+  // maps it to boolean false: the execution path sends `thinking: false` (Anthropic
+  // {type:"disabled"}) and no longer forces thinking-capable provider selection.
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir({ prefix: "ac-effort-thinking-false-" });
+    await Deno.mkdir(join(testDir, "Blueprints", "Agents"), { recursive: true });
+    await Deno.writeTextFile(
+      join(testDir, "Blueprints", "Agents", "test-agent.md"),
+      "---\nagent_role: test-agent\nname: Test\nmodel: mock:test\nthinking: false\n---\nYou are a test agent.\n",
+    );
+    try {
+      const config = createTestConfig();
+      config.system.root = testDir;
+      config.portals = [{ alias: "TestPortal", target_path: testDir, operations: [] }] as never;
+
+      const { resolver, captured } = makeCapturingResolver();
+      const logger = new EventLogger({ db });
+      const pathResolver = new PathResolver(config);
+      const permissions = new PortalPermissionsService(config.portals as never);
+      const { strategyRegistry, getCallOptions } = makeStubStrategy();
+      const composer = new AgentComposer({
+        config,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+        modelResolver: resolver,
+      });
+
+      await composer.executeStep(makeContext(testDir), makeOptions("TestPortal"));
+
+      assertEquals(
+        captured[0].thinking,
+        false,
+        "a failsafe 'false' string must read as boolean false, not a truthy thinking",
+      );
+      assertEquals(getCallOptions()?.thinking, false, "the execution path must send thinking false");
+      composer.dispose();
+    } finally {
+      await Deno.remove(testDir, { recursive: true }).catch(() => {});
+    }
+  } finally {
+    await cleanup();
+  }
+});

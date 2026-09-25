@@ -46,6 +46,10 @@ export interface IRequestMetadata {
   /** The request's declaration-time effort/thinking pair ("auto" allowed), persisted beside
    *  requestIntent so the execution path resolves it AFTER provider selection (GAP-3). */
   requestEffortDeclaration?: IEffortDeclarationPair;
+  /** The FINAL resolved skill id set from the planning run (pinned ∪ matched ∪ agent-role
+   *  defaults, minus suppressed), persisted onto the plan frontmatter so the execution path
+   *  applies the same skill floors one request gets on both paths (GAP-5). */
+  resolvedSkillIds?: string[];
 }
 
 export interface IPlanWriterConfig {
@@ -278,6 +282,7 @@ export class PlanWriter {
 
     this.applyRequestIntentToFrontmatter(frontmatter, metadata.requestIntent ?? {});
     this.applyRequestEffortDeclaration(frontmatter, metadata.requestEffortDeclaration);
+    this.applyResolvedSkillIds(frontmatter, metadata.resolvedSkillIds);
 
     if (metadata.portal) {
       frontmatter.portal = metadata.portal;
@@ -341,6 +346,17 @@ export class PlanWriter {
       ...(requestEffortDeclaration.thinking !== undefined ? { thinking: requestEffortDeclaration.thinking } : {}),
     };
     passthrough.request_effort_declaration = persisted;
+  }
+
+  /** Persists the planning run's final resolved skill id set so execution applies the same
+   *  skill floors (pinned + matched + defaults) the request got during plan generation (GAP-5). */
+  private applyResolvedSkillIds(
+    frontmatter: PlanFrontmatter,
+    resolvedSkillIds?: Opt<string[], Reason.OptionalContext>,
+  ): void {
+    if (!resolvedSkillIds || resolvedSkillIds.length === 0) return;
+    const passthrough = frontmatter as PlanFrontmatter & Record<string, JSONValue | undefined>;
+    passthrough.resolved_skill_ids = resolvedSkillIds;
   }
 
   private async getTokenUsageSummary(traceId: string): Promise<ITokenUsageSummary | null> {

@@ -70,7 +70,8 @@ import {
   resolveProviderType,
   taskComplexityFromAnalysis,
 } from "@exaix/ai";
-import type { IEffortDeclarationPair, IEffortResolution } from "@exaix/ai";
+import type { IEffortDeclarationPair, IEffortResolution, IEffortResolver } from "@exaix/ai";
+import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
@@ -156,6 +157,9 @@ export interface IAgentComposerDeps {
   /** Agent-role blueprint IDs trusted to activate contextPort, passed through to
    *  CliDelegateStrategy. Mandatory whenever contextPort is set. */
   trustedAgentRoles?: Opt<ReadonlySet<string>, Reason.OptionalDependency>;
+  /** The EffortResolver instance used for execution-path resolution; defaults to a fresh
+   *  EffortResolver (IAgentComposerDeps mirror of options.effortResolver, GAP-9). */
+  effortResolver?: IEffortResolver;
 }
 
 /**
@@ -189,6 +193,9 @@ export class AgentComposer {
   private _guardrailRunner?: IGuardrailRunner;
   private readonly options?: IAgentComposerOptions;
   private modelResolver?: ModelResolver;
+  /** Resolver for execution-path effort/thinking resolution — injected once (GAP-9), so
+   *  IEffortResolverOptions overrides and test substitutes reach this path too. */
+  private readonly effortResolver: IEffortResolver;
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
   private gitAuditService: GitAuditService;
@@ -248,6 +255,7 @@ export class AgentComposer {
     this.trustedAgentRoles = deps.trustedAgentRoles;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
+    this.effortResolver = deps.effortResolver ?? new EffortResolver();
     this.blueprintService = deps.blueprintService ??
       new BlueprintService(this.config, this.logger, deps.modelResolver, deps.options);
     this.ctx = deps.executionContext ?? new ExecutionContextService(this.config, this.logger, {
@@ -474,7 +482,7 @@ export class AgentComposer {
     const providerType = resolveProviderType(blueprint.provider);
     const metadata = providerType !== undefined ? ProviderRegistry.getProviderMetadata(providerType) : undefined;
     const analysis = options.request_analysis as IRequestAnalysis | undefined;
-    return new EffortResolver().resolve(
+    return this.effortResolver.resolve(
       {
         request: this.options?.requestDeclaration,
         role: { effort: blueprint.effort, thinking: blueprint.thinking },
@@ -495,7 +503,8 @@ export class AgentComposer {
   }
 
   /** Journals the execution path's effort resolution as agent.effort_resolved, joinable by
-   *  the plan's traceId (Step 6). */
+   *  the plan's traceId (Step 6). The payload is built by buildAgentEffortResolvedPayload —
+   *  the single typed owner of the event's shape (GAP-4). */
   private journalStepEffortResolution(
     resolution: IEffortResolution,
     blueprint: IAgentFileBlueprint,
@@ -503,23 +512,14 @@ export class AgentComposer {
     traceId: string,
   ): void {
     const providerType = resolveProviderType(blueprint.provider);
-    const payload: Record<string, JSONValue> = {
+    const payload = buildAgentEffortResolvedPayload({
       path: options.strategy ? "flow_step" : "execution",
-      agent_role: options.agent_role ?? "",
-      ...(resolution.effort !== undefined ? { effort: resolution.effort } : {}),
-      ...(resolution.thinking !== undefined ? { thinking: resolution.thinking } : {}),
-      effort_basis: resolution.effortBasis,
-      thinking_basis: resolution.thinkingBasis,
-      declaration_source: resolution.declarationSource,
+      resolution,
+      agentRole: options.agent_role,
       declared: {
         ...(this.options?.requestDeclaration?.effort !== undefined ||
             this.options?.requestDeclaration?.thinking !== undefined
-          ? {
-            request: {
-              effort: this.options.requestDeclaration.effort,
-              thinking: this.options.requestDeclaration.thinking,
-            },
-          }
+          ? { request: this.options.requestDeclaration }
           : {}),
         ...(options.effort !== undefined || options.thinking !== undefined
           ? { flow_step: { effort: options.effort, thinking: options.thinking } }
@@ -528,21 +528,9 @@ export class AgentComposer {
           ? { role: { effort: blueprint.effort, thinking: blueprint.thinking } }
           : {}),
       },
-      ...(resolution.heuristicInputs
-        ? {
-          heuristic_inputs: {
-            task_complexity: resolution.heuristicInputs.taskComplexity,
-            complexity_source: resolution.heuristicInputs.complexitySource,
-            ...(resolution.heuristicInputs.modelSize !== undefined
-              ? { model_size: resolution.heuristicInputs.modelSize }
-              : {}),
-          },
-        }
-        : {}),
-      floors_applied: resolution.floorsApplied,
-      ...(providerType !== undefined ? { provider_type: providerType } : {}),
+      providerType,
       model: blueprint.model,
-    };
+    });
     void this.logger.info(
       DomainEventType.AgentEffortResolved,
       options.agent_role ?? "",

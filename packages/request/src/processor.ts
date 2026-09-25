@@ -51,7 +51,7 @@ import type { IEffortDeclarationPair } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
 import { CostTracker } from "@exaix/core/cost";
 import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
-import { RequestParser } from "./processing/parser.ts";
+import { type IRequestParseRejection, isRequestParseRejection, RequestParser } from "./processing/parser.ts";
 import { StatusManager } from "./processing/status.ts";
 import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
 import type { IModelIntent } from "@exaix/schemas";
@@ -303,6 +303,10 @@ export class RequestProcessor {
     if (!parsed) {
       return null;
     }
+    if (isRequestParseRejection(parsed)) {
+      await this.handleParseRejection(parsed);
+      return null;
+    }
 
     const { frontmatter, body } = parsed;
     const traceId = frontmatter.trace_id;
@@ -422,6 +426,27 @@ export class RequestProcessor {
       } catch {
         // Ignore flush errors during processing
       }
+    }
+  }
+
+  /** Fails a request whose file declaration was rejected at the parse boundary (GAP-7):
+   *  the file's status becomes FAILED visibly, and the RequestFailed event is logged
+   *  through a trace-scoped child logger with the offending field, joinable to the request
+   *  by its trace_id. */
+  private async handleParseRejection(rejection: IRequestParseRejection): Promise<void> {
+    const errorMessage = `Invalid '${rejection.field}' frontmatter value`;
+    await this.statusManager.updateStatus(rejection.filePath, RequestStatus.FAILED, errorMessage);
+    if (rejection.traceId) {
+      const traceLogger = this.logger.child({ traceId: rejection.traceId });
+      traceLogger.info(DomainEventType.RequestFailed, rejection.filePath, {
+        error: errorMessage,
+        field: rejection.field,
+      });
+    } else {
+      this.logger.info(DomainEventType.RequestFailed, rejection.filePath, {
+        error: errorMessage,
+        field: rejection.field,
+      });
     }
   }
 
@@ -732,14 +757,13 @@ export class RequestProcessor {
       traceLogger,
     });
 
-    const taskComplexity = this.taskComplexityClassifier.classify(blueprint, request, analysis);
     const classified = this.taskComplexityClassifier.classifyWithSource(blueprint, request, analysis);
     request.taskComplexity = classified.complexity;
     request.taskComplexitySource = classified.source;
 
     const agentRunner = this.processorConfig.agentRunner;
     if (agentRunner) {
-      await this.selectProvider(taskComplexity, traceId, traceLogger);
+      await this.selectProvider(classified.complexity, traceId, traceLogger);
     }
     if (!agentRunner) throw new Error("RequestProcessor requires agentRunner in config");
     const metadata: IRequestMetadata = {
@@ -768,6 +792,9 @@ export class RequestProcessor {
       traceId,
       traceLogger,
     });
+    // GAP-5: carry the planning run's FINAL resolved skill set (pinned ∪ matched ∪ defaults)
+    // onto the plan so execution applies the same skill floors this request resolved with.
+    if (result.skillsApplied) metadata.resolvedSkillIds = result.skillsApplied;
     let attempts = 0;
     const maxRetries = 2;
 
@@ -799,6 +826,7 @@ export class RequestProcessor {
             traceId,
             traceLogger,
           });
+          if (result.skillsApplied) metadata.resolvedSkillIds = result.skillsApplied;
           continue;
         }
         throw error;

@@ -19,6 +19,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { TaskComplexity } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core";
+import type { IAgentEffortResolvedPayload } from "@exaix/core/events";
 
 const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 
@@ -93,16 +94,28 @@ Deno.test("[integration] AgentRunner.run journals heuristic and native-adaptive 
 
     assertEquals(heuristicRows.length, 1);
     const heuristicPayload = JSON.parse(heuristicRows[0].payload) as Record<string, JSONValue>;
+    assertSatisfiesType(heuristicPayload);
     assertEquals(heuristicPayload.effort_basis, "heuristic");
     assertEquals(heuristicPayload.effort, "low");
+    assertEquals(heuristicPayload.effort_declaration_source, "role");
+    assertEquals(heuristicPayload.thinking_declaration_source, "none");
     const heuristicInputs = heuristicPayload.heuristic_inputs as Record<string, JSONValue>;
     assertEquals(heuristicInputs.complexity_source, "analysis");
 
     assertEquals(adaptiveRows.length, 1);
     const adaptivePayload = JSON.parse(adaptiveRows[0].payload) as Record<string, JSONValue>;
+    assertSatisfiesType(adaptivePayload);
     assertEquals(adaptivePayload.thinking_basis, "native-adaptive");
     assertEquals(adaptivePayload.thinking, undefined);
+    assertEquals(adaptivePayload.thinking_declaration_source, "role");
+    assertEquals(adaptivePayload.effort_declaration_source, "none");
   } finally {
     await cleanup();
   }
 });
+
+/** Compile-time link: the payload must satisfy IAgentEffortResolvedPayload (the shared
+ *  builder's return type), proving both emitters produce the same typed shape (GAP-4). */
+function assertSatisfiesType(payload: Record<string, JSONValue>): IAgentEffortResolvedPayload {
+  return payload as IAgentEffortResolvedPayload;
+}

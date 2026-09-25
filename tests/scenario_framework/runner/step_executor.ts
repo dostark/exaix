@@ -81,19 +81,25 @@ const WAIT_FOR_FILE_POLL_INTERVAL_MS = 2000; // Check every 2 seconds
 export const CWD_WORKTREE_TOKEN = "$WORKTREE";
 
 /** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
- *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key). Resolved at
- *  step-execution time (the trace does not exist at scenario load). */
+ *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key), and
+ *  `$JOURNAL_BASELINE` / `$STEP_BASELINE` → the scenario / per-step barrier rowid floors.
+ *  Resolved at step-execution time (the trace does not exist at scenario load). */
 export function substituteRuntimeVars(
   spec: ICommandSpec,
   workspaceRoot: string,
   baselineRowid?: Opt<number, Reason.OptionalInput>,
+  stepBaselineRowid?: Opt<number, Reason.OptionalInput>,
 ): ICommandSpec {
   const traceId = resolveCurrentTrace(workspaceRoot, baselineRowid);
   const vars: Record<string, string> = {
-    // The scenario's journal rowid baseline — resolvable even before any request exists (e.g. a
-    // `daemon.ready` wait). `exactl journal wait --since $JOURNAL_BASELINE` must ignore events a
-    // PRIOR scenario in a shared sandbox produced; 0 (no baseline) means "any matching event".
+    // $TRACE_ID/$REQUEST_ID resolve from the SCENARIO baseline (a per-step barrier baseline
+    // rises above the request as execution progresses, so it would resolve to nothing);
+    // $JOURNAL_BASELINE likewise stays scenario-wide for backward compatibility. The per-step
+    // barrier baseline is exposed separately as $STEP_BASELINE so a leg can scope its
+    // `daemon.ready`/event waits to exactly the events a boot it just performed produced
+    // (GAP-8) without changing existing scenarios' semantics.
     JOURNAL_BASELINE: String(baselineRowid ?? 0),
+    STEP_BASELINE: String(stepBaselineRowid ?? baselineRowid ?? 0),
   };
   if (traceId) {
     vars.TRACE_ID = traceId;
@@ -243,6 +249,7 @@ export async function executeScenarioStep(
     commandSpec,
     options.cwd || Deno.cwd(),
     options.traceBaselineRowid ?? options.journalBaselineRowid,
+    options.journalBaselineRowid,
   );
 
   if (options.verbose) {
@@ -686,7 +693,7 @@ function isBenignRequestSkip(payload: string): boolean {
 /** Resolve the current scenario's request trace: the first `request.created` rowid above the
  *  scenario's journal baseline. ASC+LIMIT 1 stays deterministic even when two `request.created`
  *  rows share a millisecond, since rowid (unlike the timestamp) is strictly monotonic. */
-function resolveCurrentTrace(
+export function resolveCurrentTrace(
   workspaceRoot: string,
   baselineRowid?: Opt<number, Reason.OptionalInput>,
 ): string | undefined {

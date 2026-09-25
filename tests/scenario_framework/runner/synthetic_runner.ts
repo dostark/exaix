@@ -873,6 +873,8 @@ async function executeSyntheticStep(
     portalAliases: options.portalAliases,
     stepOutcomes: options.stepOutcomes,
     exactlExecutable: options.exactlExecutable,
+    journalBaselineRowid: options.journalBaselineRowid,
+    traceBaselineRowid: options.traceBaselineRowid,
   });
 
   return {
@@ -899,6 +901,8 @@ async function evaluateInputCriteria(
         portalAliases: options.portalAliases,
         stepOutcomes: options.stepOutcomes,
         exactlExecutable: options.exactlExecutable,
+        journalBaselineRowid: options.journalBaselineRowid,
+        traceBaselineRowid: options.traceBaselineRowid,
       }),
     );
   }

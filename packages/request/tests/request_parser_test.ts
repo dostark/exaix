@@ -9,9 +9,10 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { RequestParser } from "@exaix/request";
+import { isRequestParseRejection, RequestParser } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
 import type { EventLogger } from "@exaix/core/logger";
+import type { IParsedRequestFile } from "@exaix/core/request";
 import {
   TEST_LOG_ACTION_FILE_NOT_FOUND,
   TEST_LOG_ACTION_FRONTMATTER_INVALID,
@@ -68,8 +69,16 @@ async function withTempRequestFile(
     const filePath = join(tempDir, TEST_REQUEST_FILE_NAME);
     await testFn(filePath);
   } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    await Deno.remove(tempDir, { recursive: true });
   }
+}
+
+/** The parse() result is a parsed file (never a rejection) for these fixtures. */
+function parsedFile(result: Awaited<ReturnType<RequestParser["parse"]>>): IParsedRequestFile {
+  if (result === null || isRequestParseRejection(result)) {
+    throw new Error("expected a parsed request file");
+  }
+  return result;
 }
 
 Deno.test("RequestParser: returns null and logs when file is missing", async () => {
@@ -128,9 +137,9 @@ Deno.test("RequestParser: normalizes unknown status to pending", async () => {
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    assertEquals(result?.frontmatter.trace_id, TEST_REQUEST_TRACE_ID);
-    assertEquals(result?.frontmatter.status, RequestStatus.PENDING);
-    assertEquals(result?.body.trim(), TEST_REQUEST_BODY);
+    assertEquals(parsedFile(result).frontmatter.trace_id, TEST_REQUEST_TRACE_ID);
+    assertEquals(parsedFile(result).frontmatter.status, RequestStatus.PENDING);
+    assertEquals(parsedFile(result).body.trim(), TEST_REQUEST_BODY);
   });
 });
 
@@ -172,7 +181,7 @@ Deno.test("RequestParser: parses canonical.agent_role from frontmatter", async (
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    assertEquals(result?.frontmatter.agent_role, "senior-coder");
+    assertEquals(parsedFile(result).frontmatter.agent_role, "senior-coder");
   });
 });
 
@@ -195,7 +204,7 @@ Deno.test("RequestParser: does not alias the retired identity field to agent_rol
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    assertEquals(result?.frontmatter.agent_role, undefined);
+    assertEquals(parsedFile(result).frontmatter.agent_role, undefined);
   });
 });
 
@@ -221,6 +230,6 @@ Deno.test("RequestParser: ignores agent field (Phase 54 removed)", async () => {
 
     assertEquals(errors.length, 0);
     // agent field is no longer recognized - agent_role should be undefined
-    assertEquals(result?.frontmatter.agent_role, undefined);
+    assertEquals(parsedFile(result).frontmatter.agent_role, undefined);
   });
 });

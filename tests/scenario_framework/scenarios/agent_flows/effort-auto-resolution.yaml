@@ -9,9 +9,10 @@ portals: []
 
 steps:
   # --- Heuristic leg: claude-cli (subscription-billed), --effort auto on a COMPLEX request.
-  # The exact scalar values (effort_basis == "heuristic", effort == "high") are asserted by the
-  # non-live Steps 1/2/6 integration tests; this live leg proves a real daemon on the real
-  # provider path emits the event. ---
+  # TaskComplexity is PINNED deterministically by forcing the heuristic analyzer
+  # (request_analysis.mode = heuristic): the long refactor prompt's content drives
+  # COMPLEX, so effort must resolve to high. The leg is the scenario's FIRST request, so
+  # trace_scope: current resolves to THIS request's trace. ---
   - id: "write-config-heuristic"
     type: "write-file"
     path: "exa.config.toml"
@@ -33,6 +34,10 @@ steps:
       provider = "claude-cli"
       model = "sonnet"
 
+      [request_analysis]
+      enabled = true
+      mode = "heuristic"
+
       [quality_gate]
       enabled = false
 
@@ -48,7 +53,7 @@ steps:
   - id: "wait-for-daemon-ready"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -73,7 +78,7 @@ steps:
   - id: "wait-effort-heuristic"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "300"]
+    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$STEP_BASELINE", "--timeout", "300"]
     timeout_sec: 300
     input_criteria: []
     output_criteria:
@@ -83,21 +88,24 @@ steps:
         equals: 0
   - id: "journal-heuristic"
     type: "journal-assert"
-    input_criteria:
-      - id: "journal-query-heuristic"
-        score_weight: 0.5
-        kind: "journal-event-exists"
-        event_type: "agent.effort_resolved"
+    input_criteria: []
     output_criteria:
       - id: "journal-event-heuristic"
-        score_weight: 0.5
+        score_weight: 1.0
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
+        trace_scope: "current"
+        payload_equals:
+          effort_basis: "heuristic"
+          effort: "high"
+          heuristic_inputs.complexity_source: "analysis"
 
   # --- Native-adaptive leg: Claude Code CLI with a subscription (not metered API), model
-  # claude-sonnet-5, --thinking auto. EffortResolver's native-adaptive set includes CLAUDE_CLI,
-  # so thinking_basis == "native-adaptive" is journaled and no thinking-disabling flag reaches
-  # the CLI. ---
+  # claude-sonnet-5, --thinking auto. EffortResolver's native-adaptive set includes CLAUDE_CLI
+  # (verified: Claude Code runs adaptive by default on native-adaptive models), so
+  # thinking_basis == "native-adaptive" is journaled and no thinking-disabling setting reaches
+  # the CLI. This leg is NOT the first request, so trace_scope current does not apply; the
+  # native-adaptive basis is a value NO other leg emits, so payload_equals alone is specific. ---
   - id: "write-config-native"
     type: "write-file"
     path: "exa.config.toml"
@@ -119,6 +127,10 @@ steps:
       provider = "claude-cli"
       model = "claude-sonnet-5"
 
+      [request_analysis]
+      enabled = true
+      mode = "heuristic"
+
       [quality_gate]
       enabled = false
 
@@ -134,7 +146,7 @@ steps:
   - id: "wait-for-daemon-ready-native"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -159,7 +171,7 @@ steps:
   - id: "wait-effort-native"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "300"]
+    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$STEP_BASELINE", "--timeout", "300"]
     timeout_sec: 300
     input_criteria: []
     output_criteria:
@@ -169,21 +181,20 @@ steps:
         equals: 0
   - id: "journal-native"
     type: "journal-assert"
-    input_criteria:
-      - id: "journal-query-native"
-        score_weight: 0.5
-        kind: "journal-event-exists"
-        event_type: "agent.effort_resolved"
+    input_criteria: []
     output_criteria:
       - id: "journal-event-native"
-        score_weight: 0.5
+        score_weight: 1.0
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
+        payload_equals:
+          thinking_basis: "native-adaptive"
 
   # --- Flow + judge floor leg: a self-contained fixture flow with two declared steps
   # (effort low / effort high, same role) and a quality-judge step whose blueprint declares
   # effort: low — the judge role floor raises it, so floors_applied contains
-  # role:quality-judge in the journaled agent.effort_resolved. No portal required. ---
+  # role:quality-judge. Path is flow_context and the two step efforts differ, which no other
+  # leg emits, so payload_equals is leg-specific. ---
   - id: "write-config-flow"
     type: "write-file"
     path: "exa.config.toml"
@@ -273,7 +284,7 @@ steps:
   - id: "wait-for-daemon-ready-flow"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -292,7 +303,7 @@ steps:
   - id: "wait-flow-completed"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "flow.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "600"]
+    args: ["wait", "--event", "flow.completed", "--since-rowid", "$STEP_BASELINE", "--timeout", "600"]
     timeout_sec: 600
     input_criteria: []
     output_criteria:
@@ -300,6 +311,30 @@ steps:
         score_weight: 1.0
         kind: "command-exit-code"
         equals: 0
+
+  - id: "journal-flow-analyze"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "flow-step-analyze-low"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+        payload_equals:
+          path: "flow_step"
+          effort: "low"
+
+  - id: "journal-flow-implement"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "flow-step-implement-high"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "agent.effort_resolved"
+        payload_equals:
+          path: "flow_step"
+          effort: "high"
 
   - id: "journal-flow-judge"
     type: "journal-assert"
@@ -314,7 +349,9 @@ steps:
 
   # --- Skill-floor leg: a SIMPLE request pinned to the response-contract-security-analysis
   # skill with --effort auto resolves to low heuristically, then the skill's `effort: medium`
-  # floor raises it — floors_applied contains the skill id. ---
+  # floor raises it — effort_basis skill-floor, effort medium, heuristic_inputs still present
+  # (GAP-3), and the resolved_skill_ids passthrough lets the execution path apply the same
+  # floor (GAP-5). ---
   - id: "request-effort-skill-floor"
     type: "exactl"
     command: "request"
@@ -337,7 +374,7 @@ steps:
   - id: "wait-effort-skill-floor"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "300"]
+    args: ["wait", "--event", "agent.effort_resolved", "--since-rowid", "$STEP_BASELINE", "--timeout", "300"]
     timeout_sec: 300
     input_criteria: []
     output_criteria:
@@ -354,5 +391,7 @@ steps:
         score_weight: 1.0
         kind: "journal-event-exists"
         event_type: "agent.effort_resolved"
-        payload_includes:
-          floors_applied: ["550e8400-e29b-41d4-a716-446655440014"]
+        payload_equals:
+          effort_basis: "skill-floor"
+          effort: "medium"
+          heuristic_inputs.complexity_source: "analysis"

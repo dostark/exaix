@@ -12,7 +12,12 @@ export { buildPlanValidationFeedbackPrompt } from "./common.ts";
 export { RequestAnalyzer } from "./analysis/mod.ts";
 export { analyzeHeuristic, deriveAnalysisPath, LlmAnalyzer, loadAnalysis, saveAnalysis } from "./analysis/mod.ts";
 
-export { RequestParser, StatusManager } from "./processing/mod.ts";
+export {
+  type IRequestParseRejection,
+  isRequestParseRejection,
+  RequestParser,
+  StatusManager,
+} from "./processing/mod.ts";
 
 export {
   type IFlowResult,

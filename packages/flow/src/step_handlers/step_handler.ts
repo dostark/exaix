@@ -8,6 +8,7 @@
  */
 
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
@@ -66,9 +67,9 @@ export interface IStepExecutionContext {
     /** The flow's portal alias; required for a strategy-routed step. */
     readonly portal?: string;
     /** Per-step reasoning-effort declaration ("auto" defers to EffortResolver). */
-    readonly effort?: string;
+    readonly effort?: EffortDeclaration;
     /** Per-step thinking declaration ("auto" defers to EffortResolver). */
-    readonly thinking?: string | boolean;
+    readonly thinking?: ThinkingDeclaration;
     /** True for the flow's terminal `output.format: json` step (`flow_runner.isFinalJsonStrategyStep`);
      *  tells a strategy-routed executor to coerce untagged output into parseable Plan JSON. */
     readonly expectPlanJsonOutput?: boolean;

@@ -23,7 +23,7 @@ import {
 } from "../schema/step_schema.ts";
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
-import { resolveExecutionBase } from "./step_executor.ts";
+import { resolveCurrentTrace, resolveExecutionBase } from "./step_executor.ts";
 import {
   computeAbstentionCorrect,
   computeNdcgAtK,
@@ -91,6 +91,14 @@ export interface IEvaluateCriterionOptions {
   exactlExecutable?: string;
   /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
   stepOutcomes?: IScenarioStepOutcome[];
+  /** Per-step barrier journal rowid floor — a journal-event-exists criterion's
+   *  `trace_scope: current` resolves the request trace against this when the scenario
+   *  baseline is absent. */
+  journalBaselineRowid?: number;
+  /** The SCENARIO's journal rowid baseline (captured at scenario start) — `trace_scope: current`
+   *  resolves the current request's trace against this (the per-step barrier baseline rises
+   *  above the request). */
+  traceBaselineRowid?: number;
   /** Fires after a real (non-mock) llm-judge call resolves, before scoring. Absent by
    *  default — ordinary history/scoring behavior is unaffected either way. */
   calibrationCapture?: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>;
@@ -108,6 +116,10 @@ export interface IEvaluateStepOutcomeOptions {
   artifactBaselineMs?: number;
   /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
   stepOutcomes?: IScenarioStepOutcome[];
+  /** Per-step barrier journal rowid floor, forwarded to journal-event-exists criteria. */
+  journalBaselineRowid?: number;
+  /** The SCENARIO's journal rowid baseline, forwarded to `trace_scope: current` criteria. */
+  traceBaselineRowid?: number;
 }
 
 export interface IScenarioStepOutcome {
@@ -282,6 +294,8 @@ export async function evaluateStepOutcome(
     portalAliases: options.portalAliases,
     exactlExecutable: options.exactlExecutable,
     stepOutcomes: options.stepOutcomes,
+    journalBaselineRowid: options.journalBaselineRowid,
+    traceBaselineRowid: options.traceBaselineRowid,
   });
 
   if (hasFailedCriterion(inputResults)) {
@@ -320,6 +334,8 @@ export async function evaluateStepOutcome(
     portalAliases: options.portalAliases,
     exactlExecutable: options.exactlExecutable,
     stepOutcomes: options.stepOutcomes,
+    journalBaselineRowid: options.journalBaselineRowid,
+    traceBaselineRowid: options.traceBaselineRowid,
   });
   const criterionResults = [...inputResults, ...outputResults];
 
@@ -343,6 +359,8 @@ interface IEvaluateCriteriaBatchOptions {
   exactlExecutable?: string;
   /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
   stepOutcomes?: IScenarioStepOutcome[];
+  journalBaselineRowid?: number;
+  traceBaselineRowid?: number;
 }
 
 async function evaluateCriteriaBatch(
@@ -362,6 +380,8 @@ async function evaluateCriteriaBatch(
         portalAliases: options.portalAliases,
         exactlExecutable: options.exactlExecutable,
         stepOutcomes: options.stepOutcomes,
+        journalBaselineRowid: options.journalBaselineRowid,
+        traceBaselineRowid: options.traceBaselineRowid,
       }),
     );
   }
@@ -686,9 +706,41 @@ async function evaluateJournalEventExistsCriterion(
   }
 
   // Modern Exaix uses 'action_type' for event identification in the SQLite journal.
-  const typeMatches = events.filter((e) =>
+  let typeMatches = events.filter((e) =>
     e.action_type === criterion.event_type || e.event_type === criterion.event_type
   );
+
+  // Opt-in `trace_scope: current`: restrict matches to the CURRENT scenario request's trace,
+  // so a globally found event is NOT evidence the request under test emitted it (GAP-8).
+  if (criterion.trace_scope === "current") {
+    const traceId = resolveCurrentTrace(
+      options.workspaceRoot,
+      options.traceBaselineRowid ?? options.journalBaselineRowid,
+    );
+    if (traceId !== undefined) {
+      typeMatches = typeMatches.filter((e) => e.trace_id === traceId);
+    }
+  }
+
+  // Requires a matching event whose payload equals EVERY scalar in criterion.payload_equals at
+  // its dotted path (e.g. heuristic_inputs.complexity_source). A missing key FAILS — this is
+  // a value assertion, unlike a bare event-type match (GAP-8).
+  if (criterion.payload_equals) {
+    const equals = criterion.payload_equals;
+    if (typeMatches.some((e) => payloadEqualsAll(e, equals))) return buildPassedResult(options, []);
+    const summary = JSON.stringify(equals);
+    return buildFailedResult(options, {
+      message: typeMatches.length === 0
+        ? `expected journal event type: ${criterion.event_type}`
+        : `expected a '${criterion.event_type}' event whose payload equals ${summary}, but no matching event did`,
+      expectedValue: `${criterion.event_type} with payload ${summary}`,
+      observedValue: typeMatches.length === 0
+        ? `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`
+        : `${typeMatches.length} matching event(s), payloads: ${
+          typeMatches.slice(0, 5).map((e) => String(e.payload)).join(" | ")
+        }`,
+    });
+  }
 
   // Requires a matching event whose payload carries, under each named key, an array containing
   // every listed string — proving e.g. that ids pinned in request frontmatter actually reached
@@ -734,6 +786,18 @@ async function evaluateJournalEventExistsCriterion(
     observedValue: typeMatches.length === 0
       ? `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`
       : `${typeMatches.length} matching event(s), all carrying ${absentSummary}`,
+  });
+}
+
+/** True when the event's payload equals EVERY scalar in `expected` at its dotted path.
+ *  A key that does not exist at that path FAILS (never treated as a match). */
+function payloadEqualsAll(event: IJournalEvent, expected: IJournalPayloadFields): boolean {
+  const payload = parseEventPayload(event);
+  if (!payload) return false;
+  return Object.entries(expected).every(([key, value]) => {
+    const selection = readJsonPath(payload, `$${key.startsWith(".") ? key : `.${key}`}`);
+    if (!selection.exists) return false;
+    return JSON.stringify(selection.value) === JSON.stringify(value);
   });
 }
 

@@ -212,6 +212,18 @@ const JournalEventExistsCriterionSchema = BaseCriterionSchema.extend({
   // key, an ARRAY containing every listed string (membership, not equality) — lets a
   // criterion pin ids out of e.g. `skills.resolved`'s `skill_ids` set. See assertions.ts.
   payload_includes: z.record(z.string(), z.array(z.string().min(1)).min(1)).optional(),
+  // When set, a matching event must exist whose parsed `payload`, at each dotted-path key
+  // (e.g. `heuristic_inputs.complexity_source`), carries a SCALAR equal to the given value.
+  // A missing key FAILS the criterion (value-asserting, unlike a bare event-type match) —
+  // see assertions.ts.
+  payload_equals: z.record(
+    z.string().min(1),
+    z.union([z.string(), z.number(), z.boolean(), z.null()]),
+  ).optional(),
+  // Opt-in `trace_scope: current` restricts matches to the CURRENT scenario request's trace
+  // (the first request.created above the scenario journal baseline) — without it, a
+  // globally found event is not evidence the request under test emitted it. See assertions.ts.
+  trace_scope: z.literal("current").optional(),
 }).strict();
 
 const CommandExitCodeCriterionSchema = BaseCriterionSchema.extend({
