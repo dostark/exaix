@@ -122,3 +122,61 @@ Deno.test("EffortResolver: a concrete role effort with thinking empty resolves e
   assertEquals(result.thinking, undefined);
   assertEquals(result.thinkingBasis, "unset");
 });
+
+Deno.test("EffortResolver: a skill effort floor raises a low heuristic result to medium", () => {
+  const signals = baseSignals({ taskComplexity: TaskComplexity.SIMPLE });
+  const result = resolver.resolve(
+    { role: { effort: "auto" } },
+    { ...signals, skillFloors: [{ skillId: "sc", effort: "medium" }] },
+  );
+  assertEquals(result.effort, "medium" as EffortTier);
+  assertEquals(result.effortBasis, "skill-floor");
+  assertEquals(result.floorsApplied, ["sc"]);
+});
+
+Deno.test("EffortResolver: a skill effort floor raises unset to medium", () => {
+  const result = resolver.resolve(
+    { role: {} },
+    { ...baseSignals(), skillFloors: [{ skillId: "sc", effort: "medium" }] },
+  );
+  assertEquals(result.effort, "medium" as EffortTier);
+  assertEquals(result.effortBasis, "skill-floor");
+});
+
+Deno.test("EffortResolver: a skill effort floor never lowers high", () => {
+  const result = resolver.resolve(
+    { role: { effort: "high" } },
+    { ...baseSignals(), skillFloors: [{ skillId: "sc", effort: "medium" }] },
+  );
+  assertEquals(result.effort, "high" as EffortTier);
+  assertEquals(result.effortBasis, "declared");
+  assertEquals(result.floorsApplied, []);
+});
+
+Deno.test("EffortResolver: thinking floors OR together across skills", () => {
+  const result = resolver.resolve(
+    { role: {} },
+    {
+      ...baseSignals(),
+      providerType: ProviderType.CLAUDE_CLI,
+      model: "sonnet",
+      skillFloors: [
+        { skillId: "a", thinking: false },
+        { skillId: "b", thinking: true },
+      ],
+    },
+  );
+  assertEquals(result.thinking, true);
+  assertEquals(result.thinkingBasis, "skill-floor");
+});
+
+Deno.test("EffortResolver: an explicit request-level low is NOT raised by a skill floor", () => {
+  const result = resolver.resolve(
+    { request: { effort: "low" }, role: { effort: "high" } },
+    { ...baseSignals(), skillFloors: [{ skillId: "sc", effort: "medium" }] },
+  );
+  assertEquals(result.effort, "low" as EffortTier);
+  assertEquals(result.effortBasis, "declared");
+  assertEquals(result.declarationSource, "request");
+  assertEquals(result.floorsApplied, []);
+});

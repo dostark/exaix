@@ -13,7 +13,7 @@ import { resolveMemoryExecutionRoot } from "../config/paths.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IEffortDeclarationPair } from "@exaix/ai";
-import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
+import type { EffortTier, IModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -307,6 +307,10 @@ export class PlanExecutor {
     if (matchedSkillTools.length > 0) {
       options.matchedSkillTools = matchedSkillTools;
     }
+    const matchedSkillFloors = await this.deriveMatchedSkillFloors(context);
+    if (matchedSkillFloors.length > 0) {
+      options.matchedSkillFloors = matchedSkillFloors;
+    }
 
     // Builds the allocator here (rather than leaving it undefined) so it carries the
     // edition-selected registry, bypassing AgentComposer's own default construction.
@@ -366,8 +370,45 @@ export class PlanExecutor {
   }
 
   /** Re-runs the same skill match as deriveTopSkillTaskTypes (kept separate to leave that
-   *  method's tested behaviour untouched), then fetches each match's full ISkill for its
-   *  `tools`; returns one array per match, unioned/intersected with permitted_tools by the caller. */
+   *  one-hot path untouched) and returns each matched skill's declared effort/thinking
+   *  floor, so the execution path can raise a resolution that a request matches (GAP-11). */
+  private async deriveMatchedSkillFloors(
+    context: IPlanContext,
+  ): Promise<Array<{ skillId: string; effort?: EffortTier; thinking?: boolean }>> {
+    const skills = this.options.context?.skills;
+    const requestText = context.frontmatter.subject;
+    if (!skills || typeof requestText !== "string" || requestText.length === 0) {
+      return [];
+    }
+
+    const { matches } = await skills.matchSkills({
+      requestText,
+      tags: frontmatterTags(context),
+      agentRole: context.agent_role,
+    });
+
+    return await Promise.all(
+      matches.map(async (match) => {
+        const skill = await skills.getSkill(match.skillId);
+        if (!skill || (skill.effort === undefined && skill.thinking === undefined)) return null;
+        return {
+          skillId: match.skillId,
+          ...(skill.effort !== undefined ? { effort: skill.effort } : {}),
+          ...(skill.thinking !== undefined ? { thinking: skill.thinking } : {}),
+        };
+      }),
+    ).then((entries) =>
+      entries.filter((e) => e !== null) as Array<{
+        skillId: string;
+        effort?: EffortTier;
+        thinking?: boolean;
+      }>
+    );
+  }
+
+  /** Re-runs the same skill match as deriveTopSkillTaskTypes (that one-hot path stays
+   *  untouched), then fetches each match's full ISkill for its `tools`; returns one array
+   *  per match, unioned/intersected with permitted_tools by the caller. */
   private async deriveMatchedSkillTools(context: IPlanContext): Promise<Array<string[] | undefined>> {
     const skills = this.options.context?.skills;
     const requestText = context.frontmatter.subject;

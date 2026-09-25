@@ -42,6 +42,7 @@
     }
   ],
   "critical": true,
+  "effort": "medium",
   "compatible_with": {
     "agents": [
       "*"

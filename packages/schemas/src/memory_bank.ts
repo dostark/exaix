@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { DEFAULT_QUERY_LIMIT, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 import { MEMORY_STATUS_VALUES } from "@exaix/core/status";
+import { EffortTierSchema } from "./model_intent.ts";
 import {
   type ActivityType,
   ConfidenceAssessmentLevel,
@@ -387,6 +388,17 @@ export const SkillSchema = z.object({
    *  contract and a few hard constraints; ordinary methodology stays droppable. */
   critical: z.boolean().optional().describe(
     "Render as a protected, non-droppable prompt segment (treated as false when absent)",
+  ),
+
+  /** Minimum reasoning effort this skill's deliverable requires. A floor, never a
+   *  downgrade — a matched call's resolved effort is raised to meet it. "auto" is not a
+   *  valid floor. Absent means no floor. */
+  effort: EffortTierSchema.optional().describe(
+    "Minimum reasoning effort this skill's deliverable requires (floor, not an override)",
+  ),
+  /** Minimum thinking requirement, same floor semantics as effort. */
+  thinking: z.boolean().optional().describe(
+    "Whether this skill's deliverable requires extended thinking (floor, not an override)",
   ),
 
   /** Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit, git_create_branch). When

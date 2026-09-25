@@ -459,7 +459,12 @@ export class AgentRunner implements IAgentRunner {
 
     // Execute via the model provider (with retry if enabled)
     const callSite = this.resolveCallSite(request);
-    const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole);
+    const skillFloors = skillsContext?.matched?.map((m) => ({
+      skillId: m.skillId,
+      effort: m.effort,
+      thinking: m.thinking,
+    })) ?? [];
+    const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     const hints: IGenerationHints = {
       conversationId: traceId,
@@ -528,6 +533,7 @@ export class AgentRunner implements IAgentRunner {
     blueprint: IBlueprint,
     request: IParsedRequest,
     agentRole: string,
+    skillFloors: ReadonlyArray<{ skillId: string; effort?: EffortTier; thinking?: boolean }>,
   ): IEffortResolution {
     const selectedModel = this.selectedModelIdentity();
     const providerType = selectedModel.providerType ?? resolveProviderType(selectedModel.provider);
@@ -542,7 +548,7 @@ export class AgentRunner implements IAgentRunner {
       model: selectedModel.model,
       providerSupportsThinking: providerMetadata?.supportsThinking === true,
       anthropicThinkingDefault: this.config?.context?.config.get().ai_anthropic?.thinking_default,
-      skillFloors: [],
+      skillFloors,
       agentRole,
     };
     return this.effortResolver.resolve(
@@ -691,6 +697,8 @@ export class AgentRunner implements IAgentRunner {
         matchScore: matchScores.get(s.id) ?? 0.5,
         tags: s.triggers.tags || [],
         critical: s.critical ?? false,
+        effort: s.effort,
+        thinking: s.thinking,
         examples: s.examples,
       })),
       totalAvailable,

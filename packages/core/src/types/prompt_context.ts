@@ -32,6 +32,11 @@ export const ZSkillMatch = z.object({
   /** Criticality flag carried from the skill so the prompt formatter can render critical
    * skills as a protected segment. */
   critical: z.boolean().default(false),
+  /** Minimum effort floor carried from the skill so EffortResolver can raise the resolved
+   *  value (floors never lower). */
+  effort: z.enum(["low", "medium", "high"]).optional(),
+  /** Minimum thinking floor carried from the skill (logical OR of matched floors). */
+  thinking: z.boolean().optional(),
   /** Illustrative content split from `content` at generation time, carried from
    *  `ISkill.examples`. Rendered by the prompt formatter after Instructions, omitted in
    *  trimmed render mode for ordinary (non-critical) skills. */

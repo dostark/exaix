@@ -9,6 +9,7 @@ name: "Response Contract — Security Analysis"
 version: "1.0.0"
 description: "The <content> JSON template for a security-assessment deliverable (findings, compliance, remediation). Applies alongside response-contract, only for security-review requests."
 critical: true
+effort: medium
 
 triggers:
   keywords:

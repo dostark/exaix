@@ -60,7 +60,7 @@ import type { IDogfoodContextPort, Opt, Reason, TaskType } from "@exaix/core/typ
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { EffortDeclaration, IModelIntent, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
+import type { EffortDeclaration, EffortTier, IModelIntent, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 import {
   COMPLEXITY_SOURCE_ANALYSIS,
   COMPLEXITY_SOURCE_DEFAULT,
@@ -121,6 +121,10 @@ export interface IAgentComposerOptions {
    *  skill. A caller that already matched skills (e.g. PlanExecutor) supplies this so
    *  executeStep can union them and intersect with the blueprint's permitted_tools. */
   matchedSkillTools?: Array<string[] | undefined>;
+  /** The effort/thinking floor declared by every skill matched for this execution, one
+   *  entry per matched skill. A caller that already matched skills supplies this so
+   *  executeStep can include skill floors in its resolution (floors only raise). */
+  matchedSkillFloors?: Array<{ skillId: string; effort?: EffortTier; thinking?: boolean }>;
 }
 
 /** Dependencies for AgentComposer constructor. */
@@ -483,7 +487,7 @@ export class AgentComposer {
         model: blueprint.model,
         providerSupportsThinking: metadata?.supportsThinking === true,
         anthropicThinkingDefault: this.config.ai_anthropic?.thinking_default,
-        skillFloors: [],
+        skillFloors: this.options?.matchedSkillFloors ?? [],
         agentRole: options.agent_role,
       },
     );
