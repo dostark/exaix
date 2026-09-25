@@ -87,8 +87,8 @@ Optional fields: conversation_id, links, prompt, tool_audit, model.
 
 ⚠️ Identity accuracy
 
-- Assert your real identity and model. Never write "Antigravity" or "Gemini" unless it is
-  genuinely yours.
+- Assert your real identity and model. Never hallucinate your model name or agent name.
+- Never write "Antigravity" or "Gemini" unless it is genuinely yours.
 
 ⚠️ Validator traps (scripts/check_commit_msg.ts)
 

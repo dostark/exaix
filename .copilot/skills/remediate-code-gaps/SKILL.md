@@ -140,8 +140,8 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
 1. Preflight blocks with "roll back the submodule's last commit"? The submodule was
    committed separately: `git -C exaix-dev-docs reset --soft HEAD~1`, re-run.
 1. Submodule commit SUCCEEDED but the PARENT's `check_commit_msg.ts` rejects the message?
-   Do NOT roll back the submodule (it is valid). Confirm `git -C exaix-dev-docs log --oneline
-   -1`, fix the message, commit the parent directly. Parent rejects the `→ path`
+   Do NOT roll back the submodule, it is already valid. Confirm `git -C exaix-dev-docs
+   log --oneline -1`, fix the message, commit the parent directly. Parent rejects the `→ path`
    convention itself? AMEND the submodule commit (`git -C exaix-dev-docs add <planning-doc>
    && git -C exaix-dev-docs commit --amend --no-edit`) so every item line stays an added
    line of `HEAD~1..HEAD`, re-stage the pointer, commit the parent directly.

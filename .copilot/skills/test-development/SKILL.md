@@ -134,10 +134,13 @@ Assertion sensitivity — a test that cannot fail is worse than no test
   When deleting a test file, grep for it — planning docs cite test paths as ✅ evidence.
 
   TEST-RUN EVIDENCE — a command exit code is not proof the intended tests ran. Retain
-  output naming a non-zero selected-test count and pass/fail counts. Multi-name filters use
-  `--filter '/a|b/'`; a plain `--filter 'a|b'` can select zero tests and exit cleanly —
-  zero selected tests is a failed verification. Evidence cited by a phase claim must
-  survive restarts: copy decisive logs to a durable phase-named output dir, not only /tmp.
+  output naming a non-zero selected-test count and pass/fail counts. In Deno,
+  multiple-name filters use a regex literal such as `--filter '/first case|second case/'`;
+  a plain `--filter 'first|second'` can select zero tests and exit cleanly.
+  Treat zero selected tests as a failed verification. Evidence cited by a phase claim must
+  survive session restarts: `/tmp` must not be the sole user-facing proof artifact. Copy
+  or write decisive logs and manifests to a durable, phase-named workspace/sandbox output directory
+  and cite that path.
 
 Edge case coverage — mandatory test dimensions
 

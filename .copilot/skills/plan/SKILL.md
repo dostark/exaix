@@ -126,8 +126,11 @@ Do / Don't
 - ❌ Design a third-party integration from memory or accept a hack when an official path
   exists (§2F).
 - ❌ Defer documentation updates — they land as the final phase step.
-- ❌ Author code snippets with inline `npm:`/`jsr:`/`https:` specifiers — use a deno.json
-  import-map alias (lint rejects the prefixes).
+- ❌ Author code snippets with inline `npm:`/`jsr:`/`https:` specifiers — `deno lint`
+  rejects them (`no-import-prefix` + `no-unversioned-import`). Reference npm/jsr packages
+  via a deno.json import-map alias (e.g. `"@babel/parser/package.json":
+  "npm:@babel/parser@7.29.8/package.json"`, then
+  `import babelPkg from "@babel/parser/package.json"`).
 
 Prototypes & validation:
 - #review-phase-plan re-verifies the plan against the codebase (a second pass, not first

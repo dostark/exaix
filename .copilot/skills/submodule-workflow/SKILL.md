@@ -56,11 +56,12 @@ For these, do NOT commit the submodule first:
 4. Blocked with **roll back the submodule's last commit**? The submodule was committed
    separately. Fix: `git -C exaix-dev-docs reset --soft HEAD~1`, then re-run the
    orchestrator so both land together.
-5. **Submodule commit SUCCEEDED but the parent's `check_commit_msg.ts` rejects the
-   message** (Structural Bloom, Component Traceability — see `#commit`): do NOT roll back
-   the submodule. Confirm `git -C exaix-dev-docs log --oneline -1`, fix the message, and
-   commit the parent directly — `git add exaix-dev-docs <staged parent files> && git commit
-   -F <fixed-msg>` — skipping `commit_plan_step.ts` (it would re-commit nothing staged).
+5. **Different failure mode — the submodule commit SUCCEEDS but the parent's
+   `check_commit_msg.ts` rejects the message** (Structural Bloom, Component Traceability —
+   see `#commit`): do NOT roll back the submodule. Confirm `git -C exaix-dev-docs
+   log --oneline -1`, fix the message, and commit the parent directly — `git add
+   exaix-dev-docs <staged parent files> && git commit -F <fixed-msg>` — skipping
+   `commit_plan_step.ts` (it would re-commit nothing staged).
 
 The submodule-first rule governs all NON-plan-step changes.
 

@@ -27,10 +27,13 @@ Key points
   criterion/test to `- ✅ <text> → `<staged-path>`` (or `- ⚠️ deferred <text> → `<token>` +
   a ledger row), run fast CI gates, commit submodule plan doc + parent code via
   `scripts/commit_plan_step.ts <msg> --commit` (message carries `plan:`). No `- [ ]` stays.
-- Interrupted? **Chat memory is not reliable evidence.** Cross-check `git log --oneline -N`
-  in both repos and the plan doc's per-step `**Status:**` markers before writing code —
-  trusting stale chat re-implements committed work or drafts against a changed design.
-- File-scoped test commands by default; full-suite only for massive changes or user request.
+- Interrupted? **Chat/session memory is not reliable evidence on its own.** After a
+  compaction, a resumed session, or when another agent/tool may have worked on the phase,
+  ALWAYS cross-check `git log --oneline -N` in both repos and the plan doc's per-step
+  `**Status:**` markers before writing code — trusting stale chat re-implements committed
+  work or drafts against a changed design.
+- Use focused, file-scoped test commands by default; full-suite only for massive changes
+  or user request.
 - **Tests must RUN and pass before a step is complete.** Scenario YAML/test files that were
   only written (parsed/type-checked) but never executed do not count.
 - Reading > ~20 files: batches of 5–10. Read a batch, record findings, continue.
@@ -211,10 +214,9 @@ PHASE-COMPLETION GATE (ONCE, after the last step, before declaring the phase com
       BLOCKING.
   G4. G1–G3 fail? Do not close. Implement the wiring as more steps, or surface the
       production-dead set with the explicit claim that the feature would ship non-functional.
-  G5. Every test implemented was EXECUTED and passed, including scenario/E2E. Shells often
-      set `CI=true`, silently skipping `ignore: CI` real-boot tests (folded into an ignored
-      count). Grep for `ignore:.*CI`, re-run each with `env -u CI deno test --allow-all
-      <file>` and confirm the previously-ignored tests show `ok`.
+G5. Every test implemented was EXECUTED and passed, including scenario/E2E. Agent shells commonly have `CI=true` set, silently skipping `ignore: CI` real-boot tests (folded
+       into an ignored count). Grep for `ignore:.*CI`, re-run each with `env -u CI deno
+       test --allow-all <file>` and confirm the previously-ignored tests show `ok`.
   G6. Event coverage: `deno task check:event-coverage` (full repo). Verify by hand any
       finding on a phase-touched file; a confirmed gap is BLOCKING (add the event or
       document why none applies). Findings on untouched files are pre-existing debt, out of
