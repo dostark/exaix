@@ -32,6 +32,7 @@ topics: ["reference", "docs", "catalog"]
 | Clean Codebase Skill (#clean-codebase) | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md) |
 | Remediate Plan Gaps Skill (#remediate-plan-gaps) | [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md) |
 | Commit Skill (#commit) | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
+| Scenario Framework Testing & Evaluation (#run-scenario-test) | [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md) |
 | Dogfood Development Skill (#dogfood-development) | [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md) |
 | Test Development Skill (#test-development) | [skills/test-development/SKILL.md](skills/test-development/SKILL.md) |
 | Next Phase Selection (#next-phase) | [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md) |
@@ -82,6 +83,7 @@ topics: ["reference", "docs", "catalog"]
 - **`copilot`** → [prompts/README.md](prompts/README.md)
 - **`corpus`** → [docs/README.md](docs/README.md)
 - **`coverage`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
+- **`debugging`** → [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)
 - **`delegation`** → [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`deno-permissions`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)
 - **`dependencies`** → [skills/upgrade-version/SKILL.md](skills/upgrade-version/SKILL.md), [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)
@@ -93,6 +95,7 @@ topics: ["reference", "docs", "catalog"]
 - **`dogfooding`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`edition`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`enterprise`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
+- **`evaluation`** → [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)
 - **`exploration`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`gap-analysis`** → [skills/review-phase-plan/SKILL.md](skills/review-phase-plan/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md), [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)
 - **`git`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
@@ -142,6 +145,7 @@ topics: ["reference", "docs", "catalog"]
 - **`routing`** → [prompts/README.md](prompts/README.md)
 - **`run-command`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)
 - **`sandbox`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
+- **`scenario-framework`** → [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md)
 - **`seam`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`secrets`** → [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md)
 - **`security`** → [skills/review-phase-plan/SKILL.md](skills/review-phase-plan/SKILL.md), [skills/audit-security/SKILL.md](skills/audit-security/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/review-phase-code/SKILL.md](skills/review-phase-code/SKILL.md)
@@ -159,7 +163,7 @@ topics: ["reference", "docs", "catalog"]
 - **`team`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`terminology`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`test-helpers`** → [skills/test-development/SKILL.md](skills/test-development/SKILL.md)
-- **`testing`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
+- **`testing`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md), [skills/run-scenario-test/SKILL.md](skills/run-scenario-test/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`tool-selection`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tool-use`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tools`** → [docs/TOOLS.md](docs/TOOLS.md)

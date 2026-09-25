@@ -26,7 +26,8 @@
     ".copilot/skills/submodule-workflow",
     ".copilot/skills/tdd-workflow",
     ".copilot/skills/test-development",
-    ".copilot/skills/upgrade-version"
+    ".copilot/skills/upgrade-version",
+    ".copilot/skills/run-scenario-test"
   ],
   "permissions": {
     "allow": [

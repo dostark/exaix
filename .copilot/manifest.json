@@ -450,6 +450,22 @@
       "qwen_skill": "commit"
     },
     {
+      "path": ".copilot/skills/run-scenario-test/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Scenario Framework Testing & Evaluation (#run-scenario-test)",
+      "short_summary": "Run exactl eval scenarios — self-contained packs, sandbox-backed agent_flows, and live provider legs — and debug failures with the sandbox journal / daemon-log / verdict helpers.",
+      "version": "1.0.0",
+      "topics": [
+        "evaluation",
+        "scenario-framework",
+        "testing",
+        "testing",
+        "debugging"
+      ],
+      "qwen_skill": "run-scenario-test"
+    },
+    {
       "path": ".copilot/skills/dogfood-development/SKILL.md",
       "agent": "general",
       "scope": "dev",
