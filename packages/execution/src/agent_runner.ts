@@ -197,6 +197,12 @@ export interface IParsedRequest {
    *  scopes call-index assignment per flow step so concurrent steps in the same parallel
    *  wave cannot collide on the same index. Absent for non-flow calls. */
   flowStepId?: string;
+  /** Flow step's own effort declaration, set by AgentComposerAdapter for declared flow
+   *  steps (GAP-4) — distinct from request-level `effort`. */
+  flowStepEffort?: EffortDeclaration;
+  /** Flow step's own thinking declaration, set by AgentComposerAdapter for declared flow
+   *  steps (GAP-4). */
+  flowStepThinking?: ThinkingDeclaration;
 
   /** Resolved portal knowledge snapshot for adaptive inclusion (`portal_knowledge.inclusion
    *  === "adaptive"`). Ephemeral — never persisted to the request file or `knowledge.json`;
@@ -555,6 +561,7 @@ export class AgentRunner implements IAgentRunner {
       {
         role: { effort: blueprint.effort, thinking: blueprint.thinking },
         request: { effort: request.effort, thinking: request.thinking },
+        flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
       },
       signals,
     );

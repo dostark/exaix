@@ -478,6 +478,7 @@ export class AgentComposer {
       {
         request: this.options?.requestDeclaration,
         role: { effort: blueprint.effort, thinking: blueprint.thinking },
+        flowStep: { effort: options.effort, thinking: options.thinking },
       },
       {
         taskComplexity: taskComplexityFromAnalysis(analysis?.complexity),

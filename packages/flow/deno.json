@@ -29,6 +29,8 @@
     "@exaix/testing": "../testing/mod.ts",
     "@exaix/testing/": "../testing/src/",
     "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/providers": "../ai/src/providers/mod.ts",
+    "@exaix/ai/providers.ts": "../ai/src/providers.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/mcp": "../mcp/mod.ts",
     "@exaix/mcp/server": "../mcp/server/mod.ts",

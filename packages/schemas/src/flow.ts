@@ -26,6 +26,7 @@ import {
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
 import { VotingGroupConfigSchema } from "./voting.ts";
+import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 
 import {
   DEFAULT_FLOW_MAX_RETRIES,
@@ -235,6 +236,12 @@ const FlowStepSchemaBase = z.object({
    *  strategy, bypassing capability-based dispatch. Invalid on a DYNAMIC step (which
    *  already has its own tool-selection loop) or a non-agent step type. */
   strategy: FlowStepStrategySchema.optional(),
+  /** Per-step reasoning-effort declaration ("auto" defers to EffortResolver). Mirrors
+   *  `strategy`'s per-step override: an analyze step can run cheap while an implement step
+   *  runs deep, without changing the bound role's own default. */
+  effort: EffortDeclarationSchema.optional(),
+  /** Per-step thinking declaration ("auto" defers to EffortResolver). */
+  thinking: ThinkingDeclarationSchema.optional(),
 });
 
 /** Configuration for a `session_delegate_cycle` flow step. The plan itself is request
@@ -307,6 +314,26 @@ export const FlowStepSchema = FlowStepSchemaBase.extend({
         code: z.ZodIssueCode.custom,
         message: "strategy is only valid on an agent-type step",
         path: ["strategy"],
+      });
+    }
+  }
+
+  if (step.effort !== undefined) {
+    if (step.type !== FlowStepType.AGENT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "effort is only valid on an agent-type step",
+        path: ["effort"],
+      });
+    }
+  }
+
+  if (step.thinking !== undefined) {
+    if (step.type !== FlowStepType.AGENT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "thinking is only valid on an agent-type step",
+        path: ["thinking"],
       });
     }
   }

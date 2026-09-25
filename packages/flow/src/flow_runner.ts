@@ -43,6 +43,7 @@ import type { IToolManifestResolver } from "@exaix/core/types";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
@@ -171,6 +172,11 @@ export interface IFlowStepRequest {
    *  `isFinalJsonStrategyStep`) — a strategy-routed executor uses this to decide whether a
    *  raw, untagged response must be coerced into parseable Plan JSON before `PlanAdapter`. */
   expectPlanJsonOutput?: boolean;
+  /** Per-step reasoning-effort declaration from the step YAML ("auto" defers to
+   *  EffortResolver). */
+  effort?: EffortDeclaration;
+  /** Per-step thinking declaration from the step YAML ("auto" defers to EffortResolver). */
+  thinking?: ThinkingDeclaration;
 }
 
 export interface IParallelGroupSummary {
@@ -1776,6 +1782,8 @@ export class FlowRunner implements IFlowRunner {
         parallelGroupResults: stepRequest.parallelGroupResults,
         portal: stepRequest.portal,
         expectPlanJsonOutput: stepRequest.expectPlanJsonOutput,
+        effort: stepRequest.effort,
+        thinking: stepRequest.thinking,
       },
       flowRunId,
       startedAt,
@@ -1903,6 +1911,8 @@ export class FlowRunner implements IFlowRunner {
       requestAnalysis: originalRequest.requestAnalysis,
       portal: originalRequest.portal,
       expectPlanJsonOutput: isFinalJsonStrategyStep(step, flow),
+      effort: step.effort,
+      thinking: step.thinking,
     };
 
     const stepRequestWithParallelGroups = this.parallelGroupMergeService.attachParallelGroupResults(

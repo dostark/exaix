@@ -180,3 +180,12 @@ Deno.test("EffortResolver: an explicit request-level low is NOT raised by a skil
   assertEquals(result.declarationSource, "request");
   assertEquals(result.floorsApplied, []);
 });
+
+Deno.test("EffortResolver: flowStep beats role precedence", () => {
+  const result = resolver.resolve(
+    { role: { effort: "high" }, flowStep: { effort: "low" } },
+    baseSignals(),
+  );
+  assertEquals(result.effort, "low" as EffortTier);
+  assertEquals(result.declarationSource, "flow_step");
+});

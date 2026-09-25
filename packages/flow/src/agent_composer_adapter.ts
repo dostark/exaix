@@ -37,6 +37,9 @@ import { resolveWorktreeBaseDir } from "./resolve_worktree_base_dir.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
+import { COMPLEXITY_SOURCE_ANALYSIS, COMPLEXITY_SOURCE_DEFAULT, taskComplexityFromAnalysis } from "@exaix/ai";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
+import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 /**
@@ -62,6 +65,10 @@ interface IParsedRequest {
   scenarioId?: string;
   stepId?: string;
   flowStepId?: string;
+  flowStepEffort?: EffortDeclaration;
+  flowStepThinking?: ThinkingDeclaration;
+  taskComplexity?: TaskComplexity;
+  taskComplexitySource?: string;
 }
 
 /**
@@ -148,10 +155,10 @@ export class AgentComposerAdapter {
     if (!loaded) {
       throw new Error(`Blueprint not found for agent_role: ${agentRole}`);
     }
-    const blueprint: IBlueprint = {
-      systemPrompt: loaded.systemPrompt,
-      agentRole: loaded.agentRole,
-    };
+    // GAP-4 fix: use the loader's legacy projection so the flow role's declared
+    // effort/thinking/default_skills reach AgentRunner instead of being dropped.
+    const blueprint: IBlueprint = this.loader.toLegacyBlueprint(loaded);
+    const analysis = request.requestAnalysis;
     const parsedRequest: IParsedRequest = {
       userPrompt: request.userPrompt,
       context: (request.context ?? {}) as IRequestContextContext,
@@ -160,6 +167,10 @@ export class AgentComposerAdapter {
       scenarioId: request.scenarioId,
       stepId: request.stepId,
       flowStepId: request.flowStepId,
+      flowStepEffort: request.effort,
+      flowStepThinking: request.thinking,
+      taskComplexity: taskComplexityFromAnalysis(analysis?.complexity),
+      taskComplexitySource: analysis ? COMPLEXITY_SOURCE_ANALYSIS : COMPLEXITY_SOURCE_DEFAULT,
     };
 
     return await this.runner.run(blueprint, parsedRequest, undefined);
@@ -251,6 +262,8 @@ export class AgentComposerAdapter {
         agent_role: agentRole,
         portal: request.portal,
         strategy,
+        ...(request.effort !== undefined ? { effort: request.effort } : {}),
+        ...(request.thinking !== undefined ? { thinking: request.thinking } : {}),
       };
       const result = await orchestrator.executeStep(context, options);
       // A flow step's prompt requires wrapping the answer in <thought>/<content> tags. ReAct

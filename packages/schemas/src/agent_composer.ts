@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { AgentExecutionErrorType, ExecutionStrategyName, JSONValueSchema, SecurityMode } from "@exaix/core";
+import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 
 /**
  * Security mode for agent execution
@@ -68,6 +69,16 @@ export const AgentExecutionOptionsSchema = z.object({
     .optional().describe(
       "Forced execution strategy, bypassing capability-based dispatch. Set by a flow step's own `strategy` field (Phase 159); absent for the plan-execution path, which keeps capability-based dispatch.",
     ),
+  /** Per-step reasoning-effort declaration ("auto" defers to EffortResolver). Set by a
+   *  flow step's own `effort` field; absent otherwise. */
+  effort: EffortDeclarationSchema.optional().describe(
+    "Per-step reasoning-effort declaration; set by a flow step's own `effort` field",
+  ),
+  /** Per-step thinking declaration ("auto" defers to EffortResolver). Set by a flow step's
+   *  own `thinking` field. */
+  thinking: ThinkingDeclarationSchema.optional().describe(
+    "Per-step thinking declaration; set by a flow step's own `thinking` field",
+  ),
 });
 export type IAgentExecutionOptions = z.output<
   typeof AgentExecutionOptionsSchema
