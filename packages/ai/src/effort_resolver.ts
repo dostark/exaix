@@ -12,8 +12,9 @@
  * @related-files [packages/execution/src/agent_runner.ts, packages/execution/src/agent_composer.ts, packages/request/src/task_complexity_classifier.ts]
  */
 
-import { ProviderType, TaskComplexity } from "@exaix/core";
+import { ConfigValueType, ProviderType, SwapClass, TaskComplexity } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { configurable } from "@exaix/core/config";
 import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
 import type {
   EffortDeclaration,
@@ -84,6 +85,13 @@ export interface IEffortResolver {
   resolve(declarations: IEffortDeclarations, signals: IEffortResolutionSignals): IEffortResolution;
 }
 
+export interface IEffortResolverOptions {
+  /** Overrides JUDGE_EFFORT_FLOOR for this instance; validated against EffortTierSchema. */
+  judgeEffortFloor?: EffortTier;
+  /** Overrides EFFORT_FLOOR_AGENT_ROLE_IDS for this instance. */
+  floorAgentRoleIds?: readonly string[];
+}
+
 /** Runtime labels for TaskComplexitySource at positions that assign (not type) them. */
 export const COMPLEXITY_SOURCE_ANALYSIS: TaskComplexitySource = "analysis";
 export const COMPLEXITY_SOURCE_DEFAULT: TaskComplexitySource = "default";
@@ -151,6 +159,27 @@ export const NATIVE_ADAPTIVE_THINKING_MODEL_PREFIXES: readonly string[] = [
   "claude-opus-5",
   "claude-sonnet-5",
 ];
+
+/** Reasoning-effort floor for judge agent roles — a judge's depth is measurement
+ *  infrastructure and must never be silently cost-optimized away. Validated against
+ *  EffortTierSchema at EffortResolver construction (throws on an invalid override). */
+export const JUDGE_EFFORT_FLOOR: string = configurable({
+  key: "effort.judge_floor",
+  default: "medium",
+  type: ConfigValueType.STRING,
+  description: "Minimum reasoning effort tier for judge agent roles (low, medium or high)",
+  swap: SwapClass.RESTART,
+});
+
+/** Agent-role blueprint IDs that receive the judge effort floor, following the
+ *  DEFAULT_DOGFOOD_CONTEXT_TRUSTED_AGENT_ROLES precedent. */
+export const EFFORT_FLOOR_AGENT_ROLE_IDS: readonly string[] = configurable({
+  key: "effort.floor_agent_role_ids",
+  default: ["quality-judge", "voting-judge"],
+  type: ConfigValueType.ARRAY,
+  description: "Agent-role blueprint IDs that resolve at least to the judge effort floor",
+  swap: SwapClass.RESTART,
+});
 
 /** Exact match on a ProviderType value, else the LONGEST ProviderType value `v` such that
  *  `providerId.startsWith(v + "-")` (so "claude-cli-sonnet" → CLAUDE_CLI, not a "claude"
@@ -240,6 +269,19 @@ function floorSkipped(
 }
 
 export class EffortResolver implements IEffortResolver {
+  private readonly judgeEffortFloor: EffortTier;
+  private readonly floorAgentRoleIds: ReadonlySet<string>;
+
+  constructor(options: IEffortResolverOptions = {}) {
+    const floor = options.judgeEffortFloor ?? JUDGE_EFFORT_FLOOR;
+    const parsed = EffortTierSchema.safeParse(floor);
+    if (!parsed.success) {
+      throw new Error(`Invalid JUDGE_EFFORT_FLOOR '${String(floor)}' — expected low, medium or high`);
+    }
+    this.judgeEffortFloor = parsed.data;
+    this.floorAgentRoleIds = new Set(options.floorAgentRoleIds ?? EFFORT_FLOOR_AGENT_ROLE_IDS);
+  }
+
   resolve(declarations: IEffortDeclarations, signals: IEffortResolutionSignals): IEffortResolution {
     const effortResult = this.resolveField(declarations, FIELD_EFFORT, signals);
     const thinkingResult = this.resolveField(declarations, FIELD_THINKING, signals);
@@ -350,6 +392,21 @@ export class EffortResolver implements IEffortResolver {
         resolved.thinking.value = true;
         resolved.thinking.basis = BASIS_SKILL_FLOOR;
         if (!floorsApplied.includes(floor.skillId)) floorsApplied.push(floor.skillId);
+      }
+    }
+
+    // Role-kind floor (Step 5): a judge role's effort is never resolved below the floor,
+    // unless an explicit concrete request-level value says otherwise (Constraint rule 1).
+    const effortSkip = floorSkipped(
+      govSource(declarations, FIELD_EFFORT),
+      govValue(declarations, FIELD_EFFORT),
+    );
+    if (!effortSkip && signals.agentRole !== undefined && this.floorAgentRoleIds.has(signals.agentRole)) {
+      const currentEffort = resolved.effort.value as EffortTier | undefined;
+      if (effortRank(this.judgeEffortFloor) > effortRank(currentEffort)) {
+        resolved.effort.value = this.judgeEffortFloor;
+        resolved.effort.basis = "role-floor";
+        floorsApplied.push(`role:${signals.agentRole}`);
       }
     }
     return floorsApplied;

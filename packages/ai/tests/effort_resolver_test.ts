@@ -189,3 +189,41 @@ Deno.test("EffortResolver: flowStep beats role precedence", () => {
   assertEquals(result.effort, "low" as EffortTier);
   assertEquals(result.declarationSource, "flow_step");
 });
+
+Deno.test("EffortResolver: quality-judge with effort auto + SIMPLE resolves to medium via role floor", () => {
+  const result = resolver.resolve(
+    { role: { effort: "auto" } },
+    { ...baseSignals({ taskComplexity: TaskComplexity.SIMPLE }), agentRole: "quality-judge" },
+  );
+  assertEquals(result.effort, "medium" as EffortTier);
+  assertEquals(result.effortBasis, "role-floor");
+  assertEquals(result.floorsApplied, ["role:quality-judge"]);
+});
+
+Deno.test("EffortResolver: a non-judge role under the same signals resolves to low", () => {
+  const result = resolver.resolve(
+    { role: { effort: "auto" } },
+    { ...baseSignals({ taskComplexity: TaskComplexity.SIMPLE }), agentRole: "senior-coder" },
+  );
+  assertEquals(result.effort, "low" as EffortTier);
+  assertEquals(result.floorsApplied, []);
+});
+
+Deno.test("EffortResolver: an explicit request-level low for a judge stays low (floor skipped)", () => {
+  const result = resolver.resolve(
+    { request: { effort: "low" }, role: { effort: "auto" } },
+    { ...baseSignals({ taskComplexity: TaskComplexity.SIMPLE }), agentRole: "quality-judge" },
+  );
+  assertEquals(result.effort, "low" as EffortTier);
+  assertEquals(result.floorsApplied, []);
+});
+
+Deno.test("EffortResolver: an invalid judgeEffortFloor override throws at construction", () => {
+  let threw = false;
+  try {
+    new EffortResolver({ judgeEffortFloor: "turbo" as EffortTier });
+  } catch {
+    threw = true;
+  }
+  assertEquals(threw, true);
+});
