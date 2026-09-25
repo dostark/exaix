@@ -11,6 +11,7 @@ import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
 import { ActivityActor, type BlueprintStatus, McpToolName, TaskType, ToolName } from "@exaix/core";
 import { HitlPolicySchema } from "./hitl.ts";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
+import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 
 // Blueprint Interfaces
 
@@ -88,11 +89,12 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Soft ranking hints: cheapest, fastest. */
   characteristics: z.array(z.string()).optional(),
 
-  /** Extended-thinking hint. */
-  thinking: z.boolean().optional(),
+  /** Extended-thinking declaration: a boolean is final, "auto" defers to EffortResolver. */
+  thinking: ThinkingDeclarationSchema.optional(),
 
-  /** Reasoning-effort hint. */
-  effort: z.string().optional(),
+  /** Reasoning-effort declaration: a concrete tier is final, "auto" defers to
+   *  EffortResolver. Rejects any other value. */
+  effort: EffortDeclarationSchema.optional(),
 
   /** Preferred provider hint. */
   preferred_provider: z.string().optional(),

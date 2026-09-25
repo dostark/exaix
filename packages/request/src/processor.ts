@@ -716,6 +716,9 @@ export class RequestProcessor {
     });
 
     const taskComplexity = this.taskComplexityClassifier.classify(blueprint, request, analysis);
+    const classified = this.taskComplexityClassifier.classifyWithSource(blueprint, request, analysis);
+    request.taskComplexity = classified.complexity;
+    request.taskComplexitySource = classified.source;
 
     const agentRunner = this.processorConfig.agentRunner;
     if (agentRunner) {

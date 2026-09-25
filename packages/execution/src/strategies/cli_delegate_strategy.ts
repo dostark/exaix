@@ -49,6 +49,8 @@ import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
+import { EffortTierSchema } from "@exaix/schemas";
+import { SafeError } from "@exaix/core/errors";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
@@ -164,6 +166,14 @@ const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROP
  *  ambient var it genuinely needs, distinct from Exaix's provider secrets. Re-added to the
  *  launch env explicitly (never via the ambient parent). */
 const DELEGATE_OAUTH_ENV_KEY = "CLAUDE_CODE_OAUTH_TOKEN";
+
+/** Defense in depth: effort is interpolated into argv (`--effort`, `--variant`).
+ *  Reject anything outside the tier enum before it reaches the subprocess. */
+function assertValidEffortTier(effort: string): void {
+  if (!EffortTierSchema.options.includes(effort as never)) {
+    throw new SafeError(`Invalid reasoning effort tier: '${effort}'`, "INVALID_EFFORT_TIER");
+  }
+}
 
 // Used by detectGitChanges(). Kept LOCAL (not imported from @exaix/git) so a strategy
 // file does not reach into a low-level constants module; values mirror git_audit_service's.
@@ -517,6 +527,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     mcpConfigPath: Opt<string, Reason.OptionalContext>,
   ): string[] {
     const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
+    if (this.deps.effort) assertValidEffortTier(this.deps.effort);
     const effortFlag = this.deps.effort ? [SESSION_FLAG_EFFORT, this.deps.effort] : [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
     const extraAllowedTools = connection ? claudeMcpAllowedToolEntries(toMcpConnectionInput(connection)) : undefined;
@@ -537,6 +548,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
 
   private buildOpencodeArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
     const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
+    if (this.deps.effort) assertValidEffortTier(this.deps.effort);
     const variantFlag = this.deps.effort ? [SESSION_FLAG_VARIANT, this.deps.effort] : [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
     return [

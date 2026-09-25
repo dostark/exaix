@@ -103,3 +103,33 @@ export interface IModelResolutionTrace {
 /** Zod enum for the reasoning effort tiers, so intent parsing and validation round-trip
  *  through a schema. */
 export const EffortTierSchema = z.enum(["low", "medium", "high"]);
+
+/** Canonical "auto" declaration value — the literal's single source for every surface
+ *  that accepts a declaration-time value. */
+// deno-lint-ignore prefer-as-const
+export const EFFORT_AUTO: "auto" = "auto";
+
+/** Declaration-time effort value. "auto" defers to EffortResolver; a concrete EffortTier
+ *  bypasses resolution entirely (an explicit choice is never second-guessed). */
+export const EffortDeclarationSchema = z.union([EffortTierSchema, z.literal(EFFORT_AUTO)]);
+export type EffortDeclaration = z.infer<typeof EffortDeclarationSchema>;
+
+/** Declaration-time thinking value — same "auto" semantics as effort. */
+export const ThinkingDeclarationSchema = z.preprocess(
+  // failsafe-YAML blueprints (BlueprintService) deliver booleans as strings
+  (v) => (v === "true" ? true : v === "false" ? false : v),
+  z.union([z.boolean(), z.literal(EFFORT_AUTO)]),
+);
+export type ThinkingDeclaration = z.infer<typeof ThinkingDeclarationSchema>;
+
+/** Why EffortResolver produced the value it did — journaled per request for
+ *  measurement reproducibility. */
+export const EffortResolutionBasisSchema = z.enum([
+  "unset", // no surface declared a value -> field omitted (today's behavior)
+  "declared", // caller gave a concrete value; resolver passed it through unchanged
+  "native-adaptive", // thinking auto + Anthropic native-adaptive model + thinking_default != false -> omit the field
+  "heuristic", // auto + a provider with no native adaptive default -> TaskComplexity-derived tier
+  "role-floor", // resolved value raised to meet a role-kind policy floor (e.g. judges)
+  "skill-floor", // resolved value raised to meet a matched skill's declared floor
+]);
+export type EffortResolutionBasis = z.infer<typeof EffortResolutionBasisSchema>;

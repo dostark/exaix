@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { Config } from "@exaix/schemas/config.ts";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
+import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "@exaix/schemas/model_intent.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
@@ -53,6 +54,12 @@ export const BlueprintSchema = z.object({
   allowed_paths: z.array(z.string().max(255)).max(100).optional(),
   /** Declared explicitly (not left to `.passthrough()`) so it is Zod-validated and typed. */
   hitl: HitlPolicySchema.optional(),
+  /** Extended-thinking declaration — the preprocess maps failsafe-YAML's string "true"/
+   *  "false", "auto" defers to EffortResolver. */
+  thinking: ThinkingDeclarationSchema.optional(),
+  /** Reasoning-effort declaration — "auto" defers to EffortResolver; a concrete tier is
+   *  an explicit choice that is never second-guessed. */
+  effort: EffortDeclarationSchema.optional(),
   created: z.string().optional(),
   created_by: z.string().optional(),
   version: z.string().optional(),

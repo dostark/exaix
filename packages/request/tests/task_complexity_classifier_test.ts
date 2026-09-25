@@ -139,3 +139,41 @@ Deno.test("[TaskComplexityClassifier.classify] agent fallbacks: any agent maps t
   );
   assertEquals(result, TaskComplexity.MEDIUM);
 });
+
+Deno.test("[TaskComplexityClassifier.classifyWithSource] structured analysis carries source 'analysis'", () => {
+  const classifier = new TaskComplexityClassifier();
+  const analysis: IRequestAnalysis = makeAnalysis({ complexity: RequestAnalysisComplexity.SIMPLE });
+  const result = classifier.classifyWithSource(makeBlueprint("generic-agent"), makeRequest("test"), analysis);
+  assertEquals(result.complexity, TaskComplexity.SIMPLE);
+  assertEquals(result.source, "analysis");
+});
+
+Deno.test("[TaskComplexityClassifier.classifyWithSource] content heuristics carry source 'content_heuristic'", () => {
+  const classifier = new TaskComplexityClassifier();
+  const manyBullets = Array.from({ length: COMPLEXITY_BULLET_THRESHOLD_HIGH + 1 }, (_, i) => `- Task ${i}`).join(
+    "\n",
+  );
+  const result = classifier.classifyWithSource(makeBlueprint("generic-agent"), makeRequest(manyBullets));
+  assertEquals(result.complexity, TaskComplexity.COMPLEX);
+  assertEquals(result.source, "content_heuristic");
+});
+
+Deno.test("[TaskComplexityClassifier.classifyWithSource] agent-id fallback carries source 'agent_role'", () => {
+  const classifier = new TaskComplexityClassifier();
+  const result = classifier.classifyWithSource(
+    makeBlueprint("advanced-coder"),
+    makeRequest(
+      "Please write sophisticated code for the authentication module while handling all the deferred edge cases that a thorough review would identify. This body must stay long enough that the content heuristic does not classify it.",
+    ),
+  );
+  assertEquals(result.complexity, TaskComplexity.COMPLEX);
+  assertEquals(result.source, "agent_role");
+});
+
+Deno.test("[TaskComplexityClassifier] classify delegates to classifyWithSource.complexity (same values)", () => {
+  const classifier = new TaskComplexityClassifier();
+  const analysis: IRequestAnalysis = makeAnalysis({ complexity: RequestAnalysisComplexity.COMPLEX });
+  const direct = classifier.classify(makeBlueprint("generic-agent"), makeRequest("test"), analysis);
+  const withSource = classifier.classifyWithSource(makeBlueprint("generic-agent"), makeRequest("test"), analysis);
+  assertEquals(direct, withSource.complexity);
+});

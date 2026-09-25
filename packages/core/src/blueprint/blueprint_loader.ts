@@ -13,6 +13,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_AGENTS_PATH, DEFAULT_AI_MODEL, DEFAULT_BLUEPRINT_VERSION, McpToolName, ToolName } from "@exaix/core";
+import type { EffortDeclaration, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 
 /**
  * Fully loaded and validated blueprint
@@ -52,10 +53,15 @@ export interface IBlueprint {
   agentRole?: string;
   /** Default skills to apply for all requests, sourced from frontmatter.default_skills. */
   defaultSkills?: string[];
-  /** Extended-thinking hint, sourced from frontmatter.thinking. */
-  thinking?: boolean;
-  /** Reasoning-effort hint, sourced from frontmatter.effort. */
-  effort?: string;
+  /** Extended-thinking declaration, sourced from frontmatter.thinking. "auto" defers to
+   *  EffortResolver; a boolean is final. */
+  thinking?: ThinkingDeclaration;
+  /** Reasoning-effort declaration, sourced from frontmatter.effort. "auto" defers to
+   *  EffortResolver; a concrete tier is final. */
+  effort?: EffortDeclaration;
+  /** Model size tier (S/M/L/XL), sourced from frontmatter.model_size — caps heuristic
+   *  effort resolution for small models. */
+  modelSize?: ModelSize;
 }
 
 export interface IBlueprintLoaderOptions {
@@ -80,6 +86,18 @@ export interface IRuntimeFrontmatterValidation {
 }
 
 // Blueprint Schema (Extended for Runtime)
+
+/** Runtime mirror of @exaix/schemas' EffortDeclarationSchema (core cannot import the
+ *  schemas package at runtime); the types are imported type-only from it. */
+// deno-lint-ignore prefer-as-const
+const EFFORT_AUTO: "auto" = "auto";
+const EffortDeclarationSchema = z.union([z.enum(["low", "medium", "high"]), z.literal(EFFORT_AUTO)]);
+/** Runtime mirror of @exaix/schemas' ThinkingDeclarationSchema — the preprocess maps
+ *  failsafe-YAML's string "true"/"false". */
+const ThinkingDeclarationSchema = z.preprocess(
+  (v) => (v === "true" ? true : v === "false" ? false : v),
+  z.union([z.boolean(), z.literal(EFFORT_AUTO)]),
+);
 
 /** Inline HITL policy schema — avoids runtime cross-package import from @exaix/schemas. */
 const HitlRuleSchema = z.object({
@@ -126,11 +144,13 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Size tier mapped onto task complexity for provider selection. */
   model_size: z.enum(["S", "M", "L", "XL"]).optional(),
 
-  /** Extended-thinking hint; ignored by providers that do not support it. */
-  thinking: z.boolean().optional(),
+  /** Extended-thinking declaration ("auto" defers to EffortResolver); ignored by
+   *  providers that do not support it. */
+  thinking: ThinkingDeclarationSchema.optional(),
 
-  /** Reasoning-effort hint; ignored by providers that do not support it. */
-  effort: z.string().min(1).optional(),
+  /** Reasoning-effort declaration ("auto" defers to EffortResolver); ignored by
+   *  providers that do not support it. */
+  effort: EffortDeclarationSchema.optional(),
 
   /** Soft ranking hints: cheapest, fastest. */
   characteristics: z.array(z.string()).optional(),
@@ -508,6 +528,7 @@ export class IBlueprintLoader {
       defaultSkills: loaded.frontmatter.default_skills,
       thinking: loaded.frontmatter.thinking,
       effort: loaded.frontmatter.effort,
+      modelSize: loaded.frontmatter.model_size,
     };
   }
 }

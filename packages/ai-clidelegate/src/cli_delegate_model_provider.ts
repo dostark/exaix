@@ -60,6 +60,8 @@ import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { probeDelegateVersion } from "@exaix/session/delegate_version_probe.ts";
 import type { JSONValue } from "@exaix/core";
 import { buildAllowlistChildEnv } from "@exaix/core/helpers/child_env.ts";
+import { SafeError } from "@exaix/core/errors";
+import { EffortTierSchema } from "@exaix/schemas/model_intent.ts";
 import { SafeSubprocess } from "@exaix/core";
 import {
   DEFAULT_RUNTIME_PATH,
@@ -135,6 +137,15 @@ export interface IOpencodeReadOnlyPermissionConfig {
     bash: OpencodePermissionValue;
     task: OpencodePermissionValue;
   };
+}
+
+/** Defense in depth: effort is interpolated into argv and codex's
+ *  `-c model_reasoning_effort="…"` TOML override — reject anything outside the tier enum
+ *  before it reaches the subprocess. */
+function assertValidEffortTier(effort: string): void {
+  if (!EffortTierSchema.options.includes(effort as never)) {
+    throw new SafeError(`Invalid reasoning effort tier: '${effort}'`, "INVALID_EFFORT_TIER");
+  }
 }
 
 /** Builds the CLI-delegate subprocess env via the shared allowlist-mode child-env policy — an allowlist, not a denylist, since a denylist can't be proven to never forward a newly-added secret-shaped var. */
@@ -401,6 +412,7 @@ export class CliDelegateModelProvider implements IModelProvider {
   ): Promise<string[]> {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
+    if (effort) assertValidEffortTier(effort);
     const effortFlag = effort ? [SESSION_FLAG_EFFORT, effort] : [];
     const jsonSchemaFlag: string[] = [];
     if (jsonSchema) {
@@ -449,6 +461,7 @@ export class CliDelegateModelProvider implements IModelProvider {
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
     // codex has no dedicated effort flag — set via -c key=value, quoted like the existing
     // developer_instructions="..." override (unquoted TOML fails to parse a bare word).
+    if (effort) assertValidEffortTier(effort);
     const effortArgs = effort
       ? [SESSION_FLAG_CONFIG_OVERRIDE, `${SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT}="${effort}"`]
       : [];
@@ -499,6 +512,7 @@ export class CliDelegateModelProvider implements IModelProvider {
   ): string[] {
     const backendArgs = this.options.protocolBackend?.getInvocationArgs(this.options.tool) ?? [];
     const sessionFlag = sessionId ? [SESSION_FLAG_SESSION_ID, sessionId] : [];
+    if (effort) assertValidEffortTier(effort);
     const variantFlag = effort ? [SESSION_FLAG_VARIANT, effort] : [];
     return [
       SESSION_SUBCMD_RUN,

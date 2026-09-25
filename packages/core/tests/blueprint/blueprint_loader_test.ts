@@ -539,3 +539,91 @@ Deno.test("[IBlueprintLoader] returns null when agent role not found in Agents p
     await teardown(testDir);
   }
 });
+
+Deno.test("[IBlueprintLoader] effort: auto parses through to IBlueprint.effort", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+
+  try {
+    const content = `---
+agent_role: "effort-auto-agent"
+name: "Effort Auto Agent"
+effort: auto
+---
+System prompt.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "effort-auto-agent.md"), content);
+
+    const blueprint = await loadBlueprint(blueprintsPath, "effort-auto-agent");
+
+    assertExists(blueprint);
+    assertEquals(blueprint.effort, "auto");
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[IBlueprintLoader] model_size: S maps to IBlueprint.modelSize", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+
+  try {
+    const content = `---
+agent_role: "small-model-agent"
+name: "Small Model Agent"
+model_size: S
+---
+System prompt.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "small-model-agent.md"), content);
+
+    const blueprint = await loadBlueprint(blueprintsPath, "small-model-agent");
+
+    assertExists(blueprint);
+    assertEquals(blueprint.modelSize, "S");
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[IBlueprintLoader] rejects an invalid effort declaration (turbo)", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+
+  try {
+    const content = `---
+agent_role: "bad-effort-agent"
+name: "Bad Effort Agent"
+effort: turbo
+---
+System prompt.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "bad-effort-agent.md"), content);
+
+    await assertRejects(
+      () => loadBlueprint(blueprintsPath, "bad-effort-agent"),
+      BlueprintLoadError,
+    );
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[IBlueprintLoader] rejects an injected effort value at the parse boundary", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+
+  try {
+    const content = `---
+agent_role: "injected-effort-agent"
+name: "Injected Effort Agent"
+effort: 'high" x="y'
+---
+System prompt.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "injected-effort-agent.md"), content);
+
+    await assertRejects(
+      () => loadBlueprint(blueprintsPath, "injected-effort-agent"),
+      BlueprintLoadError,
+    );
+  } finally {
+    await teardown(testDir);
+  }
+});

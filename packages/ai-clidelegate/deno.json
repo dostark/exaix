@@ -7,12 +7,15 @@
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/errors": "../core/src/errors/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/types.ts": "../ai/src/types.ts",
     "@exaix/ai/providers": "../ai/src/providers/mod.ts",
     "@exaix/ai/factories/abstract_provider_factory.ts": "../ai/src/factories/abstract_provider_factory.ts",
     "@exaix/schemas/session_delegate.ts": "../schemas/src/session_delegate.ts",
     "@exaix/schemas/opencode_config.ts": "../schemas/src/opencode_config.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
     "@exaix/session/delegate_return_parser.ts": "../session/src/delegate_return_parser.ts"
   },
   "exports": {

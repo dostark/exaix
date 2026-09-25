@@ -15,10 +15,14 @@
 
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
+import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
+import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation } from "@exaix/core";
+import { PlanningToolLoopStopReason, PlanningToolsSkipReason, PortalOperation, TaskComplexity } from "@exaix/core";
+import type { ProviderType } from "@exaix/core";
 import { PortalPermissionsService } from "@exaix/portal";
 import { readOnlyEditorTools } from "@exaix/tool-runtime";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
@@ -83,6 +87,9 @@ import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 export interface ISelectedModelIdentity {
   provider: string;
   model: string;
+  /** Canonical provider type — set from IProviderInfo.type at the construction sites;
+   *  AgentRunner falls back to resolveProviderType(provider) when absent. */
+  providerType?: ProviderType;
 }
 
 type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
@@ -98,11 +105,17 @@ export interface IBlueprint {
   /** Optional: Default skills to apply for all requests */
   defaultSkills?: string[];
 
-  /** Optional: Extended-thinking hint, sourced from frontmatter.thinking */
-  thinking?: boolean;
+  /** Optional: Extended-thinking declaration, sourced from frontmatter.thinking.
+   *  "auto" defers to EffortResolver; a boolean is final. */
+  thinking?: ThinkingDeclaration;
 
-  /** Optional: Reasoning-effort hint, sourced from frontmatter.effort */
-  effort?: string;
+  /** Optional: Reasoning-effort declaration, sourced from frontmatter.effort.
+   *  "auto" defers to EffortResolver; a concrete tier is final. */
+  effort?: EffortDeclaration;
+
+  /** Optional: Model size tier (S/M/L/XL), sourced from frontmatter.model_size — caps
+   *  heuristic effort resolution for small models. */
+  modelSize?: ModelSize;
 }
 
 /**
@@ -158,6 +171,13 @@ export interface IParsedRequest {
   thinking?: boolean;
   effort?: string;
   characteristics?: string[];
+
+  /** Task complexity computed by RequestProcessor's TaskComplexityClassifier, stamped by
+   *  processAgentRequest so EffortResolver can resolve declaration-time "auto"
+   *  from the same signal the provider selector used. */
+  taskComplexity?: TaskComplexity;
+  /** Which signal produced `taskComplexity` — journaled with the resolution. */
+  taskComplexitySource?: TaskComplexitySource;
 
   /** Portal alias from request frontmatter. Required for the planning tools path —
    *  absent means the tools path is skipped (`planning.tools.skipped{reason:"no_portal"}`). */
@@ -252,6 +272,10 @@ export interface IAgentRunnerConfig {
 
   /** Optional: screens planning tool results for blocking violations. No-op/absent in Solo. */
   guardrailRunner?: IGuardrailRunner;
+
+  /** Optional: EffortResolver for declaration-time "auto" effort/thinking. Defaults to
+   *  a fresh EffortResolver; the daemon passes its own instance. */
+  effortResolver?: IEffortResolver;
 }
 
 /**
@@ -266,13 +290,14 @@ export interface IAgentRunner {
 }
 
 /** Bundles executeWithRetry's per-call generation hints into one param, keeping it under
- *  the 7-parameter style limit. */
+ *  the 7-parameter style limit. Effort/thinking here are always RESOLVED values from
+ *  EffortResolver — the declaration-time surface ("auto") never enters this object. */
 interface IGenerationHints {
   conversationId: Opt<string, Reason.TraceAbsent>;
   jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>;
   callSite: Opt<ICallSite, Reason.OptionalContext>;
   thinking: Opt<boolean, Reason.OptionalContext>;
-  effort: Opt<string, Reason.OptionalContext>;
+  effort: Opt<EffortTier, Reason.OptionalContext>;
 }
 
 /** Comma-separated skill ids to exclude from the resolved set for this process's lifetime.
@@ -301,6 +326,7 @@ export class AgentRunner implements IAgentRunner {
 
   private modelProvider: IModelProvider;
   private config?: IAgentRunnerConfig;
+  private effortResolver: IEffortResolver;
   /** Next call index per (scenarioId, stepId), for fixture replay addressing.
    *  Incremented once per consumed response — a retried logical call keeps its index. */
   private callIndexByCallSite = new Map<string, number>();
@@ -325,6 +351,7 @@ export class AgentRunner implements IAgentRunner {
     this.modelProvider = provider;
     this.logger = this.config?.logger;
     this.disableRetry = this.config?.disableRetry ?? false;
+    this.effortResolver = this.config?.effortResolver ?? new EffortResolver();
     this.skillsService = ctx?.skills || this.config?.skillsService;
     this.disableSkills = this.config?.disableSkills ?? false;
     this.retryPolicy = this.config?.retryPolicyInstance ||
@@ -428,13 +455,14 @@ export class AgentRunner implements IAgentRunner {
 
     // Execute via the model provider (with retry if enabled)
     const callSite = this.resolveCallSite(request);
+    const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     const hints: IGenerationHints = {
       conversationId: traceId,
       jsonSchema,
       callSite,
-      thinking: blueprint.thinking,
-      effort: blueprint.effort,
+      thinking: resolution.thinking,
+      effort: resolution.effort,
     };
     const toolsResult = await this.runPlanningToolsIfGated(request, agentRole, combinedPrompt, startTime, hints);
     const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints);
@@ -488,6 +516,35 @@ export class AgentRunner implements IAgentRunner {
       ...result,
       skillsApplied: skillIds.length > 0 ? skillIds : undefined,
     };
+  }
+
+  /** Resolves declaration-time effort/thinking through EffortResolver, keyed on the
+   *  selected model's provider identity and the request's TaskComplexity signal. */
+  private resolveEffortAndThinking(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    agentRole: string,
+  ): IEffortResolution {
+    const selectedModel = this.selectedModelIdentity();
+    const providerType = selectedModel.providerType ?? resolveProviderType(selectedModel.provider);
+    const providerMetadata = providerType !== undefined
+      ? ProviderRegistry.getProviderMetadata(providerType)
+      : undefined;
+    const signals: IEffortResolutionSignals = {
+      taskComplexity: request.taskComplexity ?? TaskComplexity.MEDIUM,
+      complexitySource: request.taskComplexitySource ?? "default",
+      modelSize: blueprint.modelSize,
+      providerType,
+      model: selectedModel.model,
+      providerSupportsThinking: providerMetadata?.supportsThinking === true,
+      anthropicThinkingDefault: this.config?.context?.config.get().ai_anthropic?.thinking_default,
+      skillFloors: [],
+      agentRole,
+    };
+    return this.effortResolver.resolve(
+      { role: { effort: blueprint.effort, thinking: blueprint.thinking } },
+      signals,
+    );
   }
 
   /**
@@ -708,7 +765,7 @@ export class AgentRunner implements IAgentRunner {
         ...(conversationId ? { conversationId } : {}),
         ...(conversationId ? { traceId: conversationId } : {}),
         ...(thinking !== undefined ? { thinking } : {}),
-        ...(effort ? { effort: effort as IModelOptions["effort"] } : {}),
+        ...(effort ? { effort } : {}),
         ...(jsonSchema ? { jsonSchema } : {}),
         ...(callSite ? { callSite } : {}),
       }

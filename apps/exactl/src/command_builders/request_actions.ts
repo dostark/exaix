@@ -280,7 +280,7 @@ async function handleRequestCreateDryRunContext(
       new PlanAdapter(),
       appContext.provider,
       {
-        selectedModel: { provider: providerInfo.id, model: providerInfo.model },
+        selectedModel: { provider: providerInfo.id, model: providerInfo.model, providerType: providerInfo.type },
         context: appContext,
         skillsService: appContext.skills,
         disableSkills: !config.skills.inject_in_prompt,

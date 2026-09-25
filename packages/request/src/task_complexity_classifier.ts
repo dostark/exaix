@@ -17,7 +17,8 @@ import {
   TaskComplexity,
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
-import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
+import { taskComplexityFromAnalysis, type TaskComplexitySource } from "@exaix/ai";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IBlueprint, IParsedRequest } from "@exaix/execution";
 
 export interface ITaskComplexityClassifier {
@@ -26,7 +27,17 @@ export interface ITaskComplexityClassifier {
     request: IParsedRequest,
     analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): TaskComplexity;
+  /** classify plus the source signal that decided the value — journaled so an
+   *  LLM-derived complexity is distinguishable from a content/agent-id fallback. */
+  classifyWithSource(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+  ): { complexity: TaskComplexity; source: TaskComplexitySource };
 }
+
+/** The agent-id fallback's journaled source label. */
+const COMPLEXITY_SOURCE_AGENT_ROLE: TaskComplexitySource = "agent_role";
 
 export class TaskComplexityClassifier implements ITaskComplexityClassifier {
   classify(
@@ -34,28 +45,22 @@ export class TaskComplexityClassifier implements ITaskComplexityClassifier {
     request: IParsedRequest,
     analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): TaskComplexity {
+    return this.classifyWithSource(blueprint, request, analysis).complexity;
+  }
+
+  classifyWithSource(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+  ): { complexity: TaskComplexity; source: TaskComplexitySource } {
     if (analysis?.complexity) {
-      return this.mapAnalysisComplexity(analysis.complexity);
+      return { complexity: taskComplexityFromAnalysis(analysis.complexity), source: "analysis" };
     }
 
     const bodySignals = this.checkContentHeuristics(request.userPrompt);
-    if (bodySignals) return bodySignals;
+    if (bodySignals) return { complexity: bodySignals, source: "content_heuristic" };
 
-    return this.classifyByAgentId(blueprint.agentRole);
-  }
-
-  private mapAnalysisComplexity(complexity: RequestAnalysisComplexity): TaskComplexity {
-    switch (complexity) {
-      case RequestAnalysisComplexity.SIMPLE:
-        return TaskComplexity.SIMPLE;
-      case RequestAnalysisComplexity.MEDIUM:
-        return TaskComplexity.MEDIUM;
-      case RequestAnalysisComplexity.COMPLEX:
-      case RequestAnalysisComplexity.EPIC:
-        return TaskComplexity.COMPLEX;
-      default:
-        return TaskComplexity.MEDIUM;
-    }
+    return { complexity: this.classifyByAgentId(blueprint.agentRole), source: COMPLEXITY_SOURCE_AGENT_ROLE };
   }
 
   private checkContentHeuristics(

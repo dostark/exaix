@@ -42,6 +42,7 @@ import { DatabaseService } from "@exaix/storage-sqlite";
 import {
   DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
   DefaultRoutingStrategy,
+  EffortResolver,
   type IProviderHealthChecker,
   type IResolutionStrategy,
   ModelResolver,
@@ -884,7 +885,8 @@ if (import.meta.main) {
       new PlanAdapter(),
       llmProvider,
       {
-        selectedModel: { provider: providerInfo.id, model: providerInfo.model },
+        selectedModel: { provider: providerInfo.id, model: providerInfo.model, providerType: providerInfo.type },
+        effortResolver: new EffortResolver(),
         context,
         milestoneEmitter: buildMilestoneEmitterFromConfig(config),
         skillsService,
