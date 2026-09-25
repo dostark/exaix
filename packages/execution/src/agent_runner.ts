@@ -471,6 +471,7 @@ export class AgentRunner implements IAgentRunner {
       thinking: m.thinking,
     })) ?? [];
     const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
+    this.journalEffortResolution(blueprint, request, agentRole, resolution, traceId, requestId);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     const hints: IGenerationHints = {
       conversationId: traceId,
@@ -535,6 +536,61 @@ export class AgentRunner implements IAgentRunner {
 
   /** Resolves declaration-time effort/thinking through EffortResolver, keyed on the
    *  selected model's provider identity and the request's TaskComplexity signal. */
+  /** Journals the resolved effort/thinking with its basis and inputs as
+   *  agent.effort_resolved, joinable by traceId (Step 6 of phase-197). */
+  private journalEffortResolution(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    agentRole: string,
+    resolution: IEffortResolution,
+    traceId: Opt<string, Reason.TraceAbsent>,
+    requestId: Opt<string, Reason.TraceAbsent>,
+  ): void {
+    const selectedModelId = this.selectedModelIdentity();
+    const payload: Record<string, JSONValue> = {
+      path: request.flowStepId ? "flow_step" : "planning",
+      agent_role: agentRole,
+      ...(resolution.effort !== undefined ? { effort: resolution.effort } : {}),
+      ...(resolution.thinking !== undefined ? { thinking: resolution.thinking } : {}),
+      effort_basis: resolution.effortBasis,
+      thinking_basis: resolution.thinkingBasis,
+      declaration_source: resolution.declarationSource,
+      declared: {
+        ...(request.effort !== undefined || request.thinking !== undefined
+          ? { request: { effort: request.effort, thinking: request.thinking } }
+          : {}),
+        ...(request.flowStepEffort !== undefined || request.flowStepThinking !== undefined
+          ? { flow_step: { effort: request.flowStepEffort, thinking: request.flowStepThinking } }
+          : {}),
+        ...(blueprint.effort !== undefined || blueprint.thinking !== undefined
+          ? { role: { effort: blueprint.effort, thinking: blueprint.thinking } }
+          : {}),
+      },
+      ...(resolution.heuristicInputs
+        ? {
+          heuristic_inputs: {
+            task_complexity: resolution.heuristicInputs.taskComplexity,
+            complexity_source: resolution.heuristicInputs.complexitySource,
+            ...(resolution.heuristicInputs.modelSize !== undefined
+              ? { model_size: resolution.heuristicInputs.modelSize }
+              : {}),
+          },
+        }
+        : {}),
+      floors_applied: resolution.floorsApplied,
+      ...(selectedModelId.providerType !== undefined ? { provider_type: selectedModelId.providerType } : {}),
+      model: selectedModelId.model,
+    };
+    this.logActivity(
+      ACTIVITY_ACTOR_AGENT,
+      DomainEventType.AgentEffortResolved,
+      requestId ?? null,
+      payload,
+      traceId,
+      agentRole,
+    );
+  }
+
   private resolveEffortAndThinking(
     blueprint: IBlueprint,
     request: IParsedRequest,

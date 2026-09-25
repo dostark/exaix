@@ -9,7 +9,14 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
-import type { EffortTier, IRouteReason, ModelResolutionReason, TaskTypeSource } from "@exaix/schemas";
+import type {
+  EffortResolutionBasis,
+  EffortTier,
+  IRouteReason,
+  ModelResolutionReason,
+  TaskTypeSource,
+} from "@exaix/schemas";
+import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
 import type {
   ContextInspectionResult,
   HitlRuleSource,
@@ -17,6 +24,8 @@ import type {
   OtelDestinationScheme,
   PlanningToolLoopStopReason,
   PlanningToolsSkipReason,
+  ProviderType,
+  TaskComplexity,
   TaskType,
   VotingStrategy,
 } from "../types/enums.ts";
@@ -67,6 +76,35 @@ export interface IAgentPromptAssembledReactPayload {
 export type IAgentPromptAssembledPayload =
   | IAgentPromptAssembledPlanningPayload
   | IAgentPromptAssembledReactPayload;
+
+/** Typed payload for agent.effort_resolved — the journaled EffortResolver outcome with
+ *  its basis, inputs and floors, joinable by traceId for measurement reproducibility. */
+/** Which resolution call-site produced an agent.effort_resolved event. */
+export type EffortResolutionPath = "planning" | "execution" | "flow_step";
+
+export interface IAgentEffortResolvedPayload {
+  /** Which resolution call-site produced the event. */
+  path: EffortResolutionPath;
+  agent_role: string;
+  effort?: EffortTier;
+  thinking?: boolean;
+  effort_basis: EffortResolutionBasis;
+  thinking_basis: EffortResolutionBasis;
+  declaration_source: EffortDeclarationSource;
+  declared: {
+    request?: IEffortDeclarationPair;
+    flow_step?: IEffortDeclarationPair;
+    role?: IEffortDeclarationPair;
+  };
+  heuristic_inputs?: {
+    task_complexity: TaskComplexity;
+    complexity_source: TaskComplexitySource;
+    model_size?: string;
+  };
+  floors_applied: string[];
+  provider_type?: ProviderType;
+  model?: string;
+}
 
 /** Typed payload for planning.tools.completed events — one per PlanningToolLoop.run() call. */
 export interface IPlanningToolLoopCompletedPayload {
@@ -813,6 +851,9 @@ export const DomainEventType = {
 
   // Agent prompt assembly. Same value as the old raw string constant AGENT_EVENT_PROMPT_ASSEMBLED, now a taxonomy member.
   AgentPromptAssembled: "agent.prompt_assembled",
+
+  // Effort resolution outcome — journals EffortResolver's value, basis and inputs.
+  AgentEffortResolved: "agent.effort_resolved",
 
   // Judge calibration — CalibrationRunner's own lifecycle. Payloads never carry
   // prompts/auth/rationale, only identity/hashes/vendor/counts/metrics/duration.

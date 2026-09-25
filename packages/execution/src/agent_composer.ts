@@ -494,6 +494,63 @@ export class AgentComposer {
     );
   }
 
+  /** Journals the execution path's effort resolution as agent.effort_resolved, joinable by
+   *  the plan's traceId (Step 6). */
+  private journalStepEffortResolution(
+    resolution: IEffortResolution,
+    blueprint: IAgentFileBlueprint,
+    options: IAgentExecutionOptions,
+    traceId: string,
+  ): void {
+    const providerType = resolveProviderType(blueprint.provider);
+    const payload: Record<string, JSONValue> = {
+      path: options.strategy ? "flow_step" : "execution",
+      agent_role: options.agent_role ?? "",
+      ...(resolution.effort !== undefined ? { effort: resolution.effort } : {}),
+      ...(resolution.thinking !== undefined ? { thinking: resolution.thinking } : {}),
+      effort_basis: resolution.effortBasis,
+      thinking_basis: resolution.thinkingBasis,
+      declaration_source: resolution.declarationSource,
+      declared: {
+        ...(this.options?.requestDeclaration?.effort !== undefined ||
+            this.options?.requestDeclaration?.thinking !== undefined
+          ? {
+            request: {
+              effort: this.options.requestDeclaration.effort,
+              thinking: this.options.requestDeclaration.thinking,
+            },
+          }
+          : {}),
+        ...(options.effort !== undefined || options.thinking !== undefined
+          ? { flow_step: { effort: options.effort, thinking: options.thinking } }
+          : {}),
+        ...(blueprint.effort !== undefined || blueprint.thinking !== undefined
+          ? { role: { effort: blueprint.effort, thinking: blueprint.thinking } }
+          : {}),
+      },
+      ...(resolution.heuristicInputs
+        ? {
+          heuristic_inputs: {
+            task_complexity: resolution.heuristicInputs.taskComplexity,
+            complexity_source: resolution.heuristicInputs.complexitySource,
+            ...(resolution.heuristicInputs.modelSize !== undefined
+              ? { model_size: resolution.heuristicInputs.modelSize }
+              : {}),
+          },
+        }
+        : {}),
+      floors_applied: resolution.floorsApplied,
+      ...(providerType !== undefined ? { provider_type: providerType } : {}),
+      model: blueprint.model,
+    };
+    void this.logger.info(
+      DomainEventType.AgentEffortResolved,
+      options.agent_role ?? "",
+      payload,
+      traceId,
+    );
+  }
+
   /** Rebuilds _resolvedCallOptions from the resolution: the final thinking/effort replace
    *  the ModelResolver-derived values, and max_tokens is EFFORT_MAX_TOKENS[effort] only
    *  when the governing declaration was concrete (GAP-8) — auto-resolved effort never sets
@@ -570,7 +627,9 @@ export class AgentComposer {
     // Resolve declaration-time effort/thinking AFTER provider selection (GAP-3): the
     // blueprint's resolved provider/model and the persisted request_analysis are known
     // here, and "auto" must never feed ModelResolver (which already ran in loadBlueprint).
-    this.applyEffortResolution(this.resolveStepEffort(_blueprint, options));
+    const effortResolution = this.resolveStepEffort(_blueprint, options);
+    this.applyEffortResolution(effortResolution);
+    this.journalStepEffortResolution(effortResolution, _blueprint, options, context.trace_id);
     const modelId = this.resolveModelId(_blueprint);
     await this.ctx.allocateBudget(
       modelId,
