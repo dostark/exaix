@@ -130,12 +130,13 @@ should be extracted into named constants or enums. It is invoked as part of the
 pre-commit gates via `deno task check:magic` (or directly:
 `deno run -A scripts/check_magic_values.ts`).
 
-**Detection thresholds:**
+**Detection thresholds** (the script's actual defaults — keep this table in sync with
+`scripts/check_magic_values.ts` `--local-*-threshold` / `--global-*-threshold`):
 
 | Scope  | String literals | Number literals |
 | ------ | --------------- | --------------- |
-| Module | > 2 occurrences | > 3 occurrences |
-| Global | > 3 occurrences | > 4 occurrences |
+| Module | > 3 occurrences | > 4 occurrences |
+| Global | > 5 occurrences | > 6 occurrences |
 
 **Whitelisted values (never flagged):**
 
