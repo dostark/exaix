@@ -28,7 +28,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
-import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
+import type { IModelCallOptions } from "@exaix/schemas";
 import {
   AGENT_COMPOSER_ID,
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -60,6 +60,17 @@ import type { IDogfoodContextPort, Opt, Reason, TaskType } from "@exaix/core/typ
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { EffortDeclaration, IModelIntent, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
+import {
+  COMPLEXITY_SOURCE_ANALYSIS,
+  COMPLEXITY_SOURCE_DEFAULT,
+  EFFORT_MAX_TOKENS,
+  EffortResolver,
+  ProviderRegistry,
+  resolveProviderType,
+  taskComplexityFromAnalysis,
+} from "@exaix/ai";
+import type { IEffortDeclarationPair, IEffortResolution } from "@exaix/ai";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
@@ -84,6 +95,13 @@ export interface IAgentFileBlueprint {
   systemPrompt: string;
   /** Per-action HITL governance rules. Resolved by ExecutionLoop for ToolRegistry path. */
   hitl?: HitlPolicy;
+  /** Blueprint-declared effort ("auto" defers to EffortResolver at execution resolution). */
+  effort?: EffortDeclaration;
+  /** Blueprint-declared thinking ("auto" defers to EffortResolver at execution resolution). */
+  thinking?: ThinkingDeclaration;
+  /** Blueprint model size tier (S/M/L/XL) — caps heuristic effort resolution for small
+   *  models on the execution path too. */
+  modelSize?: ModelSize;
 }
 
 /** Optional configuration for AgentComposer. */
@@ -91,6 +109,10 @@ export interface IAgentComposerOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
+  /** The request's declaration-time effort/thinking pair ("auto" allowed), threaded by
+   *  PlanExecutor from the plan frontmatter so the execution path resolves it AFTER
+   *  provider selection (GAP-3). */
+  requestDeclaration?: IEffortDeclarationPair;
   /** The caller's highest-confidence skill match's triggers.task_types, in priority order
    *  (first = most confident). AgentComposer has no SkillsService dependency; a caller
    *  that already matched skills (e.g. AgentRunner) supplies this for the derivation chain. */
@@ -438,6 +460,53 @@ export class AgentComposer {
     return result.blueprint;
   }
 
+  /** Resolves the execution call's declaration-time effort/thinking (GAP-3): request
+   *  declaration wins over the blueprint's; TaskComplexity comes from the persisted
+   *  request_analysis (the plan path may differ — Step 2's documented divergence). */
+  private resolveStepEffort(
+    blueprint: IAgentFileBlueprint,
+    options: IAgentExecutionOptions,
+  ): IEffortResolution {
+    const providerType = resolveProviderType(blueprint.provider);
+    const metadata = providerType !== undefined ? ProviderRegistry.getProviderMetadata(providerType) : undefined;
+    const analysis = options.request_analysis as IRequestAnalysis | undefined;
+    return new EffortResolver().resolve(
+      {
+        request: this.options?.requestDeclaration,
+        role: { effort: blueprint.effort, thinking: blueprint.thinking },
+      },
+      {
+        taskComplexity: taskComplexityFromAnalysis(analysis?.complexity),
+        complexitySource: analysis ? COMPLEXITY_SOURCE_ANALYSIS : COMPLEXITY_SOURCE_DEFAULT,
+        modelSize: blueprint.modelSize,
+        providerType,
+        model: blueprint.model,
+        providerSupportsThinking: metadata?.supportsThinking === true,
+        anthropicThinkingDefault: this.config.ai_anthropic?.thinking_default,
+        skillFloors: [],
+        agentRole: options.agent_role,
+      },
+    );
+  }
+
+  /** Rebuilds _resolvedCallOptions from the resolution: the final thinking/effort replace
+   *  the ModelResolver-derived values, and max_tokens is EFFORT_MAX_TOKENS[effort] only
+   *  when the governing declaration was concrete (GAP-8) — auto-resolved effort never sets
+   *  max_tokens. */
+  private applyEffortResolution(resolution: IEffortResolution): void {
+    this._resolvedCallOptions = this._resolvedCallOptions ?? {};
+    delete this._resolvedCallOptions.thinking;
+    delete this._resolvedCallOptions.effort;
+    delete this._resolvedCallOptions.max_tokens;
+    if (resolution.thinking !== undefined) this._resolvedCallOptions.thinking = resolution.thinking;
+    if (resolution.effort !== undefined) {
+      this._resolvedCallOptions.effort = resolution.effort;
+      if (resolution.concreteDeclaration) {
+        this._resolvedCallOptions.max_tokens = EFFORT_MAX_TOKENS[resolution.effort];
+      }
+    }
+  }
+
   /**
    * Sanitize system prompt to prevent XSS and injection attacks
    */
@@ -493,6 +562,10 @@ export class AgentComposer {
 
     // Load blueprint — capabilities array drives strategy dispatch (MCP > ReAct > Legacy).
     const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
+    // Resolve declaration-time effort/thinking AFTER provider selection (GAP-3): the
+    // blueprint's resolved provider/model and the persisted request_analysis are known
+    // here, and "auto" must never feed ModelResolver (which already ran in loadBlueprint).
+    this.applyEffortResolution(this.resolveStepEffort(_blueprint, options));
     const modelId = this.resolveModelId(_blueprint);
     await this.ctx.allocateBudget(
       modelId,

@@ -50,6 +50,8 @@ import {
 import { PortalContextBuilder } from "@exaix/request";
 import type { IPromptPreview } from "@exaix/schemas/prompt_budget.ts";
 import { resolveEffectiveBudgetPolicy } from "@exaix/core/config";
+import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -72,7 +74,10 @@ export interface IRequestCreateOptions {
   model?: string;
   modelSize?: string;
   preferredProvider?: string;
-  thinking?: boolean;
+  /** Raw CLI value: bare --thinking is true; --thinking true|false|auto arrives as a
+   *  string. Normalized into a ThinkingDeclaration in handleRequestCreate. */
+  thinking?: boolean | string;
+  /** CLI value for --effort; validated against the declaration schema. */
   effort?: string;
   characteristic?: string[];
   flow?: string;
@@ -237,6 +242,24 @@ async function resolvePortalPreviewContext(
   return "available";
 }
 
+/** Normalizes the raw CLI thinking value (bare flag = true, string "true"/"false"/"auto")
+ *  into the declaration type, rejecting anything else with an actionable error. */
+function normalizeThinkingDeclaration(value: IRequestCreateOptions["thinking"]): ThinkingDeclaration | undefined {
+  if (value === undefined || value === true || value === false) return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (value === EFFORT_AUTO) return EFFORT_AUTO;
+  throw new Error(`Invalid --thinking value: '${value}' — expected true, false or auto.`);
+}
+
+/** Validates the CLI effort value against the declaration schema with an actionable error. */
+function validateEffortDeclaration(value: string): EffortDeclaration {
+  if ((EffortTierSchema.options as readonly string[]).includes(value) || value === EFFORT_AUTO) {
+    return value as EffortDeclaration;
+  }
+  throw new Error(`Invalid --effort value: '${value}' — expected low, medium, high or auto.`);
+}
+
 /** Non-mutating `--dry-run-context` path: constructs an in-process `AgentRunner`
  *  mirroring `apps/daemon/main.ts`'s real budget wiring, calls `previewPrompt()`, and
  *  prints the breakdown — never writes a request file, never invokes a real LLM call. */
@@ -360,6 +383,12 @@ export async function handleRequestCreate(
   try {
     const agentRole = options.agentRole;
 
+    // Normalize the declared thinking/effort from whatever the CLI produced (bare --thinking
+    // is a boolean; --thinking true|false|auto arrives as a string) into the declaration
+    // types the request file carries, rejecting invalid values with an actionable error.
+    const thinking = normalizeThinkingDeclaration(options.thinking);
+    const effort = options.effort !== undefined ? validateEffortDeclaration(options.effort) : undefined;
+
     const createOptions = {
       agent_role: options.flow ? undefined : agentRole,
       priority: options.priority as RequestPriority,
@@ -368,8 +397,8 @@ export async function handleRequestCreate(
       model: options.model,
       model_size: options.modelSize,
       preferred_provider: options.preferredProvider,
-      thinking: options.thinking,
-      effort: options.effort,
+      thinking,
+      effort,
       characteristics: options.characteristic,
       flow: options.flow,
       skills: options.skills ? options.skills.split(",").map((s: string) => s.trim()) : undefined,
@@ -535,7 +564,7 @@ function printRequestResult(
     status: string;
     subject?: string;
     model_size?: string;
-    thinking?: boolean;
+    thinking?: boolean | "auto";
     effort?: string;
     characteristics?: string[];
     preferred_provider?: string;

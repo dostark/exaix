@@ -12,6 +12,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../config/paths.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
+import type { IEffortDeclarationPair } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -84,6 +85,9 @@ export interface IPlanExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields that override blueprint values. */
   requestIntent?: Partial<IModelIntent>;
+  /** The request's declaration-time effort/thinking pair, threaded from the plan frontmatter
+   *  passthrough (GAP-3) so the execution path resolves "auto" after provider selection. */
+  requestDeclaration?: IEffortDeclarationPair;
   /** Resolver threaded into AgentComposer so resolveModelFromBlueprint's
    *  ModelResolver.resolve() branch is reachable during real execution — without it,
    *  best/route/auto-admit/task_type derivation never fires, regardless of blueprint content. */
@@ -291,6 +295,9 @@ export class PlanExecutor {
     }
     if (this.options.requestIntent) {
       options.requestIntent = this.options.requestIntent;
+    }
+    if (this.options.requestDeclaration) {
+      options.requestDeclaration = this.options.requestDeclaration;
     }
     const topSkillTaskTypes = await this.deriveTopSkillTaskTypes(context);
     if (topSkillTaskTypes.length > 0) {

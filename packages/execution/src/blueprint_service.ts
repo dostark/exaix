@@ -13,7 +13,8 @@ import { z } from "zod";
 import type { Config } from "@exaix/schemas/config.ts";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
-import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "@exaix/schemas/model_intent.ts";
+import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
+import { EFFORT_AUTO, EffortDeclarationSchema, ThinkingDeclarationSchema } from "@exaix/schemas/model_intent.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
@@ -38,9 +39,21 @@ interface BlueprintInput {
   model_size?: IModelIntent["model_size"];
   characteristics?: string[];
   preferred_provider?: string;
-  thinking?: boolean;
-  effort?: IModelIntent["effort"];
+  thinking?: ThinkingDeclaration;
+  effort?: EffortDeclaration;
   task_type?: IModelIntent["task_type"];
+}
+
+/** Normalizes a declaration-time thinking value to a concrete boolean for the intent —
+ *  "auto" (and any string) is dropped so it never constrains provider selection (GAP-3). */
+function thinkingLike(value: Opt<boolean | ThinkingDeclaration, Reason.OptionalInput>): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+/** Normalizes a declaration-time effort value to a concrete tier for the intent — "auto"
+ *  is dropped so it never constrains provider selection (GAP-3). */
+function effortLike(value: Opt<EffortTier | EffortDeclaration, Reason.OptionalInput>): EffortTier | undefined {
+  return value === undefined || value === EFFORT_AUTO ? undefined : (value as EffortTier);
 }
 
 /** Strict validation prevents YAML deserialization attacks. */
@@ -109,6 +122,9 @@ export class BlueprintService {
           allowed_paths: validatedFrontmatter.allowed_paths,
           systemPrompt: sanitizedPrompt,
           hitl: validatedFrontmatter.hitl,
+          effort: validatedFrontmatter.effort,
+          thinking: validatedFrontmatter.thinking,
+          modelSize: validatedFrontmatter.model_size as ModelSize | undefined,
         },
         resolvedCallOptions,
       };
@@ -154,8 +170,10 @@ export class BlueprintService {
         model_size: requestIntent?.model_size ?? extras.model_size,
         characteristics: requestIntent?.characteristics ?? extras.characteristics,
         preferred_provider: requestIntent?.preferred_provider ?? extras.preferred_provider,
-        thinking: requestIntent?.thinking ?? extras.thinking,
-        effort: requestIntent?.effort ?? extras.effort,
+        // A declaration-time "auto" must never reach ModelResolver (it only understands
+        // concrete values); it is resolved after selection by the caller (GAP-3).
+        thinking: thinkingLike(requestIntent?.thinking ?? extras.thinking),
+        effort: effortLike(requestIntent?.effort ?? extras.effort),
         task_type: derivedTaskType.taskType,
         task_type_source: derivedTaskType.source,
       };

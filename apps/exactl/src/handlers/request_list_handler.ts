@@ -6,6 +6,7 @@
  * @related-files ["apps/exactl/src/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
+import { EFFORT_AUTO } from "@exaix/schemas";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -139,8 +140,12 @@ export class RequestListHandler extends BaseCommand {
   ): void {
     if (frontmatter.model_size) entry.model_size = String(frontmatter.model_size);
     if (frontmatter.preferred_provider) entry.preferred_provider = String(frontmatter.preferred_provider);
-    if (frontmatter.thinking !== undefined) entry.thinking = Boolean(frontmatter.thinking);
-    if (frontmatter.effort) entry.effort = String(frontmatter.effort);
+    if (frontmatter.thinking !== undefined) {
+      entry.thinking = frontmatter.thinking === EFFORT_AUTO
+        ? EFFORT_AUTO
+        : frontmatter.thinking === "true" || frontmatter.thinking === true;
+    }
+    if (frontmatter.effort) entry.effort = frontmatter.effort as IRequestEntry["effort"];
     if (frontmatter.characteristics) entry.characteristics = JSON.parse(String(frontmatter.characteristics));
   }
 

@@ -6,6 +6,7 @@
  * @related-files ["apps/exactl/src/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
+import { EFFORT_AUTO } from "@exaix/schemas";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -170,9 +171,7 @@ export class RequestShowHandler extends BaseCommand {
     for (const { sourceKey, targetKey } of optionalFields) {
       const value = frontmatter[sourceKey];
       if (value) {
-        (metadata as IRequestShowResult["metadata"] & Record<OptionalMetadataStringKey, string>)[targetKey] = String(
-          value,
-        );
+        (metadata as object as Record<string, string | boolean | number>)[targetKey] = value;
       }
     }
   }
@@ -183,7 +182,7 @@ export class RequestShowHandler extends BaseCommand {
   ): void {
     const thinking = frontmatter.thinking;
     if (thinking !== undefined) {
-      metadata.thinking = Boolean(thinking);
+      metadata.thinking = thinking === EFFORT_AUTO ? EFFORT_AUTO : thinking === "true" || thinking === true;
     }
 
     const characteristics = frontmatter.characteristics;

@@ -7,6 +7,7 @@
  */
 
 import type { RequestStatusType } from "@exaix/core/status";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 
 export interface IRequestFrontmatter {
   trace_id: string;
@@ -29,10 +30,11 @@ export interface IRequestFrontmatter {
   model_size?: string;
   /** Provider preference hint */
   preferred_provider?: string;
-  /** Enable extended thinking */
-  thinking?: boolean;
-  /** Reasoning effort tier: low|medium|high */
-  effort?: string;
+  /** Enable extended thinking. A boolean is final; "auto" defers to EffortResolver. */
+  thinking?: ThinkingDeclaration;
+  /** Reasoning effort tier: low|medium|high|auto. A concrete tier is final; "auto"
+   *  defers to EffortResolver. */
+  effort?: EffortDeclaration;
   /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
   /** Skills to apply for this request. Accepts a YAML array (hand-authored), a JSON-encoded

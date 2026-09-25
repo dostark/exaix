@@ -46,6 +46,8 @@ import type { IFlowRunner } from "@exaix/flow";
 import { DomainEventType } from "@exaix/core/events";
 import type { IFlowLoaderService, IFlowValidatorService } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import { EFFORT_AUTO } from "@exaix/schemas";
+import type { IEffortDeclarationPair } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
 import { CostTracker } from "@exaix/core/cost";
 import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
@@ -147,16 +149,29 @@ export interface IRequestProcessorConfig {
 
 export class RequestProcessor {
   /** Forwards the request frontmatter's model intent fields onto the plan so native
-   * execution applies request overrides (see PlanWriter.requestIntent). */
+   * execution applies request overrides (see PlanWriter.requestIntent). Declared "auto"
+   * values are EXCLUDED here — they must never float into the concrete IModelIntent that
+   * drives provider selection (GAP-3); they travel as requestEffortDeclaration instead. */
   private static requestIntentFromFrontmatter(frontmatter: IRequestFrontmatter): Partial<IModelIntent> {
     const intent: Partial<IModelIntent> = {};
     if (frontmatter.model_size !== undefined) intent.model_size = frontmatter.model_size as IModelIntent["model_size"];
-    if (frontmatter.thinking !== undefined) intent.thinking = frontmatter.thinking === true;
-    if (frontmatter.effort !== undefined) intent.effort = frontmatter.effort as IModelIntent["effort"];
+    if (typeof frontmatter.thinking === "boolean") intent.thinking = frontmatter.thinking;
+    if (frontmatter.effort !== undefined && frontmatter.effort !== EFFORT_AUTO) {
+      intent.effort = frontmatter.effort as IModelIntent["effort"];
+    }
     if (frontmatter.characteristics !== undefined) intent.characteristics = frontmatter.characteristics;
     if (frontmatter.preferred_provider !== undefined) intent.preferred_provider = frontmatter.preferred_provider;
     if (frontmatter.model !== undefined) intent.model = frontmatter.model;
     return intent;
+  }
+
+  /** Declaration-time effort/thinking of the request — travels beside requestIntent so
+   *  the execution path can resolve "auto" AFTER provider selection. */
+  private static requestEffortDeclaration(frontmatter: IRequestFrontmatter): IEffortDeclarationPair {
+    return {
+      ...(frontmatter.effort !== undefined ? { effort: frontmatter.effort } : {}),
+      ...(frontmatter.thinking !== undefined ? { thinking: frontmatter.thinking } : {}),
+    };
   }
   private readonly planWriter: PlanWriter;
   private readonly plansDir: string;
@@ -631,6 +646,7 @@ export class RequestProcessor {
         targetBranch: frontmatter.target_branch,
         requestAnalysis: analysis,
         requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
+        requestEffortDeclaration: RequestProcessor.requestEffortDeclaration(frontmatter),
       };
 
       return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
@@ -667,6 +683,7 @@ export class RequestProcessor {
       targetBranch: frontmatter.target_branch,
       requestAnalysis: analysis,
       requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
+      requestEffortDeclaration: RequestProcessor.requestEffortDeclaration(frontmatter),
     };
 
     return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
@@ -738,6 +755,7 @@ export class RequestProcessor {
       subject: frontmatter.subject,
       requestAnalysis: analysis,
       requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
+      requestEffortDeclaration: RequestProcessor.requestEffortDeclaration(frontmatter),
     };
 
     const planJsonSchema = getPlanJsonSchema();

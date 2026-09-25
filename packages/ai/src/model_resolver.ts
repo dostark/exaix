@@ -83,6 +83,10 @@ const EFFORT_MAX_TOKENS: Record<EffortTier, number> = {
   high: 8192,
 };
 
+/** Exported so AgentComposer.executeStep can recompute max_tokens from the FINAL
+ *  (possibly floor-raised) effort tier when the governing declaration was concrete (GAP-8). */
+export { EFFORT_MAX_TOKENS };
+
 /** Policy-driven model resolver. Stateless — state lives in the injected dependencies.
  * @visible
  */

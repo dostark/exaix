@@ -401,8 +401,14 @@ const baseCommand = new Command()
         "Soft ranking hint — cheapest|fastest. Scores providers, does not eliminate (repeatable)",
         { collect: true },
       )
-      .option("--thinking", "Require extended reasoning model")
-      .option("--effort <tier:string>", "Reasoning token budget: low|medium|high (only with --thinking)")
+      .option(
+        "--thinking [mode:string]",
+        "Extended thinking: bare --thinking means true; accepts true|false|auto",
+      )
+      .option(
+        "--effort <tier:string>",
+        "Reasoning token budget: low|medium|high|auto (auto asks the system to decide)",
+      )
       .option(
         "--preferred-provider <provider:string>",
         "Narrow candidates to specific provider (skips cross-provider scoring)",

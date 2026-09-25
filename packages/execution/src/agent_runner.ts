@@ -15,7 +15,7 @@
 
 import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
+import { COMPLEXITY_SOURCE_DEFAULT, EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
 import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
 import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 import { toSafeJson } from "@exaix/core/types";
@@ -168,8 +168,12 @@ export interface IParsedRequest {
   model?: string;
   model_size?: string;
   preferred_provider?: string;
-  thinking?: boolean;
-  effort?: string;
+  /** Extended-thinking declaration from request frontmatter — "auto" defers to
+   *  EffortResolver. */
+  thinking?: ThinkingDeclaration;
+  /** Reasoning-effort declaration from request frontmatter — "auto" defers to
+   *  EffortResolver. */
+  effort?: EffortDeclaration;
   characteristics?: string[];
 
   /** Task complexity computed by RequestProcessor's TaskComplexityClassifier, stamped by
@@ -532,7 +536,7 @@ export class AgentRunner implements IAgentRunner {
       : undefined;
     const signals: IEffortResolutionSignals = {
       taskComplexity: request.taskComplexity ?? TaskComplexity.MEDIUM,
-      complexitySource: request.taskComplexitySource ?? "default",
+      complexitySource: request.taskComplexitySource ?? COMPLEXITY_SOURCE_DEFAULT,
       modelSize: blueprint.modelSize,
       providerType,
       model: selectedModel.model,
@@ -542,7 +546,10 @@ export class AgentRunner implements IAgentRunner {
       agentRole,
     };
     return this.effortResolver.resolve(
-      { role: { effort: blueprint.effort, thinking: blueprint.thinking } },
+      {
+        role: { effort: blueprint.effort, thinking: blueprint.thinking },
+        request: { effort: request.effort, thinking: request.thinking },
+      },
       signals,
     );
   }

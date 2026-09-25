@@ -84,6 +84,10 @@ export interface IEffortResolver {
   resolve(declarations: IEffortDeclarations, signals: IEffortResolutionSignals): IEffortResolution;
 }
 
+/** Runtime labels for TaskComplexitySource at positions that assign (not type) them. */
+export const COMPLEXITY_SOURCE_ANALYSIS: TaskComplexitySource = "analysis";
+export const COMPLEXITY_SOURCE_DEFAULT: TaskComplexitySource = "default";
+
 /** A declaration value from any surface: an effort tier, a thinking boolean, or "auto". */
 type DeclarationValue = EffortDeclaration | boolean | undefined;
 

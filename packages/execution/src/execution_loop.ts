@@ -41,7 +41,9 @@ import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/co
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
-import type { IModelIntent } from "@exaix/schemas";
+import type { EffortDeclaration, IModelIntent, ThinkingDeclaration } from "@exaix/schemas";
+import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
+import type { IEffortDeclarationPair } from "@exaix/ai";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
 import {
@@ -600,17 +602,38 @@ export class ExecutionLoop {
 
   /** Extracts the request's model intent from the plan frontmatter passthrough
    *  (PlanWriter writes it there), so native plan execution applies the same request
-   *  overrides the delegation path resolves. */
+   *  overrides the delegation path resolves. Declaration-time "auto" is never forwarded
+   *  into the concrete intent (GAP-3) — it travels as the requestDeclaration pair. */
   private requestIntentFromPlanFrontmatter(frontmatter: PlanFrontmatter): Partial<IModelIntent> {
     const raw = this.toSafeFrontmatter(frontmatter);
     const intent: Partial<IModelIntent> = {};
     if (raw.model_size !== undefined) intent.model_size = raw.model_size as IModelIntent["model_size"];
-    if (raw.thinking !== undefined) intent.thinking = raw.thinking === true;
-    if (raw.effort !== undefined) intent.effort = raw.effort as IModelIntent["effort"];
+    if (raw.thinking === true || raw.thinking === false) intent.thinking = raw.thinking;
+    if (
+      typeof raw.effort === "string" && raw.effort !== EFFORT_AUTO &&
+      (EffortTierSchema.options as readonly string[]).includes(raw.effort)
+    ) {
+      intent.effort = raw.effort as IModelIntent["effort"];
+    }
     if (Array.isArray(raw.characteristics)) intent.characteristics = raw.characteristics as string[];
     if (raw.preferred_provider !== undefined) intent.preferred_provider = raw.preferred_provider as string;
     if (raw.model !== undefined) intent.model = raw.model as string;
     return intent;
+  }
+
+  /** Reads the plan frontmatter's request_effort_declaration passthrough (written by
+   *  PlanWriter) and surfaces it as typed declaration values for the execution path. */
+  private requestDeclarationFromPlanFrontmatter(frontmatter: PlanFrontmatter): IEffortDeclarationPair | undefined {
+    const raw = this.toSafeFrontmatter(frontmatter);
+    const decl = raw.request_effort_declaration;
+    if (decl === undefined || decl === null || typeof decl !== "object") return undefined;
+    const pair = decl as { effort?: string; thinking?: string | boolean };
+    return {
+      ...(typeof pair.effort === "string" ? { effort: pair.effort as EffortDeclaration } : {}),
+      ...(typeof pair.thinking === "boolean" || pair.thinking === EFFORT_AUTO
+        ? { thinking: pair.thinking as ThinkingDeclaration }
+        : {}),
+    };
   }
 
   /** Parses action blocks from plan content: code blocks with tool invocations in TOML format. */
@@ -739,6 +762,7 @@ export class ExecutionLoop {
       // Phase 132 (GAP-4): request-level intent flags ride the plan frontmatter
       // (written by PlanWriter) so native execution overrides blueprint values.
       requestIntent: this.requestIntentFromPlanFrontmatter(frontmatter),
+      requestDeclaration: this.requestDeclarationFromPlanFrontmatter(frontmatter),
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;

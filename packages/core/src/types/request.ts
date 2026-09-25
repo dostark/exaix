@@ -11,6 +11,7 @@ import type { RequestPriority, RequestSource } from "@exaix/core";
 import type { RequestStatusType } from "@exaix/core/status";
 
 import type { IRequestAnalysis } from "@exaix/schemas";
+import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 
 /** AnalysisMode enum for triggering request analysis; exported here to maintain shared
  *  type hierarchy. */
@@ -46,10 +47,11 @@ export interface IRequestOptions {
   model_size?: string;
   /** Provider preference hint */
   preferred_provider?: string;
-  /** Enable extended thinking */
-  thinking?: boolean;
-  /** Reasoning effort tier: low|medium|high */
-  effort?: string;
+  /** Enable extended thinking. A boolean is final; "auto" defers to EffortResolver. */
+  thinking?: ThinkingDeclaration;
+  /** Reasoning effort tier: low|medium|high|auto. A concrete tier is final; "auto" defers
+   *  to EffortResolver. */
+  effort?: EffortDeclaration;
   /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
   flow?: string;
@@ -86,10 +88,11 @@ export interface IRequestMetadata {
   model_size?: string;
   /** Provider preference hint */
   preferred_provider?: string;
-  /** Enable extended thinking */
-  thinking?: boolean;
-  /** Reasoning effort tier: low|medium|high */
-  effort?: string;
+  /** Enable extended thinking. A boolean is final; "auto" defers to EffortResolver. */
+  thinking?: ThinkingDeclaration;
+  /** Reasoning effort tier: low|medium|high|auto. A concrete tier is final; "auto" defers
+   *  to EffortResolver. */
+  effort?: EffortDeclaration;
   /** Soft hints: cheapest|fastest, repeatable */
   characteristics?: string[];
   flow?: string;

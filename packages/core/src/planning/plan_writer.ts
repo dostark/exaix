@@ -19,6 +19,7 @@ import type { IDatabaseService } from "@exaix/core/types";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import type { IModelIntent } from "@exaix/schemas";
+import type { IEffortDeclarationPair } from "@exaix/ai";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -42,6 +43,9 @@ export interface IRequestMetadata {
   /** Forwarded onto the plan frontmatter so native plan execution applies the same CLI-flag
    *  overrides the delegation path resolves. */
   requestIntent?: Partial<IModelIntent>;
+  /** The request's declaration-time effort/thinking pair ("auto" allowed), persisted beside
+   *  requestIntent so the execution path resolves it AFTER provider selection (GAP-3). */
+  requestEffortDeclaration?: IEffortDeclarationPair;
 }
 
 export interface IPlanWriterConfig {
@@ -273,6 +277,7 @@ export class PlanWriter {
     }
 
     this.applyRequestIntentToFrontmatter(frontmatter, metadata.requestIntent ?? {});
+    this.applyRequestEffortDeclaration(frontmatter, metadata.requestEffortDeclaration);
 
     if (metadata.portal) {
       frontmatter.portal = metadata.portal;
@@ -320,6 +325,22 @@ export class PlanWriter {
     if (requestIntent.preferred_provider !== undefined) {
       passthrough.preferred_provider = requestIntent.preferred_provider;
     }
+  }
+
+  /** Persists the request-level effort/thinking declaration onto the plan frontmatter so
+   *  execution can resolve "auto" against the SAME request declaration that produced the
+   *  plan (GAP-3). */
+  private applyRequestEffortDeclaration(
+    frontmatter: PlanFrontmatter,
+    requestEffortDeclaration?: Opt<IEffortDeclarationPair, Reason.OptionalContext>,
+  ): void {
+    if (!requestEffortDeclaration) return;
+    const passthrough = frontmatter as PlanFrontmatter & Record<string, JSONValue | undefined>;
+    const persisted: JSONValue = {
+      ...(requestEffortDeclaration.effort !== undefined ? { effort: requestEffortDeclaration.effort } : {}),
+      ...(requestEffortDeclaration.thinking !== undefined ? { thinking: requestEffortDeclaration.thinking } : {}),
+    };
+    passthrough.request_effort_declaration = persisted;
   }
 
   private async getTokenUsageSummary(traceId: string): Promise<ITokenUsageSummary | null> {

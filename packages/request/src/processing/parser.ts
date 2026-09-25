@@ -11,6 +11,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
 import { coerceRequestStatus } from "@exaix/core/status";
+import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "@exaix/schemas/model_intent.ts";
 
 export class RequestParser {
   constructor(private readonly logger: IEventLogger) {}
@@ -50,6 +51,7 @@ export class RequestParser {
       await this.validateAcceptanceCriteria(frontmatter, filePath);
       await this.validateExpectedOutcomes(frontmatter, filePath);
       await this.validateScopeField(frontmatter, filePath);
+      await this.validateEffortThinkingBoundary(frontmatter, filePath);
 
       // Validate required fields
       if (!frontmatter.trace_id) {
@@ -101,4 +103,34 @@ export class RequestParser {
       fm.scope = undefined;
     }
   }
+
+  /** Reject an invalid declaration-time effort/thinking value through the RequestFailed
+   *  path, naming the field — requests are file-driven, so this covers the manual/hand-
+   *  written channel the CLI-level check can never reach (GAP-5). */
+  private async validateEffortThinkingBoundary(fm: IRequestFrontmatter, filePath: string): Promise<void> {
+    if (fm.effort !== undefined) {
+      const parsedEffort = EffortDeclarationSchema.safeParse(fm.effort);
+      if (!parsedEffort.success) {
+        await this.logger.error(DomainEventType.RequestFailed, filePath, {
+          error: "Invalid 'effort' frontmatter value — expected low, medium, high or auto.",
+        });
+        throw new RequestFrontmatterRejectedError(`Invalid 'effort' value in ${filePath}`);
+      }
+      fm.effort = parsedEffort.data;
+    }
+    if (fm.thinking !== undefined) {
+      const parsedThinking = ThinkingDeclarationSchema.safeParse(fm.thinking);
+      if (!parsedThinking.success) {
+        await this.logger.error(DomainEventType.RequestFailed, filePath, {
+          error: "Invalid 'thinking' frontmatter value — expected true, false or auto.",
+        });
+        throw new RequestFrontmatterRejectedError(`Invalid 'thinking' value in ${filePath}`);
+      }
+      fm.thinking = parsedThinking.data;
+    }
+  }
 }
+
+/** Signals a rejected request-file declaration; the outer parse handler converts it into a
+ *  null result so processing stops before any provider call. */
+class RequestFrontmatterRejectedError extends Error {}
