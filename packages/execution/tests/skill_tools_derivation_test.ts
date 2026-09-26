@@ -78,3 +78,8 @@ Deno.test("[skill-tools] duplicate tool within a single skill's own list is not 
   );
   assertEquals(result.sort(), ["read_file", "write_file"]);
 });
+
+Deno.test("[react_loop] aliases on skill and role tool lists do not grant canonical tools", () => {
+  assertEquals(resolveEffectiveSkillTools([["Read"]], ["read_file"]), []);
+  assertEquals(resolveEffectiveSkillTools([["read_file"]], ["Read"]), []);
+});

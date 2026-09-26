@@ -12,7 +12,14 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_AGENTS_PATH, DEFAULT_AI_MODEL, DEFAULT_BLUEPRINT_VERSION, McpToolName, ToolName } from "@exaix/core";
+import {
+  canonicalizeToolName,
+  DEFAULT_AGENTS_PATH,
+  DEFAULT_AI_MODEL,
+  DEFAULT_BLUEPRINT_VERSION,
+  McpToolName,
+  ToolName,
+} from "@exaix/core";
 import type { EffortDeclaration, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 
 /**
@@ -99,8 +106,16 @@ const ThinkingDeclarationSchema = z.preprocess(
   z.union([z.boolean(), z.literal(EFFORT_AUTO)]),
 );
 
-/** Inline HITL policy schema — avoids runtime cross-package import from @exaix/schemas. */
+const CANONICAL_TOOL_NAMES = new Set<string>([...Object.values(McpToolName), ...Object.values(ToolName)]);
+
+/** Inline HITL policy schema. This avoids a runtime cross-package import from @exaix/schemas.
+ *  The tool field is preprocessed through canonicalizeToolName, so an alias like `Write`
+ *  still requires approval. Retired native names and case variants fail validation. */
 const HitlRuleSchema = z.object({
+  tool: z.preprocess(
+    (tool) => typeof tool === "string" ? canonicalizeToolName(tool) : tool,
+    z.string().min(1).refine((tool) => CANONICAL_TOOL_NAMES.has(tool), "Tool name must be canonical"),
+  ),
   command_pattern: z.string().optional(),
   path_pattern: z.string().optional(),
   branch_pattern: z.string().optional(),
@@ -197,8 +212,15 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Default skills to apply */
   default_skills: z.array(z.string()).optional(),
 
-  /** Tools this agent role is permitted to use (from McpToolName or ToolName). */
-  permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
+  /** Tools this agent role is permitted to use (from McpToolName or ToolName). Preprocessed
+   *  through canonicalizeToolName, so an alias like `Read` resolves to its canonical name.
+   *  Retired native names and case variants fail validation. */
+  permitted_tools: z.array(
+    z.preprocess(
+      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
+      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
+    ),
+  ).optional(),
 
   /** Deprecation flag for outdated blueprints; consumed by routing/capability matching */
   deprecated: z.boolean().default(false),

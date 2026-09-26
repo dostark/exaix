@@ -11,7 +11,7 @@ import { McpToolName } from "@exaix/mcp";
 import { EXECUTION_TOOL_NAMES } from "@exaix/core";
 import { describe, it } from "@std/testing/bdd";
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertThrows } from "@std/assert";
 import type { ZodError } from "zod";
 import type { IPlanStep, Plan } from "@exaix/schemas";
 
@@ -796,4 +796,13 @@ describe("PlanSchema - Specialized Agent Fields", () => {
       }
     });
   });
+});
+
+Deno.test("[schemas] PlanActionSchema accepts a supported general-purpose alias, keeping the raw value for the registry to rewrite", () => {
+  const parsed = PlanActionSchema.parse({ tool: "glob", params: { query: "*.ts", path: "." } });
+  assertEquals(parsed.tool, "glob");
+});
+
+Deno.test("[schemas] PlanActionSchema rejects a retired native alias", () => {
+  assertThrows(() => PlanActionSchema.parse({ tool: "list_symbols", params: {} }));
 });

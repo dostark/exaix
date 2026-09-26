@@ -8,7 +8,13 @@
  */
 
 import { z } from "zod";
-import { AgentExecutionErrorType, ExecutionStrategyName, JSONValueSchema, SecurityMode } from "@exaix/core";
+import {
+  AgentExecutionErrorType,
+  ExecutionStrategyName,
+  isRejectedNativeToolName,
+  JSONValueSchema,
+  SecurityMode,
+} from "@exaix/core";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
 
 /**
@@ -53,7 +59,10 @@ export const AgentExecutionOptionsSchema = z.object({
   audit_enabled: z.boolean().default(true).describe(
     "Enable post-execution git audit",
   ),
-  permitted_tools: z.array(z.string()).optional().describe(
+  permitted_tools: z.array(z.string()).optional().refine(
+    (tools) => tools === undefined || !tools.some(isRejectedNativeToolName),
+    { message: "permitted_tools contains an invalid native tool name" },
+  ).describe(
     "Custom tool permissions for this execution",
   ),
   allowed_paths: z.array(z.string()).optional().describe(

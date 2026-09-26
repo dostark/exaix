@@ -10,9 +10,19 @@
  */
 
 import { z } from "zod";
+import { canonicalizeToolName, McpToolName, ToolName } from "@exaix/core";
+
+const CANONICAL_TOOL_NAMES = new Set<string>([...Object.values(McpToolName), ...Object.values(ToolName)]);
 
 export const HitlRuleSchema = z.object({
-  tool: z.string().min(1),
+  /** Preprocessed through canonicalizeToolName so a stored rule naming a supported
+   *  general-purpose alias (`Write`) still requires approval for `write_file`. Native
+   *  case/whitespace variants and retired native names never canonicalize, so they still
+   *  fail the membership check below (third-review GAP-1). */
+  tool: z.preprocess(
+    (tool) => typeof tool === "string" ? canonicalizeToolName(tool) : tool,
+    z.string().min(1).refine((tool) => CANONICAL_TOOL_NAMES.has(tool), "Tool name must be canonical"),
+  ),
   branch_pattern: z.string().optional(),
   path_pattern: z.string().optional(),
   command_pattern: z.string().optional(),

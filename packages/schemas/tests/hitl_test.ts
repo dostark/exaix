@@ -97,3 +97,16 @@ Deno.test("HitlPolicySchema: multiple rules parse", () => {
   });
   assertEquals(result.require_secondary_approval.length, 3);
 });
+
+Deno.test("[security][hitl] a rule naming Write requires approval for a write_file call", () => {
+  const rule = HitlRuleSchema.parse({ tool: "Write" });
+  assertEquals(rule.tool, "write_file");
+  const policy = HitlPolicySchema.parse({ require_secondary_approval: [{ tool: "Write" }] });
+  assertEquals(policy.require_secondary_approval[0].tool, "write_file");
+});
+
+Deno.test("[security][hitl] HITL rules reject retired native aliases and native case/whitespace variants", () => {
+  assertFalse(HitlRuleSchema.safeParse({ tool: "list_symbols" }).success);
+  assertFalse(HitlRuleSchema.safeParse({ tool: "Query_Symbols" }).success);
+  assertFalse(HitlPolicySchema.safeParse({ require_secondary_approval: [{ tool: "list_symbols" }] }).success);
+});

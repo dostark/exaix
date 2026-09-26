@@ -6,7 +6,7 @@
  * @description Verifies the ConfigSchema `hitl` block (Phase 118).
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 import { ExaPathDefaults } from "@exaix/core";
 
@@ -44,4 +44,20 @@ Deno.test("ConfigSchema: hitl mandatory_rules empty defaults to []", () => {
     hitl: { enabled: true },
   });
   assertEquals(result.hitl?.mandatory_rules, []);
+});
+
+Deno.test("[security][hitl] config mandatory_rules accepts the Write alias and stores write_file", () => {
+  const result = ConfigSchema.parse({
+    ...baseConfig(),
+    hitl: { mandatory_rules: [{ tool: "Write", path_pattern: "**/.env*" }] },
+  });
+  assertEquals(result.hitl?.mandatory_rules[0].tool, "write_file");
+});
+
+Deno.test("[security][hitl] config mandatory_rules reject a retired native alias", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    hitl: { mandatory_rules: [{ tool: "list_symbols", path_pattern: "**/.env*" }] },
+  });
+  assert(!result.success);
 });

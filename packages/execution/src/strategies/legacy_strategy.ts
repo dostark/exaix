@@ -24,6 +24,8 @@ import {
 import type { McpToolName } from "@exaix/mcp";
 import type { IToolResult } from "@exaix/core/types";
 import { WRITE_TOOLS } from "@exaix/mcp";
+import { canonicalizeForRegistry } from "@exaix/tool-runtime";
+import { PATH_PARAM } from "@exaix/core";
 
 /**
  * Legacy execution strategy that uses direct LLM generation (simulation)
@@ -117,7 +119,21 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
       for (const act of blockActions) {
         if (!act.tool) continue;
 
-        const toolResult = await this.executeTool(act.tool, act.params || {}, options);
+        const params = act.params || {};
+        if (!this.executor.toolRegistry) {
+          throw new AgentExecutionError("ToolRegistry not available", AgentExecutionErrorType.CONFIGURATION_ERROR);
+        }
+        const canonical = canonicalizeForRegistry(this.executor.toolRegistry, act.tool, params);
+        const dispatchParams = { ...params };
+        if (
+          options.portal && typeof canonical.params.path === "string" && !canonical.params.path.startsWith("@")
+        ) {
+          const prefixedPath = `@${options.portal}/${canonical.params.path}`;
+          const rawPathKey = canonical.renamedParams.find(({ to }) => to === PATH_PARAM)?.from ?? PATH_PARAM;
+          dispatchParams[rawPathKey] = prefixedPath;
+        }
+        const canonicalAction = { tool: canonical.name, params: canonical.params };
+        const toolResult = await this.executeTool(act.tool, dispatchParams, options);
         if (!toolResult.success) {
           throw new AgentExecutionError(
             `Action ${act.tool} failed: ${toolResult.error}`,
@@ -126,7 +142,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
         }
 
         toolCallCount++;
-        this.trackFileChanges(act, toolResult, options, filesChanged);
+        this.trackFileChanges(canonicalAction, toolResult, options, filesChanged);
       }
     }
 
@@ -207,15 +223,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
       throw new AgentExecutionError("ToolRegistry not available", AgentExecutionErrorType.CONFIGURATION_ERROR);
     }
 
-    // Ensure portal isolation via path prefixing
-    const enrichedParams = { ...params };
-    if (
-      options.portal && enrichedParams.path && typeof enrichedParams.path === "string" &&
-      !enrichedParams.path.startsWith("@")
-    ) {
-      enrichedParams.path = `@${options.portal}/${enrichedParams.path}`;
-    }
-
-    return await this.executor.toolRegistry.execute(tool, enrichedParams);
+    void options;
+    return await this.executor.toolRegistry.execute(tool, params);
   }
 }

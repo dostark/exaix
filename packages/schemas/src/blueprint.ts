@@ -8,7 +8,14 @@
 
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
-import { ActivityActor, type BlueprintStatus, McpToolName, TaskType, ToolName } from "@exaix/core";
+import {
+  ActivityActor,
+  type BlueprintStatus,
+  canonicalizeToolName,
+  McpToolName,
+  TaskType,
+  ToolName,
+} from "@exaix/core";
 import { HitlPolicySchema } from "./hitl.ts";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
@@ -126,8 +133,15 @@ export const BlueprintFrontmatterSchema = z.object({
   default_skills: z.array(z.string()).optional(),
 
   /** Tools this agent role is permitted to use in dynamic execution steps (from McpToolName or ToolName). Flow
-   *  steps may narrow but not expand this set. Omitting this field means no dynamic tool permissions. */
-  permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
+   *  steps may narrow but not expand this set. Omitting this field means no dynamic tool permissions. Each entry
+   *  is preprocessed through canonicalizeToolName, so an alias like `grep` resolves to its canonical name.
+   *  Retired native names and case variants fail validation. */
+  permitted_tools: z.array(
+    z.preprocess(
+      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
+      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
+    ),
+  ).optional(),
 
   /** Per-action HITL governance rules. Optional; absent means no per-action HITL policy. */
   hitl: HitlPolicySchema.optional(),

@@ -23,7 +23,7 @@ import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ActorType, AGENT_GENERATION_COMPLETED, LogLevel, RunnerKind } from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, canonicalizeToolName, LogLevel, RunnerKind } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -563,22 +563,24 @@ export class AgentComposer {
   public static sanitizePrompt(prompt: string): string {
     return BlueprintService.sanitizePrompt(prompt);
   }
-  /** Bridges blueprint-level permitted_tools/allowed_paths onto per-call options, then
-   *  narrows permitted_tools to matched skills' tools intersected with the agent role's own
-   *  allowlist — a skill can only narrow, never grant a tool the agent role doesn't allow. */
+  /** Bridges blueprint-level permitted_tools/allowed_paths onto per-call options. Then narrows
+   *  permitted_tools to matched skills' tools intersected with the agent role's own allowlist.
+   *  A skill can only narrow, never grant a tool the role doesn't allow. Both sides are
+   *  canonicalized here, before the pure intersection, so a role listing `grep_search` still
+   *  matches a skill declaring `grep`. */
   private applyBlueprintToolScope(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
   ): void {
     if (blueprint.permitted_tools) {
-      options.permitted_tools = blueprint.permitted_tools;
+      options.permitted_tools = blueprint.permitted_tools.map(canonicalizeToolName);
     }
     if (blueprint.allowed_paths) {
       options.allowed_paths = blueprint.allowed_paths;
     }
     if (this.options?.matchedSkillTools) {
       options.permitted_tools = resolveEffectiveSkillTools(
-        this.options.matchedSkillTools,
+        this.options.matchedSkillTools.map((tools) => tools?.map(canonicalizeToolName)),
         options.permitted_tools,
       );
     }

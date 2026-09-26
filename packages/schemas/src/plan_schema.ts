@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_QUERY_LIMIT, EXECUTION_TOOL_NAMES, JSONValueSchema } from "@exaix/core";
+import { canonicalizeToolName, DEFAULT_QUERY_LIMIT, EXECUTION_TOOL_NAMES, JSONValueSchema } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 
 import { RequestAnalysisSchema } from "./request_analysis.ts";
@@ -60,10 +60,15 @@ export type PlanFrontmatter = z.infer<typeof PlanFrontmatterSchema>;
  */
 export const PlanActionSchema = z.object({
   /** Tool name to invoke — an execution-reachable tool. The model discovers allowed values via
-   *  the read-only `list_available_tools` catalog tool; validation re-checks the execution set. */
-  tool: z.string().min(1).refine((t) => (EXECUTION_TOOL_NAMES as readonly string[]).includes(t), {
-    message: `tool must be one of ${EXECUTION_TOOL_NAMES.join(", ")}`,
-  }),
+   *  the read-only `list_available_tools` catalog tool. Validation re-checks the canonicalized
+   *  name but keeps the raw value. A plan naming an alias like `grep` still passes here.
+   *  The registry performs and journals the actual rewrite at execution time. */
+  tool: z.string().min(1).refine(
+    (t) => (EXECUTION_TOOL_NAMES as readonly string[]).includes(canonicalizeToolName(t)),
+    {
+      message: `tool must be one of ${EXECUTION_TOOL_NAMES.join(", ")}`,
+    },
+  ),
 
   /** Parameters for the tool invocation */
   params: z.record(z.string(), JSONValueSchema),

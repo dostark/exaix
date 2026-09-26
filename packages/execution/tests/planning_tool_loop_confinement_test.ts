@@ -18,7 +18,11 @@ import type { JSONValue } from "@exaix/core/types";
 
 /** Runs one real-registry planning round for `toolName`/`input` over a portal that has a sibling
  *  secret file, and returns the content the loop fed back to the model. */
-async function feedBackFor(toolName: string, input: Record<string, JSONValue>): Promise<string> {
+async function feedBackFor(
+  toolName: string,
+  input: Record<string, JSONValue>,
+  allowedTool: string = toolName,
+): Promise<string> {
   const root = await Deno.makeTempDir();
   try {
     await Deno.mkdir(`${root}/portal/src`, { recursive: true });
@@ -50,7 +54,7 @@ async function feedBackFor(toolName: string, input: Record<string, JSONValue>): 
       nextCallSite: () => undefined,
       portalAlias: "p",
       portalRoot: `${root}/portal`,
-      allowedTools: new Set([toolName]),
+      allowedTools: new Set([allowedTool]),
       maxRounds: 2,
       maxToolResultTokens: 2000,
       maxToolCallsPerRound: 3,
@@ -83,4 +87,27 @@ Deno.test("[security] PlanningToolLoop denies a ../ file_path alias outside the 
 Deno.test("PlanningToolLoop still reads an in-portal file through the file_path alias", async () => {
   const fedBack = await feedBackFor("read_file", { file_path: "src/a.ts" });
   assert(fedBack.includes("export const a = 1;"), `expected file content, got ${fedBack}`);
+});
+
+Deno.test("[security] PlanningToolLoop denies read_file with an absolute filePath outside the portal", async () => {
+  const fedBack = await feedBackFor("read_file", { filePath: "$ROOT/secret.txt" });
+  assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
+  assertEquals(fedBack.includes("OUTSIDE"), false);
+});
+
+Deno.test("[security] PlanningToolLoop denies read_file with an absolute target_file outside the portal", async () => {
+  const fedBack = await feedBackFor("read_file", { target_file: "$ROOT/secret.txt" });
+  assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
+  assertEquals(fedBack.includes("OUTSIDE"), false);
+});
+
+Deno.test("[security] PlanningToolLoop denies glob with a ../ pattern the same way as search_files", async () => {
+  const fedBack = await feedBackFor("glob", { query: "../*.txt", path: "." }, "search_files");
+  assert(fedBack.includes("Access denied"), `expected access denied, got ${fedBack}`);
+  assertEquals(fedBack.includes("secret.txt"), false);
+});
+
+Deno.test("[security] PlanningToolLoop rejects the non-canonical glob name when the allowlist names glob, not search_files", async () => {
+  const fedBack = await feedBackFor("glob", { query: "*.txt", path: "." });
+  assert(fedBack.includes("not in the planning catalog"), `expected catalog rejection, got ${fedBack}`);
 });

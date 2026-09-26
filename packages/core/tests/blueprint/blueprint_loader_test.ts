@@ -8,6 +8,7 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
+import { ToolName } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 
@@ -621,6 +622,46 @@ System prompt.
 
     await assertRejects(
       () => loadBlueprint(blueprintsPath, "injected-effort-agent"),
+      BlueprintLoadError,
+    );
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[schemas] a runtime-loaded blueprint accepts the Read alias and resolves it to read_file", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+  try {
+    const content = `---
+agent_role: "alias-test"
+name: "Alias Test"
+permitted_tools: ["Read"]
+---
+
+Read a file.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "alias-test.md"), content);
+    const blueprint = await new IBlueprintLoader({ blueprintsPath }).load("alias-test");
+    assertEquals(blueprint?.frontmatter.permitted_tools, [ToolName.READ_FILE]);
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[schemas] a runtime-loaded blueprint rejects a retired native permitted_tools alias", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+  try {
+    const content = `---
+agent_role: "alias-retired-test"
+name: "Alias Retired Test"
+permitted_tools: ["list_symbols"]
+---
+
+Query symbols.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "alias-retired-test.md"), content);
+    await assertRejects(
+      () => new IBlueprintLoader({ blueprintsPath }).load("alias-retired-test"),
       BlueprintLoadError,
     );
   } finally {

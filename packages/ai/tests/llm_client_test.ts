@@ -152,3 +152,37 @@ Deno.test("LlmClient - handles invalid JSON", async () => {
     "Failed to parse LLM response",
   );
 });
+
+Deno.test("[llm_client] a dynamic-step decision naming Read parses to read_file", async () => {
+  const client = makeClient(
+    JSON.stringify({ reasoning: "read", action: { type: "tool_call", tool: "Read", args: { file_path: "a.ts" } } }),
+  );
+  const decision = await client.reasonNextAction({
+    agent_role: mockAgentRole,
+    stepObjective: "Read",
+    accumulatedContext: "",
+    availableTools: mockTools,
+    iteration: 1,
+    maxIterations: 2,
+  });
+  assertEquals(decision.tool, McpToolName.READ_FILE);
+});
+
+Deno.test("[llm_client] an excluded native alias is rejected", async () => {
+  const client = makeClient(
+    JSON.stringify({
+      reasoning: "list",
+      action: { type: "tool_call", tool: "list_symbols", args: {} },
+    }),
+  );
+  await assertRejects(() =>
+    client.reasonNextAction({
+      agent_role: mockAgentRole,
+      stepObjective: "List symbols",
+      accumulatedContext: "",
+      availableTools: mockTools,
+      iteration: 1,
+      maxIterations: 2,
+    })
+  );
+});

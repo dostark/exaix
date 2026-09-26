@@ -140,3 +140,104 @@ Deno.test("[LegacyStrategyRegistryComputedCost] an unknown model falls back to r
   assertEquals(capture.costUsd, 0.042);
   assertEquals(result.usage!.cost_usd, 0.042);
 });
+
+function makeAliasExecutor(portalRoot: string, captured: Array<{ tool: string; params: Record<string, string> }>) {
+  return {
+    ...makeMockExecutor({}),
+    toolRegistry: {
+      execute: (tool: string, params: Record<string, string>) => {
+        captured.push({ tool, params });
+        return Promise.resolve({ success: true, data: { path: `${portalRoot}/src/a.ts` } });
+      },
+      getTools: () => [{
+        name: "write_file",
+        description: "write",
+        parameters: { type: "object", properties: { path: { type: "string" }, content: { type: "string" } } },
+      }],
+      getBaseDir: () => portalRoot,
+    },
+    getPortalConfig: () => ({ alias: "test", target_path: portalRoot }),
+  };
+}
+
+function makeAliasProvider(tomlContent: string): IModelProvider {
+  return {
+    id: "legacy-alias-provider",
+    generate(): Promise<IGenerateResult> {
+      return Promise.resolve({
+        content: tomlContent,
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        model: "unknown-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
+    },
+  };
+}
+
+Deno.test("[security][legacy_strategy] a canonical write_file is portal-prefixed and write-tracked", async () => {
+  const captured: Array<{ tool: string; params: Record<string, string> }> = [];
+  const mockExecutor = makeAliasExecutor("/workspace/portal", captured);
+  const provider = makeAliasProvider(
+    '```toml\n[[actions]]\ntool = "write_file"\n[actions.params]\nfile_path = "src/a.ts"\ncontent = "x"\n```',
+  );
+  const result = await new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider)
+    .execute(
+      testBlueprint,
+      testContext,
+      createOptions("test"),
+    );
+  assertEquals(captured[0], { tool: "write_file", params: { file_path: "@test/src/a.ts", content: "x" } });
+  assertEquals(result.files_changed, ["src/a.ts"]);
+});
+
+Deno.test("[security][legacy_strategy] an aliased tool name (write) is portal-prefixed and write-tracked as the canonical write_file", async () => {
+  const captured: Array<{ tool: string; params: Record<string, string> }> = [];
+  const mockExecutor = makeAliasExecutor("/workspace/portal", captured);
+  const provider = makeAliasProvider(
+    '```toml\n[[actions]]\ntool = "write"\n[actions.params]\nfile_path = "src/a.ts"\ncontent = "x"\n```',
+  );
+  const result = await new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider)
+    .execute(
+      testBlueprint,
+      testContext,
+      createOptions("test"),
+    );
+  // Dispatch keeps the ORIGINAL requested name ("write") and raw keys.
+  // ToolRegistry.execute performs the real canonicalization and journals the rewrite.
+  assertEquals(captured[0], { tool: "write", params: { file_path: "@test/src/a.ts", content: "x" } });
+  assertEquals(result.files_changed, ["src/a.ts"]);
+});
+
+Deno.test("[security][legacy_strategy] conflicting path/file_path values retain canonical precedence and cannot change the confined destination", async () => {
+  const captured: Array<{ tool: string; params: Record<string, string> }> = [];
+  const mockExecutor = makeAliasExecutor("/workspace/portal", captured);
+  const provider = makeAliasProvider(
+    '```toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "src/a.ts"\nfile_path = "../../etc/passwd"\ncontent = "x"\n```',
+  );
+  await new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider).execute(
+    testBlueprint,
+    testContext,
+    createOptions("test"),
+  );
+  // The canonical key `path` wins and is the one prefixed. The dropped alias `file_path`
+  // stays raw and unprefixed, so it can never redirect the confined destination.
+  assertEquals(captured[0], {
+    tool: "write_file",
+    params: { path: "@test/src/a.ts", file_path: "../../etc/passwd", content: "x" },
+  });
+});
+
+Deno.test("[legacy_strategy] an already-prefixed path is not prefixed again", async () => {
+  const captured: Array<{ tool: string; params: Record<string, string> }> = [];
+  const mockExecutor = makeAliasExecutor("/workspace/portal", captured);
+  const provider = makeAliasProvider(
+    '```toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "@test/src/a.ts"\ncontent = "x"\n```',
+  );
+  await new LegacyAgentStrategy(mockExecutor as Partial<AgentComposer> as AgentComposer, provider).execute(
+    testBlueprint,
+    testContext,
+    createOptions("test"),
+  );
+  assertEquals(captured[0], { tool: "write_file", params: { path: "@test/src/a.ts", content: "x" } });
+});

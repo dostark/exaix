@@ -12,6 +12,7 @@ import { MEMORY_STATUS_VALUES } from "@exaix/core/status";
 import { EffortTierSchema } from "./model_intent.ts";
 import {
   type ActivityType,
+  canonicalizeToolName,
   ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
@@ -404,8 +405,13 @@ export const SkillSchema = z.object({
   /** Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit, git_create_branch). When
    *  matched onto a request, unioned with every other matched skill's tools, then intersected with the agent role's
    *  permitted_tools — a skill can never grant a tool the agent role doesn't already permit. */
-  tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional().describe(
-    "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the agent role's permitted_tools",
+  tools: z.array(
+    z.preprocess(
+      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
+      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
+    ),
+  ).optional().describe(
+    "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the agent role's permitted_tools. Supported general-purpose aliases (e.g. grep) resolve to their canonical name; excluded/retired native names fail validation.",
   ),
 
   // Compatibility

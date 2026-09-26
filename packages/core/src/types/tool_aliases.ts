@@ -30,7 +30,7 @@ export interface ICanonicalizedToolCall {
 }
 
 /** Canonical parameter keys the alias tables rename to. */
-const PATH_PARAM = "path";
+export const PATH_PARAM = "path";
 const PATTERN_PARAM = "pattern";
 const SEARCH_PARAM = "search";
 const REPLACE_PARAM = "replace";
@@ -69,8 +69,6 @@ export const TOOL_ALIASES: Readonly<Record<string, IToolAlias>> = Object.freeze(
   remove_file: { canonical: ToolName.DELETE_FILE },
   webfetch: { canonical: ToolName.FETCH_URL },
   web_fetch: { canonical: ToolName.FETCH_URL },
-  dependents: { canonical: ToolName.WHO_DEPENDS_ON },
-  list_symbols: { canonical: ToolName.QUERY_SYMBOLS },
   save_memory: { canonical: ToolName.REMEMBER_FACT },
   list_tools: { canonical: ToolName.LIST_AVAILABLE_TOOLS },
 });
@@ -111,11 +109,53 @@ const CANONICAL_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
   ...Object.values(McpToolName),
 ]);
 
+/** Exaix-specific tool names (v1.7 category policy): one exact canonical spelling everywhere,
+ *  no aliases, no case/whitespace normalization. Grows as later steps rename `who_depends_on`,
+ *  `deno_task` and `exaix_portal_symbols`. */
+export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
+  ToolName.DENO_TASK,
+  ToolName.WHO_DEPENDS_ON,
+  ToolName.QUERY_SYMBOLS,
+  ToolName.QUERY_RELATIONSHIPS,
+  ToolName.GET_MODULE_DEPENDENCIES,
+  McpToolName.CREATE_REQUEST,
+  McpToolName.LIST_PLANS,
+  McpToolName.APPROVE_PLAN,
+  McpToolName.QUERY_JOURNAL,
+  McpToolName.CONFIG_GET,
+  McpToolName.CONFIG_SET,
+  McpToolName.CONFIG_VALIDATE,
+  McpToolName.CONFIG_DIFF,
+  McpToolName.CONFIG_GET_PROVENANCE,
+  McpToolName.CONFIG_APPLY,
+  McpToolName.PORTAL_SYMBOLS,
+]);
+
+/** Retired native names/aliases. This is rejection data, never an alias map. It grows as
+ *  each rename lands: `dependents`/`list_symbols` today, `who_depends_on`/`deno_task` and
+ *  `exaix_portal_symbols` later. */
+const EXCLUDED_NATIVE_NAMES: ReadonlySet<string> = new Set<string>(["dependents", "list_symbols"]);
+
+/** True when `name` is a rejected native-tool spelling. Native names are exact-only. A case
+ *  or whitespace variant of one counts, and so does a retired native name or alias.
+ *  General-purpose names, unrelated custom names and exact native names return false. */
+export function isRejectedNativeToolName(name: string): boolean {
+  if (typeof name !== "string" || NATIVE_TOOL_NAMES.has(name)) return false;
+  const normalized = name.trim().toLowerCase();
+  if (EXCLUDED_NATIVE_NAMES.has(normalized)) return true;
+  for (const native of NATIVE_TOOL_NAMES) {
+    if (native.toLowerCase() === normalized) return true;
+  }
+  return false;
+}
+
 /** Name-only canonicalization for allowlists, schema values and plan actions. Total and
- *  pure: an unknown name is returned unchanged. */
+ *  pure: an unknown name is returned unchanged. Native names are exact-only — a case or
+ *  whitespace variant of one does not normalize (v1.7 category policy). */
 export function canonicalizeToolName(name: string): string {
-  if (typeof name !== "string") return name;
+  if (typeof name !== "string" || CANONICAL_TOOL_NAMES.has(name)) return name;
   const key = name.trim().toLowerCase();
+  if (NATIVE_TOOL_NAMES.has(key)) return name;
   if (CANONICAL_TOOL_NAMES.has(key)) return key;
   return Object.hasOwn(TOOL_ALIASES, key) ? TOOL_ALIASES[key].canonical : name;
 }

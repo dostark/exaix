@@ -3085,6 +3085,103 @@ Deno.test({
 });
 
 Deno.test({
+  name:
+    "fix(agent-orchestrator): applyBlueprintToolScope canonicalizes both a matched skill's alias and the role's canonical name before intersecting (Phase 201 Step 3 GAP-1)",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const fakeTools: ITool[] = [
+        {
+          name: "grep_search",
+          description: "Search file contents by pattern inside a portal.",
+          parameters: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
+        },
+      ];
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => fakeTools,
+        execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => "/tmp",
+      };
+
+      let capturedPrompt = "";
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: async (prompt: string): Promise<IGenerateResult> => {
+          capturedPrompt = prompt;
+          await Promise.resolve();
+          return {
+            content: `\`\`\`json\n${
+              JSON.stringify({
+                branch: "feat/x",
+                commit_sha: "1234567890123456789012345678901234567890",
+                files_changed: [],
+                description: "done",
+                tool_calls: 0,
+                execution_time_ms: 1,
+              })
+            }\n\`\`\``,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          };
+        },
+      };
+
+      // The matched skill declares the alias "grep". The agent role declares the canonical
+      // "grep_search". Without normalizing both sides first, they would never match.
+      const executor = new AgentComposer({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        provider: mockProvider,
+        toolRegistry: fakeToolRegistry,
+        options: { matchedSkillTools: [["grep"]] },
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
+          'permitted_tools: ["grep_search"]\n---\nPrompt',
+      );
+
+      const context: IExecutionContext = {
+        trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c9",
+        request_id: "r-skill-alias-tools",
+        request: "Work",
+        plan: "Plan",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        agent_role: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      await executor.executeStep(context, options);
+
+      assertStringIncludes(
+        capturedPrompt,
+        "grep_search",
+        "grep_search must survive the intersection: the alias grep on the skill side must canonicalize to match",
+      );
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentComposer: executeStep with provider parses JSON response",
   fn: async () => {
     await setup();

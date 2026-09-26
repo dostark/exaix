@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import {
+  canonicalizeToolName,
   DataFormat,
   ExecutionStrategyName,
   FlowConsensusMethod,
@@ -42,7 +43,13 @@ const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform(
 });
 
 export const ZToolCall = z.object({
-  tool: z.nativeEnum(McpToolName),
+  /** Preprocessed through canonicalizeToolName: a dynamic decision or compensate call naming
+   *  a supported general-purpose alias (`Read`) parses to its canonical name. Excluded/
+   *  retired native names and native case/whitespace variants fail the enum check. */
+  tool: z.preprocess(
+    (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
+    z.nativeEnum(McpToolName),
+  ),
   args: z.record(z.string(), JSONValueSchema).optional(),
   params: z.record(z.string(), JSONValueSchema).optional(),
   description: z.string().optional(),
@@ -193,7 +200,12 @@ const FlowStepSchemaBase = z.object({
   execution_mode: z.nativeEnum(FlowStepExecutionMode).optional().default(FlowStepExecutionMode.DECLARED),
   /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */
   /** Tools this step is permitted to use (from McpToolName or ToolName). */
-  permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
+  permitted_tools: z.array(
+    z.preprocess(
+      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
+      z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)]),
+    ),
+  ).optional(),
   dependsOn: z.array(z.string()).default([]),
   input: z.object({
     source: z.nativeEnum(FlowInputSource).default(FlowInputSource.REQUEST),

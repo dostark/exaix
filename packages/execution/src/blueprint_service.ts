@@ -19,7 +19,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_AGENTS_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
+import { DEFAULT_AGENTS_PATH, isRejectedNativeToolName, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
 import type { IAgentComposerOptions, IAgentFileBlueprint } from "./agent_composer.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
@@ -63,7 +63,13 @@ export const BlueprintSchema = z.object({
   model: z.string().max(100),
   provider: z.string().max(100).optional(),
   capabilities: z.array(z.string().max(MAX_NAME_LENGTH)).max(20).default([]),
-  permitted_tools: z.array(z.string().max(MAX_NAME_LENGTH)).max(100).optional(),
+  /** Rejects a retired native tool name or a case/whitespace variant of one. General-purpose
+   *  canonicalization runs later, at `resolveEffectiveSkillTools`/`deriveVisibleToolIds`.
+   *  Unrelated custom names and `undefined` versus `[]` stay unchanged. */
+  permitted_tools: z.array(z.string().max(MAX_NAME_LENGTH)).max(100).optional().refine(
+    (tools) => tools === undefined || !tools.some(isRejectedNativeToolName),
+    { message: "permitted_tools contains an invalid native tool name" },
+  ),
   allowed_paths: z.array(z.string().max(255)).max(100).optional(),
   /** Declared explicitly (not left to `.passthrough()`) so it is Zod-validated and typed. */
   hitl: HitlPolicySchema.optional(),

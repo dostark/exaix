@@ -509,3 +509,29 @@ Deno.test("FlowStepSchema: rejects invalid tier value", () => {
     ZodError,
   );
 });
+
+Deno.test("[schemas] a flow compensate call naming Read parses to read_file; permitted_tools accepts the same alias", () => {
+  const parsed = FlowStepSchema.safeParse({
+    id: "alias-step",
+    name: "Alias step",
+    agent_role: "senior-coder",
+    permitted_tools: ["read"],
+    onError: { action: "retry", compensate: [{ tool: "Read", params: { file_path: "a.ts" } }] },
+  });
+  assertEquals(parsed.success, true);
+  if (parsed.success) {
+    assertEquals(parsed.data.permitted_tools, ["read_file"]);
+    assertEquals(parsed.data.onError?.compensate?.[0].tool, "read_file");
+  }
+});
+
+Deno.test("[schemas] flow permitted_tools and compensate calls reject a retired native alias", () => {
+  const parsed = FlowStepSchema.safeParse({
+    id: "alias-step-2",
+    name: "Alias step 2",
+    agent_role: "senior-coder",
+    permitted_tools: ["list_symbols"],
+    onError: { action: "retry", compensate: [{ tool: "list_symbols", params: {} }] },
+  });
+  assertEquals(parsed.success, false);
+});

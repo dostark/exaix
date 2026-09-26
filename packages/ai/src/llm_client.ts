@@ -9,7 +9,7 @@ import type { ILlmClient, ToolArgs } from "./types.ts";
 import type { IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 
-import { DEFAULT_MODEL_FALLBACK, McpToolName, ReActActionType } from "@exaix/core";
+import { canonicalizeToolName, DEFAULT_MODEL_FALLBACK, McpToolName, ReActActionType } from "@exaix/core";
 import { ProviderFactory } from "./provider_factory.ts";
 import type { IModelProvider } from "./types.ts";
 import type { ModelResolver } from "./model_resolver.ts";
@@ -33,7 +33,12 @@ const ReActResponseSchema = z.object({
   reasoning: z.string(),
   action: z.object({
     type: z.nativeEnum(ReActActionType),
-    tool: z.nativeEnum(McpToolName).optional(),
+    /** A supported alias like `Read` resolves to its canonical name. Retired native aliases
+     *  and case variants fail the enum check. */
+    tool: z.preprocess(
+      (value) => typeof value === "string" ? canonicalizeToolName(value) : value,
+      z.nativeEnum(McpToolName),
+    ).optional(),
     args: z.record(z.string(), z.unknown()).optional(),
     output: z.string().optional(),
   }),

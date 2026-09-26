@@ -14,7 +14,13 @@ import type { IModelProvider, IProviderTurn, IToolDefinition } from "@exaix/ai/t
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
-import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
+import {
+  AgentExecutionErrorType,
+  canonicalizeToolName,
+  ExecutionStrategyName,
+  ToolCallEntryPoint,
+  ToolName,
+} from "@exaix/core";
 import {
   buildNativeToolDefinitions,
   buildPriorTurn,
@@ -26,7 +32,7 @@ import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type IToolAliasRewrittenPayload } from "@exaix/core/events";
 import {
   AGENT_EVENT_RESPONSE_TRUNCATED,
   CONTEXT_PRIORITY_REFLECTION,
@@ -54,7 +60,12 @@ import type { IContextBudgetManagerInput } from "../context/context_budget_manag
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
 import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
-import { calculateAciDocBudgetChars, type IAciRenderResult, renderAciDocFragments } from "@exaix/tool-runtime";
+import {
+  calculateAciDocBudgetChars,
+  canonicalizeForRegistry,
+  type IAciRenderResult,
+  renderAciDocFragments,
+} from "@exaix/tool-runtime";
 
 export interface IReActAction {
   tool: string;
@@ -558,7 +569,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let lastPriorTurn = nativeToolsPriorTurn;
     let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
-      const action = parsed.actions[a];
+      const action = this.canonicalizeAction(parsed.actions[a], context.trace_id);
       const execResult = await this.executeTool(action, options);
       allActionsSucceeded &&= execResult.success === true;
       this.recordWrittenFile(action, execResult, writtenFiles);
@@ -697,6 +708,32 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     ) as IToolExecutionResult;
   }
 
+  /** Canonicalizes one parsed action's name and parameter keys. Every later consumer sees
+   *  only the canonical form: the allowlist check, portal prefixing, write tracking, history
+   *  and the journal. Journals the rewrite when one occurred. */
+  private canonicalizeAction(action: IReActAction, traceId: string): IReActAction {
+    if (!this.executor.toolRegistry) return action;
+    const canonical = canonicalizeForRegistry(this.executor.toolRegistry, action.tool, action.params);
+    if (canonical.rewritten) this.logAliasRewrite(canonical, traceId);
+    return { ...action, tool: canonical.name, params: canonical.params };
+  }
+
+  private logAliasRewrite(
+    call: ReturnType<typeof canonicalizeForRegistry>,
+    traceId: string,
+  ): void {
+    const logger = this.executor.budgetLogger;
+    if (!logger) return;
+    const payload: IToolAliasRewrittenPayload = {
+      requestedName: call.requestedName,
+      canonicalName: call.name,
+      renamedParams: [...call.renamedParams],
+      droppedParams: [...call.droppedParams],
+      entryPoint: ToolCallEntryPoint.REACT_LOOP,
+    };
+    void logger.info(DomainEventType.ToolAliasRewritten, call.name, { ...payload }, traceId);
+  }
+
   /** Wraps an async operation with a heartbeat timer, emitting STREAMING_EVENT_HEARTBEAT
    *  every EXECUTION_HEARTBEAT_INTERVAL_MS while in flight. Timer always cleared in finally. */
   private async withHeartbeat<T>(
@@ -827,12 +864,13 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return history.filter((_, idx) => keptHistoryIds.has(`hist-${idx}-${context.trace_id}`));
   }
 
-  /** Tools visible to this iteration: `options.permitted_tools` when declared (an explicit
-   *  empty array stays empty), else the default five — deduplicated. Computed once and
-   *  reused for both the AVAILABLE TOOLS line and ACI rendering. */
+  /** Tools visible to this iteration. Uses `options.permitted_tools` when declared, an
+   *  explicit empty array stays empty, else the default five. Each entry is canonicalized
+   *  then deduplicated, so an alias like `grep` resolves to its canonical id. Computed once
+   *  and reused for both the AVAILABLE TOOLS line and ACI rendering. */
   private deriveVisibleToolIds(options: IAgentExecutionOptions): string[] {
     const requested = options.permitted_tools ?? DEFAULT_REACT_VISIBLE_TOOLS;
-    return [...new Set(requested)];
+    return [...new Set(requested.map(canonicalizeToolName))];
   }
 
   /** Renders this iteration's ACI guidance, or undefined when disabled. Pure with respect

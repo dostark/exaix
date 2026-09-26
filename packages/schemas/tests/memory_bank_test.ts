@@ -7,14 +7,16 @@
  * strict enforcement of metadata structure and keyword collections.
  */
 
-import { assertEquals } from "@std/assert";
-import { ExecutionStatus, MemoryReferenceType } from "@exaix/core";
+import { assertEquals, assertFalse } from "@std/assert";
+import type { z } from "zod";
+import { ExecutionStatus, MemoryBankSource, MemoryReferenceType, MemoryScope, SkillStatus } from "@exaix/core";
 
 import {
   ExecutionMemorySchema,
   type IExecutionMemory as IExecutionMemory,
   type IProjectMemory as IProjectMemory,
   ProjectMemorySchema,
+  SkillSchema,
 } from "@exaix/schemas";
 
 Deno.test("ProjectMemorySchema: validates valid project memory", () => {
@@ -316,4 +318,37 @@ Deno.test("ProjectMemorySchema: allows decisions without optional fields", () =>
 
   const result = ProjectMemorySchema.safeParse(projectWithMinimalDecision);
   assertEquals(result.success, true);
+});
+
+function skillWithTools(tools: string[]): z.input<typeof SkillSchema> {
+  return {
+    id: "12345678-1234-4123-8123-123456789012",
+    created_at: "2026-09-26T00:00:00.000Z",
+    source: MemoryBankSource.USER,
+    scope: MemoryScope.GLOBAL,
+    status: SkillStatus.ACTIVE,
+    skill_id: "alias-skill",
+    name: "Alias skill",
+    description: "test",
+    version: "1.0.0",
+    triggers: { keywords: ["test"] },
+    instructions: "Read a file.",
+    tools,
+  };
+}
+
+Deno.test("[schemas] SkillSchema accepts a supported general-purpose alias and stores the canonical name", () => {
+  const parsed = SkillSchema.safeParse(skillWithTools(["read"]));
+  assertEquals(parsed.success, true);
+  if (parsed.success) assertEquals(parsed.data.tools, ["read_file"]);
+});
+
+Deno.test("[schemas] SkillSchema rejects an unknown/non-canonical tool name", () => {
+  const parsed = SkillSchema.safeParse(skillWithTools(["not_a_real_tool"]));
+  assertFalse(parsed.success);
+});
+
+Deno.test("[schemas] SkillSchema rejects a retired native alias", () => {
+  const parsed = SkillSchema.safeParse(skillWithTools(["list_symbols"]));
+  assertFalse(parsed.success);
 });

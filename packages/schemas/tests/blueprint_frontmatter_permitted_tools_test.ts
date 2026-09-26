@@ -7,6 +7,7 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
+import { ToolName } from "@exaix/core";
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
@@ -91,4 +92,19 @@ Deno.test("BlueprintFrontmatterSchema: strips unknown fields", () => {
   const result = BlueprintFrontmatterSchema.parse(frontmatter);
 
   assertEquals("unknown_field" in result, false);
+});
+
+Deno.test("[schemas] a blueprint permitted_tools entry of grep parses to the current ToolName.GREP_SEARCH value; an unknown name still fails validation", () => {
+  const frontmatter = {
+    agent_role: "senior-coder",
+    name: "Senior Coder",
+    model: "mock:test",
+    created: new Date().toISOString(),
+    created_by: "test-user",
+    permitted_tools: ["read", "grep"],
+  };
+  const parsed = BlueprintFrontmatterSchema.parse(frontmatter);
+  assertEquals(parsed.permitted_tools, [ToolName.READ_FILE, ToolName.GREP_SEARCH]);
+  assertThrows(() => BlueprintFrontmatterSchema.parse({ ...frontmatter, permitted_tools: ["not-a-tool"] }));
+  assertThrows(() => BlueprintFrontmatterSchema.parse({ ...frontmatter, permitted_tools: ["list_symbols"] }));
 });

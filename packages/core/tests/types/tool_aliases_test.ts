@@ -9,12 +9,14 @@
  * @related-files [packages/core/src/types/tool_aliases.ts, packages/core/src/types/enums.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import {
   canonicalizeToolCall,
   canonicalizeToolName,
   COMMON_PARAM_ALIASES,
+  isRejectedNativeToolName,
   McpToolName,
+  NATIVE_TOOL_NAMES,
   TOOL_ALIASES,
   TOOL_PARAM_ALIASES,
   ToolName,
@@ -182,8 +184,6 @@ Deno.test("[tool_aliases] every seed alias resolves to its documented canonical 
     remove_file: ToolName.DELETE_FILE,
     webfetch: ToolName.FETCH_URL,
     web_fetch: ToolName.FETCH_URL,
-    dependents: ToolName.WHO_DEPENDS_ON,
-    list_symbols: ToolName.QUERY_SYMBOLS,
     save_memory: ToolName.REMEMBER_FACT,
     list_tools: ToolName.LIST_AVAILABLE_TOOLS,
   };
@@ -219,4 +219,59 @@ Deno.test("[tool_aliases] every seed parameter alias renames to its documented c
     const result = canonicalizeToolCall(tool, { [from]: "v" }, new Set(accepted));
     assertEquals(result.params, { [to]: "v" }, `${tool}: ${from} -> ${to}`);
   }
+});
+
+Deno.test("[tool_aliases] native query_symbols/query_relationships/get_module_dependencies names pass unchanged", () => {
+  for (const native of [ToolName.QUERY_SYMBOLS, ToolName.QUERY_RELATIONSHIPS, ToolName.GET_MODULE_DEPENDENCIES]) {
+    assertEquals(canonicalizeToolName(native), native);
+    assertFalse(isRejectedNativeToolName(native), native);
+  }
+});
+
+Deno.test("[tool_aliases] dependents and list_symbols are retired native aliases, not seeded", () => {
+  assertFalse(Object.hasOwn(TOOL_ALIASES, "dependents"));
+  assertFalse(Object.hasOwn(TOOL_ALIASES, "list_symbols"));
+  assert(isRejectedNativeToolName("dependents"));
+  assert(isRejectedNativeToolName("list_symbols"));
+  assertEquals(canonicalizeToolName("dependents"), "dependents");
+  assertEquals(canonicalizeToolName("list_symbols"), "list_symbols");
+});
+
+Deno.test("[tool_aliases] native case or whitespace variants remain unresolved and are rejected", () => {
+  assertEquals(canonicalizeToolName("Query_Symbols"), "Query_Symbols");
+  assertEquals(canonicalizeToolName(" query_symbols "), " query_symbols ");
+  assert(isRejectedNativeToolName("Query_Symbols"));
+  assert(isRejectedNativeToolName(" query_symbols "));
+});
+
+Deno.test("[tool_aliases] general-purpose Read/glob/grep/webfetch still resolve and are never rejected as native", () => {
+  for (const generalPurpose of ["Read", "glob", "grep", "webfetch", "Write"]) {
+    assertFalse(isRejectedNativeToolName(generalPurpose), generalPurpose);
+  }
+  assertEquals(canonicalizeToolName("glob"), ToolName.SEARCH_FILES);
+  assertEquals(canonicalizeToolName("grep"), ToolName.GREP_SEARCH);
+});
+
+Deno.test("[tool_aliases] isRejectedNativeToolName leaves unrelated custom names alone", () => {
+  for (const name of ["", "my_custom_tool", "search_files", ToolName.RUN_COMMAND]) {
+    assertFalse(isRejectedNativeToolName(name), name);
+  }
+});
+
+Deno.test("[tool_aliases] NATIVE_TOOL_NAMES contains the current exaix-specific and exaix_* control-plane values", () => {
+  for (
+    const expected of [
+      ToolName.DENO_TASK,
+      ToolName.WHO_DEPENDS_ON,
+      ToolName.QUERY_SYMBOLS,
+      ToolName.QUERY_RELATIONSHIPS,
+      ToolName.GET_MODULE_DEPENDENCIES,
+      McpToolName.PORTAL_SYMBOLS,
+      McpToolName.CREATE_REQUEST,
+      McpToolName.CONFIG_APPLY,
+    ]
+  ) {
+    assert(NATIVE_TOOL_NAMES.has(expected), expected);
+  }
+  assertFalse(NATIVE_TOOL_NAMES.has(ToolName.SEARCH_FILES));
 });

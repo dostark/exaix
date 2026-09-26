@@ -24,6 +24,7 @@ import {
   DomainEventType,
   type IPlanningToolLoopAbortedPayload,
   type IPlanningToolLoopCompletedPayload,
+  type IToolAliasRewrittenPayload,
 } from "@exaix/core/events";
 import {
   PLANNING_TOOL_RESULT_TAG,
@@ -34,7 +35,8 @@ import {
   REACT_TOOL_RESULT_SUMMARY_MAX,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import { PathSecurity } from "@exaix/tool-runtime";
+import { canonicalizeForRegistry, PathSecurity } from "@exaix/tool-runtime";
+import { ToolCallEntryPoint } from "@exaix/core";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import { buildNativeToolDefinitions, buildPriorTurn, enrichPortalPathParam } from "./native_tool_turns.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
@@ -92,7 +94,20 @@ export interface IPlanningToolLoopResult {
 /** Tool call parameter names the confinement guard checks — every string value under these
  *  keys must resolve inside the request portal before the tool call reaches ToolRegistry.
  *  `file_path` is the alias ToolRegistry accepts in place of `path`. */
-const CONFINED_PARAM_NAMES = ["path", "file_path", "repo_path", "from", "file"] as const;
+const CONFINED_PARAM_NAMES = [
+  "path",
+  "file_path",
+  "filePath",
+  "filepath",
+  "repo_path",
+  "from",
+  "file",
+  "target_file",
+  "absolute_path",
+  "dir_path",
+  "directory",
+  "folder",
+] as const;
 
 const CONFINEMENT_DENIED_MESSAGE = "Access denied: path is outside the request portal";
 const GUARDRAIL_BLOCKED_MESSAGE = "blocked by guardrail";
@@ -135,7 +150,14 @@ export class PlanningToolLoop {
     options: IPlanningToolLoopOptions,
     progress: ILoopProgress,
   ): Promise<IPlanningToolLoopResult> {
-    const allowedToolDefs = buildAllowedToolDefinitions(this.deps.toolRegistry.getTools(), options.allowedTools);
+    const canonicalOptions: IPlanningToolLoopOptions = {
+      ...options,
+      allowedTools: new Set(options.allowedTools),
+    };
+    const allowedToolDefs = buildAllowedToolDefinitions(
+      this.deps.toolRegistry.getTools(),
+      canonicalOptions.allowedTools,
+    );
     const basePrompt = options.maxRounds === 1
       ? options.prompt
       : `${options.prompt}\n\n${PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE}`;
@@ -193,7 +215,7 @@ export class PlanningToolLoop {
         }, options.traceId);
       }
 
-      const executed = await this.executeRoundCalls(response.toolCalls, options, round, progress);
+      const executed = await this.executeRoundCalls(response.toolCalls, canonicalOptions, round, progress);
       transcript += executed.transcript;
 
       // A prior round's priorTurn is about to be superseded by this round's — age it into
@@ -283,20 +305,23 @@ export class PlanningToolLoop {
     options: IPlanningToolLoopOptions,
     round: number,
   ): Promise<{ turn: IProviderTurn; guardrailBlocked: boolean }> {
+    const canonical = canonicalizeForRegistry(this.deps.toolRegistry, call.name, call.input);
+    this.logAliasRewrite(canonical, options.traceId);
+    const canonicalCall: IProviderToolCall = { ...call, name: canonical.name, input: canonical.params };
     let execResult: IToolResult;
     let guardrailBlocked = false;
 
-    if (!options.allowedTools.has(call.name)) {
-      execResult = { success: false, error: `Tool '${call.name}' is not in the planning catalog` };
+    if (!options.allowedTools.has(canonicalCall.name)) {
+      execResult = { success: false, error: `Tool '${canonicalCall.name}' is not in the planning catalog` };
     } else {
-      const enrichedParams = enrichPortalPathParam(call.name, call.input, options.portalAlias);
+      const enrichedParams = enrichPortalPathParam(canonicalCall.name, canonicalCall.input, options.portalAlias);
       const confinementError = await this.assertWithinPortal(enrichedParams, options.portalAlias, options.portalRoot);
       if (confinementError) {
-        this.logSecurityDenied(call.name, enrichedParams, confinementError, options.traceId);
+        this.logSecurityDenied(canonicalCall.name, enrichedParams, confinementError, options.traceId);
         execResult = { success: false, error: confinementError };
       } else {
         try {
-          execResult = await this.deps.toolRegistry.execute(call.name, enrichedParams);
+          execResult = await this.deps.toolRegistry.execute(canonicalCall.name, enrichedParams);
         } catch (error) {
           execResult = { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -314,8 +339,23 @@ export class PlanningToolLoop {
     const built = buildPriorTurn(call, execResult);
     const cappedContent = await this.capToTokenLimit(String(built.toolResultContent), options.maxToolResultTokens);
     const turn: IProviderTurn = { ...built, toolResultContent: cappedContent };
-    this.logDynamicToolCall(call.name, call.input, cappedContent, round, options.traceId);
+    this.logDynamicToolCall(canonicalCall.name, canonicalCall.input, cappedContent, round, options.traceId);
     return { turn, guardrailBlocked };
+  }
+
+  private logAliasRewrite(
+    call: ReturnType<typeof canonicalizeForRegistry>,
+    traceId: string,
+  ): void {
+    if (!call.rewritten || !this.logger) return;
+    const payload: IToolAliasRewrittenPayload = {
+      requestedName: call.requestedName,
+      canonicalName: call.name,
+      renamedParams: [...call.renamedParams],
+      droppedParams: [...call.droppedParams],
+      entryPoint: ToolCallEntryPoint.PLANNING_LOOP,
+    };
+    void this.logger.info(DomainEventType.ToolAliasRewritten, call.name, { ...payload }, traceId);
   }
 
   /** Answers a call past the per-round cap with an error result without executing it. */

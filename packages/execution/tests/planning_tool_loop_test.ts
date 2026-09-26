@@ -568,3 +568,106 @@ Deno.test("[planning_tool_loop][integration] a round that throws journals one pl
     await cleanup();
   }
 });
+
+Deno.test("[security] an alias of a write tool is refused when its canonical tool is outside the planning allowlist", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file"), fixtureTool("write_file")]);
+  const generate = new ScriptedGenerate([
+    makeGenerateResult("", {
+      toolCalls: [{ id: "write-1", name: "write", input: { path: "a.ts", content: "changed" } }],
+    }),
+    makeGenerateResult("done"),
+  ]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+  await loop.run(makeOptions({ allowedTools: new Set(["read_file"]), maxRounds: 2 }));
+  assertEquals(registry.calls.length, 0);
+  assertEquals(
+    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"),
+    true,
+  );
+});
+
+Deno.test("[security] a fetch_url alias is not offered or executed in the planning catalog", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file"), fixtureTool("fetch_url")]);
+  const generate = new ScriptedGenerate([
+    makeGenerateResult("", { toolCalls: [{ id: "fetch-1", name: "webfetch", input: { url: "https://example.com" } }] }),
+    makeGenerateResult("done"),
+  ]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+  await loop.run(makeOptions({ allowedTools: new Set(["read_file"]), maxRounds: 2 }));
+  assertEquals(registry.calls.length, 0);
+  assertEquals(generate.calls[0].options.tools?.some((tool) => tool.name === "fetch_url"), false);
+});
+
+Deno.test("[planning_tool_loop] a provider-native Read call with a thoughtSignature executes as read_file and replays its original id, name, input and signature", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file")], {
+    read_file: () => ({ success: true, data: { content: "file" } }),
+  });
+  const call = {
+    id: "signed-read",
+    name: "Read",
+    input: { file_path: "a.ts" },
+    thoughtSignature: "signed-by-provider",
+  };
+  const generate = new ScriptedGenerate([
+    makeGenerateResult("", { toolCalls: [call] }),
+    makeGenerateResult("done"),
+  ]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+  await loop.run(makeOptions({ allowedTools: new Set(["read_file"]), maxRounds: 2 }));
+  assertEquals(registry.calls, [{ name: "read_file", params: { file_path: "a.ts" } }]);
+  assertEquals(generate.calls[1].options.priorTurn?.toolUseId, call.id);
+  assertEquals(generate.calls[1].options.priorTurn?.toolName, call.name);
+  assertEquals(generate.calls[1].options.priorTurn?.toolInput, call.input);
+  assertEquals(generate.calls[1].options.priorTurn?.thoughtSignature, call.thoughtSignature);
+});
+
+Deno.test("[planning_tool_loop] a rejected Exaix-specific alias also replays verbatim", async () => {
+  const registry = new StubToolRegistry([fixtureTool("read_file")]);
+  const call = {
+    id: "signed-list",
+    name: "list_symbols",
+    input: {},
+    thoughtSignature: "signed-by-provider",
+  };
+  const generate = new ScriptedGenerate([
+    makeGenerateResult("", { toolCalls: [call] }),
+    makeGenerateResult("done"),
+  ]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+  await loop.run(makeOptions({ allowedTools: new Set(["read_file"]), maxRounds: 2 }));
+  assertEquals(registry.calls.length, 0);
+  assertEquals(generate.calls[1].options.priorTurn?.toolUseId, call.id);
+  assertEquals(generate.calls[1].options.priorTurn?.toolName, call.name);
+  assertEquals(generate.calls[1].options.priorTurn?.toolInput, call.input);
+  assertEquals(generate.calls[1].options.priorTurn?.thoughtSignature, call.thoughtSignature);
+});
+
+Deno.test("[planning_tool_loop][integration] an alias rewrite journals the canonical dynamic tool and planning entry point", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const registry = new StubToolRegistry([{
+      ...fixtureTool("read_file"),
+      parameters: { type: "object", properties: { path: { type: "string" } } },
+    }], {
+      read_file: () => ({ success: true, data: { content: "file" } }),
+    });
+    const traceId = "planning-alias-trace";
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", { toolCalls: [{ id: "read-1", name: "read_file", input: { file_path: "a.ts" } }] }),
+      makeGenerateResult("done"),
+    ]);
+    const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate, logger }));
+    await loop.run(makeOptions({ traceId, allowedTools: new Set(["read_file"]), maxRounds: 2 }));
+    await db.waitForFlush();
+    const rows = db.getActivitiesByTrace(traceId);
+    const dynamic = rows.find((row) => row.action_type === DomainEventType.AgentDynamicToolCall);
+    assertExists(dynamic);
+    assertEquals(JSON.parse(dynamic.payload).tool, "read_file");
+    const alias = rows.filter((row) => row.action_type === DomainEventType.ToolAliasRewritten);
+    assertEquals(alias.length, 1);
+    assertEquals(JSON.parse(alias[0].payload).entryPoint, "planning_loop");
+  } finally {
+    await cleanup();
+  }
+});
