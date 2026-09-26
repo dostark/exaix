@@ -1,0 +1,136 @@
+schema_version: "1.0.0"
+# A recorded planning round calls Read {file_path}. The daemon runs it as read_file, journals one
+# alias rewrite, and delivers the portal marker to the next provider call. The final fixture's
+# expectedInput fails the round when the marker is absent from that call's priorTurn result.
+id: "tool-aliasing"
+title: "A general-purpose Read alias runs as read_file in the planning loop and its result reaches the provider"
+pack: "portal_knowledge"
+scoring: "gated"
+tags: ["planning", "tools", "aliasing", "task:planning", "entity:tool-aliasing"]
+request_fixture: "fixtures/requests/portal_knowledge/tool_aliasing.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "seed-planning-config"
+    type: "run-script"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_planning_tools.ts"
+      - "$WORKSPACE_ROOT"
+      - "tool-aliasing"
+      - "submit-request"
+      - "alias-read"
+    output_criteria:
+      - id: "config-seeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-planning-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/planning.config.toml"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "planning-portal", "--agent-role", "mock-agent"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-alias-rewritten"
+    type: "journal-assert"
+    action_type: "tool.alias.rewritten"
+    trace_scoped: true
+    payload_equals:
+      - { path: "requestedName", value: "Read" }
+      - { path: "canonicalName", value: "read_file" }
+      - { path: "entryPoint", value: "planning_loop" }
+    payload_contains: ["\"from\":\"file_path\"", "\"to\":\"path\""]
+    expect_count: 1
+    output_criteria:
+      - id: "alias-rewrite-journaled"
+        class: "security"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-read-executed"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    payload_equals:
+      - { path: "tool", value: "read_file" }
+      - { path: "phase", value: "planning" }
+      - { path: "args.path", value: "src/target.ts" }
+    payload_contains: ["EXAIX_PHASE201_ALIAS_MARKER_"]
+    expect_count: 1
+    output_criteria:
+      - id: "read-result-journaled"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-loop-completed"
+    type: "journal-assert"
+    name: "the final round's expectedInput saw the marker in its priorTurn result"
+    action_type: "planning.tools.completed"
+    trace_scoped: true
+    expect_count: 1
+    output_criteria:
+      - id: "loop-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-loop-not-aborted"
+    type: "journal-assert"
+    action_type: "planning.tools.aborted"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "loop-not-aborted"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-plan-carries-marker"
+    type: "file-contains"
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "marker-in-plan"
+        kind: "text-contains"
+        contains: "EXAIX_PHASE201_ALIAS_MARKER_"
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

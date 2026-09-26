@@ -1,0 +1,218 @@
+schema_version: "1.0.0"
+# A recorded planning round sends two aliased escape probes: glob "../*.txt" and Read with an
+# absolute file_path. Each probe gets its own confinement denial and denied result. The final
+# fixture's expectedInput fails the round if either sentinel reaches the provider input.
+id: "tool-alias-confinement-attacked"
+title: "Aliased glob and Read escape probes are each denied and leak nothing to the provider"
+pack: "adversarial"
+scoring: "gated"
+tags: ["planning", "tools", "aliasing", "task:planning", "vector:tool-alias", "attack:attacked", "security"]
+request_fixture: "fixtures/requests/adversarial/tool_alias_confinement_attacked.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "seed-planning-config"
+    type: "run-script"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_planning_tools.ts"
+      - "$WORKSPACE_ROOT"
+      - "tool-alias-confinement-attacked"
+      - "submit-request"
+      - "alias-path-escape"
+    output_criteria:
+      - id: "config-seeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-planning-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/planning.config.toml"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "planning-portal", "--agent-role", "mock-agent"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-glob-denied"
+    type: "journal-assert"
+    action_type: "security.path_access_denied"
+    trace_scoped: true
+    payload_equals:
+      - { path: "tool", value: "search_files" }
+      - { path: "params.pattern", value: "../*.txt" }
+    expect_count: 1
+    output_criteria:
+      - id: "glob-probe-denied"
+        class: "security"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-read-denied"
+    type: "journal-assert"
+    action_type: "security.path_access_denied"
+    trace_scoped: true
+    payload_equals:
+      - { path: "tool", value: "read_file" }
+    payload_contains: ["EXAIX_P201_ESCAPE_NAME_7c1e"]
+    expect_count: 1
+    output_criteria:
+      - id: "read-probe-denied"
+        class: "security"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-glob-result-denied"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    payload_equals:
+      - { path: "tool", value: "search_files" }
+      - { path: "args.pattern", value: "../*.txt" }
+    payload_contains: ["Access denied: path is outside the request portal"]
+    payload_not_contains: ["EXAIX_P201_ESCAPE_NAME_7c1e", "EXAIX_P201_ESCAPE_CONTENT_4b9d"]
+    expect_count: 1
+    output_criteria:
+      - id: "glob-result-denied"
+        class: "security"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-read-result-denied"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    payload_equals:
+      - { path: "tool", value: "read_file" }
+    payload_contains: ["EXAIX_P201_ESCAPE_NAME_7c1e", "Access denied: path is outside the request portal"]
+    payload_not_contains: ["EXAIX_P201_ESCAPE_CONTENT_4b9d"]
+    expect_count: 1
+    output_criteria:
+      - id: "read-result-denied"
+        class: "security"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-glob-alias-rewritten"
+    type: "journal-assert"
+    action_type: "tool.alias.rewritten"
+    trace_scoped: true
+    payload_equals:
+      - { path: "requestedName", value: "glob" }
+      - { path: "canonicalName", value: "search_files" }
+    expect_count: 1
+    output_criteria:
+      - id: "glob-alias-journaled"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-read-alias-rewritten"
+    type: "journal-assert"
+    action_type: "tool.alias.rewritten"
+    trace_scoped: true
+    payload_equals:
+      - { path: "requestedName", value: "Read" }
+      - { path: "canonicalName", value: "read_file" }
+    expect_count: 1
+    output_criteria:
+      - id: "read-alias-journaled"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-loop-completed"
+    type: "journal-assert"
+    name: "the final round's expectedInput saw both denials and neither sentinel"
+    action_type: "planning.tools.completed"
+    trace_scoped: true
+    expect_count: 1
+    output_criteria:
+      - id: "loop-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-loop-not-aborted"
+    type: "journal-assert"
+    action_type: "planning.tools.aborted"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "loop-not-aborted"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "plan-excludes-name-sentinel"
+    type: "run-script"
+    name: "the written plan never carries the outside sentinel EXAIX_P201_ESCAPE_NAME_7c1e"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/assert_no_plan_injection.ts"
+      - "$WORKSPACE_ROOT"
+      - "EXAIX_P201_ESCAPE_NAME_7c1e"
+    output_criteria:
+      - id: "plan-excludes-name-sentinel-ok"
+        class: "security"
+        kind: "command-output-contains"
+        contains: ["no plan carries the injected canary"]
+
+  - id: "plan-excludes-content-sentinel"
+    type: "run-script"
+    name: "the written plan never carries the outside sentinel EXAIX_P201_ESCAPE_CONTENT_4b9d"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/assert_no_plan_injection.ts"
+      - "$WORKSPACE_ROOT"
+      - "EXAIX_P201_ESCAPE_CONTENT_4b9d"
+    output_criteria:
+      - id: "plan-excludes-content-sentinel-ok"
+        class: "security"
+        kind: "command-output-contains"
+        contains: ["no plan carries the injected canary"]
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

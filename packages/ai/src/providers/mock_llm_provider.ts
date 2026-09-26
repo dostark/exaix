@@ -13,7 +13,7 @@
 
 import { MockStrategy, ProviderType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import type { ICallSite, IModelOptions, IModelProvider } from "../types.ts";
+import type { ICallSite, IModelOptions, IModelProvider, IProviderTurn } from "../types.ts";
 import type { IGenerateResult, IProviderToolCall } from "./common.ts";
 import {
   DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
@@ -53,6 +53,17 @@ export interface IRecordedResponse {
    *  response, and why the earlier ones were refused. The rate this represents across a
    *  fixture set is a product finding, not noise to smooth away. */
   capture?: { attempts: number; failures: string[] };
+  /** Assertions on the actual provider input, checked before this recording replays. */
+  expectedInput?: IRecordedInputExpectation;
+}
+
+/** Substrings the incoming prompt and prior-turn tool result must include or exclude.
+ *  A required prior-turn substring fails when the call carries no priorTurn. */
+export interface IRecordedInputExpectation {
+  promptIncludes?: string[];
+  promptExcludes?: string[];
+  priorTurnResultIncludes?: string[];
+  priorTurnResultExcludes?: string[];
 }
 
 /** A replayed recording: the recorded text response plus any native tool calls it carried. */
@@ -134,6 +145,13 @@ export interface IMockLLMProviderOptions {
   /** Token counts per response */
   tokensPerResponse?: ITokenCount;
 }
+
+const INPUT_EXPECTATION_KEYS: readonly (keyof IRecordedInputExpectation)[] = [
+  "promptIncludes",
+  "promptExcludes",
+  "priorTurnResultIncludes",
+  "priorTurnResultExcludes",
+];
 
 // Custom Error Type
 
@@ -223,6 +241,69 @@ function toolCallsValidationError(
   return null;
 }
 
+/** Validates a recording's expectedInput field. Returns a failure or null when well formed. */
+function expectedInputValidationError(value: Opt<JSONValue, Reason.OptionalInput>): string | null {
+  if (value === undefined) return null;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return "expectedInput is present but not an object";
+  }
+  for (const [key, entry] of Object.entries(value)) {
+    if (!(INPUT_EXPECTATION_KEYS as readonly string[]).includes(key)) {
+      return `expectedInput has unknown field "${key}"`;
+    }
+    if (!Array.isArray(entry) || !entry.every((item) => typeof item === "string")) {
+      return `expectedInput.${key} must be an array of strings`;
+    }
+  }
+  return null;
+}
+
+/** The prior-turn tool result as text. Rich content blocks are serialized. */
+function priorTurnResultText(priorTurn: IProviderTurn): string {
+  const content = priorTurn.toolResultContent;
+  return typeof content === "string" ? content : JSON.stringify(content);
+}
+
+/** Checks one input against its include and exclude substrings. Returns a failure or null. */
+function substringMismatch(
+  label: string,
+  text: string,
+  includes: readonly string[] = [],
+  excludes: readonly string[] = [],
+): string | null {
+  const missing = includes.find((needle) => !text.includes(needle));
+  if (missing !== undefined) return `${label} does not include "${missing}"`;
+  const present = excludes.find((needle) => text.includes(needle));
+  return present === undefined ? null : `${label} includes the excluded "${present}"`;
+}
+
+/** Enforces a recording's expectedInput against the actual prompt and priorTurn. */
+function assertExpectedInput(
+  recording: IRecordedResponse,
+  prompt: string,
+  priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+  where: string,
+): void {
+  const expected = recording.expectedInput;
+  if (!expected) return;
+  const fail = (reason: string): never => {
+    throw new MockLLMError(`Fixture input expectation failed at ${where}: ${reason}.`);
+  };
+  const promptError = substringMismatch("prompt", prompt, expected.promptIncludes, expected.promptExcludes);
+  if (promptError) fail(promptError);
+  if (!priorTurn) {
+    if ((expected.priorTurnResultIncludes ?? []).length > 0) fail("the call has no priorTurn tool result");
+    return;
+  }
+  const resultError = substringMismatch(
+    "priorTurn result",
+    priorTurnResultText(priorTurn),
+    expected.priorTurnResultIncludes,
+    expected.priorTurnResultExcludes,
+  );
+  if (resultError) fail(resultError);
+}
+
 /** Validate a loaded fixture file against the IRecordedResponse contract, so a corrupt or
  *  schema-violating recording fails loudly at load time — naming the file — instead of an
  *  unvalidated JSON.parse crash or a silently-malformed recording that can never replay correctly. */
@@ -246,8 +327,9 @@ function validateRecordedResponse(value: JSONValue, filePath: string): IRecorded
   if (candidate.callSite !== undefined && !isValidCallSite(candidate.callSite)) {
     fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex, flowStepId? }");
   }
-  const toolCallsError = toolCallsValidationError(candidate.toolCalls);
-  if (toolCallsError) fail(toolCallsError);
+  const optionalFieldError = toolCallsValidationError(candidate.toolCalls) ??
+    expectedInputValidationError(candidate.expectedInput as Opt<JSONValue, Reason.OptionalInput>);
+  if (optionalFieldError) fail(optionalFieldError);
   return candidate as IRecordedResponse;
 }
 
@@ -427,7 +509,7 @@ export class MockLLMProvider implements IModelProvider {
    *  for calls without options.callSite. */
   private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): IRecordedReplay {
     if (options?.callSite) {
-      return this.generateRecordedByCallSite(prompt, options.callSite);
+      return this.generateRecordedByCallSite(prompt, options.callSite, options.priorTurn);
     }
 
     const hash = this.hashPrompt(prompt);
@@ -435,6 +517,7 @@ export class MockLLMProvider implements IModelProvider {
     // Try exact hash match first
     const recording = this.recordings.find((r) => r.promptHash === hash);
     if (recording) {
+      assertExpectedInput(recording, prompt, options?.priorTurn, `prompt hash ${hash}`);
       return { response: recording.response, toolCalls: recording.toolCalls };
     }
 
@@ -443,6 +526,7 @@ export class MockLLMProvider implements IModelProvider {
       prompt.startsWith(r.promptPreview) || r.promptPreview.startsWith(prompt)
     );
     if (previewMatch) {
+      assertExpectedInput(previewMatch, prompt, options?.priorTurn, `prompt preview "${previewMatch.promptPreview}"`);
       return { response: previewMatch.response, toolCalls: previewMatch.toolCalls };
     }
 
@@ -478,7 +562,11 @@ export class MockLLMProvider implements IModelProvider {
   /** Look up a recording by call site. A hit whose prompt hash no longer matches still replays
    *  but is reported as drift. A miss is fatal under strictRecordings, naming the call site so
    *  the missing fixture can be captured; otherwise it falls back to pattern matching. */
-  private generateRecordedByCallSite(prompt: string, callSite: ICallSite): IRecordedReplay {
+  private generateRecordedByCallSite(
+    prompt: string,
+    callSite: ICallSite,
+    priorTurn: Opt<IProviderTurn, Reason.OptionalInput>,
+  ): IRecordedReplay {
     const key = callSiteKey(callSite);
     const recording = this.recordings.find((r) => r.callSite && callSiteKey(r.callSite) === key);
 
@@ -493,6 +581,7 @@ export class MockLLMProvider implements IModelProvider {
             `it still represents the current prompt.`,
         );
       }
+      assertExpectedInput(recording, prompt, priorTurn, `call site ${describeCallSite(callSite)}`);
       return { response: recording.response, toolCalls: recording.toolCalls };
     }
 

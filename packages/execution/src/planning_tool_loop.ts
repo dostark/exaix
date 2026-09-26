@@ -11,7 +11,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/native_tool_turns.ts", "packages/execution/src/strategies/react_loop_strategy.ts"]
  */
 
-import { resolve, SEPARATOR } from "@std/path";
+import { isAbsolute, resolve, SEPARATOR } from "@std/path";
 import type { IModelOptions, IProviderTurn, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts";
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
@@ -36,7 +36,7 @@ import {
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { canonicalizeForRegistry, PathSecurity } from "@exaix/tool-runtime";
-import { ToolCallEntryPoint } from "@exaix/core";
+import { ToolCallEntryPoint, ToolName } from "@exaix/core";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import { buildNativeToolDefinitions, buildPriorTurn, enrichPortalPathParam } from "./native_tool_turns.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
@@ -109,11 +109,21 @@ const CONFINED_PARAM_NAMES = [
   "folder",
 ] as const;
 
+/** The search_files glob parameter. Its pattern must not climb above the search root. */
+const SEARCH_PATTERN_PARAM = "pattern";
+
 const CONFINEMENT_DENIED_MESSAGE = "Access denied: path is outside the request portal";
 const GUARDRAIL_BLOCKED_MESSAGE = "blocked by guardrail";
 /** Journal target and `phase` payload value that mark planning-call tool rows. */
 const PLANNING_LOG_PHASE = "planning";
 const TOOL_CALL_LIMIT_MESSAGE = "tool call limit reached for this round; call skipped";
+
+/** True when a search_files pattern is absolute or has a `..` segment. */
+function escapesSearchRoot(toolName: string, params: Record<string, JSONValue>): boolean {
+  const pattern = params[SEARCH_PATTERN_PARAM];
+  if (toolName !== ToolName.SEARCH_FILES || typeof pattern !== "string") return false;
+  return isAbsolute(pattern) || pattern.split(/[\\/]/).includes("..");
+}
 
 /** Maps ToolRegistry's ITool[] to the provider-agnostic IToolDefinition[] the planner may
  *  call, filtered to the read-only catalog names AgentRunner resolved for this request. */
@@ -315,7 +325,9 @@ export class PlanningToolLoop {
       execResult = { success: false, error: `Tool '${canonicalCall.name}' is not in the planning catalog` };
     } else {
       const enrichedParams = enrichPortalPathParam(canonicalCall.name, canonicalCall.input, options.portalAlias);
-      const confinementError = await this.assertWithinPortal(enrichedParams, options.portalAlias, options.portalRoot);
+      const confinementError = escapesSearchRoot(canonicalCall.name, enrichedParams)
+        ? CONFINEMENT_DENIED_MESSAGE
+        : await this.assertWithinPortal(enrichedParams, options.portalAlias, options.portalRoot);
       if (confinementError) {
         this.logSecurityDenied(canonicalCall.name, enrichedParams, confinementError, options.traceId);
         execResult = { success: false, error: confinementError };

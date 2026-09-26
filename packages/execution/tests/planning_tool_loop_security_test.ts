@@ -179,6 +179,69 @@ Deno.test("[planning_tool_loop][security][integration] a denied path journals on
   }
 });
 
+Deno.test("[planning_tool_loop][security][integration] a glob alias with a ../ pattern is denied before execute and journals its own security.path_access_denied row", async () => {
+  const fixture = makePortalFixture();
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const registry = new StubToolRegistry([fixtureTool("search_files")]);
+    const deps = makeDeps({ toolRegistry: registry, logger });
+    const traceId = crypto.randomUUID();
+    const options = makeOptions(fixture.portalRoot, { traceId, allowedTools: new Set(["search_files"]) });
+
+    const { turnContent, turnIsError } = await runOneToolRound(deps, options, "glob", { pattern: "../outside/*.txt" });
+    await db.waitForFlush();
+
+    assertEquals(registry.calls.length, 0, "ToolRegistry.execute must never be reached");
+    assertEquals(turnIsError, true);
+    assert(turnContent.includes("Access denied"));
+    const denied = db.getActivitiesByTrace(traceId).filter((r) =>
+      r.action_type === DomainEventType.SecurityPathAccessDenied
+    );
+    assertEquals(denied.length, 1);
+    const payload = JSON.parse(denied[0].payload) as { tool: string; params: { pattern: string } };
+    assertEquals(payload.tool, "search_files");
+    assertEquals(payload.params.pattern, "../outside/*.txt");
+  } finally {
+    await cleanup();
+    fixture.cleanup();
+  }
+});
+
+Deno.test("[planning_tool_loop][security] an absolute search_files pattern is denied before execute", async () => {
+  const fixture = makePortalFixture();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("search_files")]);
+    const deps = makeDeps({ toolRegistry: registry });
+    const options = makeOptions(fixture.portalRoot, { allowedTools: new Set(["search_files"]) });
+
+    const { turnIsError } = await runOneToolRound(deps, options, "search_files", {
+      pattern: join(fixture.outsideRoot, "*.txt"),
+    });
+
+    assertEquals(registry.calls.length, 0);
+    assertEquals(turnIsError, true);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+Deno.test("[planning_tool_loop][security] an in-portal search_files pattern and a search_text regex containing .. still execute", async () => {
+  const fixture = makePortalFixture();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("search_files"), fixtureTool("search_text")]);
+    const deps = makeDeps({ toolRegistry: registry });
+    const options = makeOptions(fixture.portalRoot, { allowedTools: new Set(["search_files", "search_text"]) });
+
+    await runOneToolRound(deps, options, "search_files", { pattern: "src/*.ts" });
+    await runOneToolRound(deps, options, "search_text", { pattern: ".." });
+
+    assertEquals(registry.calls.map((c) => c.name), ["search_files", "search_text"]);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
 Deno.test("[planning_tool_loop][security] a ../ escape from the portal root is rejected before execute", async () => {
   const fixture = makePortalFixture();
   try {
