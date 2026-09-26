@@ -120,7 +120,7 @@ export async function bootRealDaemon(
   settleMs: number,
   options: {
     extraEnv?: Record<string, string>;
-    midFlight?: () => void;
+    midFlight?: () => void | Promise<void>;
     afterInjectMs?: number;
     /** Polled instead of sleeping `settleMs`; resolves true once the daemon is ready for `midFlight`. */
     waitFor?: () => Promise<boolean>;
@@ -143,7 +143,7 @@ export async function bootRealDaemon(
       await new Promise((r) => setTimeout(r, settleMs));
     }
     if (options.midFlight) {
-      options.midFlight();
+      await options.midFlight();
       if (options.waitForAfterInject) {
         await pollUntil(options.waitForAfterInject, options.afterInjectMs ?? 0);
       } else {

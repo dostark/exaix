@@ -138,6 +138,26 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[configuring] createDbWatcherHandler removes a cleared HOT override",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const { store, db, dir } = setup();
+    try {
+      insertOverride(db, "db_watcher_test.timeout_ms", "12000", "cli", "hot");
+      await createDbWatcherHandler(store, db)();
+      assertEquals(store.get("db_watcher_test.timeout_ms"), "12000");
+
+      insertOverride(db, "db_watcher_test.timeout_ms", null, "cli", "hot");
+      await createDbWatcherHandler(store, db)();
+      assertEquals(store.get("db_watcher_test.timeout_ms"), undefined);
+    } finally {
+      cleanUp(dir, db);
+    }
+  },
+});
+
+Deno.test({
   name: "[configuring] createDbWatcherHandler emits ConfigDbWatcherChangeDetected on hot-apply",
   sanitizeOps: false,
   sanitizeResources: false,

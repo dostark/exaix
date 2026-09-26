@@ -681,7 +681,10 @@ export class ToolRegistry implements IToolRegistry {
       !accepted.has(key) && !TOOL_AUTH_ONLY_PARAMS.some((authKey) => authKey === key)
     );
     if (unknownParams.length === 0) return undefined;
-    const strict = (this.applicationContext?.config.get() ?? this.config).tools?.strict_params ?? false;
+    const configDbStrict = this.applicationContext?.configAdapter?.getOverride<boolean>?.("tools.strict_params");
+    const strict = typeof configDbStrict === "boolean"
+      ? configDbStrict
+      : (this.applicationContext?.config.get() ?? this.config).tools?.strict_params ?? false;
     const payload: IToolParamUnknownPayload = { tool: toolName, unknownParams, acceptedParams: [...accepted], strict };
     await this.logger?.info(DomainEventType.ToolParamUnknown, toolName, { ...payload }, this.traceId);
     return strict

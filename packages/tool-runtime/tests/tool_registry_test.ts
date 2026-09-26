@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertObjectMatch, assertStringIncludes } from "@std/assert";
-import { ConfigValueType, DaemonStatus, SwapClass, ToolName } from "@exaix/core";
+import { ConfigAdapterMode, ConfigValueType, DaemonStatus, SwapClass, ToolName } from "@exaix/core";
 import { getRegisteredDefaults } from "@exaix/core/config";
 import { ConfigSchema, ToolsConfigSchema } from "@exaix/schemas/config.ts";
 import { PlanActionSchema } from "@exaix/schemas";
@@ -909,6 +909,34 @@ Deno.test("[tool_registry] strict params observe config replacement on an existi
     config.tools = ToolsConfigSchema.parse({ strict_params: true });
     assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, false);
     config.tools = ToolsConfigSchema.parse({ strict_params: false });
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[strict-precedence] Config DB override wins, then TOML, then default", async () => {
+  const { helper, cleanup } = await createToolRegistryTestContext("alias-config-precedence-");
+  try {
+    const config = ConfigSchema.parse({ ...helper.config, tools: { strict_params: true } });
+    let dbOverride: boolean | undefined;
+    const context = createStubContext({ config: createStubConfig(config) });
+    context.configAdapter = {
+      get: <T>() => dbOverride as T | undefined,
+      getOverride: <T>() => dbOverride as T | undefined,
+      mode: ConfigAdapterMode.DAEMON,
+    };
+    const registry = new ToolRegistry({ config, context });
+    const params = { surprise: true };
+
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, false);
+    dbOverride = false;
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, true);
+    dbOverride = true;
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, false);
+
+    config.tools = ToolsConfigSchema.parse({ strict_params: false });
+    dbOverride = undefined;
     assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, true);
   } finally {
     await cleanup();

@@ -123,6 +123,9 @@ export interface IConfigAdapter {
   /** Get the effective value at path (DB → registry → schema → undefined). */
   get<T = ConfigValue>(key: string): T | undefined;
 
+  /** Get a non-NULL Config DB override without falling back to a registry default. */
+  getOverride<T = ConfigValue>(key: string): T | undefined;
+
   /** Validate then append an override row. */
   set(key: string, value: ConfigValue, options?: { swap_class?: string }): Promise<void>;
 
@@ -363,6 +366,14 @@ export class DirectConfigAdapter implements IConfigAdapter {
     // 3. Schema check (not yet implemented)
     // 4. Return undefined
     return undefined;
+  }
+
+  getOverride<T = ConfigValue>(key: string): T | undefined {
+    const dbValue = getEffectiveValue(this.db, key);
+    if (dbValue === null) return undefined;
+    const metadataKey = this.resolveValidationKey(key) ?? key;
+    const registered = getRegisteredDefaults().get(metadataKey);
+    return coerceDbValue(dbValue, registered?.opts) as T;
   }
 
   async set(
@@ -748,6 +759,14 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
 
     // 3. Schema check (not yet implemented)
     return undefined;
+  }
+
+  override getOverride<T = ConfigValue>(key: string): T | undefined {
+    const stored = this.configStore.get(key);
+    if (stored === undefined || stored === null) return undefined;
+    const metadataKey = this.resolveValidationKey(key) ?? key;
+    const registered = getRegisteredDefaults().get(metadataKey);
+    return coerceDbValue(stored, registered?.opts) as T;
   }
 
   override async set(

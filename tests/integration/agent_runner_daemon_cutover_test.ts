@@ -1527,6 +1527,158 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[strict-cli-cutover] false-to-true-to-false CLI changes affect the same running daemon",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase201-strict-cli-cutover-" });
+    const configPath = join(tempDir, "exa.config.toml");
+    const portalDir = join(tempDir, "fixture-portal");
+    const fixturesDir = join(tempDir, "fixtures");
+    const marker = `${ALIAS_MARKER_PREFIX}${crypto.randomUUID().slice(0, 8)}`;
+    try {
+      await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalDir, "src", "target.ts"), `// ${marker}\nexport const target = "alias";\n`);
+      await Deno.mkdir(fixturesDir, { recursive: true });
+      const round = aliasCutoverRound("alias-extra-param", marker, "");
+      const fixture = (
+        scenarioId: string,
+        callIndex: number,
+        response: string,
+        extra: Pick<IRecordedResponse, "toolCalls" | "expectedInput">,
+      ): IRecordedResponse => ({
+        promptHash: `phase201-strict-${callIndex}`,
+        promptPreview: `phase201 strict planning round ${callIndex}`,
+        response,
+        model: "cutover-mock",
+        tokens: { input: 1000, output: callIndex === 0 ? 0 : 300 },
+        recordedAt: "2026-09-26T00:00:00.000Z",
+        callSite: { scenarioId, stepId: "planning", callIndex },
+        ...extra,
+      });
+      for (let index = 0; index < 3; index++) {
+        const scenarioId = `phase201-strict-${index}`;
+        await Deno.writeTextFile(
+          join(fixturesDir, `explore-round-${index}.json`),
+          JSON.stringify(fixture(scenarioId, 0, "", { toolCalls: round.toolCalls })),
+        );
+        await Deno.writeTextFile(
+          join(fixturesDir, `final-round-${index}.json`),
+          JSON.stringify(fixture(scenarioId, 1, planningToolsPlanBody(marker), {})),
+        );
+      }
+      writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, true);
+      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await Deno.copyFile(
+        join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+      );
+
+      const runRequest = async (index: number): Promise<IPlanningCutoverRow[]> => {
+        const traceId = crypto.randomUUID();
+        const scenarioId = `phase201-strict-${index}`;
+        const requestDir = join(tempDir, "Workspace", "Requests");
+        await Deno.mkdir(requestDir, { recursive: true });
+        await Deno.writeTextFile(
+          join(requestDir, `strict-${index}-${traceId.slice(0, 8)}.md`),
+          "---\n" +
+            `trace_id: "${traceId}"\n` +
+            `created: "${new Date().toISOString()}"\n` +
+            "status: pending\npriority: normal\nagent_role: mock-agent\nportal: cutover-portal\n" +
+            `scenario_id: "${scenarioId}"\nstep_id: "planning"\n` +
+            'source: cli\ncreated_by: "test@example.com"\nsubject: "strict CLI cutover"\n' +
+            "---\n\n# Request\n\nInspect the portal target file and produce a plan.\n",
+        );
+        const deadline = Date.now() + 20000;
+        while (Date.now() < deadline) {
+          const rows = await readPlanningCutoverActivity(configPath, traceId);
+          if (rows.some((row) => PLANNING_END_EVENTS.includes(row.action_type))) return rows;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        throw new Error(`request ${index} did not complete in time`);
+      };
+      const setStrict = async (value: boolean): Promise<void> => {
+        const result = await new Deno.Command("deno", {
+          args: [
+            "run",
+            "--allow-all",
+            join(REPO_ROOT, "apps", "exactl", "main.ts"),
+            "config",
+            "set",
+            "tools.strict_params",
+            String(value),
+          ],
+          env: { EXA_CONFIG_PATH: configPath },
+          stdout: "piped",
+          stderr: "piped",
+        }).output();
+        assertEquals(
+          result.code,
+          0,
+          new TextDecoder().decode(result.stderr) || new TextDecoder().decode(result.stdout),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      };
+      const setInvalidStrict = async (): Promise<void> => {
+        const result = await new Deno.Command("deno", {
+          args: [
+            "run",
+            "--allow-all",
+            join(REPO_ROOT, "apps", "exactl", "main.ts"),
+            "config",
+            "set",
+            "tools.strict_params",
+            "not-a-boolean",
+          ],
+          env: { EXA_CONFIG_PATH: configPath },
+          stdout: "piped",
+          stderr: "piped",
+        }).output();
+        assertEquals(result.code === 0, false, "invalid values must be rejected by exactl config set");
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      };
+
+      const runs: IPlanningCutoverRow[][] = [];
+      await bootRealDaemon(configPath, 2000, {
+        extraEnv: { EXA_CONFIG_DB_POLL_INTERVAL_MS: "50" },
+        midFlight: async () => {
+          runs.push(await runRequest(0));
+          await setStrict(true);
+          runs.push(await runRequest(1));
+          await setInvalidStrict();
+          await setStrict(false);
+          runs.push(await runRequest(2));
+        },
+      });
+
+      assertEquals(runs.length, 3);
+      const observedStrict = runs.map((rows) =>
+        payloadsOf<IToolParamUnknownPayload>(rows, "tool.param.unknown")[0]?.strict
+      );
+      assertEquals(observedStrict, [false, true, false], runs.map(actionTypes).join("\n"));
+      const configService = new ConfigService(configPath);
+      const configDb = new DatabaseService(configService.getAll());
+      try {
+        const updates = await configDb.preparedAll<{ target: string; payload: string }>(
+          "SELECT target, payload FROM activity WHERE action_type = 'config.updated' AND target = 'tools.strict_params' ORDER BY rowid ASC",
+        );
+        assertEquals(updates.map((row) => JSON.parse(row.payload).value), [true, false]);
+      } finally {
+        await configDb.close();
+      }
+      const calls = runs.map((rows) => payloadsOf<IToolCallRow>(rows, "dynamic_tool_call")[0]);
+      assert(calls[0].resultSummary.includes(marker), "default mode must execute the read");
+      assert(calls[1].resultSummary.includes("Unknown parameter"), calls[1].resultSummary);
+      assertEquals(calls[1].resultSummary.includes(marker), false, "strict mode must reject before execution");
+      assert(calls[2].resultSummary.includes(marker), "setting false must restore execution");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
   name:
     "[phase201-native-name-cutover] the real daemon's planning loop executes find_dependents under its canonical name and never executes who_depends_on",
   ignore: Deno.env.get("CI") === "true",

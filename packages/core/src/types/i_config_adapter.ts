@@ -13,6 +13,8 @@ import type { ConfigAdapterMode } from "./enums.ts";
 export interface IConfigAdapter {
   /** Read effective value: Config DB override → registry default. */
   get<T = unknown>(key: string): T | undefined;
+  /** Read only a non-NULL Config DB override, without falling back to a registry default. */
+  getOverride?<T = unknown>(key: string): T | undefined;
   /** Whether the adapter is in direct (offline) or daemon mode. */
   readonly mode: ConfigAdapterMode;
 }
