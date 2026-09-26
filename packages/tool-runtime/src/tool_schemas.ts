@@ -221,6 +221,10 @@ export function createCoreToolSchemas(
             type: "string",
             description: "Command to execute (must be whitelisted)",
           },
+          cwd: {
+            type: "string",
+            description: "Working directory within an authorized root",
+          },
           args: {
             type: JsonSchemaType.ARRAY,
             items: { type: "string" },

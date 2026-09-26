@@ -21,6 +21,8 @@ import {
   PORTAL_PREFIX_PATTERN,
   SystemCommand,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+  TOOL_AUTH_ONLY_PARAMS,
+  ToolCallEntryPoint,
   ToolName,
 } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID, type IGitServiceFactory } from "@exaix/core/types";
@@ -45,7 +47,7 @@ import {
 import type { IPortalKnowledge, ISymbolEntry } from "@exaix/schemas/portal_knowledge.ts";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type IToolAliasRewrittenPayload, type IToolParamUnknownPayload } from "@exaix/core/events";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import { DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S } from "@exaix/core";
@@ -59,6 +61,7 @@ import {
 import { lookupRemediationPolicy, lookupRemediationToolMetadata } from "@exaix/mcp";
 import { type IValidationReportContext, logValidationResult } from "./tool_validation_reporter.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { acceptedParamsFor, canonicalizeForRegistry } from "./tool_call_canonicalizer.ts";
 import { createCoreToolSchemas } from "./tool_schemas.ts";
 
 type RemediationPolicyResolver = (
@@ -461,21 +464,16 @@ export class ToolRegistry implements IToolRegistry {
     const bool = (v: JSONValue): boolean => Boolean(v);
     const strArr = (v: JSONValue): string[] =>
       Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
-    // Our tools take a bare `path` param, but a model with no per-tool parameter schema (only
-    // the tool name is listed in the ReAct prompt) can guess a native-CLI name like Claude
-    // Code's `file_path` instead — silently defaulting to "" then resolves to the workspace
-    // root rather than failing clearly. Falling back to this alias covers that guess.
-    const strPath = (p: Record<string, JSONValue>): string => str(p.path ?? p.file_path);
 
-    this.executors.set(ToolName.READ_FILE, (p) => this.readFile(strPath(p)));
-    this.executors.set(ToolName.WRITE_FILE, (p) => this.writeFile(strPath(p), str(p.content)));
-    this.executors.set(ToolName.LIST_DIRECTORY, (p) => this.listDirectory(strPath(p)));
-    this.executors.set(ToolName.SEARCH_FILES, (p) => this.searchFiles(str(p.pattern), strPath(p)));
+    this.executors.set(ToolName.READ_FILE, (p) => this.readFile(str(p.path)));
+    this.executors.set(ToolName.WRITE_FILE, (p) => this.writeFile(str(p.path), str(p.content)));
+    this.executors.set(ToolName.LIST_DIRECTORY, (p) => this.listDirectory(str(p.path)));
+    this.executors.set(ToolName.SEARCH_FILES, (p) => this.searchFiles(str(p.pattern), str(p.path)));
     this.executors.set(
       ToolName.RUN_COMMAND,
       (p) => this.runCommand(str(p.command), p.args ? strArr(p.args) : [], p.cwd ? str(p.cwd) : undefined),
     );
-    this.executors.set(ToolName.CREATE_DIRECTORY, (p) => this.createDirectory(strPath(p)));
+    this.executors.set(ToolName.CREATE_DIRECTORY, (p) => this.createDirectory(str(p.path)));
     this.executors.set(
       ToolName.FETCH_URL,
       (p) => this.fetchUrl(str(p.url), p.format ? str(p.format) : undefined),
@@ -498,7 +496,7 @@ export class ToolRegistry implements IToolRegistry {
       (p) =>
         this.copyFile(str(p.source), str(p.destination), p.overwrite !== undefined ? bool(p.overwrite) : undefined),
     );
-    this.executors.set(ToolName.DELETE_FILE, (p) => this.deleteFile(strPath(p)));
+    this.executors.set(ToolName.DELETE_FILE, (p) => this.deleteFile(str(p.path)));
     this.executors.set(
       ToolName.GIT_INFO,
       (p) => this.gitInfo(str(p.repo_path), p.scope ? str(p.scope) : undefined),
@@ -584,6 +582,22 @@ export class ToolRegistry implements IToolRegistry {
    * Execute a tool by name
    */
   async execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {
+    const call = canonicalizeForRegistry(this, toolName, params);
+    toolName = call.name;
+    params = call.params;
+    if (call.rewritten) {
+      const payload: IToolAliasRewrittenPayload = {
+        requestedName: call.requestedName,
+        canonicalName: call.name,
+        renamedParams: [...call.renamedParams],
+        droppedParams: [...call.droppedParams],
+        entryPoint: ToolCallEntryPoint.REGISTRY,
+      };
+      await this.logger?.info(DomainEventType.ToolAliasRewritten, toolName, { ...payload }, this.traceId);
+    }
+    const parameterError = await this.validateKnownParams(toolName, params);
+    if (parameterError) return { success: false, error: parameterError };
+
     const context: IToolContext = {
       toolName,
       params,
@@ -657,6 +671,24 @@ export class ToolRegistry implements IToolRegistry {
     }
 
     return context.result!;
+  }
+
+  /** Journal unknown keys before middleware. Strict mode rejects them before any side effect. */
+  private async validateKnownParams(toolName: string, params: Record<string, JSONValue>): Promise<string | undefined> {
+    const accepted = acceptedParamsFor(this, toolName);
+    if (!accepted) return undefined;
+    const unknownParams = Object.keys(params).filter((key) =>
+      !accepted.has(key) && !TOOL_AUTH_ONLY_PARAMS.some((authKey) => authKey === key)
+    );
+    if (unknownParams.length === 0) return undefined;
+    const strict = (this.applicationContext?.config.get() ?? this.config).tools?.strict_params ?? false;
+    const payload: IToolParamUnknownPayload = { tool: toolName, unknownParams, acceptedParams: [...accepted], strict };
+    await this.logger?.info(DomainEventType.ToolParamUnknown, toolName, { ...payload }, this.traceId);
+    return strict
+      ? `Unknown parameter(s) [${unknownParams.join(", ")}] for tool '${toolName}'; accepted: [${
+        [...accepted].join(", ")
+      }]`
+      : undefined;
   }
 
   private resolveRemediationPolicy(toolName: string): IToolResultRemediationPolicy | null {

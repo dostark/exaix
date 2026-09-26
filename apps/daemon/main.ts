@@ -871,6 +871,7 @@ if (import.meta.main) {
       createToolRegistry(traceId: string, baseDir: string) {
         return new ToolRegistry({
           config,
+          logger,
           traceId,
           agentRole: DAEMON_AGENT_ROLE_ID,
           baseDir,

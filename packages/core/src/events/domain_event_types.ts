@@ -28,6 +28,7 @@ import type {
   ProviderType,
   TaskComplexity,
   TaskType,
+  ToolCallEntryPoint,
   VotingStrategy,
 } from "../types/enums.ts";
 
@@ -109,6 +110,23 @@ export interface IAgentEffortResolvedPayload extends Record<string, JSONValue> {
   floors_applied: string[];
   provider_type?: ProviderType;
   model?: string;
+}
+
+/** Metadata for one inbound tool-name or parameter-key rewrite. Values are never journaled here. */
+export interface IToolAliasRewrittenPayload {
+  requestedName: string;
+  canonicalName: string;
+  renamedParams: Array<{ from: string; to: string }>;
+  droppedParams: string[];
+  entryPoint: ToolCallEntryPoint;
+}
+
+/** Unknown parameter keys observed at the registry boundary. */
+export interface IToolParamUnknownPayload {
+  tool: string;
+  unknownParams: string[];
+  acceptedParams: string[];
+  strict: boolean;
 }
 
 /** Typed payload for planning.tools.completed events — one per PlanningToolLoop.run() call. */
@@ -496,6 +514,10 @@ export const DomainEventType = {
   CostDailyCostQueried: "cost.query.daily",
   CostSummaryQueried: "cost.query.summary",
   CostBatchFlushed: "cost.batch.flushed",
+
+  // Tool input normalization events
+  ToolAliasRewritten: "tool.alias.rewritten",
+  ToolParamUnknown: "tool.param.unknown",
 
   // Agent orchestrator events (agent_composer.ts, react_loop_adapter.ts)
   AgentOutput: "agent.output",

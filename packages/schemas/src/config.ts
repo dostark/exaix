@@ -217,6 +217,7 @@ export const DEFAULT_MODEL_PRESETS: Record<string, ModelPreset> = {
 };
 
 export const ToolsConfigSchema = z.object({
+  strict_params: z.boolean().default(DEFAULTS.DEFAULT_TOOLS_STRICT_PARAMS),
   // Network capability control
   fetch_url: z.object({
     enabled: z.boolean().default(false),

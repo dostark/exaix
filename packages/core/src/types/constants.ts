@@ -2889,6 +2889,15 @@ export const JsonSchemaType = {
   NULL: "null",
 } as const;
 
+/** Reject undeclared tool parameters after alias canonicalization when enabled. */
+export const DEFAULT_TOOLS_STRICT_PARAMS = configurable({
+  key: "tools.strict_params",
+  default: false,
+  type: ConfigValueType.BOOLEAN,
+  description: "Reject unknown tool parameters instead of journaling and continuing",
+  swap: SwapClass.HOT,
+});
+
 // Tool Result Validation
 
 /** Maximum retries for schema validation failures — applies only to idempotent, side-effect-free tools. */

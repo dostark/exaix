@@ -5,13 +5,16 @@
  * ensuring execution sandboxing and strict prevention of path traversal attacks.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
-import { DaemonStatus, ToolName } from "@exaix/core";
+import { assert, assertEquals, assertExists, assertObjectMatch, assertStringIncludes } from "@std/assert";
+import { ConfigValueType, DaemonStatus, SwapClass, ToolName } from "@exaix/core";
+import { getRegisteredDefaults } from "@exaix/core/config";
+import { ConfigSchema, ToolsConfigSchema } from "@exaix/schemas/config.ts";
+import ts from "typescript";
 import type { IToolResult } from "@exaix/core/types";
 import { join } from "@std/path";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "@exaix/testing";
+import { createMockConfig, createStubConfig, createStubContext } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { createToolRegistryTestContext } from "./helpers/tool_registry_test_helper.ts";
@@ -691,5 +694,185 @@ Deno.test("[security] ToolRegistry: search_files - blocks search in /home", asyn
   } finally {
     await cleanup();
     await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+const ALIAS_TRACE = "tool-alias-trace";
+const ALIAS_EVENT = "tool.alias.rewritten";
+const UNKNOWN_EVENT = "tool.param.unknown";
+const ALIAS_CONTENT = "alias fixture";
+const ALIAS_FILE = "alias.ts";
+const STRICT_CONFIG_KEY = "tools.strict_params";
+
+Deno.test("[tool_registry] glob runs search_files and journals one rewrite with its trace", async () => {
+  await withToolRegistryContext("alias-glob-", async ({ workspaceRoot, registry, db }) => {
+    const path = join(workspaceRoot, ALIAS_FILE);
+    await Deno.writeTextFile(path, ALIAS_CONTENT);
+    const result = await registry.execute("glob", { query: "*.ts", file_path: "." });
+    assertEquals(result.success, true);
+    assertEquals(result.data, { files: [path] });
+    await db.getRecentActivity();
+    const events = db.getActivitiesByTrace(ALIAS_TRACE).filter((row) => row.action_type === ALIAS_EVENT);
+    assertEquals(events.length, 1);
+    assertEquals(JSON.parse(events[0].payload), {
+      requestedName: "glob",
+      canonicalName: ToolName.SEARCH_FILES,
+      renamedParams: [{ from: "query", to: "pattern" }, { from: "file_path", to: "path" }],
+      droppedParams: [],
+      entryPoint: "registry",
+    });
+  }, { traceId: ALIAS_TRACE });
+});
+
+Deno.test("[tool_registry] Read canonicalizes before middleware and reads file_path", async () => {
+  const { helper, cleanup } = await createToolRegistryTestContext("alias-read-");
+  try {
+    const path = await helper.createMemoryProjectFile(ALIAS_FILE, ALIAS_CONTENT);
+    const registry = new ToolRegistry({
+      config: helper.config,
+      hitlPolicyEvaluator: {
+        evaluate(_rules, name, params) {
+          assertEquals(name, ToolName.READ_FILE);
+          assertEquals(params, { path });
+          return null;
+        },
+      },
+    });
+    const result = await registry.execute("Read", { file_path: path });
+    assertEquals(result.success, true);
+    assert(typeof result.data === "object" && result.data !== null);
+    assertObjectMatch(result.data, { content: ALIAS_CONTENT });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[tool_registry] unknown parameters journal strict false and canonical calls emit neither event", async () => {
+  await withToolRegistryContext("alias-unknown-", async ({ registry, db }) => {
+    const canonical = await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, {});
+    assertEquals(canonical.success, true);
+    assertEquals(
+      db.getActivitiesByTrace(ALIAS_TRACE).filter((row) => [ALIAS_EVENT, UNKNOWN_EVENT].includes(row.action_type))
+        .length,
+      0,
+    );
+    const result = await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, { surprise: "unused" });
+    assertEquals(result, canonical);
+    await db.getRecentActivity();
+    const events = db.getActivitiesByTrace(ALIAS_TRACE).filter((row) => row.action_type === UNKNOWN_EVENT);
+    assertEquals(events.length, 1);
+    assertEquals(JSON.parse(events[0].payload), {
+      tool: ToolName.LIST_AVAILABLE_TOOLS,
+      unknownParams: ["surprise"],
+      acceptedParams: [],
+      strict: false,
+    });
+  }, { traceId: ALIAS_TRACE });
+});
+
+Deno.test("[config] tools.strict_params defaults false, validates boolean and registers HOT", () => {
+  assertObjectMatch(ToolsConfigSchema.parse({}), { strict_params: false });
+  assertObjectMatch(ToolsConfigSchema.parse({ strict_params: true }), { strict_params: true });
+  assertEquals(ToolsConfigSchema.safeParse({ strict_params: "true" }).success, false);
+  const entry = getRegisteredDefaults().get(STRICT_CONFIG_KEY);
+  assertExists(entry);
+  assertEquals(entry.opts.swap, SwapClass.HOT);
+  assertEquals(entry.opts.type, ConfigValueType.BOOLEAN);
+});
+
+Deno.test("[security][tool_registry] strict params reject before execution and journal the rejection", async () => {
+  const { helper, cleanup } = await createToolRegistryTestContext("alias-strict-");
+  try {
+    const config = ConfigSchema.parse({ ...helper.config, tools: { strict_params: true } });
+    const registry = new ToolRegistry({ config, logger: new EventLogger({ db: helper.db }), traceId: ALIAS_TRACE });
+    const path = await helper.createMemoryProjectFile(ALIAS_FILE, ALIAS_CONTENT);
+    const result = await registry.execute("Write", { file_path: path, content: "changed", surprise: true });
+    assertToolFailure(result);
+    assertStringIncludes(result.error, "Unknown parameter(s) [surprise]");
+    assertStringIncludes(result.error, ToolName.WRITE_FILE);
+    assertStringIncludes(result.error, "accepted: [path, content]");
+    assertEquals(await Deno.readTextFile(path), ALIAS_CONTENT);
+    await helper.db.getRecentActivity();
+    const events = helper.db.getActivitiesByTrace(ALIAS_TRACE);
+    assertEquals(events.filter((row) => row.action_type === ALIAS_EVENT).length, 1);
+    const unknown = events.filter((row) => row.action_type === UNKNOWN_EVENT);
+    assertEquals(unknown.length, 1);
+    assertEquals(JSON.parse(unknown[0].payload).strict, true);
+    const allowed = await registry.execute(ToolName.WRITE_FILE, {
+      path,
+      content: ALIAS_CONTENT,
+      portal: "test",
+      agent_role: "test",
+    });
+    assertEquals(allowed.success, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[tool_registry] strict run_command accepts cwd and executes there", async () => {
+  const { helper, cleanup } = await createToolRegistryTestContext("alias-cwd-");
+  try {
+    const config = ConfigSchema.parse({ ...helper.config, tools: { strict_params: true } });
+    const registry = new ToolRegistry({ config });
+    const cwd = await helper.createMemoryProjectsDir();
+    const result = await registry.execute(ToolName.RUN_COMMAND, { command: "pwd", cwd });
+    assertEquals(result.success, true);
+    assert(typeof result.data === "object" && result.data !== null);
+    assertObjectMatch(result.data, { output: cwd + "\n", exitCode: 0 });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[parity] every core and graph executor parameter is declared in its schema", async () => {
+  const source = ts.createSourceFile(
+    "tool_registry.ts",
+    await Deno.readTextFile(new URL("../src/tool_registry.ts", import.meta.url)),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const registry = new ToolRegistry();
+  let checked = 0;
+  function visit(node: ts.Node): void {
+    if (ts.isCallExpression(node) && node.expression.getText(source) === "this.executors.set") {
+      const [name, executor] = node.arguments;
+      assertEquals(ts.isPropertyAccessExpression(name), true);
+      const member = (name as ts.PropertyAccessExpression).name.text as keyof typeof ToolName;
+      const tool = registry.getTools().find((tool) => tool.name === ToolName[member]);
+      assertExists(tool);
+      const checkRead = (child: ts.Node): void => {
+        if (ts.isPropertyAccessExpression(child) && child.expression.getText(source) === "p") {
+          assertEquals(
+            Object.hasOwn(tool!.parameters.properties, child.name.text),
+            true,
+            tool!.name + ": " + child.name.text,
+          );
+          checked++;
+        }
+        ts.forEachChild(child, checkRead);
+      };
+      ts.forEachChild(executor, checkRead);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assertEquals(checked > 0, true);
+});
+
+Deno.test("[tool_registry] strict params observe config replacement on an existing registry", async () => {
+  const { helper, cleanup } = await createToolRegistryTestContext("alias-hot-");
+  try {
+    const config = helper.config;
+    const context = createStubContext({ config: createStubConfig(config) });
+    const registry = new ToolRegistry({ config, context });
+    const params = { surprise: true };
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, true);
+    config.tools = ToolsConfigSchema.parse({ strict_params: true });
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, false);
+    config.tools = ToolsConfigSchema.parse({ strict_params: false });
+    assertEquals((await registry.execute(ToolName.LIST_AVAILABLE_TOOLS, params)).success, true);
+  } finally {
+    await cleanup();
   }
 });
