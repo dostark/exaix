@@ -1577,9 +1577,15 @@ Deno.test({
         join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
         join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
       );
+      const taskEffectPath = join(tempDir, "phase201-task-effect.ts");
+      await Deno.writeTextFile(taskEffectPath, "const phase201TaskEffect={value:1}\n");
       await setupGitRepo(tempDir);
       const probes = [
-        { traceId: crypto.randomUUID(), tool: "run_deno_task", params: 'task = "fmt"' },
+        {
+          traceId: crypto.randomUUID(),
+          tool: "run_deno_task",
+          params: 'task = "fmt"\npath = "phase201-task-effect.ts"',
+        },
         { traceId: crypto.randomUUID(), tool: "deno_task", params: 'task = "fmt"' },
         { traceId: crypto.randomUUID(), tool: "who_depends_on", params: 'path = "x.ts"' },
       ];
@@ -1618,6 +1624,11 @@ Deno.test({
         payloadsOf<{ error: string }>(rows, "execution.action_failed").map((p) => p.error).join(" | ");
 
       assertEquals(completedTools(canonical), ["run_deno_task"], actionTypes(canonical));
+      assertEquals(
+        await Deno.readTextFile(taskEffectPath),
+        "const phase201TaskEffect = { value: 1 };\n",
+        "the real daemon must run the requested fmt task against its validated path",
+      );
       assertEquals(completedTools(retiredTask), [], actionTypes(retiredTask));
       assertEquals(failedTools(retiredTask), ["deno_task"], actionTypes(retiredTask));
       assertEquals(completedTools(retiredDependents), [], actionTypes(retiredDependents));

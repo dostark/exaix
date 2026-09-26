@@ -1784,7 +1784,7 @@ export class ToolRegistry implements IToolRegistry {
       // Add path
       cmdArgs.push(resolvedPath);
 
-      const cmd = new Deno.Command(SystemCommand.DENO, {});
+      const cmd = new Deno.Command(SystemCommand.DENO, { args: cmdArgs });
 
       const { code, stdout, stderr } = await cmd.output();
       const output = new TextDecoder().decode(stdout);
