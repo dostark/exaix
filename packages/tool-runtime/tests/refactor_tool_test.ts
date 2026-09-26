@@ -51,16 +51,26 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
       assertEquals(await Deno.readTextFile(dest), "new content");
     });
 
-    await t.step("the retired {source, destination} shape now fails validation, not silently accepted", async () => {
+    await t.step("source/destination aliases preserve overwrite protection", async () => {
       await Deno.writeTextFile(src, "should not move");
       const result = await registry.execute(ToolName.MOVE_FILE, {
         source: "move_src.txt",
         destination: "move_dest.txt",
       });
       assertEquals(result.success, false);
-      assertEquals(result.error?.includes("from") || result.error?.includes("to"), true);
-      // The source file must be untouched — the old shape must not silently apply anything.
+      assertEquals(result.error?.includes("already exists"), true);
       assertEquals(await Deno.readTextFile(src), "should not move");
+    });
+
+    await t.step("source/destination aliases move the file when overwrite is permitted", async () => {
+      const result = await registry.execute(ToolName.MOVE_FILE, {
+        source: "move_src.txt",
+        destination: "move_dest.txt",
+        overwrite: true,
+      });
+      assertEquals(result.success, true);
+      assertEquals(await Deno.readTextFile(dest), "should not move");
+      await assertRejects(() => Deno.stat(src), Deno.errors.NotFound);
     });
   });
 

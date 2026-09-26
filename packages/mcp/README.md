@@ -93,7 +93,7 @@ dogfood-context launch/turn and tears it down when the launch closes.
   `McpServer`), bound explicitly to `127.0.0.1` on an OS-assigned port. A random 32-byte
   bearer capability, validated by the outer `Deno.serve` handler before the request ever
   reaches SDK dispatch, gates every call.
-- **Scope:** exactly three read-only tools — `query_relationships`, `who_depends_on`,
+- **Scope:** exactly three read-only tools — `query_relationships`, `find_dependents`,
   `search_memory` — over a portal-knowledge snapshot resolved once at start (never
   triggers analysis/indexing) and scoped memory retrieval. No resources, prompts,
   filesystem writes, or general daemon RPC.

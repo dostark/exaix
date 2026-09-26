@@ -518,9 +518,9 @@ Deno.test("[dogfood_context_cutover] the captured record and `exactl request ins
     assertEquals(parsed.promptText, handle.prompt);
     assert(isValidUuid(parsed.recordId));
     assertEquals(parsed.tools.map((t: { name: string }) => t.name).toSorted(), [
+      "find_dependents",
       "query_relationships",
       "search_memory",
-      "who_depends_on",
     ]);
   } finally {
     await Deno.remove(tempDir, { recursive: true });

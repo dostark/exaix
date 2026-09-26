@@ -112,34 +112,6 @@ export enum TaskType {
   UNKNOWN = "unknown",
 }
 
-/** The single canonical source of execution-reachable tool names — the set
- *  `createCoreToolSchemas()`/`ToolRegistry` actually executes. Plan actions and the registry's
- *  catalog are validated against this list, never the wider `McpToolName` MCP catalog. */
-export const EXECUTION_TOOL_NAMES = [
-  "read_file",
-  "write_file",
-  "list_directory",
-  "search_files",
-  "create_directory",
-  "run_command",
-  "fetch_url",
-  "grep_search",
-  "move_file",
-  "copy_file",
-  "delete_file",
-  "git_info",
-  "deno_task",
-  "patch_file",
-  "query_relationships",
-  "who_depends_on",
-  "query_symbols",
-  "get_module_dependencies",
-  "remember_fact",
-  "search_memory",
-] as const;
-
-export type ExecutionToolName = typeof EXECUTION_TOOL_NAMES[number];
-
 /**
  * Canonical names for built-in tools.
  */
@@ -151,12 +123,12 @@ export enum ToolName {
   CREATE_DIRECTORY = "create_directory",
   RUN_COMMAND = "run_command",
   FETCH_URL = "fetch_url",
-  GREP_SEARCH = "grep_search",
+  GREP_SEARCH = "search_text",
   MOVE_FILE = "move_file",
   COPY_FILE = "copy_file",
   DELETE_FILE = "delete_file",
   GIT_INFO = "git_info",
-  DENO_TASK = "deno_task",
+  DENO_TASK = "run_deno_task",
   PATCH_FILE = "patch_file",
   GIT_COMMIT = "git_commit",
   GIT_CREATE_BRANCH = "git_create_branch",
@@ -166,7 +138,7 @@ export enum ToolName {
   GIT_PULL = "git_pull",
   GIT_STASH = "git_stash",
   QUERY_RELATIONSHIPS = "query_relationships",
-  WHO_DEPENDS_ON = "who_depends_on",
+  WHO_DEPENDS_ON = "find_dependents",
   QUERY_SYMBOLS = "query_symbols",
   GET_MODULE_DEPENDENCIES = "get_module_dependencies",
   REMEMBER_FACT = "remember_fact",
@@ -176,6 +148,33 @@ export enum ToolName {
    *  guessing from bare names baked into a prompt. */
   LIST_AVAILABLE_TOOLS = "list_available_tools",
 }
+
+/** Plan actions use the execution registry's catalog, not the wider MCP catalog.
+ * Enum members propagate tool renames into plan-action validation. */
+export const EXECUTION_TOOL_NAMES = [
+  ToolName.READ_FILE,
+  ToolName.WRITE_FILE,
+  ToolName.LIST_DIRECTORY,
+  ToolName.SEARCH_FILES,
+  ToolName.CREATE_DIRECTORY,
+  ToolName.RUN_COMMAND,
+  ToolName.FETCH_URL,
+  ToolName.GREP_SEARCH,
+  ToolName.MOVE_FILE,
+  ToolName.COPY_FILE,
+  ToolName.DELETE_FILE,
+  ToolName.GIT_INFO,
+  ToolName.DENO_TASK,
+  ToolName.PATCH_FILE,
+  ToolName.QUERY_RELATIONSHIPS,
+  ToolName.WHO_DEPENDS_ON,
+  ToolName.QUERY_SYMBOLS,
+  ToolName.GET_MODULE_DEPENDENCIES,
+  ToolName.REMEMBER_FACT,
+  ToolName.SEARCH_MEMORY,
+] as const;
+
+export type ExecutionToolName = typeof EXECUTION_TOOL_NAMES[number];
 
 /** The entry point that canonicalized an aliased tool call, journaled on
  *  `tool.alias.rewritten`. Load-time allowlist/schema canonicalization has no value here:

@@ -668,3 +668,47 @@ Query symbols.
     await teardown(testDir);
   }
 });
+
+Deno.test("[naming] a runtime-loaded blueprint listing grep_search loads and resolves to search_text", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+  try {
+    const content = `---
+agent_role: "alias-grep-search-test"
+name: "Alias Grep Search Test"
+permitted_tools: ["grep_search"]
+---
+
+Search text.
+`;
+    await Deno.writeTextFile(join(agentRolesDir, "alias-grep-search-test.md"), content);
+    const blueprint = await new IBlueprintLoader({ blueprintsPath }).load("alias-grep-search-test");
+    assertEquals(blueprint?.frontmatter.permitted_tools, [ToolName.GREP_SEARCH]);
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[naming] a runtime-loaded blueprint rejects the retired who_depends_on/deno_task names", async () => {
+  const { blueprintsPath, agentRolesDir, testDir } = await setup();
+  try {
+    await Deno.writeTextFile(
+      join(agentRolesDir, "alias-who-depends-on-test.md"),
+      '---\nagent_role: "alias-who-depends-on-test"\nname: "Test"\npermitted_tools: ["who_depends_on"]\n---\n\nBody.\n',
+    );
+    await assertRejects(
+      () => new IBlueprintLoader({ blueprintsPath }).load("alias-who-depends-on-test"),
+      BlueprintLoadError,
+    );
+
+    await Deno.writeTextFile(
+      join(agentRolesDir, "alias-deno-task-test.md"),
+      '---\nagent_role: "alias-deno-task-test"\nname: "Test"\npermitted_tools: ["deno_task"]\n---\n\nBody.\n',
+    );
+    await assertRejects(
+      () => new IBlueprintLoader({ blueprintsPath }).load("alias-deno-task-test"),
+      BlueprintLoadError,
+    );
+  } finally {
+    await teardown(testDir);
+  }
+});

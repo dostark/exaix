@@ -806,3 +806,13 @@ Deno.test("[schemas] PlanActionSchema accepts a supported general-purpose alias,
 Deno.test("[schemas] PlanActionSchema rejects a retired native alias", () => {
   assertThrows(() => PlanActionSchema.parse({ tool: "list_symbols", params: {} }));
 });
+
+Deno.test("[naming] PlanActionSchema accepts a plan action naming grep_search, keeping the raw value", () => {
+  const parsed = PlanActionSchema.parse({ tool: "grep_search", params: { pattern: "*.ts", path: "." } });
+  assertEquals(parsed.tool, "grep_search");
+});
+
+Deno.test("[naming] PlanActionSchema rejects the retired who_depends_on/deno_task names", () => {
+  assertThrows(() => PlanActionSchema.parse({ tool: "who_depends_on", params: {} }));
+  assertThrows(() => PlanActionSchema.parse({ tool: "deno_task", params: {} }));
+});

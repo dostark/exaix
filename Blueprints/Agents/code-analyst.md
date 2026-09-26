@@ -16,9 +16,9 @@ default_skills: [
 permitted_tools:
   - read_file
   - list_directory
-  - grep_search
+  - search_text
   - query_relationships
-  - who_depends_on
+  - find_dependents
   - query_symbols
   - get_module_dependencies
   - fetch_url

@@ -804,11 +804,11 @@ export class ToolRegistry implements IToolRegistry {
   private async whoDependsOnTool(path: string): Promise<IToolResult> {
     const portalKnowledgeService = this.applicationContext?.portalKnowledge;
     if (!portalKnowledgeService) {
-      return { success: false, error: "who_depends_on requires a portal-knowledge service, none is configured" };
+      return { success: false, error: "find_dependents requires a portal-knowledge service, none is configured" };
     }
     const portal = this.currentPortal();
     if (!portal) {
-      return { success: false, error: "who_depends_on: current execution root is not a configured portal" };
+      return { success: false, error: "find_dependents: current execution root is not a configured portal" };
     }
     const knowledge = await portalKnowledgeService.getOrAnalyze(portal.alias, portal.path);
     return this.formatSuccess(whoDependsOn(knowledge, path) as unknown as JSONValue);
@@ -1473,6 +1473,7 @@ export class ToolRegistry implements IToolRegistry {
       }
 
       // Add exclude dirs from config
+      // Keep the existing configuration keys when the tool name changes.
       const excludeDirs = this.config.tools?.grep_search?.exclude_dirs || [".git", "node_modules", "dist", "coverage"];
       for (const dir of excludeDirs) {
         args.push(`--exclude-dir=${dir}`);

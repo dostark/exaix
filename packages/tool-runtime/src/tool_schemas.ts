@@ -28,9 +28,9 @@ export function createCoreToolSchemas(
   const b = gitScopeValues?.branch ?? "branch";
   return [
     {
-      name: "read_file",
+      name: ToolName.READ_FILE,
       description:
-        "Return the full text content of a file at the given path. Use when you need to read or analyze file contents; for searching within files use grep_search; for finding files by pattern use search_files. Returns file text as a string in data.content.",
+        "Return the full text content of a file at the given path. Use when you need to read or analyze file contents; for searching within files use search_text; for finding files by pattern use search_files. Returns file text as a string in data.content.",
       parameters: {
         type: "object",
         properties: {
@@ -47,7 +47,7 @@ export function createCoreToolSchemas(
         when_to_use:
           "Use when you already know a file's path and need to see or analyze its full content, e.g. before editing it or to answer a question about its contents.",
         when_not_to_use:
-          "Do not use to locate files by name or pattern (use search_files) or to find a string across many files (use grep_search) — read_file takes exactly one literal path and has no glob or pattern support.",
+          "Do not use to locate files by name or pattern (use search_files) or to find a string across many files (use search_text) — read_file takes exactly one literal path and has no glob or pattern support.",
         example: {
           input: { path: "src/example.ts" },
           output: 'export function example(): string {\n  return "ok";\n}\n',
@@ -141,7 +141,7 @@ export function createCoreToolSchemas(
     {
       name: ToolName.SEARCH_FILES,
       description:
-        "Find files matching a glob pattern (e.g. '**/*.ts') under a directory. Use when you need to locate files by name pattern; for searching file contents use grep_search; for listing all items use list_directory. Returns data.files as an array of absolute file paths.",
+        "Find files matching a glob pattern (e.g. '**/*.ts') under a directory. Use when you need to locate files by name pattern; for searching file contents use search_text; for listing all items use list_directory. Returns data.files as an array of absolute file paths.",
       parameters: {
         type: "object",
         properties: {
@@ -161,7 +161,7 @@ export function createCoreToolSchemas(
         summary: "Finds files whose path matches a glob pattern under a directory.",
         when_to_use: "Use when you know a file naming pattern but not the exact path, e.g. finding all test files.",
         when_not_to_use:
-          "Do not use to search inside file contents for a string or regex — use grep_search instead; search_files only matches file names/paths against a glob, never file contents.",
+          "Do not use to search inside file contents for a string or regex — use search_text instead; search_files only matches file names/paths against a glob, never file contents.",
         example: {
           input: { pattern: "**/*_test.ts", path: "packages/core" },
           output: '{"files":["packages/core/tests/foo_test.ts","packages/core/tests/bar_test.ts"]}',
@@ -213,7 +213,7 @@ export function createCoreToolSchemas(
       description:
         "Execute a whitelisted shell command (git, deno, npm, grep, ls, etc.) with argument validation. Use when you need to run a CLI tool or build script; for git repo inspection use git_info instead. Returns data.output (stdout string) and data.exitCode. Blocked or failed commands return a descriptive error.",
       nativeDescription:
-        "Execute shell commands for exploration, testing, and building. For code analysis, prefer grep_search or read_file. For editing, prefer patch_file or write_file.",
+        "Execute shell commands for exploration, testing, and building. For code analysis, prefer search_text or read_file. For editing, prefer patch_file or write_file.",
       parameters: {
         type: "object",
         properties: {
@@ -320,7 +320,7 @@ export function createCoreToolSchemas(
         when_to_use:
           "Use to find where a specific string, function name, or pattern appears across many files, without knowing which file contains it.",
         when_not_to_use:
-          "Do not use to find files by name — use search_files; grep_search only matches file contents, and a wide, unbounded `path` on a common pattern can return far more matches than useful.",
+          "Do not use to find files by name — use search_files; search_text only matches file contents, and a wide, unbounded `path` on a common pattern can return far more matches than useful.",
         example: {
           input: { pattern: "function greet", path: "src" },
           output: '[{"file":"src/greeting.ts","line":1,"content":"export function greet(name: string): string {"}]',
@@ -330,7 +330,7 @@ export function createCoreToolSchemas(
         anti_example: {
           input: { pattern: "greeting.ts" },
           why_wrong:
-            "grep_search requires both pattern and path — path bounds the search to a directory; omitting it leaves the tool with no root to scan.",
+            "search_text requires both pattern and path — path bounds the search to a directory; omitting it leaves the tool with no root to scan.",
         },
       },
     },
@@ -396,7 +396,7 @@ export function createCoreToolSchemas(
       },
     },
     {
-      name: "delete_file",
+      name: ToolName.DELETE_FILE,
       description:
         "Permanently remove a file at the given path. Use when you need to delete a file; this action is irreversible. Returns data.path on success. Fails if the file does not exist or the path is outside allowed roots.",
       parameters: {
@@ -417,7 +417,7 @@ export function createCoreToolSchemas(
           input: { path: "src/deprecated_helper.ts" },
           output: "src/deprecated_helper.ts",
           rationale:
-            "Removes a file already confirmed (via grep_search) to have zero remaining references, after its logic was migrated elsewhere.",
+            "Removes a file already confirmed (via search_text) to have zero remaining references, after its logic was migrated elsewhere.",
         },
         anti_example: {
           input: { path: ["src/a.tmp", "src/b.tmp"] },
@@ -427,7 +427,7 @@ export function createCoreToolSchemas(
       },
     },
     {
-      name: "git_info",
+      name: ToolName.GIT_INFO,
       description:
         "Retrieve git repository information: working-tree status, current branch name, or diff summary. Use when you need to inspect repo state without running run_command directly; scope 'status' returns changed files, 'branch' returns the branch name, 'diff_summary' returns a diff stat. Returns parsed git output in data.",
       parameters: {
@@ -467,7 +467,7 @@ export function createCoreToolSchemas(
       },
     },
     {
-      name: "deno_task",
+      name: ToolName.DENO_TASK,
       description:
         "Run a standard Deno task (test, lint, fmt, check) at the given path. Use when you need to validate code quality or run tests within an agent strategy; returns output even when the task finds issues. Returns data.output (stdout), data.errorOutput, and data.exitCode.",
       parameters: {
@@ -496,7 +496,7 @@ export function createCoreToolSchemas(
         when_to_use:
           "Use to validate code quality or run tests as part of an agent strategy, reading the output even when the task reports issues.",
         when_not_to_use:
-          "Do not use for arbitrary shell commands — deno_task only accepts its four fixed task names; use run_command for anything else.",
+          "Do not use for arbitrary shell commands — run_deno_task only accepts its four fixed task names; use run_command for anything else.",
         example: {
           input: { task: "check", path: "packages/core/src/" },
           output: '{"output":"Checked 42 files","exitCode":0}',
@@ -561,7 +561,7 @@ export function createCoreToolSchemas(
     {
       name: ToolName.QUERY_RELATIONSHIPS,
       description:
-        "List relationship edges leading forward from a layer name or file path in the current portal's knowledge graph (populated by 'portal analyze' standard/deep mode). Combines persisted file-import edges with layer-membership edges computed on demand. Use when you need to discover which files a layer contains or which files a given file imports internally; for the reverse direction (who imports a file) use who_depends_on. Optionally filter by edge kind. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
+        "List relationship edges leading forward from a layer name or file path in the current portal's knowledge graph (populated by 'portal analyze' standard/deep mode). Combines persisted file-import edges with layer-membership edges computed on demand. Use when you need to discover which files a layer contains or which files a given file imports internally; for the reverse direction (who imports a file) use find_dependents. Optionally filter by edge kind. Returns an array of edge records in data, or an error if no portal-knowledge service is available or the current execution root is not a configured portal.",
       parameters: {
         type: "object",
         properties: {
@@ -584,7 +584,7 @@ export function createCoreToolSchemas(
         when_to_use:
           "Use to discover which files belong to an architecture layer, or which files a given file imports internally, when navigating an unfamiliar codebase.",
         when_not_to_use:
-          "Do not use to find who imports a given file — that's the reverse direction, use who_depends_on instead.",
+          "Do not use to find who imports a given file — that's the reverse direction, use find_dependents instead.",
         example: {
           input: { from: "services" },
           output: '[{"from":"services","to":"services/main.ts","kind":"layer_contains_file"}]',
@@ -623,7 +623,7 @@ export function createCoreToolSchemas(
         },
         anti_example: {
           input: {},
-          why_wrong: "who_depends_on requires 'path' — there is no default target to find dependents of.",
+          why_wrong: "find_dependents requires 'path' — there is no default target to find dependents of.",
         },
       },
     },
@@ -676,7 +676,7 @@ export function createCoreToolSchemas(
     {
       name: ToolName.GET_MODULE_DEPENDENCIES,
       description:
-        "Breadth-first traverse cached internal import edges (file_imports_file_internal) forward from a portal-relative file path, up to a bounded depth. Reads only the last cached analysis — never triggers a new one. Use to understand what a file transitively depends on before changing it. For the reverse direction (who imports a file) use who_depends_on, which is single-hop only. Returns an array of edge records in data.edges, capped at 50 and possibly truncated (data.truncated), or an error if no cached knowledge exists for this portal.",
+        "Breadth-first traverse cached internal import edges (file_imports_file_internal) forward from a portal-relative file path, up to a bounded depth. Reads only the last cached analysis — never triggers a new one. Use to understand what a file transitively depends on before changing it. For the reverse direction (who imports a file) use find_dependents, which is single-hop only. Returns an array of edge records in data.edges, capped at 50 and possibly truncated (data.truncated), or an error if no cached knowledge exists for this portal.",
       parameters: {
         type: "object",
         properties: {
@@ -697,7 +697,7 @@ export function createCoreToolSchemas(
         when_to_use:
           "Use to understand what a file (transitively) depends on before changing it, without reading every file in the chain.",
         when_not_to_use:
-          "Do not use to find who imports a file — that's the reverse direction, use who_depends_on. Do not request a depth beyond 3, it is rejected.",
+          "Do not use to find who imports a file — that's the reverse direction, use find_dependents. Do not request a depth beyond 3, it is rejected.",
         example: {
           input: { path: "src/router.ts", depth: 2 },
           output:

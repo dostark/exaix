@@ -3843,7 +3843,7 @@ thinking: true             # extended reasoning for critique
 effort: high               # high token budget for deep analysis
 capabilities: ["review", "evaluation"]
 default_skills: ["response-contract", "reflexive-critique", "portal-grounding"]
-permitted_tools: ["read_file", "grep_search"]
+permitted_tools: ["read_file", "search_text"]
 reflexive: true
 max_reflexion_iterations: 3
 confidence_required: 80
@@ -4511,8 +4511,8 @@ exactl config set planning.max_tool_calls_per_round 5
 **Read-only by construction.** Only tools whose side-effect scope is `none` are offered, minus
 `list_available_tools` (which would advertise write tools the planner can never call). A planning
 call can never write, patch, delete, move, or run a command. The ten offered tools are:
-`read_file`, `list_directory`, `search_files`, `grep_search`, `git_info`, `query_relationships`,
-`who_depends_on`, `query_symbols`, `get_module_dependencies`, and `search_memory`. Adding a new
+`read_file`, `list_directory`, `search_files`, `search_text`, `git_info`, `query_relationships`,
+`find_dependents`, `query_symbols`, `get_module_dependencies`, and `search_memory`. Adding a new
 `none`-scoped tool to the Solo catalog automatically extends this list.
 
 **Requirements.** The loop activates only when every gate below holds:

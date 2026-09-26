@@ -69,7 +69,7 @@ derive directly from source structure:
 - “File A imports File B.”
 - A symbol's current file or line location.
 - Directory organization or an unqualified list of dependencies.
-- Relationships already answered by `query_relationships` or `who_depends_on`.
+- Relationships already answered by `query_relationships` or `find_dependents`.
 
 A structural fact may be supporting evidence, but it is not by itself a durable
 learning. Retain the conclusion only when it explains a non-obvious convention,

@@ -27,7 +27,7 @@ characteristics: [] # ["fastest", "cheapest"] — soft ranking hints
 preferred_provider: "" # narrow candidate pool to a specific provider
 capabilities: ["analysis", "review"] # behavioural tags, NOT tool names
 default_skills: ["response-contract-code-analysis"] # keep short — see §Skills
-permitted_tools: ["read_file", "grep_search"] # least-privilege tool allowlist
+permitted_tools: ["read_file", "search_text"] # least-privilege tool allowlist
 created: "2026-01-01T00:00:00Z"
 created_by: "you@example.com"
 version: "1.0.0"

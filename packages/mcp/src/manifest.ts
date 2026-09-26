@@ -8,7 +8,7 @@
  * @related-files [exaix-team/packages/mcp-server/tools.ts, exaix-team/packages/mcp-server/server.ts, packages/core/src/types/enums.ts]
  */
 
-import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
+import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolName, ToolSideEffectScope } from "@exaix/core";
 import { REMEDIATION_MODE_FAIL_CLOSED, REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE } from "@exaix/schemas";
 
 /** Minimal JSON Schema draft-07 descriptor used in tool manifest output_schema fields.
@@ -773,7 +773,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
-    name: "grep_search",
+    name: ToolName.GREP_SEARCH,
     kind: ToolKind.INTERNAL_ONLY,
     category: ToolCategory.READ,
     dynamic_mode_allowed: false,
@@ -813,7 +813,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
-    name: "deno_task",
+    name: ToolName.DENO_TASK,
     kind: ToolKind.INTERNAL_ONLY,
     category: ToolCategory.META,
     dynamic_mode_allowed: false,

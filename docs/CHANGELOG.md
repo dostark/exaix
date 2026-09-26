@@ -306,7 +306,7 @@ cloud model is available, and automatic approval stays off until you enable it.
 - Portal knowledge now includes an explicit relationship graph — which files import which
   other files internally, and which files belong to which architecture layer — covering
   every entrypoint in a portal by default. Query it mid-task via two new Solo-tier ReAct
-  tools, `query_relationships` and `who_depends_on` (grant them to an identity's
+  tools, `query_relationships` and `find_dependents` (grant them to an identity's
   `permitted_tools`; see `Exaix_User_Guide.md` §5.8, "Portal Knowledge Gathering").
 
 ### Fixed

@@ -102,6 +102,30 @@ Deno.test("[blueprint_service] preserves an unrelated custom tool name", async (
   }
 });
 
+Deno.test("[naming] rejects who_depends_on and deno_task after the Step 4 rename; grep_search stays accepted as a raw alias", async () => {
+  const { root, service, cleanup } = await setup();
+  try {
+    await writeBlueprint(
+      root,
+      "agent-grep",
+      blueprintContent(toolsFrontmatter("agent-grep", "grep_search")),
+    );
+    const result = await service.loadBlueprint("agent-grep");
+    assertEquals(result.blueprint.permitted_tools, ["grep_search"]);
+
+    for (const tool of ["who_depends_on", " WHO_DEPENDS_ON ", "deno_task", " DENO_TASK "]) {
+      await writeBlueprint(root, "agent-native", blueprintContent(toolsFrontmatter("agent-native", tool)));
+      await assertRejects(() => service.loadBlueprint("agent-native"), SafeError);
+    }
+    for (const tool of ["find_dependents", "run_deno_task"]) {
+      await writeBlueprint(root, "agent-current", blueprintContent(toolsFrontmatter("agent-current", tool)));
+      assertEquals((await service.loadBlueprint("agent-current")).blueprint.permitted_tools, [tool]);
+    }
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[blueprint_service] distinguishes undefined permitted_tools from an explicit empty array", async () => {
   const { root, service, cleanup } = await setup();
   try {

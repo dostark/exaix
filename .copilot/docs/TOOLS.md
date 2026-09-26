@@ -103,7 +103,7 @@ is **not** kept in sync automatically; update it by hand when the tools below ch
 **Scope note (phase-175 Step 5, extended by phases 176 and 198):** this section documents only
 the Solo-tier tools those phases added. `ToolRegistry`'s other 14 tools (`read_file`,
 `write_file`, `list_directory`, `search_files`, `create_directory`, `run_command`,
-`fetch_url`, `grep_search`, `move_file`, `copy_file`, `delete_file`, `git_info`, `deno_task`,
+`fetch_url`, `search_text`, `move_file`, `copy_file`, `delete_file`, `git_info`, `run_deno_task`,
 `patch_file`) have no representation here at all — a real gap, deliberately not fixed by
 these phases (see phase-175's Step 5 Actions). It is worth its own scoped phase, or a
 `docs-sync-schemas`/`TOOL_MANIFEST` extension that enumerates `packages/tool-runtime`'s
@@ -112,7 +112,7 @@ catalog alongside the Team MCP one.
 | Tool                      | Description                                                                                                                                                                                                                                 | Side-effect scope | Source                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------- |
 | `query_relationships`     | Lists relationship edges leading forward from a layer name or file path in the current portal's knowledge graph — combines persisted `file_imports_file_internal` edges with on-demand `layer_contains_file` edges. Optional `kind` filter. | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
-| `who_depends_on`          | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
+| `find_dependents`         | Lists relationship edges pointing into a file path — the reverse of `query_relationships`; finds every file that imports a given file internally.                                                                                           | `none`            | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
 | `query_symbols`           | Lists cached AST symbols by optional name substring, kind, or portal-relative file. Returns at most 50 records and 2,000 result tokens; each symbol's documentation is capped at 40 tokens.                                                 | `none`            | [`ToolRegistry.querySymbolsTool`](../../packages/tool-runtime/src/tool_registry.ts)          |
 | `get_module_dependencies` | Traverses cached internal imports forward from a portal-relative path, with depth 1 by default and 3 at most. Returns at most 50 edges and 2,000 result tokens.                                                                             | `none`            | [`ToolRegistry.getModuleDependenciesTool`](../../packages/tool-runtime/src/tool_registry.ts) |
 | `remember_fact`           | Persists a lightweight, execution-scoped "worth remembering" note (content + optional tags) into the current execution's scratchpad (`Memory/Execution/{trace_id}/scratchpad.jsonl`), captured raw for later extraction passes.             | `system`          | [`packages/tool-runtime/src/tool_registry.ts`](packages/tool-runtime/src/tool_registry.ts)   |
@@ -123,13 +123,13 @@ call every request makes before any execution-loop code runs — is offered the 
 catalog when `planning.tools_enabled` is on: exactly the `ToolRegistry` entries with
 `sideEffectScope: none` (including the graph tools above), minus `list_available_tools` (which
 would advertise write tools the planner can never call). The ten tools offered are `read_file`,
-`list_directory`, `search_files`, `grep_search`, `git_info`, `query_relationships`,
-`who_depends_on`, `query_symbols`, `get_module_dependencies`, and `search_memory`. A planning call
+`list_directory`, `search_files`, `search_text`, `git_info`, `query_relationships`,
+`find_dependents`, `query_symbols`, `get_module_dependencies`, and `search_memory`. A planning call
 therefore has no `write_file`/`patch_file`/`run_command`/`remember_fact` access, its tool rounds
 are confined to the request portal's real path, and each round is journaled as a
 `dynamic_tool_call` row with `phase: "planning"`.
 
-`query_relationships`/`who_depends_on` require a portal-knowledge service to be wired into the
+`query_relationships`/`find_dependents` require a portal-knowledge service to be wired into the
 `ToolRegistry`'s `IApplicationContext` (present in the daemon's plan execution
 factory and flow strategy adapter) and the current execution root to match a
 configured portal's `target_path` — otherwise they return a structured error,
@@ -153,7 +153,7 @@ in the tool-call parameters is never honoured) and is scoped per execution, not 
 `search_memory` requires a memory service on the same `IApplicationContext`; when the current
 execution root matches no configured portal it falls back to a global-only search rather than
 erroring, since `IMemoryService.search`'s `portal` option is optional. This is a deliberate
-divergence from `query_relationships`/`who_depends_on`'s hard error in that case — memory
+divergence from `query_relationships`/`find_dependents`'s hard error in that case — memory
 search has meaningful behavior without a portal, relationship graphs do not.
 
 Note: `search_memory` is also the name of one of the three tools
@@ -166,7 +166,7 @@ transport (loopback-only, bearer-gated, three tools total), not a wrapper around
 
 **Why use these instead of reading imports directly:** the underlying graph is built from
 `deno info`'s resolved module graph, not text pattern matching, so it correctly follows import-map
-aliases and barrel re-exports that a naive `import .* from` grep would miss. `who_depends_on`
+aliases and barrel re-exports that a naive `import .* from` grep would miss. `find_dependents`
 (reverse dependency lookup — "what imports this file") has no efficient text-grep equivalent at
 all; answering it by reading files would mean opening every file in the portal. `layer_contains_file`
 edges are synthesized from the portal's `layers` config and are not derivable from import
@@ -200,7 +200,7 @@ aciDoc: {
     "content, e.g. before editing it or to answer a question about its contents.",
   when_not_to_use:
     "Do not use to locate files by name or pattern (use search_files) or to find a " +
-    "string across many files (use grep_search) — read_file takes exactly one literal " +
+    "string across many files (use search_text) — read_file takes exactly one literal " +
     "path and has no glob or pattern support.",
   example: {
     input: { path: "src/example.ts" },

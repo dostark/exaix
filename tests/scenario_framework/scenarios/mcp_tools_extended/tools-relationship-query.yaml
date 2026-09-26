@@ -1,5 +1,5 @@
 schema_version: "1.0.0"
-# Asserts query_relationships/who_depends_on end to end: a real `portal analyze` populates a
+# Asserts query_relationships/find_dependents end to end: a real `portal analyze` populates a
 # real layer_contains_file edge (Step 2, derived on demand) and a real file_imports_file_internal
 # edge (Step 1, persisted), then a real ToolRegistry — the Solo-tier in-process ReAct catalog,
 # a separate catalog from packages/mcp/src/manifest.ts's TOOL_MANIFEST (see ARCHITECTURE.md's
@@ -8,9 +8,9 @@ schema_version: "1.0.0"
 # ToolRegistry.execute() call (call_tool_registry_tool.ts) since there is no MCP handler for
 # either Solo-only tool.
 id: "tools-relationship-query"
-title: "Solo tool — query_relationships/who_depends_on serve a portal's relationship graph"
+title: "Solo tool — query_relationships/find_dependents serve a portal's relationship graph"
 pack: "mcp_tools_extended"
-tags: ["domain", "subsystem:tools", "entity:query_relationships", "entity:who_depends_on"]
+tags: ["domain", "subsystem:tools", "entity:query_relationships", "entity:find_dependents"]
 request_fixture: "fixtures/requests/mcp_tools_extended/tools_relationship_query.md"
 mode_support: ["auto"]
 portals:
@@ -71,7 +71,7 @@ steps:
 
   - id: "who-depends-on-reverse"
     type: "run-script"
-    name: "who_depends_on lists the real internal importer of services/greeter.ts"
+    name: "find_dependents lists the real internal importer of services/greeter.ts"
     command: "deno"
     args:
       - "run"
@@ -82,7 +82,7 @@ steps:
       - "$WORKSPACE_ROOT"
       - "rel-fixture"
       - "$WORKSPACE_ROOT/Portals/rel-fixture"
-      - "who_depends_on"
+      - "find_dependents"
       - '{"path":"services/greeter.ts"}'
     output_criteria:
       - id: "reverse-edge-present"

@@ -122,7 +122,7 @@ triggers analysis; callers must treat a cold or missing snapshot as unavailable.
 
 The daemon snapshots the bound portal knowledge when it creates a child connection. The
 child can query only relationship data from that snapshot through `query_relationships`
-and `who_depends_on`; request text and tool arguments cannot select another portal.
+and `find_dependents`; request text and tool arguments cannot select another portal.
 
 ## CLI Commands
 

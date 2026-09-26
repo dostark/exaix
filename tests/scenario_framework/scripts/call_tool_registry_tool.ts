@@ -37,7 +37,7 @@ const NOOP_DISPLAY: IDisplayService = {
   fatal: () => Promise.resolve(),
 };
 
-/** Only `portalKnowledge`/`config` are read by query_relationships/who_depends_on; the rest
+/** Only `portalKnowledge`/`config` are read by query_relationships/find_dependents; the rest
  *  of IApplicationContext is stubbed to satisfy the interface, matching flow_runner.ts's
  *  established stubbing idiom for a context this narrow. */
 function makeContext(portalKnowledge: PortalKnowledgeService, config: Config): IApplicationContext {

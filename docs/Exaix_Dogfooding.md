@@ -741,7 +741,7 @@ read-only tools:
 | Tool                  | Arguments                                  | Returns                                                        |
 | --------------------- | ------------------------------------------ | -------------------------------------------------------------- |
 | `query_relationships` | `from` (layer/path), `kind?` (edge filter) | Forward edges from the bound portal's cached knowledge graph   |
-| `who_depends_on`      | `path`                                     | Reverse edges into that path                                   |
+| `find_dependents`     | `path`                                     | Reverse edges into that path                                   |
 | `search_memory`       | `query`, `limit?`                          | Scored project/global memory items, scoped to the bound portal |
 
 The server never triggers portal analysis/indexing — it reads only the knowledge

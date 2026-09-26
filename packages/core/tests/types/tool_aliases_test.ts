@@ -163,6 +163,7 @@ Deno.test("[tool_aliases] every seed alias resolves to its documented canonical 
     text_search: ToolName.GREP_SEARCH,
     search_file_content: ToolName.GREP_SEARCH,
     grep_files: ToolName.GREP_SEARCH,
+    grep_search: ToolName.GREP_SEARCH,
     read: ToolName.READ_FILE,
     read_text_file: ToolName.READ_FILE,
     write: ToolName.WRITE_FILE,
@@ -235,6 +236,19 @@ Deno.test("[tool_aliases] dependents and list_symbols are retired native aliases
   assert(isRejectedNativeToolName("list_symbols"));
   assertEquals(canonicalizeToolName("dependents"), "dependents");
   assertEquals(canonicalizeToolName("list_symbols"), "list_symbols");
+});
+
+Deno.test("[naming] who_depends_on and deno_task are rejected after the Step 4 rename; find_dependents/run_deno_task resolve", () => {
+  assertFalse(Object.hasOwn(TOOL_ALIASES, "who_depends_on"));
+  assertFalse(Object.hasOwn(TOOL_ALIASES, "deno_task"));
+  assert(isRejectedNativeToolName("who_depends_on"));
+  assert(isRejectedNativeToolName("deno_task"));
+  assertEquals(canonicalizeToolName("who_depends_on"), "who_depends_on");
+  assertEquals(canonicalizeToolName("deno_task"), "deno_task");
+  assertEquals(canonicalizeToolName(ToolName.WHO_DEPENDS_ON), ToolName.WHO_DEPENDS_ON);
+  assertEquals(canonicalizeToolName(ToolName.DENO_TASK), ToolName.DENO_TASK);
+  assertFalse(isRejectedNativeToolName(ToolName.WHO_DEPENDS_ON));
+  assertFalse(isRejectedNativeToolName(ToolName.DENO_TASK));
 });
 
 Deno.test("[tool_aliases] native case or whitespace variants remain unresolved and are rejected", () => {

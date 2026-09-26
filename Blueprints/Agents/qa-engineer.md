@@ -14,8 +14,8 @@ permitted_tools:
   - read_file
   - list_directory
   - run_command
-  - grep_search
-  - deno_task
+  - search_text
+  - run_deno_task
   - fetch_url
   - git_info
 ---

@@ -14,7 +14,7 @@ permitted_tools:
   - write_file
   - list_directory
   - fetch_url
-  - grep_search
+  - search_text
   - git_info
 ---
 

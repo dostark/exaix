@@ -352,3 +352,14 @@ Deno.test("[schemas] SkillSchema rejects a retired native alias", () => {
   const parsed = SkillSchema.safeParse(skillWithTools(["list_symbols"]));
   assertFalse(parsed.success);
 });
+
+Deno.test("[naming] SkillSchema tools entry of grep_search parses to search_text", () => {
+  const parsed = SkillSchema.safeParse(skillWithTools(["grep_search"]));
+  assertEquals(parsed.success, true);
+  if (parsed.success) assertEquals(parsed.data.tools, ["search_text"]);
+});
+
+Deno.test("[naming] SkillSchema rejects the retired who_depends_on/deno_task names", () => {
+  assertFalse(SkillSchema.safeParse(skillWithTools(["who_depends_on"])).success);
+  assertFalse(SkillSchema.safeParse(skillWithTools(["deno_task"])).success);
+});

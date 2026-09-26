@@ -44,6 +44,16 @@ Deno.test("[agent_execution_options] preserves an unrelated custom tool name", (
   assertEquals(result.permitted_tools, ["my_custom_tool"]);
 });
 
+Deno.test("[naming] rejects who_depends_on and deno_task after the Step 4 rename; grep_search stays accepted as a raw alias", () => {
+  const result = InputValidator.validateAgentExecutionOptions(baseOptions(["grep_search"]));
+  assertEquals(result.permitted_tools, ["grep_search"]);
+  for (const tool of ["who_depends_on", " WHO_DEPENDS_ON ", "deno_task", " DENO_TASK "]) {
+    assertThrows(() => InputValidator.validateAgentExecutionOptions(baseOptions([tool])), z.ZodError);
+  }
+  const native = ["find_dependents", "run_deno_task"];
+  assertEquals(InputValidator.validateAgentExecutionOptions(baseOptions(native)).permitted_tools, native);
+});
+
 Deno.test("[agent_execution_options] distinguishes undefined permitted_tools from an explicit empty array", () => {
   const undef = InputValidator.validateAgentExecutionOptions(baseOptions());
   const empty = InputValidator.validateAgentExecutionOptions(baseOptions([]));

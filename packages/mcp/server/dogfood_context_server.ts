@@ -2,7 +2,7 @@
  * @module DogfoodContextServer
  * @path packages/mcp/server/dogfood_context_server.ts
  * @description Phase 176 Step 2 — a small, per-launch loopback MCP server exposing
- * exactly three read-only tools (query_relationships, who_depends_on, search_memory) to
+ * exactly three read-only tools (query_relationships, find_dependents, search_memory) to
  * one spawned dogfood child session, over the official @modelcontextprotocol/server SDK
  * (the same createMcpHandler/McpServer pattern exercised by
  * packages/mcp/tests/fixtures/authenticated_reference_server.ts). Bound explicitly to

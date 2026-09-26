@@ -232,7 +232,7 @@ export const ToolsConfigSchema = z.object({
     max_response_size_kb: z.number().default(50), // Prevent context flooding
   }).prefault({}),
 
-  // Search limits
+  // Search limits for the search_text tool. The key keeps its pre-rename name as a stable config contract.
   grep_search: z.object({
     max_results: z.number().default(50),
     exclude_dirs: z.array(z.string()).default([".git", "node_modules", "dist", "coverage"]),

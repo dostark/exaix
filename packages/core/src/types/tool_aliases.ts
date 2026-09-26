@@ -48,6 +48,7 @@ export const TOOL_ALIASES: Readonly<Record<string, IToolAlias>> = Object.freeze(
   text_search: { canonical: ToolName.GREP_SEARCH },
   search_file_content: { canonical: ToolName.GREP_SEARCH },
   grep_files: { canonical: ToolName.GREP_SEARCH },
+  grep_search: { canonical: ToolName.GREP_SEARCH },
   read: { canonical: ToolName.READ_FILE },
   read_text_file: { canonical: ToolName.READ_FILE },
   write: { canonical: ToolName.WRITE_FILE },
@@ -110,8 +111,8 @@ const CANONICAL_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
 ]);
 
 /** Exaix-specific tool names (v1.7 category policy): one exact canonical spelling everywhere,
- *  no aliases, no case/whitespace normalization. Grows as later steps rename `who_depends_on`,
- *  `deno_task` and `exaix_portal_symbols`. */
+ *  no aliases, no case/whitespace normalization. Grows as a later step renames
+ *  `exaix_portal_symbols`. */
 export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
   ToolName.DENO_TASK,
   ToolName.WHO_DEPENDS_ON,
@@ -132,9 +133,14 @@ export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
 ]);
 
 /** Retired native names/aliases. This is rejection data, never an alias map. It grows as
- *  each rename lands: `dependents`/`list_symbols` today, `who_depends_on`/`deno_task` and
+ *  each rename lands: `dependents`/`list_symbols`/`who_depends_on`/`deno_task` today,
  *  `exaix_portal_symbols` later. */
-const EXCLUDED_NATIVE_NAMES: ReadonlySet<string> = new Set<string>(["dependents", "list_symbols"]);
+const EXCLUDED_NATIVE_NAMES: ReadonlySet<string> = new Set<string>([
+  "dependents",
+  "list_symbols",
+  "who_depends_on",
+  "deno_task",
+]);
 
 /** True when `name` is a rejected native-tool spelling. Native names are exact-only. A case
  *  or whitespace variant of one counts, and so does a retired native name or alias.

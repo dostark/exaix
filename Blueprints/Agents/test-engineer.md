@@ -15,8 +15,8 @@ permitted_tools:
   - write_file
   - list_directory
   - run_command
-  - grep_search
-  - deno_task
+  - search_text
+  - run_deno_task
   - patch_file
   - git_info
 ---

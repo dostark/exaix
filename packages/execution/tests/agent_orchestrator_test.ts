@@ -3093,7 +3093,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const fakeTools: ITool[] = [
         {
-          name: "grep_search",
+          name: "search_text",
           description: "Search file contents by pattern inside a portal.",
           parameters: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
         },
@@ -3129,8 +3129,8 @@ Deno.test({
         },
       };
 
-      // The matched skill declares the alias "grep". The agent role declares the canonical
-      // "grep_search". Without normalizing both sides first, they would never match.
+      // The matched skill declares the alias "grep". The agent role declares the alias
+      // "grep_search". Both canonicalize to "search_text" before the intersection.
       const executor = new AgentComposer({
         config: testConfig,
         db,
@@ -3170,8 +3170,8 @@ Deno.test({
 
       assertStringIncludes(
         capturedPrompt,
-        "grep_search",
-        "grep_search must survive the intersection: the alias grep on the skill side must canonicalize to match",
+        "search_text",
+        "search_text must survive the intersection: both the role's and the skill's alias must canonicalize to match",
       );
     } finally {
       await cleanup();

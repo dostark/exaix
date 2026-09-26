@@ -23,6 +23,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "@exaix/testing";
 import { makeGenerateResult } from "@exaix/testing";
 import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS, PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION } from "@exaix/core";
+import { createCoreToolSchemas, readOnlyEditorTools } from "@exaix/tool-runtime";
 
 // Test doubles
 
@@ -114,6 +115,22 @@ function makeOptions(overrides: Partial<IPlanningToolLoopOptions> = {}): IPlanni
 }
 
 // Round protocol
+
+Deno.test("[naming][planning_tool_loop] native renames preserve the read-only catalog boundary", async () => {
+  const allowedTools = new Set(readOnlyEditorTools().map((tool) => tool.name));
+  for (const name of ["find_dependents", "run_deno_task", "who_depends_on", "deno_task", "dependents"]) {
+    const registry = new StubToolRegistry(createCoreToolSchemas());
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", { toolCalls: [{ id: "native-name", name, input: { path: "." } }] }),
+      makeGenerateResult("plan"),
+    ]);
+    await new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate })).run(
+      makeOptions({ allowedTools }),
+    );
+    assertEquals(registry.calls, name === "find_dependents" ? [{ name, params: { path: "@myportal/." } }] : []);
+    assertEquals(generate.calls[1].options.priorTurn?.toolResultIsError, name !== "find_dependents");
+  }
+});
 
 Deno.test("[planning_tool_loop] round 1 with no toolCalls returns the raw response untouched, stopReason no_tool_calls", async () => {
   const response = makeGenerateResult("<thought>t</thought><content>plan</content>");

@@ -61,3 +61,20 @@ Deno.test("[security][hitl] config mandatory_rules reject a retired native alias
   });
   assert(!result.success);
 });
+
+Deno.test("[naming][security][hitl] a config mandatory_rules entry naming grep_search matches search_text", () => {
+  const result = ConfigSchema.parse({
+    ...baseConfig(),
+    hitl: { mandatory_rules: [{ tool: "grep_search", path_pattern: "**/*.ts" }] },
+  });
+  assertEquals(result.hitl?.mandatory_rules[0].tool, "search_text");
+});
+
+Deno.test("[naming][security][hitl] config mandatory_rules reject the retired deno_task/who_depends_on names", () => {
+  assert(
+    !ConfigSchema.safeParse({ ...baseConfig(), hitl: { mandatory_rules: [{ tool: "deno_task" }] } }).success,
+  );
+  assert(
+    !ConfigSchema.safeParse({ ...baseConfig(), hitl: { mandatory_rules: [{ tool: "who_depends_on" }] } }).success,
+  );
+});

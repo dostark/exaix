@@ -16,6 +16,9 @@ import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
+import { EventLogger } from "@exaix/core/logger";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { createMockConfig, initTestDbService } from "@exaix/testing";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
 const testBlueprint = {
@@ -175,6 +178,61 @@ function makeAliasProvider(tomlContent: string): IModelProvider {
   };
 }
 
+Deno.test("[legacy_strategy][integration] aliased writes persist their original provenance through the real registry", async () => {
+  const root = await Deno.makeTempDir();
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const config = createMockConfig(root);
+    config.portals[0].alias = "test";
+    const registry = new ToolRegistry({ config, logger: new EventLogger({ db }), traceId: testContext.trace_id });
+    const executor = { ...makeAliasExecutor(root, []), toolRegistry: registry };
+    const provider = makeAliasProvider(
+      '```toml\n[[actions]]\ntool = "Write"\n[actions.params]\npath = "a.ts"\nfilePath = "outside.ts"\ncontent = "saved"\n```',
+    );
+    const result = await new LegacyAgentStrategy(executor as Partial<AgentComposer> as AgentComposer, provider)
+      .execute(testBlueprint, testContext, createOptions("test"));
+    assertEquals(await Deno.readTextFile(`${root}/a.ts`), "saved");
+    assertEquals(result.files_changed, ["a.ts"]);
+    await db.getRecentActivity();
+    const events = db.getActivitiesByTrace(testContext.trace_id).filter((row) =>
+      row.action_type === "tool.alias.rewritten"
+    );
+    assertEquals(events.length, 1);
+    assertEquals(JSON.parse(events[0].payload), {
+      requestedName: "Write",
+      canonicalName: "write_file",
+      renamedParams: [],
+      droppedParams: ["filePath"],
+      entryPoint: "registry",
+    });
+    const aliasedPathProvider = makeAliasProvider(
+      '```toml\n[[actions]]\ntool = "Write"\n[actions.params]\nfilePath = "b.ts"\ncontent = "second"\n```',
+    );
+    const second = await new LegacyAgentStrategy(
+      executor as Partial<AgentComposer> as AgentComposer,
+      aliasedPathProvider,
+    )
+      .execute(testBlueprint, testContext, createOptions("test"));
+    assertEquals(await Deno.readTextFile(`${root}/b.ts`), "second");
+    assertEquals(second.files_changed, ["b.ts"]);
+    await db.getRecentActivity();
+    const allEvents = db.getActivitiesByTrace(testContext.trace_id).filter((row) =>
+      row.action_type === "tool.alias.rewritten"
+    );
+    assertEquals(allEvents.length, 2);
+    assertEquals(JSON.parse(allEvents[1].payload), {
+      requestedName: "Write",
+      canonicalName: "write_file",
+      renamedParams: [{ from: "filePath", to: "path" }],
+      droppedParams: [],
+      entryPoint: "registry",
+    });
+  } finally {
+    await cleanup();
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("[security][legacy_strategy] a canonical write_file is portal-prefixed and write-tracked", async () => {
   const captured: Array<{ tool: string; params: Record<string, string> }> = [];
   const mockExecutor = makeAliasExecutor("/workspace/portal", captured);
@@ -240,4 +298,17 @@ Deno.test("[legacy_strategy] an already-prefixed path is not prefixed again", as
     createOptions("test"),
   );
   assertEquals(captured[0], { tool: "write_file", params: { path: "@test/src/a.ts", content: "x" } });
+});
+
+Deno.test("[naming][legacy_strategy] canonical native calls retain their names and portal prefix", async () => {
+  for (const tool of ["find_dependents", "run_deno_task"]) {
+    const captured: Array<{ tool: string; params: Record<string, string> }> = [];
+    const executor = makeAliasExecutor("/workspace/portal", captured);
+    const provider = makeAliasProvider(
+      `\`\`\`toml\n[[actions]]\ntool = "${tool}"\n[actions.params]\npath = "a.ts"\n\`\`\``,
+    );
+    await new LegacyAgentStrategy(executor as Partial<AgentComposer> as AgentComposer, provider)
+      .execute(testBlueprint, testContext, createOptions("test"));
+    assertEquals(captured, [{ tool, params: { path: "@test/a.ts" } }]);
+  }
 });

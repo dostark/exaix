@@ -54,7 +54,7 @@ that child session exactly three read-only MCP tools over a private, per-launch
 govern Exaix-side tool access, not the delegated child's native tool surface:
 
 - `query_relationships` — forward edges from a layer/file in the bound portal's cached knowledge graph.
-- `who_depends_on` — reverse edges into a file path.
+- `find_dependents` — reverse edges into a file path.
 - `search_memory` — project/global memory scoped to the bound portal.
 
 The connection is loopback-only, bearer-authenticated, single-child, and closes when the

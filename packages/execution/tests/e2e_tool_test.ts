@@ -99,7 +99,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
     // Run lint (mocked because real lint might take time or fail on new file)
     // or we can run a simple check.
     // Let's run 'deno fmt' to verify it works
-    const fmt = await registry.execute("deno_task", { task: "fmt", path: "main.ts" });
+    const fmt = await registry.execute(ToolName.DENO_TASK, { task: "fmt", path: "main.ts" });
     assertEquals(fmt.success, true);
   });
 

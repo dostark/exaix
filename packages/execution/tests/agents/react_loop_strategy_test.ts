@@ -20,7 +20,7 @@ import {
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
-import { ToolRegistry } from "@exaix/tool-runtime";
+import { createCoreToolSchemas, ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
 
 class MockModelProvider implements IModelProvider {
@@ -434,7 +434,7 @@ Deno.test("[react_loop] rendered AVAILABLE TOOLS contains canonical names; a per
     toolRegistry: {
       execute: () => Promise.resolve({ success: true, data: {} }),
       getTools: () => [{
-        name: "grep_search",
+        name: "search_text",
         description: "search",
         parameters: { type: "object", properties: { pattern: { type: "string" } } },
       }],
@@ -451,7 +451,7 @@ Deno.test("[react_loop] rendered AVAILABLE TOOLS contains canonical names; a per
   );
   assertEquals(provider.prompts.length, 1);
   const toolsLine = provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0];
-  assertEquals(toolsLine, "grep_search");
+  assertEquals(toolsLine, "search_text");
 });
 
 Deno.test("[security] ReActLoopStrategy denies read_file with an absolute file_path outside the portal", async () => {
@@ -487,5 +487,81 @@ file_path = "${outside}/secret.txt"
   } finally {
     await Deno.remove(root, { recursive: true });
     await Deno.remove(outside, { recursive: true });
+  }
+});
+
+Deno.test("[naming][react_loop] a role whose permitted_tools lists grep_search may call grep_search and search_text after the rename", async () => {
+  const calls: Array<{ tool: string; params: TestToolParams }> = [];
+  const executor = {
+    ...mockExecutor,
+    toolRegistry: {
+      execute: (tool: string, params: TestToolParams) => {
+        calls.push({ tool, params });
+        return Promise.resolve({ success: true, data: [] });
+      },
+      getTools: () => [{
+        name: "search_text",
+        description: "search",
+        parameters: { type: "object", properties: { pattern: { type: "string" }, path: { type: "string" } } },
+      }],
+      getBaseDir: () => "/nonexistent-test-basedir",
+    },
+  };
+  const action = `${REACT_THOUGHT_PREFIX}Search.
+\`\`\`toml
+[[actions]]
+tool = "grep_search"
+[actions.params]
+pattern = "*.ts"
+path = "."
+\`\`\`
+`;
+  const responses = [action, `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`];
+  await new ReActLoopStrategy(executor as ReActExecutor, new MockModelProvider(responses)).execute(
+    testBlueprint,
+    testContext,
+    { ...createOptions("test"), permitted_tools: ["grep_search"] },
+  );
+  assertEquals(calls[0], { tool: "search_text", params: { pattern: "*.ts", path: "@test/." } });
+
+  calls.length = 0;
+  const action2 = action.replace('tool = "grep_search"', 'tool = "search_text"');
+  await new ReActLoopStrategy(
+    executor as ReActExecutor,
+    new MockModelProvider([action2, `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`]),
+  ).execute(
+    testBlueprint,
+    testContext,
+    { ...createOptions("test"), permitted_tools: ["grep_search"] },
+  );
+  assertEquals(calls[0], { tool: "search_text", params: { pattern: "*.ts", path: "@test/." } });
+});
+
+Deno.test("[naming][react_loop] native calls and rendered names honor the renamed allowlist", async () => {
+  for (const name of ["find_dependents", "run_deno_task", "who_depends_on", "deno_task"]) {
+    const calls: string[] = [];
+    const executor = {
+      ...mockExecutor,
+      toolRegistry: {
+        execute: (tool: string) => {
+          calls.push(tool);
+          return Promise.resolve({ success: true, data: {} });
+        },
+        getTools: createCoreToolSchemas,
+        getBaseDir: () => "/nonexistent-test-basedir",
+      },
+    };
+    const provider = new MockModelProvider([
+      `${REACT_THOUGHT_PREFIX}Inspect.\n\`\`\`toml\n[[actions]]\ntool = "${name}"\n[actions.params]\npath = "."\ntask = "fmt"\n\`\`\``,
+      `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
+    ]);
+    const permitted = ["find_dependents", "run_deno_task"];
+    await new ReActLoopStrategy(executor as ReActExecutor, provider).execute(
+      testBlueprint,
+      testContext,
+      { ...createOptions("test"), permitted_tools: permitted },
+    );
+    assertEquals(calls, permitted.includes(name) ? [name] : []);
+    assertEquals(provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0], permitted.join(", "));
   }
 });

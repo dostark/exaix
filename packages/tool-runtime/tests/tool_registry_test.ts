@@ -9,6 +9,7 @@ import { assert, assertEquals, assertExists, assertObjectMatch, assertStringIncl
 import { ConfigValueType, DaemonStatus, SwapClass, ToolName } from "@exaix/core";
 import { getRegisteredDefaults } from "@exaix/core/config";
 import { ConfigSchema, ToolsConfigSchema } from "@exaix/schemas/config.ts";
+import { PlanActionSchema } from "@exaix/schemas";
 import ts from "typescript";
 import type { IToolResult } from "@exaix/core/types";
 import { join } from "@std/path";
@@ -721,6 +722,43 @@ Deno.test("[tool_registry] glob runs search_files and journals one rewrite with 
       droppedParams: [],
       entryPoint: "registry",
     });
+  }, { traceId: ALIAS_TRACE });
+});
+
+Deno.test("[naming][tool_registry] a persisted grep_search plan action executes search_text and journals its rewrite", async () => {
+  await withToolRegistryContext("alias-grep-search-", async ({ workspaceRoot, registry, db }) => {
+    const path = join(workspaceRoot, ALIAS_FILE);
+    await Deno.writeTextFile(path, ALIAS_CONTENT);
+    const action = PlanActionSchema.parse(JSON.parse(JSON.stringify({
+      tool: "grep_search",
+      params: { pattern: ALIAS_CONTENT, path: "." },
+    })));
+    const result = await registry.execute(action.tool, action.params ?? {});
+    assertEquals(result.success, true);
+    assertEquals(result.data, [{ file: ALIAS_FILE, line: 1, content: ALIAS_CONTENT }]);
+    await db.getRecentActivity();
+    const events = db.getActivitiesByTrace(ALIAS_TRACE).filter((row) => row.action_type === ALIAS_EVENT);
+    assertEquals(events.length, 1);
+    assertEquals(JSON.parse(events[0].payload).requestedName, "grep_search");
+    assertEquals(JSON.parse(events[0].payload).canonicalName, ToolName.GREP_SEARCH);
+    assertEquals(JSON.parse(events[0].payload).entryPoint, "registry");
+  }, { traceId: ALIAS_TRACE });
+});
+
+Deno.test("[naming][tool_registry] the retired who_depends_on/deno_task names never invoke an executor", async () => {
+  await withToolRegistryContext("alias-retired-native-", async ({ registry, db }) => {
+    const whoResult = await registry.execute("who_depends_on", { path: "a.ts" });
+    assertToolFailure(whoResult);
+    const denoResult = await registry.execute("deno_task", { task: "fmt" });
+    assertToolFailure(denoResult);
+    assertStringIncludes(whoResult.error, "not found");
+    assertStringIncludes(denoResult.error, "not found");
+    const dependentsResult = await registry.execute("dependents", { path: "a.ts" });
+    assertToolFailure(dependentsResult);
+    assertStringIncludes(dependentsResult.error, "not found");
+    await db.getRecentActivity();
+    const events = db.getActivitiesByTrace(ALIAS_TRACE).filter((row) => row.action_type === ALIAS_EVENT);
+    assertEquals(events.length, 0);
   }, { traceId: ALIAS_TRACE });
 });
 

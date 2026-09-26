@@ -11,6 +11,28 @@ import { join } from "@std/path";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
 import { ToolName } from "@exaix/core";
 
+Deno.test("[naming] search_text preserves grep_search result limits and directory exclusions", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    await Deno.mkdir(join(tempDir, "omit"));
+    await Deno.writeTextFile(join(tempDir, "visible.ts"), "needle\nneedle\nneedle\n");
+    await Deno.writeTextFile(join(tempDir, "omit", "hidden.ts"), "excluded\n");
+    const registry = createToolRegistryForTests(tempDir, {
+      tools: { grep_search: { max_results: 1, exclude_dirs: ["omit"] } },
+    });
+    for (const name of ["search_text", "grep_search"]) {
+      const limited = await registry.execute(name, { pattern: "needle", path: "." });
+      assertEquals(limited.success, true);
+      assertEquals(limited.data, [{ file: "visible.ts", line: 1, content: "needle" }]);
+      const excluded = await registry.execute(name, { pattern: "excluded", path: "." });
+      assertEquals(excluded.success, true);
+      assertEquals(excluded.data, []);
+    }
+  } finally {
+    await cleanupTempDir(tempDir);
+  }
+});
+
 Deno.test("ToolRegistry: grep_search", async (t) => {
   // Setup temp directory with fixtures
   const tempDir = await Deno.makeTempDir();

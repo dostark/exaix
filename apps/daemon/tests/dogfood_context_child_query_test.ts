@@ -194,7 +194,7 @@ Deno.test({
 
       const result = await readChildResult(portalDir);
       assertEquals(result.ok, true, `child reported failure: ${result.error}`);
-      assertEquals(result.toolNames, ["query_relationships", "search_memory", "who_depends_on"]);
+      assertEquals(result.toolNames, ["find_dependents", "query_relationships", "search_memory"]);
       assert(result.searchMemoryResult, "search_memory result must be present");
       const text = result.searchMemoryResult![0].text;
       assert(text.includes(SEEDED_TITLE), `expected the seeded fact's title in: ${text}`);

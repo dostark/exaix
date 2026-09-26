@@ -932,7 +932,7 @@ ${aciSection.text}`;
     prompt += `
 
 TOOL SELECTION GUIDELINES:
-- For reading files or searching code: use read_file, grep_search, or search_files.
+- For reading files or searching code: use read_file, search_text, or search_files.
 - For creating NEW files or overwriting entire files: use write_file.
 - For small targeted edits (fixing bugs, null-guard fixes): prefer patch_file over write_file.
 - For shell commands: use run_command only when no specialized tool exists for your task.`;

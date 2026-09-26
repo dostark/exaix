@@ -110,3 +110,15 @@ Deno.test("[security][hitl] HITL rules reject retired native aliases and native 
   assertFalse(HitlRuleSchema.safeParse({ tool: "Query_Symbols" }).success);
   assertFalse(HitlPolicySchema.safeParse({ require_secondary_approval: [{ tool: "list_symbols" }] }).success);
 });
+
+Deno.test("[naming][security][hitl] a canonical run_deno_task rule still requires approval; a deno_task rule fails validation after the rename", () => {
+  const rule = HitlRuleSchema.parse({ tool: "run_deno_task" });
+  assertEquals(rule.tool, "run_deno_task");
+  assertFalse(HitlRuleSchema.safeParse({ tool: "deno_task" }).success);
+  assertFalse(HitlRuleSchema.safeParse({ tool: "who_depends_on" }).success);
+});
+
+Deno.test("[naming][hitl] a rule naming the legacy grep_search alias matches search_text", () => {
+  const rule = HitlRuleSchema.parse({ tool: "grep_search" });
+  assertEquals(rule.tool, "search_text");
+});

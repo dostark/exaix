@@ -68,7 +68,7 @@ Deno.test("[phase147-step1] instructions distinguish non-derivable knowledge fro
   assertStringIncludes(instructions, "why");
   assertStringIncludes(instructions, "File A imports File B");
   assertStringIncludes(instructions, "query_relationships");
-  assertStringIncludes(instructions, "who_depends_on");
+  assertStringIncludes(instructions, "find_dependents");
   assertStringIncludes(instructions.toLowerCase(), "deprioritize");
 });
 

@@ -14,7 +14,7 @@ default_skills: [response-contract, research-methodology]
 permitted_tools:
   - read_file
   - list_directory
-  - grep_search
+  - search_text
   - fetch_url
   - git_info
 ---
