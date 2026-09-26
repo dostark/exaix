@@ -43,7 +43,11 @@ import {
 } from "@exaix/core";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { initTestDbService } from "@exaix/testing";
+import { setupGitRepo } from "@exaix/git/testing";
 import { MockProvider } from "@exaix/ai/providers.ts";
+import type { IProviderToolCall, IRecordedInputExpectation, IRecordedResponse } from "@exaix/ai/providers";
+import type { IToolAliasRewrittenPayload, IToolParamUnknownPayload } from "@exaix/core/events";
+import type { JSONValue } from "@exaix/core/types";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { buildPortalKnowledgeSummary } from "@exaix/request";
 import {
@@ -1227,6 +1231,401 @@ Deno.test({
       // The flag-off plan carries the same marker the flag-on final round produced — the
       // single-call run consumed the same recorded response, so the plan shape is identical.
       assert(planText.includes("EXAIX_PHASE199_MARKER_"), "the flag-off plan must carry the same fixture marker");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+/// Tool-alias cutover over the recorded-mock planning boot.
+/// The final round's fixture asserts the actual provider input.
+
+const ALIAS_MARKER_PREFIX = "EXAIX_PHASE201_ALIAS_MARKER_";
+const ESCAPE_NAME_SENTINEL = "EXAIX_P201_ESCAPE_NAME_7c1e";
+const ESCAPE_CONTENT_SENTINEL = "EXAIX_P201_ESCAPE_CONTENT_4b9d";
+const CONFINEMENT_DENIAL = "Access denied: path is outside the request portal";
+const PHASE201_SCENARIO = "phase201";
+const PLANNING_END_EVENTS = ["planning.tools.completed", "planning.tools.aborted", "request.failed"];
+
+/** Which round-1 calls the recorded explore fixture replays. */
+type AliasCutoverMode = "alias-read" | "alias-extra-param" | "escape" | "native";
+
+interface IAliasCutoverRun {
+  rows: IPlanningCutoverRow[];
+  planText: string;
+  marker: string;
+}
+
+interface IToolCallRow {
+  tool: string;
+  args: Record<string, JSONValue>;
+  resultSummary: string;
+}
+
+/** The round-1 tool calls and the final round's required provider input for `mode`. */
+function aliasCutoverRound(
+  mode: AliasCutoverMode,
+  marker: string,
+  outsideFile: string,
+): { toolCalls: IProviderToolCall[]; expectedInput?: IRecordedInputExpectation } {
+  switch (mode) {
+    case "alias-read":
+      return {
+        toolCalls: [{ id: "toolu_p201_read", name: "Read", input: { file_path: "src/target.ts" } }],
+        expectedInput: { priorTurnResultIncludes: [marker] },
+      };
+    case "alias-extra-param":
+      return {
+        toolCalls: [{ id: "toolu_p201_read", name: "Read", input: { file_path: "src/target.ts", p201_extra: true } }],
+      };
+    case "escape":
+      return {
+        toolCalls: [
+          { id: "toolu_p201_glob_probe", name: "glob", input: { pattern: "../*.txt" } },
+          { id: "toolu_p201_read_probe", name: "Read", input: { file_path: outsideFile } },
+        ],
+        expectedInput: {
+          promptIncludes: [`tool="glob" round="1">\n"${CONFINEMENT_DENIAL}"`],
+          promptExcludes: [ESCAPE_NAME_SENTINEL, ESCAPE_CONTENT_SENTINEL],
+          priorTurnResultIncludes: [CONFINEMENT_DENIAL],
+          priorTurnResultExcludes: [ESCAPE_NAME_SENTINEL, ESCAPE_CONTENT_SENTINEL],
+        },
+      };
+    case "native":
+      return {
+        toolCalls: [
+          { id: "toolu_p201_find", name: "find_dependents", input: { path: "src/target.ts" } },
+          { id: "toolu_p201_who", name: "who_depends_on", input: { path: "src/target.ts" } },
+        ],
+      };
+  }
+}
+
+/** Boots a real daemon with planning tools enabled and the `mode` fixtures. Returns the trace rows. */
+async function bootAliasCutoverRun(
+  tempDir: string,
+  mode: AliasCutoverMode,
+  options: { strictParams?: boolean } = {},
+): Promise<IAliasCutoverRun> {
+  const configPath = join(tempDir, "exa.config.toml");
+  const portalDir = join(tempDir, "fixture-portal");
+  const fixturesDir = join(tempDir, "fixtures");
+  const marker = `${ALIAS_MARKER_PREFIX}${crypto.randomUUID().slice(0, 8)}`;
+  const outsideFile = join(tempDir, `${ESCAPE_NAME_SENTINEL}.txt`);
+
+  await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+  await Deno.writeTextFile(join(portalDir, "src", "target.ts"), `// ${marker}\nexport const target = "alias";\n`);
+  await Deno.writeTextFile(outsideFile, `${ESCAPE_CONTENT_SENTINEL}\n`);
+
+  const round = aliasCutoverRound(mode, marker, outsideFile);
+  const fixture = (
+    callIndex: number,
+    response: string,
+    extra: Pick<IRecordedResponse, "toolCalls" | "expectedInput">,
+  ): IRecordedResponse => ({
+    promptHash: `phase201-${callIndex}`,
+    promptPreview: `phase201 planning round ${callIndex}`,
+    response,
+    model: "cutover-mock",
+    tokens: { input: 1000, output: callIndex === 0 ? 0 : 300 },
+    recordedAt: "2026-09-26T00:00:00.000Z",
+    callSite: { scenarioId: PHASE201_SCENARIO, stepId: "planning", callIndex },
+    ...extra,
+  });
+  await Deno.mkdir(fixturesDir, { recursive: true });
+  await Deno.writeTextFile(
+    join(fixturesDir, "explore-round.json"),
+    JSON.stringify(fixture(0, "", { toolCalls: round.toolCalls })),
+  );
+  await Deno.writeTextFile(
+    join(fixturesDir, "final-round.json"),
+    JSON.stringify(
+      fixture(
+        1,
+        planningToolsPlanBody(marker),
+        { expectedInput: round.expectedInput },
+      ),
+    ),
+  );
+  writePlanningToolsCutoverConfig(configPath, tempDir, portalDir, fixturesDir, true);
+  // The real exa.config.toml, loaded and schema-validated by the daemon's ConfigService.
+  if (options.strictParams) await Deno.writeTextFile(configPath, "\n[tools]\nstrict_params = true\n", { append: true });
+
+  await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+  await Deno.copyFile(
+    join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+    join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+  );
+
+  const traceId = crypto.randomUUID();
+  const readPlan = () => {
+    const dir = join(tempDir, "Workspace", "Plans");
+    const plans = [...Deno.readDirSync(dir)];
+    return plans.length > 0 ? Deno.readTextFileSync(join(dir, plans[0].name)) : "";
+  };
+  await bootRealDaemon(configPath, 20000, {
+    midFlight: () => {
+      Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+      Deno.mkdirSync(join(tempDir, "Workspace", "Plans"), { recursive: true });
+      Deno.writeTextFileSync(
+        join(tempDir, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`),
+        "---\n" +
+          `trace_id: "${traceId}"\n` +
+          `created: "${new Date().toISOString()}"\n` +
+          "status: pending\n" +
+          "priority: normal\n" +
+          "agent_role: mock-agent\n" +
+          "portal: cutover-portal\n" +
+          `scenario_id: "${PHASE201_SCENARIO}"\n` +
+          'step_id: "planning"\n' +
+          "source: cli\n" +
+          'created_by: "test@example.com"\n' +
+          'subject: "Phase 201 tool alias cutover"\n' +
+          "---\n\n# Request\n\nInspect the portal target file and produce a plan.\n",
+      );
+    },
+    afterInjectMs: 60000,
+    waitForAfterInject: async () => {
+      const rows = await readPlanningCutoverActivity(configPath, traceId);
+      return rows.some((r) => PLANNING_END_EVENTS.includes(r.action_type)) &&
+        (mode !== "alias-read" || readPlan() !== "");
+    },
+  });
+  return { rows: await readPlanningCutoverActivity(configPath, traceId), planText: readPlan(), marker };
+}
+
+function payloadsOf<T>(rows: IPlanningCutoverRow[], actionType: string): T[] {
+  return rows.filter((r) => r.action_type === actionType).map((r) => JSON.parse(r.payload) as T);
+}
+
+function actionTypes(rows: IPlanningCutoverRow[]): string {
+  return JSON.stringify(rows.map((r) => r.action_type));
+}
+
+Deno.test({
+  name:
+    "[phase201-tool-alias-cutover] a real daemon boot executes Read {file_path} as read_file, journals the rewrite, delivers the marker to the next provider call, and the plan contains the marker",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase201-alias-read-cutover-" });
+    try {
+      const { rows, planText, marker } = await bootAliasCutoverRun(tempDir, "alias-read");
+
+      const rewrites = payloadsOf<IToolAliasRewrittenPayload>(rows, "tool.alias.rewritten");
+      assertEquals(rewrites.length, 1, `exactly one rewrite row. got: ${actionTypes(rows)}`);
+      assertEquals(rewrites[0].requestedName, "Read");
+      assertEquals(rewrites[0].canonicalName, "read_file");
+      assertEquals(rewrites[0].entryPoint, "planning_loop");
+      assertEquals(rewrites[0].renamedParams, [{ from: "file_path", to: "path" }]);
+
+      const calls = payloadsOf<IToolCallRow>(rows, "dynamic_tool_call");
+      assertEquals(calls.length, 1);
+      assertEquals(calls[0].tool, "read_file");
+      assertEquals(calls[0].args, { path: "src/target.ts" });
+      assert(
+        calls[0].resultSummary.includes(marker),
+        `the read result must carry the marker: ${calls[0].resultSummary}`,
+      );
+
+      // The final fixture throws unless the marker reached the actual priorTurn.
+      // A completed loop with no abort therefore proves delivery to the provider.
+      assertEquals(payloadsOf(rows, "planning.tools.completed").length, 1, actionTypes(rows));
+      assertEquals(payloadsOf(rows, "planning.tools.aborted").length, 0, actionTypes(rows));
+      assert(planText.includes(marker), "the written plan must carry the marker");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase201-tool-alias-cutover] both aliased attack probes are independently denied and no sentinel reaches the actual provider input",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase201-escape-cutover-" });
+    try {
+      const { rows, planText } = await bootAliasCutoverRun(tempDir, "escape");
+
+      const denials = payloadsOf<{ tool: string; params: Record<string, JSONValue> }>(
+        rows,
+        "security.path_access_denied",
+      );
+      assertEquals(denials.filter((d) => d.tool === "search_files" && d.params.pattern === "../*.txt").length, 1);
+      assertEquals(
+        denials.filter((d) => d.tool === "read_file" && String(d.params.path).includes(ESCAPE_NAME_SENTINEL)).length,
+        1,
+      );
+
+      const calls = payloadsOf<IToolCallRow>(rows, "dynamic_tool_call");
+      const glob = calls.filter((c) => c.tool === "search_files");
+      const read = calls.filter((c) => c.tool === "read_file");
+      assertEquals(glob.length, 1);
+      assertEquals(read.length, 1);
+      for (const call of [...glob, ...read]) {
+        assert(call.resultSummary.includes(CONFINEMENT_DENIAL), `denied result expected: ${call.resultSummary}`);
+        assertEquals(call.resultSummary.includes(ESCAPE_CONTENT_SENTINEL), false);
+        assertEquals(call.resultSummary.includes(ESCAPE_NAME_SENTINEL), false);
+      }
+
+      const rewrites = payloadsOf<IToolAliasRewrittenPayload>(rows, "tool.alias.rewritten");
+      assertEquals(rewrites.map((r) => `${r.requestedName}->${r.canonicalName}`).sort(), [
+        "Read->read_file",
+        "glob->search_files",
+      ]);
+
+      // The final fixture's expectedInput rejects either sentinel in the prompt or priorTurn.
+      assertEquals(payloadsOf(rows, "planning.tools.completed").length, 1, actionTypes(rows));
+      assertEquals(payloadsOf(rows, "planning.tools.aborted").length, 0, actionTypes(rows));
+      assertEquals(planText.includes(ESCAPE_CONTENT_SENTINEL), false);
+      assertEquals(planText.includes(ESCAPE_NAME_SENTINEL), false);
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase201-tool-alias-cutover] with the default config an aliased call's unknown parameter is journaled and the call runs; tools.strict_params=true in the real exa.config.toml rejects it before execution",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const defaultDir = await Deno.makeTempDir({ prefix: "phase201-strict-default-" });
+    const strictDir = await Deno.makeTempDir({ prefix: "phase201-strict-on-" });
+    try {
+      const lenient = await bootAliasCutoverRun(defaultDir, "alias-extra-param");
+      const lenientUnknown = payloadsOf<IToolParamUnknownPayload>(lenient.rows, "tool.param.unknown");
+      assertEquals(lenientUnknown.length, 1, actionTypes(lenient.rows));
+      assertEquals(lenientUnknown[0].tool, "read_file");
+      assertEquals(lenientUnknown[0].unknownParams, ["p201_extra"]);
+      assertEquals(lenientUnknown[0].strict, false);
+      const lenientCall = payloadsOf<IToolCallRow>(lenient.rows, "dynamic_tool_call");
+      assert(lenientCall[0].resultSummary.includes(lenient.marker), "the default run must execute the read");
+
+      const strict = await bootAliasCutoverRun(strictDir, "alias-extra-param", { strictParams: true });
+      const strictUnknown = payloadsOf<IToolParamUnknownPayload>(strict.rows, "tool.param.unknown");
+      assertEquals(strictUnknown.length, 1, actionTypes(strict.rows));
+      assertEquals(strictUnknown[0].strict, true);
+      const strictCall = payloadsOf<IToolCallRow>(strict.rows, "dynamic_tool_call");
+      assert(strictCall[0].resultSummary.includes("Unknown parameter"), strictCall[0].resultSummary);
+      assertEquals(strictCall[0].resultSummary.includes(strict.marker), false, "strict mode must not execute the read");
+    } finally {
+      await Deno.remove(defaultDir, { recursive: true }).catch(() => {});
+      await Deno.remove(strictDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[phase201-native-name-cutover] the real daemon's planning loop executes find_dependents under its canonical name and never executes who_depends_on",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase201-native-planning-" });
+    try {
+      const { rows } = await bootAliasCutoverRun(tempDir, "native");
+
+      const calls = payloadsOf<IToolCallRow>(rows, "dynamic_tool_call");
+      const find = calls.find((c) => c.tool === "find_dependents");
+      const who = calls.find((c) => c.tool === "who_depends_on");
+      assert(find, `find_dependents must run. got: ${actionTypes(rows)}`);
+      assertEquals(/error|not in the planning catalog|requires/i.test(find!.resultSummary), false, find!.resultSummary);
+      assert(who, "the retired name is journaled as a refused call");
+      assert(who!.resultSummary.includes("not in the planning catalog"), who!.resultSummary);
+      assertEquals(payloadsOf(rows, "tool.alias.rewritten").length, 0, "native names never rewrite");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+/** An approved legacy plan whose single TOML action the daemon's ExecutionLoop runs through ToolRegistry. */
+function approvedActionPlan(traceId: string, tool: string, params: string): string {
+  return "---\n" +
+    `trace_id: "${traceId}"\n` +
+    `request_id: "p201-${traceId.slice(0, 8)}"\n` +
+    "agent_role: mock-agent\n" +
+    "status: approved\n" +
+    `created_at: "${new Date().toISOString()}"\n` +
+    "---\n\n# Proposed Plan\n\n## Actions\n\n" +
+    "```toml\n" + `tool = "${tool}"\n[params]\n${params}\n` + "```\n";
+}
+
+const EXECUTION_END_EVENTS = ["execution.completed", "execution.failed"];
+
+Deno.test({
+  name:
+    "[phase201-native-name-cutover] the real daemon's execution loop runs run_deno_task under its canonical name and never executes deno_task or who_depends_on",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "phase201-native-execution-" });
+    try {
+      const configPath = join(tempDir, "exa.config.toml");
+      writeDaemonConfigWithMockAiNoQualityGate(configPath, tempDir);
+      await Deno.mkdir(join(tempDir, "Blueprints", "Agents"), { recursive: true });
+      await Deno.copyFile(
+        join(REPO_ROOT, "Blueprints", "Agents", "mock-agent.md"),
+        join(tempDir, "Blueprints", "Agents", "mock-agent.md"),
+      );
+      await setupGitRepo(tempDir);
+      const probes = [
+        { traceId: crypto.randomUUID(), tool: "run_deno_task", params: 'task = "fmt"' },
+        { traceId: crypto.randomUUID(), tool: "deno_task", params: 'task = "fmt"' },
+        { traceId: crypto.randomUUID(), tool: "who_depends_on", params: 'path = "x.ts"' },
+      ];
+      const allEnded = async () => {
+        for (const probe of probes) {
+          const rows = await readPlanningCutoverActivity(configPath, probe.traceId);
+          if (!rows.some((r) => EXECUTION_END_EVENTS.includes(r.action_type))) return false;
+        }
+        return true;
+      };
+
+      await bootRealDaemon(configPath, 20000, {
+        midFlight: () => {
+          const activeDir = join(tempDir, "Workspace", "Active");
+          Deno.mkdirSync(activeDir, { recursive: true });
+          for (const probe of probes) {
+            Deno.writeTextFileSync(
+              join(activeDir, `p201-${probe.traceId.slice(0, 8)}_plan.md`),
+              approvedActionPlan(probe.traceId, probe.tool, probe.params),
+            );
+          }
+        },
+        afterInjectMs: 60000,
+        waitForAfterInject: allEnded,
+      });
+
+      const [canonical, retiredTask, retiredDependents] = await Promise.all(
+        probes.map((probe) => readPlanningCutoverActivity(configPath, probe.traceId)),
+      );
+      const completedTools = (rows: IPlanningCutoverRow[]) =>
+        payloadsOf<{ tool: string }>(rows, "execution.action_completed").map((p) => p.tool);
+      const failedTools = (rows: IPlanningCutoverRow[]) => [
+        ...new Set(payloadsOf<{ tool: string }>(rows, "execution.action_failed").map((p) => p.tool)),
+      ];
+      const failureErrors = (rows: IPlanningCutoverRow[]) =>
+        payloadsOf<{ error: string }>(rows, "execution.action_failed").map((p) => p.error).join(" | ");
+
+      assertEquals(completedTools(canonical), ["run_deno_task"], actionTypes(canonical));
+      assertEquals(completedTools(retiredTask), [], actionTypes(retiredTask));
+      assertEquals(failedTools(retiredTask), ["deno_task"], actionTypes(retiredTask));
+      assertEquals(completedTools(retiredDependents), [], actionTypes(retiredDependents));
+      assertEquals(failedTools(retiredDependents), ["who_depends_on"], actionTypes(retiredDependents));
+      for (const rows of [retiredTask, retiredDependents]) {
+        assertEquals(payloadsOf(rows, "tool.alias.rewritten").length, 0, "retired native names never rewrite");
+        assert(failureErrors(rows).includes("not found"), failureErrors(rows));
+      }
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }

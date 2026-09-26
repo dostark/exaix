@@ -405,3 +405,34 @@ Deno.test({
     );
   },
 });
+
+// Alias journaling
+
+Deno.test({
+  name:
+    "[daemon wiring][phase201] the Team dispatcher from buildTeamMcpClient journals one tool.alias.rewritten with entryPoint mcp for a general-purpose alias",
+  async fn() {
+    const rewrites: LogMetadata[] = [];
+    const logger: IEventLogger = {
+      log: () => Promise.resolve(),
+      info: (action: string, _target: string | null, payload?: LogMetadata) => {
+        if (action === DomainEventType.ToolAliasRewritten) rewrites.push(payload ?? {});
+        return Promise.resolve();
+      },
+      warn: () => Promise.resolve(),
+      error: () => Promise.resolve(),
+      fatal: () => Promise.resolve(),
+      debug: () => Promise.resolve(),
+      child: () => logger,
+    };
+
+    const dispatcher = await buildTeamMcpClient(createStubContext(), new AllowAllPermissionsService(), logger);
+    assert(dispatcher, "the Team dispatcher must build");
+    await dispatcher.callTool("Read" as never, { portal: "p", agent_role: "a", file_path: "x.ts" }).catch(() => {});
+
+    assertEquals(rewrites.length, 1);
+    assertEquals(rewrites[0].requestedName, "Read");
+    assertEquals(rewrites[0].canonicalName, "read_file");
+    assertEquals(rewrites[0].entryPoint, "mcp");
+  },
+});

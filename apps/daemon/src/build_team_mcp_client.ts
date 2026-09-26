@@ -24,7 +24,7 @@ export async function buildTeamMcpClient(
 ): Promise<LocalToolDispatcher | undefined> {
   try {
     const { buildDynamicHandlers } = await import("@exaix-team/mcp-server");
-    return new LocalToolDispatcher(context, buildDynamicHandlers(context, portalPermissions));
+    return new LocalToolDispatcher(context, buildDynamicHandlers(context, portalPermissions), logger);
   } catch (error) {
     logger.error(DomainEventType.DynamicToolsInitFailed, "daemon", {
       error: error instanceof Error ? error.message : String(error),
