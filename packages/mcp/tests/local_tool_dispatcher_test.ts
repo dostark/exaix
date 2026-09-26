@@ -7,12 +7,15 @@
  */
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { LocalToolDispatcher } from "@exaix/mcp/server";
-import { appendToolChoiceHint, McpToolName } from "@exaix/mcp";
+import { appendToolChoiceHint, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
+import { TOOL_ALIASES, ToolCallEntryPoint } from "@exaix/core";
+import { DomainEventType, type IToolAliasRewrittenPayload } from "@exaix/core/events";
+import { EventLogger } from "@exaix/core/logger";
 import { ToolHandler } from "@exaix/mcp/server";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { createStubContext } from "@exaix/testing";
+import { createStubContext, initTestDbService } from "@exaix/testing";
 
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;
 
@@ -179,4 +182,104 @@ Deno.test("LocalToolDispatcher - Map construction: tool not in map returns not f
     Error,
     "not found",
   );
+});
+
+class RecordingTool extends ToolHandler {
+  readonly calls: Array<Record<string, JSONValue>> = [];
+  constructor(private readonly toolName: string, private readonly properties: Record<string, JSONValue>) {
+    super(mockContext);
+  }
+  execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
+    this.calls.push(args);
+    return Promise.resolve({ content: [{ type: "text", text: `ran:${this.toolName}` }] });
+  }
+  getToolDefinition(): IToolDefinition {
+    return { name: this.toolName, description: "", inputSchema: { type: "object", properties: this.properties } };
+  }
+}
+
+async function withJournal(
+  fn: (logger: EventLogger, rewrites: () => Promise<IToolAliasRewrittenPayload[]>) => Promise<void>,
+) {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    await fn(logger, async () => {
+      await db.waitForFlush();
+      return db.getActivitiesByActionType(DomainEventType.ToolAliasRewritten)
+        .map((row) => JSON.parse(row.payload) as IToolAliasRewrittenPayload);
+    });
+  } finally {
+    await cleanup();
+  }
+}
+
+Deno.test("[mcp][local] a general-purpose alias executes the canonical handler and emits one rewrite with entryPoint mcp", async () => {
+  await withJournal(async (logger, rewrites) => {
+    const read = new RecordingTool(McpToolName.READ_FILE, { path: { type: "string" }, portal: { type: "string" } });
+    const client = new LocalToolDispatcher(mockContext, [read], logger);
+
+    assertEquals(await client.callTool("Read" as McpToolName, { portal: "p", file_path: "a.ts" }), "ran:read_file");
+    assertEquals(read.calls, [{ portal: "p", path: "a.ts" }]);
+    assertEquals(await rewrites(), [{
+      requestedName: "Read",
+      canonicalName: McpToolName.READ_FILE,
+      renamedParams: [{ from: "file_path", to: "path" }],
+      droppedParams: [],
+      entryPoint: ToolCallEntryPoint.MCP,
+    }]);
+  });
+});
+
+Deno.test("[mcp][local] query_symbols {query} and {name} reach the handler as {name}; the canonical key wins a conflict", async () => {
+  await withJournal(async (logger, rewrites) => {
+    const symbols = new RecordingTool(McpToolName.PORTAL_SYMBOLS, {
+      portal: { type: "string" },
+      name: { type: "string" },
+      kind: { type: "string" },
+    });
+    const client = new LocalToolDispatcher(mockContext, [symbols], logger);
+
+    await client.callTool(McpToolName.PORTAL_SYMBOLS, { portal: "p", query: "greet" });
+    await client.callTool(McpToolName.PORTAL_SYMBOLS, { portal: "p", name: "greet" });
+    await client.callTool(McpToolName.PORTAL_SYMBOLS, { portal: "p", query: "loser", name: "greet" });
+
+    assertEquals(symbols.calls, [
+      { portal: "p", name: "greet" },
+      { portal: "p", name: "greet" },
+      { portal: "p", name: "greet" },
+    ]);
+    const events = await rewrites();
+    assertEquals(events.length, 2);
+    assertEquals(events[1].droppedParams, ["query"]);
+  });
+});
+
+Deno.test("[mcp][local] retired native names and native case/whitespace variants never reach a handler", async () => {
+  const symbols = new RecordingTool(McpToolName.PORTAL_SYMBOLS, { name: { type: "string" } });
+  const client = new LocalToolDispatcher(mockContext, [symbols]);
+  for (const name of ["exaix_portal_symbols", "list_symbols", " QUERY_SYMBOLS ", "Query_Symbols"]) {
+    await assertRejects(() => client.callTool(name as McpToolName, {}), Error, "not found");
+  }
+  assertEquals(symbols.calls, []);
+});
+
+Deno.test("[mcp][security] an alias resolves to the same approval decision as its canonical tool; an approval tool's variant never executes", async () => {
+  const client = new LocalToolDispatcher(mockContext, [new RecordingTool(McpToolName.CREATE_REQUEST, {})]);
+  for (const [alias, { canonical }] of Object.entries(TOOL_ALIASES)) {
+    if (!TOOL_MANIFEST.some((entry) => entry.name === canonical)) continue;
+    assertEquals(
+      client.requiresHumanApproval(alias as McpToolName),
+      client.requiresHumanApproval(canonical as McpToolName),
+      alias,
+    );
+  }
+  assertEquals(client.requiresHumanApproval(McpToolName.CREATE_REQUEST), true);
+  await assertRejects(() => client.callTool(" EXAIX_CREATE_REQUEST " as McpToolName, {}), Error, "not found");
+});
+
+Deno.test("[mcp][local] getToolDefinitions resolves a general-purpose alias to the canonical definition", () => {
+  const client = new LocalToolDispatcher(mockContext, [new RecordingTool(McpToolName.READ_FILE, {})]);
+  assertEquals(client.getToolDefinitions(["Read" as McpToolName]).map((d) => d.name), [McpToolName.READ_FILE]);
+  assertEquals(client.getToolDefinitions(["exaix_portal_symbols" as McpToolName]), []);
 });

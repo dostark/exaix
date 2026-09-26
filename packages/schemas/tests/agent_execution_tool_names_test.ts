@@ -60,3 +60,13 @@ Deno.test("[agent_execution_options] distinguishes undefined permitted_tools fro
   assertEquals(undef.permitted_tools, undefined);
   assertEquals(empty.permitted_tools, []);
 });
+
+Deno.test("[naming] execution options accept query_symbols and reject exaix_portal_symbols and its variants", () => {
+  assertEquals(
+    InputValidator.validateAgentExecutionOptions(baseOptions(["query_symbols"])).permitted_tools,
+    ["query_symbols"],
+  );
+  for (const tool of ["exaix_portal_symbols", " EXAIX_PORTAL_SYMBOLS ", "Query_Symbols"]) {
+    assertThrows(() => InputValidator.validateAgentExecutionOptions(baseOptions([tool])), z.ZodError, undefined, tool);
+  }
+});

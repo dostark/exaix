@@ -186,3 +186,18 @@ Deno.test("[llm_client] an excluded native alias is rejected", async () => {
     })
   );
 });
+
+Deno.test("[naming] a dynamic-step decision naming query_symbols parses; exaix_portal_symbols is rejected", async () => {
+  const decide = (tool: string) =>
+    makeClient(JSON.stringify({ reasoning: "symbols", action: { type: "tool_call", tool, args: {} } }))
+      .reasonNextAction({
+        agent_role: mockAgentRole,
+        stepObjective: "List symbols",
+        accumulatedContext: "",
+        availableTools: mockTools,
+        iteration: 1,
+        maxIterations: 2,
+      });
+  assertEquals((await decide("query_symbols")).tool, McpToolName.PORTAL_SYMBOLS);
+  await assertRejects(() => decide("exaix_portal_symbols"));
+});

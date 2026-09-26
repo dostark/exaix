@@ -565,3 +565,31 @@ Deno.test("[naming][react_loop] native calls and rendered names honor the rename
     assertEquals(provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0], permitted.join(", "));
   }
 });
+
+Deno.test("[naming][react_loop] query_symbols renders and executes with {query} normalized to {name}; exaix_portal_symbols never executes", async () => {
+  for (const name of ["query_symbols", "exaix_portal_symbols"]) {
+    const calls: Array<{ tool: string; params: TestToolParams }> = [];
+    const executor = {
+      ...mockExecutor,
+      toolRegistry: {
+        execute: (tool: string, params: TestToolParams) => {
+          calls.push({ tool, params });
+          return Promise.resolve({ success: true, data: [] });
+        },
+        getTools: createCoreToolSchemas,
+        getBaseDir: () => "/nonexistent-test-basedir",
+      },
+    };
+    const provider = new MockModelProvider([
+      `${REACT_THOUGHT_PREFIX}Symbols.\n\`\`\`toml\n[[actions]]\ntool = "${name}"\n[actions.params]\nquery = "greet"\n\`\`\``,
+      `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
+    ]);
+    await new ReActLoopStrategy(executor as ReActExecutor, provider).execute(
+      testBlueprint,
+      testContext,
+      { ...createOptions("test"), permitted_tools: ["query_symbols"] },
+    );
+    assertEquals(provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0], "query_symbols");
+    assertEquals(calls, name === "query_symbols" ? [{ tool: "query_symbols", params: { name: "greet" } }] : []);
+  }
+});

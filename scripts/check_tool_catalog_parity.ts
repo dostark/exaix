@@ -28,6 +28,10 @@ if (import.meta.main) {
     }
   }
 
+  for (const exception of result.documentedExceptions) {
+    console.log(`  ℹ️  ${exception}`);
+  }
+
   if (result.success) {
     console.log("✅ Tool catalog parity check passed.");
     Deno.exit(0);

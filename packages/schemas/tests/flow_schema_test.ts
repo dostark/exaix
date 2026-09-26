@@ -535,3 +535,18 @@ Deno.test("[schemas] flow permitted_tools and compensate calls reject a retired 
   });
   assertEquals(parsed.success, false);
 });
+
+Deno.test("[naming] flow compensate calls accept query_symbols and reject exaix_portal_symbols/list_symbols after the enum rename", () => {
+  const step = (tool: string) => ({
+    id: "symbols-step",
+    name: "Symbols step",
+    agent_role: "senior-coder",
+    onError: { action: "retry", compensate: [{ tool, params: { portal: "p" } }] },
+  });
+  const parsed = FlowStepSchema.safeParse(step("query_symbols"));
+  assertEquals(parsed.success, true);
+  if (parsed.success) assertEquals(parsed.data.onError?.compensate?.[0].tool, "query_symbols");
+  for (const retired of ["exaix_portal_symbols", "list_symbols", " QUERY_SYMBOLS "]) {
+    assertEquals(FlowStepSchema.safeParse(step(retired)).success, false, retired);
+  }
+});

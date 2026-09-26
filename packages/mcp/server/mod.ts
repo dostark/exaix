@@ -11,6 +11,7 @@
 
 export * from "./local_tool_dispatcher.ts";
 export * from "./tool_handler.ts";
+export * from "./mcp_tool_call_canonicalizer.ts";
 export { startDogfoodContextServer } from "./dogfood_context_server.ts";
 export type {
   IDogfoodContextServerDeps,

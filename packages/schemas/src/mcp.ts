@@ -210,7 +210,7 @@ export const SearchFilesToolArgsSchema = z.object({
 
 export const PortalSymbolsToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
-  query: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
   kind: SymbolEntrySchema.shape.kind.optional(),
   limit: z.number().int().positive().default(DEFAULT_QUERY_LIMIT),
   agent_role: z.string().min(1, MCP_ERR_AGENT_ROLE_REQUIRED).default(DEFAULT_MCP_AGENT_ROLE_ID),

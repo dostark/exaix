@@ -111,8 +111,7 @@ const CANONICAL_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
 ]);
 
 /** Exaix-specific tool names (v1.7 category policy): one exact canonical spelling everywhere,
- *  no aliases, no case/whitespace normalization. Grows as a later step renames
- *  `exaix_portal_symbols`. */
+ *  no aliases, no case/whitespace normalization. */
 export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
   ToolName.DENO_TASK,
   ToolName.WHO_DEPENDS_ON,
@@ -132,14 +131,13 @@ export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set<string>([
   McpToolName.PORTAL_SYMBOLS,
 ]);
 
-/** Retired native names/aliases. This is rejection data, never an alias map. It grows as
- *  each rename lands: `dependents`/`list_symbols`/`who_depends_on`/`deno_task` today,
- *  `exaix_portal_symbols` later. */
+/** Retired native names/aliases. This is rejection data, never an alias map. */
 const EXCLUDED_NATIVE_NAMES: ReadonlySet<string> = new Set<string>([
   "dependents",
   "list_symbols",
   "who_depends_on",
   "deno_task",
+  "exaix_portal_symbols",
 ]);
 
 /** True when `name` is a rejected native-tool spelling. Native names are exact-only. A case

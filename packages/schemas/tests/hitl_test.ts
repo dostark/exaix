@@ -122,3 +122,9 @@ Deno.test("[naming][hitl] a rule naming the legacy grep_search alias matches sea
   const rule = HitlRuleSchema.parse({ tool: "grep_search" });
   assertEquals(rule.tool, "search_text");
 });
+
+Deno.test("[naming][security][hitl] a query_symbols rule is valid; an exaix_portal_symbols rule fails validation after the rename", () => {
+  assertEquals(HitlRuleSchema.parse({ tool: "query_symbols" }).tool, "query_symbols");
+  assertFalse(HitlRuleSchema.safeParse({ tool: "exaix_portal_symbols" }).success);
+  assertFalse(HitlRuleSchema.safeParse({ tool: " EXAIX_PORTAL_SYMBOLS " }).success);
+});

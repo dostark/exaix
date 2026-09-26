@@ -289,3 +289,13 @@ Deno.test("[tool_aliases] NATIVE_TOOL_NAMES contains the current exaix-specific 
   }
   assertFalse(NATIVE_TOOL_NAMES.has(ToolName.SEARCH_FILES));
 });
+
+Deno.test("[naming] McpToolName.PORTAL_SYMBOLS is query_symbols; exaix_portal_symbols and its variants are rejected", () => {
+  assertEquals(McpToolName.PORTAL_SYMBOLS as string, ToolName.QUERY_SYMBOLS as string);
+  assertFalse(Object.hasOwn(TOOL_ALIASES, "exaix_portal_symbols"));
+  for (const retired of ["exaix_portal_symbols", " EXAIX_PORTAL_SYMBOLS ", "list_symbols"]) {
+    assert(isRejectedNativeToolName(retired), retired);
+    assertEquals(canonicalizeToolName(retired), retired);
+  }
+  assertFalse(isRejectedNativeToolName("query_symbols"));
+});

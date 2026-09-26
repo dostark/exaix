@@ -12,6 +12,7 @@
  * @architectural-layer MCP
  * @related-files [packages/mcp/src/manifest.ts, packages/tool-runtime/src/tool_schemas.ts, scripts/check_tool_catalog_parity.ts]
  */
+import { ToolName } from "@exaix/core";
 import type { ITool } from "@exaix/core/types";
 import type { IToolManifestEntry } from "./manifest.ts";
 
@@ -20,8 +21,19 @@ export interface IToolCatalogParityResult {
   success: boolean;
   errors: string[];
   warnings: string[];
+  /** Reviewed registry-only parameters, reported instead of flagged as drift. */
+  documentedExceptions: string[];
   checkedTools: number;
 }
+
+/** Reviewed registry-only parameters of shared operations (tool -> parameter -> reason). */
+export const DOCUMENTED_PARAM_EXCEPTIONS: Readonly<Partial<Record<string, Readonly<Record<string, string>>>>> = {
+  [ToolName.QUERY_SYMBOLS]: { file: "The MCP handler scopes symbols by portal, not by file." },
+  [ToolName.RUN_COMMAND]: {
+    cwd: "The registry runs inside its execution root. The MCP handler runs at the portal root.",
+  },
+  [ToolName.MOVE_FILE]: { overwrite: "The MCP handler never overwrites an existing destination." },
+};
 
 /** ToolRegistry executes within an already-resolved single-portal, single-agent-role
  *  context, so it never accepts these — excluded from comparison so they don't flag
@@ -49,6 +61,7 @@ export function checkToolCatalogParity(
 ): IToolCatalogParityResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const documentedExceptions: string[] = [];
   const manifestByName = new Map(manifestEntries.map((entry) => [entry.name, entry]));
 
   for (const registryTool of registryTools) {
@@ -88,8 +101,15 @@ export function checkToolCatalogParity(
       continue;
     }
 
-    const registryProps = withoutAuthParams(Object.keys(registryTool.parameters.properties));
-    const manifestProps = withoutAuthParams(Object.keys(inputSchema.properties ?? {}));
+    const exceptions = DOCUMENTED_PARAM_EXCEPTIONS[registryTool.name] ?? {};
+    for (const [param, reason] of Object.entries(exceptions)) {
+      documentedExceptions.push(`Tool '${registryTool.name}': '${param}' is registry-only. ${reason}`);
+    }
+    const isException = (key: string) => Object.hasOwn(exceptions, key);
+    const registryProps = withoutAuthParams(
+      Object.keys(registryTool.parameters.properties).filter((k) => !isException(k)),
+    );
+    const manifestProps = withoutAuthParams(Object.keys(inputSchema.properties ?? {}).filter((k) => !isException(k)));
     if (!setsEqual(registryProps, manifestProps)) {
       warnings.push(
         `Tool '${registryTool.name}': optional-param mismatch — ToolRegistry properties ` +
@@ -102,6 +122,7 @@ export function checkToolCatalogParity(
     success: errors.length === 0,
     errors,
     warnings,
+    documentedExceptions,
     checkedTools: registryTools.length,
   };
 }

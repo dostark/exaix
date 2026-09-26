@@ -17,10 +17,12 @@
  */
 
 import {
+  type ISharedToolOperation,
   isRejectedNativeToolName,
   MCP_ONLY_TOOL_NAMES,
   McpToolName,
   NATIVE_TOOL_NAMES,
+  SHARED_TOOL_OPERATIONS,
   TOOL_ALIASES,
   TOOL_NAME_VERBS,
   ToolName,
@@ -90,6 +92,46 @@ export function findMcpOnlyViolations(
   return errors;
 }
 
+/** D9: every declared row resolves to its canonical string in both enums.
+ *  Every value present in both enums must be a declared row.
+ *  Semantic identity of unmatched operations is a review decision.
+ *  This check compares only declared members and literal intersections. */
+export function findSharedOperationViolations(
+  rows: readonly ISharedToolOperation[],
+  toolNames: Readonly<Record<string, string>>,
+  mcpToolNames: Readonly<Record<string, string>>,
+): string[] {
+  const errors: string[] = [];
+  for (const row of rows) {
+    const registryValue = toolNames[row.toolNameMember];
+    const mcpValue = mcpToolNames[row.mcpToolNameMember];
+    if (registryValue !== row.canonical || mcpValue !== row.canonical) {
+      errors.push(
+        `SHARED_TOOL_OPERATIONS "${row.canonical}": ToolName.${row.toolNameMember} = "${registryValue}", ` +
+          `McpToolName.${row.mcpToolNameMember} = "${mcpValue}"`,
+      );
+    }
+  }
+  const declared = new Set(rows.map((row) => row.canonical));
+  const mcpValues = new Set(Object.values(mcpToolNames));
+  for (const value of new Set(Object.values(toolNames))) {
+    if (mcpValues.has(value) && !declared.has(value)) {
+      errors.push(`"${value}" is in both ToolName and McpToolName but has no SHARED_TOOL_OPERATIONS row`);
+    }
+  }
+  return errors;
+}
+
+/** D8: the MCP export advertises canonical names only, so no export value may be an alias key. */
+export function findExportAliasViolations(
+  mcpToolValues: readonly string[],
+  aliases: Readonly<Record<string, { canonical: string }>>,
+): string[] {
+  return mcpToolValues
+    .filter((value) => Object.hasOwn(aliases, value))
+    .map((value) => `McpToolName "${value}" is a TOOL_ALIASES key; MCP exports must be canonical`);
+}
+
 /** A catalog or registration may expose only ToolName values, `exaix_` control-plane tools
  *  or declared MCP-only exceptions. It must never expose a retired or variant native name. */
 export function findCatalogViolations(
@@ -121,6 +163,8 @@ if (import.meta.main) {
     ...findNamingViolations(ToolName, TOOL_NAME_VERBS),
     ...findAliasViolations(TOOL_ALIASES, canonicalToolNames, NATIVE_TOOL_NAMES),
     ...findMcpOnlyViolations(Object.values(McpToolName), toolNameValues, mcpOnlyNames),
+    ...findSharedOperationViolations(SHARED_TOOL_OPERATIONS, ToolName, McpToolName),
+    ...findExportAliasViolations(Object.values(McpToolName), TOOL_ALIASES),
     ...findCatalogViolations("createCoreToolSchemas", registryNames, toolNameValues, mcpOnlyNames),
     ...findCatalogViolations("TOOL_MANIFEST", manifestNames, toolNameValues, mcpOnlyNames),
   ];

@@ -1,14 +1,14 @@
 schema_version: "1.0.0"
-# Asserts exaix_portal_symbols end to end through the real MCP server: refuses before the
+# Asserts query_symbols end to end through the real MCP server: refuses before the
 # portal has ever been analyzed, then serves the persisted symbolMap once knowledge.json
 # exists, ranked by pageRankScore and filterable by name substring / kind / limit. Issue #3:
 # PortalKnowledgeService's symbol extraction was computed and persisted but had no agent-facing
 # read path — this is the tool that closes that gap, and the scenario this manifest requires
 # every docs-visible tool to carry (tests/eval/tool_eval_parity_test.ts, entity:<tool-name>).
 id: "tools-portal-symbols"
-title: "Domain tool — exaix_portal_symbols serves a portal's persisted code symbols"
+title: "Domain tool — query_symbols serves a portal's persisted code symbols"
 pack: "mcp_tools_extended"
-tags: ["domain", "subsystem:tools", "entity:exaix_portal_symbols"]
+tags: ["domain", "subsystem:tools", "entity:query_symbols"]
 request_fixture: "fixtures/requests/mcp_tools_extended/exaix_create_request.md"
 mode_support: ["auto"]
 portals: []
@@ -42,7 +42,7 @@ steps:
 
   - id: "not-yet-analyzed"
     type: "run-script"
-    name: "exaix_portal_symbols refuses before the portal has ever been analyzed"
+    name: "query_symbols refuses before the portal has ever been analyzed"
     command: "deno"
     args:
       - "run"
@@ -50,7 +50,7 @@ steps:
       - "--config"
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "exaix_portal_symbols"
+      - "query_symbols"
       - '{"portal":"tools","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
@@ -97,7 +97,7 @@ steps:
 
   - id: "query-all-symbols"
     type: "run-script"
-    name: "exaix_portal_symbols ranks results by pageRankScore descending"
+    name: "query_symbols ranks results by pageRankScore descending"
     command: "deno"
     args:
       - "run"
@@ -105,7 +105,7 @@ steps:
       - "--config"
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "exaix_portal_symbols"
+      - "query_symbols"
       - '{"portal":"tools","agent_role":"tools-eval"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
@@ -117,7 +117,7 @@ steps:
 
   - id: "query-filtered-by-kind"
     type: "run-script"
-    name: "exaix_portal_symbols filters by symbol kind"
+    name: "query_symbols filters by symbol kind"
     command: "deno"
     args:
       - "run"
@@ -125,7 +125,7 @@ steps:
       - "--config"
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "exaix_portal_symbols"
+      - "query_symbols"
       - '{"portal":"tools","agent_role":"tools-eval","kind":"interface"}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
@@ -137,7 +137,7 @@ steps:
 
   - id: "query-filtered-by-name-and-limit"
     type: "run-script"
-    name: "exaix_portal_symbols combines a name-substring filter with limit"
+    name: "query_symbols combines a legacy {query} name-substring filter with limit (parameter alias)"
     command: "deno"
     args:
       - "run"
@@ -145,7 +145,7 @@ steps:
       - "--config"
       - "$FRAMEWORK_HOME/../../deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "exaix_portal_symbols"
+      - "query_symbols"
       - '{"portal":"tools","agent_role":"tools-eval","query":"greet","limit":1}'
     env:
       EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"

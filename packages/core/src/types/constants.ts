@@ -3572,6 +3572,40 @@ export const MCP_ONLY_TOOL_NAMES: readonly McpToolName[] = [
   McpToolName.GIT_WORKTREE,
 ];
 
+/** One operation that both the registry (`ToolName`) and the MCP export (`McpToolName`) expose. */
+export interface ISharedToolOperation {
+  canonical: string;
+  toolNameMember: keyof typeof ToolName;
+  mcpToolNameMember: keyof typeof McpToolName;
+}
+
+/** D9 source of truth: each shared operation has one canonical name in both enums.
+ *  The `check:tool-naming` gate asserts both members resolve to `canonical`.
+ *  It also requires a row for every value present in both enums.
+ *  Classify any new unmatched export in review. */
+export const SHARED_TOOL_OPERATIONS: readonly ISharedToolOperation[] = [
+  { canonical: ToolName.READ_FILE, toolNameMember: "READ_FILE", mcpToolNameMember: "READ_FILE" },
+  { canonical: ToolName.WRITE_FILE, toolNameMember: "WRITE_FILE", mcpToolNameMember: "WRITE_FILE" },
+  { canonical: ToolName.RUN_COMMAND, toolNameMember: "RUN_COMMAND", mcpToolNameMember: "RUN_COMMAND" },
+  { canonical: ToolName.LIST_DIRECTORY, toolNameMember: "LIST_DIRECTORY", mcpToolNameMember: "LIST_DIRECTORY" },
+  { canonical: ToolName.SEARCH_FILES, toolNameMember: "SEARCH_FILES", mcpToolNameMember: "SEARCH_FILES" },
+  {
+    canonical: ToolName.CREATE_DIRECTORY,
+    toolNameMember: "CREATE_DIRECTORY",
+    mcpToolNameMember: "CREATE_DIRECTORY",
+  },
+  { canonical: ToolName.PATCH_FILE, toolNameMember: "PATCH_FILE", mcpToolNameMember: "PATCH_FILE" },
+  { canonical: ToolName.DELETE_FILE, toolNameMember: "DELETE_FILE", mcpToolNameMember: "DELETE_FILE" },
+  { canonical: ToolName.MOVE_FILE, toolNameMember: "MOVE_FILE", mcpToolNameMember: "MOVE_FILE" },
+  {
+    canonical: ToolName.GIT_CREATE_BRANCH,
+    toolNameMember: "GIT_CREATE_BRANCH",
+    mcpToolNameMember: "GIT_CREATE_BRANCH",
+  },
+  { canonical: ToolName.GIT_COMMIT, toolNameMember: "GIT_COMMIT", mcpToolNameMember: "GIT_COMMIT" },
+  { canonical: ToolName.QUERY_SYMBOLS, toolNameMember: "QUERY_SYMBOLS", mcpToolNameMember: "PORTAL_SYMBOLS" },
+];
+
 /** Allowed first tokens of a `<verb>_<object>` tool name (`exaix` is the MCP-only
  *  control-plane namespace). */
 export const TOOL_NAME_VERBS: readonly string[] = [

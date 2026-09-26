@@ -139,3 +139,18 @@ Deno.test("[blueprint_service] distinguishes undefined permitted_tools from an e
     await cleanup();
   }
 });
+
+Deno.test("[naming] BlueprintService accepts query_symbols and rejects exaix_portal_symbols and its variants", async () => {
+  const { root, service, cleanup } = await setup();
+  try {
+    await writeBlueprint(root, "agent-qs", blueprintContent(toolsFrontmatter("agent-qs", "query_symbols")));
+    assertEquals((await service.loadBlueprint("agent-qs")).blueprint.permitted_tools, ["query_symbols"]);
+    for (const [index, tool] of ["exaix_portal_symbols", " EXAIX_PORTAL_SYMBOLS "].entries()) {
+      const role = `agent-retired-portal-${index}`;
+      await writeBlueprint(root, role, blueprintContent(toolsFrontmatter(role, tool)));
+      await assertRejects(() => service.loadBlueprint(role), SafeError);
+    }
+  } finally {
+    await cleanup();
+  }
+});

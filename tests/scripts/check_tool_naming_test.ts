@@ -13,14 +13,17 @@ import { assertEquals } from "@std/assert";
 import {
   findAliasViolations,
   findCatalogViolations,
+  findExportAliasViolations,
   findMcpOnlyViolations,
   findNamingViolations,
+  findSharedOperationViolations,
 } from "../../scripts/check_tool_naming.ts";
 import {
   EXECUTION_TOOL_NAMES,
   MCP_ONLY_TOOL_NAMES,
   McpToolName,
   NATIVE_TOOL_NAMES,
+  SHARED_TOOL_OPERATIONS,
   TOOL_ALIASES,
   TOOL_NAME_VERBS,
   ToolName,
@@ -123,4 +126,27 @@ Deno.test("[naming] a catalog exposing a retired native name or an unknown name 
   const manifestNames = TOOL_MANIFEST.map((entry) => entry.name);
   assertEquals(findCatalogViolations("createCoreToolSchemas", registryNames, toolNameValues, mcpOnlyNames), []);
   assertEquals(findCatalogViolations("TOOL_MANIFEST", manifestNames, toolNameValues, mcpOnlyNames), []);
+});
+
+Deno.test("[naming] every row of SHARED_TOOL_OPERATIONS resolves to the same string in ToolName and McpToolName", () => {
+  assertEquals(SHARED_TOOL_OPERATIONS.length, 12);
+  assertEquals(findSharedOperationViolations(SHARED_TOOL_OPERATIONS, ToolName, McpToolName), []);
+});
+
+Deno.test("[naming] a deliberately mismatched shared-operation name fails the check", () => {
+  const mcpRenamed = { ...McpToolName, READ_FILE: "read_text" };
+  const errors = findSharedOperationViolations(SHARED_TOOL_OPERATIONS, ToolName, mcpRenamed);
+  assertEquals(errors.some((e) => e.includes("read_file")), true);
+});
+
+Deno.test("[naming] a tool present in both enums but missing from SHARED_TOOL_OPERATIONS fails the check", () => {
+  const withoutRead = SHARED_TOOL_OPERATIONS.filter((row) => row.canonical !== ToolName.READ_FILE);
+  const errors = findSharedOperationViolations(withoutRead, ToolName, McpToolName);
+  assertEquals(errors.length, 1);
+  assertEquals(errors[0].includes("read_file"), true);
+});
+
+Deno.test("[naming] an McpToolName value that is an alias key fails the check (exports stay canonical)", () => {
+  assertEquals(findExportAliasViolations(Object.values(McpToolName), TOOL_ALIASES), []);
+  assertEquals(findExportAliasViolations([...Object.values(McpToolName), "glob"], TOOL_ALIASES).length, 1);
 });

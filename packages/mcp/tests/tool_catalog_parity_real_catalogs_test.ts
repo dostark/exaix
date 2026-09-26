@@ -25,3 +25,17 @@ Deno.test("[regression] checkToolCatalogParity finds zero required-param or side
   assertEquals(result.errors, []);
   assertEquals(result.success, true);
 });
+
+Deno.test("[parity] check:tool-catalog-parity compares query_symbols and reports its file parameter as a documented exception", () => {
+  const result = checkToolCatalogParity(createCoreToolSchemas(), TOOL_MANIFEST);
+
+  assertEquals(result.documentedExceptions.some((e) => e.startsWith("Tool 'query_symbols': 'file'")), true);
+  assertEquals(result.warnings.filter((w) => w.includes("'query_symbols'")), []);
+});
+
+Deno.test("[parity] the shared operations report no unexplained parameter divergence", () => {
+  const result = checkToolCatalogParity(createCoreToolSchemas(), TOOL_MANIFEST);
+
+  assertEquals(result.warnings.filter((w) => w.includes("optional-param mismatch")), []);
+  assertEquals(result.documentedExceptions.length, 3);
+});

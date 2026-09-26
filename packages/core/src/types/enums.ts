@@ -535,7 +535,7 @@ export enum McpToolName {
   CONFIG_DIFF = "exaix_config_diff",
   CONFIG_GET_PROVENANCE = "exaix_config_get_provenance",
   CONFIG_APPLY = "exaix_config_apply",
-  PORTAL_SYMBOLS = "exaix_portal_symbols",
+  PORTAL_SYMBOLS = "query_symbols",
 }
 
 /**

@@ -3808,9 +3808,9 @@ permitted_tools:
 `permitted_tools` controls what the ReAct prompt shows, what native
 provider tool-call definitions the model receives, and what the
 execution loop will dispatch. A model-supplied call to an unlisted tool is
-denied before `ToolRegistry` runs it. The Team MCP tool
-`exaix_portal_symbols` is a separate interface; it is not this Solo
-`query_symbols` entry.
+denied before `ToolRegistry` runs it. The Team MCP export
+uses the same `query_symbols` name. It has its own registration and
+permission surface.
 
 ---
 
