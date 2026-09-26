@@ -977,6 +977,13 @@ separate path in which the CLI owns its tool loop.
 
 **Flow:** `ReActLoopStrategy.execute()` → checks `options.native_tools_enabled` + `ProviderRegistry.getProviderMetadata(provider.id)?.supportsNativeTools` → builds `IToolDefinition[]` from `ToolRegistry.getTools()` → calls `provider.generate(prompt, {tools, toolChoice: {type: "any" | "tool", name?}, priorTurn?})` → the resolved provider serializes into its own wire format (`AnthropicRequestBody.tools[]`/`tool_choice`, OpenAI/OpenRouter `tools[].function`/`tool_choice`, Google `tools[].functionDeclarations[]`/`toolConfig`) → response tool-call blocks surfaced as `IGenerateResult.toolCalls[]` → executed via `ToolRegistry.execute()`. Tool results fed back as native tool-result content via `priorTurn` on the next iteration.
 
+Every tool entry point resolves supported general-purpose aliases and parameter keys to
+the canonical tool contract before allowlist, permission, approval, or path-confinement
+checks. Execution and journal records use the canonical name; `tool.alias.rewritten`
+retains the requested name and rewrite details for audit. Exaix-specific names remain
+exact-only. The MCP catalogs expose canonical names, while transport rules determine
+whether general-purpose name aliases are accepted before dispatch.
+
 **Key interfaces:** `IToolDefinition` (name, description, inputSchema, strict?, cache_control?, input_examples?), `IToolChoice` (auto/any/tool/none with disable_parallel_tool_use), `IProviderTurn` (toolUseId, toolName, toolInput, toolResultContent, toolResultIsError), `IProviderToolCall` (id, name, input). All in `packages/ai/src/types.ts` and `packages/ai/src/providers/common.ts`. Reused verbatim across all four providers.
 
 **Config:** `[execution] native_tools_enabled = true` in TOML config (`packages/schemas/src/config.ts`), threaded through `PlanExecutor.executeSteps()` to `IAgentExecutionOptions.native_tools_enabled`.

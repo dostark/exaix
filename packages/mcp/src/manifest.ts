@@ -95,7 +95,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "exaix-team/packages/mcp-server/handlers/read_file_tool.ts",
     description:
-      "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use run_command with grep or rg; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
+      "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within file contents use search_text; for checking whether a file exists use list_directory. Use run_command for shell commands. Returns the raw file text as a string.",
     input_schema: {
       type: "object",
       properties: {
@@ -313,7 +313,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "exaix-team/packages/mcp-server/handlers/search_files_tool.ts",
     description:
-      "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use run_command with grep or rg. Returns an array of matching relative file paths.",
+      "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use search_text. Returns an array of matching relative file paths.",
     input_schema: {
       type: "object",
       properties: {

@@ -157,16 +157,16 @@ Every event action argument passed to `IEventLogger.info()`, `.warn()`, `.error(
 
 **Prohibited:**
 
-```ts
+````ts
 await this.logger.info("execution.started", traceId, payload); // ← inline string
-```
+```text
 
 **Required:**
 
 ```ts
 import { DomainEventType } from "@exaix/core/events";
 await this.logger.info(DomainEventType.ExecutionStarted, traceId, payload);
-```
+```text
 
 This is enforced by `deno task check:event-strings` (Gate 13 in the pre-commit pipeline). For the full event type table, see `docs/Reference_Data.md#event-taxonomy`.
 
@@ -179,21 +179,21 @@ Follow these steps every time a new event type is needed:
    - Use `domain.subdomain.verb` string values: `"execution.started"`, `"flow.step.completed"`.
    - Group it with related members using a comment block.
 
-2. **Register the publisher** at bootstrap (typically in the relevant `apps/` init file):
+1. **Register the publisher** at bootstrap (typically in the relevant `apps/` init file):
 
    ```ts
    registry.registerPublisher("my_service", [...existing, DomainEventType.MyNewEvent]);
-   ```
+   ```text
 
-3. **Emit at the call site** using `registry.emit()` for domain events or `logger.info()` for internal infrastructure events:
+1. **Emit at the call site** using `registry.emit()` for domain events or `logger.info()` for internal infrastructure events:
 
    ```ts
    await registry.emit("my_service", DomainEventType.MyNewEvent, { traceId, ...payload });
-   ```
+   ```text
 
-4. **Update `docs/Reference_Data.md#event-taxonomy`** — add a row with the member name, string value, and domain.
+1. **Update `docs/Reference_Data.md#event-taxonomy`** — add a row with the member name, string value, and domain.
 
-5. **Run `deno task check:event-strings`** — must pass with zero violations.
+1. **Run `deno task check:event-strings`** — must pass with zero violations.
 
 **What is skipped (not counted):**
 
@@ -227,14 +227,14 @@ if (condition) {
 function loadModule() {
   return import("./bar.ts"); // ❌ Not allowed
 }
-```
+```text
 
 **Allowed (with justification comment for dynamic import):**
 
 ```ts
 // Dynamic import required to break circular dependency between X and Y.
 const { Y } = await import("./y.ts");
-```
+```text
 
 ### No Re-exporting
 
@@ -248,7 +248,7 @@ export * from "./bar.ts"; // ❌ Wildcard re-export
 
 import { Baz } from "./qux.ts";
 export { Baz }; // ❌ Explicit re-export
-```
+```text
 
 **Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules owned by that package root surface; re-exporting from external packages, repo root retired `src/*` paths, or another package's source directories remains prohibited. This restriction is enforced as `[src-barrel-re-export]` for barrel files under the retired `src/`.
 
@@ -261,7 +261,7 @@ export { Baz }; // ❌ Explicit re-export
 export type { IToolRegistry } from "./src/interfaces/i_tool_registry.ts";
 export type { IActivityRecord } from "./src/types/database.ts";
 export { PortalOperation } from "./src/enums.ts";
-```
+```text
 
 **Prohibited in parent package entrypoints when a canonical subpackage barrel exists:**
 
@@ -269,13 +269,13 @@ export { PortalOperation } from "./src/enums.ts";
 // packages/core/mod.ts
 export * from "./src/status/mod.ts"; // ❌ Import from @exaix/core/status instead
 export { RetryPolicy } from "./src/request/retry_policy.ts"; // ❌ Import from @exaix/core/request instead
-```
+```text
 
 **Prohibited in package entrypoints:**
 
 ```ts
 export * from "../../apps/other_app/src/some_export.ts";
-```
+```text
 
 Package entrypoints must only expose package-local source exports, not direct imports from other packages' source trees.
 
@@ -288,14 +288,14 @@ Functional, deployable modules under `packages/`, `exaix-team/`, and `apps/` **m
 ```ts
 // apps/exactl/src/commands/eval_commands.ts
 import { EvalSqliteStore } from "../../../../tests/scenario_framework/runner/history_sqlite.ts"; // ❌
-```
+```text
 
 **Correct — relocate the shared code to a package and import the alias:**
 
 ```ts
 // apps/exactl/src/commands/eval_commands.ts
 import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ package-owned, deployable
-```
+```text
 
 **Exemptions:**
 
@@ -316,7 +316,7 @@ import { BarService, FooService } from "./services.ts";
 
 // Multi-line for many imports (optional, for readability)
 import { BarService, BazService, FooService, QuuxService, QuxService } from "./services.ts";
-```
+```text
 
 ### Dynamic Imports
 
@@ -327,14 +327,14 @@ Dynamic imports with `await import()` are **discouraged**. If you must use a dyn
 ```ts
 // Dynamic import required to break circular dependency between X and Y.
 const { Y } = await import("./y.ts");
-```
+```text
 
 **Bad:**
 
 ```ts
 // No explanation for dynamic import
 const { join } = await import("@std/path");
-```
+```text
 
 The code style checker will strictly enforce that all imports appear at the top level. Dynamic imports should only be used when absolutely necessary and always provide a justification comment.
 
@@ -360,13 +360,13 @@ Package-local tests under `packages/<package>/tests/` must remain self-contained
 ```ts
 import { TEST_DEFAULT_BRANCH } from "../../packages/git/tests/helpers/constants.ts";
 import { setupGitRepo } from "../helpers/git_test_helper.ts";
-```
+```text
 
 **Required:**
 
 ```ts
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-```
+```text
 
 These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
 
@@ -390,7 +390,7 @@ function foo(): Promise<import("./bar.ts").IBar | null> { ... }
 
 // ❌ Inline import in a method return type
 getKnowledge(alias: string): Promise<import("../shared/schemas/portal_knowledge.ts").IPortalKnowledge | null> { ... }
-```
+```text
 
 **Required:**
 
@@ -401,7 +401,7 @@ import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
 
 function foo(): Promise<IBar | null> { ... }
 getKnowledge(alias: string): Promise<IPortalKnowledge | null> { ... }
-```
+```text
 
 The style checker enforces this as an **error** (`inline-type-import` rule).
 
@@ -414,14 +414,14 @@ Renaming interfaces during import (using the `as` keyword) to remove the `I` pre
 ```ts
 import { ILogEntry as LogEntry } from "./logger.ts"; // ❌ Removing I prefix
 import { IRequest as UserRequest } from "./request.ts"; // ❌ Renaming interface
-```
+```text
 
 **Allowed:**
 
 ```ts
 import { ILogEntry } from "./logger.ts";
 import { IRequest } from "./request.ts";
-```
+```text
 
 If a naming conflict occurs, it is better to refactor the local names or the conflicting modules than to alias the interfaces.
 
@@ -434,7 +434,7 @@ import { join } from "@std/path";
 import { MyService } from "./service.ts";
 
 export class MyClass { ... }
-```
+```text
 
 Bad:
 
@@ -445,7 +445,7 @@ export class MyClass {
     // …
   }
 }
-```
+```text
 
 ---
 
@@ -481,7 +481,7 @@ export class GitService implements IGitService { ... }
 export class PlanExecutor {
   constructor(private git: IGitService, private db: IDatabaseService) {}
 }
-```
+```text
 
 ---
 
@@ -573,7 +573,7 @@ Example:
  * @visible
  */
 export class ReviewRegistry { ... }
-```
+```text
 
 ### Automated Execution Logging (`LogMethod` / `LogSyncMethod` / `LogGeneratorMethod`) {#log-method-family}
 
@@ -693,7 +693,7 @@ import { TeamComposer } from "@exaix-team/team-composer"; // ❌ Solo → Team
 
 // exaix-team/packages/voting/src/x.ts (Team)
 import { Y } from "@exaix-enterprise/mod.ts"; // ❌ Team → Enterprise
-```
+```text
 
 **Allowed — the two sanctioned cross-tier references:**
 
@@ -706,7 +706,7 @@ import type { TeamComposer } from "@exaix-team/team-composer"; // ✅
 if (editionType === EDITION_TEAM) {
   const { TeamComposer } = await import("@exaix-team/team-composer"); // ✅
 }
-```
+```text
 
 **Exemptions:**
 
@@ -833,7 +833,7 @@ Example:
  * Usage:
  *   deno run -A scripts/my_utility.ts [options]
  */
-```
+```text
 
 ---
 
@@ -871,7 +871,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 class MemoryBankService {
   constructor(private readonly logger?: IEventLogger) {}
 }
-```
+```text
 
 ### Prefer `IEventLogger` over the concrete `EventLogger` class
 
@@ -888,7 +888,7 @@ protected readonly logger?: EventLogger;
 // ✅ Prefer — depends on the public interface contract only
 import type { IEventLogger } from "@exaix/core/logger";
 protected readonly logger?: IEventLogger;
-```
+```text
 
 ### No reading runtime config or environment variables
 
@@ -909,7 +909,7 @@ const overrides = getValidatedEnvOverrides();
 // ✅ Correct — config is passed in as a plain typed value
 import type { Config } from "@exaix/schemas";
 constructor(private readonly config: Config) {}
-```
+```text
 
 ### Automated enforcement
 
@@ -949,7 +949,7 @@ function doSomething(task: string, logger?: ILogger) { ... }
 
 // ✅ Correct — required parameter
 function doSomething(task: string, logger: ILogger) { ... }
-```
+```text
 
 ### UNUSED_OPTIONAL — param is `?`, used in body, but no caller passes it
 
@@ -958,7 +958,7 @@ function body (so changing it would change behavior), yet **zero** production
 callers supply a value. This is either:
 
 1. **A wiring gap** — the value was meant to be injected but never connected.
-2. **Dead code** — the parameter is consumed by default-value logic that always
+1. **Dead code** — the parameter is consumed by default-value logic that always
    fires. Either way, the `?` is a red flag.
 
 ```ts
@@ -968,7 +968,7 @@ async launch(launch: ISessionLaunch, traceId: string, delegateProviderEnv?: Reco
   // ...
 }
 // all callers: launcher.launch(launch, traceId)  ← never passes delegateProviderEnv
-```
+```text
 
 ### MARKED_NOT_OPTIONAL — `Opt<T, R>` used on a non-optional param
 
@@ -983,7 +983,7 @@ function process(param: Opt<string, Reason.OptionalInput>) { ... }
 // ✅ Correct — truly optional
 function process(param?: Opt<string, Reason.OptionalInput>) { ... }
 function process(param: Opt<string, Reason.SensibleDefault> = "") { ... }
-```
+```text
 
 ---
 
@@ -999,7 +999,7 @@ protected abstract attemptGenerate(prompt: string, options?: Opt<IModelOptions, 
 
 // Legitimate: test factory with default overrides
 function createStub(overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {}): IDatabaseService;
-```
+```text
 
 The second type argument **must** be a member of the `Reason` enum — a codified
 reason that proves the decision was reviewed, not mechanical.
@@ -1036,16 +1036,16 @@ added to the `Reason` enum in `packages/core/src/types/optional_marker.ts`.
    at least one known production call site that omits it. Speculative
    "future-proofing" with `?` is the leading cause of both anti-patterns.
 
-2. **Defaults are not optionality.** When a parameter has a default value but
+1. **Defaults are not optionality.** When a parameter has a default value but
    every production caller provides it anyway, remove the `?` and make it
    required. The default adds noise when it never triggers.
 
-3. **`| undefined` is not optionality.** Writing `param: T | undefined` instead
+1. **`| undefined` is not optionality.** Writing `param: T | undefined` instead
    of `param?: T` does not make the parameter optional — callers must still
    pass `undefined` explicitly. Use `?` for true optionality, and add `Opt`
    to document why.
 
-4. **Reveal root cause, don't use `?` as a Band-Aid.** If a function has too
+1. **Reveal root cause, don't use `?` as a Band-Aid.** If a function has too
    many parameters and you're tempted to mark some optional, refactor to a
    parameter object instead (see §11 parameter limit).
 
@@ -1058,7 +1058,7 @@ from `@exaix/core/types`:
 import { Opt, Reason } from "@exaix/core/types";
 
 type Opt<T, R extends Reason> = T | undefined;
-```
+```text
 
 `Opt` is `T | undefined` at runtime — it adds no overhead. The `Reason` enum
 provides the closed set of codified categories (no catch-all).
@@ -1072,7 +1072,7 @@ optional parameters against all name-matched call sites and reports mismatches.
 ```bash
 deno run -A scripts/check_optional_params.ts --fail    # hard gate
 deno run -A scripts/check_optional_params.ts           # advisory (no --fail)
-```
+```text
 
 The check is integrated as `deno task check:optional-params --fail` and runs as
 part of the CI pipeline (Gate 14). Run without `--fail` locally for advisory
@@ -1109,13 +1109,13 @@ service boundary (`GitAuditService`, `ExecutionContextService`, etc.).
 
 **Fix pattern:**
 
-```
+```text
 Before:                     After:
   AgentComposer              AgentComposer
   ├── import SafeSubprocess  └── depends on GitAuditService interface
   ├── import GIT_CMD_*            └── GitAuditService imports SafeSubprocess
   └── import ToolRegistry          └── imports ToolRegistry
-```
+```text
 
 The rule is simple: if a constant (or class, or primitive) is consumed by a
 service you delegate to, then it must be imported by that service — not by you.
@@ -1149,7 +1149,7 @@ import { AGENT_EVENT_EXECUTION_STARTED } from "@exaix/core";
 
 // ✅ Type-only references to service interfaces
 import type { IToolRegistry } from "@exaix/core/types";
-```
+```text
 
 **Violations:**
 
@@ -1179,16 +1179,16 @@ get toolRegistry() {
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 // → use ctx.estimateTokensSync(text) instead
-```
+```text
 
 ### Remediation
 
 1. **Move the constant into the service's module** — the service that actually
    uses it imports it.
-2. **If the service needs to expose a computation**, add a wrapper method
+1. **If the service needs to expose a computation**, add a wrapper method
    (e.g. `estimateTokensSync()` on `ExecutionContextService`) rather than
    exporting the raw constant.
-3. **For concrete class dependencies**, remove the inline `new` expression and
+1. **For concrete class dependencies**, remove the inline `new` expression and
    accept the interface via constructor injection. Update the callers that
    create the high-level class to inject the concrete instance.
 
@@ -1301,8 +1301,24 @@ errors under `--convert-warnings-to-errors`.
 > (e.g. `.copilot/skills/exaix-development/SKILL.md`) and **are not** repeated here unless they
 > directly impact the way code is written.
 
+## 17. Tool Naming
+
+Use one canonical name for each tool operation. General-purpose aliases belong in the
+shared alias map and must not shadow a canonical name or target a different operation.
+Exaix-specific tool names are exact-only: do not add case folding, whitespace trimming,
+or compatibility aliases for them. When a rename retires a native name, reject the old
+name in runtime calls and raw permission or approval rules.
+
+When an operation exists in both `ToolName` and `McpToolName`, use the same canonical
+name in both catalogs. Add every literal intersection to `SHARED_TOOL_OPERATIONS`; the
+`check:tool-naming` gate verifies those declarations and shared names. The gate cannot
+infer that two differently named, unmatched tools have the same meaning. Review every
+new unmatched export and declare whether it is a distinct operation or add it to the
+shared-operation table. See [ARCHITECTURE.md](ARCHITECTURE.md#tool-catalog-parity-toolregistry-vs-tool_manifest).
+
 ---
 
 ## Footer — Agent Knowledge Base
 
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
+````

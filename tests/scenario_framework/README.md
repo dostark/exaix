@@ -189,6 +189,25 @@ whose capture attempts crossed the `ai.capture_failure_product_finding_threshold
 configurable (default 40%) — a call site the real model rarely satisfies on the first try is
 a **product finding**, not noise to smooth away by re-rolling.
 
+#### Provider-input assertions and tool-alias scenarios
+
+Recorded fixtures may include `expectedInput` assertions for the actual values received by
+`MockLLMProvider.generate()`: `promptIncludes`, `promptExcludes`,
+`priorTurnResultIncludes`, and `priorTurnResultExcludes`. Each field is an array of strings.
+The mock checks these assertions before replaying the recorded response. A required
+prior-turn result that is missing or does not match fails the fixture, even when prompt
+hash drift is allowed; it does not fall back to pattern responses. A recorded final answer
+does not prove that the provider received a tool result.
+
+The `alias-read` mode in `setup_planning_tools.ts` checks that a successful aliased read's
+marker reaches the next provider input. The `alias-path-escape` mode probes an aliased glob
+pattern and an absolute aliased read outside the portal. The associated scenarios assert
+separate denial events and tool results, then check the provider input for denial text and
+the absence of outside-file sentinels. Their canaries independently remove result delivery,
+glob confinement, and aliased-read confinement; each scenario must fail under its matching
+canary and pass after the guard is restored. These provider-input assertions are separate
+from checks against the final recorded response.
+
 **Fixtures are not a quality claim.** A replayed response is identical whether or not an
 artefact (a skill, a blueprint change) improved anything — capture and replay only raise
 mechanics fidelity (the pipeline runs on real model shapes, not regex guesses). Whether an

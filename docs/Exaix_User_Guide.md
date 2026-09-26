@@ -50,10 +50,10 @@ The **Actionability Score** is a measure of how "grounded" and "specified" your 
 #### Strategies for High-Score Requests
 
 1. **Define Explicit Goals:** Instead of "Fix the bug," use "Fix the null pointer exception in `handler.ts` when the user ID is missing."
-2. **Reference Specific Files:** Use absolute paths or workspace-relative paths (e.g., `packages/storage-sqlite/src/database_service.ts`). This allows the analyzer to verify the context exists.
-3. **Provide Acceptance Criteria:** Use phrases like "The task is complete when..." or "Must pass all unit tests in `tests/`."
-4. **Specify Constraints:** Mention any library versions, style guides, or performance requirements (e.g., "Must use Deno.test and maintain < 100ms latency").
-5. **Use Markdown Requests:** For complex tasks, create a `.md` file in `Workspace/Active/` with headers for "Goal," "Context," and "Constraints" instead of a one-line CLI string.
+1. **Reference Specific Files:** Use absolute paths or workspace-relative paths (e.g., `packages/storage-sqlite/src/database_service.ts`). This allows the analyzer to verify the context exists.
+1. **Provide Acceptance Criteria:** Use phrases like "The task is complete when..." or "Must pass all unit tests in `tests/`."
+1. **Specify Constraints:** Mention any library versions, style guides, or performance requirements (e.g., "Must use Deno.test and maintain < 100ms latency").
+1. **Use Markdown Requests:** For complex tasks, create a `.md` file in `Workspace/Active/` with headers for "Goal," "Context," and "Constraints" instead of a one-line CLI string.
 
 #### Resolving Ambiguity
 
@@ -285,8 +285,8 @@ For users who hit free-tier quotas on a paid subscription, or who want one key f
 **Google Vertex AI** — uses a Google Cloud **service account** (project-based quotas/billing) instead of a simple API key.
 
 1. Create a GCP project with the Vertex AI API enabled and billing on.
-2. Create a service account with the **Vertex AI User** role and download its JSON key.
-3. Provide the JSON (single line) via the configured env var, then point a model at the `vertex-ai` provider:
+1. Create a service account with the **Vertex AI User** role and download its JSON key.
+1. Provide the JSON (single line) via the configured env var, then point a model at the `vertex-ai` provider:
 
    ```bash
    export VERTEX_AI_SERVICE_ACCOUNT="$(cat ~/exaix-vertex-key.json)"
@@ -368,7 +368,7 @@ pre-existing gap outside this section's scope, not an indication they work diffe
 
    This persists your session to `~/.codex/auth.json`; no API key is required or used.
 
-2. Point a model at the `codex-cli` provider:
+1. Point a model at the `codex-cli` provider:
 
    ```toml
    [models.codex]
@@ -522,7 +522,7 @@ Codex enforces scope through two independent, layered mechanisms:
    `deriveCodexSandboxFlags` (`@exaix/session`). `workspace-write` confines all writes to
    the worktree root; a write to an absolute path outside it (e.g. `/tmp/...`) never
    reaches disk, regardless of what the model attempted.
-2. **`permitted_paths` (enforced by Exaix, after the run).** Being inside the worktree is
+1. **`permitted_paths` (enforced by Exaix, after the run).** Being inside the worktree is
    not sufficient on its own: `SessionReturnWatcher`/`reconcile` also check every path the
    delegate actually touched (via `git diff --name-only`) against the worktree-relative
    globs in `permitted_paths`. A touched path outside those globs — even one safely inside
@@ -1235,9 +1235,9 @@ exactl request "Audit dependencies" --model-size XL --preferred-provider anthrop
 1. An explicit `provider:model` (e.g. `--model anthropic:claude-opus-4.5`) — passed through as-is
    (`explicit_override`). Solo does not validate the model name against a catalog, so a typo
    surfaces as a provider error at call time.
-2. A **curated list** for the size (`model_presets.<SIZE>.candidates`) — the first healthy,
+1. A **curated list** for the size (`model_presets.<SIZE>.candidates`) — the first healthy,
    registered provider wins (`preferred_list`).
-3. Capability/cost **scoring** across registered providers (`preset_default` /
+1. Capability/cost **scoring** across registered providers (`preset_default` /
    `characteristics_scored`), with local/free providers exempt from budget filtering.
 
 (Team adds catalog validation for step 1, benchmark-driven `best` ranking and a usage
@@ -1518,8 +1518,8 @@ exactl plan amendment reject <plan-id> --reason "Incorrect approach"
 **Workflow:**
 
 1. **Trigger**: Agent detects drift and pauses execution. Status becomes `amendment_pending`.
-2. **Review**: You review the proposal using `plan amendment show`.
-3. **Decision**: You approve to apply changes and resume, or reject to abort.
+1. **Review**: You review the proposal using `plan amendment show`.
+1. **Decision**: You approve to apply changes and resume, or reject to abort.
 
 For more details, see the **Safety Gates** section.
 
@@ -1778,11 +1778,11 @@ For worktree executions, Exaix also writes a discoverability pointer at `Memory/
 **What happens when adding a portal:**
 
 1. Creates symlink: `~/Exaix/Portals/<alias>` → `<target-path>`
-2. Generates context card: `~/Exaix/Portals/<alias>.md`
-3. Updates `exa.config.toml` with portal configuration (optional per-portal keys: `default_branch` and `execution_strategy`)
-4. Validates Deno permissions for new path
-5. Restarts daemon if running (or prompts for manual restart)
-6. Logs action to Activity Journal
+1. Generates context card: `~/Exaix/Portals/<alias>.md`
+1. Updates `exa.config.toml` with portal configuration (optional per-portal keys: `default_branch` and `execution_strategy`)
+1. Validates Deno permissions for new path
+1. Restarts daemon if running (or prompts for manual restart)
+1. Logs action to Activity Journal
 
 **Portal verification checks:**
 
@@ -2557,7 +2557,7 @@ EXA_SSE_PORT=9000 exactl watch a1b2c3d4-e5f6-7890-abcd-ef1234567890
 **How it works:**
 
 1. **Live mode:** If the daemon's SSE server is running, `watch` connects to `http://127.0.0.1:8765/api/v1/traces/:id/stream` and streams events in real time.
-2. **Fallback mode:** If the SSE server is unavailable (daemon stopped, execution finished), `watch` queries the Activity Journal database and displays historical events for that trace, then exits.
+1. **Fallback mode:** If the SSE server is unavailable (daemon stopped, execution finished), `watch` queries the Activity Journal database and displays historical events for that trace, then exits.
 
 **Behavior:**
 
@@ -3068,7 +3068,7 @@ tags: [feature, api]
 Implement user authentication for the API...
 ```
 
-#### Why YAML Frontmatter?
+#### Why YAML Frontmatter
 
 | Benefit                 | Description                                               |
 | ----------------------- | --------------------------------------------------------- |
@@ -3507,9 +3507,9 @@ Portals enable agents to work directly in external project repositories (e.g., `
 When you submit a request targeting a portal:
 
 1. **Execution Environment**: Agent runs in portal workspace (e.g., `~/git/MyProject`)
-2. **Git Operations**: Branches and commits created in portal's repository
-3. **File Access**: Agent can read/write portal files directly
-4. **Reviews**: Track actual code changes in portal repository
+1. **Git Operations**: Branches and commits created in portal's repository
+1. **File Access**: Agent can read/write portal files directly
+1. **Reviews**: Track actual code changes in portal repository
 
 #### Cleanup & lifecycle notes
 
@@ -3825,9 +3825,9 @@ The Reflexion pattern enables agents to critique and improve their own outputs i
 #### How It Works
 
 1. Agent generates initial response
-2. Agent self-critiques using structured criteria (accuracy, completeness, quality, safety)
-3. If issues found, agent refines output
-4. Process repeats until quality threshold met or max iterations reached
+1. Agent self-critiques using structured criteria (accuracy, completeness, quality, safety)
+1. If issues found, agent refines output
+1. Process repeats until quality threshold met or max iterations reached
 
 #### Configuration
 
@@ -3940,10 +3940,10 @@ candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
 #### Resolution Precedence
 
 1. `model: "provider:model"` — explicit override (bypasses resolver)
-2. `model_size` + `characteristics` — preset lookup with soft ranking
-3. `model_size` only — preset default
-4. `fallbacks[]` — fallback chain iteration
-5. Context-window overflow — auto-bump to next size tier
+1. `model_size` + `characteristics` — preset lookup with soft ranking
+1. `model_size` only — preset default
+1. `fallbacks[]` — fallback chain iteration
+1. Context-window overflow — auto-bump to next size tier
 
 During plan execution, **request-level intent overrides the blueprint**: CLI flags such as
 `--model-size M` or `--thinking` (written to the request frontmatter) take precedence over
@@ -4041,10 +4041,10 @@ Session Memory automatically provides relevant context from past interactions to
 #### How It Works
 
 1. **Request received**: User submits a request
-2. **Memory lookup**: System searches for relevant past interactions
-3. **Context injection**: Top-K memories added to agent prompt
-4. **Execution**: Agent has historical context
-5. **Learning capture**: New insights saved post-execution
+1. **Memory lookup**: System searches for relevant past interactions
+1. **Context injection**: Top-K memories added to agent prompt
+1. **Execution**: Agent has historical context
+1. **Learning capture**: New insights saved post-execution
 
 #### Configuration
 
@@ -4123,9 +4123,9 @@ Agent outputs are validated against JSON schemas with automatic repair.
 #### Validation Process
 
 1. **Extract JSON**: Parse JSON from agent response
-2. **Schema validation**: Check against PlanSchema
-3. **Auto-repair**: Attempt to fix common issues
-4. **Detailed errors**: Report specific validation failures
+1. **Schema validation**: Check against PlanSchema
+1. **Auto-repair**: Attempt to fix common issues
+1. **Detailed errors**: Report specific validation failures
 
 #### Auto-Repair Capabilities
 
@@ -4188,36 +4188,36 @@ declaration narrows within that ceiling.
 If agent responses are slow:
 
 1. **Check reflexion settings**: Reduce `max_reflexion_iterations`
-2. **Reduce memory context**: Lower `topK` or `maxContextLength`
-3. **Use faster model**: Switch to smaller/faster model variant
-4. **Disable optional features**: Turn off reflexion or memory for speed
+1. **Reduce memory context**: Lower `topK` or `maxContextLength`
+1. **Use faster model**: Switch to smaller/faster model variant
+1. **Disable optional features**: Turn off reflexion or memory for speed
 
 #### Low Confidence Outputs
 
 If agents consistently produce low-confidence outputs:
 
 1. **Check prompt clarity**: Ensure request is specific
-2. **Provide more context**: Add relevant files to portal
-3. **Use specialist agent**: Match agent expertise to task
-4. **Enable session memory**: Historical context helps
+1. **Provide more context**: Add relevant files to portal
+1. **Use specialist agent**: Match agent expertise to task
+1. **Enable session memory**: Historical context helps
 
 #### Retry Exhaustion
 
 If agents fail after max retries:
 
 1. **Check service status**: Provider may be down
-2. **Verify credentials**: API keys may be expired
-3. **Check rate limits**: You may be hitting quotas
-4. **Increase delays**: Raise `initialDelay` or `maxDelay`
+1. **Verify credentials**: API keys may be expired
+1. **Check rate limits**: You may be hitting quotas
+1. **Increase delays**: Raise `initialDelay` or `maxDelay`
 
 #### Memory Not Found
 
 If relevant memories aren't being injected:
 
 1. **Check threshold**: Lower `threshold` value (e.g., 0.1)
-2. **Rebuild index**: `exactl memory rebuild-index`
-3. **Add learnings**: Approve pending learnings
-4. **Check scope**: Ensure learnings are in correct project/global scope
+1. **Rebuild index**: `exactl memory rebuild-index`
+1. **Add learnings**: Approve pending learnings
+1. **Check scope**: Ensure learnings are in correct project/global scope
 
 ---
 
@@ -4277,8 +4277,8 @@ proceed = 70    # at or above → proceed immediately
 **Best Practices:**
 
 1. **Never modify `packages/core/src/types/constants.ts` directly** - All magic values are defined in `exa.config.toml`
-2. **Use `exa.config.sample.toml` as reference** - Contains documented examples for all settings
-3. **Validate after changes** - Run `exactl daemon restart` to ensure config is valid
+1. **Use `exa.config.sample.toml` as reference** - Contains documented examples for all settings
+1. **Validate after changes** - Run `exactl daemon restart` to ensure config is valid
 
 ### 5.3 Environment Variable Reference
 
@@ -4360,15 +4360,15 @@ deno test tests/integration/19_llm_free_provider_test.ts --allow-env --allow-net
 If you see warnings like "Invalid EXA_LLM_TIMEOUT_MS: must be ≥ 1000", check:
 
 1. **Value is within valid range** (timeout: 1000-300000ms)
-2. **No typos in variable name** (case-sensitive)
-3. **Provider name is valid** (`mock`, `ollama`, `anthropic`, `openai`, `google`)
-4. **URL is well-formed** (must include protocol: `http://` or `https://`)
+1. **No typos in variable name** (case-sensitive)
+1. **Provider name is valid** (`mock`, `ollama`, `anthropic`, `openai`, `google`)
+1. **URL is well-formed** (must include protocol: `http://` or `https://`)
 
 **Environment variables not taking effect:**
 
 1. **Restart the daemon** after setting env vars: `exactl daemon restart`
-2. **Check the daemon logs** to see which values were loaded: `exactl daemon logs`
-3. **Verify the variable is set** in the daemon's environment: `env | grep EXA_LLM`
+1. **Check the daemon logs** to see which values were loaded: `exactl daemon logs`
+1. **Verify the variable is set** in the daemon's environment: `env | grep EXA_LLM`
 
 For more details, see `templates/exa.config.sample.toml` and [Technical Specification](../exaix-dev-docs/dev/Exaix_Technical_Spec.md).
 
@@ -4602,6 +4602,75 @@ When connected, AI agents have access to high-level domain tools:
 - **`exaix_query_journal`**: Search the Activity Journal for past events.
 - **FileSystem & Git**: Standard tools (`read_file`, `write_file`, `git_status`, etc.) are also available, scoped to your workspace.
 
+### Tool names and aliases
+
+Exaix keeps one canonical name for each tool operation. General-purpose aliases let
+provider calls and saved blueprints use familiar names; Exaix-specific tools require
+their exact canonical spelling. The server advertises canonical names only.
+
+| General-purpose names                                                                      | Canonical name         |
+| ------------------------------------------------------------------------------------------ | ---------------------- |
+| `glob`, `glob_file_search`, `file_search`, `find_files`                                    | `search_files`         |
+| `grep`, `rg`, `ripgrep`, `text_search`, `search_file_content`, `grep_files`, `grep_search` | `search_text`          |
+| `read`, `read_text_file`                                                                   | `read_file`            |
+| `write`, `create_file`                                                                     | `write_file`           |
+| `edit`, `str_replace`, `replace`                                                           | `patch_file`           |
+| `list_dir`, `ls`, `list`                                                                   | `list_directory`       |
+| `mkdir`                                                                                    | `create_directory`     |
+| `move`, `mv`, `rename_file`                                                                | `move_file`            |
+| `copy`, `cp`                                                                               | `copy_file`            |
+| `delete`, `rm`, `remove_file`                                                              | `delete_file`          |
+| `webfetch`, `web_fetch`                                                                    | `fetch_url`            |
+| `save_memory`                                                                              | `remember_fact`        |
+| `list_tools`                                                                               | `list_available_tools` |
+
+General-purpose tool names are matched without case sensitivity. Accepted parameter
+aliases are:
+
+| Canonical parameter                     | Accepted aliases                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `path`                                  | `file_path`, `filePath`, `filepath`, `target_file`, `absolute_path`, `dir_path`, `directory`, `folder` |
+| `pattern` on `search_files`             | `query`                                                                                                |
+| `pattern` on `search_text`              | `query`, `regex`                                                                                       |
+| `search` on `patch_file`                | `old_string`, `oldString`, `old_text`                                                                  |
+| `replace` on `patch_file`               | `new_string`, `newString`, `new_text`                                                                  |
+| `from` / `to` on `move_file`            | `source` / `destination`                                                                               |
+| `source` / `destination` on `copy_file` | `from` / `to`                                                                                          |
+| `name` on `query_symbols`               | `query`                                                                                                |
+| `content` on `remember_fact`            | `fact`                                                                                                 |
+
+Path aliases apply when the selected tool accepts `path` and does not itself declare the
+alias key. If both a canonical parameter and its alias are present, the canonical value
+wins and the alias is recorded as dropped. Some other familiar spellings are
+intentionally unsupported: `edit_file` is not an alias for `patch_file`, and `bash` is
+not an alias for `run_command`. OpenCode plan JSON has a separate compatibility rule: its
+`grep` resolves to `search_text`, and its approved `bash` plan action remains
+`run_command`.
+
+The exact-only Exaix native names must use exact spelling and case. The registry names are
+`run_deno_task`, `find_dependents`, `query_symbols`, `query_relationships`, and
+`get_module_dependencies`. The Team MCP server also exposes exact names such as
+`exaix_create_request`, `exaix_list_plans`, `exaix_approve_plan`, `exaix_query_journal`,
+and `exaix_config_get`; it does not expose alternate native names. Retired spellings
+(`deno_task`, `who_depends_on`, `exaix_portal_symbols`, `dependents`, and `list_symbols`)
+are rejected. Blueprint and skill tool lists accept general-purpose aliases, but native
+names in them must be exact. Invalid native names in permission or approval rules fail
+validation instead of silently removing a restriction.
+
+MCP alias support depends on the transport. The legacy direct handler, real Streamable
+HTTP ingress, and Exaix's local dispatcher normalize supported general-purpose name
+aliases. SDK stdio accepts only registered canonical tool names. All paths accept
+parameter aliases for a registered canonical name. Native aliases are rejected on every
+path; the Team MCP server lists canonical names only. `query_symbols` accepts the
+`query` parameter as an alias for `name`.
+
+Set `tools.strict_params = true` in `exa.config.toml` to reject unknown tool parameters
+before execution. The default is `false`: the call continues and Exaix records the
+unknown keys. `portal` and `agent_role` are exempt from this check. Use the Activity
+Journal events `tool.alias.rewritten` and `tool.param.unknown` to inspect normalization:
+the first records the requested and canonical names, renamed and dropped keys, and entry
+point; the second records unknown and accepted keys and whether strict mode was enabled.
+
 ### 8.3 Client Integration
 
 **Claude Desktop:**
@@ -4715,7 +4784,7 @@ started:
    into the spawned daemon process. Deno enforces it at the OS level — the
    narrowing applies to specific hosts.
 
-2. **Startup self-check (defence-in-depth).** Some launch paths cannot read
+1. **Startup self-check (defence-in-depth).** Some launch paths cannot read
    `allow_net` at startup — most importantly the **compiled `exaix` binary** (its
    `--allow-*` flags are frozen at `deno compile` time) and `deno task dev` (flags
    are fixed in the task). For these, the daemon performs a startup check: if
@@ -4736,8 +4805,8 @@ started:
 ### 9.2 Best Practices
 
 1. **Review Plans:** Always inspect the diffs in the TUI (`exactl plan show`) before approving.
-2. **Audit Logs:** Use `exactl journal` to audit agent activity.
-3. **Keep Keys Private:** Never commit your `.env` or `exa.config.toml` if it contains secrets (though it shouldn't).
+1. **Audit Logs:** Use `exactl journal` to audit agent activity.
+1. **Keep Keys Private:** Never commit your `.env` or `exa.config.toml` if it contains secrets (though it shouldn't).
 
 ### 9.3 Adversarial robustness and gate-bypass attribution
 
@@ -5137,9 +5206,9 @@ generation calls do not yet populate it.
 Cost tracking operates at multiple levels:
 
 1. **Per-Request Tracking**: Each agent execution logs token usage and estimated cost
-2. **Daily Budget Enforcement**: Prevents exceeding your daily spending limit
-3. **Provider-Specific Rates**: Different rates for different models and providers
-4. **Historical Reporting**: Query past usage and costs via Activity Journal
+1. **Daily Budget Enforcement**: Prevents exceeding your daily spending limit
+1. **Provider-Specific Rates**: Different rates for different models and providers
+1. **Historical Reporting**: Query past usage and costs via Activity Journal
 
 ### 11.2 Configuration
 
@@ -5175,8 +5244,8 @@ final prompt.
 Before each agent execution, Exaix checks:
 
 1. **Daily Budget**: Current day's spending vs `max_daily_cost_usd`
-2. **Estimated Cost**: Predicted cost for the current request
-3. **Provider Limits**: Any provider-specific restrictions
+1. **Estimated Cost**: Predicted cost for the current request
+1. **Provider Limits**: Any provider-specific restrictions
 
 If a request would exceed your budget, it's rejected with a clear error message.
 
@@ -5262,9 +5331,9 @@ An amendment is automatically proposed by the agent when:
 ### 12.2 The Amendment Workflow
 
 1. **Pause**: Execution is immediately paused. A checkpoint is saved.
-2. **Proposal**: The agent generates a "Plan Amendment Patch" with a summary of changes.
-3. **Wait**: The plan status becomes `amendment_pending`.
-4. **Human Review**: Use CLI commands to review and decide:
+1. **Proposal**: The agent generates a "Plan Amendment Patch" with a summary of changes.
+1. **Wait**: The plan status becomes `amendment_pending`.
+1. **Human Review**: Use CLI commands to review and decide:
    - `exactl plan amendment show` to see the proposed diff.
    - `exactl plan amendment approve` to apply and resume.
    - `exactl plan amendment reject` to abort the plan.

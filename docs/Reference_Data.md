@@ -699,6 +699,11 @@ Example output:
 
 The SSE endpoint is served by `exaix-team/packages/mcp-server/sse_handler.ts` on the MCP HTTP server (default port `8765`, binds to `127.0.0.1` only). When the SSE server is unavailable, the command falls back to querying the Activity Journal via `queryActivity`.
 
+Tool-name and parameter normalization is recorded in the tool-runtime entries above.
+`tool.alias.rewritten` includes the originally requested name, canonical name, renamed
+and dropped parameter keys, and entry point. `tool.param.unknown` records unknown and
+accepted parameter names and whether strict rejection was enabled.
+
 ---
 
 ## Parsing & Schema Layer — Key Modules
