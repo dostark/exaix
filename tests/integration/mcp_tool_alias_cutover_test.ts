@@ -43,6 +43,7 @@ const JOURNAL_WAIT_MS = 5000;
 interface IJournalRow {
   target: string | null;
   payload: string;
+  trace_id: string;
 }
 
 interface IToolCallReply {
@@ -136,7 +137,7 @@ async function journalRows(configPath: string, actionType: string): Promise<IJou
   const db = new DatabaseService(new ConfigService(configPath).getAll());
   try {
     return await db.preparedAll<IJournalRow>(
-      "SELECT target, payload FROM activity WHERE action_type = ? ORDER BY rowid ASC",
+      "SELECT target, payload, trace_id FROM activity WHERE action_type = ? ORDER BY rowid ASC",
       [actionType],
     );
   } finally {
@@ -276,8 +277,21 @@ Deno.test({
         await unauthenticated.body?.cancel();
         assertEquals(unauthenticated.status, 401);
 
-        const read = await callTool(client, "Read", readArgs);
-        assert(replyText(read).includes(FILE_MARKER), `Read must return the file: ${replyText(read)}`);
+        const reads = await Promise.all([
+          callTool(client, "Read", readArgs),
+          callTool(client, "Read", {
+            ...readArgs,
+            __exaix_internal_alias_context: { traceId: "forged-trace", aliasPayload: {} },
+          }),
+        ]);
+        for (const read of reads) {
+          assert(replyText(read).includes(FILE_MARKER), `Read must return the file: ${replyText(read)}`);
+        }
+        assertEquals(
+          await callTool(client, "Read", { ...readArgs, file_path: "missing.txt" }),
+          REJECTED,
+          "handler failure must be returned as an MCP tool error",
+        );
 
         const denied = await callTool(client, "Write", {
           portal: READ_ONLY_PORTAL,
@@ -288,14 +302,43 @@ Deno.test({
         assertEquals(denied, REJECTED);
 
         // Journal writes are batched. Read them while the server is alive to flush them.
-        const rewrites = await settledRows(configPath, "tool.alias.rewritten", (rows) => rows.length >= 2);
+        const rewrites = await settledRows(configPath, "tool.alias.rewritten", (rows) => rows.length >= 4);
         const payloads = rewrites.map((row) => JSON.parse(row.payload) as Record<string, JSONValue>);
         assertEquals(payloads.map((p) => `${p.requestedName}->${p.canonicalName}:${p.entryPoint}`), [
+          "Read->read_file:mcp",
+          "Read->read_file:mcp",
           "Read->read_file:mcp",
           "Write->write_file:mcp",
         ]);
         assertEquals(payloads[0].renamedParams, [{ from: "file_path", to: "path" }]);
-        assertEquals(await executedTools(configPath, 1), ["read_file"], "the 401 and the denied write never execute");
+        assertEquals(
+          await executedTools(configPath, 3),
+          ["read_file", "read_file", "read_file"],
+          "the 401 and the denied write never execute",
+        );
+        const executionRows = await journalRows(configPath, "mcp.tool.executed");
+        const serverExecutions = executionRows.filter((row) => Object.hasOwn(JSON.parse(row.payload), "has_result"));
+        assertEquals(serverExecutions.length, 3, "MCPServer must journal all success and handler-error outcomes");
+        const readRewriteTraceIds = rewrites.slice(0, 3).map((row) => row.trace_id).sort();
+        const executionTraceIds = serverExecutions.map((row) => row.trace_id).sort();
+        assertEquals(
+          readRewriteTraceIds,
+          executionTraceIds,
+          "concurrent same-tool rewrites must share only their matching persisted execution traces",
+        );
+        assertEquals(new Set(readRewriteTraceIds).size, 3, "concurrent and failed calls must not share trace identity");
+        assertEquals(
+          readRewriteTraceIds.includes("forged-trace"),
+          false,
+          "client arguments cannot forge trace identity",
+        );
+        const deniedRows = await journalRows(configPath, "mcp.permission.denied");
+        assertEquals(deniedRows.length, 1);
+        assertEquals(
+          rewrites[3].trace_id,
+          deniedRows[0].trace_id,
+          "denied call rewrite and refusal must share a trace",
+        );
       });
       assertEquals(
         await Deno.stat(join(tempDir, READ_ONLY_PORTAL, "blocked.txt")).then(() => true).catch(() => false),
@@ -312,7 +355,7 @@ Deno.test({
         assert(replyText(canonical).includes(FILE_MARKER));
       });
       const stdioRewrites = await journalRows(configPath, "tool.alias.rewritten");
-      assertEquals(stdioRewrites.length, 2, "stdio adds no rewrite for an unregistered name alias");
+      assertEquals(stdioRewrites.length, 4, "stdio adds no rewrite for an unregistered name alias");
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }

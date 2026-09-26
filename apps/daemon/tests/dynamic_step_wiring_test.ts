@@ -412,11 +412,11 @@ Deno.test({
   name:
     "[daemon wiring][phase201] the Team dispatcher from buildTeamMcpClient journals one tool.alias.rewritten with entryPoint mcp for a general-purpose alias",
   async fn() {
-    const rewrites: LogMetadata[] = [];
+    const rewrites: Array<LogMetadata & { traceId?: string }> = [];
     const logger: IEventLogger = {
       log: () => Promise.resolve(),
-      info: (action: string, _target: string | null, payload?: LogMetadata) => {
-        if (action === DomainEventType.ToolAliasRewritten) rewrites.push(payload ?? {});
+      info: (action: string, _target: string | null, payload?: LogMetadata, traceId?: string) => {
+        if (action === DomainEventType.ToolAliasRewritten) rewrites.push({ ...payload, traceId });
         return Promise.resolve();
       },
       warn: () => Promise.resolve(),
@@ -428,11 +428,18 @@ Deno.test({
 
     const dispatcher = await buildTeamMcpClient(createStubContext(), new AllowAllPermissionsService(), logger);
     assert(dispatcher, "the Team dispatcher must build");
-    await dispatcher.callTool("Read" as never, { portal: "p", agent_role: "a", file_path: "x.ts" }).catch(() => {});
+    await dispatcher.callTool("Read" as never, { portal: "p", agent_role: "a", file_path: "x.ts" }, {
+      traceId: "phase201-daemon-local-trace",
+      provider: "daemon-provider",
+      model: "daemon-model",
+    }).catch(() => {});
 
     assertEquals(rewrites.length, 1);
     assertEquals(rewrites[0].requestedName, "Read");
     assertEquals(rewrites[0].canonicalName, "read_file");
     assertEquals(rewrites[0].entryPoint, "mcp");
+    assertEquals(rewrites[0].traceId, "phase201-daemon-local-trace");
+    assertEquals(rewrites[0].provider, "daemon-provider");
+    assertEquals(rewrites[0].model, "daemon-model");
   },
 });

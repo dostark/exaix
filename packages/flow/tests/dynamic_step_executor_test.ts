@@ -8,8 +8,9 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
-import type { IMcpClient } from "@exaix/mcp";
+import type { IMcpClient, IMcpToolCallContext } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
@@ -19,7 +20,7 @@ import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@
  * Mock implementations for dependencies
  */
 class MockMcpClient implements IMcpClient, IToolManifestResolver {
-  private callHistory: Array<{ tool: McpToolName; args: ToolArgs }> = [];
+  private callHistory: Array<{ tool: McpToolName; args: ToolArgs; context?: IMcpToolCallContext }> = [];
   private responses: Map<string, string> = new Map();
 
   setResponse(tool: McpToolName, response: string) {
@@ -30,8 +31,12 @@ class MockMcpClient implements IMcpClient, IToolManifestResolver {
     return [...this.callHistory];
   }
 
-  callTool(tool: McpToolName, args: ToolArgs): Promise<string> {
-    this.callHistory.push({ tool, args });
+  callTool(
+    tool: McpToolName,
+    args: ToolArgs,
+    context?: Opt<IMcpToolCallContext, Reason.OptionalInput>,
+  ): Promise<string> {
+    this.callHistory.push({ tool, args, context });
     return Promise.resolve(this.responses.get(tool) ?? `Result from ${tool}`);
   }
 
@@ -59,6 +64,8 @@ class MockLlmClient implements ILlmClient {
     tool?: McpToolName;
     args?: ToolArgs;
     output?: string;
+    provider?: string;
+    model?: string;
   }> = [];
   private decisionIndex = 0;
 
@@ -68,6 +75,8 @@ class MockLlmClient implements ILlmClient {
       tool?: McpToolName;
       args?: ToolArgs;
       output?: string;
+      provider?: string;
+      model?: string;
     }>,
   ) {
     this.decisions = decisions;
@@ -76,7 +85,9 @@ class MockLlmClient implements ILlmClient {
 
   reasonNextAction(
     _params: any,
-  ): Promise<{ done: boolean; tool?: McpToolName; args?: ToolArgs; output?: string }> {
+  ): Promise<
+    { done: boolean; tool?: McpToolName; args?: ToolArgs; output?: string; provider?: string; model?: string }
+  > {
     if (this.decisionIndex >= this.decisions.length) {
       // Default to done if no more decisions
       return Promise.resolve({ done: true, output: "Completed" });
@@ -140,7 +151,13 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
   });
 
   llmClient.setDecisions([
-    { done: false, tool: McpToolName.READ_FILE, args: { path: "main.ts" } },
+    {
+      done: false,
+      tool: McpToolName.READ_FILE,
+      args: { path: "main.ts" },
+      provider: "flow-provider",
+      model: "flow-model",
+    },
     { done: true, output: "No bugs found" },
   ]);
   mcpClient.setResponse(McpToolName.READ_FILE, "console.log('hello');");
@@ -153,6 +170,11 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
   assertEquals(result.output, "No bugs found");
   assertEquals(result.toolCallsLog.length, 1);
   assertEquals(result.toolCallsLog[0].tool, McpToolName.READ_FILE);
+  assertEquals(mcpClient.getCallHistory()[0].context, {
+    traceId: "trace-1",
+    provider: "flow-provider",
+    model: "flow-model",
+  });
   assertEquals(result.iterations, 2);
 
   const entries = journal.getEntries();

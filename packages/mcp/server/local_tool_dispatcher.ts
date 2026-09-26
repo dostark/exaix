@@ -6,7 +6,7 @@
  * @related-files [packages/mcp/server/tool_handler.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 import type { ToolArgs } from "@exaix/ai";
-import type { IMcpClient } from "../src/i_mcp_client.ts";
+import type { IMcpClient, IMcpToolCallContext } from "../src/i_mcp_client.ts";
 import { appendToolChoiceHint, TOOL_MANIFEST } from "@exaix/mcp";
 import type { McpToolName } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
@@ -46,14 +46,22 @@ export class LocalToolDispatcher implements IMcpClient, IToolManifestResolver {
     return [...this.tools.keys()] as McpToolName[];
   }
 
-  async callTool(tool: McpToolName, args: ToolArgs): Promise<string> {
+  async callTool(
+    tool: McpToolName,
+    args: ToolArgs,
+    callContext?: Opt<IMcpToolCallContext, Reason.OptionalInput>,
+  ): Promise<string> {
     const resolved = canonicalizeMcpToolCall(this.tools, tool, args as Record<string, JSONValue>);
     if (!resolved) {
       throw new Error(`MCP Tool '${tool}' not found in registry`);
     }
     if (resolved.call.rewritten) {
       const payload = mcpAliasRewrittenPayload(resolved.call);
-      await this.logger?.info(DomainEventType.ToolAliasRewritten, resolved.call.name, { ...payload });
+      await this.logger?.info(DomainEventType.ToolAliasRewritten, resolved.call.name, {
+        ...payload,
+        ...(callContext?.provider ? { provider: callContext.provider } : {}),
+        ...(callContext?.model ? { model: callContext.model } : {}),
+      }, callContext?.traceId);
     }
 
     const response = await resolved.handler.execute(resolved.call.params);

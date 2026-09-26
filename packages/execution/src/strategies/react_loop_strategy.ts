@@ -569,7 +569,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let lastPriorTurn = nativeToolsPriorTurn;
     let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
-      const action = this.canonicalizeAction(parsed.actions[a], context.trace_id);
+      const action = this.canonicalizeAction(parsed.actions[a], context.trace_id, response.provider, response.model);
       const execResult = await this.executeTool(action, options);
       allActionsSucceeded &&= execResult.success === true;
       this.recordWrittenFile(action, execResult, writtenFiles);
@@ -711,16 +711,18 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   /** Canonicalizes one parsed action's name and parameter keys. Every later consumer sees
    *  only the canonical form: the allowlist check, portal prefixing, write tracking, history
    *  and the journal. Journals the rewrite when one occurred. */
-  private canonicalizeAction(action: IReActAction, traceId: string): IReActAction {
+  private canonicalizeAction(action: IReActAction, traceId: string, provider: string, model: string): IReActAction {
     if (!this.executor.toolRegistry) return action;
     const canonical = canonicalizeForRegistry(this.executor.toolRegistry, action.tool, action.params);
-    if (canonical.rewritten) this.logAliasRewrite(canonical, traceId);
+    if (canonical.rewritten) this.logAliasRewrite(canonical, traceId, provider, model);
     return { ...action, tool: canonical.name, params: canonical.params };
   }
 
   private logAliasRewrite(
     call: ReturnType<typeof canonicalizeForRegistry>,
     traceId: string,
+    provider: string,
+    model: string,
   ): void {
     const logger = this.executor.budgetLogger;
     if (!logger) return;
@@ -730,6 +732,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       renamedParams: [...call.renamedParams],
       droppedParams: [...call.droppedParams],
       entryPoint: ToolCallEntryPoint.REACT_LOOP,
+      provider,
+      model,
     };
     void logger.info(DomainEventType.ToolAliasRewritten, call.name, { ...payload }, traceId);
   }

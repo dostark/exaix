@@ -132,6 +132,8 @@ export class LlmClient implements ILlmClient {
     tool?: McpToolName;
     args?: ToolArgs;
     output?: string;
+    provider?: string;
+    model?: string;
   }> {
     const { agent_role, stepObjective, accumulatedContext, availableTools, iteration, maxIterations, options } = params;
 
@@ -181,6 +183,8 @@ export class LlmClient implements ILlmClient {
         return {
           done: true,
           output: decision.action.output,
+          provider: result.provider,
+          model: result.model,
         };
       }
 
@@ -189,6 +193,8 @@ export class LlmClient implements ILlmClient {
           done: false,
           tool: decision.action.tool,
           args: (decision.action.args ?? {}) as ToolArgs,
+          provider: result.provider,
+          model: result.model,
         };
       }
 

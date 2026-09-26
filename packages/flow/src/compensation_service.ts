@@ -80,7 +80,11 @@ export class CompensationService {
         };
 
         try {
-          const result = await this.mcpClient.callTool(compensation.tool, args);
+          const result = await this.mcpClient.callTool(
+            compensation.tool,
+            args,
+            request.traceId ? { traceId: request.traceId } : undefined,
+          );
 
           await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATED, {
             flowRunId,

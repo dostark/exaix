@@ -80,6 +80,8 @@ Deno.test("LlmClient - builds correct reasoning prompt and handles valid tool_ca
   assertEquals(result.done, false);
   assertEquals(result.tool, McpToolName.READ_FILE);
   assertEquals(result.args, { path: "src/main.ts" });
+  assertEquals(result.provider, "mock");
+  assertEquals(result.model, "test-model");
 
   const prompt = provider.lastPrompt;
   assertEquals(prompt.includes("Test Agent"), true);

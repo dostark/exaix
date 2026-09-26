@@ -202,6 +202,8 @@ export interface ILlmClient {
     tool?: McpToolName;
     args?: ToolArgs;
     output?: string;
+    provider?: string;
+    model?: string;
   }>;
 }
 

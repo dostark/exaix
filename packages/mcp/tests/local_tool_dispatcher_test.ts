@@ -199,7 +199,12 @@ class RecordingTool extends ToolHandler {
 }
 
 async function withJournal(
-  fn: (logger: EventLogger, rewrites: () => Promise<IToolAliasRewrittenPayload[]>) => Promise<void>,
+  fn: (
+    logger: EventLogger,
+    rewrites: () => Promise<IToolAliasRewrittenPayload[]>,
+    rewriteRows: () => Promise<Array<{ traceId: string; payload: IToolAliasRewrittenPayload }>>,
+    attributionGroups: () => Promise<Array<{ provider: string | null; model: string | null; count: number }>>,
+  ) => Promise<void>,
 ) {
   const { db, cleanup } = await initTestDbService();
   try {
@@ -208,11 +213,75 @@ async function withJournal(
       await db.waitForFlush();
       return db.getActivitiesByActionType(DomainEventType.ToolAliasRewritten)
         .map((row) => JSON.parse(row.payload) as IToolAliasRewrittenPayload);
+    }, async () => {
+      await db.waitForFlush();
+      return db.getActivitiesByActionType(DomainEventType.ToolAliasRewritten).map((row) => ({
+        traceId: row.trace_id,
+        payload: JSON.parse(row.payload) as IToolAliasRewrittenPayload,
+      }));
+    }, async () => {
+      await db.waitForFlush();
+      return await db.preparedAll<{ provider: string | null; model: string | null; count: number }>(
+        `SELECT json_extract(payload, '$.provider') AS provider,
+          json_extract(payload, '$.model') AS model, COUNT(*) AS count
+        FROM activity WHERE action_type = ? GROUP BY provider, model ORDER BY provider, model`,
+        [DomainEventType.ToolAliasRewritten],
+      );
     });
   } finally {
     await cleanup();
   }
 }
+
+Deno.test("[mcp][local] alias event retains the caller trace and model response identity", async () => {
+  await withJournal(async (logger, _rewrites, rewriteRows) => {
+    const read = new RecordingTool(McpToolName.READ_FILE, { path: { type: "string" } });
+    const client = new LocalToolDispatcher(mockContext, [read], logger);
+
+    await client.callTool("Read" as McpToolName, { file_path: "a.ts" }, {
+      traceId: "phase201-parent-trace",
+      provider: "fixture-provider",
+      model: "fixture-model",
+    });
+
+    assertEquals(await rewriteRows(), [{
+      traceId: "phase201-parent-trace",
+      payload: {
+        requestedName: "Read",
+        canonicalName: McpToolName.READ_FILE,
+        renamedParams: [{ from: "file_path", to: "path" }],
+        droppedParams: [],
+        entryPoint: ToolCallEntryPoint.MCP,
+        provider: "fixture-provider",
+        model: "fixture-model",
+      },
+    }]);
+  });
+});
+
+Deno.test("[alias-attribution] journal query groups actual producers and keeps external identity unknown", async () => {
+  await withJournal(async (logger, _rewrites, _rewriteRows, attributionGroups) => {
+    const read = new RecordingTool(McpToolName.READ_FILE, { path: { type: "string" } });
+    const client = new LocalToolDispatcher(mockContext, [read], logger);
+    await client.callTool("Read" as McpToolName, { file_path: "a.ts" }, {
+      traceId: "shared-request-trace",
+      provider: "provider-a",
+      model: "model-a",
+    });
+    await client.callTool("Read" as McpToolName, { file_path: "b.ts" }, {
+      traceId: "shared-request-trace",
+      provider: "provider-b",
+      model: "model-b",
+    });
+    await client.callTool("Read" as McpToolName, { file_path: "external.ts" });
+
+    assertEquals(await attributionGroups(), [
+      { provider: null, model: null, count: 1 },
+      { provider: "provider-a", model: "model-a", count: 1 },
+      { provider: "provider-b", model: "model-b", count: 1 },
+    ]);
+  });
+});
 
 Deno.test("[mcp][local] a general-purpose alias executes the canonical handler and emits one rewrite with entryPoint mcp", async () => {
   await withJournal(async (logger, rewrites) => {

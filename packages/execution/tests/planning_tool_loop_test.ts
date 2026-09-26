@@ -671,7 +671,11 @@ Deno.test("[planning_tool_loop][integration] an alias rewrite journals the canon
     });
     const traceId = "planning-alias-trace";
     const generate = new ScriptedGenerate([
-      makeGenerateResult("", { toolCalls: [{ id: "read-1", name: "read_file", input: { file_path: "a.ts" } }] }),
+      makeGenerateResult("", {
+        provider: "alias-test-provider",
+        model: "alias-test-model",
+        toolCalls: [{ id: "read-1", name: "read_file", input: { file_path: "a.ts" } }],
+      }),
       makeGenerateResult("done"),
     ]);
     const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate, logger }));
@@ -684,6 +688,9 @@ Deno.test("[planning_tool_loop][integration] an alias rewrite journals the canon
     const alias = rows.filter((row) => row.action_type === DomainEventType.ToolAliasRewritten);
     assertEquals(alias.length, 1);
     assertEquals(JSON.parse(alias[0].payload).entryPoint, "planning_loop");
+    assertEquals(JSON.parse(alias[0].payload).provider, "alias-test-provider");
+    assertEquals(JSON.parse(alias[0].payload).model, "alias-test-model");
+    assertEquals(JSON.parse(alias[0].payload).modelCallId, "read-1");
   } finally {
     await cleanup();
   }

@@ -919,6 +919,7 @@ function planningToolsPlanBody(marker: string): string {
 }
 
 interface IPlanningCutoverRow {
+  trace_id: string;
   action_type: string;
   payload: string;
 }
@@ -929,7 +930,7 @@ async function readPlanningCutoverActivity(configPath: string, traceId: string):
   const db = new DatabaseService(configService.getAll());
   try {
     return await db.preparedAll<IPlanningCutoverRow>(
-      "SELECT action_type, payload FROM activity WHERE trace_id = ? ORDER BY rowid ASC",
+      "SELECT trace_id, action_type, payload FROM activity WHERE trace_id = ? ORDER BY rowid ASC",
       [traceId],
     );
   } finally {
@@ -1251,6 +1252,7 @@ const PLANNING_END_EVENTS = ["planning.tools.completed", "planning.tools.aborted
 type AliasCutoverMode = "alias-read" | "alias-extra-param" | "escape" | "native";
 
 interface IAliasCutoverRun {
+  traceId: string;
   rows: IPlanningCutoverRow[];
   planText: string;
   marker: string;
@@ -1391,7 +1393,7 @@ async function bootAliasCutoverRun(
         (mode !== "alias-read" || readPlan() !== "");
     },
   });
-  return { rows: await readPlanningCutoverActivity(configPath, traceId), planText: readPlan(), marker };
+  return { traceId, rows: await readPlanningCutoverActivity(configPath, traceId), planText: readPlan(), marker };
 }
 
 function payloadsOf<T>(rows: IPlanningCutoverRow[], actionType: string): T[] {
@@ -1411,10 +1413,11 @@ Deno.test({
   async fn() {
     const tempDir = await Deno.makeTempDir({ prefix: "phase201-alias-read-cutover-" });
     try {
-      const { rows, planText, marker } = await bootAliasCutoverRun(tempDir, "alias-read");
+      const { traceId, rows, planText, marker } = await bootAliasCutoverRun(tempDir, "alias-read");
 
       const rewrites = payloadsOf<IToolAliasRewrittenPayload>(rows, "tool.alias.rewritten");
       assertEquals(rewrites.length, 1, `exactly one rewrite row. got: ${actionTypes(rows)}`);
+      assertEquals(rows.find((row) => row.action_type === "tool.alias.rewritten")?.trace_id, traceId);
       assertEquals(rewrites[0].requestedName, "Read");
       assertEquals(rewrites[0].canonicalName, "read_file");
       assertEquals(rewrites[0].entryPoint, "planning_loop");
@@ -1422,6 +1425,7 @@ Deno.test({
 
       const calls = payloadsOf<IToolCallRow>(rows, "dynamic_tool_call");
       assertEquals(calls.length, 1);
+      assertEquals(rows.find((row) => row.action_type === "dynamic_tool_call")?.trace_id, traceId);
       assertEquals(calls[0].tool, "read_file");
       assertEquals(calls[0].args, { path: "src/target.ts" });
       assert(

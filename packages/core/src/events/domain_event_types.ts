@@ -119,6 +119,11 @@ export interface IToolAliasRewrittenPayload {
   renamedParams: Array<{ from: string; to: string }>;
   droppedParams: string[];
   entryPoint: ToolCallEntryPoint;
+  /** Actual model response identity when this call came from a model. Absent for external callers. */
+  provider?: string;
+  model?: string;
+  /** Provider tool-call identifier when the producing response supplies one. */
+  modelCallId?: string;
 }
 
 /** Unknown parameter keys observed at the registry boundary. */

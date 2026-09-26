@@ -225,7 +225,10 @@ export class PlanningToolLoop {
         }, options.traceId);
       }
 
-      const executed = await this.executeRoundCalls(response.toolCalls, canonicalOptions, round, progress);
+      const executed = await this.executeRoundCalls(response.toolCalls, canonicalOptions, round, progress, {
+        provider: response.provider,
+        model: response.model,
+      });
       transcript += executed.transcript;
 
       // A prior round's priorTurn is about to be superseded by this round's — age it into
@@ -261,6 +264,7 @@ export class PlanningToolLoop {
     options: IPlanningToolLoopOptions,
     round: number,
     progress: ILoopProgress,
+    identity: { provider: string; model: string },
   ): Promise<{
     lastTurn: Opt<IProviderTurn, Reason.OptionalInput>;
     lastTool: string;
@@ -276,7 +280,9 @@ export class PlanningToolLoop {
     for (let i = 0; i < calls.length; i++) {
       const call = calls[i];
       const withinCap = i < options.maxToolCallsPerRound;
-      const outcome = withinCap ? await this.executeCall(call, options, round) : this.refuseCall(call, round, options);
+      const outcome = withinCap
+        ? await this.executeCall(call, options, round, { ...identity, modelCallId: call.id })
+        : this.refuseCall(call, round, options);
       if (withinCap) progress.toolCalls++;
       guardrailBlocked ||= outcome.guardrailBlocked;
       if (i === replayIndex) {
@@ -314,9 +320,10 @@ export class PlanningToolLoop {
     call: IProviderToolCall,
     options: IPlanningToolLoopOptions,
     round: number,
+    identity: { provider: string; model: string; modelCallId?: string },
   ): Promise<{ turn: IProviderTurn; guardrailBlocked: boolean }> {
     const canonical = canonicalizeForRegistry(this.deps.toolRegistry, call.name, call.input);
-    this.logAliasRewrite(canonical, options.traceId);
+    this.logAliasRewrite(canonical, options.traceId, identity);
     const canonicalCall: IProviderToolCall = { ...call, name: canonical.name, input: canonical.params };
     let execResult: IToolResult;
     let guardrailBlocked = false;
@@ -358,6 +365,7 @@ export class PlanningToolLoop {
   private logAliasRewrite(
     call: ReturnType<typeof canonicalizeForRegistry>,
     traceId: string,
+    identity: { provider: string; model: string; modelCallId?: string },
   ): void {
     if (!call.rewritten || !this.logger) return;
     const payload: IToolAliasRewrittenPayload = {
@@ -366,6 +374,9 @@ export class PlanningToolLoop {
       renamedParams: [...call.renamedParams],
       droppedParams: [...call.droppedParams],
       entryPoint: ToolCallEntryPoint.PLANNING_LOOP,
+      provider: identity.provider,
+      model: identity.model,
+      ...(identity.modelCallId ? { modelCallId: identity.modelCallId } : {}),
     };
     void this.logger.info(DomainEventType.ToolAliasRewritten, call.name, { ...payload }, traceId);
   }

@@ -181,67 +181,17 @@ export class DynamicStepExecutor {
         );
       }
 
-      const policyMatch = this.hitlPolicyEvaluator?.evaluate(
-        agent_role.hitl?.require_secondary_approval ?? [],
+      const denialText = await this.requestApprovalIfRequired(
         decision.tool,
         decision.args ?? {},
+        agent_role,
+        step.id,
+        opts.traceId,
+        opts.config?.tools?.confirmation_timeout_s,
       );
-
-      if (this.mcpClient.requiresHumanApproval(decision.tool) || policyMatch) {
-        if (!this.confirmationInterceptor) {
-          throw new Error(
-            `Dynamic step "${step.id}": tool "${decision.tool}" requires human approval but no confirmation interceptor is configured`,
-          );
-        }
-
-        if (policyMatch) {
-          await this.activityJournal.log({
-            traceId: opts.traceId,
-            stepId: step.id,
-            event: DomainEventType.HitlPolicyMatched,
-            tool: decision.tool,
-            ruleSource: policyMatch.source,
-            reason: policyMatch.rule.reason,
-            surface: "dynamic",
-          });
-        }
-
-        const confirmationRequest = this.createConfirmationRequest(
-          decision.tool,
-          decision.args ?? {},
-          step.id,
-          opts.traceId,
-          opts.config?.tools?.confirmation_timeout_s,
-          policyMatch?.rule.reason,
-        );
-        const approvalDecision = await this.confirmationInterceptor.requestApproval(confirmationRequest);
-
-        if (!approvalDecision.approved) {
-          const denialText = this.formatDenialObservation(decision.tool, approvalDecision.reason);
-
-          await this.activityJournal.log({
-            traceId: opts.traceId,
-            stepId: step.id,
-            event: TOOL_CONFIRMATION_EVENT_DENIED,
-            tool: decision.tool,
-            confirmationId: confirmationRequest.id,
-            toolErrorCode: ToolErrorCode.PERMISSION_DENIED,
-            ...(approvalDecision.reason !== undefined ? { reason: approvalDecision.reason } : {}),
-            ...(approvalDecision.decidedBy !== undefined ? { decidedBy: approvalDecision.decidedBy } : {}),
-          });
-
-          context = this.appendObservation(context, decision.tool, denialText);
-          continue;
-        }
-
-        await this.activityJournal.log({
-          traceId: opts.traceId,
-          stepId: step.id,
-          event: TOOL_CONFIRMATION_EVENT_APPROVED,
-          tool: decision.tool,
-          confirmationId: confirmationRequest.id,
-          ...(approvalDecision.decidedBy !== undefined ? { decidedBy: approvalDecision.decidedBy } : {}),
-        });
+      if (denialText !== undefined) {
+        context = this.appendObservation(context, decision.tool, denialText);
+        continue;
       }
 
       // Execute the tool call
@@ -249,6 +199,11 @@ export class DynamicStepExecutor {
       const toolResult = await this.mcpClient.callTool(
         decision.tool,
         decision.args ?? {},
+        {
+          traceId: opts.traceId,
+          ...(decision.provider ? { provider: decision.provider } : {}),
+          ...(decision.model ? { model: decision.model } : {}),
+        },
       );
       await this.emitMilestone(MILESTONE_TOOL_CALL_COMPLETED, opts.traceId, `Tool call completed: ${decision.tool}`);
 
@@ -360,5 +315,71 @@ export class DynamicStepExecutor {
     reason?: Opt<string, Reason.OptionalInput>,
   ): string {
     return `Tool '${tool}' call denied: ${reason ?? "User declined"}`;
+  }
+
+  private async requestApprovalIfRequired(
+    tool: McpToolName,
+    args: ToolArgs,
+    agentRole: IBlueprintFrontmatter,
+    stepId: string,
+    traceId: string,
+    timeoutSeconds: Opt<number, Reason.OptionalInput>,
+  ): Promise<Opt<string, Reason.OptionalInput>> {
+    const policyMatch = this.hitlPolicyEvaluator?.evaluate(
+      agentRole.hitl?.require_secondary_approval ?? [],
+      tool,
+      args,
+    );
+    if (!this.mcpClient.requiresHumanApproval(tool) && !policyMatch) return undefined;
+    if (!this.confirmationInterceptor) {
+      throw new Error(
+        `Dynamic step "${stepId}": tool "${tool}" requires human approval but no confirmation interceptor is configured`,
+      );
+    }
+
+    if (policyMatch) {
+      await this.activityJournal.log({
+        traceId,
+        stepId,
+        event: DomainEventType.HitlPolicyMatched,
+        tool,
+        ruleSource: policyMatch.source,
+        reason: policyMatch.rule.reason,
+        surface: "dynamic",
+      });
+    }
+
+    const confirmationRequest = this.createConfirmationRequest(
+      tool,
+      args,
+      stepId,
+      traceId,
+      timeoutSeconds,
+      policyMatch?.rule.reason,
+    );
+    const approvalDecision = await this.confirmationInterceptor.requestApproval(confirmationRequest);
+    if (!approvalDecision.approved) {
+      await this.activityJournal.log({
+        traceId,
+        stepId,
+        event: TOOL_CONFIRMATION_EVENT_DENIED,
+        tool,
+        confirmationId: confirmationRequest.id,
+        toolErrorCode: ToolErrorCode.PERMISSION_DENIED,
+        ...(approvalDecision.reason !== undefined ? { reason: approvalDecision.reason } : {}),
+        ...(approvalDecision.decidedBy !== undefined ? { decidedBy: approvalDecision.decidedBy } : {}),
+      });
+      return this.formatDenialObservation(tool, approvalDecision.reason);
+    }
+
+    await this.activityJournal.log({
+      traceId,
+      stepId,
+      event: TOOL_CONFIRMATION_EVENT_APPROVED,
+      tool,
+      confirmationId: confirmationRequest.id,
+      ...(approvalDecision.decidedBy !== undefined ? { decidedBy: approvalDecision.decidedBy } : {}),
+    });
+    return undefined;
   }
 }
