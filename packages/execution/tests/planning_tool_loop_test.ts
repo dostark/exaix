@@ -132,6 +132,40 @@ Deno.test("[naming][planning_tool_loop] native renames preserve the read-only ca
   }
 });
 
+Deno.test("[planning-allowlist-alias] alias and canonical allowlists expose and execute search_text", async () => {
+  for (const allowed of ["grep_search", "search_text"]) {
+    const registry = new StubToolRegistry([fixtureTool("search_text")]);
+    const generate = new ScriptedGenerate([
+      makeGenerateResult("", { toolCalls: [{ id: "search-1", name: "grep_search", input: {} }] }),
+      makeGenerateResult("done"),
+    ]);
+    const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+
+    await loop.run(makeOptions({ allowedTools: new Set([allowed]) }));
+
+    assertEquals(generate.calls[0].options.tools?.map((tool) => tool.name), ["search_text"]);
+    assertEquals(registry.calls, [{ name: "search_text", params: {} }]);
+  }
+});
+
+Deno.test("[scope-boundaries] native names in a planning allowlist do not introduce a catalog alias", async () => {
+  const registry = new StubToolRegistry(readOnlyEditorTools());
+  const generate = new ScriptedGenerate([
+    makeGenerateResult("", { toolCalls: [{ id: "native-alias", name: "who_depends_on", input: { path: "." } }] }),
+    makeGenerateResult("done"),
+  ]);
+  const loop = new PlanningToolLoop(makeDeps({ toolRegistry: registry, generate: generate.generate }));
+
+  await loop.run(makeOptions({ allowedTools: new Set(["who_depends_on"]) }));
+
+  assertEquals(generate.calls[0].options.tools?.some((tool) => tool.name === "who_depends_on"), false);
+  assertEquals(registry.calls, []);
+  assertEquals(
+    String(generate.calls[1].options.priorTurn?.toolResultContent).includes("not in the planning catalog"),
+    true,
+  );
+});
+
 Deno.test("[planning_tool_loop] round 1 with no toolCalls returns the raw response untouched, stopReason no_tool_calls", async () => {
   const response = makeGenerateResult("<thought>t</thought><content>plan</content>");
   const generate = new ScriptedGenerate([response]);

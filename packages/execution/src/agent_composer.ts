@@ -572,6 +572,9 @@ export class AgentComposer {
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
   ): void {
+    if (options.permitted_tools !== undefined) {
+      options.permitted_tools = options.permitted_tools.map(canonicalizeToolName);
+    }
     if (blueprint.permitted_tools) {
       options.permitted_tools = blueprint.permitted_tools.map(canonicalizeToolName);
     }

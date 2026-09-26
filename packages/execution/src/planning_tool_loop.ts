@@ -27,6 +27,8 @@ import {
   type IToolAliasRewrittenPayload,
 } from "@exaix/core/events";
 import {
+  canonicalizeToolName,
+  isRejectedNativeToolName,
   PLANNING_TOOL_RESULT_TAG,
   PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX,
   PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION,
@@ -160,9 +162,14 @@ export class PlanningToolLoop {
     options: IPlanningToolLoopOptions,
     progress: ILoopProgress,
   ): Promise<IPlanningToolLoopResult> {
+    const catalogNames = new Set(this.deps.toolRegistry.getTools().map((tool) => tool.name));
     const canonicalOptions: IPlanningToolLoopOptions = {
       ...options,
-      allowedTools: new Set(options.allowedTools),
+      allowedTools: new Set(
+        [...options.allowedTools]
+          .map(canonicalizeToolName)
+          .filter((name) => !isRejectedNativeToolName(name) && catalogNames.has(name)),
+      ),
     };
     const allowedToolDefs = buildAllowedToolDefinitions(
       this.deps.toolRegistry.getTools(),

@@ -3182,6 +3182,92 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[scope-alias] execution-option and skill aliases resolve without a blueprint scope",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => [{
+          name: "search_text",
+          description: "Search file contents by pattern inside a portal.",
+          parameters: { type: "object", properties: { pattern: { type: "string" } } },
+        }],
+        execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => "/tmp",
+      };
+      let capturedPrompt = "";
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: (prompt: string): Promise<IGenerateResult> => {
+          capturedPrompt = prompt;
+          return Promise.resolve({
+            content: `\`\`\`json\n${
+              JSON.stringify({
+                branch: "feat/x",
+                commit_sha: "1234567890123456789012345678901234567890",
+                files_changed: [],
+                description: "done",
+                tool_calls: 0,
+                execution_time_ms: 1,
+              })
+            }\n\`\`\``,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          });
+        },
+      };
+      const executor = new AgentComposer({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        provider: mockProvider,
+        toolRegistry: fakeToolRegistry,
+        options: { matchedSkillTools: [["grep"]] },
+      });
+      const blueprintPath = join(testConfig.paths.blueprints, "Agents", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
+      await Deno.writeTextFile(blueprintPath, "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
+      const context: IExecutionContext = {
+        trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0ca",
+        request_id: "r-skill-option-alias-tools",
+        request: "Work",
+        plan: "Plan",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        agent_role: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+        permitted_tools: ["grep_search"],
+      };
+
+      await executor.executeStep(context, options);
+
+      assertStringIncludes(capturedPrompt, "search_text");
+      await executor.executeStep({ ...context, request_id: "r-empty-tool-scope" }, { ...options, permitted_tools: [] });
+      assertEquals(capturedPrompt.includes("search_text"), false);
+      await executor.executeStep(
+        { ...context, request_id: "r-undefined-tool-scope" },
+        { ...options, permitted_tools: undefined },
+      );
+      assertStringIncludes(capturedPrompt, "search_text");
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentComposer: executeStep with provider parses JSON response",
   fn: async () => {
     await setup();
