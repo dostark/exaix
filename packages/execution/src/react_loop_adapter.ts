@@ -15,10 +15,11 @@ import { ActorType, AGENT_GENERATION_COMPLETED, DEFAULT_MCP_AGENT_ROLE_ID, Runne
 import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
-import type { IChangesetResult } from "@exaix/schemas/agent_composer.ts";
+import type { IChangesetCostSource, IChangesetResult } from "@exaix/schemas/agent_composer.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
+import type { ITokenizer } from "@exaix/core/func";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
@@ -48,7 +49,8 @@ export interface IReActLoopExecutor {
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
-      costUsd: number;
+      costUsd?: number;
+      costSource?: IChangesetCostSource;
       cacheReadTokens?: Opt<number, Reason.OptionalInput>;
       cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
       durationMs?: Opt<number, Reason.OptionalInput>;
@@ -57,6 +59,8 @@ export interface IReActLoopExecutor {
   eventBus?: IEventBusService;
   contextBudgetManager?: IContextBudgetManager;
   currentPromptBudget?: IPromptBudget;
+  /** Model-aware tokenizer used to preflight immutable native snapshots. */
+  tokenizer?: ITokenizer;
   budgetLogger?: IEventLogger;
   guardrailRunner?: IGuardrailRunner;
   /** Whether ACI tool guidance is injected into the ReAct execution prompt. */
@@ -117,6 +121,10 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     return this.ctx.currentPromptBudget;
   }
 
+  get tokenizer(): ITokenizer | undefined {
+    return this.ctx.tokenizer;
+  }
+
   get budgetLogger(): IEventLogger {
     return this.logger;
   }
@@ -161,7 +169,8 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
-      costUsd: number;
+      costUsd?: number;
+      costSource?: IChangesetCostSource;
       cacheReadTokens?: Opt<number, Reason.OptionalInput>;
       cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
       durationMs?: Opt<number, Reason.OptionalInput>;
@@ -178,7 +187,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
-      costUsd: usage.costUsd,
+      costUsd: usage.costSource === "unknown" ? null : usage.costUsd,
       cacheReadTokens: usage.cacheReadTokens,
       cacheCreationTokens: usage.cacheCreationTokens,
       payload: {
@@ -187,7 +196,8 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
         prompt_tokens: usage.promptTokens,
         completion_tokens: usage.completionTokens,
         total_tokens: usage.totalTokens,
-        cost_usd: usage.costUsd,
+        ...(usage.costUsd === undefined ? {} : { cost_usd: usage.costUsd }),
+        ...(usage.costSource === undefined ? {} : { cost_source: usage.costSource }),
         duration_ms: usage.durationMs,
       },
     });

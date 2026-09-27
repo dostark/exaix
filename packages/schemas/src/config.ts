@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { AiConfigSchema, ProviderTypeSchema } from "./ai_config.ts";
+import { AiConfigSchema, CompatibleChatOverrideSchema, MODEL_CONFIG_FIELD, ProviderTypeSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
 import { ProviderType, TaskType, TokenizerBackend } from "@exaix/core";
@@ -405,7 +405,7 @@ export const ConfigSchema = z.object({
     z.string(),
     z.object({
       provider: ProviderTypeSchema,
-      model: z.string(),
+      model: z.string().optional(),
       timeout_ms: z.number().positive().optional(),
       max_tokens: z.number().positive().optional(),
       temperature: z.number()
@@ -413,6 +413,10 @@ export const ConfigSchema = z.object({
         .max(resolveConfigurableBounds("ai.temperature_max").max!)
         .optional(),
       base_url: z.string().optional(),
+      compatible: CompatibleChatOverrideSchema.optional(),
+    }).refine((entry) => entry.model !== undefined || entry.provider === ProviderType.OPENAI_CHAT, {
+      message: "Model is required for this provider",
+      path: [MODEL_CONFIG_FIELD],
     }),
   ).default({
     [DEFAULTS.DEFAULT_AGENT_MODEL]: {

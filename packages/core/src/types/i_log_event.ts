@@ -51,7 +51,7 @@ export interface ILogEvent {
   completionTokens?: number;
 
   /** Estimated cost in USD */
-  costUsd?: number;
+  costUsd?: number | null;
 
   /** Real tool-reported prompt-cache read tokens (undefined when not reported) */
   cacheReadTokens?: number;

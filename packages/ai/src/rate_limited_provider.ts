@@ -6,10 +6,13 @@
  * @related-files [packages/ai/src/providers.ts, "packages/core/src/cost/cost_tracker.ts"]
  */
 
-import type { IModelProvider } from "./types.ts";
+import type { IModelOptions, IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
 import type { ICostTracker, Opt, Reason } from "@exaix/core/types";
+import { ProviderRegistry } from "./provider_registry.ts";
+import { ProviderCallPolicyError } from "./errors.ts";
 import {
+  OPENAI_COMPATIBLE_LOCAL_PROFILE,
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,
   RATE_LIMIT_WINDOW_MINUTE_MS,
@@ -55,6 +58,12 @@ export class RateLimitedProvider implements IModelProvider {
   public windowStart = Date.now();
   public hourStart = Date.now();
   public dayStart = Date.now();
+  private readonly compatible: boolean;
+  private readonly compatibleLocal: boolean;
+  private hasUnpricedRemoteUsage = false;
+  public readonly measureInputTokens: IModelProvider["measureInputTokens"];
+  public readonly callCapabilities: IModelProvider["callCapabilities"];
+  public readonly estimateCallCost: IModelProvider["estimateCallCost"];
 
   constructor(
     /** Public so unwrapModelProvider can reach through a decorator chain to report on
@@ -62,12 +71,17 @@ export class RateLimitedProvider implements IModelProvider {
     public readonly inner: IModelProvider,
     private limits: IRateLimitConfig,
   ) {
-    this.id = `rate-limited-${inner.id}`;
+    this.compatible = ProviderRegistry.getMetadataForInstance(inner.id)?.supportsNativeConversation === true;
+    this.compatibleLocal = this.compatible && inner.callCapabilities?.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE;
+    this.id = this.compatible ? inner.id : `rate-limited-${inner.id}`;
+    this.measureInputTokens = inner.measureInputTokens?.bind(inner);
+    this.callCapabilities = inner.callCapabilities;
+    this.estimateCallCost = inner.estimateCallCost?.bind(inner);
   }
 
   async generate(
     prompt: string,
-    options?: Opt<{ max_tokens?: number }, Reason.OptionalInput>,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<IGenerateResult> {
     this.resetWindowsIfNeeded();
 
@@ -76,10 +90,63 @@ export class RateLimitedProvider implements IModelProvider {
       throw new RateLimiterError(`Rate limit exceeded: ${this.limits.maxCallsPerMinute} calls per minute`);
     }
 
-    // Estimate cost and tokens
-    const estimatedTokens = this.estimateTokens(prompt, options);
-    const estimatedCost = (estimatedTokens / 1000) * this.limits.costPer1kTokens;
+    const { estimatedTokens, estimatedCost, finiteRemoteBudget } = await this.estimateAdmission(prompt, options);
+    await this.checkAdmission(estimatedTokens, estimatedCost);
 
+    // Track before call (pessimistic)
+    this.callsThisMinute++;
+    this.tokensThisHour += estimatedTokens;
+    this.costThisDay += estimatedCost;
+
+    let generated = false;
+    try {
+      const result = await this.inner.generate(prompt, options);
+      generated = this.compatible;
+      if (this.compatible) this.costThisDay += (result.cost_usd ?? 0) - estimatedCost;
+      await this.persistUsage(result, options?.traceId);
+
+      if (this.compatible && !this.compatibleLocal && result.costStatus === "unknown") {
+        this.hasUnpricedRemoteUsage = true;
+        if (finiteRemoteBudget) {
+          throw new ProviderCallPolicyError("pricing_unavailable", this.callCapabilities?.profile ?? this.id);
+        }
+      }
+      return result;
+    } catch (error) {
+      // Rollback tracking on error
+      if (!generated) {
+        this.callsThisMinute--;
+        this.tokensThisHour -= estimatedTokens;
+        this.costThisDay -= estimatedCost;
+      }
+      throw error;
+    }
+  }
+
+  private async estimateAdmission(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<{ estimatedTokens: number; estimatedCost: number; finiteRemoteBudget: boolean }> {
+    if (this.compatible && !this.measureInputTokens) {
+      throw new RateLimiterError("Native conversation provider requires input measurement");
+    }
+    const estimatedTokens = this.compatible
+      ? (await this.measureInputTokens!(prompt, options)).totalTokens
+      : this.estimateTokens(prompt, options);
+    const price = this.compatible && !this.compatibleLocal
+      ? await this.estimateCallCost?.(estimatedTokens, options?.max_tokens ?? TOKEN_ESTIMATION_MAX_TOKENS)
+      : undefined;
+    const finiteRemoteBudget = this.compatible && !this.compatibleLocal && Number.isFinite(this.limits.maxCostPerDay);
+    if (
+      finiteRemoteBudget && (price === undefined || !Number.isFinite(price) || price < 0 || this.hasUnpricedRemoteUsage)
+    ) {
+      throw new ProviderCallPolicyError("pricing_unavailable", this.callCapabilities?.profile ?? this.id);
+    }
+    const estimatedCost = this.compatible ? price ?? 0 : (estimatedTokens / 1000) * this.limits.costPer1kTokens;
+    return { estimatedTokens, estimatedCost, finiteRemoteBudget };
+  }
+
+  private async checkAdmission(estimatedTokens: number, estimatedCost: number): Promise<void> {
     if (this.tokensThisHour + estimatedTokens > this.limits.maxTokensPerHour) {
       throw new RateLimiterError(`Rate limit exceeded: ${this.limits.maxTokensPerHour} tokens per hour`);
     }
@@ -91,49 +158,38 @@ export class RateLimitedProvider implements IModelProvider {
     }
 
     // Check persistent budget if cost tracker is available
-    if (this.limits.costTracker) {
+    if (this.limits.costTracker && !this.compatibleLocal) {
       const providerName = this.extractProviderName(this.inner.id);
       const withinBudget = await this.limits.costTracker.isWithinBudget(providerName, this.limits.maxCostPerDay);
       if (!withinBudget) {
         throw new RateLimiterError(`Persistent cost budget exceeded for ${providerName}`);
       }
     }
+  }
 
-    // Track before call (pessimistic)
-    this.callsThisMinute++;
-    this.tokensThisHour += estimatedTokens;
-    this.costThisDay += estimatedCost;
-
-    try {
-      const result = await this.inner.generate(prompt, options);
-
-      // Track in persistent storage if cost tracker is available
-      if (this.limits.costTracker) {
-        const providerName = this.extractProviderName(this.inner.id);
-        await this.limits.costTracker.trackGeneration(
-          providerName,
-          result.model || this.inner.id,
-          {
-            promptTokens: result.usage.promptTokens,
-            completionTokens: result.usage.completionTokens,
-            totalTokens: result.usage.totalTokens,
-            // Pass provider-reported cost through (e.g. OpenRouter usage.cost).
-            costUsd: result.cost_usd,
-            costSource: result.cost_usd !== undefined ? "provider_reported" : undefined,
-            cacheReadTokens: result.usage.cacheReadTokens,
-            cacheCreationTokens: result.usage.cacheCreationTokens,
-          },
-        );
-      }
-
-      return result;
-    } catch (error) {
-      // Rollback tracking on error
-      this.callsThisMinute--;
-      this.tokensThisHour -= estimatedTokens;
-      this.costThisDay -= estimatedCost;
-      throw error;
+  private async persistUsage(result: IGenerateResult, traceId?: Opt<string, Reason.TraceAbsent>): Promise<void> {
+    const tracker = this.limits.costTracker;
+    if (!tracker) return;
+    const providerName = this.extractProviderName(this.inner.id);
+    const model = result.model || this.inner.id;
+    const usage = {
+      promptTokens: result.usage.promptTokens,
+      completionTokens: result.usage.completionTokens,
+      totalTokens: result.usage.totalTokens,
+    };
+    if (result.costStatus === "unknown") {
+      await tracker.recordUnpricedGeneration?.(providerName, model, usage, traceId);
+      return;
     }
+    await tracker.trackGeneration(providerName, model, {
+      ...usage,
+      costUsd: result.cost_usd,
+      costSource: result.cost_usd !== undefined
+        ? (this.compatible ? "registry_computed" : "provider_reported")
+        : undefined,
+      cacheReadTokens: result.usage.cacheReadTokens,
+      cacheCreationTokens: result.usage.cacheCreationTokens,
+    }, traceId);
   }
 
   /**
@@ -157,6 +213,7 @@ export class RateLimitedProvider implements IModelProvider {
     // Reset daily counter
     if (now - this.dayStart > RATE_LIMIT_WINDOW_DAY_MS) {
       this.costThisDay = 0;
+      this.hasUnpricedRemoteUsage = false;
       this.dayStart = now;
     }
   }
@@ -172,6 +229,8 @@ export class RateLimitedProvider implements IModelProvider {
   }
   /** Extracts provider name from an id like "anthropic-claude-3-sonnet" -> "anthropic". */
   private extractProviderName(providerId: string): string {
+    const providerType = ProviderRegistry.getMetadataForInstance(providerId)?.name;
+    if (providerType) return providerType;
     // Provider IDs follow pattern: "provider-model" or "rate-limited-provider-model"
     const parts = providerId.replace(/^rate-limited-/, "").split("-");
     return parts[0];

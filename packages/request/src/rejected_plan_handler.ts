@@ -18,8 +18,9 @@ import { PlanStatus } from "@exaix/core/status";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IRequestFrontmatter } from "@exaix/core/request";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { LogMetadata, Opt, Reason } from "@exaix/core/types";
 import type { StatusManager } from "./processing/status.ts";
+import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 
 export interface IRejectedPlanHandlerDeps {
   config: Config;
@@ -120,15 +121,23 @@ export class RejectedPlanHandler implements IRejectedPlanHandler {
       }
     }
 
-    traceLogger.error(DomainEventType.RequestFailed, filePath, {
-      error: errorMessage,
-    });
+    await traceLogger.error(
+      DomainEventType.RequestFailed,
+      filePath,
+      this.failurePayload(error instanceof Error ? error : undefined, errorMessage),
+      frontmatter?.trace_id,
+    );
 
     // If we didn't already persist rejected_path above (e.g. non-validation errors),
     // persist the original error message without path metadata.
     if (!persistedRejectedPath) {
       await this.statusManager.updateStatus(Deno.realPathSync(filePath), RequestStatus.FAILED, errorMessage);
     }
+  }
+
+  private failurePayload(error: Opt<Error, Reason.OptionalContext>, errorMessage: string): LogMetadata {
+    const providerReasonCode = error ? getProviderFailureReason(error) : undefined;
+    return { error: errorMessage, ...(providerReasonCode ? { providerReasonCode } : {}) };
   }
 
   private formatRejectedPlan(args: {

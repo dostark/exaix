@@ -47,6 +47,8 @@ export interface IModelPricing {
   model: string;
   inputPerMtok?: number;
   outputPerMtok?: number;
+  cacheReadPerMtok?: number;
+  cacheCreationPerMtok?: number;
   provenance: PricingProvenance;
   verifiedAt?: number;
   sourceUrl?: string;

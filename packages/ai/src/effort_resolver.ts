@@ -24,6 +24,7 @@ import type {
   ThinkingDeclaration,
 } from "@exaix/schemas";
 import type { RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
+import { longestPrefixMatch } from "./provider_registry.ts";
 
 /** Which signal decided TaskComplexity — journaled so an LLM-derived value is
  *  distinguishable from a content/agent-id fallback. */
@@ -193,18 +194,8 @@ export const EFFORT_FLOOR_AGENT_ROLE_IDS: readonly string[] = configurable({
  *  `providerId.startsWith(v + "-")` (so "claude-cli-sonnet" → CLAUDE_CLI, not a "claude"
  *  prefix; "anthropic-claude-sonnet-5" → ANTHROPIC). Unknown → undefined (heuristic). */
 export function resolveProviderType(providerId: Opt<string, Reason.OptionalContext>): ProviderType | undefined {
-  if (providerId === undefined) return undefined;
   const providerTypes = Object.values(ProviderType) as ProviderType[];
-  if ((providerTypes as string[]).includes(providerId)) {
-    return providerId as ProviderType;
-  }
-  let best: ProviderType | undefined;
-  for (const providerType of providerTypes) {
-    if (providerId.startsWith(`${providerType}-`) && (best === undefined || providerType.length > best.length)) {
-      best = providerType;
-    }
-  }
-  return best;
+  return longestPrefixMatch(providerId, providerTypes);
 }
 
 /** Shared analysis→complexity mapping (SIMPLE/MEDIUM/COMPLEX, EPIC→COMPLEX, absent→MEDIUM).

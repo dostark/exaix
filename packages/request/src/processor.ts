@@ -46,6 +46,7 @@ import type { IFlowRunner } from "@exaix/flow";
 import { DomainEventType } from "@exaix/core/events";
 import type { IFlowLoaderService, IFlowValidatorService } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import { EFFORT_AUTO } from "@exaix/schemas";
 import type { IEffortDeclarationPair } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
@@ -867,13 +868,17 @@ export class RequestProcessor {
       });
       return result;
     } catch (error) {
+      const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
       await traceLogger.log({
         action: AGENT_EVENT_EXECUTION_FAILED,
         target: requestId,
         runnerId: AGENT_RUNNER_ID,
         runnerKind: RunnerKind.AGENT_RUNNER,
         traceId,
-        payload: { error_message: error instanceof Error ? error.message : String(error) },
+        payload: {
+          error_message: error instanceof Error ? error.message : String(error),
+          ...(providerReasonCode ? { providerReasonCode } : {}),
+        },
       });
       throw error;
     }
@@ -948,6 +953,7 @@ export class RequestProcessor {
         taskComplexity,
       );
     } catch (selErr) {
+      if (selErr instanceof Error && getProviderFailureReason(selErr)) throw selErr;
       traceLogger.warn(DomainEventType.RequestProviderSelectionFailed, String(selErr), {
         fallback: ProviderType.MOCK,
       });

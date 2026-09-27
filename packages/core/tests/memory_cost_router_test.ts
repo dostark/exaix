@@ -20,6 +20,7 @@ class StubCostTracker implements ICostTracker {
   }
 
   persistEntry(record: IProviderCostRecord): Promise<void> {
+    if (record.estimatedCostUsd === null) throw new Error("Numeric cost stub cannot price an unknown record");
     this.dailyCost += record.estimatedCostUsd;
     return Promise.resolve();
   }

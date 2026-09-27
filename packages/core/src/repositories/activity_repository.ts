@@ -27,7 +27,7 @@ export interface IActivity {
   payload: Record<string, JSONValue>;
   promptTokens?: number;
   completionTokens?: number;
-  costUsd?: number;
+  costUsd?: number | null;
   cacheReadTokens?: number | null;
   cacheCreationTokens?: number | null;
   timestamp: string;
@@ -48,7 +48,7 @@ export interface ILogActivityRequest {
   agentRole?: string | null;
   promptTokens?: number;
   completionTokens?: number;
-  costUsd?: number;
+  costUsd?: number | null;
   cacheReadTokens?: number;
   cacheCreationTokens?: number;
 }
@@ -146,7 +146,7 @@ export class DatabaseActivityRepository implements IActivityRepository {
       payload,
       promptTokens: record.prompt_tokens ?? 0,
       completionTokens: record.completion_tokens ?? 0,
-      costUsd: record.cost_usd ?? 0,
+      costUsd: record.cost_usd === null ? null : record.cost_usd ?? 0,
       cacheReadTokens: record.cache_read_tokens ?? undefined,
       cacheCreationTokens: record.cache_creation_tokens ?? undefined,
       timestamp: record.timestamp,

@@ -158,3 +158,25 @@ Deno.test("[materialize_cell_config] a preset without an [ai] block yields undef
     await Deno.remove(workspaceRoot, { recursive: true });
   }
 });
+
+Deno.test("[phase155] local compatible preset materialization injects the allocated fixture port", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "phase155-materialize-" });
+  const presetPath = new URL("../../fixtures/phase155/local-compatible.toml", import.meta.url);
+  try {
+    const result = await materializeCellConfig([daemonStep(presetPath.pathname)], {
+      workspaceRoot,
+      worktreePath: "/repo-under-test",
+      compatFixturePort: 43127,
+    });
+    assertEquals(result.aiProvider, "openai-chat");
+    assertEquals(result.aiModel, "compat-fixture-v1");
+    const daemon = result.steps.find((step) => step.id === MATRIX_START_DAEMON_STEP_ID);
+    const written = await Deno.readTextFile(daemon!.env!.EXA_CONFIG_PATH!);
+    assertStringIncludes(written, 'endpoint = "http://127.0.0.1:43127/v1/chat/completions"');
+    assertStringIncludes(written, 'default_model = "compat-agent"');
+    assertStringIncludes(written, "[models.compat-agent]");
+    assert(!written.includes("__COMPAT_FIXTURE_PORT__"));
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});

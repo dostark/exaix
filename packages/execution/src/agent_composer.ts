@@ -27,6 +27,7 @@ import { ActorType, AGENT_GENERATION_COMPLETED, canonicalizeToolName, LogLevel, 
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelCallOptions } from "@exaix/schemas";
 import {
@@ -72,6 +73,9 @@ import {
 } from "@exaix/ai";
 import type { IEffortDeclarationPair, IEffortResolution, IEffortResolver } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
+import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
+import { providerSupportsNativeConversation } from "./native_tool_turns.ts";
+import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
@@ -494,7 +498,8 @@ export class AgentComposer {
         modelSize: blueprint.modelSize,
         providerType,
         model: blueprint.model,
-        providerSupportsThinking: metadata?.supportsThinking === true,
+        providerSupportsThinking: this.provider?.callCapabilities?.supportsThinking ??
+          metadata?.supportsThinking === true,
         anthropicThinkingDefault: this.config.ai_anthropic?.thinking_default,
         skillFloors: this.options?.matchedSkillFloors ?? [],
         agentRole: options.agent_role,
@@ -510,6 +515,7 @@ export class AgentComposer {
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
     traceId: string,
+    projection?: Opt<IProjectedCallOptions, Reason.OptionalContext>,
   ): void {
     const providerType = resolveProviderType(blueprint.provider);
     const payload = buildAgentEffortResolvedPayload({
@@ -530,6 +536,7 @@ export class AgentComposer {
       },
       providerType,
       model: blueprint.model,
+      projection,
     });
     void this.logger.info(
       DomainEventType.AgentEffortResolved,
@@ -543,14 +550,14 @@ export class AgentComposer {
    *  the ModelResolver-derived values, and max_tokens is EFFORT_MAX_TOKENS[effort] only
    *  when the governing declaration was concrete (GAP-8) — auto-resolved effort never sets
    *  max_tokens. */
-  private applyEffortResolution(resolution: IEffortResolution): void {
+  private applyEffortResolution(resolution: IEffortResolution, projection: IProjectedCallOptions): void {
     this._resolvedCallOptions = this._resolvedCallOptions ?? {};
     delete this._resolvedCallOptions.thinking;
     delete this._resolvedCallOptions.effort;
     delete this._resolvedCallOptions.max_tokens;
-    if (resolution.thinking !== undefined) this._resolvedCallOptions.thinking = resolution.thinking;
+    if (projection.thinking !== undefined) this._resolvedCallOptions.thinking = projection.thinking;
+    if (projection.effort !== undefined) this._resolvedCallOptions.effort = projection.effort;
     if (resolution.effort !== undefined) {
-      this._resolvedCallOptions.effort = resolution.effort;
       if (resolution.concreteDeclaration) {
         this._resolvedCallOptions.max_tokens = EFFORT_MAX_TOKENS[resolution.effort];
       }
@@ -602,50 +609,38 @@ export class AgentComposer {
 
     const startTime = Date.now();
 
-    // Validate portal exists
-    const portal = this.config.portals?.find((p) => p.alias === options.portal);
-    if (!portal) {
-      throw new Error(`Portal not found: ${options.portal}`);
-    }
-
-    // Validate agent has permissions (check before loading blueprint)
-    if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
-      throw new Error(
-        `Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`,
-      );
-    }
-
-    // Load blueprint — capabilities array drives strategy dispatch (MCP > ReAct > Legacy).
-    const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
-    // Resolve declaration-time effort/thinking AFTER provider selection (GAP-3): the
-    // blueprint's resolved provider/model and the persisted request_analysis are known
-    // here, and "auto" must never feed ModelResolver (which already ran in loadBlueprint).
-    const effortResolution = this.resolveStepEffort(_blueprint, options);
-    this.applyEffortResolution(effortResolution);
-    this.journalStepEffortResolution(effortResolution, _blueprint, options, context.trace_id);
-    const modelId = this.resolveModelId(_blueprint);
-    await this.ctx.allocateBudget(
-      modelId,
-      options.request_analysis as IRequestAnalysis | undefined,
-    );
-
-    // Log execution start
-    await this.logExecutionStart(
-      context.trace_id,
-      options.agent_role ?? "",
-      options.portal,
-    );
-
-    const strategyName = this.resolveStrategyName(_blueprint, options);
-
-    this.applyBlueprintToolScope(_blueprint, options);
-
-    // Forward this blueprint's own hitl.require_secondary_approval rules to the
-    // ToolRegistry the resolved strategy will call execute() on, so the blueprint's
-    // approval rules gate every strategy's tool calls, same as agent_role.hitl.
-    this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
-
     try {
+      // Validate portal exists
+      const portal = this.config.portals?.find((p) => p.alias === options.portal);
+      if (!portal) {
+        throw new Error(`Portal not found: ${options.portal}`);
+      }
+
+      // Validate agent has permissions (check before loading blueprint)
+      if (!this.permissions.checkAgentAllowed(options.portal, options.agent_role ?? "").allowed) {
+        throw new Error(
+          `Agent role not allowed to access portal: ${options.agent_role} -> ${options.portal}`,
+        );
+      }
+
+      // Load blueprint — capabilities array drives strategy dispatch (MCP > ReAct > Legacy).
+      const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
+      await this.prepareStepBudget(_blueprint, options, context.trace_id);
+
+      // Log execution start
+      await this.logExecutionStart(
+        context.trace_id,
+        options.agent_role ?? "",
+        options.portal,
+      );
+
+      const strategyName = this.resolveStrategyName(_blueprint, options);
+
+      this.applyBlueprintToolScope(_blueprint, options);
+
+      // Apply the blueprint's secondary-approval rules to the ToolRegistry before the selected strategy executes tools.
+      this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
+
       const strategy = this.strategyRegistry!.resolve(strategyName);
       // Forward resolved per-call options (thinking/effort) to the strategy
       if (this._resolvedCallOptions && "callOptions" in strategy) {
@@ -742,16 +737,40 @@ export class AgentComposer {
       return validated;
     } catch (error) {
       // Log error
+      const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
       await this.logExecutionError(context.trace_id, options.agent_role ?? "", {
         type: AgentExecutionErrorType.EXECUTION_ERROR,
         message: error instanceof Error ? error.message : String(error),
         trace_id: context.trace_id,
+        ...(providerReasonCode ? { providerReasonCode } : {}),
       });
 
       throw error;
     } finally {
       this.ctx.clearBudget();
     }
+  }
+
+  private async prepareStepBudget(
+    blueprint: IAgentFileBlueprint,
+    options: IAgentExecutionOptions,
+    traceId: string,
+  ): Promise<void> {
+    const effortResolution = this.resolveStepEffort(blueprint, options);
+    const projection = projectResolvedCallOptions(effortResolution, {
+      request: this.options?.requestDeclaration,
+      role: { effort: blueprint.effort, thinking: blueprint.thinking },
+      flowStep: { effort: options.effort, thinking: options.thinking },
+    }, this.provider?.callCapabilities);
+    this.applyEffortResolution(effortResolution, projection);
+    this.journalStepEffortResolution(effortResolution, blueprint, options, traceId, projection);
+    await this.ctx.allocateBudget(
+      this.resolveModelId(blueprint),
+      options.request_analysis as IRequestAnalysis | undefined,
+      options.native_tools_enabled && this.provider && providerSupportsNativeConversation(this.provider.id)
+        ? { loopHistoryUsedTokens: options.max_tool_calls * PLANNING_TOOL_CALL_OVERHEAD_TOKENS }
+        : undefined,
+    );
   }
 
   /** Logs output from an agent subprocess. */
@@ -914,7 +933,7 @@ export class AgentComposer {
     usage?: Opt<
       {
         tokens: number;
-        cost_usd_estimate: number;
+        cost_usd_estimate: number | null;
         prompt_tokens?: number;
         completion_tokens?: number;
         cache_read_tokens?: number;
@@ -972,7 +991,7 @@ export class AgentComposer {
   async logExecutionError(
     traceId: string,
     agentRole: string,
-    error: { type: string; message: string; trace_id?: string },
+    error: { type: string; message: string; trace_id?: string; providerReasonCode?: string },
   ): Promise<void> {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_FAILED,
@@ -987,6 +1006,7 @@ export class AgentComposer {
       payload: {
         error_type: error.type,
         error_message: error.message,
+        ...(error.providerReasonCode ? { providerReasonCode: error.providerReasonCode } : {}),
         failed_at: new Date().toISOString(),
       },
     });
@@ -1015,7 +1035,8 @@ export class AgentComposer {
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
-      costUsd: number;
+      costUsd?: number;
+      costSource?: IChangesetCostSource;
       cacheReadTokens?: Opt<number, Reason.OptionalInput>;
       cacheCreationTokens?: Opt<number, Reason.OptionalInput>;
       /** Real wall-clock duration of this individual provider.generate() call, ms. */
@@ -1033,7 +1054,7 @@ export class AgentComposer {
       agentRole: agentRole,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
-      costUsd: usage.costUsd,
+      costUsd: usage.costSource === "unknown" ? null : usage.costUsd,
       cacheReadTokens: usage.cacheReadTokens,
       cacheCreationTokens: usage.cacheCreationTokens,
       payload: {
@@ -1042,7 +1063,8 @@ export class AgentComposer {
         prompt_tokens: usage.promptTokens,
         completion_tokens: usage.completionTokens,
         total_tokens: usage.totalTokens,
-        cost_usd: usage.costUsd,
+        ...(usage.costUsd === undefined ? {} : { cost_usd: usage.costUsd }),
+        ...(usage.costSource === undefined ? {} : { cost_source: usage.costSource }),
         duration_ms: usage.durationMs,
       },
     });

@@ -15,6 +15,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PromptBudgetAllocator } from "@exaix/core";
+import type { IAllocationHints } from "@exaix/core/prompt_budget_allocator.ts";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ContextCache } from "@exaix/core/context";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -97,10 +98,11 @@ export class ExecutionContextService {
   async allocateBudget(
     modelId: string,
     requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+    hints?: Opt<IAllocationHints, Reason.OptionalInput>,
   ): Promise<void> {
     this._currentPromptBudget = await this.promptBudgetAllocator!.allocate(
       modelId,
-      undefined,
+      hints,
       requestAnalysis,
     );
     void this.logger.info(DomainEventType.ExecutionContextBudgetAllocated, null, {

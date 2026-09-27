@@ -25,7 +25,7 @@ export interface IDatabaseService {
     runnerKind?: string | null,
     promptTokens?: number,
     completionTokens?: number,
-    costUsd?: number,
+    costUsd?: number | null,
     cacheReadTokens?: number,
     cacheCreationTokens?: number,
   ): void;

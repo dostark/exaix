@@ -10,7 +10,7 @@
  * @related-files [packages/execution/src/strategies/legacy_strategy.ts, packages/execution/src/registry_computed_cost.ts]
  */
 
-import { assertAlmostEquals, assertEquals } from "@std/assert";
+import { assertAlmostEquals, assertEquals, assertExists } from "@std/assert";
 import { LegacyAgentStrategy } from "@exaix/execution";
 import type { AgentComposer, IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -111,6 +111,7 @@ Deno.test("[LegacyStrategyRegistryComputedCost] cost_usd for a known model is re
   const result = await strategy.execute(testBlueprint, testContext, createOptions("test"));
 
   assertAlmostEquals(capture.costUsd!, 18);
+  assertExists(result.usage!.cost_usd);
   assertAlmostEquals(result.usage!.cost_usd, 18);
   assertEquals(result.usage!.cost_source, "predicted");
 });

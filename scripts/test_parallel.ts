@@ -61,6 +61,9 @@ const SEQUENTIAL_FILES: string[] = [
   // The Claude trial can produce fewer approved candidates under parallel load.
   // Keep this live provider test sequential.
   "tests/scenario_framework/tests/unit/learning_effectiveness_live_test.ts",
+  // Live calibration must not inherit temporary fixture-capture settings from
+  // concurrent tests that mutate the process environment.
+  "tests/security/calibration_sandbox_test.ts",
   // Tests that launch daemon subprocesses or heavy I/O — these do not
   // parallelize safely due to Deno cache races on direct `deno run` calls
   // and resource contention from multiple concurrent daemon instances.
@@ -81,6 +84,8 @@ const SEQUENTIAL_FILES: string[] = [
   // Integrity daemon boot — boots a real daemon and writes mid-flight config DB
   // overrides; races on Deno module cache and SQLite busy-timeout under parallel.
   "tests/integration/config_integrity_daemon_boot_test.ts",
+  // Parallel daemon startup can exceed the review-plan approval deadline.
+  "tests/integration/openai_compatible_daemon_cutover_test.ts",
   // Dogfood e2e — boots a real daemon and waits for plan generation; daemon
   // subprocess crashes under parallel Deno cache contention.
   "tests/integration/dogfood_e2e_test.ts",

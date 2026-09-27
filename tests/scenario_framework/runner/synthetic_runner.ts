@@ -305,7 +305,7 @@ export async function runSyntheticScenario(
     scenarioPath: options.scenarioPath,
   });
 
-  const envForExpansion = {
+  const envForExpansion: Record<string, string> = {
     ...Deno.env.toObject(),
     ...(options.env ?? {}),
     WORKSPACE_ROOT: options.workspaceRoot,
@@ -355,6 +355,9 @@ export async function runSyntheticScenario(
   const materialized = await materializeCellConfig(stepsToRun, {
     workspaceRoot: options.workspaceRoot,
     worktreePath: REPO_ROOT,
+    ...(envForExpansion.COMPAT_FIXTURE_PORT
+      ? { compatFixturePort: Number.parseInt(envForExpansion.COMPAT_FIXTURE_PORT, 10) }
+      : {}),
   });
   stepsToRun = materialized.steps;
 

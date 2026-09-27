@@ -179,6 +179,34 @@ Deno.test("createOpenAIChatCompletionsRequestInit without priorTurn produces a s
   assertEquals(body.messages[0].content, "test prompt");
 });
 
+Deno.test("compatible snapshot replays the immutable initial prompt and each completed turn once", () => {
+  const options: IModelOptions = {
+    nativeConversation: {
+      initialPrompt: "role and portal context",
+      roundInstruction: "Return the final answer",
+      turns: [{
+        toolUseId: "call_1",
+        toolName: "read_file",
+        toolInput: { path: "README.md" },
+        toolResultContent: "file contents",
+        toolResultIsError: false,
+        assistantContent: "I will inspect the file.",
+      }],
+    },
+  };
+  const body = JSON.parse(
+    createOpenAIChatCompletionsRequestInit("test-key", "gpt-4.1-mini", "role and portal context", options)
+      .body as string,
+  ) as CapturedBody;
+
+  assertEquals(body.messages.map(({ role, content }) => [role, content]), [
+    ["user", "role and portal context"],
+    ["assistant", "I will inspect the file."],
+    ["tool", "file contents"],
+    ["user", "Return the final answer"],
+  ]);
+});
+
 Deno.test(
   "createOpenAIChatCompletionsRequestInit serializes max_tokens as max_completion_tokens (OpenAI deprecated max_tokens; incompatible with o-series/gpt-5 reasoning models)",
   () => {

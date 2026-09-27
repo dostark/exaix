@@ -30,6 +30,14 @@ export interface ICostTracker {
     portal?: string,
   ): Promise<number>;
 
+  /** Journal token usage without creating a numeric cost row when verified pricing is absent. */
+  recordUnpricedGeneration?(
+    provider: string,
+    model: string,
+    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    traceId?: string,
+  ): Promise<void>;
+
   /**
    * Persist a cost record to the database
    */

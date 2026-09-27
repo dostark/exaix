@@ -7,6 +7,8 @@
  */
 import { type ChatFormat, PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
+import type { IModelOptions } from "./types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 type ProviderRegistryGlobal = typeof globalThis & {
   __exaixRegisteredProviderTypes?: string[];
@@ -46,6 +48,33 @@ export interface IProviderMetadata {
   supportsNativeTools?: boolean;
   /** Chat protocol format supported by this provider. */
   chatFormat?: ChatFormat;
+  /** True only when this provider accepts an invocation-local complete native conversation. */
+  supportsNativeConversation?: boolean;
+}
+
+/** Returns an exact candidate or the longest `candidate-` prefix. */
+export function longestPrefixMatch<T extends string>(
+  id: Opt<string, Reason.OptionalContext>,
+  candidates: readonly T[],
+): T | undefined {
+  if (id === undefined) return undefined;
+  if ((candidates as readonly string[]).includes(id)) return id as T;
+  return candidates
+    .filter((candidate) => id.startsWith(`${candidate}-`))
+    .reduce<T | undefined>((best, candidate) => !best || candidate.length > best.length ? candidate : best, undefined);
+}
+
+/** Rejects invocation-local snapshots unless the registered provider contract accepts them. */
+export function assertNoNativeConversation(
+  providerId: string,
+  options?: Opt<IModelOptions, Reason.OptionalInput>,
+): void {
+  if (
+    options?.nativeConversation &&
+    ProviderRegistry.getMetadataForInstance(providerId)?.supportsNativeConversation !== true
+  ) {
+    throw new Error(`Provider ${providerId} does not support native conversation snapshots`);
+  }
 }
 
 function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
@@ -82,6 +111,11 @@ export class ProviderRegistry {
 
   static getProviderMetadata(providerType: string): IProviderMetadata | undefined {
     return this.metadata.get(providerType);
+  }
+
+  static getMetadataForInstance(id: Opt<string, Reason.OptionalContext>): IProviderMetadata | undefined {
+    const providerType = longestPrefixMatch(id, [...this.metadata.keys()]);
+    return providerType === undefined ? undefined : this.metadata.get(providerType);
   }
 
   static getSupportedProviders(): string[] {

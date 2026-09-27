@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 import {
+  BYTES_PER_KB,
   DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
@@ -17,9 +18,43 @@ import {
   DEFAULT_MOCK_MODEL,
   DEFAULT_MOCK_STRATEGY,
   MockStrategy,
+  OPENAI_COMPATIBLE_MAX_HISTORY_BYTES,
+  OPENAI_COMPATIBLE_MAX_RESPONSE_BYTES,
+  OPENAI_COMPATIBLE_MAX_TOOL_ARGUMENT_BYTES,
   ProviderDefaultsRegistry,
   ProviderType,
 } from "@exaix/core";
+
+const COMPATIBLE_BYTE_LIMIT_CEILING = 64 * BYTES_PER_KB ** 2;
+export const MODEL_CONFIG_FIELD = "model";
+
+const CompatibleChatFieldsSchema = z.object({
+  profile: z.enum(["openai", "deepseek", "local-test"]),
+  endpoint: z.string().optional(),
+  model: z.string().optional(),
+  allow_insecure_loopback: z.boolean().optional(),
+  max_response_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
+  max_tool_argument_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
+  max_history_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
+});
+
+/** Raw named-model overrides preserve omitted fields. */
+export const CompatibleChatOverrideSchema = CompatibleChatFieldsSchema.partial().strict();
+
+/** Apply profile defaults after override inheritance. */
+export const CompatibleChatConfigSchema = CompatibleChatFieldsSchema.extend({
+  allow_insecure_loopback: z.boolean().default(false),
+  max_response_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).default(
+    OPENAI_COMPATIBLE_MAX_RESPONSE_BYTES,
+  ),
+  max_tool_argument_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).default(
+    OPENAI_COMPATIBLE_MAX_TOOL_ARGUMENT_BYTES,
+  ),
+  max_history_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).default(
+    OPENAI_COMPATIBLE_MAX_HISTORY_BYTES,
+  ),
+}).strict();
+export type CompatibleChatConfig = z.infer<typeof CompatibleChatConfigSchema>;
 
 /** Validates against registered providers, not a hardcoded enum, so provider types
  *  stay configurable. */
@@ -70,7 +105,7 @@ export const AiConfigSchema = z.object({
   provider: ProviderTypeSchema.default(ProviderType.MOCK),
 
   /** Model name (provider-specific) */
-  model: z.string().default(DEFAULT_AI_MODEL),
+  model: z.string().optional(),
 
   /** API endpoint URL (for ollama, custom endpoints). Empty string means use default. */
   base_url: z.string().refine(
@@ -79,7 +114,7 @@ export const AiConfigSchema = z.object({
   ).optional(),
 
   /** Request timeout in milliseconds */
-  timeout_ms: z.number().positive().default(DEFAULT_AI_TIMEOUT_MS),
+  timeout_ms: z.number().positive().optional(),
 
   /** Max output tokens */
   max_tokens: z.number().positive().optional(),
@@ -89,10 +124,19 @@ export const AiConfigSchema = z.object({
 
   /** Mock-specific configuration */
   mock: MockConfigSchema.optional(),
+
+  /** Explicit profile-scoped OpenAI-compatible Chat Completions settings. */
+  compatible: CompatibleChatOverrideSchema.optional(),
 }).prefault({
   provider: ProviderType.MOCK,
   timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-});
+}).transform((config) =>
+  config.provider === ProviderType.OPENAI_CHAT ? config : ({
+    ...config,
+    model: config.model ?? DEFAULT_AI_MODEL,
+    timeout_ms: config.timeout_ms ?? DEFAULT_AI_TIMEOUT_MS,
+  })
+);
 
 export type AiConfig = z.infer<typeof AiConfigSchema>;
 

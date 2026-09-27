@@ -90,6 +90,8 @@ export class DefaultModelRegistry implements IModelRegistry {
         model,
         inputPerMtok: overlay.inputPerMtok,
         outputPerMtok: overlay.outputPerMtok,
+        cacheReadPerMtok: overlay.cacheReadPerMtok,
+        cacheCreationPerMtok: overlay.cacheCreationPerMtok,
         provenance: "static" as const,
         verifiedAt: overlay.verifiedAt,
         sourceUrl: overlay.sourceUrl,

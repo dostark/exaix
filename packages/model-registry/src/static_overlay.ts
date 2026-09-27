@@ -12,6 +12,8 @@
 export interface IOverlayEntry {
   inputPerMtok?: number;
   outputPerMtok?: number;
+  cacheReadPerMtok?: number;
+  cacheCreationPerMtok?: number;
   contextWindow?: number;
   /** Max output tokens where the provider's list endpoint omits it. */
   maxOutputTokens?: number;

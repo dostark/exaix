@@ -7,6 +7,7 @@
  */
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import { ProviderProtocolError } from "./errors.ts";
 
 import {
   AuthenticationError,
@@ -19,9 +20,11 @@ import {
 } from "./providers/common.ts";
 import {
   type IModelOptions,
+  type INativeConversationSnapshot,
   type IProviderTurn,
   type IToolChoice,
   type IToolDefinition,
+  TOOL_CHOICE_TYPE_AUTO,
   TOOL_CHOICE_TYPE_NONE,
   TOOL_CHOICE_TYPE_TOOL,
 } from "./types.ts";
@@ -38,6 +41,7 @@ import {
   PROVIDER_GOOGLE,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
+  PROVIDER_OPENAI_CHAT,
   TOKENS_PER_COST_UNIT,
 } from "@exaix/core";
 import { HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED } from "@exaix/core";
@@ -62,6 +66,7 @@ export type TokenMap = {
 };
 
 type ResponseTokenMapper<T> = (data: T, providerId?: string) => TokenMap | undefined;
+export const COMPATIBLE_REDIRECT_POLICY: RequestRedirect = "error";
 
 // Provider Response Interfaces
 export type OllamaResponse = {
@@ -84,6 +89,7 @@ export type OpenAIUsage = {
    *  https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
    *  reasoning_tokens is a SUBSET of completion_tokens (billed as output). */
   completion_tokens_details?: { reasoning_tokens?: number };
+  prompt_tokens_details?: { cached_tokens?: number };
 };
 
 /** One OpenAI-format tool call, as it appears on the wire — `arguments` is a
@@ -96,10 +102,11 @@ export type OpenAIToolCall = {
 };
 
 export type OpenAIResponse = {
+  model?: string;
   usage?: OpenAIUsage;
   choices?: Array<{
     message?: {
-      content?: string;
+      content?: string | null;
       /** Present when finish_reason is "tool_calls". */
       tool_calls?: OpenAIToolCall[];
       /** Reasoning content replayed with the assistant message for continuity. */
@@ -227,16 +234,20 @@ export async function handleProviderResponse<T>(
   id: string,
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   tokenMapper?: Opt<ResponseTokenMapper<T>, Reason.OptionalDependency>,
+  policy: { maxResponseBytes?: number; exposeRemoteErrorText?: boolean; responseValidator?: (data: T) => T } = {},
 ): Promise<T> {
+  const bodyText = await readResponseText(response, policy.maxResponseBytes, id);
   if (!response.ok) {
     // Include HTTP status code in messages so tests can assert on it (e.g. "HTTP 503").
-    let message = `HTTP ${response.status} ${response.statusText}`;
+    let message = policy.exposeRemoteErrorText === false
+      ? `HTTP ${response.status}`
+      : `HTTP ${response.status} ${response.statusText}`;
     let errorType: string | undefined;
     try {
-      const error = await response.json();
+      const error = JSON.parse(bodyText);
       errorType = error.error?.type ?? undefined;
       const remoteMsg = error.error?.message ?? error.message ?? undefined;
-      if (remoteMsg) {
+      if (remoteMsg && policy.exposeRemoteErrorText !== false) {
         // Surface the machine-readable error type alongside the human message —
         // it is the contract the API documents (e.g. "invalid_request_error").
         message = errorType
@@ -246,10 +257,22 @@ export async function handleProviderResponse<T>(
     } catch {
       // ignore JSON parse errors and fallback to statusText
     }
-    throw classifyProviderError(response.status, errorType, message, id);
+    throw classifyProviderError(
+      response.status,
+      policy.exposeRemoteErrorText === false ? undefined : errorType,
+      message,
+      id,
+    );
   }
 
-  const data = await response.json() as T;
+  let data: T;
+  try {
+    data = JSON.parse(bodyText) as T;
+  } catch (error) {
+    if (policy.exposeRemoteErrorText === false) throw new ProviderProtocolError("Invalid compatible JSON response", id);
+    throw error;
+  }
+  if (policy.responseValidator) data = policy.responseValidator(data);
 
   if (logger && tokenMapper) {
     try {
@@ -274,13 +297,52 @@ export async function handleProviderResponse<T>(
   return data;
 }
 
+/** Reads a response stream with an optional hard byte ceiling, independent of its headers. */
+async function readResponseText(
+  response: Response,
+  maxBytes: Opt<number, Reason.OptionalInput>,
+  id: string,
+): Promise<string> {
+  if (maxBytes === undefined) return await response.text();
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) {
+    throw new ProviderProtocolError("Response byte limit is invalid", id);
+  }
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new ProviderProtocolError("Response exceeds configured byte limit", id);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
+}
+
 /** Token mapper for OpenAI response shape */
 export function tokenMapperOpenAI(model: string): ResponseTokenMapper<OpenAIResponse> {
   return (d: OpenAIResponse, providerId?: Opt<string, Reason.OptionalContext>): TokenMap | undefined => {
     if (!d.usage) return undefined;
 
     const totalTokens = d.usage.total_tokens ?? (d.usage.prompt_tokens + d.usage.completion_tokens);
-    const cost = providerId ? calculateCost(providerId, totalTokens) : undefined;
+    const compatibleProvider = providerId === PROVIDER_OPENAI_CHAT ||
+      providerId?.startsWith(`${PROVIDER_OPENAI_CHAT}-`);
+    const cost = providerId && !compatibleProvider ? calculateCost(providerId, totalTokens) : undefined;
 
     return {
       prompt_tokens: d.usage.prompt_tokens,
@@ -327,7 +389,7 @@ export type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "funct
 export function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
   switch (choice.type) {
     case "auto":
-      return "auto";
+      return TOOL_CHOICE_TYPE_AUTO;
     case "any":
       return "required";
     case TOOL_CHOICE_TYPE_TOOL:
@@ -352,7 +414,7 @@ function stringifyOpenAiToolResultContent(
 export type OpenAiChatMessage =
   | {
     role: "assistant";
-    content: null;
+    content: string | null;
     /** Prior reasoning content replayed with tool-call outputs. */
     reasoning_content?: string;
     tool_calls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
@@ -371,8 +433,36 @@ const OPENAI_MESSAGE_ROLE_TOOL = "tool";
 export function buildOpenAiMessages(
   prompt: string,
   priorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
+  nativeConversation?: Opt<INativeConversationSnapshot, Reason.OptionalInput>,
 ): OpenAiChatMessage[] {
   const messages: OpenAiChatMessage[] = [];
+  if (nativeConversation) {
+    if (prompt !== nativeConversation.initialPrompt) {
+      throw new Error("Native conversation prompt must match its immutable initialPrompt");
+    }
+    messages.push({ role: "user", content: nativeConversation.initialPrompt });
+    for (const turn of nativeConversation.turns) {
+      messages.push({
+        role: "assistant",
+        content: turn.assistantContent ?? null,
+        ...(turn.reasoningContent !== undefined ? { reasoning_content: turn.reasoningContent } : {}),
+        tool_calls: [{
+          id: turn.toolUseId,
+          type: "function",
+          function: { name: turn.toolName, arguments: JSON.stringify(turn.toolInput) },
+        }],
+      });
+      messages.push({
+        role: OPENAI_MESSAGE_ROLE_TOOL,
+        tool_call_id: turn.toolUseId,
+        content: stringifyOpenAiToolResultContent(turn.toolResultContent),
+      });
+    }
+    if (nativeConversation.roundInstruction !== undefined) {
+      messages.push({ role: "user", content: nativeConversation.roundInstruction });
+    }
+    return messages;
+  }
   if (priorTurn) {
     messages.push({
       role: "assistant",
@@ -421,13 +511,14 @@ export function createOpenAIChatCompletionsRequestInit(
   const reasoningEffort = reasoningModel ? (hasTools ? OPENAI_REASONING_EFFORT_NONE : options?.effort) : undefined;
   return {
     method: "POST",
+    ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
-      messages: buildOpenAiMessages(prompt, options?.priorTurn),
+      messages: buildOpenAiMessages(prompt, options?.priorTurn, options?.nativeConversation),
       // OpenAI deprecated max_tokens in favor of max_completion_tokens and rejects
       // max_tokens outright on o-series/gpt-5 reasoning models; IModelOptions.max_tokens
       // is Exaix's own field name — only the OpenAI wire serialization moves.
@@ -470,6 +561,42 @@ export function extractOpenAIToolCalls(d: OpenAIResponse): IProviderToolCall[] |
     }
   }
   return parsed.length > 0 ? parsed : undefined;
+}
+
+/** Strict serial parser for the compatible profile: reject malformed, oversized, or parallel calls before execution. */
+export function extractOpenAICompatibleToolCalls(
+  response: OpenAIResponse,
+  maxArgumentBytes: number,
+  providerId: string = PROVIDER_OPENAI_CHAT,
+): IProviderToolCall[] | undefined {
+  const rawCalls = response.choices?.[0]?.message?.tool_calls;
+  if (!rawCalls || rawCalls.length === 0) return undefined;
+  if (rawCalls.length !== 1) {
+    throw new ProviderProtocolError("Compatible response must contain at most one tool call", providerId);
+  }
+  const call = rawCalls[0];
+  if (new TextEncoder().encode(call.function.arguments).byteLength > maxArgumentBytes) {
+    throw new ProviderProtocolError("Compatible tool arguments exceed configured byte limit", providerId);
+  }
+  let input: Record<string, JSONValue>;
+  try {
+    const parsed = JSON.parse(call.function.arguments);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("Expected JSON object");
+    }
+    input = parsed as Record<string, JSONValue>;
+  } catch {
+    throw new ProviderProtocolError("Compatible tool arguments contain malformed JSON", providerId);
+  }
+  return [{
+    id: call.id,
+    name: call.function.name,
+    input: input as Record<string, JSONValue>,
+    type: "function",
+    ...(response.choices?.[0]?.message?.reasoning_content !== undefined
+      ? { reasoningContent: response.choices[0].message.reasoning_content }
+      : {}),
+  }];
 }
 
 /** Token mapper for Google response shape */
@@ -601,6 +728,11 @@ export async function fetchJsonWithRetries<T>(
     timeoutMs,
     logger,
     tokenMapper,
+    maxResponseBytes,
+    exposeRemoteErrorText,
+    requestSignal,
+    redirectBehavior,
+    responseValidator,
   }: {
     id: string;
     maxAttempts?: number;
@@ -608,31 +740,51 @@ export async function fetchJsonWithRetries<T>(
     timeoutMs?: number;
     logger?: IEventLogger;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
+    maxResponseBytes?: number;
+    exposeRemoteErrorText?: boolean;
+    requestSignal?: AbortSignal;
+    redirectBehavior?: RequestRedirect;
+    responseValidator?: (data: T) => T;
   },
 ): Promise<T> {
   // Use the withRetry helper to centralize retry/backoff semantics
   const attemptFn = async () => {
     const controller = typeof timeoutMs === "number" ? new AbortController() : undefined;
-    const signal = controller?.signal;
+    const signal = controller && requestSignal
+      ? AbortSignal.any([controller.signal, requestSignal])
+      : controller?.signal ?? requestSignal;
     const timeoutId = controller && typeof timeoutMs === "number"
       ? setTimeout(() => controller.abort(), timeoutMs)
       : undefined;
 
     try {
-      const response = await fetch(url, { ...fetchOptions, signal });
+      const response = await fetch(url, {
+        ...fetchOptions,
+        ...(redirectBehavior !== undefined ? { redirect: redirectBehavior } : {}),
+        signal,
+      });
       // Let handleProviderResponse inspect status, parse JSON and throw typed errors
-      const data = await handleProviderResponse<T>(response, id, logger, tokenMapper);
+      const data = await handleProviderResponse<T>(response, id, logger, tokenMapper, {
+        maxResponseBytes,
+        exposeRemoteErrorText,
+        responseValidator,
+      });
       if (timeoutId) clearTimeout(timeoutId);
       return data;
     } catch (err) {
       if (timeoutId) clearTimeout(timeoutId);
+      if (
+        redirectBehavior === COMPATIBLE_REDIRECT_POLICY && err instanceof TypeError && /redirect/i.test(err.message)
+      ) {
+        throw new ProviderProtocolError("Compatible endpoint redirect is not allowed", id);
+      }
       // Rethrow to allow withRetry to decide whether to retry
       throw err;
     }
   };
 
   // Use withRetry defined in providers/common.ts
-  return await withRetry(attemptFn, { maxRetries: maxAttempts, baseDelayMs: backoffBaseMs });
+  return await withRetry(attemptFn, { maxRetries: maxAttempts, baseDelayMs: backoffBaseMs, signal: requestSignal });
 }
 
 /** Perform a provider call: fetch JSON with retries, then extract textual content
@@ -650,6 +802,12 @@ export async function performProviderCall<T>(
     extractor,
     stopReasonExtractor,
     toolCallExtractor,
+    maxResponseBytes,
+    exposeRemoteErrorText,
+    logResponseBody,
+    maxRequestBytes,
+    redirectBehavior,
+    responseValidator,
   }: {
     id: string;
     maxAttempts?: number;
@@ -662,8 +820,19 @@ export async function performProviderCall<T>(
     /** Optional extractor for native tool-call blocks in the provider response,
      *  surfaced as IGenerateResult.toolCalls when present. */
     toolCallExtractor?: (d: T) => IProviderToolCall[] | undefined;
+    maxResponseBytes?: number;
+    exposeRemoteErrorText?: boolean;
+    logResponseBody?: boolean;
+    maxRequestBytes?: number;
+    redirectBehavior?: RequestRedirect;
+    responseValidator?: (data: T) => T;
   },
 ): Promise<IGenerateResult> {
+  if (maxRequestBytes !== undefined && typeof fetchOptions.body === "string") {
+    if (new TextEncoder().encode(fetchOptions.body).byteLength > maxRequestBytes) {
+      throw new ProviderProtocolError("Request exceeds configured byte limit", id);
+    }
+  }
   const data = await fetchJsonWithRetries<T>(url, fetchOptions, {
     id,
     maxAttempts,
@@ -671,11 +840,16 @@ export async function performProviderCall<T>(
     timeoutMs,
     logger,
     tokenMapper,
+    maxResponseBytes,
+    exposeRemoteErrorText,
+    requestSignal: fetchOptions.signal ?? undefined,
+    redirectBehavior,
+    responseValidator,
   });
   // Debug-level dump of the raw response body: content extraction strips parts of
   // it (e.g. thinking blocks), so investigating a live-provider issue needs the
   // unfiltered body in the journal.
-  if (logger) {
+  if (logger && logResponseBody !== false) {
     void logger.debug(PROVIDER_EVENT_RESPONSE_DEBUG_DUMP, id, {
       provider: id,
       response_body: toSafeJson(data as SafeJsonInput) ?? {},

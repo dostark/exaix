@@ -764,6 +764,28 @@ export class Svc {
   assertEquals(result.findings.some((f) => f.scopeName.endsWith(".save")), false);
 });
 
+Deno.test("[analyzeClass] recognizes typed object-form log events without accepting raw or overwritten actions", () => {
+  for (
+    const [event, covered] of [
+      ["{ action: DomainEventType.SvcSaved, target: 'x', costUsd: null }", true],
+      ["{ action: 'raw.action', target: 'x' }", false],
+      ["{ target: 'x' }", false],
+      ["{ action: DomainEventType.SvcSaved, ...untrusted }", false],
+      ["{ action: DomainEventType.SvcSaved, action: 'raw.action' }", false],
+    ] as const
+  ) {
+    const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger, private repo: IRepo) {}
+  save(): void { this.logger.log(${event}); this.repo.save(); }
+}`);
+    const result = analyzeClass(firstClass(sf), sf);
+    assertEquals(result.wiredUnused === null, covered, event);
+    if (covered) assertEquals(result.findings.length, 0);
+  }
+});
+
 Deno.test("[analyzeClass] treats a tagged class's private-helper object-field action as covered when the field is typed TDomainEventType", () => {
   const sf = parse(`
 /** @visible */

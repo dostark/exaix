@@ -8,6 +8,8 @@
 
 import { initializeRegistry, type IProviderMetadata, ProviderRegistry, setProviderRegistryBootstrap } from "@exaix/ai";
 import { PricingTier, ProviderDefaultsRegistry } from "@exaix/core";
+import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
+import { getOverlayEntry } from "@exaix/model-registry";
 import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import {
   ANTHROPIC_DEFAULTS,
@@ -23,7 +25,16 @@ import {
   PROVIDER_OPENROUTER,
 } from "@exaix/ai-openrouter";
 import { OLLAMA_DEFAULTS, OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
-import { OPENAI_DEFAULTS, OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
+import {
+  OPENAI_CHAT_DEFAULTS,
+  OPENAI_CHAT_PROVIDER_METADATA,
+  OPENAI_DEFAULTS,
+  OPENAI_PROVIDER_METADATA,
+  OpenAICompatibleProviderFactory,
+  OpenAIProviderFactory,
+  PROVIDER_OPENAI,
+  PROVIDER_OPENAI_CHAT,
+} from "@exaix/ai-openai";
 import {
   CLAUDE_CLI_DEFAULTS,
   CLAUDE_CLI_PROVIDER_METADATA,
@@ -74,6 +85,37 @@ function registerConcreteProviders(): void {
       PROVIDER_OPENAI,
       new OpenAIProviderFactory(),
       openaiMetadata,
+    );
+  }
+
+  if (!supported.includes(PROVIDER_OPENAI_CHAT)) {
+    const compatibleMetadata: IProviderMetadata = {
+      ...OPENAI_CHAT_PROVIDER_METADATA,
+      capabilities: [...OPENAI_CHAT_PROVIDER_METADATA.capabilities],
+    };
+    ProviderRegistry.registerWithMetadata(
+      PROVIDER_OPENAI_CHAT,
+      new OpenAICompatibleProviderFactory(undefined, new AiTokenEstimatorTokenizer(), {
+        getModelPricing(provider, model) {
+          const entry = getOverlayEntry(provider, model);
+          return Promise.resolve(
+            entry
+              ? {
+                provider,
+                model,
+                inputPerMtok: entry.inputPerMtok,
+                outputPerMtok: entry.outputPerMtok,
+                cacheReadPerMtok: entry.cacheReadPerMtok,
+                cacheCreationPerMtok: entry.cacheCreationPerMtok,
+                provenance: "static",
+                verifiedAt: entry.verifiedAt,
+                sourceUrl: entry.sourceUrl,
+              }
+              : { provider, model, provenance: "unknown" },
+          );
+        },
+      }),
+      compatibleMetadata,
     );
   }
 
@@ -160,6 +202,7 @@ function registerProviderDefaults(): void {
   ProviderDefaultsRegistry.register(PROVIDER_OLLAMA, OLLAMA_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_ANTHROPIC, ANTHROPIC_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_OPENAI, OPENAI_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_OPENAI_CHAT, OPENAI_CHAT_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_GOOGLE, GOOGLE_DEFAULTS);
   // OpenRouter is Solo (all editions) — see D5b/D-providers.
   ProviderDefaultsRegistry.register(PROVIDER_OPENROUTER, OPENROUTER_DEFAULTS);

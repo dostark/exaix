@@ -82,7 +82,7 @@ interface LogEntry {
   payload: string;
   promptTokens: number;
   completionTokens: number;
-  costUsd: number;
+  costUsd: number | null;
   cacheReadTokens: number | null;
   cacheCreationTokens: number | null;
   timestamp: string;
@@ -101,7 +101,7 @@ export const ActivityRecordSchema = z.object({
   payload: z.string(),
   prompt_tokens: z.number().int().min(0).optional().default(0),
   completion_tokens: z.number().int().min(0).optional().default(0),
-  cost_usd: z.number().min(0).optional().default(0),
+  cost_usd: z.number().min(0).nullable().optional().default(0),
   cache_read_tokens: z.number().int().min(0).nullable().optional(),
   cache_creation_tokens: z.number().int().min(0).nullable().optional(),
   timestamp: z.string(),
@@ -188,7 +188,7 @@ export class DatabaseService implements IDatabaseService {
     runnerKind?: Opt<string | null, Reason.OptionalContext>,
     promptTokens?: Opt<number, Reason.OptionalInput>,
     completionTokens?: Opt<number, Reason.OptionalInput>,
-    costUsd?: Opt<number, Reason.OptionalInput>,
+    costUsd?: Opt<number | null, Reason.OptionalInput>,
     cacheReadTokens?: Opt<number, Reason.OptionalInput>,
     cacheCreationTokens?: Opt<number, Reason.OptionalInput>,
   ): void {
@@ -209,7 +209,7 @@ export class DatabaseService implements IDatabaseService {
       payload: JSON.stringify(payload),
       promptTokens: promptTokens || 0,
       completionTokens: completionTokens || 0,
-      costUsd: costUsd || 0,
+      costUsd: costUsd === undefined ? 0 : costUsd,
       cacheReadTokens: cacheReadTokens ?? null,
       cacheCreationTokens: cacheCreationTokens ?? null,
       timestamp: new Date().toISOString(),
@@ -316,7 +316,7 @@ export class DatabaseService implements IDatabaseService {
                 entry.payload ?? null,
                 entry.promptTokens ?? 0,
                 entry.completionTokens ?? 0,
-                entry.costUsd ?? 0,
+                entry.costUsd,
                 entry.cacheReadTokens ?? null,
                 entry.cacheCreationTokens ?? null,
                 entry.timestamp ?? null,

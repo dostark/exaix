@@ -12,6 +12,7 @@ import type { IModelOptions, IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
 import { RateLimiterError } from "./rate_limited_provider.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ProviderRegistry } from "./provider_registry.ts";
 
 export interface ICircuitBreakerOptions {
   /** Number of consecutive failures before opening circuit */
@@ -125,6 +126,9 @@ export class CircuitBreaker {
  */
 export class CircuitBreakerProvider implements IModelProvider {
   public readonly id: string;
+  public readonly measureInputTokens: IModelProvider["measureInputTokens"];
+  public readonly callCapabilities: IModelProvider["callCapabilities"];
+  public readonly estimateCallCost: IModelProvider["estimateCallCost"];
 
   private circuitBreaker: CircuitBreaker;
 
@@ -136,7 +140,12 @@ export class CircuitBreakerProvider implements IModelProvider {
       halfOpenSuccessThreshold: 2,
     },
   ) {
-    this.id = `circuit-breaker-${inner.id}`;
+    this.id = ProviderRegistry.getMetadataForInstance(inner.id)?.supportsNativeConversation === true
+      ? inner.id
+      : `circuit-breaker-${inner.id}`;
+    this.measureInputTokens = inner.measureInputTokens?.bind(inner);
+    this.callCapabilities = inner.callCapabilities;
+    this.estimateCallCost = inner.estimateCallCost?.bind(inner);
     this.circuitBreaker = new CircuitBreaker(options);
   }
 

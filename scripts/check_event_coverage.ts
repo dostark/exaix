@@ -450,6 +450,19 @@ function resolvesToRegisteredAction(
   return false;
 }
 
+/** Extracts the action from positional calls or the supported object-form log overload. */
+function auditCallAction(call: ts.CallExpression, methodName: string): ts.Expression | undefined {
+  const first = call.arguments[0];
+  if (methodName !== "log" || !first || !ts.isObjectLiteralExpression(first)) return first;
+  if (first.properties.some((p) => ts.isSpreadAssignment(p) || (p.name && ts.isComputedPropertyName(p.name)))) {
+    return undefined;
+  }
+  const actions = first.properties.filter((p) =>
+    p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text === "action"
+  );
+  return actions.length === 1 && ts.isPropertyAssignment(actions[0]) ? actions[0].initializer : undefined;
+}
+
 /** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy action, resolved directly or through one level of parameter-typed indirection (see `resolvesToRegisteredAction`) — `enclosingParams` is `body`'s own owning function/method's parameter list, needed to resolve that indirection. */
 export function bodyCallsAuditBinding(
   body: ts.Node,
@@ -462,7 +475,7 @@ export function bodyCallsAuditBinding(
     if (found) return;
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
       const methodName = node.expression.name.text;
-      const action = node.arguments[0];
+      const action = auditCallAction(node, methodName);
       const registeredAction = resolvesToRegisteredAction(action, enclosingParams);
       if (LOG_METHOD_PATTERN.test(methodName) && (!requireRegisteredAction || registeredAction)) {
         const receiver = node.expression.expression;

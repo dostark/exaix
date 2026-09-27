@@ -18,6 +18,7 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import { COMPLEXITY_SOURCE_DEFAULT, EffortResolver, ProviderRegistry, resolveProviderType } from "@exaix/ai";
 import type { IEffortResolution, IEffortResolutionSignals, IEffortResolver, TaskComplexitySource } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
+import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
 import type { EffortDeclaration, EffortTier, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
 import { toSafeJson } from "@exaix/core/types";
 import type { IToolRegistryFactory } from "@exaix/core/types";
@@ -472,14 +473,19 @@ export class AgentRunner implements IAgentRunner {
       thinking: m.thinking,
     })) ?? [];
     const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
-    this.journalEffortResolution(blueprint, request, agentRole, resolution, traceId, requestId);
+    const projection = projectResolvedCallOptions(resolution, {
+      role: { effort: blueprint.effort, thinking: blueprint.thinking },
+      request: { effort: request.effort, thinking: request.thinking },
+      flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
+    }, this.modelProvider.callCapabilities);
+    this.journalEffortResolution(blueprint, request, agentRole, resolution, { traceId, requestId }, projection);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${agentRole}`);
     const hints: IGenerationHints = {
       conversationId: traceId,
       jsonSchema,
       callSite,
-      thinking: resolution.thinking,
-      effort: resolution.effort,
+      thinking: projection.thinking,
+      effort: projection.effort,
     };
     const toolsResult = await this.runPlanningToolsIfGated(request, agentRole, combinedPrompt, startTime, hints);
     const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints);
@@ -545,9 +551,10 @@ export class AgentRunner implements IAgentRunner {
     request: IParsedRequest,
     agentRole: string,
     resolution: IEffortResolution,
-    traceId: Opt<string, Reason.TraceAbsent>,
-    requestId: Opt<string, Reason.TraceAbsent>,
+    correlation: { traceId?: string; requestId?: string },
+    projection?: Opt<IProjectedCallOptions, Reason.OptionalContext>,
   ): void {
+    const { traceId, requestId } = correlation;
     const selectedModelId = this.selectedModelIdentity();
     const payload = buildAgentEffortResolvedPayload({
       path: request.flowStepId ? "flow_step" : "planning",
@@ -566,6 +573,7 @@ export class AgentRunner implements IAgentRunner {
       },
       providerType: selectedModelId.providerType,
       model: selectedModelId.model,
+      projection,
     });
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
@@ -594,7 +602,8 @@ export class AgentRunner implements IAgentRunner {
       modelSize: blueprint.modelSize,
       providerType,
       model: selectedModel.model,
-      providerSupportsThinking: providerMetadata?.supportsThinking === true,
+      providerSupportsThinking: this.modelProvider.callCapabilities?.supportsThinking ??
+        providerMetadata?.supportsThinking === true,
       anthropicThinkingDefault: this.config?.context?.config.get().ai_anthropic?.thinking_default,
       skillFloors,
       agentRole,

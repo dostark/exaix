@@ -7,8 +7,16 @@
  */
 import type { ChatFormat, ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
+import type {
+  CompatibleChatConfig,
+  Config,
+  EffortTier,
+  IBlueprintFrontmatter,
+  IModelCallOptions,
+} from "@exaix/schemas";
 import type { IGenerateResult, IThinkingReplayBlock } from "./providers/common.ts";
+import type { INativeInputMeasurement, INativePromptSection } from "./native_conversation_budget.ts";
+import type { IProviderCallCapabilities } from "./provider_call_options.ts";
 
 /**
  * Cache TTL values for Anthropic prompt caching.
@@ -65,12 +73,24 @@ export interface IProviderTurn {
    *  (text, image, document, etc.) matching Anthropic's tool_result.content shape. */
   toolResultContent: string | Array<{ type: string; [key: string]: JSONValue }>;
   toolResultIsError: boolean;
+  /** Optional assistant text emitted with the native tool call. */
+  assistantContent?: string;
   /** Gemini thought signature required when replaying the prior function call. */
   thoughtSignature?: string;
   /** Signed Anthropic thinking blocks replayed before the tool-use block. */
   thinkingBlocks?: IThinkingReplayBlock[];
   /** OpenAI reasoning content replayed with tool-call outputs. */
   reasoningContent?: string;
+}
+
+/** Immutable compatible-provider conversation state assembled by the caller.
+ *  Each generate call replays the same initial prompt and completed turns, then
+ *  appends only the current control instruction. */
+export interface INativeConversationSnapshot {
+  initialPrompt: string;
+  initialPromptSections?: readonly INativePromptSection[];
+  turns: IProviderTurn[];
+  roundInstruction?: string;
 }
 
 /**
@@ -108,6 +128,10 @@ export interface IModelOptions {
    *  tool_use + user tool_result) when continuing a native tool-use loop.
    *  Absent for every call today. */
   priorTurn?: IProviderTurn;
+  /** Complete immutable conversation for providers that require serialized replay. */
+  nativeConversation?: INativeConversationSnapshot;
+  /** Internal transport signal used to enforce one provider-call deadline. */
+  requestSignal?: AbortSignal;
   /** Chat protocol format: "anthropic" (Messages API), "openai" (Chat Completions API), or "native" (TOML action blocks). */
   chatFormat?: ChatFormat;
   /** Location of call for fixture replay addressing. Assigned by AgentRunner from IParsedRequest. */
@@ -129,6 +153,11 @@ export interface ICallSite {
 export interface IModelProvider {
   /** Unique identifier for this provider instance. */
   id: string;
+  readonly callCapabilities?: IProviderCallCapabilities;
+  /** Pure measurement of the same input projection used for transport. */
+  measureInputTokens?(prompt: string, options?: IModelOptions): Promise<INativeInputMeasurement>;
+  /** Verified monetary reservation for complete input and maximum output. Missing rates remain unknown. */
+  estimateCallCost?(inputTokens: number, outputTokens: number): Promise<number | undefined>;
 
   /** Generate a response from the model. @param prompt The input prompt to send to the model @param options Optional generation parameters @returns The generated response payload */
   generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
@@ -166,6 +195,8 @@ export interface IResolvedProviderOptions {
   logger?: IEventLogger;
   /** Resolved Exaix config — lets provider-specific factories read their option blocks. */
   config?: Config;
+  /** Resolved compatible profile settings, present only for openai-chat. */
+  compatible?: CompatibleChatConfig;
 }
 
 /**

@@ -20,6 +20,7 @@ import {
   USER_REQUEST_MAX_LENGTH,
 } from "@exaix/core";
 import { AgentExecutionOptionsSchema } from "./agent_composer.ts";
+import { CompatibleChatOverrideSchema, MODEL_CONFIG_FIELD } from "./ai_config.ts";
 
 /**
  * Blueprint name validation - prevents path traversal and injection
@@ -129,7 +130,7 @@ export const ModelConfigSchema = z.object({
       message: "Provider must be a valid supported provider type",
     },
   ),
-  model: z.string().min(1).max(MODEL_NAME_MAX_LENGTH),
+  model: z.string().min(1).max(MODEL_NAME_MAX_LENGTH).optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().min(1).max(100000).optional(),
   base_url: z.string().url().optional(),
@@ -140,7 +141,11 @@ export const ModelConfigSchema = z.object({
     error_message: z.string().optional(),
     delay_ms: z.number().int().positive().optional(),
   }).optional(),
-}).strict();
+  compatible: CompatibleChatOverrideSchema.optional(),
+}).strict().refine((entry) => entry.model !== undefined || entry.provider === ProviderType.OPENAI_CHAT, {
+  message: "Model is required for this provider",
+  path: [MODEL_CONFIG_FIELD],
+});
 
 /**
  * Execution context validation

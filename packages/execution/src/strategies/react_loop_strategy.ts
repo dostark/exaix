@@ -10,7 +10,17 @@
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { IModelProvider, IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
+import type {
+  IModelProvider,
+  INativeConversationSnapshot,
+  IProviderTurn,
+  IToolChoice,
+  IToolDefinition,
+} from "@exaix/ai/types.ts";
+import { TOOL_CHOICE_TYPE_AUTO } from "@exaix/ai/types.ts";
+import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
+import type { INativePromptSection } from "@exaix/ai";
+import { PromptBudgetAllocator } from "@exaix/core";
 import type { IProviderToolCall } from "@exaix/ai/providers";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { ITool, IToolResult } from "@exaix/core/types";
@@ -25,6 +35,7 @@ import {
   buildNativeToolDefinitions,
   buildPriorTurn,
   enrichPortalPathParam,
+  providerSupportsNativeConversation,
   providerSupportsNativeTools,
 } from "../native_tool_turns.ts";
 import { GuardrailBlockedError } from "@exaix/core/planning";
@@ -59,6 +70,7 @@ import type { IModelCallOptions } from "@exaix/schemas";
 import type { IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
 import {
   calculateAciDocBudgetChars,
@@ -108,15 +120,17 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
 
 /** Executes an agentic loop: the LLM generates actions, ToolRegistry runs them, until the task completes. */
 /** Which native tool-choice branch produced this iteration's options. */
-export type NativeToolChoiceMode = "forced" | "any";
+export type NativeToolChoiceMode = "forced" | "any" | "auto";
 
 export /** Internal type for dynamically-built provider.generate() options. */
 interface GeneratedOptions {
+  traceId?: string;
   temperature: number;
   max_tokens: number;
   tools?: IToolDefinition[];
-  toolChoice?: { type: string; name?: string; disable_parallel_tool_use: boolean };
+  toolChoice?: IToolChoice;
   priorTurn?: IProviderTurn;
+  nativeConversation?: INativeConversationSnapshot;
   /** "forced" means the preferred-tool branch chose this iteration's tool choice; "any"
    *  means the unconstrained fallback. Non-wire: ignored by provider request builders. */
   nativeToolChoiceMode?: NativeToolChoiceMode;
@@ -134,13 +148,17 @@ interface IIterationParams {
   toolCallCount: number;
   totalPromptTokens: number;
   totalCompletionTokens: number;
-  totalCostUsd: number;
+  totalCostUsd: number | undefined;
   totalCacheReadTokens: number;
   totalCacheCreationTokens: number;
   totalReasoningTokens: number;
   nativeToolsUsed: boolean;
   nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>;
   nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>;
+  nativeConversationEnabled: boolean;
+  nativeConversationInitialPrompt?: string;
+  nativeConversationInitialSections?: readonly INativePromptSection[];
+  nativeConversationTurns: IProviderTurn[];
   nativePreferredTool?: Opt<string, Reason.OptionalInput>;
 }
 
@@ -149,11 +167,14 @@ interface IIterationResult {
   toolCallCount: number;
   totalPromptTokens: number;
   totalCompletionTokens: number;
-  totalCostUsd: number;
+  totalCostUsd: number | undefined;
   totalCacheReadTokens: number;
   totalCacheCreationTokens: number;
   totalReasoningTokens: number;
   nativeToolsPriorTurn?: IProviderTurn;
+  nativeConversationInitialPrompt?: string;
+  nativeConversationInitialSections?: readonly INativePromptSection[];
+  nativeConversationTurns?: IProviderTurn[];
   done: boolean;
   result?: IChangesetResult;
 }
@@ -187,7 +208,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let toolCallCount = 0;
     let totalPromptTokens = 0;
     let totalCompletionTokens = 0;
-    let totalCostUsd = 0;
+    let totalCostUsd: number | undefined = 0;
     let totalCacheReadTokens = 0;
     let totalCacheCreationTokens = 0;
     let totalReasoningTokens = 0;
@@ -195,6 +216,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     // Native-tools gate requires both the opt-in flag and provider capability.
     const useNativeTools = options.native_tools_enabled === true && providerSupportsNativeTools(this.provider!.id);
     let nativeToolsPriorTurn: IProviderTurn | undefined;
+    const nativeConversationEnabled = useNativeTools && providerSupportsNativeConversation(this.provider!.id);
+    let nativeConversationInitialPrompt: string | undefined;
+    let nativeConversationInitialSections: readonly INativePromptSection[] | undefined;
+    let nativeConversationTurns: IProviderTurn[] = [];
     let nativeToolDefinitions: IToolDefinition[] | undefined;
     let nativeToolsUsed = false;
     if (useNativeTools) {
@@ -237,6 +262,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         nativeToolsUsed,
         nativeToolDefinitions,
         nativeToolsPriorTurn,
+        nativeConversationEnabled,
+        nativeConversationInitialPrompt,
+        nativeConversationInitialSections,
+        nativeConversationTurns,
         nativePreferredTool,
       });
       toolCallCount = iterResult.toolCallCount;
@@ -247,6 +276,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCacheCreationTokens = iterResult.totalCacheCreationTokens;
       totalReasoningTokens = iterResult.totalReasoningTokens;
       nativeToolsPriorTurn = iterResult.nativeToolsPriorTurn;
+      nativeConversationInitialPrompt = iterResult.nativeConversationInitialPrompt ?? nativeConversationInitialPrompt;
+      nativeConversationInitialSections = iterResult.nativeConversationInitialSections ??
+        nativeConversationInitialSections;
+      nativeConversationTurns = iterResult.nativeConversationTurns ?? nativeConversationTurns;
       if (iterResult.done) {
         return iterResult.result!;
       }
@@ -268,7 +301,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     usage: {
       promptTokens: number;
       completionTokens: number;
-      costUsd: number;
+      costUsd: number | undefined;
       cacheReadTokens: number;
       cacheCreationTokens: number;
       reasoningTokens: number;
@@ -290,13 +323,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     finalResult.usage = {
       prompt_tokens: usage.promptTokens,
       completion_tokens: usage.completionTokens,
-      cost_usd: usage.costUsd,
+      cost_usd: usage.costUsd ?? null,
       cache_read_tokens: usage.cacheReadTokens,
       cache_creation_tokens: usage.cacheCreationTokens,
       reasoning_tokens: usage.reasoningTokens,
-      // ReActLoopStrategy's cost_usd is always a calculateCost() estimate — no direct-API
-      // provider ever returns a real reported figure — so this is always "predicted".
-      cost_source: "predicted",
+      cost_source: usage.costUsd === undefined ? "unknown" : "predicted",
     };
     return this.executor.validateReviewResult(finalResult);
   }
@@ -363,8 +394,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
         base.nativeToolChoiceMode = "forced";
       } else {
-        base.toolChoice = { type: "any" as const, disable_parallel_tool_use: true };
-        base.nativeToolChoiceMode = "any";
+        base.toolChoice = nativeToolsPriorTurn
+          ? { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true }
+          : { type: "any" as const, disable_parallel_tool_use: true };
+        base.nativeToolChoiceMode = nativeToolsPriorTurn ? TOOL_CHOICE_TYPE_AUTO : "any";
       }
       // One-line diagnostic of the native toolChoice branch chosen.
       console.debug(
@@ -420,6 +453,115 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   }
 
   /** Executes one ReAct iteration; returns accumulated metrics and, if the loop should terminate early, a finished result. */
+  private async prepareIterationPrompt(params: IIterationParams): Promise<{
+    prompt: string;
+    initialPrompt?: string;
+    initialSections: INativePromptSection[];
+    generateOptions: GeneratedOptions;
+    aciSection?: { result: IAciRenderResult; budgetChars: number };
+  }> {
+    const {
+      blueprint,
+      context,
+      options,
+      history,
+      i,
+      nativeToolsUsed,
+      nativeToolDefinitions,
+      nativeToolsPriorTurn,
+      nativePreferredTool,
+    } = params;
+    const budgetedHistory = params.nativeConversationEnabled
+      ? []
+      : await this.applyContextBudget(blueprint, context, history, i);
+    const visibleToolIds = this.deriveVisibleToolIds(options);
+    const aciSection = this.renderAciSection(visibleToolIds);
+    const initialSections: INativePromptSection[] = [];
+    const initialPrompt = params.nativeConversationEnabled
+      ? params.nativeConversationInitialPrompt ?? this.buildPrompt(
+        blueprint,
+        context,
+        options,
+        [],
+        nativeToolsUsed,
+        visibleToolIds,
+        aciSection?.result,
+        initialSections,
+      )
+      : undefined;
+    const prompt = initialPrompt ?? this.buildPrompt(
+      blueprint,
+      context,
+      options,
+      budgetedHistory,
+      nativeToolsUsed,
+      visibleToolIds,
+      aciSection?.result,
+    );
+
+    const generateOptions = this.buildNativeGenerateOptions(
+      nativeToolDefinitions,
+      nativeToolsPriorTurn,
+      nativeToolsUsed,
+      nativePreferredTool,
+    );
+    generateOptions.traceId = context.trace_id;
+    if (params.nativeConversationEnabled && nativeToolsUsed && initialPrompt !== undefined) {
+      generateOptions.nativeConversation = {
+        initialPrompt,
+        initialPromptSections: params.nativeConversationInitialSections ?? initialSections,
+        turns: params.nativeConversationTurns,
+        ...(params.nativeConversationTurns.length > 0
+          ? {
+            roundInstruction: `Iteration ${
+              i + 1
+            } of ${this.MAX_ITERATIONS}. Continue with the next permitted tool call or return the final answer.`,
+          }
+          : {}),
+      };
+      delete generateOptions.priorTurn;
+    }
+    return { prompt, initialPrompt, initialSections, generateOptions, aciSection };
+  }
+
+  private async logIterationGeneration(
+    response: IGenerateResult,
+    context: IExecutionContext,
+    options: IAgentExecutionOptions,
+    generateDurationMs: number,
+  ): Promise<number | undefined> {
+    const registryCostUsd = response.costStatus === undefined
+      ? computeRegistryPredictedCost(response.provider, response.model, {
+        promptTokens: response.usage.promptTokens,
+        completionTokens: response.usage.completionTokens,
+        cacheReadTokens: response.usage.cacheReadTokens,
+        cacheCreationTokens: response.usage.cacheCreationTokens,
+      })
+      : undefined;
+    const costUsd = response.costStatus === "unknown"
+      ? undefined
+      : response.costStatus !== undefined
+      ? response.cost_usd
+      : registryCostUsd ?? response.cost_usd ?? 0;
+
+    await this.executor.logGeneration(
+      context.trace_id,
+      options.agent_role ?? "",
+      response.model,
+      response.provider,
+      {
+        ...response.usage,
+        costUsd,
+        ...(response.costStatus !== undefined
+          ? { costSource: costUsd === undefined ? "unknown" as const : "predicted" as const }
+          : {}),
+        durationMs: generateDurationMs,
+      },
+    );
+
+    return costUsd;
+  }
+
   private async runSingleIteration(
     params: IIterationParams,
   ): Promise<IIterationResult> {
@@ -439,9 +581,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCacheCreationTokens,
       totalReasoningTokens,
       nativeToolsUsed,
-      nativeToolDefinitions,
       nativeToolsPriorTurn,
-      nativePreferredTool,
     } = params;
     if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
       throw new GuardrailBlockedError(
@@ -450,24 +590,14 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
     }
 
-    const budgetedHistory = await this.applyContextBudget(blueprint, context, history, i);
-    const visibleToolIds = this.deriveVisibleToolIds(options);
-    const aciSection = this.renderAciSection(visibleToolIds);
-    const prompt = this.buildPrompt(
-      blueprint,
-      context,
-      options,
-      budgetedHistory,
-      nativeToolsUsed,
-      visibleToolIds,
-      aciSection?.result,
+    const { prompt, initialPrompt, initialSections, generateOptions, aciSection } = await this.prepareIterationPrompt(
+      params,
     );
-
-    const generateOptions = this.buildNativeGenerateOptions(
-      nativeToolDefinitions,
-      nativeToolsPriorTurn,
-      nativeToolsUsed,
-      nativePreferredTool,
+    await this.preflightNativeConversationBudget(
+      blueprint,
+      generateOptions.nativeConversation,
+      generateOptions,
+      context.trace_id,
     );
     await this.emitPromptAssembledEvent(context, i, aciSection);
     const generateStartTime = Date.now();
@@ -476,21 +606,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     this.logMaxTokensTruncation(response, options, i, context);
 
-    const registryCostUsd = computeRegistryPredictedCost(response.provider, response.model, {
-      promptTokens: response.usage.promptTokens,
-      completionTokens: response.usage.completionTokens,
-      cacheReadTokens: response.usage.cacheReadTokens,
-      cacheCreationTokens: response.usage.cacheCreationTokens,
-    });
-    const costUsd = registryCostUsd ?? response.cost_usd ?? 0;
-
-    await this.executor.logGeneration(
-      context.trace_id,
-      options.agent_role ?? "",
-      response.model,
-      response.provider,
-      { ...response.usage, costUsd, durationMs: generateDurationMs },
-    );
+    const costUsd = await this.logIterationGeneration(response, context, options, generateDurationMs);
 
     const iterPromptTokens = response.usage.promptTokens;
     const iterCompletionTokens = response.usage.completionTokens;
@@ -501,7 +617,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     const newTotalPromptTokens = totalPromptTokens + iterPromptTokens;
     const newTotalCompletionTokens = totalCompletionTokens + iterCompletionTokens;
-    const newTotalCostUsd = totalCostUsd + iterCostUsd;
+    const newTotalCostUsd = this.accumulateKnownCost(totalCostUsd, iterCostUsd);
     const newTotalCacheReadTokens = totalCacheReadTokens + iterCacheReadTokens;
     const newTotalCacheCreationTokens = totalCacheCreationTokens + iterCacheCreationTokens;
     const newTotalReasoningTokens = totalReasoningTokens + iterReasoningTokens;
@@ -567,6 +683,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     let newToolCallCount = toolCallCount;
     let lastPriorTurn = nativeToolsPriorTurn;
+    const completedNativeConversationTurns = [...params.nativeConversationTurns];
     let allActionsSucceeded = true;
     for (let a = 0; a < parsed.actions.length; a++) {
       const action = this.canonicalizeAction(parsed.actions[a], context.trace_id, response.provider, response.model);
@@ -601,6 +718,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           parsed.nativeToolCalls[a],
           execResult as never,
         );
+        completedNativeConversationTurns.push(lastPriorTurn);
       }
     }
 
@@ -629,6 +747,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         totalCacheCreationTokens: newTotalCacheCreationTokens,
         totalReasoningTokens: newTotalReasoningTokens,
         nativeToolsPriorTurn: lastPriorTurn,
+        nativeConversationInitialPrompt: initialPrompt,
+        nativeConversationInitialSections: params.nativeConversationInitialSections ?? initialSections,
+        nativeConversationTurns: completedNativeConversationTurns,
         done: true,
         result,
       };
@@ -643,8 +764,57 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCacheCreationTokens: newTotalCacheCreationTokens,
       totalReasoningTokens: newTotalReasoningTokens,
       nativeToolsPriorTurn: lastPriorTurn,
+      nativeConversationInitialPrompt: initialPrompt,
+      nativeConversationInitialSections: params.nativeConversationInitialSections ?? initialSections,
+      nativeConversationTurns: completedNativeConversationTurns,
       done: false,
     };
+  }
+
+  private accumulateKnownCost(
+    total: Opt<number, Reason.OptionalContext>,
+    next: Opt<number, Reason.OptionalInput>,
+  ): number | undefined {
+    return total === undefined || next === undefined ? undefined : total + next;
+  }
+
+  /** Keep each native tool call paired with its result. Reject an oversized complete snapshot before generation. */
+  private async preflightNativeConversationBudget(
+    blueprint: IAgentFileBlueprint,
+    snapshot: Opt<INativeConversationSnapshot, Reason.OptionalContext>,
+    options: GeneratedOptions,
+    traceId: string,
+  ): Promise<void> {
+    if (!snapshot) return;
+    if (!this.provider?.measureInputTokens) throw new Error("Native conversation provider requires input measurement");
+    const budget = this.executor.currentPromptBudget ?? await new PromptBudgetAllocator(
+      { enabled: true },
+      this.executor.tokenizer,
+    ).allocate(blueprint.model, { loopHistoryUsedTokens: REACT_DEFAULT_MAX_TOKENS });
+    const measured = await this.provider.measureInputTokens(snapshot.initialPrompt, options);
+    const inputLimit = Math.max(
+      0,
+      budget.totalBudgetTokens - budget.safetyBufferTokens - (options.max_tokens ?? REACT_DEFAULT_MAX_TOKENS),
+    );
+    const sectionOverflow = Object.entries(measured.sections).some(([section, count]) =>
+      count > budget.sections[section as keyof typeof budget.sections]
+    );
+    if (measured.totalTokens > inputLimit || sectionOverflow) {
+      await this.executor.budgetLogger?.warn(DomainEventType.ContextBudgetExceeded, blueprint.model, {
+        model: blueprint.model,
+        section_counts: measured.sections,
+        limit: inputLimit,
+        input_tokens: measured.totalTokens,
+        token_source: measured.tokenSource,
+      }, traceId);
+      throw new ContextBudgetExceededError(
+        "Native conversation exceeds its allocated prompt budget",
+        blueprint.model,
+        inputLimit,
+        measured.totalTokens,
+        { ...measured.sections },
+      );
+    }
   }
 
   private shouldFinishActionTurn(isComplete: boolean, allActionsSucceeded: boolean): boolean {
@@ -897,18 +1067,21 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     skipToolProse = false,
     visibleToolIds: string[] = this.deriveVisibleToolIds(options),
     aciSection: Opt<IAciRenderResult, Reason.OptionalContext> = this.renderAciSection(visibleToolIds)?.result,
+    sections?: Opt<INativePromptSection[], Reason.OptionalInput>,
   ): string {
     const historyText = this.buildBudgetedHistoryText(history);
 
-    let prompt = `AGENT ROLE: ${blueprint.name}
+    const roleSection = `${
+      sections && blueprint.systemPrompt ? `${blueprint.systemPrompt}\n\n` : ""
+    }AGENT ROLE: ${blueprint.name}
 CAPABILITIES: ${blueprint.capabilities.join(", ")}
 
 CONTEXT:
 Portal: ${options.portal}
 Trace ID: ${context.trace_id}
-Request: ${context.request}
-Plan Step: ${context.plan}
-
+`;
+    const planSection = `Request: ${context.request}\nPlan Step: ${context.plan}\n`;
+    let prompt = `${roleSection}${planSection}
 ${history.length > 0 ? `HISTORY:\n${historyText}` : ""}
 
 INSTRUCTIONS:
@@ -964,6 +1137,11 @@ ${REACT_SUMMARY_PREFIX}[What was done]`;
 When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SUMMARY_PREFIX}[summary]".`;
     }
 
+    sections?.push(
+      { section: PromptBudgetSection.SYSTEM, text: roleSection },
+      { section: PromptBudgetSection.PLAN, text: planSection },
+      { section: PromptBudgetSection.SYSTEM, text: prompt.slice(roleSection.length + planSection.length) },
+    );
     return prompt;
   }
 

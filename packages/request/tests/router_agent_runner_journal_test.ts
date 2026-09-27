@@ -9,6 +9,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_FAILED,
@@ -101,6 +102,23 @@ Deno.test("[new] RequestRouter.routeToAgent logs runnerKind: RunnerKind.AGENT_RU
   assertEquals(failed.runnerKind, RunnerKind.AGENT_RUNNER);
   const completed = events.find((e) => e.action === AGENT_EVENT_EXECUTION_COMPLETED);
   assertEquals(completed, undefined, "no completion event should be logged when the run throws");
+});
+
+Deno.test("RequestRouter preserves a typed provider factory reason on the failure event", async () => {
+  const events: ILogEvent[] = [];
+  const router = createTestRequestRouter({
+    flowRunner: createMockFlowRunner(),
+    agentRunner: createThrowingAgentRunner(
+      new ProviderFactoryError("network permission denied", "net_permission_denied"),
+    ),
+    flowValidator: createMockFlowValidator(),
+    logger: createCapturingLogger(events),
+  });
+
+  await assertRejects(() => router.routeToAgent("senior-coder", sampleRouterRequest({ frontmatter: {} })));
+  const failed = events.find((e) => e.action === AGENT_EVENT_EXECUTION_FAILED);
+  assertExists(failed);
+  assertEquals((failed.payload as { providerReasonCode?: string }).providerReasonCode, "net_permission_denied");
 });
 
 Deno.test("[new] RequestRouter.routeToDefaultAgent logs runnerKind: RunnerKind.AGENT_RUNNER on successful agentRunner.run() completion", async () => {

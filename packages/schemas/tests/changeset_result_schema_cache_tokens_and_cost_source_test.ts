@@ -85,3 +85,17 @@ Deno.test("[ChangesetResultSchema] cost_source rejects an unknown value", () => 
 
   assertEquals(result.success, false);
 });
+
+Deno.test("[ChangesetResultSchema] represents unpriced usage as null with an unknown source", () => {
+  const parsed = ChangesetResultSchema.parse({
+    branch: "feat/test",
+    commit_sha: "1234567",
+    files_changed: [],
+    description: "result",
+    tool_calls: 0,
+    execution_time_ms: 0,
+    usage: { prompt_tokens: 10, completion_tokens: 5, cost_usd: null, cost_source: "unknown" },
+  });
+  assertEquals(parsed.usage?.cost_usd, null);
+  assertEquals(parsed.usage?.cost_source, "unknown");
+});

@@ -225,6 +225,65 @@ export class CostTracker implements ICostTracker {
     return { cost: this.estimateCost(provider, tokens, options.model), source: null };
   }
 
+  async recordUnpricedGeneration(
+    provider: string,
+    model: string,
+    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void> {
+    const payload: LogMetadata = {
+      provider,
+      model,
+      prompt_tokens: usage.promptTokens,
+      completion_tokens: usage.completionTokens,
+      total_tokens: usage.totalTokens,
+      cost_status: "unknown",
+    };
+    if (this.eventLogger) {
+      await this.eventLogger.log({
+        action: DomainEventType.LlmUsageRecorded,
+        target: `${provider}:${model}`,
+        payload,
+        traceId,
+        costUsd: null,
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+      });
+      await this.db.waitForFlush();
+      return;
+    }
+    this.db.logActivity(
+      "system",
+      DomainEventType.LlmUsageRecorded,
+      `${provider}:${model}`,
+      payload,
+      traceId ?? crypto.randomUUID(),
+      null,
+      null,
+      null,
+      usage.promptTokens,
+      usage.completionTokens,
+      null,
+    );
+    await this.db.waitForFlush();
+  }
+
+  private async hasUnpricedUsageToday(provider?: Opt<string, Reason.QueryFilter>): Promise<boolean> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const result = await this.db.preparedGet<{ present: number }>(
+      `SELECT 1 AS present FROM activity
+       WHERE action_type = ? AND timestamp >= ? AND timestamp < ?
+         ${provider ? "AND json_extract(payload, '$.provider') = ?" : ""}
+         AND json_extract(payload, '$.cost_status') = 'unknown'
+       LIMIT 1`,
+      [DomainEventType.LlmUsageRecorded, today.toISOString(), tomorrow.toISOString(), ...(provider ? [provider] : [])],
+    );
+    return result != null;
+  }
+
   /** Split input/output per-Mtok price from the injected lookup, or undefined. */
   private async computeSplitPrice(
     provider: string,
@@ -267,6 +326,14 @@ export class CostTracker implements ICostTracker {
     );
   }
   async persistEntry(record: IProviderCostRecord): Promise<void> {
+    if (record.estimatedCostUsd === null) {
+      await this.recordUnpricedGeneration(record.provider, record.model, {
+        promptTokens: record.promptTokens,
+        completionTokens: record.completionTokens,
+        totalTokens: record.tokens,
+      }, record.traceId);
+      return;
+    }
     await this.trackRequest(record.provider, record.tokens, {
       model: record.model,
       traceId: record.traceId,
@@ -307,7 +374,18 @@ export class CostTracker implements ICostTracker {
              completion_tokens as completionTokens, estimated_cost_usd as estimatedCostUsd,
              trace_id as traceId, portal, agent_role as agentRole, timestamp, cost_source as costSource,
              cache_read_tokens as cacheReadTokens, cache_creation_tokens as cacheCreationTokens
-      FROM provider_costs
+      FROM (
+        SELECT id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd,
+               trace_id, portal, agent_role, timestamp, cost_source, cache_read_tokens, cache_creation_tokens
+        FROM provider_costs
+        UNION ALL
+        SELECT 'unpriced-' || id, json_extract(payload, '$.provider'), json_extract(payload, '$.model'), 1,
+               json_extract(payload, '$.total_tokens'), json_extract(payload, '$.prompt_tokens'),
+               json_extract(payload, '$.completion_tokens'), NULL, trace_id, json_extract(payload, '$.portal'),
+               agent_role, timestamp, NULL, json_extract(payload, '$.cache_read_tokens'), json_extract(payload, '$.cache_creation_tokens')
+        FROM activity
+        WHERE action_type = '${DomainEventType.LlmUsageRecorded}' AND json_extract(payload, '$.cost_status') = 'unknown'
+      )
       ${whereClause}
       ORDER BY timestamp DESC
     `;
@@ -320,7 +398,7 @@ export class CostTracker implements ICostTracker {
       tokens: number;
       promptTokens: number;
       completionTokens: number;
-      estimatedCostUsd: number;
+      estimatedCostUsd: number | null;
       traceId: string | null;
       portal: string | null;
       agentRole: string | null;
@@ -376,7 +454,9 @@ export class CostTracker implements ICostTracker {
       row.completionTokens += record.completionTokens;
       row.cacheReadTokens += record.cacheReadTokens ?? 0;
       row.cacheCreationTokens += record.cacheCreationTokens ?? 0;
-      row.estimatedCostUsd += record.estimatedCostUsd;
+      row.estimatedCostUsd = row.estimatedCostUsd === null || record.estimatedCostUsd === null
+        ? null
+        : row.estimatedCostUsd + record.estimatedCostUsd;
       grouped.set(group, row);
     }
     return [...grouped.values()].sort((a, b) => a.group.localeCompare(b.group));
@@ -394,6 +474,7 @@ export class CostTracker implements ICostTracker {
     budget?: Opt<number, Reason.SensibleDefault>,
   ): Promise<boolean> {
     const dailyBudget = budget ?? this.config?.provider_strategy?.max_daily_cost_usd ?? 5.0;
+    if (Number.isFinite(dailyBudget) && await this.hasUnpricedUsageToday(provider)) return false;
     const dailyCost = await this.getDailyCost(provider);
     return dailyCost < dailyBudget;
   }

@@ -7,11 +7,13 @@
  */
 
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 import type { Config } from "@exaix/schemas";
 import { DEFAULT_MODEL_FALLBACK, DEFAULT_TIMEOUT_MS } from "@exaix/core";
 
 import type { IModelOptions, IModelProvider } from "../types.ts";
+import { assertNoNativeConversation } from "../provider_registry.ts";
 import { type IGenerateResult, withRetry } from "./common.ts";
 /**
  * Options for base provider.
@@ -68,15 +70,19 @@ export abstract class BaseProvider implements IModelProvider {
   /**
    * Generate a completion from the model.
    */
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
+    assertNoNativeConversation(this.id, options);
     return await withRetry(
       () => this.attemptGenerate(prompt, options),
-      { maxRetries: this.maxRetries, baseDelayMs: this.retryDelayMs },
+      { maxRetries: this.maxRetries, baseDelayMs: this.retryDelayMs, signal: options?.requestSignal },
     );
   }
 
   /**
    * Internal: attempt a single completion call.
    */
-  protected abstract attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
+  protected abstract attemptGenerate(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<IGenerateResult>;
 }

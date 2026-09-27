@@ -16,6 +16,7 @@ function stubDailyCost(records: IProviderCostRecord[], _provider?: string): numb
   for (const r of records) {
     if (_provider && r.provider !== _provider) continue;
     if (r.timestamp < startOfDay) continue;
+    if (r.estimatedCostUsd === null) throw new Error("Numeric cost stub cannot price an unknown record");
     total += r.estimatedCostUsd;
   }
   return total;
@@ -61,6 +62,7 @@ export function createStubCostTracker(): ICostTracker {
       for (const r of records) {
         if (_provider && r.provider !== _provider) continue;
         if (_model && r.model !== _model) continue;
+        if (r.estimatedCostUsd === null) throw new Error("Numeric cost stub cannot price an unknown record");
         total += r.estimatedCostUsd;
       }
       return total;

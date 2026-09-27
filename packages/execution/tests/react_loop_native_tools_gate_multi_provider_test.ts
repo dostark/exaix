@@ -17,11 +17,11 @@
  * ]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ReActLoopStrategy } from "../src/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import {
@@ -33,6 +33,7 @@ import {
   SecurityMode,
 } from "@exaix/core";
 import { makeGenerateResult } from "@exaix/testing";
+import type { ITool } from "@exaix/core/types";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
@@ -68,7 +69,11 @@ function makeOptions(nativeToolsEnabled: boolean): IAgentExecutionOptions {
 
 /** Executor whose toolRegistry.getTools() is only reachable when the gate evaluates true
  *  (react_loop_strategy.ts:170-171: `this.executor.toolRegistry?.getTools() ?? []`). */
-function makeTrackingExecutor(getToolsCalls: { count: number }): ReActExecutor {
+function makeTrackingExecutor(
+  getToolsCalls: { count: number },
+  tool?: ITool,
+  generationRecords?: Array<{ costUsd?: number; costSource?: string }>,
+): ReActExecutor {
   return {
     logAgentOutput: () => Promise.resolve(),
     validateReviewResult: (r: IChangesetResult) => r,
@@ -80,12 +85,15 @@ function makeTrackingExecutor(getToolsCalls: { count: number }): ReActExecutor {
       tool_calls: 0,
       execution_time_ms: Date.now() - t,
     }),
-    logGeneration: () => Promise.resolve(),
+    logGeneration: (_traceId, _role, _model, _provider, usage) => {
+      generationRecords?.push({ costUsd: usage.costUsd, costSource: usage.costSource });
+      return Promise.resolve();
+    },
     toolRegistry: {
-      execute: () => Promise.resolve({ success: true }),
+      execute: () => Promise.resolve({ success: true, data: { value: "OBSERVATION_SENTINEL" } }),
       getTools: () => {
         getToolsCalls.count++;
-        return [];
+        return tool ? [tool] : [];
       },
       getBaseDir: () => "/nonexistent-test-basedir",
     },
@@ -99,6 +107,50 @@ function makeCompleteProvider(id: string): IModelProvider {
     generate: () => Promise.resolve(makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`)),
   };
 }
+
+Deno.test("ordinary ReAct providers retain the legacy omitted-cost and journal payload defaults", async () => {
+  const records: Array<{ costUsd?: number; costSource?: string }> = [];
+  const provider: IModelProvider = {
+    id: "ordinary-fixture",
+    generate: () =>
+      Promise.resolve({
+        content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        model: "unlisted-fixture",
+        provider: "mock",
+      }),
+  };
+  const result = await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, undefined, records), provider).execute(
+    testBlueprint,
+    testContext,
+    makeOptions(false),
+  );
+  assertEquals(result.usage?.cost_usd, 0);
+  assertEquals(records, [{ costUsd: 0, costSource: undefined }]);
+});
+
+Deno.test("compatible priced usage keeps the provider policy result without generic registry repricing", async () => {
+  const records: Array<{ costUsd?: number; costSource?: string }> = [];
+  const provider: IModelProvider = {
+    id: "priced-fixture",
+    generate: () =>
+      Promise.resolve({
+        content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
+        usage: { promptTokens: 100, completionTokens: 10, totalTokens: 110 },
+        model: "claude-sonnet-5",
+        provider: "anthropic",
+        costStatus: "estimated",
+        cost_usd: 0.123,
+      }),
+  };
+  const result = await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, undefined, records), provider).execute(
+    testBlueprint,
+    testContext,
+    makeOptions(false),
+  );
+  assertEquals(records[0].costUsd, 0.123);
+  assertEquals(result.usage?.cost_usd, 0.123);
+});
 
 Deno.test(
   "[react-loop-native-tools-gate-multi-provider] gate fires for a non-anthropic provider id registered with supportsNativeTools:true",
@@ -124,6 +176,90 @@ Deno.test(
     await strategy.execute(testBlueprint, testContext, makeOptions(true));
 
     assertEquals(getToolsCalls.count, 1);
+  },
+);
+
+Deno.test(
+  "[phase155.snapshot] ReAct keeps its first prompt and replays completed observations only in the snapshot",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const providerId = "openai-chat-fixture-model";
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
+      name: "openai-chat",
+      description: "Compatible fixture",
+      capabilities: ["chat", "tools"],
+      costTier: ProviderCostTier.LOCAL,
+      pricingTier: PricingTier.LOCAL,
+      strengths: [],
+      supportsNativeTools: true,
+      supportsNativeConversation: true,
+      chatFormat: "openai",
+    });
+    const tool: ITool = {
+      name: "read_file",
+      description: "Read one file",
+      parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+    };
+    const getToolsCalls = { count: 0 };
+    const generationRecords: Array<{ costUsd?: number; costSource?: string }> = [];
+    const calls: Array<{ prompt: string; options?: IModelOptions }> = [];
+    const provider: IModelProvider = {
+      id: providerId,
+      measureInputTokens: () =>
+        Promise.resolve({
+          totalTokens: 100,
+          tokenSource: "tokenizer_estimate",
+          sections: { system: 100, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+        }),
+      generate(prompt, options) {
+        calls.push({ prompt, options });
+        if (calls.length <= 2) {
+          const response = makeGenerateResult("");
+          delete response.cost_usd;
+          return Promise.resolve({
+            ...response,
+            costStatus: "unknown",
+            toolCalls: [{
+              id: `call_${calls.length}`,
+              name: "read_file",
+              input: { path: "README.md" },
+              type: "function",
+            }],
+          });
+        }
+        const response = makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`);
+        delete response.cost_usd;
+        return Promise.resolve({ ...response, costStatus: "unknown" });
+      },
+    };
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor(getToolsCalls, tool, generationRecords), provider);
+    const result = await strategy.execute(testBlueprint, testContext, makeOptions(true));
+
+    assertEquals(calls.length, 3);
+    assertEquals(calls[0].prompt, calls[1].prompt);
+    assertEquals(calls[1].prompt, calls[2].prompt);
+    assertStringIncludes(calls[0].prompt, testBlueprint.systemPrompt);
+    assertEquals(calls[2].options?.nativeConversation?.turns.length, 2);
+    assertEquals(
+      calls[1].options?.nativeConversation?.roundInstruction === calls[2].options?.nativeConversation?.roundInstruction,
+      false,
+    );
+    assertExists(calls[0].options?.nativeConversation);
+    assertEquals(calls[0].options!.nativeConversation!.turns.length, 0);
+    assertExists(calls[1].options?.nativeConversation);
+    assertEquals(calls[1].options!.nativeConversation!.turns.length, 1);
+    assertStringIncludes(
+      String(calls[1].options!.nativeConversation!.turns[0].toolResultContent),
+      "OBSERVATION_SENTINEL",
+    );
+    assertEquals(calls[1].prompt.includes("OBSERVATION_SENTINEL"), false);
+    assertEquals(result.usage?.cost_usd, null);
+    assertEquals(result.usage?.cost_source, "unknown");
+    assertEquals(
+      generationRecords.every((record) => record.costUsd === undefined && record.costSource === "unknown"),
+      true,
+    );
   },
 );
 

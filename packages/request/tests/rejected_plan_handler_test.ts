@@ -13,12 +13,14 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RejectedPlanHandler, StatusManager } from "@exaix/request";
-import { createMockConfig, createMockEventLogger } from "@exaix/testing";
+import { createMockConfig, createMockEventLogger, createMockLogger } from "@exaix/testing";
 import { PlanValidationError } from "@exaix/core/planning";
 import { RequestStatus } from "@exaix/core/status";
 import { PlanStatus } from "@exaix/core/status";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import { RequestSource } from "@exaix/core";
+import { ProviderFactoryError } from "@exaix/ai/errors.ts";
+import { DomainEventType } from "@exaix/core/events";
 
 async function makeHandlerTestSetup() {
   const testDir = await Deno.makeTempDir({ prefix: "exa_rejected_plan_handler_test_" });
@@ -44,6 +46,29 @@ function makeFrontmatter(overrides: Partial<IRequestFrontmatter> = {}): IRequest
     ...overrides,
   };
 }
+
+Deno.test("typed provider factory failure retains the original trace and one request terminal reason", async () => {
+  const { testDir, filePath, handler } = await makeHandlerTestSetup();
+  try {
+    const logger = createMockLogger();
+    await handler.handleError(
+      new ProviderFactoryError("Compatible credential unavailable", "credential_missing"),
+      filePath,
+      "req-1",
+      logger,
+      makeFrontmatter(),
+    );
+    const failures = logger.error.calls.filter((call) => call.args[0] === DomainEventType.RequestFailed);
+    assertEquals(failures.length, 1);
+    assertEquals(failures[0].args[2], {
+      error: "Compatible credential unavailable",
+      providerReasonCode: "credential_missing",
+    });
+    assertEquals(failures[0].args[3], "trace-1");
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
 
 Deno.test("[RejectedPlanHandler.handleError] PlanValidationError persists a rejected artifact and marks FAILED", async () => {
   const { testDir, config, filePath, handler } = await makeHandlerTestSetup();

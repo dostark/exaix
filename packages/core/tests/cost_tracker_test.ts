@@ -48,6 +48,36 @@ Deno.test("CostTracker: tracks single request", async () => {
   });
 });
 
+Deno.test("CostTracker: persists unknown usage in the journal and blocks a finite budget after tracker restart", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const tracker = new CostTracker(db, undefined, logger);
+    await tracker.recordUnpricedGeneration("openai-chat", "local-fixture", {
+      promptTokens: 18,
+      completionTokens: 4,
+      totalTokens: 22,
+    });
+    await db.waitForFlush();
+
+    const restartedTracker = new CostTracker(db, undefined, logger);
+    assertEquals(await restartedTracker.isWithinBudget("openai-chat", 1), false);
+    assertEquals(await restartedTracker.isWithinBudget(undefined, 1), false);
+    assertEquals(await restartedTracker.isWithinBudget("openai-chat", Number.POSITIVE_INFINITY), true);
+    assertEquals(await restartedTracker.isWithinBudget("anthropic", 1), true);
+    const rows = await db.preparedAll<{ payload: string; cost_usd: number | null }>(
+      "SELECT payload, cost_usd FROM activity WHERE action_type = ?",
+      [DomainEventType.LlmUsageRecorded],
+    );
+    assertEquals(rows.length, 1);
+    assertEquals(JSON.parse(rows[0].payload).cost_status, "unknown");
+    assertEquals(rows[0].cost_usd, null);
+  } finally {
+    await db.close();
+    await cleanup();
+  }
+});
+
 Deno.test("CostTracker: accumulates multiple requests", async () => {
   await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {

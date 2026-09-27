@@ -338,10 +338,10 @@ Deno.test("[exactl request create --dry-run-context] with a non-native-tools def
     // provider became native-capable, and this key is in the supported set, so resolution
     // cannot fall back to mock.
     ProviderRegistry.registerWithMetadata(
-      ProviderType.OPENAI_CHAT,
+      ProviderType.CLAUDE_CLI,
       { create: () => Promise.reject(new Error("unused")) } as never,
       {
-        name: ProviderType.OPENAI_CHAT,
+        name: ProviderType.CLAUDE_CLI,
         description: "non-native fixture provider",
         capabilities: ["chat"],
         costTier: 0 as never,
@@ -351,13 +351,13 @@ Deno.test("[exactl request create --dry-run-context] with a non-native-tools def
     );
     await Deno.writeTextFile(
       join(tempDir, "config.toml"),
-      `[system]\nroot = "."\n\n[agents]\ndefault_model = "fixture"\n\n[models.fixture]\nprovider = "openai-chat"\nmodel = "x"\n\n[planning]\ntools_enabled = true\nmax_tool_rounds = 2\nmax_tool_result_tokens = 2000\n`,
+      `[system]\nroot = "."\n\n[agents]\ndefault_model = "fixture"\n\n[models.fixture]\nprovider = "claude-cli"\nmodel = "x"\n\n[planning]\ntools_enabled = true\nmax_tool_rounds = 2\nmax_tool_result_tokens = 2000\n`,
     );
     context.appContext!.config.reload();
     const rendered = await runDryRunContextPreview(context);
 
     assertStringIncludes(rendered, "(inactive: provider", "non-native provider must be flagged inactive (GAP-8)");
-    assertStringIncludes(rendered, "openai-chat", "the flagged provider id must be named");
+    assertStringIncludes(rendered, "claude-cli", "the flagged provider id must be named");
     assertStringIncludes(rendered, "lacks native tools");
   });
 });

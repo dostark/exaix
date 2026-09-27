@@ -13,7 +13,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, scripts/dogfood_bootstrap.ts]
  */
 
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";
 
 const PRESET = [
@@ -49,4 +49,31 @@ Deno.test("[cell_config] resolveCellConfig replaces every occurrence (replaceAll
 Deno.test("[cell_config] resolveCellConfig leaves a sentinel-free preset unchanged", () => {
   const clean = '[system]\nroot = "/already/absolute"\n';
   assertEquals(resolveCellConfig(clean, { workspaceRoot: "/ws", worktreePath: "/repo" }), clean);
+});
+
+Deno.test("[cell_config] resolveCellConfig replaces the compatible fixture port sentinel", () => {
+  const preset = '[ai_endpoints]\nopenai_chat = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1"';
+  const out = resolveCellConfig(preset, {
+    workspaceRoot: "/ws",
+    worktreePath: "/repo",
+    compatFixturePort: 43127,
+  });
+  assertStringIncludes(out, 'openai_chat = "http://127.0.0.1:43127/v1"');
+  assert(!out.includes("__COMPAT_FIXTURE_PORT__"));
+});
+
+Deno.test("[cell_config] compatible fixture sentinel requires a valid allocated port", async () => {
+  const preset = 'endpoint = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1"';
+  await assertRejects(() =>
+    Promise.resolve().then(() => resolveCellConfig(preset, { workspaceRoot: "/ws", worktreePath: "/repo" }))
+  );
+  await assertRejects(() =>
+    Promise.resolve().then(() =>
+      resolveCellConfig(preset, {
+        workspaceRoot: "/ws",
+        worktreePath: "/repo",
+        compatFixturePort: Number.NaN,
+      })
+    )
+  );
 });

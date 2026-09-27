@@ -11,6 +11,7 @@
  * @related-files [packages/ai/src/factories/mock_factory.ts, packages/ai/tests/providers/mock_llm_provider_test.ts]
  */
 
+import { assertNoNativeConversation } from "../provider_registry.ts";
 import { MockStrategy, ProviderType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { ICallSite, IModelOptions, IModelProvider, IProviderTurn } from "../types.ts";
@@ -445,6 +446,7 @@ export class MockLLMProvider implements IModelProvider {
   // IModelProvider Implementation
 
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
+    assertNoNativeConversation(this.id, options);
     if (this.strategy === "failing") {
       this._callCount++;
       this._callHistory.push({

@@ -119,6 +119,8 @@ export async function bootRealDaemon(
   configPath: string,
   settleMs: number,
   options: {
+    /** Explicit child permissions for tests that prove network confinement. */
+    denoPermissions?: string[];
     extraEnv?: Record<string, string>;
     midFlight?: () => void | Promise<void>;
     afterInjectMs?: number;
@@ -130,7 +132,7 @@ export async function bootRealDaemon(
 ): Promise<void> {
   await migrateDaemonWorkspace(dirname(configPath));
   const proc = new Deno.Command("deno", {
-    args: ["run", "--allow-all", "apps/daemon/main.ts"],
+    args: ["run", ...(options.denoPermissions ?? ["--allow-all"]), "apps/daemon/main.ts"],
     stdin: "null",
     stdout: "null",
     stderr: "null",

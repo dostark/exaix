@@ -128,7 +128,7 @@ export class JournalFormatter {
     }
   }
 
-  private static formatCostDisplay(costUsd: Opt<number, Reason.OptionalInput>): string {
+  private static formatCostDisplay(costUsd: Opt<number | null, Reason.OptionalInput>): string {
     if (typeof costUsd === "number" && costUsd > 0) {
       return `$${costUsd.toFixed(COST_PRECISION)}`;
     }

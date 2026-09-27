@@ -10,11 +10,23 @@
 import * as DEFAULTS from "@exaix/ai/constants.ts";
 import type { Config } from "@exaix/schemas";
 
-import { type AiConfig, getDefaultModels, InputValidator, type ModelConfigSchema } from "@exaix/schemas";
+import {
+  type AiConfig,
+  CompatibleChatConfigSchema,
+  getDefaultModels,
+  InputValidator,
+  type ModelConfigSchema,
+} from "@exaix/schemas";
 
 import type { z } from "zod";
 import type { ICostTracker, IDatabaseService, JSONValue } from "@exaix/core";
-import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
+import {
+  ConfigSource,
+  type MockStrategy,
+  OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  PricingTier,
+  ProviderType,
+} from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import { createAPIRetryPolicy, RetryPolicy } from "@exaix/core/request";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
@@ -23,7 +35,7 @@ import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_f
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
 import { TracedProvider } from "./traced_provider.ts";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
-import { ProviderFactoryError } from "./errors.ts";
+import { PROVIDER_REASON_PROFILE_MISMATCH, ProviderFactoryError } from "./errors.ts";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
 import { CaptureRecordingProvider } from "./providers/capture_recording_provider.ts";
@@ -90,6 +102,7 @@ export class ProviderFactory {
 
         return provider;
       } catch (error) {
+        if (error instanceof ProviderFactoryError && error.reasonCode) throw error;
         lastError = error instanceof Error ? error : new Error(String(error));
         // Use repo logging convention if available
         if (typeof console !== "undefined" && typeof console.warn === "function") {
@@ -184,6 +197,76 @@ export class ProviderFactory {
     return typeof rawModelConfig === "object" && rawModelConfig !== null && !Array.isArray(rawModelConfig);
   }
 
+  private static resolveCompatibleOptions(
+    baseAi: AiConfig,
+    modelConfig: Opt<z.infer<typeof ModelConfigSchema>, Reason.OptionalInput>,
+    providerType: ProviderType,
+    envBaseUrl: Opt<string, Reason.OptionalInput>,
+    hasNamedModel: boolean,
+  ): { compatible?: IResolvedProviderOptions["compatible"]; inheritCompatibleDefaults: boolean } {
+    const rawGlobalCompatible = baseAi.compatible;
+    const rawModelCompatible = modelConfig?.compatible;
+    const switchedProfile = rawModelCompatible?.profile !== undefined &&
+      rawGlobalCompatible?.profile !== undefined && rawModelCompatible.profile !== rawGlobalCompatible.profile;
+    const inheritCompatibleDefaults = !switchedProfile && baseAi.provider === providerType;
+    if (providerType !== ProviderType.OPENAI_CHAT) {
+      if (rawModelCompatible !== undefined || (!hasNamedModel && rawGlobalCompatible !== undefined)) {
+        throw new ProviderFactoryError(
+          "Compatible settings require the openai-chat provider",
+          PROVIDER_REASON_PROFILE_MISMATCH,
+        );
+      }
+      return { inheritCompatibleDefaults };
+    }
+    const profile = rawModelCompatible?.profile ?? rawGlobalCompatible?.profile;
+    if (!profile) {
+      throw new ProviderFactoryError(
+        "The openai-chat provider requires an explicit compatible profile",
+        PROVIDER_REASON_PROFILE_MISMATCH,
+      );
+    }
+    const compatibleOverrides = switchedProfile
+      ? rawModelCompatible
+      : { ...rawGlobalCompatible, ...rawModelCompatible };
+    const endpoint = envBaseUrl ?? modelConfig?.base_url ?? compatibleOverrides?.endpoint ??
+      (inheritCompatibleDefaults ? baseAi.base_url : undefined) ?? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].endpoint;
+    return {
+      compatible: CompatibleChatConfigSchema.parse({ ...compatibleOverrides, profile, endpoint }),
+      inheritCompatibleDefaults,
+    };
+  }
+
+  private static resolveRegisteredProvider(
+    envProvider: Opt<string, Reason.OptionalInput>,
+    configuredProvider: Opt<string, Reason.OptionalInput>,
+  ): ProviderType {
+    let providerType: ProviderType = ProviderType.MOCK;
+    if (envProvider) {
+      const normalized = envProvider.toLowerCase().trim();
+      if (ProviderRegistry.getSupportedProviders().includes(normalized)) {
+        providerType = normalized as ProviderType;
+      } else {
+        if (normalized === ProviderType.OPENAI_CHAT) {
+          throw new ProviderFactoryError("Compatible provider registration is missing", "registration_missing");
+        }
+        console.warn(`Unknown provider '${envProvider}' from EXA_LLM_PROVIDER, falling back to mock`);
+        providerType = ProviderType.MOCK;
+      }
+    } else if (configuredProvider) {
+      if (ProviderRegistry.getSupportedProviders().includes(configuredProvider)) {
+        providerType = configuredProvider as ProviderType;
+      } else {
+        if (configuredProvider === ProviderType.OPENAI_CHAT) {
+          throw new ProviderFactoryError("Compatible provider registration is missing", "registration_missing");
+        }
+        console.warn(`Unknown provider '${configuredProvider}' from config, falling back to mock`);
+        providerType = ProviderType.MOCK;
+      }
+    }
+
+    return providerType;
+  }
+
   private static resolveOptions(
     config: Config,
     rawModelConfig?: Opt<JSONValue, Reason.OptionalInput>,
@@ -210,31 +293,25 @@ export class ProviderFactory {
       ...(modelConfig ?? {}),
     };
 
-    // Resolve provider type (env > modelConfig > global)
-    let providerType: ProviderType = ProviderType.MOCK;
     // Ensure the registry is initialized before validation so tests and runtime
     // cannot observe a partially-registered provider set.
     ensureProviderRegistryInitialized();
 
-    if (envProvider) {
-      const normalized = envProvider.toLowerCase().trim();
-      if (ProviderRegistry.getSupportedProviders().includes(normalized)) {
-        providerType = normalized as ProviderType;
-      } else {
-        console.warn(`Unknown provider '${envProvider}' from EXA_LLM_PROVIDER, falling back to mock`);
-        providerType = ProviderType.MOCK;
-      }
-    } else if (merged.provider) {
-      if (ProviderRegistry.getSupportedProviders().includes(merged.provider)) {
-        providerType = merged.provider as ProviderType;
-      } else {
-        console.warn(`Unknown provider '${merged.provider}' from config, falling back to mock`);
-        providerType = ProviderType.MOCK;
-      }
-    }
+    const providerType = this.resolveRegisteredProvider(envProvider, merged.provider);
 
-    // Resolve model (env > merged.model > default per provider)
-    const model = envModel ?? (merged.model ?? getDefaultModels()[providerType]);
+    const { compatible, inheritCompatibleDefaults } = this.resolveCompatibleOptions(
+      baseAi,
+      modelConfig,
+      providerType,
+      envBaseUrl,
+      rawModelConfig !== undefined,
+    );
+
+    // Resolve model (env > merged.model > default per provider).
+    // A profile switch does not carry the prior compatible model identifier.
+    const model = envModel ?? modelConfig?.model ?? compatible?.model ??
+      (compatible && !inheritCompatibleDefaults ? undefined : baseAi.model) ??
+      (compatible ? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[compatible.profile].model : getDefaultModels()[providerType]);
 
     // Resolve base url and timeout (env > merged > defaults)
     const baseUrl = envBaseUrl ?? merged.base_url;
@@ -242,7 +319,10 @@ export class ProviderFactory {
     // Reads modelConfig's own timeout_ms and config.ai's pre-fallback timeout_ms directly (not
     // merged.timeout_ms) — merged always carries baseAi's synthetic default when config.ai is
     // unset, which would otherwise shadow the config.ai_timeout.providers[providerType] branch below.
-    const explicitTimeoutMs = modelConfig?.timeout_ms ?? (config.ai as AiConfig | undefined)?.timeout_ms;
+    const explicitTimeoutMs = modelConfig?.timeout_ms ??
+      (providerType === ProviderType.OPENAI_CHAT && baseAi.provider !== providerType
+        ? undefined
+        : config.ai?.timeout_ms);
     let timeoutMs = DEFAULTS.DEFAULT_AI_TIMEOUT_MS;
     if (envTimeout) {
       timeoutMs = parseInt(envTimeout, 10);
@@ -278,6 +358,7 @@ export class ProviderFactory {
       mockStrict,
       captureFixturesDir,
       config,
+      ...(compatible ? { compatible } : {}),
     };
   }
 
@@ -300,6 +381,12 @@ export class ProviderFactory {
     _db?: Opt<IDatabaseService, Reason.OptionalDependency>,
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
+    if (options.captureFixturesDir && options.provider === ProviderType.OPENAI_CHAT) {
+      throw new ProviderFactoryError(
+        "Fixture capture is unsupported for compatible Chat Completions",
+        "capture_unsupported",
+      );
+    }
     let provider = await this.createProvider(options);
 
     // Operator-triggered capture: wraps the real provider in a recording wrapper. Refused for mock —
@@ -320,14 +407,15 @@ export class ProviderFactory {
       provider = new TracedProvider(provider, options.logger);
     }
 
-    // Apply rate limiting if enabled
-    if (config.rate_limiting?.enabled) {
+    // Compatible usage accounting remains active when admission limits are disabled.
+    if (config.rate_limiting?.enabled || options.provider === ProviderType.OPENAI_CHAT) {
       const tracker = costTracker;
+      const limits = config.rate_limiting?.enabled ? config.rate_limiting : undefined;
       return new RateLimitedProvider(provider, {
-        maxCallsPerMinute: config.rate_limiting.max_calls_per_minute,
-        maxTokensPerHour: config.rate_limiting.max_tokens_per_hour,
-        maxCostPerDay: config.rate_limiting.max_cost_per_day,
-        costPer1kTokens: config.rate_limiting.cost_per_1k_tokens,
+        maxCallsPerMinute: limits?.max_calls_per_minute ?? Infinity,
+        maxTokensPerHour: limits?.max_tokens_per_hour ?? Infinity,
+        maxCostPerDay: limits?.max_cost_per_day ?? Infinity,
+        costPer1kTokens: limits?.cost_per_1k_tokens ?? 0,
         costTracker: tracker,
       });
     }
@@ -386,6 +474,7 @@ export class ProviderFactory {
     throw new ProviderFactoryError(
       `Provider '${options.provider}' is not registered in the provider registry. ` +
         `Available providers: ${ProviderRegistry.getSupportedProviders().join(", ")}`,
+      options.provider === ProviderType.OPENAI_CHAT ? "registration_missing" : undefined,
     );
   }
 

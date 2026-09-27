@@ -15,6 +15,7 @@ import type { ProviderType } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { EffortResolutionPath, IAgentEffortResolvedPayload } from "@exaix/core/events";
 import type { IEffortDeclarationPair, IEffortResolution } from "@exaix/ai";
+import type { IProjectedCallOptions } from "@exaix/ai";
 
 /** Everything an emitter owns that the payload must represent. */
 export interface IAgentEffortResolvedInput {
@@ -32,6 +33,7 @@ export interface IAgentEffortResolvedInput {
   agentRole?: string;
   providerType?: ProviderType;
   model?: string;
+  projection?: IProjectedCallOptions;
 }
 
 function pairOrUndefined(pair: Opt<IEffortDeclarationPair, Reason.OptionalInput>): IEffortDeclarationPair | undefined {
@@ -70,5 +72,12 @@ export function buildAgentEffortResolvedPayload(input: IAgentEffortResolvedInput
     floors_applied: input.resolution.floorsApplied,
     ...(input.providerType !== undefined ? { provider_type: input.providerType } : {}),
     ...(input.model !== undefined ? { model: input.model } : {}),
+    ...(input.projection?.profile
+      ? {
+        profile: input.projection.profile,
+        wire: { effort: input.projection.effort ?? null, thinking: input.projection.thinking ?? null },
+        projection_reason: input.projection.reason ?? null,
+      }
+      : {}),
   };
 }

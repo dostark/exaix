@@ -16,6 +16,32 @@ import { EventLogger } from "@exaix/core/logger";
 import { TracedProvider } from "../src/traced_provider.ts";
 import type { IModelProvider } from "../src/types.ts";
 import type { LogMetadata } from "@exaix/core/types";
+import { ProviderCallPolicyError } from "../src/errors.ts";
+
+Deno.test("[TracedProvider] unknown compatible costs stay null and report the returned model", async () => {
+  const logger = createMockLogger();
+  const traced = new TracedProvider({
+    id: "openai-chat-requested-model",
+    generate: () =>
+      Promise.resolve({
+        content: "ok",
+        model: "returned-model",
+        provider: "openai-chat",
+        usage: { promptTokens: 10, completionTokens: 3, totalTokens: 13 },
+        costStatus: "unknown",
+      }),
+  }, logger);
+  const result = await traced.generate("prompt", { traceId: "unknown-cost-trace" });
+  assertEquals(result.costStatus, "unknown");
+  assertEquals(result.cost_usd, undefined);
+  const event = logger.log.calls[0].args[0];
+  assertEquals(event.costUsd, null);
+  assertEquals(event.payload?.cost_usd, undefined);
+  assertEquals(event.payload?.cost_status, "unknown");
+  assertEquals(event.payload?.model, "returned-model");
+  assertEquals(event.promptTokens, 10);
+  assertEquals(event.completionTokens, 3);
+});
 
 function createInnerProvider(
   chunks: string[],
@@ -36,6 +62,22 @@ function createInnerProvider(
     },
   };
 }
+
+Deno.test("[TracedProvider] compatible policy failure retains a safe reason and one terminal with the caller trace", async () => {
+  const logger = createMockLogger();
+  const error = new ProviderCallPolicyError("unsupported_call_option", "local-test");
+  const traced = new TracedProvider({
+    id: "openai-chat-compat-fixture-v1",
+    generate: () => Promise.reject(error),
+  }, logger);
+  await assertRejects(() => traced.generate("sensitive-prompt", { traceId: "compatible-parent" }));
+  assertEquals(logger.info.calls.length, 1);
+  assertEquals(logger.warn.calls.length, 1);
+  assertEquals(logger.log.calls.length, 0);
+  assertEquals(logger.warn.calls[0].args[3], "compatible-parent");
+  assertEquals((logger.warn.calls[0].args[2] as LogMetadata).providerReasonCode, "unsupported_call_option");
+  assertEquals(JSON.stringify(logger.warn.calls).includes("sensitive-prompt"), false);
+});
 
 Deno.test("[TracedProvider.generateStream] emits started (debug level) before the first yielded chunk", async () => {
   const logger = createMockLogger();

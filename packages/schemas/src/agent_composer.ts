@@ -101,7 +101,7 @@ export type IAgentExecutionOptionsInput = z.input<
  */
 /** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's own
  *  calculateCost() rate-based guess ("predicted"). */
-export const ChangesetCostSourceSchema = z.enum(["tracked", "predicted"]);
+export const ChangesetCostSourceSchema = z.enum(["tracked", "predicted", "unknown"]);
 export type IChangesetCostSource = z.infer<typeof ChangesetCostSourceSchema>;
 
 export const ChangesetResultSchema = z.object({
@@ -123,7 +123,7 @@ export const ChangesetResultSchema = z.object({
   usage: z.object({
     prompt_tokens: z.number().int().nonnegative(),
     completion_tokens: z.number().int().nonnegative(),
-    cost_usd: z.number().nonnegative(),
+    cost_usd: z.number().nonnegative().nullable(),
     /** Prompt-cache read tokens. undefined when caching wasn't used — never 0 for
      *  "unknown". */
     cache_read_tokens: z.number().int().nonnegative().optional(),

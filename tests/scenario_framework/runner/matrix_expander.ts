@@ -67,6 +67,8 @@ export interface ICellConfigTargets {
   workspaceRoot: string;
   /** Replaces `__WORKTREE_PATH__` — the mounted portal target (the repo in-repo, or a third-party repo in a deployed sandbox). */
   worktreePath: string;
+  /** Replaces `__COMPAT_FIXTURE_PORT__` with the bound local HTTP fixture port. */
+  compatFixturePort?: number;
 }
 
 /** A runnable group the runner consumes: either a matrix cell-run (with its `cell`) or
@@ -90,14 +92,26 @@ export const MATRIX_START_DAEMON_STEP_ID = "start-daemon";
 /** Deploy-time sentinels in the dogfood presets (mirrors scripts/dogfood_bootstrap.ts). */
 const SENTINEL_DOGFOOD_ROOT = "__DOGFOOD_ROOT__";
 const SENTINEL_WORKTREE_PATH = "__WORKTREE_PATH__";
+const SENTINEL_COMPAT_FIXTURE_PORT = "__COMPAT_FIXTURE_PORT__";
 
 /** Pure substitution of a dogfood preset's deploy-time sentinels with the run's real paths —
  *  without this, the daemon would literally root at "__DOGFOOD_ROOT__". A sentinel-free
  *  preset is returned unchanged. Mirrors `dogfood_bootstrap.ts`'s `replaceAll` mapping. */
 export function resolveCellConfig(presetText: string, targets: ICellConfigTargets): string {
+  if (presetText.includes(SENTINEL_COMPAT_FIXTURE_PORT) && targets.compatFixturePort === undefined) {
+    throw new Error("Compatible fixture preset requires compatFixturePort");
+  }
+  if (
+    presetText.includes(SENTINEL_COMPAT_FIXTURE_PORT) &&
+    (!Number.isInteger(targets.compatFixturePort) || targets.compatFixturePort! < 1 ||
+      targets.compatFixturePort! > 65_535)
+  ) {
+    throw new Error("Compatible fixture port must be an integer between 1 and 65535");
+  }
   return presetText
     .replaceAll(SENTINEL_DOGFOOD_ROOT, targets.workspaceRoot)
-    .replaceAll(SENTINEL_WORKTREE_PATH, targets.worktreePath);
+    .replaceAll(SENTINEL_WORKTREE_PATH, targets.worktreePath)
+    .replaceAll(SENTINEL_COMPAT_FIXTURE_PORT, String(targets.compatFixturePort ?? ""));
 }
 
 /** Per-cell expansion outcome. Named union (no magic string union). */

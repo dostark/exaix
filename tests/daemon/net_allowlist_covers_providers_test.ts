@@ -38,6 +38,14 @@ const SHIPPED_PROVIDER_HOSTS: readonly { provider: string; host: string }[] = [
   { provider: "ai-openrouter", host: "openrouter.ai" },
 ];
 
+const OPT_IN_PROFILE_HOSTS = ["api.deepseek.com"] as const;
+
+Deno.test("[security] compatible opt-in profile hosts are absent from default outbound grants", () => {
+  for (const host of OPT_IN_PROFILE_HOSTS) {
+    assertEquals(DAEMON_DEFAULT_NET_HOSTS.some((entry) => entry.split(":")[0] === host), false);
+  }
+});
+
 Deno.test("[security] the default allowlist covers every shipped provider host", () => {
   const missing = SHIPPED_PROVIDER_HOSTS
     .filter(({ host }) => !DAEMON_DEFAULT_NET_HOSTS.some((entry) => entry.split(":")[0] === host))

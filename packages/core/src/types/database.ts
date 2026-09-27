@@ -40,7 +40,7 @@ export interface IActivityRecord {
   payload: string;
   prompt_tokens?: number;
   completion_tokens?: number;
-  cost_usd?: number;
+  cost_usd?: number | null;
   cache_read_tokens?: number | null;
   cache_creation_tokens?: number | null;
   timestamp: string;
@@ -62,7 +62,7 @@ export interface IProviderCostRecord {
   tokens: number;
   promptTokens: number;
   completionTokens: number;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
   /** Number of requests this record represents (provider_costs.requests); an aggregate or
    *  batched row can carry more than one, so grouped reports must sum this, not rows. Absent
    *  on legacy/mock records, which represent a single request. */
@@ -101,7 +101,7 @@ export interface IGroupedCostRecord {
   completionTokens: number;
   cacheReadTokens: number;
   cacheCreationTokens: number;
-  estimatedCostUsd: number;
+  estimatedCostUsd: number | null;
 }
 
 /**

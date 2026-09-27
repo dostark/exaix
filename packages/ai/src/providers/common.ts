@@ -8,6 +8,9 @@
 
 import type { JSONValue } from "@exaix/core";
 import type { IModelProvider } from "../types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
+
+export type ProviderCostStatus = "estimated" | "tracked" | "unknown";
 
 /**
  * Result of a model provider generate call.
@@ -31,6 +34,8 @@ export interface IGenerateResult {
   model: string;
   provider: string;
   cost_usd?: number;
+  /** Unknown monetary cost differs from a zero-cost response. */
+  costStatus?: ProviderCostStatus;
   streamed?: boolean;
   /** Why generation ended (Anthropic stop_reason: "end_turn", "max_tokens", "stop_sequence", ...).
    * "max_tokens" means truncated mid-generation — callers should treat that as incomplete, not malformed. */
@@ -70,6 +75,8 @@ export interface IThinkingReplayBlock {
   thinking: string;
   signature: string;
 }
+const PROVIDER_ABORT_EVENT = "abort";
+const PROVIDER_ABORT_ERROR_NAME = "AbortError";
 /**
  * Base error class for model provider errors.
  */
@@ -172,23 +179,42 @@ export function isRetryable(error: Error): boolean {
 /** Retries a promise-returning function with exponential backoff (maxRetries, baseDelayMs). */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  options: { maxRetries: number; baseDelayMs: number },
+  options: { maxRetries: number; baseDelayMs: number; signal?: AbortSignal },
 ): Promise<T> {
   let lastError: Error | null = null;
   for (let i = 0; i < options.maxRetries; i++) {
+    if (options.signal?.aborted) throw new DOMException("Provider request aborted", PROVIDER_ABORT_ERROR_NAME);
     try {
       return await fn();
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+      if (options.signal?.aborted) throw new DOMException("Provider request aborted", PROVIDER_ABORT_ERROR_NAME);
       if (!isRetryable(err)) throw error;
       lastError = err;
       if (i < options.maxRetries - 1) {
         const delay = options.baseDelayMs * Math.pow(2, i);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await waitForRetry(delay, options.signal);
       }
     }
   }
   throw lastError ?? new Error("Unknown error in withRetry");
+}
+
+/** Releases the backoff timer and listener on completion or request cancellation. */
+function waitForRetry(delayMs: number, signal?: Opt<AbortSignal, Reason.OptionalContext>): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const abort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener(PROVIDER_ABORT_EVENT, abort);
+      reject(new DOMException("Provider request aborted", PROVIDER_ABORT_ERROR_NAME));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener(PROVIDER_ABORT_EVENT, abort);
+      resolve();
+    }, delayMs);
+    signal?.addEventListener(PROVIDER_ABORT_EVENT, abort, { once: true });
+    if (signal?.aborted) abort();
+  });
 }
 
 /** A decorator provider (TracedProvider, RateLimitedProvider, ...) that wraps another. */

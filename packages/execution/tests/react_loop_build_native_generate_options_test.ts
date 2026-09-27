@@ -56,7 +56,7 @@ Deno.test("buildNativeGenerateOptions with preferredTool uses tool_choice type:t
   assertEquals(options.nativeToolChoiceMode, "forced");
 });
 
-Deno.test("buildNativeGenerateOptions records mode 'any' when a priorTurn exists (GAP-153-B diagnostic)", () => {
+Deno.test("buildNativeGenerateOptions uses auto after a prior native turn (GAP-155-17)", () => {
   const strategy = new ReActLoopStrategy(dummyExecutor);
   const typed = strategy as never as {
     buildNativeGenerateOptions(
@@ -74,9 +74,9 @@ Deno.test("buildNativeGenerateOptions records mode 'any' when a priorTurn exists
     "patch_file",
   );
 
-  assertEquals(options.toolChoice?.type, "any");
+  assertEquals(options.toolChoice?.type, "auto");
   assertEquals(options.toolChoice?.name, undefined);
-  assertEquals(options.nativeToolChoiceMode, "any");
+  assertEquals(options.nativeToolChoiceMode, "auto");
 });
 
 Deno.test("buildNativeGenerateOptions records mode 'any' when no preferred tool is derived (exploration step)", () => {
@@ -136,7 +136,7 @@ Deno.test("buildNativeGenerateOptions with preferredTool falls back to type:any 
     "patch_file",
   );
 
-  assertEquals(options.toolChoice?.type, "any");
+  assertEquals(options.toolChoice?.type, "auto");
   assertEquals(options.toolChoice?.name, undefined);
 });
 

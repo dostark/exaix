@@ -67,9 +67,10 @@ export function enrichPortalPathParam(
 /** Resolves whether a provider id supports native tool-calling, falling back from a
  *  composite `"<type>-<model>"` id to its bare-type prefix. Never throws. */
 export function providerSupportsNativeTools(providerId: Opt<string, Reason.OptionalContext>): boolean {
-  if (providerId === undefined) return false;
-  if (ProviderRegistry.getProviderMetadata(providerId)?.supportsNativeTools === true) return true;
-  const sep = providerId.indexOf("-");
-  if (sep === -1) return false;
-  return ProviderRegistry.getProviderMetadata(providerId.slice(0, sep))?.supportsNativeTools === true;
+  return ProviderRegistry.getMetadataForInstance(providerId)?.supportsNativeTools === true;
+}
+
+/** True when a provider accepts a complete invocation-local conversation snapshot. */
+export function providerSupportsNativeConversation(providerId: Opt<string, Reason.OptionalContext>): boolean {
+  return ProviderRegistry.getMetadataForInstance(providerId)?.supportsNativeConversation === true;
 }

@@ -12,6 +12,7 @@ import { CostCommands } from "../src/commands/cost_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import type { ICostTracker } from "@exaix/core/types";
 import type { ICommandContext } from "@exaix/cli/base.ts";
+import { CostTracker } from "@exaix/core/cost";
 
 describe("CostCommands", () => {
   let cleanup: () => Promise<void>;
@@ -25,6 +26,34 @@ describe("CostCommands", () => {
 
   afterEach(async () => {
     await cleanup();
+  });
+
+  it("reports persisted unpriced usage as unknown in detailed and grouped views", async () => {
+    const cost = new CostTracker(context.db);
+    await cost.recordUnpricedGeneration("openai-chat", "fixture", {
+      promptTokens: 30,
+      completionTokens: 4,
+      totalTokens: 34,
+    }, "unknown-trace");
+    const command = new CostCommands({ ...context, cost });
+    const output: string[] = [];
+    const original = console.log;
+    console.log = (...args) => {
+      output.push(args.join(" "));
+    };
+    try {
+      await command.show({ traceId: "unknown-trace" });
+      // Color wrapping puts an ANSI code between the label and its value, so assert each side.
+      assertStringIncludes(output.join("\n"), "Total Cost:");
+      assertStringIncludes(output.join("\n"), "unknown (known subtotal $0.000000)");
+      assertStringIncludes(output.join("\n"), "Total Tokens:  34");
+      output.length = 0;
+      await command.show({ groupBy: "model" });
+      assertStringIncludes(output.join("\n"), "unknown");
+      assertStringIncludes(output.join("\n"), "fixture");
+    } finally {
+      console.log = original;
+    }
   });
 
   it("prints a friendly message when no cost records are found", async () => {

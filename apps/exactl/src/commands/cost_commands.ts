@@ -18,6 +18,11 @@ export interface ICostCommandOptions {
   groupBy?: string;
 }
 
+const UNKNOWN_COST_LABEL = "unknown";
+function formatCost(cost: number | null): string {
+  return cost === null ? UNKNOWN_COST_LABEL : `$${cost.toFixed(6)}`;
+}
+
 /**
  * CostCommands provides CLI access to LLM cost and token usage reports.
  */
@@ -81,7 +86,7 @@ export class CostCommands extends BaseCommand {
         `${r.provider}/${r.model}`,
         `${r.promptTokens}/${r.completionTokens}/${r.tokens}`,
         `${r.cacheReadTokens ?? "-"}/${r.cacheCreationTokens ?? "-"}`,
-        `$${r.estimatedCostUsd.toFixed(6)}`,
+        formatCost(r.estimatedCostUsd),
       ]));
 
     console.log(colors.cyan(colors.bold("\nLLM Cost & Token Usage Report")));
@@ -89,14 +94,17 @@ export class CostCommands extends BaseCommand {
     table.render();
     console.log(colors.gray("=".repeat(80)));
 
-    const totalCost = records.reduce((acc, r) => acc + r.estimatedCostUsd, 0);
+    const totalCost = records.reduce((acc, r) => acc + (r.estimatedCostUsd ?? 0), 0);
+    const totalCostLabel = records.some((record) => record.estimatedCostUsd === null)
+      ? `${UNKNOWN_COST_LABEL} (known subtotal ${formatCost(totalCost)})`
+      : formatCost(totalCost);
     const totalTokens = records.reduce((acc, r) => acc + r.tokens, 0);
     const totalPrompt = records.reduce((acc, r) => acc + r.promptTokens, 0);
     const totalCompletion = records.reduce((acc, r) => acc + r.completionTokens, 0);
     const totalCacheRead = records.reduce((acc, r) => acc + (r.cacheReadTokens ?? 0), 0);
     const totalCacheCreation = records.reduce((acc, r) => acc + (r.cacheCreationTokens ?? 0), 0);
 
-    console.log(colors.bold(`Total Cost:    ${colors.green("$" + totalCost.toFixed(6))}`));
+    console.log(colors.bold(`Total Cost:    ${colors.green(totalCostLabel)}`));
     console.log(colors.bold(`Total Tokens:  ${totalTokens} (Prompt: ${totalPrompt}, Completion: ${totalCompletion})`));
     if (totalCacheRead > 0 || totalCacheCreation > 0) {
       console.log(
@@ -125,7 +133,7 @@ export class CostCommands extends BaseCommand {
         String(group.completionTokens),
         String(group.cacheReadTokens),
         String(group.cacheCreationTokens),
-        `$${group.estimatedCostUsd.toFixed(6)}`,
+        formatCost(group.estimatedCostUsd),
       ]));
     console.log(colors.cyan(colors.bold(`\nLLM Cost by ${groupBy}`)));
     table.render();

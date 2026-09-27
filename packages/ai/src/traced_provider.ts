@@ -14,10 +14,14 @@ import { LogGeneratorMethod } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IModelOptions } from "./types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { getProviderFailureReason } from "./errors.ts";
 
 /** @visible */
 export class TracedProvider implements IModelProvider {
   public readonly id: string;
+  public readonly measureInputTokens: IModelProvider["measureInputTokens"];
+  public readonly callCapabilities: IModelProvider["callCapabilities"];
+  public readonly estimateCallCost: IModelProvider["estimateCallCost"];
 
   constructor(
     /** Public so unwrapModelProvider can reach through a decorator chain to report on
@@ -26,6 +30,9 @@ export class TracedProvider implements IModelProvider {
     private logger: IEventLogger,
   ) {
     this.id = inner.id;
+    this.measureInputTokens = inner.measureInputTokens?.bind(inner);
+    this.callCapabilities = inner.callCapabilities;
+    this.estimateCallCost = inner.estimateCallCost?.bind(inner);
   }
 
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
@@ -52,14 +59,14 @@ export class TracedProvider implements IModelProvider {
           total_tokens: result.usage?.totalTokens ?? 0,
           cache_read_tokens: result.usage?.cacheReadTokens ?? 0,
           cache_creation_tokens: result.usage?.cacheCreationTokens ?? 0,
-          cost_usd: result.cost_usd ?? 0,
-          model: this.id,
+          ...(result.costStatus === "unknown" ? { cost_status: "unknown" } : { cost_usd: result.cost_usd ?? 0 }),
+          model: result.costStatus !== undefined ? result.model : this.id,
           trace_id: traceId,
         },
         traceId,
         promptTokens: result.usage?.promptTokens,
         completionTokens: result.usage?.completionTokens,
-        costUsd: result.cost_usd,
+        costUsd: result.costStatus === "unknown" ? null : result.cost_usd,
         cacheReadTokens: result.usage?.cacheReadTokens,
         cacheCreationTokens: result.usage?.cacheCreationTokens,
       });
@@ -67,11 +74,13 @@ export class TracedProvider implements IModelProvider {
       return result;
     } catch (error) {
       const durationMs = performance.now() - startTime;
+      const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
 
       void this.logger.warn(DomainEventType.LlmCallFailed, this.id, {
         duration_ms: Math.round(durationMs),
         error: error instanceof Error ? error.message : String(error),
         error_type: error instanceof Error ? error.constructor.name : "unknown",
+        ...(providerReasonCode ? { providerReasonCode } : {}),
         model: this.id,
         trace_id: traceId,
       }, traceId);

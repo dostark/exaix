@@ -12,6 +12,7 @@
  */
 
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
+import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
@@ -428,13 +429,17 @@ export class RequestRouter {
       });
       return result;
     } catch (error) {
+      const providerReasonCode = error instanceof Error ? getProviderFailureReason(error) : undefined;
       await this.eventLogger.log({
         action: AGENT_EVENT_EXECUTION_FAILED,
         target: requestId,
         runnerId: AGENT_RUNNER_ID,
         runnerKind: RunnerKind.AGENT_RUNNER,
         traceId,
-        payload: { error_message: error instanceof Error ? error.message : String(error) },
+        payload: {
+          error_message: error instanceof Error ? error.message : String(error),
+          ...(providerReasonCode ? { providerReasonCode } : {}),
+        },
       });
       throw error;
     }

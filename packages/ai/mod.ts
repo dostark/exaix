@@ -29,3 +29,6 @@ export * from "./src/embeddings/embedding_provider_factory.ts";
 export * from "./src/resolve_agent_role_model.ts";
 export * from "./src/model_resolver.ts";
 export * from "./src/effort_resolver.ts";
+export * from "./src/native_conversation_budget.ts";
+export * from "./src/provider_call_options.ts";
+export * from "./src/compatible_usage.ts";

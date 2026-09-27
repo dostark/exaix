@@ -23,6 +23,46 @@ import {
 import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
 
+export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
+export const OPENAI_COMPATIBLE_PROFILE_DEFAULTS = {
+  openai: { model: "gpt-4.1-mini-2025-04-14", endpoint: "https://api.openai.com/v1/chat/completions" },
+  deepseek: { model: "deepseek-flash", endpoint: "https://api.deepseek.com/v1/chat/completions" },
+  "local-test": { model: "compat-fixture-v1", endpoint: undefined },
+} as const;
+
+/** Compatible Chat Completions streamed response body ceiling. */
+export const OPENAI_COMPATIBLE_MAX_RESPONSE_BYTES: number = configurable({
+  key: "openai_compatible.max_response_bytes",
+  default: 8 * 1024 * 1024,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum compatible Chat Completions response body size in bytes",
+  min: 1,
+  max: 64 * 1024 * 1024,
+  swap: SwapClass.RESTART,
+});
+
+/** Compatible native tool argument UTF-8 byte ceiling. */
+export const OPENAI_COMPATIBLE_MAX_TOOL_ARGUMENT_BYTES: number = configurable({
+  key: "openai_compatible.max_tool_argument_bytes",
+  default: 64 * 1024,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum compatible native tool argument size in bytes",
+  min: 1,
+  max: 64 * 1024 * 1024,
+  swap: SwapClass.RESTART,
+});
+
+/** Compatible native conversation history UTF-8 byte ceiling. */
+export const OPENAI_COMPATIBLE_MAX_HISTORY_BYTES: number = configurable({
+  key: "openai_compatible.max_history_bytes",
+  default: 8 * 1024 * 1024,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum compatible native conversation history size in bytes",
+  min: 1,
+  max: 64 * 1024 * 1024,
+  swap: SwapClass.RESTART,
+});
+
 // HTTP Status Codes
 export const HTTP_UNAUTHORIZED = 401;
 export const HTTP_FORBIDDEN = 403;
@@ -806,6 +846,7 @@ export const DEFAULT_LOCAL_MODEL_NAME: string = configurable({
 export const PROVIDER_MOCK = ProviderType.MOCK;
 export const PROVIDER_OLLAMA = ProviderType.OLLAMA;
 export const PROVIDER_OPENAI = ProviderType.OPENAI;
+export const PROVIDER_OPENAI_CHAT = ProviderType.OPENAI_CHAT;
 export const PROVIDER_ANTHROPIC = ProviderType.ANTHROPIC;
 export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
 export const PROVIDER_VERTEX = ProviderType.VERTEX;

@@ -18,6 +18,7 @@ import { EFFORT_AUTO, EffortDeclarationSchema, ThinkingDeclarationSchema } from 
 import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
+import { ProviderFactoryError } from "@exaix/ai/errors.ts";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_AGENTS_PATH, isRejectedNativeToolName, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
 import { DEFAULT_MCP_AGENT_ROLE_ID } from "@exaix/core/types";
@@ -135,6 +136,7 @@ export class BlueprintService {
         resolvedCallOptions,
       };
     } catch (error) {
+      if (error instanceof ProviderFactoryError) throw error;
       if (error instanceof Deno.errors.NotFound) {
         throw new SafeError("Blueprint not found", "BLUEPRINT_NOT_FOUND", error, this.logger);
       }
