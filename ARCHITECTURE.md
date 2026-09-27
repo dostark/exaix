@@ -394,6 +394,13 @@ before reading a config:
 
 ### Config DB (.exa/config.db)
 
+`ToolRegistry.validateKnownParams()` resolves the live `tools.strict_params` policy from an
+explicit Config DB override first, then the TOML-backed runtime config, then its registered
+default (`false`). `exactl config set tools.strict_params true|false` updates the running
+daemon through the hot Config DB watcher; unsetting the override returns to TOML/default
+behavior. The alias audit and strict-parameter event payloads are described in
+`docs/Reference_Data.md#tool-runtime-audit-and-configuration`.
+
 The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. As of Phase 137, **180+ `configurable()` keys** are registered across all packages (core, AI providers, git, etc.).
 
 **Schema:** Append-only `config_overrides` table (`id`, `key`, `value`, `source`, `swap_class`, `created_at`) with no UPDATE path — every override creates a new row. The latest row per key (by max id) is the effective value; a NULL value means "use registry default."
@@ -983,6 +990,11 @@ checks. Execution and journal records use the canonical name; `tool.alias.rewrit
 retains the requested name and rewrite details for audit. Exaix-specific names remain
 exact-only. The MCP catalogs expose canonical names, while transport rules determine
 whether general-purpose name aliases are accepted before dispatch.
+
+Alias audit payloads include the model-response provider and model only when the caller is
+a model-driven tool path; external MCP callers without that identity remain unknown
+(`NULL`), even when they share a request trace. The executable Activity Journal query in
+`docs/Reference_Data.md#tool-runtime-audit-and-configuration` groups rewrites by those payload fields.
 
 **Key interfaces:** `IToolDefinition` (name, description, inputSchema, strict?, cache_control?, input_examples?), `IToolChoice` (auto/any/tool/none with disable_parallel_tool_use), `IProviderTurn` (toolUseId, toolName, toolInput, toolResultContent, toolResultIsError), `IProviderToolCall` (id, name, input). All in `packages/ai/src/types.ts` and `packages/ai/src/providers/common.ts`. Reused verbatim across all four providers.
 

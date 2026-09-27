@@ -4664,12 +4664,30 @@ parameter aliases for a registered canonical name. Native aliases are rejected o
 path; the Team MCP server lists canonical names only. `query_symbols` accepts the
 `query` parameter as an alias for `name`.
 
-Set `tools.strict_params = true` in `exa.config.toml` to reject unknown tool parameters
-before execution. The default is `false`: the call continues and Exaix records the
-unknown keys. `portal` and `agent_role` are exempt from this check. Use the Activity
-Journal events `tool.alias.rewritten` and `tool.param.unknown` to inspect normalization:
-the first records the requested and canonical names, renamed and dropped keys, and entry
-point; the second records unknown and accepted keys and whether strict mode was enabled.
+Set the live strict-parameter policy with `exactl config set tools.strict_params true`;
+`exactl config set tools.strict_params false` restores permissive handling. The setting is
+hot-applied while the daemon runs. A Config DB override takes precedence over
+`exa.config.toml`; without an override, TOML is used, then the default `false`. In
+permissive mode Exaix records unknown keys and continues. `portal` and `agent_role` are
+exempt from this check.
+
+Use the Activity Journal events `tool.alias.rewritten` and `tool.param.unknown` to inspect
+normalization. Alias records include requested and canonical names, renamed and dropped
+keys, entry point, and model-response provider/model when known. External calls without a
+model response retain unknown attribution as `NULL`. This query groups rewrites by the
+actual producer identity:
+
+```sql
+SELECT json_extract(payload, '$.provider') AS provider,
+       json_extract(payload, '$.model') AS model,
+       COUNT(*) AS count
+FROM activity
+WHERE action_type = 'tool.alias.rewritten'
+GROUP BY provider, model
+ORDER BY provider, model;
+```
+
+`tool.param.unknown` records unknown and accepted keys and whether strict mode was enabled.
 
 ### 8.3 Client Integration
 

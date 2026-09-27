@@ -107,7 +107,7 @@ Deno.test("[security] PlanningToolLoop denies glob with a ../ pattern the same w
   assertEquals(fedBack.includes("secret.txt"), false);
 });
 
-Deno.test("[security] PlanningToolLoop rejects the non-canonical glob name when the allowlist names glob, not search_files", async () => {
+Deno.test("[planning-allowlist-alias] PlanningToolLoop runs search_files when the allowlist names glob", async () => {
   const fedBack = await feedBackFor("glob", { query: "*.txt", path: "." });
-  assert(fedBack.includes("not in the planning catalog"), `expected catalog rejection, got ${fedBack}`);
+  assertEquals(fedBack, '{"files":[]}');
 });

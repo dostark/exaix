@@ -18,6 +18,39 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 201 (Tool Aliasing and Tool-Name Unification)
+
+### Added
+
+- General-purpose tools accept familiar names such as `Read`, `glob`, and `grep`, plus
+  parameter aliases such as `file_path`, across agent execution, MCP HTTP, and local
+  dispatch, while MCP SDK stdio accepts canonical tool names with parameter aliases
+  (see [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+- `tools.strict_params` enables live rejection of unknown tool parameters, defaults to
+  `false`, and honors Config DB overrides before TOML configuration (see
+  [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+- Activity Journal events `tool.alias.rewritten` and `tool.param.unknown` expose
+  normalization and unknown parameters, with producer provider/model attribution when
+  known (see [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+
+### Changed
+
+- Canonical tool names are now `search_text`, `find_dependents`, `run_deno_task`, and
+  `query_symbols`, with `grep_search` retained as a general-purpose alias and retired
+  Exaix-specific names rejected (see
+  [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+
+### Fixed
+
+- `run_deno_task` executes the validated Deno task and reports its actual outcome (see
+  [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+
+### Security
+
+- Supported aliases normalize before permission, approval, and portal-confinement
+  checks, and invalid Exaix-specific names in permission or approval rules fail
+  validation (see [Tool names and aliases](Exaix_User_Guide.md#tool-names-and-aliases)).
+
 ## Unreleased — Phase 199 (Read-Only Exploration Tools in the Planning Call)
 
 ### Added
