@@ -15,11 +15,15 @@ import { isAbsolute, resolve, SEPARATOR } from "@std/path";
 import type { IModelOptions, IProviderTurn, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
 import { TOOL_CHOICE_TYPE_AUTO, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts";
 import type { IGenerateResult, IProviderToolCall } from "@exaix/ai/providers";
+import type { INativeInputMeasurement } from "@exaix/ai";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ICallSite } from "@exaix/ai/types.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
+import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 import {
   DomainEventType,
   type IPlanningToolLoopAbortedPayload,
@@ -31,6 +35,7 @@ import {
   isRejectedNativeToolName,
   PLANNING_TOOL_RESULT_TAG,
   PLANNING_TOOL_RESULT_TRUNCATED_SUFFIX,
+  PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION,
   PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION,
   PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE,
   PlanningToolLoopStopReason,
@@ -40,7 +45,12 @@ import {
 import { canonicalizeForRegistry, PathSecurity } from "@exaix/tool-runtime";
 import { ToolCallEntryPoint, ToolName } from "@exaix/core";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import { buildNativeToolDefinitions, buildPriorTurn, enrichPortalPathParam } from "./native_tool_turns.ts";
+import {
+  buildNativeToolDefinitions,
+  buildPriorTurn,
+  enrichPortalPathParam,
+  providerSupportsNativeConversation,
+} from "./native_tool_turns.ts";
 import { tokenBoundedPrefix } from "./context/token_bounded_prefix.ts";
 
 export interface IPlanningToolLoopDeps {
@@ -53,6 +63,12 @@ export interface IPlanningToolLoopDeps {
   generate: (prompt: string, options: IModelOptions) => Promise<IGenerateResult>;
   logger?: IEventLogger;
   guardrailRunner?: IGuardrailRunner;
+  /** The generating provider's instance id — resolves whether it accepts a native-conversation
+   *  snapshot (IModelOptions.nativeConversation) via ProviderRegistry. Absent always runs the
+   *  legacy priorTurn + text-transcript path. */
+  providerId?: string;
+  /** Measures a native-conversation round's real input tokens for the pre-flight budget check. */
+  measureInputTokens?: IModelProvider["measureInputTokens"];
 }
 
 export interface IPlanningToolLoopOptions {
@@ -74,6 +90,10 @@ export interface IPlanningToolLoopOptions {
   /** Calls executed per round; the rest are answered with an error result. */
   maxToolCallsPerRound: number;
   traceId: string;
+  /** AgentRunner's already-computed prompt budget for this request — checked before every
+   *  native-conversation round via IPlanningToolLoopDeps.measureInputTokens. Absent skips the
+   *  preflight (today's unbounded behavior). Ignored entirely in the legacy path. */
+  promptBudget?: IPromptBudget;
 }
 
 /** Totals accumulated across rounds, kept outside the loop body so an abort can report them. */
@@ -178,11 +198,15 @@ export class PlanningToolLoop {
     const basePrompt = options.maxRounds === 1
       ? options.prompt
       : `${options.prompt}\n\n${PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE}`;
+    // A native-conversation provider owns turns[] instead of the text transcript/priorTurn.
+    const nativeConversationEnabled = options.maxRounds > 1 &&
+      providerSupportsNativeConversation(this.deps.providerId);
 
     let transcript = "";
     let priorTurn: Opt<IProviderTurn, Reason.OptionalInput> = undefined;
     let priorTurnTool = "";
     let priorTurnRound = 0;
+    const nativeTurns: IProviderTurn[] = [];
     let finalRoundIndex = options.maxRounds;
     let guardrailForced = false;
 
@@ -191,18 +215,29 @@ export class PlanningToolLoop {
       const isFinalRound = round === finalRoundIndex;
       const callSite = options.nextCallSite();
       let roundPrompt = basePrompt;
-      if (options.maxRounds > 1) {
-        roundPrompt += transcript;
-        if (isFinalRound) roundPrompt += `\n\n${PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION}`;
+      let roundOptions: IModelOptions;
+      if (nativeConversationEnabled) {
+        roundOptions = this.buildNativeRoundOptions(
+          options.baseOptions,
+          allowedToolDefs,
+          nativeTurns,
+          basePrompt,
+          isFinalRound,
+          callSite,
+        );
+      } else {
+        roundPrompt = this.buildLegacyRoundPrompt(basePrompt, transcript, options.maxRounds, isFinalRound);
+        roundOptions = this.buildRoundOptions(
+          options.baseOptions,
+          allowedToolDefs,
+          priorTurn,
+          isFinalRound,
+          options.maxRounds,
+          callSite,
+        );
       }
-      const roundOptions = this.buildRoundOptions(
-        options.baseOptions,
-        allowedToolDefs,
-        priorTurn,
-        isFinalRound,
-        options.maxRounds,
-        callSite,
-      );
+
+      if (options.promptBudget) await this.preflightBudget(roundOptions, options.promptBudget, options.traceId);
 
       const response = await this.deps.generate(roundPrompt, roundOptions);
       progress.promptTokens += response.usage.promptTokens;
@@ -236,16 +271,19 @@ export class PlanningToolLoop {
         provider: response.provider,
         model: response.model,
       });
-      transcript += executed.transcript;
 
-      // A prior round's priorTurn is about to be superseded by this round's — age it into
-      // the transcript (tagged with the round it actually came from) so it is not lost.
-      if (priorTurn !== undefined) {
-        transcript += this.buildTranscriptBlock(priorTurnTool, priorTurnRound, String(priorTurn.toolResultContent));
+      if (nativeConversationEnabled) {
+        if (executed.lastTurn) nativeTurns.push(executed.lastTurn);
+      } else {
+        transcript += executed.transcript;
+        // Age the superseded priorTurn into the transcript, tagged with its real round.
+        if (priorTurn !== undefined) {
+          transcript += this.buildTranscriptBlock(priorTurnTool, priorTurnRound, String(priorTurn.toolResultContent));
+        }
+        priorTurn = executed.lastTurn;
+        priorTurnTool = executed.lastTool;
+        priorTurnRound = round;
       }
-      priorTurn = executed.lastTurn;
-      priorTurnTool = executed.lastTool;
-      priorTurnRound = round;
 
       if (executed.guardrailBlocked) {
         guardrailForced = true;
@@ -256,6 +294,17 @@ export class PlanningToolLoop {
     // Unreachable: the loop always returns from inside the for-body (isFinalRound is always
     // hit by round === finalRoundIndex, since finalRoundIndex only ever shrinks toward round+1).
     throw new Error("PlanningToolLoop.run: exited without a final response");
+  }
+
+  private buildLegacyRoundPrompt(
+    basePrompt: string,
+    transcript: string,
+    maxRounds: number,
+    isFinalRound: boolean,
+  ): string {
+    if (!(maxRounds > 1)) return basePrompt;
+    const roundPrompt: string = basePrompt + transcript;
+    return isFinalRound ? `${roundPrompt}\n\n${PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION}` : roundPrompt;
   }
 
   private finalStopReason(response: IGenerateResult, guardrailForced: boolean): PlanningToolLoopStopReason {
@@ -321,6 +370,65 @@ export class PlanningToolLoop {
       toolChoice,
       ...(priorTurn ? { priorTurn } : {}),
     };
+  }
+
+  /** The prompt stays frozen every round — control lives in nativeConversation.roundInstruction. */
+  private buildNativeRoundOptions(
+    base: IModelOptions,
+    toolDefs: IToolDefinition[],
+    turns: readonly IProviderTurn[],
+    initialPrompt: string,
+    isFinalRound: boolean,
+    callSite: Opt<ICallSite, Reason.TraceAbsent>,
+  ): IModelOptions {
+    const withCallSite: IModelOptions = { ...base, ...(callSite ? { callSite } : {}) };
+    const roundInstruction = isFinalRound
+      ? PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION
+      : turns.length > 0
+      ? PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION
+      : undefined;
+    return {
+      ...withCallSite,
+      ...(isFinalRound
+        ? { toolChoice: { type: TOOL_CHOICE_TYPE_NONE } }
+        : { tools: toolDefs, toolChoice: { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true } }),
+      nativeConversation: {
+        initialPrompt,
+        turns: [...turns],
+        ...(roundInstruction ? { roundInstruction } : {}),
+      },
+    };
+  }
+
+  /** Measures this round's real input tokens and aborts BEFORE issuing the call if they exceed
+   *  the caller's budget. A no-op without a native conversation snapshot or measureInputTokens. */
+  private async preflightBudget(
+    roundOptions: IModelOptions,
+    budget: IPromptBudget,
+    traceId: string,
+  ): Promise<void> {
+    const snapshot = roundOptions.nativeConversation;
+    if (!snapshot || !this.deps.measureInputTokens) return;
+    const measured: INativeInputMeasurement = await this.deps.measureInputTokens(snapshot.initialPrompt, roundOptions);
+    const inputLimit = Math.max(0, budget.totalBudgetTokens - budget.safetyBufferTokens);
+    const sectionOverflow = Object.entries(measured.sections).some(([section, count]) =>
+      count > budget.sections[section as keyof typeof budget.sections]
+    );
+    if (measured.totalTokens <= inputLimit && !sectionOverflow) return;
+    void this.deps.logger?.warn(DomainEventType.ContextBudgetExceeded, this.deps.modelId, {
+      model: this.deps.modelId,
+      section_counts: measured.sections,
+      limit: inputLimit,
+      input_tokens: measured.totalTokens,
+      token_source: measured.tokenSource,
+    }, traceId);
+    throw new ContextBudgetExceededError(
+      "Planning tool loop's native conversation exceeds its allocated prompt budget",
+      this.deps.modelId,
+      inputLimit,
+      measured.totalTokens,
+      { ...measured.sections },
+    );
   }
 
   private async executeCall(

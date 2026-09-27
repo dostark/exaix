@@ -61,6 +61,10 @@ export class TracedProvider implements IModelProvider {
           cache_creation_tokens: result.usage?.cacheCreationTokens ?? 0,
           ...(result.costStatus === "unknown" ? { cost_status: "unknown" } : { cost_usd: result.cost_usd ?? 0 }),
           model: result.costStatus !== undefined ? result.model : this.id,
+          ...(result.structuredOutputMode ? { structured_output_mode: result.structuredOutputMode } : {}),
+          ...(result.structuredOutputModeReason
+            ? { structured_output_mode_reason: result.structuredOutputModeReason }
+            : {}),
           trace_id: traceId,
         },
         traceId,

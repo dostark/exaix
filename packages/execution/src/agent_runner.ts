@@ -429,7 +429,7 @@ export class AgentRunner implements IAgentRunner {
     const trimmedSkillRender = this.config?.context?.config.get().skills?.render_mode === SkillRenderMode.TRIMMED;
     const skillContextString = renderSkillsSection(skillsContext, trimmedSkillRender);
     const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
-    const combinedPrompt = await this.constructPrompt(
+    const { prompt: combinedPrompt, budget: promptBudget } = await this.constructPrompt(
       blueprint,
       request,
       skillContextString,
@@ -487,7 +487,14 @@ export class AgentRunner implements IAgentRunner {
       thinking: projection.thinking,
       effort: projection.effort,
     };
-    const toolsResult = await this.runPlanningToolsIfGated(request, agentRole, combinedPrompt, startTime, hints);
+    const toolsResult = await this.runPlanningToolsIfGated(
+      request,
+      agentRole,
+      combinedPrompt,
+      startTime,
+      hints,
+      promptBudget,
+    );
     const retryResult = toolsResult ?? await this.executeWithRetry(combinedPrompt, startTime, hints);
 
     const duration = Date.now() - startTime;
@@ -928,6 +935,7 @@ export class AgentRunner implements IAgentRunner {
     combinedPrompt: string,
     startTime: number,
     hints: IGenerationHints,
+    promptBudget: IPromptBudget,
   ): Promise<IRetryResult<IGenerateResult> | undefined> {
     const gate = this.resolvePlanningGate(request, agentRole);
     const traceId = hints.conversationId;
@@ -964,6 +972,8 @@ export class AgentRunner implements IAgentRunner {
         }),
       logger: this.logger,
       guardrailRunner: this.config!.guardrailRunner,
+      providerId: this.modelProvider.id,
+      measureInputTokens: this.modelProvider.measureInputTokens?.bind(this.modelProvider),
     });
 
     let lastCallSite: Opt<ICallSite, Reason.TraceAbsent> = undefined;
@@ -982,6 +992,7 @@ export class AgentRunner implements IAgentRunner {
       maxToolResultTokens: planning.max_tool_result_tokens,
       maxToolCallsPerRound: planning.max_tool_calls_per_round,
       traceId: traceId ?? "",
+      promptBudget,
     });
     this.markCallSiteConsumed(lastCallSite);
 
@@ -1304,14 +1315,14 @@ export class AgentRunner implements IAgentRunner {
     request: IParsedRequest,
     skillContext?: Opt<string, Reason.OptionalContext>,
     criticalSkillContext?: Opt<string, Reason.OptionalContext>,
-  ): Promise<string> {
-    const { includedSegments } = await this.assemblePromptSegments(
+  ): Promise<{ prompt: string; budget: IPromptBudget }> {
+    const { includedSegments, budget } = await this.assemblePromptSegments(
       blueprint,
       request,
       skillContext,
       criticalSkillContext,
     );
-    return includedSegments.map((s) => s.content).join("\n\n");
+    return { prompt: includedSegments.map((s) => s.content).join("\n\n"), budget };
   }
 
   /** Hard token cap on `portal_knowledge` at assembly (a direct-set block bypasses

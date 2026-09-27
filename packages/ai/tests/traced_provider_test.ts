@@ -43,6 +43,44 @@ Deno.test("[TracedProvider] unknown compatible costs stay null and report the re
   assertEquals(event.completionTokens, 3);
 });
 
+Deno.test("[TracedProvider] LlmCallCompleted carries the structured-output mode and reason", async () => {
+  const logger = createMockLogger();
+  const traced = new TracedProvider({
+    id: "openai-chat-requested-model",
+    generate: () =>
+      Promise.resolve({
+        content: '{"title":"t"}',
+        model: "requested-model",
+        provider: "openai-chat",
+        usage: { promptTokens: 10, completionTokens: 3, totalTokens: 13 },
+        structuredOutputMode: "json_object",
+        structuredOutputModeReason: "schema_not_strict_representable",
+      }),
+  }, logger);
+  await traced.generate("prompt", { traceId: "structured-output-trace" });
+  const event = logger.log.calls[0].args[0];
+  assertEquals(event.payload?.structured_output_mode, "json_object");
+  assertEquals(event.payload?.structured_output_mode_reason, "schema_not_strict_representable");
+});
+
+Deno.test("[TracedProvider] LlmCallCompleted omits structured-output fields when the call didn't use one", async () => {
+  const logger = createMockLogger();
+  const traced = new TracedProvider({
+    id: "openai-chat-requested-model",
+    generate: () =>
+      Promise.resolve({
+        content: "ok",
+        model: "requested-model",
+        provider: "openai-chat",
+        usage: { promptTokens: 10, completionTokens: 3, totalTokens: 13 },
+      }),
+  }, logger);
+  await traced.generate("prompt", { traceId: "no-structured-output-trace" });
+  const event = logger.log.calls[0].args[0];
+  assertEquals("structured_output_mode" in (event.payload ?? {}), false);
+  assertEquals("structured_output_mode_reason" in (event.payload ?? {}), false);
+});
+
 function createInnerProvider(
   chunks: string[],
   options: { throwOnGuard?: boolean; throwMidStream?: boolean } = {},

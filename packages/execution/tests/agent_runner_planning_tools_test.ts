@@ -15,7 +15,7 @@
  * ]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentRunner } from "@exaix/execution";
 import type { IAgentRunnerConfig, IBlueprint, IParsedRequest } from "@exaix/execution";
@@ -31,13 +31,16 @@ import {
   PlanningToolLoopStopReason,
   PlanningToolsSkipReason,
   PricingTier,
+  PromptBudgetAllocator,
   ProviderCostTier,
 } from "@exaix/core";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 
 const NATIVE_PROVIDER_ID = "phase199-agent-runner-native-test";
 const NON_NATIVE_PROVIDER_ID = "phase199-agent-runner-nonnative-test";
+const NATIVE_CONVERSATION_PROVIDER_ID = "phase155-agent-runner-native-conversation-test";
 
 const blueprint: IBlueprint = { systemPrompt: "You are a test agent.", agentRole: "senior-coder" };
 
@@ -49,9 +52,15 @@ const stubTokenizer = {
 class ScriptedProvider implements IModelProvider {
   public readonly id: string;
   public calls: Array<{ prompt: string; options?: IModelOptions }> = [];
+  public readonly measureInputTokens?: IModelProvider["measureInputTokens"];
   private index = 0;
-  constructor(id: string, private readonly responses: IGenerateResult[]) {
+  constructor(
+    id: string,
+    private readonly responses: IGenerateResult[],
+    measureInputTokens?: IModelProvider["measureInputTokens"],
+  ) {
     this.id = id;
+    this.measureInputTokens = measureInputTokens;
   }
   generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     this.calls.push({ prompt, options });
@@ -151,6 +160,16 @@ function registerProviders(): void {
     strengths: [],
     supportsNativeTools: false,
   });
+  ProviderRegistry.registerWithMetadata(NATIVE_CONVERSATION_PROVIDER_ID, new MockProviderFactory(), {
+    name: NATIVE_CONVERSATION_PROVIDER_ID,
+    description: "Phase 155 AgentRunner planning-tools fixture provider (native conversation snapshot)",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.PAID,
+    pricingTier: PricingTier.MEDIUM,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+  });
 }
 
 const TWO_ROUND_PLANNING = {
@@ -194,6 +213,87 @@ Deno.test("[AgentRunner planning tools] tools_enabled + native provider + readab
     assertEquals(provider.calls.length, 2);
     assertEquals(registry.calls.length, 1);
     assertEquals(registry.calls[0].name, "read_file");
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+Deno.test("[AgentRunner planning tools][native] a native-conversation provider drives PlanningToolLoop with a frozen prompt and an accumulating turns snapshot, jsonSchema preserved", async () => {
+  registerProviders();
+  const fixture = makePortalFixture();
+  try {
+    const provider = new ScriptedProvider(NATIVE_CONVERSATION_PROVIDER_ID, twoRoundResponses());
+    const registry = new StubToolRegistry(fixture.root);
+    const request: IParsedRequest = { userPrompt: "do it", context: {}, portal: "myportal", traceId: "trace-native" };
+    const context = makeContext({
+      planning: TWO_ROUND_PLANNING,
+      portals: [{ alias: "myportal", target_path: fixture.root, agents_allowed: ["*"], operations: ["read"] }],
+    });
+    const runner = new AgentRunner(
+      provider,
+      {
+        context,
+        selectedModel: { provider: NATIVE_CONVERSATION_PROVIDER_ID, model: "test-model" },
+        tokenizer: stubTokenizer,
+        plannerToolRegistryFactory: { createToolRegistry: () => registry },
+      } satisfies IAgentRunnerConfig,
+    );
+    const jsonSchema = { type: "object", properties: { title: { type: "string" } }, required: ["title"] };
+
+    const result = await runner.run(blueprint, request, jsonSchema);
+
+    assertEquals(result.content, "plan uses marker-content");
+    assertEquals(provider.calls.length, 2);
+    assertEquals(
+      provider.calls[0].prompt,
+      provider.calls[1].prompt,
+      "the native prompt must stay frozen across rounds",
+    );
+    assertEquals(provider.calls[0].options?.nativeConversation?.turns, []);
+    assertEquals(provider.calls[0].options?.jsonSchema, jsonSchema);
+    const finalTurns = provider.calls[1].options?.nativeConversation?.turns;
+    assertEquals(finalTurns?.length, 1);
+    assertEquals(finalTurns?.[0].toolUseId, "t1");
+    assertEquals(provider.calls[1].options?.tools, undefined, "the final native round must drop tools");
+    assertEquals(provider.calls[1].options?.jsonSchema, jsonSchema, "jsonSchema must survive onto the final round");
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+Deno.test("[AgentRunner planning tools][native] a native-conversation round exceeding the request's real prompt budget aborts before any generate call", async () => {
+  registerProviders();
+  const fixture = makePortalFixture();
+  try {
+    const provider = new ScriptedProvider(
+      NATIVE_CONVERSATION_PROVIDER_ID,
+      twoRoundResponses(),
+      () =>
+        Promise.resolve({
+          totalTokens: 5_000_000,
+          sections: { system: 0, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 5_000_000 },
+          tokenSource: "tokenizer_estimate",
+        }),
+    );
+    const registry = new StubToolRegistry(fixture.root);
+    const request: IParsedRequest = { userPrompt: "do it", context: {}, portal: "myportal", traceId: "trace-budget" };
+    const context = makeContext({
+      planning: TWO_ROUND_PLANNING,
+      portals: [{ alias: "myportal", target_path: fixture.root, agents_allowed: ["*"], operations: ["read"] }],
+    });
+    const runner = new AgentRunner(
+      provider,
+      {
+        context,
+        selectedModel: { provider: NATIVE_CONVERSATION_PROVIDER_ID, model: "test-model" },
+        tokenizer: stubTokenizer,
+        plannerToolRegistryFactory: { createToolRegistry: () => registry },
+        promptBudgetAllocator: new PromptBudgetAllocator({ enabled: true, costTargetTokens: 20_000 }, stubTokenizer),
+      } satisfies IAgentRunnerConfig,
+    );
+
+    await assertRejects(() => runner.run(blueprint, request, undefined), ContextBudgetExceededError);
+    assertEquals(provider.calls.length, 0, "an over-budget round must never reach generate()");
   } finally {
     fixture.cleanup();
   }

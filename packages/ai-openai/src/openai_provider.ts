@@ -104,7 +104,7 @@ export class OpenAIProvider extends BaseProvider {
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<INativeInputMeasurement> {
     const request = this.compatible
-      ? createCompatibleChatRequestInit("", this.model, prompt, options, this.compatibleConfig?.profile)
+      ? createCompatibleChatRequestInit("", this.model, prompt, options, this.compatibleConfig?.profile).init
       : createOpenAIChatCompletionsRequestInit("", this.model, prompt, options);
     const projection = JSON.parse(request.body as string) as Record<string, JSONValue>;
     const snapshot = options?.nativeConversation;
@@ -164,11 +164,12 @@ export class OpenAIProvider extends BaseProvider {
   ): Promise<IGenerateResult> {
     if (this.callCapabilities) assertSupportedCallOptions(options, this.callCapabilities);
     const callOptions = options;
+    const compatibleRequest = this.compatible
+      ? createCompatibleChatRequestInit(this.apiKey, this.model, prompt, callOptions, this.compatibleConfig?.profile)
+      : undefined;
     const result = await performProviderCall<OpenAIResponse>(
       this.baseUrl,
-      this.compatible
-        ? createCompatibleChatRequestInit(this.apiKey, this.model, prompt, callOptions, this.compatibleConfig?.profile)
-        : createOpenAIChatCompletionsRequestInit(this.apiKey, this.model, prompt, callOptions),
+      compatibleRequest?.init ?? createOpenAIChatCompletionsRequestInit(this.apiKey, this.model, prompt, callOptions),
       {
         id: this.id,
         maxAttempts: this.compatible ? 1 : this.maxRetries,
@@ -184,6 +185,7 @@ export class OpenAIProvider extends BaseProvider {
                 this.id,
                 this.compatibleConfig!.max_tool_argument_bytes,
                 callOptions,
+                this.compatibleConfig!.profile,
               ),
           }
           : {}),
@@ -210,6 +212,17 @@ export class OpenAIProvider extends BaseProvider {
     if (!this.compatibleConfig) return result;
     const profile = this.compatibleConfig.profile;
     const pricing = await this.getCompatiblePricing(result.model);
-    return { ...result, ...priceCompatibleUsage(profile, result.model, result.usage, pricing) };
+    return {
+      ...result,
+      ...priceCompatibleUsage(profile, result.model, result.usage, pricing),
+      ...(compatibleRequest?.structuredOutputMode
+        ? {
+          structuredOutputMode: compatibleRequest.structuredOutputMode,
+          ...(compatibleRequest.structuredOutputModeReason
+            ? { structuredOutputModeReason: compatibleRequest.structuredOutputModeReason }
+            : {}),
+        }
+        : {}),
+    };
   }
 }

@@ -3596,6 +3596,10 @@ export const PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION =
   "No further tool calls are available. Using everything you have read so far, " +
   "produce your final <thought> and <content> now.";
 
+/** A native-conversation round's intermediate-round `roundInstruction` text. */
+export const PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION =
+  "Continue with the next permitted tool call, or return your final answer if you have enough information.";
+
 /** Appended to a planning tool_result (or transcript block) truncated to fit
  *  `planning.max_tool_result_tokens` — signals to the model that content was cut, not that
  *  the tool call failed or the file legitimately ends there. */

@@ -16,10 +16,13 @@ import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
 import { initTestDbService, makeGenerateResult } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
 import type { GuardrailIncident } from "@exaix/schemas";
 import type { IGuardrailRunner } from "../src/guardrail_runner.ts";
 
@@ -374,6 +377,48 @@ Deno.test("[planning_tool_loop][security] a guardrail blocking violation on a to
     assert(String(generate.calls[1].options.priorTurn?.toolResultContent).includes("blocked by guardrail"));
     assertEquals(result.stopReason, "guardrail_blocked");
   } finally {
+    fixture.cleanup();
+  }
+});
+
+const NATIVE_SECURITY_PROVIDER_ID = "phase155-planning-security-native-fixture";
+
+Deno.test("[planning_tool_loop][security][native] a guardrail-blocked result reaches the native conversation snapshot (not priorTurn) and still forces the final round", async () => {
+  const fixture = makePortalFixture();
+  ProviderRegistry.registerWithMetadata(NATIVE_SECURITY_PROVIDER_ID, new MockProviderFactory(), {
+    name: NATIVE_SECURITY_PROVIDER_ID,
+    description: "Native-conversation security fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+  });
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], { success: true, data: { content: "ok" } });
+    const guardrailRunner = new StubGuardrailRunner(1);
+    const deps = makeDeps({ toolRegistry: registry, guardrailRunner, providerId: NATIVE_SECURITY_PROVIDER_ID });
+    const options = makeOptions(fixture.portalRoot, { maxRounds: 5 });
+
+    const round1 = makeGenerateResult("", {
+      toolCalls: [{ id: "t1", name: "read_file", input: { path: "src/a.ts" } }],
+    });
+    const round2Final = makeGenerateResult("<thought>t</thought><content>plan</content>");
+    const generate = new ScriptedGenerate([round1, round2Final]);
+    const loop = new PlanningToolLoop({ ...deps, generate: generate.generate });
+
+    const result = await loop.run(options);
+
+    assertEquals(generate.calls.length, 2, "the guardrail must force round 2 to be the final round, not run all 5");
+    assertEquals(generate.calls[1].options.priorTurn, undefined);
+    const turns = generate.calls[1].options.nativeConversation?.turns;
+    assertEquals(turns?.length, 1);
+    assertEquals(turns?.[0].toolResultIsError, true);
+    assert(String(turns?.[0].toolResultContent).includes("blocked by guardrail"));
+    assertEquals(result.stopReason, "guardrail_blocked");
+  } finally {
+    ProviderRegistry.clear();
     fixture.cleanup();
   }
 });

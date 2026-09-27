@@ -15,15 +15,24 @@ import { PlanningToolLoop } from "../src/planning_tool_loop.ts";
 import type { IPlanningToolLoopDeps, IPlanningToolLoopOptions } from "../src/planning_tool_loop.ts";
 import type { ICallSite, IModelOptions } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import { type INativeInputMeasurement, ProviderRegistry } from "@exaix/ai";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import type { ITool, IToolRegistry, IToolResult, JSONValue } from "@exaix/core/types";
-import { PlanningToolLoopStopReason } from "@exaix/core";
+import { PlanningToolLoopStopReason, PricingTier, ProviderCostTier } from "@exaix/core";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "@exaix/testing";
 import { makeGenerateResult } from "@exaix/testing";
-import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS, PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION } from "@exaix/core";
+import {
+  PLANNING_TOOL_CALL_OVERHEAD_TOKENS,
+  PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION,
+  PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION,
+  PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE,
+} from "@exaix/core";
 import { createCoreToolSchemas, readOnlyEditorTools } from "@exaix/tool-runtime";
+import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 
 // Test doubles
 
@@ -225,6 +234,186 @@ Deno.test("[planning_tool_loop] the final round is sent with toolChoice none and
   const finalRoundOptions = generate.calls[1].options;
   assertEquals(finalRoundOptions.toolChoice?.type, "none");
   assertExists(finalRoundOptions.tools, "the final round must still define tools (a priorTurn requires it)");
+});
+
+// Native conversation snapshot (compatible providers)
+
+const NATIVE_PROVIDER_ID = "openai-chat-native-fixture";
+
+function registerNativeConversationProvider(): void {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata(NATIVE_PROVIDER_ID, new MockProviderFactory(), {
+    name: NATIVE_PROVIDER_ID,
+    description: "Native-conversation fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+    chatFormat: "openai",
+  });
+}
+
+Deno.test("[planning_tool_loop][native] round 1 carries no priorTurn/transcript — an empty turns snapshot and no roundInstruction", async () => {
+  registerNativeConversationProvider();
+  try {
+    const response = makeGenerateResult("<thought>t</thought><content>plan</content>");
+    const generate = new ScriptedGenerate([response]);
+    const loop = new PlanningToolLoop(makeDeps({ generate: generate.generate, providerId: NATIVE_PROVIDER_ID }));
+
+    await loop.run(makeOptions({ maxRounds: 3 }));
+
+    const roundOptions = generate.calls[0].options;
+    assertEquals(roundOptions.nativeConversation?.turns, []);
+    assertEquals(roundOptions.nativeConversation?.roundInstruction, undefined);
+    assertEquals(roundOptions.priorTurn, undefined);
+    assert(roundOptions.nativeConversation?.initialPrompt.includes(PLANNING_TOOLS_UNTRUSTED_DATA_NOTICE));
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][native] a tool call is appended to the snapshot's turns (not priorTurn/transcript), and round 2's prompt is byte-identical to round 1's", async () => {
+  registerNativeConversationProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: { content: "file contents" } }),
+    });
+    const round1 = makeGenerateResult("", {
+      toolCalls: [{ id: "toolu_1", name: "read_file", input: { path: "a.ts" } }],
+    });
+    const round2 = makeGenerateResult("<thought>t</thought><content>plan</content>");
+    const generate = new ScriptedGenerate([round1, round2]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: NATIVE_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(
+      generate.calls[1].prompt,
+      generate.calls[0].prompt,
+      "the native prompt must stay frozen across rounds",
+    );
+    assertEquals(generate.calls[1].options.priorTurn, undefined);
+    const turns = generate.calls[1].options.nativeConversation?.turns;
+    assertEquals(turns?.length, 1);
+    assertEquals(turns?.[0].toolUseId, "toolu_1");
+    assert(String(turns?.[0].toolResultContent).includes("file contents"));
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][native] the final round drops tools entirely and sets the final roundInstruction", async () => {
+  registerNativeConversationProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: {} }),
+    });
+    const round1 = makeGenerateResult("", { toolCalls: [{ id: "t1", name: "read_file", input: { path: "a.ts" } }] });
+    const round2 = makeGenerateResult("<thought>t</thought><content>final plan</content>");
+    const generate = new ScriptedGenerate([round1, round2]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: NATIVE_PROVIDER_ID }),
+    );
+
+    const result = await loop.run(makeOptions({ maxRounds: 2 }));
+
+    assertEquals(result.final.content, "<thought>t</thought><content>final plan</content>");
+    const finalOptions = generate.calls[1].options;
+    assertEquals(finalOptions.tools, undefined, "the final native round must not define tools");
+    assertEquals(finalOptions.nativeConversation?.roundInstruction, PLANNING_TOOLS_FINAL_ROUND_INSTRUCTION);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][native] a denied (confinement) result is appended to the snapshot's turns with its call id, matching the ordinary path", async () => {
+  registerNativeConversationProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")]);
+    const round1 = makeGenerateResult("", {
+      toolCalls: [{ id: "escape-1", name: "read_file", input: { path: "/etc/passwd" } }],
+    });
+    const round2 = makeGenerateResult("<thought>t</thought><content>plan</content>");
+    const generate = new ScriptedGenerate([round1, round2]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: NATIVE_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(registry.calls, [], "a confinement-denied call must never reach the registry");
+    const turns = generate.calls[1].options.nativeConversation?.turns;
+    assertEquals(turns?.length, 1);
+    assertEquals(turns?.[0].toolUseId, "escape-1");
+    assertEquals(turns?.[0].toolResultIsError, true);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][native] an intermediate round with prior turns sets the continue roundInstruction", async () => {
+  registerNativeConversationProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: {} }),
+    });
+    const round1 = makeGenerateResult("", { toolCalls: [{ id: "t1", name: "read_file", input: { path: "a.ts" } }] });
+    const round2 = makeGenerateResult("", { toolCalls: [{ id: "t2", name: "read_file", input: { path: "b.ts" } }] });
+    const round3 = makeGenerateResult("<thought>t</thought><content>plan</content>");
+    const generate = new ScriptedGenerate([round1, round2, round3]);
+    const loop = new PlanningToolLoop(
+      makeDeps({ toolRegistry: registry, generate: generate.generate, providerId: NATIVE_PROVIDER_ID }),
+    );
+
+    await loop.run(makeOptions({ maxRounds: 3, allowedTools: new Set(["read_file"]) }));
+
+    assertEquals(
+      generate.calls[1].options.nativeConversation?.roundInstruction,
+      PLANNING_TOOLS_CONTINUE_ROUND_INSTRUCTION,
+    );
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
+Deno.test("[planning_tool_loop][native] a round exceeding the caller's prompt budget aborts before that generate call, never issuing an over-budget request", async () => {
+  registerNativeConversationProvider();
+  try {
+    const registry = new StubToolRegistry([fixtureTool("read_file")], {
+      read_file: () => ({ success: true, data: {} }),
+    });
+    const round1 = makeGenerateResult("", { toolCalls: [{ id: "t1", name: "read_file", input: { path: "a.ts" } }] });
+    const generate = new ScriptedGenerate([round1]);
+    const budget: IPromptBudget = {
+      model: "gpt-4",
+      totalBudgetTokens: 100,
+      safetyBufferTokens: 0,
+      sections: { system: 100, plan: 100, portalKnowledge: 100, memory: 100, skills: 100, loopHistory: 100 },
+    };
+    const overflowMeasurement: INativeInputMeasurement = {
+      totalTokens: 500,
+      sections: { system: 10, plan: 10, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 480 },
+      tokenSource: "tokenizer_estimate",
+    };
+    const loop = new PlanningToolLoop(makeDeps({
+      toolRegistry: registry,
+      generate: generate.generate,
+      providerId: NATIVE_PROVIDER_ID,
+      measureInputTokens: () => Promise.resolve(overflowMeasurement),
+    }));
+
+    await assertRejects(
+      () => loop.run(makeOptions({ maxRounds: 2, allowedTools: new Set(["read_file"]), promptBudget: budget })),
+      ContextBudgetExceededError,
+    );
+    assertEquals(generate.calls.length, 0, "the over-budget round must never reach generate()");
+  } finally {
+    ProviderRegistry.clear();
+  }
 });
 
 Deno.test("[planning_tool_loop] exploration rounds use toolChoice auto with parallel disabled, never any/tool", async () => {

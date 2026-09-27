@@ -19,6 +19,12 @@ import {
   type OpenAIResponse,
   type TokenMap,
 } from "@exaix/ai/provider_common_utils.ts";
+import { planStructuredOutput, validateStructuredOutput } from "./compatible_structured_output.ts";
+import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai/providers";
+
+/** Structured-output dispatch treats an absent profile (the local-test fixture calling
+ *  compatible_chat helpers directly, without a factory-resolved profile) as OpenAI-shaped. */
+const DEFAULT_STRUCTURED_OUTPUT_PROFILE = "openai";
 
 const tokenCount = z.number().int().nonnegative();
 const CompatibleResponseSchema = z.object({
@@ -46,15 +52,22 @@ const CompatibleResponseSchema = z.object({
   }),
 });
 
-/** Per-profile wire projection. DeepSeek omits `parallel_tool_calls` and, under
- *  thinking mode, `temperature`/`top_p`. Other profiles keep both fields. */
+/** The wire RequestInit plus its structured-output mode, for the caller to attach to IGenerateResult. */
+export interface ICompatibleChatRequestInit {
+  init: RequestInit;
+  structuredOutputMode?: StructuredOutputMode;
+  structuredOutputModeReason?: StructuredOutputModeReason;
+}
+
+/** Per-profile wire projection (DeepSeek omits `parallel_tool_calls` and thinking-mode
+ *  sampling fields). `options.jsonSchema` selects strict json_schema or json_object mode. */
 export function createCompatibleChatRequestInit(
   apiKey: string,
   model: string,
   prompt: string,
   options?: Opt<IModelOptions, Reason.OptionalInput>,
   profile?: Opt<CompatibleChatConfig["profile"], Reason.OptionalContext>,
-): RequestInit {
+): ICompatibleChatRequestInit {
   const snapshot = options?.nativeConversation;
   const ids = snapshot?.turns.map((turn) => turn.toolUseId) ?? [];
   if (
@@ -65,9 +78,43 @@ export function createCompatibleChatRequestInit(
   ) {
     throw new ProviderProtocolError("Invalid compatible request protocol", ProviderType.OPENAI_CHAT);
   }
-  const isDeepSeek = profile === "deepseek";
-  const request = createOpenAIChatCompletionsRequestInit(apiKey, model, prompt, options);
+  let structuredOutputMode: StructuredOutputMode | undefined;
+  let structuredOutputModeReason: StructuredOutputModeReason | undefined;
+  let responseFormat: Record<string, JSONValue> | undefined;
+  let wirePrompt = prompt;
+  if (options?.jsonSchema) {
+    let plan;
+    try {
+      plan = planStructuredOutput(profile ?? DEFAULT_STRUCTURED_OUTPUT_PROFILE, options.jsonSchema);
+    } catch (error) {
+      throw new ProviderProtocolError(
+        `Unsupported structured-output schema: ${error instanceof Error ? error.message : String(error)}`,
+        ProviderType.OPENAI_CHAT,
+      );
+    }
+    structuredOutputMode = plan.mode;
+    structuredOutputModeReason = plan.reason;
+    responseFormat = plan.responseFormat;
+    if (plan.promptInstruction) wirePrompt = `${prompt}\n\n${plan.promptInstruction}`;
+  }
+
+  const request = createOpenAIChatCompletionsRequestInit(apiKey, model, wirePrompt, options);
   const body = JSON.parse(request.body as string) as Record<string, JSONValue>;
+  applyProfileOptions(body, profile, options);
+  if (responseFormat) body.response_format = responseFormat;
+  return {
+    init: { ...request, redirect: COMPATIBLE_REDIRECT_POLICY, body: JSON.stringify(body) },
+    structuredOutputMode,
+    structuredOutputModeReason,
+  };
+}
+
+function applyProfileOptions(
+  body: Record<string, JSONValue>,
+  profile: Opt<CompatibleChatConfig["profile"], Reason.OptionalContext>,
+  options: Opt<IModelOptions, Reason.OptionalInput>,
+): void {
+  const isDeepSeek: boolean = profile === "deepseek";
   if (options?.tools?.length && !isDeepSeek) body.parallel_tool_calls = false;
   if (options?.thinking !== undefined) body.thinking = { type: options.thinking ? "enabled" : "disabled" };
   if (options?.effort !== undefined) body.reasoning_effort = options.effort;
@@ -75,15 +122,16 @@ export function createCompatibleChatRequestInit(
     delete body.temperature;
     delete body.top_p;
   }
-  return { ...request, redirect: COMPATIBLE_REDIRECT_POLICY, body: JSON.stringify(body) };
 }
 
-/** Rejects malformed or unadvertised calls before any result can reach an executor. */
+/** Rejects malformed or unadvertised calls. A final response's content, when jsonSchema is
+ *  set, is re-validated against the original schema and replaced with the normalized JSON. */
 export function validateCompatibleResponse(
   data: OpenAIResponse,
   providerId: string,
   maxArgumentBytes: number,
   options?: Opt<IModelOptions, Reason.OptionalInput>,
+  profile?: Opt<CompatibleChatConfig["profile"], Reason.OptionalContext>,
 ): OpenAIResponse {
   const parsed = CompatibleResponseSchema.safeParse(data);
   if (!parsed.success) throw new ProviderProtocolError("Invalid compatible response protocol", providerId);
@@ -105,7 +153,27 @@ export function validateCompatibleResponse(
     }
     extractOpenAICompatibleToolCalls(response, maxArgumentBytes, providerId);
   }
-  const usage = response.usage;
+  validateCompatibleUsage(response.usage, providerId);
+  if (!call && options?.jsonSchema) {
+    let normalized: JSONValue;
+    try {
+      normalized = validateStructuredOutput(
+        message.content!,
+        options.jsonSchema,
+        profile ?? DEFAULT_STRUCTURED_OUTPUT_PROFILE,
+      );
+    } catch (error) {
+      throw new ProviderProtocolError(
+        `Structured output failed schema validation: ${error instanceof Error ? error.message : String(error)}`,
+        providerId,
+      );
+    }
+    response.choices[0].message.content = JSON.stringify(normalized);
+  }
+  return response;
+}
+
+function validateCompatibleUsage(usage: z.infer<typeof CompatibleResponseSchema>["usage"], providerId: string): void {
   if (
     usage.total_tokens !== usage.prompt_tokens + usage.completion_tokens ||
     (usage.prompt_tokens_details?.cached_tokens ?? 0) > usage.prompt_tokens ||
@@ -113,7 +181,6 @@ export function validateCompatibleResponse(
   ) {
     throw new ProviderProtocolError("Invalid compatible token usage", providerId);
   }
-  return response;
 }
 
 /** Uses the returned model and reported token breakdowns. Costs remain unknown without verified rates. */

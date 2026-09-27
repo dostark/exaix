@@ -653,3 +653,122 @@ Deno.test("compatible chat preserves DeepSeek reasoning_content across two succe
     true,
   );
 });
+
+Deno.test("compatible chat sends OpenAI strict json_schema mode for a representable schema and reports its mode", async () => {
+  let requestBody: (IFixtureChatRequest & { response_format?: JSONValue }) | undefined;
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+    requestBody = await request.json();
+    return Response.json({
+      model: "gpt-4.1-mini-2025-04-14",
+      choices: [{ message: { role: "assistant", content: '{"title":"t"}' }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+    });
+  });
+  const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+  try {
+    const provider = new OpenAIProvider({
+      apiKey: "fixture-key",
+      model: "gpt-4.1-mini-2025-04-14",
+      baseUrl: endpoint,
+      compatible: {
+        profile: "openai",
+        endpoint,
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    const result = await provider.generate("prompt", {
+      jsonSchema: { type: "object", properties: { title: { type: "string" } }, required: ["title"] },
+    });
+    assertExists(requestBody);
+    const responseFormat = requestBody!.response_format as Record<string, JSONValue>;
+    assertEquals(responseFormat.type, "json_schema");
+    assertEquals(result.structuredOutputMode, "json_schema");
+    assertEquals(result.structuredOutputModeReason, undefined);
+    assertEquals(result.content, '{"title":"t"}');
+  } finally {
+    await server.shutdown();
+  }
+});
+
+Deno.test("compatible chat falls back to json_object mode and instruction text for a non-strict-representable schema", async () => {
+  let requestBody: (IFixtureChatRequest & { response_format?: JSONValue }) | undefined;
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+    requestBody = await request.json();
+    return Response.json({
+      model: "requested-model",
+      choices: [{ message: { role: "assistant", content: '{"title":"t","note":null}' }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+    });
+  });
+  const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+  try {
+    const provider = new OpenAIProvider({
+      apiKey: "fixture-key",
+      model: "requested-model",
+      baseUrl: endpoint,
+      compatible: {
+        profile: "openai",
+        endpoint,
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    const result = await provider.generate("prompt", {
+      jsonSchema: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          params: { type: "object", additionalProperties: { type: "string" } },
+        },
+        required: ["title"],
+      },
+    });
+    assertExists(requestBody);
+    const responseFormat = requestBody!.response_format as Record<string, JSONValue>;
+    assertEquals(responseFormat.type, "json_object");
+    assertEquals(result.structuredOutputMode, "json_object");
+    assertEquals(result.structuredOutputModeReason, "schema_not_strict_representable");
+    const systemMessage = requestBody!.messages.find((m) => m.role === "system" || m.role === "user");
+    assertExists(systemMessage);
+  } finally {
+    await server.shutdown();
+  }
+});
+
+Deno.test("compatible chat rejects structured output content that violates the schema", async () => {
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, () => {
+    return Response.json({
+      model: "requested-model",
+      choices: [{ message: { role: "assistant", content: '{"title":123}' }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+    });
+  });
+  const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+  try {
+    const provider = new OpenAIProvider({
+      apiKey: "fixture-key",
+      model: "requested-model",
+      baseUrl: endpoint,
+      compatible: {
+        profile: "openai",
+        endpoint,
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    await assertRejects(() =>
+      provider.generate("prompt", {
+        jsonSchema: { type: "object", properties: { title: { type: "string" } }, required: ["title"] },
+      })
+    );
+  } finally {
+    await server.shutdown();
+  }
+});
