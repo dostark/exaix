@@ -1,0 +1,49 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.openai.com"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Phase 155 Step 3: the qualified "openai" compatible profile, targeting the real OpenAI Chat
+# Completions endpoint through the shared @exaix/ai-openai compatible provider rather than a
+# second HTTP stack. Requires OPENAI_API_KEY in the daemon's own environment; no key is present
+# in this file, its `[[cells]]` catalog entry, or any captured fixture. Mirrors
+# openai-no-delegate.toml's shape; unlike that preset, `provider = "openai-chat"` routes through
+# OpenAICompatibleProviderFactory, which pins the endpoint host and the qualified model below.
+[ai]
+provider = "openai-chat"
+model = "gpt-4.1-mini-2025-04-14"
+
+[ai.compatible]
+profile = "openai"
+
+[models.default]
+provider = "openai-chat"
+model = "gpt-4.1-mini-2025-04-14"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[execution]
+native_tools_enabled = true
+
+[request_analysis]
+enabled = true
+
+# No [session_delegate] block: omitting it entirely defaults session_delegate to disabled,
+# mirroring openai-no-delegate.toml.

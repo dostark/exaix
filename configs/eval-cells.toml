@@ -67,3 +67,17 @@ config = "configs/codex-cli-react.toml"
 provider = "codex-cli"
 model = "gpt-5.6-terra"
 requires_bin = "codex"
+
+[tool.openai-chat]
+config = "configs/openai-chat.toml"
+provider = "openai-chat"
+model = "gpt-4.1-mini-2025-04-14"
+requires_key = "OPENAI_API_KEY"
+native_tools = true
+
+[tool.deepseek-chat]
+config = "configs/deepseek-chat.toml"
+provider = "openai-chat"
+model = "deepseek-flash"
+requires_key = "DEEPSEEK_API_KEY"
+native_tools = true

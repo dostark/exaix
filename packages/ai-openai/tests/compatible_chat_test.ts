@@ -21,6 +21,7 @@ import { createMockLogger } from "@exaix/testing";
 interface IFixtureChatMessage {
   role: string;
   content?: string;
+  reasoning_content?: string;
   tool_call_id?: string;
   tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
 }
@@ -28,6 +29,10 @@ interface IFixtureChatMessage {
 interface IFixtureChatRequest {
   messages: IFixtureChatMessage[];
   tool_choice: string;
+  parallel_tool_calls?: boolean;
+  temperature?: number;
+  top_p?: number;
+  thinking?: { type: string };
 }
 
 Deno.test("compatible deadline aborts an unfinished HTTP response body with one logical terminal", async () => {
@@ -405,4 +410,246 @@ Deno.test("compatible response validation rejects invalid protocol before return
   } finally {
     await server.shutdown();
   }
+});
+
+Deno.test("compatible chat omits DeepSeek's unsupported parallel_tool_calls switch and its thinking-mode sampling fields", async () => {
+  let requestBody: IFixtureChatRequest | undefined;
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+    requestBody = await request.json();
+    return Response.json({
+      model: "deepseek-flash",
+      choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+    });
+  });
+  const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+  try {
+    const provider = new OpenAIProvider({
+      apiKey: "deepseek-fixture-key",
+      model: "deepseek-flash",
+      baseUrl: endpoint,
+      compatible: {
+        profile: "deepseek",
+        endpoint,
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    await provider.generate("prompt", {
+      temperature: 0.4,
+      top_p: 0.9,
+      thinking: true,
+      tools: [{
+        name: "read_file",
+        description: "Read one permitted file",
+        inputSchema: { type: "object", properties: { path: { type: "string" } } },
+      }],
+      toolChoice: { type: "auto", disable_parallel_tool_use: true },
+    });
+    assertExists(requestBody);
+    assertEquals(requestBody.parallel_tool_calls, undefined);
+    assertEquals(requestBody.thinking, { type: "enabled" });
+    assertEquals(requestBody.temperature, undefined);
+    assertEquals(requestBody.top_p, undefined);
+
+    await provider.generate("prompt", { temperature: 0.4, top_p: 0.9, thinking: false });
+    assertEquals(requestBody!.thinking, { type: "disabled" });
+    assertEquals(requestBody!.temperature, 0.4);
+    assertEquals(requestBody!.top_p, 0.9);
+  } finally {
+    await server.shutdown();
+  }
+});
+
+Deno.test("compatible chat rejects explicit thinking on the OpenAI profile's pinned nonreasoning model", async () => {
+  const endpoint = "http://127.0.0.1:1/v1/chat/completions";
+  const provider = new OpenAIProvider({
+    apiKey: "fixture-key",
+    model: "gpt-4.1-mini-2025-04-14",
+    baseUrl: endpoint,
+    compatible: {
+      profile: "openai",
+      endpoint,
+      allow_insecure_loopback: true,
+      max_response_bytes: 4096,
+      max_tool_argument_bytes: 512,
+      max_history_bytes: 4096,
+    },
+  });
+  const error = await assertRejects(() => provider.generate("prompt", { thinking: true }), Error);
+  assertEquals(error.name, "ProviderCallPolicyError");
+  await assertRejects(() => provider.generate("prompt", { effort: "medium" }));
+});
+
+Deno.test("compatible chat still sets parallel_tool_calls:false for the OpenAI and local-test profiles", async () => {
+  for (const profile of ["openai", "local-test"] as const) {
+    let requestBody: IFixtureChatRequest | undefined;
+    const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+      requestBody = await request.json();
+      return Response.json({
+        model: "requested-model",
+        choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+      });
+    });
+    const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+    try {
+      const provider = new OpenAIProvider({
+        apiKey: "fixture-key",
+        model: "requested-model",
+        baseUrl: endpoint,
+        compatible: {
+          profile,
+          endpoint,
+          allow_insecure_loopback: true,
+          max_response_bytes: 4096,
+          max_tool_argument_bytes: 512,
+          max_history_bytes: 4096,
+        },
+      });
+      await provider.generate("prompt", {
+        tools: [{ name: "read_file", description: "Read a file", inputSchema: { type: "object" } }],
+        toolChoice: { type: "auto", disable_parallel_tool_use: true },
+      });
+      assertEquals(requestBody?.parallel_tool_calls, false, profile);
+    } finally {
+      await server.shutdown();
+    }
+  }
+});
+
+Deno.test("compatible chat preserves DeepSeek reasoning_content across two successive tool turns to a final answer", async () => {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
+    name: "openai-chat",
+    description: "Compatible fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+    chatFormat: "openai",
+  });
+  const seenRequests: IFixtureChatRequest[] = [];
+  let round = 0;
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+    seenRequests.push(await request.json());
+    round++;
+    if (round === 1) {
+      return Response.json({
+        model: "deepseek-flash",
+        choices: [{
+          message: {
+            role: "assistant",
+            content: null,
+            reasoning_content: "Considering the second file next.",
+            tool_calls: [{
+              id: "call-2",
+              type: "function",
+              function: { name: "read_file", arguments: '{"path":"b.md"}' },
+            }],
+          },
+          finish_reason: "tool_calls",
+        }],
+        usage: { prompt_tokens: 30, completion_tokens: 5, total_tokens: 35 },
+      });
+    }
+    return Response.json({
+      model: "deepseek-flash",
+      choices: [{ message: { role: "assistant", content: "both files read" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 40, completion_tokens: 4, total_tokens: 44 },
+    });
+  });
+  const port = (server.addr as Deno.NetAddr).port;
+  const endpoint = `http://127.0.0.1:${port}/v1/chat/completions`;
+  try {
+    await (async () => {
+      // Constructed directly: the real factory pins "deepseek" to its real host.
+      const provider = new OpenAIProvider({
+        apiKey: "deepseek-fixture-key",
+        model: "deepseek-flash",
+        baseUrl: endpoint,
+        compatible: {
+          profile: "deepseek",
+          endpoint,
+          allow_insecure_loopback: true,
+          max_response_bytes: 4096,
+          max_tool_argument_bytes: 512,
+          max_history_bytes: 4096,
+        },
+      });
+      const tools = [{
+        name: "read_file",
+        description: "Read one permitted file",
+        inputSchema: { type: "object", properties: { path: { type: "string" } } },
+      }];
+      // Round 1: one completed turn (call-1) already replayed, and the fixture returns call-2.
+      const firstRound: IModelOptions = {
+        thinking: true,
+        tools,
+        toolChoice: { type: "auto", disable_parallel_tool_use: true },
+        nativeConversation: {
+          initialPrompt: "Read both requested files",
+          turns: [{
+            toolUseId: "call-1",
+            toolName: "read_file",
+            toolInput: { path: "a.md" },
+            toolResultContent: "contents of a.md",
+            toolResultIsError: false,
+            reasoningContent: "Reading the first file.",
+          }],
+          roundInstruction: "Continue or return the final answer.",
+        },
+      };
+      const firstResult = await provider.generate("Read both requested files", firstRound);
+      const secondCall = firstResult.toolCalls?.[0];
+      assertExists(secondCall);
+      assertEquals(secondCall.id, "call-2");
+      assertEquals(secondCall.reasoningContent, "Considering the second file next.");
+
+      // Round 2 mirrors the real caller: append call-2's result as a completed turn
+      // and replay the full two-turn snapshot.
+      const secondRound: IModelOptions = {
+        ...firstRound,
+        nativeConversation: {
+          ...firstRound.nativeConversation!,
+          turns: [
+            ...firstRound.nativeConversation!.turns,
+            {
+              toolUseId: secondCall.id,
+              toolName: secondCall.name,
+              toolInput: secondCall.input,
+              toolResultContent: "contents of b.md",
+              toolResultIsError: false,
+              reasoningContent: secondCall.reasoningContent,
+            },
+          ],
+        },
+      };
+      const secondResult = await provider.generate("Read both requested files", secondRound);
+      assertEquals(secondResult.content, "both files read");
+    })();
+  } finally {
+    await server.shutdown();
+    ProviderRegistry.clear();
+  }
+
+  assertEquals(round, 2);
+  const firstRequest = seenRequests[0];
+  const firstAssistant = firstRequest.messages.find((m) => m.role === "assistant");
+  assertEquals(firstAssistant?.reasoning_content, "Reading the first file.");
+  const firstTool = firstRequest.messages.find((m) => m.role === "tool");
+  assertEquals(firstTool?.tool_call_id, "call-1");
+
+  const secondRequest = seenRequests[1];
+  const secondTool = secondRequest.messages.find((m) => m.tool_call_id === "call-2");
+  assertEquals(secondTool?.content, "contents of b.md");
+  assertEquals(secondRequest.messages.filter((m) => m.role === "assistant").length, 2);
+  assertEquals(
+    secondRequest.messages.some((m) => m.reasoning_content === "Considering the second file next."),
+    true,
+  );
 });

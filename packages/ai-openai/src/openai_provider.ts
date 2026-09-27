@@ -84,12 +84,17 @@ export class OpenAIProvider extends BaseProvider {
     this.tokenizer = options.tokenizer ?? new AiTokenEstimatorTokenizer();
     this.pricingLookup = options.pricingLookup;
     if (this.compatibleConfig) {
+      const profile = this.compatibleConfig.profile;
+      const isDeepSeek = profile === "deepseek";
+      const isLocal = profile === OPENAI_COMPATIBLE_LOCAL_PROFILE;
+      // OpenAI's pinned nonreasoning model rejects explicit thinking/effort; DeepSeek's
+      // documented thinking mode and the scripted local fixture both support it. DeepSeek's
+      // effort mapping applies only when thinking is enabled (Wire Profiles contract).
       this.callCapabilities = Object.freeze({
-        profile: this.compatibleConfig.profile,
-        supportsThinking: this.compatibleConfig.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE,
-        supportedEffortTiers: Object.freeze(
-          this.compatibleConfig.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE ? ["low", "medium", "high"] as const : [],
-        ),
+        profile,
+        supportsThinking: isLocal || isDeepSeek,
+        supportedEffortTiers: Object.freeze(isLocal || isDeepSeek ? ["low", "medium", "high"] as const : []),
+        ...(isDeepSeek ? { effortRequiresThinking: true } : {}),
       });
     }
   }
@@ -99,7 +104,7 @@ export class OpenAIProvider extends BaseProvider {
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<INativeInputMeasurement> {
     const request = this.compatible
-      ? createCompatibleChatRequestInit("", this.model, prompt, options)
+      ? createCompatibleChatRequestInit("", this.model, prompt, options, this.compatibleConfig?.profile)
       : createOpenAIChatCompletionsRequestInit("", this.model, prompt, options);
     const projection = JSON.parse(request.body as string) as Record<string, JSONValue>;
     const snapshot = options?.nativeConversation;
@@ -162,7 +167,7 @@ export class OpenAIProvider extends BaseProvider {
     const result = await performProviderCall<OpenAIResponse>(
       this.baseUrl,
       this.compatible
-        ? createCompatibleChatRequestInit(this.apiKey, this.model, prompt, callOptions)
+        ? createCompatibleChatRequestInit(this.apiKey, this.model, prompt, callOptions, this.compatibleConfig?.profile)
         : createOpenAIChatCompletionsRequestInit(this.apiKey, this.model, prompt, callOptions),
       {
         id: this.id,

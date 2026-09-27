@@ -16,7 +16,14 @@ import {
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
 } from "./constants.ts";
-import { OPENAI_COMPATIBLE_LOCAL_PROFILE, PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
+import {
+  OPENAI_COMPATIBLE_LOCAL_PROFILE,
+  OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  PricingTier,
+  ProviderCostTier,
+  ProviderType,
+  SecureCredentialStore,
+} from "@exaix/core";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
 import type { IModelPricingLookup, Opt, Reason } from "@exaix/core/types";
 
@@ -43,6 +50,52 @@ export const OPENAI_CHAT_PROVIDER_METADATA = {
 const LOCAL_TEST_KEY_ENV = "EXA_COMPAT_TEST_API_KEY";
 const LOCAL_TEST_MODEL = "compat-fixture-v1";
 const LOCAL_TEST_ENDPOINT = /^http:\/\/127\.0\.0\.1:[0-9]+\/v1\/chat\/completions$/;
+
+type RemoteCompatibleProfile = "openai" | "deepseek";
+
+/** Fixed profile → credential env var. Never derived from user input. */
+const REMOTE_PROFILE_KEY_ENV: Record<RemoteCompatibleProfile, string> = {
+  openai: "OPENAI_API_KEY",
+  deepseek: "DEEPSEEK_API_KEY",
+};
+
+/** Qualified host per remote profile, derived from the single source of truth
+ *  (`OPENAI_COMPATIBLE_PROFILE_DEFAULTS`) rather than a second hardcoded literal. */
+const REMOTE_PROFILE_HOST: Record<RemoteCompatibleProfile, string> = {
+  openai: new URL(OPENAI_COMPATIBLE_PROFILE_DEFAULTS.openai.endpoint).host,
+  deepseek: new URL(OPENAI_COMPATIBLE_PROFILE_DEFAULTS.deepseek.endpoint).host,
+};
+
+const CHAT_COMPLETIONS_PATH = "/v1/chat/completions";
+
+/** Pinned qualified model per profile — the only model each profile may select. */
+function pinnedModel(profile: CompatibleChatConfig["profile"]): string {
+  return profile === OPENAI_COMPATIBLE_LOCAL_PROFILE
+    ? LOCAL_TEST_MODEL
+    : OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].model;
+}
+
+/** Normalizes a remote profile's root, `/v1` base, or full endpoint to its qualified URL. */
+function remoteEndpoint(profile: RemoteCompatibleProfile, rawEndpoint: string): URL {
+  let url: URL;
+  try {
+    url = new URL(rawEndpoint);
+  } catch {
+    throw new ProviderFactoryError(`Compatible ${profile} endpoint is invalid`, PROVIDER_REASON_PROFILE_MISMATCH);
+  }
+  const path = url.pathname.replace(/\/$/, "");
+  if (
+    url.protocol !== "https:" || url.host !== REMOTE_PROFILE_HOST[profile] ||
+    url.username || url.password || url.search || url.hash ||
+    (path !== "" && path !== "/v1" && path !== CHAT_COMPLETIONS_PATH)
+  ) {
+    throw new ProviderFactoryError(
+      `Compatible ${profile} endpoint must use its qualified HTTPS host and documented path`,
+      PROVIDER_REASON_PROFILE_MISMATCH,
+    );
+  }
+  return new URL(`https://${REMOTE_PROFILE_HOST[profile]}${CHAT_COMPLETIONS_PATH}`);
+}
 
 type PermissionKind = "env" | "net";
 type PermissionState = "granted" | "denied" | "prompt";
@@ -86,18 +139,19 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
 
   override async create(options: IResolvedProviderOptions): Promise<IModelProvider> {
     const compatible = options.compatible;
-    if (!compatible || compatible.profile !== OPENAI_COMPATIBLE_LOCAL_PROFILE) {
+    if (!compatible) {
       throw new ProviderFactoryError(
         "Compatible profile is unsupported in this phase",
         PROVIDER_REASON_PROFILE_MISMATCH,
       );
     }
+    const model = pinnedModel(compatible.profile);
     if (
-      options.model !== LOCAL_TEST_MODEL || (compatible.model !== undefined && compatible.model !== LOCAL_TEST_MODEL) ||
+      options.model !== model || (compatible.model !== undefined && compatible.model !== model) ||
       options.apiKey !== undefined
     ) {
       throw new ProviderFactoryError(
-        "Compatible local-test model or credential tuple is invalid",
+        "Compatible model or credential tuple is invalid",
         PROVIDER_REASON_PROFILE_MISMATCH,
       );
     }
@@ -107,16 +161,27 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
         PROVIDER_REASON_PROFILE_MISMATCH,
       );
     }
-    const endpoint = localEndpoint(compatible.endpoint ?? "", compatible.allow_insecure_loopback);
+    const endpoint = compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE
+      ? localEndpoint(compatible.endpoint ?? "", compatible.allow_insecure_loopback)
+      : remoteEndpoint(compatible.profile, compatible.endpoint ?? "");
+    const defaultPort = endpoint.protocol === "https:" ? "443" : "80";
     try {
-      if (await this.readPermission("net", `${endpoint.hostname}:${endpoint.port || "80"}`) !== "granted") {
-        throw new ProviderFactoryError("Permission to reach local-test endpoint is required", "net_permission_denied");
+      if (await this.readPermission("net", `${endpoint.hostname}:${endpoint.port || defaultPort}`) !== "granted") {
+        throw new ProviderFactoryError(
+          "Permission to reach the compatible endpoint is required",
+          "net_permission_denied",
+        );
       }
     } catch (error) {
       if (error instanceof ProviderFactoryError) throw error;
-      throw new ProviderFactoryError("Permission to reach local-test endpoint is required", "net_permission_denied");
+      throw new ProviderFactoryError(
+        "Permission to reach the compatible endpoint is required",
+        "net_permission_denied",
+      );
     }
-    const key = await this.readLocalKey();
+    const key = compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE
+      ? await this.readKey(LOCAL_TEST_KEY_ENV, false)
+      : await this.readKey(REMOTE_PROFILE_KEY_ENV[compatible.profile], true);
 
     const resolvedCompatible: CompatibleChatConfig = compatible;
     return new OpenAIProvider({
@@ -133,18 +198,20 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
     });
   }
 
-  private async readLocalKey(): Promise<string> {
+  /** Reads the fixed env var first, then a remote-only read-only store fallback. */
+  private async readKey(envKey: string, allowStoreFallback: boolean): Promise<string> {
     let key: string | undefined;
     try {
-      if (await this.readPermission("env", LOCAL_TEST_KEY_ENV) !== "granted") {
-        throw new ProviderFactoryError("Permission to read local-test credential is required", "env_permission_denied");
+      if (await this.readPermission("env", envKey) !== "granted") {
+        throw new ProviderFactoryError("Permission to read compatible credential is required", "env_permission_denied");
       }
-      key = Deno.env.get(LOCAL_TEST_KEY_ENV);
+      key = Deno.env.get(envKey);
     } catch (error) {
       if (error instanceof ProviderFactoryError) throw error;
-      throw new ProviderFactoryError("Permission to read local-test credential is required", "env_permission_denied");
+      throw new ProviderFactoryError("Permission to read compatible credential is required", "env_permission_denied");
     }
-    if (!key) throw new ProviderFactoryError("Local-test credential is missing", "credential_missing");
+    if (!key && allowStoreFallback) key = (await SecureCredentialStore.get(envKey)) ?? undefined;
+    if (!key) throw new ProviderFactoryError("Compatible credential is missing", "credential_missing");
 
     return key;
   }

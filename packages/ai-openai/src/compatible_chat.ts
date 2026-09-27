@@ -11,6 +11,7 @@ import { ProviderProtocolError } from "@exaix/ai/errors.ts";
 import { type IModelOptions, TOOL_CHOICE_TYPE_NONE } from "@exaix/ai/types.ts";
 import { type JSONValue, ProviderType } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import type { CompatibleChatConfig } from "@exaix/schemas";
 import {
   COMPATIBLE_REDIRECT_POLICY,
   createOpenAIChatCompletionsRequestInit,
@@ -45,12 +46,14 @@ const CompatibleResponseSchema = z.object({
   }),
 });
 
-/** Pure local-profile projection shared by measurement and transport. */
+/** Per-profile wire projection. DeepSeek omits `parallel_tool_calls` and, under
+ *  thinking mode, `temperature`/`top_p`. Other profiles keep both fields. */
 export function createCompatibleChatRequestInit(
   apiKey: string,
   model: string,
   prompt: string,
   options?: Opt<IModelOptions, Reason.OptionalInput>,
+  profile?: Opt<CompatibleChatConfig["profile"], Reason.OptionalContext>,
 ): RequestInit {
   const snapshot = options?.nativeConversation;
   const ids = snapshot?.turns.map((turn) => turn.toolUseId) ?? [];
@@ -62,11 +65,16 @@ export function createCompatibleChatRequestInit(
   ) {
     throw new ProviderProtocolError("Invalid compatible request protocol", ProviderType.OPENAI_CHAT);
   }
+  const isDeepSeek = profile === "deepseek";
   const request = createOpenAIChatCompletionsRequestInit(apiKey, model, prompt, options);
   const body = JSON.parse(request.body as string) as Record<string, JSONValue>;
-  if (options?.tools?.length) body.parallel_tool_calls = false;
+  if (options?.tools?.length && !isDeepSeek) body.parallel_tool_calls = false;
   if (options?.thinking !== undefined) body.thinking = { type: options.thinking ? "enabled" : "disabled" };
   if (options?.effort !== undefined) body.reasoning_effort = options.effort;
+  if (isDeepSeek && options?.thinking === true) {
+    delete body.temperature;
+    delete body.top_p;
+  }
   return { ...request, redirect: COMPATIBLE_REDIRECT_POLICY, body: JSON.stringify(body) };
 }
 

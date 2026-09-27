@@ -102,13 +102,177 @@ Deno.test("[security] local compatible tuple rejects alternate model, path and e
   });
 });
 
-Deno.test("compatible factory rejects remote profiles until their credential policy is implemented", async () => {
-  await withEnv({ EXA_COMPAT_TEST_API_KEY: null }, async () => {
-    const error = await assertRejects(() =>
-      factory.create(options("deepseek", "http://127.0.0.1:4312/v1/chat/completions"))
+Deno.test("compatible factory rejects a remote profile's endpoint on a local loopback host", async () => {
+  await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
+    for (const profile of ["openai", "deepseek"] as const) {
+      const error = await assertRejects(
+        () => factory.create(options(profile, "http://127.0.0.1:4312/v1/chat/completions")),
+        ProviderFactoryError,
+      );
+      assertEquals(error.reasonCode, "profile_mismatch");
+    }
+  });
+});
+
+Deno.test("compatible factory normalizes a remote profile's documented root or /v1 base to the full endpoint", async () => {
+  await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: null }, async () => {
+    for (
+      const endpoint of [
+        "https://api.openai.com",
+        "https://api.openai.com/v1",
+        "https://api.openai.com/v1/chat/completions",
+      ]
+    ) {
+      const provider = await factory.create({
+        ...options("openai", endpoint),
+        model: "gpt-4.1-mini-2025-04-14",
+        compatible: { ...options("openai", endpoint).compatible!, model: undefined },
+      });
+      assertInstanceOf(provider, OpenAIProvider);
+    }
+  });
+});
+
+Deno.test("compatible factory rejects a remote profile's endpoint on the wrong host, scheme or with userinfo/query", async () => {
+  await withEnv({ OPENAI_API_KEY: "fixture-key" }, async () => {
+    for (
+      const endpoint of [
+        "http://api.openai.com/v1/chat/completions",
+        "https://api.deepseek.com/v1/chat/completions",
+        "https://evil.example.com/v1/chat/completions",
+        "https://user:pass@api.openai.com/v1/chat/completions",
+        "https://api.openai.com/v1/chat/completions?debug=1",
+        "https://api.openai.com/v2/chat/completions",
+      ]
+    ) {
+      const error = await assertRejects(
+        () => factory.create({ ...options("openai", endpoint), model: "gpt-4.1-mini-2025-04-14" }),
+        ProviderFactoryError,
+      );
+      assertEquals(error.reasonCode, "profile_mismatch", endpoint);
+    }
+  });
+});
+
+Deno.test("compatible factory pins each remote profile's qualified model and rejects an unqualified override", async () => {
+  await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
+    const cases = [
+      { profile: "openai", model: "gpt-4.1-mini-2025-04-14", endpoint: "https://api.openai.com/v1/chat/completions" },
+      { profile: "deepseek", model: "deepseek-flash", endpoint: "https://api.deepseek.com/v1/chat/completions" },
+    ] as const;
+    for (const { profile, model, endpoint } of cases) {
+      const valid = {
+        ...options(profile, endpoint),
+        model,
+        compatible: { ...options(profile, endpoint).compatible!, model: undefined },
+      };
+      const provider = await factory.create(valid);
+      assertEquals(provider.id, `openai-chat-${model}`);
+      const wrongTopLevel = await assertRejects(
+        () => factory.create({ ...valid, model: "unqualified-model" }),
+        ProviderFactoryError,
+      );
+      assertEquals(wrongTopLevel.reasonCode, "profile_mismatch");
+      const wrongOverride = await assertRejects(
+        () => factory.create({ ...valid, compatible: { ...valid.compatible!, model: "unqualified-model" } }),
+        ProviderFactoryError,
+      );
+      assertEquals(wrongOverride.reasonCode, "profile_mismatch");
+    }
+  });
+});
+
+Deno.test("compatible factory reads each remote profile's fixed credential environment variable", async () => {
+  await withEnv({ OPENAI_API_KEY: "openai-fixture-key", DEEPSEEK_API_KEY: null }, async () => {
+    const openai = await factory.create({
+      ...options("openai", "https://api.openai.com/v1/chat/completions"),
+      model: "gpt-4.1-mini-2025-04-14",
+      compatible: {
+        ...options("openai", "https://api.openai.com/v1/chat/completions").compatible!,
+        model: undefined,
+      },
+    });
+    assertInstanceOf(openai, OpenAIProvider);
+    const error = await assertRejects(
+      () =>
+        factory.create({
+          ...options("deepseek", "https://api.deepseek.com/v1/chat/completions"),
+          model: "deepseek-flash",
+          compatible: {
+            ...options("deepseek", "https://api.deepseek.com/v1/chat/completions").compatible!,
+            model: undefined,
+          },
+        }),
+      ProviderFactoryError,
     );
-    assertEquals(error instanceof ProviderFactoryError, true);
-    assertEquals((error as ProviderFactoryError).reasonCode, "profile_mismatch");
+    assertEquals(error.reasonCode, "credential_missing");
+  });
+});
+
+Deno.test("[security] a remote profile may read a stored credential but never writes one", async () => {
+  await withEnv({ OPENAI_API_KEY: null }, async () => {
+    await SecureCredentialStore.set("OPENAI_API_KEY", "stored-openai-key");
+    try {
+      const provider = await factory.create({
+        ...options("openai", "https://api.openai.com/v1/chat/completions"),
+        model: "gpt-4.1-mini-2025-04-14",
+        compatible: {
+          ...options("openai", "https://api.openai.com/v1/chat/completions").compatible!,
+          model: undefined,
+        },
+      });
+      assertInstanceOf(provider, OpenAIProvider);
+      assertEquals(await SecureCredentialStore.get("OPENAI_API_KEY"), "stored-openai-key");
+    } finally {
+      SecureCredentialStore.clear("OPENAI_API_KEY");
+    }
+  });
+});
+
+Deno.test("[security] a remote profile never persists an env-sourced credential, even with EXA_PERSIST_ENV_CREDENTIALS set", async () => {
+  await withEnv({ DEEPSEEK_API_KEY: "env-deepseek-key" }, async () => {
+    const persistFlag = globalThis as { EXA_PERSIST_ENV_CREDENTIALS?: boolean };
+    persistFlag.EXA_PERSIST_ENV_CREDENTIALS = true;
+    try {
+      assertEquals(await SecureCredentialStore.get("DEEPSEEK_API_KEY"), null);
+      const provider = await factory.create({
+        ...options("deepseek", "https://api.deepseek.com/v1/chat/completions"),
+        model: "deepseek-flash",
+        compatible: {
+          ...options("deepseek", "https://api.deepseek.com/v1/chat/completions").compatible!,
+          model: undefined,
+        },
+      });
+      assertInstanceOf(provider, OpenAIProvider);
+      assertEquals(await SecureCredentialStore.get("DEEPSEEK_API_KEY"), null);
+    } finally {
+      delete persistFlag.EXA_PERSIST_ENV_CREDENTIALS;
+      SecureCredentialStore.clear("DEEPSEEK_API_KEY");
+    }
+  });
+});
+
+Deno.test("compatible factory requires the qualified network permission for each remote profile's host", async () => {
+  await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
+    const cases = [
+      { profile: "openai", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4.1-mini-2025-04-14" },
+      { profile: "deepseek", endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-flash" },
+    ] as const;
+    for (const { profile, endpoint, model } of cases) {
+      const denied = new OpenAICompatibleProviderFactory((kind) =>
+        Promise.resolve(kind === "env" ? "granted" : "denied")
+      );
+      const error = await assertRejects(
+        () =>
+          denied.create({
+            ...options(profile, endpoint),
+            model,
+            compatible: { ...options(profile, endpoint).compatible!, model: undefined },
+          }),
+        ProviderFactoryError,
+      );
+      assertEquals(error.reasonCode, "net_permission_denied");
+    }
   });
 });
 
