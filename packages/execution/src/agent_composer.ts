@@ -74,7 +74,7 @@ import {
 import type { IEffortDeclarationPair, IEffortResolution, IEffortResolver } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
-import { providerSupportsNativeConversation } from "./native_tool_turns.ts";
+import { providerSupportsNativeConversation, providerSupportsNativeTools } from "./native_tool_turns.ts";
 import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
@@ -627,14 +627,16 @@ export class AgentComposer {
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
       await this.prepareStepBudget(_blueprint, options, context.trace_id);
 
+      const strategyName = this.resolveStrategyName(_blueprint, options);
+      const nativeLegacyRoute = this.isNativeLegacyRoute(_blueprint, options, strategyName);
+
       // Log execution start
       await this.logExecutionStart(
         context.trace_id,
         options.agent_role ?? "",
         options.portal,
+        nativeLegacyRoute,
       );
-
-      const strategyName = this.resolveStrategyName(_blueprint, options);
 
       this.applyBlueprintToolScope(_blueprint, options);
 
@@ -886,7 +888,22 @@ export class AgentComposer {
     if (blueprint.capabilities.includes(ExecutionStrategyName.REACT)) {
       return ExecutionStrategyName.REACT;
     }
+    if (options.native_tools_enabled === true && providerSupportsNativeTools(this.provider?.id)) {
+      return ExecutionStrategyName.REACT;
+    }
     return ExecutionStrategyName.LEGACY;
+  }
+
+  private isNativeLegacyRoute(
+    blueprint: IAgentFileBlueprint,
+    options: IAgentExecutionOptions,
+    strategyName: ExecutionStrategyName,
+  ): boolean {
+    return strategyName === ExecutionStrategyName.REACT &&
+      !options.strategy &&
+      !blueprint.capabilities.includes(ExecutionStrategyName.REACT) &&
+      !blueprint.capabilities.includes(ExecutionStrategyName.MCP) &&
+      !blueprint.capabilities.includes(ExecutionStrategyName.CLI_DELEGATE);
   }
 
   /**
@@ -906,6 +923,7 @@ export class AgentComposer {
     traceId: string,
     agentRole: string,
     portal: string,
+    nativeLegacyRoute = false,
   ): Promise<void> {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_STARTED,
@@ -919,6 +937,7 @@ export class AgentComposer {
       payload: {
         portal,
         started_at: new Date().toISOString(),
+        ...(nativeLegacyRoute ? { strategy_routed_from: "legacy", strategy_route_reason: "native_tools" } : {}),
       },
     });
   }
