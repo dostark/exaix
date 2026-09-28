@@ -29,7 +29,7 @@ import type { IModelPricingLookup, Opt, Reason } from "@exaix/core/types";
 
 export const PROVIDER_OPENAI_CHAT = ProviderType.OPENAI_CHAT;
 export const OPENAI_CHAT_DEFAULTS = {
-  defaultModel: "gpt-4.1-mini-2025-04-14",
+  defaultModel: "gpt-6-luna",
   defaultEndpoint: "",
   defaultTimeoutMs: DEFAULT_OPENAI_TIMEOUT_MS,
   defaultRetryMaxAttempts: DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,

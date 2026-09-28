@@ -16,14 +16,14 @@ memory = "Memory"
 # OpenAICompatibleProviderFactory, which pins the endpoint host and the qualified model below.
 [ai]
 provider = "openai-chat"
-model = "gpt-4.1-mini-2025-04-14"
+model = "gpt-6-luna"
 
 [ai.compatible]
 profile = "openai"
 
 [models.default]
 provider = "openai-chat"
-model = "gpt-4.1-mini-2025-04-14"
+model = "gpt-6-luna"
 timeout_ms = 60000
 
 [agents]

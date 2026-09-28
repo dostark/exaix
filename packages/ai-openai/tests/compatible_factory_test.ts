@@ -125,7 +125,7 @@ Deno.test("compatible factory normalizes a remote profile's documented root or /
     ) {
       const provider = await factory.create({
         ...options("openai", endpoint),
-        model: "gpt-4.1-mini-2025-04-14",
+        model: "gpt-6-luna",
         compatible: { ...options("openai", endpoint).compatible!, model: undefined },
       });
       assertInstanceOf(provider, OpenAIProvider);
@@ -146,7 +146,7 @@ Deno.test("compatible factory rejects a remote profile's endpoint on the wrong h
       ]
     ) {
       const error = await assertRejects(
-        () => factory.create({ ...options("openai", endpoint), model: "gpt-4.1-mini-2025-04-14" }),
+        () => factory.create({ ...options("openai", endpoint), model: "gpt-6-luna" }),
         ProviderFactoryError,
       );
       assertEquals(error.reasonCode, "profile_mismatch", endpoint);
@@ -157,7 +157,7 @@ Deno.test("compatible factory rejects a remote profile's endpoint on the wrong h
 Deno.test("compatible factory pins each remote profile's qualified model and rejects an unqualified override", async () => {
   await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
     const cases = [
-      { profile: "openai", model: "gpt-4.1-mini-2025-04-14", endpoint: "https://api.openai.com/v1/chat/completions" },
+      { profile: "openai", model: "gpt-6-luna", endpoint: "https://api.openai.com/v1/chat/completions" },
       { profile: "deepseek", model: "deepseek-flash", endpoint: "https://api.deepseek.com/v1/chat/completions" },
     ] as const;
     for (const { profile, model, endpoint } of cases) {
@@ -186,7 +186,7 @@ Deno.test("compatible factory reads each remote profile's fixed credential envir
   await withEnv({ OPENAI_API_KEY: "openai-fixture-key", DEEPSEEK_API_KEY: null }, async () => {
     const openai = await factory.create({
       ...options("openai", "https://api.openai.com/v1/chat/completions"),
-      model: "gpt-4.1-mini-2025-04-14",
+      model: "gpt-6-luna",
       compatible: {
         ...options("openai", "https://api.openai.com/v1/chat/completions").compatible!,
         model: undefined,
@@ -215,7 +215,7 @@ Deno.test("[security] a remote profile may read a stored credential but never wr
     try {
       const provider = await factory.create({
         ...options("openai", "https://api.openai.com/v1/chat/completions"),
-        model: "gpt-4.1-mini-2025-04-14",
+        model: "gpt-6-luna",
         compatible: {
           ...options("openai", "https://api.openai.com/v1/chat/completions").compatible!,
           model: undefined,
@@ -255,7 +255,7 @@ Deno.test("[security] a remote profile never persists an env-sourced credential,
 Deno.test("compatible factory requires the qualified network permission for each remote profile's host", async () => {
   await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
     const cases = [
-      { profile: "openai", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4.1-mini-2025-04-14" },
+      { profile: "openai", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-6-luna" },
       { profile: "deepseek", endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-flash" },
     ] as const;
     for (const { profile, endpoint, model } of cases) {

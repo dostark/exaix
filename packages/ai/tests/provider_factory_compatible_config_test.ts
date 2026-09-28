@@ -169,7 +169,7 @@ Deno.test("[phase155.factory] profile switch does not inherit local endpoint or 
       const config = ConfigSchema.parse({
         ...baseConfig,
         models: {
-          remote: { provider: "openai-chat", model: "gpt-4.1-mini-2025-04-14", compatible: { profile: "openai" } },
+          remote: { provider: "openai-chat", model: "gpt-6-luna", compatible: { profile: "openai" } },
         },
       });
       await ProviderFactory.createByName(config, "remote");
@@ -189,7 +189,7 @@ Deno.test("[phase155.factory] global compatible defaults preserve model and time
       ai_timeout: { providers: { "openai-chat": 1234, openai: 9999 } },
     });
     await ProviderFactory.create(config);
-    assertEquals(createdOptions[0].model, "gpt-4.1-mini-2025-04-14");
+    assertEquals(createdOptions[0].model, "gpt-6-luna");
     assertEquals(createdOptions[0].timeoutMs, 1234);
   });
 });
@@ -201,7 +201,7 @@ Deno.test("[phase155.factory] omitted model on a profile switch uses the new qua
       models: { remote: { provider: "openai-chat", compatible: { profile: "openai" } } },
     });
     await ProviderFactory.createByName(config, "remote");
-    assertEquals(createdOptions[0].model, "gpt-4.1-mini-2025-04-14");
+    assertEquals(createdOptions[0].model, "gpt-6-luna");
     assertEquals(createdOptions[0].compatible?.endpoint, "https://api.openai.com/v1/chat/completions");
     assertEquals(createdOptions[0].compatible?.allow_insecure_loopback, false);
   });
@@ -216,7 +216,7 @@ Deno.test("[phase155.factory] named compatible defaults do not inherit another p
       models: { remote: { provider: "openai-chat", compatible: { profile: "openai" } } },
     });
     await ProviderFactory.createByName(config, "remote");
-    assertEquals(createdOptions[0].model, "gpt-4.1-mini-2025-04-14");
+    assertEquals(createdOptions[0].model, "gpt-6-luna");
     assertEquals(createdOptions[0].compatible?.endpoint, "https://api.openai.com/v1/chat/completions");
     assertEquals(createdOptions[0].timeoutMs, 1234);
   });

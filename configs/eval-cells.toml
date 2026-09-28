@@ -71,7 +71,7 @@ requires_bin = "codex"
 [tool.openai-chat]
 config = "configs/openai-chat.toml"
 provider = "openai-chat"
-model = "gpt-4.1-mini-2025-04-14"
+model = "gpt-6-luna"
 requires_key = "OPENAI_API_KEY"
 native_tools = true
 

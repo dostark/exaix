@@ -34,6 +34,7 @@ interface IFixtureChatRequest {
   temperature?: number;
   top_p?: number;
   thinking?: { type: string };
+  reasoning_effort?: string;
 }
 
 Deno.test("compatible deadline aborts an unfinished HTTP response body with one logical terminal", async () => {
@@ -464,11 +465,11 @@ Deno.test("compatible chat omits DeepSeek's unsupported parallel_tool_calls swit
   }
 });
 
-Deno.test("compatible chat rejects explicit thinking on the OpenAI profile's pinned nonreasoning model", async () => {
+Deno.test("compatible chat rejects explicit thinking on the OpenAI profile's pinned model", async () => {
   const endpoint = "http://127.0.0.1:1/v1/chat/completions";
   const provider = new OpenAIProvider({
     apiKey: "fixture-key",
-    model: "gpt-4.1-mini-2025-04-14",
+    model: "gpt-6-luna",
     baseUrl: endpoint,
     compatible: {
       profile: "openai",
@@ -515,6 +516,54 @@ Deno.test("compatible chat still sets parallel_tool_calls:false for the OpenAI a
         toolChoice: { type: "auto", disable_parallel_tool_use: true },
       });
       assertEquals(requestBody?.parallel_tool_calls, false, profile);
+    } finally {
+      await server.shutdown();
+    }
+  }
+});
+
+Deno.test("compatible chat sends reasoning_effort none only with tools on the OpenAI profile", async () => {
+  const cases = [
+    { profile: "openai", withTools: true, expected: "none" },
+    { profile: "openai", withTools: false, expected: undefined },
+    { profile: "deepseek", withTools: true, expected: undefined },
+    { profile: "local-test", withTools: true, expected: undefined },
+  ] as const;
+  for (const { profile, withTools, expected } of cases) {
+    let requestBody: IFixtureChatRequest | undefined;
+    const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+      requestBody = await request.json();
+      return Response.json({
+        model: "requested-model",
+        choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+      });
+    });
+    const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+    try {
+      const provider = new OpenAIProvider({
+        apiKey: "fixture-key",
+        model: "requested-model",
+        baseUrl: endpoint,
+        compatible: {
+          profile,
+          endpoint,
+          allow_insecure_loopback: true,
+          max_response_bytes: 4096,
+          max_tool_argument_bytes: 512,
+          max_history_bytes: 4096,
+        },
+      });
+      await provider.generate(
+        "prompt",
+        withTools
+          ? {
+            tools: [{ name: "read_file", description: "Read a file", inputSchema: { type: "object" } }],
+            toolChoice: { type: "auto", disable_parallel_tool_use: true },
+          }
+          : {},
+      );
+      assertEquals(requestBody?.reasoning_effort, expected, `${profile} tools=${withTools}`);
     } finally {
       await server.shutdown();
     }
@@ -660,7 +709,7 @@ Deno.test("compatible chat sends OpenAI strict json_schema mode for a representa
   const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
     requestBody = await request.json();
     return Response.json({
-      model: "gpt-4.1-mini-2025-04-14",
+      model: "gpt-6-luna",
       choices: [{ message: { role: "assistant", content: '{"title":"t"}' }, finish_reason: "stop" }],
       usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
     });
@@ -669,7 +718,7 @@ Deno.test("compatible chat sends OpenAI strict json_schema mode for a representa
   try {
     const provider = new OpenAIProvider({
       apiKey: "fixture-key",
-      model: "gpt-4.1-mini-2025-04-14",
+      model: "gpt-6-luna",
       baseUrl: endpoint,
       compatible: {
         profile: "openai",

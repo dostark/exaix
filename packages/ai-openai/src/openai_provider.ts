@@ -87,9 +87,8 @@ export class OpenAIProvider extends BaseProvider {
       const profile = this.compatibleConfig.profile;
       const isDeepSeek = profile === "deepseek";
       const isLocal = profile === OPENAI_COMPATIBLE_LOCAL_PROFILE;
-      // OpenAI's pinned nonreasoning model rejects explicit thinking/effort; DeepSeek's
-      // documented thinking mode and the scripted local fixture both support it. DeepSeek's
-      // effort mapping applies only when thinking is enabled (Wire Profiles contract).
+      // Only DeepSeek and the local fixture support explicit thinking and effort.
+      // DeepSeek maps effort only while thinking is enabled.
       this.callCapabilities = Object.freeze({
         profile,
         supportsThinking: isLocal || isDeepSeek,

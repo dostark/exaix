@@ -24,7 +24,9 @@ import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai
 
 /** Structured-output dispatch treats an absent profile (the local-test fixture calling
  *  compatible_chat helpers directly, without a factory-resolved profile) as OpenAI-shaped. */
-const DEFAULT_STRUCTURED_OUTPUT_PROFILE = "openai";
+const OPENAI_PROFILE = "openai";
+const DEFAULT_STRUCTURED_OUTPUT_PROFILE = OPENAI_PROFILE;
+const OPENAI_TOOL_REASONING_EFFORT = "none";
 
 const tokenCount = z.number().int().nonnegative();
 const CompatibleResponseSchema = z.object({
@@ -136,6 +138,8 @@ function applyProfileOptions(
   if (options?.tools?.length && !isDeepSeek) body.parallel_tool_calls = false;
   if (options?.thinking !== undefined) body.thinking = { type: options.thinking ? "enabled" : "disabled" };
   if (options?.effort !== undefined) body.reasoning_effort = options.effort;
+  // The OpenAI profile's pinned reasoning model rejects function tools at any other effort on Chat Completions.
+  else if (profile === OPENAI_PROFILE && options?.tools?.length) body.reasoning_effort = OPENAI_TOOL_REASONING_EFFORT;
   if (isDeepSeek && options?.thinking === true) {
     delete body.temperature;
     delete body.top_p;
