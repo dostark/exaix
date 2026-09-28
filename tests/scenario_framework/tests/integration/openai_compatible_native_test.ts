@@ -20,6 +20,8 @@ const DYNAMIC_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-dy
 const DYNAMIC_CALL_IDS = ["compat-dyn-read-1", "compat-dyn-read-2"];
 const DYNAMIC_PATHS = ["src/utils.ts", "src/models.ts"];
 const APPROVAL_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-approval.yaml";
+const LIMITS_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-limits.yaml";
+const BUDGET_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-budget.yaml";
 const FAILURE_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-failure.yaml";
 const CAPTURE_ENV = "EXA_CAPTURE_FIXTURES_DIR";
 const SENSITIVE_SENTINEL = "SENSITIVE_UPSTREAM_BODY_9f3a";
@@ -27,6 +29,7 @@ const FIXTURE_MODEL = "compat-fixture-v1";
 const FIXTURE_KEY = "local-fixture-key";
 const PLANNING_CALL_ID = "compat-planning-read-1";
 const EXECUTION_CALL_ID = "compat-exec-read-1";
+const LARGE_READ_PATH = "src/business_logic_test.ts";
 const PORTAL_MARKER_PATH = "src/utils.ts";
 const REPORT_SUMMARY_HEADER = "### EXECUTION REPORT SUMMARY ###";
 
@@ -73,7 +76,14 @@ function toolCall(id: string, path: string, portal?: string): IFixtureMessage {
   };
 }
 
-function startFixture(observed: IObservedRequest[], rejectChat = false, dynamicFlow = false): Deno.HttpServer {
+type FixtureVariant = "invalid-plan" | "oversized" | "repeat-read";
+
+function startFixture(
+  observed: IObservedRequest[],
+  rejectChat = false,
+  dynamicFlow = false,
+  variant?: FixtureVariant,
+): Deno.HttpServer {
   return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
     if (new URL(request.url).pathname === "/api/embed") {
       const embedding = await request.json() as { input?: string[] };
@@ -83,6 +93,9 @@ function startFixture(observed: IObservedRequest[], rejectChat = false, dynamicF
     observed.push({ body, authorization: request.headers.get("authorization") });
     if (rejectChat) {
       return Response.json({ error: { type: "invalid_request_error", message: SENSITIVE_SENTINEL } }, { status: 400 });
+    }
+    if (variant === "oversized") {
+      return completion({ content: `${"A".repeat(4096)}${SENSITIVE_SENTINEL}` }, "stop", 30);
     }
     const messages = body.messages ?? [];
     const hasToolResult = messages.some((message) => message.role === "tool");
@@ -98,6 +111,9 @@ function startFixture(observed: IObservedRequest[], rejectChat = false, dynamicF
       return completion({ content: "Both modules were read." }, "stop", 60);
     }
     if (body.response_format) {
+      if (variant === "invalid-plan" && (hasToolResult || !body.tools?.length)) {
+        return completion({ content: JSON.stringify({ title: "Schema-invalid plan" }) }, "stop", 60);
+      }
       if (!dynamicFlow && body.tools?.length && !hasToolResult) {
         return completion(toolCall(PLANNING_CALL_ID, PORTAL_MARKER_PATH), "tool_calls", 50);
       }
@@ -118,6 +134,10 @@ function startFixture(observed: IObservedRequest[], rejectChat = false, dynamicF
     }
     if (!body.tools?.length || body.tool_choice === "none") {
       return completion({ content: "ok" }, "stop", 20);
+    }
+    if (variant === "repeat-read") {
+      const completedReads = messages.filter((message) => message.role === "tool").length;
+      return completion(toolCall(`${EXECUTION_CALL_ID}-${completedReads + 1}`, LARGE_READ_PATH), "tool_calls", 70);
     }
     if (!hasToolResult) {
       return completion(toolCall(EXECUTION_CALL_ID, PORTAL_MARKER_PATH), "tool_calls", 70);
@@ -233,13 +253,14 @@ Deno.test({
 async function runFailureScenario(
   fixtureRejects: boolean,
   extraEnv: Record<string, string | null>,
+  options: { scenarioPath?: string; variant?: FixtureVariant } = {},
 ): Promise<
   { observed: IObservedRequest[]; rows: IActivityRow[]; workspaceRoot: string; passed: boolean; failedSteps: string }
 > {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "phase155-failure-ws-" });
   const outputDir = await Deno.makeTempDir({ prefix: "phase155-failure-out-" });
   const observed: IObservedRequest[] = [];
-  const fixture = startFixture(observed, fixtureRejects);
+  const fixture = startFixture(observed, fixtureRejects, false, options.variant);
   const port = (fixture.addr as Deno.NetAddr).port;
   try {
     let passed = false;
@@ -247,7 +268,7 @@ async function runFailureScenario(
     await withEnv({ EXA_COMPAT_TEST_API_KEY: FIXTURE_KEY, ...extraEnv }, async () => {
       const run = await runSyntheticScenario({
         frameworkHome: FRAMEWORK_HOME,
-        scenarioPath: FAILURE_SCENARIO_PATH,
+        scenarioPath: options.scenarioPath ?? FAILURE_SCENARIO_PATH,
         workspaceRoot,
         outputDir,
         mode: ScenarioExecutionMode.AUTO,
@@ -428,6 +449,104 @@ Deno.test({
       assertEquals(rows.filter((row) => row.action_type === "dynamic_tool_call").length, 1);
       assert(rows.some((row) => row.action_type === "hitl.policy.matched"));
       assertEquals(rows.some((row) => row.action_type === "flow.failed"), false);
+    } finally {
+      await fixture.shutdown();
+      await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+      await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name: "[phase155] schema-invalid planning final fails the request with no plan and no execution",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    let workspaceRoot: string | undefined;
+    try {
+      const result = await runFailureScenario(false, { [CAPTURE_ENV]: null }, { variant: "invalid-plan" });
+      workspaceRoot = result.workspaceRoot;
+      assert(result.passed, `${result.failedSteps} ${JSON.stringify(result.rows.map((row) => row.action_type))}`);
+      const terminal = terminalFailure(result.rows);
+      assert(terminal.payload.includes("Structured output failed schema validation"), terminal.payload);
+      assert(result.rows.some((row) => row.action_type === "llm.call.failed" && row.trace_id === terminal.trace_id));
+      assert(result.rows.some((row) => row.action_type === "planning.tools.aborted"));
+      assertEquals(result.rows.some((row) => row.action_type.startsWith("execution.")), false);
+      const plans = await Deno.stat(join(workspaceRoot, "Workspace", "Plans")).then(
+        () => [...Deno.readDirSync(join(workspaceRoot!, "Workspace", "Plans"))].length,
+        () => 0,
+      );
+      assertEquals(plans, 0);
+    } finally {
+      if (workspaceRoot) await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name: "[phase155] limits-only model override inherits the endpoint and rejects an oversized response redacted",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    let workspaceRoot: string | undefined;
+    try {
+      const result = await runFailureScenario(false, { [CAPTURE_ENV]: null }, {
+        scenarioPath: LIMITS_SCENARIO_PATH,
+        variant: "oversized",
+      });
+      workspaceRoot = result.workspaceRoot;
+      assert(result.passed, `${result.failedSteps} ${JSON.stringify(result.rows.map((row) => row.action_type))}`);
+      assert(result.observed.length >= 1, "the inherited endpoint must have been called");
+      const terminal = terminalFailure(result.rows);
+      assert(/byte|size|large|limit/i.test(terminal.payload), terminal.payload);
+      assertEquals(JSON.stringify(result.rows).includes(SENSITIVE_SENTINEL), false);
+      assertEquals(result.rows.some((row) => row.action_type === "execution.completed"), false);
+    } finally {
+      if (workspaceRoot) await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name: "[phase155] token ceiling rejects an oversized native conversation before the next generation",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const workspaceRoot = await Deno.makeTempDir({ prefix: "phase155-budget-ws-" });
+    const outputDir = await Deno.makeTempDir({ prefix: "phase155-budget-out-" });
+    const observed: IObservedRequest[] = [];
+    const fixture = startFixture(observed, false, false, "repeat-read");
+    const port = (fixture.addr as Deno.NetAddr).port;
+    try {
+      let failedSteps = "";
+      await withEnv({ EXA_COMPAT_TEST_API_KEY: FIXTURE_KEY }, async () => {
+        const run = await runSyntheticScenario({
+          frameworkHome: FRAMEWORK_HOME,
+          scenarioPath: BUDGET_SCENARIO_PATH,
+          workspaceRoot,
+          outputDir,
+          mode: ScenarioExecutionMode.AUTO,
+          env: { EXA_COMPAT_FIXTURE_PORT: String(port) },
+        });
+        assert(run.manifest.steps.length > 0);
+        failedSteps = JSON.stringify(
+          run.manifest.steps.filter((step: { executionStatus: string }) => step.executionStatus !== "passed"),
+        );
+      });
+      await assertScenarioPassed(failedSteps, workspaceRoot, observed);
+      const executionCalls = observed.filter((entry) => !entry.body.response_format && entry.body.tools?.length);
+      const rowsBefore = await readActivity(join(workspaceRoot, "exa.config.toml"));
+      const executedReads = rowsBefore.filter((row) => row.action_type === "dynamic_tool_call").length;
+      assert(executedReads >= 2, `the conversation must accumulate several completed turns, saw ${executedReads}`);
+      assertEquals(executionCalls.length, executedReads, "no generation may run after the ceiling is crossed");
+      const lastReplays = (executionCalls.at(-1)?.body.messages ?? []).filter((message) => message.role === "tool");
+      assertEquals(lastReplays.length, executedReads - 1, "completed pairs are never evicted before the failure");
+      const rows = await readActivity(join(workspaceRoot, "exa.config.toml"));
+      assert(rows.some((row) => row.action_type === "context.budget.exceeded"));
+      assertEquals(rows.some((row) => row.action_type === "execution.completed"), false);
     } finally {
       await fixture.shutdown();
       await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});

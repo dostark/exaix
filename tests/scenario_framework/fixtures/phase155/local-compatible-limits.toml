@@ -1,0 +1,45 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]
+
+[ai]
+provider = "openai-chat"
+model = "compat-fixture-v1"
+timeout_ms = 10000
+
+[ai.compatible]
+profile = "local-test"
+endpoint = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions"
+model = "compat-fixture-v1"
+allow_insecure_loopback = true
+max_response_bytes = 65536
+max_tool_argument_bytes = 8192
+max_history_bytes = 65536
+
+[execution]
+native_tools_enabled = true
+
+[agents]
+default_model = "compat-agent"
+
+[models.compat-agent]
+provider = "openai-chat"
+model = "compat-fixture-v1"
+timeout_ms = 10000
+
+[quality_gate]
+enabled = false
+
+[planning]
+tools_enabled = true
+max_tool_rounds = 2
+max_tool_result_tokens = 2000
+max_tool_calls_per_round = 1
+
+[memory.embedding]
+provider = "ollama"
+model = "nomic-embed-text"
+baseUrl = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__"
+
+[models.compat-agent.compatible]
+max_response_bytes = 512
