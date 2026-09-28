@@ -43,6 +43,15 @@ export const STATIC_OVERLAY: StaticOverlay = {
     verifiedAt: VERIFIED_AT_TIMESTAMP,
     sourceUrl: "https://openai.com/api/pricing/",
   },
+  // Short-context rates only. Prompts over 272K input tokens cost more.
+  "openai:gpt-6-luna": {
+    inputPerMtok: 0.10,
+    outputPerMtok: 0.50,
+    cacheReadPerMtok: 0.01,
+    cacheCreationPerMtok: 0.125,
+    verifiedAt: Date.UTC(2026, 8, 28),
+    sourceUrl: "https://developers.openai.com/api/docs/models/gpt-6-luna",
+  },
   "anthropic:claude-sonnet-5": {
     inputPerMtok: 3.00,
     outputPerMtok: 15.00,
