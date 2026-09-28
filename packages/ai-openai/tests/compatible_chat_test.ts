@@ -29,7 +29,7 @@ interface IFixtureChatMessage {
 
 interface IFixtureChatRequest {
   messages: IFixtureChatMessage[];
-  tool_choice: string;
+  tool_choice?: string;
   parallel_tool_calls?: boolean;
   temperature?: number;
   top_p?: number;
@@ -564,6 +564,45 @@ Deno.test("compatible chat sends reasoning_effort none only with tools on the Op
           : {},
       );
       assertEquals(requestBody?.reasoning_effort, expected, `${profile} tools=${withTools}`);
+    } finally {
+      await server.shutdown();
+    }
+  }
+});
+
+Deno.test("compatible chat omits tool_choice when no tools are advertised", async () => {
+  for (const withTools of [false, true]) {
+    let requestBody: IFixtureChatRequest | undefined;
+    const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+      requestBody = await request.json();
+      return Response.json({
+        model: "requested-model",
+        choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+      });
+    });
+    const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+    try {
+      const provider = new OpenAIProvider({
+        apiKey: "fixture-key",
+        model: "requested-model",
+        baseUrl: endpoint,
+        compatible: {
+          profile: "openai",
+          endpoint,
+          allow_insecure_loopback: true,
+          max_response_bytes: 4096,
+          max_tool_argument_bytes: 512,
+          max_history_bytes: 4096,
+        },
+      });
+      await provider.generate("prompt", {
+        toolChoice: { type: "none" },
+        ...(withTools
+          ? { tools: [{ name: "read_file", description: "Read a file", inputSchema: { type: "object" } }] }
+          : {}),
+      });
+      assertEquals(requestBody?.tool_choice, withTools ? "none" : undefined, `tools=${withTools}`);
     } finally {
       await server.shutdown();
     }

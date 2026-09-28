@@ -135,6 +135,7 @@ function applyProfileOptions(
   options: Opt<IModelOptions, Reason.OptionalInput>,
 ): void {
   const isDeepSeek: boolean = profile === "deepseek";
+  if (!options?.tools?.length) delete body.tool_choice;
   if (options?.tools?.length && !isDeepSeek) body.parallel_tool_calls = false;
   if (options?.thinking !== undefined) body.thinking = { type: options.thinking ? "enabled" : "disabled" };
   if (options?.effort !== undefined) body.reasoning_effort = options.effort;

@@ -382,6 +382,9 @@ Deno.test({
       }
       const body = await request.json() as IFixtureRequestBody;
       observedRequests.push({ body, authorization: request.headers.get("authorization") });
+      if (body.tool_choice && !body.tools?.length) {
+        return Response.json({ error: { message: "tool_choice requires tools" } }, { status: 400 });
+      }
       if (observedRequests.length === 1) {
         return Response.json({
           model: "compat-fixture-v1",
@@ -535,7 +538,7 @@ Deno.test({
       assert(first.messages?.[0]?.content?.includes("Respond with a single json object matching the supplied schema."));
       assertEquals(final.response_format?.type, "json_object");
       assertEquals(final.tools, undefined);
-      assertEquals(final.tool_choice, "none");
+      assertEquals(final.tool_choice, undefined);
       assertEquals(final.messages?.[0]?.content, first.messages?.[0]?.content);
       const replayedTool = final.messages?.find((message) => message.role === "tool");
       assertEquals(replayedTool?.tool_call_id, "phase155-planning-read-1");

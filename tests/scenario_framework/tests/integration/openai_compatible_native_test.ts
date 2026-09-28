@@ -97,6 +97,10 @@ function startFixture(
     if (variant === "oversized") {
       return completion({ content: `${"A".repeat(4096)}${SENSITIVE_SENTINEL}` }, "stop", 30);
     }
+    // The real API rejects tool_choice when no tools are sent.
+    if (body.tool_choice && !body.tools?.length) {
+      return Response.json({ error: { message: "tool_choice requires tools" } }, { status: 400 });
+    }
     const messages = body.messages ?? [];
     const hasToolResult = messages.some((message) => message.role === "tool");
     if (dynamicFlow && !body.response_format) {
