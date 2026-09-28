@@ -91,6 +91,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "memory-full-loop",
       "model-registry-team-cutover",
       "openai-compatible-native",
+      "openai-compatible-native-approval",
       "openai-compatible-native-dynamic",
       "openai-compatible-native-failure",
       "plan-amendment-lifecycle",

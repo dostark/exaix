@@ -59,6 +59,7 @@ import { AgentRunner, ContextBudgetManager, ExecutionLoop } from "@exaix/executi
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import {
+  ActivityJournal,
   AgentComposerAdapter,
   createJudgeEvaluator,
   FlowLoader,
@@ -112,7 +113,7 @@ import type { EffortTier, ModelSize } from "@exaix/schemas";
 import type { JSONValue } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import { HnswVectorIndex } from "@exaix/memory";
-import { ToolRegistry } from "@exaix/tool-runtime";
+import { buildConfirmationInterceptor, ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_AGENT_ROLE_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
@@ -1055,6 +1056,7 @@ if (import.meta.main) {
       tokenizer: agentRunnerTokenizer,
       promptBudgetAllocator: agentRunnerPromptBudgetAllocator,
       hitlPolicyEvaluator,
+      confirmationInterceptor: buildConfirmationInterceptor(context, config, new ActivityJournal(flowLogger)),
       modelResolver,
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,

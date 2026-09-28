@@ -1,0 +1,144 @@
+schema_version: "1.0.0"
+id: "openai-compatible-native-approval"
+title: "Phase 155 — a denied dynamic tool call is replayed as an error turn and never executes"
+pack: "agent_flows"
+tags: ["safety-gate", "manual-only", "subsystem:flows"]
+request_fixture: "fixtures/requests/agent_flows/openai_compatible_native_approval.md"
+mode_support: ["auto"]
+flow_fixture: "fixtures/flows/phase155/compat_dynamic_approval.flow.yaml"
+portals:
+  - alias: "todo-app"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/todo-app"
+    git_init: true
+matrix:
+  cells:
+    - tool: "compat-fixture"
+      provider: "openai-chat"
+      config: "tests/scenario_framework/fixtures/phase155/local-compatible-hitl.toml"
+      requires_bin: "deno"
+      requires_key: "EXA_COMPAT_TEST_API_KEY"
+steps:
+  - id: "write-compat-agent"
+    type: "write-file"
+    path: "Blueprints/Agents/compat-agent.md"
+    content: |
+      ---
+      agent_role: "compat-agent"
+      name: "Compatible ReAct Agent"
+      model: "openai-chat:compat-fixture-v1"
+      model_size: M
+      characteristics: [fastest]
+      capabilities: ["react"]
+      created: "2026-09-27T00:00:00Z"
+      created_by: "scenario-framework"
+      version: "1.0.0"
+      description: "Local compatible provider scenario agent"
+      default_skills: []
+      permitted_tools: ["read_file"]
+      ---
+      Read the requested file and return the result.
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXAIX_EDITION: "team"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    env:
+      EXAIX_EDITION: "team"
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-flow-terminal"
+    type: "exactl"
+    command: "journal"
+    args: [
+      "wait",
+      "--event",
+      "flow.completed",
+      "--event",
+      "flow.failed",
+      "--since-rowid",
+      "$JOURNAL_BASELINE",
+      "--timeout",
+      "120",
+    ]
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-flow-completed"
+    type: "journal-assert"
+    action_type: "flow.completed"
+    trace_scoped: true
+    output_criteria:
+      - id: "flow-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-denial-journaled"
+    type: "journal-assert"
+    action_type: "tool.confirmation.denied"
+    trace_scoped: true
+    payload_contains: ["read_file"]
+    output_criteria:
+      - id: "denial-journaled"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-only-allowed-call-executed"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    expect_count: 1
+    output_criteria:
+      - id: "denied-call-not-executed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

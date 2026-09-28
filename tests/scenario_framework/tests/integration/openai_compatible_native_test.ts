@@ -19,6 +19,7 @@ const SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native.yaml";
 const DYNAMIC_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-dynamic.yaml";
 const DYNAMIC_CALL_IDS = ["compat-dyn-read-1", "compat-dyn-read-2"];
 const DYNAMIC_PATHS = ["src/utils.ts", "src/models.ts"];
+const APPROVAL_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-approval.yaml";
 const FAILURE_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-failure.yaml";
 const CAPTURE_ENV = "EXA_CAPTURE_FIXTURES_DIR";
 const SENSITIVE_SENTINEL = "SENSITIVE_UPSTREAM_BODY_9f3a";
@@ -379,6 +380,53 @@ Deno.test({
         assertEquals(generation.cost_usd, null);
         assertEquals((JSON.parse(generation.payload) as { cost_status?: string }).cost_status, "unknown");
       }
+      assertEquals(rows.some((row) => row.action_type === "flow.failed"), false);
+    } finally {
+      await fixture.shutdown();
+      await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+      await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name: "[phase155] denied dynamic tool call replays an error turn by call ID and never executes",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const workspaceRoot = await Deno.makeTempDir({ prefix: "phase155-approval-ws-" });
+    const outputDir = await Deno.makeTempDir({ prefix: "phase155-approval-out-" });
+    const observed: IObservedRequest[] = [];
+    const fixture = startFixture(observed, false, true);
+    const port = (fixture.addr as Deno.NetAddr).port;
+    try {
+      let failedSteps = "";
+      await withEnv({ EXA_COMPAT_TEST_API_KEY: FIXTURE_KEY }, async () => {
+        const run = await runSyntheticScenario({
+          frameworkHome: FRAMEWORK_HOME,
+          scenarioPath: APPROVAL_SCENARIO_PATH,
+          workspaceRoot,
+          outputDir,
+          mode: ScenarioExecutionMode.AUTO,
+          env: { EXA_COMPAT_FIXTURE_PORT: String(port) },
+        });
+        assert(run.manifest.steps.length > 0);
+        failedSteps = JSON.stringify(
+          run.manifest.steps.filter((step: { executionStatus: string }) => step.executionStatus !== "passed"),
+        );
+      });
+      await assertScenarioPassed(failedSteps, workspaceRoot, observed);
+      const chatCalls = observed.filter((entry) => entry.body.messages?.length && !entry.body.response_format);
+      assertEquals(chatCalls.length, 3);
+      const replays = (chatCalls[2].body.messages ?? []).filter((message) => message.role === "tool");
+      assertEquals(replays.map((message) => message.tool_call_id), DYNAMIC_CALL_IDS);
+      assert(replays[0].content?.includes("TodoApp"), "the allowed call replays its real result");
+      assertEquals(replays[1].content?.includes("IUser"), false, "the denied call must not leak the file");
+      assert(/den(y|ied)|approv/i.test(replays[1].content ?? ""), replays[1].content);
+      const rows = await readActivity(join(workspaceRoot, "exa.config.toml"));
+      assertEquals(rows.filter((row) => row.action_type === "dynamic_tool_call").length, 1);
+      assert(rows.some((row) => row.action_type === "hitl.policy.matched"));
       assertEquals(rows.some((row) => row.action_type === "flow.failed"), false);
     } finally {
       await fixture.shutdown();
