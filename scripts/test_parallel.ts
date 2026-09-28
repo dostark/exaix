@@ -86,6 +86,8 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/config_integrity_daemon_boot_test.ts",
   // Parallel daemon startup can exceed the review-plan approval deadline.
   "tests/integration/openai_compatible_daemon_cutover_test.ts",
+  // Runs real scenarios and sets process-wide capture and key environment. Parallel files would read it.
+  "tests/scenario_framework/tests/integration/openai_compatible_native_test.ts",
   // Dogfood e2e — boots a real daemon and waits for plan generation; daemon
   // subprocess crashes under parallel Deno cache contention.
   "tests/integration/dogfood_e2e_test.ts",

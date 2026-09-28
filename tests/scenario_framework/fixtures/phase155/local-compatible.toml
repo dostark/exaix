@@ -1,5 +1,6 @@
 [system]
 root = "__DOGFOOD_ROOT__"
+allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]
 
 [ai]
 provider = "openai-chat"
@@ -25,3 +26,17 @@ default_model = "compat-agent"
 provider = "openai-chat"
 model = "compat-fixture-v1"
 timeout_ms = 10000
+
+[quality_gate]
+enabled = false
+
+[planning]
+tools_enabled = true
+max_tool_rounds = 2
+max_tool_result_tokens = 2000
+max_tool_calls_per_round = 1
+
+[memory.embedding]
+provider = "ollama"
+model = "nomic-embed-text"
+baseUrl = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__"

@@ -355,8 +355,8 @@ export async function runSyntheticScenario(
   const materialized = await materializeCellConfig(stepsToRun, {
     workspaceRoot: options.workspaceRoot,
     worktreePath: REPO_ROOT,
-    ...(envForExpansion.COMPAT_FIXTURE_PORT
-      ? { compatFixturePort: Number.parseInt(envForExpansion.COMPAT_FIXTURE_PORT, 10) }
+    ...(envForExpansion.EXA_COMPAT_FIXTURE_PORT
+      ? { compatFixturePort: Number.parseInt(envForExpansion.EXA_COMPAT_FIXTURE_PORT, 10) }
       : {}),
   });
   stepsToRun = materialized.steps;

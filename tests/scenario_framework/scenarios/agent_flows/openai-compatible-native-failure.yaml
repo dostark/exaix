@@ -1,0 +1,122 @@
+schema_version: "1.0.0"
+id: "openai-compatible-native-failure"
+title: "Phase 155 — configured OpenAI-compatible route fails closed with a redacted terminal diagnostic"
+pack: "agent_flows"
+tags: ["safety-gate", "manual-only", "security"]
+request_fixture: "fixtures/requests/agent_flows/openai_compatible_native.md"
+mode_support: ["auto"]
+portals:
+  - alias: "todo-app"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/todo-app"
+    git_init: true
+matrix:
+  cells:
+    - tool: "compat-fixture"
+      provider: "openai-chat"
+      config: "tests/scenario_framework/fixtures/phase155/local-compatible.toml"
+      requires_bin: "deno"
+      requires_key: "EXA_COMPAT_TEST_API_KEY"
+steps:
+  - id: "write-compat-agent"
+    type: "write-file"
+    path: "Blueprints/Agents/compat-agent.md"
+    content: |
+      ---
+      agent_role: "compat-agent"
+      name: "Compatible ReAct Agent"
+      model: "openai-chat:compat-fixture-v1"
+      model_size: M
+      characteristics: [fastest]
+      capabilities: ["react"]
+      created: "2026-09-27T00:00:00Z"
+      created_by: "scenario-framework"
+      version: "1.0.0"
+      description: "Local compatible provider scenario agent"
+      default_skills: []
+      permitted_tools: ["read_file"]
+      ---
+      Read the requested file and return the result.
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  # The provider rejects the request (capture opt-in, or a sentinel-bearing HTTP error). The
+  # scenario only proves the terminal failure reaches the request boundary; the integration
+  # driver asserts the reason code, the absence of the sentinel and of capture files.
+  - id: "wait-for-request-failure"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "request.failed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "90"]
+    timeout_sec: 90
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-request-failed"
+    type: "journal-assert"
+    action_type: "request.failed"
+    trace_scoped: true
+    output_criteria:
+      - id: "request-failed-terminal"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-no-execution-started"
+    type: "journal-assert"
+    action_type: "execution.completed"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "no-execution"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

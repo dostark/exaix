@@ -173,6 +173,7 @@ Deno.test("[phase155] local compatible preset materialization injects the alloca
     const daemon = result.steps.find((step) => step.id === MATRIX_START_DAEMON_STEP_ID);
     const written = await Deno.readTextFile(daemon!.env!.EXA_CONFIG_PATH!);
     assertStringIncludes(written, 'endpoint = "http://127.0.0.1:43127/v1/chat/completions"');
+    assertStringIncludes(written, 'allow_net = ["127.0.0.1:43127"]');
     assertStringIncludes(written, 'default_model = "compat-agent"');
     assertStringIncludes(written, "[models.compat-agent]");
     assert(!written.includes("__COMPAT_FIXTURE_PORT__"));

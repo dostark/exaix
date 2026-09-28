@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "compat-dynamic"
+name: "Compatible Native Dynamic Exploration"
+description: "Dynamic step that reads two portal files through native tool calls on the local compatible provider"
+version: "1.0.0"
+output:
+  from: explore
+  format: markdown
+steps:
+  - id: "explore"
+    name: "Read two portal files"
+    agent_role: "code-analyst"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+    input:
+      source: "request"
+    timeout: 60000
