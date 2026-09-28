@@ -15,6 +15,7 @@ import { type JSONValue, PricingTier, ProviderCostTier, ProviderType } from "@ex
 import { withEnv } from "@exaix/testing/helpers/env.ts";
 import { OpenAICompatibleProviderFactory } from "../src/compatible_factory.ts";
 import { OpenAIProvider } from "../src/openai_provider.ts";
+import { createCompatibleChatRequestInit } from "../src/compatible_chat.ts";
 import { TracedProvider } from "@exaix/ai/traced_provider.ts";
 import { createMockLogger } from "@exaix/testing";
 
@@ -738,6 +739,33 @@ Deno.test("compatible chat falls back to json_object mode and instruction text f
   } finally {
     await server.shutdown();
   }
+});
+
+Deno.test("json_object instruction stays on the user prompt after a prior tool turn", () => {
+  const request = createCompatibleChatRequestInit("key", "model", "final prompt", {
+    jsonSchema: {
+      type: "object",
+      properties: { params: { type: "object", additionalProperties: { type: "string" } } },
+    },
+    priorTurn: {
+      toolUseId: "read-1",
+      toolName: "read_file",
+      toolInput: { path: "a.md" },
+      toolResultContent: "file contents",
+      toolResultIsError: false,
+    },
+  }, "local-test");
+  const body = JSON.parse(request.init.body as string) as {
+    messages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string }> }>;
+  };
+  assertEquals(body.messages[0].role, "assistant");
+  assertEquals(body.messages[0].content, null);
+  assertExists(body.messages[0].tool_calls);
+  assertEquals(body.messages[2].role, "user");
+  assertEquals(
+    body.messages[2].content,
+    "final prompt\n\nRespond with a single json object matching the supplied schema. No prose, no markdown fence.",
+  );
 });
 
 Deno.test("compatible chat rejects structured output content that violates the schema", async () => {

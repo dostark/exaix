@@ -25,7 +25,8 @@ interface IActivityRow {
 interface IFixtureRequestBody {
   model?: string;
   tool_choice?: string;
-  tools?: Array<{ type: string }>;
+  tools?: Array<{ type: string; function?: { name: string } }>;
+  response_format?: { type: string };
   messages?: Array<{ role: string; tool_call_id?: string; content?: string }>;
 }
 
@@ -71,18 +72,15 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
         observedRequests.push({ body, authorization: request.headers.get("authorization") });
         const messages = body.messages ?? [];
         if (requestCount === 1) {
-          const plan = "<thought>Read the requested portal file during execution.</thought>\n\n" +
-            "<content>\n" +
-            JSON.stringify({
-              subject: "Phase 155 local provider cutover",
-              description: `Read src/marker.txt and return ${fixtureMarker}.`,
-              steps: [{
-                step: 1,
-                title: "Read the marker",
-                description: "Read src/marker.txt through the permitted tool.",
-              }],
-            }) +
-            "\n</content>";
+          const plan = JSON.stringify({
+            title: "Phase 155 local provider cutover",
+            description: `Read src/marker.txt and return ${fixtureMarker}.`,
+            steps: [{
+              step: 1,
+              title: "Read the marker",
+              description: "Read src/marker.txt through the permitted tool.",
+            }],
+          });
           return Response.json({
             model: "compat-fixture-v1",
             choices: [{
@@ -365,3 +363,213 @@ for (const mode of ["enabled", "disabled", "unlimited", "invalid-config", "unaut
     },
   });
 }
+
+Deno.test({
+  name: "[phase155] real daemon compatible planning uses schema and read tools before writing the final plan",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const root = await Deno.makeTempDir({ prefix: "phase155-compatible-planning-" });
+    const portal = join(root, "portal");
+    const configPath = join(root, "exa.config.toml");
+    const marker = `PHASE155_PLANNING_${crypto.randomUUID().slice(0, 8)}`;
+    const observedRequests: IObservedFixtureRequest[] = [];
+    const fixture = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+      if (new URL(request.url).pathname === "/api/embed") {
+        const embeddingRequest = await request.json() as { input?: string[] };
+        return Response.json({ embeddings: (embeddingRequest.input ?? []).map(() => Array(768).fill(0)) });
+      }
+      const body = await request.json() as IFixtureRequestBody;
+      observedRequests.push({ body, authorization: request.headers.get("authorization") });
+      if (observedRequests.length === 1) {
+        return Response.json({
+          model: "compat-fixture-v1",
+          choices: [{
+            message: {
+              role: "assistant",
+              content: null,
+              tool_calls: [{
+                id: "phase155-planning-read-1",
+                type: "function",
+                function: { name: "read_file", arguments: '{"path":"src/marker.txt"}' },
+              }],
+            },
+            finish_reason: "tool_calls",
+          }],
+          usage: { prompt_tokens: 50, completion_tokens: 10, total_tokens: 60 },
+        });
+      }
+      return Response.json({
+        model: "compat-fixture-v1",
+        choices: [{
+          message: {
+            role: "assistant",
+            content: JSON.stringify({
+              title: "Phase 155 structured planning cutover",
+              description: `The planning read observed ${marker}.`,
+              steps: [{ step: 1, title: "Report marker", description: `Report ${marker} from the portal file.` }],
+            }),
+          },
+          finish_reason: "stop",
+        }],
+        usage: { prompt_tokens: 60, completion_tokens: 25, total_tokens: 85 },
+      });
+    });
+    try {
+      await Deno.mkdir(join(portal, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portal, "src", "marker.txt"), marker);
+      const port = (fixture.addr as Deno.NetAddr).port;
+      await Deno.writeTextFile(
+        configPath,
+        [
+          ...daemonConfigSections(root, ""),
+          "",
+          "[ai]",
+          'provider = "mock"',
+          'model = "test"',
+          "",
+          "[ai.mock]",
+          "timeout_ms = 30000",
+          "",
+          "[agents]",
+          'default_model = "compat-agent"',
+          "",
+          "[models.compat-agent]",
+          'provider = "openai-chat"',
+          'model = "compat-fixture-v1"',
+          "timeout_ms = 10000",
+          "",
+          "[models.compat-agent.compatible]",
+          'profile = "local-test"',
+          `endpoint = "http://127.0.0.1:${port}/v1/chat/completions"`,
+          'model = "compat-fixture-v1"',
+          "allow_insecure_loopback = true",
+          "",
+          "[quality_gate]",
+          "enabled = false",
+          "",
+          "[planning]",
+          "tools_enabled = true",
+          "max_tool_rounds = 2",
+          "max_tool_result_tokens = 2000",
+          "max_tool_calls_per_round = 1",
+          "",
+          "[memory.embedding]",
+          'provider = "ollama"',
+          'model = "nomic-embed-text"',
+          `baseUrl = "http://127.0.0.1:${port}"`,
+          "",
+          "[[portals]]",
+          'alias = "phase155-portal"',
+          `target_path = "${portal}"`,
+        ].join("\n"),
+      );
+      await Deno.mkdir(join(root, "Blueprints", "Agents"), { recursive: true });
+      await Deno.writeTextFile(
+        join(root, "Blueprints", "Agents", "compat-agent.md"),
+        [
+          "---",
+          'agent_role: "compat-agent"',
+          'name: "Compatible Planning Agent"',
+          'model: "openai-chat:compat-fixture-v1"',
+          "model_size: M",
+          "characteristics: [fastest]",
+          'capabilities: ["react"]',
+          'created: "2026-09-27T00:00:00Z"',
+          'created_by: "phase155-test"',
+          'version: "1.0.0"',
+          'description: "Local compatible planning fixture"',
+          "default_skills: []",
+          'permitted_tools: ["read_file"]',
+          "---",
+          "Read the requested file and return a plan.",
+          "",
+        ].join("\n"),
+      );
+      const traceId = crypto.randomUUID();
+      const requestPath = join(root, "Workspace", "Requests", `r-${traceId.slice(0, 8)}.md`);
+      await bootRealDaemon(configPath, 2000, {
+        extraEnv: { EXA_COMPAT_TEST_API_KEY: "local-fixture-key" },
+        midFlight: async () => {
+          await Deno.mkdir(join(root, "Workspace", "Requests"), { recursive: true });
+          await Deno.writeTextFile(
+            requestPath,
+            [
+              "---",
+              `trace_id: "${traceId}"`,
+              `created: "${new Date().toISOString()}"`,
+              "status: pending",
+              "priority: normal",
+              "agent_role: compat-agent",
+              "portal: phase155-portal",
+              "source: cli",
+              'created_by: "test@example.com"',
+              'subject: "Phase 155 structured planning cutover"',
+              "---",
+              "",
+              "# Request",
+              "",
+              "Read src/marker.txt and produce a plan based on its contents.",
+              "",
+            ].join("\n"),
+          );
+        },
+        afterInjectMs: 60000,
+        waitForAfterInject: async () => {
+          const rows = await readTraceActivity(configPath, traceId);
+          return rows.some((row) => row.action_type === "request.planned" || row.action_type === "request.failed");
+        },
+      });
+      const rows = await readTraceActivity(configPath, traceId);
+      assertEquals(rows.some((row) => row.action_type === "request.failed"), false, JSON.stringify(rows));
+      assert(rows.some((row) => row.action_type === "request.planned"), JSON.stringify(rows));
+      assertEquals(observedRequests.length, 2, JSON.stringify(observedRequests));
+      assertEquals(observedRequests.every((entry) => entry.authorization === "Bearer local-fixture-key"), true);
+      const first = observedRequests[0].body;
+      const final = observedRequests[1].body;
+      assertEquals(first.response_format?.type, "json_object");
+      assertEquals(first.tool_choice, "auto");
+      assert(first.tools?.some((tool) => tool.type === "function" && tool.function?.name === "read_file"));
+      assertEquals(first.tools?.some((tool) => tool.function?.name === "write_file"), false);
+      assert(first.messages?.[0]?.content?.includes("Respond with a single json object matching the supplied schema."));
+      assertEquals(final.response_format?.type, "json_object");
+      assertEquals(final.tools, undefined);
+      assertEquals(final.tool_choice, "none");
+      assertEquals(final.messages?.[0]?.content, first.messages?.[0]?.content);
+      const replayedTool = final.messages?.find((message) => message.role === "tool");
+      assertEquals(replayedTool?.tool_call_id, "phase155-planning-read-1");
+      assert(replayedTool?.content?.includes(marker));
+      const toolRow = rows.find((row) => row.action_type === "dynamic_tool_call");
+      assert(toolRow, JSON.stringify(rows.map((row) => row.action_type)));
+      const toolPayload = JSON.parse(toolRow.payload) as { tool: string; phase: string; resultSummary: string };
+      assertEquals(toolPayload.tool, "read_file");
+      assertEquals(toolPayload.phase, "planning");
+      assert(toolPayload.resultSummary.includes(marker));
+      const completed = rows.find((row) => row.action_type === "planning.tools.completed");
+      assert(completed, JSON.stringify(rows.map((row) => row.action_type)));
+      const completedPayload = JSON.parse(completed.payload) as { rounds: number; toolCalls: number };
+      assertEquals(completedPayload.rounds, 2);
+      assertEquals(completedPayload.toolCalls, 1);
+      const structuredCalls = rows.filter((row) => row.action_type === "llm.call.completed");
+      assertEquals(structuredCalls.length, 2);
+      for (const call of structuredCalls) {
+        const payload = JSON.parse(call.payload) as {
+          structured_output_mode?: string;
+          structured_output_mode_reason?: string;
+        };
+        assertEquals(payload.structured_output_mode, "json_object");
+        assertEquals(payload.structured_output_mode_reason, "schema_not_strict_representable");
+      }
+      const plansDir = join(root, "Workspace", "Plans");
+      const planFile = [...Deno.readDirSync(plansDir)].find((entry) => entry.isFile && entry.name.endsWith(".md"));
+      assert(planFile);
+      const planText = await Deno.readTextFile(join(plansDir, planFile.name));
+      assert(planText.includes("Phase 155 structured planning cutover"));
+      assert(planText.includes(marker));
+    } finally {
+      await fixture.shutdown();
+      await Deno.remove(root, { recursive: true }).catch(() => {});
+    }
+  },
+});

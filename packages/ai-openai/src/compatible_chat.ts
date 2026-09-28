@@ -98,8 +98,11 @@ export function createCompatibleChatRequestInit(
     if (plan.promptInstruction) wirePrompt = `${prompt}\n\n${plan.promptInstruction}`;
   }
 
-  const request = createOpenAIChatCompletionsRequestInit(apiKey, model, wirePrompt, options);
+  // The native conversation contract checks the caller's immutable prompt before wire
+  // projection. Add the JSON-mode instruction to the projected first message instead.
+  const request = createOpenAIChatCompletionsRequestInit(apiKey, model, prompt, options);
   const body = JSON.parse(request.body as string) as Record<string, JSONValue>;
+  applyWirePromptInstruction(body, prompt, wirePrompt, snapshot !== undefined);
   applyProfileOptions(body, profile, options);
   if (responseFormat) body.response_format = responseFormat;
   return {
@@ -107,6 +110,21 @@ export function createCompatibleChatRequestInit(
     structuredOutputMode,
     structuredOutputModeReason,
   };
+}
+
+function applyWirePromptInstruction(
+  body: Record<string, JSONValue>,
+  prompt: string,
+  wirePrompt: string,
+  hasNativeConversation: boolean,
+): void {
+  if (wirePrompt === prompt) return;
+  const messages = body.messages as Array<Record<string, JSONValue>>;
+  const promptMessage = hasNativeConversation ? messages[0] : messages[messages.length - 1];
+  if (!promptMessage) {
+    throw new ProviderProtocolError("Compatible request has no prompt message", ProviderType.OPENAI_CHAT);
+  }
+  promptMessage.content = wirePrompt;
 }
 
 function applyProfileOptions(
