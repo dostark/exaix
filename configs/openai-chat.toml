@@ -28,10 +28,18 @@ timeout_ms = 60000
 
 [agents]
 default_model = "default"
+# gpt-6-luna over-explores before committing to a write action (observed: 10/10 iterations
+# spent on read_file/list_directory alone, "Reached maximum iterations without completing
+# task" on map-dependencies). Raised for this cell only; Sonnet finishes well under the default.
+max_iterations = 20
 
 [rate_limiting]
 enabled = true
 max_calls_per_minute = 300
+# gpt-6-luna needs more iterations than Sonnet for the same multi-file swe_tasks scope
+# (observed: 37 calls / ~84k prompt tokens still mid-task on write-tests-uncovered), so the
+# 100k/hour default cuts off a real task rather than a runaway one. Raised for this cell only.
+max_tokens_per_hour = 500000
 
 [portal_knowledge]
 auto_analyze_on_mount = true
