@@ -28,6 +28,7 @@ import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { ExecutionStrategyName, MockStrategy, SecurityMode } from "@exaix/core";
 import { RequestProcessor } from "@exaix/request";
 import { PlanExecutor } from "@exaix/core/planning";
+import { MockProvider } from "@exaix/ai/providers.ts";
 import { SkillsService } from "@exaix/core/skills";
 import { buildSkillsIndex } from "../../scripts/build_skills_index.ts";
 import { createStubConfig, createStubDisplay, createStubGit, REPO_ROOT } from "@exaix/testing";
@@ -132,7 +133,7 @@ Deno.test("[integration] executing the plan's requestDeclaration through AgentCo
         _options: IAgentExecutionOptions,
       ) => Promise<IChangesetResult>;
     } = {
-      name: ExecutionStrategyName.LEGACY,
+      name: ExecutionStrategyName.REACT,
       callOptions: {},
       execute: () => {
         capturedCallOptions = stub.callOptions;
@@ -289,14 +290,7 @@ Review the response contract for injection risks and fix the login handler.
     const planFrontmatter = parseYaml((planContent.match(/^---\n([\s\S]*?)\n---/) ?? [])[1] ?? "") as never;
     const config = env.config;
 
-    const executionProvider = env.createMockProvider(MockStrategy.RECORDED, [{
-      promptHash: "execution-step",
-      promptPreview: "You are a helpful assistant.",
-      response: "<thought>ok</thought><content>done</content>",
-      model: "test",
-      tokens: { input: 0, output: 0 },
-      recordedAt: new Date().toISOString(),
-    }]);
+    const executionProvider = new MockProvider("THOUGHT: Review complete.\nSTATUS: COMPLETE\nSUMMARY: done");
 
     const executor = new PlanExecutor(
       config,

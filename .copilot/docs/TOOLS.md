@@ -95,7 +95,7 @@ Run `deno task docs-sync-schemas` to regenerate after manifest changes.
 The table above is generated exclusively from `packages/mcp/src/manifest.ts`'s `TOOL_MANIFEST`
 (Team-tier MCP-facing tools). `docs-sync-schemas` has no visibility into
 `packages/tool-runtime/src/tool_registry.ts` — Solo's separate in-process ReAct tool catalog
-(`ReActLoopStrategy`/`LegacyAgentStrategy`/`McpAgentStrategy`; see ARCHITECTURE.md's "Tool
+(`ReActLoopStrategy`/`McpAgentStrategy`; see ARCHITECTURE.md's "Tool
 Catalog Parity" section) — so any manual entry placed inside the markers above would be
 silently discarded on the next sync. This section is intentionally outside those markers and
 is **not** kept in sync automatically; update it by hand when the tools below change.

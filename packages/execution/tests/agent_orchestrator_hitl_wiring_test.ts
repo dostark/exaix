@@ -6,7 +6,7 @@
  *   HITL middleware but never actually populated by any production construction site —
  *   `IToolRegistryFactory.createToolRegistry(traceId, baseDir)` has no parameter for it, so
  *   a blueprint's own `hitl` rules silently did nothing for tool calls routed through
- *   `ReActLoopStrategy`/`LegacyAgentStrategy`/`McpAgentStrategy` (all of which dispatch via
+ *   `ReActLoopStrategy`/`McpAgentStrategy` (both dispatch via
  *   `AgentComposer.toolRegistry.execute()`), even though the identical mechanism IS
  *   respected by `DynamicStepExecutor`'s Flow path (`agent_role.hitl?.require_secondary_approval`).
  *   `AgentComposer.executeStep()` already loads the blueprint (with its parsed `.hitl`

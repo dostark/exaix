@@ -96,8 +96,8 @@ steps:
         score_weight: 0.15
 
   # PortalExecutionStrategy.WORKTREE (GitExecutionSetupService.getExecutionStrategy) is forced
-  # for every plan whose frontmatter carries a portal — the direct-API path (ReActLoopStrategy/
-  # LegacyAgentStrategy, session_delegate.enabled = false) gets no exemption from this: its tool
+  # for every plan whose frontmatter carries a portal — the direct-API path (ReActLoopStrategy,
+  # with session_delegate.enabled = false) gets no exemption from this: its tool
   # calls resolve through ToolRegistry, whose baseDir is the worktree checkout for a
   # WORKTREE-strategy plan (PlanExecutor.createAgentExecutor). So the agent's fix lands only in
   # .exa/worktrees/<portal>/<trace_id>/ until a review is approved. Discover this run's trace_id

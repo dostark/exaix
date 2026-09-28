@@ -7,7 +7,7 @@
  * tokenMapperAnthropic parses them. Verifies performProviderCall (the real construction site
  * for IGenerateResult, called by every direct-API provider) surfaces cacheReadTokens/
  * cacheCreationTokens on usage — consumed identically by ReActLoopStrategy and
- * LegacyAgentStrategy, since both call provider.generate() and receive the same widened
+ * ReActLoopStrategy, since it calls provider.generate() and receives the same widened
  * IGenerateResult.
  * @architectural-layer AI
  * @related-files [packages/ai/src/provider_common_utils.ts, packages/ai/src/providers/common.ts]

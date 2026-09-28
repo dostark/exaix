@@ -27,7 +27,7 @@ const stubProvider = {
   id: "stub",
   generate: () =>
     Promise.resolve({
-      content: "",
+      content: "STATUS: COMPLETE\nSUMMARY: done",
       usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
       model: "",
       provider: "",

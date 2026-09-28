@@ -52,7 +52,6 @@ import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
-import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { CliDelegateStrategy } from "./strategies/cli_delegate_strategy.ts";
@@ -74,7 +73,7 @@ import {
 import type { IEffortDeclarationPair, IEffortResolution, IEffortResolver } from "@exaix/ai";
 import { buildAgentEffortResolvedPayload } from "./effort_resolution_payload.ts";
 import { type IProjectedCallOptions, projectResolvedCallOptions } from "@exaix/ai";
-import { providerSupportsNativeConversation, providerSupportsNativeTools } from "./native_tool_turns.ts";
+import { providerSupportsNativeConversation } from "./native_tool_turns.ts";
 import { PLANNING_TOOL_CALL_OVERHEAD_TOKENS } from "@exaix/core";
 import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
@@ -293,7 +292,6 @@ export class AgentComposer {
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
-      this.strategyRegistry.register(new LegacyAgentStrategy(this, this.provider));
       this.strategyRegistry.register(new ReActLoopStrategy(this.reActAdapter, this.provider));
       this.strategyRegistry.register(new McpAgentStrategy(this));
       if (this.config.cli_delegate?.enabled) {
@@ -623,19 +621,17 @@ export class AgentComposer {
         );
       }
 
-      // Load blueprint — capabilities array drives strategy dispatch (MCP > ReAct > Legacy).
+      // Load the blueprint. Keep MCP and CLI delegation as explicit routes.
+      // Use ReAct for all other provider-backed plan steps.
       const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
       await this.prepareStepBudget(_blueprint, options, context.trace_id);
 
       const strategyName = this.resolveStrategyName(_blueprint, options);
-      const nativeLegacyRoute = this.isNativeLegacyRoute(_blueprint, options, strategyName);
-
       // Log execution start
       await this.logExecutionStart(
         context.trace_id,
         options.agent_role ?? "",
         options.portal,
-        nativeLegacyRoute,
       );
 
       this.applyBlueprintToolScope(_blueprint, options);
@@ -869,9 +865,8 @@ export class AgentComposer {
       : portal.target_path;
   }
 
-  /** Resolves executeStep's dispatch strategy. `options.strategy`, when present, is an
-   *  unconditional override, never cross-checked against `blueprint.capabilities`. Absent
-   *  one: prefer MCP or ReAct if specified, fallback to legacy; CLI_DELEGATE is opt-in only. */
+  /** Resolve the executeStep strategy. MCP and CLI use explicit capabilities.
+   * ReAct is the default for provider-backed execution. */
   private resolveStrategyName(
     blueprint: IAgentFileBlueprint,
     options: IAgentExecutionOptions,
@@ -885,25 +880,7 @@ export class AgentComposer {
     if (blueprint.capabilities.includes(ExecutionStrategyName.CLI_DELEGATE)) {
       return ExecutionStrategyName.CLI_DELEGATE;
     }
-    if (blueprint.capabilities.includes(ExecutionStrategyName.REACT)) {
-      return ExecutionStrategyName.REACT;
-    }
-    if (options.native_tools_enabled === true && providerSupportsNativeTools(this.provider?.id)) {
-      return ExecutionStrategyName.REACT;
-    }
-    return ExecutionStrategyName.LEGACY;
-  }
-
-  private isNativeLegacyRoute(
-    blueprint: IAgentFileBlueprint,
-    options: IAgentExecutionOptions,
-    strategyName: ExecutionStrategyName,
-  ): boolean {
-    return strategyName === ExecutionStrategyName.REACT &&
-      !options.strategy &&
-      !blueprint.capabilities.includes(ExecutionStrategyName.REACT) &&
-      !blueprint.capabilities.includes(ExecutionStrategyName.MCP) &&
-      !blueprint.capabilities.includes(ExecutionStrategyName.CLI_DELEGATE);
+    return ExecutionStrategyName.REACT;
   }
 
   /**
@@ -923,7 +900,6 @@ export class AgentComposer {
     traceId: string,
     agentRole: string,
     portal: string,
-    nativeLegacyRoute = false,
   ): Promise<void> {
     await this.logger.log({
       action: AGENT_EVENT_EXECUTION_STARTED,
@@ -937,7 +913,6 @@ export class AgentComposer {
       payload: {
         portal,
         started_at: new Date().toISOString(),
-        ...(nativeLegacyRoute ? { strategy_routed_from: "legacy", strategy_route_reason: "native_tools" } : {}),
       },
     });
   }

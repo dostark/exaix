@@ -264,14 +264,7 @@ Deno.test("[regression] ExecutionLoop: read-only structured plan writes analysis
       if (prompt.includes("EXECUTION REPORT")) {
         content = "## Summary\n\nRead-only analysis report.";
       } else {
-        content = `
-\`\`\`toml
-[[actions]]
-tool = "read_file"
-[actions.params]
-path = "analysis-target.txt"
-\`\`\`
-`;
+        content = "STATUS: COMPLETE\nSUMMARY: Read-only analysis complete.";
       }
 
       return Promise.resolve({

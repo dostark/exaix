@@ -137,45 +137,6 @@ Deno.test({
   },
 });
 
-// every active agent role opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS)
-
-/** mock-agent declares no capabilities at all — test-only agent role, not a real execution path. */
-const AGENST_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
-
-Deno.test({
-  name:
-    "fix(agent-role-catalog): every active agent role (except mock-agent) declares react in capabilities so AgentComposer dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
-  fn() {
-    const activeIds = listActiveAgentRoles();
-    const missing: string[] = [];
-
-    for (const id of activeIds) {
-      if (AGENST_EXEMPT_FROM_REACT.has(id)) continue;
-      const fm = readRawFrontmatter(join(AGENTS_DIR, `${id}.md`));
-      const caps = fm?.capabilities ?? [];
-      if (!caps.includes("react")) {
-        missing.push(id);
-      }
-    }
-
-    if (missing.length > 0) {
-      console.log('\nAgent roles missing "react" in capabilities:');
-      for (const id of missing) {
-        console.log(`  ${id}`);
-      }
-    }
-
-    assertEquals(
-      missing.length,
-      0,
-      `${missing.length} agent role(s) missing "react" in capabilities — without it, ` +
-        "AgentComposer.executeStep falls through to LegacyAgentStrategy, which makes a " +
-        "single blind provider.generate() call with no tool-result feedback loop " +
-        "(Ledger:EXECUTION_STRATEGY_NO_TOOLS)",
-    );
-  },
-});
-
 // 6. permitted_tools are valid tool-name values
 
 Deno.test({

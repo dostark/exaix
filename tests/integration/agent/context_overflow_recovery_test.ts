@@ -41,7 +41,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
     const holder: { executor?: AgentComposer } = {};
     const strategyRegistry = new StrategyRegistry();
     strategyRegistry.register({
-      name: ExecutionStrategyName.LEGACY,
+      name: ExecutionStrategyName.REACT,
       execute: async (blueprint, context, options) => {
         const prompt = await holder.executor!.buildExecutionPrompt(blueprint, context, options);
         promptLengthSeen = prompt.length;

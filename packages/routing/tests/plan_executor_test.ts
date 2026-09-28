@@ -14,10 +14,26 @@ import {
 import { join } from "@std/path";
 import { type IPlanContext, PlanExecutor } from "@exaix/core/planning";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createGitTestContext, GitTestHelper, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "@exaix/testing";
+import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
+
+const REACT_COMPLETE_RESPONSE = "STATUS: COMPLETE\nSUMMARY: done";
+
+function createReactScriptProvider(...responses: string[]): IModelProvider {
+  return {
+    id: "react-script-provider",
+    generate: () =>
+      Promise.resolve({
+        content: responses.shift() ?? REACT_COMPLETE_RESPONSE,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "test",
+        provider: "mock",
+        cost_usd: 0,
+      }),
+  };
+}
 
 const BASIC_TEST_BLUEPRINT =
   `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`;
@@ -33,6 +49,7 @@ interface IPlanExecutorTestContext {
   createExecutor: (
     provider: IModelProvider,
     options?: ConstructorParameters<typeof PlanExecutor>[5],
+    logger?: ReturnType<typeof createMockEventLogger>,
   ) => PlanExecutor;
 }
 
@@ -65,7 +82,8 @@ async function withPlanExecutorTestContext(
     const createExecutor = (
       provider: IModelProvider,
       executorOptions?: ConstructorParameters<typeof PlanExecutor>[5],
-    ): PlanExecutor => new PlanExecutor(config, provider, db, repoDir, undefined, executorOptions);
+      logger: ReturnType<typeof createMockEventLogger> = createMockEventLogger(),
+    ): PlanExecutor => new PlanExecutor(config, provider, db, repoDir, logger, executorOptions);
 
     await run({ tempDir, repoDir, db, config, git, helper, writeBlueprint, createExecutor });
   } finally {
@@ -80,20 +98,15 @@ Deno.test("PlanExecutor: executes plan steps successfully", async () => {
       const fixture_1 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_1.md");
       await writeBlueprint(fixture_1);
 
-      // Mock LLM response with TOML actions
-      const mockResponse = `
-Here are the actions for the step:
-
-\`\`\`toml
+      const mockResponse = `THOUGHT: Create the requested file.\n\`\`\`toml
 [[actions]]
 tool = "write_file"
 description = "Create test file"
 [actions.params]
 path = "test.txt"
 content = "Hello World"
-\`\`\`
-`;
-      const mockProvider = new MockProvider(mockResponse);
+\`\`\``;
+      const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
       const executor = createExecutor(mockProvider);
 
       // Prepare plan context
@@ -148,42 +161,24 @@ Deno.test("PlanExecutor: handles multiple steps", async () => {
       const fixture_2 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_2.md");
       await writeBlueprint(fixture_2);
 
-      // SmartMockProvider provides step-specific responses based on prompt contents.
-      class SmartMockProvider extends MockProvider {
-        override generate(prompt: string): Promise<IGenerateResult> {
-          let content = "";
-          if (prompt.includes("CURRENT TASK:\nStep 1")) {
-            content = `
-\`\`\`toml
+      const mockProvider = createReactScriptProvider(
+        `THOUGHT: Complete step 1.\n\`\`\`toml
 [[actions]]
 tool = "write_file"
 [actions.params]
 path = "step1.txt"
 content = "Step 1"
-\`\`\`
-`;
-          } else if (prompt.includes("CURRENT TASK:\nStep 2")) {
-            content = `
-\`\`\`toml
+\`\`\``,
+        REACT_COMPLETE_RESPONSE,
+        `THOUGHT: Complete step 2.\n\`\`\`toml
 [[actions]]
 tool = "write_file"
 [actions.params]
 path = "step2.txt"
 content = "Step 2"
-\`\`\`
-`;
-          }
-          return Promise.resolve({
-            content,
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            model: "smart-mock",
-            provider: "mock",
-            cost_usd: 0,
-          });
-        }
-      }
-
-      const mockProvider = new SmartMockProvider("");
+\`\`\``,
+        REACT_COMPLETE_RESPONSE,
+      );
       const executor = createExecutor(mockProvider);
 
       const context: IPlanContext = {
@@ -215,19 +210,15 @@ Deno.test("PlanExecutor: handles tool execution failure", async () => {
     const fixture_3 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_3.md");
     await writeBlueprint(fixture_3);
 
-    // Mock response with invalid tool usage (e.g. write to root which might be allowed but let's try something that fails)
-    // Or just use a non-existent tool? ToolRegistry throws if tool not found?
-    // ToolRegistry throws "Unknown tool" if not found.
-    const mockResponse = `
-\`\`\`toml
+    const mockResponse = `THOUGHT: Try the unavailable tool.\n\`\`\`toml
 [[actions]]
 tool = "non_existent_tool"
 [actions.params]
 foo = "bar"
-\`\`\`
-`;
-    const mockProvider = new MockProvider(mockResponse);
-    const executor = createExecutor(mockProvider);
+\`\`\``;
+    const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
+    const logger = createMockEventLogger();
+    const executor = createExecutor(mockProvider, undefined, logger);
 
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000003",
@@ -237,21 +228,19 @@ foo = "bar"
       steps: [{ number: 1, title: "Fail", content: "Fail" }],
     };
 
-    // Should throw
-    await assertRejects(
-      async () => await executor.execute(join(tempDir, "plan.md"), context),
-      Error,
-      "Tool 'non_existent_tool' not found",
-    );
+    const result = await executor.execute(join(tempDir, "plan.md"), context);
+    assertEquals(result.lastCommitSha, null);
+    const toolCall = logger.events.find((event) => event.action === "dynamic_tool_call");
+    assertExists(toolCall);
+    assertEquals(toolCall.payload?.tool, "non_existent_tool");
   });
 });
 
-Deno.test("PlanExecutor: handles no actions generated", async () => {
+Deno.test("PlanExecutor: accepts a one-turn ReAct completion without tools", async () => {
   await withPlanExecutorTestContext("plan-exec-no-act-", async ({ tempDir, writeBlueprint, createExecutor }) => {
     await writeBlueprint(BASIC_TEST_BLUEPRINT);
 
-    // Mock response with no actions
-    const mockProvider = new MockProvider("No actions here");
+    const mockProvider = createReactScriptProvider(REACT_COMPLETE_RESPONSE);
     const executor = createExecutor(mockProvider);
 
     const context: IPlanContext = {
@@ -262,7 +251,6 @@ Deno.test("PlanExecutor: handles no actions generated", async () => {
       steps: [{ number: 1, title: "No Action", content: "Do nothing" }],
     };
 
-    // Should return null (no commit)
     const result = await executor.execute(join(tempDir, "plan.md"), context);
     const sha = result.lastCommitSha;
     assertEquals(sha, null);
@@ -273,8 +261,7 @@ Deno.test("PlanExecutor: handles malformed TOML", async () => {
   await withPlanExecutorTestContext("plan-exec-bad-toml-", async ({ tempDir, writeBlueprint, createExecutor }) => {
     await writeBlueprint(BASIC_TEST_BLUEPRINT);
 
-    // Mock response with malformed TOML
-    const mockResponse = `
+    const mockResponse = `THOUGHT: Try malformed TOML.
 \`\`\`toml
 [[actions]]
 tool = "write_file"
@@ -282,7 +269,7 @@ tool = "write_file"
 path = "bad.txt"
 \`\`\`
 `;
-    const mockProvider = new MockProvider(mockResponse);
+    const mockProvider = createReactScriptProvider(mockResponse);
     const executor = createExecutor(mockProvider);
 
     const context: IPlanContext = {
@@ -293,10 +280,11 @@ path = "bad.txt"
       steps: [{ number: 1, title: "Bad TOML", content: "Bad" }],
     };
 
-    // Should return null because parsing fails -> no actions -> warning -> return null
-    const result = await executor.execute(join(tempDir, "plan.md"), context);
-    const sha = result.lastCommitSha;
-    assertEquals(sha, null);
+    await assertRejects(
+      () => executor.execute(join(tempDir, "plan.md"), context),
+      Error,
+      "No actions generated in ReAct iteration",
+    );
   });
 });
 
@@ -305,17 +293,16 @@ Deno.test("PlanExecutor: handles tool failure (result.success=false)", async () 
     const fixture_4 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_4.md");
     await writeBlueprint(fixture_4);
 
-    // Mock response where tool returns success=false
-    const mockResponse = `
+    const mockResponse = `THOUGHT: Read the missing file.
 \`\`\`toml
 [[actions]]
 tool = "read_file"
 [actions.params]
 path = "non_existent.txt"
-\`\`\`
-`;
-    const mockProvider = new MockProvider(mockResponse);
-    const executor = createExecutor(mockProvider);
+\`\`\``;
+    const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
+    const logger = createMockEventLogger();
+    const executor = createExecutor(mockProvider, undefined, logger);
 
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000006",
@@ -325,12 +312,11 @@ path = "non_existent.txt"
       steps: [{ number: 1, title: "Fail Result", content: "Fail" }],
     };
 
-    // Should throw because tool returns success: false
-    await assertRejects(
-      async () => await executor.execute(join(tempDir, "plan.md"), context),
-      Error,
-      "File: non_existent.txt not found",
-    );
+    const result = await executor.execute(join(tempDir, "plan.md"), context);
+    assertEquals(result.lastCommitSha, null);
+    const toolCall = logger.events.find((event) => event.action === "dynamic_tool_call");
+    assertExists(toolCall);
+    assertEquals(String(toolCall.payload?.resultSummary).includes("File: non_existent.txt not found"), true);
   });
 });
 
@@ -345,15 +331,14 @@ Deno.test("PlanExecutor: handles step with no changes", async () => {
       await Deno.writeTextFile(join(repoDir, "read.txt"), "Original content");
       await helper.createFileAndCommit("read.txt", "Original content", "Initial commit");
       const _initialSha = await helper.getCommitSha("HEAD");
-      const mockResponse = `
+      const mockResponse = `THOUGHT: Read the existing file.
 \`\`\`toml
 [[actions]]
 tool = "read_file"
 [actions.params]
 path = "read.txt"
-\`\`\`
-`;
-      const mockProvider = new MockProvider(mockResponse);
+\`\`\``;
+      const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
       const executor = createExecutor(mockProvider);
 
       const context: IPlanContext = {
@@ -380,8 +365,8 @@ Deno.test("PlanExecutor: handles execution without git", async () => {
       await writeBlueprint(fixture_5);
 
       const mockResponse =
-        `\`\`\`toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "no-git.txt"\ncontent = "No Git"\n\`\`\``;
-      const mockProvider = new MockProvider(mockResponse);
+        `THOUGHT: Create the requested file.\n\`\`\`toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "no-git.txt"\ncontent = "No Git"\n\`\`\``;
+      const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
       const executor = createExecutor(mockProvider, { enableGit: false });
 
       const context: IPlanContext = {
@@ -422,8 +407,8 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
       await writeBlueprint(fixture_6);
 
       const mockResponse =
-        `\`\`\`toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "portal-file.txt"\ncontent = "In Portal"\n\`\`\``;
-      const mockProvider = new MockProvider(mockResponse);
+        `THOUGHT: Create the portal file.\n\`\`\`toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "portal-file.txt"\ncontent = "In Portal"\n\`\`\``;
+      const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
       const executor = createExecutor(mockProvider, { enableGit: false });
 
       const context: IPlanContext = {

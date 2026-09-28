@@ -19,7 +19,6 @@ export * from "./src/react_loop_adapter.ts";
 export * from "./src/guardrail_runner.ts";
 export * from "./src/strategies/execution_strategy.ts";
 export * from "./src/strategies/strategy_registry.ts";
-export * from "./src/strategies/legacy_strategy.ts";
 export * from "./src/strategies/react_loop_strategy.ts";
 export * from "./src/strategies/mcp_agent_strategy.ts";
 export * from "./src/strategies/cli_delegate_strategy.ts";

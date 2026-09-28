@@ -2,7 +2,7 @@
  * @module ToolCatalogParity
  * @path packages/mcp/src/tool_catalog_parity.ts
  * @description Compares ToolRegistry's in-process tool catalog (used by
- *   ReActLoopStrategy/LegacyAgentStrategy for ReAct-style tool execution)
+ *   ReActLoopStrategy for ReAct-style tool execution)
  *   against the MCP tool manifest's advertised handler schemas (used by
  *   external MCP clients and DynamicStepExecutor's MCP-mediated tool calls),
  *   for the tools present in both. The two catalogs are independently

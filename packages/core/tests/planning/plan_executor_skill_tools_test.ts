@@ -138,16 +138,7 @@ Deno.test({
         generate: (prompt: string) => {
           capturedPrompt = prompt;
           return Promise.resolve({
-            content: `\`\`\`json\n${
-              JSON.stringify({
-                branch: "feat/x",
-                commit_sha: "1234567890123456789012345678901234567890",
-                files_changed: [],
-                description: "done",
-                tool_calls: 0,
-                execution_time_ms: 1,
-              })
-            }\n\`\`\``,
+            content: "STATUS: COMPLETE\nSUMMARY: done",
             usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             model: "stub",
             provider: "stub",
@@ -172,15 +163,16 @@ Deno.test({
         steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
       });
 
-      assertStringIncludes(capturedPrompt, "read_file");
-      assertStringIncludes(capturedPrompt, "write_file");
+      const visibleTools = capturedPrompt.match(/AVAILABLE TOOLS:\n([^\n]*)/)?.[1] ?? "";
+      assertStringIncludes(visibleTools, "read_file");
+      assertStringIncludes(visibleTools, "write_file");
       assertStringIncludes(
-        capturedPrompt,
+        visibleTools,
         "delete_file",
         "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive",
       );
       assertEquals(
-        capturedPrompt.includes("list_directory"),
+        visibleTools.includes("list_directory"),
         false,
         "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
       );

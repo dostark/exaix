@@ -18,9 +18,8 @@ interface IUsagePayload {
   usage?: { tokens?: number; cost_usd_estimate?: number };
 }
 
-// Runs a single-step AgentComposer execution through a LEGACY strategy whose execute()
-// result is supplied by the caller, then returns the journaled agent.execution_completed
-// usage payload. Shared by every cost-logging case below.
+// Run one AgentComposer step with the supplied strategy result.
+// Return the execution_completed usage payload from the journal.
 async function runCostLoggingStep(
   requestId: string,
   strategyResult: IChangesetResult,
@@ -30,7 +29,7 @@ async function runCostLoggingStep(
   try {
     const strategyRegistry = new StrategyRegistry();
     strategyRegistry.register({
-      name: ExecutionStrategyName.LEGACY,
+      name: ExecutionStrategyName.REACT,
       execute: () => Promise.resolve(strategyResult),
     });
 

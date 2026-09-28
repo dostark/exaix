@@ -11,7 +11,7 @@
  * function only re-prices already-measured, real, POST-CALL token counts — cost_source remains
  * "predicted", unchanged, never surfaced as tracked cost.
  * @architectural-layer Services
- * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/strategies/legacy_strategy.ts, packages/model-registry/src/static_overlay.ts]
+ * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/model-registry/src/static_overlay.ts]
  */
 
 import { assertAlmostEquals, assertEquals } from "@std/assert";

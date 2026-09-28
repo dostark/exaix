@@ -563,8 +563,8 @@ For criteria generation rules, gate configuration, built-in criteria definitions
     "PlanWatcher detects approved plan in Workspace/Active",
     "Daemon initializes PlanExecutor with plan path",
     "PlanExecutor parses Plan and loads execution context",
-    "ReAct loop starts for each step in the plan",
-    "AI Provider proposes tool actions in structural TOML",
+    "AgentComposer selects ReAct by default or an explicitly enabled delegation strategy",
+    "ReAct completes in one turn or loops through model-supplied tool actions",
     "ToolRegistry validates and executes requested tools",
     "GitService commits atomic changes and generates trace metadata",
     "Activity Journal persists results for auditing"
@@ -904,16 +904,17 @@ module header lists the corresponding service files.
 
 #### 6a. IExecutionStrategy — Per-Step Direct-API vs Headless-CLI Execution
 
-**File:** `packages/execution/src/strategies/` (`legacy_strategy.ts`, `react_loop_strategy.ts`, `mcp_agent_strategy.ts`, `cli_delegate_strategy.ts`)
+**File:** `packages/execution/src/strategies/` (`react_loop_strategy.ts`, `mcp_agent_strategy.ts`, `cli_delegate_strategy.ts`)
 
-`AgentExecutor.executeStep()` resolves one `IExecutionStrategy` per step from a `StrategyRegistry`, selected by the executing agent role's `IAgentFileBlueprint.capabilities`:
+`AgentComposer.executeStep()` resolves one `IExecutionStrategy` per step from a `StrategyRegistry`. MCP and CLI delegation require explicit capabilities; ReAct is the default:
 
 ```text
 capabilities.includes("mcp")          → McpAgentStrategy
 capabilities.includes("cli_delegate") → CliDelegateStrategy   (only if [cli_delegate].enabled)
-capabilities.includes("react")        → ReActLoopStrategy
-(none of the above)                   → LegacyAgentStrategy
+otherwise                              → ReActLoopStrategy
 ```
+
+`native_tools_enabled` controls ReAct's provider protocol, not strategy selection. A capable provider receives native tool definitions; other calls use ReAct's text action format. ReAct may finish in one model turn when no tool call is needed.
 
 `CliDelegateStrategy` drives a **headless `claude`/`opencode` CLI subprocess** in place of a direct `IModelProvider` call — the same effect as `ReActLoopStrategy`'s multi-turn tool-use loop, but executed by the external CLI's own agent loop instead of Exaix's. It never falls back to the direct-API path silently; a missing/unspawnable binary is a hard `AgentExecutionError`, not a degrade. Selection requires both the capability tag and a `[cli_delegate]` config block (`enabled = true`, `tool = "claude-code" | "opencode"`) — an explicit opt-in, not a runtime fallback.
 
@@ -969,7 +970,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
 
 The `IModelProvider.generate()` interface (`packages/ai/src/types.ts`) accepts an optional `IModelOptions` with `tools?: IToolDefinition[]`, `toolChoice?: IToolChoice`, and `priorTurn?: IProviderTurn` fields. When set, the provider serializes these into a real API-level `tools[]`/`tool_choice` parameter (each provider's own wire format) instead of relying on prose instructions in the prompt.
 
-**Scope boundary:** `AnthropicProvider`, `OpenAIProvider`, `GoogleProvider`, and `OpenRouterProvider` (reusing OpenAI's byte-for-byte-compatible serialization) all implement native tool serialization; only `ReActLoopStrategy` (`packages/execution/src/strategies/react_loop_strategy.ts`) reads the capability gate (`IProviderMetadata.supportsNativeTools`). `LegacyAgentStrategy` and `LlmClient.reasonNextAction()` are explicitly out of scope.
+**Scope boundary:** `AnthropicProvider`, `OpenAIProvider`, `GoogleProvider`, and `OpenRouterProvider` (reusing OpenAI's byte-for-byte-compatible serialization) all implement native tool serialization; only `ReActLoopStrategy` (`packages/execution/src/strategies/react_loop_strategy.ts`) reads the capability gate (`IProviderMetadata.supportsNativeTools`). Dynamic `LlmClient.reasonNextAction()` uses the same provider capability metadata through its flow executor.
 
 **CLI providers and ReAct tools:** `codex-cli`, `claude-cli`, and `opencode-cli`
 do not advertise native Exaix tool calling. A forced ReAct step instead lists
@@ -1034,7 +1035,7 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### Tool Selection & Resolution
 
-Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentComposer` reads `IToolRegistry.getTools()` and `PromptBuilder` renders the resulting `## Available Tools` prompt section plus the TOML action-block calling convention `LegacyAgentStrategy` parses responses against), **agent role `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Agents/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the agent role's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the agent role doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
+Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentComposer` reads `IToolRegistry.getTools()` and gives the resulting tool definitions to ReAct, which uses provider-native calls when available and a TOML action block otherwise), **agent role `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Agents/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the agent role's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the agent role doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
 
 For the full resolution order, the fail-closed semantics (`permitted_tools: []` permits nothing regardless of skill declarations; `undefined` means no restriction), and the pure `resolveEffectiveSkillTools()` union+intersect function, see `packages/execution/README.md#tool-selection--resolution`.
 
@@ -1250,15 +1251,15 @@ GITHUB_TOKEN=$(gh auth token) deno test --allow-all tests/integration/external_m
 Two independent tool catalogs exist side by side; Phase 154 established an enforced parity gate
 between them rather than merging them into one. `ToolRegistry`
 (`packages/tool-runtime/src/tool_registry.ts`) is the plan-execution catalog, dispatched directly
-by `ReActLoopStrategy`, `LegacyAgentStrategy`, and `McpAgentStrategy` (all three, despite the
-latter's name — Phase 154 Step 2's Routing Evaluation). `TOOL_MANIFEST`
+by `ReActLoopStrategy` and `McpAgentStrategy` (despite the latter's name — Phase 154 Step 2's
+Routing Evaluation). `TOOL_MANIFEST`
 (`packages/mcp/src/manifest.ts`) is the MCP-facing catalog, served to external MCP clients
 (`apps/mcp-server/`) and Flow's `DynamicStepExecutor` alike through `LocalToolDispatcher`.
 `deno task check:tool-catalog-parity` (`checkToolCatalogParity()`,
 `packages/mcp/src/tool_catalog_parity.ts`) runs in CI and fails on any required-param shape
 divergence between the two, so drift is caught mechanically rather than relying on manual
 synchronization. Phase 154 Step 2 evaluated and explicitly decided **against** migrating
-`ReActLoopStrategy`/`LegacyAgentStrategy`/`McpAgentStrategy` onto `LocalToolDispatcher` — the two
+`ReActLoopStrategy`/`McpAgentStrategy` onto `LocalToolDispatcher` — the two
 dispatch paths' independent HITL/confirmation pipelines were found to be organic drift, not
 intentional divergence, and are tracked and remediated per-path rather than justifying a full
 migration.

@@ -79,7 +79,7 @@ function makeContext(_repoPath: string): IExecutionContext {
   } as never;
 }
 
-function makeStubStrategy(name: string = ExecutionStrategyName.LEGACY) {
+function makeStubStrategy(name: string = ExecutionStrategyName.REACT) {
   let capturedCallOptions: IModelCallOptions | undefined;
   const stub: {
     name: string;

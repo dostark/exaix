@@ -28,15 +28,7 @@ import type { Config } from "@exaix/schemas";
 import { createMockConfig } from "@exaix/testing";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
 
-const WELL_FORMED_STEP_RESPONSE = `\`\`\`toml
-[[actions]]
-tool = "read_file"
-[actions.params]
-path = "analysis-target.txt"
-\`\`\``;
-
-/** Read-only Structured Plan reply: for the report prompt returns the report summary,
- *  otherwise a TOML action block the legacy strategy can execute. */
+/** Read-only plan reply: returns a completion marker or a report summary. */
 class ReadOnlyReportProvider implements IModelProvider {
   id = "declaration-test-provider";
 
@@ -45,7 +37,7 @@ class ReadOnlyReportProvider implements IModelProvider {
     if (prompt.includes("EXECUTION REPORT")) {
       content = "## Summary\n\nRead-only analysis report.";
     } else {
-      content = WELL_FORMED_STEP_RESPONSE;
+      content = "STATUS: COMPLETE\nSUMMARY: Read-only analysis complete.";
     }
     return Promise.resolve({
       content,

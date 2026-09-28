@@ -1,14 +1,14 @@
 /**
  * @module RegistryComputedCost
  * @path packages/execution/src/registry_computed_cost.ts
- * @description Phase 140a Step 7 — re-prices ReActLoopStrategy/LegacyAgentStrategy's real,
+ * @description Re-prices ReActLoopStrategy's real,
  * already-measured token counts against static_overlay.ts's real per-model split price table,
  * instead of calculateCost()'s single flat blended per-provider rate. Distinct in kind from the
  * heuristic PRE-CALL output-token estimator GAP-23/24/25 removed from AgentComposer: this
  * function only re-prices tokens a real API call already reported, never guesses at an unknown
  * quantity. cost_source remains "predicted" — this module never produces a tracked figure.
  * @architectural-layer Services
- * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/strategies/legacy_strategy.ts, packages/model-registry/src/static_overlay.ts]
+ * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/model-registry/src/static_overlay.ts]
  */
 
 import { getOverlayEntry } from "@exaix/model-registry";

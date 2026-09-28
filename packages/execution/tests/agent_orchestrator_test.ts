@@ -18,6 +18,8 @@ import {
   ExecutionStrategyName,
   MemoryOperation,
   PortalOperation,
+  REACT_STATUS_COMPLETE,
+  REACT_SUMMARY_PREFIX,
   SecurityMode,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
   ToolName,
@@ -82,6 +84,11 @@ let runtimeDir: string;
 let testConfig: Config;
 let dbService: Awaited<ReturnType<typeof initTestDbService>>;
 const ORIGINAL_CWD = Deno.cwd();
+const REACT_DONE_RESPONSE = `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`;
+
+function getVisibleToolList(prompt: string): string {
+  return prompt.match(/AVAILABLE TOOLS:\n([^\n]*)/)?.[1] ?? "";
+}
 
 // Setup before all tests
 async function setup() {
@@ -225,7 +232,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/short",
@@ -305,7 +312,7 @@ Deno.test({
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/event-test",
@@ -600,7 +607,7 @@ Deno.test({
       const writtenPath = "src/step-output.ts";
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(portalDir, "src"), { recursive: true });
           await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
@@ -676,7 +683,7 @@ Deno.test({
       const step1WrittenPath = "src/step1-output.ts";
       const step1Registry = new StrategyRegistry();
       step1Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(portalDir, "src"), { recursive: true });
           // Left uncommitted on purpose — mirrors CliDelegateStrategy not committing after
@@ -737,7 +744,7 @@ Deno.test({
       const step2WrittenPath = "src/step2-output.ts";
       const step2Registry = new StrategyRegistry();
       step2Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
           return {
@@ -782,7 +789,7 @@ Deno.test({
       const step1WrittenPath = "src/unshared-step1-output.ts";
       const step1Registry = new StrategyRegistry();
       step1Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(portalDir, "src"), { recursive: true });
           await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
@@ -835,7 +842,7 @@ Deno.test({
       const step2WrittenPath = "src/unshared-step2-output.ts";
       const step2Registry = new StrategyRegistry();
       step2Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
           return {
@@ -896,7 +903,7 @@ Deno.test({
       const step1Path = "src/step1-output.ts";
       const step1Registry = new StrategyRegistry();
       step1Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(portalDir, "src"), { recursive: true });
           await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
@@ -942,7 +949,7 @@ Deno.test({
       const step2Path = "src/step2-output.ts";
       const step2Registry = new StrategyRegistry();
       step2Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
           return {
@@ -1006,7 +1013,7 @@ Deno.test({
       const step1Path = "src/unshared-step1-output.ts";
       const step1Registry = new StrategyRegistry();
       step1Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(portalDir, "src"), { recursive: true });
           await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
@@ -1051,7 +1058,7 @@ Deno.test({
       const step2Path = "src/unshared-step2-output.ts";
       const step2Registry = new StrategyRegistry();
       step2Registry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
           return {
@@ -1134,7 +1141,7 @@ Deno.test({
       const writtenPath = "src/worktree-output.ts";
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(worktreePath, "src"), { recursive: true });
           await Deno.writeTextFile(join(worktreePath, writtenPath), "export const x = 1;\n");
@@ -1227,7 +1234,7 @@ Deno.test({
       const writtenPath = "src/mcp-output.ts";
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           await Deno.mkdir(join(portalDir, "src"), { recursive: true });
           await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
@@ -1303,7 +1310,7 @@ Deno.test({
       let stepIndex = 0;
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async () => {
           const isFirst = stepIndex++ === 0;
           if (isFirst) {
@@ -2223,7 +2230,7 @@ Deno.test({
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/budget-test",
@@ -2326,7 +2333,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/budget-policy-test",
@@ -2721,7 +2728,7 @@ Deno.test({
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async (
           blueprint: IAgentFileBlueprint,
           ctx: IExecutionContext,
@@ -2825,7 +2832,7 @@ Deno.test({
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/summarization",
@@ -2997,16 +3004,7 @@ Deno.test({
           capturedPrompt = prompt;
           await Promise.resolve();
           return {
-            content: `\`\`\`json\n${
-              JSON.stringify({
-                branch: "feat/x",
-                commit_sha: "1234567890123456789012345678901234567890",
-                files_changed: [],
-                description: "done",
-                tool_calls: 0,
-                execution_time_ms: 1,
-              })
-            }\n\`\`\``,
+            content: REACT_DONE_RESPONSE,
             usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             model: "mock-model",
             provider: "mock",
@@ -3065,15 +3063,16 @@ Deno.test({
 
       await executor.executeStep(context, options);
 
-      assertStringIncludes(capturedPrompt, "read_file");
-      assertStringIncludes(capturedPrompt, "write_file");
+      const visibleTools = getVisibleToolList(capturedPrompt);
+      assertStringIncludes(visibleTools, "read_file");
+      assertStringIncludes(visibleTools, "write_file");
       assertStringIncludes(
-        capturedPrompt,
+        visibleTools,
         "delete_file",
         "delete_file is in both the skill-tools union and the agent role's permitted_tools — must survive the intersection",
       );
       assert(
-        !capturedPrompt.includes("list_directory"),
+        !visibleTools.includes("list_directory"),
         "list_directory must be excluded: the agent role permits it, but no matched skill's tools union includes it",
       );
     } finally {
@@ -3111,16 +3110,7 @@ Deno.test({
           capturedPrompt = prompt;
           await Promise.resolve();
           return {
-            content: `\`\`\`json\n${
-              JSON.stringify({
-                branch: "feat/x",
-                commit_sha: "1234567890123456789012345678901234567890",
-                files_changed: [],
-                description: "done",
-                tool_calls: 0,
-                execution_time_ms: 1,
-              })
-            }\n\`\`\``,
+            content: REACT_DONE_RESPONSE,
             usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             model: "mock-model",
             provider: "mock",
@@ -3169,7 +3159,7 @@ Deno.test({
       await executor.executeStep(context, options);
 
       assertStringIncludes(
-        capturedPrompt,
+        getVisibleToolList(capturedPrompt),
         "search_text",
         "search_text must survive the intersection: both the role's and the skill's alias must canonicalize to match",
       );
@@ -3202,16 +3192,7 @@ Deno.test({
         generate: (prompt: string): Promise<IGenerateResult> => {
           capturedPrompt = prompt;
           return Promise.resolve({
-            content: `\`\`\`json\n${
-              JSON.stringify({
-                branch: "feat/x",
-                commit_sha: "1234567890123456789012345678901234567890",
-                files_changed: [],
-                description: "done",
-                tool_calls: 0,
-                execution_time_ms: 1,
-              })
-            }\n\`\`\``,
+            content: REACT_DONE_RESPONSE,
             usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             model: "mock-model",
             provider: "mock",
@@ -3251,14 +3232,14 @@ Deno.test({
 
       await executor.executeStep(context, options);
 
-      assertStringIncludes(capturedPrompt, "search_text");
+      assertStringIncludes(getVisibleToolList(capturedPrompt), "search_text");
       await executor.executeStep({ ...context, request_id: "r-empty-tool-scope" }, { ...options, permitted_tools: [] });
-      assertEquals(capturedPrompt.includes("search_text"), false);
+      assertEquals(getVisibleToolList(capturedPrompt).includes("search_text"), false);
       await executor.executeStep(
         { ...context, request_id: "r-undefined-tool-scope" },
         { ...options, permitted_tools: undefined },
       );
-      assertStringIncludes(capturedPrompt, "search_text");
+      assertStringIncludes(getVisibleToolList(capturedPrompt), "search_text");
     } finally {
       await cleanup();
     }
@@ -3268,27 +3249,18 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentComposer: executeStep with provider parses JSON response",
+  name: "AgentComposer: executeStep with provider accepts ReAct completion",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-
-      const mockResult = {
-        branch: "feat/provider-test",
-        commit_sha: "1234567890123456789012345678901234567890",
-        files_changed: ["src/provider.ts"],
-        description: "Tested via provider",
-        tool_calls: 3,
-        execution_time_ms: 100,
-      };
 
       const mockProvider: IModelProvider = {
         id: "mock",
         generate: async (): Promise<IGenerateResult> => {
           await Promise.resolve();
           return {
-            content: `Here is the result \`\`\`json\n${JSON.stringify(mockResult)}\n\`\`\``,
+            content: REACT_DONE_RESPONSE,
             usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             model: "mock-model",
             provider: "mock",
@@ -3338,11 +3310,9 @@ Deno.test({
 
       const result = await executor.executeStep(context, options);
 
-      assertEquals(result.branch, mockResult.branch);
-      // commit_sha is overwritten by executeStep with real git HEAD SHA
+      assertEquals(result.description, "done");
       assertExists(result.commit_sha);
-      assertEquals(result.files_changed, mockResult.files_changed);
-      // tool_calls is set based on actual TOML actions executed, not from JSON response
+      assertEquals(result.files_changed, []);
       assertEquals(result.tool_calls, 0);
     } finally {
       await cleanup();
@@ -3414,7 +3384,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentComposer: executeStep without provider uses fallback result",
+  name: "AgentComposer: executeStep without a provider rejects ReAct execution",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -3442,10 +3412,11 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const result = await executor.executeStep(context, options);
-      assertStringIncludes(result.branch, "feat/r-prov");
-      assertEquals(result.files_changed.length, 0);
-      assertEquals(result.tool_calls, 0);
+      await assertRejects(
+        () => executor.executeStep(context, options),
+        AgentExecutionError,
+        "Model provider required for ReAct loop strategy",
+      );
     } finally {
       await cleanup();
     }
@@ -3534,7 +3505,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentComposer: executeStep parses agent response without JSON blocks securely",
+  name: "AgentComposer: executeStep rejects a response without ReAct actions or completion",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -3583,12 +3554,11 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const result = await executor.executeStep(context, options);
-      // Validates fallback object
-      assertStringIncludes(result.branch, "feat/r2-ae5c81f3");
-      assertEquals(result.files_changed.length, 0);
-      // commit_sha is overwritten by executeStep with real git HEAD SHA
-      assertExists(result.commit_sha);
+      await assertRejects(
+        () => executor.executeStep(context, options),
+        AgentExecutionError,
+        "No actions generated in ReAct iteration",
+      );
     } finally {
       await cleanup();
     }
@@ -3598,7 +3568,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentComposer: executeStep handles invalid JSON in provider response by falling back",
+  name: "AgentComposer: executeStep rejects malformed non-ReAct output",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -3647,10 +3617,11 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const result = await executor.executeStep(context, options);
-      // Validates parse fail fallback
-      assertStringIncludes(result.branch, "feat/r3-ce5c81f3");
-      assertEquals(result.files_changed.length, 0);
+      await assertRejects(
+        () => executor.executeStep(context, options),
+        AgentExecutionError,
+        "No actions generated in ReAct iteration",
+      );
     } finally {
       await cleanup();
     }
@@ -3667,7 +3638,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/loop-test",
@@ -3742,7 +3713,7 @@ Deno.test({
       let stepCount = 0;
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () => {
           stepCount++;
           return Promise.resolve({
@@ -3850,7 +3821,7 @@ Deno.test({
       let stepCount = 0;
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () => {
           stepCount++;
           return Promise.resolve({
@@ -3977,7 +3948,7 @@ Deno.test({
       let stepCount = 0;
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () => {
           stepCount++;
           return Promise.resolve({
@@ -4095,7 +4066,7 @@ Deno.test({
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
           // buildExecutionPrompt is called within executeStep's strategy execution,
           // so currentPromptBudget is set. We just need to trigger prompt building.
@@ -4172,7 +4143,7 @@ Deno.test({
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
           await executor.buildExecutionPrompt(_blueprint, ctx, opts);
           return {
@@ -4260,7 +4231,7 @@ Deno.test({
       const contextCache = new ContextCache();
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
           await executor.buildExecutionPrompt(_blueprint, _ctx, _opts);
           return {
@@ -4395,29 +4366,13 @@ Deno.test({
 });
 
 Deno.test({
-  name:
-    "fix(agent-orchestrator): executeStep dispatches to ReActLoopStrategy when the blueprint declares react in capabilities",
+  name: "AgentComposer defaults capability-free blueprints to ReActLoopStrategy",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      let legacyCalled = false;
       let reactCalled = false;
       const strategyRegistry = new StrategyRegistry();
-      strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
-        execute: () => {
-          legacyCalled = true;
-          return Promise.resolve({
-            branch: "feat/legacy",
-            commit_sha: "0000000000000000000000000000000000000000",
-            files_changed: [],
-            description: "Legacy dispatch",
-            tool_calls: 0,
-            execution_time_ms: 1,
-          });
-        },
-      });
       strategyRegistry.register({
         name: ExecutionStrategyName.REACT,
         execute: () => {
@@ -4446,7 +4401,7 @@ Deno.test({
       await Deno.mkdir(join(testConfig.paths.blueprints, "Agents"), { recursive: true });
       await Deno.writeTextFile(
         blueprintPath,
-        '---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: ["execution", "react"]\n---\nYou are a test agent.',
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
       );
 
       const context: IExecutionContext = {
@@ -4467,7 +4422,6 @@ Deno.test({
       await executor.executeStep(context, options);
 
       assertEquals(reactCalled, true, "ReActLoopStrategy should have been invoked");
-      assertEquals(legacyCalled, false, "LegacyAgentStrategy should not have been invoked");
 
       executor.dispose();
     } finally {
@@ -4511,7 +4465,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/cache-passthrough",
@@ -4595,7 +4549,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/reasoning-passthrough",

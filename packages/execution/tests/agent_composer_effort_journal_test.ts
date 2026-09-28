@@ -44,7 +44,7 @@ Deno.test("AgentComposer.executeStep emits agent.effort_resolved with path execu
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: (_bp: object, _ctx: object, _opts: object) =>
           Promise.resolve({
             branch: "feat/effort",
@@ -124,7 +124,7 @@ Deno.test("AgentComposer uses the injected IEffortResolver instead of constructi
 
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: () =>
           Promise.resolve({
             branch: "feat/effort",

@@ -2835,10 +2835,6 @@ export const DEFAULT_TIMEOUT_MS: number = configurable({
 /** Fallback model name when none is configured. */
 export const DEFAULT_MODEL_FALLBACK = "default";
 
-/** Default parameters for legacy agent execution */
-export const LEGACY_EXECUTION_TEMPERATURE = 0.7;
-export const LEGACY_EXECUTION_MAX_TOKENS = 4000;
-
 /** Loop history compaction threshold: fraction of budget before auto-compaction triggers. */
 export const LOOP_HISTORY_BUDGET_THRESHOLD = 0.8;
 

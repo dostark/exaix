@@ -5,14 +5,39 @@
  * git commands are strictly confined to authorized repository boundaries.
  */
 
-import { assert, assertRejects } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { createGitTestContext, GitTestHelper, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { type IPlanContext, PlanExecutor } from "@exaix/core/planning";
-import { MockProvider } from "@exaix/ai/providers.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GitService } from "@exaix/git";
 import { ExecutionLoop } from "@exaix/execution";
 import { getFixturePath, readFixtureTextSync } from "@exaix/testing";
+import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "@exaix/core";
+import { EventLogger } from "@exaix/core/logger";
+
+function createCommandAttemptProvider(command: string, args: string[], prompts: string[]): IModelProvider {
+  let calls = 0;
+  return {
+    id: "mock-model",
+    generate: (prompt) => {
+      prompts.push(prompt);
+      calls++;
+      const content = calls === 1
+        ? `${REACT_THOUGHT_PREFIX}Attempt the requested command.\n\`\`\`toml\n[[actions]]\ntool = "run_command"\n[actions.params]\ncommand = "${command}"\nargs = [${
+          args.map((arg) => `"${arg}"`).join(", ")
+        }]\n\`\`\``
+        : `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}The command was rejected.`;
+      return Promise.resolve({
+        content,
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        model: "test",
+        provider: "mock",
+        cost_usd: 0,
+      });
+    },
+  };
+}
 
 Deno.test("[security] Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");
@@ -28,21 +53,12 @@ Deno.test("[security] Git Security: blocks destructive git reset --hard in PlanE
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
-      `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`,
+      `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\npermitted_tools: [run_command]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`,
     );
 
-    // Mock response that attempts a destructive reset
-    const mockResponse = `
-\`\`\`toml
-[[actions]]
-tool = "run_command"
-[actions.params]
-command = "git"
-args = ["reset", "--hard", "HEAD"]
-\`\`\`
-`;
-    const mockProvider = new MockProvider(mockResponse);
-    const executor = new PlanExecutor(config, mockProvider, db, repoDir);
+    const prompts: string[] = [];
+    const mockProvider = createCommandAttemptProvider("git", ["reset", "--hard", "HEAD"], prompts);
+    const executor = new PlanExecutor(config, mockProvider, db, repoDir, new EventLogger({ db }));
 
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000011",
@@ -52,19 +68,12 @@ args = ["reset", "--hard", "HEAD"]
       steps: [{ number: 1, title: "Attack", content: "Attempt destructive reset" }],
     };
 
-    // Execution should fail because ToolRegistry blocks it
-    const _result = await executor.execute("plan.md", context);
-    // Wait, PlanExecutor catches errors and logs them, but it should rethrow if it's a step failure?
-    // Actually PlanExecutor.executeStep throws if an action fails.
-
-    // BUT! Since it's run_command, ToolRegistry returns {success: false, error: ...}
-    // and PlanExecutor throws if result.success is false.
-  } catch (error) {
-    assert(error instanceof Error);
-    assert(
-      error.message.includes("Destructive git operation prohibited"),
-      `Expected security error message, got: ${error.message}`,
-    );
+    await executor.execute("plan.md", context);
+    assertEquals(prompts.length, 2);
+    await db.waitForFlush();
+    const toolCalls = await db.queryActivity({ traceId: context.trace_id, actionType: "dynamic_tool_call" });
+    assertEquals(toolCalls.length, 1);
+    assertEquals(JSON.parse(toolCalls[0].payload).resultSummary.includes("Destructive git operation prohibited"), true);
   } finally {
     await cleanup();
   }
@@ -80,23 +89,15 @@ Deno.test("[security] Git Security: blocks checkout to main branch", async () =>
     await git.ensureRepository();
     await git.ensureIdentity();
 
-    // Create blueprint without mcp capability so Legacy strategy is used
+    // Create blueprint without the MCP capability so the default ReAct strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Agents");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     const fixture_1 = readFixtureTextSync(import.meta.url, "security", "git_security_regression_test", "fixture_1.md");
     await Deno.writeTextFile(join(blueprintsDir, "test-agent.md"), fixture_1);
 
-    const mockResponse = `
-\`\`\`toml
-[[actions]]
-tool = "run_command"
-[actions.params]
-command = "git"
-args = ["checkout", "main"]
-\`\`\`
-`;
-    const mockProvider = new MockProvider(mockResponse);
-    const executor = new PlanExecutor(config, mockProvider, db, repoDir);
+    const prompts: string[] = [];
+    const mockProvider = createCommandAttemptProvider("git", ["checkout", "main"], prompts);
+    const executor = new PlanExecutor(config, mockProvider, db, repoDir, new EventLogger({ db }));
 
     const context: IPlanContext = {
       trace_id: "00000000-0000-0000-0000-000000000012",
@@ -106,11 +107,12 @@ args = ["checkout", "main"]
       steps: [{ number: 1, title: "Attack", content: "Attempt checkout main" }],
     };
 
-    await assertRejects(
-      async () => await executor.execute("plan.md", context),
-      Error,
-      "Operations on protected branches",
-    );
+    await executor.execute("plan.md", context);
+    assertEquals(prompts.length, 2);
+    await db.waitForFlush();
+    const toolCalls = await db.queryActivity({ traceId: context.trace_id, actionType: "dynamic_tool_call" });
+    assertEquals(toolCalls.length, 1);
+    assertEquals(JSON.parse(toolCalls[0].payload).resultSummary.includes("Operations on protected branches"), true);
   } finally {
     await cleanup();
   }

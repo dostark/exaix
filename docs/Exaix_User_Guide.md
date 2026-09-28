@@ -603,7 +603,7 @@ capabilities: ["code_generation", "cli_delegate"]
 `AgentComposer` only registers `CliDelegateStrategy` when `[cli_delegate].enabled = true`,
 and only dispatches a step to it when the executing agent role's `capabilities` includes
 `"cli_delegate"` — both conditions must hold. A step whose agent role lacks the tag still runs
-through whichever strategy its own capabilities select (`react`/`mcp`/legacy), even with
+through ReAct by default, or MCP when its capabilities select it, even with
 `[cli_delegate]` enabled globally.
 
 #### 2.5a.2 Auth — making sure the subscription is actually used
@@ -4379,17 +4379,18 @@ The `[execution]` section controls how plan steps are executed:
 ```toml
 [execution]
 # Enable provider-enforced native tool selection. When true and the configured
-# provider supports it, the model selects tools via the API's native tool_choice
-# mechanism instead of embedding tool calls in TOML prose.
+# provider supports it, ReAct sends tools through the provider API. Otherwise,
+# ReAct uses its TOML action-block format.
 # Default: false.
 native_tools_enabled = true
 ```
 
-When `native_tools_enabled = true`, the daemon's `ReActLoopStrategy` sends a real
+The daemon's `ReActLoopStrategy` sends a real
 `tools[]`/`tool_choice` (or provider-equivalent) parameter to the configured provider's
 API, constraining the model to choose from the tools Exaix actually offers. Falls back
-to the standard TOML-block prose path when the provider or strategy does not support
-native tool selection.
+to the standard TOML-block prose path when `native_tools_enabled` is false or the provider
+does not support native tool selection. ReAct can finish a step in one model turn when it
+does not need to call a tool.
 
 **Current scope:**
 
@@ -4404,7 +4405,7 @@ native tool selection.
   to, not on OpenRouter itself — check that a model's `supported_parameters` includes
   `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool
   selection through it.
-- ReActLoopStrategy only (LegacyAgentStrategy and LlmClient unchanged).
+- Plan-step execution uses ReAct by default. MCP and CLI delegation remain explicit execution capabilities.
 
 ### 5.4 Testing & CI Model Aliases
 

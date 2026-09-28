@@ -96,7 +96,7 @@ Deno.test({
       const { logger, errors } = createAuditMockLogger();
 
       const mockStrategy: IExecutionStrategy = {
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async (
           _blueprint: IAgentFileBlueprint,
           _context: IExecutionContext,
@@ -242,7 +242,7 @@ Deno.test({
       const { logger, errors } = createAuditMockLogger();
 
       const mockStrategy: IExecutionStrategy = {
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: async (): Promise<IChangesetResult> => {
           await Deno.writeTextFile(join(portalDir, "authorized.txt"), "This file is authorized\n");
           return {

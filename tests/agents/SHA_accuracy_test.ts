@@ -66,9 +66,9 @@ Deno.test({
       // 4. Use the real logger to avoid overload/cast issues in editor diagnostics.
       const logger = new EventLogger({ db: dbService.db });
 
-      // 5. Mock LEGACY strategy — always returns GIT_EMPTY_SHA so we can detect override
+      // 5. Mock strategy — always returns GIT_EMPTY_SHA so we can detect override
       const mockStrategy: IExecutionStrategy = {
-        name: ExecutionStrategyName.LEGACY,
+        name: ExecutionStrategyName.REACT,
         execute: (): Promise<IChangesetResult> =>
           Promise.resolve({
             branch: "feat/test-branch",
@@ -80,7 +80,7 @@ Deno.test({
           }),
       };
 
-      // 6. StrategyRegistry with only the mock LEGACY strategy
+      // 6. StrategyRegistry with only the mock strategy
       const registry = new StrategyRegistry();
       registry.register(mockStrategy);
 

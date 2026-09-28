@@ -1,7 +1,7 @@
 /**
- * @module LegacyStrategyNativeCutoverTest
- * @path packages/execution/tests/legacy_strategy_native_cutover_test.ts
- * @description Exercises legacy blueprint dispatch through a production AgentComposer.
+ * @module AgentComposerReactStrategyTest
+ * @path packages/execution/tests/agent_composer_react_strategy_test.ts
+ * @description Exercises ReAct strategy dispatch through AgentComposer and PlanExecutor.
  * @architectural-layer Execution
  * @related-files [packages/execution/src/agent_composer.ts]
  */
@@ -30,7 +30,7 @@ import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { initTestDbService } from "@exaix/testing";
 import { createTestConfig } from "../../ai/tests/helpers/test_config.ts";
 
-const PROVIDER_ID = "native-legacy-cutover-fixture";
+const PROVIDER_ID = "native-react-strategy-fixture";
 
 async function git(cwd: string, ...args: string[]): Promise<void> {
   const result = await new Deno.Command("git", { cwd, args }).output();
@@ -65,7 +65,7 @@ async function setup() {
   return { ...dbFixture, config, portal };
 }
 
-Deno.test("legacy blueprint uses native ReAct once and journals its route and usage", async () => {
+Deno.test("capability-free blueprint uses one native ReAct loop with replay and usage", async () => {
   const fixture = await setup();
   ProviderRegistry.registerWithMetadata(PROVIDER_ID, new MockProviderFactory(), {
     name: PROVIDER_ID,
@@ -165,8 +165,6 @@ Deno.test("legacy blueprint uses native ReAct once and journals its route and us
     const completed = await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_COMPLETED });
     assertEquals(started.length, 1);
     assertEquals(completed.length, 1);
-    assertEquals(JSON.parse(started[0].payload).strategy_routed_from, "legacy");
-    assertEquals(JSON.parse(started[0].payload).strategy_route_reason, "native_tools");
     assertEquals(
       (await db.queryActivity({ traceId: nextTraceId, actionType: AGENT_EVENT_EXECUTION_COMPLETED })).length,
       1,
@@ -177,14 +175,13 @@ Deno.test("legacy blueprint uses native ReAct once and journals its route and us
   }
 });
 
-Deno.test("native legacy dispatch keeps flag, capability, and explicit strategy controls", async () => {
+Deno.test("ReAct is the default strategy while MCP and CLI precedence stays intact", async () => {
   const { config, db, cleanup } = await setup();
   const controlProviderId = "cutover-control-fixture";
   const selected: string[] = [];
   const registry = new StrategyRegistry();
   for (
     const name of [
-      ExecutionStrategyName.LEGACY,
       ExecutionStrategyName.REACT,
       ExecutionStrategyName.MCP,
       ExecutionStrategyName.CLI_DELEGATE,
@@ -247,11 +244,9 @@ Deno.test("native legacy dispatch keeps flag, capability, and explicit strategy 
   };
   try {
     const flagOff = await run(false);
-    assertEquals(flagOff.result.description, ExecutionStrategyName.LEGACY);
-    assertEquals(flagOff.startPayload.strategy_routed_from, undefined);
+    assertEquals(flagOff.result.description, ExecutionStrategyName.REACT);
     const noMetadata = await run(true);
-    assertEquals(noMetadata.result.description, ExecutionStrategyName.LEGACY);
-    assertEquals(noMetadata.startPayload.strategy_routed_from, undefined);
+    assertEquals(noMetadata.result.description, ExecutionStrategyName.REACT);
     ProviderRegistry.registerWithMetadata(controlProviderId, new MockProviderFactory(), {
       name: controlProviderId,
       description: "Cutover fixture",
@@ -263,7 +258,6 @@ Deno.test("native legacy dispatch keeps flag, capability, and explicit strategy 
     });
     const routed = await run(true);
     assertEquals(routed.result.description, ExecutionStrategyName.REACT);
-    assertEquals(routed.startPayload.strategy_routed_from, "legacy");
     await Deno.writeTextFile(blueprintPath, "---\nmodel: test\nprovider: mock\ncapabilities: [mcp]\n---\nRead.");
     assertEquals((await run(true)).result.description, ExecutionStrategyName.MCP);
     await Deno.writeTextFile(
@@ -299,17 +293,17 @@ Deno.test("native legacy dispatch keeps flag, capability, and explicit strategy 
           native_tools_enabled: true,
         },
       );
-      assertEquals(noProvider.description, ExecutionStrategyName.LEGACY);
+      assertEquals(noProvider.description, ExecutionStrategyName.REACT);
     } finally {
       noProviderComposer.dispose();
     }
     assertEquals(selected, [
-      ExecutionStrategyName.LEGACY,
-      ExecutionStrategyName.LEGACY,
+      ExecutionStrategyName.REACT,
+      ExecutionStrategyName.REACT,
       ExecutionStrategyName.REACT,
       ExecutionStrategyName.MCP,
       ExecutionStrategyName.CLI_DELEGATE,
-      ExecutionStrategyName.LEGACY,
+      ExecutionStrategyName.REACT,
     ]);
   } finally {
     composer.dispose();
@@ -317,7 +311,7 @@ Deno.test("native legacy dispatch keeps flag, capability, and explicit strategy 
   }
 });
 
-Deno.test("failed native legacy request does not retry through the legacy parser", async () => {
+Deno.test("failed native ReAct request does not retry through a text path", async () => {
   const { config, db, cleanup } = await setup();
   ProviderRegistry.registerWithMetadata(PROVIDER_ID, new MockProviderFactory(), {
     name: PROVIDER_ID,
@@ -374,7 +368,7 @@ Deno.test("failed native legacy request does not retry through the legacy parser
   }
 });
 
-Deno.test("PlanExecutor passes configured native flag to legacy blueprint dispatch", async () => {
+Deno.test("PlanExecutor passes configured native flag to ReAct execution", async () => {
   const { config, db, portal, cleanup } = await setup();
   config.execution = { ...config.execution, native_tools_enabled: true };
   ProviderRegistry.registerWithMetadata(PROVIDER_ID, new MockProviderFactory(), {
@@ -387,10 +381,12 @@ Deno.test("PlanExecutor passes configured native flag to legacy blueprint dispat
     supportsNativeTools: true,
   });
   let calls = 0;
+  const nativeToolNames: string[][] = [];
   const provider: IModelProvider = {
     id: PROVIDER_ID,
-    generate: () => {
+    generate: (_prompt, options) => {
       calls++;
+      nativeToolNames.push((options?.tools ?? []).map((tool) => tool.name));
       return Promise.resolve({
         content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
         usage: { promptTokens: 2, completionTokens: 1, totalTokens: 3 },
@@ -412,16 +408,16 @@ Deno.test("PlanExecutor passes configured native flag to legacy blueprint dispat
       steps: [{ number: 1, title: "Read", content: "Read the portal" }],
     } as never);
     assertEquals(calls, 1);
+    assertEquals(nativeToolNames[0].includes(ToolName.READ_FILE), true);
     await db.waitForFlush();
     const started = await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_STARTED });
     assertEquals(started.length, 1);
-    assertEquals(JSON.parse(started[0].payload).strategy_route_reason, "native_tools");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("routed legacy blueprint denies a native tool outside its role scope", async () => {
+Deno.test("capability-free blueprint denies a native tool outside its role scope", async () => {
   const { config, db, portal, cleanup } = await setup();
   ProviderRegistry.registerWithMetadata(PROVIDER_ID, new MockProviderFactory(), {
     name: PROVIDER_ID,
@@ -507,7 +503,7 @@ Deno.test("routed legacy blueprint denies a native tool outside its role scope",
   }
 });
 
-Deno.test("flag-off and incapable providers keep legacy result and usage", async () => {
+Deno.test("flag-off and incapable providers use the one-turn ReAct path", async () => {
   const { config, db, cleanup } = await setup();
   ProviderRegistry.registerWithMetadata(PROVIDER_ID, new MockProviderFactory(), {
     name: PROVIDER_ID,
@@ -526,9 +522,7 @@ Deno.test("flag-off and incapable providers keep legacy result and usage", async
         generate: () => {
           calls++;
           return Promise.resolve({
-            content: `\`\`\`json\n${
-              JSON.stringify({ description: "legacy result", files_changed: [], tool_calls: 0 })
-            }\n\`\`\``,
+            content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}react result`,
             usage: { promptTokens: 4, completionTokens: 2, totalTokens: 6 },
             model: "test",
             provider: id,
@@ -559,12 +553,9 @@ Deno.test("flag-off and incapable providers keep legacy result and usage", async
           },
         );
         assertEquals(calls, 1);
-        assertEquals(result.description, "legacy result");
+        assertEquals(result.description, "react result");
         assertEquals(result.usage?.prompt_tokens, 4);
         assertEquals(result.usage?.completion_tokens, 2);
-        await db.waitForFlush();
-        const started = await db.queryActivity({ traceId, actionType: AGENT_EVENT_EXECUTION_STARTED });
-        assertEquals(JSON.parse(started[0].payload).strategy_routed_from, undefined);
       } finally {
         composer.dispose();
       }

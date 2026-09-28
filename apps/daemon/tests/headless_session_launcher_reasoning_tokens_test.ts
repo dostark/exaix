@@ -5,7 +5,7 @@
  * Session/{traceId}/return.json token_stats object only reads
  * parsed.tokenStats.{input,output,total} — reasoning_tokens would be silently dropped at this
  * exact leaf-to-trunk assembly point (the session-delegate path's own equivalent of
- * ReActLoopStrategy's finishLoop/LegacyAgentStrategy's parsedResult.usage) even after
+ * ReActLoopStrategy's finishLoop result usage) even after
  * IDelegateParsedReturn and SessionTokenStatsSchema are both widened. Verifies a Codex spawn
  * whose stdout reports reasoning_output_tokens produces a return.json token_stats.reasoning_tokens.
  * @architectural-layer Services

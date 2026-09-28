@@ -849,7 +849,7 @@ I see the drift instructions in the analysis phase.
 </content>`;
           }
 
-          // 2. Execution Phase — agent roles with capabilities:["react"] (e.g. "default") dispatch to ReActLoopStrategy, whose own prompt template (buildPrompt) is "AGENT ROLE: ...\n...\nAVAILABLE TOOLS:...", NOT the legacy PromptBuilder's "## Execution Context (SYSTEM CONTROLLED)" template — and its parseResponse() looks for the literal "THOUGHT: " prefix and "STATUS: COMPLETE" text, not the <thought>/<content> JSON envelope the legacy strategy expects. A response with neither STATUS: COMPLETE nor a ```toml action block throws "Agent provided no actions and did not signal completion", which itself becomes a NEW (tool_error-sourced) amendment trigger, looping forever regardless of content.
+          // 2. Execution Phase — AgentComposer defaults provider-backed plan steps to ReActLoopStrategy.
           const isReActPrompt = prompt.includes("AGENT ROLE: ") && prompt.includes("AVAILABLE TOOLS:");
           if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)") || isReActPrompt) {
             // Each step's prompt only carries that step's own content (context.request /
