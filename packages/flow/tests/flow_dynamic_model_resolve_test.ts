@@ -288,6 +288,9 @@ Deno.test(
 // Per-call options reach the dynamic ReAct generate()
 
 class CapturingLlm implements ILlmClient {
+  createNativeConversation() {
+    return Promise.resolve({ initialPrompt: "", turns: [] });
+  }
   lastOptions: IModelCallOptions | undefined;
   reasonNextAction(params: {
     agent_role: IBlueprintFrontmatter;

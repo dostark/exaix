@@ -78,6 +78,10 @@ class MockLlmClient implements ILlmClient {
   }> = [];
   private decisionIndex = 0;
 
+  createNativeConversation() {
+    return Promise.resolve({ initialPrompt: "", turns: [] });
+  }
+
   setDecisions(
     decisions: Array<{
       done: boolean;

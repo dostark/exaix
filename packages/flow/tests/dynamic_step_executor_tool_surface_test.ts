@@ -46,6 +46,9 @@ class CapturingMcpClient implements IMcpClient, IToolManifestResolver {
 }
 
 class ImmediateDoneLlmClient implements ILlmClient {
+  createNativeConversation() {
+    return Promise.resolve({ initialPrompt: "", turns: [] });
+  }
   reasonNextAction(_params: {
     agent_role: IBlueprintFrontmatter;
     stepObjective: string;

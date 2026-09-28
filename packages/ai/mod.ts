@@ -12,6 +12,7 @@ export * from "./src/types.ts";
 export * from "./src/errors.ts";
 export * from "./src/providers.ts";
 export * from "./src/provider_factory.ts";
+export * from "./src/traced_provider.ts";
 export * from "./src/provider_registry.ts";
 export * from "./src/provider_selector.ts";
 export * from "./src/routing/provider_routing_strategy.ts";

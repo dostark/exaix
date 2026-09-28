@@ -6,13 +6,33 @@
  * @related-files [packages/flow/src/dynamic_step_executor.ts, packages/ai/src/providers.ts]
  */
 import type { ILlmClient, ToolArgs } from "./types.ts";
-import type { IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
+import type { EffortDeclaration, IBlueprintFrontmatter, IModelCallOptions, ThinkingDeclaration } from "@exaix/schemas";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 
-import { canonicalizeToolName, DEFAULT_MODEL_FALLBACK, McpToolName, ReActActionType } from "@exaix/core";
+import {
+  canonicalizeToolName,
+  DEFAULT_MODEL_FALLBACK,
+  McpToolName,
+  ReActActionType,
+  TaskComplexity,
+} from "@exaix/core";
 import { ProviderFactory } from "./provider_factory.ts";
-import type { IModelProvider } from "./types.ts";
+import type { IModelOptions, IModelProvider, INativeConversationSnapshot } from "./types.ts";
 import type { ModelResolver } from "./model_resolver.ts";
+import { ProviderRegistry } from "./provider_registry.ts";
+import type { IProviderMetadata } from "./provider_registry.ts";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { ITokenizer } from "@exaix/core/func";
+import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
+import type { PromptBudgetAllocator } from "@exaix/core";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
+import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
+import { measureNativeConversation } from "./native_conversation_budget.ts";
+import { EffortResolver } from "./effort_resolver.ts";
+import { projectResolvedCallOptions } from "./provider_call_options.ts";
+import type { IEffortDeclarations } from "./effort_resolver.ts";
+import type { ProviderType } from "@exaix/core";
+import type { IGenerateResult, ProviderCostStatus } from "./providers/common.ts";
 
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
@@ -73,12 +93,30 @@ Respond in JSON format:
 }
 `;
 
+const NATIVE_REACT_PROMPT_TEMPLATE = `
+You are {agent_role_name}, {agent_role_description}.
+
+Step Objective: {step_objective}
+
+Original Input:
+{original_input}
+
+Available tools are supplied through the provider tool interface. Use one tool at a time,
+or provide a final answer when the objective is complete. Do not write a JSON action envelope.
+`;
+
+type IReasonParams = Parameters<ILlmClient["reasonNextAction"]>[0];
+type IReasonResult = Awaited<ReturnType<ILlmClient["reasonNextAction"]>>;
+
 export class LlmClient implements ILlmClient {
   constructor(
     private readonly config?: Opt<Config, Reason.OptionalDependency>,
     private readonly testProvider?: Opt<IModelProvider, Reason.TestOverride>,
     private readonly defaultModel: string = DEFAULT_MODEL_FALLBACK,
     private readonly resolver?: Opt<ModelResolver, Reason.OptionalDependency>,
+    private readonly logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    private readonly tokenizer: ITokenizer = new AiTokenEstimatorTokenizer(),
+    private readonly promptBudgetAllocator?: Opt<Pick<PromptBudgetAllocator, "allocate">, Reason.OptionalDependency>,
   ) {}
 
   /** Parses "provider:model", "gpt-*" (implicit OpenAI), or a plain model name. */
@@ -106,88 +144,213 @@ export class LlmClient implements ILlmClient {
     // When resolver is available, use it directly — no env var mutation needed
     if (this.resolver && model) {
       const resolved = await this.resolver.resolve({ model });
-      return ProviderFactory.createByName(this.config ?? ConfigSchema.parse({}), resolved.model);
+      return ProviderFactory.createByName(
+        this.config ?? ConfigSchema.parse({}),
+        resolved.model,
+        undefined,
+        this.logger,
+      );
     }
     // Fallback: direct factory call (backward compat)
     const overrides = LlmClient.parseModelString(model);
     const config = this.config ?? ConfigSchema.parse({});
     const effectiveModel = overrides.model || this.defaultModel;
-    return await ProviderFactory.createByName(config, effectiveModel);
+    return await ProviderFactory.createByName(config, effectiveModel, undefined, this.logger);
   }
 
-  async reasonNextAction(params: {
-    agent_role: IBlueprintFrontmatter;
+  async createNativeConversation(params: {
+    agentRole: IBlueprintFrontmatter;
     stepObjective: string;
-    accumulatedContext: string;
-    availableTools: Array<{
-      name: string;
-      description: string;
-      inputSchema: Record<string, JSONValue>;
-    }>;
-    iteration: number;
-    maxIterations: number;
-    options?: IModelCallOptions;
-  }): Promise<{
-    done: boolean;
-    tool?: McpToolName;
-    args?: ToolArgs;
-    output?: string;
-    provider?: string;
-    model?: string;
-  }> {
-    const { agent_role, stepObjective, accumulatedContext, availableTools, iteration, maxIterations, options } = params;
+    originalInput: string;
+    availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
+  }): Promise<INativeConversationSnapshot> {
+    const initialPrompt = NATIVE_REACT_PROMPT_TEMPLATE
+      .replace("{agent_role_name}", params.agentRole.name)
+      .replace("{agent_role_description}", params.agentRole.description ?? "an expert assistant")
+      .replace("{step_objective}", params.stepObjective)
+      .replace("{original_input}", params.originalInput);
+    const initialPromptSections = [{ section: PromptBudgetSection.SYSTEM, text: initialPrompt }];
+    return await this.measureNativeSnapshot(
+      { initialPrompt, initialPromptSections, turns: [] },
+      params.agentRole.model ?? this.defaultModel,
+      params.availableTools,
+      false,
+    );
+  }
 
-    const provider = this.testProvider ?? await this.resolveProvider(agent_role.model);
-
-    // Provide detailed tools description with JSON schemas
-    const toolsDesc = availableTools
-      .map((t) => `- ${t.name}: ${t.description}\n  Schema: ${JSON.stringify(t.inputSchema)}`)
-      .join("\n");
-    const accCtx = accumulatedContext || "[No previous tool calls yet]";
-
-    const prompt = REACT_PROMPT_TEMPLATE
-      .replace("{agent_role_name}", agent_role.name)
-      .replace("{agent_role_description}", agent_role.description ?? "an expert assistant")
-      .replace("{step_objective}", stepObjective)
-      .replace("{tools_description}", toolsDesc)
-      .replace("{accumulated_context}", accCtx)
-      .replace("{iteration}", iteration.toString())
-      .replace("{max_iterations}", maxIterations.toString());
-
-    const result = await provider.generate(prompt, options);
-    const responseStr = result.content;
-
-    // Attempt multiple parsing strategies
-    let jsonMatch = responseStr.match(/```json\n([\s\S]*?)\n```/);
-    if (!jsonMatch) {
-      jsonMatch = responseStr.match(/```\n([\s\S]*?)\n```/);
-    }
-
-    let rawJsonStr = jsonMatch ? jsonMatch[1] : responseStr;
-    rawJsonStr = rawJsonStr.trim();
-
-    // In rare cases the model might prepend logic, so a simple `{` index search can help fallback
-    if (rawJsonStr.indexOf("{") !== 0) {
-      const startIdx = rawJsonStr.indexOf("{");
-      const endIdx = rawJsonStr.lastIndexOf("}");
-      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-        rawJsonStr = rawJsonStr.substring(startIdx, endIdx + 1);
+  private async measureNativeSnapshot(
+    snapshot: INativeConversationSnapshot,
+    model: string,
+    tools: readonly { name: string; description: string; inputSchema: Record<string, JSONValue> }[],
+    enforceBudget: boolean,
+  ): Promise<INativeConversationSnapshot> {
+    const sections = [
+      ...(snapshot.initialPromptSections ?? [{ section: PromptBudgetSection.SYSTEM, text: snapshot.initialPrompt }]),
+      ...(snapshot.turns.length ? [{ section: "loopHistory" as const, text: JSON.stringify(snapshot.turns) }] : []),
+      ...(snapshot.roundInstruction !== undefined
+        ? [{ section: "loopHistory" as const, text: snapshot.roundInstruction }]
+        : []),
+    ];
+    const projection: JSONValue = {
+      initialPrompt: snapshot.initialPrompt,
+      turns: snapshot.turns.map((turn) => ({
+        toolUseId: turn.toolUseId,
+        toolName: turn.toolName,
+        toolInput: turn.toolInput,
+        toolResultContent: turn.toolResultContent,
+        toolResultIsError: turn.toolResultIsError,
+        ...(turn.assistantContent !== undefined ? { assistantContent: turn.assistantContent } : {}),
+        ...(turn.reasoningContent !== undefined ? { reasoningContent: turn.reasoningContent } : {}),
+        ...(turn.thoughtSignature !== undefined ? { thoughtSignature: turn.thoughtSignature } : {}),
+        ...(turn.thinkingBlocks !== undefined
+          ? { thinkingBlocks: turn.thinkingBlocks.map(({ thinking, signature }) => ({ thinking, signature })) }
+          : {}),
+      })),
+      ...(snapshot.roundInstruction !== undefined ? { roundInstruction: snapshot.roundInstruction } : {}),
+      tools: tools.map((tool) => ({
+        name: tool.name,
+        ...(tool.description !== undefined ? { description: tool.description } : {}),
+        inputSchema: tool.inputSchema,
+      })),
+    };
+    const measurement = await measureNativeConversation(this.tokenizer, model, projection, sections);
+    if (enforceBudget && this.promptBudgetAllocator) {
+      const budget = await this.promptBudgetAllocator.allocate(model);
+      const inputLimit = Math.max(0, budget.totalBudgetTokens - budget.safetyBufferTokens);
+      if (measurement.totalTokens > inputLimit) {
+        throw new ContextBudgetExceededError(
+          `Dynamic native prompt exceeds the input budget for ${budget.model}`,
+          budget.model,
+          inputLimit,
+          measurement.totalTokens,
+          measurement.sections,
+        );
       }
     }
+    return { ...snapshot, measurement };
+  }
 
+  async reasonNextAction(params: IReasonParams): Promise<IReasonResult> {
+    const { agent_role } = params;
+    const provider = this.testProvider ?? await this.resolveProvider(agent_role.model);
+    const providerMetadata = ProviderRegistry.getMetadataForInstance(provider.id);
+    const nativeEnabled = params.nativeToolsEnabled === true &&
+      providerMetadata?.supportsNativeTools === true &&
+      providerMetadata.supportsNativeConversation === true && params.nativeConversation !== undefined;
+    const prompt = this.buildPrompt(params, nativeEnabled);
+    const generateOptions = await this.buildGenerateOptions(params, provider, providerMetadata, nativeEnabled);
+    const result = await provider.generate(prompt, generateOptions);
+    return nativeEnabled ? this.parseNativeResult(result, params.availableTools) : this.parseJsonResult(result);
+  }
+
+  private buildPrompt(params: IReasonParams, nativeEnabled: boolean): string {
+    if (nativeEnabled) return params.nativeConversation!.initialPrompt;
+    const toolsDescription = params.availableTools
+      .map((tool) => `- ${tool.name}: ${tool.description}\n  Schema: ${JSON.stringify(tool.inputSchema)}`)
+      .join("\n");
+    return REACT_PROMPT_TEMPLATE
+      .replace("{agent_role_name}", params.agent_role.name)
+      .replace("{agent_role_description}", params.agent_role.description ?? "an expert assistant")
+      .replace("{step_objective}", params.stepObjective)
+      .replace("{tools_description}", toolsDescription)
+      .replace("{accumulated_context}", params.accumulatedContext || "[No previous tool calls yet]")
+      .replace("{iteration}", params.iteration.toString())
+      .replace("{max_iterations}", params.maxIterations.toString());
+  }
+
+  private async buildGenerateOptions(
+    params: IReasonParams,
+    provider: IModelProvider,
+    metadata: Opt<IProviderMetadata, Reason.OptionalContext>,
+    nativeEnabled: boolean,
+  ): Promise<IModelOptions | undefined> {
+    const options = this.projectCallOptions(
+      provider,
+      metadata,
+      params.agent_role,
+      params.flowStepEffort,
+      params.flowStepThinking,
+      params.options,
+    );
+    const trace = params.traceId ? { traceId: params.traceId } : {};
+    if (!nativeEnabled) return options || params.traceId ? { ...options, ...trace } : undefined;
+    const nativeConversation = await this.measureNativeSnapshot(
+      {
+        ...params.nativeConversation!,
+        roundInstruction:
+          `Iteration: ${params.iteration} of ${params.maxIterations}. Select one tool call or return your final answer.`,
+      },
+      params.agent_role.model ?? provider.id,
+      params.availableTools,
+      true,
+    );
+    return {
+      ...options,
+      ...trace,
+      tools: params.availableTools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      })),
+      toolChoice: { type: "auto", disable_parallel_tool_use: true },
+      nativeConversation,
+    };
+  }
+
+  private parseNativeResult(
+    result: IGenerateResult,
+    availableTools: IReasonParams["availableTools"],
+  ): IReasonResult {
+    if (!result.toolCalls?.length) {
+      if (!result.content.trim()) throw new Error("Native dynamic decision returned no tool call or final content");
+      return {
+        done: true,
+        output: result.content,
+        provider: result.provider,
+        model: result.model,
+        ...this.modelMetadata(result),
+      };
+    }
+    if (result.toolCalls.length !== 1) throw new Error("Native dynamic decision returned multiple tool calls");
+    const call = result.toolCalls[0];
+    const canonicalName = canonicalizeToolName(call.name);
+    const matchingTool = availableTools.find((tool) => tool.name === canonicalName);
+    if (
+      !matchingTool || !call.id?.trim() || !call.input || typeof call.input !== "object" || Array.isArray(call.input)
+    ) {
+      throw new Error("Native dynamic decision returned an unknown or malformed tool call");
+    }
+    return {
+      done: false,
+      tool: matchingTool.name as McpToolName,
+      args: call.input as ToolArgs,
+      provider: result.provider,
+      model: result.model,
+      nativeToolCall: { ...call, name: matchingTool.name },
+      ...this.modelMetadata(result),
+    };
+  }
+
+  private parseJsonResult(result: IGenerateResult): IReasonResult {
+    let rawJson = result.content.match(/```json\n([\s\S]*?)\n```/)?.[1] ??
+      result.content.match(/```\n([\s\S]*?)\n```/)?.[1] ?? result.content;
+    rawJson = rawJson.trim();
+    if (rawJson.indexOf("{") !== 0) {
+      const startIndex = rawJson.indexOf("{");
+      const endIndex = rawJson.lastIndexOf("}");
+      if (startIndex !== -1 && endIndex > startIndex) rawJson = rawJson.substring(startIndex, endIndex + 1);
+    }
     try {
-      const parsed = JSON.parse(rawJsonStr);
-      const decision = ReActResponseSchema.parse(parsed);
-
+      const decision = ReActResponseSchema.parse(JSON.parse(rawJson));
       if (decision.action.type === "complete") {
         return {
           done: true,
           output: decision.action.output,
           provider: result.provider,
           model: result.model,
+          ...this.modelMetadata(result),
         };
       }
-
       if (decision.action.type === "tool_call" && decision.action.tool) {
         return {
           done: false,
@@ -195,13 +358,62 @@ export class LlmClient implements ILlmClient {
           args: (decision.action.args ?? {}) as ToolArgs,
           provider: result.provider,
           model: result.model,
+          ...this.modelMetadata(result),
         };
       }
-
       throw new Error("Invalid reasoning response format: missing tool name for tool_call");
     } catch (error) {
-      // For now, fail loudly on schema validation
       throw new Error(`Failed to parse LLM response: ${getErrorMessage(error as LlmErrorPayload)}`);
     }
+  }
+
+  private modelMetadata(result: IGenerateResult): {
+    usage: IGenerateResult["usage"];
+    cost_usd?: number;
+    costStatus?: ProviderCostStatus;
+  } {
+    return {
+      usage: result.usage,
+      ...(result.costStatus !== undefined ? { costStatus: result.costStatus } : {}),
+      ...(result.costStatus !== "unknown" && result.cost_usd !== undefined ? { cost_usd: result.cost_usd } : {}),
+    };
+  }
+
+  private projectCallOptions(
+    provider: IModelProvider,
+    providerMetadata: Opt<IProviderMetadata, Reason.OptionalContext>,
+    role: IBlueprintFrontmatter,
+    flowStepEffort: Opt<EffortDeclaration, Reason.OptionalContext>,
+    flowStepThinking: Opt<ThinkingDeclaration, Reason.OptionalContext>,
+    requestOptions: Opt<IModelCallOptions, Reason.OptionalInput>,
+  ): IModelOptions | undefined {
+    if (
+      !requestOptions && role.effort === undefined && role.thinking === undefined &&
+      flowStepEffort === undefined && flowStepThinking === undefined
+    ) return undefined;
+    const declarations: IEffortDeclarations = {
+      ...(requestOptions ? { request: { effort: requestOptions.effort, thinking: requestOptions.thinking } } : {}),
+      role: { effort: role.effort, thinking: role.thinking },
+      flowStep: { effort: flowStepEffort, thinking: flowStepThinking },
+    };
+    const resolver = new EffortResolver();
+    const resolution = resolver.resolve(declarations, {
+      taskComplexity: TaskComplexity.MEDIUM,
+      complexitySource: "default",
+      modelSize: role.model_size,
+      providerType: providerMetadata?.name as ProviderType | undefined,
+      model: provider.id,
+      providerSupportsThinking: provider.callCapabilities?.supportsThinking ??
+        providerMetadata?.supportsThinking === true,
+      anthropicThinkingDefault: this.config?.ai_anthropic?.thinking_default,
+      skillFloors: [],
+      agentRole: role.agent_role,
+    });
+    const projected = projectResolvedCallOptions(resolution, declarations, provider.callCapabilities);
+    return {
+      ...requestOptions,
+      ...(projected.effort !== undefined ? { effort: projected.effort } : {}),
+      ...(projected.thinking !== undefined ? { thinking: projected.thinking } : {}),
+    };
   }
 }

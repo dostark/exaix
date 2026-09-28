@@ -28,7 +28,10 @@ import {
   MILESTONE_TOOL_CALL_STARTED,
 } from "@exaix/core";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
-import type { ILlmClient, ToolArgs } from "@exaix/ai";
+import type { ILlmClient, INativeConversationSnapshot, ToolArgs } from "@exaix/ai";
+import type { IProviderToolCall } from "@exaix/ai/providers";
+import type { IProviderTurn } from "@exaix/ai";
+import type { ProviderCostStatus } from "@exaix/ai/providers";
 import type { IMcpClient } from "@exaix/mcp";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { IExecutionMilestone } from "@exaix/schemas";
@@ -60,6 +63,15 @@ export interface IDynamicToolCall {
   timestamp: string;
 }
 
+interface IDynamicModelUsageTotals {
+  calls: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  costUsd?: number;
+  costStatus?: ProviderCostStatus;
+}
+
 /**
  * Options for dynamic step execution
  */
@@ -69,7 +81,10 @@ export interface IDynamicStepExecutorOptions {
   /** Trace ID for Activity Journal correlation */
   traceId: string;
   /** Config subset for runtime behaviour — if absent, defaults apply */
-  config?: { tools?: { confirmation_timeout_s?: number } };
+  config?: {
+    tools?: { confirmation_timeout_s?: number };
+    execution?: { native_tools_enabled?: boolean };
+  };
 }
 
 /** For audit logging. */
@@ -134,6 +149,22 @@ export class DynamicStepExecutor {
 
     let context = input;
     let iterations = 0;
+    const modelUsage: IDynamicModelUsageTotals = {
+      calls: 0,
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+    };
+    const nativeToolsEnabled = opts.config?.execution?.native_tools_enabled ?? false;
+    const initialTools = this.mcpClient.getToolDefinitions(effectiveTools);
+    let nativeConversation: INativeConversationSnapshot | undefined = nativeToolsEnabled
+      ? await this.llmClient.createNativeConversation({
+        agentRole: agent_role,
+        stepObjective: step.name,
+        originalInput: input,
+        availableTools: initialTools,
+      })
+      : undefined;
     const maxIterations = step.timeout
       ? Math.min(DEFAULT_MAX_ITERATIONS, Math.floor(step.timeout / 1000))
       : DEFAULT_MAX_ITERATIONS;
@@ -153,7 +184,13 @@ export class DynamicStepExecutor {
         maxIterations,
         // Forward the resolver's per-call options; undefined is backward compatible.
         options: this.callOptions,
+        nativeToolsEnabled,
+        traceId: opts.traceId,
+        flowStepEffort: step.effort,
+        flowStepThinking: step.thinking,
+        ...(nativeConversation ? { nativeConversation } : {}),
       });
+      this.addModelUsage(modelUsage, decision);
 
       if (decision.done) {
         // Model has declared the step objective is met
@@ -163,6 +200,7 @@ export class DynamicStepExecutor {
           event: "dynamic_step_completed",
           iterations,
           toolCallCount: toolCallsLog.length,
+          ...this.modelUsagePayload(modelUsage),
         });
         return {
           stepId: step.id,
@@ -191,6 +229,14 @@ export class DynamicStepExecutor {
       );
       if (denialText !== undefined) {
         context = this.appendObservation(context, decision.tool, denialText);
+        nativeConversation = this.appendNativeTurn(
+          nativeConversation,
+          decision.nativeToolCall,
+          decision.tool,
+          decision.args ?? {},
+          denialText,
+          true,
+        );
         continue;
       }
 
@@ -228,6 +274,14 @@ export class DynamicStepExecutor {
 
       // Feed observation back into context for next iteration
       context = this.appendObservation(context, decision.tool, toolResult);
+      nativeConversation = this.appendNativeTurn(
+        nativeConversation,
+        decision.nativeToolCall,
+        decision.tool,
+        decision.args ?? {},
+        toolResult,
+        false,
+      );
     }
 
     // Max iterations reached — return with what we have
@@ -237,6 +291,7 @@ export class DynamicStepExecutor {
       event: "dynamic_step_max_iterations_reached",
       iterations,
       toolCallCount: toolCallsLog.length,
+      ...this.modelUsagePayload(modelUsage),
     });
 
     return {
@@ -283,6 +338,62 @@ export class DynamicStepExecutor {
     result: string,
   ): string {
     return `${context}\n\n[Tool: ${tool}]\n${result}`;
+  }
+
+  private appendNativeTurn(
+    conversation: Opt<INativeConversationSnapshot, Reason.OptionalInput>,
+    call: Opt<IProviderToolCall, Reason.OptionalInput>,
+    tool: McpToolName,
+    args: ToolArgs,
+    result: string,
+    isError: boolean,
+  ): INativeConversationSnapshot | undefined {
+    if (!conversation || !call) return conversation;
+    const turn: IProviderTurn = {
+      toolUseId: call.id,
+      toolName: tool,
+      toolInput: args,
+      toolResultContent: result,
+      toolResultIsError: isError,
+      ...(call.reasoningContent !== undefined ? { reasoningContent: call.reasoningContent } : {}),
+      ...(call.thoughtSignature !== undefined ? { thoughtSignature: call.thoughtSignature } : {}),
+      ...(call.thinkingBlocks !== undefined ? { thinkingBlocks: call.thinkingBlocks } : {}),
+    };
+    return { ...conversation, turns: [...conversation.turns, turn] };
+  }
+
+  private addModelUsage(
+    totals: IDynamicModelUsageTotals,
+    decision: Awaited<ReturnType<ILlmClient["reasonNextAction"]>>,
+  ): void {
+    if (!decision.usage) return;
+    totals.calls++;
+    totals.promptTokens += decision.usage.promptTokens;
+    totals.completionTokens += decision.usage.completionTokens;
+    totals.totalTokens += decision.usage.totalTokens;
+    if (decision.costStatus === "unknown") {
+      totals.costStatus = "unknown";
+      delete totals.costUsd;
+      return;
+    }
+    if (decision.cost_usd !== undefined && totals.costStatus !== "unknown") {
+      totals.costUsd = (totals.costUsd ?? 0) + decision.cost_usd;
+      totals.costStatus = decision.costStatus ?? totals.costStatus;
+    } else if (decision.costStatus !== undefined && totals.costStatus === undefined) {
+      totals.costStatus = decision.costStatus;
+    }
+  }
+
+  private modelUsagePayload(totals: IDynamicModelUsageTotals): JournalEntry {
+    if (totals.calls === 0) return {};
+    return {
+      llmCalls: totals.calls,
+      promptTokens: totals.promptTokens,
+      completionTokens: totals.completionTokens,
+      totalTokens: totals.totalTokens,
+      ...(totals.costStatus !== undefined ? { costStatus: totals.costStatus } : {}),
+      ...(totals.costStatus !== "unknown" && totals.costUsd !== undefined ? { cost_usd: totals.costUsd } : {}),
+    };
   }
 
   private createConfirmationRequest(

@@ -75,6 +75,10 @@ class MockMcpClient implements IMcpClient, IToolManifestResolver {
 class MockLlmClient implements ILlmClient {
   private decisionIndex = 0;
 
+  createNativeConversation() {
+    return Promise.resolve({ initialPrompt: "", turns: [] });
+  }
+
   reasonNextAction(): Promise<{
     done: boolean;
     tool?: McpToolName;

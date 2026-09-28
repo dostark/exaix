@@ -83,6 +83,10 @@ class MockLlmClient implements ILlmClient {
     this.decisionIndex = 0;
   }
 
+  createNativeConversation() {
+    return Promise.resolve({ initialPrompt: "", turns: [] });
+  }
+
   reasonNextAction(
     _params: any,
   ): Promise<

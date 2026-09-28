@@ -67,7 +67,10 @@ export class AgentStepHandler implements IFlowStepHandler {
       step,
       loaded.frontmatter as IBlueprintFrontmatter,
       stepRequest.userPrompt,
-      { traceId: request.traceId || crypto.randomUUID() },
+      {
+        traceId: request.traceId || crypto.randomUUID(),
+        ...(this.#config ? { config: this.#config } : {}),
+      },
     );
 
     return {

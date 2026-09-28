@@ -10,11 +10,17 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type {
   CompatibleChatConfig,
   Config,
+  EffortDeclaration,
   EffortTier,
   IBlueprintFrontmatter,
   IModelCallOptions,
 } from "@exaix/schemas";
-import type { IGenerateResult, IThinkingReplayBlock } from "./providers/common.ts";
+import type {
+  IGenerateResult,
+  IProviderToolCall,
+  IThinkingReplayBlock,
+  ProviderCostStatus,
+} from "./providers/common.ts";
 import type { INativeInputMeasurement, INativePromptSection } from "./native_conversation_budget.ts";
 import type { IProviderCallCapabilities } from "./provider_call_options.ts";
 
@@ -91,6 +97,8 @@ export interface INativeConversationSnapshot {
   initialPromptSections?: readonly INativePromptSection[];
   turns: IProviderTurn[];
   roundInstruction?: string;
+  /** Token estimate of the complete provider projection before generation. */
+  measurement?: INativeInputMeasurement;
 }
 
 /**
@@ -216,6 +224,12 @@ export interface IProviderInfo {
 export type ToolArgs = Record<string, JSONValue>;
 
 export interface ILlmClient {
+  createNativeConversation(params: {
+    agentRole: IBlueprintFrontmatter;
+    stepObjective: string;
+    originalInput: string;
+    availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
+  }): Promise<INativeConversationSnapshot>;
   reasonNextAction(params: {
     agent_role: IBlueprintFrontmatter;
     stepObjective: string;
@@ -228,6 +242,11 @@ export interface ILlmClient {
     iteration: number;
     maxIterations: number;
     options?: IModelCallOptions;
+    nativeToolsEnabled?: boolean;
+    traceId?: string;
+    nativeConversation?: INativeConversationSnapshot;
+    flowStepEffort?: EffortDeclaration;
+    flowStepThinking?: boolean | "auto";
   }): Promise<{
     done: boolean;
     tool?: McpToolName;
@@ -235,6 +254,10 @@ export interface ILlmClient {
     output?: string;
     provider?: string;
     model?: string;
+    nativeToolCall?: IProviderToolCall;
+    usage?: IGenerateResult["usage"];
+    cost_usd?: number;
+    costStatus?: ProviderCostStatus;
   }>;
 }
 
