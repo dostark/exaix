@@ -6,7 +6,7 @@
  * @description Unit tests for ReActLoopStrategy.
  */
 
-import { assert, assertEquals, assertFalse } from "@std/assert";
+import { assert, assertEquals, assertFalse, assertRejects } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -592,4 +592,66 @@ Deno.test("[naming][react_loop] query_symbols renders and executes with {query} 
     assertEquals(provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0], "query_symbols");
     assertEquals(calls, name === "query_symbols" ? [{ tool: "query_symbols", params: { name: "greet" } }] : []);
   }
+});
+
+function readFileRound(path: string): string {
+  return `${REACT_THOUGHT_PREFIX}Reading ${path}.
+\`\`\`toml
+[[actions]]
+tool = "read_file"
+[actions.params]
+path = "${path}"
+\`\`\`
+`;
+}
+
+const readOnlyExecutor = {
+  ...mockExecutor,
+  toolRegistry: {
+    execute: (_tool: string, _params: TestToolParams) => Promise.resolve({ success: true, data: { content: "x" } }),
+    getTools: () => [{
+      name: "read_file",
+      description: "read",
+      parameters: { type: "object", properties: { path: { type: "string" } } },
+    }],
+    getBaseDir: () => "/nonexistent-test-basedir",
+  },
+};
+
+Deno.test("[react_loop][max_iterations] executor.maxIterations overrides the compile-time default", async () => {
+  const neverCompletes = new MockModelProvider(
+    Array.from({ length: 5 }, (_, i) => readFileRound(`file-${i}.ts`)),
+  );
+  const executor = { ...readOnlyExecutor, maxIterations: 2 };
+  await assertRejects(
+    () =>
+      new ReActLoopStrategy(executor as ReActExecutor, neverCompletes).execute(
+        testBlueprint,
+        testContext,
+        createOptions("test"),
+      ),
+    Error,
+    "Reached maximum iterations (2)",
+  );
+  assertEquals(
+    neverCompletes.prompts.length,
+    2,
+    "the loop must stop at the configured cap, not the compile-time default of 10",
+  );
+});
+
+Deno.test("[react_loop][max_iterations] an executor with no maxIterations keeps the compile-time default of 10", async () => {
+  const neverCompletes = new MockModelProvider(
+    Array.from({ length: 11 }, (_, i) => readFileRound(`file-${i}.ts`)),
+  );
+  await assertRejects(
+    () =>
+      new ReActLoopStrategy(readOnlyExecutor as ReActExecutor, neverCompletes).execute(
+        testBlueprint,
+        testContext,
+        createOptions("test"),
+      ),
+    Error,
+    "Reached maximum iterations (10)",
+  );
 });

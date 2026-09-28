@@ -30,6 +30,34 @@ function createAdapter(config: Config, logger: EventLogger): ReActLoopAdapter {
   );
 }
 
+Deno.test("[ReActLoopAdapter] maxIterations option reaches the adapter's own field unchanged", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const adapter = new ReActLoopAdapter(
+      new OutputParser(),
+      new ExecutionContextService(config, logger, {}),
+      logger,
+      undefined,
+      { maxIterations: 3 },
+    );
+    assertEquals(adapter.maxIterations, 3);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[ReActLoopAdapter] omitted maxIterations option leaves the adapter's field undefined", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const adapter = createAdapter(config, logger);
+    assertEquals(adapter.maxIterations, undefined);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[ReActLoopAdapter] logAgentOutput emits agent.output with a real, field-level payload", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {

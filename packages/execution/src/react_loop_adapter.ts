@@ -67,6 +67,8 @@ export interface IReActLoopExecutor {
   readonly aciDocsEnabled?: boolean;
   /** The configured aggregate ACI prompt-injection character budget. */
   readonly aciDocPromptMaxChars?: number;
+  /** The configured agents.max_iterations. Absent falls back to the compile-time default. */
+  readonly maxIterations?: number;
   /** `target` is `context.request_id`. Optional since test doubles need not implement it. */
   logPromptAssembled?(
     traceId: string,
@@ -89,6 +91,8 @@ export interface IReActLoopAdapterOptions {
   eventBus?: Opt<IEventBusService, Reason.OptionalDependency>;
   guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>;
   aci?: IReActLoopAdapterAciOptions;
+  /** The configured agents.max_iterations. Absent falls back to the compile-time default. */
+  maxIterations?: number;
 }
 
 /** Adapter that implements IReActLoopExecutor by composing AgentComposer's services.
@@ -99,6 +103,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
   public readonly guardrailRunner?: IGuardrailRunner;
   public readonly aciDocsEnabled: boolean;
   public readonly aciDocPromptMaxChars: number;
+  public readonly maxIterations?: number;
 
   constructor(
     private outputParser: OutputParser,
@@ -111,6 +116,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     this.guardrailRunner = options?.guardrailRunner;
     this.aciDocsEnabled = options?.aci?.enabled ?? false;
     this.aciDocPromptMaxChars = options?.aci?.promptMaxChars ?? DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS;
+    this.maxIterations = options?.maxIterations;
   }
 
   get contextBudgetManager(): IContextBudgetManager | undefined {

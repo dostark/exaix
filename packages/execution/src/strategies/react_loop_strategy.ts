@@ -183,7 +183,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   public readonly name = ExecutionStrategyName.REACT;
   /** Per-call options (thinking/effort/max_tokens) set by agent_executor before execute(). */
   public callOptions?: IModelCallOptions;
-  private readonly MAX_ITERATIONS = DEFAULT_AGENT_MAX_ITERATIONS;
+  /** Resolved per execute() call from the executor's config, not cached. One strategy
+   *  instance serves several executions. */
+  private get maxIterations(): number {
+    return this.executor.maxIterations ?? DEFAULT_AGENT_MAX_ITERATIONS;
+  }
 
   constructor(
     private executor: IReActLoopExecutor,
@@ -243,7 +247,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       planPreview: context.plan.slice(0, Math.min(context.plan.length, 120)),
     });
 
-    for (let i = 0; i < this.MAX_ITERATIONS; i++) {
+    for (let i = 0; i < this.maxIterations; i++) {
       const iterResult = await this.runSingleIteration({
         i,
         startTime,
@@ -286,7 +290,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }
 
     throw new AgentExecutionError(
-      `Reached maximum iterations (${this.MAX_ITERATIONS}) without completing task`,
+      `Reached maximum iterations (${this.maxIterations}) without completing task`,
       AgentExecutionErrorType.EXECUTION_ERROR,
     );
   }
@@ -515,7 +519,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           ? {
             roundInstruction: `Iteration ${
               i + 1
-            } of ${this.MAX_ITERATIONS}. Continue with the next permitted tool call or return the final answer.`,
+            } of ${this.maxIterations}. Continue with the next permitted tool call or return the final answer.`,
           }
           : {}),
       };

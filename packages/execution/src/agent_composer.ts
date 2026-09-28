@@ -284,6 +284,7 @@ export class AgentComposer {
           enabled: this.config.agents?.inject_aci_docs,
           promptMaxChars: this.config.agents?.aci_doc_prompt_max_chars,
         },
+        maxIterations: this.config.agents?.max_iterations,
       },
     );
     if (deps.options?.guardrailRunner) {
