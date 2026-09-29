@@ -1012,7 +1012,7 @@ a model-driven tool path; external MCP callers without that identity remain unkn
 - **Reserved metadata:** `IModelOptions.chatFormat` and the registry `chatFormat` are descriptive scaffolding. They do not select an execution format. `OPENAI_CHAT` registration is what activates the provider.
 - **Test seam:** the `__COMPAT_FIXTURE_PORT__` sentinel in a scenario preset is replaced with the bound local fixture port by `materializeCellConfig`, so scenario presets never hard-code a port.
 
-Live qualification of the remote profiles is recorded in `exaix-dev-docs/planning/phase-155-openai-compatible-react.md`. The `openai` profile passed a live scenario, and the `deepseek` profile is blocked by intermittent multi-call responses.
+Live qualification of the remote profiles is recorded in `exaix-dev-docs/planning/phase-155-openai-compatible-react.md`. Both remote profiles passed a live scenario. The `deepseek` profile pins `deepseek-v4-pro` and can still fail rarely on a multi-call, empty or schema-violating reply, which Exaix rejects without retry.
 
 **Refinements (nativeDescription, prompt guidance, targeted-edit heuristic):** `ITool.nativeDescription` (`packages/core/src/types/i_tool_registry.ts`) provides behavioral-preference signals for the native tool UI (e.g., "PREFERRED for targeted edits"). `ReActLoopStrategy.buildPrompt()` always renders `AVAILABLE TOOLS:` and `TOOL SELECTION GUIDELINES:` (only the `FORMAT:` TOML block is gated). A targeted-edit keyword heuristic (`context.plan` matching fix/patch/null-guard/refactor/edit/bug/repair) sets `tool_choice: {type: "tool", name: "patch_file"}` on the first iteration.
 

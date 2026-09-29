@@ -4531,10 +4531,11 @@ keys or tool contents:
 | `pricing_unavailable`     | A finite cost budget is set and the returned model has no registered rate |
 | `protocol_invalid`        | The response was malformed, oversized, multi-call or unadvertised         |
 
-**Live qualification.** The `openai` profile passed a live scenario on 2026-09-28. The `deepseek`
-profile is not qualified: its live scenario passed three runs after two fixes, but earlier trials
-were rejected for multi-call responses, and the leg stays blocked until the operator accepts those
-runs or Phase 202 lands. Unit and fixture tests never prove live compatibility.
+**Live qualification.** The `openai` profile passed a live scenario on 2026-09-28, and the `deepseek`
+profile (`deepseek-v4-pro`) passed eight consecutive live runs on 2026-09-29. Live runs still fail
+rarely. DeepSeek cannot forbid parallel tool calls, so a multi-call reply is rejected, and the final
+planning round can return an empty reply or a plan that violates the schema. Exaix does not retry
+those. Unit and fixture tests never prove live compatibility.
 
 ### 5.4 Testing & CI Model Aliases
 
