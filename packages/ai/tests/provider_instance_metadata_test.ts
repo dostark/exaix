@@ -84,6 +84,23 @@ Deno.test("[phase155.registry] metadata lookup uses exact IDs then longest regis
   }
 });
 
+Deno.test("metadata lookup sees through the rate-limited wrapper prefix", () => {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata("openai", new MockProviderFactory(), metadata("openai"));
+  ProviderRegistry.registerWithMetadata(
+    "openai-chat",
+    new MockProviderFactory(),
+    metadata("openai-chat", true),
+  );
+  try {
+    assertEquals(ProviderRegistry.getMetadataForInstance("rate-limited-openai-gpt-5.6-terra")?.name, "openai");
+    assertEquals(ProviderRegistry.getMetadataForInstance("rate-limited-openai-chat-gpt-6-luna")?.name, "openai-chat");
+    assertEquals(ProviderRegistry.getMetadataForInstance("rate-limited-unknown-x"), undefined);
+  } finally {
+    ProviderRegistry.clear();
+  }
+});
+
 Deno.test("[phase155.registry] snapshots are accepted only by metadata-enabled provider instances", () => {
   ProviderRegistry.clear();
   ProviderRegistry.registerWithMetadata("openai", new MockProviderFactory(), metadata("openai"));

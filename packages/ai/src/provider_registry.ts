@@ -77,6 +77,9 @@ export function assertNoNativeConversation(
   }
 }
 
+/** RateLimitedProvider prefixes the wrapped provider id with this string. */
+const RATE_LIMITED_ID_PREFIX = /^rate-limited-/;
+
 function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
   const globalRegistry = globalThis as ProviderRegistryGlobal;
   globalRegistry.__exaixRegisteredProviderTypes = Array.from(providerTypes);
@@ -114,7 +117,7 @@ export class ProviderRegistry {
   }
 
   static getMetadataForInstance(id: Opt<string, Reason.OptionalContext>): IProviderMetadata | undefined {
-    const providerType = longestPrefixMatch(id, [...this.metadata.keys()]);
+    const providerType = longestPrefixMatch(id?.replace(RATE_LIMITED_ID_PREFIX, ""), [...this.metadata.keys()]);
     return providerType === undefined ? undefined : this.metadata.get(providerType);
   }
 
