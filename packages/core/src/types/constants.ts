@@ -26,7 +26,7 @@ import { PortalKnowledgeInclusion } from "./portal.ts";
 export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
 export const OPENAI_COMPATIBLE_PROFILE_DEFAULTS = {
   openai: { model: "gpt-6-luna", endpoint: "https://api.openai.com/v1/chat/completions" },
-  deepseek: { model: "deepseek-flash", endpoint: "https://api.deepseek.com/v1/chat/completions" },
+  deepseek: { model: "deepseek-v4-pro", endpoint: "https://api.deepseek.com/v1/chat/completions" },
   "local-test": { model: "compat-fixture-v1", endpoint: undefined },
 } as const;
 

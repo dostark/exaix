@@ -420,7 +420,7 @@ Deno.test("compatible chat omits DeepSeek's unsupported parallel_tool_calls swit
   const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
     requestBody = await request.json();
     return Response.json({
-      model: "deepseek-flash",
+      model: "deepseek-v4-pro",
       choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
       usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
     });
@@ -429,7 +429,7 @@ Deno.test("compatible chat omits DeepSeek's unsupported parallel_tool_calls swit
   try {
     const provider = new OpenAIProvider({
       apiKey: "deepseek-fixture-key",
-      model: "deepseek-flash",
+      model: "deepseek-v4-pro",
       baseUrl: endpoint,
       compatible: {
         profile: "deepseek",
@@ -630,7 +630,7 @@ Deno.test("compatible chat preserves DeepSeek reasoning_content across two succe
     round++;
     if (round === 1) {
       return Response.json({
-        model: "deepseek-flash",
+        model: "deepseek-v4-pro",
         choices: [{
           message: {
             role: "assistant",
@@ -648,7 +648,7 @@ Deno.test("compatible chat preserves DeepSeek reasoning_content across two succe
       });
     }
     return Response.json({
-      model: "deepseek-flash",
+      model: "deepseek-v4-pro",
       choices: [{ message: { role: "assistant", content: "both files read" }, finish_reason: "stop" }],
       usage: { prompt_tokens: 40, completion_tokens: 4, total_tokens: 44 },
     });
@@ -660,7 +660,7 @@ Deno.test("compatible chat preserves DeepSeek reasoning_content across two succe
       // Constructed directly: the real factory pins "deepseek" to its real host.
       const provider = new OpenAIProvider({
         apiKey: "deepseek-fixture-key",
-        model: "deepseek-flash",
+        model: "deepseek-v4-pro",
         baseUrl: endpoint,
         compatible: {
           profile: "deepseek",

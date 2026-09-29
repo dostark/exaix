@@ -52,11 +52,11 @@ export const STATIC_OVERLAY: StaticOverlay = {
     verifiedAt: Date.UTC(2026, 8, 28),
     sourceUrl: "https://developers.openai.com/api/docs/models/gpt-6-luna",
   },
-  // Peak-hour rates. Off-peak is half, so estimates are an upper bound.
-  "deepseek:deepseek-flash": {
-    inputPerMtok: 0.30,
-    outputPerMtok: 1.20,
-    cacheReadPerMtok: 0.006,
+  // Peak-hour rates. Off-peak is lower, so estimates are an upper bound.
+  "deepseek:deepseek-v4-pro": {
+    inputPerMtok: 1.32,
+    outputPerMtok: 3.96,
+    cacheReadPerMtok: 0.044,
     verifiedAt: Date.UTC(2026, 8, 29),
     sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing",
   },

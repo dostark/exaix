@@ -138,17 +138,17 @@ Deno.test({
 
 Deno.test({
   name:
-    "getModelPricing returns the deepseek-flash peak-hour rates as a conservative ceiling with their official source",
+    "getModelPricing returns the deepseek-v4-pro peak-hour rates as a conservative ceiling with their official source",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
     setupProviders();
     const registry = new DefaultModelRegistry(stubHealthChecker());
-    const pricing = await registry.getModelPricing("deepseek", "deepseek-flash");
+    const pricing = await registry.getModelPricing("deepseek", "deepseek-v4-pro");
     assertEquals(pricing.provenance, "static");
-    assertEquals(pricing.inputPerMtok, 0.3);
-    assertEquals(pricing.outputPerMtok, 1.2);
-    assertEquals(pricing.cacheReadPerMtok, 0.006);
+    assertEquals(pricing.inputPerMtok, 1.32);
+    assertEquals(pricing.outputPerMtok, 3.96);
+    assertEquals(pricing.cacheReadPerMtok, 0.044);
     assertExists(pricing.verifiedAt);
     assertEquals(pricing.sourceUrl, "https://api-docs.deepseek.com/quick_start/pricing");
   },

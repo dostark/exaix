@@ -78,6 +78,6 @@ native_tools = true
 [tool.deepseek-chat]
 config = "configs/deepseek-chat.toml"
 provider = "openai-chat"
-model = "deepseek-flash"
+model = "deepseek-v4-pro"
 requires_key = "DEEPSEEK_API_KEY"
 native_tools = true

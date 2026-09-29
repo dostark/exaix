@@ -4413,10 +4413,10 @@ The `openai-chat` provider talks to a Chat Completions endpoint through one shar
 qualified remote profiles ship, plus a loopback fixture profile for tests. Exaix does **not**
 claim support for arbitrary compatible providers: only the profiles below are qualified.
 
-| Profile    | Preset                       | Model                    | Endpoint host      | Secret variable    |
-| ---------- | ---------------------------- | ------------------------ | ------------------ | ------------------ |
-| `openai`   | `configs/openai-chat.toml`   | `gpt-6-luna` (pinned)    | `api.openai.com`   | `OPENAI_API_KEY`   |
-| `deepseek` | `configs/deepseek-chat.toml` | `deepseek-flash` (alias) | `api.deepseek.com` | `DEEPSEEK_API_KEY` |
+| Profile    | Preset                       | Model                      | Endpoint host      | Secret variable    |
+| ---------- | ---------------------------- | -------------------------- | ------------------ | ------------------ |
+| `openai`   | `configs/openai-chat.toml`   | `gpt-6-luna` (pinned)      | `api.openai.com`   | `OPENAI_API_KEY`   |
+| `deepseek` | `configs/deepseek-chat.toml` | `deepseek-v4-pro` (pinned) | `api.deepseek.com` | `DEEPSEEK_API_KEY` |
 
 Copy a preset, or set the keys yourself:
 
@@ -4469,11 +4469,11 @@ max_response_bytes = 4194304
 
 [models.default]
 provider = "openai-chat"
-model = "deepseek-flash"
+model = "deepseek-v4-pro"
 
 [models.strict]
 provider = "openai-chat"
-model = "deepseek-flash"
+model = "deepseek-v4-pro"
 
 [models.strict.compatible]
 profile = "deepseek"
@@ -4513,7 +4513,7 @@ host to its `--allow-net` list, or the provider fails with `env_permission_denie
 - Cost comes from registered rates for the exact returned model. An unknown rate records a null cost
   with `cost_status: unknown`. With a finite `rate_limiting.max_cost_per_day`, a remote call with no
   registered rate fails with `pricing_unavailable` before any request is sent. Registered
-  `deepseek-flash` rates are the peak-hour rates, so DeepSeek estimates are an upper bound.
+  `deepseek-v4-pro` rates are the peak-hour rates, so DeepSeek estimates are an upper bound.
 - Fixture capture (`EXA_CAPTURE_FIXTURES_DIR`) is rejected for this provider with `capture_unsupported`.
 
 **Failure reasons.** Failures carry one of these allowlisted reason codes and never include prompts,

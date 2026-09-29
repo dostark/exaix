@@ -158,7 +158,7 @@ Deno.test("compatible factory pins each remote profile's qualified model and rej
   await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
     const cases = [
       { profile: "openai", model: "gpt-6-luna", endpoint: "https://api.openai.com/v1/chat/completions" },
-      { profile: "deepseek", model: "deepseek-flash", endpoint: "https://api.deepseek.com/v1/chat/completions" },
+      { profile: "deepseek", model: "deepseek-v4-pro", endpoint: "https://api.deepseek.com/v1/chat/completions" },
     ] as const;
     for (const { profile, model, endpoint } of cases) {
       const valid = {
@@ -197,7 +197,7 @@ Deno.test("compatible factory reads each remote profile's fixed credential envir
       () =>
         factory.create({
           ...options("deepseek", "https://api.deepseek.com/v1/chat/completions"),
-          model: "deepseek-flash",
+          model: "deepseek-v4-pro",
           compatible: {
             ...options("deepseek", "https://api.deepseek.com/v1/chat/completions").compatible!,
             model: undefined,
@@ -237,7 +237,7 @@ Deno.test("[security] a remote profile never persists an env-sourced credential,
       assertEquals(await SecureCredentialStore.get("DEEPSEEK_API_KEY"), null);
       const provider = await factory.create({
         ...options("deepseek", "https://api.deepseek.com/v1/chat/completions"),
-        model: "deepseek-flash",
+        model: "deepseek-v4-pro",
         compatible: {
           ...options("deepseek", "https://api.deepseek.com/v1/chat/completions").compatible!,
           model: undefined,
@@ -256,7 +256,7 @@ Deno.test("compatible factory requires the qualified network permission for each
   await withEnv({ OPENAI_API_KEY: "fixture-key", DEEPSEEK_API_KEY: "fixture-key" }, async () => {
     const cases = [
       { profile: "openai", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-6-luna" },
-      { profile: "deepseek", endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-flash" },
+      { profile: "deepseek", endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-v4-pro" },
     ] as const;
     for (const { profile, endpoint, model } of cases) {
       const denied = new OpenAICompatibleProviderFactory((kind) =>

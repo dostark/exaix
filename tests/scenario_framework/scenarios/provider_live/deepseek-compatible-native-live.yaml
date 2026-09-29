@@ -57,7 +57,7 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
-    timeout_sec: 240
+    timeout_sec: 400
     failure_glob: "Workspace/Rejected/*_rejected.md"
     output_criteria:
       - id: "plan-produced"
@@ -92,7 +92,7 @@ steps:
     trace_scoped: true
     payload_equals:
       - path: "model"
-        value: "deepseek-flash"
+        value: "deepseek-v4-pro"
     output_criteria:
       - id: "pinned-model-returned"
         kind: "command-exit-code"
