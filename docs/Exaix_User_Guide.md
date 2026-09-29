@@ -4504,10 +4504,18 @@ host to its `--allow-net` list, or the provider fails with `env_permission_denie
   parallel calls, so a live DeepSeek run can still hit that rejection. With the flag off, ReAct uses
   the TOML action-block path.
 - Planning uses strict `json_schema` output on `openai` when the schema allows it. `deepseek` always
-  uses `json_object` mode plus a schema instruction, and Exaix validates the result locally.
+  uses `json_object` mode plus a schema instruction, and Exaix validates the result locally. In
+  strict mode, nested optional nulls introduced by the provider schema are removed through local
+  references and applicable `anyOf` branches. Nulls permitted by the original schema remain.
 - `deepseek` supports explicit thinking (`--thinking true`) and replays `reasoning_content` across
-  tool rounds. The pinned `openai` model rejects unsupported effort or thinking options with
-  `unsupported_call_option` instead of dropping them.
+  tool rounds. The pinned `openai` model rejects unsupported explicit effort or `thinking: true`
+  with `unsupported_call_option`; `thinking: false` is omitted from its request. DeepSeek sends
+  supported enabled or disabled thinking controls.
+- Native dynamic rounds check section and total input limits before sending a request. The
+  objective and original input count toward `plan`, prior turns and round control toward
+  `loopHistory`, and instructions and tool framing toward `system`. The resolved output token
+  allowance is reserved even when a caller did not inject an allocator. Overflow emits a traced
+  `ContextBudgetExceeded` event and stops before provider I/O or another tool effect.
 - One deadline (`timeout_ms`) bounds each provider call. A malformed, oversized
   or unadvertised response fails with `protocol_invalid`.
 - Cost comes from registered rates for the exact returned model. An unknown rate records a null cost

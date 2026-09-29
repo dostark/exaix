@@ -112,3 +112,29 @@ Deno.test("Architecture native tool-calling section describes the compatible cal
     assertStringIncludes(native, token);
   }
 });
+
+Deno.test("Compatible documentation describes strict null normalization, false thinking and dynamic preflight", async () => {
+  const guide = await readUserGuide();
+  const architecture = await readArchitecture();
+  for (const raw of [guide, architecture]) {
+    const text = raw.replace(/\s+/g, " ");
+    assertStringIncludes(text, "nested optional nulls");
+    assertStringIncludes(text, "thinking: false");
+    assertStringIncludes(text, "output token allowance");
+    assertStringIncludes(text, "ContextBudgetExceeded");
+  }
+});
+
+Deno.test("Phase 155 binding profile table and live scenario paths match shipped defaults", async () => {
+  const plan = await Deno.readTextFile("exaix-dev-docs/planning/phase-155-openai-compatible-react.md");
+  const binding = section(plan, "### Endpoint and Secret Boundary");
+  for (const profile of ["openai", "deepseek"] as const) {
+    assertStringIncludes(binding, OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].model);
+  }
+  const step8 = section(plan, "### Step 8 — Authorized live profile qualification");
+  for (const profile of ["openai", "deepseek"]) {
+    const path = `tests/scenario_framework/scenarios/provider_live/${profile}-compatible-native-live.yaml`;
+    assertStringIncludes(step8, path);
+    assert((await Deno.stat(path)).isFile);
+  }
+});
