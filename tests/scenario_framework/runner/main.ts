@@ -22,6 +22,8 @@ import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
 import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./persona_response_trial.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
+import { loadTraceActivities } from "./failure_classifier.ts";
+import { writeProviderLiveEvidence } from "./provider_live_evidence.ts";
 import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
   accumulateRunVerdict,
@@ -181,6 +183,7 @@ await new Command()
     const budget = new BudgetTracker({ maxCostUsd: options.maxCostUsd });
     // The trial-0 workspace whose journal holds the run's trace.
     let firstTrialWorkspaceRoot = "";
+    const providerLiveWorkspaces = new Map<string, string>();
 
     for (const entry of selectedEntries) {
       // Checked between scenarios: once accumulated cost reached the cap, the remaining
@@ -279,6 +282,7 @@ await new Command()
             manifests.set(entry.id, result.manifest);
             // The run's trace lives in this trial's workspace journal.
             firstTrialWorkspaceRoot = trialWorkspaceRoot;
+            if (entry.pack === "provider_live") providerLiveWorkspaces.set(entry.id, trialWorkspaceRoot);
           }
 
           console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
@@ -439,6 +443,28 @@ await new Command()
         historyFormat: options.historyFormat,
         scoreThreshold,
       });
+    }
+
+    // Keep only redacted provider metadata before reclaiming a successful sandbox.
+    const exitCode = runVerdict.infraError ? 2 : runVerdict.allPassed ? 0 : 1;
+    for (const [scenarioId, workspaceRoot] of providerLiveWorkspaces) {
+      const manifest = manifests.get(scenarioId);
+      if (!manifest) continue;
+      const journalPath = join(workspaceRoot, ".exa", "journal.db");
+      const activities = await Deno.stat(journalPath).then(
+        () => loadTraceActivities(journalPath),
+        () => [],
+      );
+      const evidencePath = await writeProviderLiveEvidence({
+        scenarioId,
+        outputDir: runtimeConfig.output_dir,
+        configPath: join(workspaceRoot, "exa.config.toml"),
+        activities,
+        outcome: manifest.outcome,
+        suiteScore: manifest.suite_score ?? 0,
+        exitCode,
+      });
+      console.log(`Redacted live evidence: ${evidencePath}`);
     }
 
     // 13. Reclaim the sandbox this run minted. Nothing reclaimed one before, so growth was
