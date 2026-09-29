@@ -137,6 +137,24 @@ Deno.test({
 });
 
 Deno.test({
+  name:
+    "getModelPricing returns the deepseek-flash peak-hour rates as a conservative ceiling with their official source",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    setupProviders();
+    const registry = new DefaultModelRegistry(stubHealthChecker());
+    const pricing = await registry.getModelPricing("deepseek", "deepseek-flash");
+    assertEquals(pricing.provenance, "static");
+    assertEquals(pricing.inputPerMtok, 0.3);
+    assertEquals(pricing.outputPerMtok, 1.2);
+    assertEquals(pricing.cacheReadPerMtok, 0.006);
+    assertExists(pricing.verifiedAt);
+    assertEquals(pricing.sourceUrl, "https://api-docs.deepseek.com/quick_start/pricing");
+  },
+});
+
+Deno.test({
   name: "costPer1kTokens on IModelEntry equals inputPerMtok/1000 via the shared helper (G1)",
   sanitizeOps: false,
   sanitizeResources: false,
