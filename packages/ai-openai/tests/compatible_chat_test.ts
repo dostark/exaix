@@ -16,6 +16,7 @@ import { withEnv } from "@exaix/testing/helpers/env.ts";
 import { OpenAICompatibleProviderFactory } from "../src/compatible_factory.ts";
 import { OpenAIProvider } from "../src/openai_provider.ts";
 import { createCompatibleChatRequestInit } from "../src/compatible_chat.ts";
+import { STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION } from "../src/constants.ts";
 import { TracedProvider } from "@exaix/ai/traced_provider.ts";
 import { createMockLogger } from "@exaix/testing";
 
@@ -852,7 +853,7 @@ Deno.test("json_object instruction stays on the user prompt after a prior tool t
   assertEquals(body.messages[2].role, "user");
   assertEquals(
     body.messages[2].content,
-    "final prompt\n\nRespond with a single json object matching the supplied schema. No prose, no markdown fence.",
+    `final prompt\n\n${STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION}`,
   );
 });
 

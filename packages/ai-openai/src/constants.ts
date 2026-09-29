@@ -84,7 +84,8 @@ export const STRUCTURED_OUTPUT_SCHEMA_MAX_BYTES = 64 * 1024;
 export const STRUCTURED_OUTPUT_SCHEMA_MAX_NESTING = 64;
 /** json_object mode requires the literal word "json" somewhere in the conversation. */
 export const STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION =
-  "Respond with a single json object matching the supplied schema. No prose, no markdown fence.";
+  "Respond with a single json object matching the supplied schema. This overrides any earlier instruction to " +
+  "use <content> or other wrapper tags. The first character of your reply must be {. No prose, no markdown fence.";
 
 export const OPENAI_DEFAULTS: IProviderDefaults = {
   defaultModel: DEFAULT_OPENAI_MODEL,

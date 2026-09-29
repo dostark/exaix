@@ -20,6 +20,7 @@ import {
   UnsupportedJsonSchemaError,
   validateStructuredOutput,
 } from "../src/compatible_structured_output.ts";
+import { STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION } from "../src/constants.ts";
 
 const schema = (body: Record<string, JSONValue>): Record<string, JSONValue> => body;
 
@@ -216,6 +217,11 @@ Deno.test("planStructuredOutput always uses json_object mode for DeepSeek, even 
   assertEquals(plan.mode, "json_object");
   assertEquals(plan.reason, undefined);
   assertEquals(plan.responseFormat.type, "json_object");
+});
+
+Deno.test("json_object instruction overrides prompt-level wrapper tags so the reply is bare JSON", () => {
+  assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("<content>"), true);
+  assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("first character"), true);
 });
 
 Deno.test("validateStructuredOutput accepts a valid real plan through both profiles", () => {
