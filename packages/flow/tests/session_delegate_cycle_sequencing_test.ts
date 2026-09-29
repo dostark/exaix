@@ -96,12 +96,28 @@ class AlwaysPassGateEvaluator implements IGateEvaluator {
 /** A gate evaluator whose promise for a given call index only resolves when told to. */
 class ControllableGateEvaluator implements IGateEvaluator {
   private readonly pendingResolvers: Array<(result: IGateResult) => void> = [];
+  private readonly waiters: Array<{ count: number; resolve: () => void }> = [];
   callCount = 0;
 
   evaluate(_config: IGateConfig): Promise<IGateResult> {
     this.callCount++;
+    for (let i = this.waiters.length - 1; i >= 0; i--) {
+      if (this.callCount >= this.waiters[i].count) {
+        this.waiters[i].resolve();
+        this.waiters.splice(i, 1);
+      }
+    }
     return new Promise((resolve) => {
       this.pendingResolvers.push(resolve);
+    });
+  }
+
+  waitForCall(targetCount = 1): Promise<void> {
+    if (this.callCount >= targetCount) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.waiters.push({ count: targetCount, resolve });
     });
   }
 
@@ -201,12 +217,12 @@ Deno.test("[unit] step N+1 is not invoked until step N's review promise resolves
 
   const resultPromise = handler.execute(makeCtx());
 
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await gateEvaluator.waitForCall(1);
   assertEquals(coordinator.calls.length, 1, "only step 1 may have been delegated before its review resolves");
   assertEquals(gateEvaluator.callCount, 1);
 
   gateEvaluator.resolveNext(true);
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await gateEvaluator.waitForCall(2);
   assertEquals(coordinator.calls.length, 2, "step 2 dispatches only after step 1's review passes");
 
   gateEvaluator.resolveNext(true);
