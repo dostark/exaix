@@ -18,6 +18,28 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 155 (OpenAI-Compatible Provider Cutover and ReAct Default)
+
+### Added
+
+- The `openai-chat` provider type talks to OpenAI and DeepSeek Chat Completions endpoints through
+  two qualified profiles with ready-made presets (see
+  [OpenAI-compatible Chat Completions](Exaix_User_Guide.md#openai-compatible-chat-completions-openai-chat)).
+- `[ai.compatible]` sets the profile, endpoint and byte limits for an `openai-chat` model, and a
+  named model can override one field.
+- Provider failures for `openai-chat` report one reason code such as `credential_missing`,
+  `net_permission_denied` or `pricing_unavailable`, without prompts, keys or tool contents.
+- The DeepSeek profile pins `deepseek-v4-pro` and accepts thinking requests, and both remote profiles
+  passed a live planning scenario.
+
+### Changed
+
+- Plan steps run through the ReAct strategy by default. MCP and CLI delegation stay explicit
+  execution capabilities.
+- A model with no registered rate records a null cost instead of a guessed price, and a finite daily
+  budget rejects an unpriced remote call.
+- An `openai-chat` response that carries more than one tool call is rejected before any tool runs.
+
 ## Unreleased — Phase 201 (Tool Aliasing and Tool-Name Unification)
 
 ### Added
