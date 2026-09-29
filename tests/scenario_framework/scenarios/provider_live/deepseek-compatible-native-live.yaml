@@ -1,0 +1,149 @@
+schema_version: "1.0.0"
+id: "deepseek-compatible-native-live"
+title: "Phase 155 Step 8 — live DeepSeek profile: thinking-mode planning with two serial native read rounds"
+pack: "provider_live"
+tags: ["provider-live", "planning", "safety-gate"]
+request_fixture: "fixtures/requests/provider_live/deepseek_compatible_live.md"
+mode_support: ["auto"]
+portals:
+  - alias: "live-portal"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/planning_marker_repo"
+    target_path: "$WORKSPACE_ROOT/live-portal"
+    git_init: true
+matrix:
+  cells:
+    - tool: "exactl"
+      provider: "openai-chat"
+      config: "configs/deepseek-chat-live.toml"
+      requires_bin: "true"
+      requires_key: "DEEPSEEK_API_KEY"
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$REQUEST_FIXTURE",
+      "--portal",
+      "live-portal",
+      "--agent-role",
+      "senior-coder",
+      "--plan-only",
+      "--thinking",
+      "true",
+    ]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 240
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-two-planning-read-rounds"
+    type: "journal-assert"
+    action_type: "planning.tools.completed"
+    trace_scoped: true
+    expect_sum:
+      path: "toolCalls"
+      gt: 1
+    output_criteria:
+      - id: "two-serial-read-rounds"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-planning-tool-call"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    expect_contains: ["\"phase\":\"planning\""]
+    output_criteria:
+      - id: "planning-tool-call-live"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-pinned-model-returned"
+    type: "journal-assert"
+    action_type: "llm.call.completed"
+    trace_scoped: true
+    payload_equals:
+      - path: "model"
+        value: "deepseek-flash"
+    output_criteria:
+      - id: "pinned-model-returned"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-thinking-projected"
+    type: "journal-assert"
+    action_type: "agent.effort_resolved"
+    trace_scoped: true
+    payload_equals:
+      - path: "thinking"
+        value: true
+    output_criteria:
+      - id: "thinking-projected-live"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-cost-estimated-from-verified-rates"
+    type: "journal-assert"
+    action_type: "llm.call.completed"
+    trace_scoped: true
+    payload_contains: ["\"cost_usd\":"]
+    payload_not_contains: ["\"cost_status\":\"unknown\""]
+    output_criteria:
+      - id: "cost-estimated-from-verified-rates"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-plan-carries-marker"
+    type: "file-contains"
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: "marker-in-live-plan"
+        kind: "text-contains"
+        contains: "EXAIX_LIVE_MARKER_c9a41"
+
+  - id: "assert-no-request-failure"
+    type: "journal-assert"
+    action_type: "request.failed"
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "no-request-failure"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]
