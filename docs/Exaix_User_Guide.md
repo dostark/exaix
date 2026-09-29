@@ -4407,6 +4407,135 @@ does not need to call a tool.
   selection through it.
 - Plan-step execution uses ReAct by default. MCP and CLI delegation remain explicit execution capabilities.
 
+#### OpenAI-compatible Chat Completions (`openai-chat`)
+
+The `openai-chat` provider talks to a Chat Completions endpoint through one shared client. Two
+qualified remote profiles ship, plus a loopback fixture profile for tests. Exaix does **not**
+claim support for arbitrary compatible providers: only the profiles below are qualified.
+
+| Profile    | Preset                       | Model                    | Endpoint host      | Secret variable    |
+| ---------- | ---------------------------- | ------------------------ | ------------------ | ------------------ |
+| `openai`   | `configs/openai-chat.toml`   | `gpt-6-luna` (pinned)    | `api.openai.com`   | `OPENAI_API_KEY`   |
+| `deepseek` | `configs/deepseek-chat.toml` | `deepseek-flash` (alias) | `api.deepseek.com` | `DEEPSEEK_API_KEY` |
+
+Copy a preset, or set the keys yourself:
+
+```toml
+[system]
+allow_net = ["api.openai.com"]
+
+[ai]
+provider = "openai-chat"
+model = "gpt-6-luna"
+
+[ai.compatible]
+profile = "openai"
+
+[models.default]
+provider = "openai-chat"
+model = "gpt-6-luna"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[execution]
+native_tools_enabled = true
+```
+
+`[ai.compatible]` keys (a named `[models.*]` entry may carry its own `compatible` block, and unset
+fields inherit from the global block only for the same profile):
+
+| Key                       | Default          | Meaning                                                        |
+| ------------------------- | ---------------- | -------------------------------------------------------------- |
+| `profile`                 | none, required   | `openai`, `deepseek` or `local-test`                           |
+| `endpoint`                | profile endpoint | Must match the profile host. Remote profiles accept HTTPS only |
+| `allow_insecure_loopback` | `false`          | Only the `local-test` profile may use a loopback HTTP endpoint |
+| `max_response_bytes`      | 8 MiB            | Largest accepted response body                                 |
+| `max_tool_argument_bytes` | 64 KiB           | Largest accepted tool-call argument object                     |
+| `max_history_bytes`       | 8 MiB            | Largest accepted replayed conversation                         |
+
+A limits-only global block is inherited by every `openai-chat` model that sets the same profile. A
+named model can override one field, including an explicit `false`, and a finite daily budget needs a
+registered rate for the returned model:
+
+```toml
+[system]
+allow_net = ["api.deepseek.com"]
+
+[ai.compatible]
+profile = "deepseek"
+max_response_bytes = 4194304
+
+[models.default]
+provider = "openai-chat"
+model = "deepseek-flash"
+
+[models.strict]
+provider = "openai-chat"
+model = "deepseek-flash"
+
+[models.strict.compatible]
+profile = "deepseek"
+allow_insecure_loopback = false
+max_history_bytes = 2097152
+
+[rate_limiting]
+max_cost_per_day = 5.0
+```
+
+Switching `profile` resets the endpoint and loopback grant, so a local endpoint never carries over
+to a remote profile. A missing profile or a missing registration fails before the provider is built. It never
+falls back to the mock provider.
+
+**Secrets and network.** The key comes from the daemon's own environment and never from the preset.
+`exactl daemon start` grants network access from `system.allow_net`, so a DeepSeek deployment must
+list `api.deepseek.com`. Without the host, provider creation fails with `net_permission_denied`. The
+`deno task start:fg` script grants only `EXA_`, `HOME` and `USER` environment variables and a fixed
+host list. For a remote profile, add the secret variable to its `--allow-env` list and the endpoint
+host to its `--allow-net` list, or the provider fails with `env_permission_denied` or
+`net_permission_denied`.
+
+**Behavior.**
+
+- With `native_tools_enabled = true` the provider receives real `tools[]` and runs one tool call
+  per round. A response that carries more than one tool call is rejected before any tool runs, and
+  Exaix never drops the extra calls. Parallel batches belong to Phase 202. DeepSeek cannot forbid
+  parallel calls, so a live DeepSeek run can still hit that rejection. With the flag off, ReAct uses
+  the TOML action-block path.
+- Planning uses strict `json_schema` output on `openai` when the schema allows it. `deepseek` always
+  uses `json_object` mode plus a schema instruction, and Exaix validates the result locally.
+- `deepseek` supports explicit thinking (`--thinking true`) and replays `reasoning_content` across
+  tool rounds. The pinned `openai` model rejects unsupported effort or thinking options with
+  `unsupported_call_option` instead of dropping them.
+- One deadline (`timeout_ms`) bounds each provider call. A malformed, oversized
+  or unadvertised response fails with `protocol_invalid`.
+- Cost comes from registered rates for the exact returned model. An unknown rate records a null cost
+  with `cost_status: unknown`. With a finite `rate_limiting.max_cost_per_day`, a remote call with no
+  registered rate fails with `pricing_unavailable` before any request is sent. Registered
+  `deepseek-flash` rates are the peak-hour rates, so DeepSeek estimates are an upper bound.
+- Fixture capture (`EXA_CAPTURE_FIXTURES_DIR`) is rejected for this provider with `capture_unsupported`.
+
+**Failure reasons.** Failures carry one of these allowlisted reason codes and never include prompts,
+keys or tool contents:
+
+| Code                      | Meaning                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `credential_missing`      | The secret variable for the profile is unset                              |
+| `env_permission_denied`   | The daemon may not read the secret variable                               |
+| `net_permission_denied`   | The daemon may not reach the profile host                                 |
+| `profile_mismatch`        | The endpoint, model or key does not match the profile                     |
+| `registration_missing`    | The `openai-chat` provider is not registered                              |
+| `capture_unsupported`     | Fixture capture is enabled for this provider                              |
+| `unsupported_call_option` | A call asked for an effort or thinking option the profile cannot honor    |
+| `pricing_unavailable`     | A finite cost budget is set and the returned model has no registered rate |
+| `protocol_invalid`        | The response was malformed, oversized, multi-call or unadvertised         |
+
+**Live qualification.** The `openai` profile passed a live scenario on 2026-09-28. The `deepseek`
+profile is not qualified: its live scenario passed three runs after two fixes, but earlier trials
+were rejected for multi-call responses, and the leg stays blocked until the operator accepts those
+runs or Phase 202 lands. Unit and fixture tests never prove live compatibility.
+
 ### 5.4 Testing & CI Model Aliases
 
 Exaix provides two predefined model configurations for testing and CI workflows via `exa.config.toml`:
@@ -5327,13 +5456,14 @@ exactl journal --filter since=$(date +%Y-%m-%d) --payload %cost% --format json >
 
 Cost tracking supports all major AI providers:
 
-| Provider  | Token Tracking | Cost Estimation | Budget Enforcement |
-| --------- | -------------- | --------------- | ------------------ |
-| Anthropic | ✅             | ✅              | ✅                 |
-| OpenAI    | ✅             | ✅              | ✅                 |
-| Google    | ✅             | ✅              | ✅                 |
-| Ollama    | ✅             | ❌ (free)       | ❌                 |
-| Mock      | ✅             | ❌              | ❌                 |
+| Provider                                                            | Token Tracking | Cost Estimation                                      | Budget Enforcement                                         |
+| ------------------------------------------------------------------- | -------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| Anthropic                                                           | ✅             | ✅                                                   | ✅                                                         |
+| OpenAI                                                              | ✅             | ✅                                                   | ✅                                                         |
+| Google                                                              | ✅             | ✅                                                   | ✅                                                         |
+| OpenAI-compatible (`openai-chat`, profiles `openai` and `deepseek`) | ✅             | ✅ from registered rates, otherwise unknown (`null`) | ✅ only with known rates (`pricing_unavailable` otherwise) |
+| Ollama                                                              | ✅             | ❌ (free)                                            | ❌                                                         |
+| Mock                                                                | ✅             | ❌                                                   | ❌                                                         |
 
 ## 12. Safety Gates & Plan Amendments
 

@@ -46,7 +46,7 @@ export interface IProviderMetadata {
   isAggregator?: boolean;
   /** True when generate() serializes IModelOptions.tools/toolChoice into a real API request; the capability gate reads this to pick native tool-calling vs the TOML-block prose convention (absent/undefined behaves as false). */
   supportsNativeTools?: boolean;
-  /** Chat protocol format supported by this provider. */
+  /** Descriptive transport metadata. It does not select an execution format. */
   chatFormat?: ChatFormat;
   /** True only when this provider accepts an invocation-local complete native conversation. */
   supportsNativeConversation?: boolean;

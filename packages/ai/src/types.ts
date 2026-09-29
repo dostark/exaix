@@ -140,7 +140,7 @@ export interface IModelOptions {
   nativeConversation?: INativeConversationSnapshot;
   /** Internal transport signal used to enforce one provider-call deadline. */
   requestSignal?: AbortSignal;
-  /** Chat protocol format: "anthropic" (Messages API), "openai" (Chat Completions API), or "native" (TOML action blocks). */
+  /** Reserved compatibility field. No provider dispatches on it. */
   chatFormat?: ChatFormat;
   /** Location of call for fixture replay addressing. Assigned by AgentRunner from IParsedRequest. */
   callSite?: ICallSite;
