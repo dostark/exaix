@@ -167,6 +167,65 @@ Deno.test("stripIntroducedNulls recurses into nested objects and arrays", () => 
   assertEquals("note" in stripped.items[0], false);
 });
 
+Deno.test("strict output removes introduced nulls inside local refs and matching anyOf branches", () => {
+  const original = schema({
+    type: "object",
+    properties: {
+      child: { $ref: "#/$defs/Child" },
+      choice: {
+        anyOf: [
+          {
+            type: "object",
+            properties: { kind: { const: "a" }, note: { type: "string" } },
+            required: ["kind"],
+          },
+          {
+            type: "object",
+            properties: { kind: { const: "b" }, count: { type: "number" } },
+            required: ["kind"],
+          },
+        ],
+      },
+    },
+    required: ["child", "choice"],
+    $defs: {
+      Child: {
+        type: "object",
+        properties: { title: { type: "string" }, optional: { type: "string" } },
+        required: ["title"],
+      },
+    },
+  });
+  const response = { child: { title: "t", optional: null }, choice: { kind: "a", note: null } };
+  assertEquals(planStructuredOutput("openai", original).mode, "json_schema");
+  assertEquals(validateStructuredOutput(JSON.stringify(response), original, "openai"), {
+    child: { title: "t" },
+    choice: { kind: "a" },
+  });
+});
+
+Deno.test("strict output preserves legal nulls in enum, const, union type, ref and anyOf", () => {
+  const original = schema({
+    type: "object",
+    properties: {
+      enumValue: { enum: ["x", null] },
+      constValue: { const: null },
+      unionValue: { type: ["string", "null"] },
+      nested: { $ref: "#/$defs/Nullable" },
+      choice: { anyOf: [{ type: "null" }, { type: "string" }] },
+    },
+    $defs: { Nullable: { type: "object", properties: { value: { enum: ["y", null] } } } },
+  });
+  const response = {
+    enumValue: null,
+    constValue: null,
+    unionValue: null,
+    nested: { value: null },
+    choice: null,
+  };
+  assertEquals(validateStructuredOutput(JSON.stringify(response), original, "openai"), response);
+});
+
 Deno.test("planStructuredOutput picks OpenAI strict json_schema mode for a strict-representable schema", () => {
   const plan = planStructuredOutput(
     "openai",

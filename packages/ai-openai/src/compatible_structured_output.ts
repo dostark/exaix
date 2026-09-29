@@ -177,16 +177,35 @@ export function isStrictRepresentable(schema: Record<string, JSONValue>): boolea
   return check(schema) && Object.values(defs).every(check);
 }
 
-/** True iff the original property schema allows `null` — a strip-safe null, not strict mode's. */
-function originalSchemaAllowsNull(propSchema: JSONValue): boolean {
-  if (!isPlainObject(propSchema)) return false;
-  if (propSchema.type === "null") return true;
-  if (Array.isArray(propSchema.anyOf)) return propSchema.anyOf.some((branch) => originalSchemaAllowsNull(branch));
-  return false;
+/** Checks the original contract, including refs, enum, const and union types. */
+function originalSchemaAccepts(
+  value: JSONValue,
+  node: JSONValue,
+  defs: Record<string, JSONValue>,
+): boolean {
+  if (!isPlainObject(node)) return false;
+  const schema = { ...node, $defs: defs } as Parameters<typeof z.fromJSONSchema>[0];
+  return z.fromJSONSchema(schema).safeParse(value).success;
+}
+
+/** Selects a branch only when its normalized value satisfies the original union. */
+function stripAnyOfIntroducedNulls(
+  value: JSONValue,
+  node: Record<string, JSONValue>,
+  defs: Record<string, JSONValue>,
+  strip: (value: JSONValue, node: JSONValue) => JSONValue,
+): JSONValue {
+  if (originalSchemaAccepts(value, node, defs)) return value;
+  for (const branch of node.anyOf as JSONValue[]) {
+    const normalized = strip(value, branch);
+    if (originalSchemaAccepts(normalized, node, defs)) return normalized;
+  }
+  return value;
 }
 
 /** Closes every object and makes each optional property required and nullable (strict mode). */
 export function toStrictSchema(schema: Record<string, JSONValue>): Record<string, JSONValue> {
+  const defs = isPlainObject(schema.$defs) ? schema.$defs : {};
   const strictifyNode = (node: JSONValue): JSONValue => {
     if (!isPlainObject(node)) return node;
     const out: Record<string, JSONValue> = { ...node };
@@ -195,7 +214,7 @@ export function toStrictSchema(schema: Record<string, JSONValue>): Record<string
       const strictProps: Record<string, JSONValue> = {};
       for (const [key, propSchema] of Object.entries(node.properties)) {
         const strictProp = strictifyNode(propSchema);
-        strictProps[key] = requiredSet.has(key) || originalSchemaAllowsNull(propSchema)
+        strictProps[key] = requiredSet.has(key) || originalSchemaAccepts(null, propSchema, defs)
           ? strictProp
           : { anyOf: [strictProp, { type: "null" }] };
       }
@@ -218,23 +237,42 @@ export function toStrictSchema(schema: Record<string, JSONValue>): Record<string
   return strict;
 }
 
+/** Drops optional properties whose `null` only exists because strict mode made them required. */
+function stripObjectIntroducedNulls(
+  value: Record<string, JSONValue>,
+  properties: Record<string, JSONValue>,
+  required: JSONValue,
+  defs: Record<string, JSONValue>,
+  strip: (value: JSONValue, node: JSONValue) => JSONValue,
+): Record<string, JSONValue> {
+  const requiredSet = new Set(Array.isArray(required) ? required as string[] : []);
+  const out: Record<string, JSONValue> = {};
+  for (const [key, fieldValue] of Object.entries(value)) {
+    const propSchema = properties[key];
+    const wasOptional = propSchema !== undefined && !requiredSet.has(key);
+    if (fieldValue === null && wasOptional && !originalSchemaAccepts(null, propSchema, defs)) continue;
+    out[key] = propSchema !== undefined ? strip(fieldValue, propSchema) : fieldValue;
+  }
+  return out;
+}
+
 /** Reverses toStrictSchema: drops a `null` that was optional and didn't originally allow it. */
 export function stripIntroducedNulls(data: JSONValue, originalSchema: Record<string, JSONValue>): JSONValue {
+  const defs = isPlainObject(originalSchema.$defs) ? originalSchema.$defs : {};
   const strip = (value: JSONValue, node: JSONValue): JSONValue => {
     if (!isPlainObject(node)) return value;
+    if (typeof node.$ref === "string") {
+      const name = LOCAL_REF_PATTERN.exec(node.$ref)?.[1];
+      return name && defs[name] !== undefined ? strip(value, defs[name]) : value;
+    }
+    if (Array.isArray(node.anyOf)) {
+      return stripAnyOfIntroducedNulls(value, node, defs, strip);
+    }
     if (Array.isArray(value) && node.items !== undefined) {
       return value.map((item) => strip(item, node.items));
     }
     if (isPlainObject(value) && isPlainObject(node.properties)) {
-      const requiredSet = new Set(Array.isArray(node.required) ? node.required as string[] : []);
-      const out: Record<string, JSONValue> = {};
-      for (const [key, fieldValue] of Object.entries(value)) {
-        const propSchema = node.properties[key];
-        const wasOptional = propSchema !== undefined && !requiredSet.has(key);
-        if (fieldValue === null && wasOptional && !originalSchemaAllowsNull(propSchema)) continue;
-        out[key] = propSchema !== undefined ? strip(fieldValue, propSchema) : fieldValue;
-      }
-      return out;
+      return stripObjectIntroducedNulls(value, node.properties, node.required ?? null, defs, strip);
     }
     return value;
   };

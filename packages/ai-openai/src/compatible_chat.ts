@@ -137,7 +137,9 @@ function applyProfileOptions(
   const isDeepSeek: boolean = profile === "deepseek";
   if (!options?.tools?.length) delete body.tool_choice;
   if (options?.tools?.length && !isDeepSeek) body.parallel_tool_calls = false;
-  if (options?.thinking !== undefined) body.thinking = { type: options.thinking ? "enabled" : "disabled" };
+  if (isDeepSeek && options?.thinking !== undefined) {
+    body.thinking = { type: options.thinking ? "enabled" : "disabled" };
+  }
   if (options?.effort !== undefined) body.reasoning_effort = options.effort;
   // The OpenAI profile's pinned reasoning model rejects function tools at any other effort on Chat Completions.
   else if (profile === OPENAI_PROFILE && options?.tools?.length) body.reasoning_effort = OPENAI_TOOL_REASONING_EFFORT;

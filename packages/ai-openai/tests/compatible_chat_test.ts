@@ -486,6 +486,40 @@ Deno.test("compatible chat rejects explicit thinking on the OpenAI profile's pin
   await assertRejects(() => provider.generate("prompt", { effort: "medium" }));
 });
 
+Deno.test("compatible chat omits unsupported false thinking for direct OpenAI calls", async () => {
+  let requestBody: IFixtureChatRequest | undefined;
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
+    requestBody = await request.json();
+    return Response.json({
+      model: "gpt-6-luna",
+      choices: [{ message: { role: "assistant", content: "done" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+    });
+  });
+  const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+  try {
+    const provider = new OpenAIProvider({
+      apiKey: "fixture-key",
+      model: "gpt-6-luna",
+      baseUrl: endpoint,
+      compatible: {
+        profile: "openai",
+        endpoint,
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    await provider.generate("prompt", { thinking: false });
+    assertEquals(requestBody?.thinking, undefined);
+    const built = createCompatibleChatRequestInit("fixture-key", "gpt-6-luna", "prompt", { thinking: false }, "openai");
+    assertEquals((JSON.parse(built.init.body as string) as IFixtureChatRequest).thinking, undefined);
+  } finally {
+    await server.shutdown();
+  }
+});
+
 Deno.test("compatible chat still sets parallel_tool_calls:false for the OpenAI and local-test profiles", async () => {
   for (const profile of ["openai", "local-test"] as const) {
     let requestBody: IFixtureChatRequest | undefined;
@@ -783,6 +817,48 @@ Deno.test("compatible chat sends OpenAI strict json_schema mode for a representa
   }
 });
 
+Deno.test("compatible chat returns the original-schema value after strict nested ref normalization", async () => {
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, () =>
+    Response.json({
+      model: "gpt-6-luna",
+      choices: [{
+        message: { role: "assistant", content: '{"title":"T","details":{"optional":null}}' },
+        finish_reason: "stop",
+      }],
+      usage: { prompt_tokens: 10, completion_tokens: 2, total_tokens: 12 },
+    }));
+  const endpoint = `http://127.0.0.1:${(server.addr as Deno.NetAddr).port}/v1/chat/completions`;
+  try {
+    const provider = new OpenAIProvider({
+      apiKey: "fixture-key",
+      model: "gpt-6-luna",
+      baseUrl: endpoint,
+      compatible: {
+        profile: "openai",
+        endpoint,
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    const result = await provider.generate("prompt", {
+      jsonSchema: {
+        type: "object",
+        properties: { title: { type: "string" }, details: { $ref: "#/$defs/Details" } },
+        required: ["title", "details"],
+        $defs: {
+          Details: { type: "object", properties: { optional: { type: "string" } } },
+        },
+      },
+    });
+    assertEquals(result.structuredOutputMode, "json_schema");
+    assertEquals(result.content, '{"title":"T","details":{}}');
+  } finally {
+    await server.shutdown();
+  }
+});
+
 Deno.test("compatible chat falls back to json_object mode and instruction text for a non-strict-representable schema", async () => {
   let requestBody: (IFixtureChatRequest & { response_format?: JSONValue }) | undefined;
   const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
@@ -888,4 +964,16 @@ Deno.test("compatible chat rejects structured output content that violates the s
   } finally {
     await server.shutdown();
   }
+});
+
+Deno.test("compatible request builder keeps DeepSeek enabled and disabled thinking and omits it for OpenAI", () => {
+  const thinking = (profile: "openai" | "deepseek", value: boolean): IFixtureChatRequest["thinking"] =>
+    (JSON.parse(
+      createCompatibleChatRequestInit("fixture-key", "model", "prompt", { thinking: value }, profile).init
+        .body as string,
+    ) as IFixtureChatRequest).thinking;
+  assertEquals(thinking("deepseek", true), { type: "enabled" });
+  assertEquals(thinking("deepseek", false), { type: "disabled" });
+  assertEquals(thinking("openai", false), undefined);
+  assertEquals(thinking("openai", true), undefined);
 });
