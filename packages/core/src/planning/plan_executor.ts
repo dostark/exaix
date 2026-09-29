@@ -299,10 +299,17 @@ export class PlanExecutor {
    * Create an AgentComposer instance with proper dependencies.
    */
   private async createAgentExecutor(traceId: string, context: IPlanContext): Promise<AgentComposer> {
-    const pathResolver = new PathResolver(this.config, {
+    const portalAlias = this.resolvePortalName(context.frontmatter.portal);
+    const executionConfig = {
+      ...this.config,
+      portals: this.config.portals.map((portal) =>
+        portal.alias === portalAlias ? { ...portal, target_path: this.repoPath } : portal
+      ),
+    };
+    const pathResolver = new PathResolver(executionConfig, {
       traceId,
     });
-    const permissions = new PortalPermissionsService(this.config.portals);
+    const permissions = new PortalPermissionsService(executionConfig.portals);
 
     const options: IAgentComposerOptions = {};
     if (this.options.guardrailRunner) {
@@ -335,14 +342,14 @@ export class PlanExecutor {
       : undefined;
 
     return new AgentComposer({
-      config: this.config,
+      config: executionConfig,
       db: this.db as DatabaseService,
       logger: this.logger,
       pathResolver,
       permissions,
       provider: this.llmProvider,
       toolRegistry: new ToolRegistry({
-        config: this.config,
+        config: executionConfig,
         traceId,
         baseDir: this.repoPath,
         pathResolver,

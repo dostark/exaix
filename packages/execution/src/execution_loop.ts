@@ -352,29 +352,31 @@ export class ExecutionLoop {
         await this.persistExecutionReport(traceId, workResult.report);
       }
 
-      const commitSha = workResult.didMutateRepo && gitSetup.branchName
-        ? await this.gitExecutionSetupService.commitChanges(
-          gitSetup.executionGitService,
-          requestId!,
-          traceId!,
-          this.agentRole,
-          (noChangesTraceId, noChangesRequestId) => {
-            this.logActivity(DomainEventType.ExecutionNoChanges, noChangesTraceId, {
-              request_id: noChangesRequestId,
-            });
-          },
-        )
-        : null;
+      const commitSha = workResult.commitSha ??
+        (workResult.didMutateRepo && gitSetup.branchName
+          ? await this.gitExecutionSetupService.commitChanges(
+            gitSetup.executionGitService,
+            requestId!,
+            traceId!,
+            this.agentRole,
+            (noChangesTraceId, noChangesRequestId) => {
+              this.logActivity(DomainEventType.ExecutionNoChanges, noChangesTraceId, {
+                request_id: noChangesRequestId,
+              });
+            },
+          )
+          : null);
 
       // Register review
       if (commitSha) {
         const baseBranch = gitSetup.baseBranch ??
           await this.gitExecutionSetupService.resolveBaseBranch(frontmatter, portalGitService!, portalRepoRoot);
+        const branch = await gitSetup.executionGitService.getCurrentBranch();
         await this.registerReview({
           requestId: requestId!,
           traceId: traceId!,
           portal: frontmatter.portal || "unknown",
-          branch: gitSetup.branchName || "unknown",
+          branch,
           commitSha,
           repository: portalRepoRoot,
           baseBranch,
@@ -465,7 +467,9 @@ export class ExecutionLoop {
     executionRoot: string;
     executionGitService: IGitService;
     frontmatter: PlanFrontmatter;
-  }): Promise<{ didExecuteWork: boolean; didMutateRepo: boolean; report?: string; completionSummary?: string }> {
+  }): Promise<
+    { didExecuteWork: boolean; didMutateRepo: boolean; commitSha?: string; report?: string; completionSummary?: string }
+  > {
     if (args.structuredPlan) {
       if (args.isReadOnly && (!this.llmProvider || !this.db)) {
         this.logActivity(DomainEventType.ExecutionReadonlyPlanSkipped, args.traceId, {
@@ -494,6 +498,7 @@ export class ExecutionLoop {
       return {
         didExecuteWork: true,
         didMutateRepo: !args.isReadOnly,
+        ...(structuredPlanResult.lastCommitSha ? { commitSha: structuredPlanResult.lastCommitSha } : {}),
         report: structuredPlanResult.report,
         completionSummary: structuredPlanResult.report,
       };
@@ -787,7 +792,7 @@ export class ExecutionLoop {
     frontmatter: PlanFrontmatter,
     planPath: string,
     options?: Opt<{ enableGit?: boolean; generateReport?: boolean }, Reason.ExecutionConfig>,
-  ): Promise<{ report?: string }> {
+  ): Promise<{ report?: string; lastCommitSha: string | null }> {
     if (!this.llmProvider) {
       throw new Error("LLM provider required for structured plan execution");
     }
@@ -837,7 +842,7 @@ export class ExecutionLoop {
 
     // Execute the plan
     const result = await planExecutor.execute(dummyPlanPath, context);
-    return { report: result.report };
+    return { report: result.report, lastCommitSha: result.lastCommitSha };
   }
 
   /**

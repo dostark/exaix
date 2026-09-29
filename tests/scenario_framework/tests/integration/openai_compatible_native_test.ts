@@ -16,6 +16,7 @@ import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native.yaml";
+const WRITE_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-write.yaml";
 const DYNAMIC_SCENARIO_PATH = "scenarios/agent_flows/openai-compatible-native-dynamic.yaml";
 const DYNAMIC_CALL_IDS = ["compat-dyn-read-1", "compat-dyn-read-2"];
 const DYNAMIC_PATHS = ["src/utils.ts", "src/models.ts"];
@@ -29,6 +30,7 @@ const FIXTURE_MODEL = "compat-fixture-v1";
 const FIXTURE_KEY = "local-fixture-key";
 const PLANNING_CALL_ID = "compat-planning-read-1";
 const EXECUTION_CALL_ID = "compat-exec-read-1";
+const WRITE_CALL_ID = "compat-exec-write-1";
 const LARGE_READ_PATH = "src/business_logic_test.ts";
 const PORTAL_MARKER_PATH = "src/utils.ts";
 const REPORT_SUMMARY_HEADER = "### EXECUTION REPORT SUMMARY ###";
@@ -76,7 +78,21 @@ function toolCall(id: string, path: string, portal?: string): IFixtureMessage {
   };
 }
 
-type FixtureVariant = "invalid-plan" | "oversized" | "repeat-read";
+function writeToolCall(): IFixtureMessage {
+  return {
+    content: null,
+    tool_calls: [{
+      id: WRITE_CALL_ID,
+      type: "function",
+      function: {
+        name: "write_file",
+        arguments: JSON.stringify({ path: "src/compat_review.txt", content: "fixture change\n" }),
+      },
+    }],
+  };
+}
+
+type FixtureVariant = "invalid-plan" | "oversized" | "repeat-read" | "write";
 
 function startFixture(
   observed: IObservedRequest[],
@@ -125,8 +141,12 @@ function startFixture(
         {
           content: JSON.stringify({
             title: "Compatible native scenario",
-            description: "Read the portal utility module and report it.",
-            steps: [{ step: 1, title: "Read utils", description: `Read ${PORTAL_MARKER_PATH} and report.` }],
+            description: variant === "write"
+              ? "Write the portal review marker."
+              : "Read the portal utility module and report it.",
+            steps: variant === "write"
+              ? [{ step: 1, title: "Write marker", description: "Create src/compat_review.txt." }]
+              : [{ step: 1, title: "Read utils", description: `Read ${PORTAL_MARKER_PATH} and report.` }],
           }),
         },
         "stop",
@@ -142,6 +162,11 @@ function startFixture(
     if (variant === "repeat-read") {
       const completedReads = messages.filter((message) => message.role === "tool").length;
       return completion(toolCall(`${EXECUTION_CALL_ID}-${completedReads + 1}`, LARGE_READ_PATH), "tool_calls", 70);
+    }
+    if (variant === "write") {
+      return !hasToolResult
+        ? completion(writeToolCall(), "tool_calls", 70)
+        : completion({ content: `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}portal marker written` }, "stop", 80);
     }
     if (!hasToolResult) {
       return completion(toolCall(EXECUTION_CALL_ID, PORTAL_MARKER_PATH), "tool_calls", 70);
@@ -246,6 +271,63 @@ Deno.test({
       assert(toolPhases.length >= 2, toolPhases.join(","));
       assert(rows.some((row) => row.action_type === "execution.completed"));
       assertEquals(rows.some((row) => row.action_type.endsWith(".failed")), false);
+    } finally {
+      await fixture.shutdown();
+      await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+      await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name: "[phase155] compatible portal change persists a trace-linked review and execution memory artifact",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const workspaceRoot = await Deno.makeTempDir({ prefix: "phase155-write-ws-" });
+    const outputDir = await Deno.makeTempDir({ prefix: "phase155-write-out-" });
+    const observed: IObservedRequest[] = [];
+    const fixture = startFixture(observed, false, false, "write");
+    try {
+      let run: Awaited<ReturnType<typeof runSyntheticScenario>> | undefined;
+      await withEnv({ EXA_COMPAT_TEST_API_KEY: FIXTURE_KEY }, async () => {
+        run = await runSyntheticScenario({
+          frameworkHome: FRAMEWORK_HOME,
+          scenarioPath: WRITE_SCENARIO_PATH,
+          workspaceRoot,
+          outputDir,
+          mode: ScenarioExecutionMode.AUTO,
+          env: { EXA_COMPAT_FIXTURE_PORT: String((fixture.addr as Deno.NetAddr).port) },
+        });
+      });
+      assert(run);
+      assertEquals(run.manifest.outcome, "success", JSON.stringify(run.manifest.steps));
+      const configPath = join(workspaceRoot, "exa.config.toml");
+      const rows = await readActivity(configPath);
+      const completed = rows.find((row) => row.action_type === "execution.completed");
+      assert(completed?.trace_id);
+      const traceId = completed.trace_id;
+      const db = new DatabaseService(new ConfigService(configPath).getAll());
+      try {
+        const reviews = await db.preparedAll<{ trace_id: string; commit_sha: string; worktree_path: string | null }>(
+          "SELECT trace_id, commit_sha, worktree_path FROM reviews WHERE trace_id = ?",
+          [traceId],
+        );
+        assertEquals(reviews.length, 1);
+        assert(reviews[0].commit_sha.length > 0);
+        assert(reviews[0].worktree_path);
+        assertEquals(
+          await Deno.readTextFile(join(reviews[0].worktree_path, "src", "compat_review.txt")),
+          "fixture change\n",
+        );
+      } finally {
+        await db.close();
+      }
+      const traceDir = join(workspaceRoot, "Memory", "Execution", traceId);
+      assert((await Deno.readTextFile(join(traceDir, "summary.md"))).length > 0);
+      assert((await Deno.readTextFile(join(traceDir, "plan.md"))).length > 0);
+      assert(rows.some((row) => row.action_type === "report.generated" && row.trace_id === traceId));
     } finally {
       await fixture.shutdown();
       await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
@@ -477,6 +559,18 @@ Deno.test({
       assert(result.rows.some((row) => row.action_type === "llm.call.failed" && row.trace_id === terminal.trace_id));
       assert(result.rows.some((row) => row.action_type === "planning.tools.aborted"));
       assertEquals(result.rows.some((row) => row.action_type.startsWith("execution.")), false);
+      const db = new DatabaseService(new ConfigService(join(workspaceRoot, "exa.config.toml")).getAll());
+      try {
+        const reviews = await db.preparedAll<{ trace_id: string }>(
+          "SELECT trace_id FROM reviews WHERE trace_id = ?",
+          [terminal.trace_id],
+        );
+        assertEquals(reviews.length, 0);
+      } finally {
+        await db.close();
+      }
+      const successArtifact = join(workspaceRoot, "Memory", "Execution", terminal.trace_id!, "plan.md");
+      assertEquals(await Deno.stat(successArtifact).then(() => true, () => false), false);
       const plans = await Deno.stat(join(workspaceRoot, "Workspace", "Plans")).then(
         () => [...Deno.readDirSync(join(workspaceRoot!, "Workspace", "Plans"))].length,
         () => 0,
