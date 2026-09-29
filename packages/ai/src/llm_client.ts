@@ -13,6 +13,7 @@ import {
   canonicalizeToolName,
   DEFAULT_MODEL_FALLBACK,
   McpToolName,
+  REACT_DEFAULT_MAX_TOKENS,
   ReActActionType,
   TaskComplexity,
 } from "@exaix/core";
@@ -24,7 +25,8 @@ import type { IProviderMetadata } from "./provider_registry.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
-import type { PromptBudgetAllocator } from "@exaix/core";
+import { PromptBudgetAllocator } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { PromptBudgetSection } from "@exaix/schemas/prompt_budget.ts";
 import { measureNativeConversation } from "./native_conversation_budget.ts";
@@ -93,15 +95,8 @@ Respond in JSON format:
 }
 `;
 
-const NATIVE_REACT_PROMPT_TEMPLATE = `
-You are {agent_role_name}, {agent_role_description}.
-
-Step Objective: {step_objective}
-
-Original Input:
-{original_input}
-
-Available tools are supplied through the provider tool interface. Use one tool at a time,
+const NATIVE_REACT_TOOL_INSTRUCTION =
+  `Available tools are supplied through the provider tool interface. Use one tool at a time,
 or provide a final answer when the objective is complete. Do not write a JSON action envelope.
 `;
 
@@ -164,12 +159,18 @@ export class LlmClient implements ILlmClient {
     originalInput: string;
     availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
   }): Promise<INativeConversationSnapshot> {
-    const initialPrompt = NATIVE_REACT_PROMPT_TEMPLATE
-      .replace("{agent_role_name}", params.agentRole.name)
-      .replace("{agent_role_description}", params.agentRole.description ?? "an expert assistant")
-      .replace("{step_objective}", params.stepObjective)
-      .replace("{original_input}", params.originalInput);
-    const initialPromptSections = [{ section: PromptBudgetSection.SYSTEM, text: initialPrompt }];
+    const initialPromptSections = [
+      {
+        section: PromptBudgetSection.SYSTEM,
+        text: `\nYou are ${params.agentRole.name}, ${params.agentRole.description ?? "an expert assistant"}.\n\n`,
+      },
+      {
+        section: PromptBudgetSection.PLAN,
+        text: `Step Objective: ${params.stepObjective}\n\nOriginal Input:\n${params.originalInput}\n\n`,
+      },
+      { section: PromptBudgetSection.SYSTEM, text: NATIVE_REACT_TOOL_INSTRUCTION },
+    ];
+    const initialPrompt = initialPromptSections.map((section) => section.text).join("");
     return await this.measureNativeSnapshot(
       { initialPrompt, initialPromptSections, turns: [] },
       params.agentRole.model ?? this.defaultModel,
@@ -183,6 +184,8 @@ export class LlmClient implements ILlmClient {
     model: string,
     tools: readonly { name: string; description: string; inputSchema: Record<string, JSONValue> }[],
     enforceBudget: boolean,
+    outputTokens = 0,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<INativeConversationSnapshot> {
     const sections = [
       ...(snapshot.initialPromptSections ?? [{ section: PromptBudgetSection.SYSTEM, text: snapshot.initialPrompt }]),
@@ -214,10 +217,27 @@ export class LlmClient implements ILlmClient {
       })),
     };
     const measurement = await measureNativeConversation(this.tokenizer, model, projection, sections);
-    if (enforceBudget && this.promptBudgetAllocator) {
-      const budget = await this.promptBudgetAllocator.allocate(model);
-      const inputLimit = Math.max(0, budget.totalBudgetTokens - budget.safetyBufferTokens);
-      if (measurement.totalTokens > inputLimit) {
+    if (enforceBudget) {
+      const allocator = this.promptBudgetAllocator ?? new PromptBudgetAllocator(undefined, this.tokenizer);
+      const budget = await allocator.allocate(model, {
+        systemUsedTokens: measurement.sections.system,
+        planUsedTokens: measurement.sections.plan,
+        loopHistoryUsedTokens: measurement.sections.loopHistory,
+      });
+      const inputLimit = Math.max(0, budget.totalBudgetTokens - budget.safetyBufferTokens - outputTokens);
+      const overSection = Object.entries(measurement.sections).some(([section, count]) =>
+        count > budget.sections[section as keyof typeof budget.sections]
+      );
+      if (measurement.totalTokens > inputLimit || overSection) {
+        await this.logger?.info(DomainEventType.ContextBudgetExceeded, "", {
+          model: budget.model,
+          contextWindow: budget.totalBudgetTokens,
+          inputLimit,
+          outputTokens,
+          estimatedTokens: measurement.totalTokens,
+          sectionBreakdown: measurement.sections,
+          tokenSource: measurement.tokenSource,
+        }, traceId);
         throw new ContextBudgetExceededError(
           `Dynamic native prompt exceeds the input budget for ${budget.model}`,
           budget.model,
@@ -274,6 +294,7 @@ export class LlmClient implements ILlmClient {
     );
     const trace = params.traceId ? { traceId: params.traceId } : {};
     if (!nativeEnabled) return options || params.traceId ? { ...options, ...trace } : undefined;
+    const outputTokens = params.options?.max_tokens ?? this.config?.ai?.max_tokens ?? REACT_DEFAULT_MAX_TOKENS;
     const nativeConversation = await this.measureNativeSnapshot(
       {
         ...params.nativeConversation!,
@@ -283,10 +304,13 @@ export class LlmClient implements ILlmClient {
       params.agent_role.model ?? provider.id,
       params.availableTools,
       true,
+      outputTokens,
+      params.traceId,
     );
     return {
       ...options,
       ...trace,
+      max_tokens: outputTokens,
       tools: params.availableTools.map((tool) => ({
         name: tool.name,
         description: tool.description,

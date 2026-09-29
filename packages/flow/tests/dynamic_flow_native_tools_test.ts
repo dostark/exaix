@@ -20,6 +20,9 @@ import {
   MockStrategy,
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import { EventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
+import type { PromptBudgetAllocator } from "@exaix/core";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
 import type { IMcpClient, IMcpToolCallContext } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
@@ -250,6 +253,84 @@ for (const useModelResolver of [false, true]) {
         ),
         true,
       );
+    } finally {
+      ProviderFactory.createByName = originalCreateByName;
+      await cleanup();
+    }
+  });
+}
+
+for (const useModelResolver of [false, true]) {
+  Deno.test(`FlowRunner native budget overflow stops ${useModelResolver ? "lazy" : "eager"} generation with a traced event`, async () => {
+    const { db, tempDir, cleanup } = await initTestDbService();
+    const originalCreateByName = ProviderFactory.createByName;
+    const provider = new DynamicNativeProvider();
+    const mcp = new DynamicMcp();
+    try {
+      const config = createMockConfig(tempDir, {
+        execution: { native_tools_enabled: true, milestone_streaming_enabled: DEFAULT_MILESTONE_STREAMING_ENABLED },
+        ai: {
+          provider: "mock",
+          model: "test",
+          timeout_ms: 30000,
+          mock: { strategy: MockStrategy.RECORDED, fixtures_dir: tempDir },
+        },
+      });
+      writeRole(tempDir);
+      ProviderFactory.createByName = () => Promise.resolve(provider);
+      const allocator = {
+        allocate: () =>
+          Promise.resolve({
+            model: "dynamic-flow-test-model",
+            totalBudgetTokens: 100_000,
+            safetyBufferTokens: 0,
+            sections: { system: 100_000, plan: 1, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 100_000 },
+          }),
+      } as Pick<PromptBudgetAllocator, "allocate">;
+      const runner = new FlowRunner({
+        agentExecutor: new FlowAgent(),
+        eventLogger: { log: () => {} },
+        llmEventLogger: new EventLogger({ db }),
+        promptBudgetAllocator: allocator,
+        tokenizer: {
+          countTokens: (text: string) => Promise.resolve(text.length),
+          countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((text) => text.length)),
+        },
+        config,
+        db,
+        dynamicModeTools: DYNAMIC_MODE_TOOLS,
+        dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+        mcpClient: mcp,
+        ...(useModelResolver
+          ? {
+            modelResolver: {
+              resolve: () =>
+                Promise.resolve({
+                  provider: "dynamic-flow-test",
+                  model: "dynamic-flow-test-model",
+                  attempt: 1,
+                  options: {},
+                }),
+            } as never,
+          }
+          : {}),
+      });
+      await assertRejects(() =>
+        runner.execute(dynamicFlow() as IFlow, {
+          userPrompt: "Review src/a.ts",
+          traceId: "trace-dynamic-overflow",
+        })
+      );
+      assertEquals(provider.calls.length, 0);
+      assertEquals(mcp.calls.length, 0);
+      await db.waitForFlush();
+      const rows = db.instance.prepare(
+        "SELECT trace_id, payload FROM activity WHERE action_type = ?",
+      ).all(DomainEventType.ContextBudgetExceeded) as Array<{ trace_id: string; payload: string }>;
+      assertEquals(rows.length, 1);
+      assertEquals(rows[0].trace_id, "trace-dynamic-overflow");
+      const payload = JSON.parse(rows[0].payload);
+      assertEquals(payload.sectionBreakdown.plan > 1, true);
     } finally {
       ProviderFactory.createByName = originalCreateByName;
       await cleanup();

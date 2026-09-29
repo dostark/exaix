@@ -235,3 +235,90 @@ Deno.test("LlmClient rejects an over-budget native snapshot before provider gene
     }), ContextBudgetExceededError);
   assertEquals(provider.calls.length, 0);
 });
+
+Deno.test("LlmClient rejects section overflow even when total input fits", async () => {
+  const provider = new NativeProvider();
+  const tokenizer = {
+    countTokens: (text: string) => Promise.resolve(text.length),
+    countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((text) => text.length)),
+  };
+  const allocator = {
+    allocate: () =>
+      Promise.resolve({
+        model: "test-model",
+        totalBudgetTokens: 100_000,
+        safetyBufferTokens: 0,
+        sections: { system: 100_000, plan: 1, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 100_000 },
+      }),
+  } as Pick<PromptBudgetAllocator, "allocate">;
+  const client = new LlmClient(undefined, provider, undefined, undefined, undefined, tokenizer, allocator);
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read", inputSchema: {} }];
+  const snapshot = await client.createNativeConversation({
+    agentRole: role,
+    stepObjective: "Inspect",
+    originalInput: "Original input",
+    availableTools: tools,
+  });
+  assertEquals(snapshot.measurement?.sections.plan !== undefined && snapshot.measurement.sections.plan > 1, true);
+  await assertRejects(() =>
+    client.reasonNextAction({
+      agent_role: role,
+      stepObjective: "Inspect",
+      accumulatedContext: "Original input",
+      availableTools: tools,
+      iteration: 1,
+      maxIterations: 2,
+      nativeToolsEnabled: true,
+      nativeConversation: snapshot,
+    }), ContextBudgetExceededError);
+  assertEquals(provider.calls.length, 0);
+});
+
+Deno.test("LlmClient reserves the requested output allowance and allocates when none is injected", async () => {
+  const provider = new NativeProvider();
+  provider.content = "done";
+  const tokenizer = {
+    countTokens: (text: string) => Promise.resolve(text.length),
+    countTokensBatch: (texts: string[]) => Promise.resolve(texts.map((text) => text.length)),
+  };
+  const allocator = {
+    allocate: () =>
+      Promise.resolve({
+        model: "test-model",
+        totalBudgetTokens: 1500,
+        safetyBufferTokens: 0,
+        sections: { system: 1500, plan: 1500, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 1500 },
+      }),
+  } as Pick<PromptBudgetAllocator, "allocate">;
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read", inputSchema: {} }];
+  const call = async (client: LlmClient, maxTokens: number) => {
+    const nativeConversation = await client.createNativeConversation({
+      agentRole: role,
+      stepObjective: "Inspect",
+      originalInput: "Original input",
+      availableTools: tools,
+    });
+    return await client.reasonNextAction({
+      agent_role: role,
+      stepObjective: "Inspect",
+      accumulatedContext: "Original input",
+      availableTools: tools,
+      iteration: 1,
+      maxIterations: 2,
+      nativeToolsEnabled: true,
+      nativeConversation,
+      options: { max_tokens: maxTokens },
+    });
+  };
+  await assertRejects(
+    () => call(new LlmClient(undefined, provider, undefined, undefined, undefined, tokenizer, allocator), 1400),
+    ContextBudgetExceededError,
+  );
+  assertEquals(provider.calls.length, 0);
+  const fallbackClient = new LlmClient(undefined, provider, undefined, undefined, undefined, tokenizer);
+  await assertRejects(() => call(fallbackClient, 128_000), ContextBudgetExceededError);
+  assertEquals(provider.calls.length, 0);
+  await call(fallbackClient, 1400);
+  assertEquals(provider.calls.length, 1);
+  assertEquals(provider.calls[0].options?.nativeConversation?.measurement?.totalTokens !== undefined, true);
+});
