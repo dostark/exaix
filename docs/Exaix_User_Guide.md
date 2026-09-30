@@ -5574,10 +5574,10 @@ CI integration, see **[`docs/Exaix_Evaluation.md`](Exaix_Evaluation.md)**.
 ### Subsystem evaluation
 
 Scenarios are tagged by the subsystem they measure — tools, mcp-server, mcp-client, agent_roles,
-skills, flows — so coverage can be read per subsystem rather than per directory:
+skills, flows, memory — so coverage can be read per subsystem rather than per directory:
 
 ```bash
-# Every mock-tier scenario across all six subsystems
+# Every mock-tier scenario across all seven subsystems
 deno task eval:subsystems
 
 # The cheap tier: one or more representatives per subsystem

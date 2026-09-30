@@ -855,7 +855,7 @@ exactl eval compare --run-a $RUN_A --run-b $RUN_B | grep "delta"
 ## 12. Subsystem Evaluation
 
 Packs are organised by _which subsystem they measure_, not only by which directory they live in. A
-scenario carries a `subsystem:` tag, and the six subsystems together are the coverage contract: if a
+scenario carries a `subsystem:` tag, and the seven subsystems together are the coverage contract: if a
 subsystem has no green scenario, nothing in this framework is measuring it.
 
 | Subsystem tag           | What it measures                                         | Edition |
@@ -866,6 +866,7 @@ subsystem has no green scenario, nothing in this framework is measuring it.
 | `subsystem:agent_roles` | agent role resolution and its effect on the written plan | all     |
 | `subsystem:skills`      | skill matching, pinning and injection into the prompt    | all     |
 | `subsystem:flows`       | flow blueprints end to end, request through plan         | all     |
+| `subsystem:memory`      | memory capture, extraction, approval and injection       | all     |
 
 A second axis, `entity:<name>`, narrows to one tool, agent role, skill or flow — that is what
 `eval report --group-by entity` aggregates.
@@ -877,7 +878,7 @@ A second axis, `entity:<name>`, narrows to one tool, agent role, skill or flow �
 | **ci-smoke**    | `--profile ci-smoke`             | `smoke`-tagged scenarios                                       |
 | **ci-core**     | `deno task eval:subsystems:core` | the `smoke` subset — one or more representatives per subsystem |
 | **ci-core**     | `deno task test:parity`          | the catalog/flow/agent-role/skill/tool parity gates            |
-| **ci-extended** | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems             |
+| **ci-extended** | `deno task eval:subsystems`      | every mock-tier scenario across all seven subsystems           |
 | **nightly**     | see below                        | the `provider-live` tier, against a real model                 |
 
 > **These tasks are run by hand.** None is attached to a GitHub Actions job, to `scripts/ci.ts`, or

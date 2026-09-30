@@ -22,7 +22,7 @@ parity gate `tests/eval/tool_eval_parity_test.ts` fails when a manifest entry ha
 nor a reasoned exclusion in `tests/eval/parity_exclusions.json`.
 
 **Adding a tool therefore means adding a scenario, or writing down why not.** Run the pack with
-`deno task eval:subsystems` (all six subsystems, mock tier) and the gates with
+`deno task eval:subsystems` (all seven subsystems, mock tier) and the gates with
 `deno task test:parity`; both are invoked by hand, not by a CI job.
 
 Two flags in the table below also constrain where a tool may be used. A tool that is **not**

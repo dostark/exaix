@@ -480,7 +480,7 @@ cd "$FRAMEWORK_DIR/scenario_framework"
 **17 packs, 146 scenarios** (counts measured from the catalog, not maintained by hand — regenerate
 with `loadScenarioCatalog` if they drift). The `Subsystem` column is what
 `eval report --group-by subsystem` aggregates and what the cadence tiers select on; a pack with no
-subsystem tag is not part of the six-subsystem coverage contract.
+subsystem tag is not part of the seven-subsystem coverage contract.
 
 | Pack                 | Requires        | Scenarios | Subsystem     |
 | -------------------- | --------------- | --------- | ------------- |
@@ -703,8 +703,9 @@ scenario_framework/
 
 ## 4b. Subsystem Cadence — Which Tier Runs What
 
-Phase 142 defines three tiers over the six subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
-`subsystem:mcp-client`, `subsystem:agent_roles`, `subsystem:skills`, `subsystem:flows`).
+Phase 142 defines three tiers over the seven subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
+`subsystem:mcp-client`, `subsystem:agent_roles`, `subsystem:skills`, `subsystem:flows`,
+`subsystem:memory`).
 
 > **These are run by hand.** None of the commands below is attached to a GitHub Actions job, to
 > `scripts/ci.ts`, or to the pre-commit gates — "tier" here names a _selection_ and the task that
@@ -715,7 +716,7 @@ Phase 142 defines three tiers over the six subsystem packs (`subsystem:tools`, `
 | ------------------ | -------------------------------- | ---------------------------------------------------------------- |
 | **ci-core**        | `deno task eval:subsystems:core` | `smoke`-tagged representatives, one or more per subsystem        |
 | **ci-core** (also) | `deno task test:parity`          | the catalog/flow/agent-role/skill/tool parity gates (deno tests) |
-| **ci-extended**    | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems               |
+| **ci-extended**    | `deno task eval:subsystems`      | every mock-tier scenario across all seven subsystems             |
 | **nightly**        | see below                        | the `provider-live` tier, against a real model                   |
 
 `ci-core` and `ci-extended` used to select the _same_ set — 86 scenarios each on a Team build — so
