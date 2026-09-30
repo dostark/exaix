@@ -1,20 +1,87 @@
 schema_version: "1.0.0"
 id: "voting-majority-consensus"
-title: "Voting Group majority consensus — 3 runners produce 2-vs-1 majority"
+title: "Voting group — three runners reach a majority consensus through a real daemon"
 pack: "agent_flows"
+# The previous version submitted a request that named no flow and asserted only that some plan file
+# existed, so it proved nothing about voting. This version runs the voting flow on a Team daemon and
+# asserts the voting events. voting.resolved carries no vote counts, so the scenario proves that
+# three candidates reached a consensus, not the exact split.
 tags: ["safety-gate", "voting", "consensus", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/voting_majority_consensus.md"
 flow_fixture: "fixtures/flows/voting/majority_consensus.flow.yaml"
 mode_support: ["auto"]
 portals: []
+matrix:
+  cells:
+    - tool: "exactl"
+      provider: "mock"
+      config: "configs/agent-flows-mock-pattern.toml"
+      requires_bin: "true"
 steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
   - id: "submit-voting-request"
     type: "exactl"
     command: "request"
     args: ["--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
     output_criteria:
-      - id: "plan-produced"
-        kind: "file-found"
-        path_pattern: "**/*_plan.md"
-        score_weight: 1.0
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-flow-completed"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "flow.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria:
+      - id: "flow-completed"
+        kind: "journal-event-exists"
+        event_type: "flow.completed"
+        score_weight: 0.3
+
+  - id: "assert-three-candidates"
+    type: "journal-assert"
+    action_type: "voting.started"
+    payload_contains:
+      - '"candidate_count":3'
+    output_criteria:
+      - id: "three-runners-voted"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "assert-consensus"
+    type: "journal-assert"
+    action_type: "voting.resolved"
+    payload_contains:
+      - '"consensus_reached":true'
+      - '"strategy":"majority"'
+    output_criteria:
+      - id: "majority-consensus"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.4
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

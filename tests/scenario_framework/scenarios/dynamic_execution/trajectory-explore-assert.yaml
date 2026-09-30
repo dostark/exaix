@@ -1,20 +1,14 @@
 schema_version: "1.0.0"
-id: "trajectory-tool-order-assert"
-title: "Trajectory eval captures tool order from fixture journal"
+id: "trajectory-explore-assert"
+title: "Trajectory eval checks tool order and tool arguments of a read-only exploration"
 pack: "dynamic_execution"
-tags: ["dynamic", "manual-only", "trajectory", "subsystem:mcp-client"]
+# Replaces trajectory-tool-order-assert and trajectory-tool-args-assert, which expected tools Exaix
+# does not have (edit_file, bash, search_code) and so could never pass. Provider-live: the mock
+# provider makes no tool calls, so only a real model produces a trajectory to assert.
+tags: ["dynamic", "trajectory", "subsystem:mcp-client", "entity:list_directory", "provider-live"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
+mode_support: ["auto"]
 portals: []
-mode_support: ["manual-checkpoint"]
-# Phase 142 Step 15 — `exactl flow run <flow> --request <file>` was invoked here and has never
-# existed: `flow` offers only list/show/validate, and a flow executes when a request naming it in
-# its `flow:` frontmatter is submitted. The referenced `fixtures/requests/trajectory/example.md`
-# does not exist either. Both replaced with the real path, which the scenario's own declared
-# `request_fixture` already supports. Remains manual-only: the trajectory it asserts needs
-# real tool calls, which the mock provider does not make.
-# Phase 142 Step 7 — declares the flow its request fixture names, so the runner stages it.
-# Without this the scenario only worked when another had already staged `explore-codebase`
-# into the shared sandbox.
 flow_fixture: "fixtures/flows/dynamic_execution/explore.flow.yaml"
 steps:
   - id: "start-daemon"
@@ -31,12 +25,11 @@ steps:
 
   - id: "submit-request"
     type: "exactl"
-    name: "Submit the request whose frontmatter names the flow"
     command: "request"
     args: ["--file", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "request-submitted"
-        score_weight: 0.4
+        score_weight: 0.3
         kind: "command-output-contains"
         contains: ["request.created"]
 
@@ -46,20 +39,34 @@ steps:
     timeout_sec: 180
     output_criteria:
       - id: "plan-produced"
-        score_weight: 0.5
         kind: "file-found"
         path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.4
 
+  # An agent exploring an unknown project lists before it reads: it cannot name a file it has
+  # not seen. Other read-only calls may interleave.
   - id: "assert-trajectory-order"
     type: "trajectory-assert"
-    name: "Verify tool call order matches expected sequence"
+    name: "list_directory runs before read_file"
+    source_step: "submit-request"
+    expected_sequence:
+      - tool: "list_directory"
+      - tool: "read_file"
+    order_matters: true
+    allow_extra_tools: true
+    partial_credit: false
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-read-args"
+    type: "trajectory-assert"
+    name: "read_file is always called with a path argument"
     source_step: "submit-request"
     expected_sequence:
       - tool: "read_file"
-      - tool: "edit_file"
-      - tool: "bash"
-    order_matters: true
-    allow_extra_tools: false
+        min_args: 1
+    order_matters: false
+    allow_extra_tools: true
     partial_credit: false
     input_criteria: []
     output_criteria: []

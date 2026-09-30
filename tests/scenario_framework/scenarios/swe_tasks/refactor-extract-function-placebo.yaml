@@ -3,7 +3,10 @@ id: "swe-refactor-extract-function-placebo"
 title: "Refactor processTaskSubmission into smaller functions (Zen free tier, placebo control arm)"
 pack: "swe_tasks"
 scoring: "gated"
-tags: ["swe", "provider-live", "zen-free", "placebo-arm"]
+# Measurement instrument, not a task variant: the deliberately harmful arm the value-comparison
+# validity check (runner/validity_gate.ts, scripts/run_value_comparison_report.ts placeboArms) needs
+# to show that a measurement can detect a real negative effect. Keep it while that check exists.
+tags: ["swe", "provider-live", "zen-free", "placebo-arm", "instrument:validity-check"]
 request_fixture: "fixtures/requests/swe_tasks/refactor-extract-function.md"
 reference_patch: "fixtures/swe_tasks/refactor-extract-function/reference.patch"
 portals:

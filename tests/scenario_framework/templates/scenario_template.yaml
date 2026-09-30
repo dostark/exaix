@@ -1,5 +1,7 @@
+# Starter scenario: a request travels through a running daemon and produces a plan.
+# Replace every double-underscore placeholder, then run `deno task scenario:test:unit`.
+# scenario_template_test.ts keeps this template parseable and on the real CLI.
 # Schema version - use the current SCHEMA_VERSION from tests/scenario_framework/schema/version.ts
-# Run `deno task scenario:test` to ensure your scenario is valid against the current schema.
 schema_version: "1.0.0"
 id: "__SCENARIO_ID__"
 title: "__SCENARIO_TITLE__"
@@ -8,16 +10,64 @@ tags: [__SCENARIO_TAGS__]
 request_fixture: "__REQUEST_FIXTURE__"
 mode_support: ["auto"]
 portals: []
+# The pattern mock answers any prompt. The default recorded mock needs a recording per prompt, and
+# a new request without one stalls in quality assessment.
+matrix:
+  cells:
+    - tool: "exactl"
+      provider: "mock"
+      config: "configs/agent-flows-mock-pattern.toml"
+      requires_bin: "true"
 steps:
-  - id: "create-request"
+  - id: "start-daemon"
     type: "exactl"
-    command: "request create"
-    args: ["--from-file", "__REQUEST_FIXTURE__"]
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
     input_criteria:
       - id: "request-fixture-exists"
         kind: "file-exists"
-        path: "__REQUEST_FIXTURE__"
+        path: "$REQUEST_FIXTURE"
     output_criteria:
-      - id: "request-command-succeeded"
+      - id: "request-created"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "validate-plan-frontmatter"
+    type: "json-assert"
+    file_pattern: "**/Plans/*_plan.md"
+    output_criteria:
+      - id: "has-trace"
+        kind: "frontmatter-field-exists"
+        field: "trace_id"
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
         kind: "command-exit-code"
         equals: 0
