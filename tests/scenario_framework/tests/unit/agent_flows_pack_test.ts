@@ -96,6 +96,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "openai-compatible-native-dynamic",
       "openai-compatible-native-failure",
       "openai-compatible-native-limits",
+      "openai-compatible-native-write",
       "plan-amendment-lifecycle",
       "portal-knowledge-adaptive-tools",
       "portal-knowledge-snapshot",
