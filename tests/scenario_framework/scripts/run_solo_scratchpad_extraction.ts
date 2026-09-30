@@ -156,22 +156,27 @@ if (import.meta.main) {
       trace_id: traceId,
       summary: "Agent captured an in-the-moment gotcha via remember_fact.",
     });
+    // Counts are measured against a baseline: an earlier scenario in the same sandbox may have left
+    // proposals or learnings behind.
+    const pendingBefore = (await extractor.listPending()).length;
+    const globalBefore = (await memoryBank.getGlobalMemory())?.learnings?.length ?? 0;
     const candidates = await extractor.analyzeExecution(execution);
     for (const candidate of candidates) {
       await extractor.createProposal(candidate, execution, "scenario-role");
     }
     const pending = await extractor.listPending();
     const global = await memoryBank.getGlobalMemory();
-    const globalLearnings = global?.learnings?.length ?? 0;
-    if (candidates.length < 1 || pending.length !== candidates.length || globalLearnings !== 0) {
+    const globalLearnings = (global?.learnings?.length ?? 0) - globalBefore;
+    const newPending = pending.length - pendingBefore;
+    if (candidates.length < 1 || newPending !== candidates.length || globalLearnings !== 0) {
       throw new Error(
-        `pipeline invariant violated: candidates=${candidates.length} pending=${pending.length} globalLearnings=${globalLearnings}`,
+        `pipeline invariant violated: candidates=${candidates.length} newPending=${newPending} newGlobalLearnings=${globalLearnings}`,
       );
     }
     console.log(JSON.stringify({
       scratchpad_entries: entries.length,
       candidates: candidates.length,
-      pending_count: pending.length,
+      pending_count: newPending,
       global_learnings: globalLearnings,
       tool_calls: result.tool_calls ?? 0,
     }));
