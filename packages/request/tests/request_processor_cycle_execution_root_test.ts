@@ -203,4 +203,25 @@ describe("RequestProcessor session_delegate_cycle execution root provenance", ()
     assertEquals(result, null);
     assertEquals(flowRunnerCalled, false);
   });
+
+  it("marks a returned failed flow result as a failed request", async () => {
+    config.portals = [{ alias: "exaix-self", target_path: "/configured/portal/root" } as never];
+    const flowRunner: IFlowRunner = {
+      execute: () =>
+        Promise.resolve({
+          flowRunId: "run",
+          success: false,
+          stepResults: new Map(),
+          output: "",
+          duration: 1,
+          startedAt: new Date(),
+          completedAt: new Date(),
+        }),
+    };
+    const requestPath = writeCycleRequest({ portal: "exaix-self", planContextRef: ".exa/PlanContext/phase-174.md" });
+    const result = await createProcessor(flowRunner).process(requestPath);
+    assertEquals(result, null);
+    const written = await Deno.readTextFile(requestPath);
+    assert(written.includes(RequestStatus.FAILED));
+  });
 });

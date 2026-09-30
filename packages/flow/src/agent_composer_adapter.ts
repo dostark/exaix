@@ -36,7 +36,7 @@ import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import { resolveWorktreeBaseDir } from "./resolve_worktree_base_dir.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IEffortResolver, ModelResolver } from "@exaix/ai";
+import type { IEffortResolver, ModelBindingService, ModelResolver } from "@exaix/ai";
 import { COMPLEXITY_SOURCE_ANALYSIS, COMPLEXITY_SOURCE_DEFAULT, taskComplexityFromAnalysis } from "@exaix/ai";
 import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
@@ -67,6 +67,8 @@ interface IParsedRequest {
   flowStepId?: string;
   flowStepEffort?: EffortDeclaration;
   flowStepThinking?: ThinkingDeclaration;
+  bindingEffort?: EffortDeclaration;
+  bindingThinking?: ThinkingDeclaration;
   taskComplexity?: TaskComplexity;
   taskComplexitySource?: string;
 }
@@ -80,6 +82,7 @@ export interface IRunner {
     request: IParsedRequest,
     jsonSchema?: Record<string, JSONValue>,
   ): Promise<IAgentExecutionResult>;
+  withProvider?(provider: IModelProvider, selectedModel: { provider: string; model: string }): IRunner;
 }
 
 /** For constructing a fresh, per-call `AgentComposer` — never a shared instance, since
@@ -145,6 +148,7 @@ export class AgentComposerAdapter {
     private runner: IRunner,
     blueprintsPath: string,
     private orchestratorDeps?: Opt<IAgentComposerConstructionDeps, Reason.OptionalDependency>,
+    private bindingService?: Opt<ModelBindingService, Reason.OptionalDependency>,
   ) {
     this.loader = new IBlueprintLoader({ blueprintsPath });
   }
@@ -176,6 +180,24 @@ export class AgentComposerAdapter {
       taskComplexitySource: analysis ? COMPLEXITY_SOURCE_ANALYSIS : COMPLEXITY_SOURCE_DEFAULT,
     };
 
+    if (this.bindingService && request.bindingSnapshot && request.flowId && request.flowStepId) {
+      const bound = await this.bindingService.providerFor(request.bindingSnapshot, {
+        flowId: request.flowId,
+        stepId: request.flowStepId,
+        agentRole,
+        kind: "agent",
+        nativeTools: false,
+      });
+      if (bound) {
+        if (!this.runner.withProvider) throw new Error("Bound runner does not support provider replacement");
+        parsedRequest.bindingEffort = bound.binding.effort;
+        parsedRequest.bindingThinking = bound.binding.thinking;
+        return await this.runner.withProvider(bound.provider, {
+          provider: bound.binding.adapter,
+          model: bound.binding.service_model_id,
+        }).run(blueprint, parsedRequest, undefined);
+      }
+    }
     return await this.runner.run(blueprint, parsedRequest, undefined);
   }
 

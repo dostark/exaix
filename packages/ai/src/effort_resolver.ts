@@ -31,7 +31,7 @@ import { longestPrefixMatch } from "./provider_registry.ts";
 export type TaskComplexitySource = "analysis" | "content_heuristic" | "agent_role" | "default";
 
 /** The surface whose declaration governs a field — the precedence rule's source. */
-export type EffortDeclarationSource = "request" | "flow_step" | "role" | "none";
+export type EffortDeclarationSource = "binding" | "request" | "flow_step" | "role" | "none";
 
 /** A declaration pair (one surface): a reason-effort and/or thinking declaration. A type
  *  alias (not an interface) so an object of this shape gets JSONValue-implicit-index
@@ -43,6 +43,7 @@ export type IEffortDeclarationPair = {
 
 /** One pair per surface; the resolver applies the Constraints precedence rule. */
 export interface IEffortDeclarations {
+  binding?: IEffortDeclarationPair;
   request?: IEffortDeclarationPair;
   flowStep?: IEffortDeclarationPair;
   role?: IEffortDeclarationPair;
@@ -123,6 +124,7 @@ const BASIS_SKILL_FLOOR: EffortResolutionBasis = "skill-floor";
 
 /** Source labels (EffortDeclarationSource) used at runtime positions. */
 const SOURCE_REQUEST: EffortDeclarationSource = "request";
+const SOURCE_BINDING: EffortDeclarationSource = "binding";
 const SOURCE_FLOW_STEP: EffortDeclarationSource = "flow_step";
 const SOURCE_ROLE: EffortDeclarationSource = "role";
 const SOURCE_NONE: EffortDeclarationSource = "none";
@@ -252,6 +254,7 @@ function governingDeclaration(
   field: ResolutionField,
 ): { declaration: DeclarationValue; source: EffortDeclarationSource } {
   const pairs: Array<{ pair: IEffortDeclarationPair | undefined; source: EffortDeclarationSource }> = [
+    { pair: declarations.binding, source: SOURCE_BINDING },
     { pair: declarations.request, source: SOURCE_REQUEST },
     { pair: declarations.flowStep, source: SOURCE_FLOW_STEP },
     { pair: declarations.role, source: SOURCE_ROLE },
@@ -269,7 +272,8 @@ function floorSkipped(
   source: EffortDeclarationSource,
   declaration: DeclarationValue,
 ): boolean {
-  return source === SOURCE_REQUEST && declaration !== undefined && declaration !== EFFORT_AUTO;
+  return (source === SOURCE_REQUEST || source === SOURCE_BINDING) && declaration !== undefined &&
+    declaration !== EFFORT_AUTO;
 }
 
 export class EffortResolver implements IEffortResolver {

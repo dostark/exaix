@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { AiConfigSchema, CompatibleChatOverrideSchema, MODEL_CONFIG_FIELD, ProviderTypeSchema } from "./ai_config.ts";
+import { BindingCatalogSchema, BindingsTableSchema } from "./model_binding.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
 import { ProviderType, TaskType, TokenizerBackend } from "@exaix/core";
@@ -400,6 +401,8 @@ export const ConfigSchema = z.object({
   portals: z.array(PortalPermissionsSchema).default([]),
   /** AI/LLM provider configuration (legacy/single) */
   ai: AiConfigSchema.optional(),
+  bindings: BindingsTableSchema.optional(),
+  catalog: BindingCatalogSchema.optional(),
   /** Named model configurations (default, fast, local, etc.) */
   models: z.record(
     z.string(),

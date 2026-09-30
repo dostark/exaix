@@ -18,6 +18,7 @@ import type {
 } from "@exaix/schemas";
 import type { EffortDeclarationSource, IEffortDeclarationPair, TaskComplexitySource } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types";
+import type { IBindingFieldSource, IBindingIssue } from "@exaix/schemas/model_binding.ts";
 import type {
   ContextInspectionResult,
   HitlRuleSource,
@@ -33,6 +34,28 @@ import type {
 } from "../types/enums.ts";
 
 /** Guardrail verdict type. */
+export interface IBindingResolvedEventPayload {
+  flow_id: string;
+  step_id: string;
+  agent_role: string;
+  trace_id: string;
+  service: string;
+  model_provider: string;
+  model: string;
+  service_model_id: string;
+  transport: string;
+  interface: string;
+  adapter: string;
+  sources: Partial<Record<string, IBindingFieldSource>>;
+  fingerprint: string;
+}
+
+export interface IBindingRejectedEventPayload {
+  flow_id: string;
+  trace_id: string;
+  issues: readonly IBindingIssue[];
+}
+
 export type GuardrailVerdict = "pass" | "violation";
 /** Guardrail severity type. */
 export type GuardrailSeverity = "warn" | "block";
@@ -808,6 +831,8 @@ export const DomainEventType = {
 
   // Model resolution events
   ModelResolved: "model.resolved",
+  BindingResolved: "binding.resolved",
+  BindingRejected: "binding.rejected",
 
   // Model registry events
   ModelPricingStale: "model.pricing.stale",

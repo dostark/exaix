@@ -9,6 +9,7 @@
 
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
+import type { IBindingRunSnapshot } from "@exaix/schemas";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
@@ -49,6 +50,8 @@ export interface IStepExecutionContext {
     readonly scenarioId?: string;
     readonly stepId?: string;
     readonly flowStepId?: string;
+    readonly flowId?: string;
+    readonly bindingSnapshot?: IBindingRunSnapshot;
     readonly requestAnalysis?: IRequestAnalysis;
     readonly skills?: readonly string[];
     readonly sharedNamespace?: Readonly<Record<string, string>>;

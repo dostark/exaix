@@ -11,6 +11,7 @@ export { CatalogAuthError, CatalogError, CatalogHttpError, CatalogParseError } f
 export { getOverlayEntry, STATIC_OVERLAY } from "./src/static_overlay.ts";
 export { mtokToPer1k, per1kToMtok } from "./src/cost_units.ts";
 export { DefaultModelRegistry } from "./src/default_model_registry.ts";
+export { buildBuiltInCatalog, mergeCatalogs } from "./src/binding_catalog.ts";
 export { isCostExempt } from "./src/cost_exemption.ts";
 export type { IOverlayEntry, StaticOverlay } from "./src/static_overlay.ts";
 export type {

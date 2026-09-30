@@ -46,6 +46,7 @@ export * from "./evaluation_json_schema.ts";
 export * from "./streaming_event.ts";
 export * from "./milestone_event.ts";
 export * from "./model_intent.ts";
+export * from "./model_binding.ts";
 export * from "./execution/context_budget.ts";
 export {
   AgentIdSchema,

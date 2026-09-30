@@ -45,6 +45,7 @@ import {
   EffortResolver,
   type IProviderHealthChecker,
   type IResolutionStrategy,
+  ModelBindingService,
   ModelResolver,
   ProviderFactory,
   ProviderRegistry,
@@ -82,7 +83,7 @@ import {
   SessionMemoryService,
 } from "@exaix/memory";
 import { ExecutionMemoryStore } from "@exaix/core/execution-memory";
-import { ConfidenceAssessmentLevel, ConfidenceLevel, PromptBudgetAllocator } from "@exaix/core";
+import { ConfidenceAssessmentLevel, ConfidenceLevel, PromptBudgetAllocator, SecureCredentialStore } from "@exaix/core";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
 import { createMemoryEmbeddingProvider } from "../common/embedding_provider_bootstrap.ts";
 import { NotificationService } from "@exaix/core/notification";
@@ -1000,6 +1001,17 @@ if (import.meta.main) {
     const flowWorktreeCoordinator = new FlowWorktreeCoordinator({ config, gitServiceFactory, logger });
     gracefulShutdown.registerCleanup("release_flow_worktrees", () => flowWorktreeCoordinator.releaseAll());
 
+    const bindingService = new ModelBindingService({
+      configSource: configService,
+      logger,
+      db: dbService,
+      costTracker,
+      probe: {
+        hasKey: async (name) => Boolean(Deno.env.get(name) || await SecureCredentialStore.get(name)),
+        hasOptIn: (name) => Deno.env.get(name) === "1",
+      },
+    });
+
     const agentExecutorAdapter = new AgentComposerAdapter(
       agentRunner,
       blueprintsPath,
@@ -1015,6 +1027,7 @@ if (import.meta.main) {
         trustedAgentRoles: dogfoodTrustedAgentRoles,
         worktreeCoordinator: flowWorktreeCoordinator,
       },
+      bindingService,
     );
     // FlowRunner and PlanExecutor share one coordinator as delegation authority.
     const sessionDelegationCoordinator = _sessionDelegateService && _sessionWaitStore && _sessionResultStore &&
@@ -1049,6 +1062,7 @@ if (import.meta.main) {
     const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider)));
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,
+      bindingService,
       gateEvaluator,
       config,
       eventLogger: flowLogger,

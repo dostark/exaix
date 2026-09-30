@@ -25,6 +25,8 @@ import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
+import type { IBindingRunSnapshot } from "@exaix/schemas";
+import { BindingIncompatibleError, type ModelBindingService } from "@exaix/ai";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
   FlowInputSource,
@@ -142,6 +144,8 @@ export interface IFlowRunner {
       stepId?: string;
       executionRoot?: string;
       planContextRef?: string;
+      flowId?: string;
+      bindingSnapshot?: IBindingRunSnapshot;
     },
   ): Promise<IFlowResult>;
 }
@@ -161,6 +165,8 @@ export interface IFlowStepRequest {
    *  flow step so steps racing in the same parallel wave (WaveOrchestrator.executeWave uses
    *  Promise.all) cannot collide on the same index. */
   flowStepId?: string;
+  flowId?: string;
+  bindingSnapshot?: IBindingRunSnapshot;
   /** Skills to apply for this step execution */
   skills?: string[];
   /** Structured request analysis. */
@@ -197,6 +203,7 @@ export interface IParallelGroupSummary {
  */
 export interface IFlowRunnerConfig {
   agentExecutor: IAgentExecutor;
+  bindingService?: ModelBindingService;
   eventLogger: IFlowEventLogger;
   /** Optional logger for provider-level LLM lifecycle events. */
   llmEventLogger?: IEventLogger;
@@ -302,6 +309,8 @@ type IFlowOriginalRequest = {
   userPrompt: string;
   traceId?: string;
   requestId?: string;
+  bindingSnapshot?: IBindingRunSnapshot;
+  flowId?: string;
   requestAnalysis?: IRequestAnalysis;
   portal?: string;
   /** The portal's configured `target_path` verbatim — `SessionDelegationCoordinator.
@@ -1140,6 +1149,8 @@ export class FlowRunner implements IFlowRunner {
       stepId?: string;
       executionRoot?: string;
       planContextRef?: string;
+      flowId?: string;
+      bindingSnapshot?: IBindingRunSnapshot;
     },
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
@@ -1150,21 +1161,34 @@ export class FlowRunner implements IFlowRunner {
       request = { ...request, traceId: await this.normalizeCycleParentTraceId(request, flowRunId) };
     }
 
-    // Ensure dynamic step executor is initialized (deferred async init for modelResolver path)
-    await this.ensureDynamicExecutor(flow, flowRunId);
-
-    // Validate flow
-    await this.validateIFlow(flow, request, flowRunId);
-
     const stepResults = new Map<string, IStepResult>();
 
-    await this.checkpointCoordinator.loadCheckpointIfAvailable(flow, request, flowRunId, flowContentHash, stepResults);
-    await this.namespaceCoordinator.initializeNamespace(
-      this.namespaceCoordinator.getNamespaceId(request, flowRunId),
-      flow,
-    );
-
     try {
+      await this.ensureDynamicExecutor(flow, flowRunId);
+      await this.validateIFlow(flow, request, flowRunId);
+      if (this.options.bindingService?.isActive()) {
+        const traceId = request.traceId ?? crypto.randomUUID();
+        request = {
+          ...request,
+          traceId,
+          flowId: flow.id,
+          bindingSnapshot: await this.options.bindingService.snapshotForRun(flow, {
+            traceId,
+            requestId: request.requestId,
+          }),
+        };
+      }
+      await this.checkpointCoordinator.loadCheckpointIfAvailable(
+        flow,
+        request,
+        flowRunId,
+        flowContentHash,
+        stepResults,
+      );
+      await this.namespaceCoordinator.initializeNamespace(
+        this.namespaceCoordinator.getNamespaceId(request, flowRunId),
+        flow,
+      );
       // Execute waves and aggregate results
       await this.waveOrchestrator.executeWaves(flow, request, flowRunId, flowContentHash, stepResults);
 
@@ -1186,6 +1210,29 @@ export class FlowRunner implements IFlowRunner {
       // Aggregate output and finalize
       return await this.aggregateAndFinalize(flow, request, flowRunId, stepResults, startedAt);
     } catch (error) {
+      if (error instanceof BindingIncompatibleError) {
+        await this.eventLogger.log("flow.failed", {
+          flowRunId,
+          flowId: flow.id,
+          error: error.message,
+          errorType: error.name,
+          duration: Date.now() - startedAt.getTime(),
+          stepsAttempted: 0,
+          successfulSteps: 0,
+          failedSteps: 0,
+          traceId: request.traceId,
+          requestId: request.requestId,
+        });
+        return {
+          flowRunId,
+          success: false,
+          stepResults,
+          output: "",
+          duration: Date.now() - startedAt.getTime(),
+          startedAt,
+          completedAt: new Date(),
+        };
+      }
       return await this.handleExecutionError(flow, request, flowRunId, stepResults, startedAt, error);
     }
   }
@@ -1850,6 +1897,8 @@ export class FlowRunner implements IFlowRunner {
         scenarioId: stepRequest.scenarioId,
         stepId: stepRequest.stepId,
         flowStepId: stepRequest.flowStepId,
+        flowId: stepRequest.flowId,
+        bindingSnapshot: stepRequest.bindingSnapshot,
         requestAnalysis: stepRequest.requestAnalysis,
         skills: stepRequest.skills,
         sharedNamespace: stepRequest.sharedNamespace,
@@ -1984,6 +2033,8 @@ export class FlowRunner implements IFlowRunner {
       scenarioId: originalRequest.scenarioId,
       stepId: originalRequest.stepId,
       flowStepId: step.id,
+      flowId: originalRequest.flowId,
+      bindingSnapshot: originalRequest.bindingSnapshot,
       skills,
       requestAnalysis: originalRequest.requestAnalysis,
       portal: originalRequest.portal,

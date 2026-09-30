@@ -8,7 +8,7 @@
  */
 
 import * as DEFAULTS from "@exaix/ai/constants.ts";
-import type { Config } from "@exaix/schemas";
+import type { Config, IResolvedBinding } from "@exaix/schemas";
 
 import {
   type AiConfig,
@@ -58,9 +58,92 @@ export function ensureProviderRegistryInitialized(): void {
   externalProviderRegistryBootstrap?.();
 }
 
+const COMPATIBLE_PROFILE_OPENAI = ProviderType.OPENAI;
+const COMPATIBLE_PROFILE_DEEPSEEK = "deepseek";
+const COMPATIBLE_PROFILE_LOCAL_TEST = "local-test";
+
 // ProviderFactory Implementation
 
 export class ProviderFactory {
+  /** Build the openai-chat compatible provider for a resolved binding, with qualification. */
+  private static async createCompatibleFromBinding(
+    config: Config,
+    binding: IResolvedBinding,
+    db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
+  ): Promise<IModelProvider> {
+    const profile = binding.profile;
+    if (
+      profile !== COMPATIBLE_PROFILE_OPENAI && profile !== COMPATIBLE_PROFILE_DEEPSEEK &&
+      profile !== COMPATIBLE_PROFILE_LOCAL_TEST
+    ) {
+      throw new ProviderFactoryError(`Unsupported compatible binding profile: ${profile}`);
+    }
+    if (binding.service_model_id !== OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].model) {
+      throw new ProviderFactoryError(`Compatible ${profile} model is not qualified`);
+    }
+    if (
+      profile !== COMPATIBLE_PROFILE_LOCAL_TEST && binding.endpoint &&
+      binding.endpoint !== OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].endpoint
+    ) {
+      throw new ProviderFactoryError(`Compatible ${profile} requires its pinned endpoint`);
+    }
+    if (profile !== COMPATIBLE_PROFILE_LOCAL_TEST && binding.allow_insecure_loopback) {
+      throw new ProviderFactoryError("Loopback opt-in is only valid for local-test");
+    }
+    if (profile === COMPATIBLE_PROFILE_LOCAL_TEST && (!binding.allow_insecure_loopback || !binding.endpoint)) {
+      throw new ProviderFactoryError("local-test requires a loopback endpoint and explicit opt-in");
+    }
+    const compatible = CompatibleChatConfigSchema.parse({
+      profile,
+      endpoint: binding.endpoint,
+      model: binding.service_model_id,
+      allow_insecure_loopback: binding.allow_insecure_loopback ?? false,
+    });
+    const options: IResolvedProviderOptions = {
+      provider: ProviderType.OPENAI_CHAT,
+      model: binding.service_model_id,
+      timeoutMs: config.ai?.timeout_ms ?? DEFAULTS.DEFAULT_AI_TIMEOUT_MS,
+      compatible,
+      logger,
+      config,
+    };
+    return await this.createAndWrap(config, options, db, costTracker, true);
+  }
+
+  /** Construct one qualified binding without consulting global EXA_LLM routing overrides. */
+  static async createFromBinding(
+    config: Config,
+    binding: IResolvedBinding,
+    db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
+  ): Promise<IModelProvider> {
+    ensureProviderRegistryInitialized();
+    const provider = binding.adapter;
+    if (!Object.values(ProviderType).includes(provider as ProviderType)) {
+      throw new ProviderFactoryError(`Unknown binding adapter: ${provider}`);
+    }
+    if (provider === ProviderType.OPENAI_CHAT) {
+      return await this.createCompatibleFromBinding(config, binding, db, logger, costTracker);
+    }
+    if (binding.profile || binding.endpoint || binding.allow_insecure_loopback) {
+      throw new ProviderFactoryError(`Adapter ${provider} does not accept a compatible profile or endpoint`);
+    }
+    const options: IResolvedProviderOptions = {
+      provider: provider as ProviderType,
+      model: binding.service_model_id,
+      timeoutMs: config.ai?.timeout_ms ?? DEFAULTS.DEFAULT_AI_TIMEOUT_MS,
+      mockStrategy: config.ai?.mock?.strategy ?? DEFAULTS.DEFAULT_MOCK_STRATEGY,
+      mockFixturesDir: config.ai?.mock?.fixtures_dir,
+      mockStrict: config.ai?.mock?.strict,
+      logger,
+      config,
+    };
+    return await this.createAndWrap(config, options, db, costTracker, true);
+  }
+
   /** Creates an LLM provider via a fallback chain: tries primary, then fallbacks, with optional health check and retry logic. */
   static async createWithFallback(
     config: Config,
@@ -380,6 +463,7 @@ export class ProviderFactory {
     options: IResolvedProviderOptions,
     _db?: Opt<IDatabaseService, Reason.OptionalDependency>,
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
+    eager = false,
   ): Promise<IModelProvider> {
     if (options.captureFixturesDir && options.provider === ProviderType.OPENAI_CHAT) {
       throw new ProviderFactoryError(
@@ -387,7 +471,7 @@ export class ProviderFactory {
         "capture_unsupported",
       );
     }
-    let provider = await this.createProvider(options);
+    let provider = await this.createProvider(options, eager);
 
     // Operator-triggered capture: wraps the real provider in a recording wrapper. Refused for mock —
     // capturing the mock's own guesses would manufacture an authoritative-looking fixture set from guesses.
@@ -450,7 +534,7 @@ export class ProviderFactory {
   /**
    * Create the appropriate provider based on resolved options
    */
-  private static async createProvider(options: IResolvedProviderOptions): Promise<IModelProvider> {
+  private static async createProvider(options: IResolvedProviderOptions, eager = false): Promise<IModelProvider> {
     // Ensure registry is initialized
     ensureProviderRegistryInitialized();
 
@@ -460,7 +544,7 @@ export class ProviderFactory {
       // Key-based factories validate API keys on creation, so we eagerly instantiate them —
       // missing credentials must cause create() to reject, as tests and callers expect. Other
       // factories are returned lazily to defer heavy initialization.
-      if (factory instanceof AbstractKeyBasedProviderFactory) {
+      if (eager || factory instanceof AbstractKeyBasedProviderFactory) {
         return await factory.create(options);
       }
 

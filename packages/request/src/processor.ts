@@ -654,6 +654,10 @@ export class RequestProcessor {
         executionRoot: cycleContext.executionRoot,
         planContextRef: cycleContext.planContextRef,
       });
+      if (!flowResult.success) {
+        await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, "Flow execution failed");
+        return null;
+      }
 
       const result = {
         thought: `Flow ${frontmatter.flow} executed (${flowResult.duration}ms)`,

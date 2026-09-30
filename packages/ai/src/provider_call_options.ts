@@ -6,7 +6,7 @@
  * @dependencies [@exaix/ai/types.ts]
  * @related-files [packages/ai/src/provider_registry.ts, packages/ai-openai/src/openai_provider.ts]
  */
-import { EFFORT_AUTO, type EffortTier } from "@exaix/schemas";
+import { EFFORT_AUTO, type EffortDeclaration, type EffortTier } from "@exaix/schemas";
 import type { IEffortDeclarations, IEffortResolution } from "./effort_resolver.ts";
 import { ProviderCallPolicyError } from "./errors.ts";
 import type { IModelOptions } from "./types.ts";
@@ -26,6 +26,23 @@ export interface IProjectedCallOptions {
   reason?: "profile_unsupported_effort";
 }
 
+/** The declaration that governs a resolution source, when the source has one. */
+function declarationForSource(
+  source: IEffortResolution["effortDeclarationSource"],
+  declarations: IEffortDeclarations,
+): EffortDeclaration | undefined {
+  switch (source) {
+    case "binding":
+      return declarations.binding?.effort;
+    case "request":
+      return declarations.request?.effort;
+    case "flow_step":
+      return declarations.flowStep?.effort;
+    default:
+      return undefined;
+  }
+}
+
 /** Keeps the resolution intact for allocation and projects only its wire controls. */
 export function projectResolvedCallOptions(
   resolution: IEffortResolution,
@@ -33,11 +50,7 @@ export function projectResolvedCallOptions(
   capabilities?: Opt<IProviderCallCapabilities, Reason.OptionalContext>,
 ): IProjectedCallOptions {
   if (!capabilities) return { effort: resolution.effort, thinking: resolution.thinking };
-  const effortDeclaration = resolution.effortDeclarationSource === "request"
-    ? declarations.request?.effort
-    : resolution.effortDeclarationSource === "flow_step"
-    ? declarations.flowStep?.effort
-    : undefined;
+  const effortDeclaration = declarationForSource(resolution.effortDeclarationSource, declarations);
   const supportedEffort = resolution.effort === undefined ||
     (capabilities.supportedEffortTiers.includes(resolution.effort) &&
       (!capabilities.effortRequiresThinking || resolution.thinking === true));

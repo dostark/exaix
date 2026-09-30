@@ -205,6 +205,8 @@ export interface IParsedRequest {
   /** Flow step's own thinking declaration, set by AgentComposerAdapter for declared flow
    *  steps (GAP-4). */
   flowStepThinking?: ThinkingDeclaration;
+  bindingEffort?: EffortDeclaration;
+  bindingThinking?: ThinkingDeclaration;
 
   /** Resolved portal knowledge snapshot for adaptive inclusion (`portal_knowledge.inclusion
    *  === "adaptive"`). Ephemeral — never persisted to the request file or `knowledge.json`;
@@ -343,6 +345,13 @@ export class AgentRunner implements IAgentRunner {
    *  Incremented once per consumed response — a retried logical call keeps its index. */
   private callIndexByCallSite = new Map<string, number>();
 
+  /** Return an invocation-local runner with the same dependencies and a bound model. */
+  withProvider(provider: IModelProvider, selectedModel: ISelectedModelIdentity): AgentRunner {
+    const sibling = new AgentRunner(this.planAdapter, provider, { ...this.config, selectedModel });
+    sibling.callIndexByCallSite = this.callIndexByCallSite;
+    return sibling;
+  }
+
   constructor(
     planAdapterOrProvider?: Opt<IPlanAdapter | IModelProvider, Reason.OptionalDependency>,
     modelProviderOrConfig?: Opt<IModelProvider | IAgentRunnerConfig, Reason.OptionalDependency>,
@@ -474,6 +483,7 @@ export class AgentRunner implements IAgentRunner {
     })) ?? [];
     const resolution = this.resolveEffortAndThinking(blueprint, request, agentRole, skillFloors);
     const projection = projectResolvedCallOptions(resolution, {
+      binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
       role: { effort: blueprint.effort, thinking: blueprint.thinking },
       request: { effort: request.effort, thinking: request.thinking },
       flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
@@ -617,6 +627,7 @@ export class AgentRunner implements IAgentRunner {
     };
     return this.effortResolver.resolve(
       {
+        binding: { effort: request.bindingEffort, thinking: request.bindingThinking },
         role: { effort: blueprint.effort, thinking: blueprint.thinking },
         request: { effort: request.effort, thinking: request.thinking },
         flowStep: { effort: request.flowStepEffort, thinking: request.flowStepThinking },
