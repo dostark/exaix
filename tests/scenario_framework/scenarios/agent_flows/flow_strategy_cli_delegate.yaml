@@ -2,8 +2,9 @@ schema_version: "1.0.0"
 id: "flow-strategy-cli-delegate"
 title: "A flow step forcing strategy: cli_delegate executes against the real headless CLI"
 pack: "agent_flows"
-tags: ["subsystem:flows", "provider-live", "entity:strategy-comparison-cli-delegate.flow"]
+tags: ["subsystem:flows", "provider-live"]
 request_fixture: "fixtures/requests/agent_flows/strategy_comparison_cli_delegate.md"
+flow_fixture: "fixtures/flows/strategy_routing/strategy_comparison_cli_delegate.flow.yaml"
 mode_support: ["auto"]
 portals:
   - alias: "todo-app"

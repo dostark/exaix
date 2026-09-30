@@ -10,7 +10,7 @@
  *   colliding steps; see agent_runner.ts's callSiteCounterKey). A scenario whose flow
  *   changed (a step added, renamed, or a capture that raced and lost a step's fixture) would
  *   otherwise only be caught the next time someone actually runs the pack against
- *   mock+strict. Team-edition-gated scenarios (e.g. consensus_review) are excluded — they
+ *   mock+strict. Team-edition-gated scenarios are excluded — they
  *   are not part of the default solo-edition selection this pack's fixtures were captured
  *   against.
  * @architectural-layer Test

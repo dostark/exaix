@@ -11,10 +11,10 @@ tags: [
   "subsystem:mcp-client",
   "subsystem:flows",
   "entity:query_symbols",
-  "entity:portal-knowledge-query-symbols-react.flow",
   "provider-live",
 ]
 request_fixture: "fixtures/requests/agent_flows/portal_knowledge_query_symbols.md"
+flow_fixture: "fixtures/flows/portal_knowledge/query_symbols_react.flow.yaml"
 mode_support: ["auto"]
 portals:
   - alias: "todo-app"

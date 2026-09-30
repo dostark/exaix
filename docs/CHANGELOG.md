@@ -18,6 +18,16 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 204 (Flow-Step Model Bindings)
+
+### Removed
+
+- The `research-synthesis`, `consensus-review`, `code-review` and `documentation` flows are no longer
+  shipped: send a request to the `research-synthesizer` agent role instead of `research-synthesis`,
+  and use the `pr-review`, `api-documentation` or `onboarding-docs` flows for the other three.
+- The single-purpose strategy test flows (`strategy-comparison-react`, `strategy-comparison-cli-delegate`,
+  `strategy-routing-smoke`, `portal-knowledge-query-symbols-react`) no longer appear in `exactl flow list`.
+
 ## Unreleased — Phase 155 (OpenAI-Compatible Provider Cutover and ReAct Default)
 
 ### Added

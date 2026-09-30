@@ -282,24 +282,6 @@
   },
   {
     "kind": "flow",
-    "artefactId": "code-review",
-    "status": "non-coverage",
-    "rationale": "not exercised by an arm this run"
-  },
-  {
-    "kind": "flow",
-    "artefactId": "consensus-review",
-    "status": "non-coverage",
-    "rationale": "not exercised by an arm this run"
-  },
-  {
-    "kind": "flow",
-    "artefactId": "documentation",
-    "status": "non-coverage",
-    "rationale": "not exercised by an arm this run"
-  },
-  {
-    "kind": "flow",
     "artefactId": "dogfood-loop",
     "status": "non-coverage",
     "rationale": "not exercised by an arm this run"
@@ -324,12 +306,6 @@
   },
   {
     "kind": "flow",
-    "artefactId": "portal-knowledge-query-symbols-react",
-    "status": "non-coverage",
-    "rationale": "Phase 198 Step 6 live graph-tool cutover fixture, not exercised by an arm this run"
-  },
-  {
-    "kind": "flow",
     "artefactId": "pr-review",
     "status": "non-coverage",
     "rationale": "not exercised by an arm this run"
@@ -337,12 +313,6 @@
   {
     "kind": "flow",
     "artefactId": "refactoring",
-    "status": "non-coverage",
-    "rationale": "not exercised by an arm this run"
-  },
-  {
-    "kind": "flow",
-    "artefactId": "research-synthesis",
     "status": "non-coverage",
     "rationale": "not exercised by an arm this run"
   },
@@ -357,23 +327,5 @@
     "artefactId": "test-generation",
     "status": "non-coverage",
     "rationale": "not exercised by an arm this run"
-  },
-  {
-    "kind": "flow",
-    "artefactId": "strategy-comparison-cli-delegate",
-    "status": "non-coverage",
-    "rationale": "Phase 159 mechanism-proof fixture (Step 6), not a production task flow subject to a value decision"
-  },
-  {
-    "kind": "flow",
-    "artefactId": "strategy-comparison-react",
-    "status": "non-coverage",
-    "rationale": "Phase 159 mechanism-proof fixture (Step 6), not a production task flow subject to a value decision"
-  },
-  {
-    "kind": "flow",
-    "artefactId": "strategy-routing-smoke",
-    "status": "non-coverage",
-    "rationale": "Phase 159 mechanism-proof fixture (Step 5), not a production task flow subject to a value decision"
   }
 ]

@@ -15,13 +15,6 @@ import type { IFlowStep } from "@exaix/schemas/flow.ts";
 const FLOWS_DIR = "./Blueprints/Flows";
 const BLUEPRINTS_DIR = "./Blueprints";
 
-/** Mechanism-proof fixtures — not part of the shipped flow catalog. */
-const NON_CATALOG_FIXTURES = new Set([
-  "strategy-comparison-cli-delegate.flow.yaml",
-  "strategy-comparison-react.flow.yaml",
-  "strategy-routing-smoke.flow.yaml",
-]);
-
 type Decision = "react" | "cli_delegate" | "no-strategy" | "n/a-dynamic" | "session_delegate_cycle";
 
 /** Mirrors the "Flow catalog strategy audit table" in phase-159-flow-step-execution-strategy.md. */
@@ -54,24 +47,6 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "write-test-cases": "react",
     "compile-report": "no-strategy",
   },
-  "code-review": {
-    "analyze-code": "react",
-    "security-review": "no-strategy",
-    "performance-review": "no-strategy",
-    "final-report": "no-strategy",
-  },
-  "consensus-review": {
-    "candidate-architecture": "no-strategy",
-    "candidate-security": "no-strategy",
-    "consensus": "no-strategy",
-  },
-  "documentation": {
-    "extract-code-structure": "react",
-    "generate-api-docs": "no-strategy",
-    "generate-user-guide": "no-strategy",
-    "generate-architecture-docs": "no-strategy",
-    "compile-documentation": "no-strategy",
-  },
   "dogfood-loop": { "implement": "cli_delegate", "review": "cli_delegate" },
   "dogfood-meta-workflow": { "pre-gap": "react", "next-steps": "session_delegate_cycle", "post-gap": "react" },
   "feature-development": {
@@ -103,9 +78,6 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "generate-glossary": "no-strategy",
     "compile-onboarding-docs": "no-strategy",
   },
-  "portal-knowledge-query-symbols-react": {
-    "query-symbols": "react",
-  },
   "pr-review": {
     "diff-analysis": "react",
     "code-quality-review": "no-strategy",
@@ -125,7 +97,6 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "validate-refactoring": "cli_delegate",
     "final-review": "cli_delegate",
   },
-  "research-synthesis": { "synthesize": "no-strategy", "assess-quality": "no-strategy" },
   "security-audit": {
     "static-analysis": "react",
     "dependency-audit": "react",
@@ -151,7 +122,7 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
 async function listCatalogFlowIds(): Promise<string[]> {
   const ids: string[] = [];
   for await (const entry of Deno.readDir(FLOWS_DIR)) {
-    if (!entry.isFile || !entry.name.endsWith(".flow.yaml") || NON_CATALOG_FIXTURES.has(entry.name)) continue;
+    if (!entry.isFile || !entry.name.endsWith(".flow.yaml")) continue;
     ids.push(entry.name.replace(".flow.yaml", ""));
   }
   return ids;

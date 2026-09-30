@@ -2,8 +2,9 @@ schema_version: "1.0.0"
 id: "flow-strategy-routing"
 title: "A flow step declaring strategy routes through the agent strategy registry"
 pack: "agent_flows"
-tags: ["subsystem:flows", "entity:strategy-routing-smoke.flow"]
+tags: ["subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/strategy_routing_smoke.md"
+flow_fixture: "fixtures/flows/strategy_routing/strategy_routing_smoke.flow.yaml"
 mode_support: ["auto"]
 portals:
   - alias: "todo-app"

@@ -55,8 +55,13 @@ const PROGRAMMATIC_SKILLS: ReadonlySet<string> = new Set([
   "memory-extraction-content-policy",
 ]);
 
-/** Agent roles exempt from the orphan-agent-role rule (invoked directly, not via flows). */
-const EXEMPT_AGENT_ROLE_IDS: ReadonlySet<string> = new Set(["default", "dogfood-developer"]);
+/** Agent roles exempt from the orphan-agent-role rule. Callers invoke them directly, not via flows. */
+const EXEMPT_AGENT_ROLE_IDS: ReadonlySet<string> = new Set([
+  "default",
+  "dogfood-developer",
+  "research-synthesizer", // request target
+  "voting-judge", // judge inside a voting group
+]);
 
 interface IAgentRoleRecord {
   id: string;

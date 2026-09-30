@@ -4,7 +4,7 @@ description: >
   Single-step flow whose step forces strategy: react (Phase 159), used by the
   provider-live scenario proving a strategy-routed flow step reaches the real
   agent strategy registry with a live provider. Paired with
-  strategy-comparison-cli-delegate.flow.yaml on the same task for a control-axis
+  strategy_comparison_cli_delegate.flow.yaml on the same task for a control-axis
   (cli_delegate vs react) comparison. Not a production task flow — a mechanism
   cutover fixture.
 version: "1.0"
