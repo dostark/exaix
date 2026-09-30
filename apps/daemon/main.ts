@@ -40,6 +40,7 @@ import { PlanAdapter, PlanAmendmentGate, PlanAmendmentService } from "@exaix/cor
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
+  createProductionBindingEnvProbe,
   DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
   DefaultRoutingStrategy,
   EffortResolver,
@@ -1006,10 +1007,7 @@ if (import.meta.main) {
       logger,
       db: dbService,
       costTracker,
-      probe: {
-        hasKey: async (name) => Boolean(Deno.env.get(name) || await SecureCredentialStore.get(name)),
-        hasOptIn: (name) => Deno.env.get(name) === "1",
-      },
+      probe: createProductionBindingEnvProbe(Deno.env, SecureCredentialStore),
     });
 
     const agentExecutorAdapter = new AgentComposerAdapter(

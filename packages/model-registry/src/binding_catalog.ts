@@ -138,6 +138,15 @@ export function buildBuiltInCatalog(): IBindingCatalog {
   projectStaticOverlay(catalog);
   projectCompatibleProfiles(catalog);
   projectCliRoutes(catalog);
+  for (
+    const provider of new Set<string>([
+      ...Object.values(catalog.models).map((model) => model.model_provider),
+      ...Object.keys(catalog.services),
+    ])
+  ) {
+    const own = catalog.services[provider] ? [provider] : [];
+    catalog.preferences[provider] = [...new Set([...own, "openrouter"])];
+  }
   return catalog;
 }
 

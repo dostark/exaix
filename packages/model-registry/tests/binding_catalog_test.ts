@@ -55,7 +55,44 @@ Deno.test("catalog omits a provider default that no package registered", () => {
 Deno.test("operator catalog cannot assert unverified model capabilities", () => {
   const base = buildBuiltInCatalog();
   const merged = mergeCatalogs(base, {
-    models: { "mock/private": { model_provider: "mock", capabilities: ["thinking"] } },
+    models: { "mock/unverified": { model_provider: "mock", capabilities: ["thinking"] } },
   });
-  assertEquals(merged.models["mock/private"].capabilities, undefined);
+  assertEquals(merged.models["mock/unverified"].capabilities, undefined);
+});
+
+Deno.test("each model provider prefers its same-named service then openrouter", () => {
+  const catalog = buildBuiltInCatalog();
+  for (const [provider, path] of Object.entries(catalog.preferences)) {
+    assertExists(path, provider);
+    assertEquals(path.at(-1), "openrouter");
+    if (catalog.services[provider]) assertEquals(path[0], provider);
+    for (const candidate of path.slice(0, -1)) {
+      assertExists(catalog.services[candidate], `${provider} prefers ${candidate}`);
+    }
+  }
+});
+
+Deno.test("a config catalog service entry adds a service and overrides a built-in by name", () => {
+  const base = buildBuiltInCatalog();
+  const merged = mergeCatalogs(base, {
+    services: {
+      "openai-chat": {
+        adapter: "openai-chat",
+        profile: "openai",
+        endpoint: "https://operator.example/v1",
+        transport: "cloud",
+        interface: "api",
+        serves: { "openai/gpt-6-luna": "gpt-6-luna" },
+      },
+      "operator-lab": {
+        adapter: "mock",
+        transport: "local",
+        interface: "api",
+        serves: { "mock/alpha": "alpha" },
+      },
+    },
+  });
+  assertEquals(merged.services["openai-chat"].endpoint, "https://operator.example/v1");
+  assertExists(merged.services["operator-lab"]);
+  assertExists(merged.services.deepseek);
 });

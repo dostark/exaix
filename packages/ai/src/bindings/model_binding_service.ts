@@ -10,18 +10,17 @@
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import type { ICostTracker, IDatabaseService } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
-import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
 import type {
   BindingOutcome,
   Config,
   IBindingIssue,
-  IBindingLayers,
   IBindingRunSnapshot,
   IBindingStepRef,
   IFlow,
 } from "@exaix/schemas";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
+import { loadBindingLayers } from "./binding_layers.ts";
 import { resolveBinding } from "./binding_resolver.ts";
 import { BINDING_OUTCOME_INVALID, BindingIncompatibleError, type IBoundStepProvider } from "./binding_types.ts";
 
@@ -33,8 +32,6 @@ export interface IModelBindingServiceDeps {
   costTracker?: ICostTracker;
   eventRegistry?: IEventRegistry;
 }
-
-const LAYER_CONFIG = "config";
 
 /** @visible Resolves all flow choices before one step can call a provider. */
 export class ModelBindingService {
@@ -59,21 +56,10 @@ export class ModelBindingService {
   /** Capture current config once and construct every bound provider before execution. */
   async snapshotForRun(flow: IFlow, run: { traceId: string; requestId?: string }): Promise<IBindingRunSnapshot> {
     const config = structuredClone(this.deps.configSource.get());
-    const catalog = mergeCatalogs(buildBuiltInCatalog(), config.catalog ?? {});
-    const entries: IBindingLayers["entries"] = Object.entries(config.bindings ?? {}).map(([selector, spec]) => ({
-      layer: LAYER_CONFIG,
-      selector,
-      spec,
-    }));
-    const layers: IBindingLayers = {
-      entries,
-      catalog,
-      overlaySha256: [],
-      operatorLayersPresent: entries.length > 0,
-    };
+    const layers = loadBindingLayers(config);
     const keyState = new Map<string, boolean>();
     const optInState = new Map<string, boolean>();
-    for (const service of Object.values(catalog.services)) {
+    for (const service of Object.values(layers.catalog.services)) {
       if (service.key_env && !keyState.has(service.key_env)) {
         keyState.set(service.key_env, await this.deps.probe.hasKey(service.key_env));
       }

@@ -38,6 +38,22 @@ export interface IBoundStepProvider {
 /** The tagged outcome kind for an invalid resolved binding. */
 export const BINDING_OUTCOME_INVALID = "invalid" as const;
 
+/** Production key/opt-in probe: a non-empty variable, else a non-empty credential-store entry. */
+export function createProductionBindingEnvProbe(
+  env: Pick<typeof Deno.env, "get">,
+  store: { get(name: string): Promise<string | null> },
+): { hasKey(name: string): Promise<boolean>; hasOptIn(name: string): Promise<boolean> | boolean } {
+  return {
+    hasKey: async (name) => {
+      const envValue = env.get(name);
+      if (envValue && envValue.length > 0) return true;
+      const stored = await store.get(name);
+      return Boolean(stored && stored.length > 0);
+    },
+    hasOptIn: (name) => env.get(name) === "1",
+  };
+}
+
 export class BindingIncompatibleError extends Error {
   constructor(public readonly issues: readonly IBindingIssue[]) {
     super(issues.map((issue) => `${issue.code}: ${issue.detail}`).join("; "));

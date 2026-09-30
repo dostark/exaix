@@ -1,7 +1,7 @@
 /**
  * @module BindingResolver
  * @path packages/ai/src/bindings/binding_resolver.ts
- * @description Pure first-slice resolver for config default and exact flow step bindings.
+ * @description Pure resolver implementing the full binding selector grammar.
  * @architectural-layer AI
  * @dependencies [@exaix/schemas, @std/crypto]
  * @related-files [packages/ai/src/bindings/model_binding_service.ts, packages/model-registry/src/binding_catalog.ts]
@@ -11,12 +11,17 @@ import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import {
   type BindingField,
+  type BindingLayer,
   type BindingOutcome,
   EFFORT_AUTO,
+  getDefaultModels,
+  type IBindingFieldSource,
   type IBindingIssue,
   type IBindingLayers,
   type IBindingSpec,
   type IBindingStepRef,
+  type ICatalogModel,
+  type ICatalogService,
   type IResolvedBinding,
   type IStepPin,
   ModelCapabilitySchema,
@@ -30,6 +35,12 @@ export interface IInvalidBindingOutcome {
 }
 
 const SELECTOR_DEFAULT = "default";
+const FALLBACK_LAYER: BindingLayer = "config";
+const ISSUE_UNKNOWN_MODEL: IBindingIssue["code"] = "unknown_model";
+const FLOW_PREFIX = "flow:";
+const ROLE_PREFIX = "role:";
+const STEP_SEPARATOR = "/step:";
+
 const LAYER_RANK: Record<IBindingLayers["entries"][number]["layer"], number> = {
   flow: 0,
   config: 1,
@@ -42,201 +53,371 @@ function issue(code: IBindingIssue["code"], ref: IBindingStepRef, detail: string
   return { kind: BINDING_OUTCOME_INVALID, issues: [{ code, flowId: ref.flowId, stepId: ref.stepId, detail }] };
 }
 
-/** Merge every matching entry in layer order and return the merged spec and per-field sources. */
-function collectSpec(
+interface IMatchRank {
+  layerRank: number;
+  specificity: number;
+  prefixLen: number;
+}
+
+interface IMatchingEntry {
+  entry: IBindingLayers["entries"][number]["spec"];
+  layer: IBindingLayers["entries"][number]["layer"];
+  selector: string;
+  rank: IMatchRank;
+}
+
+/** Wildcard glob, anchored to the full string. */
+function globMatch(pattern: string, value: string): boolean {
+  const parts = pattern.split("*");
+  let cursor = 0;
+  for (let index = 0; index < parts.length; index++) {
+    const part = parts[index];
+    if (part === "") continue;
+    if (index === 0 && !value.startsWith(part)) return false;
+    if (index === parts.length - 1 && !value.endsWith(part)) return false;
+    const found = value.indexOf(part, cursor);
+    if (found === -1) return false;
+    cursor = found + part.length;
+  }
+  return true;
+}
+
+/** Specificity classes: default(0) < flow:(1) < role:(2) < step-glob(3) < step-exact(4). */
+function selectorSpecificity(selector: string): number {
+  if (selector === SELECTOR_DEFAULT) return 0;
+  if (selector.startsWith(ROLE_PREFIX)) return 2;
+  if (!selector.startsWith(FLOW_PREFIX)) return -1;
+  const stepIndex = selector.indexOf(STEP_SEPARATOR);
+  if (stepIndex === -1) return 1;
+  return selector.includes("*", stepIndex + STEP_SEPARATOR.length) ? 3 : 4;
+}
+
+/** Characters before the first glob, used as the ambiguity and ordering tie-break. */
+function literalPrefixLen(selector: string): number {
+  const star = selector.indexOf("*");
+  return star === -1 ? selector.length : star;
+}
+
+function rankFor(layer: IBindingLayers["entries"][number]["layer"], selector: string): IMatchRank {
+  return {
+    layerRank: LAYER_RANK[layer],
+    specificity: selectorSpecificity(selector),
+    prefixLen: literalPrefixLen(selector),
+  };
+}
+
+/** True when a selector binds this flow step. Judge selectors never match a flow step. */
+function selectorMatches(ref: IBindingStepRef, selector: string): boolean {
+  if (selector === SELECTOR_DEFAULT) return true;
+  if (selector === "judge" || selector.startsWith("judge:")) return false;
+  if (selector.startsWith(ROLE_PREFIX)) return ref.agentRole === selector.slice(ROLE_PREFIX.length);
+  if (selector.startsWith(FLOW_PREFIX)) {
+    const body = selector.slice(FLOW_PREFIX.length);
+    const stepIndex = body.indexOf(STEP_SEPARATOR);
+    if (stepIndex === -1) return globMatch(body, ref.flowId);
+    const flowGlob = body.slice(0, stepIndex);
+    const stepGlob = body.slice(stepIndex + STEP_SEPARATOR.length);
+    return globMatch(flowGlob, ref.flowId) && globMatch(stepGlob, ref.stepId);
+  }
+  return false;
+}
+
+function compareRanks(a: IMatchRank, b: IMatchRank): number {
+  return a.layerRank - b.layerRank || a.specificity - b.specificity || a.prefixLen - b.prefixLen;
+}
+
+function sameRank(a: IMatchRank, b: IMatchRank): boolean {
+  return compareRanks(a, b) === 0;
+}
+
+/** Collect matching entries and merge per field. A later entry wins a field. Equal-specificity globs are ambiguous when literal prefixes tie. */
+function mergeEntries(
+  ref: IBindingStepRef,
   layers: IBindingLayers,
-  exact: string,
-): { spec: IBindingSpec; sources: IResolvedBinding["sources"] } | undefined {
-  const matching = layers.entries.filter(
-    (entry) => entry.selector === SELECTOR_DEFAULT || entry.selector === exact,
-  );
-  if (matching.length === 0) return undefined;
-  const ordered = matching.toSorted((a, b) => {
-    const layerDiff = LAYER_RANK[a.layer] - LAYER_RANK[b.layer];
-    return layerDiff || Number(a.selector === exact) - Number(b.selector === exact);
-  });
+): { spec: IBindingSpec; sources: IResolvedBinding["sources"] } | IInvalidBindingOutcome {
+  const matched: IMatchingEntry[] = [];
+  for (const entry of layers.entries) {
+    if (!selectorMatches(ref, entry.selector)) continue;
+    matched.push({
+      entry: entry.spec,
+      layer: entry.layer,
+      selector: entry.selector,
+      rank: rankFor(entry.layer, entry.selector),
+    });
+  }
+  if (matched.length === 0) return { spec: {}, sources: {} };
+  matched.sort((a, b) => compareRanks(a.rank, b.rank));
+
   const spec: IBindingSpec = {};
   const sources: IResolvedBinding["sources"] = {};
-  for (const entry of ordered) {
-    for (const [rawField, value] of Object.entries(entry.spec)) {
+  const winners = new Map<
+    BindingField,
+    { rank: IMatchRank; value: IBindingSpec[BindingField]; layer: string; selector: string }
+  >();
+
+  for (const match of matched) {
+    for (const [rawField, value] of Object.entries(match.entry) as Array<[BindingField, IBindingSpec[BindingField]]>) {
       if (value === undefined) continue;
-      const field = rawField as BindingField;
-      Object.assign(spec, { [field]: value });
-      sources[field] = { layer: entry.layer, selector: entry.selector };
+      const winner = winners.get(rawField);
+      if (!winner) {
+        winners.set(rawField, { rank: match.rank, value, layer: match.layer, selector: match.selector });
+        Object.assign(spec, { [rawField]: value });
+        sources[rawField] = { layer: match.layer, selector: match.selector };
+        continue;
+      }
+      if (sameRank(winner.rank, match.rank)) {
+        if (winner.value !== value) {
+          return issue(
+            "ambiguous_selector",
+            ref,
+            `${winner.selector} and ${match.selector} both match ${ref.flowId}/${ref.stepId} and set ${rawField} differently`,
+          );
+        }
+        continue;
+      }
+      if (compareRanks(match.rank, winner.rank) > 0) {
+        winners.set(rawField, { rank: match.rank, value, layer: match.layer, selector: match.selector });
+        Object.assign(spec, { [rawField]: value });
+        sources[rawField] = { layer: match.layer, selector: match.selector };
+      }
     }
   }
   return { spec, sources };
 }
 
-/** Verify the serve mapping consistency for an explicit canonical model. */
-function collectServeIssues(
-  ref: IBindingStepRef,
-  spec: IBindingSpec,
-  service: { serves: Record<string, string> },
-): IBindingIssue[] {
-  if (!spec.model) return [];
-  if (spec.service_model_id && service.serves[spec.model] !== spec.service_model_id) {
-    return [{
-      code: "service_does_not_serve_model",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `${spec.service} does not serve ${spec.model} as ${spec.service_model_id}`,
-    }];
-  }
-  if (!spec.service_model_id && !service.serves[spec.model]) {
-    return [{
-      code: "service_does_not_serve_model",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `${spec.service} does not serve ${spec.model}`,
-    }];
-  }
-  return [];
+interface IModelState {
+  canonical: string;
+  provider: string;
+  catalogModel?: ICatalogModel;
 }
 
-/** Verify the model half of a merged spec and return issues, or none when valid. */
-function collectModelIssues(
+/** Resolve the canonical model and its provider from the merged spec. */
+function resolveModel(
   ref: IBindingStepRef,
   spec: IBindingSpec,
   layers: IBindingLayers,
-  service: { serves: Record<string, string> },
-): IBindingIssue[] {
-  if (!spec.model && !spec.service_model_id) {
-    return [{
-      code: "unknown_model",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: "A service binding requires model or service_model_id",
-    }];
+): IModelState | IInvalidBindingOutcome | { kind: "unbound" } {
+  if (spec.model) {
+    const catalogModel = layers.catalog.models[spec.model];
+    if (!catalogModel) return issue(ISSUE_UNKNOWN_MODEL, ref, `Unknown canonical model: ${spec.model}`);
+    if (spec.model_provider && catalogModel.model_provider !== spec.model_provider) {
+      return issue(ISSUE_UNKNOWN_MODEL, ref, `Model provider mismatch: ${spec.model_provider}`);
+    }
+    return { canonical: spec.model, provider: catalogModel.model_provider, catalogModel };
   }
-  const model = spec.model ? layers.catalog.models[spec.model] : undefined;
-  if (spec.model && !model) {
-    return [{
-      code: "unknown_model",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `Unknown canonical model: ${spec.model}`,
-    }];
+  if (spec.model_provider) {
+    const canonical = `${spec.model_provider}/${getDefaultModels()[spec.model_provider] ?? ""}`;
+    const catalogModel = layers.catalog.models[canonical];
+    if (!catalogModel) {
+      return issue(ISSUE_UNKNOWN_MODEL, ref, `No registered default canonical model for ${spec.model_provider}`);
+    }
+    return { canonical, provider: spec.model_provider, catalogModel };
   }
-  if (model && spec.model_provider && model.model_provider !== spec.model_provider) {
-    return [{
-      code: "unknown_model",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `Model provider mismatch: ${spec.model_provider}`,
-    }];
+  if (spec.transport || spec.interface) {
+    const canonical = layers.configDefaultModel;
+    const catalogModel = canonical ? layers.catalog.models[canonical] : undefined;
+    if (!canonical || !catalogModel) {
+      return issue(ISSUE_UNKNOWN_MODEL, ref, "No config.ai default canonical model in catalog");
+    }
+    return { canonical, provider: catalogModel.model_provider, catalogModel };
   }
+  if (spec.service_model_id) {
+    if (!spec.service) {
+      return issue("unknown_service", ref, "service_model_id without model requires an explicit service");
+    }
+    return { canonical: `${spec.service}/${spec.service_model_id}`, provider: spec.model_provider ?? spec.service };
+  }
+  if (spec.service) return issue(ISSUE_UNKNOWN_MODEL, ref, "A service binding requires model or service_model_id");
+  return { kind: "unbound" };
+}
+
+/** Substitutes the {model}/{name} placeholders of a wildcard serves route. */
+function substituteTemplate(template: string, canonical: string): string {
+  return template.replaceAll("{model}", canonical).replaceAll("{name}", canonical.slice(canonical.indexOf("/") + 1));
+}
+
+/** The service model id a service maps a canonical model to, or none. */
+function serviceModelRoute(service: ICatalogService, canonical: string): string | undefined {
+  const explicit = service.serves[canonical];
+  if (explicit) return explicit;
+  const template = service.serves["*"];
+  return template ? substituteTemplate(template, canonical) : undefined;
+}
+
+interface IServiceState {
+  service: ICatalogService;
+  serviceId: string;
+  serviceModelId: string;
+}
+
+/** Choose the explicit service, or the first preferred service satisfying every constraint. */
+/** Why a candidate preference service fails, as a human-readable fragment, or none. */
+function candidateDropReason(
+  service: ICatalogService,
+  spec: IBindingSpec,
+  modelState: IModelState,
+  probe: IBindingEnvProbe,
+): string | undefined {
+  if (spec.transport && service.transport !== spec.transport) return `transport ${service.transport}`;
+  if (spec.interface && service.interface !== spec.interface) return `interface ${service.interface}`;
+  if (service.key_env && !probe.hasKey(service.key_env)) return `key ${service.key_env} missing`;
+  if (service.requires_optin && !probe.hasOptIn(service.requires_optin)) {
+    return `opt-in ${service.requires_optin} missing`;
+  }
+  const route = serviceModelRoute(service, modelState.canonical);
+  if (!route) return `does not serve ${modelState.canonical}`;
+  if (spec.service_model_id && route !== spec.service_model_id) return `serves ${route} not ${spec.service_model_id}`;
+  return undefined;
+}
+
+function resolveService(
+  ref: IBindingStepRef,
+  spec: IBindingSpec,
+  modelState: IModelState,
+  layers: IBindingLayers,
+  probe: IBindingEnvProbe,
+): IServiceState | IInvalidBindingOutcome {
+  if (spec.service) return explicitServiceState(ref, spec, modelState, layers, probe);
+  const dropped: string[] = [];
+  for (const candidate of layers.catalog.preferences[modelState.provider] ?? []) {
+    const service = layers.catalog.services[candidate];
+    if (!service) {
+      dropped.push(`${candidate}: unknown`);
+      continue;
+    }
+    if (spec.service_model_id && !modelState.catalogModel) {
+      return { service, serviceId: candidate, serviceModelId: spec.service_model_id };
+    }
+    const reason = candidateDropReason(service, spec, modelState, probe);
+    if (reason) {
+      dropped.push(`${candidate}: ${reason}`);
+      continue;
+    }
+    const route = serviceModelRoute(service, modelState.canonical);
+    return { service, serviceId: candidate, serviceModelId: spec.service_model_id ?? route! };
+  }
+  return issue("no_service_for_constraints", ref, dropped.join("; ") || "no preferred service");
+}
+
+/** Capability checks for requested features. Absent metadata proves nothing. */
+function capabilityIssues(ref: IBindingStepRef, spec: IBindingSpec, modelState: IModelState): IBindingIssue[] {
   const issues: IBindingIssue[] = [];
-  if (
-    spec.model && ((spec.thinking === true && !model?.capabilities?.includes(ModelCapabilitySchema.enum.thinking)) ||
-      (spec.effort && spec.effort !== EFFORT_AUTO &&
-        !model?.capabilities?.includes(ModelCapabilitySchema.enum.effort)))
-  ) {
+  const capabilities = modelState.catalogModel?.capabilities;
+  if (spec.thinking === true && !capabilities?.includes(ModelCapabilitySchema.enum.thinking)) {
     issues.push({
       code: "capability_missing",
       flowId: ref.flowId,
       stepId: ref.stepId,
-      detail: `Model capability is not verified for ${spec.model}`,
+      detail: `Model capability is not verified for ${modelState.canonical}`,
     });
   }
-  return [...issues, ...collectServeIssues(ref, spec, service)];
-}
-
-/** Verify the service half of a merged spec and return issues, or none when valid. */
-function collectServiceIssues(
-  ref: IBindingStepRef,
-  spec: IBindingSpec,
-  service: { key_env?: string; requires_optin?: string; transport: string; interface: string },
-  probe: IBindingEnvProbe,
-): IBindingIssue[] {
-  const issues: IBindingIssue[] = [];
-  if (service.key_env && !probe.hasKey(service.key_env)) {
+  if (spec.effort && spec.effort !== EFFORT_AUTO && !capabilities?.includes(ModelCapabilitySchema.enum.effort)) {
     issues.push({
-      code: "key_missing",
+      code: "capability_missing",
       flowId: ref.flowId,
       stepId: ref.stepId,
-      detail: `Missing credential: ${service.key_env}`,
-    });
-  }
-  if (service.requires_optin && !probe.hasOptIn(service.requires_optin)) {
-    issues.push({
-      code: "optin_missing",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `Missing opt-in: ${service.requires_optin}`,
-    });
-  }
-  if (spec.transport && spec.transport !== service.transport) {
-    issues.push({
-      code: "no_service_for_constraints",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `Transport mismatch for ${spec.service}`,
-    });
-  }
-  if (spec.interface && spec.interface !== service.interface) {
-    issues.push({
-      code: "interface_unsupported",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `Interface mismatch for ${spec.service}`,
+      detail: `Model capability is not verified for ${modelState.canonical}`,
     });
   }
   return issues;
 }
 
-/** Verify the merged spec against the catalog service and model and return issues, or none when valid. */
-function collectIssues(
+/** Check an explicitly named service: existence, constraints, routes and key/opt-in. */
+/** Missing key or opt-in for a service, as an outcome, or none. */
+function credentialIssue(
   ref: IBindingStepRef,
-  spec: IBindingSpec,
-  layers: IBindingLayers,
+  service: ICatalogService,
   probe: IBindingEnvProbe,
-): IBindingIssue[] {
-  if (!spec.service) {
-    return [{
-      code: "no_service_for_constraints",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: "Step 1 requires an explicit service",
-    }];
+): IInvalidBindingOutcome | undefined {
+  if (service.key_env && !probe.hasKey(service.key_env)) {
+    return issue("key_missing", ref, `Missing credential: ${service.key_env}`);
   }
-  const service = layers.catalog.services[spec.service];
-  if (!service) {
-    return [{
-      code: "unknown_service",
-      flowId: ref.flowId,
-      stepId: ref.stepId,
-      detail: `Unknown binding service: ${spec.service}`,
-    }];
+  if (service.requires_optin && !probe.hasOptIn(service.requires_optin)) {
+    return issue("optin_missing", ref, `Missing opt-in: ${service.requires_optin}`);
   }
-  return [
-    ...collectModelIssues(ref, spec, layers, service),
-    ...collectServiceIssues(ref, spec, service, probe),
-  ];
+  return undefined;
 }
 
-/** Resolve only the Step 1 selectors. Step 2 adds the other selector classes. */
+function explicitServiceState(
+  ref: IBindingStepRef,
+  spec: IBindingSpec,
+  modelState: IModelState,
+  layers: IBindingLayers,
+  probe: IBindingEnvProbe,
+): IServiceState | IInvalidBindingOutcome {
+  const service = layers.catalog.services[spec.service!];
+  if (!service) return issue("unknown_service", ref, `Unknown binding service: ${spec.service}`);
+  if (spec.transport && service.transport !== spec.transport) {
+    return issue("no_service_for_constraints", ref, `Transport mismatch for ${spec.service}`);
+  }
+  if (spec.interface && service.interface !== spec.interface) {
+    return issue("interface_unsupported", ref, `Interface mismatch for ${spec.service}`);
+  }
+  const credentials = credentialIssue(ref, service, probe);
+  if (credentials) return credentials;
+  if (spec.service_model_id && !modelState.catalogModel) {
+    return { service, serviceId: spec.service!, serviceModelId: spec.service_model_id };
+  }
+  const route = serviceModelRoute(service, modelState.canonical);
+  if (!route) {
+    return issue(
+      "service_does_not_serve_model",
+      ref,
+      `${spec.service} does not serve ${modelState.canonical}`,
+    );
+  }
+  if (spec.service_model_id && route !== spec.service_model_id) {
+    return issue(
+      "service_does_not_serve_model",
+      ref,
+      `${spec.service} serves ${modelState.canonical} as ${route} not ${spec.service_model_id}`,
+    );
+  }
+  return { service, serviceId: spec.service!, serviceModelId: spec.service_model_id ?? route };
+}
+
+/** The selector that drove the binding, inherited by derived fields. */
+function driverSource(sources: IResolvedBinding["sources"]): IBindingFieldSource {
+  return sources.model ?? sources.model_provider ?? sources.service_model_id ?? sources.service ??
+    sources.transport ?? sources.interface ?? { layer: FALLBACK_LAYER, selector: SELECTOR_DEFAULT };
+}
+
+/** Resolve a flow step's provider binding across all layers. */
 export function resolveBinding(
   ref: IBindingStepRef,
   _step: { binding?: IBindingSpec; pin?: IStepPin },
   layers: IBindingLayers,
   probe: IBindingEnvProbe,
 ): BindingOutcome | IInvalidBindingOutcome {
-  const exact = `flow:${ref.flowId}/step:${ref.stepId}`;
-  const collected = collectSpec(layers, exact);
-  if (!collected) return { kind: "unbound" };
-  const { spec, sources } = collected;
-  const issues = collectIssues(ref, spec, layers, probe);
-  if (issues.length > 0) return { kind: BINDING_OUTCOME_INVALID, issues };
-  const service = layers.catalog.services[spec.service!];
-  const model = spec.model ? layers.catalog.models[spec.model] : undefined;
-  const resolvedModel = spec.model ?? `${spec.service}/${spec.service_model_id}`;
-  const serviceModelId = spec.service_model_id ?? service.serves[resolvedModel];
-  if (!serviceModelId) return issue("service_does_not_serve_model", ref, `${spec.service} has no model route`);
+  const merged = mergeEntries(ref, layers);
+  if ("issues" in merged) return { kind: BINDING_OUTCOME_INVALID, issues: merged.issues };
+  const { spec, sources } = merged;
+
+  const modelState = resolveModel(ref, spec, layers);
+  if ("issues" in modelState) return { kind: BINDING_OUTCOME_INVALID, issues: modelState.issues };
+  if ("kind" in modelState && modelState.kind === "unbound") return { kind: "unbound" };
+
+  const capability = capabilityIssues(ref, spec, modelState);
+  if (capability.length > 0) return { kind: BINDING_OUTCOME_INVALID, issues: capability };
+
+  const serviceState = resolveService(ref, spec, modelState, layers, probe);
+  if ("issues" in serviceState) return { kind: BINDING_OUTCOME_INVALID, issues: serviceState.issues };
+
+  const { service, serviceId, serviceModelId } = serviceState;
+  const driver = driverSource(sources);
+  const resolvedSources: IResolvedBinding["sources"] = {
+    service: sources.service ?? driver,
+    model: sources.model ?? driver,
+    model_provider: sources.model_provider ?? sources.model ?? driver,
+    service_model_id: sources.service_model_id ?? sources.service ?? driver,
+    transport: sources.transport ?? sources.service ?? driver,
+    interface: sources.interface ?? sources.service ?? driver,
+  };
+
   const construction = {
-    service: spec.service!,
-    model_provider: model?.model_provider ?? spec.model_provider ?? spec.service!,
-    model: resolvedModel,
+    service: serviceId,
+    model_provider: modelState.provider,
+    model: modelState.canonical,
     service_model_id: serviceModelId,
     transport: service.transport,
     interface: service.interface,
@@ -251,5 +432,5 @@ export function resolveBinding(
   const fingerprint = encodeHex(
     crypto.subtle.digestSync("SHA-256", new TextEncoder().encode(JSON.stringify(construction))),
   );
-  return { kind: "bound", binding: { ...construction, sources, fingerprint } };
+  return { kind: "bound", binding: { ...construction, sources: resolvedSources, fingerprint } };
 }

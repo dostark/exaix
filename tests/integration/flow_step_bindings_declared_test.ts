@@ -455,6 +455,71 @@ Deno.test("factory construction failure rejects once before the first flow gener
   }
 });
 
+Deno.test("a role binding in config moves every step of that role to the bound service", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const factory = new CapturingFactory();
+  ProviderRegistry.registerWithMetadata("mock", factory, {
+    name: "mock",
+    description: "captured mock",
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.FREE,
+    pricingTier: PricingTier.FREE,
+    strengths: [],
+  });
+  try {
+    const blueprints = join(tempDir, "Blueprints", "Agents");
+    await Deno.mkdir(blueprints, { recursive: true });
+    for (const role of ["composer", "explorer"]) {
+      await Deno.writeTextFile(
+        join(blueprints, `${role}.md`),
+        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
+      );
+    }
+    const config = ConfigSchema.parse({
+      ...configFor(tempDir, {
+        "role:composer": { model: "mock/alpha" },
+        "role:explorer": { model: "mock/beta" },
+      }),
+      catalog: {
+        models: { "mock/alpha": { model_provider: "mock" }, "mock/beta": { model_provider: "mock" } },
+        services: {
+          alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
+          beta: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/beta": "beta" } },
+        },
+        preferences: { mock: ["alpha", "beta"] },
+      },
+    });
+    const logger = createMockEventLogger();
+    const service = new ModelBindingService({
+      configSource: { get: () => config },
+      logger,
+      db,
+      probe: { hasKey: () => true, hasOptIn: () => true },
+    });
+    const adapter = new AgentComposerAdapter(
+      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
+      blueprints,
+      undefined,
+      service,
+    );
+    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    const traceId = crypto.randomUUID();
+    const result = await runner.execute(flow, { userPrompt: "Research", traceId });
+    assertEquals(result.success, true);
+    assertEquals(factory.calls, ["alpha", "beta"]);
+    const resolved = logger.events.filter((event) => event.action === "binding.resolved");
+    assertEquals(resolved.length, 2);
+    assertEquals(resolved.every((event) => event.traceId === traceId), true);
+    const sources = resolved.map((event) =>
+      (event.payload as { sources?: { service?: { selector?: string } } }).sources
+    );
+    assertEquals(sources[0]?.service?.selector, "role:composer");
+    assertEquals(sources[1]?.service?.selector, "role:explorer");
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("resolved and rejected events carry the same run trace as the request; a retried bound step emits one resolved event per acquisition attempt", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   const factory = new CapturingFactory();

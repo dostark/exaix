@@ -146,6 +146,9 @@ export interface IBindingLayers {
   catalog: IBindingCatalog;
   overlaySha256: readonly string[];
   operatorLayersPresent: boolean;
+  /** The current `config.ai` default canonical model id (e.g. `openai/gpt-6-luna`),
+   *  when the projection is unique. Transport/interface-only bindings start from it. */
+  configDefaultModel?: string;
 }
 
 export interface IBindingRunSnapshot {
