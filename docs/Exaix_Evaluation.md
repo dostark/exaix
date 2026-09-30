@@ -811,7 +811,6 @@ exactl eval run --pack agent_flows \
   --pack integration_e2e \
   --pack mcp_tools_extended \
   --pack smoke \
-  --pack triggers-basic \
   --score-threshold 0.5 \
   --trials 1
 ```

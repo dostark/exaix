@@ -488,8 +488,6 @@ subsystem tag is not part of the six-subsystem coverage contract.
 | `agent_role_eval`    | Daemon          | 14        | `agent_roles` |
 | `blueprint_eval`     | None            | 2         | —             |
 | `dynamic_execution`  | Daemon          | 11        | `mcp-client`  |
-| `eval_edge_cases`    | None            | 5         | —             |
-| `eval_smoke`         | None            | 1         | —             |
 | `flow_blueprints`    | Daemon          | 16        | `flows`       |
 | `framework_test`     | Framework       | 2         | —             |
 | `integration_e2e`    | Daemon + portal | 3         | —             |
@@ -500,7 +498,6 @@ subsystem tag is not part of the six-subsystem coverage contract.
 | `skill_eval`         | Daemon          | 7         | `skills`      |
 | `smoke`              | Daemon          | 1         | —             |
 | `swe_tasks`          | Real LLM        | 23        | —             |
-| `triggers_basic`     | Daemon          | 1         | —             |
 
 ### 2.4 Where Sandboxes Are Created
 

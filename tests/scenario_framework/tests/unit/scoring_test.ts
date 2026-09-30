@@ -74,6 +74,21 @@ Deno.test("[Scoring] computeStepScore — empty results returns 1.0", () => {
   assertEquals(score, 1.0);
 });
 
+Deno.test("[Scoring] computeStepScore — a failing zero-weight criterion does not lower the score", () => {
+  const results: ICriterionResult[] = [
+    makeResult({ criterion_id: "a", status: CriterionStatus.PASSED, score_weight: 1 }),
+    makeResult({ criterion_id: "b", status: CriterionStatus.FAILED, score_weight: 0 }),
+  ];
+  assertEquals(computeStepScore(results), 1.0);
+});
+
+Deno.test("[Scoring] computeStepScore — only zero-weight criteria returns 1.0", () => {
+  const results: ICriterionResult[] = [
+    makeResult({ criterion_id: "a", status: CriterionStatus.FAILED, score_weight: 0 }),
+  ];
+  assertEquals(computeStepScore(results), 1.0);
+});
+
 Deno.test("[Scoring] computeStepScore — no score_weight on any criterion defaults to equal weights", () => {
   const results: ICriterionResult[] = [
     makeResult({ criterion_id: "a", status: CriterionStatus.PASSED }),

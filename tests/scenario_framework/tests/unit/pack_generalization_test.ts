@@ -34,8 +34,6 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "agent_flows",
     "agent_role_eval",
     "dynamic_execution",
-    "eval_edge_cases",
-    "eval_smoke",
     "external_terminal_bench",
     "flow_blueprints",
     "framework_test",
@@ -50,7 +48,6 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "skill_eval",
     "smoke",
     "swe_tasks",
-    "triggers_basic",
   ]);
   assertEquals(smokePack.map((scenario: IScenario) => scenario.id), ["workspace-health-smoke"]);
 });

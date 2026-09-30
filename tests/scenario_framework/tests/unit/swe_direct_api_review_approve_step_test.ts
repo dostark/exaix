@@ -7,13 +7,12 @@
  *   worktree PortalExecutionStrategy.WORKTREE sets up, rather than bypassing it. Without an
  *   approve-review step between execution and run-tests, the agent's real fix now lands only in
  *   .exa/worktrees/<portal>/<trace_id>/ and run-tests (which checks the mounted portal) sees
- *   stale, unfixed code — mirroring the identical fix already applied to
- *   fix-bug-null-guard-cli-all-legacy.yaml. Asserts a new "approve-review" step exists, is positioned
+ *   stale, unfixed code. Asserts a new "approve-review" step exists, is positioned
  *   between wait-for-execution-completion and run-tests, discovers trace_id from the journal
  *   rather than a hardcoded branch name, and that the scenario's stale "no code_changes delegate
  *   worktree is created" comment (factually wrong per Step 5's finding) is gone.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard.yaml, tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-all-legacy.yaml, tests/scenario_framework/tests/unit/swe_cli_all_review_approve_step_test.ts]
+ * @related-files [tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard.yaml]
  */
 
 import { assert } from "@std/assert";

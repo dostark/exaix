@@ -5,7 +5,7 @@
  * envelope production, TriggerIngestionService request-file writing, and duplicate
  * deduplication — all without requiring a daemon or FileWatcher.
  * @architectural-layer Tests
- * @related-files [packages/triggers/adapters/webhook_adapter.ts, packages/triggers/services/ingestion_service.ts, tests/scenario_framework/scenarios/triggers_basic/triggers-basic.yaml]
+ * @related-files [packages/triggers/adapters/webhook_adapter.ts, packages/triggers/services/ingestion_service.ts]
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";

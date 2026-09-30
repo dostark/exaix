@@ -57,7 +57,7 @@ Deno.test(
     for (const entry of Deno.readDirSync(SWE_TASKS_DIR)) {
       if (entry.isFile && entry.name.endsWith(".yaml")) yamls.push(resolve(SWE_TASKS_DIR, entry.name));
     }
-    assert(yamls.length >= 30, `expected the swe_tasks corpus to be loaded, got ${yamls.length}`);
+    assert(yamls.length >= 20, `expected the swe_tasks corpus to be loaded, got ${yamls.length}`);
 
     const violations: string[] = [];
     for (const yamlPath of yamls) {

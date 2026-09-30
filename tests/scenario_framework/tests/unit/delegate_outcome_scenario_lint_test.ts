@@ -48,15 +48,47 @@ Deno.test("[delegate-outcome-lint] the outcome scenario asserts delegate-produce
   );
 });
 
-Deno.test("[delegate-outcome-lint] plumbing-only scenarios do not satisfy the outcome check", async () => {
-  // The matrix scenario now includes real worktree file-content proof, so it's no longer
-  // plumbing-only and legitimately passes the outcome check. Re-pointed this anti-tautology
-  // guard at a scenario that remains genuinely plumbing-only.
-  const path = join(SCENARIOS_DIR, "provider_live/multi-agent-tui-flow.yaml");
-  const parsed = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(path)));
+/** Submits, waits and runs a shell step that reads no worktree: plumbing only, no content proof. */
+const PLUMBING_ONLY_SCENARIO = `
+schema_version: "1.0.0"
+id: "plumbing-only"
+title: "Plumbing-only delegation"
+pack: "provider_live"
+tags: ["provider-live"]
+request_fixture: "fixtures/requests/provider_live/product_manager.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "submit"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "created"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    output_criteria:
+      - id: "plan-found"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+  - id: "list-workspace"
+    type: "shell"
+    command: "ls"
+    args: ["Workspace"]
+    output_criteria:
+      - id: "listed"
+        kind: "command-output-contains"
+        contains: ["Plans"]
+`;
+
+Deno.test("[delegate-outcome-lint] plumbing-only scenarios do not satisfy the outcome check", () => {
+  const parsed = ScenarioSchema.parse(parseYaml(PLUMBING_ONLY_SCENARIO));
   assert(
     !assertsProducedContent(parsed.steps),
-    "multi-agent-tui-flow.yaml asserts content it should not — if it now satisfies the " +
-      "outcome check, the check has been loosened to the point of proving nothing",
+    "a plumbing-only scenario satisfies the outcome check — the check has been loosened to " +
+      "the point of proving nothing",
   );
 });

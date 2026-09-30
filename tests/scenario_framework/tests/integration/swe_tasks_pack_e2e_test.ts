@@ -1,7 +1,7 @@
 /**
  * @module SweTasksPackE2eTest
  * @path tests/scenario_framework/tests/integration/swe_tasks_pack_e2e_test.ts
- * @description Validates swe_tasks pack scenarios: loads all non-legacy YAML files,
+ * @description Validates swe_tasks pack scenarios: loads all YAML files,
  *   verifies schema/tag metadata, and confirms the multi-cell matrix resolves
  *   correctly. CLI-delegate cell selection proves --cell filtering works for
  *   both claude-code and opencode tools.
@@ -21,31 +21,20 @@ const EXPECTED_SW_TASKS_IDS = [
   "swe-add-api-routes-constants",
   "swe-add-batch-operations",
   "swe-add-feature-endpoint",
-  "swe-add-feature-endpoint-cli-all-legacy",
   "swe-add-feature-endpoint-flow-feature-development",
   "swe-add-feature-endpoint-flow-refactoring",
-  "swe-add-feature-endpoint-free",
-  "swe-add-feature-endpoint-legacy",
   "swe-add-search-feature",
   "swe-async-ordering-bug",
   "swe-docstring-storage-module",
   "swe-explain-request-flow",
   "swe-explain-request-flow-codeanalyst",
-  "swe-explain-request-flow-codeanalyst-preprune",
   "swe-extract-sort-utility",
   "swe-fix-bug-null-guard",
-  "swe-fix-bug-null-guard-cli-all-legacy",
-  "swe-fix-bug-null-guard-free",
-  "swe-fix-bug-null-guard-legacy",
   "swe-injection-sanitisation",
-  "swe-injection-sanitisation-free",
   "swe-injection-sanitisation-seniorcoder",
   "swe-map-dependencies",
   "swe-path-traversal-storage",
   "swe-refactor-extract-function",
-  "swe-refactor-extract-function-cli-all-legacy",
-  "swe-refactor-extract-function-free",
-  "swe-refactor-extract-function-legacy",
   "swe-refactor-extract-function-placebo",
   "swe-rename-done-to-completed",
   "swe-rename-priority-type",
@@ -53,8 +42,6 @@ const EXPECTED_SW_TASKS_IDS = [
   "swe-write-coverage-for-priority",
   "swe-write-regression-test-for-summary",
   "swe-write-tests-uncovered",
-  "swe-write-tests-uncovered-cli-all-legacy",
-  "swe-write-tests-uncovered-legacy",
   "swe-write-tests-uncovered-testengineer",
 ];
 
