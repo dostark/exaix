@@ -38,8 +38,11 @@ export async function setExploreService(root: string, service: string): Promise<
   }
 }
 
-/** Save the most recently written run lock at a stable path for --locked replay. */
-export async function saveLatestLock(root: string): Promise<void> {
+type LockPick = "latest" | "earliest";
+const LOCK_DESTINATIONS: Record<LockPick, string> = { latest: "fifth.lock.json", earliest: "first.lock.json" };
+
+/** Copy the earliest or latest run lock to a stable path for --locked replay. */
+export async function saveLock(root: string, pick: LockPick): Promise<void> {
   const realRoot = await Deno.realPath(root);
   const runtimeDir = join(realRoot, ".exa");
   const lockDir = join(runtimeDir, "bindings");
@@ -51,9 +54,10 @@ export async function saveLatestLock(root: string): Promise<void> {
     if (!info.isFile || info.isSymlink) continue;
     locks.push({ path, modified: info.mtime?.getTime() ?? 0 });
   }
-  locks.sort((a, b) => b.modified - a.modified || b.path.localeCompare(a.path));
+  const direction = pick === "latest" ? -1 : 1;
+  locks.sort((a, b) => direction * (a.modified - b.modified) || direction * a.path.localeCompare(b.path));
   if (locks.length === 0) throw new Error("No binding lock is available");
-  const destination = join(runtimeDir, "fifth.lock.json");
+  const destination = join(runtimeDir, LOCK_DESTINATIONS[pick]);
   const existing = await Deno.lstat(destination).catch(() => undefined);
   if (existing) throw new Error("Replay lock destination already exists");
   await Deno.copyFile(locks[0].path, destination);
@@ -62,6 +66,7 @@ export async function saveLatestLock(root: string): Promise<void> {
 if (import.meta.main) {
   const [operation, service] = Deno.args;
   if (operation === "set-explore" && service) await setExploreService(Deno.cwd(), service);
-  else if (operation === "save-fifth-lock" && service === undefined) await saveLatestLock(Deno.cwd());
+  else if (operation === "save-fifth-lock" && service === undefined) await saveLock(Deno.cwd(), "latest");
+  else if (operation === "save-first-lock" && service === undefined) await saveLock(Deno.cwd(), "earliest");
   else throw new Error("Unsupported cutover operation");
 }

@@ -57,9 +57,8 @@ export class RequestCreateHandler extends BaseCommand {
     const traceId = String(frontmatterFields.trace_id);
     const overlays = await this.loadOverlays(options.overlays ?? []);
     const binds = this.parseBinds(options.binds ?? []);
-    const locked = options.locked
-      ? BindingLockSchema.parse(JSON.parse(await Deno.readTextFile(options.locked)))
-      : undefined;
+    const lockedText = options.locked ? await Deno.readTextFile(options.locked) : undefined;
+    const locked = lockedText ? BindingLockSchema.parse(JSON.parse(lockedText)) : undefined;
     const file: IRunBindingsFile = {
       schema: 1,
       trace_id: traceId,
@@ -69,6 +68,7 @@ export class RequestCreateHandler extends BaseCommand {
       overlays,
       binds,
       locked,
+      ...(lockedText ? { locked_sha256: await this.sha256(lockedText) } : {}),
     };
     return await store.write(file);
   }

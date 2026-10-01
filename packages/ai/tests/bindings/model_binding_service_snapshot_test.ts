@@ -4,13 +4,13 @@
  * @description Checks immutable config snapshots and aggregated binding rejection.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { crypto as stdCrypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import { ModelBindingService } from "@exaix/ai";
 import { BINDINGS_DIR } from "@exaix/core";
-import { BindingLockSchema, type Config, ConfigSchema, FlowSchema } from "@exaix/schemas";
+import { BindingLockSchema, type Config, ConfigSchema, FlowSchema, type IRunBindingsFile } from "@exaix/schemas";
 import { createMockConfig, createMockEventLogger, initTestDbService } from "@exaix/testing";
 
 const flow = FlowSchema.parse({
@@ -129,72 +129,147 @@ Deno.test("every run writes a lock matching BindingLockSchema and emits binding.
   }
 });
 
-Deno.test("replay: a changed effective binding yields lock_mismatch; an equal resolution passes", async () => {
+function replayService(
+  tempDir: string,
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
+  bindings: Config["bindings"],
+  locked?: IRunBindingsFile["locked"],
+  lockedSha256?: string,
+): { service: ModelBindingService; config: Config } {
+  const config = createMockConfig(tempDir, {
+    ai: { provider: "mock", model: "boot" },
+    catalog: catalog as Config["catalog"],
+    bindings,
+  });
+  const runFile = locked === undefined ? undefined : {
+    schema: 1,
+    trace_id: "00000000-0000-4000-8000-000000000000",
+    request_path: "Workspace/Requests/r.md",
+    request_sha256: "b".repeat(64),
+    created_at: new Date().toISOString(),
+    overlays: [],
+    binds: [],
+    locked,
+    ...(lockedSha256 ? { locked_sha256: lockedSha256 } : {}),
+  };
+  const service = new ModelBindingService({
+    configSource: { get: () => config },
+    logger: createMockEventLogger(),
+    db,
+    runStore: {
+      write: () => Promise.resolve(""),
+      exists: () => Promise.resolve(true),
+      claim: () => Promise.resolve(runFile as never),
+      pruneOlderThan: () => Promise.resolve(0),
+    },
+    probe: { hasKey: () => true, hasOptIn: () => true },
+  });
+  return { service, config };
+}
+
+const RUN = { requestPath: "Workspace/Requests/r.md", requestSha256: "b".repeat(64) };
+const composeAlpha: Config["bindings"] = { "flow:research/step:compose": { service: "alpha", model: "mock/alpha" } };
+
+async function sha256Of(text: string): Promise<string> {
+  const digest = await stdCrypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return encodeHex(new Uint8Array(digest));
+}
+
+async function firstLock(
+  tempDir: string,
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
+  bindings: Config["bindings"],
+  flowUnderTest: typeof flow = flow,
+): Promise<{ lock: ReturnType<typeof BindingLockSchema.parse>; sha256: string }> {
+  const { service, config } = replayService(tempDir, db, bindings);
+  const traceId = crypto.randomUUID();
+  await service.snapshotForRun(flowUnderTest, { traceId, ...RUN });
+  const text = await Deno.readTextFile(join(tempDir, config.paths.runtime, BINDINGS_DIR, `${traceId}.lock.json`));
+  return { lock: BindingLockSchema.parse(JSON.parse(text)), sha256: await sha256Of(text) };
+}
+
+Deno.test("[replay] an equal resolution replays; a changed service, flow content, pin or catalog yields lock_mismatch", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const lockConfig = createMockConfig(tempDir, {
+    const { lock, sha256 } = await firstLock(tempDir, db, composeAlpha);
+    const same = replayService(tempDir, db, composeAlpha, lock, sha256);
+    const ok = await same.service.snapshotForRun(flow, { traceId: crypto.randomUUID(), ...RUN });
+    assertEquals(ok.lock !== undefined, true);
+
+    const drifted = async (
+      bindings: Config["bindings"],
+      flowUnderTest: typeof flow = flow,
+    ): Promise<Error | object> => {
+      const { service } = replayService(tempDir, db, bindings, lock, sha256);
+      return await service.snapshotForRun(flowUnderTest, { traceId: crypto.randomUUID(), ...RUN }).catch((e) => e);
+    };
+    const beta: Config["bindings"] = { "flow:research/step:compose": { service: "beta", model: "mock/beta" } };
+    assertStringIncludes(String(await drifted(beta)), "lock_mismatch");
+    const effort: Config["bindings"] = {
+      "flow:research/step:compose": { service: "alpha", model: "mock/alpha", effort: "high" },
+    };
+    assertStringIncludes(String(await drifted(effort)), "lock_mismatch");
+    const extraCatalog = { ...catalog, models: { ...catalog!.models, "mock/gamma": { model_provider: "mock" } } };
+    const changedCatalog = createMockConfig(tempDir, {
       ai: { provider: "mock", model: "boot" },
-      catalog: catalog as Config["catalog"],
-      bindings: { "flow:research/step:compose": { service: "alpha", model: "mock/alpha" } },
+      catalog: extraCatalog as Config["catalog"],
+      bindings: composeAlpha,
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => lockConfig },
-      logger,
+    const catalogService = new ModelBindingService({
+      configSource: { get: () => changedCatalog },
+      logger: createMockEventLogger(),
       db,
+      runStore: {
+        write: () => Promise.resolve(""),
+        exists: () => Promise.resolve(true),
+        claim: () =>
+          Promise.resolve({
+            schema: 1,
+            trace_id: "00000000-0000-4000-8000-000000000000",
+            ...RUN,
+            request_path: RUN.requestPath,
+            request_sha256: RUN.requestSha256,
+            created_at: new Date().toISOString(),
+            overlays: [],
+            binds: [],
+            locked: lock,
+            locked_sha256: sha256,
+          } as never),
+        pruneOlderThan: () => Promise.resolve(0),
+      },
       probe: { hasKey: () => true, hasOptIn: () => true },
     });
-    const traceId = crypto.randomUUID();
-    await service.snapshotForRun(flow, { traceId });
-    const lockPath = join(tempDir, lockConfig.paths.runtime, BINDINGS_DIR, `${traceId}.lock.json`);
-    const lockFile = { path: lockPath, sha256: undefined };
-
-    // A later run on the same config writes its own lock for its own trace.
-    const second = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
-    assertEquals(second.lock?.path.startsWith(join(tempDir, lockConfig.paths.runtime, BINDINGS_DIR)), true);
-    void lockFile;
+    assertStringIncludes(
+      String(await catalogService.snapshotForRun(flow, { traceId: crypto.randomUUID(), ...RUN }).catch((e) => e)),
+      "lock_mismatch",
+    );
+    const editedFlow = FlowSchema.parse({ ...flow, description: "edited" });
+    assertStringIncludes(String(await drifted(composeAlpha, editedFlow)), "lock_mismatch");
+    const pinnedFlow = FlowSchema.parse({
+      ...flow,
+      steps: [
+        {
+          ...flow.steps[0],
+          binding: { service: "alpha", model: "mock/alpha" },
+          pin: { fields: ["service"], reason: "compliance" },
+        },
+        flow.steps[1],
+      ],
+    });
+    assertStringIncludes(String(await drifted(composeAlpha, pinnedFlow)), "lock_mismatch");
   } finally {
     await cleanup();
   }
 });
 
-Deno.test("replay: a lock whose step binding differs yields lock_mismatch", async () => {
+Deno.test("[replay] a lock whose bytes no longer match its recorded sha256 fails closed", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const lockConfig = createMockConfig(tempDir, {
-      ai: { provider: "mock", model: "boot" },
-      catalog: catalog as Config["catalog"],
-      bindings: { "flow:research/step:compose": { service: "alpha", model: "mock/alpha" } },
-    });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => lockConfig },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const traceId = crypto.randomUUID();
-    await service.snapshotForRun(flow, { traceId });
-    const lockPath = join(tempDir, lockConfig.paths.runtime, BINDINGS_DIR, `${traceId}.lock.json`);
-
-    // The same config replays cleanly.
-    const ok = await service.snapshotForRun(flow, { traceId: crypto.randomUUID(), locked: lockPath });
-    assertEquals(ok.lock?.path.startsWith(join(tempDir, lockConfig.paths.runtime, BINDINGS_DIR)), true);
-
-    // A config that changes the effective binding to beta differs from the lock.
-    const changed = createMockConfig(tempDir, {
-      ai: { provider: "mock", model: "boot" },
-      catalog: catalog as Config["catalog"],
-      bindings: { "flow:research/step:compose": { service: "beta", model: "mock/beta" } },
-    });
-    const changedService = new ModelBindingService({
-      configSource: { get: () => changed },
-      logger: createMockEventLogger(),
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const { lock, sha256 } = await firstLock(tempDir, db, composeAlpha);
+    const tampered = { ...lock, hosts: ["evil.example:443"] };
+    const { service } = replayService(tempDir, db, composeAlpha, tampered, sha256);
     await assertRejects(
-      () => changedService.snapshotForRun(flow, { traceId: crypto.randomUUID(), locked: lockPath }),
+      () => service.snapshotForRun(flow, { traceId: crypto.randomUUID(), ...RUN }),
       Error,
       "lock_mismatch",
     );

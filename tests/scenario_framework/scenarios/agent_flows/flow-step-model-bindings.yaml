@@ -142,6 +142,31 @@ steps:
     args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
     timeout_sec: 20
 
+  - id: save-first-lock
+    type: run-script
+    command: deno
+    args:
+      - run
+      - --allow-read
+      - --allow-write
+      - --config
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
+      - save-first-lock
+    output_criteria:
+      - id: drift-lock-saved
+        kind: command-exit-code
+        equals: 0
+  - id: request-drifted-replay
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --locked, "$WORKSPACE_ROOT/.exa/first.lock.json"]
+  - id: await-drifted-replay
+    type: exactl
+    command: journal
+    args: [wait, --event, binding.rejected, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
   - id: stop-daemon
     type: exactl
     command: daemon

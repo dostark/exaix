@@ -25,6 +25,8 @@ export interface IRunBindingsStore {
     requestPath: string,
     requestSha256: string,
   ): Promise<Opt<IRunBindingsFile, Reason.OptionalContext>>;
+  /** True when a run file exists for the trace. It does not claim the file. */
+  exists(traceId: string): Promise<boolean>;
   pruneOlderThan(days: number, now: Date): Promise<number>;
 }
 
@@ -73,6 +75,16 @@ export class RunBindingsStore implements IRunBindingsStore {
       throw error;
     }
     return path;
+  }
+
+  /** Whether a regular run file exists for the trace. A non-UUID trace never has one. */
+  async exists(traceId: string): Promise<boolean> {
+    if (!UUID_PATTERN.test(traceId)) return false;
+    try {
+      return (await Deno.lstat(this.pathFor(traceId))).isFile;
+    } catch {
+      return false;
+    }
   }
 
   /** Claim a run file for a request, verifying trace id, path and content hash.

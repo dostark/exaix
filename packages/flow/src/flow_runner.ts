@@ -1116,7 +1116,7 @@ export class FlowRunner implements IFlowRunner {
     stepRequest: { flowId?: string; bindingSnapshot?: IBindingRunSnapshot },
   ): Promise<DynamicStepExecutor | undefined> {
     if (
-      stepRequest.bindingSnapshot && stepRequest.flowId && this.options.bindingService?.isActive()
+      stepRequest.bindingSnapshot && stepRequest.flowId && this.options.bindingService
     ) {
       const bound = await this.options.bindingService.providerFor(stepRequest.bindingSnapshot, {
         flowId: stepRequest.flowId,
@@ -1264,7 +1264,11 @@ export class FlowRunner implements IFlowRunner {
       await this.ensureDynamicExecutor(flow, flowRunId);
       await this.validateIFlow(flow, request, flowRunId);
       const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
-      if (this.options.bindingService && (this.options.bindingService.isActive() || flowDeclaresBindings)) {
+      if (
+        this.options.bindingService &&
+        (this.options.bindingService.isActive() || flowDeclaresBindings ||
+          await this.options.bindingService.hasRunFile(request.traceId))
+      ) {
         const traceId = request.traceId ?? crypto.randomUUID();
         request = {
           ...request,

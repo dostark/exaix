@@ -329,6 +329,8 @@ export const RunBindingsFileSchema = z.object({
   ),
   binds: BindOneOffSchema,
   locked: BindingLockSchema.optional(),
+  /** SHA-256 of the lock file bytes that exactl read. The daemon derives it again before replay. */
+  locked_sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
 }).strict();
 
 export type IRunBindingsFile = z.infer<typeof RunBindingsFileSchema>;

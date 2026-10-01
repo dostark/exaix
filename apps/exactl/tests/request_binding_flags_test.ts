@@ -134,10 +134,13 @@ Deno.test("[cli] exactl request --locked parses a lock file into the run binding
 
     const runFiles = [...Deno.readDirSync(join(tempDir, ".exa", "run-bindings"))].map((e) => e.name);
     assertEquals(runFiles.length, 1);
-    const runFile = readJson<{ locked: { trace_id: string } }>(
+    const runFile = readJson<{ locked: { trace_id: string }; locked_sha256?: string }>(
       join(tempDir, ".exa", "run-bindings", runFiles[0]!),
     );
     assertExists(runFile.locked);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(lock)));
+    const expected = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    assertEquals(runFile.locked_sha256, expected);
     void db;
     void config;
     void result;

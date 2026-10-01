@@ -147,3 +147,19 @@ Deno.test("[store] pruneOlderThan removes only files older than the window", asy
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+Deno.test("[store] exists reports a written run file without claiming it, and is false for absent or non-UUID traces", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "bindings-store-" });
+  try {
+    const store = new RunBindingsStore(createMockConfig(tempDir, {}));
+    const traceId = crypto.randomUUID();
+    assertEquals(await store.exists(traceId), false);
+    await store.write(runFile(traceId, "Workspace/Requests/r.md", await sha256("bytes")));
+    assertEquals(await store.exists(traceId), true);
+    assertEquals(await store.exists("../escape"), false);
+    // Not claimed: a different request may still claim-fail on identity, but exists never throws.
+    assertEquals(await store.exists(traceId), true);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});

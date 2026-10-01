@@ -68,7 +68,7 @@ function startFixture(calls: IFixtureCall[]): Deno.HttpServer {
 }
 
 Deno.test({
-  name: "[phase204] flow-step-model-bindings runs six requests on one daemon",
+  name: "[phase204] flow-step-model-bindings runs seven requests on one daemon",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
@@ -98,6 +98,7 @@ Deno.test({
       assertEquals(callCountInWindow(calls, run, "request-pinned-refusal", "await-pinned-refusal"), 0);
       assertEquals(callCountInWindow(calls, run, "request-daemon-overlay", "await-daemon-overlay"), 0);
       assertEquals(callCountInWindow(calls, run, "request-locked-replay", "await-locked-replay"), 0);
+      assertEquals(callCountInWindow(calls, run, "request-drifted-replay", "await-drifted-replay"), 0);
 
       const rows = await readActivity(workspaceRoot);
       const starts = rows.filter((row) => row.action_type === "daemon.started");
@@ -113,8 +114,8 @@ Deno.test({
         (JSON.parse(row.payload) as { via?: string }).via === "cli"
       );
       const traceIds = created.map((row) => row.trace_id);
-      assertEquals(traceIds.length, 6, JSON.stringify(created));
-      assertEquals(new Set(traceIds).size, 6);
+      assertEquals(traceIds.length, 7, JSON.stringify(created));
+      assertEquals(new Set(traceIds).size, 7);
       const successful = [0, 1, 2, 4, 5];
       const lockedEntries: Array<ReturnType<typeof BindingLockSchema.parse>["entries"]> = [];
       for (const index of successful) {
@@ -171,6 +172,19 @@ Deno.test({
           assertEquals(resolved.find((entry) => entry.step_id === "explore-one")?.sources.service?.layer, "overlay");
         }
       }
+      const driftTrace = traceIds[6];
+      const driftRejection = rows.filter((row) =>
+        row.trace_id === driftTrace && row.action_type === "binding.rejected"
+      );
+      assertEquals(driftRejection.length, 1);
+      assertEquals(
+        (JSON.parse(driftRejection[0].payload) as { issues: Array<{ code: string }> }).issues[0]?.code,
+        "lock_mismatch",
+      );
+      assertEquals(
+        rows.filter((row) => row.trace_id === driftTrace && row.action_type === "flow.step.started").length,
+        0,
+      );
       const rejectedTrace = traceIds[3];
       const rejection = rows.filter((row) => row.trace_id === rejectedTrace && row.action_type === "binding.rejected");
       assertEquals(rejection.length, 1);
