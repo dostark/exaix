@@ -13,7 +13,7 @@
 import { assertEquals } from "@std/assert";
 import type { IBindingStepRef, IResolvedBinding } from "@exaix/schemas";
 import type { PricingProvenance } from "@exaix/core/types";
-import { validateBinding } from "@exaix/ai/bindings/binding_validation.ts";
+import { adapterKeyId, validateBinding } from "@exaix/ai/bindings/binding_validation.ts";
 import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS } from "@exaix/core";
 
 const ref: IBindingStepRef = {
@@ -126,7 +126,7 @@ Deno.test("[validation] key_missing when the credential is absent, and when the 
     binding: binding({ service: "svc" }),
     probe: { hasKey: () => true, hasOptIn: () => true },
     service: { adapter: "mock", transport: "cloud", interface: "api", serves: {}, key_env: "WRONG_KEY" },
-    adapterKeyEnv: { mock: "MOCK_API_KEY" },
+    adapterKeyEnv: { [adapterKeyId("mock", undefined)]: "MOCK_API_KEY" },
   });
   assertEquals(wrong.map((issue) => issue.code).includes("key_missing"), true);
 });

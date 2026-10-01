@@ -710,3 +710,42 @@ Deno.test("[pool] a credential stored or rotated after provider creation creates
     await cleanup();
   }
 });
+
+const deepseekCatalog = (keyEnv: string): Config["catalog"] => ({
+  services: {
+    "custom-deepseek": {
+      adapter: "openai-chat",
+      profile: "deepseek",
+      transport: "cloud",
+      interface: "api",
+      key_env: keyEnv,
+      serves: { "deepseek/deepseek-v4-pro": "deepseek-v4-pro" },
+    },
+  },
+});
+
+Deno.test("[validation] a service key variable must equal the one its adapter profile reads", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  registerStubOpenAiChat();
+  try {
+    const bind: Config["bindings"] = {
+      "flow:research/step:compose": { service: "custom-deepseek", model: "deepseek/deepseek-v4-pro" },
+    };
+    const wrong = lockService(tempDir, db, bind, deepseekCatalog("OTHER_API_KEY"));
+    const error = await wrong.service.snapshotForRun(flow, { traceId: crypto.randomUUID() }).catch((e) => e);
+    assertStringIncludes(String(error), "key_missing");
+    assertStringIncludes(String(error), "OTHER_API_KEY");
+
+    const right = lockService(tempDir, db, bind, deepseekCatalog("DEEPSEEK_API_KEY"));
+    const snapshot = await right.service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    assertEquals(snapshot.bindings.get("compose")?.kind, "bound");
+
+    const builtIn = lockService(tempDir, db, {
+      "flow:research/step:compose": { service: "deepseek", model: "deepseek/deepseek-v4-pro" },
+    });
+    const builtInSnapshot = await builtIn.service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    assertEquals(builtInSnapshot.bindings.get("compose")?.kind, "bound");
+  } finally {
+    await cleanup();
+  }
+});

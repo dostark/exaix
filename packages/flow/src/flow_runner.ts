@@ -22,6 +22,7 @@ import { StepContentHasher } from "./step_content_hasher.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import type { JSONValue } from "@exaix/core";
+import { BoundedLruCache } from "./bounded_lru_cache.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
@@ -34,6 +35,7 @@ import {
 } from "@exaix/ai";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
+  BINDING_PROVIDER_POOL_MAX_SIZE,
   FlowInputSource,
   FlowOutputFormat,
   FlowStepOnErrorAction,
@@ -801,7 +803,9 @@ export class FlowRunner implements IFlowRunner {
    *  One LlmClient serves each distinct bound service fingerprint.
    *  Two differently-bound DYNAMIC steps never share a model route.
    *  At most one entry grows per fingerprint used in this process. */
-  private readonly dynamicExecutorsByFingerprint = new Map<string, DynamicStepExecutor>();
+  private readonly dynamicExecutorsByFingerprint = new BoundedLruCache<string, DynamicStepExecutor>(
+    BINDING_PROVIDER_POOL_MAX_SIZE,
+  );
   private mcpClient?: IMcpClient & IToolManifestResolver;
   private agentExecutor: IAgentExecutor;
   private eventLogger: IFlowEventLogger;
@@ -1267,7 +1271,7 @@ export class FlowRunner implements IFlowRunner {
       const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
       if (
         this.options.bindingService &&
-        (this.options.bindingService.isActive() || flowDeclaresBindings ||
+        (flowDeclaresBindings || await this.options.bindingService.isActive() ||
           await this.options.bindingService.hasRunFile(request.traceId))
       ) {
         const traceId = request.traceId ?? crypto.randomUUID();

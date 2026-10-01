@@ -148,7 +148,8 @@ Deno.test("[runtime] an overlay dropped into .exa/overlays/ applies to the next 
     });
 
     // First run: no overlay, no bindings → inactive, no snapshot.
-    assertEquals(service.isActive(), false);
+    assertEquals(service.isActive() instanceof Promise, true, "the activation check is asynchronous");
+    assertEquals(await service.isActive(), false);
     await Deno.mkdir(overlaysDir, { recursive: true });
 
     // Drop an overlay, and the next run sees it without any daemon restart.
@@ -159,7 +160,7 @@ Deno.test("[runtime] an overlay dropped into .exa/overlays/ applies to the next 
         bindings: { "flow:research/step:compose": { service: "alpha", model: "mock/mock" } },
       }),
     );
-    assertEquals(service.isActive(), true);
+    assertEquals(await service.isActive(), true);
     const after = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
     assertEquals(after.layers.operatorLayersPresent, true);
     const composeOutcome = after.bindings.get("compose");

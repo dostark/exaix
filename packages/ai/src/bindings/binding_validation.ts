@@ -99,6 +99,11 @@ function parseEndpoint(endpoint: Opt<string, Reason.OptionalContext>): IEndpoint
   };
 }
 
+/** Key of the expected key variable for an adapter profile. openai-chat serves several profiles with different variables. */
+export function adapterKeyId(adapter: string, profile: Opt<string, Reason.OptionalContext>): string {
+  return `${adapter}|${profile ?? ""}`;
+}
+
 function issue(code: IBindingIssue["code"], ref: IBindingStepRef, detail: string): IBindingIssue {
   return { code, flowId: ref.flowId, stepId: ref.stepId, detail };
 }
@@ -167,7 +172,10 @@ function validateCredentials(ref: IBindingStepRef, deps: IBindingValidationDeps,
   if (service?.key_env) {
     if (!probe.hasKey(service.key_env)) {
       issues.push(issue(ISSUE_KEY_MISSING, ref, `Missing credential: ${service.key_env}`));
-    } else if (adapterKeyEnv?.[binding.adapter] && service.key_env !== adapterKeyEnv[binding.adapter]) {
+    } else if (
+      adapterKeyEnv?.[adapterKeyId(binding.adapter, binding.profile)] &&
+      service.key_env !== adapterKeyEnv[adapterKeyId(binding.adapter, binding.profile)]
+    ) {
       issues.push(issue(ISSUE_KEY_MISSING, ref, `${service.key_env} differs from the adapter's fixed key variable`));
     }
   }

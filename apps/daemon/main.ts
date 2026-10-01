@@ -1033,7 +1033,7 @@ if (import.meta.main) {
         costPer1kTokens: bootLimits.cost_per_1k_tokens,
         costTracker,
         globalCapUsd: bootLimits.max_cost_per_day,
-        globalBudget: () => Promise.resolve(bindingService.isActive()),
+        globalBudget: () => bindingService.isActive(),
       });
     }
 

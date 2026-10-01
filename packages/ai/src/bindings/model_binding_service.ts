@@ -33,6 +33,7 @@ import type {
 } from "@exaix/schemas";
 import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
+import { buildBuiltInCatalog } from "@exaix/model-registry";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
 import { unwrapModelProvider } from "../providers/common.ts";
@@ -43,7 +44,7 @@ import {
   resolveBinding,
   SELECTOR_DEFAULT,
 } from "./binding_resolver.ts";
-import { validateBinding } from "./binding_validation.ts";
+import { adapterKeyId, validateBinding } from "./binding_validation.ts";
 import { compareLock, sha256Hex } from "./binding_replay.ts";
 import { buildLock, LockConflictError, persistLockExclusive } from "./binding_lock.ts";
 import { type IRunBindingsStore, OverlayClaimError } from "./run_bindings_store.ts";
@@ -106,6 +107,12 @@ export class ModelBindingService {
   private readonly credentialVersions = new WeakMap<IBindingRunSnapshot, ReadonlyMap<string, string>>();
   private tick = 0;
   private readonly deps: IModelBindingServiceDeps;
+  /** Expected key variable per adapter profile, taken from the built-in catalog. */
+  private readonly builtInKeyVariables: Record<string, string> = Object.fromEntries(
+    Object.values(buildBuiltInCatalog().services).flatMap((service) =>
+      service.key_env ? [[adapterKeyId(service.adapter, service.profile), service.key_env]] : []
+    ),
+  );
   private readonly logger: IEventLogger;
 
   constructor(deps: IModelBindingServiceDeps) {
@@ -122,17 +129,15 @@ export class ModelBindingService {
   /** Flow execution enables binding setup when an operator layer may exist.
    *  That is a config [bindings] block or a non-empty daemon overlay directory.
    *  The full layer scan happens in snapshotForRun, so this is the cheap gate. */
-  isActive(): boolean {
+  async isActive(): Promise<boolean> {
     const config = this.deps.configSource.get();
     if (Object.keys(config.bindings ?? {}).length > 0) return true;
     const overlaysDir = join(config.system.root, config.paths.runtime, BINDING_OVERLAYS_DIR);
     try {
-      const info = Deno.statSync(overlaysDir);
-      if (info.isDirectory) return true;
+      return (await Deno.stat(overlaysDir)).isDirectory;
     } catch {
-      // No overlay directory — no operator layer.
+      return false;
     }
-    return false;
   }
 
   /** Whether an operator run file exists for the trace. Run-file presence alone activates
@@ -342,7 +347,7 @@ export class ModelBindingService {
       catalogModel: layers.catalog.models[resolved.model],
       probe,
       getAdapterMetadata: this.deps.getAdapterMetadata,
-      adapterKeyEnv: this.deps.adapterKeyEnv,
+      adapterKeyEnv: this.deps.adapterKeyEnv ?? this.builtInKeyVariables,
       modelRegistry: this.deps.modelRegistry,
       maxCostPerDay: this.deps.maxCostPerDay,
       allowNet: this.deps.configSource.get().system?.allow_net,
