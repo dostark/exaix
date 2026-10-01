@@ -63,9 +63,10 @@ class FlowLog implements IFlowEventLogger {
   log(_action: string, _payload: Record<string, JSONValue | undefined>): void {}
 }
 
-function configFor(root: string): Config {
+function configFor(root: string, nativeTools = false): Config {
   return ConfigSchema.parse({
     system: { root },
+    execution: { native_tools_enabled: nativeTools },
     paths: {},
     ai: { provider: "mock", model: "boot" },
     catalog: {
@@ -81,7 +82,7 @@ function configFor(root: string): Config {
   });
 }
 
-async function harness(tempDir: string, db: IDatabaseService) {
+async function harness(tempDir: string, db: IDatabaseService, nativeTools = false) {
   const factory = new CapturingFactory();
   ProviderRegistry.registerWithMetadata("mock", factory, {
     name: "mock",
@@ -99,7 +100,7 @@ async function harness(tempDir: string, db: IDatabaseService) {
       `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
     );
   }
-  const config = configFor(tempDir);
+  const config = configFor(tempDir, nativeTools);
   const logger = createMockEventLogger();
   const service = new ModelBindingService({
     configSource: { get: () => config },
@@ -191,6 +192,34 @@ Deno.test("[replay] a drifted --locked lock fails the run before any provider ca
     const rejected = logger.events.filter((event) => event.action === "binding.rejected");
     assertEquals(rejected.length, 1);
     assertStringIncludes(JSON.stringify(rejected[0].payload), "lock_mismatch");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[validation] a DYNAMIC step bound to an adapter without native tools fails capability_missing before any provider call", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const { factory, logger, config, runner } = await harness(tempDir, db, true);
+    const traceId = crypto.randomUUID();
+    await new RunBindingsStore(config).write(runFile(traceId, {
+      binds: [{ selector: "default", spec: { service: "alpha", model: "mock/alpha" } }],
+    }));
+    const dynamicFlow = FlowSchema.parse({
+      ...flow,
+      steps: [{ ...flow.steps[0], execution_mode: "dynamic" }, flow.steps[1]],
+    });
+    const result = await runner.execute(dynamicFlow, {
+      userPrompt: "Research",
+      traceId,
+      requestPath: REQUEST_PATH,
+      requestSha256: REQUEST_SHA,
+    });
+    assertEquals(result.success, false);
+    assertEquals(factory.calls, []);
+    const rejected = logger.events.filter((event) => event.action === "binding.rejected");
+    assertEquals(rejected.length, 1);
+    assertStringIncludes(JSON.stringify(rejected[0].payload), "capability_missing");
   } finally {
     await cleanup();
   }

@@ -287,3 +287,36 @@ Deno.test("[validation] a new host outside the start grant is needs_restart when
   });
   assertEquals(ok.includes("needs_restart"), false);
 });
+
+const nativeAdapter = (supportsNativeTools: boolean) => () => ({
+  name: "mock",
+  description: "",
+  capabilities: [],
+  costTier: 0 as never,
+  pricingTier: 0 as never,
+  strengths: [],
+  supportsNativeTools,
+});
+
+Deno.test("[validation] native tools: unknown model capabilities pass, a declared set without native_tools fails", async () => {
+  const nativeRef = { ...ref, nativeTools: true };
+  const base = { binding: binding({}), probe: { hasKey: () => true, hasOptIn: () => true }, adapterKeyEnv: {} };
+  const unknown = await validateBinding(nativeRef, {
+    ...base,
+    catalogModel: { model_provider: "mock" },
+    getAdapterMetadata: nativeAdapter(true),
+  });
+  assertEquals(unknown.map((issue) => issue.code), []);
+  const declared = await validateBinding(nativeRef, {
+    ...base,
+    catalogModel: { model_provider: "mock", capabilities: ["thinking"] },
+    getAdapterMetadata: nativeAdapter(true),
+  });
+  assertEquals(declared.map((issue) => issue.code), ["capability_missing"]);
+  const supported = await validateBinding(nativeRef, {
+    ...base,
+    catalogModel: { model_provider: "mock", capabilities: ["native_tools"] },
+    getAdapterMetadata: nativeAdapter(true),
+  });
+  assertEquals(supported.map((issue) => issue.code), []);
+});

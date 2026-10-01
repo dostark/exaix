@@ -8,7 +8,8 @@ import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { crypto as stdCrypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
-import { ModelBindingService } from "@exaix/ai";
+import { ModelBindingService, ProviderRegistry } from "@exaix/ai";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
 import { BINDINGS_DIR } from "@exaix/core";
 import { BindingLockSchema, type Config, ConfigSchema, FlowSchema, type IRunBindingsFile } from "@exaix/schemas";
 import { createMockConfig, createMockEventLogger, initTestDbService } from "@exaix/testing";
@@ -326,6 +327,108 @@ Deno.test("pool: same binding reuses one wrapper; a service cap change creates a
     });
     const noCapSnapshot = await noCapService.snapshotForRun(flow, { traceId: crypto.randomUUID() });
     assertEquals(noCapSnapshot.issues.length, 0);
+  } finally {
+    await cleanup();
+  }
+});
+
+const keyedCatalog: Config["catalog"] = {
+  models: { "mock/alpha": { model_provider: "mock" } },
+  services: {
+    alpha: {
+      adapter: "mock",
+      transport: "cloud",
+      interface: "api",
+      key_env: "ALPHA_API_KEY",
+      serves: { "mock/alpha": "alpha" },
+    },
+  },
+  preferences: {},
+};
+
+function preflightService(
+  tempDir: string,
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
+  overrides: Partial<Config>,
+  extra: Partial<ConstructorParameters<typeof ModelBindingService>[0]> = {},
+): ModelBindingService {
+  const config = createMockConfig(tempDir, {
+    ai: { provider: "mock", model: "boot" },
+    catalog: keyedCatalog,
+    bindings: composeAlpha,
+    ...overrides,
+  });
+  return new ModelBindingService({
+    configSource: { get: () => config },
+    logger: createMockEventLogger(),
+    db,
+    probe: { hasKey: () => false, hasOptIn: () => true },
+    ...extra,
+  });
+}
+
+Deno.test("[snapshot] an explicit service without its key fails key_missing before any provider is built", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const service = preflightService(tempDir, db, {});
+    const error = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() }).catch((e) => e);
+    assertStringIncludes(String(error), "key_missing");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[snapshot] a DYNAMIC step on an adapter without native tools fails capability_missing when native tools are enabled", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const dynamicFlow = FlowSchema.parse({
+      ...flow,
+      steps: [{ ...flow.steps[0], execution_mode: "dynamic" }, flow.steps[1]],
+    });
+    const adapterMetadata = () => ({
+      name: "mock",
+      description: "",
+      capabilities: [],
+      costTier: 0 as never,
+      pricingTier: 0 as never,
+      strengths: [],
+      supportsNativeTools: false,
+    });
+    const overrides = { execution: { native_tools_enabled: true } } as Partial<Config>;
+    const on = preflightService(tempDir, db, overrides, {
+      probe: { hasKey: () => true, hasOptIn: () => true },
+      getAdapterMetadata: adapterMetadata,
+    });
+    const error = await on.snapshotForRun(dynamicFlow, { traceId: crypto.randomUUID() }).catch((e) => e);
+    assertStringIncludes(String(error), "capability_missing");
+
+    const off = preflightService(tempDir, db, {}, {
+      probe: { hasKey: () => true, hasOptIn: () => true },
+      getAdapterMetadata: adapterMetadata,
+    });
+    const snapshot = await off.snapshotForRun(dynamicFlow, { traceId: crypto.randomUUID() });
+    assertEquals(snapshot.bindings.get("compose")?.kind, "bound");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[snapshot] provider construction failure keeps its cause in the issue detail", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.registerWithMetadata("mock", {
+      create: () => Promise.reject(new Error("socket pool exhausted")),
+    }, {
+      name: "mock",
+      description: "failing",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.FREE,
+      strengths: [],
+    });
+    const service = preflightService(tempDir, db, {}, { probe: { hasKey: () => true, hasOptIn: () => true } });
+    const error = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() }).catch((e) => e);
+    assertStringIncludes(String(error), "socket pool exhausted");
   } finally {
     await cleanup();
   }

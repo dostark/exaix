@@ -15,7 +15,6 @@ import {
   BINDING_OVERLAYS_DIR,
   BINDING_PROVIDER_POOL_MAX_SIZE,
   BINDINGS_DIR,
-  FlowStepType,
   type ICostTracker,
   type IDatabaseService,
 } from "@exaix/core";
@@ -37,7 +36,7 @@ import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
-import { LAYER_CONFIG, loadBindingLayers } from "./binding_layers.ts";
+import { bindingStepRef, LAYER_CONFIG, loadBindingLayers } from "./binding_layers.ts";
 import { type IInvalidBindingOutcome, resolveBinding, SELECTOR_DEFAULT } from "./binding_resolver.ts";
 import { validateBinding } from "./binding_validation.ts";
 import { compareLock, lockDigests, sha256Hex } from "./binding_replay.ts";
@@ -52,8 +51,6 @@ import {
   BOUND_TARGET_KIND_SESSION_TOOL,
   type IBoundStepProvider,
   type IBoundStepTarget,
-  STEP_KIND_AGENT,
-  STEP_KIND_GATE,
 } from "./binding_types.ts";
 
 export interface IModelBindingServiceDeps {
@@ -76,6 +73,13 @@ export interface IModelBindingServiceDeps {
   /** The start-time network grant covering every catalog host (Step 7). An endpoint host
    *  outside it when allow_net is unset yields needs_restart during validation. */
   startNetGrant?: readonly string[];
+}
+
+const CONSTRUCTION_CAUSE_MAX_CHARS = 200;
+
+/** The failure message, bounded for the audit trail. Factories never put key values in errors. */
+function constructionCause(error: Error): string {
+  return error.message.slice(0, CONSTRUCTION_CAUSE_MAX_CHARS);
 }
 
 /** @visible Resolves all flow choices before one step can call a provider. */
@@ -114,35 +118,6 @@ export class ModelBindingService {
     return false;
   }
 
-  /** The binding ref for an LLM-calling step, or undefined for other step types. */
-  private stepRefFor(flow: IFlow, step: IFlow["steps"][number]): IBindingStepRef | undefined {
-    if (
-      step.type !== FlowStepType.AGENT && step.type !== FlowStepType.GATE &&
-      step.type !== FlowStepType.SESSION_DELEGATE_CYCLE
-    ) {
-      return undefined;
-    }
-    if (step.type === FlowStepType.AGENT) {
-      return {
-        flowId: flow.id,
-        stepId: step.id,
-        agentRole: step.agent_role,
-        kind: STEP_KIND_AGENT,
-        strategy: step.strategy,
-        nativeTools: false,
-      };
-    }
-    return {
-      flowId: flow.id,
-      stepId: step.id,
-      agentRole: step.type === FlowStepType.GATE
-        ? step.evaluate?.agent_role ?? step.agent_role
-        : step.delegateCycle?.review.agent_role ?? step.agent_role,
-      kind: STEP_KIND_GATE,
-      nativeTools: false,
-    };
-  }
-
   /** Whether an operator run file exists for the trace. Run-file presence alone activates
    *  binding setup, so per-run overlays, --bind and --locked work with no other layer. */
   async hasRunFile(traceId: Opt<string, Reason.TraceAbsent>): Promise<boolean> {
@@ -164,37 +139,16 @@ export class ModelBindingService {
     const probe = await this.envProbe(layers);
     const envIgnored = layers.operatorLayersPresent &&
       (Deno.env.get("EXA_LLM_PROVIDER") !== undefined || Deno.env.get("EXA_LLM_MODEL") !== undefined);
+    const nativeTools = config.execution?.native_tools_enabled === true;
     const bindings = new Map<string, BindingOutcome>();
     const issues: IBindingIssue[] = [];
     for (const step of flow.steps) {
-      const ref = this.stepRefFor(flow, step);
+      const ref = bindingStepRef(flow, step, nativeTools);
       if (!ref) continue;
       this.resolveStep(layers, probe, step, ref, bindings, issues);
     }
     if (issues.length === 0) {
-      for (const step of flow.steps) {
-        const ref = this.stepRefFor(flow, step);
-        const outcome = ref ? bindings.get(step.id) : undefined;
-        if (!outcome || outcome.kind !== BINDING_OUTCOME_BOUND) continue;
-        const validationIssues = await this.validateOutcomeBinding(ref!, outcome.binding, layers);
-        if (validationIssues.length > 0) {
-          issues.push(...validationIssues);
-          continue;
-        }
-        if (outcome.binding.adapter !== ADAPTER_CLI_DELEGATE) {
-          try {
-            const key = await this.prepareProvider(config, outcome.binding, layers, layers.operatorLayersPresent);
-            this.activeRuns.add(key);
-          } catch {
-            issues.push({
-              code: "interface_unsupported",
-              flowId: flow.id,
-              stepId: step.id,
-              detail: `Provider construction failed for service ${outcome.binding.service}`,
-            });
-          }
-        }
-      }
+      issues.push(...await this.validateAndPrepare(flow, config, layers, probe, bindings, nativeTools));
     }
 
     const replayIssue = await compareLock(flow, runFile, { bindings, catalog: layers.catalog });
@@ -215,6 +169,43 @@ export class ModelBindingService {
       lock,
       globalBudgetMode: layers.operatorLayersPresent,
     };
+  }
+
+  /** Validate every bound step, then construct its provider. Returns all issues found. */
+  private async validateAndPrepare(
+    flow: IFlow,
+    config: Config,
+    layers: IBindingLayers,
+    probe: { hasKey(name: string): boolean; hasOptIn(name: string): boolean },
+    bindings: ReadonlyMap<string, BindingOutcome>,
+    nativeTools: boolean,
+  ): Promise<IBindingIssue[]> {
+    const issues: IBindingIssue[] = [];
+    for (const step of flow.steps) {
+      const ref = bindingStepRef(flow, step, nativeTools);
+      const outcome = ref ? bindings.get(step.id) : undefined;
+      if (!ref || !outcome || outcome.kind !== BINDING_OUTCOME_BOUND) continue;
+      const validationIssues = await this.validateOutcomeBinding(ref, outcome.binding, layers, probe);
+      if (validationIssues.length > 0) {
+        issues.push(...validationIssues);
+        continue;
+      }
+      if (outcome.binding.adapter === ADAPTER_CLI_DELEGATE) continue;
+      try {
+        const key = await this.prepareProvider(config, outcome.binding, layers, layers.operatorLayersPresent);
+        this.activeRuns.add(key);
+      } catch (error) {
+        issues.push({
+          code: "interface_unsupported",
+          flowId: flow.id,
+          stepId: step.id,
+          detail: `Provider construction failed for service ${outcome.binding.service}: ${
+            constructionCause(error instanceof Error ? error : new Error("non-error failure"))
+          }`,
+        });
+      }
+    }
+    return issues;
   }
 
   /** Claim the operator run-binding file for this request when one exists. */
@@ -279,12 +270,13 @@ export class ModelBindingService {
     ref: IBindingStepRef,
     resolved: IResolvedBinding,
     layers: IBindingLayers,
+    probe: { hasKey(name: string): boolean; hasOptIn(name: string): boolean },
   ): Promise<IBindingIssue[]> {
     return await validateBinding(ref, {
       binding: resolved,
       service: layers.catalog.services[resolved.service],
       catalogModel: layers.catalog.models[resolved.model],
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      probe,
       getAdapterMetadata: this.deps.getAdapterMetadata,
       adapterKeyEnv: this.deps.adapterKeyEnv,
       modelRegistry: this.deps.modelRegistry,

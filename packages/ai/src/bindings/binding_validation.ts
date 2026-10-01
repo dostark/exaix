@@ -124,9 +124,11 @@ function validateCapabilities(
   const capabilities = catalogModel?.capabilities;
   const adapterMeta = getAdapterMetadata?.(binding.adapter);
   if (ref.nativeTools) {
-    const modelSupports = capabilities?.includes("native_tools") === true;
+    // Native tools are an opt-in with a text fallback, so an unknown model capability passes.
+    // The adapter fact is verified, and a declared capability set is known.
+    const modelRefuses = capabilities !== undefined && !capabilities.includes("native_tools");
     const adapterSupports = adapterMeta?.supportsNativeTools === true;
-    if (!modelSupports || !adapterSupports) {
+    if (modelRefuses || !adapterSupports) {
       issues.push(issue(ISSUE_CAPABILITY_MISSING, ref, `${binding.model} lacks native tool support`));
     }
   }

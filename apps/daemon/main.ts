@@ -1014,6 +1014,8 @@ if (import.meta.main) {
       costTracker,
       probe: createProductionBindingEnvProbe(Deno.env, SecureCredentialStore),
       runStore: new RunBindingsStore(config),
+      getAdapterMetadata: (adapter) => ProviderRegistry.getProviderMetadata(adapter),
+      modelRegistry,
       startNetGrant: await computeStartNetGrant(config),
       maxCostPerDay: config.rate_limiting?.max_cost_per_day !== undefined
         ? config.rate_limiting.max_cost_per_day

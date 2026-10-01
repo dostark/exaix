@@ -26,7 +26,13 @@ import {
   type IFlow,
   type IRunBindingsFile,
 } from "@exaix/schemas";
-import { BINDING_OVERLAY_MAX_BYTES, BINDING_OVERLAYS_DIR, FlowStepType } from "@exaix/core";
+import {
+  BINDING_OVERLAY_MAX_BYTES,
+  BINDING_OVERLAYS_DIR,
+  ExecutionStrategyName,
+  FlowStepExecutionMode,
+  FlowStepType,
+} from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND, STEP_KIND_AGENT, STEP_KIND_GATE } from "./binding_types.ts";
 import { type IInvalidBindingOutcome, resolveBinding, SELECTOR_DEFAULT } from "./binding_resolver.ts";
@@ -284,7 +290,7 @@ export async function resolveFlowForAudit(
   const layers = await loadBindingLayers(config, run);
   const steps: IStepAuditResolution[] = [];
   for (const step of flow.steps) {
-    const ref = auditStepRef(flow, step);
+    const ref = bindingStepRef(flow, step, config.execution?.native_tools_enabled === true);
     if (!ref) continue;
     const issues: IBindingIssue[] = [];
     let outcome = resolveBinding(ref, { binding: step.binding ?? {}, pin: step.pin }, layers, probe);
@@ -311,16 +317,18 @@ export async function resolveFlowForAudit(
 }
 
 /** The binding ref for an LLM-calling step, or undefined for other step types.
- *  Mirrors ModelBindingService.stepRefFor. */
+ *  `nativeToolsEnabled` is the operator's `[execution].native_tools_enabled` opt-in. A DYNAMIC
+ *  step or a react strategy step then runs a native tool loop. */
 const STEP_KINDS = new Set<FlowStepType>([
   FlowStepType.AGENT,
   FlowStepType.GATE,
   FlowStepType.SESSION_DELEGATE_CYCLE,
 ]);
 
-function auditStepRef(
+export function bindingStepRef(
   flow: IFlow,
   step: IFlow["steps"][number],
+  nativeToolsEnabled: boolean,
 ): IBindingStepRef | undefined {
   if (!STEP_KINDS.has(step.type)) return undefined;
   if (step.type === FlowStepType.AGENT) {
@@ -330,7 +338,8 @@ function auditStepRef(
       agentRole: step.agent_role,
       kind: STEP_KIND_AGENT,
       strategy: step.strategy,
-      nativeTools: false,
+      nativeTools: nativeToolsEnabled &&
+        (step.execution_mode === FlowStepExecutionMode.DYNAMIC || step.strategy === ExecutionStrategyName.REACT),
     };
   }
   return {
