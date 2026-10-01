@@ -749,3 +749,117 @@ Deno.test("[validation] a service key variable must equal the one its adapter pr
     await cleanup();
   }
 });
+
+async function lockDir(tempDir: string, config: Config): Promise<string> {
+  const dir = join(tempDir, config.paths.runtime, BINDINGS_DIR);
+  await Deno.mkdir(dir, { recursive: true });
+  return dir;
+}
+
+Deno.test("[lock] a malformed or symlinked existing lock for the trace is a traced lock_mismatch, not a raw error", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const { service, config, logger } = lockService(tempDir, db, composeAlpha);
+    const dir = await lockDir(tempDir, config);
+
+    const malformedTrace = crypto.randomUUID();
+    await Deno.writeTextFile(join(dir, `${malformedTrace}.lock.json`), "{ not json");
+    const malformed = await service.snapshotForRun(flow, { traceId: malformedTrace }).catch((e) => e);
+    assertStringIncludes(String(malformed), "lock_mismatch");
+
+    const linkedTrace = crypto.randomUUID();
+    const target = join(tempDir, "elsewhere.json");
+    await Deno.writeTextFile(target, "{}");
+    await Deno.symlink(target, join(dir, `${linkedTrace}.lock.json`));
+    const linked = await service.snapshotForRun(flow, { traceId: linkedTrace }).catch((e) => e);
+    assertStringIncludes(String(linked), "lock_mismatch");
+
+    assertEquals(logger.events.filter((e) => e.action === "binding.rejected").length, 2);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[lock] a filesystem that refuses hard links still gets one exclusive lock", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const originalLink = Deno.link;
+  try {
+    const { service } = lockService(tempDir, db, composeAlpha);
+    Deno.link = () => Promise.reject(new Deno.errors.PermissionDenied("hard links not supported"));
+    const traceId = crypto.randomUUID();
+    const first = await service.snapshotForRun(flow, { traceId });
+    assertEquals((await Deno.stat(first.lock!.path)).isFile, true);
+    const again = await service.snapshotForRun(flow, { traceId });
+    assertEquals(again.lock!.sha256, first.lock!.sha256);
+  } finally {
+    Deno.link = originalLink;
+    await cleanup();
+  }
+});
+
+Deno.test("[probe] each credential is read once per run: presence comes from its version", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const config = createMockConfig(tempDir, {
+      ai: { provider: "mock", model: "boot" },
+      catalog: keyedCatalog,
+      bindings: composeAlpha,
+    });
+    let presenceReads = 0;
+    let versionReads = 0;
+    const service = new ModelBindingService({
+      configSource: { get: () => config },
+      logger: createMockEventLogger(),
+      db,
+      probe: {
+        hasKey: () => {
+          presenceReads++;
+          return true;
+        },
+        hasOptIn: () => true,
+        keyVersion: () => {
+          versionReads++;
+          return "v1";
+        },
+      },
+    });
+    const snapshot = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    const distinctKeyVariables = new Set(
+      Object.values(snapshot.layers.catalog.services).flatMap((entry) => entry.key_env ?? []),
+    );
+    assertEquals(presenceReads, 0);
+    assertEquals(versionReads, distinctKeyVariables.size);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[pool] a provider shared by two runs stays open until the last run releases it", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const spy = installPoolSpy();
+  try {
+    const config = createMockConfig(tempDir, {
+      ai: { provider: "mock", model: "boot" },
+      catalog,
+      bindings: composeAlpha,
+    });
+    const service = new ModelBindingService({
+      configSource: { get: () => config },
+      logger: createMockEventLogger(),
+      db,
+      poolMaxSize: 0,
+      probe: { hasKey: () => true, hasOptIn: () => true },
+    });
+    const runA = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    const runB = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    await service.releaseRun(runA.traceId);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(spy.disposed.includes("alpha"), false, "run B still holds the shared provider");
+    await service.releaseRun(runB.traceId);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(spy.disposed.includes("alpha"), true);
+  } finally {
+    spy.restore();
+    await cleanup();
+  }
+});

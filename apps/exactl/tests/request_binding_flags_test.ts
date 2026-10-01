@@ -9,6 +9,7 @@
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts, packages/ai/src/bindings/run_bindings_store.ts]
  */
 
+import { BindingLockSchema } from "@exaix/schemas";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { RequestCommands } from "../src/commands/request_commands.ts";
@@ -127,7 +128,8 @@ Deno.test("[cli] exactl request --locked parses a lock file into the run binding
       hosts: [],
       entries: [],
     };
-    await Deno.writeTextFile(lockPath, JSON.stringify(lock));
+    // A pretty-printed file with a trailing newline must replay the same as the compact one.
+    await Deno.writeTextFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
 
     const commands = new RequestCommands(context);
     const result = await commands.create("replay", { flow: "research", locked: lockPath });
@@ -138,7 +140,10 @@ Deno.test("[cli] exactl request --locked parses a lock file into the run binding
       join(tempDir, ".exa", "run-bindings", runFiles[0]!),
     );
     assertExists(runFile.locked);
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(lock)));
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(JSON.stringify(BindingLockSchema.parse(lock))),
+    );
     const expected = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
     assertEquals(runFile.locked_sha256, expected);
     void db;

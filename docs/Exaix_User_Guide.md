@@ -4526,8 +4526,7 @@ resolved identities, source layers, catalog/config/overlay checksums, and whethe
 override a bound step. `--locked` compares the lock's flow content, step pins, catalog and
 every resolved binding (service, adapter, model, effort and sources) with the current
 resolution. Any difference fails the run with `lock_mismatch` before the first LLM call.
-`exactl request` also records the lock file's SHA-256, and the daemon refuses a lock whose
-bytes no longer match it. A trace ID has one lock: a second run with the same trace reuses
+`exactl request` also records a SHA-256 of the lock's parsed content, so whitespace and a trailing newline do not matter, and the daemon refuses a lock whose content no longer matches it. A trace ID has one lock: a second run with the same trace reuses
 it only when the resolution is equal, and a different resolution fails with `lock_mismatch`.
 The `binding.snapshot.created` event carries the lock path and hash, `hosts` (the endpoint
 `host:port` of each bound service), `env_ignored`, the config and overlay checksums, the

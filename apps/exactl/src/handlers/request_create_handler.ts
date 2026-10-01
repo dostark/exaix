@@ -68,7 +68,7 @@ export class RequestCreateHandler extends BaseCommand {
       overlays,
       binds,
       locked,
-      ...(lockedText ? { locked_sha256: await this.sha256(lockedText) } : {}),
+      ...(locked ? { locked_sha256: await this.sha256(JSON.stringify(locked)) } : {}),
     };
     return await store.write(file);
   }

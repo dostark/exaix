@@ -10,6 +10,7 @@
  */
 
 import { join } from "@std/path";
+import type { JSONValue } from "@exaix/core";
 import type { BindingOutcome, IBindingLayers, IFlow } from "@exaix/schemas";
 import { BindingLockSchema } from "@exaix/schemas";
 import { canonicalJson, lockDigests, sha256Hex } from "./binding_replay.ts";
@@ -104,6 +105,14 @@ function resolutionIdentity(lock: IBindingLock): string {
   });
 }
 
+function parseJson(text: string): JSONValue | undefined {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Write the lock beneath `dir` without replacing an existing file. */
 export async function persistLockExclusive(dir: string, lock: IBindingLock): Promise<IPersistedLock> {
   await Deno.mkdir(dir, { recursive: true });
@@ -112,8 +121,7 @@ export async function persistLockExclusive(dir: string, lock: IBindingLock): Pro
   const tempPath = join(dir, `.tmp-${lock.trace_id}-${crypto.randomUUID()}`);
   await Deno.writeTextFile(tempPath, serialized, { createNew: true });
   try {
-    await Deno.link(tempPath, path);
-    return { path, sha256: await sha256Hex(serialized) };
+    return await createLockFile(tempPath, path, serialized);
   } catch (error) {
     if (!(error instanceof Deno.errors.AlreadyExists)) throw error;
     return await reuseExisting(path, lock);
@@ -122,11 +130,22 @@ export async function persistLockExclusive(dir: string, lock: IBindingLock): Pro
   }
 }
 
+/** Link the finished temp file into place. A filesystem without hard links falls back to exclusive creation. */
+async function createLockFile(tempPath: string, path: string, serialized: string): Promise<IPersistedLock> {
+  try {
+    await Deno.link(tempPath, path);
+  } catch (error) {
+    if (error instanceof Deno.errors.AlreadyExists) throw error;
+    await Deno.writeTextFile(path, serialized, { createNew: true });
+  }
+  return { path, sha256: await sha256Hex(serialized) };
+}
+
 async function reuseExisting(path: string, lock: IBindingLock): Promise<IPersistedLock> {
   const info = await Deno.lstat(path);
   if (!info.isFile || info.isSymlink) throw new LockConflictError("existing lock is not a regular file");
   const text = await Deno.readTextFile(path);
-  const parsed = BindingLockSchema.safeParse(JSON.parse(text));
+  const parsed = BindingLockSchema.safeParse(parseJson(text));
   if (!parsed.success) throw new LockConflictError("existing lock is malformed");
   if (resolutionIdentity(parsed.data) !== resolutionIdentity(lock)) {
     throw new LockConflictError("trace already has a lock with a different resolution");

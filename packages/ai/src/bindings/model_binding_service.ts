@@ -299,8 +299,12 @@ export class ModelBindingService {
     const versions = new Map<string, string>();
     for (const service of Object.values(layers.catalog.services)) {
       if (service.key_env && !keyState.has(service.key_env)) {
-        keyState.set(service.key_env, await this.deps.probe.hasKey(service.key_env));
-        versions.set(service.key_env, await this.deps.probe.keyVersion?.(service.key_env) ?? "");
+        const version = await this.deps.probe.keyVersion?.(service.key_env);
+        versions.set(service.key_env, version ?? "");
+        keyState.set(
+          service.key_env,
+          version === undefined ? await this.deps.probe.hasKey(service.key_env) : version !== "",
+        );
       }
       if (service.requires_optin && !optInState.has(service.requires_optin)) {
         optInState.set(service.requires_optin, await this.deps.probe.hasOptIn(service.requires_optin));
