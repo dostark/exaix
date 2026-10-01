@@ -22,12 +22,16 @@ import type {
   IBindingRunSnapshot,
   IBindingStepRef,
   IFlow,
+  IResolvedBinding,
   IRunBindingsFile,
 } from "@exaix/schemas";
+import type { IModelRegistry } from "@exaix/core/types";
+import type { IProviderMetadata } from "../provider_registry.ts";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
 import { LAYER_CONFIG, loadBindingLayers } from "./binding_layers.ts";
 import { type IInvalidBindingOutcome, resolveBinding, SELECTOR_DEFAULT } from "./binding_resolver.ts";
+import { validateBinding } from "./binding_validation.ts";
 import { type IRunBindingsStore, OverlayClaimError } from "./run_bindings_store.ts";
 import {
   ADAPTER_CLI_DELEGATE,
@@ -51,6 +55,14 @@ export interface IModelBindingServiceDeps {
   eventRegistry?: IEventRegistry;
   /** Per-run binding file store, required for CLI runs to claim their overlays. */
   runStore?: IRunBindingsStore;
+  /** Adapter metadata lookup (ProviderRegistry) for validation. */
+  getAdapterMetadata?: (adapter: string) => IProviderMetadata | undefined;
+  /** Canonical key variable per adapter id, for the key-variable name check. */
+  adapterKeyEnv?: Record<string, string>;
+  /** Model registry for pricing provenance used by validation. */
+  modelRegistry?: Pick<IModelRegistry, "getModelPricing">;
+  /** Finite daily cost cap enabling the unknown-pricing guard. */
+  maxCostPerDay?: number;
 }
 
 /** @visible Resolves all flow choices before one step can call a provider. */
@@ -132,8 +144,15 @@ export class ModelBindingService {
       this.resolveStep(layers, probe, step, ref, bindings, issues);
     }
     if (issues.length === 0) {
-      for (const [stepId, outcome] of bindings) {
-        if (outcome.kind !== "bound") continue;
+      for (const step of flow.steps) {
+        const ref = this.stepRefFor(flow, step);
+        const outcome = ref ? bindings.get(step.id) : undefined;
+        if (!outcome || outcome.kind !== "bound") continue;
+        const validationIssues = await this.validateOutcomeBinding(ref!, outcome.binding, layers);
+        if (validationIssues.length > 0) {
+          issues.push(...validationIssues);
+          continue;
+        }
         if (outcome.binding.adapter !== ADAPTER_CLI_DELEGATE) {
           try {
             await this.prepareProvider(config, outcome.binding);
@@ -141,7 +160,7 @@ export class ModelBindingService {
             issues.push({
               code: "interface_unsupported",
               flowId: flow.id,
-              stepId,
+              stepId: step.id,
               detail: `Provider construction failed for service ${outcome.binding.service}`,
             });
           }
@@ -210,6 +229,24 @@ export class ModelBindingService {
     }
     if (outcome.kind === BINDING_OUTCOME_INVALID) issues.push(...outcome.issues);
     else bindings.set(step.id, outcome);
+  }
+
+  /** Run the binding validation table over one resolved outcome (Step 6). */
+  private async validateOutcomeBinding(
+    ref: IBindingStepRef,
+    resolved: IResolvedBinding,
+    layers: IBindingLayers,
+  ): Promise<IBindingIssue[]> {
+    return await validateBinding(ref, {
+      binding: resolved,
+      service: layers.catalog.services[resolved.service],
+      catalogModel: layers.catalog.models[resolved.model],
+      probe: { hasKey: () => true, hasOptIn: () => true },
+      getAdapterMetadata: this.deps.getAdapterMetadata,
+      adapterKeyEnv: this.deps.adapterKeyEnv,
+      modelRegistry: this.deps.modelRegistry,
+      maxCostPerDay: this.deps.maxCostPerDay,
+    });
   }
 
   /** Resolve an unmatched step under an operator layer through the config.ai implicit default. */

@@ -37,7 +37,14 @@ export interface IInvalidBindingOutcome {
 
 export const SELECTOR_DEFAULT = "default";
 const FALLBACK_LAYER: BindingLayer = "config";
-const ISSUE_UNKNOWN_MODEL: IBindingIssue["code"] = "unknown_model";
+export const ISSUE_UNKNOWN_MODEL: IBindingIssue["code"] = "unknown_model";
+export const ISSUE_INTERFACE_UNSUPPORTED: IBindingIssue["code"] = "interface_unsupported";
+export const ISSUE_CAPABILITY_MISSING: IBindingIssue["code"] = "capability_missing";
+export const ISSUE_KEY_MISSING: IBindingIssue["code"] = "key_missing";
+export const ISSUE_OPTIN_MISSING: IBindingIssue["code"] = "optin_missing";
+export const ISSUE_ENDPOINT_INVALID: IBindingIssue["code"] = "endpoint_invalid";
+export const ISSUE_LOCAL_HOST_NOT_PRIVATE: IBindingIssue["code"] = "local_host_not_private";
+export const ISSUE_PRICING_UNAVAILABLE: IBindingIssue["code"] = "pricing_unavailable";
 const FLOW_PREFIX = "flow:";
 const ROLE_PREFIX = "role:";
 const STEP_SEPARATOR = "/step:";
@@ -385,7 +392,7 @@ function capabilityIssues(ref: IBindingStepRef, spec: IBindingSpec, modelState: 
   const capabilities = modelState.catalogModel?.capabilities;
   if (spec.thinking === true && !capabilities?.includes(ModelCapabilitySchema.enum.thinking)) {
     issues.push({
-      code: "capability_missing",
+      code: ISSUE_CAPABILITY_MISSING,
       flowId: ref.flowId,
       stepId: ref.stepId,
       detail: `Model capability is not verified for ${modelState.canonical}`,
@@ -393,7 +400,7 @@ function capabilityIssues(ref: IBindingStepRef, spec: IBindingSpec, modelState: 
   }
   if (spec.effort && spec.effort !== EFFORT_AUTO && !capabilities?.includes(ModelCapabilitySchema.enum.effort)) {
     issues.push({
-      code: "capability_missing",
+      code: ISSUE_CAPABILITY_MISSING,
       flowId: ref.flowId,
       stepId: ref.stepId,
       detail: `Model capability is not verified for ${modelState.canonical}`,
@@ -410,10 +417,10 @@ function credentialIssue(
   probe: IBindingEnvProbe,
 ): IInvalidBindingOutcome | undefined {
   if (service.key_env && !probe.hasKey(service.key_env)) {
-    return issue("key_missing", ref, `Missing credential: ${service.key_env}`);
+    return issue(ISSUE_KEY_MISSING, ref, `Missing credential: ${service.key_env}`);
   }
   if (service.requires_optin && !probe.hasOptIn(service.requires_optin)) {
-    return issue("optin_missing", ref, `Missing opt-in: ${service.requires_optin}`);
+    return issue(ISSUE_OPTIN_MISSING, ref, `Missing opt-in: ${service.requires_optin}`);
   }
   return undefined;
 }
@@ -431,7 +438,7 @@ function explicitServiceState(
     return issue("no_service_for_constraints", ref, `Transport mismatch for ${spec.service}`);
   }
   if (spec.interface && service.interface !== spec.interface) {
-    return issue("interface_unsupported", ref, `Interface mismatch for ${spec.service}`);
+    return issue(ISSUE_INTERFACE_UNSUPPORTED, ref, `Interface mismatch for ${spec.service}`);
   }
   const credentials = credentialIssue(ref, service, probe);
   if (credentials) return credentials;
@@ -503,7 +510,7 @@ export function resolveBinding(
 
   const { service, serviceId, serviceModelId } = serviceState;
   const routeIssue = interfaceCompatibilityIssue(ref, service);
-  if (routeIssue) return issue("interface_unsupported", ref, routeIssue);
+  if (routeIssue) return issue(ISSUE_INTERFACE_UNSUPPORTED, ref, routeIssue);
   const driver = driverSource(sources);
   const resolvedSources: IResolvedBinding["sources"] = {
     service: sources.service ?? driver,
