@@ -22,11 +22,21 @@
 
 ### Added
 
-- Flow authors and operators can choose models per flow step with catalog bindings, layered overlays, pinned fields, replay locks, and the [binding preview command](Exaix_User_Guide.md#model-bindings-for-flow-steps).
+- Flow steps and gate judges can run on their own service, model, transport and interface, set through `[bindings]` and `[catalog.*]` in `exa.config.toml`, daemon overlay files, or per-run overlays (see [Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps)).
+- `exactl request` accepts repeatable `--overlay <file>` and `--bind <selector>=<field>=<value>` flags and a `--locked <lock-file>` flag that replays a saved resolution.
+- `exactl flow bindings <flow-id>` previews each LLM step's resolved service, model and winning source, and exits non-zero on any issue.
+- Flow authors can set `binding:` on a step and pin fields with a reason, so a broader override keeps the pinned value and an exact override is refused.
+- Every flow run that uses bindings writes a lock under `.exa/bindings/` and journals `binding.resolved`, `binding.rejected`, `binding.snapshot.created` and `binding.run.released` events.
+
+### Changed
+
+- With any binding layer active, `EXA_LLM_PROVIDER` and `EXA_LLM_MODEL` no longer affect flow steps, and `rate_limiting.max_cost_per_day` becomes one daily cap across all services.
+- `exactl daemon start` grants network access to every catalog service host when `allow_net` is unset, so switching between known services needs no restart.
 
 ### Fixed
 
-- A per-run `--bind`, `--overlay` or `--locked` now applies on a daemon with no other binding layer, and `--locked` replay refuses any drift in flow content, pins, catalog or resolved bindings. Run locks are written once per trace, and the snapshot event reports the real `env_ignored` and `hosts`. Pooled providers follow the run that holds them, and a key stored or rotated later is picked up (see the [binding guide](Exaix_User_Guide.md#model-bindings-for-flow-steps)).
+- A per-run `--bind`, `--overlay` or `--locked` now applies on a daemon with no other binding layer, and `--locked` refuses a changed resolution.
+- A key stored or rotated after the daemon started is used by the next flow run, including DYNAMIC steps.
 
 ### Removed
 
