@@ -1,0 +1,63 @@
+# @schema-version: 1.0.0
+---
+id: binding-split
+name: Binding Split Cutover
+description: One pinned composer, two exploration steps, and a generate-backed gate.
+version: "1.0.0"
+steps:
+  - id: compose
+    name: Compose the request
+    agent_role: senior-coder
+    execution_mode: declared
+    binding:
+      service: mock
+      model: mock/mock-model
+    pin:
+      fields: [service, model]
+      reason: capability-gate
+    input:
+      source: request
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: explore-one
+    name: Explore first part
+    agent_role: code-analyst
+    execution_mode: declared
+    dependsOn: [compose]
+    input:
+      source: step
+      stepId: compose
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: explore-two
+    name: Explore second part
+    agent_role: code-analyst
+    execution_mode: declared
+    dependsOn: [explore-one]
+    input:
+      source: step
+      stepId: explore-one
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: gate
+    name: Evaluate exploration
+    type: gate
+    agent_role: senior-coder
+    dependsOn: [explore-two]
+    evaluate:
+      agent_role: senior-coder
+      criteria: [CODE_CORRECTNESS]
+      threshold: 0
+      onFail: continue-with-warning
+    input:
+      source: step
+      stepId: explore-two
+output:
+  from: gate
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true

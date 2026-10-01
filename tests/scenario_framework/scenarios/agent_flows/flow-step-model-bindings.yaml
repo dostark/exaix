@@ -1,0 +1,148 @@
+schema_version: "1.0.0"
+id: flow-step-model-bindings
+title: Flow-step model bindings cutover on one daemon
+pack: agent_flows
+tags: ["subsystem:flows", "safety-gate"]
+request_fixture: fixtures/requests/agent_flows/flow_step_model_bindings.md
+flow_fixture: fixtures/flows/binding-split.flow.yaml
+mode_support: ["auto"]
+portals: []
+matrix:
+  cells:
+    - tool: exactl
+      provider: mock
+      config: tests/scenario_framework/fixtures/phase204/binding-split.toml
+      requires_bin: deno
+      requires_key: EXA_COMPAT_TEST_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env:
+      EXA_LLM_PROVIDER: mock
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+
+  - id: request-config-fixture
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+  - id: await-config-fixture
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
+  - id: change-config-to-mock
+    type: run-script
+    command: deno
+    args:
+      - run
+      - --allow-read
+      - --allow-write
+      - --config
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
+      - set-explore
+      - mock
+    output_criteria:
+      - id: config-moved-to-mock
+        kind: command-exit-code
+        equals: 0
+  - id: request-config-mock
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+  - id: await-config-mock
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
+  - id: write-broad-overlay
+    type: write-file
+    path: .exa/run-input/broad.json
+    content: '{"schema":1,"bindings":{"default":{"service":"compat-fixture","model":"openai/compat-fixture-v1"}}}'
+  - id: request-broad-overlay
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --overlay, "$WORKSPACE_ROOT/.exa/run-input/broad.json"]
+  - id: await-broad-overlay
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
+  - id: request-pinned-refusal
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --bind, "flow:binding-split/step:compose=service=compat-fixture"]
+  - id: await-pinned-refusal
+    type: exactl
+    command: journal
+    args: [wait, --event, binding.rejected, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
+  - id: restore-config-fixture
+    type: run-script
+    command: deno
+    args:
+      - run
+      - --allow-read
+      - --allow-write
+      - --config
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
+      - set-explore
+      - compat-fixture
+    output_criteria:
+      - id: config-restored-to-fixture
+        kind: command-exit-code
+        equals: 0
+  - id: write-daemon-overlay
+    type: write-file
+    path: .exa/overlays/cutover.json
+    content: '{"schema":1,"bindings":{"flow:binding-split/step:explore-*":{"service":"mock","model":"mock/mock-model"}}}'
+  - id: request-daemon-overlay
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+  - id: await-daemon-overlay
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
+  - id: save-fifth-lock
+    type: run-script
+    command: deno
+    args:
+      - run
+      - --allow-read
+      - --allow-write
+      - --config
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
+      - save-fifth-lock
+    output_criteria:
+      - id: replay-lock-saved
+        kind: command-exit-code
+        equals: 0
+  - id: request-locked-replay
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --locked, "$WORKSPACE_ROOT/.exa/fifth.lock.json"]
+  - id: await-locked-replay
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 20
+
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

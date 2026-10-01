@@ -1,0 +1,33 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+
+[ai]
+provider = "mock"
+model = "mock-model"
+
+[ai.mock]
+strategy = "pattern"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+[catalog.models."openai/compat-fixture-v1"]
+model_provider = "openai"
+
+[catalog.services.compat-fixture]
+adapter = "openai-chat"
+profile = "local-test"
+endpoint = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions"
+allow_insecure_loopback = true
+transport = "local"
+interface = "api"
+key_env = "EXA_COMPAT_TEST_API_KEY"
+
+[catalog.services.compat-fixture.serves]
+"openai/compat-fixture-v1" = "compat-fixture-v1"
+
+[bindings]
+"flow:binding-split/step:explore-*" = { service = "compat-fixture", model = "openai/compat-fixture-v1" }
