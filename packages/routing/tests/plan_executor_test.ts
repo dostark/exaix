@@ -387,10 +387,10 @@ Deno.test("PlanExecutor: handles execution without git", async () => {
   );
 });
 
-Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
+Deno.test("PlanExecutor: routes portal context to the active execution root", async () => {
   await withPlanExecutorTestContext(
     "plan-exec-portal-",
-    async ({ tempDir, config, writeBlueprint, createExecutor }) => {
+    async ({ tempDir, repoDir, config, writeBlueprint, createExecutor }) => {
       const portalDir = join(tempDir, "TargetPortal");
       await Deno.mkdir(portalDir, { recursive: true });
 
@@ -421,8 +421,9 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
 
       await executor.execute(join(tempDir, "plan.md"), context);
 
-      const content = await Deno.readTextFile(join(portalDir, "portal-file.txt"));
+      const content = await Deno.readTextFile(join(repoDir, "portal-file.txt"));
       assertEquals(content, "In Portal");
+      await assertRejects(() => Deno.readTextFile(join(portalDir, "portal-file.txt")), Deno.errors.NotFound);
     },
     { ensureGit: false },
   );
