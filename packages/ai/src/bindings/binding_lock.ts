@@ -54,7 +54,7 @@ function endpointHostPort(endpoint: string): string | undefined {
 }
 
 /** Sorted, de-duplicated endpoint hosts of every bound step. */
-export function boundHosts(bindings: ReadonlyMap<string, BindingOutcome>): string[] {
+function boundHosts(bindings: ReadonlyMap<string, BindingOutcome>): string[] {
   const hosts = new Set<string>();
   for (const outcome of bindings.values()) {
     if (outcome.kind !== BINDING_OUTCOME_BOUND || !outcome.binding.endpoint) continue;

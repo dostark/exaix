@@ -195,7 +195,7 @@ considered and why it picked what it picked.
 
 ## 7. Flow step bindings and intent resolution
 
-A flow step binding fixes the service and model through the Phase 204 catalog and binding
+A flow step binding fixes the service and model through the model binding catalog and binding
 resolver before the step calls a model. A bound step uses that resolved provider directly;
 it does not ask `ModelResolver` to choose a model from the step's intent. The run snapshot
 keeps the selected identity and field sources stable for that run. New runs resolve the

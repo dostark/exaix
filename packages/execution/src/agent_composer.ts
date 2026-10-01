@@ -339,7 +339,7 @@ export class AgentComposer {
    *  The binary mapping handles claude-code, opencode and codex. Any other tool fails preflight.
    *  Prefers the ToolRegistry's resolved baseDir over the portal's static config path. */
   private buildCliDelegateStrategy(
-    cliDelegateConfig: Opt<NonNullable<Config["cli_delegate"]>, Reason.OptionalDependency>,
+    cliDelegateConfig?: Opt<NonNullable<Config["cli_delegate"]>, Reason.OptionalDependency>,
     cliDelegateBinding?: Opt<{ tool: SessionTool; model: string }, Reason.OptionalDependency>,
     cliDelegateRun?: Opt<IRunCliDelegateProcess, Reason.TestOverride>,
   ): CliDelegateStrategy {

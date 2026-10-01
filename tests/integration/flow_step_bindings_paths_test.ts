@@ -19,6 +19,7 @@ import {
   FlowOutputFormat,
   FlowStepExecutionMode,
   FlowStepType,
+  type IDatabaseService,
   PricingTier,
   ProviderCostTier,
 } from "@exaix/core";
@@ -171,10 +172,122 @@ function flowWith(step: FlowStepOverride): IFlow {
   });
 }
 
+function bindingServiceFor(
+  config: Config,
+  db: IDatabaseService,
+  logger: ReturnType<typeof createMockEventLogger> = createMockEventLogger(),
+): ModelBindingService {
+  return new ModelBindingService({
+    configSource: { get: () => config },
+    logger,
+    db,
+    probe: { hasKey: () => true, hasOptIn: () => true },
+  });
+}
+
+function delegateConfig(tempDir: string, service: string, tool: string, modelId: string): Config {
+  return createMockConfig(tempDir, {
+    ai: { provider: "mock", model: "boot" },
+    catalog: {
+      models: {},
+      services: {
+        [service]: {
+          adapter: "cli-delegate",
+          transport: "local",
+          interface: "cli",
+          tool: tool as never,
+          serves: { "*": "{name}" },
+        },
+      },
+    },
+    bindings: { "flow:research/step:s1": { service, service_model_id: modelId } },
+  });
+}
+
+type CliDelegateRun = (
+  bin: string,
+  args: string[],
+  opts: Parameters<IRunCliDelegateProcess>[2],
+) => Promise<{ code: number; stdout: string; stderr: string }>;
+
+/** A flow runner whose cli_delegate strategy launches through `run` instead of a real subprocess. */
+async function delegateRunner(tempDir: string, db: IDatabaseService, config: Config, run: CliDelegateRun) {
+  const blueprints = await writeBlueprints(tempDir, ["builder"]);
+  const service = bindingServiceFor(config, db);
+  const adapter = new AgentComposerAdapter(
+    { run: () => Promise.reject(new Error("strategy path must not run the declared runner")) } as never,
+    blueprints,
+    {
+      config,
+      db,
+      logger: new EventLogger({ db }) as never,
+      permissions: new PortalPermissionsService(config.portals!) as never,
+      provider: undefined,
+      cliDelegateRun: run,
+    } as never,
+    service,
+  );
+  return new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+}
+
+function recordingRun(launched: Array<{ bin: string; args: string[] }>): CliDelegateRun {
+  return (bin, args) => {
+    launched.push({ bin, args });
+    return Promise.resolve({ code: 0, stdout: JSON.stringify({ sessionID: "s1" }), stderr: "" });
+  };
+}
+
+function assertLaunchedModel(session: { bin: string; args: string[] } | undefined, model: string): void {
+  const modelIndex = session?.args.indexOf("--model") ?? -1;
+  assertEquals(modelIndex !== -1, true, `expected --model in args: ${session?.args}`);
+  assertEquals(session?.args[modelIndex + 1], model);
+}
+
+function buildGateFlow(): IFlow {
+  return FlowSchema.parse({
+    id: "research",
+    name: "Research",
+    description: "gate",
+    version: "1.0.0",
+    steps: [{
+      id: "gate1",
+      name: "Gate 1",
+      type: FlowStepType.GATE,
+      agent_role: "reviewer",
+      evaluate: {
+        agent_role: "reviewer",
+        criteria: ["CODE_CORRECTNESS"],
+        threshold: 0.8,
+        onFail: "halt",
+        maxRetries: 3,
+        includeRequestCriteria: false,
+      },
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST },
+    }],
+    output: { from: "gate1", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
+  });
+}
+
+/** A flow runner whose gate judge runs through the binding service over a boot judge runner. */
+function gateRunner(service: ModelBindingService, bootJudge: never = judgeRunnerReturning(JUDGE_OK)): FlowRunner {
+  const gateEvaluator = new GateEvaluator(new JudgeEvaluator(new JudgeAgentRunner(bootJudge, service)));
+  return new FlowRunner({
+    agentExecutor: { run: () => Promise.resolve({ content: "", raw: "", thought: "" }) } as never,
+    eventLogger: new FlowLog(),
+    gateEvaluator,
+    bindingService: service,
+  });
+}
+
+function judgeRunnerReturning(content: string): never {
+  return { run: () => Promise.resolve({ content }) } as never;
+}
+
 Deno.test("cli-delegate bindings preflight as session-tool targets and never construct a provider", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const blueprints = await writeBlueprints(tempDir, ["builder"]);
     const config = ConfigSchema.parse({
       ...configFor(tempDir),
       catalog: {
@@ -193,14 +306,7 @@ Deno.test("cli-delegate bindings preflight as session-tool targets and never con
         "flow:research/step:s1": { service: "opencode", service_model_id: "opencode/model-x" },
       },
     });
-    void blueprints;
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db);
     const flow = flowWith({ strategy: ExecutionStrategyName.CLI_DELEGATE });
     const snapshot = await service.snapshotForRun(flow, { traceId: "t", requestId: "r" });
     const target = await service.providerFor(snapshot, {
@@ -224,70 +330,17 @@ Deno.test("cli-delegate bindings preflight as session-tool targets and never con
 Deno.test("a strategy: cli_delegate step bound to service opencode launches the opencode tool with the bound model", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const config: Config = createMockConfig(tempDir, {
-      ai: { provider: "mock", model: "boot" },
-      catalog: {
-        models: {},
-        services: {
-          opencode: {
-            adapter: "cli-delegate",
-            transport: "local",
-            interface: "cli",
-            tool: "opencode",
-            serves: { "*": "{name}" },
-          },
-        },
-      },
-      bindings: {
-        "flow:research/step:s1": { service: "opencode", service_model_id: "opencode/model-x" },
-      },
-    });
-    const blueprints = await writeBlueprints(tempDir, ["builder"]);
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-
-    // Capture the tool + model the strategy would launch, using a fake `run` so no real
-    // subprocess executes. Registering a REAL CliDelegateStrategy through the adapter's
-    // test-only escape hatch proves the binding values reach the delegate launch.
+    const config = delegateConfig(tempDir, "opencode", "opencode", "opencode/model-x");
+    // A fake `run` captures the tool and model the real CliDelegateStrategy would launch.
     const launched: Array<{ bin: string; args: string[] }> = [];
-    const fakeRun = (
-      bin: string,
-      args: string[],
-      _opts: Parameters<IRunCliDelegateProcess>[2],
-    ): Promise<{ code: number; stdout: string; stderr: string }> => {
-      launched.push({ bin, args });
-      return Promise.resolve({ code: 0, stdout: JSON.stringify({ sessionID: "s1" }), stderr: "" });
-    };
-
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("strategy path must not run the declared runner")) } as never,
-      blueprints,
-      {
-        config,
-        db,
-        logger: new EventLogger({ db }) as never,
-        permissions: new PortalPermissionsService(config.portals!) as never,
-        provider: undefined,
-        cliDelegateRun: fakeRun,
-      } as never,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    const runner = await delegateRunner(tempDir, db, config, recordingRun(launched));
     const result = await runner.execute(flowWith({ strategy: ExecutionStrategyName.CLI_DELEGATE }), {
       userPrompt: "do it",
       portal: config.portals![0].alias,
     });
     assertEquals(result.success, true);
-    const session = launched[0];
-    assertEquals(session?.bin, "opencode");
-    const modelIndex = session?.args.indexOf("--model") ?? -1;
-    assertEquals(modelIndex !== -1, true, `expected --model in args: ${session?.args}`);
-    assertEquals(session?.args[modelIndex + 1], "opencode/model-x");
+    assertEquals(launched[0]?.bin, "opencode");
+    assertLaunchedModel(launched[0], "opencode/model-x");
   } finally {
     await cleanup();
   }
@@ -296,69 +349,17 @@ Deno.test("a strategy: cli_delegate step bound to service opencode launches the 
 Deno.test("a bound codex delegate invokes the Codex binary and a bound delegate works with cli_delegate.enabled=false", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const config: Config = createMockConfig(tempDir, {
-      ai: { provider: "mock", model: "boot" },
-      catalog: {
-        models: {},
-        services: {
-          codex: {
-            adapter: "cli-delegate",
-            transport: "local",
-            interface: "cli",
-            tool: "codex",
-            serves: { "*": "{name}" },
-          },
-        },
-      },
-      bindings: {
-        "flow:research/step:s1": { service: "codex", service_model_id: "codex/model-x" },
-      },
-    });
-    const blueprints = await writeBlueprints(tempDir, ["builder"]);
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-
+    // cli_delegate.enabled is false here (createMockConfig default), and the bound delegate still launches.
+    const config = delegateConfig(tempDir, "codex", "codex", "codex/model-x");
     const launched: Array<{ bin: string; args: string[] }> = [];
-    const fakeRun = (
-      bin: string,
-      args: string[],
-      _opts: Parameters<IRunCliDelegateProcess>[2],
-    ): Promise<{ code: number; stdout: string; stderr: string }> => {
-      launched.push({ bin, args });
-      return Promise.resolve({ code: 0, stdout: JSON.stringify({ sessionID: "s1" }), stderr: "" });
-    };
-
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("strategy path must not run the declared runner")) } as never,
-      blueprints,
-      {
-        config,
-        db,
-        logger: new EventLogger({ db }) as never,
-        permissions: new PortalPermissionsService(config.portals!) as never,
-        provider: undefined,
-        cliDelegateRun: fakeRun,
-      } as never,
-      service,
-    );
-    // cli_delegate.enabled is false here (createMockConfig default).
-    // The bound delegate still registers and launches the Codex binary.
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    const runner = await delegateRunner(tempDir, db, config, recordingRun(launched));
     const result = await runner.execute(flowWith({ strategy: ExecutionStrategyName.CLI_DELEGATE }), {
       userPrompt: "do it",
       portal: config.portals![0].alias,
     });
     assertEquals(result.success, true);
-    const session = launched[0];
-    assertEquals(session?.bin, SESSION_BIN_CODEX);
-    const modelIndex = session?.args.indexOf("--model") ?? -1;
-    assertEquals(modelIndex !== -1, true, `expected --model in args: ${session?.args}`);
-    assertEquals(session?.args[modelIndex + 1], "codex/model-x");
+    assertEquals(launched[0]?.bin, SESSION_BIN_CODEX);
+    assertLaunchedModel(launched[0], "codex/model-x");
   } finally {
     await cleanup();
   }
@@ -367,56 +368,11 @@ Deno.test("a bound codex delegate invokes the Codex binary and a bound delegate 
 Deno.test("an incompatible bound cli-delegate tool fails before launch", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const config: Config = createMockConfig(tempDir, {
-      ai: { provider: "mock", model: "boot" },
-      catalog: {
-        models: {},
-        services: {
-          // A cli-delegate service whose tool maps to no binary.
-          // Cursor is not a supported SessionTool.
-          // The strategy refuses to build before any subprocess.
-          cursor: {
-            adapter: "cli-delegate",
-            transport: "local",
-            interface: "cli",
-            tool: "cursor" as never,
-            serves: { "*": "{name}" },
-          },
-        },
-      },
-      bindings: {
-        "flow:research/step:s1": { service: "cursor", service_model_id: "cursor/model-x" },
-      },
-    });
-    const blueprints = await writeBlueprints(tempDir, ["builder"]);
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const fakeRun = (
-      _bin: string,
-      _args: string[],
-      _opts: Parameters<IRunCliDelegateProcess>[2],
-    ): Promise<{ code: number; stdout: string; stderr: string }> => {
+    // Cursor is not a supported SessionTool, so the strategy refuses to build before any subprocess.
+    const config = delegateConfig(tempDir, "cursor", "cursor", "cursor/model-x");
+    const runner = await delegateRunner(tempDir, db, config, () => {
       throw new Error("must never launch a subprocess");
-    };
-    const adapter = new AgentComposerAdapter(
-      { run: () => Promise.reject(new Error("strategy path must not run the declared runner")) } as never,
-      blueprints,
-      {
-        config,
-        db,
-        logger: new EventLogger({ db }) as never,
-        permissions: new PortalPermissionsService(config.portals!) as never,
-        provider: undefined,
-        cliDelegateRun: fakeRun,
-      } as never,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    });
     await assertRejects(
       () =>
         runner.execute(flowWith({ strategy: ExecutionStrategyName.CLI_DELEGATE }), {
@@ -451,12 +407,7 @@ Deno.test("a strategy: react step runs on its bound provider", async () => {
     });
     const blueprints = await writeBlueprints(tempDir, ["builder"]);
     const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db, logger);
 
     // Spy REACT strategy proves the step routes through runWithStrategy.
     // The bound provider's construction is proven during preflight.
@@ -528,48 +479,9 @@ Deno.test("a gate step bound through flow:/step: grades on the bound provider; a
       },
     });
     void await writeBlueprints(tempDir, ["reviewer"]);
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const nullRunner = {
-      run: () => Promise.resolve({ content: JUDGE_OK }),
-    } as never;
-    const judge = new JudgeEvaluator(new JudgeAgentRunner(nullRunner, service));
-    const gateEvaluator = new GateEvaluator(judge);
-    const flow = FlowSchema.parse({
-      id: "research",
-      name: "Research",
-      description: "gate",
-      version: "1.0.0",
-      steps: [{
-        id: "gate1",
-        name: "Gate 1",
-        type: FlowStepType.GATE,
-        agent_role: "reviewer",
-        evaluate: {
-          agent_role: "reviewer",
-          criteria: ["CODE_CORRECTNESS"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST },
-      }],
-      output: { from: "gate1", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-    });
-    const runner = new FlowRunner({
-      agentExecutor: { run: () => Promise.resolve({ content: "", raw: "", thought: "" }) } as never,
-      eventLogger: new FlowLog(),
-      gateEvaluator,
-      bindingService: service,
-    });
+    const service = bindingServiceFor(config, db);
+    const flow = buildGateFlow();
+    const runner = gateRunner(service);
     const result = await runner.execute(flow, { userPrompt: "grade this", traceId: crypto.randomUUID() });
     assertEquals(result.success, true);
     // The bound judge provider ran the grade (its generate was called with the alpha model).
@@ -589,12 +501,7 @@ Deno.test("an unbound gate step uses the boot judge provider and records no bind
     });
     const _blueprints = await writeBlueprints(tempDir, ["reviewer"]);
     const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db, logger);
     let bootCalls = 0;
     const bootJudge = {
       generate: () => {
@@ -608,38 +515,8 @@ Deno.test("an unbound gate step uses the boot judge provider and records no bind
         });
       },
     } as never;
-    const judge = new JudgeEvaluator(new JudgeAgentRunner(bootJudge, service));
-    const gateEvaluator = new GateEvaluator(judge);
-    const flow = FlowSchema.parse({
-      id: "research",
-      name: "Research",
-      description: "gate",
-      version: "1.0.0",
-      steps: [{
-        id: "gate1",
-        name: "Gate 1",
-        type: FlowStepType.GATE,
-        agent_role: "reviewer",
-        evaluate: {
-          agent_role: "reviewer",
-          criteria: ["CODE_CORRECTNESS"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST },
-      }],
-      output: { from: "gate1", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-    });
-    const runner = new FlowRunner({
-      agentExecutor: { run: () => Promise.resolve({ content: "", raw: "", thought: "" }) } as never,
-      eventLogger: new FlowLog(),
-      gateEvaluator,
-      bindingService: service,
-    });
+    const flow = buildGateFlow();
+    const runner = gateRunner(service, bootJudge);
     const result = await runner.execute(flow, { userPrompt: "grade this", traceId: crypto.randomUUID() });
     assertEquals(result.success, true);
     assertEquals(bootCalls, 1);
@@ -681,42 +558,13 @@ Deno.test("a gate using cli-delegate is refused with interface_unsupported while
         "flow:research/step:gate1": { service: "opencode", service_model_id: "opencode/model-x" },
       },
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db);
     const judge = new JudgeEvaluator({
       run: () => Promise.resolve({ content: JUDGE_OK }),
     } as never);
     const gateEvaluator = new GateEvaluator(judge);
     void gateEvaluator;
-    const flow = FlowSchema.parse({
-      id: "research",
-      name: "Research",
-      description: "gate",
-      version: "1.0.0",
-      steps: [{
-        id: "gate1",
-        name: "Gate 1",
-        type: FlowStepType.GATE,
-        agent_role: "reviewer",
-        evaluate: {
-          agent_role: "reviewer",
-          criteria: ["CODE_CORRECTNESS"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST },
-      }],
-      output: { from: "gate1", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-    });
+    const flow = buildGateFlow();
     await assertRejects(
       () => service.snapshotForRun(flow, { traceId: crypto.randomUUID(), requestId: "r" }),
       Error,
@@ -778,46 +626,9 @@ Deno.test("gate and judge providers receive the snapshot's effective effort/thin
         "flow:research/step:gate1": { service: "alpha", model: canonicalMock, effort: "high", thinking: true },
       },
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const nullRunner = { run: () => Promise.resolve({ content: JUDGE_OK }) } as never;
-    const judge = new JudgeEvaluator(new JudgeAgentRunner(nullRunner, service));
-    const gateEvaluator = new GateEvaluator(judge);
-    const gateFlow = FlowSchema.parse({
-      id: "research",
-      name: "Research",
-      description: "gate",
-      version: "1.0.0",
-      steps: [{
-        id: "gate1",
-        name: "Gate 1",
-        type: FlowStepType.GATE,
-        agent_role: "reviewer",
-        evaluate: {
-          agent_role: "reviewer",
-          criteria: ["CODE_CORRECTNESS"],
-          threshold: 0.8,
-          onFail: "halt",
-          maxRetries: 3,
-          includeRequestCriteria: false,
-        },
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST },
-      }],
-      output: { from: "gate1", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
-    });
-    const runner = new FlowRunner({
-      agentExecutor: { run: () => Promise.resolve({ content: "", raw: "", thought: "" }) } as never,
-      eventLogger: new FlowLog(),
-      gateEvaluator,
-      bindingService: service,
-    });
+    const service = bindingServiceFor(config, db);
+    const gateFlow = buildGateFlow();
+    const runner = gateRunner(service);
     const result = await runner.execute(gateFlow, { userPrompt: "grade", traceId: crypto.randomUUID() });
     assertEquals(result.success, true);
     assertEquals(factory.calls.length, 1);
@@ -852,12 +663,7 @@ Deno.test("two DYNAMIC steps with different bindings use two LlmClients over two
       },
     });
     await writeBlueprints(tempDir, ["builder"]);
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger: createMockEventLogger(),
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db);
     const dynFlow = FlowSchema.parse({
       id: "research",
       name: "Research",
@@ -935,12 +741,7 @@ Deno.test("an unbound DYNAMIC step keeps the shared executor while bound steps g
       },
     });
     await writeBlueprints(tempDir, ["builder"]);
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger: createMockEventLogger(),
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db);
     const dynFlow = FlowSchema.parse({
       id: "research",
       name: "Research",
@@ -1020,13 +821,7 @@ Deno.test("a session_delegate_cycle step's review gate grades on the cycle step'
         "flow:cycle-flow/step:next-steps": { service: "alpha", model: "mock/alpha" },
       },
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
+    const service = bindingServiceFor(config, db);
     // PlanContext fixture plus a recording delegation coordinator, so the cycle step's
     // review gate runs against a real delegated outcome.
     const planDir = join(root, ".exa", "PlanContext");

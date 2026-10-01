@@ -4476,7 +4476,7 @@ credential store. `requires_optin` must be present with value `1` in the daemon 
 
 Selectors in `[bindings]` and overlays are `default`, `role:<agent-role>`, `flow:<flow-id>`,
 and `flow:<flow-id>/step:<step-id-or-glob>`. `judge` and `judge:<role>` parse now, but their
-resolver path belongs to Phase 203; use an exact gate step selector for a gate judge here.
+resolver path is not part of flow bindings yet; use an exact gate step selector for a gate judge here.
 Within one layer, a more specific selector wins a field; equal-specificity matching globs
 with the same literal prefix are rejected as ambiguous. Layers apply per field from low to
 high priority: flow YAML `binding:`, config `[bindings]`, daemon overlay, per-run overlay,
@@ -4574,7 +4574,7 @@ Binding issues are reported by `exactl flow bindings` and fail the flow prefligh
 | `pinned`                       | Exact override conflicts with a pinned flow value.            |
 | `lock_mismatch`                | Replay inputs differ from the saved lock.                     |
 
-The implementation contract is tracked in [Phase 204 Step 10](../exaix-dev-docs/planning/phase-204-flow-step-model-bindings.md#step-10--documentation).
+The implementation contract is tracked in the [flow-step model bindings plan](../exaix-dev-docs/planning/phase-204-flow-step-model-bindings.md#step-10--documentation).
 
 #### OpenAI-compatible Chat Completions (`openai-chat`)
 

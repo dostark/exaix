@@ -6,23 +6,11 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import {
-  type IModelOptions,
-  type IModelProvider,
-  type IResolvedProviderOptions,
-  ModelBindingService,
-  ProviderRegistry,
-} from "@exaix/ai";
-import type { IProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
-import { MockProvider } from "@exaix/ai/providers.ts";
-import { FlowOutputFormat, PricingTier, ProviderCostTier } from "@exaix/core";
-import { AgentRunner } from "@exaix/execution";
-import { AgentComposerAdapter, FlowRunner, type IFlowEventLogger } from "@exaix/flow";
-import { type Config, ConfigSchema, EffortTierSchema, FlowSchema, getDefaultModels } from "@exaix/schemas";
+import { FlowOutputFormat } from "@exaix/core";
+import { type Config, ConfigSchema, FlowSchema, getDefaultModels } from "@exaix/schemas";
 import { ConfigService, createConfigReloadHandler } from "@exaix/core/config";
-import { createMockEventLogger, initTestDbService } from "@exaix/testing";
-import type { JSONValue } from "@exaix/core";
+import { initTestDbService } from "@exaix/testing";
+import { alphaBetaConfig, CapturingFactory, createBindingHarness } from "./helpers/flow_binding_harness.ts";
 
 const flow = FlowSchema.parse({
   id: "research",
@@ -35,97 +23,20 @@ const flow = FlowSchema.parse({
   output: { from: "explore", format: FlowOutputFormat.MARKDOWN },
 });
 
-class CapturingFactory implements IProviderFactory {
-  readonly calls: string[] = [];
-  readonly options: Array<IModelOptions | undefined> = [];
-  onGenerate?: (model: string) => Promise<void>;
-  failCreate = false;
-  create(options: IResolvedProviderOptions): Promise<IModelProvider> {
-    if (this.failCreate) return Promise.reject(new Error("factory unavailable"));
-    const model = options.model;
-    return Promise.resolve({
-      id: `bound-${model}`,
-      callCapabilities: {
-        profile: "mock",
-        supportedEffortTiers: [EffortTierSchema.enum.low, EffortTierSchema.enum.medium, EffortTierSchema.enum.high],
-        supportsThinking: true,
-      },
-      generate: async (_prompt: string, options?: IModelOptions): Promise<IGenerateResult> => {
-        this.calls.push(model);
-        this.options.push(options);
-        await this.onGenerate?.(model);
-        return {
-          content: `<thought>ok</thought><content>${model}</content>`,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          model,
-          provider: "mock",
-          cost_usd: 0,
-        };
-      },
-    });
-  }
-}
-
-class FlowLog implements IFlowEventLogger {
-  readonly actions: string[] = [];
-  log(action: string, _payload: Record<string, JSONValue | undefined>): void {
-    this.actions.push(action);
-  }
-}
-
-function configFor(root: string, bindings?: Config["bindings"]): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    paths: {},
-    ai: { provider: "mock", model: "boot" },
-    bindings,
-    catalog: {
-      models: {
-        "mock/alpha": { model_provider: "mock" },
-        "mock/beta": { model_provider: "mock" },
-      },
-      services: {
-        alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
-        beta: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/beta": "beta" } },
-      },
-    },
-  });
-}
+const alphaOnly = (): Config["bindings"] => ({ default: { service: "alpha", model: "mock/alpha" } });
 
 Deno.test("declared flow steps call their bound mock service and emit traced resolutions", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
-    let config = configFor(tempDir, {
+    let config = alphaBetaConfig(tempDir, {
       "flow:research/step:compose": { service: "alpha", model: "mock/alpha" },
       "flow:research/step:explore": { service: "beta", model: "mock/beta" },
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
+    const { factory, logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      configSource: { get: () => config },
     });
-    const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
-    const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
     const traceId = crypto.randomUUID();
     const result = await runner.execute(flow, { userPrompt: "Research", traceId });
     assertEquals(result.success, true);
@@ -133,7 +44,7 @@ Deno.test("declared flow steps call their bound mock service and emit traced res
     const resolved = logger.events.filter((event) => event.action === "binding.resolved");
     assertEquals(resolved.map((event) => event.traceId), [traceId, traceId]);
 
-    config = configFor(tempDir, { default: { service: "beta", model: "mock/beta" } });
+    config = alphaBetaConfig(tempDir, { default: { service: "beta", model: "mock/beta" } });
     factory.calls.length = 0;
     await runner.execute(flow, { userPrompt: "Research again", traceId: crypto.randomUUID() });
     assertEquals(factory.calls, ["beta", "beta"]);
@@ -144,38 +55,13 @@ Deno.test("declared flow steps call their bound mock service and emit traced res
 
 Deno.test("invalid Step 1 binding fails preflight with zero flow provider calls", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const logger = createMockEventLogger();
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
-    const service = new ModelBindingService({
-      configSource: { get: () => configFor(tempDir, { default: { service: "missing", model: "mock/alpha" } }) },
-      logger,
+    const config = alphaBetaConfig(tempDir, { default: { service: "missing", model: "mock/alpha" } });
+    const { factory, logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      configSource: { get: () => config },
     });
-    const adapter = new AgentComposerAdapter(
-      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
-      blueprints,
-      undefined,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
     const result = await runner.execute(flow, { userPrompt: "Research", traceId: crypto.randomUUID() });
     assertEquals(result.success, false);
     assertEquals(factory.calls, []);
@@ -188,24 +74,8 @@ Deno.test("invalid Step 1 binding fails preflight with zero flow provider calls"
 Deno.test("a flow without bindings uses the boot provider and emits no binding events", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => configFor(tempDir) },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
-    const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    const config = alphaBetaConfig(tempDir);
+    const { logger, runner } = await createBindingHarness({ tempDir, db, configSource: { get: () => config } });
     const result = await runner.execute(flow, { userPrompt: "Research" });
     assertEquals(result.success, true);
     assertEquals([...result.stepResults.values()].map((step) => step.result?.content), ["boot", "boot"]);
@@ -217,24 +87,7 @@ Deno.test("a flow without bindings uses the boot provider and emits no binding e
 
 Deno.test("a config reload changes the next run's bound service", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
     const configPath = join(tempDir, "exa.config.toml");
     const writeConfig = (service: string, model: string): Promise<void> =>
       Deno.writeTextFile(
@@ -268,20 +121,7 @@ model = "${model}"
       );
     await writeConfig("alpha", "mock/alpha");
     const configService = new ConfigService(configPath);
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: configService,
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const adapter = new AgentComposerAdapter(
-      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
-      blueprints,
-      undefined,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    const { factory, logger, runner } = await createBindingHarness({ tempDir, db, configSource: configService });
     await runner.execute(flow, { userPrompt: "First" });
     assertEquals(factory.calls, ["alpha", "alpha"]);
     factory.calls.length = 0;
@@ -296,39 +136,9 @@ model = "${model}"
 
 Deno.test("an active run keeps its snapshot while a concurrent run reads new bindings", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
-    let config = configFor(tempDir, { default: { service: "alpha", model: "mock/alpha" } });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const adapter = new AgentComposerAdapter(
-      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
-      blueprints,
-      undefined,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    let config = alphaBetaConfig(tempDir, alphaOnly());
+    const { factory, runner } = await createBindingHarness({ tempDir, db, configSource: { get: () => config } });
     let enteredFirst!: () => void;
     let releaseFirst!: () => void;
     const entered = new Promise<void>((resolve) => enteredFirst = resolve);
@@ -343,7 +153,7 @@ Deno.test("an active run keeps its snapshot while a concurrent run reads new bin
     };
     const first = runner.execute(flow, { userPrompt: "First" });
     await entered;
-    config = configFor(tempDir, { default: { service: "beta", model: "mock/beta" } });
+    config = alphaBetaConfig(tempDir, { default: { service: "beta", model: "mock/beta" } });
     const second = await runner.execute(flow, { userPrompt: "Second" });
     releaseFirst();
     const firstResult = await first;
@@ -358,46 +168,19 @@ Deno.test("an active run keeps its snapshot while a concurrent run reads new bin
 
 Deno.test("binding effort and thinking override flow step declarations in generate options", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
     const canonicalMock = `mock/${getDefaultModels().mock}`;
     const config = ConfigSchema.parse({
-      ...configFor(tempDir, { default: { service: "alpha", model: canonicalMock, effort: "low", thinking: true } }),
+      ...alphaBetaConfig(tempDir, {
+        default: { service: "alpha", model: canonicalMock, effort: "low", thinking: true },
+      }),
       catalog: {
         services: {
           alpha: { adapter: "mock", transport: "local", interface: "api", serves: { [canonicalMock]: "alpha" } },
         },
       },
     });
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger: createMockEventLogger(),
-      db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const adapter = new AgentComposerAdapter(
-      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
-      blueprints,
-      undefined,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+    const { factory, runner } = await createBindingHarness({ tempDir, db, configSource: { get: () => config } });
     const declared = FlowSchema.parse({
       ...flow,
       steps: flow.steps.map((step) => ({ ...step, effort: "high", thinking: false })),
@@ -413,39 +196,16 @@ Deno.test("binding effort and thinking override flow step declarations in genera
 
 Deno.test("factory construction failure rejects once before the first flow generate call", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  factory.failCreate = true;
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => configFor(tempDir, { default: { service: "alpha", model: "mock/alpha" } }) },
-      logger,
+    const factory = new CapturingFactory();
+    factory.failCreate = true;
+    const config = alphaBetaConfig(tempDir, alphaOnly());
+    const { logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      factory,
+      configSource: { get: () => config },
     });
-    const adapter = new AgentComposerAdapter(
-      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
-      blueprints,
-      undefined,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
     const result = await runner.execute(flow, { userPrompt: "Research", traceId: crypto.randomUUID() });
     assertEquals(result.success, false);
     assertEquals(factory.calls, []);
@@ -457,26 +217,9 @@ Deno.test("factory construction failure rejects once before the first flow gener
 
 Deno.test("a role binding in config moves every step of that role to the bound service", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
     const config = ConfigSchema.parse({
-      ...configFor(tempDir, {
+      ...alphaBetaConfig(tempDir, {
         "role:composer": { model: "mock/alpha" },
         "role:explorer": { model: "mock/beta" },
       }),
@@ -489,20 +232,11 @@ Deno.test("a role binding in config moves every step of that role to the bound s
         preferences: { mock: ["alpha", "beta"] },
       },
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
+    const { factory, logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      configSource: { get: () => config },
     });
-    const adapter = new AgentComposerAdapter(
-      new AgentRunner(new MockProvider("<thought>ok</thought><content>boot</content>")),
-      blueprints,
-      undefined,
-      service,
-    );
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
     const traceId = crypto.randomUUID();
     const result = await runner.execute(flow, { userPrompt: "Research", traceId });
     assertEquals(result.success, true);
@@ -522,30 +256,13 @@ Deno.test("a role binding in config moves every step of that role to the bound s
 
 Deno.test("resolved and rejected events carry the same run trace as the request; a retried bound step emits one resolved event per acquisition attempt", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  let attempt = 0;
-  factory.onGenerate = () => {
-    attempt++;
-    if (attempt === 1) {
-      return Promise.reject(new Error("transient failure"));
-    }
-    return Promise.resolve();
-  };
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    await Deno.writeTextFile(
-      join(blueprints, "composer.md"),
-      `---\nagent_role: composer\nmodel: mock:boot\n---\nYou are composer.`,
-    );
+    const factory = new CapturingFactory();
+    let attempt = 0;
+    factory.onGenerate = () => {
+      attempt++;
+      return attempt === 1 ? Promise.reject(new Error("transient failure")) : Promise.resolve();
+    };
     const retryFlow = FlowSchema.parse({
       id: "retry-flow",
       name: "Retry Flow",
@@ -560,19 +277,16 @@ Deno.test("resolved and rejected events carry the same run trace as the request;
       ],
       output: { from: "compose", format: FlowOutputFormat.MARKDOWN },
     });
-    const config = configFor(tempDir, {
+    const config = alphaBetaConfig(tempDir, {
       "flow:retry-flow/step:compose": { service: "alpha", model: "mock/alpha" },
     });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
+    const { logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      factory,
+      roles: ["composer"],
+      configSource: { get: () => config },
     });
-    const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
-    const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
     const traceId = crypto.randomUUID();
     const result = await runner.execute(retryFlow, { userPrompt: "Run retry", traceId });
     assertEquals(result.success, true);
@@ -585,26 +299,19 @@ Deno.test("resolved and rejected events carry the same run trace as the request;
       assertEquals((event.payload as { trace_id?: string }).trace_id, traceId);
     }
 
-    const rejectConfig = configFor(tempDir, {
+    const rejectConfig = alphaBetaConfig(tempDir, {
       default: { service: "non-existent-service", model: "mock/alpha" },
     });
-    const rejectLogger = createMockEventLogger();
-    const rejectService = new ModelBindingService({
-      configSource: { get: () => rejectConfig },
-      logger: rejectLogger,
+    const reject = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
-    });
-    const rejectAdapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, rejectService);
-    const rejectRunner = new FlowRunner({
-      agentExecutor: rejectAdapter,
-      eventLogger: new FlowLog(),
-      bindingService: rejectService,
+      roles: ["composer"],
+      configSource: { get: () => rejectConfig },
     });
     const rejectTraceId = crypto.randomUUID();
-    const rejectResult = await rejectRunner.execute(retryFlow, { userPrompt: "Run reject", traceId: rejectTraceId });
+    const rejectResult = await reject.runner.execute(retryFlow, { userPrompt: "Run reject", traceId: rejectTraceId });
     assertEquals(rejectResult.success, false);
-    const rejected = rejectLogger.events.filter((event) => event.action === "binding.rejected");
+    const rejected = reject.logger.events.filter((event) => event.action === "binding.rejected");
     assertEquals(rejected.length, 1);
     assertEquals(rejected[0].traceId, rejectTraceId);
     assertEquals((rejected[0].payload as { trace_id?: string }).trace_id, rejectTraceId);
@@ -615,51 +322,13 @@ Deno.test("resolved and rejected events carry the same run trace as the request;
 
 Deno.test("a flow-file binding runs the step on its declared service with no config layer", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(
-        join(blueprints, `${role}.md`),
-        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-      );
-    }
-    // No [bindings] layer at all: the flow file's own step binding provides the service.
-    const config = ConfigSchema.parse({
-      system: { root: tempDir },
-      paths: {},
-      ai: { provider: "mock", model: "boot" },
-      catalog: {
-        models: {
-          "mock/alpha": { model_provider: "mock" },
-          "mock/beta": { model_provider: "mock" },
-        },
-        services: {
-          alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
-          beta: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/beta": "beta" } },
-        },
-      },
-    });
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => config },
-      logger,
+    const config = alphaBetaConfig(tempDir);
+    const { factory, logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      configSource: { get: () => config },
     });
-    const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
-    const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
-
     const boundFlow = FlowSchema.parse({
       id: "research",
       name: "Research",

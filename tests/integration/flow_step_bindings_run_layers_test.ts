@@ -7,22 +7,11 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import {
-  type IModelProvider,
-  type IResolvedProviderOptions,
-  ModelBindingService,
-  ProviderRegistry,
-  RunBindingsStore,
-} from "@exaix/ai";
-import type { IProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
-import { MockProvider } from "@exaix/ai/providers.ts";
-import { FlowOutputFormat, PricingTier, ProviderCostTier } from "@exaix/core";
-import { AgentRunner } from "@exaix/execution";
-import { AgentComposerAdapter, FlowRunner, type IFlowEventLogger } from "@exaix/flow";
-import { type Config, ConfigSchema, FlowSchema, type IRunBindingsFile } from "@exaix/schemas";
-import { createMockEventLogger, initTestDbService } from "@exaix/testing";
-import type { IDatabaseService, JSONValue } from "@exaix/core";
+import { RunBindingsStore } from "@exaix/ai";
+import { FlowOutputFormat, type IDatabaseService } from "@exaix/core";
+import { ConfigSchema, FlowSchema, type IRunBindingsFile } from "@exaix/schemas";
+import { initTestDbService } from "@exaix/testing";
+import { alphaBetaConfig, createBindingHarness } from "./helpers/flow_binding_harness.ts";
 
 const flow = FlowSchema.parse({
   id: "research",
@@ -38,87 +27,19 @@ const flow = FlowSchema.parse({
 const REQUEST_PATH = "Workspace/Requests/request-run-layer.md";
 const REQUEST_SHA = "a".repeat(64);
 
-class CapturingFactory implements IProviderFactory {
-  readonly calls: string[] = [];
-  readonly disposed: string[] = [];
-  create(options: IResolvedProviderOptions): Promise<IModelProvider> {
-    const model = options.model;
-    return Promise.resolve({
-      id: `bound-${model}`,
-      callCapabilities: { profile: "mock", supportedEffortTiers: [], supportsThinking: true },
-      dispose: () => {
-        this.disposed.push(model);
-        return Promise.resolve();
-      },
-      generate: (): Promise<IGenerateResult> => {
-        this.calls.push(model);
-        return Promise.resolve({
-          content: `<thought>ok</thought><content>${model}</content>`,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          model,
-          provider: "mock",
-          cost_usd: 0,
-        });
-      },
-    });
-  }
-}
-
-class FlowLog implements IFlowEventLogger {
-  log(_action: string, _payload: Record<string, JSONValue | undefined>): void {}
-}
-
-function configFor(root: string, nativeTools = false): Config {
-  return ConfigSchema.parse({
-    system: { root },
-    execution: { native_tools_enabled: nativeTools },
-    paths: {},
-    ai: { provider: "mock", model: "boot" },
-    catalog: {
-      models: {
-        "mock/alpha": { model_provider: "mock" },
-        "mock/beta": { model_provider: "mock" },
-      },
-      services: {
-        alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
-        beta: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/beta": "beta" } },
-      },
-    },
-  });
-}
-
 async function harness(tempDir: string, db: IDatabaseService, nativeTools = false, poolMaxSize?: number) {
-  const factory = new CapturingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "captured mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
+  const config = ConfigSchema.parse({
+    ...alphaBetaConfig(tempDir),
+    execution: { native_tools_enabled: nativeTools },
   });
-  const blueprints = join(tempDir, "Blueprints", "Agents");
-  await Deno.mkdir(blueprints, { recursive: true });
-  for (const role of ["composer", "explorer"]) {
-    await Deno.writeTextFile(
-      join(blueprints, `${role}.md`),
-      `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
-    );
-  }
-  const config = configFor(tempDir, nativeTools);
-  const logger = createMockEventLogger();
-  const service = new ModelBindingService({
-    configSource: { get: () => config },
-    logger,
+  const built = await createBindingHarness({
+    tempDir,
     db,
+    configSource: { get: () => config },
     runStore: new RunBindingsStore(config),
     ...(poolMaxSize !== undefined ? { poolMaxSize } : {}),
-    probe: { hasKey: () => true, hasOptIn: () => true },
   });
-  const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
-  const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
-  const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
-  return { factory, logger, config, runner };
+  return { ...built, config };
 }
 
 function runFile(traceId: string, extra: Partial<IRunBindingsFile>): IRunBindingsFile {

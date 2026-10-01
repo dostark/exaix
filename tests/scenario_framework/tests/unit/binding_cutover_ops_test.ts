@@ -8,7 +8,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { saveLatestLock, setExploreService } from "../../scripts/binding_cutover_ops.ts";
+import { saveLock, setExploreService } from "../../scripts/binding_cutover_ops.ts";
 
 const FIXTURE =
   '"flow:binding-split/step:explore-*" = { service = "compat-fixture", model = "openai/compat-fixture-v1" }';
@@ -39,8 +39,26 @@ Deno.test("[phase204] cutover helper copies the newest lock for replay", async (
     await Deno.writeTextFile(oldPath, "old");
     await Deno.writeTextFile(latestPath, "latest");
     await Deno.utime(oldPath, new Date(0), new Date(0));
-    await saveLatestLock(root);
+    await saveLock(root, "latest");
     assertEquals(await Deno.readTextFile(join(root, ".exa", "fifth.lock.json")), "latest");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[phase204] cutover helper copies the earliest lock for drift replay and refuses to overwrite", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    const dir = join(root, ".exa", "bindings");
+    await Deno.mkdir(dir, { recursive: true });
+    const oldPath = join(dir, "old.lock.json");
+    const latestPath = join(dir, "latest.lock.json");
+    await Deno.writeTextFile(oldPath, "old");
+    await Deno.writeTextFile(latestPath, "latest");
+    await Deno.utime(oldPath, new Date(0), new Date(0));
+    await saveLock(root, "earliest");
+    assertEquals(await Deno.readTextFile(join(root, ".exa", "first.lock.json")), "old");
+    await assertRejects(() => saveLock(root, "earliest"), Error, "already exists");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

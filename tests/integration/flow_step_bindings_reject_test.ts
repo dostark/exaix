@@ -9,42 +9,10 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
-import { type IModelProvider, ModelBindingService, ProviderRegistry } from "@exaix/ai";
-import type { IProviderFactory, IResolvedProviderOptions } from "@exaix/ai";
-import type { IGenerateResult } from "@exaix/ai/providers";
-import { FlowOutputFormat, PricingTier, ProviderCostTier } from "@exaix/core";
-import { AgentRunner } from "@exaix/execution";
-import { AgentComposerAdapter, FlowRunner, type IFlowEventLogger } from "@exaix/flow";
+import { FlowOutputFormat } from "@exaix/core";
 import { type Config, ConfigSchema, FlowSchema } from "@exaix/schemas";
-import { createMockEventLogger, initTestDbService } from "@exaix/testing";
-import type { JSONValue } from "@exaix/core";
-
-/** Records every generate call. The reject test asserts none happened. */
-class RecordingFactory implements IProviderFactory {
-  readonly calls: string[] = [];
-  create(options: IResolvedProviderOptions): Promise<IModelProvider> {
-    const model = options.model;
-    return Promise.resolve({
-      id: `p-${model}`,
-      callCapabilities: { profile: "mock", supportedEffortTiers: [], supportsThinking: true },
-      generate: (): Promise<IGenerateResult> => {
-        this.calls.push(model);
-        return Promise.resolve({
-          content: `<thought>ok</thought><content>${model}</content>`,
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          model,
-          provider: "mock",
-          cost_usd: 0,
-        });
-      },
-    });
-  }
-}
-
-class FlowLog implements IFlowEventLogger {
-  log(_action: string, _payload: Record<string, JSONValue | undefined>): void {}
-}
+import { initTestDbService } from "@exaix/testing";
+import { createBindingHarness } from "./helpers/flow_binding_harness.ts";
 
 function configFor(root: string): Config {
   return ConfigSchema.parse({
@@ -97,43 +65,13 @@ const rejectFlow = FlowSchema.parse({
 
 Deno.test("a flow with two incompatible steps fails with all issues, one binding.rejected, and zero generates", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const factory = new RecordingFactory();
-  ProviderRegistry.registerWithMetadata("mock", factory, {
-    name: "mock",
-    description: "recording mock",
-    capabilities: ["chat"],
-    costTier: ProviderCostTier.FREE,
-    pricingTier: PricingTier.FREE,
-    strengths: [],
-  });
   try {
-    const blueprints = join(tempDir, "Blueprints", "Agents");
-    await Deno.mkdir(blueprints, { recursive: true });
-    for (const role of ["composer", "explorer"]) {
-      await Deno.writeTextFile(join(blueprints, `${role}.md`), `---\nagent_role: ${role}\n---\nYou are ${role}.`);
-    }
-    const logger = createMockEventLogger();
-    const service = new ModelBindingService({
-      configSource: { get: () => configFor(tempDir) },
-      logger,
+    const config = configFor(tempDir);
+    const { factory, logger, runner } = await createBindingHarness({
+      tempDir,
       db,
-      probe: { hasKey: () => true, hasOptIn: () => true },
+      configSource: { get: () => config },
     });
-    const boot: IModelProvider = {
-      id: "boot",
-      callCapabilities: { profile: "mock", supportedEffortTiers: [], supportsThinking: true },
-      generate: (): Promise<IGenerateResult> =>
-        Promise.resolve({
-          content: "<thought>ok</thought><content>boot</content>",
-          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-          model: "boot",
-          provider: "mock",
-          cost_usd: 0,
-        }),
-    };
-    const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
-    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
-
     const traceId = crypto.randomUUID();
     const result = await runner.execute(rejectFlow, { userPrompt: "Research", traceId });
     assertEquals(result.success, false);
