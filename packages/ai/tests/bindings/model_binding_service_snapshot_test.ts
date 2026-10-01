@@ -11,8 +11,9 @@ import { encodeHex } from "@std/encoding/hex";
 import { ModelBindingService, ProviderRegistry } from "@exaix/ai";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import { BINDINGS_DIR } from "@exaix/core";
+import type { IBindingSnapshotCreatedEventPayload } from "@exaix/core/events";
 import { BindingLockSchema, type Config, ConfigSchema, FlowSchema, type IRunBindingsFile } from "@exaix/schemas";
-import { createMockConfig, createMockEventLogger, initTestDbService } from "@exaix/testing";
+import { createMockConfig, createMockEventLogger, initTestDbService, withEnv } from "@exaix/testing";
 
 const flow = FlowSchema.parse({
   id: "research",
@@ -415,7 +416,15 @@ Deno.test("[snapshot] a DYNAMIC step on an adapter without native tools fails ca
 
 Deno.test("[snapshot] provider construction failure keeps its cause in the issue detail", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();
+  let restoreMock = () => {};
   try {
+    const originalFactory = ProviderRegistry.getFactory("mock");
+    const originalMetadata = ProviderRegistry.getProviderMetadata("mock");
+    restoreMock = () => {
+      if (originalFactory && originalMetadata) {
+        ProviderRegistry.registerWithMetadata("mock", originalFactory, originalMetadata);
+      }
+    };
     ProviderRegistry.registerWithMetadata("mock", {
       create: () => Promise.reject(new Error("socket pool exhausted")),
     }, {
@@ -429,6 +438,147 @@ Deno.test("[snapshot] provider construction failure keeps its cause in the issue
     const service = preflightService(tempDir, db, {}, { probe: { hasKey: () => true, hasOptIn: () => true } });
     const error = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() }).catch((e) => e);
     assertStringIncludes(String(error), "socket pool exhausted");
+  } finally {
+    restoreMock();
+    await cleanup();
+  }
+});
+
+const FIXTURE_ENDPOINT = "http://127.0.0.1:8000/v1/chat/completions";
+const endpointCatalog: Config["catalog"] = {
+  models: { "openai/compat-fixture-v1": { model_provider: "openai", capabilities: [] } },
+  services: {
+    "compat-fixture": {
+      adapter: "openai-chat",
+      profile: "local-test",
+      endpoint: FIXTURE_ENDPOINT,
+      allow_insecure_loopback: true,
+      transport: "local",
+      interface: "api",
+      key_env: "EXA_COMPAT_TEST_API_KEY",
+      serves: { "openai/compat-fixture-v1": "compat-fixture-v1" },
+    },
+  },
+  preferences: {},
+};
+const composeFixture: Config["bindings"] = {
+  "flow:research/step:compose": { service: "compat-fixture", model: "openai/compat-fixture-v1" },
+};
+
+function lockService(
+  tempDir: string,
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
+  bindings: Config["bindings"],
+  catalogOverride: Config["catalog"] = catalog,
+): { service: ModelBindingService; config: Config; logger: ReturnType<typeof createMockEventLogger> } {
+  const config = createMockConfig(tempDir, {
+    ai: { provider: "mock", model: "boot" },
+    catalog: catalogOverride,
+    bindings,
+  });
+  const logger = createMockEventLogger();
+  const service = new ModelBindingService({
+    configSource: { get: () => config },
+    logger,
+    db,
+    probe: { hasKey: () => true, hasOptIn: () => true },
+  });
+  return { service, config, logger };
+}
+
+function registerStubOpenAiChat(): void {
+  ProviderRegistry.registerWithMetadata("openai-chat", {
+    create: (options) =>
+      Promise.resolve({
+        id: `stub-${options.model}`,
+        callCapabilities: { profile: "mock", supportedEffortTiers: [], supportsThinking: false },
+        generate: () => Promise.reject(new Error("not called")),
+      }),
+  }, {
+    name: "openai-chat",
+    description: "stub",
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.FREE,
+    pricingTier: PricingTier.FREE,
+    strengths: [],
+  });
+}
+
+Deno.test("[snapshot] env_ignored and hosts in the lock and event match the run", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  registerStubOpenAiChat();
+  try {
+    await withEnv({ EXA_LLM_PROVIDER: "mock", EXA_COMPAT_TEST_API_KEY: "fixture-key" }, async () => {
+      const { service, config, logger } = lockService(tempDir, db, composeFixture, endpointCatalog);
+      const traceId = crypto.randomUUID();
+      const snapshot = await service.snapshotForRun(flow, { traceId });
+      assertEquals(snapshot.envIgnored, true);
+      const lock = BindingLockSchema.parse(JSON.parse(await Deno.readTextFile(snapshot.lock!.path)));
+      assertEquals(lock.env_ignored, true);
+      assertEquals(lock.hosts, ["127.0.0.1:8000"]);
+      const event = logger.events.find((e) => e.action === "binding.snapshot.created")!;
+      const payload: IBindingSnapshotCreatedEventPayload = JSON.parse(JSON.stringify(event.payload));
+      assertEquals(payload.env_ignored, true);
+      assertEquals(payload.hosts, ["127.0.0.1:8000"]);
+      assertEquals(payload.config_checksum, lock.config_checksum);
+      assertEquals(payload.overlay_sha256, lock.overlay_sha256);
+      assertEquals(payload.run_overlays, 0);
+      assertEquals(payload.issues, 0);
+      assertEquals(payload.replayed, false);
+      assertEquals(payload.entries, lock.entries.length);
+      void config;
+    });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[snapshot] a duplicate trace with different content fails, a same-request resume reuses the lock, and no temp file remains", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const first = lockService(tempDir, db, composeAlpha);
+    const traceId = crypto.randomUUID();
+    const one = await first.service.snapshotForRun(flow, { traceId });
+    const before = await Deno.readTextFile(one.lock!.path);
+
+    const resumed = await first.service.snapshotForRun(flow, { traceId });
+    assertEquals(resumed.lock!.path, one.lock!.path);
+    assertEquals(resumed.lock!.sha256, one.lock!.sha256);
+    assertEquals(await Deno.readTextFile(one.lock!.path), before);
+
+    const beta: Config["bindings"] = { "flow:research/step:compose": { service: "beta", model: "mock/beta" } };
+    const other = lockService(tempDir, db, beta);
+    const error = await other.service.snapshotForRun(flow, { traceId }).catch((e) => e);
+    assertStringIncludes(String(error), "lock_mismatch");
+    assertEquals(await Deno.readTextFile(one.lock!.path), before);
+    const names = [...Deno.readDirSync(join(tempDir, first.config.paths.runtime, BINDINGS_DIR))].map((e) => e.name);
+    assertEquals(names.filter((name) => name.startsWith(".tmp-")), []);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[audit] binding.rejected issues carry the offending selector", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const pinnedFlow = FlowSchema.parse({
+      ...flow,
+      steps: [
+        {
+          ...flow.steps[0],
+          binding: { service: "alpha", model: "mock/alpha" },
+          pin: { fields: ["service"], reason: "compliance" },
+        },
+        flow.steps[1],
+      ],
+    });
+    const exact: Config["bindings"] = { "flow:research/step:compose": { service: "beta", model: "mock/beta" } };
+    const { service, logger } = lockService(tempDir, db, exact);
+    await service.snapshotForRun(pinnedFlow, { traceId: crypto.randomUUID() }).catch(() => {});
+    const rejected = logger.events.find((e) => e.action === "binding.rejected")!;
+    const issues = (rejected.payload as { issues: Array<{ code: string; selector?: string }> }).issues;
+    assertEquals(issues[0].code, "pinned");
+    assertEquals(issues[0].selector, "flow:research/step:compose");
   } finally {
     await cleanup();
   }

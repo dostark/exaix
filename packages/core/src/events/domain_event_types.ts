@@ -63,6 +63,14 @@ export interface IBindingSnapshotCreatedEventPayload {
   lock_path: string;
   lock_sha256: string;
   entries: number;
+  issues: number;
+  hosts: readonly string[];
+  config_checksum: string;
+  overlay_sha256: readonly string[];
+  run_overlays: number;
+  env_ignored: boolean;
+  /** True when the run was submitted with `--locked` and matched its lock. */
+  replayed: boolean;
 }
 
 export type GuardrailVerdict = "pass" | "violation";

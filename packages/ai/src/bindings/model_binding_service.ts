@@ -31,15 +31,20 @@ import type {
   IResolvedBinding,
   IRunBindingsFile,
 } from "@exaix/schemas";
-import { BindingLockSchema } from "@exaix/schemas";
 import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
 import { bindingStepRef, LAYER_CONFIG, loadBindingLayers } from "./binding_layers.ts";
-import { type IInvalidBindingOutcome, resolveBinding, SELECTOR_DEFAULT } from "./binding_resolver.ts";
+import {
+  type IInvalidBindingOutcome,
+  ISSUE_LOCK_MISMATCH,
+  resolveBinding,
+  SELECTOR_DEFAULT,
+} from "./binding_resolver.ts";
 import { validateBinding } from "./binding_validation.ts";
-import { compareLock, lockDigests, sha256Hex } from "./binding_replay.ts";
+import { compareLock, sha256Hex } from "./binding_replay.ts";
+import { buildLock, LockConflictError, persistLockExclusive } from "./binding_lock.ts";
 import { type IRunBindingsStore, OverlayClaimError } from "./run_bindings_store.ts";
 import {
   ADAPTER_CLI_DELEGATE,
@@ -158,7 +163,15 @@ export class ModelBindingService {
       await this.reject(run.traceId, flow.id, issues);
       throw new BindingIncompatibleError(issues);
     }
-    const lock = await this.writeLock(flow, run.traceId, layers, bindings);
+    const lock = await this.writeLock(flow, run.traceId, layers, bindings, {
+      envIgnored,
+      replayed: runFile?.locked !== undefined,
+    }).catch(async (error) => {
+      if (!(error instanceof LockConflictError)) throw error;
+      const conflict: IBindingIssue = { code: ISSUE_LOCK_MISMATCH, flowId: flow.id, detail: error.message };
+      await this.reject(run.traceId, flow.id, [conflict]);
+      throw new BindingIncompatibleError([conflict]);
+    });
     return {
       traceId: run.traceId,
       flowId: flow.id,
@@ -320,69 +333,48 @@ export class ModelBindingService {
       issues: issues.map((entry) => ({
         code: entry.code,
         step_id: entry.stepId,
+        ...(entry.selector ? { selector: entry.selector } : {}),
         detail: entry.detail,
       })),
     }, traceId);
   }
 
-  /** Write the per-run lockfile atomically and emit binding.snapshot.created with its sha256. */
+  /** Write the per-run lockfile exclusively and emit binding.snapshot.created with its sha256. */
   private async writeLock(
     flow: IFlow,
     traceId: string,
     layers: IBindingLayers,
     bindings: Map<string, BindingOutcome>,
+    audit: { envIgnored: boolean; replayed: boolean },
   ): Promise<{ path: string; sha256: string } | undefined> {
     const config = structuredClone(this.deps.configSource.get());
     // The production request creator always mints a UUID trace. A non-UUID trace (direct
     // flow-call fixture) lacks a stable lock identity and gets no lock.
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(traceId)) return undefined;
-    const stepIds = flow.steps.map((step) => step.id);
-    const entryRecords = flow.steps.flatMap((step) => {
-      const outcome = bindings.get(step.id);
-      if (!outcome) return [];
-      return [{
-        step_id: step.id,
-        agent_role: step.agent_role,
-        outcome: outcome.kind === BINDING_OUTCOME_BOUND
-          ? { kind: BINDING_OUTCOME_BOUND, binding: outcome.binding }
-          : { kind: BINDING_OUTCOME_UNBOUND },
-      }];
+    const lock = await buildLock({
+      flow,
+      traceId,
+      layers,
+      bindings,
+      configChecksum: await sha256Hex(JSON.stringify(config)),
+      envIgnored: audit.envIgnored,
     });
-
-    const hash = sha256Hex;
-    const lock = BindingLockSchema.parse({
-      schema: 1,
-      trace_id: traceId,
-      flow_id: flow.id,
-      created_at: new Date().toISOString(),
-      ...await lockDigests(flow, layers.catalog),
-      step_ids: stepIds,
-      config_checksum: await hash(JSON.stringify(config)),
-      overlay_sha256: [...layers.overlaySha256],
-      run_overlays: layers.entries.filter((e) => e.layer === "run").length,
-      env_ignored: false,
-      hosts: [],
-      entries: entryRecords,
-    });
-
-    const dir = join(config.system.root, config.paths.runtime, BINDINGS_DIR);
-    await Deno.mkdir(dir, { recursive: true });
-    const path = join(dir, `${traceId}.lock.json`);
-    const serialized = JSON.stringify(lock);
-    const tempPath = join(dir, `.tmp-${traceId}-${crypto.randomUUID()}`);
-    await Deno.writeTextFile(tempPath, serialized);
-    await Deno.rename(tempPath, path);
-    const sha256 = await hash(serialized);
-
+    const persisted = await persistLockExclusive(join(config.system.root, config.paths.runtime, BINDINGS_DIR), lock);
     await this.logger.info(DomainEventType.BindingSnapshotCreated, flow.id, {
       flow_id: flow.id,
       trace_id: traceId,
-      lock_path: path,
-      lock_sha256: sha256,
-      entries: entryRecords.length,
+      lock_path: persisted.path,
+      lock_sha256: persisted.sha256,
+      entries: lock.entries.length,
+      issues: 0,
+      hosts: lock.hosts,
+      config_checksum: lock.config_checksum,
+      overlay_sha256: lock.overlay_sha256,
+      run_overlays: lock.run_overlays,
+      env_ignored: lock.env_ignored,
+      replayed: audit.replayed,
     }, traceId);
-
-    return { path, sha256 };
+    return persisted;
   }
 
   private async prepareProvider(

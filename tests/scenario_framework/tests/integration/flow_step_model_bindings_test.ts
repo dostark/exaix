@@ -124,7 +124,19 @@ Deno.test({
           row.trace_id === traceId && row.action_type === "binding.snapshot.created"
         );
         assertEquals(snapshots.length, 1, `trace ${traceId} has one lock`);
-        const payload = JSON.parse(snapshots[0].payload) as { lock_path: string; lock_sha256: string };
+        const payload = JSON.parse(snapshots[0].payload) as {
+          lock_path: string;
+          lock_sha256: string;
+          hosts: string[];
+          env_ignored: boolean;
+        };
+        const fixtureHost = `127.0.0.1:${(fixture.addr as Deno.NetAddr).port}`;
+        assertEquals(
+          payload.hosts.includes(fixtureHost),
+          index === 0 || index === 2,
+          `run ${index} hosts ${JSON.stringify(payload.hosts)}`,
+        );
+        assertEquals(payload.env_ignored, true, "the daemon sets EXA_LLM_PROVIDER while an operator layer exists");
         const bytes = await Deno.readFile(payload.lock_path);
         const actualSha = encodeHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
         assertEquals(actualSha, payload.lock_sha256);
