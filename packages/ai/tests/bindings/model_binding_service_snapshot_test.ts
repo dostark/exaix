@@ -583,3 +583,130 @@ Deno.test("[audit] binding.rejected issues carry the offending selector", async 
     await cleanup();
   }
 });
+
+interface IPoolSpy {
+  created: string[];
+  disposed: string[];
+  restore: () => void;
+}
+
+function installPoolSpy(): IPoolSpy {
+  const originalFactory = ProviderRegistry.getFactory("mock");
+  const originalMetadata = ProviderRegistry.getProviderMetadata("mock");
+  const spy: IPoolSpy = {
+    created: [],
+    disposed: [],
+    restore: () => {
+      if (originalFactory && originalMetadata) {
+        ProviderRegistry.registerWithMetadata("mock", originalFactory, originalMetadata);
+      }
+    },
+  };
+  ProviderRegistry.registerWithMetadata("mock", {
+    create: (options) => {
+      spy.created.push(options.model);
+      return Promise.resolve({
+        id: `pool-${options.model}`,
+        callCapabilities: { profile: "mock", supportedEffortTiers: [], supportsThinking: false },
+        generate: () => Promise.reject(new Error("not called")),
+        dispose: () => {
+          spy.disposed.push(options.model);
+          return Promise.resolve();
+        },
+      });
+    },
+  }, {
+    name: "mock",
+    description: "pool spy",
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.FREE,
+    pricingTier: PricingTier.FREE,
+    strengths: [],
+  });
+  return spy;
+}
+
+const composeBeta: Config["bindings"] = { "flow:research/step:compose": { service: "beta", model: "mock/beta" } };
+const composeRef = {
+  flowId: "research",
+  stepId: "compose",
+  agentRole: "composer",
+  kind: "agent",
+  nativeTools: false,
+} as const;
+
+Deno.test("[pool] overlapping runs keep their providers under eviction pressure and a released provider is closed", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const spy = installPoolSpy();
+  try {
+    const config = (bindings: Config["bindings"]) =>
+      createMockConfig(tempDir, { ai: { provider: "mock", model: "boot" }, catalog, bindings });
+    let current = config(composeAlpha);
+    const logger = createMockEventLogger();
+    const service = new ModelBindingService({
+      configSource: { get: () => current },
+      logger,
+      db,
+      poolMaxSize: 1,
+      probe: { hasKey: () => true, hasOptIn: () => true },
+    });
+    const runA = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    const targetA = await service.providerFor(runA, composeRef);
+    current = config(composeBeta);
+    const runB = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    assertEquals(spy.disposed, [], "run A still holds its provider");
+    const again = await service.providerFor(runA, composeRef);
+    assertEquals(
+      again?.kind === "provider" && targetA?.kind === "provider" && again.provider === targetA.provider,
+      true,
+    );
+
+    await service.releaseRun(runA.traceId);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(spy.disposed, ["alpha"]);
+    const released = logger.events.filter((event) => event.action === "binding.run.released");
+    assertEquals(released.length, 1);
+    assertEquals(released[0].traceId, runA.traceId);
+    assertEquals(
+      JSON.parse(JSON.stringify(released[0].payload)),
+      { trace_id: runA.traceId, held_providers: 2, evicted_providers: 1 },
+    );
+    assertEquals(runB.bindings.get("compose")?.kind, "bound");
+  } finally {
+    spy.restore();
+    await cleanup();
+  }
+});
+
+Deno.test("[pool] a credential stored or rotated after provider creation creates a new wrapper", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const spy = installPoolSpy();
+  try {
+    const config = createMockConfig(tempDir, {
+      ai: { provider: "mock", model: "boot" },
+      catalog: keyedCatalog,
+      bindings: composeAlpha,
+    });
+    let version = "v1";
+    const service = new ModelBindingService({
+      configSource: { get: () => config },
+      logger: createMockEventLogger(),
+      db,
+      probe: { hasKey: () => true, hasOptIn: () => true, keyVersion: () => Promise.resolve(version) },
+    });
+    const take = async () => {
+      const run = await service.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+      await service.releaseRun(run.traceId);
+    };
+    await take();
+    await take();
+    const unchanged = spy.created.filter((model) => model === "alpha").length;
+    version = "v2";
+    await take();
+    assertEquals(unchanged, 1, "an unchanged credential reuses the pooled wrapper");
+    assertEquals(spy.created.filter((model) => model === "alpha").length, 2);
+  } finally {
+    spy.restore();
+    await cleanup();
+  }
+});

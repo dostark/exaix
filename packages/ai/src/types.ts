@@ -172,6 +172,9 @@ export interface IModelProvider {
 
   /** Optional streaming variant. If implemented, yields content chunks as they are produced by the provider. Consumers collect chunks into the final IGenerateResult with streamed: true. @param prompt The input prompt to send to the model @param options Optional generation parameters (stream option hints streaming) */
   generateStream?(prompt: string, options?: IModelOptions): AsyncGenerator<string>;
+
+  /** Optional release of resources the provider owns. The binding pool calls it on the innermost provider once no run holds it. */
+  dispose?(): Promise<void>;
 }
 
 /**

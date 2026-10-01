@@ -1259,6 +1259,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     const stepResults = new Map<string, IStepResult>();
+    let snapshotTraceId: string | undefined;
 
     try {
       await this.ensureDynamicExecutor(flow, flowRunId);
@@ -1270,6 +1271,7 @@ export class FlowRunner implements IFlowRunner {
           await this.options.bindingService.hasRunFile(request.traceId))
       ) {
         const traceId = request.traceId ?? crypto.randomUUID();
+        snapshotTraceId = traceId;
         request = {
           ...request,
           traceId,
@@ -1338,6 +1340,8 @@ export class FlowRunner implements IFlowRunner {
         };
       }
       return await this.handleExecutionError(flow, request, flowRunId, stepResults, startedAt, error);
+    } finally {
+      if (snapshotTraceId) await this.options.bindingService?.releaseRun(snapshotTraceId);
     }
   }
 

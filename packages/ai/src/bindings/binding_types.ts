@@ -64,11 +64,16 @@ export const STEP_KIND_GATE = "gate" as const;
 /** Adapter name of the cli-delegate session-tool services. */
 export const ADAPTER_CLI_DELEGATE = "cli-delegate" as const;
 
-/** Production key/opt-in probe: a non-empty variable, else a non-empty credential-store entry. */
+/** Production key probe. It reads a non-empty variable, else a non-empty credential-store entry.
+ *  `keyVersion` is a digest that only keys the provider pool. It never leaves the process. */
 export function createProductionBindingEnvProbe(
   env: Pick<typeof Deno.env, "get">,
   store: { get(name: string): Promise<string | null> },
-): { hasKey(name: string): Promise<boolean>; hasOptIn(name: string): Promise<boolean> | boolean } {
+): {
+  hasKey(name: string): Promise<boolean>;
+  hasOptIn(name: string): Promise<boolean> | boolean;
+  keyVersion(name: string): Promise<string>;
+} {
   return {
     hasKey: async (name) => {
       const envValue = env.get(name);
@@ -77,6 +82,12 @@ export function createProductionBindingEnvProbe(
       return Boolean(stored && stored.length > 0);
     },
     hasOptIn: (name) => env.get(name) === "1",
+    keyVersion: async (name) => {
+      const value = env.get(name) || await store.get(name) || "";
+      if (value.length === 0) return "";
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    },
   };
 }
 

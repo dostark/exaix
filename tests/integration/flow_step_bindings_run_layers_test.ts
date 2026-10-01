@@ -40,11 +40,16 @@ const REQUEST_SHA = "a".repeat(64);
 
 class CapturingFactory implements IProviderFactory {
   readonly calls: string[] = [];
+  readonly disposed: string[] = [];
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {
     const model = options.model;
     return Promise.resolve({
       id: `bound-${model}`,
       callCapabilities: { profile: "mock", supportedEffortTiers: [], supportsThinking: true },
+      dispose: () => {
+        this.disposed.push(model);
+        return Promise.resolve();
+      },
       generate: (): Promise<IGenerateResult> => {
         this.calls.push(model);
         return Promise.resolve({
@@ -82,7 +87,7 @@ function configFor(root: string, nativeTools = false): Config {
   });
 }
 
-async function harness(tempDir: string, db: IDatabaseService, nativeTools = false) {
+async function harness(tempDir: string, db: IDatabaseService, nativeTools = false, poolMaxSize?: number) {
   const factory = new CapturingFactory();
   ProviderRegistry.registerWithMetadata("mock", factory, {
     name: "mock",
@@ -107,6 +112,7 @@ async function harness(tempDir: string, db: IDatabaseService, nativeTools = fals
     logger,
     db,
     runStore: new RunBindingsStore(config),
+    ...(poolMaxSize !== undefined ? { poolMaxSize } : {}),
     probe: { hasKey: () => true, hasOptIn: () => true },
   });
   const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
@@ -220,6 +226,31 @@ Deno.test("[validation] a DYNAMIC step bound to an adapter without native tools 
     const rejected = logger.events.filter((event) => event.action === "binding.rejected");
     assertEquals(rejected.length, 1);
     assertStringIncludes(JSON.stringify(rejected[0].payload), "capability_missing");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[pool] a finished run releases its holds so an over-capacity provider is closed", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const { factory, config, runner } = await harness(tempDir, db, false, 1);
+    const traceId = crypto.randomUUID();
+    await new RunBindingsStore(config).write(runFile(traceId, {
+      binds: [
+        { selector: "flow:research/step:compose", spec: { service: "alpha", model: "mock/alpha" } },
+        { selector: "flow:research/step:explore", spec: { service: "beta", model: "mock/beta" } },
+      ],
+    }));
+    const result = await runner.execute(flow, {
+      userPrompt: "Research",
+      traceId,
+      requestPath: REQUEST_PATH,
+      requestSha256: REQUEST_SHA,
+    });
+    assertEquals(result.success, true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(factory.disposed.length, 1, "two providers were held; the run's end frees one over the cap of 1");
   } finally {
     await cleanup();
   }

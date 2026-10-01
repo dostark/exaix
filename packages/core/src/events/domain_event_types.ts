@@ -73,6 +73,13 @@ export interface IBindingSnapshotCreatedEventPayload {
   replayed: boolean;
 }
 
+/** Payload of the binding.run.released event: a run gave up its pooled providers. */
+export interface IBindingRunReleasedEventPayload {
+  trace_id: string;
+  held_providers: number;
+  evicted_providers: number;
+}
+
 export type GuardrailVerdict = "pass" | "violation";
 /** Guardrail severity type. */
 export type GuardrailSeverity = "warn" | "block";
@@ -852,6 +859,7 @@ export const DomainEventType = {
   BindingResolved: "binding.resolved",
   BindingRejected: "binding.rejected",
   BindingSnapshotCreated: "binding.snapshot.created",
+  BindingRunReleased: "binding.run.released",
 
   // Model registry events
   ModelPricingStale: "model.pricing.stale",

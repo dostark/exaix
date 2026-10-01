@@ -35,6 +35,7 @@ import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
+import { unwrapModelProvider } from "../providers/common.ts";
 import { bindingStepRef, LAYER_CONFIG, loadBindingLayers } from "./binding_layers.ts";
 import {
   type IInvalidBindingOutcome,
@@ -61,7 +62,14 @@ import {
 export interface IModelBindingServiceDeps {
   configSource: { get(): Config };
   logger: IEventLogger;
-  probe: { hasKey(name: string): Promise<boolean> | boolean; hasOptIn(name: string): Promise<boolean> | boolean };
+  probe: {
+    hasKey(name: string): Promise<boolean> | boolean;
+    hasOptIn(name: string): Promise<boolean> | boolean;
+    /** Opaque in-memory version of the stored credential. A change makes the pool build a new wrapper. */
+    keyVersion?(name: string): Promise<string> | string;
+  };
+  /** Pool capacity override. Defaults to BINDING_PROVIDER_POOL_MAX_SIZE. */
+  poolMaxSize?: number;
   db?: IDatabaseService;
   costTracker?: ICostTracker;
   eventRegistry?: IEventRegistry;
@@ -92,8 +100,10 @@ export class ModelBindingService {
   private readonly providers = new Map<string, Promise<IModelProvider>>();
   /** Recency tick per pooled provider key (LRU eviction order). */
   private readonly lastUsed = new Map<string, number>();
-  /** Run snapshots referencing pooled providers. These are never evicted. */
-  private readonly activeRuns = new Set<string>();
+  /** Pool keys held by each in-flight run, by trace. A held provider is never evicted. */
+  private readonly runHolds = new Map<string, Set<string>>();
+  /** Credential versions captured at each run's snapshot. They stay in memory only. */
+  private readonly credentialVersions = new WeakMap<IBindingRunSnapshot, ReadonlyMap<string, string>>();
   private tick = 0;
   private readonly deps: IModelBindingServiceDeps;
   private readonly logger: IEventLogger;
@@ -104,6 +114,8 @@ export class ModelBindingService {
     deps.eventRegistry?.registerPublisher("model_binding_service", [
       DomainEventType.BindingResolved,
       DomainEventType.BindingRejected,
+      DomainEventType.BindingSnapshotCreated,
+      DomainEventType.BindingRunReleased,
     ]);
   }
 
@@ -138,10 +150,9 @@ export class ModelBindingService {
     const config = structuredClone(this.deps.configSource.get());
     const runFile = await this.claimRunFile(flow, run);
     const layers = await loadBindingLayers(config, runFile);
-    // A new run completes the previous snapshot. Its providers may now be
-    // evicted when the pool outgrows its cap.
-    this.activeRuns.clear();
-    const probe = await this.envProbe(layers);
+    // A repeated trace (resume) starts over. Other runs keep their holds.
+    await this.releaseRun(run.traceId);
+    const { probe, versions } = await this.envProbe(layers);
     const envIgnored = layers.operatorLayersPresent &&
       (Deno.env.get("EXA_LLM_PROVIDER") !== undefined || Deno.env.get("EXA_LLM_MODEL") !== undefined);
     const nativeTools = config.execution?.native_tools_enabled === true;
@@ -153,13 +164,20 @@ export class ModelBindingService {
       this.resolveStep(layers, probe, step, ref, bindings, issues);
     }
     if (issues.length === 0) {
-      issues.push(...await this.validateAndPrepare(flow, config, layers, probe, bindings, nativeTools));
+      issues.push(
+        ...await this.validateAndPrepare(flow, config, layers, probe, bindings, {
+          nativeTools,
+          versions,
+          traceId: run.traceId,
+        }),
+      );
     }
 
     const replayIssue = await compareLock(flow, runFile, { bindings, catalog: layers.catalog });
     if (replayIssue) issues.push(replayIssue);
 
     if (issues.length > 0) {
+      await this.releaseRun(run.traceId);
       await this.reject(run.traceId, flow.id, issues);
       throw new BindingIncompatibleError(issues);
     }
@@ -167,12 +185,13 @@ export class ModelBindingService {
       envIgnored,
       replayed: runFile?.locked !== undefined,
     }).catch(async (error) => {
+      await this.releaseRun(run.traceId);
       if (!(error instanceof LockConflictError)) throw error;
       const conflict: IBindingIssue = { code: ISSUE_LOCK_MISMATCH, flowId: flow.id, detail: error.message };
       await this.reject(run.traceId, flow.id, [conflict]);
       throw new BindingIncompatibleError([conflict]);
     });
-    return {
+    const snapshot: IBindingRunSnapshot = {
       traceId: run.traceId,
       flowId: flow.id,
       layers,
@@ -182,6 +201,32 @@ export class ModelBindingService {
       lock,
       globalBudgetMode: layers.operatorLayersPresent,
     };
+    this.credentialVersions.set(snapshot, versions);
+    return snapshot;
+  }
+
+  /** Release the pool holds of a finished run. Unheld providers beyond capacity are then evicted and closed. */
+  async releaseRun(traceId: string): Promise<void> {
+    const held = this.runHolds.get(traceId);
+    if (!held) return;
+    this.runHolds.delete(traceId);
+    const evicted = this.evictIfNeeded();
+    await this.logger.info(DomainEventType.BindingRunReleased, traceId, {
+      trace_id: traceId,
+      held_providers: held.size,
+      evicted_providers: evicted,
+    }, traceId);
+  }
+
+  private hold(traceId: string, key: string): void {
+    const held = this.runHolds.get(traceId) ?? new Set<string>();
+    held.add(key);
+    this.runHolds.set(traceId, held);
+  }
+
+  private isHeld(key: string): boolean {
+    for (const held of this.runHolds.values()) if (held.has(key)) return true;
+    return false;
   }
 
   /** Validate every bound step, then construct its provider. Returns all issues found. */
@@ -191,11 +236,11 @@ export class ModelBindingService {
     layers: IBindingLayers,
     probe: { hasKey(name: string): boolean; hasOptIn(name: string): boolean },
     bindings: ReadonlyMap<string, BindingOutcome>,
-    nativeTools: boolean,
+    run: { nativeTools: boolean; versions: ReadonlyMap<string, string>; traceId: string },
   ): Promise<IBindingIssue[]> {
     const issues: IBindingIssue[] = [];
     for (const step of flow.steps) {
-      const ref = bindingStepRef(flow, step, nativeTools);
+      const ref = bindingStepRef(flow, step, run.nativeTools);
       const outcome = ref ? bindings.get(step.id) : undefined;
       if (!ref || !outcome || outcome.kind !== BINDING_OUTCOME_BOUND) continue;
       const validationIssues = await this.validateOutcomeBinding(ref, outcome.binding, layers, probe);
@@ -205,8 +250,7 @@ export class ModelBindingService {
       }
       if (outcome.binding.adapter === ADAPTER_CLI_DELEGATE) continue;
       try {
-        const key = await this.prepareProvider(config, outcome.binding, layers, layers.operatorLayersPresent);
-        this.activeRuns.add(key);
+        await this.prepareProvider(run.traceId, config, outcome.binding, layers, run.versions);
       } catch (error) {
         issues.push({
           code: "interface_unsupported",
@@ -239,23 +283,30 @@ export class ModelBindingService {
     }
   }
 
-  /** Snapshot the synchronous key/opt-in probe for this run's layer set. */
-  private async envProbe(
-    layers: IBindingLayers,
-  ): Promise<{ hasKey(name: string): boolean; hasOptIn(name: string): boolean }> {
+  /** Snapshot the synchronous key/opt-in probe for this run's layer set. `versions` maps each key
+   *  variable to its credential version. It keys the pool and never leaves memory. */
+  private async envProbe(layers: IBindingLayers): Promise<{
+    probe: { hasKey(name: string): boolean; hasOptIn(name: string): boolean };
+    versions: ReadonlyMap<string, string>;
+  }> {
     const keyState = new Map<string, boolean>();
     const optInState = new Map<string, boolean>();
+    const versions = new Map<string, string>();
     for (const service of Object.values(layers.catalog.services)) {
       if (service.key_env && !keyState.has(service.key_env)) {
         keyState.set(service.key_env, await this.deps.probe.hasKey(service.key_env));
+        versions.set(service.key_env, await this.deps.probe.keyVersion?.(service.key_env) ?? "");
       }
       if (service.requires_optin && !optInState.has(service.requires_optin)) {
         optInState.set(service.requires_optin, await this.deps.probe.hasOptIn(service.requires_optin));
       }
     }
     return {
-      hasKey: (name: string): boolean => keyState.get(name) === true,
-      hasOptIn: (name: string): boolean => optInState.get(name) === true,
+      probe: {
+        hasKey: (name: string): boolean => keyState.get(name) === true,
+        hasOptIn: (name: string): boolean => optInState.get(name) === true,
+      },
+      versions,
     };
   }
 
@@ -378,12 +429,15 @@ export class ModelBindingService {
   }
 
   private async prepareProvider(
+    traceId: string,
     config: Config,
     binding: Extract<BindingOutcome, { kind: "bound" }>["binding"],
     layers: IBindingLayers,
-    globalBudgetMode: boolean,
+    versions: ReadonlyMap<string, string>,
   ): Promise<string> {
-    const key = this.providerKey(layers, binding, globalBudgetMode);
+    const globalBudgetMode = layers.operatorLayersPresent;
+    const key = this.providerKey(layers, binding, globalBudgetMode, versions);
+    this.hold(traceId, key);
     let provider = this.providers.get(key);
     if (!provider) {
       provider = ProviderFactory.createFromBinding(
@@ -416,23 +470,29 @@ export class ModelBindingService {
     } catch (error) {
       this.providers.delete(key);
       this.lastUsed.delete(key);
+      this.runHolds.get(traceId)?.delete(key);
       throw error;
     }
   }
 
-  /** Bounded LRU eviction: remove the least-recently-used pools once capacity is exceeded,
-   *  skipping any provider referenced by an active run. Never disposes an in-use wrapper. */
-  private evictIfNeeded(): void {
-    const max = BINDING_PROVIDER_POOL_MAX_SIZE;
-    if (this.providers.size <= max) return;
+  /** Bounded LRU eviction: remove the least-recently-used pools once capacity is exceeded.
+   *  A provider held by any run stays. An evicted provider is closed after it settles. */
+  private evictIfNeeded(): number {
+    const max = this.deps.poolMaxSize ?? BINDING_PROVIDER_POOL_MAX_SIZE;
+    if (this.providers.size <= max) return 0;
+    let evictedCount = 0;
     const candidates = [...this.lastUsed.entries()]
-      .filter(([key]) => !this.activeRuns.has(key))
+      .filter(([key]) => !this.isHeld(key))
       .sort((a, b) => a[1] - b[1]);
     for (const [key] of candidates) {
       if (this.providers.size <= max) break;
+      const evicted = this.providers.get(key);
       this.providers.delete(key);
       this.lastUsed.delete(key);
+      evictedCount++;
+      void evicted?.then((provider) => unwrapModelProvider(provider).dispose?.()).catch(() => {});
     }
+    return evictedCount;
   }
 
   /** The pool key carries the service cap and budget mode. A wrapper from an earlier mode
@@ -441,9 +501,12 @@ export class ModelBindingService {
     layers: IBindingLayers,
     binding: Extract<BindingOutcome, { kind: "bound" }>["binding"],
     globalBudgetMode: boolean,
+    versions: ReadonlyMap<string, string>,
   ): string {
-    const serviceCap = layers.catalog.services[binding.service]?.daily_cost_cap_usd;
-    return `${binding.fingerprint}|cap=${serviceCap ?? ""}|mode=${globalBudgetMode ? "global" : "per-provider"}`;
+    const service = layers.catalog.services[binding.service];
+    const version = service?.key_env ? versions.get(service.key_env) ?? "" : "";
+    const mode = globalBudgetMode ? "global" : "per-provider";
+    return `${binding.fingerprint}|cap=${service?.daily_cost_cap_usd ?? ""}|mode=${mode}|cred=${version}`;
   }
 
   /** Acquire the already-preflighted target and record this step attempt.
@@ -465,7 +528,12 @@ export class ModelBindingService {
       await this.logResolved(ref, snapshot, binding);
       return { kind: BOUND_TARGET_KIND_SESSION_TOOL, binding, tool: binding.tool };
     }
-    const key = this.providerKey(snapshot.layers, binding, snapshot.globalBudgetMode ?? false);
+    const key = this.providerKey(
+      snapshot.layers,
+      binding,
+      snapshot.globalBudgetMode ?? false,
+      this.credentialVersions.get(snapshot) ?? new Map(),
+    );
     const provider = await this.providers.get(key);
     if (!provider) {
       throw new BindingIncompatibleError([{
@@ -476,7 +544,7 @@ export class ModelBindingService {
       }]);
     }
     this.lastUsed.set(key, ++this.tick);
-    this.activeRuns.add(key);
+    this.hold(snapshot.traceId, key);
     await this.logResolved(ref, snapshot, binding);
     return { kind: BOUND_TARGET_KIND_PROVIDER, binding, provider };
   }
