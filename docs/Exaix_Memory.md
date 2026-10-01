@@ -2,7 +2,7 @@
 
 - **Version:** 1.4.0
 - **Date:** 2026-09-02
-- **Status:** Current — covers the memory system as matured in Phase 147
+- **Status:** Current — covers the memory system including automatic proposal approval
 - **Companion:** operational commands live in [Exaix_User_Guide.md §3.2](Exaix_User_Guide.md#32-memory-banks); contributor view in [ARCHITECTURE.md §Memory Banks Architecture](../ARCHITECTURE.md#memory-banks-architecture)
 
 ## 1. Why Exaix Remembers
@@ -251,7 +251,7 @@ Every memory feature works with the provider off; the LLM paths make it better.
 
 ## 6. Measuring It
 
-Phase 148 owns the measurement story — extraction quality vs the heuristic
+The memory benchmark suite owns the measurement story — extraction quality vs the heuristic
 baseline, dedup rates, retrieval precision/recall, consolidation gains, and
 per-provider positioning. Positioning claims are per-benchmark and
 per-provider; consult the phase-148 measurement outputs before quoting numbers.

@@ -116,7 +116,7 @@ export EXA_LLM_MODEL=gemini-1.5-flash
 exactl eval run --pack eval-smoke
 ```
 
-### Recorded Mock Fixtures (Phase 157)
+### Recorded Mock Fixtures
 
 Capture, replay, refresh, and the call-site addressing rationale.
 

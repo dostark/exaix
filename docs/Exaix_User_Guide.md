@@ -3796,7 +3796,7 @@ knowledge gets at most the smaller of `max_tokens` and the section's remaining
 tokens after that listing. If no tokens remain, Exaix adds no adaptive knowledge
 segment. A selection that does run records `portal.knowledge.selection_applied`
 on the request trace with selected and finally included token counts. In the
-Phase 198 cutover fixture, a request naming `PaymentRouter` kept that symbol
+adaptive-context cutover fixture, a request naming `PaymentRouter` kept that symbol
 while the included knowledge segment used 76–77 adaptive tokens versus 85
 summary tokens across focused runs. The saving depends on the request and portal.
 
@@ -4669,7 +4669,7 @@ host to its `--allow-net` list, or the provider fails with `env_permission_denie
 
 - With `native_tools_enabled = true` the provider receives real `tools[]` and runs one tool call
   per round. A response that carries more than one tool call is rejected before any tool runs, and
-  Exaix never drops the extra calls. Parallel batches belong to Phase 202. DeepSeek cannot forbid
+  Exaix never drops the extra calls. Parallel tool-call batches are not supported. DeepSeek cannot forbid
   parallel calls, so a live DeepSeek run can still hit that rejection. With the flag off, ReAct uses
   the TOML action-block path.
 - Planning uses strict `json_schema` output on `openai` when the schema allows it. `deepseek` always

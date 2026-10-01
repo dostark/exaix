@@ -953,7 +953,7 @@ defect. Recorded fixtures replace those guesses with replayed real LLM exchanges
 index) rather than by
 matching the prompt's content — so an edited system prompt reports as drift on the affected
 fixtures instead of invalidating the whole set. See
-[`tests/scenario_framework/README.md` § "Recorded Mock Fixtures (Phase 157)"](../tests/scenario_framework/README.md#recorded-mock-fixtures-phase-157)
+[`tests/scenario_framework/README.md` § "Recorded Mock Fixtures"](../tests/scenario_framework/README.md#recorded-mock-fixtures)
 for how to capture, replay, and refresh them.
 
 **A replayed response is identical whether or not an artefact helped.** Capturing and replaying a
@@ -1051,7 +1051,7 @@ are `[cli_delegate]`-driven, real swe_tasks cells.
 Codex is not a swe_tasks/`[cli_delegate]` cell: no swe_tasks scenario declares a codex
 matrix entry. `configs/eval-cells.toml`'s `[tool.codex]` entry (`codex-cli/gpt-5.6-terra`)
 is exclusively consumed by the separate `agent_flows` pack's `flow_strategy_react.yaml`
-scenario (Phase 167 Step 3), proving Codex through the embedded ReAct-loop provider
+scenario, proving Codex through the embedded ReAct-loop provider
 (`[ai].provider = "codex-cli"`) — distinct from this `[cli_delegate]`-driven `swe_tasks`
 cell system and from Mode-3 session delegation (`[session_delegate] tool = "codex"`); see
 `tests/scenario_framework/README.md#codex-react-cell-vs-mode-3-session-delegation-vs-cli_delegate-vs-bare-phase-167`
@@ -1643,7 +1643,7 @@ Exaix learns from a prior run?** The protocol runs two independent, freshly-seed
 1. **Warm.** A separate empty workspace runs task A's `lessons_learned` through the real
    extraction → approval → consolidation pipeline (`MemoryExtractorService.analyzeExecution` →
    `createProposal` → `MemoryAutoApprovalService.runApprovalCycle`) — the same production path
-   Phase 147 ships, not a shortcut — then queries task B's text. `warm_recall_at_k` scores the
+   the memory system ships, not a shortcut — then queries task B's text. `warm_recall_at_k` scores the
    freshly-extracted learning's own id (unknowable in advance; captured from
    `analyzeExecution`'s return value), not a pre-declared fixture id.
 
@@ -1743,7 +1743,7 @@ pipeline:
 - Each invocation selects the journal rows whose `trace_id` exactly equals the requested trace,
   sorts them `(timestamp, id)`, and emits a deterministic snapshot — not a live feed. Running the
   same command twice against an unchanged journal produces byte-identical span/trace IDs.
-- Phase 177 does not stream, poll, or hold a cursor. A future streaming producer can reuse the
+- The OTel exporter does not stream, poll, or hold a cursor. A future streaming producer can reuse the
   same pure `OtelRecordProjector`/`OtlpHttpTransport` boundary, but implementing one is out of
   scope here — see §20.7.
 
@@ -1850,18 +1850,18 @@ at load time rather than accepting one that would silently have no effect.
 
 ### 20.7 Snapshot vs. future streaming
 
-Phase 177 ships a **snapshot** exporter only. `OtelRecordProjector.projectRecord` is stateless and
+The OTel export ships a **snapshot** exporter only. `OtelRecordProjector.projectRecord` is stateless and
 produces the same deterministic child span whether called by the snapshot assembler or a future
 incremental producer, but no durable cursor, acknowledged advancement, cross-trace batching,
 backpressure, crash replay, shutdown flush, or terminal-root policy exists yet — a live streaming
 exporter is a separately planned phase, not an implicit consequence of this one. Do not describe
-Phase 177 as providing live or continuous telemetry.
+the exporter as providing live or continuous telemetry.
 
 ### 20.8 Verifying an export lands
 
 CI proves the wire contract against an in-process receiver
 (`exaix-team/packages/otel-export/tests/export_cli_integration_test.ts`); it does not prove
-delivery to a real OTel-native tool. The Phase 177 live cutover ran the compiled Team CLI against a
+delivery to a real OTel-native tool. The live cutover run used the compiled Team CLI against a
 real `otel/opentelemetry-collector-contrib` instance and confirmed the root/child spans and eval
 attributes it received — see
 `exaix-dev-docs/planning/evidence/phase-177/live-cutover.md` for the redacted invocation, collector

@@ -153,8 +153,7 @@ into the request body alongside `model` and `messages`.
 ### Session Delegate Cycle — Sequential Governed Delegations {#session-delegate-cycle}
 
 The Handoff Contract above hands **one** pipeline gate to a session tool: one brief, one
-launch, one return. `FlowStepType.SESSION_DELEGATE_CYCLE` (`type: session_delegate_cycle`,
-Phase 174) is a distinct flow-step **type** — not a `strategy` value (see the `Flow Step
+launch, one return. `FlowStepType.SESSION_DELEGATE_CYCLE` (`type: session_delegate_cycle`) is a distinct flow-step **type** — not a `strategy` value (see the `Flow Step
 Execution Axes` subsection below) — that drives **N** of those single-shot handoffs in
 strict sequence, one hardened-plan step at a time, each individually reviewed before the next
 is allowed to start. It is the production replacement for routing an entire multi-step
@@ -184,7 +183,7 @@ delegateCycle:
     includeRequestCriteria: false
 ```
 
-**Durability and lineage (Phase 174 Step 4):** a SQLite-backed `ISessionDelegateCycleClaimStore`
+**Durability and lineage:** a SQLite-backed `ISessionDelegateCycleClaimStore`
 is the launch source of truth — a unique `(parentTraceId, parentStepId, sequence, planDigest)`
 key guarantees at most one durable launch across crash points and duplicate handler/watcher
 entry. An atomic JSON checkpoint (`ISessionDelegateCycleStore`) mirrors progress
@@ -1058,7 +1057,7 @@ a model-driven tool path; external MCP callers without that identity remain unkn
 
 **OpenAI-compatible Chat Completions:** `OpenAICompatibleProviderFactory` (`packages/ai-openai/src/compatible_factory.ts`) owns the `openai-chat` provider type and the qualified `openai`, `deepseek` and `local-test` profiles. `registerConcreteProviders` in `apps/common/registry_bootstrap.ts` registers it, and the shared `OpenAIProvider` sends the requests. The factory pins the profile host, model and secret variable, accepts HTTPS only for remote profiles, and rejects a missing profile or registration before any provider exists, so a typed failure never falls back to the mock provider. Failures carry `ProviderFactoryError.reasonCode` (`credential_missing`, `env_permission_denied`, `net_permission_denied`, `profile_mismatch`, `registration_missing`, `capture_unsupported`) or a call-policy code (`unsupported_call_option`, `pricing_unavailable`) or `protocol_invalid`. Daemon network and environment grants stay a deployment decision: `exactl daemon start` derives `--allow-net` from `system.allow_net`, and the `start:fg` task must be extended by hand for a remote profile.
 
-- **Serial conversation:** ReAct and planning replay an immutable `nativeConversation` snapshot with one tool call per round, gated by `IProviderMetadata.supportsNativeConversation`. Any response with more than one tool call is rejected before a tool runs. Phase 202 owns parallel batches, and DeepSeek cannot forbid parallel calls.
+- **Serial conversation:** ReAct and planning replay an immutable `nativeConversation` snapshot with one tool call per round, gated by `IProviderMetadata.supportsNativeConversation`. Any response with more than one tool call is rejected before a tool runs. Parallel tool-call batches are not supported, and DeepSeek cannot forbid parallel calls.
 - **Structured output:** `IGenerateResult.structuredOutputMode` records `json_schema` or `json_object`. `openai` uses strict `json_schema` when the schema allows it, `deepseek` always uses `json_object` with a schema instruction, and the JSON-mode instruction overrides prompt-level wrapper tags. Strict projection removes nested optional nulls introduced by required fields, including local references and matching `anyOf` branches; originally legal nulls survive. Local validation always runs against the original schema.
 - **Call options and dynamic budgets:** The OpenAI profile omits `thinking: false` from the request body and rejects unsupported enabled thinking or explicit effort; DeepSeek keeps its enabled and disabled thinking controls. Each native dynamic round measures role/tool text as `system`, objective/original input as `plan`, and prior turns/current control as `loopHistory`. It reserves the resolved output token allowance, allocates a fallback budget if none was injected, and emits one traced `ContextBudgetExceeded` event before generation when a section or total input limit is exceeded.
 - **Cost:** the provider prices the exact returned model from the model registry. An unknown rate yields `IGenerateResult.costStatus = "unknown"` and a null journal cost, and a finite cost budget rejects unpriced remote calls.
@@ -1301,7 +1300,7 @@ All tools enforce portal-scoped operations. Git tools obtain `IGitService` throu
 
 `packages/mcp` owns MCP in both directions. **Inbound** (existing, `exaix-team/packages/mcp-server`): Exaix acts as an MCP _server_, exposing the tool handlers above to external agents — built on the official `@modelcontextprotocol/server` SDK (Phase 163), serving the current spec protocol version over stdio and Streamable HTTP, with an opt-in bearer-token gate (`mcp.require_auth` + `MCP_AUTH_TOKEN` env indirection). **Outbound** (Phase 162, new): Exaix acts as an MCP _client_, via `ExternalMcpClient`/`IExternalMcpClient` (`packages/mcp/src/external_mcp_client.ts`), reaching a real external MCP server over the wire (Streamable HTTP primary, legacy SSE fallback, with optional bearer-token auth), through `exactl mcp connect`. Do not confuse this with `LocalToolDispatcher` (`packages/mcp/server/local_tool_dispatcher.ts`) — a local, in-process facade that dispatches to Exaix's own tool handlers and never opens a network connection; its `callTool` is keyed by the closed `McpToolName` enum, structurally incompatible with `IExternalMcpClient`'s string-keyed one. Since Phase 163 Step 6, `LocalToolDispatcher` is real-daemon-reachable: the Team-edition daemon (`apps/daemon/main.ts`) builds it from `buildDynamicHandlers(context, portalPermissions)` and passes it as `mcpClient` into the real `FlowRunner`, so `execution_mode: dynamic` flow steps execute for real on a Team/Enterprise daemon (previously the class existed only under test). Follow-up deferred from Step 5: the `IMcpClient`/`IToolManifestResolver` interface names still carry the pre-rename `McpClient` name and are candidates for a future rename phase — explicitly out of Phase 163's scope.
 
-**Scope Note:** Phase 162 ships the outbound client and CLI subcommand only — no benchmark integration (e.g. Terminal-Bench) is included; Phase 144's Terminal-Bench-harness-fidelity gap remains open and unrelated to this phase's completion. `exactl mcp connect` reaches unauthenticated and bearer-token-authenticated servers only — any server requiring interactive OAuth or `client_credentials`/JWT-assertion grants is out of reach until a further follow-up.
+**Scope Note:** The external MCP client ships the outbound client and CLI subcommand only — no benchmark integration (e.g. Terminal-Bench) is included, and the Terminal-Bench harness-fidelity gap remains open and unrelated. `exactl mcp connect` reaches unauthenticated and bearer-token-authenticated servers only — any server requiring interactive OAuth or `client_credentials`/JWT-assertion grants is out of reach until a further follow-up.
 
 Two `[live]`-tagged tests in `tests/integration/external_mcp_client_live_test.ts` prove reachability against genuine third-party servers (DeepWiki, unauthenticated; GitHub's official remote MCP server, bearer-token-authenticated). Neither runs in default CI (`ignore: Deno.env.get("CI") === "true"`); run them on demand:
 
@@ -1315,17 +1314,17 @@ GITHUB_TOKEN=$(gh auth token) deno test --allow-all tests/integration/external_m
 
 ### Tool Catalog Parity: `ToolRegistry` vs `TOOL_MANIFEST`
 
-Two independent tool catalogs exist side by side; Phase 154 established an enforced parity gate
+Two independent tool catalogs exist side by side; an enforced parity gate was established
 between them rather than merging them into one. `ToolRegistry`
 (`packages/tool-runtime/src/tool_registry.ts`) is the plan-execution catalog, dispatched directly
-by `ReActLoopStrategy` and `McpAgentStrategy` (despite the latter's name — Phase 154 Step 2's
-Routing Evaluation). `TOOL_MANIFEST`
+by `ReActLoopStrategy` and `McpAgentStrategy` (despite the latter's name — the
+routing evaluation kept it on that catalog). `TOOL_MANIFEST`
 (`packages/mcp/src/manifest.ts`) is the MCP-facing catalog, served to external MCP clients
 (`apps/mcp-server/`) and Flow's `DynamicStepExecutor` alike through `LocalToolDispatcher`.
 `deno task check:tool-catalog-parity` (`checkToolCatalogParity()`,
 `packages/mcp/src/tool_catalog_parity.ts`) runs in CI and fails on any required-param shape
 divergence between the two, so drift is caught mechanically rather than relying on manual
-synchronization. Phase 154 Step 2 evaluated and explicitly decided **against** migrating
+synchronization. The routing evaluation explicitly decided **against** migrating
 `ReActLoopStrategy`/`McpAgentStrategy` onto `LocalToolDispatcher` — the two
 dispatch paths' independent HITL/confirmation pipelines were found to be organic drift, not
 intentional divergence, and are tracked and remediated per-path rather than justifying a full

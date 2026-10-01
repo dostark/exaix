@@ -709,7 +709,7 @@ capture failure aborts the launch. Records older than `retention_days` (default 
 pruned at daemon startup and once a day.
 
 **Trusted-caller binding:** activation checks `dogfood.context.enabled`, the portal-alias
-binding, and — since Phase 176's Step 6 remediation — the calling agent's own daemon-resolved
+binding, and — since the trusted-caller remediation — the calling agent's own daemon-resolved
 `agent_role`, rejected before any context capture or MCP endpoint starts unless it is a
 member of `dogfood.context.trusted_agent_roles` (default `["dogfood-coder",
 "quality-judge"]`, the two roles the shipped `dogfood-loop` and `dogfood-meta-workflow` flows
@@ -823,7 +823,7 @@ replaced by the bootstrap script:
 - `ai.provider = "ollama"` — overridable via `EXA_LLM_PROVIDER`
 - `[[portals]]` — worktree portal `exaix-self` with `execution_strategy = "worktree"`,
   enforced in code by `FlowWorktreeCoordinator` for both a strategy-routed `cli_delegate`
-  flow step and a `session_delegate_cycle` step (Phase 194) — a per-trace worktree is
+  flow step and a `session_delegate_cycle` step — a per-trace worktree is
   created regardless of what `target_path` itself points at, not merely declared
 - `quality_gate.enabled = false` — disabled for development workflows
 
