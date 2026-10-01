@@ -50,10 +50,10 @@ that applies:
      you haven't used it before, Team adds it to your catalog on the spot rather than
      rejecting it. If the provider doesn't actually offer that model, you get a clear
      error immediately instead of a failed call later.
-2. **You curated a preferred list for this size.** If you've told Exaix "for size-M
+1. **You curated a preferred list for this size.** If you've told Exaix "for size-M
    requests, try Anthropic then Ollama" (see [curation](#3-curating-your-preferred-models)
    below), the first healthy provider on that list wins.
-3. **Otherwise, Exaix scores every available provider** against your requested size and
+1. **Otherwise, Exaix scores every available provider** against your requested size and
    characteristics, and picks the winner.
 
 On top of this, if the chosen model genuinely can't handle the request (the prompt is
@@ -192,3 +192,17 @@ exactl logs --filter action_type=model.resolved --format json
 
 If a choice ever looks wrong, this is where to start — it shows exactly what Exaix
 considered and why it picked what it picked.
+
+## 7. Flow step bindings and intent resolution
+
+A flow step binding fixes the service and model through the Phase 204 catalog and binding
+resolver before the step calls a model. A bound step uses that resolved provider directly;
+it does not ask `ModelResolver` to choose a model from the step's intent. The run snapshot
+keeps the selected identity and field sources stable for that run. New runs resolve the
+current config and overlays again.
+
+An unbound flow step keeps the existing boot-provider and intent-resolution path. Plan
+generation, plan execution and other non-flow requests do not use flow-step bindings;
+their `ModelResolver` behavior remains as described above. See
+[Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps) for
+selectors, overlay precedence, pins, diagnostics and replay locks.

@@ -20,6 +20,10 @@
 
 ## Unreleased — Phase 204 (Flow-Step Model Bindings)
 
+### Added
+
+- Flow authors and operators can choose models per flow step with catalog bindings, layered overlays, pinned fields, replay locks, and the [binding preview command](Exaix_User_Guide.md#model-bindings-for-flow-steps).
+
 ### Removed
 
 - The `research-synthesis`, `consensus-review`, `code-review` and `documentation` flows are no longer

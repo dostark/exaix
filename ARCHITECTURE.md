@@ -587,8 +587,7 @@ yet be relied on as a complete guarantee.
 
 ### Flow Step Execution Axes {#flow-step-execution-axes}
 
-A flow step has two independent, orthogonal execution controls — changing one never changes
-the other's behaviour:
+A flow step has three independent execution controls:
 
 - **`execution_mode`** (`declared` | `dynamic`, default `declared`) — the _engine_ axis:
   whether the step's tool calls are pre-declared (`tools:`/`permitted_tools:`, human-authored)
@@ -602,6 +601,18 @@ the other's behaviour:
   autonomous session. Setting `strategy` on a `dynamic` step is a schema validation error —
   a dynamic step already selects its own tools at runtime, so a forced strategy is redundant
   and the two axes would conflict.
+- **`binding`** (optional partial model/service specification) — the _provider_ axis:
+  selects the model, service, transport and interface for this step. A `pin` can protect
+  selected flow-declared fields. Operator layers can fill or override unpinned fields
+  without changing `execution_mode` or `strategy`.
+
+`FlowRunner.execute` captures one immutable binding snapshot for the run. Declared agent
+steps use `AgentComposerAdapter.run` or `runWithStrategy`; dynamic steps use
+`FlowRunner.dynamicExecutorFor`; flow gate judges pass `bindingContext` through
+`GateEvaluator` to `JudgeAgentRunner`. Session delegate cycle gates carry the cycle step's
+reference, and voting group runners carry their runner step references. Each consumer
+gets its provider from the snapshot before generating. An unbound step uses the boot
+provider; non-flow planning, execution and gate calls do not consult flow bindings.
 
 `AgentStepHandler.execute` checks `step.strategy` first: when set, it calls
 `IAgentExecutor.runWithStrategy`, which builds a fresh, per-call `AgentComposer` (never a
@@ -741,6 +752,42 @@ configured), attributed per `runner_id` with the voting step's `traceId`.
 Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`, `@exaix/ai-clidelegate`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`. Solo-edition providers are registered by `apps/common/registry_bootstrap.ts`; Team-edition providers (Vertex AI) are registered by `@exaix-team/team-composer`.
 
 `@exaix/ai-clidelegate` registers a distinct kind of `IModelProvider`: `CliDelegateModelProvider` implements ReAct-loop `generate()` by spawning a headless CLI subprocess (`codex exec --json`, `claude --print`, or `opencode run`) and parsing its stdout, rather than calling a metered HTTP API. It backs three providers — `codex-cli`, `claude-cli`, `opencode-cli` — selectable via `[ai].provider` / `[models.<name>].provider` like any other provider, but billed against the CLI's own subscription (`cost_usd` always `0`). This is independent of the `[session_delegate]`/Mode 3 session-delegation contract above, which hands an entire pipeline gate — not a single `generate()` call — to the same external tools.
+
+### Flow Model Binding Layer
+
+`ConfigSchema` accepts optional `[catalog.*]` and `[bindings]` tables. `FlowStepSchemaBase`
+accepts `binding` and `pin`. `loadBindingLayers` combines flow YAML, config, daemon
+overlays, per-run overlays and one-off CLI bindings. The catalog distinguishes a model's
+canonical provider from the service and service model ID that serve it. The pure
+`BindingResolver` merges matching selectors per field, honors pins, chooses a service
+from catalog preferences and returns a validated identity or a typed issue.
+
+At `FlowRunner.execute`, `ModelBindingService.snapshotForRun` claims the operator file
+with `RunBindingsStore.claim` using the request path and SHA-256, resolves all LLM-calling
+step references, validates keys/capabilities/endpoints/network reachability, and builds a
+per-run immutable snapshot before the first generation. `ModelBindingService.providerFor`
+returns a pooled provider for each resolved identity. `ProviderFactory.createFromBinding`
+constructs it without reading `EXA_LLM_*`; `AgentRunner.withProvider` installs it for
+declared and dynamic generation, while `IAgentComposerConstructionDeps` gives
+`AgentComposer` a `cliDelegateBinding`
+for a `cli_delegate` session. An unbound step keeps the boot provider.
+
+`computeStartNetGrant` gives the daemon a catalog-derived host grant at startup when
+`system.allow_net` is absent. `createProductionBindingEnvProbe` checks keys in the
+environment and credential store and checks opt-in variables. A newly introduced host
+outside the grant reports `needs_restart`. `BindingSnapshotCreated` records the lock
+and its hash under `.exa/bindings/`; `BindingResolved` and `BindingRejected` expose
+step outcomes. Replay rejects changed inputs. The `ICostTracker` reservation API and
+`RateLimitedProvider` use service and transport identity; `IRateLimitConfig` supplies
+the per-service cap and global budget callback when operator binding layers are active.
+`exactl request` creates per-run overlays under `.exa/run-bindings/`, and `exactl flow
+bindings` previews the same resolver path before execution.
+
+The request and judge contracts keep context in memory: `IFlowStepRequest` carries the
+flow ID and binding snapshot; `IGateConfig.bindingContext` and
+`IJudgeInvoker.evaluate` pass the gate reference and snapshot to the judge runner.
+`DomainEventType` includes the three binding events above. `IRequestOptions` carries
+`exactl request`'s repeatable overlay and bind fields plus its replay lock path.
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 

@@ -1953,6 +1953,10 @@ exactl flow show research-pipeline
 # Validate a flow definition
 exactl flow validate <flow-id>
 exactl flow validate research-pipeline
+
+# Preview each step's effective model binding and its field sources
+exactl flow bindings research-pipeline
+exactl flow bindings research-pipeline --overlay ./run-cheap.json --bind 'flow:research-pipeline/step:explore-1=model=deepseek/deepseek-v4-pro' --json
 ```
 
 #### Flow Step Execution Strategy
@@ -2132,6 +2136,23 @@ Flows support various step types for different orchestration patterns:
 | `parallel`     | Concurrent execution  | Multiple steps in parallel                 |
 | `loop`         | Iterative processing  | Repeat until condition met                 |
 | `voting_group` | Multi-agent consensus | Fan-out N runners, majority/weighted/judge |
+
+An LLM-calling step can declare a partial `binding` and pin specific fields. The pin reason
+records why the flow author fixed those fields. A broader operator selector cannot change
+them; a conflicting exact step override fails before generation.
+
+```yaml
+steps:
+  - id: compose
+    agent_role: composer
+    binding: { service: openai-chat, model: openai/gpt-6-luna }
+    pin:
+      fields: [service, model]
+      reason: compliance
+      note: "Contracted vendor for final output"
+```
+
+See [Model bindings for flow steps](#model-bindings-for-flow-steps) for catalog and override setup.
 
 ##### Condition Expressions
 
@@ -2546,13 +2567,11 @@ EXA_SSE_PORT=9000 exactl watch a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 **Output format (color-coded):**
 
-| Event Type  | Color    | Example Output                                        |
-| ----------- | -------- | ----------------------------------------------------- |
-| Heartbeat   | Dim gray | `[14:30:15] ♥ heartbeat step="Step 1" elapsed=5000ms` |
-| Tool Start  | Cyan     | `[14:30:16] ▶ tool.start tool="read_file"`            |
-| Tool End    | Cyan     | `[14:30:17] ◀ tool.end tool="read_file"`              |
-| LLM Stream  | White    | `[14:30:18] ◈ llm.stream Thinking about...`           |
-| Flow Status | Green    | `[14:30:19] ◆ flow.status status="running"`           |
+- Heartbeat (dim gray): `[14:30:15] ♥ heartbeat step="Step 1" elapsed=5000ms`
+- Tool start (cyan): `[14:30:16] ▶ tool.start tool="read_file"`
+- Tool end (cyan): `[14:30:17] ◀ tool.end tool="read_file"`
+- LLM stream (white): `[14:30:18] ◈ llm.stream Thinking about...`
+- Flow status (green): `[14:30:19] ◆ flow.status status="running"`
 
 **How it works:**
 
@@ -4406,6 +4425,142 @@ does not need to call a tool.
   `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool
   selection through it.
 - Plan-step execution uses ReAct by default. MCP and CLI delegation remain explicit execution capabilities.
+
+#### Model bindings for flow steps
+
+A binding selects the **service** that serves a canonical **model** from a **model provider**,
+through a `cloud` or `local` **transport** and an `api` or `cli` **interface**. A service can
+publish a different `service_model_id` for that model. Binding fields are optional: a layer
+sets only the fields it names, and other fields come from lower layers or the catalog.
+`effort` and `thinking` also bind per step; their effective values are checked against the
+selected provider and model before generation. With no active binding layer, flows use
+the daemon's boot provider as before. Non-flow requests keep their existing provider path.
+
+Add catalog entries and selectors to `exa.config.toml`:
+
+```toml
+[system]
+root = "/home/user/Exaix"
+
+[catalog.models."openai/compat-fixture-v1"]
+model_provider = "openai"
+capabilities = []
+
+[catalog.services.compat-fixture]
+adapter = "openai-chat"
+profile = "local-test"
+endpoint = "http://127.0.0.1:8000/v1/chat/completions"
+allow_insecure_loopback = true
+transport = "local"
+interface = "api"
+key_env = "EXA_COMPAT_TEST_API_KEY"
+serves = { "openai/compat-fixture-v1" = "compat-fixture-v1" }
+
+[catalog.preferences]
+openai = ["compat-fixture"]
+
+[bindings]
+"flow:research/step:explore-*" = { model = "openai/compat-fixture-v1", transport = "local" }
+```
+
+`[catalog.models."provider/model"]` declares model ownership, optional `context_window`,
+and `capabilities` (`native_tools`, `thinking`, `effort`). `[catalog.services.<id>]` declares
+the adapter, optional qualified `profile` and `endpoint`, `transport`, `interface`, optional
+`key_env`, `requires_optin`, `tool`, `daily_cost_cap_usd`, and `serves` mapping from canonical
+model to service model ID. `[catalog.preferences]` orders services for each model provider.
+The sample uses the `local-test` fixture profile: HTTP is allowed only on private loopback
+with `allow_insecure_loopback = true`. Production `openai-chat` bindings support the qualified
+`openai` and `deepseek` HTTPS profiles; arbitrary compatible endpoints are not qualified.
+Use an adapter-matching `key_env`. API key lookup checks the daemon environment, then the
+credential store. `requires_optin` must be present with value `1` in the daemon environment.
+
+Selectors in `[bindings]` and overlays are `default`, `role:<agent-role>`, `flow:<flow-id>`,
+and `flow:<flow-id>/step:<step-id-or-glob>`. `judge` and `judge:<role>` parse now, but their
+resolver path belongs to Phase 203; use an exact gate step selector for a gate judge here.
+Within one layer, a more specific selector wins a field; equal-specificity matching globs
+with the same literal prefix are rejected as ambiguous. Layers apply per field from low to
+high priority: flow YAML `binding:`, config `[bindings]`, daemon overlay, per-run overlay,
+then `--bind`. A model-only entry can use catalog preferences to pick its service; a
+transport/interface-only entry can inherit a uniquely projected `[ai]` default model.
+
+Place a versioned JSON or TOML overlay in `.exa/overlays/` under `system.root` to affect
+later runs. Daemon overlays load in lexical filename order. A JSON overlay looks like this:
+
+```json
+{
+  "schema": 1,
+  "bindings": {
+    "flow:research/step:explore-*": { "model": "deepseek/deepseek-v4-pro" }
+  }
+}
+```
+
+For one run, pass a **JSON** overlay to `exactl request --flow research --overlay
+<overlay-file> "Explore the issue"`; `--overlay` is repeatable. The CLI currently parses
+per-run files as JSON, even if a filename ends in `.toml`. Add `--bind
+'flow:research/step:explore-1=model=deepseek/deepseek-v4-pro,service=openai-chat'` for an
+inline, repeatable override. `--bind` takes `selector=field=value[,field=value]`; choose
+strings for its fields. `exactl flow bindings research --overlay <overlay-file> --json`
+previews the effective fields, sources, and validation issues without running the flow.
+`exactl request --file <request.md>` accepts the same flags. The CLI writes a per-run
+operator file under `.exa/run-bindings/` before writing the request; the daemon claims it
+only when trace ID, request path, and request SHA-256 match. Request frontmatter cannot
+supply a binding. A repeated claim for the same request is allowed for resume.
+
+Binding and overlay changes are read at each flow run, so they need no daemon restart.
+The daemon's network grant is calculated from configured catalog hosts at startup when
+`system.allow_net` is unset. A later overlay that names a new host fails with
+`needs_restart`: add the host to the startup catalog and restart the daemon. When
+`system.allow_net` is explicit, its host list is authoritative; an outside host fails
+with `host_not_allowed`. Local endpoints must pass the private/loopback check.
+Changing an environment variable in a running daemon still requires a restart.
+
+A binding run resolves and validates all LLM-calling steps before the first LLM call and
+writes a snapshot lock under `.exa/bindings/` (`<trace-id>.lock.json`). Use `exactl request
+--flow research --locked <lock-file> "Repeat the run"` to replay it. The lock records
+resolved identities, source layers, catalog/config/overlay checksums, and whether
+`EXA_LLM_PROVIDER` or `EXA_LLM_MODEL` was ignored. These boot-time variables never
+override a bound step; `--locked` fails with `lock_mismatch` if the current inputs drift.
+Unbound paths retain the boot provider. A flow step with `strategy: cli_delegate` uses
+the session tool binding (`claude-code`, `codex`, or `opencode`); the generate-backed
+`claude-cli`, `codex-cli`, and `opencode-cli` services instead provide one `generate()`
+call at a time. A session delegate cycle uses its session tool binding; a gate judge
+needs a generate-backed binding rather than a `cli_delegate` session.
+
+Flow authors may pin `service`, `model_provider`, `model`, `service_model_id`, `transport`,
+or `interface` on a step, with reason `provider-qualification`, `wire-compat-regression`,
+`pricing-table`, `capability-gate`, or `compliance`. An exact conflicting operator step
+binding fails with `pinned`; a broader override leaves the flow value and records
+`pin_kept` in the field source. `effort` and `thinking` cannot be pinned. With any operator
+binding layer active, the configured daily maximum is a **global** cap across bound
+services; a service's `daily_cost_cap_usd` applies in addition. Cloud cost admission uses
+an atomic reservation keyed by service and transport, while local transport is excluded
+from paid usage. A missing usable price under a finite cap fails with
+`pricing_unavailable` before a paid call.
+
+Binding issues are reported by `exactl flow bindings` and fail the flow preflight:
+
+| Code                           | Meaning                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
+| `overlay_invalid`              | Overlay or one-off binding is malformed.                      |
+| `ambiguous_selector`           | Equally specific selectors conflict.                          |
+| `unknown_model`                | Canonical model is absent from the catalog.                   |
+| `unknown_service`              | Named service is absent.                                      |
+| `service_does_not_serve_model` | Service does not map the model.                               |
+| `no_service_for_constraints`   | No service satisfies the partial fields.                      |
+| `capability_missing`           | Model lacks a required capability.                            |
+| `interface_unsupported`        | Interface and execution strategy do not fit.                  |
+| `key_missing`                  | No API key is available from environment or credential store. |
+| `optin_missing`                | Required opt-in environment variable is not set to `1`.       |
+| `endpoint_invalid`             | Endpoint fails the service/profile rules.                     |
+| `local_host_not_private`       | Local endpoint host is not private or loopback.               |
+| `host_not_allowed`             | Explicit network grant does not include the host.             |
+| `needs_restart`                | New host needs a new start-time grant.                        |
+| `pricing_unavailable`          | Finite paid budget has no usable price.                       |
+| `pinned`                       | Exact override conflicts with a pinned flow value.            |
+| `lock_mismatch`                | Replay inputs differ from the saved lock.                     |
+
+The implementation contract is tracked in [Phase 204 Step 10](../exaix-dev-docs/planning/phase-204-flow-step-model-bindings.md#step-10--documentation).
 
 #### OpenAI-compatible Chat Completions (`openai-chat`)
 
