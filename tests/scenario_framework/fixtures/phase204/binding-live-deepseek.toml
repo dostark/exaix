@@ -1,0 +1,19 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+allow_net = ["api.deepseek.com"]
+
+[ai]
+provider = "mock"
+model = "mock-model"
+
+[ai.mock]
+strategy = "pattern"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+[bindings]
+"flow:binding-live-api/step:answer" = { service = "mock", model = "mock/mock-model" }

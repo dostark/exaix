@@ -1,0 +1,88 @@
+schema_version: "1.0.0"
+id: flow-binding-deepseek-override-live
+title: A run overlay overrides mock with a real DeepSeek API call
+pack: provider_live
+tags: ["provider-live", "subsystem:flows", "model-bindings"]
+request_fixture: fixtures/requests/provider_live/flow_binding_deepseek_live.md
+flow_fixture: fixtures/flows/binding-live-api.flow.yaml
+mode_support: ["auto"]
+portals: []
+matrix:
+  cells:
+    - tool: exactl
+      provider: openai-chat
+      config: tests/scenario_framework/fixtures/phase204/binding-live-deepseek.toml
+      requires_bin: deno
+      requires_key: DEEPSEEK_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+        score_weight: 0.1
+  - id: write-deepseek-overlay
+    type: write-file
+    path: .exa/run-input/deepseek.json
+    content: '{"schema":1,"bindings":{"flow:binding-live-api/step:answer":{"service":"deepseek","model":"deepseek/deepseek-v4-pro"}}}'
+    output_criteria:
+      - id: overlay-written
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.1
+  - id: submit-deepseek-override
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --overlay, "$WORKSPACE_ROOT/.exa/run-input/deepseek.json"]
+    output_criteria:
+      - id: request-created
+        kind: command-output-contains
+        contains: [request.created]
+        score_weight: 0.1
+  - id: await-flow
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "180"]
+    timeout_sec: 180
+    output_criteria:
+      - id: flow-completed
+        kind: journal-event-exists
+        event_type: flow.completed
+        score_weight: 0.2
+  - id: assert-binding
+    type: journal-assert
+    action_type: binding.resolved
+    trace_scoped: true
+    payload_equals:
+      - path: step_id
+        value: answer
+      - path: service
+        value: deepseek
+      - path: service_model_id
+        value: deepseek-v4-pro
+      - path: sources.service.layer
+        value: run
+    output_criteria:
+      - id: deepseek-overlay-binding-used
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.25
+  - id: assert-live-api-call
+    type: journal-assert
+    action_type: llm.call.completed
+    trace_scoped: true
+    payload_equals:
+      - path: model
+        value: deepseek-v4-pro
+    output_criteria:
+      - id: deepseek-api-returned
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.25
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

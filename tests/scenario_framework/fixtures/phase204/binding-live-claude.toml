@@ -1,0 +1,25 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+allow_net = []
+
+[ai]
+provider = "mock"
+model = "mock-model"
+
+[ai.mock]
+strategy = "pattern"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+[catalog.models."claude-cli/claude-sonnet-5"]
+model_provider = "claude-cli"
+
+[catalog.models."codex-cli/gpt-5.6-terra"]
+model_provider = "codex-cli"
+
+[bindings]
+"flow:binding-live-cli/step:delegate-step" = { service = "codex", model = "codex-cli/gpt-5.6-terra" }

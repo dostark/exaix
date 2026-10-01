@@ -1,0 +1,91 @@
+schema_version: "1.0.0"
+id: flow-binding-claude-override-live
+title: A run binding overrides Codex with a real Claude CLI delegate
+pack: provider_live
+tags: ["provider-live", "subsystem:flows", "model-bindings"]
+request_fixture: fixtures/requests/provider_live/flow_binding_cli_live.md
+flow_fixture: fixtures/flows/binding-live-cli.flow.yaml
+mode_support: ["auto"]
+portals:
+  - alias: binding-portal
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/binding-portal"
+    git_init: true
+matrix:
+  cells:
+    - tool: claude
+      provider: claude-cli
+      config: tests/scenario_framework/fixtures/phase204/binding-live-claude.toml
+      requires_bin: claude
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+        score_weight: 0.1
+  - id: submit-claude-override
+    type: exactl
+    command: request
+    args: [
+      --file,
+      "$REQUEST_FIXTURE",
+      --portal,
+      binding-portal,
+      --bind,
+      "flow:binding-live-cli/step:delegate-step=service=claude-code,model=claude-cli/claude-sonnet-5",
+    ]
+    output_criteria:
+      - id: request-created
+        kind: command-output-contains
+        contains: [request.created]
+        score_weight: 0.1
+  - id: await-flow
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "360"]
+    timeout_sec: 360
+    output_criteria:
+      - id: flow-completed
+        kind: journal-event-exists
+        event_type: flow.completed
+        score_weight: 0.2
+  - id: assert-binding
+    type: journal-assert
+    action_type: binding.resolved
+    trace_scoped: true
+    payload_equals:
+      - path: step_id
+        value: delegate-step
+      - path: service
+        value: claude-code
+      - path: service_model_id
+        value: claude-sonnet-5
+      - path: sources.service.layer
+        value: cli
+    output_criteria:
+      - id: claude-cli-binding-used
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.3
+  - id: assert-delegate-completed
+    type: journal-assert
+    action_type: flow.step.completed
+    trace_scoped: true
+    payload_equals:
+      - path: stepId
+        value: delegate-step
+      - path: strategy
+        value: cli_delegate
+    output_criteria:
+      - id: live-delegate-completed
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.3
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

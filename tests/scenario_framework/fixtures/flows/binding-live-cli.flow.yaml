@@ -1,0 +1,25 @@
+# @schema-version: 1.0.0
+---
+id: binding-live-cli
+name: Live CLI Binding Override
+description: A strategy-routed step whose CLI tool is chosen by a run binding.
+version: "1.0.0"
+steps:
+  - id: delegate-step
+    name: Inspect the fixture portal
+    agent_role: senior-coder
+    execution_mode: declared
+    strategy: cli_delegate
+    input:
+      source: request
+      transform: passthrough
+    timeout: 300000
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+output:
+  from: delegate-step
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true

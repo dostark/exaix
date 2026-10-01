@@ -1,0 +1,22 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+allow_net = []
+
+[ai]
+provider = "mock"
+model = "mock-model"
+
+[ai.mock]
+strategy = "pattern"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+[catalog.models."codex-cli/gpt-5.6-terra"]
+model_provider = "codex-cli"
+
+[bindings]
+"flow:binding-live-gate/step:gate" = { service = "mock", model = "mock/mock-model" }

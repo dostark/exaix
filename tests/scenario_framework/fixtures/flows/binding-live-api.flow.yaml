@@ -1,0 +1,22 @@
+# @schema-version: 1.0.0
+---
+id: binding-live-api
+name: Live API Binding Override
+description: A declared step whose provider is selected by a run overlay.
+version: "1.0.0"
+steps:
+  - id: answer
+    name: Answer the request
+    agent_role: code-analyst
+    execution_mode: declared
+    input:
+      source: request
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+output:
+  from: answer
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true

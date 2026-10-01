@@ -1,0 +1,95 @@
+schema_version: "1.0.0"
+id: flow-binding-codex-override-live
+title: A run binding overrides a mock gate with a real Codex CLI model call
+pack: provider_live
+tags: ["provider-live", "subsystem:flows", "model-bindings"]
+request_fixture: fixtures/requests/provider_live/flow_binding_codex_live.md
+flow_fixture: fixtures/flows/binding-live-gate.flow.yaml
+mode_support: ["auto"]
+portals: []
+matrix:
+  cells:
+    - tool: codex
+      provider: codex-cli
+      config: tests/scenario_framework/fixtures/phase204/binding-live-codex.toml
+      requires_bin: codex
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+        score_weight: 0.1
+  - id: submit-codex-override
+    type: exactl
+    command: request
+    args: [
+      --file,
+      "$REQUEST_FIXTURE",
+      --bind,
+      "flow:binding-live-gate/step:gate=service=codex-cli,model=codex-cli/gpt-5.6-terra",
+    ]
+    output_criteria:
+      - id: request-created
+        kind: command-output-contains
+        contains: [request.created]
+        score_weight: 0.1
+  - id: await-flow
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "360"]
+    timeout_sec: 360
+    output_criteria:
+      - id: flow-completed
+        kind: journal-event-exists
+        event_type: flow.completed
+        score_weight: 0.2
+  - id: assert-binding
+    type: journal-assert
+    action_type: binding.resolved
+    trace_scoped: true
+    payload_equals:
+      - path: step_id
+        value: gate
+      - path: service
+        value: codex-cli
+      - path: service_model_id
+        value: gpt-5.6-terra
+      - path: sources.service.layer
+        value: cli
+    output_criteria:
+      - id: codex-cli-binding-used
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.3
+  - id: assert-gate-completed
+    type: journal-assert
+    action_type: flow.step.completed
+    trace_scoped: true
+    payload_equals:
+      - path: stepId
+        value: gate
+    output_criteria:
+      - id: live-gate-completed
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.1
+  - id: assert-live-cli-call
+    type: journal-assert
+    action_type: llm.call.completed
+    payload_equals:
+      - path: model
+        value: codex-gpt-5.6-terra
+    expect_count: 1
+    output_criteria:
+      - id: codex-cli-returned
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.2
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

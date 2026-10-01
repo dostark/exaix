@@ -1,0 +1,35 @@
+# @schema-version: 1.0.0
+---
+id: binding-live-gate
+name: Live Gate Binding Override
+description: A generate-backed gate whose model is chosen by a run binding.
+version: "1.0.0"
+steps:
+  - id: answer
+    name: Answer the request
+    agent_role: code-analyst
+    execution_mode: declared
+    input:
+      source: request
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: gate
+    name: Judge the answer
+    type: gate
+    agent_role: senior-coder
+    dependsOn: [answer]
+    evaluate:
+      agent_role: senior-coder
+      criteria: [CODE_CORRECTNESS]
+      threshold: 0
+      onFail: continue-with-warning
+    input:
+      source: step
+      stepId: answer
+output:
+  from: answer
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true
