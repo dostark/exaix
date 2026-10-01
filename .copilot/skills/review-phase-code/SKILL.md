@@ -68,6 +68,8 @@ Examples
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
+- ✅ Before reporting a control or validation as inert, trace every layer that can enforce it
+  (resolver, validator, caller) and write a characterization test. Report a gap only when it fails.
 - ✅ Read actual source — never trust the plan's description.
 - ✅ Verify every criterion against real code and test files.
 - ✅ Cross-check each step against README §F (Actions/Notes/Tests/Criteria).
@@ -171,6 +173,9 @@ Per new interface/type/output field:
 1. Trace each consumer end-to-end; a claimed adjacent-service integration must be wired.
 1. Orphaned interface slices: plan says component X reads the field but it never does —
    🔴 if a required integration, 🔵 if forward-compat-only.
+1. For every optional constructor dependency, option field or call parameter, grep the
+   production call-site and confirm it supplies each optional input. A caller that omits one
+   leaves the feature dead even when the symbol is wired and its unit tests pass.
 1. Verify constructor wiring: every new class imported + instantiated by a production
    consumer. Test-only instantiation = production-dead (🔴 if the plan requires it, 🔵 if
    intentional-undocumented). Services inject via DI or register in factory/registry/
@@ -194,7 +199,8 @@ Check every step has all §F sub-sections and §3D doc compliance.
 ### Phase 4 — Scenario Framework Coverage
 
 For flow-affecting steps: verify scenarios exercise the behavior, check assertions, decide
-on new scenarios. Journal/event assertions: a missing required field must FAIL the assertion
+on new scenarios. Ask of each assertion: Would this assertion fail if the feature were removed?
+A replay, guard or validation scenario needs a negative case such as drifted input that must be refused. Journal/event assertions: a missing required field must FAIL the assertion
 (no non-empty container holding `undefined`); require request-trace scoping whenever the scenario claims correlation — a globally found
 event is not evidence the request under test emitted it. Exhaustive-event claims: build an
 exact inventory from production declarations; add a reconciliation table; every row cites a

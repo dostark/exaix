@@ -65,6 +65,9 @@ Validation policy
    0c. Full-suite only when: the change is massive/cross-cutting; it modifies files
        imported by > 3 unrelated packages or shared classes across subsystems
        (e.g. packages/core/src/runtime/); the user requests it; a plan doc requires it.
+   0d. After renaming or removing an exported symbol, or changing its signature, grep every
+       importer, including `tests/` and `scripts/`, and run the repo-wide `deno task check`
+       once before committing. File-scoped runs miss importers outside the step's test set.
 
 RED phase
    1. Restate the step: read its Architecture notes, Success criteria, Planned tests.
@@ -109,6 +112,10 @@ VERIFY phase — value correctness, wiring, consumers, conventions
         happen — verify by hand; if it wrongly flags a genuinely-✅ row, append a
         `(tool false-positive: verified <date> — <reason>)` note).
       Every ledger row must be ✅ before the phase closes (gate G2).
+      Optional dependencies: for every optional constructor dependency, option field or call
+      parameter the step adds or relies on, grep the production call-site and confirm
+      production supplies it. A test that injects the dependency proves nothing about
+      production, and a caller that omits it leaves the feature dead.
   12. Trace every new output field to a consumer. Zero readers = dead data. Wire check:
       PRESENCE ≠ PROPAGATION — a dependency name appearing in a call site is not wiring;
       verify the value actually flows and is read (storage proof ≠ consumption proof), and
@@ -145,6 +152,13 @@ REFACTOR + CI gates
   19. deno fmt <src> <test>   (before commit, not after)
   20. deno task check:magic   → reduce new literals (use the #refactor check:magic pass if many)
   21. (optional) deno task check:complexity if non-trivial (threshold 15)
+  21a. Run `deno task check:duplication` when the step adds integration or scenario test code.
+      The integration category has a small budget. Reuse the shared harnesses under
+      `tests/integration/helpers/` instead of copying setup into each test.
+  21b. Stage the step's files BEFORE running `deno run -A scripts/ci.ts check`. The bare-optional,
+      comment-STE and commit-message gates read only staged files and pass vacuously on an
+      empty index. Write comments as sentences of at most 20 words and no semicolons. A staged
+      file's existing bare `?` parameters also fail the ratchet.
   22. (exception) full-suite only per Validation policy.
 
 Planning doc update
@@ -185,7 +199,10 @@ Commit (plan-step — spans submodule plan doc + parent code)
       whose module IS the plan doc uses the gitlink arrow `→ `exaix-dev-docs`` — never the
       internal `exaix-dev-docs/planning/<phase>.md` path (not a parent staged file — the
       gate rejects it with "not among this commit's changed files").
-  26. Do NOT run a bare `git commit`. Write the structured message (with `plan:`:
+  26. If the user's saved preference forbids a `plan:` field, skip `commit_plan_step.ts`: commit the
+      submodule plan doc first, then the parent (code and pointer) with ordinary structured
+      messages. Keep the `→ path` done-marks. Otherwise:
+      Do NOT run a bare `git commit`. Write the structured message (with `plan:`:
       `exaix-dev-docs/planning/<phase>.md#<N>`) and commit both repos via
       `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`, which runs the
       plan-step gate and commits submodule → parent pointer in sync. Before drafting,
@@ -204,7 +221,8 @@ PHASE-COMPLETION GATE (ONCE, after the last step, before declaring the phase com
   "no open 🔴" are NOT evidence it passed (Phase 137 closed on green tests while four
   ledger rows were still ⏳).
   G1. Integration-surface audit: every symbol the phase added — grep production for a real
-      importer/caller. A runtime-claiming symbol still production-dead is BLOCKING.
+      importer/caller. A runtime-claiming symbol still production-dead is BLOCKING. G1 also
+      requires that the production caller passes each optional dependency the symbol needs.
   G2. Reachability Ledger: every row ✅ or empty. Any ⏳ is BLOCKING — drain it (that is the
       terminal cutover step's job). Also: a step marked ✅ WIRED whose ledger row is still
       ⏳ is a self-contradiction — trust the ⏳, wire it or relabel to ✅ CORE. Confirm each

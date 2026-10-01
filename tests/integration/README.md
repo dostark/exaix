@@ -144,6 +144,12 @@ const found = await env.waitFor(
 | --------------------------------- | --------------------------- |
 | `env.setupPortal({ alias, ... })` | Create test portal with git |
 
+## Shared Harnesses
+
+Flow-step binding tests build their runner, mock provider factory, blueprints and alpha/beta config
+through `helpers/flow_binding_harness.ts`. Reuse it for new binding tests. Copying that setup
+raises the integration duplication budget and fails `deno task check:duplication`.
+
 ## Standard Patterns
 
 ### Request → Plan (in-process, no daemon)

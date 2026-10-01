@@ -22,7 +22,8 @@ Key points
 - Fix in dependency order: type errors → lint → fmt → style → arch → magic → duplication.
 - Targeted, minimal changes — no behavior refactors during cleanup.
 - Validate with exact project commands after every fix batch.
-- Not complete until ALL checks report zero errors/warnings/violations.
+- Not complete until ALL checks report zero errors/warnings/violations, except the
+  advisory `check:agent-prose` unclassified count and `check:god-objects` (advisory).
 - Prefer file-scope flags for faster feedback.
 - Scope > ~20 files: batches of 5–10. Read a batch, record findings, continue.
 - Edition awareness: `deno task` check/lint/fmt already include `exaix-team/` — no edition
@@ -59,9 +60,11 @@ Phase 1 — Baseline
   3. Tally totals per category.
   4. Process one category per batch — never all at once.
 
-  Run `check:phase-references` and `check:agent-prose` as baseline diagnostics. The current
-  repository has existing findings in both, so record their output and treat them as not yet
-  CI gates. Do not report either baseline as clean until its findings are resolved.
+  Run `check:phase-references` and `check:agent-prose` as baseline diagnostics. Fix every
+  `check:phase-references` finding by rewriting the phase mention as a capability description.
+  `check:agent-prose` reports unclassified sources as advisory by the Phase 195 decision, so
+  exit 1 is expected: record the count and do not invent classifications. Both are not yet CI gates and
+  do not block a green pass.
 
   Edition note: `check:style`'s `edition-conditional-outside-composer` rule allows
   `EXAIX_EDITION`/`edition ===` only in: `exaix-team/`, `apps/daemon/`, `apps/exactl/`,
