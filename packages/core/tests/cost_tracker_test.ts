@@ -586,3 +586,139 @@ Deno.test("CostTracker: grouped calls sum persisted request cardinality, not row
     await cleanup();
   }
 });
+
+Deno.test("CostTracker: persists binding service/transport identity and filters by it", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const tracker = new CostTracker(db);
+    await tracker.trackGeneration(PROVIDER_OPENAI, "alpha-model", {
+      promptTokens: 1000,
+      completionTokens: 1000,
+      totalTokens: 2000,
+      costUsd: 0.01,
+    });
+    await tracker.flush();
+
+    const plain = await tracker.queryByCriteria({});
+    assertEquals(plain[0].service, undefined);
+    assertEquals(plain[0].transport, undefined);
+
+    await tracker.trackGeneration(
+      PROVIDER_OPENAI,
+      "alpha-model",
+      {
+        promptTokens: 500,
+        completionTokens: 500,
+        totalTokens: 1000,
+        costUsd: 0.02,
+      },
+      undefined,
+      undefined,
+      { service: "alpha", transport: "cloud" },
+    );
+    await tracker.flush();
+
+    const byService = await tracker.queryByCriteria({ service: "alpha" });
+    assertEquals(byService.length, 1);
+    assertEquals(byService[0].service, "alpha");
+    assertEquals(byService[0].transport, "cloud");
+    assertEquals(byService[0].model, "alpha-model");
+
+    const byTransport = await tracker.queryByCriteria({ transport: "cloud" });
+    assertEquals(byTransport.length, 1);
+    assertEquals(byTransport[0].service, "alpha");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: getDailyBudgetCost sums only the matching priced cloud rows across services", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const tracker = new CostTracker(db);
+    await tracker.trackGeneration(
+      PROVIDER_OPENAI,
+      "a1",
+      { promptTokens: 100, completionTokens: 100, totalTokens: 200, costUsd: 0.01 },
+      undefined,
+      undefined,
+      { service: "alpha", transport: "cloud" },
+    );
+    await tracker.trackGeneration(
+      PROVIDER_OPENAI,
+      "a2",
+      { promptTokens: 100, completionTokens: 100, totalTokens: 200, costUsd: 0.02 },
+      undefined,
+      undefined,
+      { service: "beta", transport: "cloud" },
+    );
+    await tracker.trackGeneration(
+      PROVIDER_OPENAI,
+      "a3",
+      { promptTokens: 100, completionTokens: 100, totalTokens: 200, costUsd: 0.03 },
+      undefined,
+      undefined,
+      { service: "alpha", transport: "local" },
+    );
+    await tracker.trackGeneration(PROVIDER_OPENAI, "a4", {
+      promptTokens: 100,
+      completionTokens: 100,
+      totalTokens: 200,
+    });
+    await tracker.flush();
+
+    const globalCloud = await tracker.getDailyBudgetCost({ transport: "cloud" });
+    assertEquals(globalCloud, 0.03, "global cloud sum includes alpha and beta cloud calls");
+    const alphaCloud = await tracker.getDailyBudgetCost({ transport: "cloud", service: "alpha" });
+    assertEquals(alphaCloud, 0.01, "service filter isolates alpha's cloud spend");
+    const local = await tracker.getDailyBudgetCost({ transport: "local" });
+    assertEquals(local, 0.03, "priced local rows count in a local-only sum but not the cloud cap");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: reserveDailyBudget rejects when a global or per-service cap is exhausted; settle/release release headroom", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const tracker = new CostTracker(db);
+    const header = { provider: PROVIDER_OPENAI, transport: "cloud" as const, globalCapUsd: 12 };
+    const serviceHeader = { ...header };
+
+    const first = await tracker.reserveDailyBudget({ ...header, service: "alpha", estimatedUsd: 4 });
+    assertEquals(first.allowed, true);
+    const second = await tracker.reserveDailyBudget({ ...header, service: "beta", estimatedUsd: 7 });
+    assertEquals(second.allowed, true);
+    const third = await tracker.reserveDailyBudget({ ...header, service: "gamma", estimatedUsd: 2 });
+    assertEquals(third.allowed, false, "global cap 12 covers 4+7; gamma's 2 exceeds it");
+    assertEquals(third.reason, "budget_exceeded");
+
+    const perService = await tracker.reserveDailyBudget({
+      ...serviceHeader,
+      service: "alpha",
+      estimatedUsd: 1,
+      serviceCapUsd: 4.5,
+    });
+    assertEquals(perService.allowed, false, "alpha's own 4 already hits its 4.5 cap with a 1 call");
+    await tracker.releaseDailyBudget(first.reservationId!);
+    const afterRelease = await tracker.reserveDailyBudget({
+      ...serviceHeader,
+      service: "alpha",
+      estimatedUsd: 1,
+      serviceCapUsd: 4.5,
+    });
+    assertEquals(afterRelease.allowed, true);
+    await tracker.settleDailyBudget(afterRelease.reservationId!, 0.8);
+
+    const unknownPrice = await tracker.reserveDailyBudget({
+      ...header,
+      service: "gamma",
+      estimatedUsd: Number.NaN,
+      globalCapUsd: 10,
+    });
+    assertEquals(unknownPrice.allowed, false);
+    assertEquals(unknownPrice.reason, "pricing_unavailable");
+  } finally {
+    await cleanup();
+  }
+});

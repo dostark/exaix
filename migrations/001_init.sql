@@ -152,6 +152,8 @@ CREATE TABLE IF NOT EXISTS provider_costs (
   cache_read_tokens INTEGER,
   cache_creation_tokens INTEGER,
   agent_role TEXT,
+  service TEXT,
+  transport TEXT,
   trace_id TEXT,
   portal TEXT,
   timestamp DATETIME DEFAULT (datetime('now'))

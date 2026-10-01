@@ -84,6 +84,10 @@ export interface IProviderCostRecord {
   /** How this record's cost was priced (provider_costs.cost_source):
    *  undefined means the legacy blended estimate (no reported or computed figure). */
   costSource?: CostSource;
+  /** Binding service identity the generation ran under (Step 8). Absent on legacy rows. */
+  service?: string;
+  /** Binding transport identity (cloud/local) the generation ran under. Absent on legacy rows. */
+  transport?: string;
 }
 
 /** Supported dimensions for cost reports. */
@@ -112,4 +116,8 @@ export interface ICostFilter {
   portal?: string;
   since?: Date;
   model?: string;
+  /** Binding service identity, isolating a per-service query. */
+  service?: string;
+  /** Binding transport (cloud/local), isolating a cloud global sum. */
+  transport?: string;
 }

@@ -8,7 +8,7 @@
  */
 
 import * as DEFAULTS from "@exaix/ai/constants.ts";
-import type { Config, IResolvedBinding } from "@exaix/schemas";
+import type { BindingTransport, Config, IResolvedBinding } from "@exaix/schemas";
 
 import {
   type AiConfig,
@@ -45,6 +45,17 @@ declare const Deno: { env: { get(key: string): string | undefined } };
 
 export type ProviderRegistryBootstrap = () => void;
 
+/** Budget wiring for a bound provider: its service/transport, per-service cloud cap, and
+ *  the run/global budget mode (Step 8). */
+export interface IBindingBudgetOptions {
+  /** Binding service identity, carried into cost accounting and reservations. */
+  bindingIdentity: { service: string; transport: BindingTransport; dailyCostCapUsd?: number };
+  /** The finite global daily cap when the operator binding layer activates it. */
+  globalCapUsd?: number;
+  /** Async predicate used by the boot provider for calls outside a run. */
+  globalBudget?: () => Promise<boolean>;
+}
+
 let externalProviderRegistryBootstrap: ProviderRegistryBootstrap | undefined;
 
 export function setProviderRegistryBootstrap(
@@ -72,6 +83,7 @@ export class ProviderFactory {
     db?: Opt<IDatabaseService, Reason.OptionalDependency>,
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
+    budget?: Opt<IBindingBudgetOptions, Reason.OptionalContext>,
   ): Promise<IModelProvider> {
     const profile = binding.profile;
     if (
@@ -109,7 +121,7 @@ export class ProviderFactory {
       logger,
       config,
     };
-    return await this.createAndWrap(config, options, db, costTracker, true);
+    return await this.createAndWrap(config, options, db, costTracker, true, budget);
   }
 
   /** Construct one qualified binding without consulting global EXA_LLM routing overrides. */
@@ -119,6 +131,7 @@ export class ProviderFactory {
     db?: Opt<IDatabaseService, Reason.OptionalDependency>,
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
+    budget?: Opt<IBindingBudgetOptions, Reason.OptionalContext>,
   ): Promise<IModelProvider> {
     ensureProviderRegistryInitialized();
     const provider = binding.adapter;
@@ -126,7 +139,7 @@ export class ProviderFactory {
       throw new ProviderFactoryError(`Unknown binding adapter: ${provider}`);
     }
     if (provider === ProviderType.OPENAI_CHAT) {
-      return await this.createCompatibleFromBinding(config, binding, db, logger, costTracker);
+      return await this.createCompatibleFromBinding(config, binding, db, logger, costTracker, budget);
     }
     if (binding.profile || binding.endpoint || binding.allow_insecure_loopback) {
       throw new ProviderFactoryError(`Adapter ${provider} does not accept a compatible profile or endpoint`);
@@ -141,7 +154,7 @@ export class ProviderFactory {
       logger,
       config,
     };
-    return await this.createAndWrap(config, options, db, costTracker, true);
+    return await this.createAndWrap(config, options, db, costTracker, true, budget);
   }
 
   /** Creates an LLM provider via a fallback chain: tries primary, then fallbacks, with optional health check and retry logic. */
@@ -464,6 +477,7 @@ export class ProviderFactory {
     _db?: Opt<IDatabaseService, Reason.OptionalDependency>,
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
     eager = false,
+    budget?: Opt<IBindingBudgetOptions, Reason.OptionalContext>,
   ): Promise<IModelProvider> {
     if (options.captureFixturesDir && options.provider === ProviderType.OPENAI_CHAT) {
       throw new ProviderFactoryError(
@@ -501,6 +515,13 @@ export class ProviderFactory {
         maxCostPerDay: limits?.max_cost_per_day ?? Infinity,
         costPer1kTokens: limits?.cost_per_1k_tokens ?? 0,
         costTracker: tracker,
+        ...(budget
+          ? {
+            bindingIdentity: budget.bindingIdentity,
+            globalCapUsd: budget.globalCapUsd,
+            globalBudget: budget.globalBudget,
+          }
+          : {}),
       });
     }
 

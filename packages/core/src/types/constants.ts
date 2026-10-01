@@ -458,6 +458,25 @@ export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
 /** CLI table column label for the resolved model binding. */
 export const MODEL_COLUMN_LABEL = "Model";
 
+/** Binding transport labels (Step 8), canonicalized for shared cost accounting. */
+export const BINDING_TRANSPORT_CLOUD = "cloud" as const;
+export const BINDING_TRANSPORT_LOCAL = "local" as const;
+/** The cost budget denial when pricing for a cloud call is unknown under a finite cap. */
+export const COST_BUDGET_REASON_PRICING_UNAVAILABLE = "pricing_unavailable" as const;
+/** The cost budget denial when a global or per-service cap is exhausted. */
+export const COST_BUDGET_REASON_EXCEEDED = "budget_exceeded" as const;
+
+/** Bound-provider pool capacity: the number of distinct binding wrappers kept alive. */
+export const BINDING_PROVIDER_POOL_MAX_SIZE: number = configurable({
+  key: "bindings.provider_pool_max_size",
+  default: 64,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum pooled bound-provider wrappers before LRU eviction",
+  min: 4,
+  max: 1024,
+  swap: SwapClass.RESTART,
+});
+
 // Agent Validation Limits
 export const AGENT_MAX_ITERATIONS_MIN = 1;
 export const AGENT_MAX_ITERATIONS_MAX = 100;

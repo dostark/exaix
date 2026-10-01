@@ -53,6 +53,7 @@ import {
   ModelResolver,
   ProviderFactory,
   ProviderRegistry,
+  RateLimitedProvider,
   RunBindingsStore,
 } from "@exaix/ai";
 import { MockLLMProvider, unwrapModelProvider } from "@exaix/ai/providers";
@@ -476,7 +477,7 @@ if (import.meta.main) {
     const costTracker = new CostTracker(dbService, config, logger);
     // Pass the logger so provider-level diagnostics (token usage at info, outbound request
     // debug dumps) reach the journal — without it every provider call is a logging black hole.
-    const llmProvider = await ProviderFactory.createByName(
+    let llmProvider = await ProviderFactory.createByName(
       config,
       defaultModelName,
       undefined,
@@ -1014,7 +1015,25 @@ if (import.meta.main) {
       probe: createProductionBindingEnvProbe(Deno.env, SecureCredentialStore),
       runStore: new RunBindingsStore(config),
       startNetGrant: await computeStartNetGrant(config),
+      maxCostPerDay: config.rate_limiting?.max_cost_per_day !== undefined
+        ? config.rate_limiting.max_cost_per_day
+        : undefined,
     });
+
+    // Counts the boot provider against the global daily cap while operator
+    // binding layers are active. The predicate reads config lazily.
+    if (config.rate_limiting?.enabled && config.rate_limiting?.max_cost_per_day !== undefined) {
+      const bootLimits = config.rate_limiting;
+      llmProvider = new RateLimitedProvider(llmProvider, {
+        maxCallsPerMinute: bootLimits.max_calls_per_minute,
+        maxTokensPerHour: bootLimits.max_tokens_per_hour,
+        maxCostPerDay: bootLimits.max_cost_per_day,
+        costPer1kTokens: bootLimits.cost_per_1k_tokens,
+        costTracker,
+        globalCapUsd: bootLimits.max_cost_per_day,
+        globalBudget: () => Promise.resolve(bindingService.isActive()),
+      });
+    }
 
     // Prune abandoned per-run binding files and lockfiles at start and daily.
     const runBindingsStore = new RunBindingsStore(config);

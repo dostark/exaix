@@ -161,6 +161,10 @@ export interface IBindingRunSnapshot {
    *  Step 7 records it in the lock. Here it is the in-memory run-level flag. */
   envIgnored: boolean;
   lock?: { path: string; sha256: string };
+  /** True when an operator binding layer exists for this run (config [bindings], daemon
+   *  overlays or per-run overlays/binds). Every bound provider in the run uses this mode
+   *  for its cost admission (Step 8). */
+  globalBudgetMode?: boolean;
 }
 
 /** Gate-judge binding context for a flow gate evaluation.

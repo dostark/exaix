@@ -18,6 +18,9 @@ import {
   type IProviderCostRecord,
 } from "../types/mod.ts";
 import {
+  BINDING_TRANSPORT_CLOUD,
+  COST_BUDGET_REASON_EXCEEDED,
+  COST_BUDGET_REASON_PRICING_UNAVAILABLE,
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
   COST_RATE_LLAMACPP,
@@ -35,6 +38,12 @@ import { ProviderType } from "../../mod.ts";
 import type { IEventLogger } from "../logger/mod.ts";
 import { DomainEventType, type IModelCostDivergencePayload } from "../events/mod.ts";
 import type { LogMetadata, Opt, Reason } from "../types/mod.ts";
+import type {
+  CostBudgetDenialReason,
+  ICostBudgetAllowance,
+  ICostBudgetReservation,
+  ICostDailyFilter,
+} from "../types/mod.ts";
 
 /** USD-per-Mtok → USD-per-token divisor (pricing is quoted per 1M tokens). */
 const TOKENS_PER_MTOK = 1_000_000;
@@ -72,6 +81,15 @@ export class CostTracker implements ICostTracker {
   private pendingRecords: IPendingCostRecord[] = [];
   private batchTimeout: ReturnType<typeof setTimeout> | null = null;
   private pricingLookup?: IModelPricingLookup;
+  /** Active reservations by id, counted against the caps before a new reserve. */
+  private readonly reservations = new Map<string, {
+    service: string;
+    transport: string;
+    estimatedUsd: number;
+    serviceCapUsd?: number;
+    globalCapUsd?: number;
+  }>();
+  private reservationQueue: Promise<void> = Promise.resolve();
 
   constructor(
     private db: IDatabaseService,
@@ -114,6 +132,9 @@ export class CostTracker implements ICostTracker {
       costSource?: CostSource;
       cacheReadTokens?: number;
       cacheCreationTokens?: number;
+      /** Binding service/transport identity of the generation (Step 8). */
+      service?: string;
+      transport?: string;
       /** Pre-resolved cost/source (avoids recomputing + double divergence emission). */
       resolved?: { cost: number; source: CostSource | null };
     } = {},
@@ -133,6 +154,8 @@ export class CostTracker implements ICostTracker {
       timestamp: new Date(),
       cacheReadTokens: options.cacheReadTokens,
       cacheCreationTokens: options.cacheCreationTokens,
+      service: options.service,
+      transport: options.transport,
     };
 
     this.pendingRecords.push(record);
@@ -165,6 +188,7 @@ export class CostTracker implements ICostTracker {
     },
     traceId?: Opt<string, Reason.TraceAbsent>,
     portal?: Opt<string, Reason.OptionalContext>,
+    identity?: Opt<{ service?: string; transport?: string }, Reason.OptionalContext>,
   ): Promise<number> {
     const priced = await this.resolveCost(provider, usage.totalTokens, {
       model,
@@ -182,6 +206,8 @@ export class CostTracker implements ICostTracker {
       completionTokens: usage.completionTokens,
       cacheReadTokens: usage.cacheReadTokens,
       cacheCreationTokens: usage.cacheCreationTokens,
+      service: identity?.service,
+      transport: identity?.transport,
       resolved: priced, // reuse the resolved cost — do not recompute (avoids double divergence)
     });
     return priced.cost;
@@ -230,6 +256,7 @@ export class CostTracker implements ICostTracker {
     model: string,
     usage: { promptTokens: number; completionTokens: number; totalTokens: number },
     traceId?: Opt<string, Reason.TraceAbsent>,
+    identity?: Opt<{ service?: string; transport?: string }, Reason.OptionalContext>,
   ): Promise<void> {
     const payload: LogMetadata = {
       provider,
@@ -238,6 +265,8 @@ export class CostTracker implements ICostTracker {
       completion_tokens: usage.completionTokens,
       total_tokens: usage.totalTokens,
       cost_status: "unknown",
+      service: identity?.service ?? null,
+      transport: identity?.transport ?? null,
     };
     if (this.eventLogger) {
       await this.eventLogger.log({
@@ -344,6 +373,8 @@ export class CostTracker implements ICostTracker {
       costSource: "provider_reported",
       cacheReadTokens: record.cacheReadTokens,
       cacheCreationTokens: record.cacheCreationTokens,
+      service: record.service,
+      transport: record.transport,
     });
   }
 
@@ -363,6 +394,14 @@ export class CostTracker implements ICostTracker {
       whereParts.push("model = ?");
       params.push(filter.model);
     }
+    if (filter.service) {
+      whereParts.push("service = ?");
+      params.push(filter.service);
+    }
+    if (filter.transport) {
+      whereParts.push("transport = ?");
+      params.push(filter.transport);
+    }
     if (filter.since) {
       whereParts.push("timestamp >= ?");
       params.push(filter.since.toISOString());
@@ -373,16 +412,19 @@ export class CostTracker implements ICostTracker {
       SELECT id, provider, model, requests, tokens, prompt_tokens as promptTokens,
              completion_tokens as completionTokens, estimated_cost_usd as estimatedCostUsd,
              trace_id as traceId, portal, agent_role as agentRole, timestamp, cost_source as costSource,
-             cache_read_tokens as cacheReadTokens, cache_creation_tokens as cacheCreationTokens
+             cache_read_tokens as cacheReadTokens, cache_creation_tokens as cacheCreationTokens,
+             service, transport
       FROM (
         SELECT id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd,
-               trace_id, portal, agent_role, timestamp, cost_source, cache_read_tokens, cache_creation_tokens
+               trace_id, portal, agent_role, timestamp, cost_source, cache_read_tokens, cache_creation_tokens,
+               service, transport
         FROM provider_costs
         UNION ALL
         SELECT 'unpriced-' || id, json_extract(payload, '$.provider'), json_extract(payload, '$.model'), 1,
                json_extract(payload, '$.total_tokens'), json_extract(payload, '$.prompt_tokens'),
                json_extract(payload, '$.completion_tokens'), NULL, trace_id, json_extract(payload, '$.portal'),
-               agent_role, timestamp, NULL, json_extract(payload, '$.cache_read_tokens'), json_extract(payload, '$.cache_creation_tokens')
+               agent_role, timestamp, NULL, json_extract(payload, '$.cache_read_tokens'), json_extract(payload, '$.cache_creation_tokens'),
+               json_extract(payload, '$.service'), json_extract(payload, '$.transport')
         FROM activity
         WHERE action_type = '${DomainEventType.LlmUsageRecorded}' AND json_extract(payload, '$.cost_status') = 'unknown'
       )
@@ -406,6 +448,8 @@ export class CostTracker implements ICostTracker {
       costSource: CostSource | null;
       cacheReadTokens: number | null;
       cacheCreationTokens: number | null;
+      service: string | null;
+      transport: string | null;
     }>(query, params);
 
     const results = rows.map((row) => ({
@@ -417,6 +461,8 @@ export class CostTracker implements ICostTracker {
       costSource: row.costSource ?? undefined,
       cacheReadTokens: row.cacheReadTokens ?? undefined,
       cacheCreationTokens: row.cacheCreationTokens ?? undefined,
+      service: row.service ?? undefined,
+      transport: row.transport ?? undefined,
     }));
 
     await this.eventLogger?.info(DomainEventType.CostQueriedByCriteria, filter.traceId ?? filter.model ?? "all", {
@@ -507,6 +553,155 @@ export class CostTracker implements ICostTracker {
     return totalCost;
   }
 
+  /** Sum a day's priced spend under a typed binding filter. Filters isolate the cloud global
+   *  cap, a per-service cap, or local usage. Local rows never consume the cloud global sum. */
+  async getDailyBudgetCost(filter: ICostDailyFilter): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const whereParts = ["timestamp >= ?", "timestamp < ?", "estimated_cost_usd IS NOT NULL"];
+    const params: SqliteParam[] = [today.toISOString(), tomorrow.toISOString()];
+    if (filter.service) {
+      whereParts.push("service = ?");
+      params.push(filter.service);
+    }
+    if (filter.transport) {
+      whereParts.push("transport = ?");
+      params.push(filter.transport);
+    }
+
+    const query = `
+      SELECT COALESCE(SUM(estimated_cost_usd), 0) as total_cost
+      FROM provider_costs
+      WHERE ${whereParts.join(" AND ")}
+    `;
+    const result = await this.db.preparedGet<{ total_cost: number }>(query, params);
+    const persisted = result?.total_cost ?? 0;
+    // Include batched, not-yet-written priced records carrying the same filter.
+    let pendingTotal = 0;
+    for (const record of this.pendingRecords) {
+      if (record.estimatedCostUsd === null) continue;
+      if (filter.service && record.service !== filter.service) continue;
+      if (filter.transport && record.transport !== filter.transport) continue;
+      pendingTotal += record.estimatedCostUsd;
+    }
+    const total = persisted + pendingTotal;
+    await this.eventLogger?.info(DomainEventType.CostDailyCostQueried, filter.service ?? filter.transport ?? "all", {
+      service: filter.service ?? null,
+      transport: filter.transport ?? null,
+      totalCost: total,
+    });
+    return total;
+  }
+
+  /** Atomically count persisted spend plus active reservations against the finite caps and
+   *  reserve an upper bound. Serialized through a promise chain so parallel calls in one
+   *  process cannot each pass against stale totals. */
+  async reserveDailyBudget(params: ICostBudgetReservation): Promise<ICostBudgetAllowance> {
+    return await this.enqueueReservation(async () => {
+      // Persist any batched, not-yet-written spend so the caps count it now.
+      await this.flush();
+      if (
+        params.transport === BINDING_TRANSPORT_CLOUD && params.globalCapUsd !== undefined &&
+        !Number.isFinite(params.estimatedUsd)
+      ) {
+        return this.reject(COST_BUDGET_REASON_PRICING_UNAVAILABLE);
+      }
+      const persistedCloud = await this.getDailyBudgetCost({ transport: BINDING_TRANSPORT_CLOUD });
+      const reservedCloud = this.reservationSum(undefined, BINDING_TRANSPORT_CLOUD);
+      if (
+        params.globalCapUsd !== undefined &&
+        persistedCloud + reservedCloud + params.estimatedUsd > params.globalCapUsd
+      ) {
+        return this.reject(COST_BUDGET_REASON_EXCEEDED);
+      }
+      if (params.serviceCapUsd !== undefined) {
+        const persistedService = await this.getDailyBudgetCost({
+          service: params.service,
+          transport: BINDING_TRANSPORT_CLOUD,
+        });
+        const reservedService = this.reservationSum(params.service, BINDING_TRANSPORT_CLOUD);
+        if (persistedService + reservedService + params.estimatedUsd > params.serviceCapUsd) {
+          return this.reject(COST_BUDGET_REASON_EXCEEDED);
+        }
+      }
+      const reservationId = crypto.randomUUID();
+      this.reservations.set(reservationId, {
+        service: params.service,
+        transport: params.transport,
+        estimatedUsd: params.estimatedUsd,
+        serviceCapUsd: params.serviceCapUsd,
+        globalCapUsd: params.globalCapUsd,
+      });
+      await this.eventLogger?.info(DomainEventType.CostBudgetReservation, reservationId, {
+        service: params.service,
+        transport: params.transport,
+        estimatedUsd: params.estimatedUsd,
+        allowed: true,
+      });
+      return { allowed: true, reservationId };
+    });
+  }
+
+  async settleDailyBudget(reservationId: string, actualUsd: number): Promise<void> {
+    await this.enqueueReservation(async () => {
+      const reservation = this.reservations.get(reservationId);
+      if (!reservation) return;
+      this.reservations.delete(reservationId);
+      // An actual cost above the estimate is an accounting anomaly. Later admissions
+      // still count the true spend through the provider_costs sum.
+      if (actualUsd > reservation.estimatedUsd) {
+        const excess = actualUsd - reservation.estimatedUsd;
+        if (this.eventLogger) {
+          await this.eventLogger.info(
+            DomainEventType.ModelCostDivergence,
+            reservation.service,
+            { anomaly: true, exceededBy: excess },
+          );
+        }
+      }
+      await this.eventLogger?.info(DomainEventType.CostBudgetReservation, reservationId, {
+        service: reservation.service,
+        transport: reservation.transport,
+        estimatedUsd: reservation.estimatedUsd,
+        settled: true,
+      });
+    });
+  }
+
+  async releaseDailyBudget(reservationId: string): Promise<void> {
+    await this.enqueueReservation(() => {
+      this.reservations.delete(reservationId);
+      return Promise.resolve();
+    });
+    await this.eventLogger?.info(DomainEventType.CostBudgetReservation, reservationId, {
+      released: true,
+    });
+  }
+
+  /** Serialize reservations: count-then-reserve must be atomic against parallel calls. */
+  private enqueueReservation<T>(operation: () => Promise<T>): Promise<T> {
+    const run = this.reservationQueue.then(operation);
+    this.reservationQueue = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private reservationSum(service: Opt<string, Reason.QueryFilter>, transport: string): number {
+    let total = 0;
+    for (const reservation of this.reservations.values()) {
+      if (reservation.transport !== transport) continue;
+      if (service && reservation.service !== service) continue;
+      total += reservation.estimatedUsd;
+    }
+    return total;
+  }
+
+  private reject(reason: CostBudgetDenialReason): ICostBudgetAllowance {
+    return { allowed: false, reason };
+  }
+
   async getCostSummary(
     startDate: Date,
     endDate: Date,
@@ -570,9 +765,9 @@ export class CostTracker implements ICostTracker {
       return;
     }
 
-    const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+    const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
     const query = `
-      INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp, cache_read_tokens, cache_creation_tokens)
+      INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp, cache_read_tokens, cache_creation_tokens, service, transport)
       VALUES ${placeholders}
     `;
 
@@ -593,6 +788,8 @@ export class CostTracker implements ICostTracker {
         record.timestamp.toISOString(),
         record.cacheReadTokens ?? null,
         record.cacheCreationTokens ?? null,
+        record.service ?? null,
+        record.transport ?? null,
       );
     }
 

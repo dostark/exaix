@@ -174,12 +174,15 @@ export const PROVIDER_COSTS_TABLE_SQL = `
     cache_read_tokens INTEGER,
     cache_creation_tokens INTEGER,
     agent_role TEXT,
+    service TEXT,
+    transport TEXT,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);
   CREATE INDEX IF NOT EXISTS idx_provider_costs_timestamp ON provider_costs(timestamp);
   CREATE INDEX IF NOT EXISTS idx_provider_costs_trace ON provider_costs(trace_id);
   CREATE INDEX IF NOT EXISTS idx_provider_costs_portal ON provider_costs(portal);
+  CREATE INDEX IF NOT EXISTS idx_provider_costs_service ON provider_costs(service);
 `;
 
 const ARTIFACT_STATUS_CHECK_VALUES = REVIEW_STATUS_VALUES.map((status) => `'${status}'`).join(", ");

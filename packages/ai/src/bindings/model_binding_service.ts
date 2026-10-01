@@ -13,6 +13,7 @@
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   BINDING_OVERLAYS_DIR,
+  BINDING_PROVIDER_POOL_MAX_SIZE,
   BINDINGS_DIR,
   FlowStepType,
   type ICostTracker,
@@ -87,6 +88,11 @@ export interface IModelBindingServiceDeps {
 /** @visible Resolves all flow choices before one step can call a provider. */
 export class ModelBindingService {
   private readonly providers = new Map<string, Promise<IModelProvider>>();
+  /** Recency tick per pooled provider key (LRU eviction order). */
+  private readonly lastUsed = new Map<string, number>();
+  /** Run snapshots referencing pooled providers. These are never evicted. */
+  private readonly activeRuns = new Set<string>();
+  private tick = 0;
   private readonly deps: IModelBindingServiceDeps;
   private readonly logger: IEventLogger;
 
@@ -152,6 +158,9 @@ export class ModelBindingService {
     const config = structuredClone(this.deps.configSource.get());
     const runFile = await this.claimRunFile(flow, run);
     const layers = await loadBindingLayers(config, runFile);
+    // A new run completes the previous snapshot. Its providers may now be
+    // evicted when the pool outgrows its cap.
+    this.activeRuns.clear();
     const probe = await this.envProbe(layers);
     const envIgnored = layers.operatorLayersPresent &&
       (Deno.env.get("EXA_LLM_PROVIDER") !== undefined || Deno.env.get("EXA_LLM_MODEL") !== undefined);
@@ -174,7 +183,8 @@ export class ModelBindingService {
         }
         if (outcome.binding.adapter !== ADAPTER_CLI_DELEGATE) {
           try {
-            await this.prepareProvider(config, outcome.binding);
+            const key = await this.prepareProvider(config, outcome.binding, layers, layers.operatorLayersPresent);
+            this.activeRuns.add(key);
           } catch {
             issues.push({
               code: "interface_unsupported",
@@ -196,7 +206,16 @@ export class ModelBindingService {
       throw new BindingIncompatibleError(issues);
     }
     const lock = await this.writeLock(flow, run.traceId, layers, bindings);
-    return { traceId: run.traceId, flowId: flow.id, layers, bindings, issues, envIgnored, lock };
+    return {
+      traceId: run.traceId,
+      flowId: flow.id,
+      layers,
+      bindings,
+      issues,
+      envIgnored,
+      lock,
+      globalBudgetMode: layers.operatorLayersPresent,
+    };
   }
 
   /** Replay gate: when a lock file is supplied, every resolved binding must match it. */
@@ -435,8 +454,10 @@ export class ModelBindingService {
   private async prepareProvider(
     config: Config,
     binding: Extract<BindingOutcome, { kind: "bound" }>["binding"],
-  ): Promise<IModelProvider> {
-    const key = binding.fingerprint;
+    layers: IBindingLayers,
+    globalBudgetMode: boolean,
+  ): Promise<string> {
+    const key = this.providerKey(layers, binding, globalBudgetMode);
     let provider = this.providers.get(key);
     if (!provider) {
       provider = ProviderFactory.createFromBinding(
@@ -445,15 +466,58 @@ export class ModelBindingService {
         this.deps.db,
         this.deps.logger,
         this.deps.costTracker,
+        {
+          bindingIdentity: {
+            service: binding.service,
+            transport: binding.transport,
+            ...(layers.catalog.services[binding.service]?.daily_cost_cap_usd !== undefined
+              ? { dailyCostCapUsd: layers.catalog.services[binding.service].daily_cost_cap_usd }
+              : {}),
+          },
+          ...(globalBudgetMode && this.deps.maxCostPerDay !== undefined
+            ? { globalCapUsd: this.deps.maxCostPerDay }
+            : {}),
+        },
       );
       this.providers.set(key, provider);
+      this.lastUsed.set(key, ++this.tick);
+      this.evictIfNeeded();
     }
     try {
-      return await provider;
+      this.lastUsed.set(key, ++this.tick);
+      await provider;
+      return key;
     } catch (error) {
       this.providers.delete(key);
+      this.lastUsed.delete(key);
       throw error;
     }
+  }
+
+  /** Bounded LRU eviction: remove the least-recently-used pools once capacity is exceeded,
+   *  skipping any provider referenced by an active run. Never disposes an in-use wrapper. */
+  private evictIfNeeded(): void {
+    const max = BINDING_PROVIDER_POOL_MAX_SIZE;
+    if (this.providers.size <= max) return;
+    const candidates = [...this.lastUsed.entries()]
+      .filter(([key]) => !this.activeRuns.has(key))
+      .sort((a, b) => a[1] - b[1]);
+    for (const [key] of candidates) {
+      if (this.providers.size <= max) break;
+      this.providers.delete(key);
+      this.lastUsed.delete(key);
+    }
+  }
+
+  /** The pool key carries the service cap and budget mode. A wrapper from an earlier mode
+   *  is never reused. The key never includes secrets. */
+  private providerKey(
+    layers: IBindingLayers,
+    binding: Extract<BindingOutcome, { kind: "bound" }>["binding"],
+    globalBudgetMode: boolean,
+  ): string {
+    const serviceCap = layers.catalog.services[binding.service]?.daily_cost_cap_usd;
+    return `${binding.fingerprint}|cap=${serviceCap ?? ""}|mode=${globalBudgetMode ? "global" : "per-provider"}`;
   }
 
   /** Acquire the already-preflighted target and record this step attempt.
@@ -475,7 +539,8 @@ export class ModelBindingService {
       await this.logResolved(ref, snapshot, binding);
       return { kind: BOUND_TARGET_KIND_SESSION_TOOL, binding, tool: binding.tool };
     }
-    const provider = await this.providers.get(binding.fingerprint);
+    const key = this.providerKey(snapshot.layers, binding, snapshot.globalBudgetMode ?? false);
+    const provider = await this.providers.get(key);
     if (!provider) {
       throw new BindingIncompatibleError([{
         code: "unknown_service",
@@ -484,6 +549,8 @@ export class ModelBindingService {
         detail: "Preflighted provider is unavailable",
       }]);
     }
+    this.lastUsed.set(key, ++this.tick);
+    this.activeRuns.add(key);
     await this.logResolved(ref, snapshot, binding);
     return { kind: BOUND_TARGET_KIND_PROVIDER, binding, provider };
   }

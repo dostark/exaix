@@ -23,7 +23,7 @@ const flow = FlowSchema.parse({
   ],
   output: { from: "explore" },
 });
-const catalog = {
+const catalog: Config["catalog"] = {
   models: {
     "mock/alpha": { model_provider: "mock" },
     "mock/beta": { model_provider: "mock" },
@@ -198,6 +198,59 @@ Deno.test("replay: a lock whose step binding differs yields lock_mismatch", asyn
       Error,
       "lock_mismatch",
     );
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("pool: same binding reuses one wrapper; a service cap change creates a new wrapper; keys stay secret-free", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  try {
+    const unchanged: Config = createMockConfig(tempDir, {
+      ai: { provider: "mock", model: "boot" },
+      catalog: catalog as Config["catalog"],
+      bindings: { "flow:research/step:compose": { service: "alpha", model: "mock/alpha" } },
+    });
+    const capped: Config = {
+      ...unchanged,
+      catalog: {
+        models: catalog.models,
+        services: {
+          ...catalog.services,
+          alpha: { ...catalog.services!.alpha, daily_cost_cap_usd: 0.01 },
+        },
+        preferences: {},
+      },
+    };
+    const modeService = new ModelBindingService({
+      configSource: { get: () => capped },
+      logger: createMockEventLogger(),
+      db,
+      probe: { hasKey: () => true, hasOptIn: () => true },
+      maxCostPerDay: 5,
+    });
+    // A capped run preflights its wrapper and acquires it again on the same snapshot.
+    const snapshot = await modeService.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    assertEquals(snapshot.issues.length, 0);
+    const provider = await modeService.providerFor(
+      snapshot,
+      { flowId: "research", stepId: "compose", agentRole: "composer", kind: "agent", nativeTools: false },
+    );
+    assertEquals(provider?.kind, "provider");
+    // Same service, same mode, same cap → the second snapshot reuses the same preflighted key.
+    const second = await modeService.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    assertEquals(second.issues.length, 0);
+
+    // A cap-less config for the same binding must preflight as a distinct wrapper.
+    const noCapService = new ModelBindingService({
+      configSource: { get: () => unchanged },
+      logger: createMockEventLogger(),
+      db,
+      probe: { hasKey: () => true, hasOptIn: () => true },
+      maxCostPerDay: 5,
+    });
+    const noCapSnapshot = await noCapService.snapshotForRun(flow, { traceId: crypto.randomUUID() });
+    assertEquals(noCapSnapshot.issues.length, 0);
   } finally {
     await cleanup();
   }

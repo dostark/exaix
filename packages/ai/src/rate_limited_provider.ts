@@ -8,10 +8,14 @@
 
 import type { IModelOptions, IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
-import type { ICostTracker, Opt, Reason } from "@exaix/core/types";
+import type { ICostBudgetAllowance, ICostTracker, Opt, Reason } from "@exaix/core/types";
+import type { BindingTransport } from "@exaix/schemas";
 import { ProviderRegistry } from "./provider_registry.ts";
 import { ProviderCallPolicyError } from "./errors.ts";
 import {
+  BINDING_TRANSPORT_CLOUD,
+  BINDING_TRANSPORT_LOCAL,
+  COST_BUDGET_REASON_PRICING_UNAVAILABLE,
   OPENAI_COMPATIBLE_LOCAL_PROFILE,
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,
@@ -34,6 +38,14 @@ export interface IRateLimitConfig {
   costPer1kTokens: number;
   /** Optional cost tracker for persistent cost tracking */
   costTracker?: ICostTracker;
+  /** Binding identity (service/transport) of a bound provider, enabling the global and
+   *  per-service cloud caps below. Absent keeps the legacy per-provider cap path. */
+  bindingIdentity?: { service: string; transport: BindingTransport; dailyCostCapUsd?: number };
+  /** Async predicate deciding global admission for calls outside a run (the boot provider).
+   *  Absent means per-provider cap, as today. */
+  globalBudget?: () => Promise<boolean>;
+  /** The finite global daily cap, applied only while `globalBudget` resolves true. */
+  globalCapUsd?: number;
 }
 
 /**
@@ -91,7 +103,9 @@ export class RateLimitedProvider implements IModelProvider {
     }
 
     const { estimatedTokens, estimatedCost, finiteRemoteBudget } = await this.estimateAdmission(prompt, options);
-    await this.checkAdmission(estimatedTokens, estimatedCost);
+    const bindingMode = await this.resolveBudgetMode(finiteRemoteBudget);
+    const reservation = await this.acquireReservation(bindingMode, estimatedCost, options?.traceId);
+    await this.checkAdmission(estimatedTokens, estimatedCost, bindingMode.enabled);
 
     // Track before call (pessimistic)
     this.callsThisMinute++;
@@ -103,7 +117,7 @@ export class RateLimitedProvider implements IModelProvider {
       const result = await this.inner.generate(prompt, options);
       generated = this.compatible;
       if (this.compatible) this.costThisDay += (result.cost_usd ?? 0) - estimatedCost;
-      await this.persistUsage(result, options?.traceId);
+      await this.persistUsage(result, options?.traceId, bindingMode);
 
       if (this.compatible && !this.compatibleLocal && result.costStatus === "unknown") {
         this.hasUnpricedRemoteUsage = true;
@@ -111,6 +125,7 @@ export class RateLimitedProvider implements IModelProvider {
           throw new ProviderCallPolicyError("pricing_unavailable", this.callCapabilities?.profile ?? this.id);
         }
       }
+      if (reservation) await this.settleReservation(reservation, result.cost_usd);
       return result;
     } catch (error) {
       // Rollback tracking on error
@@ -119,8 +134,97 @@ export class RateLimitedProvider implements IModelProvider {
         this.tokensThisHour -= estimatedTokens;
         this.costThisDay -= estimatedCost;
       }
+      if (reservation) await this.releaseReservation(reservation);
       throw error;
     }
+  }
+
+  /** Reserve an upper bound for a cloud call when the budget mode is active and the tracker
+   *  supports reservations. Otherwise no reservation applies. */
+  private async acquireReservation(
+    bindingMode: {
+      enabled: boolean;
+      service: string;
+      transport: string;
+      globalCapUsd?: number;
+      serviceCapUsd?: number;
+    },
+    estimatedCost: number,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<ICostBudgetAllowance | undefined> {
+    if (!bindingMode.enabled || !this.limits.costTracker?.reserveDailyBudget) return undefined;
+    const reservation = await this.limits.costTracker.reserveDailyBudget({
+      service: bindingMode.service,
+      transport: bindingMode.transport as BindingTransport,
+      provider: this.extractProviderName(this.inner.id),
+      estimatedUsd: bindingMode.transport === BINDING_TRANSPORT_LOCAL ? 0 : estimatedCost,
+      globalCapUsd: bindingMode.globalCapUsd,
+      serviceCapUsd: bindingMode.serviceCapUsd,
+      traceId,
+    });
+    if (!reservation.allowed) {
+      if (reservation.reason === COST_BUDGET_REASON_PRICING_UNAVAILABLE) {
+        throw new ProviderCallPolicyError(
+          COST_BUDGET_REASON_PRICING_UNAVAILABLE,
+          this.callCapabilities?.profile ?? this.id,
+        );
+      }
+      throw new RateLimiterError(
+        `Global or service cost budget exceeded for ${this.limits.bindingIdentity?.service ?? this.id}`,
+      );
+    }
+    return reservation;
+  }
+
+  /** Decide whether this call runs under the global or service budget mode.
+   *  A bound provider always uses the mode. The boot provider uses it only while its async
+   *  globalBudget predicate resolves true. Local transport carries its own service cap and
+   *  never consumes a cloud global cap. */
+  private async resolveBudgetMode(finiteRemoteBudget: boolean): Promise<{
+    enabled: boolean;
+    service: string;
+    transport: string;
+    globalCapUsd?: number;
+    serviceCapUsd?: number;
+  }> {
+    const identity = this.limits.bindingIdentity;
+    if (identity) {
+      return {
+        enabled: true,
+        service: identity.service,
+        transport: identity.transport,
+        globalCapUsd: this.limits.globalCapUsd,
+        serviceCapUsd: identity.transport === BINDING_TRANSPORT_CLOUD ? identity.dailyCostCapUsd : undefined,
+      };
+    }
+    if (this.limits.globalBudget) {
+      const active = await this.limits.globalBudget();
+      if (active) {
+        return {
+          enabled: true,
+          service: this.extractProviderName(this.inner.id),
+          transport: finiteRemoteBudget ? BINDING_TRANSPORT_CLOUD : BINDING_TRANSPORT_LOCAL,
+          globalCapUsd: this.limits.globalCapUsd,
+        };
+      }
+    }
+    return { enabled: false, service: "", transport: BINDING_TRANSPORT_LOCAL };
+  }
+
+  private async settleReservation(
+    reservation: ICostBudgetAllowance,
+    actualUsd: Opt<number, Reason.OptionalInput>,
+  ): Promise<void> {
+    const tracker = this.limits.costTracker;
+    if (!tracker?.settleDailyBudget) return;
+    const actual = Number.isFinite(actualUsd) && actualUsd! >= 0 ? actualUsd! : 0;
+    await tracker.settleDailyBudget(reservation.reservationId!, actual);
+  }
+
+  private async releaseReservation(reservation: ICostBudgetAllowance): Promise<void> {
+    const tracker = this.limits.costTracker;
+    if (!tracker?.releaseDailyBudget) return;
+    await tracker.releaseDailyBudget(reservation.reservationId!);
   }
 
   private async estimateAdmission(
@@ -146,7 +250,11 @@ export class RateLimitedProvider implements IModelProvider {
     return { estimatedTokens, estimatedCost, finiteRemoteBudget };
   }
 
-  private async checkAdmission(estimatedTokens: number, estimatedCost: number): Promise<void> {
+  private async checkAdmission(
+    estimatedTokens: number,
+    estimatedCost: number,
+    bindingModeActive: boolean,
+  ): Promise<void> {
     if (this.tokensThisHour + estimatedTokens > this.limits.maxTokensPerHour) {
       throw new RateLimiterError(`Rate limit exceeded: ${this.limits.maxTokensPerHour} tokens per hour`);
     }
@@ -157,7 +265,9 @@ export class RateLimitedProvider implements IModelProvider {
       );
     }
 
-    // Check persistent budget if cost tracker is available
+    // Binding mode (global/per-service cloud caps) is handled by reserveDailyBudget
+    // above. The legacy per-provider path below applies only outside it.
+    if (bindingModeActive) return;
     if (this.limits.costTracker && !this.compatibleLocal) {
       const providerName = this.extractProviderName(this.inner.id);
       const withinBudget = await this.limits.costTracker.isWithinBudget(providerName, this.limits.maxCostPerDay);
@@ -167,29 +277,56 @@ export class RateLimitedProvider implements IModelProvider {
     }
   }
 
-  private async persistUsage(result: IGenerateResult, traceId?: Opt<string, Reason.TraceAbsent>): Promise<void> {
+  private async persistUsage(
+    result: IGenerateResult,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    budgetMode: { enabled: boolean; service: string; transport: string } = {
+      enabled: false,
+      service: "",
+      transport: BINDING_TRANSPORT_LOCAL,
+    },
+  ): Promise<void> {
     const tracker = this.limits.costTracker;
-    if (!tracker) return;
+    // A nested rate-limited wrapper defers persistence to its inner wrapper, avoiding a
+    // double cost record.
+    if (!tracker || this.inner instanceof RateLimitedProvider) return;
     const providerName = this.extractProviderName(this.inner.id);
     const model = result.model || this.inner.id;
+    // The boot provider enters the global budget mode through its predicate. Its spend
+    // carries the cloud transport so the global cap counts it. A bound provider uses its
+    // own service identity. No identity attaches outside the mode.
+    const identity: { service: string; transport: BindingTransport } | undefined =
+      budgetMode.enabled || this.limits.bindingIdentity
+        ? {
+          service: this.limits.bindingIdentity?.service ?? budgetMode.service,
+          transport: budgetMode.transport as BindingTransport,
+        }
+        : undefined;
     const usage = {
       promptTokens: result.usage.promptTokens,
       completionTokens: result.usage.completionTokens,
       totalTokens: result.usage.totalTokens,
     };
     if (result.costStatus === "unknown") {
-      await tracker.recordUnpricedGeneration?.(providerName, model, usage, traceId);
+      await tracker.recordUnpricedGeneration?.(providerName, model, usage, traceId, identity);
       return;
     }
-    await tracker.trackGeneration(providerName, model, {
-      ...usage,
-      costUsd: result.cost_usd,
-      costSource: result.cost_usd !== undefined
-        ? (this.compatible ? "registry_computed" : "provider_reported")
-        : undefined,
-      cacheReadTokens: result.usage.cacheReadTokens,
-      cacheCreationTokens: result.usage.cacheCreationTokens,
-    }, traceId);
+    await tracker.trackGeneration(
+      providerName,
+      model,
+      {
+        ...usage,
+        costUsd: result.cost_usd,
+        costSource: result.cost_usd !== undefined
+          ? (this.compatible ? "registry_computed" : "provider_reported")
+          : undefined,
+        cacheReadTokens: result.usage.cacheReadTokens,
+        cacheCreationTokens: result.usage.cacheCreationTokens,
+      },
+      traceId,
+      undefined,
+      identity,
+    );
   }
 
   /**

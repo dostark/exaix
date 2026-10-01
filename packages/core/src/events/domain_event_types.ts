@@ -549,6 +549,7 @@ export const DomainEventType = {
   CostPricingLookupSet: "cost.pricing_lookup.set",
   CostQueriedByCriteria: "cost.query.by_criteria",
   CostDailyCostQueried: "cost.query.daily",
+  CostBudgetReservation: "cost.budget.reservation",
   CostSummaryQueried: "cost.query.summary",
   CostBatchFlushed: "cost.batch.flushed",
 
