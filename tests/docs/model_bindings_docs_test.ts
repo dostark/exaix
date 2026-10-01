@@ -65,7 +65,7 @@ Deno.test("flow binding guide describes run-file activation, replay drift, lock 
 
 Deno.test("architecture describes pool holds, credential versions and replay comparison", async () => {
   const architecture = (await Deno.readTextFile("ARCHITECTURE.md")).replace(/\s+/g, " ");
-  for (const phrase of ["`releaseRun`", "credential version", "`compareLock`", "`BoundedLruCache`"]) {
+  for (const phrase of ["`releaseRun`", "credential version", "`compareLock`", "per pooled provider"]) {
     assertStringIncludes(architecture, phrase);
   }
 });

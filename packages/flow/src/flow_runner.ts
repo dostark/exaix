@@ -22,7 +22,6 @@ import { StepContentHasher } from "./step_content_hasher.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import type { JSONValue } from "@exaix/core";
-import { BoundedLruCache } from "./bounded_lru_cache.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
@@ -35,7 +34,6 @@ import {
 } from "@exaix/ai";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
-  BINDING_PROVIDER_POOL_MAX_SIZE,
   FlowInputSource,
   FlowOutputFormat,
   FlowStepOnErrorAction,
@@ -50,7 +48,7 @@ import { buildConfirmationInterceptor } from "@exaix/tool-runtime";
 import type { IMcpClient } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
-import type { ModelResolver } from "@exaix/ai";
+import type { IModelProvider, ModelResolver } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas";
 import { EFFORT_AUTO, type EffortDeclaration, type IModelCallOptions, type ThinkingDeclaration } from "@exaix/schemas";
 import { mapPresetToSize } from "./preset_mapper.ts";
@@ -803,9 +801,9 @@ export class FlowRunner implements IFlowRunner {
    *  One LlmClient serves each distinct bound service fingerprint.
    *  Two differently-bound DYNAMIC steps never share a model route.
    *  At most one entry grows per fingerprint used in this process. */
-  private readonly dynamicExecutorsByFingerprint = new BoundedLruCache<string, DynamicStepExecutor>(
-    BINDING_PROVIDER_POOL_MAX_SIZE,
-  );
+  /** One executor per pooled provider instance. A new provider gets a new executor.
+   *  An evicted provider takes its executor with it. */
+  private readonly dynamicExecutorsByProvider = new WeakMap<IModelProvider, DynamicStepExecutor>();
   private mcpClient?: IMcpClient & IToolManifestResolver;
   private agentExecutor: IAgentExecutor;
   private eventLogger: IFlowEventLogger;
@@ -1135,8 +1133,7 @@ export class FlowRunner implements IFlowRunner {
             `DYNAMIC step "${step.id}" resolved to a cli-delegate session-tool service ${bound.binding.service}`,
           );
         }
-        const fingerprint = bound.binding.fingerprint;
-        let executor = this.dynamicExecutorsByFingerprint.get(fingerprint);
+        let executor = this.dynamicExecutorsByProvider.get(bound.provider);
         if (!executor) {
           const config = this.config;
           if (!config) {
@@ -1171,7 +1168,7 @@ export class FlowRunner implements IFlowRunner {
             this.options.dynamicModeApprovalTools,
             Object.keys(callOptions).length > 0 ? callOptions : undefined,
           );
-          this.dynamicExecutorsByFingerprint.set(fingerprint, executor);
+          this.dynamicExecutorsByProvider.set(bound.provider, executor);
         }
         return executor;
       }

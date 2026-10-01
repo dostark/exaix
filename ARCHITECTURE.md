@@ -783,7 +783,7 @@ snapshot. The service pools one provider per binding. The pool key holds the fin
 service cap, admission mode and a private credential version, so a rotated key builds a new
 wrapper. Each run holds its keys until `releaseRun`, which `FlowRunner.execute` calls in a
 `finally` and which emits `BindingRunReleased`. Over-capacity unheld providers are evicted
-and closed. `FlowRunner` bounds its DYNAMIC executor cache with `BoundedLruCache`. The `ICostTracker` reservation API and
+and closed. `FlowRunner` keeps one DYNAMIC executor per pooled provider instance, so a rotated credential or an evicted provider never leaves a stale executor. The `ICostTracker` reservation API and
 `RateLimitedProvider` use service and transport identity; `IRateLimitConfig` supplies
 the per-service cap and global budget callback when operator binding layers are active.
 `exactl request` creates per-run overlays under `.exa/run-bindings/`, and `exactl flow

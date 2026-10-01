@@ -63,18 +63,19 @@ class RecordingMcpClient implements IMcpClient, IToolManifestResolver {
 }
 
 class MockProviderFactory implements IProviderFactory {
-  readonly calls: Array<{ model: string; options?: IModelOptions }> = [];
+  readonly calls: Array<{ model: string; options?: IModelOptions; instance: number }> = [];
   readonly creates: Array<{ model: string }> = [];
   constructor(private readonly content: (model: string) => string) {}
 
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {
     const model = options.model;
     this.creates.push({ model });
+    const instance = this.creates.length;
     return Promise.resolve({
       id: `mock-${model}`,
       callCapabilities: { profile: "mock", supportedEffortTiers: ["low", "medium", "high"], supportsThinking: true },
       generate: (_prompt: string, generateOptions?: IModelOptions): Promise<IGenerateResult> => {
-        this.calls.push({ model, options: generateOptions });
+        this.calls.push({ model, options: generateOptions, instance });
         return Promise.resolve({
           content: this.content(model),
           usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
@@ -1107,5 +1108,71 @@ Deno.test("a session_delegate_cycle step's review gate grades on the cycle step'
   } finally {
     await cleanup();
     await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("fix(flow-runner): a DYNAMIC step uses the new provider after its credential rotates", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const factory = new MockProviderFactory(() =>
+    JSON.stringify({ reasoning: "done", action: { type: "complete", output: "out" } })
+  );
+  registerFactory("mock", factory);
+  try {
+    const config: Config = createMockConfig(tempDir, {
+      ai: { provider: "mock", model: "boot" },
+      execution: { native_tools_enabled: false, milestone_streaming_enabled: true },
+      catalog: {
+        models: { "mock/alpha": { model_provider: "mock" } },
+        services: {
+          alpha: {
+            adapter: "mock",
+            transport: "cloud",
+            interface: "api",
+            key_env: "ALPHA_API_KEY",
+            serves: { "mock/alpha": "alpha" },
+          },
+        },
+      },
+      bindings: { "flow:research/step:a": { service: "alpha", model: "mock/alpha" } },
+    });
+    await writeBlueprints(tempDir, ["builder"]);
+    let keyVersion = "v1";
+    const service = new ModelBindingService({
+      configSource: { get: () => config },
+      logger: createMockEventLogger(),
+      db,
+      probe: { hasKey: () => true, hasOptIn: () => true, keyVersion: () => keyVersion },
+    });
+    const dynFlow = FlowSchema.parse({
+      id: "research",
+      name: "Research",
+      description: "dyn",
+      version: "1.0.0",
+      steps: [{
+        id: "a",
+        name: "A",
+        agent_role: "builder",
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
+        dependsOn: [],
+        input: { source: FlowInputSource.REQUEST },
+      }],
+      output: { from: "a", format: FlowOutputFormat.MARKDOWN },
+      settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
+    });
+    const runner = new FlowRunner({
+      agentExecutor: { run: () => Promise.resolve({ content: "", raw: "", thought: "" }) } as never,
+      eventLogger: { log: () => {} },
+      config,
+      db,
+      mcpClient: new RecordingMcpClient(),
+      bindingService: service,
+    });
+    await runner.execute(dynFlow, { userPrompt: "one", traceId: crypto.randomUUID() });
+    keyVersion = "v2";
+    await runner.execute(dynFlow, { userPrompt: "two", traceId: crypto.randomUUID() });
+    assertEquals(factory.creates.length, 2, "the rotated credential builds a second provider");
+    assertEquals(factory.calls.map((call) => call.instance), [1, 2], "the second run must call the new provider");
+  } finally {
+    await cleanup();
   }
 });
