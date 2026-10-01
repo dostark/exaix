@@ -2,7 +2,7 @@
  * @module CliDelegateStrategy
  * @path packages/execution/src/strategies/cli_delegate_strategy.ts
  * @description Per-step execution strategy that runs the agent step through a
- * headless CLI tool (claude/opencode) instead of a direct IModelProvider call.
+ * headless CLI tool (claude/opencode/codex) instead of a direct IModelProvider call.
  * Selected via IAgentFileBlueprint.capabilities including
  * ExecutionStrategyName.CLI_DELEGATE — an alternative to ReActLoopStrategy, not a
  * fallback for it. When the configured binary cannot be spawned, this strategy
@@ -10,10 +10,10 @@
  * back to the API path — reverting to direct API execution is a deliberate
  * capabilities/config edit, not a runtime decision.
  *
- * Multi-turn mechanism: both tools use a cold subprocess spawn per plan step,
+ * Multi-turn mechanism: each tool uses a cold subprocess spawn per plan step,
  * resuming the prior turn's conversation via a captured session id —
  * `claude -p <objective> --resume <session_id>` and `opencode run --session
- * <session_id>`, respectively. This is Claude Code's officially documented
+ * <session_id>` or `codex exec resume <thread_id>`. This is Claude Code's officially documented
  * multi-turn pattern (CLI reference: `--resume <session_id_or_name>`); an
  * earlier design kept one claude process alive across a whole plan via
  * `--input-format stream-json` stdin streaming, which worked in a live trial
@@ -36,6 +36,7 @@
  */
 
 import { isAbsolute, join, relative } from "@std/path";
+import { z } from "zod";
 import type { IDogfoodContextConnection, IDogfoodContextPort, Opt, Reason } from "@exaix/core/types";
 import { ContextConnectionCloseReason } from "@exaix/core/types";
 import { isTrustedDogfoodCaller } from "@exaix/core/func";
@@ -60,17 +61,25 @@ import {
   AgentExecutionErrorType,
   CLI_DELEGATE_TURN_TIMEOUT_MS,
   ExecutionStrategyName,
+  SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT,
+  SESSION_FLAG_CONFIG_OVERRIDE,
   SESSION_FLAG_EFFORT,
   SESSION_FLAG_FORMAT,
+  SESSION_FLAG_JSON,
   SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
   SESSION_FLAG_RESUME,
+  SESSION_FLAG_SANDBOX,
   SESSION_FLAG_SESSION_ID,
+  SESSION_FLAG_SKIP_GIT_REPO_CHECK,
   SESSION_FLAG_VARIANT,
   SESSION_FLAG_VERBOSE,
   SESSION_INPUT_FORMAT_STREAM_JSON,
   SESSION_OUTPUT_FORMAT_JSON,
+  SESSION_SANDBOX_WORKSPACE_WRITE,
+  SESSION_SUBCMD_EXEC,
+  SESSION_SUBCMD_RESUME,
   SESSION_SUBCMD_RUN,
 } from "@exaix/core";
 import { parseCliDelegateStreamTurn } from "./cli_delegate_stream_parser.ts";
@@ -88,6 +97,11 @@ interface ICliDelegateParsedOutcome {
   };
   costUsd: number | undefined;
   toolPaths: string[];
+}
+
+interface ICodexThreadEvent {
+  type?: string;
+  thread_id?: string;
 }
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
@@ -123,7 +137,7 @@ export interface ICliDelegateStrategyDeps {
   /** Optional model override (headless `--model <model>`). */
   model?: string;
   /** Optional reasoning-effort hint (headless `--effort <level>` on claude, `--variant
-   *  <level>` on opencode — verified against each installed CLI's own --help). */
+   *  <level>` on opencode, or `-c model_reasoning_effort` on codex). */
   effort?: string;
   /** Defaults to SafeSubprocess.run. Overridden in tests to avoid real subprocess execution. */
   run?: IRunCliDelegateProcess;
@@ -145,9 +159,11 @@ const defaultWriteConfigFile: IWriteConfigFile = (path, content, options) => Den
 
 /** Cap on how much of a failing CLI's raw stdout an error message quotes. */
 const ERROR_STDOUT_PREVIEW_MAX_CHARS = 2000;
+const CODEX_EVENT_THREAD_STARTED = "thread.started";
+const CodexThreadIdSchema = z.string().uuid();
 
-// deps.model may arrive "provider:model"-prefixed (ModelResolver convention); claude/opencode
-// reject that on --model with a 404 (live-verified). Neither tool's own model names use a colon.
+// ModelResolver can prefix deps.model with "provider:model".
+// CLI tools need the native model name. Claude and OpenCode reject the prefix with a 404.
 function stripProviderPrefix(model: string): string {
   const separatorIndex = model.indexOf(":");
   return separatorIndex === -1 ? model : model.slice(separatorIndex + 1);
@@ -216,7 +232,7 @@ function toPortalRelativePaths(paths: string[], portalPath: string): string[] {
   return paths.map((path) => isAbsolute(path) ? relative(portalPath, path) : path);
 }
 
-/** Drives a headless CLI tool (claude/opencode) instead of calling IModelProvider
+/** Drives a headless CLI tool (claude/opencode/codex) instead of calling IModelProvider
  *  directly. Not the async, durable-wait gate delegation used by SessionDelegateService/
  *  HeadlessSessionLauncher — this runs synchronously, once per plan step. */
 export class CliDelegateStrategy implements IExecutionStrategy {
@@ -265,7 +281,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     try {
       parsed = isClaude
         ? await this.runClaudeStep(context.trace_id, finalObjective, portalPath, connection)
-        : await this.runOpencodeStep(context.trace_id, finalObjective, portalPath, connection);
+        : await this.runJsonlStep(context.trace_id, finalObjective, portalPath, connection);
     } finally {
       await this.closeDogfoodContext(recordId);
     }
@@ -353,16 +369,17 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
   }
 
-  private async runOpencodeStep(
+  private async runJsonlStep(
     traceId: string,
     objective: string,
     portalPath: string,
     connection: Opt<IDogfoodContextConnection, Reason.OptionalContext>,
   ): Promise<ICliDelegateParsedOutcome> {
     const sessionId = this.sessionIds.get(traceId);
+    const isCodex = this.deps.tool === SessionToolSchema.enum.codex;
     const mcpConfig = connection ? await this.writeOpencodeMcpConfigFile(connection, portalPath) : undefined;
     try {
-      const args = this.buildOpencodeArgs(objective, sessionId);
+      const args = isCodex ? this.buildCodexArgs(objective, sessionId) : this.buildOpencodeArgs(objective, sessionId);
 
       let result: ICliDelegateProcessResult;
       try {
@@ -391,7 +408,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
         );
       }
 
-      const capturedSessionId = extractOpencodeSessionId(result.stdout);
+      const capturedSessionId = isCodex ? extractCodexThreadId(result.stdout) : extractOpencodeSessionId(result.stdout);
       if (capturedSessionId && !sessionId) {
         this.sessionIds.set(traceId, capturedSessionId);
       }
@@ -562,7 +579,27 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     ];
   }
 
-  /** No-op: both tools are cold-spawned per step with no persistent process to tear down; kept so AgentComposer.dispose()'s call site needs no branching. */
+  private buildCodexArgs(objective: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
+    const modelFlag = this.deps.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(this.deps.model)] : [];
+    if (this.deps.effort) assertValidEffortTier(this.deps.effort);
+    const effortFlag = this.deps.effort
+      ? [SESSION_FLAG_CONFIG_OVERRIDE, `${SESSION_CONFIG_KEY_MODEL_REASONING_EFFORT}="${this.deps.effort}"`]
+      : [];
+    const resumeFlag = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
+    return [
+      SESSION_SUBCMD_EXEC,
+      SESSION_FLAG_JSON,
+      ...modelFlag,
+      SESSION_FLAG_SANDBOX,
+      SESSION_SANDBOX_WORKSPACE_WRITE,
+      SESSION_FLAG_SKIP_GIT_REPO_CHECK,
+      ...effortFlag,
+      ...resumeFlag,
+      objective,
+    ];
+  }
+
+  /** Cold-spawned tools need no persistent process cleanup. */
   dispose(): void {
     this.sessionIds.clear();
   }
@@ -580,6 +617,29 @@ function extractOpencodeSessionId(stdout: string): string | undefined {
     } catch {
       continue;
     }
+  }
+  return undefined;
+}
+
+function extractCodexThreadId(stdout: string): string | undefined {
+  for (const line of stdout.trim().split("\n")) {
+    if (!line.trim()) continue;
+    let event: ICodexThreadEvent | null;
+    try {
+      event = JSON.parse(line.trim()) as ICodexThreadEvent | null;
+    } catch {
+      continue;
+    }
+    if (typeof event !== "object" || event === null) continue;
+    if (event.type !== CODEX_EVENT_THREAD_STARTED) continue;
+    const parsed = CodexThreadIdSchema.safeParse(event.thread_id);
+    if (!parsed.success) {
+      throw new AgentExecutionError(
+        "Codex CLI returned an invalid thread id",
+        AgentExecutionErrorType.CONFIGURATION_ERROR,
+      );
+    }
+    return parsed.data;
   }
   return undefined;
 }

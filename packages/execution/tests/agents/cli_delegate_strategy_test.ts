@@ -146,6 +146,72 @@ Deno.test("CliDelegateStrategy: strips a provider-prefixed model before passing 
   assertEquals(capturedArgs[modelIndex + 1], "claude-sonnet-5");
 });
 
+Deno.test("CliDelegateStrategy: Codex uses exec JSONL and resumes its own thread", async () => {
+  const calls: Array<{ command: string; args: string[] }> = [];
+  const threadId = "22222222-2222-4222-8222-222222222222";
+  const stdout = [
+    JSON.stringify({ type: "thread.started", thread_id: threadId }),
+    JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Inspected the portal." } }),
+    JSON.stringify({ type: "turn.completed", usage: { input_tokens: 12, output_tokens: 5 } }),
+  ].join("\n");
+  const run: IRunCliDelegateProcess = (command, args) => {
+    calls.push({ command, args });
+    return Promise.resolve({ code: 0, stdout, stderr: "" });
+  };
+  const strategy = new CliDelegateStrategy({
+    tool: "codex",
+    bin: "codex",
+    model: "codex-cli:gpt-5.6-terra",
+    effort: "high",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  const first = await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+  const second = await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+  assertEquals(first.description, "Inspected the portal.");
+  assertEquals(first.usage?.prompt_tokens, 12);
+  assertEquals(calls[0].command, "codex");
+  assertEquals(calls[0].args.slice(0, 9), [
+    "exec",
+    "--json",
+    "--model",
+    "gpt-5.6-terra",
+    "--sandbox",
+    "workspace-write",
+    "--skip-git-repo-check",
+    "-c",
+    'model_reasoning_effort="high"',
+  ]);
+  assertStringIncludes(calls[0].args[9], "Fix the null-guard bug");
+  assertEquals(calls[0].args.includes("--format"), false);
+  assertEquals(calls[1].args.includes("resume"), true);
+  assertEquals(calls[1].args.includes(threadId), true);
+  assertEquals(second.description, "Inspected the portal.");
+});
+
+Deno.test("[security] CliDelegateStrategy rejects a malformed Codex thread id before resume", async () => {
+  const run: IRunCliDelegateProcess = () =>
+    Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "thread.started", thread_id: "--dangerously-bypass-approvals-and-sandbox" }),
+      stderr: "",
+    });
+  const strategy = new CliDelegateStrategy({
+    tool: "codex",
+    bin: "codex",
+    resolvePortalPath: () => "/tmp/portal",
+    run,
+  });
+
+  await assertRejects(
+    () => strategy.execute(makeBlueprint(), makeContext(), makeOptions()),
+    AgentExecutionError,
+    "invalid thread id",
+  );
+});
+
 Deno.test("CliDelegateStrategy: strips a provider-prefixed model before passing it to opencode's --model", async () => {
   let capturedArgs: string[] = [];
   const run: IRunCliDelegateProcess = (_command, args, _options) => {
