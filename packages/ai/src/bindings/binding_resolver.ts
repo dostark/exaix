@@ -28,6 +28,7 @@ import {
 } from "@exaix/schemas";
 import type { IBindingEnvProbe } from "./binding_types.ts";
 import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND } from "./binding_types.ts";
+import { LAYER_FLOW } from "./binding_layers.ts";
 
 export interface IInvalidBindingOutcome {
   kind: typeof BINDING_OUTCOME_INVALID;
@@ -130,12 +131,29 @@ function sameRank(a: IMatchRank, b: IMatchRank): boolean {
   return compareRanks(a, b) === 0;
 }
 
+/** Exact step selector for a flow step, used as the flow-layer entry's selector. */
+function exactStepSelector(ref: IBindingStepRef): string {
+  return `flow:${ref.flowId}/step:${ref.stepId}`;
+}
+
 /** Collect matching entries and merge per field. A later entry wins a field. Equal-specificity globs are ambiguous when literal prefixes tie. */
 function mergeEntries(
   ref: IBindingStepRef,
   layers: IBindingLayers,
+  step: { binding?: IBindingSpec; pin?: IStepPin } = {},
 ): { spec: IBindingSpec; sources: IResolvedBinding["sources"] } | IInvalidBindingOutcome {
   const matched: IMatchingEntry[] = [];
+  // The step's own `binding:` enters at the flow layer with the step's exact selector.
+  // It is the lowest layer, so operator layers above it may override its fields.
+  // Pins then guard the flow author's chosen fields.
+  if (step.binding) {
+    matched.push({
+      entry: step.binding,
+      layer: LAYER_FLOW,
+      selector: exactStepSelector(ref),
+      rank: rankFor(LAYER_FLOW, exactStepSelector(ref)),
+    });
+  }
   for (const entry of layers.entries) {
     if (!selectorMatches(ref, entry.selector)) continue;
     matched.push({
@@ -182,7 +200,69 @@ function mergeEntries(
       }
     }
   }
+
+  // Pin rule (Resolution algorithm step 4).
+  // A field the flow author pinned may only be changed by an exact higher-layer entry.
+  // A broader entry is skipped, the flow value wins, and sources record pin_kept.
+  // Equal values pass silently.
+  const pinIssue = applyPins(ref, step, winners, spec, sources);
+  if (pinIssue) return pinIssue;
+
   return { spec, sources };
+}
+
+/** Apply the pin rule to the merged winners. Returns a pinned issue when an exact
+ *  higher-layer entry changes a pinned field, else mutates the flow value back. */
+function applyPins(
+  ref: IBindingStepRef,
+  step: { binding?: IBindingSpec; pin?: IStepPin },
+  winners: Map<
+    BindingField,
+    { rank: IMatchRank; value: IBindingSpec[BindingField]; layer: string; selector: string }
+  >,
+  spec: IBindingSpec,
+  sources: IResolvedBinding["sources"],
+): IInvalidBindingOutcome | undefined {
+  if (!step.pin || !step.binding) return undefined;
+  for (const field of step.pin.fields) {
+    const winner = winners.get(field);
+    if (!winner) continue;
+    const flowValue = step.binding[field];
+    if (winner.layer === LAYER_FLOW || winner.value === flowValue) continue;
+    const exact = winner.layer !== LAYER_FLOW && isExactStepEntryRef(winner.selector, ref);
+    if (exact) {
+      return {
+        kind: BINDING_OUTCOME_INVALID,
+        issues: [{
+          code: "pinned",
+          flowId: ref.flowId,
+          stepId: ref.stepId,
+          selector: winner.selector,
+          detail: `field "${field}" of ${ref.flowId}/${ref.stepId} is pinned (${step.pin.reason}); ` +
+            `${winner.selector} from the ${winner.layer} layer attempted to change it`,
+        }],
+      };
+    }
+    // Broader override: keep the flow value and record pin_kept.
+    winners.set(field, {
+      rank: rankFor(LAYER_FLOW, exactStepSelector(ref)),
+      value: flowValue,
+      layer: LAYER_FLOW,
+      selector: exactStepSelector(ref),
+    });
+    Object.assign(spec, { [field]: flowValue });
+    sources[field] = {
+      layer: LAYER_FLOW,
+      selector: exactStepSelector(ref),
+      pin_kept: { skipped_selector: winner.selector, skipped_layer: winner.layer as BindingLayer },
+    };
+  }
+  return undefined;
+}
+
+/** True when a non-flow-layer entry uses this step's exact selector. */
+function isExactStepEntryRef(selector: string, ref: IBindingStepRef): boolean {
+  return selector === exactStepSelector(ref);
 }
 
 interface IModelState {
@@ -403,11 +483,11 @@ function interfaceCompatibilityIssue(ref: IBindingStepRef, service: ICatalogServ
 /** Resolve a flow step's provider binding across all layers. */
 export function resolveBinding(
   ref: IBindingStepRef,
-  _step: { binding?: IBindingSpec; pin?: IStepPin },
+  step: { binding?: IBindingSpec; pin?: IStepPin } = {},
   layers: IBindingLayers,
   probe: IBindingEnvProbe,
 ): BindingOutcome | IInvalidBindingOutcome {
-  const merged = mergeEntries(ref, layers);
+  const merged = mergeEntries(ref, layers, step);
   if ("issues" in merged) return { kind: BINDING_OUTCOME_INVALID, issues: merged.issues };
   const { spec, sources } = merged;
 

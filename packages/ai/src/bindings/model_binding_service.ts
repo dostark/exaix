@@ -129,7 +129,7 @@ export class ModelBindingService {
     for (const step of flow.steps) {
       const ref = this.stepRefFor(flow, step);
       if (!ref) continue;
-      this.resolveStep(layers, probe, step.id, ref, bindings, issues);
+      this.resolveStep(layers, probe, step, ref, bindings, issues);
     }
     if (issues.length === 0) {
       for (const [stepId, outcome] of bindings) {
@@ -197,17 +197,19 @@ export class ModelBindingService {
   private resolveStep(
     layers: IBindingLayers,
     probe: { hasKey(name: string): boolean; hasOptIn(name: string): boolean },
-    stepId: string,
+    step: IFlow["steps"][number],
     ref: IBindingStepRef,
     bindings: Map<string, BindingOutcome>,
     issues: IBindingIssue[],
   ): void {
-    let outcome = resolveBinding(ref, {}, layers, probe);
+    const stepBinding = step.binding ?? {};
+    const stepPin = step.pin;
+    let outcome = resolveBinding(ref, { binding: stepBinding, pin: stepPin }, layers, probe);
     if (outcome.kind === BINDING_OUTCOME_UNBOUND && layers.operatorLayersPresent) {
       outcome = this.implicitConfigDefault(ref, layers, probe);
     }
     if (outcome.kind === BINDING_OUTCOME_INVALID) issues.push(...outcome.issues);
-    else bindings.set(stepId, outcome);
+    else bindings.set(step.id, outcome);
   }
 
   /** Resolve an unmatched step under an operator layer through the config.ai implicit default. */

@@ -4,8 +4,14 @@
  * @description Checks the first binding resolver slice for default and exact flow steps.
  */
 
-import { assertEquals } from "@std/assert";
-import { getDefaultModels, type IBindingCatalog, type IBindingLayers, type IBindingStepRef } from "@exaix/schemas";
+import { assertEquals, assertStringIncludes } from "@std/assert";
+import {
+  getDefaultModels,
+  type IBindingCatalog,
+  type IBindingLayers,
+  type IBindingStepRef,
+  type PinnableBindingField,
+} from "@exaix/schemas";
 import { resolveBinding } from "@exaix/ai";
 
 const catalog: IBindingCatalog = {
@@ -481,4 +487,121 @@ Deno.test("a plain (non-cli_delegate) agent step refuses a cli interface service
   );
   assertEquals(outcome.kind, "invalid");
   if (outcome.kind === "invalid") assertEquals(outcome.issues[0].code, "interface_unsupported");
+});
+
+// --- Step 5: flow-file binding and pin ---
+
+const STEP_BINDING = { service: "alpha", model: "mock/alpha" };
+const STEP_PIN = { fields: ["service", "model"] as PinnableBindingField[], reason: "capability-gate" as const };
+
+function pinLayers(bindings: Record<string, { service?: string; model?: string }>): IBindingLayers {
+  return {
+    entries: Object.entries(bindings).map(([selector, spec]) => ({ layer: "config", selector, spec })),
+    catalog,
+    overlaySha256: [],
+    operatorLayersPresent: true,
+  };
+}
+
+Deno.test("a flow-step binding resolves on its declared service with no config layer", () => {
+  const layers: IBindingLayers = {
+    entries: [],
+    catalog,
+    overlaySha256: [],
+    operatorLayersPresent: false,
+  };
+  const outcome = resolveBinding(ref, { binding: STEP_BINDING }, layers, probe);
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind === "bound") {
+    assertEquals(outcome.binding.service, "alpha");
+    assertEquals(outcome.binding.model, "mock/alpha");
+    // The flow layer owns the winning fields.
+    assertEquals(outcome.binding.sources.service?.layer, "flow");
+  }
+});
+
+Deno.test("an exact step selector in config that changes a pinned field yields pinned naming selector and reason", () => {
+  const outcome = resolveBinding(
+    ref,
+    { binding: STEP_BINDING, pin: STEP_PIN },
+    pinLayers({ "flow:research/step:compose": { service: "beta", model: "mock/beta" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "invalid");
+  if (outcome.kind === "invalid") {
+    assertEquals(outcome.issues[0].code, "pinned");
+    assertEquals(outcome.issues[0].selector, "flow:research/step:compose");
+    // The pin reason is carried on the issue detail or a dedicated field.
+    assertStringIncludes(outcome.issues[0].detail, "capability-gate");
+  }
+});
+
+Deno.test("a broader selector (default) that changes a pinned field keeps the flow value and records pin_kept", () => {
+  const outcome = resolveBinding(
+    ref,
+    { binding: STEP_BINDING, pin: STEP_PIN },
+    pinLayers({ default: { service: "beta", model: "mock/beta" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind === "bound") {
+    // The pinned field stays at the flow value.
+    assertEquals(outcome.binding.service, "alpha");
+    assertEquals(outcome.binding.model, "mock/alpha");
+    // pin_kept records the skipped selector and layer.
+    const source = outcome.binding.sources.service;
+    assertEquals(source?.layer, "flow");
+    assertEquals(source?.pin_kept?.skipped_selector, "default");
+    assertEquals(source?.pin_kept?.skipped_layer, "config");
+  }
+});
+
+Deno.test("an equal value in a higher layer passes silently (no pin_kept)", () => {
+  const outcome = resolveBinding(
+    ref,
+    { binding: STEP_BINDING, pin: STEP_PIN },
+    pinLayers({ default: { service: "alpha", model: "mock/alpha" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind === "bound") {
+    assertEquals(outcome.binding.service, "alpha");
+    const source = outcome.binding.sources.service;
+    assertEquals(source?.pin_kept, undefined);
+  }
+});
+
+Deno.test("a flow:/step glob that changes a pinned field keeps the flow value with pin_kept", () => {
+  const outcome = resolveBinding(
+    ref,
+    { binding: STEP_BINDING, pin: STEP_PIN },
+    pinLayers({ "flow:research/step:*": { service: "beta", model: "mock/beta" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind === "bound") {
+    assertEquals(outcome.binding.service, "alpha");
+    const source = outcome.binding.sources.service;
+    assertEquals(source?.layer, "flow");
+    assertEquals(source?.pin_kept?.skipped_selector, "flow:research/step:*");
+  }
+});
+
+Deno.test("a broader override still changes the step's unpinned fields", () => {
+  const outcome = resolveBinding(
+    ref,
+    {
+      binding: { service: "alpha", model: "mock/alpha", transport: "local" },
+      pin: { fields: ["transport"], reason: "capability-gate" },
+    },
+    pinLayers({ default: { service: "beta", model: "mock/beta" } }),
+    probe,
+  );
+  // The default layer's unpinned service is overridden to beta.
+  // Transport stays pinned at local, so resolution binds service beta.
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind === "bound") {
+    assertEquals(outcome.binding.service, "beta");
+    assertEquals(outcome.binding.transport, "local");
+  }
 });

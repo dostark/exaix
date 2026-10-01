@@ -25,6 +25,7 @@ import {
 import { BINDING_OVERLAY_MAX_BYTES, BINDING_OVERLAYS_DIR } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
+export const LAYER_FLOW = "flow";
 export const LAYER_CONFIG = "config";
 export const LAYER_OVERLAY = "overlay";
 export const LAYER_RUN = "run";

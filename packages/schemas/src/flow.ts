@@ -28,6 +28,7 @@ import {
 import { JSONValueSchema } from "@exaix/core";
 import { VotingGroupConfigSchema } from "./voting.ts";
 import { EffortDeclarationSchema, ThinkingDeclarationSchema } from "./model_intent.ts";
+import { BindingSpecSchema, StepPinSchema } from "./model_binding.ts";
 
 import {
   DEFAULT_FLOW_MAX_RETRIES,
@@ -254,6 +255,12 @@ const FlowStepSchemaBase = z.object({
   effort: EffortDeclarationSchema.optional(),
   /** Per-step thinking declaration ("auto" defers to EffortResolver). */
   thinking: ThinkingDeclarationSchema.optional(),
+  /** Flow-author binding: pins which service/provider/model this step may use. Enters the
+   *  resolution as the flow layer at the step's exact selector. */
+  binding: BindingSpecSchema.optional(),
+  /** Flow-author pin: fields of `binding` that a higher operator layer may not change.
+   *  Every listed field must be present in `binding`. */
+  pin: StepPinSchema.optional(),
 });
 
 /** Configuration for a `session_delegate_cycle` flow step. The plan itself is request
@@ -379,9 +386,61 @@ export const FlowStepSchema = FlowStepSchemaBase.extend({
       path: ["delegateCycle"],
     });
   }
+
+  validateStepBindingAndPin({
+    type: step.type,
+    binding: step.binding,
+    pin: step.pin,
+  }, ctx);
 });
 
 // Flow schema definition
+/** Flow-step model binding and pin are valid on LLM-calling step types only.
+ *  Every pinned field must be present in the step's own binding. */
+function validateStepBindingAndPin(
+  step: {
+    type: FlowStepType;
+    binding?: Record<string, string | boolean | undefined>;
+    pin?: { fields: string[]; reason: string } | undefined;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const bindingAllowedTypes = new Set<FlowStepType>([
+    FlowStepType.AGENT,
+    FlowStepType.GATE,
+    FlowStepType.BRANCH,
+    FlowStepType.CONSENSUS,
+    FlowStepType.SESSION_DELEGATE_CYCLE,
+  ]);
+  if (!bindingAllowedTypes.has(step.type)) {
+    if (step.binding !== undefined || step.pin !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `binding and pin are only valid on ${[...bindingAllowedTypes].join(", ")} step types`,
+        path: ["binding"],
+      });
+    }
+  }
+  if (step.pin !== undefined && step.binding === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "pin requires a binding on the same step",
+      path: ["pin"],
+    });
+  }
+  if (step.pin !== undefined && step.binding !== undefined) {
+    for (const field of step.pin.fields) {
+      if (step.binding[field] === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `pinned field "${field}" must be set in the step's binding`,
+          path: ["pin", "fields"],
+        });
+      }
+    }
+  }
+}
+
 export const FlowSchema = z.object({
   id: z.string().min(1, "Flow ID cannot be empty"),
   name: z.string().min(1, "Flow name cannot be empty"),

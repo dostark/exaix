@@ -612,3 +612,89 @@ Deno.test("resolved and rejected events carry the same run trace as the request;
     await cleanup();
   }
 });
+
+Deno.test("a flow-file binding runs the step on its declared service with no config layer", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+  const factory = new CapturingFactory();
+  ProviderRegistry.registerWithMetadata("mock", factory, {
+    name: "mock",
+    description: "captured mock",
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.FREE,
+    pricingTier: PricingTier.FREE,
+    strengths: [],
+  });
+  try {
+    const blueprints = join(tempDir, "Blueprints", "Agents");
+    await Deno.mkdir(blueprints, { recursive: true });
+    for (const role of ["composer", "explorer"]) {
+      await Deno.writeTextFile(
+        join(blueprints, `${role}.md`),
+        `---\nagent_role: ${role}\nmodel: mock:boot\n---\nYou are ${role}.`,
+      );
+    }
+    // No [bindings] layer at all: the flow file's own step binding provides the service.
+    const config = ConfigSchema.parse({
+      system: { root: tempDir },
+      paths: {},
+      ai: { provider: "mock", model: "boot" },
+      catalog: {
+        models: {
+          "mock/alpha": { model_provider: "mock" },
+          "mock/beta": { model_provider: "mock" },
+        },
+        services: {
+          alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
+          beta: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/beta": "beta" } },
+        },
+      },
+    });
+    const logger = createMockEventLogger();
+    const service = new ModelBindingService({
+      configSource: { get: () => config },
+      logger,
+      db,
+      probe: { hasKey: () => true, hasOptIn: () => true },
+    });
+    const boot = new MockProvider("<thought>ok</thought><content>boot</content>");
+    const adapter = new AgentComposerAdapter(new AgentRunner(boot), blueprints, undefined, service);
+    const runner = new FlowRunner({ agentExecutor: adapter, eventLogger: new FlowLog(), bindingService: service });
+
+    const boundFlow = FlowSchema.parse({
+      id: "research",
+      name: "Research",
+      description: "Flow-file binding",
+      version: "1.0.0",
+      steps: [
+        {
+          id: "compose",
+          name: "Compose",
+          agent_role: "composer",
+          dependsOn: [],
+          input: { source: "request" },
+          binding: { service: "alpha", model: "mock/alpha" },
+        },
+        {
+          id: "explore",
+          name: "Explore",
+          agent_role: "explorer",
+          dependsOn: ["compose"],
+          input: { source: "request" },
+        },
+      ],
+      output: { from: "explore", format: FlowOutputFormat.MARKDOWN },
+      settings: { maxParallelism: 1, failFast: true, includeRequestCriteria: false },
+    });
+
+    const result = await runner.execute(boundFlow, { userPrompt: "Research", traceId: crypto.randomUUID() });
+    assertEquals(result.success, true);
+    // Compose ran on the bound alpha service.
+    // Explore had no binding and used the boot provider.
+    assertEquals(factory.calls, ["alpha"]);
+    const resolved = logger.events.filter((event) => event.action === "binding.resolved");
+    assertEquals(resolved.length, 1);
+    assertEquals((resolved[0].payload as { service?: string }).service, "alpha");
+  } finally {
+    await cleanup();
+  }
+});

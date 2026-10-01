@@ -1263,7 +1263,8 @@ export class FlowRunner implements IFlowRunner {
     try {
       await this.ensureDynamicExecutor(flow, flowRunId);
       await this.validateIFlow(flow, request, flowRunId);
-      if (this.options.bindingService?.isActive()) {
+      const flowDeclaresBindings = flow.steps.some((step) => step.binding !== undefined || step.pin !== undefined);
+      if (this.options.bindingService && (this.options.bindingService.isActive() || flowDeclaresBindings)) {
         const traceId = request.traceId ?? crypto.randomUUID();
         request = {
           ...request,
