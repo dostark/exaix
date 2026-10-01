@@ -47,3 +47,25 @@ Deno.test("flow binding guide uses the shipped binding directory names", async (
     assertStringIncludes(guide, `\`.exa/${dir}/\``);
   }
 });
+
+Deno.test("flow binding guide describes run-file activation, replay drift, lock fields and credential refresh", async () => {
+  const guide = (await bindingGuide()).replace(/\s+/g, " ");
+  for (
+    const phrase of [
+      "needs no other binding layer",
+      "flow content, step pins, catalog and every resolved binding",
+      "`env_ignored`",
+      "`hosts`",
+      "`binding.run.released`",
+      "stored or rotated after the daemon started",
+      "fails with `key_missing` before any call",
+    ]
+  ) assertStringIncludes(guide, phrase);
+});
+
+Deno.test("architecture describes pool holds, credential versions and replay comparison", async () => {
+  const architecture = (await Deno.readTextFile("ARCHITECTURE.md")).replace(/\s+/g, " ");
+  for (const phrase of ["`releaseRun`", "credential version", "`compareLock`", "`BoundedLruCache`"]) {
+    assertStringIncludes(architecture, phrase);
+  }
+});

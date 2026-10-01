@@ -4506,6 +4506,9 @@ previews the effective fields, sources, and validation issues without running th
 operator file under `.exa/run-bindings/` before writing the request; the daemon claims it
 only when trace ID, request path, and request SHA-256 match. Request frontmatter cannot
 supply a binding. A repeated claim for the same request is allowed for resume.
+A per-run overlay, `--bind` or `--locked` needs no other binding layer. The daemon applies
+it even with no `[bindings]`, no `.exa/overlays/` directory and no flow `binding:`, because
+the run file for the request activates the binding setup.
 
 Binding and overlay changes are read at each flow run, so they need no daemon restart.
 The daemon's network grant is calculated from configured catalog hosts at startup when
@@ -4520,8 +4523,20 @@ writes a snapshot lock under `.exa/bindings/` (`<trace-id>.lock.json`). Use `exa
 --flow research --locked <lock-file> "Repeat the run"` to replay it. The lock records
 resolved identities, source layers, catalog/config/overlay checksums, and whether
 `EXA_LLM_PROVIDER` or `EXA_LLM_MODEL` was ignored. These boot-time variables never
-override a bound step; `--locked` fails with `lock_mismatch` if the current inputs drift.
-Unbound paths retain the boot provider. A flow step with `strategy: cli_delegate` uses
+override a bound step. `--locked` compares the lock's flow content, step pins, catalog and
+every resolved binding (service, adapter, model, effort and sources) with the current
+resolution. Any difference fails the run with `lock_mismatch` before the first LLM call.
+`exactl request` also records the lock file's SHA-256, and the daemon refuses a lock whose
+bytes no longer match it. A trace ID has one lock: a second run with the same trace reuses
+it only when the resolution is equal, and a different resolution fails with `lock_mismatch`.
+The `binding.snapshot.created` event carries the lock path and hash, `hosts` (the endpoint
+`host:port` of each bound service), `env_ignored`, the config and overlay checksums, the
+run overlay count and `replayed` (true for a `--locked` run).
+A bound step whose service names a key variable fails with `key_missing` before any call
+when no key is available, and a key stored or rotated after the daemon started is used by
+the next run. The daemon keeps one provider per distinct binding for the runs that hold it,
+frees it when the run ends (`binding.run.released` reports the counts), and closes evicted
+providers. Unbound paths retain the boot provider. A flow step with `strategy: cli_delegate` uses
 the session tool binding (`claude-code`, `codex`, or `opencode`); the generate-backed
 `claude-cli`, `codex-cli`, and `opencode-cli` services instead provide one `generate()`
 call at a time. A session delegate cycle uses its session tool binding; a gate judge

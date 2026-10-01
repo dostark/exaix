@@ -24,6 +24,10 @@
 
 - Flow authors and operators can choose models per flow step with catalog bindings, layered overlays, pinned fields, replay locks, and the [binding preview command](Exaix_User_Guide.md#model-bindings-for-flow-steps).
 
+### Fixed
+
+- A per-run `--bind`, `--overlay` or `--locked` now applies on a daemon with no other binding layer, and `--locked` replay refuses any drift in flow content, pins, catalog or resolved bindings. Run locks are written once per trace, and the snapshot event reports the real `env_ignored` and `hosts`. Pooled providers follow the run that holds them, and a key stored or rotated later is picked up (see the [binding guide](Exaix_User_Guide.md#model-bindings-for-flow-steps)).
+
 ### Removed
 
 - The `research-synthesis`, `consensus-review`, `code-review` and `documentation` flows are no longer

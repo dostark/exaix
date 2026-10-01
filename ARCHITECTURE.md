@@ -777,7 +777,13 @@ for a `cli_delegate` session. An unbound step keeps the boot provider.
 environment and credential store and checks opt-in variables. A newly introduced host
 outside the grant reports `needs_restart`. `BindingSnapshotCreated` records the lock
 and its hash under `.exa/bindings/`; `BindingResolved` and `BindingRejected` expose
-step outcomes. Replay rejects changed inputs. The `ICostTracker` reservation API and
+step outcomes. Replay runs `compareLock` over the lock's integrity hash, flow content,
+pins, catalog, step set and every resolved binding. Run-file presence alone activates the
+snapshot. The service pools one provider per binding. The pool key holds the fingerprint,
+service cap, admission mode and a private credential version, so a rotated key builds a new
+wrapper. Each run holds its keys until `releaseRun`, which `FlowRunner.execute` calls in a
+`finally` and which emits `BindingRunReleased`. Over-capacity unheld providers are evicted
+and closed. `FlowRunner` bounds its DYNAMIC executor cache with `BoundedLruCache`. The `ICostTracker` reservation API and
 `RateLimitedProvider` use service and transport identity; `IRateLimitConfig` supplies
 the per-service cap and global budget callback when operator binding layers are active.
 `exactl request` creates per-run overlays under `.exa/run-bindings/`, and `exactl flow
