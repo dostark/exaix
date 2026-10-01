@@ -136,6 +136,7 @@ async function main() {
     "scaffold.ts",
     "deploy_workspace.ts",
     "activity_cache_schema.ts",
+    "provider_costs_schema.ts",
   ];
   await ensureDir(join(dest, "scripts"));
   for (const f of scriptFiles) {
