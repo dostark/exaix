@@ -455,6 +455,8 @@ export const DEFAULT_TITLE_PLACEHOLDER = "Untitled";
 export const DEFAULT_NONE_LABEL = "None";
 export const DEFAULT_NONE_VALUE = "none";
 export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
+/** CLI table column label for the resolved model binding. */
+export const MODEL_COLUMN_LABEL = "Model";
 
 // Agent Validation Limits
 export const AGENT_MAX_ITERATIONS_MIN = 1;

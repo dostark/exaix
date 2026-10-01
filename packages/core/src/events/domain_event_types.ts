@@ -56,6 +56,15 @@ export interface IBindingRejectedEventPayload {
   issues: readonly IBindingIssue[];
 }
 
+/** Payload of the binding.snapshot.created event: the durable lockfile hash per run. */
+export interface IBindingSnapshotCreatedEventPayload {
+  flow_id: string;
+  trace_id: string;
+  lock_path: string;
+  lock_sha256: string;
+  entries: number;
+}
+
 export type GuardrailVerdict = "pass" | "violation";
 /** Guardrail severity type. */
 export type GuardrailSeverity = "warn" | "block";
@@ -833,6 +842,7 @@ export const DomainEventType = {
   ModelResolved: "model.resolved",
   BindingResolved: "binding.resolved",
   BindingRejected: "binding.rejected",
+  BindingSnapshotCreated: "binding.snapshot.created",
 
   // Model registry events
   ModelPricingStale: "model.pricing.stale",

@@ -11,7 +11,15 @@
  */
 
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
-import { BINDING_OVERLAYS_DIR, FlowStepType, type ICostTracker, type IDatabaseService } from "@exaix/core";
+import {
+  BINDING_OVERLAYS_DIR,
+  BINDINGS_DIR,
+  FlowStepType,
+  type ICostTracker,
+  type IDatabaseService,
+} from "@exaix/core";
+import { crypto as stdCrypto } from "@std/crypto";
+import { encodeHex } from "@std/encoding/hex";
 import type { IEventLogger } from "@exaix/core/logger";
 import { join } from "@std/path";
 import type {
@@ -25,16 +33,24 @@ import type {
   IResolvedBinding,
   IRunBindingsFile,
 } from "@exaix/schemas";
+import { BindingLockSchema } from "@exaix/schemas";
 import type { IModelRegistry } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
 import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
 import { LAYER_CONFIG, loadBindingLayers } from "./binding_layers.ts";
-import { type IInvalidBindingOutcome, resolveBinding, SELECTOR_DEFAULT } from "./binding_resolver.ts";
+import {
+  type IInvalidBindingOutcome,
+  ISSUE_LOCK_MISMATCH,
+  resolveBinding,
+  SELECTOR_DEFAULT,
+} from "./binding_resolver.ts";
 import { validateBinding } from "./binding_validation.ts";
 import { type IRunBindingsStore, OverlayClaimError } from "./run_bindings_store.ts";
 import {
   ADAPTER_CLI_DELEGATE,
+  BINDING_OUTCOME_BOUND,
   BINDING_OUTCOME_INVALID,
   BINDING_OUTCOME_UNBOUND,
   BindingIncompatibleError,
@@ -63,6 +79,9 @@ export interface IModelBindingServiceDeps {
   modelRegistry?: Pick<IModelRegistry, "getModelPricing">;
   /** Finite daily cost cap enabling the unknown-pricing guard. */
   maxCostPerDay?: number;
+  /** The start-time network grant covering every catalog host (Step 7). An endpoint host
+   *  outside it when allow_net is unset yields needs_restart during validation. */
+  startNetGrant?: readonly string[];
 }
 
 /** @visible Resolves all flow choices before one step can call a provider. */
@@ -128,7 +147,7 @@ export class ModelBindingService {
   /** Capture current config once and construct every bound provider before execution. */
   async snapshotForRun(
     flow: IFlow,
-    run: { traceId: string; requestId?: string; requestPath?: string; requestSha256?: string },
+    run: { traceId: string; requestId?: string; requestPath?: string; requestSha256?: string; locked?: string },
   ): Promise<IBindingRunSnapshot> {
     const config = structuredClone(this.deps.configSource.get());
     const runFile = await this.claimRunFile(flow, run);
@@ -147,7 +166,7 @@ export class ModelBindingService {
       for (const step of flow.steps) {
         const ref = this.stepRefFor(flow, step);
         const outcome = ref ? bindings.get(step.id) : undefined;
-        if (!outcome || outcome.kind !== "bound") continue;
+        if (!outcome || outcome.kind !== BINDING_OUTCOME_BOUND) continue;
         const validationIssues = await this.validateOutcomeBinding(ref!, outcome.binding, layers);
         if (validationIssues.length > 0) {
           issues.push(...validationIssues);
@@ -167,11 +186,66 @@ export class ModelBindingService {
         }
       }
     }
+
+    // Replay: a locked run must match the lock's effective resolution (Step 7).
+    const replayIssue = await this.replayLockCheck(flow, run.locked, bindings, issues);
+    if (replayIssue) issues.push(replayIssue);
+
     if (issues.length > 0) {
       await this.reject(run.traceId, flow.id, issues);
       throw new BindingIncompatibleError(issues);
     }
-    return { traceId: run.traceId, flowId: flow.id, layers, bindings, issues, envIgnored };
+    const lock = await this.writeLock(flow, run.traceId, layers, bindings);
+    return { traceId: run.traceId, flowId: flow.id, layers, bindings, issues, envIgnored, lock };
+  }
+
+  /** Replay gate: when a lock file is supplied, every resolved binding must match it. */
+  private async replayLockCheck(
+    flow: IFlow,
+    locked: Opt<string, Reason.OptionalContext>,
+    bindings: Map<string, BindingOutcome>,
+    issues: IBindingIssue[],
+  ): Promise<IBindingIssue | undefined> {
+    if (!locked) return undefined;
+    let raw: string;
+    try {
+      const info = await Deno.lstat(locked);
+      if (!info.isFile || info.isSymlink) {
+        return { code: ISSUE_LOCK_MISMATCH, flowId: flow.id, detail: "lock file is not a regular file" };
+      }
+      raw = await Deno.readTextFile(locked);
+    } catch {
+      return { code: ISSUE_LOCK_MISMATCH, flowId: flow.id, detail: "lock file cannot be read" };
+    }
+    let lock;
+    try {
+      lock = BindingLockSchema.parse(JSON.parse(raw));
+    } catch {
+      return { code: ISSUE_LOCK_MISMATCH, flowId: flow.id, detail: "lock file is malformed" };
+    }
+    const expectedStepIds = flow.steps.map((step) => step.id);
+    const sameSteps = lock.step_ids.length === expectedStepIds.length &&
+      expectedStepIds.every((id) => lock.step_ids.includes(id));
+    if (!sameSteps) {
+      return { code: ISSUE_LOCK_MISMATCH, flowId: flow.id, detail: "lock step set differs from the flow" };
+    }
+    for (const entry of lock.entries) {
+      const outcome = bindings.get(entry.step_id);
+      const boundOutcome = outcome?.kind === BINDING_OUTCOME_BOUND ? outcome.binding.service_model_id : undefined;
+      const lockServiceModel = entry.outcome.kind === BINDING_OUTCOME_BOUND
+        ? entry.outcome.binding.service_model_id
+        : undefined;
+      if (boundOutcome !== lockServiceModel) {
+        return {
+          code: ISSUE_LOCK_MISMATCH,
+          flowId: flow.id,
+          stepId: entry.step_id,
+          detail: "step binding differs from the lock",
+        };
+      }
+    }
+    void issues;
+    return undefined;
   }
 
   /** Claim the operator run-binding file for this request when one exists. */
@@ -246,6 +320,8 @@ export class ModelBindingService {
       adapterKeyEnv: this.deps.adapterKeyEnv,
       modelRegistry: this.deps.modelRegistry,
       maxCostPerDay: this.deps.maxCostPerDay,
+      allowNet: this.deps.configSource.get().system?.allow_net,
+      startNetGrant: this.deps.startNetGrant,
     });
   }
 
@@ -286,6 +362,74 @@ export class ModelBindingService {
         detail: entry.detail,
       })),
     }, traceId);
+  }
+
+  /** Write the per-run lockfile atomically and emit binding.snapshot.created with its sha256. */
+  private async writeLock(
+    flow: IFlow,
+    traceId: string,
+    layers: IBindingLayers,
+    bindings: Map<string, BindingOutcome>,
+  ): Promise<{ path: string; sha256: string } | undefined> {
+    const config = structuredClone(this.deps.configSource.get());
+    // The production request creator always mints a UUID trace. A non-UUID trace (direct
+    // flow-call fixture) lacks a stable lock identity and gets no lock.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(traceId)) return undefined;
+    const stepIds = flow.steps.map((step) => step.id);
+    const entryRecords = flow.steps.flatMap((step) => {
+      const outcome = bindings.get(step.id);
+      if (!outcome) return [];
+      return [{
+        step_id: step.id,
+        agent_role: step.agent_role,
+        outcome: outcome.kind === BINDING_OUTCOME_BOUND
+          ? { kind: BINDING_OUTCOME_BOUND, binding: outcome.binding }
+          : { kind: BINDING_OUTCOME_UNBOUND },
+      }];
+    });
+
+    const hash = async (text: string): Promise<string> => {
+      const digest = await stdCrypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return encodeHex(new Uint8Array(digest));
+    };
+    const flowContent = JSON.stringify(flow);
+    const pinContent = JSON.stringify(flow.steps.map((s) => s.pin ?? null));
+    const catalogContent = JSON.stringify(layers.catalog);
+    const lock = BindingLockSchema.parse({
+      schema: 1,
+      trace_id: traceId,
+      flow_id: flow.id,
+      created_at: new Date().toISOString(),
+      flow_content_sha256: await hash(flowContent),
+      pin_sha256: await hash(pinContent),
+      catalog_sha256: await hash(catalogContent),
+      step_ids: stepIds,
+      config_checksum: await hash(JSON.stringify(config)),
+      overlay_sha256: [...layers.overlaySha256],
+      run_overlays: layers.entries.filter((e) => e.layer === "run").length,
+      env_ignored: false,
+      hosts: [],
+      entries: entryRecords,
+    });
+
+    const dir = join(config.system.root, config.paths.runtime, BINDINGS_DIR);
+    await Deno.mkdir(dir, { recursive: true });
+    const path = join(dir, `${traceId}.lock.json`);
+    const serialized = JSON.stringify(lock);
+    const tempPath = join(dir, `.tmp-${traceId}-${crypto.randomUUID()}`);
+    await Deno.writeTextFile(tempPath, serialized);
+    await Deno.rename(tempPath, path);
+    const sha256 = await hash(serialized);
+
+    await this.logger.info(DomainEventType.BindingSnapshotCreated, flow.id, {
+      flow_id: flow.id,
+      trace_id: traceId,
+      lock_path: path,
+      lock_sha256: sha256,
+      entries: entryRecords.length,
+    }, traceId);
+
+    return { path, sha256 };
   }
 
   private async prepareProvider(

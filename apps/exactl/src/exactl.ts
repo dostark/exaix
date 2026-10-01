@@ -2284,6 +2284,24 @@ const baseCommand = new Command()
             const flowId = args[0];
             await flowCommands.validateFlow(flowId, options);
           }),
+      )
+      .command(
+        "bindings <flowId:string>",
+        new Command()
+          .description(
+            "Resolve this flow's step bindings across all layers (model/service/transport/interface per LLM step)",
+          )
+          .option("--json", CLI_OPTION_JSON_HELP)
+          .option("--overlay <file:string>", "Per-run binding overlay file (repeatable)", { collect: true })
+          .option(
+            "--bind <spec:string>",
+            "Per-run binding entry, e.g. flow:research/step:compose=service=openai (repeatable)",
+            { collect: true },
+          )
+          .action(async (options, ...args: string[]) => {
+            const flowId = args[0];
+            await flowCommands.bindingsFlow(flowId, options);
+          }),
       ),
   )
   // Memory commands

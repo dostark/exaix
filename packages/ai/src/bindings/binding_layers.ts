@@ -16,14 +16,32 @@ import { parse as parseToml } from "@std/toml";
 import { join } from "@std/path";
 import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
 import {
+  type BindingOutcome as SharedBindingOutcome,
   BindingOverlaySchema,
   type Config,
   getDefaultModels,
+  type IBindingIssue,
   type IBindingLayers,
+  type IBindingStepRef,
+  type IFlow,
   type IRunBindingsFile,
 } from "@exaix/schemas";
-import { BINDING_OVERLAY_MAX_BYTES, BINDING_OVERLAYS_DIR } from "@exaix/core";
+import { BINDING_OVERLAY_MAX_BYTES, BINDING_OVERLAYS_DIR, FlowStepType } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND, STEP_KIND_AGENT, STEP_KIND_GATE } from "./binding_types.ts";
+import { type IInvalidBindingOutcome, resolveBinding, SELECTOR_DEFAULT } from "./binding_resolver.ts";
+
+type BindingOutcome = SharedBindingOutcome;
+
+/** One LLM-calling step's audit resolution: the winning binding and any resolution issues.
+ *  Provider construction and validation are intentionally not performed. */
+export interface IStepAuditResolution {
+  stepId: string;
+  agentRole: string;
+  stepType: string;
+  outcome: BindingOutcome | IInvalidBindingOutcome;
+  issues: IBindingIssue[];
+}
 
 export const LAYER_FLOW = "flow";
 export const LAYER_CONFIG = "config";
@@ -250,4 +268,78 @@ async function dirExists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** One LLM-calling step's audit resolution: the winning binding and any resolution issues.
+ *  Provider construction and validation are intentionally not performed. */
+/** Resolve every LLM-calling step of a flow for audit, mirroring the runtime resolution
+ *  (pins, layer merge, environment rule, config-default fallback). Pure: no provider
+ *  construction and no validation side effects. */
+export async function resolveFlowForAudit(
+  flow: IFlow,
+  config: Config,
+  probe: { hasKey(name: string): boolean; hasOptIn(name: string): boolean },
+  run: Opt<IRunBindingsFile, Reason.OptionalContext> = undefined,
+): Promise<{ layers: IBindingLayers; steps: IStepAuditResolution[] }> {
+  const layers = await loadBindingLayers(config, run);
+  const steps: IStepAuditResolution[] = [];
+  for (const step of flow.steps) {
+    const ref = auditStepRef(flow, step);
+    if (!ref) continue;
+    const issues: IBindingIssue[] = [];
+    let outcome = resolveBinding(ref, { binding: step.binding ?? {}, pin: step.pin }, layers, probe);
+    if (outcome.kind === BINDING_OUTCOME_UNBOUND && layers.operatorLayersPresent && layers.configDefaultModel) {
+      outcome = resolveBinding(ref, { binding: {} }, {
+        ...layers,
+        entries: [...layers.entries, {
+          layer: LAYER_CONFIG,
+          selector: SELECTOR_DEFAULT,
+          spec: { model: layers.configDefaultModel },
+        }],
+      }, probe);
+    }
+    if (outcome.kind === BINDING_OUTCOME_INVALID) issues.push(...outcome.issues);
+    steps.push({
+      stepId: step.id,
+      agentRole: ref.agentRole,
+      stepType: step.type,
+      outcome,
+      issues,
+    });
+  }
+  return { layers, steps };
+}
+
+/** The binding ref for an LLM-calling step, or undefined for other step types.
+ *  Mirrors ModelBindingService.stepRefFor. */
+const STEP_KINDS = new Set<FlowStepType>([
+  FlowStepType.AGENT,
+  FlowStepType.GATE,
+  FlowStepType.SESSION_DELEGATE_CYCLE,
+]);
+
+function auditStepRef(
+  flow: IFlow,
+  step: IFlow["steps"][number],
+): IBindingStepRef | undefined {
+  if (!STEP_KINDS.has(step.type)) return undefined;
+  if (step.type === FlowStepType.AGENT) {
+    return {
+      flowId: flow.id,
+      stepId: step.id,
+      agentRole: step.agent_role,
+      kind: STEP_KIND_AGENT,
+      strategy: step.strategy,
+      nativeTools: false,
+    };
+  }
+  return {
+    flowId: flow.id,
+    stepId: step.id,
+    agentRole: step.type === FlowStepType.GATE
+      ? step.evaluate?.agent_role ?? step.agent_role
+      : step.delegateCycle?.review.agent_role ?? step.agent_role,
+    kind: STEP_KIND_GATE,
+    nativeTools: false,
+  };
 }

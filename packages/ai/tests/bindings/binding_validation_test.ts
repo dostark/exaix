@@ -235,3 +235,55 @@ Deno.test("[validation] a known compatible profile passes its adapter check", as
   assertEquals(known.includes("interface_unsupported"), false);
   assertEquals(typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS.deepseek, "object");
 });
+
+Deno.test("[validation] a host outside an explicit allow_net is host_not_allowed", async () => {
+  const result = await codes(binding({ endpoint: "https://unlisted.example.com/v1" }), {
+    service: {
+      adapter: "mock",
+      transport: "cloud",
+      interface: "api",
+      serves: {},
+      endpoint: "https://unlisted.example.com/v1",
+    },
+    allowNet: ["allowed.example.com", "allowed.example.net:8443"],
+  });
+  assertEquals(result.includes("host_not_allowed"), true);
+  // A grant entry matching the endpoint host (any port) passes.
+  const ok = await codes(binding({ endpoint: "https://allowed.example.com/v1" }), {
+    service: {
+      adapter: "mock",
+      transport: "cloud",
+      interface: "api",
+      serves: {},
+      endpoint: "https://allowed.example.com/v1",
+    },
+    allowNet: ["allowed.example.com"],
+  });
+  assertEquals(ok.includes("host_not_allowed"), false);
+});
+
+Deno.test("[validation] a new host outside the start grant is needs_restart when allow_net is unset", async () => {
+  const result = await codes(binding({ endpoint: "https://newhost.example.com/v1" }), {
+    service: {
+      adapter: "mock",
+      transport: "cloud",
+      interface: "api",
+      serves: {},
+      endpoint: "https://newhost.example.com/v1",
+    },
+    startNetGrant: ["known.example.com"],
+  });
+  assertEquals(result.includes("needs_restart"), true);
+  // A host inside the start grant passes without restart.
+  const ok = await codes(binding({ endpoint: "https://known.example.com/v1" }), {
+    service: {
+      adapter: "mock",
+      transport: "cloud",
+      interface: "api",
+      serves: {},
+      endpoint: "https://known.example.com/v1",
+    },
+    startNetGrant: ["known.example.com"],
+  });
+  assertEquals(ok.includes("needs_restart"), false);
+});

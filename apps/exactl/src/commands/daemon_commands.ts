@@ -18,6 +18,7 @@ import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
 import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { JSONObject } from "@exaix/core/types";
+import { computeStartNetGrant } from "@exaix/ai/bindings/net_grant.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
 
 import type { IDaemonStatus } from "@exaix/core/types";
@@ -95,7 +96,7 @@ export class DaemonCommands extends BaseCommand {
 
       // Build the minimal --allow-* spawn flags from config; falls back to
       // --allow-all only on a config-read exception (logged).
-      const spawnFlags = this.buildSpawnFlags().join(" ");
+      const spawnFlags = (await this.buildSpawnFlags()).join(" ");
       const cmd = new this.Command("bash", {
         args: [
           "-c",
@@ -162,7 +163,7 @@ export class DaemonCommands extends BaseCommand {
   // Builds the minimal `--allow-*` flag set for the daemon spawn from config. The
   // `--allow-all` fallback fires ONLY on a config-read exception — a successfully-read
   // `allow_net=[]` must still block outbound (no --allow-net flag), never fall back.
-  protected buildSpawnFlags(): string[] {
+  protected async buildSpawnFlags(): Promise<string[]> {
     try {
       const root = this.config.system.root!;
       const allowNet = this.config.system.allow_net;
@@ -183,12 +184,15 @@ export class DaemonCommands extends BaseCommand {
       if (perms.import) flags.push("--allow-import");
 
       // Net rules — empty array is an intentional block (no flag), never fallback.
+      // The static default list is extended with the start-time grant so the daemon can
+      // reach every catalog service host; the grant is validated host:port only.
       if (allowNet === undefined) {
-        flags.push(`--allow-net=${perms.net.join(",")}`);
+        const grant = await this.computeNetGrant();
+        if (grant.length > 0) flags.push(`--allow-net=${grant.join(",")}`);
       } else if (allowNet.length > 0) {
         flags.push(`--allow-net=${allowNet.join(",")}`);
       }
-      return flags;
+      return flags.filter((flag) => flag.length > 0);
     } catch (error) {
       // Config-read exception only: fall back to full permissions but warn loudly.
       this.logger.warn(
@@ -198,6 +202,11 @@ export class DaemonCommands extends BaseCommand {
       );
       return ["--allow-all"];
     }
+  }
+
+  /** Start-time `--allow-net` grant: DAEMON_DEFAULT_NET_HOSTS plus every catalog host. */
+  protected async computeNetGrant(): Promise<readonly string[]> {
+    return await computeStartNetGrant(this.config);
   }
 
   /**

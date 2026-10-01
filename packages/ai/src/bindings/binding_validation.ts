@@ -23,9 +23,11 @@ import type { IBindingEnvProbe } from "./binding_types.ts";
 import {
   ISSUE_CAPABILITY_MISSING,
   ISSUE_ENDPOINT_INVALID,
+  ISSUE_HOST_NOT_ALLOWED,
   ISSUE_INTERFACE_UNSUPPORTED,
   ISSUE_KEY_MISSING,
   ISSUE_LOCAL_HOST_NOT_PRIVATE,
+  ISSUE_NEEDS_RESTART,
   ISSUE_OPTIN_MISSING,
   ISSUE_PRICING_UNAVAILABLE,
 } from "./binding_resolver.ts";
@@ -46,6 +48,12 @@ export interface IBindingValidationDeps {
   modelRegistry?: Pick<IModelRegistry, "getModelPricing">;
   /** A finite daily cost cap, enabling the cloud unknown-pricing guard only when set. */
   maxCostPerDay?: number;
+  /** Explicit `[system].allow_net` grant. A resolved endpoint host outside it is
+   *  host_not_allowed. Absent means no explicit-allow check applies. */
+  allowNet?: readonly string[];
+  /** The start-time network grant (all catalog hosts) when allow_net is unset. An endpoint
+   *  host outside it is needs_restart. */
+  startNetGrant?: readonly string[];
 }
 
 /** True when the host is a loopback address: localhost, 127.0.0.0/8, or IPv6 ::1. */
@@ -166,9 +174,9 @@ function validateCredentials(ref: IBindingStepRef, deps: IBindingValidationDeps,
   }
 }
 
-/** endpoint_invalid and local_host_not_private. */
+/** endpoint_invalid, local_host_not_private, host_not_allowed and needs_restart. */
 function validateEndpoint(ref: IBindingStepRef, deps: IBindingValidationDeps, issues: IBindingIssue[]): void {
-  const { binding, service } = deps;
+  const { binding, service, allowNet, startNetGrant } = deps;
   const endpoint = service?.endpoint ?? binding.endpoint;
   const parsed = parseEndpoint(endpoint);
   if (!endpoint || !parsed) return;
@@ -182,6 +190,44 @@ function validateEndpoint(ref: IBindingStepRef, deps: IBindingValidationDeps, is
   if (binding.transport === "local" && parsed.host && !isPrivateHost(parsed.host)) {
     issues.push(issue(ISSUE_LOCAL_HOST_NOT_PRIVATE, ref, `${parsed.host} is not a private or local host`));
   }
+  validateHostGrant(ref, parsed.host, allowNet, startNetGrant, issues);
+}
+
+/** An endpoint host outside the explicit allow_net is host_not_allowed. Outside the
+ *  start-time grant it is needs_restart. Deno semantics: a host-only entry permits any
+ *  port, a host:port entry only that port. */
+function validateHostGrant(
+  ref: IBindingStepRef,
+  host: string,
+  allowNet: Opt<readonly string[], Reason.OptionalContext>,
+  startNetGrant: Opt<readonly string[], Reason.OptionalContext>,
+  issues: IBindingIssue[],
+): void {
+  if (!host) return;
+  if (allowNet !== undefined) {
+    if (!grantAllowsHost(allowNet, host)) {
+      issues.push(issue(ISSUE_HOST_NOT_ALLOWED, ref, `${host} is not in the allow_net grant`));
+    }
+  } else if (startNetGrant !== undefined) {
+    if (!grantAllowsHost(startNetGrant, host)) {
+      issues.push(issue(ISSUE_NEEDS_RESTART, ref, `${host} is outside the start-time network grant`));
+    }
+  }
+}
+
+/** Deno `--allow-net` semantics: a host-only entry permits that host on any port.
+ *  A `host:port` entry permits only that port. */
+function grantAllowsHost(grant: readonly string[], host: string): boolean {
+  for (const entry of grant) {
+    const separator = entry.lastIndexOf(":");
+    if (separator === -1) {
+      if (host === entry) return true;
+      continue;
+    }
+    const entryHost = entry.slice(0, separator);
+    if (host === entryHost) return true; // explicit host:port covers that host
+  }
+  return false;
 }
 
 /** pricing_unavailable for cloud bindings under a finite cap with unknown provenance. */

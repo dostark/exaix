@@ -42,6 +42,7 @@ import { PlanAdapter, PlanAmendmentGate, PlanAmendmentService } from "@exaix/cor
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
+  computeStartNetGrant,
   createProductionBindingEnvProbe,
   DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
   DefaultRoutingStrategy,
@@ -1012,6 +1013,7 @@ if (import.meta.main) {
       costTracker,
       probe: createProductionBindingEnvProbe(Deno.env, SecureCredentialStore),
       runStore: new RunBindingsStore(config),
+      startNetGrant: await computeStartNetGrant(config),
     });
 
     // Prune abandoned per-run binding files and lockfiles at start and daily.

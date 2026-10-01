@@ -10,10 +10,12 @@ import { Table } from "@cliffy/table";
 import { join } from "@std/path";
 import { FlowLoader } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
-import { DEFAULT_NONE_LABEL } from "@exaix/core";
+import { DEFAULT_NONE_LABEL, MODEL_COLUMN_LABEL } from "@exaix/core";
 import { BaseCommand } from "@exaix/cli/base.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { BindingOverlaySchema, BindOneOffSchema, type IRunBindingsFile } from "@exaix/schemas";
+import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND, computeStartNetGrant, resolveFlowForAudit } from "@exaix/ai";
 
 interface FlowListOptions {
   json?: boolean;
@@ -25,6 +27,12 @@ interface FlowShowOptions {
 
 interface FlowValidateOptions {
   json?: boolean;
+}
+
+interface FlowBindingsOptions {
+  json?: boolean;
+  overlay?: string[];
+  bind?: string[];
 }
 
 interface IFlowValidationResult {
@@ -241,5 +249,153 @@ export class FlowCommands extends BaseCommand {
       lines.push("");
     }
     return lines.join("\n");
+  }
+
+  /** `exactl flow bindings <flowId>`: resolve and print each LLM step's binding across all
+   *  layers (config, daemon overlays, per-run inputs). Pure resolution. No key values.
+   *  Non-zero exit on any issue. */
+  async bindingsFlow(flowId: string, options: FlowBindingsOptions = {}): Promise<void> {
+    try {
+      const flow = await this.flowLoader.loadFlow(flowId);
+      const run = await this.auditRunBindings(flowId, options);
+      const probe = this.auditProbe();
+      const { steps, layers } = await resolveFlowForAudit(flow, this.config, probe, run);
+      const hosts = await computeStartNetGrant(this.config);
+      const rows = steps.map((entry) => {
+        if (entry.outcome.kind === BINDING_OUTCOME_UNBOUND || entry.outcome.kind === BINDING_OUTCOME_INVALID) {
+          return {
+            step_id: entry.stepId,
+            agent_role: entry.agentRole,
+            unbound: entry.outcome.kind === BINDING_OUTCOME_UNBOUND,
+            invalid: entry.outcome.kind === BINDING_OUTCOME_INVALID,
+          };
+        }
+        const binding = entry.outcome.binding;
+        return {
+          step_id: entry.stepId,
+          agent_role: entry.agentRole,
+          service: binding.service,
+          model: binding.model,
+          service_model_id: binding.service_model_id,
+          transport: binding.transport,
+          interface: binding.interface,
+          sources: binding.sources,
+          unbound: false,
+        };
+      });
+      const hasIssues = steps.some((entry) => entry.issues.length > 0);
+      const issues = steps.flatMap((entry) =>
+        entry.issues.map((element) => ({ step_id: entry.stepId, code: element.code, detail: element.detail }))
+      );
+
+      if (options.json) {
+        console.log(JSON.stringify({ layers, flow_id: flowId, steps: rows, issues, hosts }, null, 2));
+      } else {
+        const table = new Table()
+          .header(["Step", "Role", "Service", MODEL_COLUMN_LABEL, "Service model id", "Transport", "Interface"])
+          .border(true);
+        for (const row of rows) {
+          if (row.unbound || row.invalid) {
+            table.push([
+              row.step_id,
+              row.agent_role,
+              row.invalid ? "INVALID" : DEFAULT_NONE_LABEL,
+              DEFAULT_NONE_LABEL,
+              DEFAULT_NONE_LABEL,
+              DEFAULT_NONE_LABEL,
+              DEFAULT_NONE_LABEL,
+            ]);
+          } else {
+            table.push([
+              row.step_id,
+              row.agent_role,
+              row.service,
+              row.model,
+              row.service_model_id,
+              row.transport,
+              row.interface,
+            ]);
+          }
+        }
+        table.render();
+        console.log();
+        console.log(`Hosts (start-time network grant): ${hosts.length > 0 ? hosts.join(", ") : DEFAULT_NONE_LABEL}`);
+        if (issues.length > 0) {
+          console.log();
+          console.log("Issues:");
+          for (const issue of issues) {
+            console.log(`  [${issue.code}] step=${issue.step_id} ${issue.detail}`);
+          }
+        }
+      }
+      if (hasIssues) this.exit(1);
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        console.error(`Flow '${flowId}' not found`);
+      } else {
+        console.error("Error resolving bindings:", error instanceof Error ? error.message : String(error));
+      }
+      this.exit(1);
+    }
+  }
+
+  private async auditRunBindings(
+    flowId: string,
+    options: FlowBindingsOptions,
+  ): Promise<Opt<IRunBindingsFile, Reason.OptionalContext>> {
+    if (!options.overlay?.length && !options.bind?.length) return undefined;
+    const overlays = [];
+    for (const sourcePath of options.overlay ?? []) {
+      const content = await Deno.readTextFile(sourcePath);
+      overlays.push({
+        source_path: sourcePath,
+        sha256: await this.auditSha256(content),
+        overlay: BindingOverlaySchema.parse(JSON.parse(content)),
+      });
+    }
+    const binds = this.auditBinds(options.bind ?? []);
+    return {
+      schema: 1,
+      trace_id: crypto.randomUUID(),
+      request_path: flowId,
+      request_sha256: "0".repeat(64),
+      created_at: new Date().toISOString(),
+      overlays,
+      binds,
+    };
+  }
+
+  private auditBinds(raw: string[]): ReturnType<typeof BindOneOffSchema.parse> {
+    if (raw.length === 0) return [];
+    const binds = [];
+    for (const entry of raw) {
+      const separatorIndex = entry.indexOf("=");
+      if (separatorIndex <= 0) throw new Error(`overlay_invalid: malformed --bind \"${entry}\"`);
+      const selector = entry.slice(0, separatorIndex);
+      const spec: Record<string, string> = {};
+      for (const fieldAssignment of entry.slice(separatorIndex + 1).split(",")) {
+        if (!fieldAssignment) continue;
+        const equalsIndex = fieldAssignment.indexOf("=");
+        if (equalsIndex <= 0) throw new Error(`overlay_invalid: malformed --bind \"${entry}\"`);
+        spec[fieldAssignment.slice(0, equalsIndex)] = fieldAssignment.slice(equalsIndex + 1);
+      }
+      binds.push({ selector, spec });
+    }
+    return BindOneOffSchema.parse(binds);
+  }
+
+  private auditProbe(): { hasKey(name: string): boolean; hasOptIn(name: string): boolean } {
+    return {
+      hasKey: (name) => {
+        const value = Deno.env.get(name);
+        return Boolean(value && value.length > 0);
+      },
+      hasOptIn: (name) => Deno.env.get(name) === "1",
+    };
+  }
+
+  private async auditSha256(text: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 }

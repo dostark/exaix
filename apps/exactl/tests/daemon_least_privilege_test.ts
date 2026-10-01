@@ -18,8 +18,8 @@ import type { Config } from "@exaix/schemas/config.ts";
 
 /** Expose the protected buildSpawnFlags() and allow injecting a config that throws. */
 class TestDaemonCommands extends DaemonCommands {
-  public callSpawnFlags(): string[] {
-    return this.buildSpawnFlags();
+  public async callSpawnFlags(): Promise<string[]> {
+    return await this.buildSpawnFlags();
   }
 }
 
@@ -38,7 +38,7 @@ async function makeCommands(allowNet: string[] | undefined): Promise<ITestComman
 Deno.test("[daemon_least_privilege] allow_net=['api.anthropic.com'] → --allow-net=api.anthropic.com, not --allow-all", async () => {
   const { cmds, cleanup } = await makeCommands(["api.anthropic.com"]);
   try {
-    const flags = cmds.callSpawnFlags();
+    const flags = await cmds.callSpawnFlags();
     assertEquals(flags.includes("--allow-net=api.anthropic.com"), true);
     assertEquals(flags.includes("--allow-all"), false);
   } finally {
@@ -49,7 +49,7 @@ Deno.test("[daemon_least_privilege] allow_net=['api.anthropic.com'] → --allow-
 Deno.test("[daemon_least_privilege] allow_net=[] → no --allow-net flag (outbound blocked), NOT --allow-all (GAP-2)", async () => {
   const { cmds, cleanup } = await makeCommands([]);
   try {
-    const flags = cmds.callSpawnFlags();
+    const flags = await cmds.callSpawnFlags();
     assertEquals(flags.some((f) => f.startsWith("--allow-net")), false);
     assertEquals(flags.includes("--allow-all"), false);
   } finally {
@@ -57,14 +57,19 @@ Deno.test("[daemon_least_privilege] allow_net=[] → no --allow-net flag (outbou
   }
 });
 
-Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net=<default host list>", async () => {
+Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net includes every default host and catalog host, not --allow-all (GAP-2)", async () => {
   const { cmds, cleanup } = await makeCommands(undefined);
   try {
-    const flags = cmds.callSpawnFlags();
+    const flags = await cmds.callSpawnFlags();
     const netFlag = flags.find((f) => f.startsWith("--allow-net="));
-    // An undefined allow_net falls back to the default host grant, not --allow-all; the
-    // default host set is pinned in tests/daemon/net_allowlist_covers_providers_test.ts.
-    assertEquals(netFlag, `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`);
+    // An undefined allow_net falls back to the start-time grant (default hosts plus every
+    // catalog service host), never --allow-all. The default set is pinned in
+    // tests/daemon/net_allowlist_covers_providers_test.ts.
+    const hosts = netFlag ? netFlag.slice("--allow-net=".length).split(",") : [];
+    for (const host of DAEMON_DEFAULT_NET_HOSTS) {
+      assertEquals(hosts.includes(host), true, `expected default host ${host}`);
+    }
+    assertEquals(flags.includes("--allow-all"), false);
   } finally {
     await cleanup();
   }
@@ -79,7 +84,7 @@ Deno.test("[daemon_least_privilege] config-read throws → --allow-all fallback 
         throw new Error("config unreadable");
       },
     });
-    const flags = cmds.callSpawnFlags();
+    const flags = await cmds.callSpawnFlags();
     assertEquals(flags, ["--allow-all"]);
   } finally {
     await cleanup();
@@ -89,7 +94,7 @@ Deno.test("[daemon_least_privilege] config-read throws → --allow-all fallback 
 Deno.test("[daemon_least_privilege] scoped/typed flags present: read, write, run(allowlist), env, ffi, import", async () => {
   const { cmds, cleanup } = await makeCommands(["api.anthropic.com"]);
   try {
-    const flags = cmds.callSpawnFlags();
+    const flags = await cmds.callSpawnFlags();
     assertEquals(flags.includes("--allow-read"), true);
     assertEquals(flags.some((f) => f.startsWith("--allow-write=")), true);
     assertEquals(
@@ -110,7 +115,7 @@ Deno.test("[daemon_least_privilege] buildSpawnFlags derives boolean perms from D
   // than hardcoding flags.
   const { cmds, cleanup } = await makeCommands(["api.anthropic.com"]);
   try {
-    const flags = cmds.callSpawnFlags();
+    const flags = await cmds.callSpawnFlags();
     // run flag derives from DAEMON_SPAWN_PERMISSIONS.run
     const runFlag = flags.find((f) => f.startsWith("--allow-run="));
     assertEquals(runFlag, `--allow-run=${DAEMON_SPAWN_PERMISSIONS.run.join(",")}`);
