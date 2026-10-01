@@ -65,6 +65,12 @@ export interface IRequestOptions {
   acceptanceCriteria?: string[];
   /** Expected outcomes passed via CLI --expected-outcome flag. */
   expectedOutcomes?: string[];
+  /** Operator per-run binding overlays (file paths), copied into the run binding file. */
+  overlays?: string[];
+  /** Operator per-run --bind specs, parsed into the run binding file. */
+  binds?: string[];
+  /** Operator per-run replay lock file path, copied into the run binding file. */
+  locked?: string;
 }
 
 /**

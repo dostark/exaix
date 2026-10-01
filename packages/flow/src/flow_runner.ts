@@ -151,6 +151,12 @@ export interface IFlowRunner {
       planContextRef?: string;
       flowId?: string;
       bindingSnapshot?: IBindingRunSnapshot;
+      /** Trusted canonical request path beneath Workspace/Requests.
+       *  It lets the run claim an operator per-run binding file.
+       *  It is never taken from request-file content. */
+      requestPath?: string;
+      /** SHA-256 of the exact request bytes read from `requestPath` by the daemon. */
+      requestSha256?: string;
     },
   ): Promise<IFlowResult>;
 }
@@ -318,6 +324,12 @@ type IFlowOriginalRequest = {
   flowId?: string;
   requestAnalysis?: IRequestAnalysis;
   portal?: string;
+  /** Trusted canonical request path beneath Workspace/Requests.
+   *  It lets the run claim an operator per-run binding file.
+   *  It is never taken from request-file content. */
+  requestPath?: string;
+  /** SHA-256 of the exact request bytes the daemon read from `requestPath`. */
+  requestSha256?: string;
   /** The portal's configured `target_path` verbatim — `SessionDelegationCoordinator.
    *  prepareBrief` resolves it to a real per-trace worktree via `FlowWorktreeCoordinator`
    *  before use when the portal opts into `execution_strategy: "worktree"`. Required by a session_delegate_cycle step. */
@@ -1233,6 +1245,8 @@ export class FlowRunner implements IFlowRunner {
       executionRoot?: string;
       planContextRef?: string;
       flowId?: string;
+      requestPath?: string;
+      requestSha256?: string;
       bindingSnapshot?: IBindingRunSnapshot;
     },
   ): Promise<IFlowResult> {
@@ -1258,6 +1272,8 @@ export class FlowRunner implements IFlowRunner {
           bindingSnapshot: await this.options.bindingService.snapshotForRun(flow, {
             traceId,
             requestId: request.requestId,
+            requestPath: request.requestPath,
+            requestSha256: request.requestSha256,
           }),
         };
       }

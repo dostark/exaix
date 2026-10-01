@@ -3145,6 +3145,42 @@ export const MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA = "2.1.205";
 /** Minimum Codex CLI version this integration targets, pinned to the exact version live-verified against a real `codex exec --help`/`codex --version` invocation: `codex-cli 0.77.0`. Unlike `MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA`, this floor has **no active `probeDelegateVersion` gate** in `CliDelegateModelProvider` — a documented Design Decision, not an oversight: no evidence was found that `--output-schema`/`--sandbox`/`resume` were later additions to `codex exec`, so an operator on a too-old Codex CLI gets a loud CLI-level flag-rejection error rather than needing speculative version-gating machinery for a first integration pass. */
 export const MINIMUM_VERSION_CODEX = "0.77.0";
 
+// Flow-step model bindings — operator runtime files (Phase 204)
+
+/** Operator runtime directory name for per-run binding locks, beneath `<root>/.exa/`. */
+export const BINDINGS_DIR = "bindings";
+/** Operator runtime directory name for daemon-wide binding overlays, beneath `<root>/.exa/`. */
+export const BINDING_OVERLAYS_DIR = "overlays";
+/** Operator runtime directory name for per-run binding files, beneath `<root>/.exa/`. */
+export const RUN_BINDINGS_DIR = "run-bindings";
+
+/** Per-overlay byte ceiling, for operator-only files.
+ *  A larger file is refused with `overlay_invalid` before any resolver. */
+export const BINDING_OVERLAY_MAX_BYTES: number = configurable({
+  key: "bindings.overlay_max_bytes",
+  default: 256 * 1024,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum bytes per operator binding overlay or run binding file",
+  min: 1024,
+  max: 16 * 1024 * 1024,
+  swap: SwapClass.HOT,
+});
+
+/** Retention window for per-run binding files and lockfiles.
+ *  Older files are pruned at daemon start and daily. */
+export const BINDING_RUN_FILE_RETENTION_DAYS: number = configurable({
+  key: "bindings.run_file_retention_days",
+  default: 30,
+  type: ConfigValueType.NUMBER,
+  description: "Days an unclaimed per-run binding file or lockfile stays before pruning",
+  min: 1,
+  max: 365,
+  swap: SwapClass.HOT,
+});
+
+/** Milliseconds in one day: the daemon's run-binding retention prune cadence. */
+export const BINDING_RUN_FILE_PRUNE_INTERVAL_MS = 86_400_000;
+
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
 export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);
 

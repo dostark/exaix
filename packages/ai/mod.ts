@@ -32,6 +32,7 @@ export * from "./src/model_resolver.ts";
 export * from "./src/effort_resolver.ts";
 export * from "./src/bindings/binding_types.ts";
 export * from "./src/bindings/binding_layers.ts";
+export * from "./src/bindings/run_bindings_store.ts";
 export * from "./src/bindings/binding_resolver.ts";
 export * from "./src/bindings/model_binding_service.ts";
 export * from "./src/native_conversation_budget.ts";

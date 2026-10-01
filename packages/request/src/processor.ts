@@ -647,6 +647,11 @@ export class RequestProcessor {
         traceId,
         requestId,
         portal: frontmatter.portal,
+        // Trusted request identity from the watcher: the canonical path and the SHA-256 of
+        // the exact bytes parsed here. This lets the run claim an operator per-run binding
+        // file — never derived from request-file content.
+        requestPath: filePath,
+        requestSha256: await sha256Bytes(body),
         // The call-site key stamped by exactl (scenario_id/step_id) must reach the flow's
         // agent steps, or every flow-step LLM call is unkeyed and capture mode refuses it.
         scenarioId: frontmatter.scenario_id,
@@ -1079,4 +1084,10 @@ function createNoopLogger(): IEventLogger {
     child: () => logger,
   };
   return logger;
+}
+
+/** SHA-256 hex digest of UTF-8 text bytes. */
+async function sha256Bytes(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }

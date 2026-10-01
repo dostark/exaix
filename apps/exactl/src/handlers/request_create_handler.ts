@@ -22,6 +22,8 @@ import { resolveSubject } from "@exaix/cli/helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
 import { AnalysisMode, type IRequestAnalysis, type Opt, type Reason } from "@exaix/core/types";
 import { DEFAULT_AGENT_ROLE } from "@exaix/core";
+import { RunBindingsStore } from "@exaix/ai/bindings/run_bindings_store.ts";
+import { BindingLockSchema, BindingOverlaySchema, BindOneOffSchema, type IRunBindingsFile } from "@exaix/schemas";
 
 const VALID_PRIORITIES: RequestPriority[] = [
   RequestPriority.LOW,
@@ -32,10 +34,85 @@ const VALID_PRIORITIES: RequestPriority[] = [
 
 export class RequestCreateHandler extends BaseCommand {
   private workspaceRequestsDir: string;
+  /** Forbidden to throw: an empty overlays/binds/locked list skips run-file writing. */
+  private readonly runBindingsStore: RunBindingsStore | undefined;
 
   constructor(context: ICommandContext) {
     super(context);
     this.workspaceRequestsDir = getWorkspaceRequestsDir(context);
+    this.runBindingsStore = new RunBindingsStore(this.config);
+  }
+
+  /** Writes the operator run binding file for the minted trace id, before the request file.
+   *  Only when overlays, binds or a locked lock file are supplied. Returns the path or
+   *  undefined when nothing was supplied. */
+  private async writeRunBindingsFile(
+    frontmatterFields: Record<string, string | boolean>,
+    path: string,
+    requestContent: string,
+    options: IRequestOptions,
+  ): Promise<string | undefined> {
+    if (!options.overlays?.length && !options.binds?.length && !options.locked) return undefined;
+    const store = this.runBindingsStore!;
+    const traceId = String(frontmatterFields.trace_id);
+    const overlays = await this.loadOverlays(options.overlays ?? []);
+    const binds = this.parseBinds(options.binds ?? []);
+    const locked = options.locked
+      ? BindingLockSchema.parse(JSON.parse(await Deno.readTextFile(options.locked)))
+      : undefined;
+    const file: IRunBindingsFile = {
+      schema: 1,
+      trace_id: traceId,
+      request_path: path,
+      request_sha256: await this.sha256(requestContent),
+      created_at: String(frontmatterFields.created),
+      overlays,
+      binds,
+      locked,
+    };
+    return await store.write(file);
+  }
+
+  private async loadOverlays(
+    paths: string[],
+  ): Promise<Array<{ source_path: string; sha256: string; overlay: ReturnType<typeof BindingOverlaySchema.parse> }>> {
+    const result = [];
+    for (const sourcePath of paths) {
+      const content = await Deno.readTextFile(sourcePath);
+      const overlay = BindingOverlaySchema.parse(JSON.parse(content));
+      result.push({ source_path: sourcePath, sha256: await this.sha256(content), overlay });
+    }
+    return result;
+  }
+
+  private parseBinds(raw: string[]): ReturnType<typeof BindOneOffSchema.parse> {
+    if (raw.length === 0) return [];
+    const binds = [];
+    for (const entry of raw) {
+      const separatorIndex = entry.indexOf("=");
+      if (separatorIndex <= 0) {
+        throw new Error(`overlay_invalid: malformed --bind "${entry}" — expected selector=field=value`);
+      }
+      const selector = entry.slice(0, separatorIndex);
+      const spec: Record<string, string> = {};
+      for (const fieldAssignment of entry.slice(separatorIndex + 1).split(",")) {
+        if (!fieldAssignment) continue;
+        const equalsIndex = fieldAssignment.indexOf("=");
+        if (equalsIndex <= 0) {
+          throw new Error(`overlay_invalid: malformed --bind "${entry}" — expected field=value`);
+        }
+        const key = fieldAssignment.slice(0, equalsIndex);
+        const value = fieldAssignment.slice(equalsIndex + 1);
+        spec[key] = value;
+      }
+      binds.push({ selector, spec });
+    }
+    return BindOneOffSchema.parse(binds);
+  }
+
+  private async sha256(text: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
   async create(
@@ -94,6 +171,11 @@ export class RequestCreateHandler extends BaseCommand {
 
       // Ensure directory exists
       await ensureDir(this.workspaceRequestsDir);
+
+      // Write the operator run binding file BEFORE the request file.
+      // The daemon watcher then never sees a request whose per-run overlays are missing.
+      // A request-write failure leaves an unclaimed file for the retention prune.
+      await this.writeRunBindingsFile(frontmatterFields, path, content, options);
 
       // Write file
       await Deno.writeTextFile(path, content);

@@ -427,6 +427,17 @@ const baseCommand = new Command()
         { collect: true },
       )
       .option("-f, --file <file:string>", "Read description from file")
+      .option(
+        "--overlay <file:string>",
+        "Per-run binding overlay file (repeatable: --overlay a.json --overlay b.toml)",
+        { collect: true },
+      )
+      .option(
+        "--bind <spec:string>",
+        "Per-run binding (repeatable), e.g. flow:research/step:compose=service=openai",
+        { collect: true },
+      )
+      .option("--locked <file:string>", "Replay a prior run's binding lock file")
       .option("--dry-run", "Show what would be created without writing")
       .option(
         "--dry-run-context",

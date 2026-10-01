@@ -157,6 +157,9 @@ export interface IBindingRunSnapshot {
   layers: IBindingLayers;
   bindings: ReadonlyMap<string, BindingOutcome>;
   issues: readonly IBindingIssue[];
+  /** True when an operator binding layer exists and the run shadows EXA_LLM_*.
+   *  Step 7 records it in the lock. Here it is the in-memory run-level flag. */
+  envIgnored: boolean;
   lock?: { path: string; sha256: string };
 }
 

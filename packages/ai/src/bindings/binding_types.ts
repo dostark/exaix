@@ -48,6 +48,8 @@ export type IBoundStepTarget = IBoundStepProvider | IBoundSessionTool | undefine
 
 /** The tagged outcome kind for an invalid resolved binding. */
 export const BINDING_OUTCOME_INVALID = "invalid" as const;
+/** The tagged outcome kind for a step no layer entry touches (unbound → boot provider). */
+export const BINDING_OUTCOME_UNBOUND = "unbound" as const;
 
 /** Discriminant values of the bound-step target union (`IBoundStepTarget`). */
 export const BOUND_TARGET_KIND_PROVIDER = "provider" as const;

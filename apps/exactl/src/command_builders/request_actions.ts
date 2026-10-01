@@ -93,6 +93,12 @@ export interface IRequestCreateOptions {
   engine?: string;
   acceptanceCriteria?: string[];
   expectedOutcomes?: string[];
+  /** Operator per-run binding overlay files (repeatable CLI flag). */
+  overlay?: string[];
+  /** Operator per-run --bind specs (repeatable CLI flag). */
+  bind?: string[];
+  /** Operator per-run replay lock file. */
+  locked?: string;
 }
 
 export interface IRequestListOptions {
@@ -407,6 +413,9 @@ export async function handleRequestCreate(
       analysis_engine: options.engine as AnalysisMode,
       acceptanceCriteria: options.acceptanceCriteria,
       expectedOutcomes: options.expectedOutcomes,
+      overlays: options.overlay,
+      binds: options.bind,
+      locked: options.locked,
     };
 
     // Handle file input

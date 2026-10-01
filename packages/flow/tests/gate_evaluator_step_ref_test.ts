@@ -49,6 +49,7 @@ function makeContext(): IBindingGateContext {
       },
       bindings: new Map(),
       issues: [],
+      envIgnored: false,
     },
   };
 }

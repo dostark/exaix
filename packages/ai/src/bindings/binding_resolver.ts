@@ -27,14 +27,14 @@ import {
   ModelCapabilitySchema,
 } from "@exaix/schemas";
 import type { IBindingEnvProbe } from "./binding_types.ts";
-import { BINDING_OUTCOME_INVALID } from "./binding_types.ts";
+import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND } from "./binding_types.ts";
 
 export interface IInvalidBindingOutcome {
   kind: typeof BINDING_OUTCOME_INVALID;
   issues: IBindingIssue[];
 }
 
-const SELECTOR_DEFAULT = "default";
+export const SELECTOR_DEFAULT = "default";
 const FALLBACK_LAYER: BindingLayer = "config";
 const ISSUE_UNKNOWN_MODEL: IBindingIssue["code"] = "unknown_model";
 const FLOW_PREFIX = "flow:";
@@ -196,7 +196,7 @@ function resolveModel(
   ref: IBindingStepRef,
   spec: IBindingSpec,
   layers: IBindingLayers,
-): IModelState | IInvalidBindingOutcome | { kind: "unbound" } {
+): IModelState | IInvalidBindingOutcome | { kind: typeof BINDING_OUTCOME_UNBOUND } {
   if (spec.model) {
     const catalogModel = layers.catalog.models[spec.model];
     if (!catalogModel) return issue(ISSUE_UNKNOWN_MODEL, ref, `Unknown canonical model: ${spec.model}`);
@@ -228,7 +228,7 @@ function resolveModel(
     return { canonical: `${spec.service}/${spec.service_model_id}`, provider: spec.model_provider ?? spec.service };
   }
   if (spec.service) return issue(ISSUE_UNKNOWN_MODEL, ref, "A service binding requires model or service_model_id");
-  return { kind: "unbound" };
+  return { kind: BINDING_OUTCOME_UNBOUND };
 }
 
 /** Substitutes the {model}/{name} placeholders of a wildcard serves route. */
@@ -413,7 +413,7 @@ export function resolveBinding(
 
   const modelState = resolveModel(ref, spec, layers);
   if ("issues" in modelState) return { kind: BINDING_OUTCOME_INVALID, issues: modelState.issues };
-  if ("kind" in modelState && modelState.kind === "unbound") return { kind: "unbound" };
+  if ("kind" in modelState && modelState.kind === BINDING_OUTCOME_UNBOUND) return { kind: BINDING_OUTCOME_UNBOUND };
 
   const capability = capabilityIssues(ref, spec, modelState);
   if (capability.length > 0) return { kind: BINDING_OUTCOME_INVALID, issues: capability };

@@ -9,6 +9,8 @@
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import {
+  BINDING_RUN_FILE_PRUNE_INTERVAL_MS,
+  BINDING_RUN_FILE_RETENTION_DAYS,
   DAEMON_AGENT_ROLE_ID,
   DAEMON_DEFAULT_NET_HOSTS,
   DaemonStatus,
@@ -50,6 +52,7 @@ import {
   ModelResolver,
   ProviderFactory,
   ProviderRegistry,
+  RunBindingsStore,
 } from "@exaix/ai";
 import { MockLLMProvider, unwrapModelProvider } from "@exaix/ai/providers";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -1008,6 +1011,28 @@ if (import.meta.main) {
       db: dbService,
       costTracker,
       probe: createProductionBindingEnvProbe(Deno.env, SecureCredentialStore),
+      runStore: new RunBindingsStore(config),
+    });
+
+    // Prune abandoned per-run binding files and lockfiles at start and daily.
+    const runBindingsStore = new RunBindingsStore(config);
+    const pruneRunBindings = async (): Promise<void> => {
+      try {
+        await runBindingsStore.pruneOlderThan(BINDING_RUN_FILE_RETENTION_DAYS, new Date());
+      } catch (error) {
+        console.error(
+          `[bindings] run-binding retention prune failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    };
+    await pruneRunBindings();
+    const runBindingsPruneHandle = setInterval(
+      () => void pruneRunBindings(),
+      BINDING_RUN_FILE_PRUNE_INTERVAL_MS,
+    );
+    gracefulShutdown.registerCleanup("clear_run_bindings_prune", () => {
+      clearInterval(runBindingsPruneHandle);
+      return Promise.resolve();
     });
 
     const agentExecutorAdapter = new AgentComposerAdapter(
