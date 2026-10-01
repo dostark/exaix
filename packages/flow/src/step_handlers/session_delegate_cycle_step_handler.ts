@@ -46,6 +46,8 @@ import {
 import type { IPlanContextResolver } from "../plan_context_resolver.ts";
 import { type IParsedPhaseStep, parsePhaseStepManifests } from "../phase_step_manifest_parser.ts";
 import { computePlanDigest } from "../plan_digest.ts";
+import type { IBindingGateContext } from "@exaix/schemas";
+import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
 import { type IFlowEventLogger, toGateConfig } from "../flow_runner.ts";
 
 export interface ISessionDelegateCycleStepHandlerDeps {
@@ -74,6 +76,11 @@ interface IStepDelegationContext {
   portalAlias: string;
   worktreePath: string;
   artifactRef: string;
+  /** Judge-binding context for the review gate.
+   *  It carries the cycle step's ref and the run snapshot.
+   *  The review judge uses the step's bound provider.
+   *  Absent when no binding layer exists, the boot provider grades as before. */
+  bindingContext?: IBindingGateContext;
 }
 
 interface ICompletedCycleStep {
@@ -172,6 +179,18 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
             portalAlias: portal,
             worktreePath: executionRoot,
             artifactRef: planContextRef,
+            bindingContext: ctx.stepRequest.bindingSnapshot
+              ? {
+                stepRef: {
+                  flowId: ctx.stepRequest.flowId ?? ctx.flow.id,
+                  stepId: ctx.step.id,
+                  agentRole: cycleConfig.review.agent_role,
+                  kind: STEP_KIND_GATE,
+                  nativeTools: false,
+                },
+                snapshot: ctx.stepRequest.bindingSnapshot,
+              }
+              : undefined,
           },
           checkpoint,
         );
@@ -366,8 +385,17 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
     key: ISessionDelegateCycleClaimKey,
     persist: (claim: ISessionDelegateCycleClaim) => Promise<void>,
   ): Promise<ISessionDelegateCycleClaim> {
-    const { parsedStep, cycleConfig, parentTraceId, parentStepId, agentRole, portalAlias, worktreePath, artifactRef } =
-      step;
+    const {
+      parsedStep,
+      cycleConfig,
+      parentTraceId,
+      parentStepId,
+      agentRole,
+      portalAlias,
+      worktreePath,
+      artifactRef,
+      bindingContext,
+    } = step;
     let state = claim.state;
     let outcome = claim.outcome;
     const delegationTraceId = claim.delegationTraceId;
@@ -438,7 +466,7 @@ export class SessionDelegateCycleStepHandler implements IFlowStepHandler {
         );
       }
       const gateResult = await this.deps.gateEvaluator.evaluate(
-        toGateConfig(cycleConfig.review),
+        bindingContext ? { ...toGateConfig(cycleConfig.review), bindingContext } : toGateConfig(cycleConfig.review),
         outcome!.summary,
         parsedStep.sectionText,
         0,

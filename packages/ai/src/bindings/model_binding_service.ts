@@ -8,7 +8,7 @@
  */
 
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
-import type { ICostTracker, IDatabaseService } from "@exaix/core";
+import { FlowStepType, type ICostTracker, type IDatabaseService } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type {
   BindingOutcome,
@@ -22,7 +22,17 @@ import { ProviderFactory } from "../provider_factory.ts";
 import type { IModelProvider } from "../types.ts";
 import { loadBindingLayers } from "./binding_layers.ts";
 import { resolveBinding } from "./binding_resolver.ts";
-import { BINDING_OUTCOME_INVALID, BindingIncompatibleError, type IBoundStepProvider } from "./binding_types.ts";
+import {
+  ADAPTER_CLI_DELEGATE,
+  BINDING_OUTCOME_INVALID,
+  BindingIncompatibleError,
+  BOUND_TARGET_KIND_PROVIDER,
+  BOUND_TARGET_KIND_SESSION_TOOL,
+  type IBoundStepProvider,
+  type IBoundStepTarget,
+  STEP_KIND_AGENT,
+  STEP_KIND_GATE,
+} from "./binding_types.ts";
 
 export interface IModelBindingServiceDeps {
   configSource: { get(): Config };
@@ -53,6 +63,35 @@ export class ModelBindingService {
     return Object.keys(this.deps.configSource.get().bindings ?? {}).length > 0;
   }
 
+  /** The binding ref for an LLM-calling step, or undefined for other step types. */
+  private stepRefFor(flow: IFlow, step: IFlow["steps"][number]): IBindingStepRef | undefined {
+    if (
+      step.type !== FlowStepType.AGENT && step.type !== FlowStepType.GATE &&
+      step.type !== FlowStepType.SESSION_DELEGATE_CYCLE
+    ) {
+      return undefined;
+    }
+    if (step.type === FlowStepType.AGENT) {
+      return {
+        flowId: flow.id,
+        stepId: step.id,
+        agentRole: step.agent_role,
+        kind: STEP_KIND_AGENT,
+        strategy: step.strategy,
+        nativeTools: false,
+      };
+    }
+    return {
+      flowId: flow.id,
+      stepId: step.id,
+      agentRole: step.type === FlowStepType.GATE
+        ? step.evaluate?.agent_role ?? step.agent_role
+        : step.delegateCycle?.review.agent_role ?? step.agent_role,
+      kind: STEP_KIND_GATE,
+      nativeTools: false,
+    };
+  }
+
   /** Capture current config once and construct every bound provider before execution. */
   async snapshotForRun(flow: IFlow, run: { traceId: string; requestId?: string }): Promise<IBindingRunSnapshot> {
     const config = structuredClone(this.deps.configSource.get());
@@ -74,15 +113,8 @@ export class ModelBindingService {
     const bindings = new Map<string, BindingOutcome>();
     const issues: IBindingIssue[] = [];
     for (const step of flow.steps) {
-      if (step.type !== "agent") continue;
-      const ref: IBindingStepRef = {
-        flowId: flow.id,
-        stepId: step.id,
-        agentRole: step.agent_role,
-        kind: "agent",
-        strategy: step.strategy,
-        nativeTools: false,
-      };
+      const ref = this.stepRefFor(flow, step);
+      if (!ref) continue;
       const outcome = resolveBinding(ref, {}, layers, probe);
       if (outcome.kind === BINDING_OUTCOME_INVALID) issues.push(...outcome.issues);
       else bindings.set(step.id, outcome);
@@ -90,15 +122,17 @@ export class ModelBindingService {
     if (issues.length === 0) {
       for (const [stepId, outcome] of bindings) {
         if (outcome.kind !== "bound") continue;
-        try {
-          await this.prepareProvider(config, outcome.binding);
-        } catch {
-          issues.push({
-            code: "interface_unsupported",
-            flowId: flow.id,
-            stepId,
-            detail: `Provider construction failed for service ${outcome.binding.service}`,
-          });
+        if (outcome.binding.adapter !== ADAPTER_CLI_DELEGATE) {
+          try {
+            await this.prepareProvider(config, outcome.binding);
+          } catch {
+            issues.push({
+              code: "interface_unsupported",
+              flowId: flow.id,
+              stepId,
+              detail: `Provider construction failed for service ${outcome.binding.service}`,
+            });
+          }
         }
       }
     }
@@ -141,11 +175,26 @@ export class ModelBindingService {
     }
   }
 
-  /** Acquire the already-preflighted target and record this step attempt. */
-  async providerFor(snapshot: IBindingRunSnapshot, ref: IBindingStepRef): Promise<IBoundStepProvider | undefined> {
+  /** Acquire the already-preflighted target and record this step attempt.
+   *  A cli-delegate service yields a session-tool target, never an IModelProvider.
+   *  Everything else returns its pooled provider. */
+  async providerFor(snapshot: IBindingRunSnapshot, ref: IBindingStepRef): Promise<IBoundStepTarget> {
     const outcome = snapshot.bindings.get(ref.stepId);
     if (!outcome || outcome.kind === "unbound") return undefined;
-    const provider = await this.providers.get(outcome.binding.fingerprint);
+    const binding = outcome.binding;
+    if (binding.adapter === ADAPTER_CLI_DELEGATE) {
+      if (!binding.tool) {
+        throw new BindingIncompatibleError([{
+          code: "unknown_service",
+          flowId: ref.flowId,
+          stepId: ref.stepId,
+          detail: `cli-delegate service ${binding.service} has no tool`,
+        }]);
+      }
+      await this.logResolved(ref, snapshot, binding);
+      return { kind: BOUND_TARGET_KIND_SESSION_TOOL, binding, tool: binding.tool };
+    }
+    const provider = await this.providers.get(binding.fingerprint);
     if (!provider) {
       throw new BindingIncompatibleError([{
         code: "unknown_service",
@@ -154,7 +203,15 @@ export class ModelBindingService {
         detail: "Preflighted provider is unavailable",
       }]);
     }
-    const binding = outcome.binding;
+    await this.logResolved(ref, snapshot, binding);
+    return { kind: BOUND_TARGET_KIND_PROVIDER, binding, provider };
+  }
+
+  private async logResolved(
+    ref: IBindingStepRef,
+    snapshot: IBindingRunSnapshot,
+    binding: IBoundStepProvider["binding"],
+  ): Promise<void> {
     await this.logger.info(DomainEventType.BindingResolved, ref.stepId, {
       flow_id: ref.flowId,
       step_id: ref.stepId,
@@ -170,6 +227,5 @@ export class ModelBindingService {
       sources: binding.sources,
       fingerprint: binding.fingerprint,
     }, snapshot.traceId);
-    return { kind: "provider", binding, provider };
   }
 }

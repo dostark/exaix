@@ -37,7 +37,12 @@ import {
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_SECURITY_VIOLATION,
 } from "@exaix/core";
-import { DEFAULT_MCP_AGENT_ROLE_ID, SESSION_BIN_CLAUDE_CODE, SESSION_BIN_OPENCODE } from "@exaix/core/types";
+import {
+  DEFAULT_MCP_AGENT_ROLE_ID,
+  SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CODEX,
+  SESSION_BIN_OPENCODE,
+} from "@exaix/core/types";
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,
@@ -54,13 +59,20 @@ import type { JSONValue } from "@exaix/core";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
-import { CliDelegateStrategy } from "./strategies/cli_delegate_strategy.ts";
+import { CliDelegateStrategy, type IRunCliDelegateProcess } from "./strategies/cli_delegate_strategy.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { IDogfoodContextPort, Opt, Reason, TaskType } from "@exaix/core/types";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { EffortDeclaration, EffortTier, IModelIntent, ModelSize, ThinkingDeclaration } from "@exaix/schemas";
+import type {
+  EffortDeclaration,
+  EffortTier,
+  IModelIntent,
+  ModelSize,
+  SessionTool,
+  ThinkingDeclaration,
+} from "@exaix/schemas";
 import {
   COMPLEXITY_SOURCE_ANALYSIS,
   COMPLEXITY_SOURCE_DEFAULT,
@@ -163,6 +175,24 @@ export interface IAgentComposerDeps {
   /** The EffortResolver instance used for execution-path resolution; defaults to a fresh
    *  EffortResolver (IAgentComposerDeps mirror of options.effortResolver, GAP-9). */
   effortResolver?: IEffortResolver;
+  /** Bind a strategy cli_delegate step to a concrete session tool and model.
+   *  This requires a cli-delegate catalog service.
+   *  buildCliDelegateStrategy prefers it over the config block.
+   *  The binding stays active even when the config flag is disabled. */
+  cliDelegateBinding?: { tool: SessionTool; model: string };
+  /** Test-only escape hatch, a fake subprocess runner for the cli-delegate strategy.
+   *  It stops a bound delegate test from spawning a real tool.
+   *  Production never sets this flag. */
+  cliDelegateRun?: Opt<IRunCliDelegateProcess, Reason.TestOverride>;
+}
+
+/** Explicit binary mapping for the supported cli-delegate session tools. Anything else
+ *  (cursor, vscode, a future tool) has no binary and fails preflight. */
+function delegateBinary(tool: SessionTool): string | undefined {
+  if (tool === SessionToolSchema.enum["claude-code"]) return SESSION_BIN_CLAUDE_CODE;
+  if (tool === SessionToolSchema.enum.opencode) return SESSION_BIN_OPENCODE;
+  if (tool === SessionToolSchema.enum.codex) return SESSION_BIN_CODEX;
+  return undefined;
 }
 
 /**
@@ -295,29 +325,42 @@ export class AgentComposer {
       this.strategyRegistry = new StrategyRegistry();
       this.strategyRegistry.register(new ReActLoopStrategy(this.reActAdapter, this.provider));
       this.strategyRegistry.register(new McpAgentStrategy(this));
-      if (this.config.cli_delegate?.enabled) {
-        this.strategyRegistry.register(this.buildCliDelegateStrategy(this.config.cli_delegate));
+      if (deps.cliDelegateBinding || this.config.cli_delegate?.enabled) {
+        this.strategyRegistry.register(
+          this.buildCliDelegateStrategy(this.config.cli_delegate, deps.cliDelegateBinding, deps.cliDelegateRun),
+        );
       }
     }
   }
 
-  /** Builds CliDelegateStrategy from the [cli_delegate] config block. Prefers the
-   *  ToolRegistry's resolved baseDir over the portal's static config path — in a worktree
-   *  run, ToolRegistry alone knows the worktree checkout path. */
-  private buildCliDelegateStrategy(cliDelegateConfig: NonNullable<Config["cli_delegate"]>): CliDelegateStrategy {
-    const bin = cliDelegateConfig.bin_overrides?.[0] ??
-      (cliDelegateConfig.tool === SessionToolSchema.enum["claude-code"]
-        ? SESSION_BIN_CLAUDE_CODE
-        : SESSION_BIN_OPENCODE);
+  /** Builds CliDelegateStrategy from the [cli_delegate] config block.
+   *  A bound cli-delegate service's tool and model beat the config block.
+   *  They keep the strategy active even when `[cli_delegate].enabled` is false.
+   *  The binary mapping handles claude-code, opencode and codex. Any other tool fails preflight.
+   *  Prefers the ToolRegistry's resolved baseDir over the portal's static config path. */
+  private buildCliDelegateStrategy(
+    cliDelegateConfig: Opt<NonNullable<Config["cli_delegate"]>, Reason.OptionalDependency>,
+    cliDelegateBinding?: Opt<{ tool: SessionTool; model: string }, Reason.OptionalDependency>,
+    cliDelegateRun?: Opt<IRunCliDelegateProcess, Reason.TestOverride>,
+  ): CliDelegateStrategy {
+    const tool = cliDelegateBinding?.tool ?? cliDelegateConfig?.tool;
+    if (!tool) {
+      throw new Error("cli-delegate strategy requires a tool from config.cli_delegate or a bound cli-delegate service");
+    }
+    const bin = cliDelegateConfig?.bin_overrides?.[0] ?? delegateBinary(tool);
+    if (!bin) {
+      throw new Error(`Unsupported cli-delegate tool: ${tool}`);
+    }
     return new CliDelegateStrategy({
-      tool: cliDelegateConfig.tool,
+      tool,
       bin,
-      model: cliDelegateConfig.model,
-      effort: cliDelegateConfig.effort,
+      model: cliDelegateBinding?.model ?? cliDelegateConfig?.model,
+      effort: cliDelegateConfig?.effort,
       resolvePortalPath: (portalAlias) =>
         this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
       contextPort: this.contextPort,
       trustedAgentRoles: this.trustedAgentRoles,
+      ...(cliDelegateRun ? { run: cliDelegateRun } : {}),
     });
   }
 

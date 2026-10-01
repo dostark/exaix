@@ -382,6 +382,24 @@ function driverSource(sources: IResolvedBinding["sources"]): IBindingFieldSource
     sources.transport ?? sources.interface ?? { layer: FALLBACK_LAYER, selector: SELECTOR_DEFAULT };
 }
 
+/** Route compatibility between the step ref and the chosen service.
+ *  A cli-delegate service is a session-tool target, never a provider.
+ *  A generate-backed cli service stays a provider with a cli interface.
+ *  Returns a reason when incompatible, else undefined. */
+function interfaceCompatibilityIssue(ref: IBindingStepRef, service: ICatalogService): string | undefined {
+  const isDelegateService = service.adapter === "cli-delegate";
+  if (ref.kind === "gate") {
+    return isDelegateService ? "a gate judge uses provider.generate, not a session-tool delegate" : undefined;
+  }
+  if (ref.strategy === "cli_delegate") {
+    return isDelegateService ? undefined : "strategy cli_delegate requires a cli-delegate service";
+  }
+  if (service.interface === "cli") {
+    return "CLI interface requires strategy cli_delegate or a gate judge";
+  }
+  return undefined;
+}
+
 /** Resolve a flow step's provider binding across all layers. */
 export function resolveBinding(
   ref: IBindingStepRef,
@@ -404,6 +422,8 @@ export function resolveBinding(
   if ("issues" in serviceState) return { kind: BINDING_OUTCOME_INVALID, issues: serviceState.issues };
 
   const { service, serviceId, serviceModelId } = serviceState;
+  const routeIssue = interfaceCompatibilityIssue(ref, service);
+  if (routeIssue) return issue("interface_unsupported", ref, routeIssue);
   const driver = driverSource(sources);
   const resolvedSources: IResolvedBinding["sources"] = {
     service: sources.service ?? driver,

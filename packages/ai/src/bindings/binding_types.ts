@@ -8,6 +8,7 @@
  */
 
 import type { IBindingIssue, IResolvedBinding } from "@exaix/schemas";
+import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { IModelProvider } from "../types.ts";
 
 export type {
@@ -30,13 +31,34 @@ export interface IBindingEnvProbe {
 }
 
 export interface IBoundStepProvider {
-  kind: "provider";
+  kind: typeof BOUND_TARGET_KIND_PROVIDER;
   binding: IResolvedBinding;
   provider: IModelProvider;
 }
 
+/** A session-tool delegate target (adapter `cli-delegate`): the strategy cli_delegate
+ *  launch reads `tool` + `service_model_id`, not an `IModelProvider`. */
+export interface IBoundSessionTool {
+  kind: typeof BOUND_TARGET_KIND_SESSION_TOOL;
+  binding: IResolvedBinding;
+  tool: SessionTool;
+}
+
+export type IBoundStepTarget = IBoundStepProvider | IBoundSessionTool | undefined;
+
 /** The tagged outcome kind for an invalid resolved binding. */
 export const BINDING_OUTCOME_INVALID = "invalid" as const;
+
+/** Discriminant values of the bound-step target union (`IBoundStepTarget`). */
+export const BOUND_TARGET_KIND_PROVIDER = "provider" as const;
+export const BOUND_TARGET_KIND_SESSION_TOOL = "session-tool" as const;
+
+/** Discriminant values of `IBindingStepRef.kind`. */
+export const STEP_KIND_AGENT = "agent" as const;
+export const STEP_KIND_GATE = "gate" as const;
+
+/** Adapter name of the cli-delegate session-tool services. */
+export const ADAPTER_CLI_DELEGATE = "cli-delegate" as const;
 
 /** Production key/opt-in probe: a non-empty variable, else a non-empty credential-store entry. */
 export function createProductionBindingEnvProbe(

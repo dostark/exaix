@@ -14,6 +14,8 @@ import type { IExecutionMilestone } from "@exaix/schemas";
 import { DomainEventType } from "@exaix/core/events";
 import { MILESTONE_APPROVAL_GATE_ENTERED } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import type { IBindingGateContext, IBindingStepRef } from "@exaix/schemas";
+import { STEP_KIND_GATE } from "@exaix/ai/bindings/binding_types.ts";
 import { toGateConfig } from "../flow_runner.ts";
 
 /** Mutable reference to pendingWaitStateId so GateStepHandler can set it on the
@@ -69,6 +71,23 @@ export class GateStepHandler implements IFlowStepHandler {
     const gateConfig = toGateConfig(step.evaluate);
     const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
     const effectiveGateConfig: IGateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude ?? false };
+
+    // A flow gate carries its own judge binding context.
+    // It names the gate step and the evaluate.agent_role.
+    // The judge runner then acquires the bound provider.
+    if (stepRequest.bindingSnapshot) {
+      const stepRef: IBindingStepRef = {
+        flowId: stepRequest.flowId ?? flow.id,
+        stepId: step.id,
+        agentRole: step.evaluate.agent_role,
+        kind: STEP_KIND_GATE,
+        nativeTools: false,
+      };
+      effectiveGateConfig.bindingContext = {
+        stepRef,
+        snapshot: stepRequest.bindingSnapshot,
+      } satisfies IBindingGateContext;
+    }
 
     if (effectiveGateConfig.includeRequestCriteria && !stepRequest.requestAnalysis) {
       await this.#eventLogger.log(DomainEventType.FlowGateCriteriaNoAnalysis, {

@@ -19,7 +19,16 @@ import { join } from "@std/path";
 
 export interface IAgentStepHandlerDeps {
   agentExecutor: IAgentExecutor;
+  /** Lazily-resolved shared DYNAMIC executor for unbound steps (legacy path). */
   dynamicStepExecutor?: DynamicStepExecutor;
+  /** Step-3: per-step DYNAMIC executor resolution. Resolves a bound step (fingerprint-keyed
+   *  LlmClient over the bound provider) and falls back to the shared executor for unbound
+   *  steps. Never re-resolves a binding after the run snapshot is captured. */
+  dynamicExecutorFor?: (
+    step: IStepExecutionContext["step"],
+    request: IStepExecutionContext["request"],
+    stepRequest: IStepExecutionContext["stepRequest"],
+  ) => Promise<DynamicStepExecutor | undefined>;
   config?: Config;
 }
 
@@ -28,18 +37,23 @@ export class AgentStepHandler implements IFlowStepHandler {
 
   readonly #agentExecutor: IAgentExecutor;
   readonly #dynamicStepExecutor?: DynamicStepExecutor;
+  readonly #dynamicExecutorFor?: IAgentStepHandlerDeps["dynamicExecutorFor"];
   readonly #config?: Config;
 
   constructor(deps: IAgentStepHandlerDeps) {
     this.#agentExecutor = deps.agentExecutor;
     this.#dynamicStepExecutor = deps.dynamicStepExecutor;
+    this.#dynamicExecutorFor = deps.dynamicExecutorFor;
     this.#config = deps.config;
   }
 
   async execute(ctx: IStepExecutionContext): Promise<IAgentExecutionResult> {
     const { step, request, stepRequest } = ctx;
 
-    if (step.execution_mode === FlowStepExecutionMode.DYNAMIC && this.#dynamicStepExecutor) {
+    if (
+      step.execution_mode === FlowStepExecutionMode.DYNAMIC &&
+      (this.#dynamicExecutorFor || this.#dynamicStepExecutor)
+    ) {
       return await this.#executeDynamic(step, request, stepRequest);
     }
     if (step.strategy) {
@@ -63,7 +77,14 @@ export class AgentStepHandler implements IFlowStepHandler {
       throw new Error(`Blueprint not found for dynamic step: ${step.agent_role}`);
     }
 
-    const dynamicResult = await this.#dynamicStepExecutor!.execute(
+    const dynamicExecutor = this.#dynamicExecutorFor
+      ? await this.#dynamicExecutorFor(step, request, stepRequest)
+      : this.#dynamicStepExecutor;
+    if (!dynamicExecutor) {
+      throw new Error(`No dynamic executor available for step ${step.id}`);
+    }
+
+    const dynamicResult = await dynamicExecutor.execute(
       step,
       loaded.frontmatter as IBlueprintFrontmatter,
       stepRequest.userPrompt,

@@ -398,3 +398,87 @@ Deno.test("judge selectors parse but never match a flow step", () => {
   };
   assertEquals(resolveBinding(ref, {}, judgeLayers, probe).kind, "unbound");
 });
+
+const cliCatalog: IBindingCatalog = {
+  models: { "mock/alpha": { model_provider: "mock" } },
+  services: {
+    alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
+    opencode: {
+      adapter: "cli-delegate",
+      transport: "local",
+      interface: "cli",
+      tool: "opencode",
+      serves: { "*": "{name}" },
+    },
+    "claude-cli": {
+      adapter: "claude-cli",
+      transport: "local",
+      interface: "cli",
+      serves: { "*": "{name}" },
+    },
+  },
+  preferences: {},
+};
+
+function cliLayers(
+  bindings: Record<string, { service: string; model?: string; service_model_id?: string }>,
+): IBindingLayers {
+  return {
+    entries: Object.entries(bindings).map(([selector, spec]) => ({ layer: "config", selector, spec })),
+    catalog: cliCatalog,
+    overlaySha256: [],
+    operatorLayersPresent: true,
+  };
+}
+
+Deno.test("a gate step bound to a cli-delegate service is rejected with interface_unsupported", () => {
+  const outcome = resolveBinding(
+    { ...ref, stepId: "gate1", kind: "gate" },
+    {},
+    cliLayers({ "flow:research/step:gate1": { service: "opencode", service_model_id: "opencode/x" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "invalid");
+  if (outcome.kind === "invalid") assertEquals(outcome.issues[0].code, "interface_unsupported");
+});
+
+Deno.test("a gate step bound to a generate-backed cli provider (claude-cli) is allowed", () => {
+  const outcome = resolveBinding(
+    { ...ref, stepId: "gate1", kind: "gate" },
+    {},
+    cliLayers({ "flow:research/step:gate1": { service: "claude-cli", service_model_id: "claude-cli/x" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "bound");
+});
+
+Deno.test("a strategy cli_delegate step accepts only a cli-delegate service", () => {
+  const ok = resolveBinding(
+    { ...ref, strategy: "cli_delegate" },
+    {},
+    cliLayers({ "flow:research/step:compose": { service: "opencode", service_model_id: "opencode/x" } }),
+    probe,
+  );
+  assertEquals(ok.kind, "bound");
+  if (ok.kind === "bound") assertEquals(ok.binding.tool, "opencode");
+
+  const refused = resolveBinding(
+    { ...ref, strategy: "cli_delegate" },
+    {},
+    cliLayers({ "flow:research/step:compose": { service: "alpha", model: "mock/alpha" } }),
+    probe,
+  );
+  assertEquals(refused.kind, "invalid");
+  if (refused.kind === "invalid") assertEquals(refused.issues[0].code, "interface_unsupported");
+});
+
+Deno.test("a plain (non-cli_delegate) agent step refuses a cli interface service", () => {
+  const outcome = resolveBinding(
+    { ...ref, strategy: "react" },
+    {},
+    cliLayers({ "flow:research/step:compose": { service: "claude-cli", service_model_id: "claude-cli/x" } }),
+    probe,
+  );
+  assertEquals(outcome.kind, "invalid");
+  if (outcome.kind === "invalid") assertEquals(outcome.issues[0].code, "interface_unsupported");
+});

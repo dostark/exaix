@@ -17,11 +17,11 @@
 
 import { AgentComposer, type IAgentExecutionResult, type IBlueprint } from "@exaix/execution";
 import type { StrategyRegistry } from "@exaix/execution";
+import type { IRunCliDelegateProcess } from "@exaix/execution";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
 import type { IDatabaseService, JSONValue } from "@exaix/core";
-import type { ExecutionStrategyName } from "@exaix/core";
-import { ConfigValueType, SwapClass } from "@exaix/core";
+import { ConfigValueType, ExecutionStrategyName, SwapClass } from "@exaix/core";
 import { configurable } from "@exaix/core/config";
 import type {
   IApplicationContext,
@@ -36,9 +36,16 @@ import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import { resolveWorktreeBaseDir } from "./resolve_worktree_base_dir.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IEffortResolver, ModelBindingService, ModelResolver } from "@exaix/ai";
+import {
+  BOUND_TARGET_KIND_PROVIDER,
+  BOUND_TARGET_KIND_SESSION_TOOL,
+  type IEffortResolver,
+  type ModelBindingService,
+  type ModelResolver,
+  STEP_KIND_AGENT,
+} from "@exaix/ai";
 import { COMPLEXITY_SOURCE_ANALYSIS, COMPLEXITY_SOURCE_DEFAULT, taskComplexityFromAnalysis } from "@exaix/ai";
-import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
+import type { EffortDeclaration, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
@@ -109,6 +116,14 @@ export interface IAgentComposerConstructionDeps {
   /** The EffortResolver instance forwarded into AgentComposer's execution resolution so
    *  the flow path shares the planning path's injected instance (GAP-9). */
   effortResolver?: IEffortResolver;
+  /** Bind a strategy cli_delegate step to a specific session tool and model (Step 3).
+   *  The tool must be a cli-delegate catalog service.
+   *  AgentComposer prefers it over `config.cli_delegate`, and it stays active
+   *  even when that config flag is disabled. */
+  cliDelegateBinding?: { tool: SessionTool; model: string };
+  /** Test-only escape hatch, a fake subprocess runner for the cli-delegate strategy.
+   *  Production never sets this flag. */
+  cliDelegateRun?: IRunCliDelegateProcess;
 }
 
 /** Bounds `planWrittenFiles` Map growth for this long-lived singleton (mirrors `apps/daemon/main.ts`'s `traceModelCache`). */
@@ -185,10 +200,15 @@ export class AgentComposerAdapter {
         flowId: request.flowId,
         stepId: request.flowStepId,
         agentRole,
-        kind: "agent",
+        kind: STEP_KIND_AGENT,
         nativeTools: false,
       });
       if (bound) {
+        if (bound.kind !== BOUND_TARGET_KIND_PROVIDER) {
+          throw new Error(
+            `Session-tool service ${bound.binding.service} is not valid on a DECLARED step without strategy cli_delegate`,
+          );
+        }
         if (!this.runner.withProvider) throw new Error("Bound runner does not support provider replacement");
         parsedRequest.bindingEffort = bound.binding.effort;
         parsedRequest.bindingThinking = bound.binding.thinking;
@@ -236,6 +256,11 @@ export class AgentComposerAdapter {
       throw new Error(`runWithStrategy: portal not found in config: ${request.portal}`);
     }
 
+    // A bound strategy step runs on the bound provider.
+    // A bound cli-delegate tool launches on strategy cli_delegate.
+    // Never resolved after the run snapshot, so an unbound step keeps the boot provider.
+    const boundResolution = await this.resolveStrategyBinding(agentRole, request, strategy, provider);
+
     const traceId = request.traceId ?? crypto.randomUUID();
     const pathResolver = new PathResolver(config, { traceId });
     const toolRegistry = new ToolRegistry({
@@ -265,7 +290,7 @@ export class AgentComposerAdapter {
       logger,
       pathResolver,
       permissions,
-      provider,
+      provider: boundResolution.effectiveProvider,
       toolRegistry,
       modelResolver,
       strategyRegistry,
@@ -273,6 +298,8 @@ export class AgentComposerAdapter {
       contextPort,
       trustedAgentRoles,
       effortResolver,
+      ...(boundResolution.cliDelegateBinding ? { cliDelegateBinding: boundResolution.cliDelegateBinding } : {}),
+      ...(this.orchestratorDeps.cliDelegateRun ? { cliDelegateRun: this.orchestratorDeps.cliDelegateRun } : {}),
     });
 
     try {
@@ -289,8 +316,16 @@ export class AgentComposerAdapter {
         agent_role: agentRole,
         portal: request.portal,
         strategy,
-        ...(request.effort !== undefined ? { effort: request.effort } : {}),
-        ...(request.thinking !== undefined ? { thinking: request.thinking } : {}),
+        ...(boundResolution.boundEffort !== undefined
+          ? { effort: boundResolution.boundEffort }
+          : request.effort !== undefined
+          ? { effort: request.effort }
+          : {}),
+        ...(boundResolution.boundThinking !== undefined
+          ? { thinking: boundResolution.boundThinking }
+          : request.thinking !== undefined
+          ? { thinking: request.thinking }
+          : {}),
       };
       const result = await orchestrator.executeStep(context, options);
       // A flow step's prompt requires wrapping the answer in <thought>/<content> tags. ReAct
@@ -305,5 +340,54 @@ export class AgentComposerAdapter {
     } finally {
       orchestrator.dispose();
     }
+  }
+
+  /** The strategy step's bound target: the bound provider, the bound cli-delegate tool, or
+   *  the boot provider when unbound (Step-3). Never re-resolves after the run snapshot. */
+  private async resolveStrategyBinding(
+    agentRole: string,
+    request: IFlowStepRequest,
+    strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
+    provider: Opt<IModelProvider, Reason.OptionalDependency>,
+  ): Promise<{
+    effectiveProvider: Opt<IModelProvider, Reason.OptionalDependency>;
+    cliDelegateBinding?: { tool: SessionTool; model: string };
+    boundEffort?: EffortDeclaration;
+    boundThinking?: ThinkingDeclaration;
+  }> {
+    const unbound = { effectiveProvider: provider };
+    if (!this.bindingService || !request.bindingSnapshot || !request.flowId || !request.flowStepId) return unbound;
+    const bound = await this.bindingService.providerFor(request.bindingSnapshot, {
+      flowId: request.flowId,
+      stepId: request.flowStepId,
+      agentRole,
+      kind: STEP_KIND_AGENT,
+      strategy,
+      nativeTools: false,
+    });
+    if (!bound) return unbound;
+    if (strategy === ExecutionStrategyName.CLI_DELEGATE) {
+      if (bound.kind !== BOUND_TARGET_KIND_SESSION_TOOL) {
+        throw new Error(
+          `Strategy cli_delegate requires a cli-delegate service; ${bound.binding.service} is not one`,
+        );
+      }
+      return {
+        effectiveProvider: provider,
+        cliDelegateBinding: { tool: bound.tool, model: bound.binding.service_model_id },
+        boundEffort: bound.binding.effort,
+        boundThinking: bound.binding.thinking,
+      };
+    }
+    if (bound.kind !== BOUND_TARGET_KIND_PROVIDER) {
+      throw new Error(
+        `Service ${bound.binding.service} is a session-tool delegate; strategy ${strategy} cannot run it`,
+      );
+    }
+    return {
+      effectiveProvider: bound.provider,
+      boundEffort: bound.binding.effort,
+      boundThinking: bound.binding.thinking,
+    };
   }
 }

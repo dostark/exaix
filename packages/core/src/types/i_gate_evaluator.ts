@@ -8,7 +8,7 @@
 
 import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/types";
 
-import type { IRequestAnalysis } from "@exaix/schemas";
+import type { IBindingGateContext, IRequestAnalysis } from "@exaix/schemas";
 
 import type { FlowGateAction, FlowGateOnFail } from "@exaix/core";
 
@@ -48,6 +48,9 @@ export interface IGateConfig {
   maxRetries: number;
   /** Include dynamic criteria generated from the request analysis */
   includeRequestCriteria: boolean;
+  /** Flow-gate judge binding carried on the evaluation. Non-flow callers omit it and
+   *  the judge runner keeps the boot provider. */
+  bindingContext?: IBindingGateContext;
 }
 
 /**
@@ -59,6 +62,7 @@ export interface IJudgeInvoker {
     content: string,
     criteria: EvaluationCriterion[],
     context?: string,
+    bindingContext?: IBindingGateContext,
   ): Promise<EvaluationResult>;
 }
 

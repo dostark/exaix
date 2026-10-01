@@ -1057,7 +1057,7 @@ if (import.meta.main) {
         () => sessionDelegationCoordinator.closeAllOpenContextConnections(),
       );
     }
-    const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider)));
+    const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider, bindingService)));
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,
       bindingService,

@@ -26,7 +26,12 @@ import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IBindingRunSnapshot } from "@exaix/schemas";
-import { BindingIncompatibleError, type ModelBindingService } from "@exaix/ai";
+import {
+  BindingIncompatibleError,
+  BOUND_TARGET_KIND_PROVIDER,
+  type ModelBindingService,
+  STEP_KIND_AGENT,
+} from "@exaix/ai";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
   FlowInputSource,
@@ -45,7 +50,7 @@ import type { IToolManifestResolver } from "@exaix/core/types";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas";
-import type { EffortDeclaration, ThinkingDeclaration } from "@exaix/schemas";
+import { EFFORT_AUTO, type EffortDeclaration, type IModelCallOptions, type ThinkingDeclaration } from "@exaix/schemas";
 import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
@@ -780,6 +785,11 @@ export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string 
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   protected dynamicStepExecutor?: DynamicStepExecutor;
+  /** Step-3 DYNAMIC executors keyed by binding fingerprint.
+   *  One LlmClient serves each distinct bound service fingerprint.
+   *  Two differently-bound DYNAMIC steps never share a model route.
+   *  At most one entry grows per fingerprint used in this process. */
+  private readonly dynamicExecutorsByFingerprint = new Map<string, DynamicStepExecutor>();
   private mcpClient?: IMcpClient & IToolManifestResolver;
   private agentExecutor: IAgentExecutor;
   private eventLogger: IFlowEventLogger;
@@ -876,6 +886,7 @@ export class FlowRunner implements IFlowRunner {
     const agentHandler = new AgentStepHandler({
       agentExecutor: this.agentExecutor,
       dynamicStepExecutor: this.dynamicStepExecutor,
+      dynamicExecutorFor: (step, request, stepRequest) => this.dynamicExecutorFor(step, request, stepRequest),
       config: this.config,
     });
     this.stepHandlerRegistry.register(agentHandler);
@@ -1073,11 +1084,83 @@ export class FlowRunner implements IFlowRunner {
     const agentHandler = new AgentStepHandler({
       agentExecutor: this.agentExecutor,
       dynamicStepExecutor: this.dynamicStepExecutor,
+      dynamicExecutorFor: (step, request, stepRequest) => this.dynamicExecutorFor(step, request, stepRequest),
       config: this.config,
     });
     this.stepHandlerRegistry.register(agentHandler);
     this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
+  }
+
+  /** Resolve the DYNAMIC executor for one step.
+   *  A bound step gets a fingerprint-keyed executor.
+   *  Its LlmClient runs the bound provider with the snapshot's effort and thinking.
+   *  An unbound step keeps the shared lazily-resolved executor.
+   *  The cache never re-resolves a binding after the run snapshot.
+   *  It keys entries by the already-fixed binding fingerprint. */
+  private async dynamicExecutorFor(
+    step: IFlowStep,
+    _request: IFlowOriginalRequest,
+    stepRequest: { flowId?: string; bindingSnapshot?: IBindingRunSnapshot },
+  ): Promise<DynamicStepExecutor | undefined> {
+    if (
+      stepRequest.bindingSnapshot && stepRequest.flowId && this.options.bindingService?.isActive()
+    ) {
+      const bound = await this.options.bindingService.providerFor(stepRequest.bindingSnapshot, {
+        flowId: stepRequest.flowId,
+        stepId: step.id,
+        agentRole: step.agent_role,
+        kind: STEP_KIND_AGENT,
+        nativeTools: false,
+      });
+      if (bound) {
+        if (bound.kind !== BOUND_TARGET_KIND_PROVIDER) {
+          throw new Error(
+            `DYNAMIC step "${step.id}" resolved to a cli-delegate session-tool service ${bound.binding.service}`,
+          );
+        }
+        const fingerprint = bound.binding.fingerprint;
+        let executor = this.dynamicExecutorsByFingerprint.get(fingerprint);
+        if (!executor) {
+          const config = this.config;
+          if (!config) {
+            throw new Error(`DYNAMIC step "${step.id}" requires config to build a bound executor`);
+          }
+          const activityJournal = new ActivityJournal(this.eventLogger);
+          const llmClient = new LlmClient(
+            config,
+            bound.provider,
+            bound.binding.service_model_id,
+            undefined,
+            this.options.llmEventLogger,
+            this.options.tokenizer,
+            this.options.promptBudgetAllocator,
+          );
+          const callOptions: IModelCallOptions = {
+            ...(bound.binding.effort !== undefined && bound.binding.effort !== EFFORT_AUTO
+              ? { effort: bound.binding.effort }
+              : {}),
+            ...(bound.binding.thinking !== undefined && bound.binding.thinking !== EFFORT_AUTO
+              ? { thinking: bound.binding.thinking === true }
+              : {}),
+          };
+          executor = new DynamicStepExecutor(
+            this.mcpClient!,
+            llmClient,
+            activityJournal,
+            this.options.confirmationInterceptor,
+            this.options.milestoneEmitter,
+            this.options.hitlPolicyEvaluator,
+            this.options.dynamicModeTools,
+            this.options.dynamicModeApprovalTools,
+            Object.keys(callOptions).length > 0 ? callOptions : undefined,
+          );
+          this.dynamicExecutorsByFingerprint.set(fingerprint, executor);
+        }
+        return executor;
+      }
+    }
+    return this.dynamicStepExecutor;
   }
 
   /** Exposes the step-handler registry for external extension; paid-edition handlers

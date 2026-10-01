@@ -160,6 +160,15 @@ export interface IBindingRunSnapshot {
   lock?: { path: string; sha256: string };
 }
 
+/** Gate-judge binding context for a flow gate evaluation.
+ *  It holds the step ref and the immutable run snapshot.
+ *  The step carries kind "gate", the step id and its judge role.
+ *  Non-flow gate callers omit it and keep the boot provider. */
+export interface IBindingGateContext {
+  stepRef: IBindingStepRef;
+  snapshot: IBindingRunSnapshot;
+}
+
 export const BINDING_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 export const CANONICAL_MODEL_PATTERN = /^[a-z0-9][a-z0-9-]*\/[A-Za-z0-9._:\-]+$/;
 export const SERVICE_MODEL_ID_PATTERN = /^[A-Za-z0-9._:/@\-]+$/;

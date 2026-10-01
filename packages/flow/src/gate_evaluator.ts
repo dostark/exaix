@@ -25,6 +25,7 @@ import type {
   IJudgeInvoker,
 } from "@exaix/core/types";
 import { CriteriaGenerator } from "@exaix/core/skills";
+import type { IBindingGateContext } from "@exaix/schemas";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 /**
@@ -88,6 +89,7 @@ export class GateEvaluator implements IGateEvaluator {
         contentToEvaluate,
         allCriteria,
         context,
+        config.bindingContext,
       );
 
       // Calculate pass/fail
@@ -268,6 +270,7 @@ export class MockJudgeInvoker implements IJudgeInvoker {
     _content: string,
     criteria: EvaluationCriterion[],
     _context?: Opt<string, Reason.AbstractBoundary>,
+    _bindingContext?: Opt<IBindingGateContext, Reason.AbstractBoundary>,
   ): Promise<EvaluationResult> {
     // Check for specific mock result
     const mockResult = this.mockResults.get(agentRole);
