@@ -33,8 +33,20 @@ import {
   stepsOnlySkippedCellsOwn,
 } from "./matrix_expander.ts";
 import { loadCellCatalog, resolveScenarioMatrixCells } from "./cell_catalog.ts";
-import { buildRunBindingsFile, type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
-import { assertJudgeBindingsResolved, resolveJudgeBindings } from "./judge_bindings.ts";
+import {
+  buildRunBindingsFile,
+  type IScenarioBindingPlan,
+  type IScenarioOverlayFile,
+  orderedRequestOverlays,
+  planScenarioBindings,
+} from "./binding_layers.ts";
+import {
+  assertJudgeBindingsResolved,
+  associatedRequestStepId,
+  type IJudgeBindingScope,
+  isJudgeBearingStep,
+  resolveJudgeBindings,
+} from "./judge_bindings.ts";
 import {
   type IProviderLiveJudgeEvidence,
   type IProviderLivePinEvidence,
@@ -52,7 +64,7 @@ import {
   REQUEST_FIXTURE_CONTENT_SENTINEL,
 } from "./matrix_expander.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
-import type { IResolvedBinding } from "@exaix/schemas";
+import type { IResolvedBinding, IRunBindingsFile } from "@exaix/schemas";
 import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
   CriterionPhase,
@@ -290,6 +302,34 @@ export async function detectPortalDrift(
   return drifted;
 }
 
+/** Build one request-scoped binding stack per judge step. A judge resolves through the
+ *  same list as the request it grades. `fallback` covers a judge with no scoped entry. */
+async function buildJudgeBindingScopes(input: {
+  steps: readonly IScenarioStep[];
+  plan: IScenarioBindingPlan;
+  requestPath: string;
+}): Promise<{ byStep: Map<string, IJudgeBindingScope>; fallback: IRunBindingsFile }> {
+  const byStep = new Map<string, IJudgeBindingScope>();
+  const runFileByRequest = new Map<string, IRunBindingsFile>();
+  const buildRunFile = (requestStepId: Opt<string, Reason.OptionalInput>): Promise<IRunBindingsFile> =>
+    buildRunBindingsFile(orderedRequestOverlays(input.plan, requestStepId), {
+      traceId: crypto.randomUUID(),
+      requestPath: input.requestPath,
+    });
+
+  for (const step of input.steps.filter(isJudgeBearingStep)) {
+    const requestStepId = associatedRequestStepId(input.steps, step.id);
+    const cacheKey = requestStepId ?? "";
+    let runFile = runFileByRequest.get(cacheKey);
+    if (!runFile) {
+      runFile = await buildRunFile(requestStepId);
+      runFileByRequest.set(cacheKey, runFile);
+    }
+    byStep.set(step.id, { runFile, ...(requestStepId ? { requestStepId } : {}) });
+  }
+  return { byStep, fallback: await buildRunFile(undefined) };
+}
+
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
@@ -426,17 +466,20 @@ export async function runSyntheticScenario(
   stepsToRun = overlayRequestBindings(stepsToRun, bindingPlan);
 
   // A judge resolves through the layers the daemon reads. It runs in this process, so the evidence is its record.
+  // Each judge gets the stack of the request it grades, not a pool of every step's overlay.
+  const judgeScopes = await buildJudgeBindingScopes({
+    steps: stepsToRun,
+    plan: bindingPlan,
+    requestPath: loadedScenario.requestFixture.absolutePath,
+  });
   const judgePlan = await resolveJudgeBindings({
     scenarioId: loadedScenario.scenario.id,
     steps: stepsToRun,
     // The sandbox config carries the config layer and the built-ins.
     // It is also the config the daemon boots with.
     config: new ConfigService(join(options.workspaceRoot, WORKSPACE_CONFIG_FILE)).get(),
-    runFile: await buildRunBindingsFile(bindingPlan.overlays, {
-      traceId: crypto.randomUUID(),
-      // The request this scenario submits is the subject of every judge grade.
-      requestPath: loadedScenario.requestFixture.absolutePath,
-    }),
+    runFile: judgeScopes.fallback,
+    scopeForStep: judgeScopes.byStep,
     env: envForExpansion,
   });
   // A named judge that did not resolve or validate stops the run before the daemon starts.

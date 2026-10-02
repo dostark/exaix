@@ -21,6 +21,22 @@ export interface ISyntheticScenarioStepDefinition {
   args: string[];
   checkpoint?: string;
   outputCriteriaLines: string[];
+  /** The step's own binding layer, only valid on an `exactl request` step. */
+  bindings?: Record<string, Record<string, string>>;
+}
+
+/** One catalog service a synthetic scenario declares at the scenario layer. */
+export interface ISyntheticCatalogService {
+  adapter: string;
+  transport: string;
+  interface: string;
+  serves: Record<string, string>;
+}
+
+/** The scenario-layer catalog a synthetic scenario may declare. */
+export interface ISyntheticScenarioCatalog {
+  services?: Record<string, ISyntheticCatalogService>;
+  models?: Record<string, { model_provider: string }>;
 }
 
 export interface IWriteSyntheticScenarioOptions {
@@ -43,6 +59,8 @@ export interface IWriteSyntheticScenarioOptions {
   };
   /** Catalog preset names: emits a `matrix.from_catalog` block instead of inline cells. */
   fromCatalog?: string[];
+  /** The scenario's own catalog layer, emitted inline. */
+  catalog?: ISyntheticScenarioCatalog;
 }
 
 /** One journal activity row, as the binding evidence readers need it. */
@@ -107,6 +125,7 @@ export async function writeSyntheticScenario(
       `request_fixture: "${requestFixturePath}"`,
       'mode_support: ["auto", "manual-checkpoint"]',
       "portals: []",
+      ...(options.catalog ? [`catalog: ${JSON.stringify(options.catalog)}`] : []),
       ...(options.scoring ? [`scoring: "${options.scoring}"`] : []),
       ...(options.matrixCell
         ? [
@@ -132,6 +151,7 @@ export async function writeSyntheticScenario(
         `    type: "${step.type}"`,
         `    command: "${escapeYaml(step.command)}"`,
         `    args: [${step.args.map((arg) => `"${escapeYaml(arg)}"`).join(", ")}]`,
+        ...(step.bindings ? [`    bindings: ${JSON.stringify(step.bindings)}`] : []),
         ...(step.checkpoint ? [`    checkpoint: "${step.checkpoint}"`] : []),
         "    input_criteria: []",
         "    output_criteria:",

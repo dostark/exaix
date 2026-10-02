@@ -507,6 +507,84 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] a bound judge grades the judge ste
   });
 });
 
+Deno.test("[ScenarioFrameworkSyntheticRunner] two requests resolve their own judge model and request association", async () => {
+  await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
+    const invocationLog = join(workspaceRoot, "exactl-invocations.log");
+    const fakeExactl = await writeFakeExactl(workspaceRoot, invocationLog);
+
+    const scenarioPath = await writeSyntheticScenario({
+      frameworkHome,
+      scenarioId: "synthetic-two-request-judges",
+      tags: ["synthetic"],
+      schemaVersion: SCHEMA_VERSION,
+      catalog: {
+        services: {
+          mock: {
+            adapter: "mock",
+            transport: "local",
+            interface: "api",
+            serves: { "mock/mock-model": "mock-model", "mock/alt-model": "alt-model" },
+          },
+        },
+        models: { "mock/alt-model": { model_provider: "mock" } },
+      },
+      steps: [
+        {
+          // The judge grades this request, so it resolves through this request's own step layer.
+          id: "request-one",
+          type: ScenarioStepType.EXACTL,
+          command: "request",
+          args: ["--file", "$REQUEST_FIXTURE"],
+          // Both requests use the same broad judge selector. Pooling the overlays would
+          // let the later request's model win.
+          bindings: { "judge": { service: "mock", model: "mock/mock-model" } },
+          outputCriteriaLines: [
+            '    - id: "one-exit"',
+            '      kind: "command-exit-code"',
+            "      equals: 0",
+            '    - id: "one-quality"',
+            '      kind: "llm-judge"',
+            '      preset: "task_fulfillment"',
+            "      score_threshold: 0.5",
+          ],
+        },
+        {
+          id: "request-two",
+          type: ScenarioStepType.EXACTL,
+          command: "request",
+          args: ["--file", "$REQUEST_FIXTURE"],
+          bindings: { "judge": { service: "mock", model: "mock/alt-model" } },
+          outputCriteriaLines: [
+            '    - id: "two-exit"',
+            '      kind: "command-exit-code"',
+            "      equals: 0",
+            '    - id: "two-quality"',
+            '      kind: "llm-judge"',
+            '      preset: "task_fulfillment"',
+            "      score_threshold: 0.5",
+          ],
+        },
+      ],
+    });
+
+    const run = await runSyntheticScenario({
+      frameworkHome,
+      scenarioPath,
+      workspaceRoot,
+      outputDir,
+      mode: ScenarioExecutionMode.AUTO,
+      exactlExecutable: fakeExactl,
+      env: { EXA_EVAL_LLM_MOCK: "pass" },
+    });
+
+    const byStep = new Map((run.judges ?? []).map((judge) => [judge.stepId, judge]));
+    assertEquals(byStep.get("request-one")?.model, "mock/mock-model");
+    assertEquals(byStep.get("request-one")?.requestStepId, "request-one");
+    assertEquals(byStep.get("request-two")?.model, "mock/alt-model");
+    assertEquals(byStep.get("request-two")?.requestStepId, "request-two");
+  });
+});
+
 async function writeFakeExactl(workspaceRoot: string, invocationLog: string): Promise<string> {
   const scriptPath = join(workspaceRoot, "fake-exactl.ts");
   await Deno.writeTextFile(

@@ -6,10 +6,12 @@
  *   nine shipped `type: judge` steps carry no judge criterion, and eleven others carry the
  *   criterion on a `json-assert` or `run-script` step.
  *
- *   The judge resolves against the same layer stack a flow step uses, because the runner
- *   already wrote the scenario, cell, step and operator overlays and the sandbox config holds
- *   the config layer and the daemon overlays. A judge therefore cannot silently inherit the
- *   system under test's binding: a `judge` ref matches judge selectors only.
+ *   The judge resolves against the same layer stack the request it grades receives, because
+ *   the runner passes one ordered overlay list per judge: scenario, cell, that request's own
+ *   step layer, then operator layers. A later or unrelated request's step overlay never enters
+ *   the stack, and the sandbox config still holds the config layer and the daemon overlays. A
+ *   judge therefore cannot silently inherit the system under test's binding: a `judge` ref
+ *   matches judge selectors only.
  *
  *   Resolution runs in the runner's process, so it emits no daemon event. The evidence file is
  *   the record. A judge that resolves to the same service and model as the system under test is
@@ -29,13 +31,24 @@ import {
 import { validateBinding } from "@exaix/ai/bindings/binding_validation.ts";
 import type { IBindingIssue, IBindingStepRef, IResolvedBinding, IRunBindingsFile } from "@exaix/schemas";
 import type { Config } from "@exaix/schemas";
-import { CriterionKind, type IScenarioStep } from "../schema/step_schema.ts";
+import type { Opt, Reason } from "@exaix/core/types";
+import { CriterionKind, type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 
 /** One judge step's resolved binding, ready to construct a provider. */
 export interface IResolvedJudgeBinding {
   stepId: string;
   ref: IBindingStepRef;
   binding: IResolvedBinding;
+  /** The request step whose binding stack this judge resolved against, when one precedes it. */
+  requestStepId?: string;
+}
+
+/** The request-scoped binding stack one judge resolves through. */
+export interface IJudgeBindingScope {
+  /** The ordered overlay list the graded request receives, read back as a run file. */
+  runFile: IRunBindingsFile;
+  /** The request step the judge grades. Absent when no request precedes the judge. */
+  requestStepId?: string;
 }
 
 /** What the system under test ran on, for the judgeSharesSut flag. */
@@ -69,8 +82,11 @@ export interface IResolveJudgeBindingsInput {
   steps: readonly IScenarioStep[];
   /** The sandbox config: it carries the config layer, the daemon overlays and the built-ins. */
   config: Config;
-  /** The run's binding file, as the runner wrote it for this run. */
+  /** The fallback stack for a judge step with no scoped entry. */
   runFile: IRunBindingsFile;
+  /** One request-scoped stack per judge step. A judge associated with a request resolves
+   *  through the same ordered overlay list that request receives. */
+  scopeForStep?: ReadonlyMap<string, IJudgeBindingScope>;
   /** The run's effective environment, for the credential and opt-in probe. */
   env: Record<string, string | undefined>;
 }
@@ -98,6 +114,25 @@ export function buildJudgeStepRef(scenarioId: string, step: IScenarioStep): IBin
     judgeId: step.id,
     nativeTools: false,
   };
+}
+
+/** True for the `exactl request` step that submits the request a judge grades. */
+function isRequestStep(step: IScenarioStep): boolean {
+  return step.type === ScenarioStepType.EXACTL && step.command === "request";
+}
+
+/** The request step a judge grades. It is the judge's own step when that step is a
+ *  request, otherwise the nearest preceding request. */
+export function associatedRequestStepId(
+  steps: readonly IScenarioStep[],
+  judgeStepId: string,
+): Opt<string, Reason.OptionalInput> {
+  let preceding: string | undefined;
+  for (const step of steps) {
+    if (isRequestStep(step)) preceding = step.id;
+    if (step.id === judgeStepId) return isRequestStep(step) ? step.id : preceding;
+  }
+  return undefined;
 }
 
 /** Build the environment probe over the catalog's credential and opt-in variables.
@@ -134,10 +169,24 @@ export async function resolveJudgeBindings(
   const judgeSteps = input.steps.filter(isJudgeBearingStep);
   if (judgeSteps.length === 0) return { bindings, issues };
 
-  const layers = await loadBindingLayers(input.config, input.runFile);
-  const probe = buildJudgeEnvProbe(layers, input.env);
+  // One layer load per distinct request scope: judges that grade the same request share it.
+  const layersByRunFile = new Map<
+    IRunBindingsFile,
+    { layers: Awaited<ReturnType<typeof loadBindingLayers>>; probe: IBindingEnvProbe }
+  >();
+  const scopeFor = async (runFile: IRunBindingsFile) => {
+    let cached = layersByRunFile.get(runFile);
+    if (!cached) {
+      const layers = await loadBindingLayers(input.config, runFile);
+      cached = { layers, probe: buildJudgeEnvProbe(layers, input.env) };
+      layersByRunFile.set(runFile, cached);
+    }
+    return cached;
+  };
 
   for (const step of judgeSteps) {
+    const scope = input.scopeForStep?.get(step.id);
+    const { layers, probe } = await scopeFor(scope?.runFile ?? input.runFile);
     const ref = buildJudgeStepRef(input.scenarioId, step);
     const outcome = resolveBinding(ref, {}, layers, probe);
     if (outcome.kind === "invalid") {
@@ -158,7 +207,12 @@ export async function resolveJudgeBindings(
       for (const issue of invalid) issues.push({ stepId: step.id, code: issue.code, detail: issue.detail });
       continue;
     }
-    bindings.set(step.id, { stepId: step.id, ref, binding: outcome.binding });
+    bindings.set(step.id, {
+      stepId: step.id,
+      ref,
+      binding: outcome.binding,
+      ...(scope?.requestStepId ? { requestStepId: scope.requestStepId } : {}),
+    });
   }
 
   return { bindings, issues };

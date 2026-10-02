@@ -40,6 +40,8 @@ export interface IProviderLiveJudgeEvidence {
   model: string;
   /** The layer and selector each resolved field came from. */
   sources: IResolvedBinding["sources"];
+  /** The request step whose binding stack the judge resolved against, when one precedes it. */
+  requestStepId?: string;
   /** True when the judge resolved to the same service and model as the system under test. */
   judgeSharesSut: boolean;
 }
@@ -126,6 +128,7 @@ export function judgeEvidenceRows(
     service: entry.binding.service,
     model: entry.binding.model,
     sources: entry.binding.sources,
+    ...(entry.requestStepId ? { requestStepId: entry.requestStepId } : {}),
     judgeSharesSut: judgeSharesSut(entry.binding, sut),
   }));
 }

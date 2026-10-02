@@ -24,7 +24,12 @@ import {
   CriterionStatus,
   type IScenarioStep,
   ScenarioStepSchema,
+  ScenarioStepType,
 } from "../../schema/step_schema.ts";
+import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
+import { SCHEMA_VERSION } from "../../schema/version.ts";
+import { buildRunBindingsFile, orderedRequestOverlays, planScenarioBindings } from "../../runner/binding_layers.ts";
+import { overlayRequestBindings } from "../../runner/matrix_expander.ts";
 import { callLlmEndpoint, evaluateLlmJudgeCriterion, type IEvaluateCriterionOptions } from "../../runner/assertions.ts";
 import {
   assertJudgeBindingsResolved,
@@ -475,5 +480,213 @@ Deno.test("[judge] judgeSharesSut matches a bound step in catalog terms for ever
       false,
       family.service,
     );
+  }
+});
+
+/** An `exactl request` step that may carry its own binding layer. */
+function requestStep(id: string, bindings?: Record<string, Record<string, string>>): IScenarioStep {
+  return ScenarioStepSchema.parse({
+    id,
+    type: ScenarioStepType.EXACTL,
+    command: "request",
+    ...(bindings ? { bindings } : {}),
+  });
+}
+
+/** A scenario with two request steps, each followed by a step that owns an llm-judge criterion. */
+function twoRequestScenario(
+  stepBindings: Record<string, Record<string, Record<string, string>>>,
+): IScenario {
+  return ScenarioSchema.parse({
+    schema_version: SCHEMA_VERSION,
+    id: "two-request-judges",
+    title: "Two request judges",
+    pack: "agent_flows",
+    tags: ["smoke"],
+    request_fixture: "fixtures/requests/agent_flows/openai_compatible_native.md",
+    mode_support: ["auto"],
+    portals: [],
+    steps: [
+      requestStep("request-one", stepBindings["request-one"]),
+      judgeStep("grade-one", true),
+      requestStep("request-two", stepBindings["request-two"]),
+      judgeStep("grade-two", true),
+    ],
+  });
+}
+
+/** The run file a judge resolves through: the ordered overlays its graded request receives. */
+async function scopeRunFile(
+  plan: Awaited<ReturnType<typeof planScenarioBindings>>,
+  requestStepId: string,
+  requestPath: string,
+): Promise<IRunBindingsFile> {
+  return await buildRunBindingsFile(orderedRequestOverlays(plan, requestStepId), {
+    traceId: crypto.randomUUID(),
+    requestPath,
+  });
+}
+
+Deno.test("[judge.layers] the judge and daemon request use the same ordered overlay list", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "judge-layers-shared-" });
+  try {
+    const requestPath = join(dir, "request.md");
+    await Deno.writeTextFile(requestPath, "grade\n");
+    const operatorPath = join(dir, "operator.json");
+    await Deno.writeTextFile(
+      operatorPath,
+      JSON.stringify({ schema: 1, bindings: { judge: { service: "judge-svc" } } }),
+    );
+
+    const scenario = twoRequestScenario({
+      "request-one": { judge: { service: "judge-svc", model: "mock/judge-model" } },
+      "request-two": { judge: { service: "judge-svc", model: "mock/judge-model-2" } },
+    });
+    const plan = await planScenarioBindings({
+      scenario,
+      operatorOverlays: [operatorPath],
+      operatorBinds: ["judge=model=mock/judge-model-2"],
+      outputDir: join(dir, "output"),
+      sandboxRoot: join(dir, "sandbox"),
+    });
+
+    const requestSteps = scenario.steps.filter((step) =>
+      step.type === ScenarioStepType.EXACTL && step.command === "request"
+    );
+    const bound = overlayRequestBindings(requestSteps, plan);
+    const ordered = orderedRequestOverlays(plan, "request-one");
+
+    // The daemon request's --overlay arguments and the judge's stack are one list, same order.
+    assertEquals(bound[0]!.args, ordered.flatMap((overlay) => ["--overlay", overlay.path]));
+    // The request's own step layer sits below the operator layers.
+    assertEquals(ordered.map((overlay) => overlay.role), ["step", "operator", "operator"]);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("[judge.layers] an operator overlay wins over a request step's judge binding", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "judge-layers-operator-" });
+  try {
+    const config = new ConfigService(await writeJudgeConfig(dir)).get();
+    const requestPath = join(dir, "request.md");
+    await Deno.writeTextFile(requestPath, "grade\n");
+    const operatorPath = join(dir, "operator.json");
+    await Deno.writeTextFile(
+      operatorPath,
+      JSON.stringify({ schema: 1, bindings: { judge: { model: "mock/judge-model-2" } } }),
+    );
+
+    const scenario = twoRequestScenario({
+      "request-one": { judge: { service: "judge-svc", model: "mock/judge-model" } },
+    });
+    const plan = await planScenarioBindings({
+      scenario,
+      operatorOverlays: [operatorPath],
+      operatorBinds: [],
+      outputDir: join(dir, "output"),
+      sandboxRoot: join(dir, "sandbox"),
+    });
+
+    const scope = {
+      runFile: await scopeRunFile(plan, "request-one", requestPath),
+      requestStepId: "request-one",
+    };
+    const judgePlan = await resolveJudgeBindings({
+      scenarioId: scenario.id,
+      steps: scenario.steps,
+      config,
+      runFile: scope.runFile,
+      scopeForStep: new Map([["grade-one", scope]]),
+      env: {},
+    });
+
+    const one = judgePlan.bindings.get("grade-one")!;
+    // The operator's later layer wins the same selector, exactly as the daemon request does.
+    assertEquals(one.binding.model, "mock/judge-model-2");
+    assertEquals(one.binding.service, "judge-svc");
+    assertEquals(one.requestStepId, "request-one");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("[judge.layers] a later request's judge binding cannot change an earlier request's judge", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "judge-layers-future-" });
+  try {
+    const config = new ConfigService(await writeJudgeConfig(dir)).get();
+    const requestPath = join(dir, "request.md");
+    await Deno.writeTextFile(requestPath, "grade\n");
+
+    const scenario = twoRequestScenario({
+      "request-one": { judge: { service: "judge-svc", model: "mock/judge-model" } },
+      "request-two": { judge: { service: "judge-svc", model: "mock/judge-model-2" } },
+    });
+    const plan = await planScenarioBindings({
+      scenario,
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(dir, "output"),
+      sandboxRoot: join(dir, "sandbox"),
+    });
+
+    const ordered = orderedRequestOverlays(plan, "request-one");
+    // The second request's step overlay is excluded from the first request's stack.
+    assertEquals(ordered.some((overlay) => overlay.role === "step" && overlay.stepId === "request-two"), false);
+
+    const runFile = await scopeRunFile(plan, "request-one", requestPath);
+    const judgePlan = await resolveJudgeBindings({
+      scenarioId: scenario.id,
+      steps: scenario.steps,
+      config,
+      runFile,
+      scopeForStep: new Map([["grade-one", { runFile, requestStepId: "request-one" }]]),
+      env: {},
+    });
+    assertEquals(judgePlan.bindings.get("grade-one")!.binding.model, "mock/judge-model");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("[judge.layers] two requests retain separate judge models and request associations", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "judge-layers-two-" });
+  try {
+    const config = new ConfigService(await writeJudgeConfig(dir)).get();
+    const requestPath = join(dir, "request.md");
+    await Deno.writeTextFile(requestPath, "grade\n");
+
+    const scenario = twoRequestScenario({
+      "request-one": { judge: { service: "judge-svc", model: "mock/judge-model" } },
+      "request-two": { judge: { service: "judge-svc", model: "mock/judge-model-2" } },
+    });
+    const plan = await planScenarioBindings({
+      scenario,
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(dir, "output"),
+      sandboxRoot: join(dir, "sandbox"),
+    });
+
+    const scopeOne = { runFile: await scopeRunFile(plan, "request-one", requestPath), requestStepId: "request-one" };
+    const scopeTwo = { runFile: await scopeRunFile(plan, "request-two", requestPath), requestStepId: "request-two" };
+    const judgePlan = await resolveJudgeBindings({
+      scenarioId: scenario.id,
+      steps: scenario.steps,
+      config,
+      runFile: scopeOne.runFile,
+      scopeForStep: new Map([["grade-one", scopeOne], ["grade-two", scopeTwo]]),
+      env: {},
+    });
+
+    assertEquals(judgePlan.issues, []);
+    const one = judgePlan.bindings.get("grade-one")!;
+    const two = judgePlan.bindings.get("grade-two")!;
+    assertEquals(one.binding.model, "mock/judge-model");
+    assertEquals(one.requestStepId, "request-one");
+    assertEquals(two.binding.model, "mock/judge-model-2");
+    assertEquals(two.requestStepId, "request-two");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
   }
 });

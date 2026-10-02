@@ -25,6 +25,7 @@ import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { deriveClaudeToolFlags } from "@exaix/session";
 import type { IScenarioBindingPlan } from "./binding_layers.ts";
+import { orderedRequestOverlays } from "./binding_layers.ts";
 import { SENTINEL_COMPAT_FIXTURE_PORT, SENTINEL_DOGFOOD_ROOT, SENTINEL_WORKTREE_PATH } from "./sentinels.ts";
 
 /** A single cell's expansion: either a runnable step list or a recorded skip. */
@@ -381,13 +382,9 @@ export function overlayRequestBindings(
   steps: readonly IScenarioStep[],
   plan: IScenarioBindingPlan,
 ): IScenarioStep[] {
-  const globalOverlays = plan.overlays.filter((overlay) => overlay.role !== "step");
-  const lowerLayers = globalOverlays.filter((overlay) => overlay.role !== "operator");
-  const operatorLayers = globalOverlays.filter((overlay) => overlay.role === "operator");
   return steps.map((step) => {
     if (step.type !== ScenarioStepType.EXACTL || step.command !== "request") return step;
-    const stepOverlay = plan.overlays.find((overlay) => overlay.role === "step" && overlay.stepId === step.id);
-    const ordered = [...lowerLayers, ...(stepOverlay ? [stepOverlay] : []), ...operatorLayers];
+    const ordered = orderedRequestOverlays(plan, step.id);
     if (ordered.length === 0) return step;
     return {
       ...step,

@@ -517,6 +517,22 @@ export async function planScenarioBindings(
   return { overlays, pins };
 }
 
+/** The overlay files one `exactl request` step receives, lowest precedence first.
+ *  The order is scenario, cell, the request's own step layer, then operator layers.
+ *  A judge resolves through this list too. */
+export function orderedRequestOverlays(
+  plan: IScenarioBindingPlan,
+  requestStepId: Opt<string, Reason.OptionalInput>,
+): IScenarioOverlayFile[] {
+  const globalOverlays = plan.overlays.filter((overlay) => overlay.role !== "step");
+  const lowerLayers = globalOverlays.filter((overlay) => overlay.role !== "operator");
+  const operatorLayers = globalOverlays.filter((overlay) => overlay.role === "operator");
+  const stepOverlay = requestStepId === undefined
+    ? undefined
+    : plan.overlays.find((overlay) => overlay.role === "step" && overlay.stepId === requestStepId);
+  return [...lowerLayers, ...(stepOverlay ? [stepOverlay] : []), ...operatorLayers];
+}
+
 /** Read a plan's overlay files back into the run-binding-file shape the layer loader reads.
  *  Judge resolution uses it, so a judge resolves against the files the daemon receives. */
 export async function buildRunBindingsFile(
