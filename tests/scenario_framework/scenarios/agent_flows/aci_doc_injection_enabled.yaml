@@ -67,6 +67,30 @@ steps:
       - id: "portal-added"
         kind: "command-exit-code"
         equals: 0
+      # The mount writes the config file, and a running daemon reads its portal list at boot.
+      # The step therefore asserts the entry landed, and the restart below makes it visible.
+      - id: "portal-in-config"
+        kind: "text-contains"
+        path: "exa.config.toml"
+        contains: "alias = \"workspace\""
+
+  - id: "restart-daemon-for-portal"
+    type: "exactl"
+    command: "daemon restart"
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready-after-restart"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$STEP_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
 
   # --- Submit and approve the request ---
   - id: "submit-request"
