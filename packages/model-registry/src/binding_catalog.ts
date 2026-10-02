@@ -118,6 +118,8 @@ function projectSelfHostedChatRoute(catalog: IBindingCatalog): void {
     adapter: ProviderType.OPENAI_CHAT,
     profile: OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
     endpoint: OLLAMA_CHAT_ENDPOINT,
+    // Ollama serves plain HTTP on loopback, which the self-hosted endpoint policy admits only by opt-in.
+    allow_insecure_loopback: true,
     transport: BindingTransportSchema.enum.local,
     interface: "api",
     supports_tool_choice: false,
@@ -125,9 +127,8 @@ function projectSelfHostedChatRoute(catalog: IBindingCatalog): void {
   };
 }
 
-/** Project the open-router route and the local CLI provider and delegate tools. */ function projectCliRoutes(
-  catalog: IBindingCatalog,
-): void {
+/** Project the open-router route and the local CLI provider and delegate tools. */
+function projectCliRoutes(catalog: IBindingCatalog): void {
   catalog.services.openrouter = {
     adapter: ProviderType.OPENROUTER,
     transport: BindingTransportSchema.enum.cloud,

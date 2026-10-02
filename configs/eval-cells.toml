@@ -165,7 +165,8 @@ model = "deepseek/deepseek-v4-pro"
 
 # Phase 203 Step 7: Ollama's own OpenAI-compatible endpoint, which the built-in catalog declares
 # as `ollama-chat`. Ollama is a background service CI cannot assume, so the cell is skipped unless
-# EXA_MATRIX_OLLAMA is set. The binding names the service explicitly: no `meta` preference key
+# EXA_MATRIX_OLLAMA is set. The model must already be pulled (`ollama pull llama3.1:8b`).
+# The binding names the service explicitly: no `meta` preference key
 # exists, because the catalog derives preferences from registered providers and `meta` is not one.
 [tool.ollama-chat]
 tool = "exactl"

@@ -104,6 +104,7 @@ Deno.test("[phase203.catalog] ollama-chat is built in as a self-hosted compatibl
   assertEquals(service.adapter, "openai-chat");
   assertEquals(service.profile, "self-hosted");
   assertEquals(service.endpoint, "http://127.0.0.1:11434/v1/chat/completions");
+  assertEquals(service.allow_insecure_loopback, true);
   assertEquals(service.transport, "local");
   assertEquals(service.interface, "api");
   assertEquals(service.supports_tool_choice, false);

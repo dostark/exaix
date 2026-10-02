@@ -5,8 +5,11 @@
  */
 
 import { assertEquals, assertInstanceOf, assertRejects, assertStringIncludes } from "@std/assert";
-import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
-import { ConfigSchema, type IResolvedBinding } from "@exaix/schemas";
+import { type IBindingLayers, ProviderFactory, ProviderRegistry, resolveBinding } from "@exaix/ai";
+import { buildBuiltInCatalog } from "@exaix/model-registry";
+import { parse as parseToml } from "@std/toml";
+import { z } from "zod";
+import { BindingCatalogSchema, BindingsTableSchema, ConfigSchema, type IResolvedBinding } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
 import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS } from "@exaix/core";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
@@ -122,4 +125,80 @@ Deno.test("binding factory rejects unknown compatible profiles and unqualified s
       allow_insecure_loopback: true,
     })
   );
+});
+
+const OLLAMA_CHAT_SERVICE = "ollama-chat";
+
+/** The one eval cell preset row this file reads. Other rows may hold unresolved sentinels. */
+const SplitStrongLocalFileSchema = z.object({
+  tool: z.object({
+    "split-strong-local": z.object({ bindings: BindingsTableSchema, catalog: BindingCatalogSchema }).loose(),
+  }).loose(),
+}).loose();
+
+const OLLAMA_MODEL = "meta/llama3.1:8b";
+
+/** The built-in ollama-chat service as a resolved binding, with only the endpoint redirected. */
+function builtInOllamaBinding(endpoint: string): IResolvedBinding {
+  const service = buildBuiltInCatalog().services[OLLAMA_CHAT_SERVICE];
+  return {
+    ...mockBinding,
+    service: OLLAMA_CHAT_SERVICE,
+    model_provider: "meta",
+    model: OLLAMA_MODEL,
+    service_model_id: SELF_HOSTED_MODEL,
+    adapter: service.adapter,
+    profile: service.profile,
+    endpoint,
+    allow_insecure_loopback: service.allow_insecure_loopback,
+    supports_tool_choice: service.supports_tool_choice,
+  };
+}
+
+Deno.test("[phase203.catalog] the built-in ollama-chat service constructs through createFromBinding", async () => {
+  ProviderRegistry.clear();
+  bootstrapProviderRegistry();
+  const fixture = startCompatibleFixture();
+  try {
+    await withEnv({ [SELF_HOSTED_KEY_ENV]: null }, async () => {
+      const provider = await ProviderFactory.createFromBinding(config, builtInOllamaBinding(fixture.endpoint));
+      const result = await provider.generate("prompt");
+
+      assertEquals(result.content, "fixture answer");
+      assertEquals(fixture.authorizationHeaders, [null]);
+      assertEquals(provider.callCapabilities?.supportsToolChoice, false);
+    });
+  } finally {
+    await fixture.shutdown();
+  }
+});
+
+Deno.test("[phase203.catalog] split-strong-local's role:web-explorer binding constructs", async () => {
+  ProviderRegistry.clear();
+  bootstrapProviderRegistry();
+  const preset = SplitStrongLocalFileSchema.parse(parseToml(await Deno.readTextFile("configs/eval-cells.toml")))
+    .tool["split-strong-local"];
+  const presetBindings = preset.bindings;
+  const presetCatalog = preset.catalog;
+  const builtIn = buildBuiltInCatalog();
+  const layers: IBindingLayers = {
+    entries: Object.entries(presetBindings).map(([selector, spec]) => ({ layer: "overlay" as const, selector, spec })),
+    catalog: { ...builtIn, models: { ...builtIn.models, ...presetCatalog.models } },
+    overlaySha256: [],
+    operatorLayersPresent: true,
+  };
+  const outcome = resolveBinding(
+    { flowId: "research", stepId: "explore-1", agentRole: "web-explorer", kind: "agent", nativeTools: true },
+    {},
+    layers,
+    { hasKey: () => false, hasOptIn: () => false },
+  );
+
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind !== "bound") return;
+  assertEquals(outcome.binding.service, OLLAMA_CHAT_SERVICE);
+  await withEnv({ [SELF_HOSTED_KEY_ENV]: null }, async () => {
+    const provider = await ProviderFactory.createFromBinding(config, outcome.binding);
+    assertEquals(provider.id, `openai-chat-${outcome.binding.service_model_id}`);
+  });
 });
