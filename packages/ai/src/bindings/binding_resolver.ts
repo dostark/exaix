@@ -565,6 +565,7 @@ export function resolveBinding(
     profile: service.profile,
     endpoint: service.endpoint,
     allow_insecure_loopback: service.allow_insecure_loopback,
+    supports_tool_choice: service.supports_tool_choice,
     tool: service.tool,
     effort: spec.effort,
     thinking: spec.thinking,

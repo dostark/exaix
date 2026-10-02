@@ -24,6 +24,7 @@ import {
   ConfigSource,
   type MockStrategy,
   OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
   PricingTier,
   ProviderType,
 } from "@exaix/core";
@@ -69,9 +70,41 @@ export function ensureProviderRegistryInitialized(): void {
   externalProviderRegistryBootstrap?.();
 }
 
-const COMPATIBLE_PROFILE_OPENAI = ProviderType.OPENAI;
-const COMPATIBLE_PROFILE_DEEPSEEK = "deepseek";
 const COMPATIBLE_PROFILE_LOCAL_TEST = "local-test";
+
+type CompatibleProfileDefaults =
+  (typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS)[keyof typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS];
+
+/** Pinned defaults for a known compatible profile, or undefined for an unknown one. */
+function pinnedProfileDefaults(
+  profile: Opt<string, Reason.OptionalContext>,
+): Opt<CompatibleProfileDefaults, Reason.OptionalContext> {
+  return OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile as keyof typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS];
+}
+
+/** Rejects a binding whose profile, model, endpoint or loopback opt-in breaks the transport policy.
+ *  A self-hosted service declares its own model and endpoint, so it pins nothing. */
+function assertCompatibleBindingQualified(binding: IResolvedBinding): void {
+  const profile = binding.profile;
+  const defaults = pinnedProfileDefaults(profile);
+  if (!defaults) throw new ProviderFactoryError(`Unsupported compatible binding profile: ${profile}`);
+  if (defaults.model !== undefined && binding.service_model_id !== defaults.model) {
+    throw new ProviderFactoryError(`Compatible ${profile} model is not qualified`);
+  }
+  const loopbackProfile = profile === COMPATIBLE_PROFILE_LOCAL_TEST ||
+    profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE;
+  if (
+    !loopbackProfile && binding.endpoint && binding.endpoint !== defaults.endpoint
+  ) {
+    throw new ProviderFactoryError(`Compatible ${profile} requires its pinned endpoint`);
+  }
+  if (!loopbackProfile && binding.allow_insecure_loopback) {
+    throw new ProviderFactoryError("Loopback opt-in is only valid for local-test or self-hosted");
+  }
+  if (profile === COMPATIBLE_PROFILE_LOCAL_TEST && (!binding.allow_insecure_loopback || !binding.endpoint)) {
+    throw new ProviderFactoryError("local-test requires a loopback endpoint and explicit opt-in");
+  }
+}
 
 // ProviderFactory Implementation
 
@@ -85,33 +118,14 @@ export class ProviderFactory {
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
     budget?: Opt<IBindingBudgetOptions, Reason.OptionalContext>,
   ): Promise<IModelProvider> {
+    assertCompatibleBindingQualified(binding);
     const profile = binding.profile;
-    if (
-      profile !== COMPATIBLE_PROFILE_OPENAI && profile !== COMPATIBLE_PROFILE_DEEPSEEK &&
-      profile !== COMPATIBLE_PROFILE_LOCAL_TEST
-    ) {
-      throw new ProviderFactoryError(`Unsupported compatible binding profile: ${profile}`);
-    }
-    if (binding.service_model_id !== OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].model) {
-      throw new ProviderFactoryError(`Compatible ${profile} model is not qualified`);
-    }
-    if (
-      profile !== COMPATIBLE_PROFILE_LOCAL_TEST && binding.endpoint &&
-      binding.endpoint !== OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].endpoint
-    ) {
-      throw new ProviderFactoryError(`Compatible ${profile} requires its pinned endpoint`);
-    }
-    if (profile !== COMPATIBLE_PROFILE_LOCAL_TEST && binding.allow_insecure_loopback) {
-      throw new ProviderFactoryError("Loopback opt-in is only valid for local-test");
-    }
-    if (profile === COMPATIBLE_PROFILE_LOCAL_TEST && (!binding.allow_insecure_loopback || !binding.endpoint)) {
-      throw new ProviderFactoryError("local-test requires a loopback endpoint and explicit opt-in");
-    }
     const compatible = CompatibleChatConfigSchema.parse({
       profile,
       endpoint: binding.endpoint,
       model: binding.service_model_id,
       allow_insecure_loopback: binding.allow_insecure_loopback ?? false,
+      ...(binding.supports_tool_choice !== undefined ? { supports_tool_choice: binding.supports_tool_choice } : {}),
     });
     const options: IResolvedProviderOptions = {
       provider: ProviderType.OPENAI_CHAT,
@@ -407,7 +421,8 @@ export class ProviderFactory {
     // A profile switch does not carry the prior compatible model identifier.
     const model = envModel ?? modelConfig?.model ?? compatible?.model ??
       (compatible && !inheritCompatibleDefaults ? undefined : baseAi.model) ??
-      (compatible ? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[compatible.profile].model : getDefaultModels()[providerType]);
+      (compatible ? OPENAI_COMPATIBLE_PROFILE_DEFAULTS[compatible.profile].model : undefined) ??
+      getDefaultModels()[providerType];
 
     // Resolve base url and timeout (env > merged > defaults)
     const baseUrl = envBaseUrl ?? merged.base_url;

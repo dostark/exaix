@@ -32,7 +32,13 @@ import type { IModelPricing, IModelPricingLookup, Opt, Reason } from "@exaix/cor
 import { createCompatibleChatRequestInit, mapCompatibleUsage, validateCompatibleResponse } from "./compatible_chat.ts";
 import { type INativeInputMeasurement, measureNativeConversation, priceCompatibleUsage } from "@exaix/ai";
 import { AiTokenEstimatorTokenizer, type ITokenizer } from "@exaix/core/func";
-import { type JSONValue, OPENAI_COMPATIBLE_LOCAL_PROFILE, ProviderType } from "@exaix/core";
+import {
+  type JSONValue,
+  OPENAI_COMPATIBLE_LOCAL_PROFILE,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
+  OPENAI_COMPATIBLE_UNPRICED_PROFILES,
+  ProviderType,
+} from "@exaix/core";
 
 /**
  * Options for OpenAIProvider.
@@ -94,6 +100,11 @@ export class OpenAIProvider extends BaseProvider {
         supportsThinking: isLocal || isDeepSeek,
         supportedEffortTiers: Object.freeze(isLocal || isDeepSeek ? ["low", "medium", "high"] as const : []),
         ...(isDeepSeek ? { effortRequiresThinking: true } : {}),
+        // A self-hosted service declares whether it honors an explicit tool_choice.
+        ...(profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE &&
+            this.compatibleConfig.supports_tool_choice !== true
+          ? { supportsToolChoice: false }
+          : {}),
       });
     }
   }
@@ -129,7 +140,7 @@ export class OpenAIProvider extends BaseProvider {
 
   private async getCompatiblePricing(model: string): Promise<IModelPricing | undefined> {
     const profile = this.compatibleConfig?.profile;
-    if (!profile || profile === OPENAI_COMPATIBLE_LOCAL_PROFILE) return undefined;
+    if (!profile || OPENAI_COMPATIBLE_UNPRICED_PROFILES.includes(profile)) return undefined;
     try {
       return await this.pricingLookup?.getModelPricing(profile, model);
     } catch {

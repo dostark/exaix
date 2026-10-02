@@ -24,11 +24,21 @@ import { configurable } from "../config/registry.ts";
 import { PortalKnowledgeInclusion } from "./portal.ts";
 
 export const OPENAI_COMPATIBLE_LOCAL_PROFILE = "local-test";
+/** A service the operator hosts. Its catalog declares the endpoint and the model. */
+export const OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE = "self-hosted";
 export const OPENAI_COMPATIBLE_PROFILE_DEFAULTS = {
   openai: { model: "gpt-6-luna", endpoint: "https://api.openai.com/v1/chat/completions" },
   deepseek: { model: "deepseek-v4-pro", endpoint: "https://api.deepseek.com/v1/chat/completions" },
   "local-test": { model: "compat-fixture-v1", endpoint: undefined },
+  // A self-hosted service pins nothing, so this entry carries no default.
+  "self-hosted": { model: undefined, endpoint: undefined },
 } as const;
+
+/** Compatible profiles whose calls carry no verified price. */
+export const OPENAI_COMPATIBLE_UNPRICED_PROFILES: readonly string[] = [
+  OPENAI_COMPATIBLE_LOCAL_PROFILE,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
+];
 
 /** Compatible Chat Completions streamed response body ceiling. */
 export const OPENAI_COMPATIBLE_MAX_RESPONSE_BYTES: number = configurable({

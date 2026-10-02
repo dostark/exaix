@@ -17,6 +17,8 @@ export interface IProviderCallCapabilities {
   readonly supportedEffortTiers: readonly EffortTier[];
   readonly supportsThinking: boolean;
   readonly effortRequiresThinking?: boolean;
+  /** False when the target cannot honor an explicit tool_choice. Absent means true. */
+  readonly supportsToolChoice?: boolean;
 }
 
 export interface IProjectedCallOptions {

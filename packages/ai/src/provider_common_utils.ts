@@ -498,7 +498,7 @@ function isOpenAiReasoningModel(model: string): boolean {
 const OPENAI_REASONING_EFFORT_NONE = "none";
 
 export function createOpenAIChatCompletionsRequestInit(
-  apiKey: string,
+  apiKey: Opt<string, Reason.OptionalInput>,
   model: string,
   prompt: string,
   options?: Opt<IModelOptions, Reason.OptionalInput>,
@@ -514,7 +514,8 @@ export function createOpenAIChatCompletionsRequestInit(
     ...(options?.requestSignal ? { signal: options.requestSignal } : {}),
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
+      // An absent or empty key means the endpoint needs no credential, so send no header.
+      ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify({
       model,

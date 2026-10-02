@@ -236,6 +236,27 @@ Deno.test("[validation] a known compatible profile passes its adapter check", as
   assertEquals(typeof OPENAI_COMPATIBLE_PROFILE_DEFAULTS.deepseek, "object");
 });
 
+Deno.test("[phase203.validation] the validator admits a self-hosted service and still rejects an unknown profile", async () => {
+  const service = (profile: string) => ({
+    adapter: "openai-chat",
+    profile,
+    transport: "cloud" as const,
+    interface: "api" as const,
+    serves: {},
+  });
+  const selfHosted = await codes(
+    binding({ adapter: "openai-chat", profile: "self-hosted", model: "openai/llama3.1:8b" }),
+    { service: service("self-hosted") },
+  );
+  assertEquals(selfHosted.includes("interface_unsupported"), false);
+  assertEquals(Object.keys(OPENAI_COMPATIBLE_PROFILE_DEFAULTS).includes("self-hosted"), true);
+
+  const unknown = await codes(binding({ adapter: "openai-chat", profile: "not-a-profile" }), {
+    service: service("not-a-profile"),
+  });
+  assertEquals(unknown.includes("interface_unsupported"), true);
+});
+
 Deno.test("[validation] a host outside an explicit allow_net is host_not_allowed", async () => {
   const result = await codes(binding({ endpoint: "https://unlisted.example.com/v1" }), {
     service: {

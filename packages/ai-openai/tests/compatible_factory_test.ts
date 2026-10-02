@@ -8,8 +8,8 @@
  */
 import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
 import { ProviderFactoryError } from "@exaix/ai/errors.ts";
-import type { IResolvedProviderOptions } from "@exaix/ai/types.ts";
-import { ProviderType, SecureCredentialStore } from "@exaix/core";
+import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.ts";
+import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS, ProviderType, SecureCredentialStore } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas";
 import { stub } from "@std/testing/mock";
 import { withEnv } from "@exaix/testing/helpers/env.ts";
@@ -470,4 +470,179 @@ Deno.test("compatible deadline interrupts retry backoff and caller cancellation 
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+const SELF_HOSTED_MODEL = "llama3.1:8b";
+const SELF_HOSTED_KEY_ENV = "EXA_COMPAT_SELF_HOSTED_API_KEY";
+
+function selfHostedOptions(
+  endpoint: string,
+  allowInsecureLoopback = false,
+  model = SELF_HOSTED_MODEL,
+): IResolvedProviderOptions {
+  return {
+    provider: ProviderType.OPENAI_CHAT,
+    model,
+    timeoutMs: 1000,
+    compatible: {
+      profile: "self-hosted",
+      endpoint,
+      model,
+      allow_insecure_loopback: allowInsecureLoopback,
+      max_response_bytes: 1024,
+      max_tool_argument_bytes: 512,
+      max_history_bytes: 1024,
+    },
+  };
+}
+
+/** Runs one real generate call against a stubbed transport and returns the request headers. */
+async function captureRequestHeaders(provider: IModelProvider): Promise<Headers> {
+  let captured: Headers | undefined;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (_input: string | URL | Request, init?: RequestInit) => {
+    captured = new Headers(init?.headers);
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          model: SELF_HOSTED_MODEL,
+          choices: [{ message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
+          usage: { prompt_tokens: 3, completion_tokens: 1, total_tokens: 4 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  };
+  try {
+    await provider.generate("prompt");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  return captured!;
+}
+
+Deno.test("[phase203.factory] self-hosted reads its endpoint and model from the config", async () => {
+  const provider = await factory.create(selfHostedOptions("https://gpu.internal:8443/v1/chat/completions"));
+  assertInstanceOf(provider, OpenAIProvider);
+  assertEquals(provider.id, `openai-chat-${SELF_HOSTED_MODEL}`);
+  assertEquals(provider.timeoutMs, 1000);
+});
+
+Deno.test("[phase203.factory][security] self-hosted rejects every endpoint outside its declared rule", async () => {
+  const rejections: Array<[string, boolean]> = [
+    ["http://gpu.internal:11434/v1/chat/completions", false],
+    ["http://gpu.internal:11434/v1/chat/completions", true],
+    ["http://127.0.0.1:11434/v1/chat/completions", false],
+    ["https://user:pass@gpu.internal/v1/chat/completions", false],
+    ["https://gpu.internal/v1/chat/completions?debug=1", false],
+    ["https://gpu.internal/v1/chat/completions#fragment", false],
+    ["https://gpu.internal/v1/models", false],
+    ["https://gpu.internal/chat/completions/", false],
+    ["not-a-url", false],
+  ];
+  for (const [endpoint, allowInsecureLoopback] of rejections) {
+    const error = await assertRejects(
+      () => factory.create(selfHostedOptions(endpoint, allowInsecureLoopback)),
+      ProviderFactoryError,
+    );
+    assertEquals(error.reasonCode, "profile_mismatch", endpoint);
+    assertEquals(error.message.includes("user:pass"), false);
+  }
+});
+
+Deno.test("[phase203.factory] self-hosted accepts HTTPS anywhere and plain HTTP on loopback with the opt-in", async () => {
+  const acceptances: Array<[string, boolean]> = [
+    ["https://gpu.internal/v1/chat/completions", false],
+    ["https://gpu.internal/chat/completions", false],
+    ["https://127.0.0.1:11434/v1/chat/completions", false],
+    ["http://127.0.0.1:11434/v1/chat/completions", true],
+    ["http://127.0.0.1:11434/chat/completions", true],
+  ];
+  for (const [endpoint, allowInsecureLoopback] of acceptances) {
+    assertInstanceOf(
+      await factory.create(selfHostedOptions(endpoint, allowInsecureLoopback)),
+      OpenAIProvider,
+      `${endpoint} (opt-in: ${allowInsecureLoopback})`,
+    );
+  }
+});
+
+Deno.test("[phase203.factory] self-hosted rejects a model that differs from its compatible model", async () => {
+  const valid = selfHostedOptions("https://gpu.internal/v1/chat/completions");
+  for (
+    const invalid of [
+      { ...valid, model: "other-model" },
+      { ...valid, compatible: { ...valid.compatible!, model: undefined } },
+    ]
+  ) {
+    const error = await assertRejects(() => factory.create(invalid), ProviderFactoryError);
+    assertEquals(error.reasonCode, "profile_mismatch");
+  }
+});
+
+Deno.test("[phase203.factory] self-hosted sends no Authorization without a key and sends one when the env key is set", async () => {
+  await withEnv({ [SELF_HOSTED_KEY_ENV]: null }, async () => {
+    const withoutKey = await factory.create(selfHostedOptions("https://gpu.internal/v1/chat/completions"));
+    assertEquals((await captureRequestHeaders(withoutKey)).get("Authorization"), null);
+    assertEquals((await captureRequestHeaders(withoutKey)).get("Content-Type"), "application/json");
+  });
+  await withEnv({ [SELF_HOSTED_KEY_ENV]: "self-hosted-key" }, async () => {
+    const withKey = await factory.create(selfHostedOptions("https://gpu.internal/v1/chat/completions"));
+    assertEquals((await captureRequestHeaders(withKey)).get("Authorization"), "Bearer self-hosted-key");
+  });
+});
+
+Deno.test("[phase203.factory][security] the self-hosted key read checks the env permission, ignores the store and persists nothing", async () => {
+  const checks: string[] = [];
+  const deniedEnv = new OpenAICompatibleProviderFactory((kind) => {
+    checks.push(kind);
+    return Promise.resolve(kind === "env" ? "denied" : "granted");
+  });
+  const error = await assertRejects(
+    () => deniedEnv.create(selfHostedOptions("https://gpu.internal/v1/chat/completions")),
+    ProviderFactoryError,
+  );
+  assertEquals(error.reasonCode, "env_permission_denied");
+  assertEquals(checks, ["net", "env"]);
+
+  await withEnv({ [SELF_HOSTED_KEY_ENV]: null }, async () => {
+    await SecureCredentialStore.set(SELF_HOSTED_KEY_ENV, "stored-self-hosted-key");
+    try {
+      const provider = await factory.create(selfHostedOptions("https://gpu.internal/v1/chat/completions"));
+      assertEquals((await captureRequestHeaders(provider)).get("Authorization"), null);
+      assertEquals(await SecureCredentialStore.get(SELF_HOSTED_KEY_ENV), "stored-self-hosted-key");
+    } finally {
+      SecureCredentialStore.clear(SELF_HOSTED_KEY_ENV);
+    }
+  });
+});
+
+Deno.test("[regression] openai and deepseek keep their pinned model, host and required credential", async () => {
+  await withEnv({ OPENAI_API_KEY: null, DEEPSEEK_API_KEY: null }, async () => {
+    for (const profile of ["openai", "deepseek"] as const) {
+      const defaults = OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile];
+      const base = options(profile, defaults.endpoint);
+      const credentialError = await assertRejects(
+        () =>
+          factory.create({
+            ...base,
+            model: defaults.model,
+            compatible: { ...base.compatible!, model: undefined },
+          }),
+        ProviderFactoryError,
+      );
+      assertEquals(credentialError.reasonCode, "credential_missing", profile);
+
+      const hostError = await assertRejects(
+        () =>
+          factory.create({
+            ...base,
+            model: defaults.model,
+            compatible: { ...base.compatible!, endpoint: "https://evil.example.com/v1/chat/completions" },
+          }),
+        ProviderFactoryError,
+      );
+      assertEquals(hostError.reasonCode, "profile_mismatch", profile);
+    }
+  });
 });

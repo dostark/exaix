@@ -11,7 +11,7 @@ import type { IModelOptions, IModelProvider } from "../src/types.ts";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { RateLimitedProvider } from "../src/rate_limited_provider.ts";
-import { PricingTier, ProviderCostTier } from "@exaix/core";
+import { DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY, PricingTier, ProviderCostTier } from "@exaix/core";
 import type { ICostTracker } from "@exaix/core/types";
 import { createStubCostTracker } from "./helpers/service_stubs.ts";
 
@@ -158,5 +158,77 @@ Deno.test("compatible rate limiting preserves identity/options and journals unkn
     Error,
     "tokens per hour",
   );
+  ProviderRegistry.clear();
+});
+
+Deno.test("[phase203.rate-limit] a self-hosted call under default limits succeeds and records an unknown cost", async () => {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata("openai-chat", new MockProviderFactory(), {
+    name: "openai-chat",
+    description: "compatible fixture",
+    capabilities: ["chat", "tools"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: [],
+    supportsNativeTools: true,
+    supportsNativeConversation: true,
+  });
+  let budgetChecks = 0;
+  let unpricedRecords = 0;
+  let numericRecords = 0;
+  const costTracker: ICostTracker = {
+    ...createStubCostTracker(),
+    isWithinBudget: () => {
+      budgetChecks++;
+      return Promise.resolve(true);
+    },
+    recordUnpricedGeneration: () => {
+      unpricedRecords++;
+      return Promise.resolve();
+    },
+    trackGeneration: () => {
+      numericRecords++;
+      return Promise.resolve(0);
+    },
+  };
+  const inner: IModelProvider = {
+    id: "openai-chat-llama3.1:8b",
+    callCapabilities: { profile: "self-hosted", supportsThinking: false, supportedEffortTiers: [] },
+    measureInputTokens: () =>
+      Promise.resolve({
+        totalTokens: 10,
+        tokenSource: "tokenizer_estimate",
+        sections: { system: 10, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+      }),
+    generate() {
+      return Promise.resolve({
+        content: "ok",
+        usage: { promptTokens: 10, completionTokens: 3, totalTokens: 13 },
+        model: "llama3.1:8b",
+        provider: this.id,
+        costStatus: "unknown",
+      });
+    },
+  };
+  const provider = new RateLimitedProvider(inner, {
+    maxCallsPerMinute: 3,
+    maxTokensPerHour: 100,
+    maxCostPerDay: DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY,
+    costPer1kTokens: 100,
+    costTracker,
+  });
+  const options: IModelOptions = {
+    max_tokens: 100,
+    nativeConversation: { initialPrompt: "stable", turns: [] },
+    tools: [{ name: "read_file", inputSchema: { type: "object" } }],
+  };
+
+  const result = await provider.generate("prompt", options);
+
+  assertEquals(result.costStatus, "unknown");
+  assertEquals(provider.costThisDay, 0);
+  assertEquals(budgetChecks, 0);
+  assertEquals(unpricedRecords, 1);
+  assertEquals(numericRecords, 0);
   ProviderRegistry.clear();
 });

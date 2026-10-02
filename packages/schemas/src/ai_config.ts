@@ -28,11 +28,14 @@ import {
 const COMPATIBLE_BYTE_LIMIT_CEILING = 64 * BYTES_PER_KB ** 2;
 export const MODEL_CONFIG_FIELD = "model";
 
+// The base stays unrefined, because CompatibleChatOverrideSchema is its .partial()
+// and zod 4 throws on .partial() of a refined object.
 const CompatibleChatFieldsSchema = z.object({
-  profile: z.enum(["openai", "deepseek", "local-test"]),
+  profile: z.enum(["openai", "deepseek", "local-test", "self-hosted"]),
   endpoint: z.string().optional(),
   model: z.string().optional(),
   allow_insecure_loopback: z.boolean().optional(),
+  supports_tool_choice: z.boolean().optional(),
   max_response_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
   max_tool_argument_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
   max_history_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
@@ -53,7 +56,14 @@ export const CompatibleChatConfigSchema = CompatibleChatFieldsSchema.extend({
   max_history_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).default(
     OPENAI_COMPATIBLE_MAX_HISTORY_BYTES,
   ),
-}).strict();
+}).strict().superRefine((config, ctx) => {
+  if (config.profile === "self-hosted" && (!config.endpoint || !config.model)) {
+    ctx.addIssue({ code: "custom", message: "self-hosted profile requires both endpoint and model" });
+  }
+  if (config.profile !== "self-hosted" && config.supports_tool_choice !== undefined) {
+    ctx.addIssue({ code: "custom", message: "supports_tool_choice applies to the self-hosted profile only" });
+  }
+});
 export type CompatibleChatConfig = z.infer<typeof CompatibleChatConfigSchema>;
 
 /** Validates against registered providers, not a hardcoded enum, so provider types

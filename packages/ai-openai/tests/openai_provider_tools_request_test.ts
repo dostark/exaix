@@ -137,3 +137,43 @@ Deno.test("[regression] OpenAIProvider.attemptGenerate without tools is unaffect
     globalThis.fetch = origFetch;
   }
 });
+
+const SELF_HOSTED_ENDPOINT = "https://gpu.internal/v1/chat/completions";
+
+function selfHostedProvider(supportsToolChoice?: boolean): OpenAIProvider {
+  return new OpenAIProvider({
+    apiKey: "",
+    model: "llama3.1:8b",
+    compatible: {
+      profile: "self-hosted",
+      endpoint: SELF_HOSTED_ENDPOINT,
+      model: "llama3.1:8b",
+      allow_insecure_loopback: false,
+      max_response_bytes: 4096,
+      max_tool_argument_bytes: 512,
+      max_history_bytes: 4096,
+      ...(supportsToolChoice === undefined ? {} : { supports_tool_choice: supportsToolChoice }),
+    },
+  });
+}
+
+Deno.test("[phase203.provider] supportsToolChoice follows the self-hosted declaration and stays absent elsewhere", () => {
+  assertEquals(selfHostedProvider().callCapabilities?.supportsToolChoice, false);
+  assertEquals("supportsToolChoice" in selfHostedProvider().callCapabilities!, true);
+  assertEquals("supportsToolChoice" in selfHostedProvider(true).callCapabilities!, false);
+  for (const profile of ["openai", "deepseek", "local-test"] as const) {
+    const provider = new OpenAIProvider({
+      apiKey: "test-key",
+      model: "compat-fixture-v1",
+      compatible: {
+        profile,
+        endpoint: "http://127.0.0.1:4312/v1/chat/completions",
+        allow_insecure_loopback: true,
+        max_response_bytes: 4096,
+        max_tool_argument_bytes: 512,
+        max_history_bytes: 4096,
+      },
+    });
+    assertEquals("supportsToolChoice" in provider.callCapabilities!, false, profile);
+  }
+});

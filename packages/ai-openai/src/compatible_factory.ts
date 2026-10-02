@@ -1,7 +1,8 @@
 /**
  * @module OpenAICompatibleProviderFactory
  * @path packages/ai-openai/src/compatible_factory.ts
- * @description Creates the local-test OpenAI-compatible provider with isolated endpoint and credential policy.
+ * @description Creates the local-test and self-hosted OpenAI-compatible providers with isolated
+ *   endpoint and credential policy.
  * @architectural-layer AI
  * @dependencies [@exaix/ai, @exaix/core, @exaix/schemas]
  * @related-files [packages/ai-openai/src/openai_provider.ts, packages/ai/src/errors.ts]
@@ -15,10 +16,13 @@ import {
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
+  SCHEME_HTTP,
+  SCHEME_HTTPS,
 } from "./constants.ts";
 import {
   OPENAI_COMPATIBLE_LOCAL_PROFILE,
   OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
   PricingTier,
   ProviderCostTier,
   ProviderType,
@@ -48,7 +52,7 @@ export const OPENAI_CHAT_PROVIDER_METADATA = {
 } as const;
 
 const LOCAL_TEST_KEY_ENV = "EXA_COMPAT_TEST_API_KEY";
-const LOCAL_TEST_MODEL = "compat-fixture-v1";
+const SELF_HOSTED_KEY_ENV = "EXA_COMPAT_SELF_HOSTED_API_KEY";
 const LOCAL_TEST_ENDPOINT = /^http:\/\/127\.0\.0\.1:[0-9]+\/v1\/chat\/completions$/;
 
 type RemoteCompatibleProfile = "openai" | "deepseek";
@@ -68,11 +72,19 @@ const REMOTE_PROFILE_HOST: Record<RemoteCompatibleProfile, string> = {
 
 const CHAT_COMPLETIONS_PATH = "/v1/chat/completions";
 
-/** Pinned qualified model per profile — the only model each profile may select. */
-function pinnedModel(profile: CompatibleChatConfig["profile"]): string {
-  return profile === OPENAI_COMPATIBLE_LOCAL_PROFILE
-    ? LOCAL_TEST_MODEL
-    : OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].model;
+/** Pinned qualified model per profile. A self-hosted service declares its own model. */
+function pinnedModel(
+  profile: CompatibleChatConfig["profile"],
+  declared: Opt<string, Reason.OptionalInput>,
+): string {
+  const pinned: Opt<string, Reason.OptionalContext> = OPENAI_COMPATIBLE_PROFILE_DEFAULTS[profile].model;
+  if (pinned === undefined) {
+    if (!declared) {
+      throw new ProviderFactoryError("Compatible self-hosted model is required", PROVIDER_REASON_PROFILE_MISMATCH);
+    }
+    return declared;
+  }
+  return pinned;
 }
 
 /** Normalizes a remote profile's root, `/v1` base, or full endpoint to its qualified URL. */
@@ -85,7 +97,7 @@ function remoteEndpoint(profile: RemoteCompatibleProfile, rawEndpoint: string): 
   }
   const path = url.pathname.replace(/\/$/, "");
   if (
-    url.protocol !== "https:" || url.host !== REMOTE_PROFILE_HOST[profile] ||
+    url.protocol !== SCHEME_HTTPS || url.host !== REMOTE_PROFILE_HOST[profile] ||
     url.username || url.password || url.search || url.hash ||
     (path !== "" && path !== "/v1" && path !== CHAT_COMPLETIONS_PATH)
   ) {
@@ -128,6 +140,43 @@ function localEndpoint(endpoint: string, allowInsecure: boolean): URL {
   return url;
 }
 
+/** Documented chat paths a self-hosted service may expose. */
+const SELF_HOSTED_PATHS = ["/v1/chat/completions", "/chat/completions"];
+
+/** HTTPS for any host, plain HTTP only on loopback with the explicit opt-in. */
+function selfHostedEndpoint(endpoint: string, allowInsecure: boolean): URL {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new ProviderFactoryError("Compatible self-hosted endpoint is invalid", PROVIDER_REASON_PROFILE_MISMATCH);
+  }
+  const insecureLoopback = url.protocol === SCHEME_HTTP && url.hostname === "127.0.0.1" && allowInsecure;
+  if (
+    (url.protocol !== SCHEME_HTTPS && !insecureLoopback) ||
+    url.username || url.password || url.search || url.hash ||
+    !SELF_HOSTED_PATHS.includes(url.pathname)
+  ) {
+    throw new ProviderFactoryError(
+      "Compatible self-hosted endpoint must use HTTPS, or opted-in loopback HTTP on a documented path",
+      PROVIDER_REASON_PROFILE_MISMATCH,
+    );
+  }
+  return url;
+}
+
+/** Applies the endpoint policy of the profile to its declared endpoint. */
+function compatibleEndpoint(compatible: CompatibleChatConfig): URL {
+  const declared = compatible.endpoint ?? "";
+  if (compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE) {
+    return localEndpoint(declared, compatible.allow_insecure_loopback);
+  }
+  if (compatible.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE) {
+    return selfHostedEndpoint(declared, compatible.allow_insecure_loopback);
+  }
+  return remoteEndpoint(compatible.profile, declared);
+}
+
 export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFactory {
   constructor(
     private readonly readPermission: PermissionStateReader = readDenoPermission,
@@ -145,7 +194,7 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
         PROVIDER_REASON_PROFILE_MISMATCH,
       );
     }
-    const model = pinnedModel(compatible.profile);
+    const model = pinnedModel(compatible.profile, compatible.model);
     if (
       options.model !== model || (compatible.model !== undefined && compatible.model !== model) ||
       options.apiKey !== undefined
@@ -161,10 +210,8 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
         PROVIDER_REASON_PROFILE_MISMATCH,
       );
     }
-    const endpoint = compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE
-      ? localEndpoint(compatible.endpoint ?? "", compatible.allow_insecure_loopback)
-      : remoteEndpoint(compatible.profile, compatible.endpoint ?? "");
-    const defaultPort = endpoint.protocol === "https:" ? "443" : "80";
+    const endpoint = compatibleEndpoint(compatible);
+    const defaultPort = endpoint.protocol === SCHEME_HTTPS ? "443" : "80";
     try {
       if (await this.readPermission("net", `${endpoint.hostname}:${endpoint.port || defaultPort}`) !== "granted") {
         throw new ProviderFactoryError(
@@ -179,13 +226,11 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
         "net_permission_denied",
       );
     }
-    const key = compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE
-      ? await this.readKey(LOCAL_TEST_KEY_ENV, false)
-      : await this.readKey(REMOTE_PROFILE_KEY_ENV[compatible.profile], true);
+    const key = await this.resolveKey(compatible);
 
     const resolvedCompatible: CompatibleChatConfig = compatible;
     return new OpenAIProvider({
-      apiKey: key,
+      apiKey: key ?? "",
       model: options.model,
       baseUrl: endpoint.href.replace(/\/$/, ""),
       id: options.id ?? `openai-chat-${options.model}`,
@@ -198,18 +243,29 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
     });
   }
 
-  /** Reads the fixed env var first, then a remote-only read-only store fallback. */
-  private async readKey(envKey: string, allowStoreFallback: boolean): Promise<string> {
-    let key: string | undefined;
+  /** Reads the profile's credential. A self-hosted endpoint may accept anonymous calls. */
+  private async resolveKey(compatible: CompatibleChatConfig): Promise<string | undefined> {
+    if (compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE) return await this.readKey(LOCAL_TEST_KEY_ENV, false);
+    if (compatible.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE) return await this.readEnvKey(SELF_HOSTED_KEY_ENV);
+    return await this.readKey(REMOTE_PROFILE_KEY_ENV[compatible.profile], true);
+  }
+
+  /** Reads the fixed env var after the environment permission check. */
+  private async readEnvKey(envKey: string): Promise<string | undefined> {
     try {
       if (await this.readPermission("env", envKey) !== "granted") {
         throw new ProviderFactoryError("Permission to read compatible credential is required", "env_permission_denied");
       }
-      key = Deno.env.get(envKey);
+      return Deno.env.get(envKey);
     } catch (error) {
       if (error instanceof ProviderFactoryError) throw error;
       throw new ProviderFactoryError("Permission to read compatible credential is required", "env_permission_denied");
     }
+  }
+
+  /** Reads the fixed env var first, then a remote-only read-only store fallback. */
+  private async readKey(envKey: string, allowStoreFallback: boolean): Promise<string> {
+    let key = await this.readEnvKey(envKey);
     if (!key && allowStoreFallback) key = (await SecureCredentialStore.get(envKey)) ?? undefined;
     if (!key) throw new ProviderFactoryError("Compatible credential is missing", "credential_missing");
 

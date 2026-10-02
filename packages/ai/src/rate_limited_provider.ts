@@ -16,7 +16,7 @@ import {
   BINDING_TRANSPORT_CLOUD,
   BINDING_TRANSPORT_LOCAL,
   COST_BUDGET_REASON_PRICING_UNAVAILABLE,
-  OPENAI_COMPATIBLE_LOCAL_PROFILE,
+  OPENAI_COMPATIBLE_UNPRICED_PROFILES,
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,
   RATE_LIMIT_WINDOW_MINUTE_MS,
@@ -71,7 +71,7 @@ export class RateLimitedProvider implements IModelProvider {
   public hourStart = Date.now();
   public dayStart = Date.now();
   private readonly compatible: boolean;
-  private readonly compatibleLocal: boolean;
+  private readonly compatibleUnpriced: boolean;
   private hasUnpricedRemoteUsage = false;
   public readonly measureInputTokens: IModelProvider["measureInputTokens"];
   public readonly callCapabilities: IModelProvider["callCapabilities"];
@@ -84,7 +84,9 @@ export class RateLimitedProvider implements IModelProvider {
     private limits: IRateLimitConfig,
   ) {
     this.compatible = ProviderRegistry.getMetadataForInstance(inner.id)?.supportsNativeConversation === true;
-    this.compatibleLocal = this.compatible && inner.callCapabilities?.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE;
+    // local-test and self-hosted carry no verified price, so their usage stays unpriced.
+    this.compatibleUnpriced = this.compatible &&
+      OPENAI_COMPATIBLE_UNPRICED_PROFILES.includes(inner.callCapabilities?.profile ?? "");
     this.id = this.compatible ? inner.id : `rate-limited-${inner.id}`;
     this.measureInputTokens = inner.measureInputTokens?.bind(inner);
     this.callCapabilities = inner.callCapabilities;
@@ -119,7 +121,7 @@ export class RateLimitedProvider implements IModelProvider {
       if (this.compatible) this.costThisDay += (result.cost_usd ?? 0) - estimatedCost;
       await this.persistUsage(result, options?.traceId, bindingMode);
 
-      if (this.compatible && !this.compatibleLocal && result.costStatus === "unknown") {
+      if (this.compatible && !this.compatibleUnpriced && result.costStatus === "unknown") {
         this.hasUnpricedRemoteUsage = true;
         if (finiteRemoteBudget) {
           throw new ProviderCallPolicyError("pricing_unavailable", this.callCapabilities?.profile ?? this.id);
@@ -237,10 +239,11 @@ export class RateLimitedProvider implements IModelProvider {
     const estimatedTokens = this.compatible
       ? (await this.measureInputTokens!(prompt, options)).totalTokens
       : this.estimateTokens(prompt, options);
-    const price = this.compatible && !this.compatibleLocal
+    const price = this.compatible && !this.compatibleUnpriced
       ? await this.estimateCallCost?.(estimatedTokens, options?.max_tokens ?? TOKEN_ESTIMATION_MAX_TOKENS)
       : undefined;
-    const finiteRemoteBudget = this.compatible && !this.compatibleLocal && Number.isFinite(this.limits.maxCostPerDay);
+    const finiteRemoteBudget = this.compatible && !this.compatibleUnpriced &&
+      Number.isFinite(this.limits.maxCostPerDay);
     if (
       finiteRemoteBudget && (price === undefined || !Number.isFinite(price) || price < 0 || this.hasUnpricedRemoteUsage)
     ) {
@@ -268,7 +271,7 @@ export class RateLimitedProvider implements IModelProvider {
     // Binding mode (global/per-service cloud caps) is handled by reserveDailyBudget
     // above. The legacy per-provider path below applies only outside it.
     if (bindingModeActive) return;
-    if (this.limits.costTracker && !this.compatibleLocal) {
+    if (this.limits.costTracker && !this.compatibleUnpriced) {
       const providerName = this.extractProviderName(this.inner.id);
       const withinBudget = await this.limits.costTracker.isWithinBudget(providerName, this.limits.maxCostPerDay);
       if (!withinBudget) {

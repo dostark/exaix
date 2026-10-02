@@ -278,6 +278,22 @@ Deno.test("planStructuredOutput always uses json_object mode for DeepSeek, even 
   assertEquals(plan.responseFormat.type, "json_object");
 });
 
+Deno.test("[phase203.structured] self-hosted takes the json_object branch on a strict-representable schema", () => {
+  const plan = planStructuredOutput(
+    "self-hosted",
+    schema({
+      type: "object",
+      properties: { title: { type: "string" } },
+      required: ["title"],
+      additionalProperties: false,
+    }),
+  );
+  assertEquals(plan.mode, "json_object");
+  assertEquals(plan.reason, undefined);
+  assertEquals(plan.responseFormat.type, "json_object");
+  assertEquals(typeof plan.promptInstruction === "string" && plan.promptInstruction.includes("json"), true);
+});
+
 Deno.test("json_object instruction overrides prompt-level wrapper tags so the reply is bare JSON", () => {
   assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("<content>"), true);
   assertEquals(STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION.includes("first character"), true);

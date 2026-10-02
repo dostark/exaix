@@ -7,7 +7,7 @@
  * @related-files [packages/ai-openai/src/openai_provider.ts]
  */
 import type { IModelPricing, Opt, Reason } from "@exaix/core/types";
-import { OPENAI_COMPATIBLE_LOCAL_PROFILE } from "@exaix/core";
+import { OPENAI_COMPATIBLE_UNPRICED_PROFILES } from "@exaix/core";
 import type { CompatibleChatConfig } from "@exaix/schemas";
 import type { IGenerateResult, ProviderCostStatus } from "./providers/common.ts";
 
@@ -30,7 +30,7 @@ export function priceCompatibleUsage(
 ): ICompatiblePrice {
   const unpriced: ICompatiblePrice = { costStatus: "unknown" };
   if (
-    profile === OPENAI_COMPATIBLE_LOCAL_PROFILE || !pricing || pricing.provider !== profile ||
+    OPENAI_COMPATIBLE_UNPRICED_PROFILES.includes(profile) || !pricing || pricing.provider !== profile ||
     pricing.model !== returnedModel ||
     pricing.provenance === "unknown" || !pricing.verifiedAt || !pricing.sourceUrl ||
     !validRate(pricing.inputPerMtok) || !validRate(pricing.outputPerMtok)

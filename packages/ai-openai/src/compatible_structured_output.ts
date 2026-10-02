@@ -10,7 +10,7 @@
  * @related-files [packages/ai-openai/src/compatible_chat.ts, packages/core/src/planning/plan_adapter.ts]
  */
 import { z } from "zod";
-import type { JSONValue } from "@exaix/core";
+import { type JSONValue, OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE } from "@exaix/core";
 import type { StructuredOutputMode, StructuredOutputModeReason } from "@exaix/ai/providers";
 import {
   STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION,
@@ -18,7 +18,7 @@ import {
   STRUCTURED_OUTPUT_SCHEMA_MAX_NESTING,
 } from "./constants.ts";
 
-export type StructuredOutputProfile = "openai" | "deepseek" | "local-test";
+export type StructuredOutputProfile = "openai" | "deepseek" | "local-test" | "self-hosted";
 
 /** Wire dispatch chosen by planStructuredOutput for a given profile + schema. */
 export interface IStructuredOutputPlan {
@@ -281,13 +281,21 @@ export function stripIntroducedNulls(data: JSONValue, originalSchema: Record<str
 
 const OPENAI_STRICT_SCHEMA_NAME = "exaix_structured_output";
 
-/** OpenAI prefers strict json_schema mode when representable — DeepSeek always uses json_object. */
+/** Only OpenAI and the local fixture may use strict json_schema. DeepSeek and a
+ *  self-hosted server are not guaranteed to accept that format. */
+function supportsStrictSchema(profile: StructuredOutputProfile): boolean {
+  return profile !== "deepseek" && profile !== OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE;
+}
+
+/** OpenAI prefers strict json_schema mode when representable. DeepSeek and self-hosted
+ *  always use json_object, because neither wire contract promises the strict format. */
 export function planStructuredOutput(
   profile: StructuredOutputProfile,
   schema: Record<string, JSONValue>,
 ): IStructuredOutputPlan {
   assertSupportedJsonSchema(schema);
-  const strict = profile !== "deepseek" && isStrictRepresentable(schema);
+  const strictProfile = supportsStrictSchema(profile);
+  const strict = strictProfile && isStrictRepresentable(schema);
   if (strict) {
     return {
       mode: "json_schema",
@@ -299,7 +307,7 @@ export function planStructuredOutput(
   }
   return {
     mode: "json_object",
-    ...(profile !== "deepseek" ? { reason: "schema_not_strict_representable" as const } : {}),
+    ...(strictProfile ? { reason: "schema_not_strict_representable" as const } : {}),
     responseFormat: { type: "json_object" },
     promptInstruction: STRUCTURED_OUTPUT_JSON_MODE_INSTRUCTION,
   };

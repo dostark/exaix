@@ -4,11 +4,12 @@
  * @description Checks binding-specific provider creation and compatible qualification.
  */
 
-import { assertInstanceOf, assertRejects, assertStringIncludes } from "@std/assert";
-import { ProviderFactory } from "@exaix/ai";
+import { assertEquals, assertInstanceOf, assertRejects, assertStringIncludes } from "@std/assert";
+import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { ConfigSchema, type IResolvedBinding } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
 import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS } from "@exaix/core";
+import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 
 const config = ConfigSchema.parse({ system: {}, paths: {}, ai: { provider: "mock", model: "boot-model" } });
 const mockBinding: IResolvedBinding = {
@@ -23,6 +24,34 @@ const mockBinding: IResolvedBinding = {
   fingerprint: "a".repeat(64),
 };
 
+const SELF_HOSTED_MODEL = "llama3.1:8b";
+const SELF_HOSTED_KEY_ENV = "EXA_COMPAT_SELF_HOSTED_API_KEY";
+
+interface ICompatibleFixture {
+  endpoint: string;
+  authorizationHeaders: Array<string | null>;
+  shutdown: () => Promise<void>;
+}
+
+/** One loopback fixture that answers a compatible Chat Completions call and records the request. */
+function startCompatibleFixture(): ICompatibleFixture {
+  const authorizationHeaders: Array<string | null> = [];
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, (request) => {
+    authorizationHeaders.push(request.headers.get("Authorization"));
+    return Response.json({
+      model: SELF_HOSTED_MODEL,
+      choices: [{ message: { role: "assistant", content: "fixture answer" }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 5, completion_tokens: 2, total_tokens: 7 },
+    });
+  });
+  const port = (server.addr as Deno.NetAddr).port;
+  return {
+    endpoint: `http://127.0.0.1:${port}/v1/chat/completions`,
+    authorizationHeaders,
+    shutdown: () => server.shutdown(),
+  };
+}
+
 Deno.test("binding factory ignores EXA_LLM_PROVIDER and EXA_LLM_MODEL", async () => {
   await withEnv({ EXA_LLM_PROVIDER: "missing-provider", EXA_LLM_MODEL: "wrong-model" }, async () => {
     const provider = await ProviderFactory.createFromBinding(config, mockBinding);
@@ -30,7 +59,38 @@ Deno.test("binding factory ignores EXA_LLM_PROVIDER and EXA_LLM_MODEL", async ()
   });
 });
 
-Deno.test("binding factory rejects unsupported compatible profiles and service models", async () => {
+Deno.test("[phase203.binding] createFromBinding builds a self-hosted provider that generates without Authorization", async () => {
+  ProviderRegistry.clear();
+  bootstrapProviderRegistry();
+  const fixture = startCompatibleFixture();
+  try {
+    await withEnv({ [SELF_HOSTED_KEY_ENV]: null }, async () => {
+      const provider = await ProviderFactory.createFromBinding(config, {
+        ...mockBinding,
+        service: "local-gpu",
+        model_provider: "openai",
+        model: `openai/${SELF_HOSTED_MODEL}`,
+        service_model_id: SELF_HOSTED_MODEL,
+        adapter: "openai-chat",
+        profile: "self-hosted",
+        endpoint: fixture.endpoint,
+        allow_insecure_loopback: true,
+        supports_tool_choice: false,
+      });
+
+      assertEquals(provider.id, `openai-chat-${SELF_HOSTED_MODEL}`);
+      const result = await provider.generate("prompt");
+
+      assertEquals(result.content, "fixture answer");
+      assertEquals(result.costStatus, "unknown");
+      assertEquals(fixture.authorizationHeaders, [null]);
+    });
+  } finally {
+    await fixture.shutdown();
+  }
+});
+
+Deno.test("binding factory rejects unknown compatible profiles and unqualified service models", async () => {
   const compatible: IResolvedBinding = {
     ...mockBinding,
     service: "compat-fixture",
@@ -41,7 +101,7 @@ Deno.test("binding factory rejects unsupported compatible profiles and service m
     profile: "local-test",
     endpoint: "http://127.0.0.1:8765/v1/chat/completions",
   };
-  await assertRejects(() => ProviderFactory.createFromBinding(config, { ...compatible, profile: "self-hosted" }));
+  await assertRejects(() => ProviderFactory.createFromBinding(config, { ...compatible, profile: "not-a-profile" }));
   const endpointError = await assertRejects(() =>
     ProviderFactory.createFromBinding(config, {
       ...compatible,

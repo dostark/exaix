@@ -89,6 +89,8 @@ export interface IResolvedBinding {
   profile?: string;
   endpoint?: string;
   allow_insecure_loopback?: boolean;
+  /** A self-hosted service states whether it honors an explicit tool_choice. */
+  supports_tool_choice?: boolean;
   tool?: SessionTool;
   effort?: EffortDeclaration;
   thinking?: ThinkingDeclaration;
@@ -128,6 +130,7 @@ export interface ICatalogService {
   profile?: string;
   endpoint?: string;
   allow_insecure_loopback?: boolean;
+  supports_tool_choice?: boolean;
   transport: BindingTransport;
   interface: BindingInterface;
   key_env?: string;
@@ -219,6 +222,7 @@ export const CatalogServiceSchema = z.object({
   profile: z.string().min(1).optional(),
   endpoint: z.string().url().optional(),
   allow_insecure_loopback: z.boolean().optional(),
+  supports_tool_choice: z.boolean().optional(),
   transport: BindingTransportSchema,
   interface: BindingInterfaceSchema,
   key_env: z.string().regex(ENV_VAR_NAME_PATTERN).optional(),
@@ -284,6 +288,7 @@ export const ResolvedBindingSchema = z.object({
   profile: z.string().optional(),
   endpoint: z.string().url().optional(),
   allow_insecure_loopback: z.boolean().optional(),
+  supports_tool_choice: z.boolean().optional(),
   tool: SessionToolSchema.optional(),
   effort: EffortDeclarationSchema.optional(),
   thinking: ThinkingDeclarationSchema.optional(),

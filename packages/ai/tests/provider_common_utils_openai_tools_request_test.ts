@@ -271,3 +271,20 @@ Deno.test(
     assertEquals(body.reasoning_effort, undefined);
   },
 );
+
+function authorizationOf(init: RequestInit): string | null {
+  return new Headers(init.headers).get("Authorization");
+}
+
+Deno.test("[phase203.provider] the shared request builder omits Authorization only for an absent key", () => {
+  assertEquals(authorizationOf(createOpenAIChatCompletionsRequestInit(undefined, "gpt-5", "prompt")), null);
+  assertEquals(authorizationOf(createOpenAIChatCompletionsRequestInit("", "gpt-5", "prompt")), null);
+  assertEquals(
+    authorizationOf(createOpenAIChatCompletionsRequestInit("test-key", "gpt-5", "prompt")),
+    "Bearer test-key",
+  );
+  assertEquals(
+    new Headers(createOpenAIChatCompletionsRequestInit(undefined, "gpt-5", "prompt").headers).get("Content-Type"),
+    "application/json",
+  );
+});
