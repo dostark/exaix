@@ -11,48 +11,26 @@ portals:
     target_path: "$WORKSPACE_ROOT/live-portal"
     git_init: true
 matrix:
-  cells:
-    # CLI-delegate tools (subscription-billed): the planning gate SKIPS planning tools with
-    # reason=provider_unsupported (Phase 199 R5 / GAP-8) and the plan comes from a single-call
-    # CLI run. These are the "run with claude-code/codex/opencode" forms.
-    - tool: "claude-code"
-      provider: "claude-cli"
-      config: "configs/planning-live.claude.toml"
-      requires_bin: "claude"
-    - tool: "codex"
-      provider: "codex-cli"
-      config: "configs/planning-live.codex.toml"
-      requires_bin: "codex"
-      requires_optin: "EXA_MATRIX_CODEX"
-    - tool: "opencode"
-      provider: "opencode-cli"
-      config: "configs/planning-live.opencode.toml"
-      requires_bin: "opencode"
-      requires_optin: "EXA_MATRIX_OPENCODE"
-    # Native-tools HTTP providers: the planning call ENGAGES the read-only tool loop and a
-    # real model decides to read the portal. Each cell pins its provider+model via its config
-    # and is gated on the provider's API key (requires_key) — the same convention swe_tasks'
-    # direct-API cells use.
-    - tool: "exactl"
-      provider: "anthropic"
-      config: "configs/planning-live.anthropic.toml"
-      requires_bin: "true"
-      requires_key: "ANTHROPIC_API_KEY"
-    - tool: "exactl"
-      provider: "openai"
-      config: "configs/planning-live.openai.toml"
-      requires_bin: "true"
-      requires_key: "OPENAI_API_KEY"
-    - tool: "exactl"
-      provider: "google"
-      config: "configs/planning-live.google.toml"
-      requires_bin: "true"
-      requires_key: "GOOGLE_API_KEY"
-    - tool: "exactl"
-      provider: "openrouter"
-      config: "configs/planning-live.openrouter.toml"
-      requires_bin: "true"
-      requires_key: "OPENROUTER_API_KEY"
+  # Phase 203 Step 8: the seven hand-listed cells become planning-live presets. Each preset
+  # keeps this file's own config, provider, model and opt-in, so the run predicates are
+  # unchanged, and so are the history cell ids.
+  #
+  # CLI-delegate tools (subscription-billed): the planning gate SKIPS planning tools with
+  # reason=provider_unsupported (Phase 199 R5 / GAP-8) and the plan comes from a single-call
+  # CLI run. These are the "run with claude-code/codex/opencode" forms.
+  #
+  # Native-tools HTTP providers: the planning call ENGAGES the read-only tool loop and a
+  # real model decides to read the portal. Each cell pins its provider and model in its config
+  # and is gated on the provider's API key, the same convention swe_tasks' direct-API cells use.
+  from_catalog: [
+    "planning-live-claude",
+    "planning-live-codex",
+    "planning-live-opencode",
+    "planning-live-anthropic",
+    "planning-live-openai",
+    "planning-live-google",
+    "planning-live-openrouter",
+  ]
 steps:
   - id: "start-daemon"
     type: "exactl"

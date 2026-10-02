@@ -23,6 +23,14 @@ bin_overrides = []
 # (e.g. the generic ReAct-completion pattern matching "AVAILABLE TOOLS:"), rather than
 # failing with "No recorded response found" — the base exa.config.toml's `recorded` strategy
 # with a flow_blueprints fixtures_dir only covers that pack's own pre-captured prompts.
+#
+# Phase 203 Step 8: the provider is declared so a matrix cell selects the pattern mock through
+# its own EXA_CONFIG_PATH. A step's `env` cannot be scoped to one cell of a two-cell matrix,
+# so the mock cell cannot set EXA_LLM_PROVIDER for itself. An existing EXA_LLM_PROVIDER value
+# still wins over this declaration.
+[ai]
+provider = "mock"
+
 [ai.mock]
 strategy = "pattern"
 

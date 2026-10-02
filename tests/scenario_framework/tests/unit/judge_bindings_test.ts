@@ -303,14 +303,32 @@ function bindingSelectorsOf(scenario: CatalogEntry): string[] {
 /** The one reviewed preset judge binding (Phase 203 Step 7, test-only fixture preset). */
 const REVIEWED_JUDGE_BINDING_PRESETS = new Set(["self-hosted-fixture"]);
 
+/** The merged agent-role scenarios Phase 203 Step 8 reviewed. Each binds its live cell's judge
+ *  to the claude-cli delegate, so a live judge needs no provider credential. */
+const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
+  "performance-engineer-smoke",
+  "product-manager-smoke",
+  "qa-engineer-smoke",
+  "quality-judge-smoke",
+  "security-expert-smoke",
+  "senior-coder-smoke",
+  "software-architect-smoke",
+  "technical-writer-smoke",
+  "test-engineer-smoke",
+]);
+
 Deno.test("[judge][regression] only the reviewed fixture preset declares a judge binding, so every other judge keeps its env path", async () => {
   const scenarios = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const offenders: string[] = [];
+  const reviewedScenarios = new Set<string>();
   for (const scenario of scenarios) {
     for (const selector of bindingSelectorsOf(scenario)) {
-      if (selector === "judge" || selector.startsWith("judge:")) {
-        offenders.push(`${scenario.id}: ${selector}`);
+      if (selector !== "judge" && !selector.startsWith("judge:")) continue;
+      if (REVIEWED_JUDGE_BINDING_SCENARIOS.has(scenario.id)) {
+        reviewedScenarios.add(`${scenario.id}: ${selector}`);
+        continue;
       }
+      offenders.push(`${scenario.id}: ${selector}`);
     }
   }
 
@@ -336,5 +354,9 @@ Deno.test("[judge][regression] only the reviewed fixture preset declares a judge
   // This guard fails until the change is made and reviewed on purpose.
   assertEquals(offenders, []);
   assertEquals([...reviewed].sort(), ["self-hosted-fixture: judge"]);
+  assertEquals(
+    [...reviewedScenarios].sort(),
+    [...REVIEWED_JUDGE_BINDING_SCENARIOS].map((id) => `${id}: judge`).sort(),
+  );
   assert(scenarios.length >= 200, `the shipped scenario corpus must load, saw ${scenarios.length}`);
 });

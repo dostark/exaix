@@ -107,6 +107,22 @@ native_tools = true
 [tool.exactl-google.bindings.default]
 model = "google/gemini-flash-latest"
 
+# Phase 203 Step 8: OpenRouter needs no new TOML file, because the binding selects the service.
+# OpenRouter's model ids equal the canonical ids, so the binding reuses the config's own model.
+# The row's provider stays the config's provider: only the service is swapped.
+[tool.exactl-openrouter]
+tool = "exactl"
+config = "configs/anthropic-no-delegate.toml"
+provider = "anthropic"
+model = "claude-sonnet-5"
+requires_bin = "true"
+requires_key = "OPENROUTER_API_KEY"
+native_tools = true
+
+[tool.exactl-openrouter.bindings.default]
+service = "openrouter"
+model = "anthropic/claude-sonnet-5"
+
 [tool.opencode-laguna-free]
 tool = "opencode-laguna-free"
 config = "configs/opencode-laguna-free.toml"
@@ -216,3 +232,57 @@ serves = { "fixture/compat-fixture-v1" = "compat-fixture-v1" }
 
 [tool.self-hosted-fixture.catalog.models."fixture/compat-fixture-v1"]
 model_provider = "fixture"
+
+# Phase 203 Step 8: the planning-live presets. `planning-read-only-tools-live` hand-listed seven
+# cells on these configs. The presets keep each config, provider, model and opt-in, so the
+# scenario migrates to `from_catalog` without changing a cell id or a run predicate.
+[tool.planning-live-claude]
+tool = "claude-code"
+config = "configs/planning-live.claude.toml"
+provider = "claude-cli"
+model = "claude-haiku-4-5"
+requires_bin = "claude"
+
+[tool.planning-live-codex]
+tool = "codex"
+config = "configs/planning-live.codex.toml"
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+requires_bin = "codex"
+requires_optin = "EXA_MATRIX_CODEX"
+
+[tool.planning-live-opencode]
+tool = "opencode"
+config = "configs/planning-live.opencode.toml"
+provider = "opencode-cli"
+model = "opencode-go/deepseek-v4-flash"
+requires_bin = "opencode"
+requires_optin = "EXA_MATRIX_OPENCODE"
+
+[tool.planning-live-anthropic]
+tool = "exactl"
+config = "configs/planning-live.anthropic.toml"
+provider = "anthropic"
+model = "claude-sonnet-5"
+requires_key = "ANTHROPIC_API_KEY"
+
+[tool.planning-live-openai]
+tool = "exactl"
+config = "configs/planning-live.openai.toml"
+provider = "openai"
+model = "gpt-5-mini"
+requires_key = "OPENAI_API_KEY"
+
+[tool.planning-live-google]
+tool = "exactl"
+config = "configs/planning-live.google.toml"
+provider = "google"
+model = "gemini-flash-latest"
+requires_key = "GOOGLE_API_KEY"
+
+[tool.planning-live-openrouter]
+tool = "exactl"
+config = "configs/planning-live.openrouter.toml"
+provider = "openrouter"
+model = "openrouter/auto"
+requires_key = "OPENROUTER_API_KEY"

@@ -10,8 +10,12 @@ import { assert, assertEquals } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import { dirname, fromFileUrl, join } from "@std/path";
+import type { IMatrixCell } from "../../runner/matrix_expander.ts";
+import { loadCellCatalog, resolveScenarioMatrixCells } from "../../runner/cell_catalog.ts";
+import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 
 const FRAMEWORK_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../..");
+const CATALOG_PATH = join(FRAMEWORK_ROOT, "..", "..", "configs", "eval-cells.toml");
 const EXPECTED_ROLE_BY_SCENARIO = {
   "swe-write-tests-uncovered": "senior-coder",
   "swe-fix-bug-null-guard": "senior-coder",
@@ -35,14 +39,15 @@ Deno.test("[PersonaIsolationRoles] preregistered scenarios explicitly request th
 });
 
 Deno.test("[PersonaIsolationRoles] preregistered scenarios expose Claude CLI and Codex CLI cells", async () => {
+  // These scenarios select their cells with `matrix.from_catalog`.
+  // A run's real cells therefore come from the eval cell catalog, not the YAML text.
+  const catalog = await loadCellCatalog(CATALOG_PATH);
   for (const scenarioId of Object.keys(EXPECTED_ROLE_BY_SCENARIO)) {
     const filename = scenarioId.slice("swe-".length) + ".yaml";
     const source = await Deno.readTextFile(join(FRAMEWORK_ROOT, "scenarios", "swe_tasks", filename));
-    const scenario = parseYaml(source) as {
-      matrix: { cells: Array<{ tool: string }> };
-      steps: Array<{ add_capabilities?: string[]; cells?: string[] }>;
-    };
-    const tools = scenario.matrix.cells.map((cell) => cell.tool);
+    const scenario = ScenarioSchema.parse(parseYaml(source));
+    assert(scenario.matrix, `${scenarioId}: missing matrix`);
+    const tools = resolveScenarioMatrixCells(scenario.matrix, catalog).map((cell) => cell.tool);
     assert(tools.includes("claude-code"), `${scenarioId}: missing Claude CLI cell`);
     assert(tools.includes("codex"), `${scenarioId}: missing Codex CLI cell`);
     for (const step of scenario.steps.filter((candidate) => candidate.add_capabilities?.includes("cli_delegate"))) {
@@ -52,15 +57,15 @@ Deno.test("[PersonaIsolationRoles] preregistered scenarios expose Claude CLI and
 });
 
 Deno.test("[PersonaIsolationRoles] capability-patched CLI cells enable their execution strategy", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
   for (const scenarioId of Object.keys(EXPECTED_ROLE_BY_SCENARIO)) {
     const source = await Deno.readTextFile(
       join(FRAMEWORK_ROOT, "scenarios", "swe_tasks", scenarioId.slice(4) + ".yaml"),
     );
-    const scenario = parseYaml(source) as {
-      matrix: { cells: Array<{ tool: string; config: string }> };
-      steps: Array<{ add_capabilities?: string[]; cells?: string[] }>;
-    };
-    for (const cell of scenario.matrix.cells.filter((cell) => ["codex", "claude-code"].includes(cell.tool))) {
+    const scenario = ScenarioSchema.parse(parseYaml(source));
+    assert(scenario.matrix, `${scenarioId}: missing matrix`);
+    const cells: IMatrixCell[] = resolveScenarioMatrixCells(scenario.matrix, catalog);
+    for (const cell of cells.filter((candidate) => ["codex", "claude-code"].includes(candidate.tool))) {
       if (
         !scenario.steps.some((step) =>
           step.add_capabilities?.includes("cli_delegate") && (!step.cells || step.cells.includes(cell.tool))

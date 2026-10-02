@@ -13,36 +13,17 @@ portals:
     git_init: true
 mode_support: ["auto"]
 matrix:
-  cells:
-    - tool: "claude-code"
-      provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-all.toml"
-      requires_bin: "claude"
-    - tool: "codex"
-      provider: "$CELL_PROVIDER"
-      config: "configs/codex-cli-react.toml"
-      requires_bin: "codex"
-    - tool: "claude-haiku-4-5"
-      provider: "$CELL_PROVIDER"
-      config: "configs/claude-haiku-4-5-delegate-all.toml"
-      requires_bin: "claude"
-    - tool: "opencode"
-      provider: "$CELL_PROVIDER"
-      config: "configs/opencode-cli-delegate-all.toml"
-      requires_bin: "opencode"
-    - tool: "opencode-north-mini-code"
-      provider: "$CELL_PROVIDER"
-      config: "configs/opencode-north-mini-code-free.toml"
-      requires_bin: "opencode"
-    - tool: "opencode-laguna-free"
-      provider: "$CELL_PROVIDER"
-      config: "configs/opencode-laguna-free.toml"
-      requires_bin: "opencode"
-    - tool: "exactl"
-      provider: "anthropic"
-      config: "configs/anthropic-no-delegate.toml"
-      requires_bin: "true"
-      requires_key: "ANTHROPIC_API_KEY"
+  # Phase 203 Step 8: the seven hand-listed cells become presets. Each preset keeps this file's
+  # own config, so every cell id and prerequisite predicate is unchanged.
+  from_catalog: [
+    "claude-code",
+    "codex",
+    "claude-haiku-4-5",
+    "opencode",
+    "opencode-north-mini-code",
+    "opencode-laguna-free",
+    "exactl-native",
+  ]
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"

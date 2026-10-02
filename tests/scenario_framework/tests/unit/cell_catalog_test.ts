@@ -289,3 +289,104 @@ Deno.test("[phase203.cell_catalog] the fixture base config grants the fixture ho
   const config = ConfigSchema.parse(parseToml(materialized));
   assertEquals(config.ai?.compatible, undefined);
 });
+
+Deno.test("[phase203.cell_catalog] exactl-openrouter selects the openrouter service without a new TOML file", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
+  const openrouter = catalog.presets["exactl-openrouter"]!;
+
+  // The binding swaps in the openrouter service, so the config can stay the shipped one.
+  assertEquals(openrouter.tool, "exactl");
+  assertEquals(openrouter.config, "configs/anthropic-no-delegate.toml");
+  assertEquals(openrouter.provider, "anthropic");
+  assertEquals(openrouter.model, "claude-sonnet-5");
+  assertEquals(openrouter.requires_key, "OPENROUTER_API_KEY");
+  assertEquals(openrouter.requires_bin, "true");
+  assertEquals(openrouter.bindings?.default, { service: "openrouter", model: "anthropic/claude-sonnet-5" });
+
+  const [cell] = resolveCatalogCells(catalog, ["exactl-openrouter"]);
+  assertEquals(cell.bindings?.default?.service, "openrouter");
+  assertEquals(cell.requires_key, "OPENROUTER_API_KEY");
+});
+
+Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs, models and opt-ins", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
+  const expected: Array<{
+    name: string;
+    tool: string;
+    config: string;
+    provider: string;
+    model: string;
+    requires_bin: string;
+    requires_optin?: string;
+  }> = [
+    {
+      name: "planning-live-claude",
+      tool: "claude-code",
+      config: "configs/planning-live.claude.toml",
+      provider: "claude-cli",
+      model: "claude-haiku-4-5",
+      requires_bin: "claude",
+    },
+    {
+      name: "planning-live-codex",
+      tool: "codex",
+      config: "configs/planning-live.codex.toml",
+      provider: "codex-cli",
+      model: "gpt-5.6-terra",
+      requires_bin: "codex",
+      requires_optin: "EXA_MATRIX_CODEX",
+    },
+    {
+      name: "planning-live-opencode",
+      tool: "opencode",
+      config: "configs/planning-live.opencode.toml",
+      provider: "opencode-cli",
+      model: "opencode-go/deepseek-v4-flash",
+      requires_bin: "opencode",
+      requires_optin: "EXA_MATRIX_OPENCODE",
+    },
+    {
+      name: "planning-live-anthropic",
+      tool: "exactl",
+      config: "configs/planning-live.anthropic.toml",
+      provider: "anthropic",
+      model: "claude-sonnet-5",
+      requires_bin: "true",
+    },
+    {
+      name: "planning-live-openai",
+      tool: "exactl",
+      config: "configs/planning-live.openai.toml",
+      provider: "openai",
+      model: "gpt-5-mini",
+      requires_bin: "true",
+    },
+    {
+      name: "planning-live-google",
+      tool: "exactl",
+      config: "configs/planning-live.google.toml",
+      provider: "google",
+      model: "gemini-flash-latest",
+      requires_bin: "true",
+    },
+    {
+      name: "planning-live-openrouter",
+      tool: "exactl",
+      config: "configs/planning-live.openrouter.toml",
+      provider: "openrouter",
+      model: "openrouter/auto",
+      requires_bin: "true",
+    },
+  ];
+
+  for (const row of expected) {
+    const preset = catalog.presets[row.name];
+    assert(preset !== undefined, `preset '${row.name}' must exist`);
+    assertEquals(preset.tool, row.tool, `${row.name} tool`);
+    assertEquals(preset.config, row.config, `${row.name} config`);
+    assertEquals(preset.provider, row.provider, `${row.name} provider`);
+    assertEquals(preset.model, row.model, `${row.name} model`);
+    assertEquals(preset.requires_bin, row.requires_bin, `${row.name} binary gate`);
+    assertEquals(preset.requires_optin, row.requires_optin, `${row.name} opt-in`);
+  }
+});

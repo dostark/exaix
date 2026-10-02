@@ -12,29 +12,9 @@ portals:
     git_init: true
 mode_support: ["auto"]
 matrix:
-  cells:
-    - tool: "claude-code"
-      provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-all.toml"
-      requires_bin: "claude"
-    - tool: "codex"
-      provider: "$CELL_PROVIDER"
-      config: "configs/codex-cli-react.toml"
-      requires_bin: "codex"
-    - tool: "opencode"
-      provider: "$CELL_PROVIDER"
-      config: "configs/opencode-cli-delegate-all.toml"
-      requires_bin: "opencode"
-    - tool: "exactl"
-      provider: "anthropic"
-      config: "configs/anthropic-no-delegate.toml"
-      requires_bin: "true"
-      requires_key: "ANTHROPIC_API_KEY"
-    - tool: "exactl"
-      provider: "openai-chat"
-      config: "configs/openai-chat.toml"
-      requires_bin: "true"
-      requires_key: "OPENAI_API_KEY"
+  # Phase 203 Step 8: the five hand-listed cells become presets. Each preset keeps this file's
+  # own config, so every cell id and prerequisite predicate is unchanged.
+  from_catalog: ["claude-code", "codex", "opencode", "exactl-native", "openai-chat"]
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"
