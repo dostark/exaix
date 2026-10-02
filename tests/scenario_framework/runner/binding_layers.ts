@@ -10,7 +10,8 @@
  *
  *   The files live under the run's output directory, outside the sandbox: the agent under test
  *   must not be able to rewrite the bindings that govern it. A caller that points the directory
- *   inside the sandbox is refused with `overlay_invalid`.
+ *   inside the sandbox is refused with `overlay_invalid`, and a symlinked output or `bindings`
+ *   component is resolved physically and refused too.
  *
  *   Layer order comes from the `--overlay` argument order the caller passes, because every run
  *   overlay carries the same daemon layer. See `packages/ai/src/bindings/binding_layers.ts` for
@@ -27,7 +28,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, packages/ai/src/bindings/binding_layers.ts]
  */
 
-import { join, resolve } from "@std/path";
+import { basename, dirname, join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
 import {
   BINDING_OVERLAY_SCHEMA_VERSION,
@@ -164,6 +165,24 @@ function isInside(candidate: string, root: string): boolean {
   const resolvedCandidate = resolve(candidate);
   const resolvedRoot = resolve(root);
   return resolvedCandidate === resolvedRoot || resolvedCandidate.startsWith(`${resolvedRoot}/`);
+}
+
+/** Resolve a path to its physical location, even when it does not exist yet.
+ *  It follows symlinks in the nearest existing ancestor, then re-joins the tail. */
+async function physicalPath(candidate: string): Promise<string> {
+  const tail: string[] = [];
+  let current = resolve(candidate);
+  while (true) {
+    try {
+      const real = await Deno.realPath(current);
+      return tail.length === 0 ? real : join(real, ...tail);
+    } catch {
+      const parent = dirname(current);
+      if (parent === current) return join(current, ...tail);
+      tail.unshift(basename(current));
+      current = parent;
+    }
+  }
 }
 
 /** Replace the fixture-port sentinel in a raw overlay's service endpoints.
@@ -437,12 +456,30 @@ export async function planScenarioBindings(
   input: IPlanScenarioBindingsInput,
 ): Promise<IScenarioBindingPlan> {
   // One directory per invocation. A repeated scenario then keeps its earlier overlay bytes.
-  const bindingsDir = join(input.outputDir, SCENARIO_BINDINGS_SUBDIR, crypto.randomUUID());
-  if (isInside(bindingsDir, input.sandboxRoot)) {
+  // Resolve physical ancestry first, so an output or `bindings` symlink into the sandbox
+  // cannot hide behind a lexically-outside path.
+  const sandboxReal = await physicalPath(input.sandboxRoot);
+  const bindingsDir = await physicalPath(
+    join(input.outputDir, SCENARIO_BINDINGS_SUBDIR, crypto.randomUUID()),
+  );
+  if (isInside(bindingsDir, sandboxReal)) {
     throw new Error(
       `overlay_invalid: the bindings directory resolves inside the sandbox (${input.sandboxRoot})`,
     );
   }
+  let bindingsDirChecked = false;
+  // Verify the created directory's physical location before the first write. The pre-check
+  // above already refuses a symlinked ancestor, so this is the post-create race guard.
+  const ensureBindingsDir = async (): Promise<void> => {
+    if (bindingsDirChecked) return;
+    await ensureDir(bindingsDir);
+    if (isInside(await Deno.realPath(bindingsDir), sandboxReal)) {
+      throw new Error(
+        `overlay_invalid: the bindings directory resolves inside the sandbox (${input.sandboxRoot})`,
+      );
+    }
+    bindingsDirChecked = true;
+  };
 
   const overlays: IScenarioOverlayFile[] = [];
   const scenarioOverlay = buildScenarioOverlay(input);
@@ -483,33 +520,33 @@ export async function planScenarioBindings(
   for (const step of input.scenario.steps) if (step.bindings) stepOverlayPath(bindingsDir, step.id);
 
   if (scenarioOverlay) {
-    await ensureDir(bindingsDir);
+    await ensureBindingsDir();
     const path = join(bindingsDir, SCENARIO_OVERLAY_NAME);
     overlays.push({ role: "scenario", path, sha256: await writeOverlay(path, scenarioOverlay) });
   }
 
   if (cellOverlay) {
-    await ensureDir(bindingsDir);
+    await ensureBindingsDir();
     const path = join(bindingsDir, CELL_OVERLAY_NAME);
     overlays.push({ role: "cell", path, sha256: await writeOverlay(path, cellOverlay) });
   }
 
   for (const [index, operator] of operatorOverlays.entries()) {
-    await ensureDir(bindingsDir);
+    await ensureBindingsDir();
     const path = join(bindingsDir, `30-operator-${index}.json`);
     overlays.push({ role: "operator", path, sha256: await writeOverlay(path, operator.document) });
   }
 
   for (const step of input.scenario.steps) {
     if (!step.bindings) continue;
-    await ensureDir(bindingsDir);
+    await ensureBindingsDir();
     const document = BindingOverlaySchema.parse({ schema: 1, bindings: step.bindings });
     const path = stepOverlayPath(bindingsDir, step.id);
     overlays.push({ role: "step", stepId: step.id, path, sha256: await writeOverlay(path, document) });
   }
 
   if (bindDocument) {
-    await ensureDir(bindingsDir);
+    await ensureBindingsDir();
     const path = join(bindingsDir, OPERATOR_BIND_OVERLAY_NAME);
     overlays.push({ role: "operator", path, sha256: await writeOverlay(path, bindDocument) });
   }

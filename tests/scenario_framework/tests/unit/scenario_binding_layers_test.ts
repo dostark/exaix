@@ -332,6 +332,81 @@ Deno.test("[security] planScenarioBindings refuses an output directory inside th
   }
 });
 
+Deno.test("[security] an output directory symlink into the sandbox is refused before any overlay write", async () => {
+  const root = await Deno.makeTempDir({ prefix: "overlay-output-link-" });
+  try {
+    const sandboxRoot = join(root, "sandbox");
+    await Deno.mkdir(sandboxRoot, { recursive: true });
+    const outputLink = join(root, "output-link");
+    await Deno.symlink(sandboxRoot, outputLink);
+
+    const error = await assertRejects(() =>
+      planScenarioBindings({
+        scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
+        operatorOverlays: [],
+        operatorBinds: [],
+        // Lexically outside the sandbox, physically the sandbox: the agent could rewrite these.
+        outputDir: outputLink,
+        sandboxRoot,
+      })
+    );
+    assertStringIncludes(String(error), "overlay_invalid");
+    // The refusal happens before any overlay directory reaches the sandbox.
+    assertEquals(await Array.fromAsync(Deno.readDir(sandboxRoot)).catch(() => []), []);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[security] a bindings child symlink into the sandbox is refused before any overlay write", async () => {
+  const root = await Deno.makeTempDir({ prefix: "overlay-bindings-link-" });
+  try {
+    const sandboxRoot = join(root, "sandbox");
+    await Deno.mkdir(sandboxRoot, { recursive: true });
+    const outputDir = join(root, "output");
+    await Deno.mkdir(outputDir, { recursive: true });
+    await Deno.symlink(sandboxRoot, join(outputDir, "bindings"));
+
+    const error = await assertRejects(() =>
+      planScenarioBindings({
+        scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
+        operatorOverlays: [],
+        operatorBinds: [],
+        outputDir,
+        sandboxRoot,
+      })
+    );
+    assertStringIncludes(String(error), "overlay_invalid");
+    assertEquals(await Array.fromAsync(Deno.readDir(sandboxRoot)).catch(() => []), []);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[security] a new valid output directory outside the sandbox remains usable", async () => {
+  const root = await Deno.makeTempDir({ prefix: "overlay-valid-output-" });
+  try {
+    const sandboxRoot = join(root, "sandbox");
+    await Deno.mkdir(sandboxRoot, { recursive: true });
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot,
+    });
+
+    assertEquals(plan.overlays.length, 1);
+    const sandboxReal = await Deno.realPath(sandboxRoot);
+    for (const overlay of plan.overlays) {
+      const physical = await Deno.realPath(overlay.path);
+      assertEquals(physical === sandboxReal || physical.startsWith(`${sandboxReal}/`), false);
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 // --- Per-invocation overlay directories ---
 
 /** One alpha-service binding plan, with a caller-chosen model, into a shared output root. */
