@@ -1,0 +1,67 @@
+schema_version: "1.0.0"
+id: operator-override-axes
+title: One operator override changes a flow step and a judge
+pack: agent_flows
+tags: ["subsystem:flows", "safety-gate"]
+request_fixture: fixtures/requests/agent_flows/scenario_bindings.md
+flow_fixture: fixtures/flows/scenario-binding-split.flow.yaml
+mode_support: ["auto"]
+portals: []
+bindings:
+  # compose produces the plan, so it must stay on the mock pattern provider; a loopback
+  # fixture returns prose, which the plan validator rejects.
+  "flow:scenario-binding-split/step:compose":
+    service: mock
+    model: mock/mock-model
+  "flow:scenario-binding-split/step:explore-one":
+    service: svc-a
+    model: openai/compat-fixture-v1
+  # The judge's service is an axis an operator --bind can move, like any flow step axis.
+  judge:
+    service: svc-a
+    model: openai/compat-fixture-v1
+matrix:
+  cells:
+    - tool: exactl
+      provider: mock
+      config: tests/scenario_framework/fixtures/phase203/scenario-bindings.toml
+      requires_bin: deno
+      requires_key: EXA_COMPAT_TEST_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env:
+      EXA_LLM_PROVIDER: mock
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+
+  # The judge grades this request's own step, so it resolves through this request's stack.
+  - id: submit-request
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: plan-quality
+        kind: llm-judge
+        preset: GOAL_ALIGNED_REVIEW
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+
+  # The daemon journals this event, so the wait is the sanctioned barrier. It is not fatal:
+  # an environment whose CLI cannot load a provider credential still runs the request.
+  - id: await-flow
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "20"]
+    timeout_sec: 25
+    continue_on_failure: true
+
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

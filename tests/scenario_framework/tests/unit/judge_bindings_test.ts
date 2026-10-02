@@ -393,6 +393,9 @@ const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
   "test-engineer-smoke",
 ]);
 
+/** The Step 26 scenario: it declares a scenario judge binding so an operator `--bind` can move it. */
+const REVIEWED_JUDGE_BINDING_TEST_SCENARIOS = new Set(["operator-override-axes"]);
+
 Deno.test("[judge][regression] only the reviewed fixture preset declares a judge binding, so every other judge keeps its env path", async () => {
   const scenarios = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const offenders: string[] = [];
@@ -400,7 +403,7 @@ Deno.test("[judge][regression] only the reviewed fixture preset declares a judge
   for (const scenario of scenarios) {
     for (const selector of bindingSelectorsOf(scenario)) {
       if (selector !== "judge" && !selector.startsWith("judge:")) continue;
-      if (REVIEWED_JUDGE_BINDING_SCENARIOS.has(scenario.id)) {
+      if (REVIEWED_JUDGE_BINDING_SCENARIOS.has(scenario.id) || REVIEWED_JUDGE_BINDING_TEST_SCENARIOS.has(scenario.id)) {
         reviewedScenarios.add(`${scenario.id}: ${selector}`);
         continue;
       }
@@ -429,7 +432,7 @@ Deno.test("[judge][regression] only the reviewed fixture preset declares a judge
   assertEquals([...reviewed].sort(), ["self-hosted-fixture: judge"]);
   assertEquals(
     [...reviewedScenarios].sort(),
-    [...REVIEWED_JUDGE_BINDING_SCENARIOS].map((id) => `${id}: judge`).sort(),
+    [...REVIEWED_JUDGE_BINDING_SCENARIOS, ...REVIEWED_JUDGE_BINDING_TEST_SCENARIOS].map((id) => `${id}: judge`).sort(),
   );
   assert(scenarios.length >= 200, `the shipped scenario corpus must load, saw ${scenarios.length}`);
 });

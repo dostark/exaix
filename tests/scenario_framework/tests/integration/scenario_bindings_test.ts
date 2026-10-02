@@ -16,21 +16,17 @@ import { join } from "@std/path";
 import { withEnv } from "@exaix/testing";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
-import { readRunActivity, resolvedServiceByTrace, traceIdsInOrder } from "./synthetic_test_helpers.ts";
+import {
+  readRunActivity,
+  resolvedServiceByTrace,
+  startCompatibleFixture,
+  traceIdsInOrder,
+} from "./synthetic_test_helpers.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const SCENARIO_PATH = "scenarios/agent_flows/scenario-bindings-split.yaml";
 const FIXTURE_MODEL = "compat-fixture-v1";
 const OPERATOR_OVERLAY = join(FRAMEWORK_HOME, "fixtures", "phase203", "operator-explore-to-svc-c.json");
-
-function startFixture(): Deno.HttpServer {
-  return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, () =>
-    Response.json({
-      model: FIXTURE_MODEL,
-      choices: [{ message: { role: "assistant", content: "Exploration complete." }, finish_reason: "stop" }],
-      usage: { prompt_tokens: 20, completion_tokens: 4, total_tokens: 24 },
-    }));
-}
 
 /** One scenario run against the shared loopback fixture. */
 async function runScenario(input: { port: number; operatorOverlays?: string[] }) {
@@ -58,7 +54,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const fixture = startFixture();
+    const fixture = startCompatibleFixture(FIXTURE_MODEL, "Exploration complete.");
     const port = (fixture.addr as Deno.NetAddr).port;
     try {
       // Run 1: as authored. Request one uses the scenario layer. Request two adds its own step

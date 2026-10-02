@@ -236,3 +236,13 @@ export function startToolChoiceRefusingFixture(
     });
   });
 }
+
+/** A loopback OpenAI-compatible fixture that answers every call with `reply`. */
+export function startCompatibleFixture(model: string, reply: string): Deno.HttpServer {
+  return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, () =>
+    Response.json({
+      model,
+      choices: [{ message: { role: "assistant", content: reply }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 20, completion_tokens: 4, total_tokens: 24 },
+    }));
+}
