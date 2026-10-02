@@ -314,6 +314,182 @@ function normalizeTableRowCompact(row: string, separatorRow: boolean): string {
   return `| ${cells.join(" | ")} |`;
 }
 
+/** The three table column styles MD060 detects. */
+type TableColumnStyle = "aligned" | "compact" | "tight";
+
+const isEscapedAt = (s: string, index: number): boolean => {
+  // A character is escaped if preceded by an odd number of backslashes.
+  let count = 0;
+  for (let i = index - 1; i >= 0 && s[i] === "\\"; i--) count++;
+  return (count % 2) === 1;
+};
+
+const EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
+
+const isWideCodePoint = (cp: number): boolean => {
+  // Approximate characters that most monospace editors render at 2 columns.
+  // Markdownlint's MD060 uses visual width for aligned tables.
+  if (
+    (cp >= 0x1100 && cp <= 0x115F) ||
+    (cp >= 0x2329 && cp <= 0x232A) ||
+    (cp >= 0x2E80 && cp <= 0x303E) ||
+    (cp >= 0x3040 && cp <= 0xA4CF) ||
+    (cp >= 0xAC00 && cp <= 0xD7A3) ||
+    (cp >= 0xF900 && cp <= 0xFAFF) ||
+    (cp >= 0xFE10 && cp <= 0xFE19) ||
+    (cp >= 0xFE30 && cp <= 0xFE6F) ||
+    (cp >= 0xFF00 && cp <= 0xFF60) ||
+    (cp >= 0xFFE0 && cp <= 0xFFE6)
+  ) {
+    return true;
+  }
+  return false;
+};
+
+const visualWidthOfCodePoint = (cp: number, ch: string): number => {
+  // Variation Selector-16 and other selectors should not add visual width.
+  if (cp === 0xFE0F) return 0;
+
+  // Treat emoji/pictographic characters as double-width.
+  if (EXTENDED_PICTOGRAPHIC_RE.test(ch)) return 2;
+
+  return isWideCodePoint(cp) ? 2 : 1;
+};
+
+const pipeVisualPositions = (line: string): number[] => {
+  // Positions are measured by visual columns (not string indices), ignoring
+  // pipes inside inline code spans and escaped pipes.
+  const positions: number[] = [];
+  let column = 0;
+
+  let inCodeSpan = false;
+  let codeSpanTicks = 0;
+
+  const openOrCloseCodeSpan = (tickCount: number) => {
+    if (!inCodeSpan) {
+      inCodeSpan = true;
+      codeSpanTicks = tickCount;
+      return;
+    }
+
+    if (tickCount === codeSpanTicks) {
+      inCodeSpan = false;
+      codeSpanTicks = 0;
+    }
+  };
+
+  // Walk by code points, but also track string indices for escape handling.
+  for (let i = 0; i < line.length;) {
+    const cp = line.codePointAt(i) ?? 0;
+    const ch = String.fromCodePoint(cp);
+    const cpLen = ch.length;
+
+    if (ch === "`") {
+      // Count consecutive backticks for inline code span delimiter.
+      let j = i;
+      while (j < line.length && line[j] === "`") j++;
+      const tickCount = j - i;
+      openOrCloseCodeSpan(tickCount);
+      column += tickCount; // backticks are 1-column each.
+      i = j;
+      continue;
+    }
+
+    if (!inCodeSpan && ch === "|" && !isEscapedAt(line, i)) {
+      positions.push(column);
+    }
+
+    column += visualWidthOfCodePoint(cp, ch);
+    i += cpLen;
+  }
+
+  return positions;
+};
+
+const rowMatchesTight = (row: string): boolean => {
+  if (!row.includes("|")) return false;
+  const trimmed = row.trim();
+  // No spaces adjacent to any pipe.
+  if (/\s\|/.test(trimmed) || /\|\s/.test(trimmed)) return false;
+  return true;
+};
+
+const rowMatchesCompact = (row: string): boolean => {
+  if (!row.includes("|")) return false;
+  const trimmed = row.trim();
+  const hasLeadingPipe = trimmed.startsWith("|");
+  const hasTrailingPipe = trimmed.endsWith("|");
+  let core = trimmed;
+  if (hasLeadingPipe) core = core.slice(1);
+  if (hasTrailingPipe) core = core.slice(0, -1);
+
+  const parts = core.split("|");
+  if (parts.length < 2) return false;
+
+  for (let c = 0; c < parts.length; c++) {
+    const cell = parts[c];
+    const isFirst = c === 0;
+    const isLast = c === parts.length - 1;
+
+    const startsWithSpace = cell.startsWith(" ");
+    const startsWithTwoSpaces = cell.startsWith("  ");
+    const endsWithSpace = cell.endsWith(" ");
+    const endsWithTwoSpaces = cell.endsWith("  ");
+
+    if (isFirst && !hasLeadingPipe) {
+      // Only trailing side must be single-space padded.
+      if (startsWithSpace) return false;
+      if (!endsWithSpace || endsWithTwoSpaces) return false;
+      continue;
+    }
+    if (isLast && !hasTrailingPipe) {
+      // Only leading side must be single-space padded.
+      if (endsWithSpace) return false;
+      if (!startsWithSpace || startsWithTwoSpaces) return false;
+      continue;
+    }
+
+    // Middle cells (and edge cells when leading/trailing pipes exist) must
+    // have exactly one leading and one trailing space.
+    if (!startsWithSpace || startsWithTwoSpaces) return false;
+    if (!endsWithSpace || endsWithTwoSpaces) return false;
+  }
+
+  return true;
+};
+
+/** The table column style whose pipe layout the fewest rows break, and those rows. */
+function tableStyleVerdict(
+  lines: readonly string[],
+  tableLineIdxs: readonly number[],
+): { style: TableColumnStyle; violations: number[] } {
+  const headerPipes = pipeVisualPositions(lines[tableLineIdxs[0]]);
+  const alignedViolations: number[] = [];
+  const compactViolations: number[] = [];
+  const tightViolations: number[] = [];
+
+  for (const lineIndex of tableLineIdxs) {
+    const row = lines[lineIndex].replace(/[ \t]+$/g, "");
+
+    const rowPipes = pipeVisualPositions(row);
+    const alignedOk = rowPipes.length === headerPipes.length &&
+      rowPipes.every((p, i) => p === headerPipes[i]);
+    if (!alignedOk) alignedViolations.push(lineIndex);
+
+    if (!rowMatchesCompact(row)) compactViolations.push(lineIndex);
+    if (!rowMatchesTight(row)) tightViolations.push(lineIndex);
+  }
+
+  const styles: ReadonlyArray<{ name: TableColumnStyle; violations: number[] }> = [
+    { name: "aligned", violations: alignedViolations },
+    { name: "compact", violations: compactViolations },
+    { name: "tight", violations: tightViolations },
+  ];
+
+  const best = styles.reduce((a, b) => b.violations.length < a.violations.length ? b : a);
+  return { style: best.name, violations: best.violations };
+}
+
 function isFenceClose(line: string, fence: Fence): boolean {
   const trimmed = line.trimStart();
   const closeMatch = new RegExp(`^${fence.char}{${fence.length},}(?:\\s*)$`).exec(
@@ -506,7 +682,9 @@ export function applySpecificFixes(content: string, findings: IFinding[]): { fix
     text = lines.join("\n");
   }
 
-  // Fix MD060: table column style
+  // Fix MD060: table column style. Table alignment belongs to `deno fmt`.
+  // The fixer rewrites only flagged tables. It skips a table whose style is aligned.
+  // Compacting an aligned table used to break the padding `deno fmt --check` requires.
   const md060Fixes = findings.filter((f) => f.rule === "MD060/table-column-style");
   if (md060Fixes.length > 0) {
     const lines = splitLines(text);
@@ -520,18 +698,26 @@ export function applySpecificFixes(content: string, findings: IFinding[]): { fix
         continue;
       }
 
-      let rowIndex = i;
+      // Collect the whole table so its style can be judged as one unit.
+      const tableLineIdxs: number[] = [i, i + 1];
+      let rowIndex = i + 2;
       while (rowIndex < lines.length) {
         const row = lines[rowIndex];
         if (row.trim() === "" || !row.includes("|")) break;
-
-        const normalized = normalizeTableRowCompact(row, isTableSeparatorRow(row));
-        if (normalized !== row) {
-          newLines[rowIndex] = normalized;
-          changed = true;
-        }
-
+        tableLineIdxs.push(rowIndex);
         rowIndex++;
+      }
+
+      const flagged = md060Fixes.some((f) => tableLineIdxs.includes(f.line - 1));
+      const { style } = tableStyleVerdict(lines, tableLineIdxs);
+      if (flagged && style !== "aligned") {
+        for (let row = i; row < rowIndex; row++) {
+          const normalized = normalizeTableRowCompact(lines[row], isTableSeparatorRow(lines[row]));
+          if (normalized !== lines[row]) {
+            newLines[row] = normalized;
+            changed = true;
+          }
+        }
       }
 
       i = Math.max(i, rowIndex - 1);
@@ -1191,147 +1377,6 @@ export function lintMarkdown(content: string, filePath: string, options: ILintOp
   // MD060/table-column-style: enforce aligned table pipes.
   // Checks that the '|' characters align across header/separator/body rows.
   {
-    const isEscapedAt = (s: string, index: number): boolean => {
-      // A character is escaped if preceded by an odd number of backslashes.
-      let count = 0;
-      for (let i = index - 1; i >= 0 && s[i] === "\\"; i--) count++;
-      return (count % 2) === 1;
-    };
-
-    const EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
-
-    const isWideCodePoint = (cp: number): boolean => {
-      // Approximate characters that most monospace editors render at 2 columns.
-      // Markdownlint's MD060 uses visual width for aligned tables.
-      if (
-        (cp >= 0x1100 && cp <= 0x115F) ||
-        (cp >= 0x2329 && cp <= 0x232A) ||
-        (cp >= 0x2E80 && cp <= 0x303E) ||
-        (cp >= 0x3040 && cp <= 0xA4CF) ||
-        (cp >= 0xAC00 && cp <= 0xD7A3) ||
-        (cp >= 0xF900 && cp <= 0xFAFF) ||
-        (cp >= 0xFE10 && cp <= 0xFE19) ||
-        (cp >= 0xFE30 && cp <= 0xFE6F) ||
-        (cp >= 0xFF00 && cp <= 0xFF60) ||
-        (cp >= 0xFFE0 && cp <= 0xFFE6)
-      ) {
-        return true;
-      }
-      return false;
-    };
-
-    const visualWidthOfCodePoint = (cp: number, ch: string): number => {
-      // Variation Selector-16 and other selectors should not add visual width.
-      if (cp === 0xFE0F) return 0;
-
-      // Treat emoji/pictographic characters as double-width.
-      if (EXTENDED_PICTOGRAPHIC_RE.test(ch)) return 2;
-
-      return isWideCodePoint(cp) ? 2 : 1;
-    };
-
-    const pipeVisualPositions = (line: string): number[] => {
-      // Positions are measured by visual columns (not string indices), ignoring
-      // pipes inside inline code spans and escaped pipes.
-      const positions: number[] = [];
-      let column = 0;
-
-      let inCodeSpan = false;
-      let codeSpanTicks = 0;
-
-      const openOrCloseCodeSpan = (tickCount: number) => {
-        if (!inCodeSpan) {
-          inCodeSpan = true;
-          codeSpanTicks = tickCount;
-          return;
-        }
-
-        if (tickCount === codeSpanTicks) {
-          inCodeSpan = false;
-          codeSpanTicks = 0;
-        }
-      };
-
-      // Walk by code points, but also track string indices for escape handling.
-      for (let i = 0; i < line.length;) {
-        const cp = line.codePointAt(i) ?? 0;
-        const ch = String.fromCodePoint(cp);
-        const cpLen = ch.length;
-
-        if (ch === "`") {
-          // Count consecutive backticks for inline code span delimiter.
-          let j = i;
-          while (j < line.length && line[j] === "`") j++;
-          const tickCount = j - i;
-          openOrCloseCodeSpan(tickCount);
-          column += tickCount; // backticks are 1-column each.
-          i = j;
-          continue;
-        }
-
-        if (!inCodeSpan && ch === "|" && !isEscapedAt(line, i)) {
-          positions.push(column);
-        }
-
-        column += visualWidthOfCodePoint(cp, ch);
-        i += cpLen;
-      }
-
-      return positions;
-    };
-
-    const rowMatchesTight = (row: string): boolean => {
-      if (!row.includes("|")) return false;
-      const trimmed = row.trim();
-      // No spaces adjacent to any pipe.
-      if (/\s\|/.test(trimmed) || /\|\s/.test(trimmed)) return false;
-      return true;
-    };
-
-    const rowMatchesCompact = (row: string): boolean => {
-      if (!row.includes("|")) return false;
-      const trimmed = row.trim();
-      const hasLeadingPipe = trimmed.startsWith("|");
-      const hasTrailingPipe = trimmed.endsWith("|");
-      let core = trimmed;
-      if (hasLeadingPipe) core = core.slice(1);
-      if (hasTrailingPipe) core = core.slice(0, -1);
-
-      const parts = core.split("|");
-      if (parts.length < 2) return false;
-
-      for (let c = 0; c < parts.length; c++) {
-        const cell = parts[c];
-        const isFirst = c === 0;
-        const isLast = c === parts.length - 1;
-
-        const startsWithSpace = cell.startsWith(" ");
-        const startsWithTwoSpaces = cell.startsWith("  ");
-        const endsWithSpace = cell.endsWith(" ");
-        const endsWithTwoSpaces = cell.endsWith("  ");
-
-        if (isFirst && !hasLeadingPipe) {
-          // Only trailing side must be single-space padded.
-          if (startsWithSpace) return false;
-          if (!endsWithSpace || endsWithTwoSpaces) return false;
-          continue;
-        }
-        if (isLast && !hasTrailingPipe) {
-          // Only leading side must be single-space padded.
-          if (endsWithSpace) return false;
-          if (!startsWithSpace || startsWithTwoSpaces) return false;
-          continue;
-        }
-
-        // Middle cells (and edge cells when leading/trailing pipes exist) must
-        // have exactly one leading and one trailing space.
-        if (!startsWithSpace || startsWithTwoSpaces) return false;
-        if (!endsWithSpace || endsWithTwoSpaces) return false;
-      }
-
-      return true;
-    };
-
     for (let idx = 0; idx + 1 < lines.length; idx++) {
       if (lineIsInFence[idx] || lineIsInFence[idx + 1]) continue;
 
@@ -1353,39 +1398,16 @@ export function lintMarkdown(content: string, filePath: string, options: ILintOp
       }
 
       // Determine which table column style the table best matches.
-      const headerPipePositions = pipeVisualPositions(lines[tableLineIdxs[0]]);
-      const alignedViolations: number[] = [];
-      const compactViolations: number[] = [];
-      const tightViolations: number[] = [];
+      const { style, violations } = tableStyleVerdict(lines, tableLineIdxs);
 
-      for (const lineIndex of tableLineIdxs) {
-        const row = lines[lineIndex].replace(/[ \t]+$/g, "");
-
-        const rowPipes = pipeVisualPositions(row);
-        const alignedOk = rowPipes.length === headerPipePositions.length &&
-          rowPipes.every((p, i) => p === headerPipePositions[i]);
-        if (!alignedOk) alignedViolations.push(lineIndex);
-
-        if (!rowMatchesCompact(row)) compactViolations.push(lineIndex);
-        if (!rowMatchesTight(row)) tightViolations.push(lineIndex);
-      }
-
-      const styles = [
-        { name: "aligned", violations: alignedViolations },
-        { name: "compact", violations: compactViolations },
-        { name: "tight", violations: tightViolations },
-      ] as const;
-
-      const best = styles.reduce((a, b) => b.violations.length < a.violations.length ? b : a);
-
-      if (best.violations.length > 0) {
-        for (const badLineIndex of best.violations) {
+      if (violations.length > 0) {
+        for (const badLineIndex of violations) {
           findings.push({
             filePath,
             line: badLineIndex + 1,
             rule: "MD060/table-column-style",
             severity: options.strict ? Severity.ERROR : Severity.WARN,
-            message: `Table column style [Table pipe does not align with header for style "${best.name}"]`,
+            message: `Table column style [Table pipe does not align with header for style "${style}"]`,
           });
         }
       }
