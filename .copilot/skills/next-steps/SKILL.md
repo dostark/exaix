@@ -32,8 +32,8 @@ Key points
   ALWAYS cross-check `git log --oneline -N` in both repos and the plan doc's per-step
   `**Status:**` markers before writing code — trusting stale chat re-implements committed
   work or drafts against a changed design.
-- Use focused, file-scoped test commands by default; full-suite only for massive changes
-  or user request.
+- Use focused, file-scoped test commands during implementation. Postpone any required
+  full-suite run until the step is fully implemented, as part of final step validation.
 - **Tests must RUN and pass before a step is complete.** Scenario YAML/test files that were
   only written (parsed/type-checked) but never executed do not count.
 - Reading > ~20 files: batches of 5–10. Read a batch, record findings, continue.
@@ -65,6 +65,11 @@ Validation policy
    0c. Full-suite only when: the change is massive/cross-cutting; it modifies files
        imported by > 3 unrelated packages or shared classes across subsystems
        (e.g. packages/core/src/runtime/); the user requests it; a plan doc requires it.
+       Postpone these runs until the full step implementation and refactoring are done.
+       Run the required suite during final step validation (step 22), before marking
+       the step complete or committing. Use focused tests during RED/GREEN and fixes.
+       Use `deno task test_parallel` (`deno task test_parallel:team` for team scope),
+       not the sequential suite tasks selected by `ci.ts test` or `ci.ts all`.
    0d. After renaming or removing an exported symbol, or changing its signature, grep every
        importer, including `tests/` and `scripts/`, and run the repo-wide `deno task check`
        once before committing. File-scoped runs miss importers outside the step's test set.
@@ -159,7 +164,13 @@ REFACTOR + CI gates
       comment-STE and commit-message gates read only staged files and pass vacuously on an
       empty index. Write comments as sentences of at most 20 words and no semicolons. A staged
       file's existing bare `?` parameters also fail the ratchet.
-  22. (exception) full-suite only per Validation policy.
+  22. Final step validation: once the full step implementation, wiring, and refactoring
+      are done and focused checks pass, run any full suite required by Validation policy
+      with `deno task test_parallel` (or `test_parallel:team` for team scope).
+      Redirect output to a temp file, inspect failures, and confirm the command exits
+      successfully. Fix failures with focused tests; rerun the required suite after
+      fixes before marking the step complete. Reuse the passing result for the commit
+      unless subsequent changes require another run.
 
 Planning doc update
   22a. **Execute every test the step implements** before marking anything done.
@@ -255,6 +266,7 @@ Do / Don't
   WIRED/CORE label before commit; stage the doc edit with the plan-step commit.
 - ✅ Use IFoo naming; `ICodeConvention["confidence"]`, not literal unions.
 - ✅ Keep test execution proportional to scope.
+- ✅ Postpone required full-suite runs until final validation of the fully implemented step.
 - ✅ Verify field values, production wiring, output-field consumers, conventions,
   event coverage (steps 10–13).
 - ✅ Treat "no production importer" as blocking ledger debt, never done.

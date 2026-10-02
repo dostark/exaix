@@ -59,9 +59,22 @@ Required validation before commit
 
 - Run the applicable quality gates for the touched changes.
 - Include formatting, linting, type-checking, and tests required by the touched area.
-- Test validation: always `deno task test_parallel` (two-batch parallel+sequential) —
-  never `deno task test`. Also run `deno fmt --check`, `deno lint`, and task-specific
-  checks.
+- Use focused tests for the touched area. When full-suite validation is required,
+  run `deno task test_parallel` (`deno task test_parallel:team` for team scope).
+  This is faster for local development cycles than the sequential `test:solo` and
+  `test:team` tasks selected by `scripts/ci.ts`.
+- Keep local static validation separate: use `deno run -A scripts/ci.ts check`.
+  Do not use `ci.ts test` or `ci.ts all` to run the local full suite. If a local
+  check/build pass is required, use `deno run -A scripts/ci.ts all --skip-tests`
+  and run required tests separately. Preserve any explicitly required coverage gate.
+- For plan-step work, run any required full suite only after the step is fully
+  implemented, during final step validation.
+- If the preceding #next-steps application already ran `deno task test_parallel`
+  (or `test_parallel:team` for team scope) successfully for the changes being
+  committed, SKIP the duplicate full-suite run in #commit. Verify the recorded
+  exit status and test summary, and cite the reused result in `tests:`. Reuse
+  counts as completed validation, not a skipped required check. Rerun only when
+  later changes invalidate that result or the prior run's success is unverified.
 - **CRITICAL:** redirect `deno task test_parallel` to a temp file and grep failures.
   Never rerun the command just to inspect results:
   ```bash
@@ -159,8 +172,11 @@ Do / Don't
 - ✅ Split unrelated changes into separate structured commits.
 - ✅ Run the required pre-commit checks before proposing the command.
 - ✅ On hook failure (fmt:check, lint), fix and retry `git commit` — never `--no-verify`.
-- ✅ Use `deno task test_parallel` for test validation — not the slower `deno task test`.
+- ✅ Use `deno task test_parallel` for required local full-suite validation; keep
+  `ci.ts` static/build checks separate from test execution.
 - ✅ Redirect test_parallel output to a temp file and grep failures.
+- ✅ Reuse verified full-suite results from the preceding #next-steps application
+  and skip duplicate test_parallel runs when those results still cover the commit.
 - ✅ Ground `impact:` in ARCHITECTURE.md components.
 - ✅ List actual tool usage in tool_audit; include your real identity.
 - ✅ Ensure the component word in `impact:` appears verbatim in `what:`.
