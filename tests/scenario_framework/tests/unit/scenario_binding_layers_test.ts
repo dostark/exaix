@@ -14,6 +14,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
+import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
 import { BindingIncompatibleError } from "@exaix/ai";
 import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { type IScenarioStep, ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
@@ -707,4 +708,71 @@ Deno.test("[bind] two --bind flags on one selector keep both fields", async () =
 Deno.test("[bind] a later --bind overrides an earlier one per field", async () => {
   const bindings = await writtenBindEntries(["default=model=mock/a,service=alpha", "default=model=mock/b"]);
   assertEquals(bindings?.default, { model: "mock/b", service: "alpha" });
+});
+
+Deno.test("[security] the runner refuses a symlinked, directory or oversized operator overlay", async () => {
+  const root = await Deno.makeTempDir({ prefix: "overlay-bounds-" });
+  try {
+    const real = join(root, "real.json");
+    await Deno.writeTextFile(real, JSON.stringify({ schema: 1, bindings: { default: { model: "mock/a" } } }));
+    const link = join(root, "link.json");
+    await Deno.symlink(real, link);
+    const directory = join(root, "overlay-dir");
+    await Deno.mkdir(directory);
+    const oversized = join(root, "big.json");
+    await Deno.writeTextFile(oversized, " ".repeat(BINDING_OVERLAY_MAX_BYTES + 1));
+
+    for (
+      const [path, reason] of [[link, "not a regular file"], [directory, "not a regular file"], [oversized, "ceiling"]]
+    ) {
+      const outputDir = join(root, `output-${reason.replaceAll(" ", "-")}-${path.length}`);
+      const error = await assertRejects(() =>
+        planScenarioBindings({
+          scenario: scenarioWith(),
+          operatorOverlays: [path],
+          operatorBinds: [],
+          outputDir,
+          sandboxRoot: join(root, "sandbox"),
+        })
+      );
+      assertStringIncludes(String(error), "overlay_invalid");
+      assertStringIncludes(String(error), reason);
+      // The refusal happens before any overlay reaches the disk.
+      assertEquals(await Array.fromAsync(Deno.readDir(outputDir)).catch(() => []), []);
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[security] a step id with path segments cannot place an overlay outside the bindings directory", async () => {
+  const root = await Deno.makeTempDir({ prefix: "overlay-step-id-" });
+  try {
+    for (const id of ["../../escape", "nested/step", ".."]) {
+      const scenario = scenarioWith({
+        steps: [
+          ScenarioStepSchema.parse({
+            id,
+            type: ScenarioStepType.EXACTL,
+            command: "request",
+            bindings: { default: { model: "mock/a" } },
+          }),
+        ],
+      });
+      const error = await assertRejects(() =>
+        planScenarioBindings({
+          scenario,
+          operatorOverlays: [],
+          operatorBinds: [],
+          outputDir: join(root, "output"),
+          sandboxRoot: join(root, "sandbox"),
+        })
+      );
+      assertStringIncludes(String(error), "overlay_invalid");
+    }
+    const escaped = await Array.fromAsync(Deno.readDir(root));
+    assertEquals(escaped.map((entry) => entry.name).filter((name) => name.endsWith(".json")), []);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });

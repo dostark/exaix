@@ -41,7 +41,14 @@ import type { IScenario } from "../schema/scenario_schema.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { SENTINEL_COMPAT_FIXTURE_PORT } from "./sentinels.ts";
-import { BindingIncompatibleError, LAYER_CLI, LAYER_RUN, selectorsCanOverlap, selectorSpecificity } from "@exaix/ai";
+import {
+  BindingIncompatibleError,
+  LAYER_CLI,
+  LAYER_RUN,
+  readRegularOverlayFile,
+  selectorsCanOverlap,
+  selectorSpecificity,
+} from "@exaix/ai";
 import type { BindingLayer, PinnableBindingField, PinReason } from "@exaix/schemas";
 import type { IScenarioPin } from "../schema/scenario_schema.ts";
 
@@ -216,17 +223,25 @@ function substituteFixturePortInCellCatalog(
 
 /** Read one operator overlay file and reject anything `exactl` could not parse itself. */
 async function readOperatorOverlayJson(sourcePath: string): Promise<JSONValue> {
-  let content: string;
-  try {
-    content = await Deno.readTextFile(sourcePath);
-  } catch {
-    throw new Error(`overlay_invalid: ${sourcePath} cannot be read`);
-  }
+  // The shared reader refuses a symlink, a non-regular file and an oversized one before parsing.
+  const content = await readRegularOverlayFile(sourcePath);
   try {
     return JSON.parse(content);
   } catch {
     throw new Error(`overlay_invalid: ${sourcePath} is not valid JSON`);
   }
+}
+
+/** Step ids that may name an overlay file: no path separator and no dot-only name. */
+const OVERLAY_STEP_ID_PATTERN = /^(?!\.+$)[A-Za-z0-9._-]+$/;
+
+/** The step overlay path for one step id, refused when the id could leave the bindings directory. */
+function stepOverlayPath(bindingsDir: string, stepId: string): string {
+  const path = join(bindingsDir, `${STEP_OVERLAY_PREFIX}${stepId}.json`);
+  if (!OVERLAY_STEP_ID_PATTERN.test(stepId) || !isInside(path, bindingsDir)) {
+    throw new Error(`overlay_invalid: step id "${stepId}" cannot name an overlay file`);
+  }
+  return path;
 }
 
 /** Write one overlay document and return the digest of the bytes written. */
@@ -481,6 +496,8 @@ export async function planScenarioBindings(
   }
 
   const pins = enforcePins(input, operatorEntries);
+  // Every step overlay path is checked before the first file is written.
+  for (const step of input.scenario.steps) if (step.bindings) stepOverlayPath(bindingsDir, step.id);
 
   if (scenarioOverlay) {
     await ensureDir(bindingsDir);
@@ -504,7 +521,7 @@ export async function planScenarioBindings(
     if (!step.bindings) continue;
     await ensureDir(bindingsDir);
     const document = BindingOverlaySchema.parse({ schema: 1, bindings: step.bindings });
-    const path = join(bindingsDir, `${STEP_OVERLAY_PREFIX}${step.id}.json`);
+    const path = stepOverlayPath(bindingsDir, step.id);
     overlays.push({ role: "step", stepId: step.id, path, sha256: await writeOverlay(path, document) });
   }
 
