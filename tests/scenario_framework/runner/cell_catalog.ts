@@ -18,7 +18,7 @@
 import { z } from "zod";
 import { parse as parseToml } from "@std/toml";
 import { BINDING_ID_PATTERN, BindingCatalogSchema, BindingsTableSchema, CatalogServiceSchema } from "@exaix/schemas";
-import { type IMatrixCell, MatrixCellSchema } from "./matrix_expander.ts";
+import { type IMatrixBlock, type IMatrixCell, MatrixCellSchema } from "./matrix_expander.ts";
 import type { IScenario } from "../schema/scenario_schema.ts";
 
 /** One `[tool.<name>]` row, normalized into the preset it declares. */
@@ -159,4 +159,10 @@ export function resolveCatalogCells(
       ...(preset.catalog !== undefined ? { catalog: preset.catalog } : {}),
     });
   });
+}
+
+/** Resolve a scenario's matrix into concrete cells. An inline `cells` block passes through as
+ *  declared. A `from_catalog` block resolves its preset names against the catalog. */
+export function resolveScenarioMatrixCells(matrix: IMatrixBlock, catalog: ICellCatalog): IMatrixCell[] {
+  return matrix.from_catalog ? resolveCatalogCells(catalog, matrix.from_catalog) : matrix.cells ?? [];
 }

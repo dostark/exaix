@@ -30,8 +30,9 @@ import {
   overlayRequestBindings,
   resolveCellConfig,
   resolveRunnableSteps,
+  stepsOnlySkippedCellsOwn,
 } from "./matrix_expander.ts";
-import { loadCellCatalog, resolveCatalogCells } from "./cell_catalog.ts";
+import { loadCellCatalog, resolveScenarioMatrixCells } from "./cell_catalog.ts";
 import { buildRunBindingsFile, type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
 import { resolveJudgeBindings } from "./judge_bindings.ts";
 import {
@@ -72,6 +73,8 @@ export interface IBuildRunManifestOptions {
   workspaceRoot: string;
   /** Each step's own [start, end] journal rowid window, tracked by the executeStep callback. */
   stepRowidWindows: Map<string, { start: number; end: number }>;
+  /** Steps only a skipped matrix cell owns. They never ran here, so they score nothing. */
+  excludedStepIds?: ReadonlySet<string>;
 }
 
 export interface IRunSyntheticScenarioOptions {
@@ -362,7 +365,7 @@ export async function runSyntheticScenario(
   // loaded here (IResolvableScenario carries only { steps, matrix }) and resolved into cells.
   const matrix = loadedScenario.scenario.matrix;
   const resolvedMatrix: IMatrixBlock | undefined = matrix?.from_catalog
-    ? { cells: resolveCatalogCells(await loadCellCatalog(CELL_CATALOG_PATH), matrix.from_catalog) }
+    ? { cells: resolveScenarioMatrixCells(matrix, await loadCellCatalog(CELL_CATALOG_PATH)) }
     : matrix;
   const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(
     { steps: loadedScenario.scenario.steps, matrix: resolvedMatrix },
@@ -377,6 +380,9 @@ export async function runSyntheticScenario(
   );
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
   let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
+  // Steps only a skipped cell owns are absent from this run by design.
+  // The manifest's unexecuted-step penalty therefore leaves them out of the score.
+  const excludedStepIds = stepsOnlySkippedCellsOwn(runnableGroups, loadedScenario.scenario.steps);
 
   // A scenario booting a daemon on a preset carrying deploy-time sentinels needs a
   // sentinel-resolved copy materialized into the workspace so the daemon roots where the
@@ -555,6 +561,7 @@ export async function runSyntheticScenario(
         ablate: firstRunnable.cell.ablate,
       }
       : undefined,
+    excludedStepIds,
   });
   const manifestPath = await writeRunManifest({
     outputDir: options.outputDir,
@@ -1085,6 +1092,9 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
   const executedIds = new Set(options.stepOutcomes.map((o: IScenarioStepOutcome) => o.stepId));
   for (const fullStep of options.loadedScenario.steps) {
     if (executedIds.has(fullStep.id)) continue;
+    // A step only a skipped cell owns never had a chance to run here.
+    // Scoring it 0 would report a failure the cell was configured to skip.
+    if (options.excludedStepIds?.has(fullStep.id)) continue;
     steps.push({
       stepId: fullStep.id,
       stepType: fullStep.type,

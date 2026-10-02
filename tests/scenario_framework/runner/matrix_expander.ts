@@ -433,15 +433,37 @@ function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): ISc
   });
 }
 
-/** Drop steps scoped away from this cell via their `cells` field (a non-empty allowlist of
- *  `tool` values); a step with no `cells` field runs for every cell, unchanged. */
-function filterStepsForCell(steps: IScenarioStep[], cell: IMatrixCell): IScenarioStep[] {
+/** Drop the steps this cell's `cells` allowlist scopes away. A step with no `cells` field
+ *  runs for every cell. */
+export function stepsForCell(steps: readonly IScenarioStep[], cell: IMatrixCell): IScenarioStep[] {
   return steps.filter((step) => !step.cells || step.cells.includes(cell.tool));
 }
 
-/** Expand a matrix block into one IMatrixCellRun per cell. Runnable cells drop any step
- *  scoped away from them (`filterStepsForCell`) then get the per-cell env overlay;
- *  absent-prerequisite cells are recorded `skip` with a reason and an unmodified step list. */
+/** The ids of the steps only a skipped matrix cell owns. This run never runs them, so the
+ *  penalty must not score them 0. A shared step stays in the penalty set, and so does one a
+ *  runnable cell selects. */
+export function stepsOnlySkippedCellsOwn(
+  groups: readonly IRunnableStepGroup[],
+  steps: readonly IScenarioStep[],
+): Set<string> {
+  const runnableTools = new Set(
+    groups.filter((group) => group.status === MatrixCellStatus.RUN && group.cell).map((group) => group.cell!.tool),
+  );
+  const owned = new Set<string>();
+  for (const group of groups) {
+    if (group.status !== MatrixCellStatus.SKIP || !group.cell) continue;
+    for (const step of stepsForCell(steps, group.cell)) {
+      if (!step.cells?.length) continue;
+      if (step.cells.some((tool) => runnableTools.has(tool))) continue;
+      owned.add(step.id);
+    }
+  }
+  return owned;
+}
+
+/** Expand a matrix block into one IMatrixCellRun per cell. A runnable cell drops the steps
+ *  `stepsForCell` scopes away, then takes the per-cell env overlay. An absent-prerequisite cell
+ *  is recorded `skip` with a reason and the steps unchanged. */
 export function expandMatrix(
   steps: IScenarioStep[],
   matrix: IMatrixBlock,
@@ -459,7 +481,7 @@ export function expandMatrix(
     }
     return {
       cell,
-      steps: overlayCellEnv(filterStepsForCell(steps, cell), cell, options.configBaseDir),
+      steps: overlayCellEnv(stepsForCell(steps, cell), cell, options.configBaseDir),
       status: MatrixCellStatus.RUN,
     };
   });
