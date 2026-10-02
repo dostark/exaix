@@ -14,6 +14,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
 import { ActivityActor, DEFAULT_PROJECTS_MEMORY_PATH, EDITION_SOLO, EDITION_TEAM, ExaPathDefaults } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IBenchmarkReader, IDatabaseService, Opt, Reason } from "@exaix/core/types";
@@ -164,8 +165,20 @@ export async function initializeServices(
     } else {
       _editionComposer = new SoloComposer();
     }
-    const providerLocal = await ProviderFactory.createByName(cfg, model);
     const displayLogger = new EventLogger({ db: dbLocal });
+    // Reading the journal or printing config needs no model.
+    // Build the provider defensively, so a failed credential degrades only the provider.
+    // Every other command then keeps the real database, git service and adapters.
+    let providerLocal: IModelProvider;
+    try {
+      providerLocal = await ProviderFactory.createByName(cfg, model);
+    } catch (error) {
+      displayLogger.warn(DomainEventType.RequestProviderSelectionFailed, ActivityActor.SYSTEM, {
+        message: `AI provider unavailable (${error}). Commands that need a model will fail.`,
+        hint: "Set the provider credential, or set EXA_LLM_PROVIDER to a usable provider.",
+      });
+      providerLocal = createProviderStub();
+    }
     const displayAdapter = new DisplayAdapter(displayLogger);
     const configAdapter = new ConfigAdapter(cfgService);
 

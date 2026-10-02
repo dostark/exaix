@@ -8,8 +8,9 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
+import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
-import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
+import { createStubConfig, createStubContext, createStubDb, withEnv } from "@exaix/testing";
 import { createMockConfig } from "@exaix/testing";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { ExaPathDefaults } from "@exaix/core";
@@ -260,5 +261,34 @@ Deno.test("[regression] PlanCommands works with stub db", async () => {
       !message.includes("logActivity is not a function"),
       "Should not throw logActivity error",
     );
+  }
+});
+
+Deno.test("[regression] a missing provider credential degrades only the provider", async () => {
+  // Reading the journal or printing config needs no model.
+  // A provider that cannot be built must therefore leave every other service real.
+  // Otherwise a step such as `journal wait` fails on a credential it never needed.
+  const root = await Deno.makeTempDir({ prefix: "exactl-provider-degraded-" });
+  const configPath = join(root, "exa.config.toml");
+  await Deno.writeTextFile(
+    configPath,
+    [
+      "[system]",
+      `root = "${root}"`,
+      "",
+      "[ai]",
+      'provider = "anthropic"',
+      'model = "claude-sonnet-5"',
+      "",
+    ].join("\n"),
+  );
+  try {
+    await withEnv({ ANTHROPIC_API_KEY: null, EXA_LLM_PROVIDER: "anthropic" }, async () => {
+      const context = await __test_initializeServices({ configPath });
+      assertEquals(context.success, true, context.error ?? "");
+      assertEquals(context.provider.id, "stub-provider");
+    });
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
   }
 });
