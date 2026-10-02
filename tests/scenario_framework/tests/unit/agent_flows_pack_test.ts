@@ -103,6 +103,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "portal-knowledge-snapshot",
       "quality-gate-clarification",
       "request-analysis-smoke",
+      "scenario-bindings-split",
       "scratchpad-extraction",
       "session-delegate-code-changes",
       "session-delegate-plan-review",
