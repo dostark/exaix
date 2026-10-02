@@ -51,10 +51,10 @@ steps: [...] # required; the ordered step list (see §4)
 
 # --- optional header fields ---
 flow_fixture: "fixtures/flows/my_pack/my.flow.yaml" # staged into Blueprints/Flows/<id>.flow.yaml
-matrix: { cells: [...] } # expand into one run per cell, or { from_catalog: [...] } (see §2.2)
-bindings: { default: { ... } } # per-step provider bindings for the daemon (see §2.3)
-catalog: { services: { ... } } # services and models the bindings may name (see §2.3)
-pin: [{ selector: "...", fields: [...], reason: "..." }] # operator-proof fields (see §2.3)
+matrix: { from_catalog: ["self-hosted-fixture"] } # one run per cell; or `cells:` (see §2.2)
+bindings: { default: { service: mock, model: mock/mock-model } } # per-step bindings (see §2.3)
+catalog: { models: { "mock/mock-model": { model_provider: mock } } } # entries bindings may name (§2.3)
+pin: [{ selector: default, fields: [service], reason: capability-gate, note: "why it is frozen" }] # (§2.3)
 scoring: "gated" # opt-in: zero the suite when a class:security criterion fails
 edition: "team" # solo | team | enterprise — filters by EXAIX_EDITION
 description: "Why this scenario exists"
@@ -111,8 +111,9 @@ matrix:
 ```
 
 Each cell is identified as `${tool}-${provider}` (for example `exactl-anthropic`) in reports,
-evidence files and `--cell` filters. A preset keeps the same id form, so migrating a hand-listed
-matrix to `from_catalog` does not rename a cell. `MatrixCellSchema` also accepts optional `bindings`
+evidence files and `--cell` filters. The provider part is the cell config's `[ai].provider` when the
+config sets one, and the cell's own `provider` label otherwise. A preset keeps the same id form, so
+migrating a hand-listed matrix to `from_catalog` does not rename a cell. `MatrixCellSchema` also accepts optional `bindings`
 and `catalog` blocks, which land in the cell layer of the overlay order in §2.3.
 
 ### 2.3 Bindings, Presets and Pins
@@ -120,8 +121,8 @@ and `catalog` blocks, which land in the cell layer of the overlay order in §2.3
 A scenario chooses which provider, model and service each flow step uses without editing a TOML
 file. The runner turns these blocks into overlay files and passes them to the daemon as
 `--overlay` arguments of every `exactl request` step. `ScenarioSchema` carries the three
-scenario-level blocks; the `exactl request` step schema accepts a `bindings:` block for that one
-request.
+scenario-level blocks. An `exactl request` step accepts its own `bindings:` block for that one request,
+and the schema rejects `bindings:` on any other step, where the runner would ignore it.
 
 ```yaml
 bindings: # BindingsTable: selector -> binding fields
@@ -150,11 +151,12 @@ matrix:
 variant is therefore a new preset row, not a copied config file. A preset whose `requires_optin`
 variable is unset records a skipped cell instead of failing.
 
-**Pins.** A `pin` entry has a `selector`, a non-empty `fields` list (any binding field except
-`effort` and `thinking`), a `reason` and an optional `note` of at most 200 characters. The reason is one
-of `provider-qualification`, `wire-compat-regression`, `pricing-table`, `capability-gate` or
-`compliance`. A pinned field keeps the value it has at the pin's selector after the scenario, cell and
-step layers apply.
+**Pins.** `pin:` is a list. Each entry has a `selector`, a non-empty `fields` list (any binding field
+except `effort` and `thinking`), a `reason` and a required `note` of at most 200 characters. Two pins
+may not share a selector. The reason is one of `provider-qualification`, `wire-compat-regression`,
+`pricing-table`, `capability-gate` or `compliance`. A pinned field keeps the value the scenario and
+cell layers give it at the pin's selector. A pin whose field neither layer sets at that selector fails
+with `pin_invalid`.
 
 **Layer order.** From lowest to highest, every layer reaches the daemon as an `--overlay` argument in
 this order:
@@ -174,17 +176,21 @@ different values are still rejected. `loadBindingLayers` applies the collapse in
 
 **How a pin is enforced.** A pinned field is protected by removing it from operator entries before
 the runner writes them. Precedence alone cannot protect a pin, because `--bind` entries sit in the
-`cli` layer above every `--overlay`, so no overlay can override a `--bind`. For each operator entry
-that sets a pinned field to a different value:
+`cli` layer above every `--overlay`, so no overlay can override a `--bind`. An entry is compared with
+a pin only when one step could match both selectors. A sibling step of a pinned step is therefore
+free to change, while `default`, a `role:` selector or a matching glob can reach the pinned step and
+is compared. For each operator entry that can reach a pinned step and sets a pinned field to a
+different value:
 
 - A selector at least as specific as the pin's selector is refused before `start-daemon` with the
   code `pinned`, and the pin's reason appears in the issue detail.
 - A broader selector is allowed with the pinned field stripped from that entry. The evidence records
   `pin_kept` for every stripped field and names the entry it came from.
 
-This is why no `--bind` can change a pinned field. A scenario, cell or step binding more specific
-than a pin that sets a pinned field to a different value is an authoring error (`pinned`, at load).
-Flow pins (`pin:` inside a flow step) are enforced by the daemon.
+This is why no `--bind` can change a pinned field. A scenario or cell binding more specific than a pin,
+or any request step's own binding at or below the pin's selector, that can reach the pinned step and
+sets a pinned field to a different value is an authoring error (`pinned`, at load). Flow pins (`pin:`
+inside a flow step) are enforced by the daemon.
 
 **Judge selectors.** A scenario judge binds through `judge` (every judge step) and
 `judge:<step-id>` (one `judge` step) only. `default`, `role:` and `flow:` do not apply to a scenario
@@ -192,8 +198,15 @@ judge: they bind flow steps, and a broad `default` must not silently move a grad
 judge is a different mechanism. It runs inside the flow (`kind: "gate"`) and resolves through
 `default`, `role:` and `flow:`, so an author must not expect the two to behave alike. With no `judge`
 binding the judge uses `EXA_EVAL_LLM_*` as before, and `EXA_EVAL_LLM_MOCK` stays the only switch
-between a mock and a live judge. A judge that resolves to the system-under-test's own service and
-model is allowed and flagged `judgeSharesSut` in the evidence.
+between a mock and a live judge. A bound judge is validated like a flow step: its credential, opt-in,
+endpoint and network grant must hold, and a `cli` service is allowed while a `cli-delegate` is not. A
+judge binding that fails to resolve or validate refuses the run before `start-daemon`, with each issue
+in the error. A named judge is never swapped silently for the environment's judge.
+
+A judge that grades with the system under test's own service and model is allowed and flagged
+`judgeSharesSut` in the evidence. The flag compares the judge's catalog service and model with every
+step the daemon bound in that run. With no bound step, it compares the judge's adapter and wire model
+with the cell config's `[ai]` provider and model.
 
 **Operator controls.** The scenario runner accepts the same flags as `exactl request`:
 
@@ -203,8 +216,10 @@ deno run -A tests/scenario_framework/runner/main.ts --scenario research-split \
   --bind 'judge=service=openrouter,model=deepseek/deepseek-v4-pro'
 ```
 
-`--overlay` is repeatable and the file must be JSON within the operator overlay byte ceiling.
-`--bind` uses the `selector=field=value[,field=value]` grammar.
+`--overlay` is repeatable. The file must be a regular JSON file within the operator overlay byte
+ceiling, never a symlink. `--bind` uses the `selector=field=value[,field=value]` grammar, and two
+`--bind` flags on one selector merge per field, the later flag winning, as `exactl request --bind`
+does.
 
 **Selecting Ollama.** Select the built-in Ollama service by an explicit binding and declare the
 canonical model in `catalog.models`; the built-in preference map has no `meta` or `qwen` key, so

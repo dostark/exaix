@@ -169,3 +169,13 @@ Deno.test("[docs] Architecture names the self-hosted profile and supportsToolCho
   assertStringIncludes(native, "supportsToolChoice");
   assertStringIncludes(native.replace(/\s+/g, " "), "four profiles");
 });
+
+Deno.test("[docs] the User Guide names the key source the factory reads", async () => {
+  const subsection = section(await readUserGuide(), "#### OpenAI-compatible Chat Completions (`openai-chat`)")
+    .replace(/\s+/g, " ");
+  const keyRule = subsection.match(/\*\*Key\.\*\*[^\n]*?(?= - \*\*|$)/)?.[0] ?? "";
+  assertStringIncludes(keyRule, "key_env");
+  assertStringIncludes(keyRule, "EXA_COMPAT_SELF_HOSTED_API_KEY");
+  assertStringIncludes(keyRule, "credential store");
+  assert(!keyRule.includes("is read from the daemon environment, then the credential store. Without it"), "stale rule");
+});

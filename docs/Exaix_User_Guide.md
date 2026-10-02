@@ -4624,6 +4624,7 @@ fields inherit from the global block only for the same profile):
 | `endpoint`                | profile endpoint | Must match the profile host. Remote profiles accept HTTPS only  |
 | `allow_insecure_loopback` | `false`          | `local-test` and `self-hosted` may use a loopback HTTP endpoint |
 | `supports_tool_choice`    | `false`          | `self-hosted` only: the server honors an explicit `tool_choice` |
+| `key_env`                 | none             | `self-hosted` only: the service's own required key variable     |
 | `max_response_bytes`      | 8 MiB            | Largest accepted response body                                  |
 | `max_tool_argument_bytes` | 64 KiB           | Largest accepted tool-call argument object                      |
 | `max_history_bytes`       | 8 MiB            | Largest accepted replayed conversation                          |
@@ -4688,15 +4689,18 @@ as a catalog service in a per-run overlay, for example for a vLLM server:
 
 Run it with `exactl request --flow research --overlay <overlay-file> "..."`. LiteLLM uses the same
 shape with its `model_name` alias in `serves` and an HTTPS endpoint. Ollama ships as the built-in
-`ollama-chat` service: select it by an explicit `service = "ollama-chat"` binding, because no
-`meta` or `qwen` preference route exists.
+`ollama-chat` service on `http://127.0.0.1:11434`, with the loopback opt-in already declared: select
+it by an explicit `service = "ollama-chat"` binding, because no `meta` or `qwen` preference route
+exists, and pull the model first.
 
 - **Endpoint rule.** The endpoint must be HTTPS, or HTTP on `127.0.0.1` with `allow_insecure_loopback = true`.
   The path must be `/v1/chat/completions` or `/chat/completions`, and the URL may carry no credentials,
   query or fragment. A violation fails with `profile_mismatch`.
-- **Key.** `EXA_COMPAT_SELF_HOSTED_API_KEY` is optional. It is read from the daemon environment, then the
-  credential store. Without it the request carries no `Authorization` header. The daemon still needs
-  `--allow-env` for that variable when you use it.
+- **Key.** A service that declares `key_env` sends only that variable's key. The key is required, and it
+  is read from the daemon environment, then the credential store. A service without `key_env` reads the
+  optional shared `EXA_COMPAT_SELF_HOSTED_API_KEY` from the daemon environment only, and without it the
+  request carries no `Authorization` header. Give each keyed server its own `key_env`, so one server's key
+  never reaches another.
 - **Tool choice.** `supports_tool_choice` defaults to false. The provider then sends `tools` but no
   `tool_choice` (`IProviderCallCapabilities.supportsToolChoice` is false), which suits Ollama. Set it to
   `true` for a vLLM server started with `--enable-auto-tool-choice` and `--tool-call-parser`, or a

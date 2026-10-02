@@ -117,13 +117,17 @@ env block; the full reference is [`SCENARIO_DSL.md` §2.3](./SCENARIO_DSL.md).
 1. **Bind the judge.** A judge binds through `judge` or `judge:<step-id>` only. `default`, `role:` and
    `flow:` do not apply to a scenario judge. Flow gate judges are a different mechanism and resolve
    through those selectors, so do not expect the two to behave alike. A live judge still needs
-   `EXA_EVAL_LLM_MOCK=false`.
-1. **Pin what must not move.** Add a `pin:` entry with a `selector`, `fields` and a `reason` (one of
-   `provider-qualification`, `wire-compat-regression`, `pricing-table`, `capability-gate`,
-   `compliance`) for every field a qualification run depends on. An operator `--overlay` or `--bind`
-   can then not change it silently.
+   `EXA_EVAL_LLM_MOCK=false`. A judge binding that fails to resolve or validate refuses the run, so
+   fix the binding instead of expecting the environment's judge to step in.
+1. **Pin what must not move.** Add an entry to the `pin:` list with a `selector`, `fields`, a `reason`
+   (one of `provider-qualification`, `wire-compat-regression`, `pricing-table`, `capability-gate`,
+   `compliance`) and a required `note` for every field a qualification run depends on. Use one entry per
+   selector, for example one for a flow step and one for its judge. An operator `--overlay` or `--bind`
+   that can reach a pinned step then cannot change the field silently, and an entry for an unrelated
+   step stays free.
 1. **Select Ollama explicitly.** Use `service = "ollama-chat"` (YAML: `service: ollama-chat`) with the
-   model declared in `catalog.models`. Do not write a `meta` or `qwen` preference route.
+   model declared in `catalog.models`, and pull that model into the local Ollama first. Do not write a
+   `meta` or `qwen` preference route.
 
 **What an operator can do.** `--overlay <file>` (repeatable, JSON) and `--bind 'selector=field=value'`
 rerun the scenario with different providers and no edit. Later layers win, and two layers that set the

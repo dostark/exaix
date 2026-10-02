@@ -1092,8 +1092,14 @@ The built-in preference map has no `meta` key, so a model-only entry never reach
 `ollama-chat` row is skipped unless `EXA_MATRIX_OLLAMA` is set. A service a run-time `--overlay` or
 preset catalog introduces is not in the daemon's start-time `--allow-net` grant, so a fixture-backed
 service needs its host in the base config's explicit `allow_net`. An uncovered host fails as
-`needs_restart`. A judge that resolves to the system-under-test's own service and model is allowed
-and flagged `judgeSharesSut`.
+`needs_restart`.
+
+A judge that grades with the system under test's own service and model is allowed and flagged
+`judgeSharesSut`. The flag compares the judge's catalog service and model with every step the daemon
+bound in that run, read from the run's lockfiles. With no bound step, it compares the judge's adapter
+and wire model with the cell config's `[ai]` provider and model. A judge binding that fails to
+resolve or validate refuses the run before the daemon starts. Such a run writes no evidence file,
+and the error lists each issue with its code, judge step and detail.
 
 ### Extending
 

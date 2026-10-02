@@ -9,6 +9,9 @@
  */
 import { assert, assertStringIncludes } from "@std/assert";
 import { BindingFieldSchema, PinReasonSchema } from "@exaix/schemas/model_binding.ts";
+import { parse as parseYaml } from "@std/yaml";
+import { ScenarioSchema } from "../scenario_framework/schema/scenario_schema.ts";
+import { SCHEMA_VERSION } from "../scenario_framework/schema/version.ts";
 import { readUserGuide } from "./helpers.ts";
 
 const AUTHORING = "tests/scenario_framework/AUTHORING.md";
@@ -109,4 +112,39 @@ Deno.test("[docs] no doc presents a meta/qwen preference route for Ollama", asyn
     assert(!/^\s*(meta|qwen)\s*=\s*\[/m.test(text), `${file} declares a meta/qwen preference list`);
     assert(!/preferences[^\n]*\b(meta|qwen)\b\s*[:=]/.test(text), `${file} routes Ollama by a meta/qwen preference`);
   }
+});
+
+/** The keys that mark a YAML example as a scenario fragment rather than a step list or a single step. */
+const SCENARIO_FRAGMENT_KEYS = ["bindings", "catalog", "pin", "matrix"];
+
+Deno.test("[docs] every scenario YAML example in SCENARIO_DSL.md parses through the schema", async () => {
+  const dsl = await Deno.readTextFile(SCENARIO_DSL);
+  const blocks = [...dsl.matchAll(/```yaml\n([\s\S]*?)```/g)].map((match) => match[1]);
+  const base = {
+    schema_version: SCHEMA_VERSION,
+    id: "docs-example",
+    title: "Docs example",
+    pack: "agent_flows",
+    tags: ["smoke"],
+    request_fixture: "fixtures/requests/agent_flows/openai_compatible_native.md",
+    mode_support: ["auto"],
+    portals: [],
+    steps: [{ id: "submit", type: "exactl", command: "request" }],
+  };
+  let checked = 0;
+  for (const block of blocks) {
+    const parsed = parseYaml(block);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) continue;
+    if (!Object.keys(parsed).some((key) => SCENARIO_FRAGMENT_KEYS.includes(key))) continue;
+    const fragment = Object.fromEntries(
+      Object.entries(parsed).filter(([key]) => SCENARIO_FRAGMENT_KEYS.includes(key)),
+    );
+    const result = ScenarioSchema.safeParse({ ...base, ...fragment });
+    assert(
+      result.success,
+      `example does not validate: ${block.slice(0, 120)}\n${JSON.stringify(result.error?.issues)}`,
+    );
+    checked++;
+  }
+  assert(checked >= 3, `expected at least 3 scenario examples, found ${checked}`);
 });
