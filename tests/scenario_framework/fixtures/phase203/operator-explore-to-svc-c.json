@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "bindings": {
+    "flow:scenario-binding-split/step:explore-one": {
+      "service": "svc-c",
+      "model": "openai/compat-fixture-v1"
+    }
+  }
+}

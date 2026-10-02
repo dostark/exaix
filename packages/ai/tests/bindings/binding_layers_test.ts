@@ -78,8 +78,12 @@ Deno.test("[layers] config < daemon overlays (file-name order) < run overlays < 
     assertEquals(layersByName.get("config"), "flow:research/step:s1");
     assertEquals(layersByName.get("overlay"), "flow:research/step:s1");
     assertEquals(layersByName.get("run"), "flow:research/step:s1");
-    // Two daemon overlays in one layer both load, so run/binds can be absent and still count.
-    assertEquals(layers.entries.filter((e) => e.layer === "overlay").length, 2);
+    // Same-selector entries in one layer merge into ONE entry. A later file then wins a
+    // field it sets, instead of tripping ambiguous_selector. Both fields survive here.
+    const overlayEntries = layers.entries.filter((e) => e.layer === "overlay");
+    assertEquals(overlayEntries.length, 1);
+    assertEquals(overlayEntries[0].spec.model, "mock/beta");
+    assertEquals(overlayEntries[0].spec.service, "beta");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -167,6 +171,67 @@ Deno.test("[layers] a regular daemon overlay applies and catalog merges over the
     assertEquals(layers.operatorLayersPresent, true);
     assertEquals(layers.overlaySha256.length, 1);
     assertEquals(layers.catalog.services["extra-svc"] !== undefined, true);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[layers][ordering] two run overlays at one selector resolve to the later argument's value", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-run-order-" });
+  try {
+    const config = baseConfig(tempDir);
+    const layers = await loadBindingLayers(config, {
+      trace_id: crypto.randomUUID(),
+      request_path: "request.md",
+      request_sha256: "0".repeat(64),
+      created_at: new Date().toISOString(),
+      schema: 1,
+      overlays: [
+        {
+          source_path: "10-scenario.json",
+          sha256: "a".repeat(64),
+          overlay: { schema: 1, bindings: { "flow:research/step:s1": { model: "mock/alpha" } } },
+        },
+        {
+          source_path: "30-operator-0.json",
+          sha256: "b".repeat(64),
+          overlay: { schema: 1, bindings: { "flow:research/step:s1": { model: "mock/beta" } } },
+        },
+      ],
+      binds: [],
+    });
+
+    const runEntries = layers.entries.filter((e) => e.layer === "run");
+    assertEquals(runEntries.length, 1);
+    assertEquals(runEntries[0].spec.model, "mock/beta");
+    // Both files were still hashed, so the evidence keeps the full overlay list.
+    assertEquals(layers.overlaySha256.length, 2);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[layers][ordering] two daemon overlay files at one selector resolve to the later file name", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "binding-layers-file-order-" });
+  try {
+    const overlaysDir = join(tempDir, ".exa", "overlays");
+    const config = baseConfig(tempDir);
+    await Deno.mkdir(overlaysDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(overlaysDir, "01-first.json"),
+      JSON.stringify({ schema: 1, bindings: { "flow:research/step:s1": { model: "mock/alpha", service: "alpha" } } }),
+    );
+    await Deno.writeTextFile(
+      join(overlaysDir, "02-second.json"),
+      JSON.stringify({ schema: 1, bindings: { "flow:research/step:s1": { service: "beta" } } }),
+    );
+
+    const layers = await loadBindingLayers(config);
+    const overlayEntries = layers.entries.filter((e) => e.layer === "overlay");
+    assertEquals(overlayEntries.length, 1);
+    // 02-second.json wins the field it sets. 01-first.json keeps the field it alone set.
+    assertEquals(overlayEntries[0].spec.service, "beta");
+    assertEquals(overlayEntries[0].spec.model, "mock/alpha");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

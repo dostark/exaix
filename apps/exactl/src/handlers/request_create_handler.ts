@@ -12,7 +12,7 @@ import { parse as parseYaml } from "@std/yaml";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import { normalizeFrontmatterList } from "@exaix/request";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
+import { BINDING_OVERLAY_MAX_BYTES, RequestKind, RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
@@ -78,11 +78,28 @@ export class RequestCreateHandler extends BaseCommand {
   ): Promise<Array<{ source_path: string; sha256: string; overlay: ReturnType<typeof BindingOverlaySchema.parse> }>> {
     const result = [];
     for (const sourcePath of paths) {
+      await RequestCreateHandler.assertRegularOverlayFile(sourcePath);
       const content = await Deno.readTextFile(sourcePath);
       const overlay = BindingOverlaySchema.parse(JSON.parse(content));
       result.push({ source_path: sourcePath, sha256: await this.sha256(content), overlay });
     }
     return result;
+  }
+
+  /** Refuse a symlink, a non-regular or an oversized file, matching the daemon's checks. */
+  private static async assertRegularOverlayFile(path: string): Promise<void> {
+    let info: Deno.FileInfo;
+    try {
+      info = await Deno.lstat(path);
+    } catch {
+      throw new Error(`overlay_invalid: ${path} is not a regular file`);
+    }
+    if (!info.isFile || info.isSymlink) {
+      throw new Error(`overlay_invalid: ${path} is not a regular file`);
+    }
+    if (info.size > BINDING_OVERLAY_MAX_BYTES) {
+      throw new Error(`overlay_invalid: ${path} exceeds the ${BINDING_OVERLAY_MAX_BYTES}-byte ceiling`);
+    }
   }
 
   private parseBinds(raw: string[]): ReturnType<typeof BindOneOffSchema.parse> {

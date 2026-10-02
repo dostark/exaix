@@ -8,6 +8,7 @@
  */
 
 import { z } from "zod";
+import { BindingCatalogSchema, BindingsTableSchema } from "@exaix/schemas";
 import {
   PortalMountSchema,
   ScenarioExecutionMode,
@@ -40,6 +41,11 @@ export const ScenarioSchema = z.object({
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),
   portals: z.array(PortalMountSchema),
   steps: z.array(ScenarioStepSchema).min(1),
+  /** Scenario-layer binding entries. The runner applies them per run.
+   *  They sit above the flow and config layers, and below the cell, operator and step layers. */
+  bindings: BindingsTableSchema.optional(),
+  /** Scenario-layer catalog entries (services, models, preferences) merged per run. */
+  catalog: BindingCatalogSchema.optional(),
   /** Additive `tool × provider` matrix block. When present, the runner expands the scenario
    *  into one cell-run per cell (see runner/matrix_expander.ts). Absent → runs unchanged. */
   matrix: MatrixSchema.optional(),

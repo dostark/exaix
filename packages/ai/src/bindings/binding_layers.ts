@@ -195,6 +195,29 @@ async function hashText(text: string): Promise<string> {
 }
 
 /**
+ * Merge entries that share one selector inside one layer. The later entry wins a field it
+ * sets. Distinct selectors stay separate, so the resolver still reports a genuine
+ * equal-specificity conflict as ambiguous_selector. This realizes the documented order of
+ * run overlays. It matters because every run overlay carries the same layer rank.
+ */
+function collapseSameSelectorEntries(
+  entries: readonly IBindingLayers["entries"][number][],
+): Array<IBindingLayers["entries"][number]> {
+  const byLayerAndSelector = new Map<string, IBindingLayers["entries"][number]>();
+  for (const entry of entries) {
+    const key = `${entry.layer}\u0000${entry.selector}`;
+    const existing = byLayerAndSelector.get(key);
+    byLayerAndSelector.set(key, {
+      layer: entry.layer,
+      selector: entry.selector,
+      spec: existing ? { ...existing.spec, ...entry.spec } : { ...entry.spec },
+    });
+  }
+  // A Map keeps insertion order, so the first occurrence holds the entry's position.
+  return [...byLayerAndSelector.values()];
+}
+
+/**
  * Assemble the operator binding layers for the current config and one run.
  * Order is config, daemon overlays, run overlays, then run --bind entries.
  * Catalogs merge over the built-ins.
@@ -257,9 +280,10 @@ export async function loadBindingLayers(
     }
   }
 
-  const specEntries = entries.length > 0;
+  const collapsedEntries = collapseSameSelectorEntries(entries);
+  const specEntries = collapsedEntries.length > 0;
   return {
-    entries,
+    entries: collapsedEntries,
     catalog,
     overlaySha256: overlayHashes,
     operatorLayersPresent: specEntries,

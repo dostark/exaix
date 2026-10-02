@@ -26,9 +26,11 @@ import {
   type ICellConfigTargets,
   type IRunnableStepGroup,
   MATRIX_START_DAEMON_STEP_ID,
+  overlayRequestBindings,
   resolveCellConfig,
   resolveRunnableSteps,
 } from "./matrix_expander.ts";
+import { type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
 import {
@@ -79,6 +81,10 @@ export interface IRunSyntheticScenarioOptions {
   selectedCell?: string;
   /** Upper bound applied to every step's `timeout_sec`; shortens only, never extends. */
   maxStepTimeoutSec?: number;
+  /** Operator `--overlay` files, in the order given. Applied above the scenario layer. */
+  operatorOverlays?: string[];
+  /** Operator `--bind` specs, in the order given. Applied after every operator overlay. */
+  operatorBinds?: string[];
 }
 
 export interface IRunSyntheticScenarioResult {
@@ -88,6 +94,8 @@ export interface IRunSyntheticScenarioResult {
   manifest: IRunManifest;
   manifestPath: string;
   executionLogPath?: string;
+  /** Overlay files this run passed to `exactl request`, with their digests. */
+  bindingOverlays?: IScenarioOverlayFile[];
 }
 
 export interface IMaterializedCellConfig {
@@ -361,6 +369,21 @@ export async function runSyntheticScenario(
   });
   stepsToRun = materialized.steps;
 
+  // Phase 203: the scenario, step and operator binding layers travel with every `exactl request`
+  // step as `--overlay` arguments. The files are written outside the sandbox, so the agent under
+  // test cannot rewrite the bindings that govern it.
+  const bindingPlan = await planScenarioBindings({
+    scenario: loadedScenario.scenario,
+    operatorOverlays: options.operatorOverlays ?? [],
+    operatorBinds: options.operatorBinds ?? [],
+    outputDir: options.outputDir,
+    sandboxRoot: options.workspaceRoot,
+    ...(envForExpansion.EXA_COMPAT_FIXTURE_PORT
+      ? { compatFixturePort: Number.parseInt(envForExpansion.EXA_COMPAT_FIXTURE_PORT, 10) }
+      : {}),
+  });
+  stepsToRun = overlayRequestBindings(stepsToRun, bindingPlan);
+
   // Runs AFTER materializeCellConfig so the `[[portals]]` entry lands in the config the
   // daemon actually boots with — mounting before it risks the entry being silently
   // overwritten by the materialized cell config, failing with "Portal not found".
@@ -502,6 +525,7 @@ export async function runSyntheticScenario(
     manifest,
     manifestPath,
     executionLogPath,
+    bindingOverlays: bindingPlan.overlays,
   };
 }
 

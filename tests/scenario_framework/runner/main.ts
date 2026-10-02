@@ -24,6 +24,9 @@ import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./per
 import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { loadTraceActivities } from "./failure_classifier.ts";
 import { writeProviderLiveEvidence } from "./provider_live_evidence.ts";
+import { type IProviderLiveBindingEvidence, readLockEntryEvidence } from "./provider_live_evidence.ts";
+import type { IScenarioOverlayFile } from "./binding_layers.ts";
+import { exists } from "@std/fs";
 import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
   accumulateRunVerdict,
@@ -81,6 +84,18 @@ await new Command()
     "Run only the matrix cell whose tool OR provider matches (e.g. claude-code, opencode, " +
       "openai, google) — every other cell is skipped, not run. Provider matching disambiguates " +
       "direct-API cells, which all share tool: exactl.",
+  )
+  .option(
+    "--overlay <file:string>",
+    "Per-run operator binding overlay file, applied above the scenario and cell layers " +
+      "(repeatable). The file must be JSON and within the operator overlay byte ceiling.",
+    { collect: true },
+  )
+  .option(
+    "--bind <spec:string>",
+    "Per-run operator binding entry, e.g. flow:research/step:compose=service=openai " +
+      "(repeatable). Same grammar as 'exactl request --bind'; applied after every --overlay.",
+    { collect: true },
   )
   .option(
     "--keep-sandbox",
@@ -184,6 +199,8 @@ await new Command()
     // The trial-0 workspace whose journal holds the run's trace.
     let firstTrialWorkspaceRoot = "";
     const providerLiveWorkspaces = new Map<string, string>();
+    // Per-scenario overlay files the runner wrote, for the redacted evidence.
+    const bindingOverlays = new Map<string, IScenarioOverlayFile[]>();
 
     for (const entry of selectedEntries) {
       // Checked between scenarios: once accumulated cost reached the cap, the remaining
@@ -248,6 +265,8 @@ await new Command()
               : resolve(frameworkHome, "bin/exactl"),
             selectedCell: options.cell,
             maxStepTimeoutSec: options.maxStepTimeout,
+            operatorOverlays: options.overlay ?? [],
+            operatorBinds: options.bind ?? [],
             ...(entry.pack === "persona_response_eval"
               ? {
                 env: {
@@ -283,6 +302,7 @@ await new Command()
             // The run's trace lives in this trial's workspace journal.
             firstTrialWorkspaceRoot = trialWorkspaceRoot;
             if (entry.pack === "provider_live") providerLiveWorkspaces.set(entry.id, trialWorkspaceRoot);
+            if (result.bindingOverlays) bindingOverlays.set(entry.id, result.bindingOverlays);
           }
 
           console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
@@ -455,6 +475,14 @@ await new Command()
         () => loadTraceActivities(journalPath),
         () => [],
       );
+      // The daemon writes one binding lock per run. Read it only when the run had bindings.
+      // An unbinding run then records no binding rows, instead of failing the evidence write.
+      const traceId = activities.find((activity) => activity.action_type === "request.created")?.trace_id;
+      let bindings: IProviderLiveBindingEvidence[] = [];
+      if (traceId) {
+        const lockPath = join(workspaceRoot, ".exa", "bindings", `${traceId}.lock.json`);
+        if (await exists(lockPath)) bindings = await readLockEntryEvidence(lockPath, traceId);
+      }
       const evidencePath = await writeProviderLiveEvidence({
         scenarioId,
         outputDir: runtimeConfig.output_dir,
@@ -463,6 +491,9 @@ await new Command()
         outcome: manifest.outcome,
         suiteScore: manifest.suite_score ?? 0,
         exitCode,
+        overlays: bindingOverlays.get(scenarioId) ?? [],
+        bindings,
+        judges: [],
       });
       console.log(`Redacted live evidence: ${evidencePath}`);
     }

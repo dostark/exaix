@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import { writeProviderLiveEvidence } from "../../runner/provider_live_evidence.ts";
+import { readLockEntryEvidence, writeProviderLiveEvidence } from "../../runner/provider_live_evidence.ts";
 
 function activity(action_type: string, payload: Record<string, JSONValue>, trace_id = "trace-live-1"): IActivityRecord {
   return {
@@ -97,5 +97,126 @@ Deno.test("provider live evidence never qualifies a quota or infrastructure fail
     }
   } finally {
     await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+  }
+});
+
+/** A minimal boundary lockfile, as the daemon persists it under `<root>/.exa/bindings/`. */
+async function writeLockfile(path: string, traceId: string): Promise<void> {
+  await Deno.writeTextFile(
+    path,
+    JSON.stringify({
+      schema: 1,
+      trace_id: traceId,
+      flow_id: "research",
+      created_at: "2026-10-02T12:00:00.000Z",
+      flow_content_sha256: "0".repeat(64),
+      pin_sha256: "0".repeat(64),
+      catalog_sha256: "0".repeat(64),
+      step_ids: ["compose", "explore"],
+      config_checksum: "checksum",
+      overlay_sha256: [],
+      run_overlays: 2,
+      env_ignored: false,
+      hosts: ["127.0.0.1:43117"],
+      entries: [
+        {
+          step_id: "compose",
+          agent_role: "senior-coder",
+          outcome: {
+            kind: "bound",
+            binding: {
+              service: "self-hosted-fixture",
+              model_provider: "fixture",
+              model: "fixture/compat-fixture-v1",
+              service_model_id: "compat-fixture-v1",
+              transport: "local",
+              interface: "api",
+              adapter: "openai-chat",
+              profile: "self-hosted",
+              endpoint: "http://127.0.0.1:43117/v1/chat/completions",
+              sources: { service: { layer: "run", selector: "flow:research/step:compose" } },
+              fingerprint: "a".repeat(64),
+            },
+          },
+        },
+        { step_id: "explore", agent_role: "web-explorer", outcome: { kind: "unbound" } },
+      ],
+    }),
+  );
+}
+
+Deno.test("[evidence] provider live evidence records overlays, lock entries and judge bindings", async () => {
+  const outputDir = await Deno.makeTempDir();
+  const configPath = `${outputDir}/exa.config.toml`;
+  await Deno.writeTextFile(configPath, "model = 'fixture-model'\n");
+  try {
+    const path = await writeProviderLiveEvidence({
+      scenarioId: "bindings-evidence",
+      outputDir,
+      configPath,
+      activities: [activity("request.created", {}), activity("llm.call.completed", { model: "mock" })],
+      outcome: "success",
+      suiteScore: 1,
+      exitCode: 0,
+      overlays: [
+        { role: "scenario", path: "/out/bindings/10-scenario.json", sha256: "a".repeat(64) },
+        { role: "operator", path: "/out/bindings/40-operator-bind.json", sha256: "b".repeat(64) },
+      ],
+      bindings: [
+        {
+          traceId: "10000000-0000-4000-8000-000000000001",
+          stepId: "compose",
+          agentRole: "senior-coder",
+          outcome: "bound",
+          service: "alpha",
+          model: "alpha/one",
+        },
+        {
+          traceId: "10000000-0000-4000-8000-000000000001",
+          stepId: "explore",
+          agentRole: "web-explorer",
+          outcome: "unbound",
+        },
+      ],
+      judges: [{ stepId: "judge-1", service: "claude-cli", model: "anthropic/claude-sonnet-5", judgeSharesSut: false }],
+    });
+
+    const summary = JSON.parse(await Deno.readTextFile(path));
+    assertEquals(summary.overlays, [
+      { role: "scenario", path: "/out/bindings/10-scenario.json", sha256: "a".repeat(64) },
+      { role: "operator", path: "/out/bindings/40-operator-bind.json", sha256: "b".repeat(64) },
+    ]);
+    assertEquals(summary.bindings.length, 2);
+    assertEquals(summary.bindings[0].stepId, "compose");
+    assertEquals(summary.bindings[0].service, "alpha");
+    assertEquals(summary.bindings[1].outcome, "unbound");
+    assertEquals(summary.judges, [
+      { stepId: "judge-1", service: "claude-cli", model: "anthropic/claude-sonnet-5", judgeSharesSut: false },
+    ]);
+  } finally {
+    await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[evidence] readLockEntryEvidence reduces a binding lockfile to auditable rows", async () => {
+  const root = await Deno.makeTempDir({ prefix: "lock-evidence-" });
+  try {
+    const traceId = "10000000-0000-4000-8000-000000000002";
+    const lockPath = `${root}/${traceId}.lock.json`;
+    await writeLockfile(lockPath, traceId);
+
+    const rows = await readLockEntryEvidence(lockPath, traceId);
+    assertEquals(rows.length, 2);
+    assertEquals(rows[0], {
+      traceId,
+      stepId: "compose",
+      agentRole: "senior-coder",
+      outcome: "bound",
+      service: "self-hosted-fixture",
+      model: "fixture/compat-fixture-v1",
+    });
+    assertEquals(rows[1], { traceId, stepId: "explore", agentRole: "web-explorer", outcome: "unbound" });
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
   }
 });

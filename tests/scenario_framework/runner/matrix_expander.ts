@@ -17,9 +17,11 @@
 
 import { z } from "zod";
 import { dirname, isAbsolute, join } from "@std/path";
-import type { IScenarioStep } from "../schema/step_schema.ts";
+import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { deriveClaudeToolFlags } from "@exaix/session";
+import type { IScenarioBindingPlan } from "./binding_layers.ts";
+import { SENTINEL_COMPAT_FIXTURE_PORT, SENTINEL_DOGFOOD_ROOT, SENTINEL_WORKTREE_PATH } from "./sentinels.ts";
 
 /** A single cell's expansion: either a runnable step list or a recorded skip. */
 export interface IMatrixCellRun {
@@ -88,11 +90,6 @@ export interface IResolvableScenario {
 
 /** The start-daemon step id the per-cell env overlay targets. */
 export const MATRIX_START_DAEMON_STEP_ID = "start-daemon";
-
-/** Deploy-time sentinels in the dogfood presets (mirrors scripts/dogfood_bootstrap.ts). */
-const SENTINEL_DOGFOOD_ROOT = "__DOGFOOD_ROOT__";
-const SENTINEL_WORKTREE_PATH = "__WORKTREE_PATH__";
-const SENTINEL_COMPAT_FIXTURE_PORT = "__COMPAT_FIXTURE_PORT__";
 
 /** Pure substitution of a dogfood preset's deploy-time sentinels with the run's real paths —
  *  without this, the daemon would literally root at "__DOGFOOD_ROOT__". A sentinel-free
@@ -358,6 +355,30 @@ function overlayCellEnv(
         [ENV_DELEGATE_TOOL]: cell.tool,
         [ENV_DELEGATE_ENABLED]: "true",
       },
+    };
+  });
+}
+
+/** Append `--overlay` arguments to every `exactl request` step, in ascending layer order.
+ *  That order is scenario, cell, the step's own overlay, then every operator file.
+ *  The daemon gives each run overlay the same layer. This argument order is therefore what
+ *  the loader's same-selector collapse turns into precedence.
+ *  A step's own overlay reaches only that step. */
+export function overlayRequestBindings(
+  steps: readonly IScenarioStep[],
+  plan: IScenarioBindingPlan,
+): IScenarioStep[] {
+  const globalOverlays = plan.overlays.filter((overlay) => overlay.role !== "step");
+  const lowerLayers = globalOverlays.filter((overlay) => overlay.role !== "operator");
+  const operatorLayers = globalOverlays.filter((overlay) => overlay.role === "operator");
+  return steps.map((step) => {
+    if (step.type !== ScenarioStepType.EXACTL || step.command !== "request") return step;
+    const stepOverlay = plan.overlays.find((overlay) => overlay.role === "step" && overlay.stepId === step.id);
+    const ordered = [...lowerLayers, ...(stepOverlay ? [stepOverlay] : []), ...operatorLayers];
+    if (ordered.length === 0) return step;
+    return {
+      ...step,
+      args: [...(step.args ?? []), ...ordered.flatMap((overlay) => ["--overlay", overlay.path])],
     };
   });
 }

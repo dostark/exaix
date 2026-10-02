@@ -1,0 +1,46 @@
+# @schema-version: 1.0.0
+---
+id: scenario-binding-split
+name: Scenario Binding Split
+description: Two LLM steps the scenario layer binds to two different services.
+version: "1.0.0"
+steps:
+  - id: compose
+    name: Compose the request
+    agent_role: senior-coder
+    execution_mode: declared
+    input:
+      source: request
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: explore-one
+    name: Explore the request
+    agent_role: code-analyst
+    execution_mode: declared
+    dependsOn: [compose]
+    input:
+      source: step
+      stepId: compose
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: finalize
+    name: Publish the plan
+    agent_role: senior-coder
+    execution_mode: declared
+    dependsOn: [explore-one]
+    input:
+      source: step
+      stepId: explore-one
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+output:
+  # The daemon validates the flow output as a plan, so the last step must be unbound and
+  # fall back to the boot mock pattern provider.
+  from: finalize
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true

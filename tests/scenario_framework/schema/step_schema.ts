@@ -9,6 +9,7 @@
  */
 
 import { z } from "zod";
+import { BindingsTableSchema } from "@exaix/schemas";
 import { VERSION_PATTERN } from "./version.ts";
 
 const NON_EMPTY_STRING = z.string().min(1);
@@ -420,6 +421,9 @@ export const ScenarioStepSchema = z.object({
   name: NON_EMPTY_STRING.optional(),
   command: NON_EMPTY_STRING.optional(),
   args: z.array(z.string()).optional(),
+  /** Step-layer binding entries, passed as this request's own overlay only. Applies to an
+   *  `exactl request` step and sits above the scenario and cell layers. */
+  bindings: BindingsTableSchema.optional(),
   /** Working directory the step runs in (and file criteria resolve against). Omitted →
    *  workspace root. `$WORKTREE` resolves to the scenario's newest execution worktree, so
    *  scenarios never hardcode deep `.exa/worktrees/...` globs. */

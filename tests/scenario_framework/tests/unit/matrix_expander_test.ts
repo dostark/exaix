@@ -22,7 +22,10 @@ import {
   type IMatrixBlock,
   MATRIX_START_DAEMON_STEP_ID,
   MatrixSchema,
+  overlayRequestBindings,
 } from "../../runner/matrix_expander.ts";
+import { planScenarioBindings } from "../../runner/binding_layers.ts";
+import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IScenarioStep } from "../../schema/step_schema.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
@@ -420,4 +423,71 @@ Deno.test("[scenario_matrix] GAP-7: EXA_CONFIG_PATH is the daemon's real config 
     mainSrc.includes('Deno.env.get("EXA_CONFIG_PATH")'),
     "apps/daemon/main.ts must read EXA_CONFIG_PATH so the matrix overlay swaps the loaded config",
   );
+});
+
+Deno.test("[bindings] overlayRequestBindings gives every exactl request step its --overlay args in layer order", async () => {
+  const root = await Deno.makeTempDir({ prefix: "matrix-overlay-bindings-" });
+  try {
+    const scenario = ScenarioSchema.parse({
+      schema_version: SCHEMA_VERSION,
+      id: "binding-args-smoke",
+      title: "Binding args smoke",
+      pack: "agent_flows",
+      tags: ["smoke"],
+      request_fixture: "fixtures/requests/agent_flows/openai_compatible_native.md",
+      mode_support: ["auto"],
+      portals: [],
+      bindings: { "flow:research/step:compose": { service: "alpha" } },
+      steps: [
+        { id: "start-daemon", type: "exactl", command: "daemon start" },
+        {
+          id: "first-request",
+          type: "exactl",
+          command: "request",
+          args: ["--file", "$REQUEST_FIXTURE"],
+          bindings: { "flow:research/step:compose": { model: "alpha/one" } },
+        },
+        { id: "second-request", type: "exactl", command: "request", args: ["--file", "$REQUEST_FIXTURE"] },
+      ],
+    });
+    const plan = await planScenarioBindings({
+      scenario,
+      operatorOverlays: [],
+      operatorBinds: ["flow:research/step:compose=service=beta"],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    const steps = overlayRequestBindings(scenario.steps, plan);
+
+    // A daemon step is never an `exactl request` step, so it gets no overlay argument.
+    const daemon = steps.find((s) => s.id === "start-daemon")!;
+    assertEquals(daemon.args, undefined);
+
+    const first = steps.find((s) => s.id === "first-request")!;
+    const second = steps.find((s) => s.id === "second-request")!;
+    const overlayArgs = (step: IScenarioStep): string[] => {
+      const args = step.args ?? [];
+      return args.flatMap((arg, index) => (arg === "--overlay" ? [args[index + 1]!] : []));
+    };
+    const firstName = (path: string) => path.slice(path.lastIndexOf("/") + 1);
+
+    // Ascending layer order: scenario, this step's own overlay, then the operator bind file.
+    assertEquals(
+      overlayArgs(first).map(firstName),
+      ["10-scenario.json", "25-step-first-request.json", "40-operator-bind.json"],
+    );
+    // The step overlay reaches only the step that declares it. The operator file reaches both.
+    assertEquals(
+      overlayArgs(second).map(firstName),
+      ["10-scenario.json", "40-operator-bind.json"],
+    );
+    // The original args survive, and every overlay path is absolute and outside the sandbox.
+    assertEquals(first.args?.slice(0, 2), ["--file", "$REQUEST_FIXTURE"]);
+    for (const path of overlayArgs(first)) {
+      assert(path.startsWith(root), `overlay ${path} must live under the run output dir`);
+      assert(!path.includes("/sandbox/"), `overlay ${path} must not live inside the sandbox`);
+    }
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 });

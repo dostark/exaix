@@ -1,0 +1,226 @@
+/**
+ * @module ScenarioBindingLayersTest
+ * @path tests/scenario_framework/tests/unit/scenario_binding_layers_test.ts
+ * @description Phase 203 Step 1 — `planScenarioBindings` writes the scenario layer and the
+ *   operator layers as real `BindingOverlaySchema` documents into a runner-owned directory
+ *   outside the sandbox, normalizes each operator overlay to JSON (the only form
+ *   `exactl request --overlay` parses), substitutes the fixture-port sentinel, and records a
+ *   sha256 per file.
+ * @architectural-layer Test
+ * @related-files [tests/scenario_framework/runner/binding_layers.ts, tests/scenario_framework/schema/scenario_schema.ts]
+ */
+
+import { assertEquals, assertRejects } from "@std/assert";
+import { join } from "@std/path";
+import { BindingOverlaySchema } from "@exaix/schemas";
+import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
+import { SCHEMA_VERSION } from "../../schema/version.ts";
+import { planScenarioBindings } from "../../runner/binding_layers.ts";
+
+/** A minimal valid scenario, so the schema (not a cast) proves the new fields exist. */
+function scenarioWith(extra: Partial<IScenario> = {}): IScenario {
+  return ScenarioSchema.parse({
+    schema_version: SCHEMA_VERSION,
+    id: "bindings-smoke",
+    title: "Bindings smoke",
+    pack: "agent_flows",
+    tags: ["smoke"],
+    request_fixture: "fixtures/requests/agent_flows/openai_compatible_native.md",
+    mode_support: ["auto"],
+    portals: [],
+    steps: [{ id: "submit", type: "exactl", command: "request" }],
+    ...extra,
+  });
+}
+
+/** The digest the runner should have recorded for the bytes now on disk. */
+async function fileSha256(path: string): Promise<string> {
+  const bytes = await Deno.readTextFile(path);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(bytes));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+Deno.test("[bindings] planScenarioBindings writes the scenario overlay with its bindings and catalog", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-" });
+  try {
+    const outputDir = join(root, "output");
+    const sandboxRoot = join(root, "sandbox");
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith({
+        bindings: { "flow:research/step:compose": { service: "alpha", model: "alpha/one" } },
+        catalog: {
+          models: { "alpha/one": { model_provider: "alpha" } },
+          services: {
+            alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "alpha/one": "one" } },
+          },
+        },
+      }),
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir,
+      sandboxRoot,
+    });
+
+    assertEquals(plan.overlays.length, 1);
+    const scenarioOverlay = plan.overlays[0]!;
+    assertEquals(scenarioOverlay.role, "scenario");
+    assertEquals(scenarioOverlay.path.endsWith("10-scenario.json"), true);
+    assertEquals(scenarioOverlay.sha256, await fileSha256(scenarioOverlay.path));
+
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(scenarioOverlay.path)));
+    assertEquals(written.bindings?.["flow:research/step:compose"]?.service, "alpha");
+    assertEquals(written.catalog?.services?.alpha?.serves["alpha/one"], "one");
+    // Step-1 subset resolves no judges.
+    assertEquals(plan.judgeBindings.size, 0);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] planScenarioBindings normalizes operator overlays in order and records sha256", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-op-" });
+  try {
+    const outputDir = join(root, "output");
+    const sandboxRoot = join(root, "sandbox");
+    // A TOML-shaped source file must still arrive as JSON: exactl parses --overlay with JSON.parse.
+    const firstPath = join(root, "first.json");
+    await Deno.writeTextFile(
+      firstPath,
+      JSON.stringify({ schema: 1, bindings: { "flow:research/step:compose": { model: "alpha/one" } } }),
+    );
+    const secondPath = join(root, "second.json");
+    await Deno.writeTextFile(
+      secondPath,
+      JSON.stringify({ schema: 1, bindings: { "role:web-explorer": { service: "beta" } } }),
+    );
+
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
+      operatorOverlays: [firstPath, secondPath],
+      operatorBinds: [],
+      outputDir,
+      sandboxRoot,
+    });
+
+    assertEquals(plan.overlays.map((o) => o.role), ["scenario", "operator", "operator"]);
+    const operators = plan.overlays.filter((o) => o.role === "operator");
+    assertEquals(operators[0]!.path.endsWith("30-operator-0.json"), true);
+    assertEquals(operators[1]!.path.endsWith("30-operator-1.json"), true);
+    assertEquals(operators[0]!.sha256, await fileSha256(operators[0]!.path));
+    assertEquals(operators[1]!.sha256, await fileSha256(operators[1]!.path));
+
+    // Order is preserved: the first operator file holds the first overlay's selector.
+    const first = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operators[0]!.path)));
+    assertEquals(first.bindings?.["flow:research/step:compose"]?.model, "alpha/one");
+    const second = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operators[1]!.path)));
+    assertEquals(second.bindings?.["role:web-explorer"]?.service, "beta");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] planScenarioBindings writes operator --bind entries as the last overlay", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-binds-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
+      operatorOverlays: [],
+      operatorBinds: ["flow:research/step:compose=service=beta,model=beta/two"],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+
+    assertEquals(plan.overlays.map((o) => o.role), ["scenario", "operator"]);
+    const bindOverlay = plan.overlays[1]!;
+    assertEquals(bindOverlay.path.endsWith("40-operator-bind.json"), true);
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(bindOverlay.path)));
+    assertEquals(written.bindings?.["flow:research/step:compose"]?.service, "beta");
+    assertEquals(written.bindings?.["flow:research/step:compose"]?.model, "beta/two");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] planScenarioBindings substitutes the fixture-port sentinel before validation", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-sentinel-" });
+  try {
+    // The endpoint schema is `z.string().url()`, so a sentinel can only arrive in a RAW overlay
+    // file. It must be substituted before BindingOverlaySchema sees it, and never reach the daemon.
+    const overlayPath = join(root, "fixture-overlay.json");
+    await Deno.writeTextFile(
+      overlayPath,
+      JSON.stringify({
+        schema: 1,
+        catalog: {
+          services: {
+            fixture: {
+              adapter: "openai-chat",
+              profile: "self-hosted",
+              endpoint: "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions",
+              transport: "local",
+              interface: "api",
+              serves: { "*": "{name}" },
+            },
+          },
+        },
+      }),
+    );
+
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith(),
+      operatorOverlays: [overlayPath],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+      compatFixturePort: 43117,
+    });
+
+    const raw = await Deno.readTextFile(plan.overlays[0]!.path);
+    assertEquals(raw.includes("__COMPAT_FIXTURE_PORT__"), false);
+    const written = BindingOverlaySchema.parse(JSON.parse(raw));
+    assertEquals(
+      written.catalog?.services?.fixture?.endpoint,
+      "http://127.0.0.1:43117/v1/chat/completions",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] planScenarioBindings writes no scenario overlay when the scenario declares none", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-empty-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith(),
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    assertEquals(plan.overlays, []);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[security] planScenarioBindings refuses an output directory inside the sandbox tree", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-refuse-" });
+  try {
+    const sandboxRoot = join(root, "sandbox");
+    await assertRejects(
+      () =>
+        planScenarioBindings({
+          scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha" } } }),
+          operatorOverlays: [],
+          operatorBinds: [],
+          // Inside the sandbox: an agent under test could rewrite these overlays.
+          outputDir: join(sandboxRoot, "output"),
+          sandboxRoot,
+        }),
+      Error,
+      "overlay_invalid",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});

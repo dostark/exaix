@@ -6,7 +6,37 @@
  * @related-files [tests/scenario_framework/runner/main.ts]
  */
 import { join } from "@std/path";
+import { BindingLockSchema } from "@exaix/schemas";
 import type { IActivityRecord, Opt, Reason } from "@exaix/core/types";
+
+/** One overlay file the run passed, as the evidence records it. */
+export interface IProviderLiveOverlayEvidence {
+  role: string;
+  path: string;
+  sha256: string;
+}
+
+/** One step binding the daemon resolved, reduced to the auditable fields. */
+export interface IProviderLiveBindingEvidence {
+  traceId: string;
+  stepId: string;
+  agentRole: string;
+  /** The lock entry's outcome kind: `bound` or `unbound`. */
+  outcome: string;
+  /** The resolved service, when the step was bound. */
+  service?: string;
+  /** The resolved canonical model, when the step was bound. */
+  model?: string;
+}
+
+/** One judge binding the runner resolved for this run. */
+export interface IProviderLiveJudgeEvidence {
+  stepId: string;
+  service: string;
+  model: string;
+  /** True when the judge resolved to the same service and model as the system under test. */
+  judgeSharesSut: boolean;
+}
 
 export interface IProviderLiveEvidenceInput {
   scenarioId: string;
@@ -16,6 +46,34 @@ export interface IProviderLiveEvidenceInput {
   outcome: string;
   suiteScore: number;
   exitCode: number;
+  /** Overlay files this run passed, with their digests. Absent when no binding layer existed. */
+  overlays?: readonly IProviderLiveOverlayEvidence[];
+  /** One row per resolved step binding, read from each run's binding lockfile. */
+  bindings?: readonly IProviderLiveBindingEvidence[];
+  /** Judge bindings the runner resolved. The Step-1 subset resolves none. */
+  judges?: readonly IProviderLiveJudgeEvidence[];
+}
+
+/**
+ * Reduce one run's binding lockfile to auditable rows.
+ *
+ * The lockfile records what each step actually bound to. A malformed or missing file
+ * therefore throws. It never records an empty binding list silently.
+ */
+export async function readLockEntryEvidence(
+  lockfilePath: string,
+  traceId: string,
+): Promise<IProviderLiveBindingEvidence[]> {
+  const lock = BindingLockSchema.parse(JSON.parse(await Deno.readTextFile(lockfilePath)));
+  return lock.entries.map((entry) => ({
+    traceId,
+    stepId: entry.step_id,
+    agentRole: entry.agent_role,
+    outcome: entry.outcome.kind,
+    ...(entry.outcome.kind === "bound"
+      ? { service: entry.outcome.binding.service, model: entry.outcome.binding.model }
+      : {}),
+  }));
 }
 
 interface ILlmUsagePayload {
@@ -72,6 +130,9 @@ export async function writeProviderLiveEvidence(input: IProviderLiveEvidenceInpu
     qualified,
     returnedModels: [...new Set(calls.map((call) => call.model).filter((model): model is string => !!model))],
     providers: [...new Set(calls.map((call) => call.provider).filter((provider): provider is string => !!provider))],
+    overlays: [...(input.overlays ?? [])],
+    bindings: [...(input.bindings ?? [])],
+    judges: [...(input.judges ?? [])],
     usage: {
       promptTokens: calls.reduce((sum, call) => sum + safeCount(call.prompt_tokens), 0),
       completionTokens: calls.reduce((sum, call) => sum + safeCount(call.completion_tokens), 0),
