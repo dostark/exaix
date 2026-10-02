@@ -276,7 +276,9 @@ Do / Don't
   note the environment.
 - ❌ Assume a green suite means criteria are met — run step 14.
 - ❌ Start the current step without verifying the previous step's criteria.
-- ❌ Commit without deno fmt.
+- ❌ Edit the plan doc by computed line index, or run `markdown_lint --fix` on it and skip the
+  `check_step_manifests.ts` re-verify. One off-by-one splice drops `step: N` from every
+  fence below it and blocks the commit — see `#plan`'s "Editing an existing plan doc safely".
 - ❌ Full-suite for a narrow step.
 
 Related skills

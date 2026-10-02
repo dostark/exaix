@@ -337,14 +337,48 @@ invariants).
 1. Brief chat summary of the approach + key risks.
 1. Path to the new/updated planning document.
 1. Each step includes a fenced step-manifest.
-1. Markdown lint on the doc:
+1. Markdown lint on the doc — **check-only**:
    `deno run --allow-read --allow-write scripts/markdown_lint.ts exaix-dev-docs/planning/<doc>`.
-   Re-ran with `--fix`? Re-verify every `# step-manifest` yaml fence keeps its `step: N`
-   key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix` has
-   misread a `# step-manifest` comment in a fence as a heading and dropped the key.
+   Prefer check-only. `--fix` on a doc that carries step-manifests can reflow a fence and
+   drop its `step: N` key — it has misread a `# step-manifest` comment inside a fence as a
+   heading. If you did run `--fix`, re-verify immediately with the step-manifest checker
+   (see "Editing an existing plan doc safely" below).
 1. Third-party integration? A Sources block (URLs, official vs community, date).
 1. Recommend `#review-phase-plan`.
 1. Commit payload — use `#commit`.
+
+### Editing an existing plan doc safely
+
+A plan doc is structured data: every `### Step N` heading owns a fenced `step-manifest`
+block, and `scripts/check_step_manifests.ts` pairs heading to block by position. This
+matters most for the later skills that edit a plan in place — `#next-steps` writing
+per-step done-marks, or `#remediate-plan-gaps` editing step definitions.
+
+Edit by **targeted text replacement against a unique anchor** — the step heading, a
+criterion or planned-test line, or the manifest fence line itself.
+
+- ❌ Never insert or delete by computed line number (`lines.insert(idx, …)`, `sed -i N
+  ...`, any scripted splice). One off-by-one shifts every fence below the edit point, so
+  nine manifests silently lose `step: N` and the doc only fails `check:manifests` at
+  commit time.
+- ✅ Replace an anchor that already exists at the insertion point rather than computing an
+  index — e.g. the step's last criterion line plus the fence that follows it, inserted as
+  one replacement string.
+- ✅ Verify structure after every edit: the `step:` count must equal the number of
+  `### Step N` headings, and the top-level fence count must stay even.
+
+  ```bash
+  grep -c '^step: ' <doc>                 # == number of '### Step N' headings
+  grep -c '^```' <doc>                    # must be even
+  ```
+
+- **Recovery when it goes wrong**: do not hand-repair the fences. Restore the doc from the
+  last good commit (`git -C exaix-dev-docs checkout <commit> -- <doc>`), re-apply the whole
+  edit as textual replacements, and re-verify. That is faster and safer than reconstructing
+  lost `step: N` lines by hand.
+- If the doc was already committed by the submodule half of a plan-step commit, roll that
+  back first (`git -C exaix-dev-docs reset --soft HEAD~1`), then restore and re-apply —
+  see `#next-steps` step 26a.
 
 ## Examples
 
