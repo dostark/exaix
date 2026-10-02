@@ -52,6 +52,20 @@ export interface IRunActivityRow {
   payload: string;
 }
 
+/** OpenAI's tool_choice wire shape: a mode string or a forced-tool object. */
+export type WireToolChoice = string | { type: string; function?: { name?: string } };
+
+export interface IFixtureRequestBody {
+  tool_choice?: WireToolChoice;
+  tools?: Array<{ function?: { name?: string } }>;
+}
+
+/** One request the fixture received, with the header fact the contract turns on. */
+export interface IObservedRequest {
+  body: IFixtureRequestBody;
+  authorization: string | null;
+}
+
 const DEFAULT_REQUEST_FIXTURE_PATH = "fixtures/requests/shared/synthetic_request.md";
 
 export async function withSyntheticTestEnv(
@@ -177,4 +191,28 @@ export async function traceIdsInOrder(workspaceRoot: string): Promise<string[]> 
     if (!seen.includes(row.trace_id)) seen.push(row.trace_id);
   }
   return seen;
+}
+
+/** An adversarial loopback server that refuses tool_choice with HTTP 400.
+ *  It answers other requests with `reply` and records each body. */
+export function startToolChoiceRefusingFixture(
+  observed: IObservedRequest[],
+  model: string,
+  reply: string,
+): Deno.HttpServer {
+  return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request) => {
+    const body = await request.json().catch(() => ({})) as IFixtureRequestBody;
+    observed.push({ body, authorization: request.headers.get("authorization") });
+    if (body.tool_choice !== undefined) {
+      return Response.json(
+        { error: { type: "invalid_request_error", message: "tool_choice is not supported" } },
+        { status: 400 },
+      );
+    }
+    return Response.json({
+      model,
+      choices: [{ message: { role: "assistant", content: reply }, finish_reason: "stop" }],
+      usage: { prompt_tokens: 20, completion_tokens: 6, total_tokens: 26 },
+    });
+  });
 }

@@ -22,11 +22,8 @@ import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
 import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./persona_response_trial.ts";
 import { computeRunFailureClasses } from "./failure_classifier.ts";
-import { loadTraceActivities } from "./failure_classifier.ts";
-import { writeProviderLiveEvidence } from "./provider_live_evidence.ts";
-import type { IProviderLiveJudgeEvidence, IProviderLivePinEvidence } from "./provider_live_evidence.ts";
-import { readRequestLockEntries } from "./provider_live_evidence.ts";
-import type { IScenarioOverlayFile } from "./binding_layers.ts";
+import { writeProviderLiveEvidence, writeRunBindingEvidence } from "./provider_live_evidence.ts";
+import { BindingIncompatibleError } from "@exaix/ai";
 import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
   accumulateRunVerdict,
@@ -198,13 +195,6 @@ await new Command()
     const budget = new BudgetTracker({ maxCostUsd: options.maxCostUsd });
     // The trial-0 workspace whose journal holds the run's trace.
     let firstTrialWorkspaceRoot = "";
-    const providerLiveWorkspaces = new Map<string, string>();
-    // Per-scenario overlay files the runner wrote, for the redacted evidence.
-    const bindingOverlays = new Map<string, IScenarioOverlayFile[]>();
-    // Per-scenario judge bindings the runner resolved, for the redacted evidence.
-    const judgeRows = new Map<string, IProviderLiveJudgeEvidence[]>();
-    // Per-scenario pinned fields the pin rule stripped, for the redacted evidence.
-    const pinRows = new Map<string, IProviderLivePinEvidence[]>();
 
     for (const entry of selectedEntries) {
       // Checked between scenarios: once accumulated cost reached the cap, the remaining
@@ -305,10 +295,24 @@ await new Command()
             manifests.set(entry.id, result.manifest);
             // The run's trace lives in this trial's workspace journal.
             firstTrialWorkspaceRoot = trialWorkspaceRoot;
-            if (entry.pack === "provider_live") providerLiveWorkspaces.set(entry.id, trialWorkspaceRoot);
-            if (result.bindingOverlays) bindingOverlays.set(entry.id, result.bindingOverlays);
-            if (result.judges?.length) judgeRows.set(entry.id, result.judges);
-            if (result.pins?.length) pinRows.set(entry.id, result.pins);
+          }
+
+          // Evidence is written now, because the next scenario reuses this workspace and its journal.
+          const bound = (result.bindingOverlays?.length ?? 0) > 0 || (result.judges?.length ?? 0) > 0 ||
+            (result.pins?.length ?? 0) > 0;
+          if (entry.pack === "provider_live" || bound) {
+            const evidencePath = await writeRunBindingEvidence({
+              scenarioId: entry.id,
+              outputDir: trialOutputDir,
+              workspaceRoot: trialWorkspaceRoot,
+              journalBaselineRowid: result.journalBaselineRowid ?? 0,
+              outcome: result.manifest.outcome,
+              suiteScore: result.manifest.suite_score ?? 0,
+              overlays: result.bindingOverlays ?? [],
+              judges: result.judges ?? [],
+              pins: result.pins ?? [],
+            });
+            console.log(`${trialLabel} Binding evidence: ${evidencePath}`);
           }
 
           console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
@@ -318,6 +322,25 @@ await new Command()
           }
         } catch (error) {
           console.error(`${trialLabel} Error executing scenario ${entry.id}:`, error);
+          // A binding refusal stops the run before the daemon starts. Its issues are the record.
+          if (error instanceof BindingIncompatibleError) {
+            const evidencePath = await writeProviderLiveEvidence({
+              scenarioId: entry.id,
+              outputDir: trialOutputDir,
+              configPath: join(trialWorkspaceRoot, "exa.config.toml"),
+              activities: [],
+              outcome: "refused",
+              suiteScore: 0,
+              exitCode: 1,
+              issues: error.issues.map((issue) => ({
+                code: issue.code,
+                detail: issue.detail,
+                ...(issue.stepId !== undefined ? { stepId: issue.stepId } : {}),
+                ...(issue.selector !== undefined ? { selector: issue.selector } : {}),
+              })),
+            });
+            console.log(`${trialLabel} Binding refusal evidence: ${evidencePath}`);
+          }
           trialInfraError = true;
           if (entry.pack === "persona_response_eval") break;
           trialScores.push(0);
@@ -469,42 +492,6 @@ await new Command()
         historyFormat: options.historyFormat,
         scoreThreshold,
       });
-    }
-
-    // Keep only redacted provider metadata before reclaiming a successful sandbox.
-    const exitCode = runVerdict.infraError ? 2 : runVerdict.allPassed ? 0 : 1;
-    for (const [scenarioId, workspaceRoot] of providerLiveWorkspaces) {
-      const manifest = manifests.get(scenarioId);
-      if (!manifest) continue;
-      const journalPath = join(workspaceRoot, ".exa", "journal.db");
-      const activities = await Deno.stat(journalPath).then(
-        () => loadTraceActivities(journalPath),
-        () => [],
-      );
-      // A run that passed an overlay must have a lock for every request it submitted, or the write fails.
-      const requestTraces = [
-        ...new Set(
-          activities.filter((activity) => activity.action_type === "request.created").map((activity) =>
-            activity.trace_id
-          ).filter((traceId): traceId is string => !!traceId),
-        ),
-      ];
-      const bound = (bindingOverlays.get(scenarioId)?.length ?? 0) > 0;
-      const bindings = await readRequestLockEntries(workspaceRoot, requestTraces, bound);
-      const evidencePath = await writeProviderLiveEvidence({
-        scenarioId,
-        outputDir: runtimeConfig.output_dir,
-        configPath: join(workspaceRoot, "exa.config.toml"),
-        activities,
-        outcome: manifest.outcome,
-        suiteScore: manifest.suite_score ?? 0,
-        exitCode,
-        overlays: bindingOverlays.get(scenarioId) ?? [],
-        bindings,
-        judges: judgeRows.get(scenarioId) ?? [],
-        pins: pinRows.get(scenarioId) ?? [],
-      });
-      console.log(`Redacted live evidence: ${evidencePath}`);
     }
 
     // 13. Reclaim the sandbox this run minted. Nothing reclaimed one before, so growth was

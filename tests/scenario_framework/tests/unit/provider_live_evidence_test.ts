@@ -8,10 +8,12 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import { Database } from "@db/sqlite";
 import {
+  loadScenarioActivities,
+  lockedRequestTraces,
   readLockEntryEvidence,
   readRequestLockEntries,
-  readRunLockEntries,
   writeProviderLiveEvidence,
 } from "../../runner/provider_live_evidence.ts";
 
@@ -239,39 +241,14 @@ Deno.test("[evidence] readLockEntryEvidence reduces a binding lockfile to audita
   }
 });
 
-Deno.test("[evidence] readRunLockEntries reads every lockfile in the run's sandbox, and none when no lock exists", async () => {
-  const root = await Deno.makeTempDir({ prefix: "run-locks-" });
-  try {
-    assertEquals(await readRunLockEntries(root), []);
-
-    const dir = `${root}/.exa/bindings`;
-    await Deno.mkdir(dir, { recursive: true });
-    const first = "10000000-0000-4000-8000-000000000003";
-    const second = "10000000-0000-4000-8000-000000000004";
-    await writeLockfile(`${dir}/${second}.lock.json`, second);
-    await writeLockfile(`${dir}/${first}.lock.json`, first);
-    await Deno.writeTextFile(`${dir}/${first}.json`, "{}");
-
-    const rows = await readRunLockEntries(root);
-    assertEquals(rows.map((row) => [row.traceId, row.stepId]), [
-      [first, "compose"],
-      [first, "explore"],
-      [second, "compose"],
-      [second, "explore"],
-    ]);
-  } finally {
-    await Deno.remove(root, { recursive: true }).catch(() => {});
-  }
-});
-
 Deno.test("[evidence] a bound run without a lockfile fails the evidence write", async () => {
   const root = await Deno.makeTempDir({ prefix: "request-locks-missing-" });
   try {
     const trace = "10000000-0000-4000-8000-000000000005";
-    const error = await assertRejects(() => readRequestLockEntries(root, [trace], true));
+    const error = await assertRejects(() => readRequestLockEntries(root, [trace], new Set([trace])));
     assertStringIncludes(String(error), trace);
     // An unbound run has no lock to read, so it records no binding rows.
-    assertEquals(await readRequestLockEntries(root, [trace], false), []);
+    assertEquals(await readRequestLockEntries(root, [trace], new Set()), []);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }
@@ -287,10 +264,81 @@ Deno.test("[evidence] every request trace of a scenario contributes its lock ent
     await writeLockfile(`${dir}/${first}.lock.json`, first);
     await writeLockfile(`${dir}/${second}.lock.json`, second);
 
-    const rows = await readRequestLockEntries(root, [first, second], true);
+    const rows = await readRequestLockEntries(root, [first, second], new Set([first, second]));
     assertEquals(new Set(rows.map((row) => row.traceId)), new Set([first, second]));
     assertEquals(rows.length, 4);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+});
+
+/** A journal holding three requests: one before the scenario's baseline and two after it. */
+function writeScopedJournal(root: string): { journalPath: string; baseline: number } {
+  const journalPath = `${root}/journal.db`;
+  const db = new Database(journalPath);
+  db.prepare(
+    `CREATE TABLE activity (rowid INTEGER PRIMARY KEY, id TEXT, trace_id TEXT, actor TEXT, actor_type TEXT,
+      agent_role TEXT, runner_kind TEXT, action_type TEXT, target TEXT, payload TEXT, prompt_tokens INTEGER,
+      completion_tokens INTEGER, cost_usd REAL, timestamp TEXT)`,
+  ).run();
+  const rows: Array<[string, string]> = [
+    ["trace-earlier", "request.created"],
+    ["trace-earlier", "llm.call.completed"],
+    ["trace-first", "request.created"],
+    ["trace-first", "llm.call.completed"],
+    ["trace-second", "request.created"],
+    ["random-event-trace", "binding.snapshot.created"],
+  ];
+  rows.forEach(([traceId, actionType], index) => {
+    const payload = actionType === "binding.snapshot.created" ? JSON.stringify({ trace_id: "trace-first" }) : "{}";
+    db.prepare(
+      "INSERT INTO activity (id, trace_id, action_type, payload, timestamp) VALUES (?, ?, ?, ?, ?)",
+    ).run(`row-${index}`, traceId, actionType, payload, `2026-10-02T00:00:0${index}Z`);
+  });
+  db.close();
+  return { journalPath, baseline: 2 };
+}
+
+Deno.test("[evidence] scenario activities include only the request traces created after the scenario's baseline", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scoped-journal-" });
+  try {
+    const { journalPath, baseline } = writeScopedJournal(root);
+    const scoped = loadScenarioActivities(journalPath, baseline);
+    assertEquals(scoped.traceIds, ["trace-first", "trace-second"]);
+    assertEquals(new Set(scoped.activities.map((row) => row.trace_id)), new Set(["trace-first", "trace-second"]));
+    assertEquals(scoped.activities.length, 3);
+    assertEquals(loadScenarioActivities(`${root}/missing.db`, 0), { traceIds: [], activities: [] });
+    // The snapshot event's own trace is random. The request whose lock it wrote is named in its payload.
+    assertEquals(lockedRequestTraces(journalPath, baseline), new Set(["trace-first"]));
+    assertEquals(lockedRequestTraces(`${root}/missing.db`, 0), new Set());
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[evidence] a refused bound run is recorded with its issues and every request trace, and is not qualified", async () => {
+  const outputDir = await Deno.makeTempDir({ prefix: "refused-evidence-" });
+  try {
+    const configPath = `${outputDir}/exa.config.toml`;
+    await Deno.writeTextFile(configPath, "[system]\n");
+    const path = await writeProviderLiveEvidence({
+      scenarioId: "senior-coder-smoke",
+      outputDir,
+      configPath,
+      activities: [],
+      outcome: "refused",
+      suiteScore: 0,
+      exitCode: 1,
+      issues: [{ code: "unknown_service", stepId: "judge-1", detail: "service missing is not in the catalog" }],
+    });
+    const summary = JSON.parse(await Deno.readTextFile(path));
+    assertEquals(summary.outcome, "refused");
+    assertEquals(summary.qualified, false);
+    assertEquals(summary.traceIds, []);
+    assertEquals(summary.issues, [
+      { code: "unknown_service", stepId: "judge-1", detail: "service missing is not in the catalog" },
+    ]);
+  } finally {
+    await Deno.remove(outputDir, { recursive: true }).catch(() => {});
   }
 });

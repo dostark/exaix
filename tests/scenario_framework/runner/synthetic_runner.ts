@@ -39,8 +39,9 @@ import {
   type IProviderLiveJudgeEvidence,
   type IProviderLivePinEvidence,
   judgeEvidenceRows,
+  loadScenarioActivities,
   pinEvidenceRows,
-  readRunLockEntries,
+  readRequestLockEntries,
 } from "./provider_live_evidence.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
@@ -114,6 +115,8 @@ export interface IRunSyntheticScenarioResult {
   judges?: IProviderLiveJudgeEvidence[];
   /** The pinned fields the pin rule kept out of this run's operator entries. */
   pins?: IProviderLivePinEvidence[];
+  /** The journal rowid before this scenario's first step, which scopes its activities. */
+  journalBaselineRowid?: number;
 }
 
 export interface IMaterializedCellConfig {
@@ -576,6 +579,10 @@ export async function runSyntheticScenario(
     );
   }
 
+  const scenarioTraces = loadScenarioActivities(
+    join(options.workspaceRoot, ".exa", "journal.db"),
+    scenarioJournalBaselineRowid,
+  );
   return {
     loadedScenario,
     stepOutcomes,
@@ -584,8 +591,10 @@ export async function runSyntheticScenario(
     manifestPath,
     executionLogPath,
     bindingOverlays: bindingPlan.overlays,
+    journalBaselineRowid: scenarioJournalBaselineRowid,
     judges: judgeEvidenceRows([...judgePlan.bindings.values()], {
-      boundSteps: await readRunLockEntries(options.workspaceRoot),
+      // Only this scenario's own requests count. The workspace keeps earlier scenarios' locks too.
+      boundSteps: await readRequestLockEntries(options.workspaceRoot, scenarioTraces.traceIds, new Set()),
       aiProvider: materialized.aiProvider,
       aiModel: materialized.aiModel,
     }),

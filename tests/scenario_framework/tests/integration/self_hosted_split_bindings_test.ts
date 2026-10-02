@@ -22,7 +22,13 @@ import { withEnv } from "@exaix/testing";
 import { readLockEntryEvidence } from "../../runner/provider_live_evidence.ts";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
-import { readRunActivity, resolvedServiceByTrace } from "./synthetic_test_helpers.ts";
+import {
+  type IFixtureRequestBody,
+  type IObservedRequest,
+  readRunActivity,
+  resolvedServiceByTrace,
+  startToolChoiceRefusingFixture,
+} from "./synthetic_test_helpers.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const SCENARIO_PATH = "scenarios/agent_flows/self-hosted-split-bindings.yaml";
@@ -37,20 +43,6 @@ const EXPLORE_SELECTOR = `flow:${FLOW_ID}/step:explore-*`;
 const COMPOSE_PIN_REASON = "capability-gate";
 const FIXTURE_REPLY = `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}exploration complete`;
 
-/** OpenAI's tool_choice wire shape: a mode string or a forced-tool object. */
-type WireToolChoice = string | { type: string; function?: { name?: string } };
-
-interface IFixtureRequestBody {
-  tool_choice?: WireToolChoice;
-  tools?: Array<{ function?: { name?: string } }>;
-}
-
-/** One request the fixture received, with the header fact the contract turns on. */
-interface IObservedRequest {
-  body: IFixtureRequestBody;
-  authorization: string | null;
-}
-
 /** The daemon's binding lock for the run, read back as the evidence reader returns it. The
  *  run's trace comes from its own binding.resolved rows, one per flow step. */
 async function lockEntries(workspaceRoot: string) {
@@ -61,25 +53,6 @@ async function lockEntries(workspaceRoot: string) {
   const exists = await Deno.stat(lockPath).then(() => true).catch(() => false);
   assert(exists, `the daemon must write a binding lock at ${lockPath}`);
   return readLockEntryEvidence(lockPath, traceId);
-}
-
-/** An adversarial loopback server that refuses tool_choice and records what it received. */
-function startFixture(observed: IObservedRequest[]): Deno.HttpServer {
-  return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request) => {
-    const body = await request.json().catch(() => ({})) as IFixtureRequestBody;
-    observed.push({ body, authorization: request.headers.get("authorization") });
-    if (body.tool_choice !== undefined) {
-      return Response.json(
-        { error: { type: "invalid_request_error", message: "tool_choice is not supported" } },
-        { status: 400 },
-      );
-    }
-    return Response.json({
-      model: FIXTURE_MODEL,
-      choices: [{ message: { role: "assistant", content: FIXTURE_REPLY }, finish_reason: "stop" }],
-      usage: { prompt_tokens: 20, completion_tokens: 6, total_tokens: 26 },
-    });
-  });
 }
 
 /** One scenario run against the fixture. The self-hosted key stays unset, so no header is sent. */
@@ -116,7 +89,7 @@ Deno.test({
   sanitizeResources: false,
   async fn() {
     const observed: IObservedRequest[] = [];
-    const fixture = startFixture(observed);
+    const fixture = startToolChoiceRefusingFixture(observed, FIXTURE_MODEL, FIXTURE_REPLY);
     const port = (fixture.addr as Deno.NetAddr).port;
     const workspaces: string[] = [];
     try {
