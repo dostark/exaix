@@ -20,6 +20,7 @@ import type { IModelPricing, IModelRegistry, PricingProvenance } from "@exaix/co
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IProviderMetadata } from "../provider_registry.ts";
 import type { IBindingEnvProbe } from "./binding_types.ts";
+import { STEP_KIND_GATE, STEP_KIND_JUDGE } from "./binding_types.ts";
 import {
   ISSUE_CAPABILITY_MISSING,
   ISSUE_ENDPOINT_INVALID,
@@ -150,11 +151,13 @@ function validateCapabilities(
 /** interface_unsupported for cli/CLI-delegate mismatches and compatible profile failures. */
 function validateInterface(ref: IBindingStepRef, deps: IBindingValidationDeps, issues: IBindingIssue[]): void {
   const { binding, service } = deps;
-  if (binding.interface === "cli" && ref.kind !== "gate" && ref.strategy !== "cli_delegate") {
+  // A gate judge and a scenario judge both call provider.generate, so both accept a cli service.
+  const grades = ref.kind === STEP_KIND_GATE || ref.kind === STEP_KIND_JUDGE;
+  if (binding.interface === "cli" && !grades && ref.strategy !== "cli_delegate") {
     issues.push(issue(ISSUE_INTERFACE_UNSUPPORTED, ref, `${binding.service} is a cli service not usable by this step`));
   }
-  if (binding.adapter === "cli-delegate" && ref.kind === "gate") {
-    issues.push(issue(ISSUE_INTERFACE_UNSUPPORTED, ref, "a cli-delegate service cannot grade a gate"));
+  if (binding.adapter === "cli-delegate" && grades) {
+    issues.push(issue(ISSUE_INTERFACE_UNSUPPORTED, ref, "a cli-delegate service cannot grade a step"));
   }
   if (binding.adapter === ProviderType.OPENAI_CHAT && binding.profile) {
     const supported = Object.keys(OPENAI_COMPATIBLE_PROFILE_DEFAULTS);

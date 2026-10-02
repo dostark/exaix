@@ -8,7 +8,7 @@
 import { join } from "@std/path";
 import { BindingLockSchema, type IResolvedBinding } from "@exaix/schemas";
 import type { IActivityRecord, Opt, Reason } from "@exaix/core/types";
-import type { IResolvedJudgeBinding } from "./judge_bindings.ts";
+import { type IJudgeSutContext, type IResolvedJudgeBinding, judgeSharesSut } from "./judge_bindings.ts";
 import type { IPinKeptRecord } from "./binding_layers.ts";
 
 /** One overlay file the run passed, as the evidence records it. */
@@ -89,17 +89,41 @@ export function pinEvidenceRows(pins: readonly IPinKeptRecord[]): IProviderLiveP
   }));
 }
 
-/** Reduce the runner's resolved judge bindings to the auditable evidence rows. */
+/** Reduce the runner's resolved judge bindings to the auditable evidence rows.
+ *  Each row is flagged against the system under test that `sut` describes. */
 export function judgeEvidenceRows(
   bindings: readonly IResolvedJudgeBinding[],
+  sut: IJudgeSutContext,
 ): IProviderLiveJudgeEvidence[] {
   return bindings.map((entry) => ({
     stepId: entry.stepId,
     service: entry.binding.service,
     model: entry.binding.model,
     sources: entry.binding.sources,
-    judgeSharesSut: entry.judgeSharesSut,
+    judgeSharesSut: judgeSharesSut(entry.binding, sut),
   }));
+}
+
+/** Suffix of a binding lockfile the daemon writes, one per request trace. */
+const LOCKFILE_SUFFIX = ".lock.json";
+
+/** Read every binding lockfile in a run's sandbox. Each sandbox holds one scenario run, so every lock is this run's. */
+export async function readRunLockEntries(workspaceRoot: string): Promise<IProviderLiveBindingEvidence[]> {
+  const dir = join(workspaceRoot, ".exa", "bindings");
+  const rows: IProviderLiveBindingEvidence[] = [];
+  const names: string[] = [];
+  try {
+    for await (const entry of Deno.readDir(dir)) {
+      if (entry.isFile && entry.name.endsWith(LOCKFILE_SUFFIX)) names.push(entry.name);
+    }
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return rows;
+    throw error;
+  }
+  for (const name of names.sort()) {
+    rows.push(...await readLockEntryEvidence(join(dir, name), name.slice(0, -LOCKFILE_SUFFIX.length)));
+  }
+  return rows;
 }
 
 /**

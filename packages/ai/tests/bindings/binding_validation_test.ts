@@ -370,3 +370,13 @@ Deno.test("[phase203.binding] a fixture host inside the grant reports no restart
   assertEquals(result.includes("endpoint_invalid"), false);
   assertEquals(result.includes("interface_unsupported"), false);
 });
+
+Deno.test("[phase203.validation] a scenario judge may use a cli service but never a cli-delegate", async () => {
+  const judgeRef: IBindingStepRef = { ...ref, kind: "judge", judgeId: "judge-one", nativeTools: false };
+  const probe = { hasKey: () => true, hasOptIn: () => true };
+  const cliBinding = binding({ interface: "cli", adapter: "claude-cli" });
+  assertEquals(await validateBinding(judgeRef, { binding: cliBinding, probe }), []);
+
+  const delegate = await validateBinding(judgeRef, { binding: { ...cliBinding, adapter: "cli-delegate" }, probe });
+  assertEquals(delegate.map((issue) => issue.code), ["interface_unsupported"]);
+});

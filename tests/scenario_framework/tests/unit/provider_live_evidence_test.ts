@@ -8,7 +8,11 @@
 import { assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import { readLockEntryEvidence, writeProviderLiveEvidence } from "../../runner/provider_live_evidence.ts";
+import {
+  readLockEntryEvidence,
+  readRunLockEntries,
+  writeProviderLiveEvidence,
+} from "../../runner/provider_live_evidence.ts";
 
 function activity(action_type: string, payload: Record<string, JSONValue>, trace_id = "trace-live-1"): IActivityRecord {
   return {
@@ -229,6 +233,31 @@ Deno.test("[evidence] readLockEntryEvidence reduces a binding lockfile to audita
       model: "fixture/compat-fixture-v1",
     });
     assertEquals(rows[1], { traceId, stepId: "explore", agentRole: "web-explorer", outcome: "unbound" });
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[evidence] readRunLockEntries reads every lockfile in the run's sandbox, and none when no lock exists", async () => {
+  const root = await Deno.makeTempDir({ prefix: "run-locks-" });
+  try {
+    assertEquals(await readRunLockEntries(root), []);
+
+    const dir = `${root}/.exa/bindings`;
+    await Deno.mkdir(dir, { recursive: true });
+    const first = "10000000-0000-4000-8000-000000000003";
+    const second = "10000000-0000-4000-8000-000000000004";
+    await writeLockfile(`${dir}/${second}.lock.json`, second);
+    await writeLockfile(`${dir}/${first}.lock.json`, first);
+    await Deno.writeTextFile(`${dir}/${first}.json`, "{}");
+
+    const rows = await readRunLockEntries(root);
+    assertEquals(rows.map((row) => [row.traceId, row.stepId]), [
+      [first, "compose"],
+      [first, "explore"],
+      [second, "compose"],
+      [second, "explore"],
+    ]);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }

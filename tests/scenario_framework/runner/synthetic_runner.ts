@@ -34,12 +34,13 @@ import {
 } from "./matrix_expander.ts";
 import { loadCellCatalog, resolveScenarioMatrixCells } from "./cell_catalog.ts";
 import { buildRunBindingsFile, type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
-import { resolveJudgeBindings } from "./judge_bindings.ts";
+import { assertJudgeBindingsResolved, resolveJudgeBindings } from "./judge_bindings.ts";
 import {
   type IProviderLiveJudgeEvidence,
   type IProviderLivePinEvidence,
   judgeEvidenceRows,
   pinEvidenceRows,
+  readRunLockEntries,
 } from "./provider_live_evidence.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
@@ -423,8 +424,7 @@ export async function runSyntheticScenario(
   });
   stepsToRun = overlayRequestBindings(stepsToRun, bindingPlan);
 
-  // Phase 203 Step 3: a judge resolves through the same layers the daemon reads. Resolution
-  // runs in the runner's process, so it emits no daemon event. The evidence is the record.
+  // A judge resolves through the layers the daemon reads. It runs in this process, so the evidence is its record.
   const judgePlan = await resolveJudgeBindings({
     scenarioId: loadedScenario.scenario.id,
     steps: stepsToRun,
@@ -437,20 +437,9 @@ export async function runSyntheticScenario(
       requestPath: loadedScenario.requestFixture.absolutePath,
     }),
     env: envForExpansion,
-    sut: {
-      service: materialized.aiProvider,
-      model: materialized.aiModel ? `${materialized.aiProvider}/${materialized.aiModel}` : undefined,
-    },
   });
-  if (judgePlan.issues.length > 0) {
-    // A judge whose binding failed keeps the environment path, so this is a warning, not a stop.
-    console.error(
-      `\n%c ⚠ judge bindings unresolved:\n   ${
-        judgePlan.issues.map((issue) => `${issue.stepId}: ${issue.code} (${issue.detail})`).join("\n   ")
-      }`,
-      "color: yellow; font-weight: bold;",
-    );
-  }
+  // A named judge that did not resolve or validate stops the run before the daemon starts.
+  assertJudgeBindingsResolved(judgePlan);
 
   // Runs AFTER materializeCellConfig so the `[[portals]]` entry lands in the config the
   // daemon actually boots with — mounting before it risks the entry being silently
@@ -597,7 +586,11 @@ export async function runSyntheticScenario(
     manifestPath,
     executionLogPath,
     bindingOverlays: bindingPlan.overlays,
-    judges: judgeEvidenceRows([...judgePlan.bindings.values()]),
+    judges: judgeEvidenceRows([...judgePlan.bindings.values()], {
+      boundSteps: await readRunLockEntries(options.workspaceRoot),
+      aiProvider: materialized.aiProvider,
+      aiModel: materialized.aiModel,
+    }),
     pins: pinEvidenceRows(bindingPlan.pins),
   };
 }

@@ -10,7 +10,8 @@
  * @related-files [tests/scenario_framework/runner/judge_bindings.ts, tests/scenario_framework/runner/assertions.ts]
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
+import { BindingIncompatibleError } from "@exaix/ai";
 import { fromFileUrl, join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { type IResolvedBinding, type IRunBindingsFile, RunBindingsFileSchema } from "@exaix/schemas";
@@ -25,7 +26,13 @@ import {
   ScenarioStepSchema,
 } from "../../schema/step_schema.ts";
 import { callLlmEndpoint, evaluateLlmJudgeCriterion, type IEvaluateCriterionOptions } from "../../runner/assertions.ts";
-import { buildJudgeStepRef, isJudgeBearingStep, resolveJudgeBindings } from "../../runner/judge_bindings.ts";
+import {
+  assertJudgeBindingsResolved,
+  buildJudgeStepRef,
+  isJudgeBearingStep,
+  judgeSharesSut,
+  resolveJudgeBindings,
+} from "../../runner/judge_bindings.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 
@@ -179,34 +186,92 @@ Deno.test("[judge] a judge binding resolves against the scenario layer stack, an
     const two = plan.bindings.get("judge-two")!;
     assertEquals(two.binding.model, "mock/judge-model-2");
     assertEquals(two.binding.sources.model?.selector, "judge:judge-two");
-
-    // The two judges share one service, so neither is flagged against the system under test.
-    assertEquals(one.judgeSharesSut, false);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("[judge] a judge bound to the system under test's own service and model is flagged judge_shares_sut", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "judge-shares-sut-" });
+/** A judge resolved to the DeepSeek service of the openai-chat adapter, as the catalog names it. */
+const DEEPSEEK_JUDGE: IResolvedBinding = {
+  service: "deepseek",
+  model_provider: "deepseek",
+  model: "deepseek/deepseek-v4-pro",
+  service_model_id: "deepseek-v4-pro",
+  transport: "cloud",
+  interface: "api",
+  adapter: "openai-chat",
+  profile: "deepseek",
+  sources: {},
+  fingerprint: "d".repeat(64),
+};
+
+Deno.test("[judge] a judge on the same service and model as an openai-chat flow step is flagged judgeSharesSut", () => {
+  // The config's [ai] block names the adapter, so it never matches the catalog service id.
+  const sut = { aiProvider: "openai-chat", aiModel: "deepseek-v4-pro" };
+  const boundStep = { service: "deepseek", model: "deepseek/deepseek-v4-pro" };
+
+  assertEquals(judgeSharesSut(DEEPSEEK_JUDGE, { ...sut, boundSteps: [boundStep] }), true);
+  assertEquals(
+    judgeSharesSut(DEEPSEEK_JUDGE, {
+      ...sut,
+      boundSteps: [{ service: "claude-cli", model: "anthropic/claude-sonnet-5" }],
+    }),
+    false,
+  );
+  // With no bound step, the config's adapter and wire model are compared with the judge's.
+  assertEquals(judgeSharesSut(DEEPSEEK_JUDGE, { ...sut, boundSteps: [] }), true);
+  assertEquals(
+    judgeSharesSut(DEEPSEEK_JUDGE, { aiProvider: "anthropic", aiModel: "claude-sonnet-5", boundSteps: [] }),
+    false,
+  );
+});
+
+Deno.test("[judge] an invalid judge binding fails the run and reports each issue", () => {
+  const bindings = new Map();
+  assertJudgeBindingsResolved({ bindings, issues: [] });
+
+  const error = assertThrows(
+    () =>
+      assertJudgeBindingsResolved({
+        bindings,
+        issues: [{ stepId: "judge-one", code: "key_missing", detail: "Missing credential: JUDGE_KEY" }],
+      }),
+    BindingIncompatibleError,
+  );
+  assertEquals(error.issues[0].code, "key_missing");
+  assertEquals(error.issues[0].stepId, "judge-one");
+  assertStringIncludes(error.issues[0].detail, "JUDGE_KEY");
+});
+
+Deno.test("[judge] a judge whose service lacks its credential is reported by validation before grading", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "judge-bindings-key-" });
   try {
-    const config = new ConfigService(await writeJudgeConfig(dir)).get();
-    const plan = await resolveJudgeBindings({
+    const configPath = await writeJudgeConfig(dir);
+    await Deno.writeTextFile(
+      configPath,
+      (await Deno.readTextFile(configPath)).replace('adapter = "mock"', 'adapter = "mock"\nkey_env = "JUDGE_KEY"'),
+    );
+    const config = new ConfigService(configPath).get();
+    const input = {
       scenarioId: "persona-eval",
       steps: [judgeStep("judge-one", true)],
       config,
       runFile: judgeRunFile({ judge: { service: "judge-svc", model: "mock/judge-model" } }),
-      env: {},
-      sut: { service: "judge-svc", model: "mock/judge-model" },
-    });
+    };
 
-    assertEquals(plan.bindings.get("judge-one")?.judgeSharesSut, true);
+    const missing = await resolveJudgeBindings({ ...input, env: {} });
+    assertEquals(missing.bindings.size, 0);
+    assertEquals(missing.issues.map((issue) => [issue.stepId, issue.code]), [["judge-one", "key_missing"]]);
+
+    const present = await resolveJudgeBindings({ ...input, env: { JUDGE_KEY: "set" } });
+    assertEquals(present.issues, []);
+    assertEquals(present.bindings.get("judge-one")?.binding.service, "judge-svc");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("[judge] a judge binding that cannot resolve is reported and keeps the judge on the env path", async () => {
+Deno.test("[judge] a judge binding that cannot resolve is reported as an issue", async () => {
   const dir = await Deno.makeTempDir({ prefix: "judge-bindings-issue-" });
   try {
     const config = new ConfigService(await writeJudgeConfig(dir)).get();
@@ -359,4 +424,59 @@ Deno.test("[judge][regression] only the reviewed fixture preset declares a judge
     [...REVIEWED_JUDGE_BINDING_SCENARIOS].map((id) => `${id}: judge`).sort(),
   );
   assert(scenarios.length >= 200, `the shipped scenario corpus must load, saw ${scenarios.length}`);
+});
+
+Deno.test("[judge] judgeSharesSut matches a bound step in catalog terms for every shipped service family", () => {
+  const families: Array<Pick<IResolvedBinding, "service" | "model" | "adapter" | "service_model_id" | "profile">> = [
+    {
+      service: "openai",
+      model: "openai/gpt-6-luna",
+      adapter: "openai-chat",
+      service_model_id: "gpt-6-luna",
+      profile: "openai",
+    },
+    {
+      service: "deepseek",
+      model: "deepseek/deepseek-v4-pro",
+      adapter: "openai-chat",
+      service_model_id: "deepseek-v4-pro",
+      profile: "deepseek",
+    },
+    {
+      service: "self-hosted-fixture",
+      model: "fixture/compat-fixture-v1",
+      adapter: "openai-chat",
+      service_model_id: "compat-fixture-v1",
+      profile: "self-hosted",
+    },
+    {
+      service: "ollama-chat",
+      model: "meta/llama3.1:8b",
+      adapter: "openai-chat",
+      service_model_id: "llama3.1:8b",
+      profile: "self-hosted",
+    },
+    {
+      service: "claude-cli",
+      model: "anthropic/claude-sonnet-5",
+      adapter: "claude-cli",
+      service_model_id: "claude-sonnet-5",
+    },
+    {
+      service: "anthropic",
+      model: "anthropic/claude-sonnet-5",
+      adapter: "anthropic",
+      service_model_id: "claude-sonnet-5",
+    },
+  ];
+  for (const family of families) {
+    const judge: IResolvedBinding = { ...DEEPSEEK_JUDGE, ...family };
+    const boundSteps = [{ service: family.service, model: family.model }];
+    assertEquals(judgeSharesSut(judge, { boundSteps }), true, family.service);
+    assertEquals(
+      judgeSharesSut(judge, { boundSteps: [{ service: "mock", model: "mock/other" }] }),
+      false,
+      family.service,
+    );
+  }
 });

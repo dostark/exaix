@@ -19,7 +19,14 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/runner/binding_layers.ts]
  */
 
-import { type IBindingEnvProbe, loadBindingLayers, resolveBinding, STEP_KIND_JUDGE } from "@exaix/ai";
+import {
+  BindingIncompatibleError,
+  type IBindingEnvProbe,
+  loadBindingLayers,
+  resolveBinding,
+  STEP_KIND_JUDGE,
+} from "@exaix/ai";
+import { validateBinding } from "@exaix/ai/bindings/binding_validation.ts";
 import type { IBindingIssue, IBindingStepRef, IResolvedBinding, IRunBindingsFile } from "@exaix/schemas";
 import type { Config } from "@exaix/schemas";
 import { CriterionKind, type IScenarioStep } from "../schema/step_schema.ts";
@@ -29,8 +36,16 @@ export interface IResolvedJudgeBinding {
   stepId: string;
   ref: IBindingStepRef;
   binding: IResolvedBinding;
-  /** True when the judge resolved to the same service and model as the system under test. */
-  judgeSharesSut: boolean;
+}
+
+/** What the system under test ran on, for the judgeSharesSut flag. */
+export interface IJudgeSutContext {
+  /** The service and canonical model of every step the daemon bound, from the run's lockfiles. */
+  boundSteps: ReadonlyArray<{ service?: string; model?: string }>;
+  /** The config's `[ai].provider`: an adapter name, compared with the judge's adapter. */
+  aiProvider?: string;
+  /** The config's `[ai].model`: a wire model id, compared with the judge's service model id. */
+  aiModel?: string;
 }
 
 /** A judge step whose binding did not resolve. That step keeps the environment path. */
@@ -58,8 +73,6 @@ export interface IResolveJudgeBindingsInput {
   runFile: IRunBindingsFile;
   /** The run's effective environment, for the credential and opt-in probe. */
   env: Record<string, string | undefined>;
-  /** The system under test's resolved service and model, for the `judgeSharesSut` flag. */
-  sut?: { service?: string; model?: string };
 }
 
 /** The judge role a ref carries when its step names no agent role. A judge ref never
@@ -138,15 +151,42 @@ export async function resolveJudgeBindings(
       continue;
     }
     if (outcome.kind !== "bound") continue;
-    bindings.set(step.id, {
-      stepId: step.id,
-      ref,
+    const invalid = await validateBinding(ref, {
       binding: outcome.binding,
-      judgeSharesSut: input.sut?.service !== undefined &&
-        input.sut.service === outcome.binding.service &&
-        input.sut.model === outcome.binding.model,
+      service: layers.catalog.services[outcome.binding.service],
+      catalogModel: layers.catalog.models[outcome.binding.model],
+      probe,
+      allowNet: input.config.system?.allow_net,
     });
+    if (invalid.length > 0) {
+      for (const issue of invalid) issues.push({ stepId: step.id, code: issue.code, detail: issue.detail });
+      continue;
+    }
+    bindings.set(step.id, { stepId: step.id, ref, binding: outcome.binding });
   }
 
   return { bindings, issues };
+}
+
+/**
+ * True when a judge grades with the same service and model as the system under test.
+ * Bound steps are compared in catalog terms. With no bound step, the config's adapter and wire model are compared.
+ */
+export function judgeSharesSut(judge: IResolvedBinding, sut: IJudgeSutContext): boolean {
+  if (sut.boundSteps.length > 0) {
+    return sut.boundSteps.some((step) => step.service === judge.service && step.model === judge.model);
+  }
+  return sut.aiProvider === judge.adapter && sut.aiModel === judge.service_model_id;
+}
+
+/** Refuse the run when a judge binding exists but did not resolve or validate.
+ *  A named judge must never be swapped silently for the environment's judge. */
+export function assertJudgeBindingsResolved(plan: IJudgeBindingPlan): void {
+  if (plan.issues.length === 0) return;
+  throw new BindingIncompatibleError(plan.issues.map((issue) => ({
+    code: issue.code,
+    selector: `judge:${issue.stepId}`,
+    stepId: issue.stepId,
+    detail: issue.detail,
+  })));
 }
