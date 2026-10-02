@@ -13,59 +13,15 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { ConfigService } from "@exaix/core/config";
-import { DatabaseService } from "@exaix/storage-sqlite";
 import { withEnv } from "@exaix/testing";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
+import { readRunActivity, resolvedServiceByTrace, traceIdsInOrder } from "./synthetic_test_helpers.ts";
 
 const FRAMEWORK_HOME = new URL("../../", import.meta.url).pathname;
 const SCENARIO_PATH = "scenarios/agent_flows/scenario-bindings-split.yaml";
 const FIXTURE_MODEL = "compat-fixture-v1";
 const OPERATOR_OVERLAY = join(FRAMEWORK_HOME, "fixtures", "phase203", "operator-explore-to-svc-c.json");
-
-interface IActivityRow {
-  action_type: string;
-  trace_id: string;
-  payload: string;
-}
-
-/** Every activity row of one run, oldest first. */
-async function readActivity(workspaceRoot: string): Promise<IActivityRow[]> {
-  const db = new DatabaseService(new ConfigService(join(workspaceRoot, "exa.config.toml")).getAll());
-  try {
-    return await db.preparedAll<IActivityRow>(
-      "SELECT action_type, trace_id, payload FROM activity ORDER BY rowid ASC",
-      [],
-    );
-  } finally {
-    await db.close();
-  }
-}
-
-/** Per trace, the service each flow step resolved to, from the daemon's binding.resolved events. */
-async function resolvedServiceByTrace(workspaceRoot: string): Promise<Map<string, Map<string, string>>> {
-  const byTrace = new Map<string, Map<string, string>>();
-  for (const row of await readActivity(workspaceRoot)) {
-    if (row.action_type !== "binding.resolved") continue;
-    const payload = JSON.parse(row.payload) as { step_id?: string; service?: string };
-    if (!payload.step_id || !payload.service) continue;
-    const steps = byTrace.get(row.trace_id) ?? new Map<string, string>();
-    steps.set(payload.step_id, payload.service);
-    byTrace.set(row.trace_id, steps);
-  }
-  return byTrace;
-}
-
-/** Trace ids in the order the daemon first resolved one of their step bindings. */
-async function traceIdsInOrder(workspaceRoot: string): Promise<string[]> {
-  const seen: string[] = [];
-  for (const row of await readActivity(workspaceRoot)) {
-    if (row.action_type !== "binding.resolved") continue;
-    if (!seen.includes(row.trace_id)) seen.push(row.trace_id);
-  }
-  return seen;
-}
 
 function startFixture(): Deno.HttpServer {
   return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, () =>
@@ -124,7 +80,7 @@ Deno.test({
         "the step's own binding moves explore-one to svc-b and leaves compose on mock",
       );
       // One daemon served both requests, so no restart was needed to change the binding.
-      const daemonStarts = (await readActivity(first.workspaceRoot))
+      const daemonStarts = (await readRunActivity(first.workspaceRoot))
         .filter((row) => row.action_type === "daemon.started");
       assertEquals(daemonStarts.length, 1);
 

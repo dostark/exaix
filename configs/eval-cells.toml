@@ -205,11 +205,14 @@ model_provider = "meta"
 
 # Test-only: the fixture service the Phase 203 Step 9 cutover drives. The judge is bound to a CLI
 # delegate, which needs no provider credential, and the fixture config carries the host grant.
+# The cell runs only when the fixture port exists, because the config and catalog both carry the
+# port sentinel and an unset port would otherwise fail config materialization.
 [tool.self-hosted-fixture]
 tool = "exactl"
 config = "configs/compat-fixture-base.toml"
 provider = "openai-chat"
 requires_bin = "true"
+requires_optin = "EXA_COMPAT_FIXTURE_PORT"
 native_tools = true
 
 [tool.self-hosted-fixture.bindings.default]

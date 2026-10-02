@@ -105,6 +105,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "request-analysis-smoke",
       "scenario-bindings-split",
       "scratchpad-extraction",
+      "self-hosted-split-bindings",
       "session-delegate-code-changes",
       "session-delegate-plan-review",
       "session-delegate-refinement",

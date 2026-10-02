@@ -255,6 +255,9 @@ Deno.test("[phase203.cell_catalog] the self-hosted presets declare their binding
 
   const fixture = catalog.presets["self-hosted-fixture"]!;
   assertEquals(fixture.config, "configs/compat-fixture-base.toml");
+  // The config and the catalog both carry the fixture-port sentinel.
+  // The cell may only run when a fixture supplies the port.
+  assertEquals(fixture.requires_optin, "EXA_COMPAT_FIXTURE_PORT");
   assertEquals(fixture.bindings?.default, { service: "self-hosted-fixture", model: "fixture/compat-fixture-v1" });
   assertEquals(fixture.bindings?.judge, { service: "claude-cli", model: "anthropic/claude-sonnet-5" });
   const service = fixture.catalog?.services?.["self-hosted-fixture"];
@@ -262,6 +265,23 @@ Deno.test("[phase203.cell_catalog] the self-hosted presets declare their binding
   assertEquals(service.profile, "self-hosted");
   assertEquals(service.supports_tool_choice, false);
   assertEquals(service.endpoint, "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions");
+});
+
+Deno.test("[phase203.cell_catalog] the fixture preset resolves its catalog once the port is known", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
+  // Without a port the cell keeps the sentinel endpoint, so the skip gate can still run.
+  const [unresolved] = resolveCatalogCells(catalog, ["self-hosted-fixture"]);
+  assertEquals(
+    unresolved.catalog?.services?.["self-hosted-fixture"]?.endpoint?.includes("__COMPAT_FIXTURE_PORT__"),
+    true,
+  );
+
+  // With a port every endpoint is a real URL before the strict cell schema sees it.
+  const [resolved] = resolveCatalogCells(catalog, ["self-hosted-fixture"], 8123);
+  assertEquals(
+    resolved.catalog?.services?.["self-hosted-fixture"]?.endpoint,
+    "http://127.0.0.1:8123/v1/chat/completions",
+  );
 });
 
 Deno.test("[phase203.cell_catalog] a preset's opt-in travels onto the resolved cell", async () => {

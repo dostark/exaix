@@ -1,0 +1,69 @@
+# @schema-version: 1.0.0
+---
+id: self-hosted-split
+name: Self-Hosted Split Cutover
+description: A pinned composer, two exploration steps on the self-hosted fixture, and a published plan.
+version: "1.0.0"
+steps:
+  - id: compose
+    name: Compose the request
+    agent_role: senior-coder
+    execution_mode: declared
+    binding:
+      service: mock
+      model: mock/mock-model
+    pin:
+      fields: [service, model]
+      reason: capability-gate
+    input:
+      source: request
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  # The exploration steps run on the self-hosted fixture service. The fixture refuses any
+  # request that carries `tool_choice`, which is what a service with no declared support must
+  # never send.
+  - id: explore-one
+    name: Explore first part
+    agent_role: code-analyst
+    execution_mode: declared
+    dependsOn: [compose]
+    timeout: 60000
+    input:
+      source: step
+      stepId: compose
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: explore-two
+    name: Explore second part
+    agent_role: code-analyst
+    execution_mode: declared
+    dependsOn: [explore-one]
+    timeout: 60000
+    input:
+      source: step
+      stepId: explore-one
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+  - id: finalize
+    name: Publish the plan
+    agent_role: senior-coder
+    execution_mode: declared
+    binding:
+      service: mock
+      model: mock/mock-model
+    dependsOn: [explore-two]
+    input:
+      source: step
+      stepId: explore-two
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+output:
+  from: finalize
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true

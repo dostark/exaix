@@ -1,0 +1,74 @@
+schema_version: "1.0.0"
+id: self-hosted-split-bindings
+title: Self-hosted split bindings cutover on one daemon
+pack: agent_flows
+tags: ["safety-gate", "manual-only", "subsystem:flows"]
+request_fixture: fixtures/requests/agent_flows/self_hosted_split_bindings.md
+flow_fixture: fixtures/flows/self-hosted-split.flow.yaml
+mode_support: ["auto"]
+portals: []
+bindings:
+  # The flow's composer already carries this binding at the flow layer. The runner's pin rule
+  # reads the scenario and cell layers only, so the scenario mirrors it to give the pin its value.
+  "flow:self-hosted-split/step:compose":
+    service: mock
+    model: mock/mock-model
+  # The explore steps run on the fixture service the preset's catalog declares.
+  "flow:self-hosted-split/step:explore-*":
+    service: self-hosted-fixture
+    model: fixture/compat-fixture-v1
+  # The flow validates its output as a plan, so the publishing step stays on the pattern mock.
+  "flow:self-hosted-split/step:finalize":
+    service: mock
+    model: mock/mock-model
+pin:
+  selector: "flow:self-hosted-split/step:compose"
+  fields: [service, model]
+  reason: capability-gate
+  note: "The composer must stay on the pattern mock, because the plan validator reads its output."
+matrix:
+  from_catalog: ["self-hosted-fixture"]
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    env:
+      # The base config declares the openai-chat realm for its binding layers, but it carries no
+      # compatible block. The boot provider is therefore the pattern mock, and each flow step
+      # takes the provider its own binding selects.
+      EXA_LLM_PROVIDER: mock
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+
+  - id: submit-request
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE"]
+
+  - id: wait-for-plan
+    type: wait-for-file
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: plan-produced
+        kind: file-found
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: grade-flow-plan
+    type: file-contains
+    file_pattern: "Workspace/Plans/*_plan.md"
+    output_criteria:
+      - id: flow-plan-graded
+        kind: llm-judge
+        preset: GOAL_ALIGNED_REVIEW
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
+
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

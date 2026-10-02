@@ -5,6 +5,8 @@
  */
 
 import { dirname, join } from "@std/path";
+import { ConfigService } from "@exaix/core/config";
+import { DatabaseService } from "@exaix/storage-sqlite";
 
 export interface ISyntheticTestEnv {
   frameworkHome: string;
@@ -41,6 +43,13 @@ export interface IWriteSyntheticScenarioOptions {
   };
   /** Catalog preset names: emits a `matrix.from_catalog` block instead of inline cells. */
   fromCatalog?: string[];
+}
+
+/** One journal activity row, as the binding evidence readers need it. */
+export interface IRunActivityRow {
+  action_type: string;
+  trace_id: string;
+  payload: string;
 }
 
 const DEFAULT_REQUEST_FIXTURE_PATH = "fixtures/requests/shared/synthetic_request.md";
@@ -129,4 +138,43 @@ export async function cleanupTempPaths(paths: string[]): Promise<void> {
   for (const path of paths) {
     await Deno.remove(path, { recursive: true }).catch(() => {});
   }
+}
+
+/** Every activity row of one sandbox, oldest first. */
+export async function readRunActivity(workspaceRoot: string): Promise<IRunActivityRow[]> {
+  const db = new DatabaseService(new ConfigService(join(workspaceRoot, "exa.config.toml")).getAll());
+  try {
+    return await db.preparedAll<IRunActivityRow>(
+      "SELECT action_type, trace_id, payload FROM activity ORDER BY rowid ASC",
+      [],
+    );
+  } finally {
+    await db.close();
+  }
+}
+
+/** Per trace, the service each flow step resolved to, from the daemon's binding.resolved events. */
+export async function resolvedServiceByTrace(
+  workspaceRoot: string,
+): Promise<Map<string, Map<string, string>>> {
+  const byTrace = new Map<string, Map<string, string>>();
+  for (const row of await readRunActivity(workspaceRoot)) {
+    if (row.action_type !== "binding.resolved") continue;
+    const payload = JSON.parse(row.payload) as { step_id?: string; service?: string };
+    if (!payload.step_id || !payload.service) continue;
+    const steps = byTrace.get(row.trace_id) ?? new Map<string, string>();
+    steps.set(payload.step_id, payload.service);
+    byTrace.set(row.trace_id, steps);
+  }
+  return byTrace;
+}
+
+/** Trace ids in the order the daemon first resolved one of their step bindings. */
+export async function traceIdsInOrder(workspaceRoot: string): Promise<string[]> {
+  const seen: string[] = [];
+  for (const row of await readRunActivity(workspaceRoot)) {
+    if (row.action_type !== "binding.resolved") continue;
+    if (!seen.includes(row.trace_id)) seen.push(row.trace_id);
+  }
+  return seen;
 }

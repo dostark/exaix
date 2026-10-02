@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "bindings": {
+    "flow:self-hosted-split/step:explore-*": {
+      "service": "mock",
+      "model": "mock/mock-model"
+    }
+  }
+}

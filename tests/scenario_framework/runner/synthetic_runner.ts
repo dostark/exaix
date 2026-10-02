@@ -364,8 +364,13 @@ export async function runSyntheticScenario(
   // A `from_catalog` matrix names catalog presets instead of inline cells, so the catalog is
   // loaded here (IResolvableScenario carries only { steps, matrix }) and resolved into cells.
   const matrix = loadedScenario.scenario.matrix;
+  const fixturePort = envForExpansion.EXA_COMPAT_FIXTURE_PORT
+    ? Number.parseInt(envForExpansion.EXA_COMPAT_FIXTURE_PORT, 10)
+    : undefined;
   const resolvedMatrix: IMatrixBlock | undefined = matrix?.from_catalog
-    ? { cells: resolveScenarioMatrixCells(matrix, await loadCellCatalog(CELL_CATALOG_PATH)) }
+    ? {
+      cells: resolveScenarioMatrixCells(matrix, await loadCellCatalog(CELL_CATALOG_PATH), fixturePort),
+    }
     : matrix;
   const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(
     { steps: loadedScenario.scenario.steps, matrix: resolvedMatrix },

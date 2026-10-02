@@ -20,6 +20,8 @@ import { parse as parseToml } from "@std/toml";
 import { BINDING_ID_PATTERN, BindingCatalogSchema, BindingsTableSchema, CatalogServiceSchema } from "@exaix/schemas";
 import { type IMatrixBlock, type IMatrixCell, MatrixCellSchema } from "./matrix_expander.ts";
 import type { IScenario } from "../schema/scenario_schema.ts";
+import type { Opt, Reason } from "@exaix/core/types";
+import { SENTINEL_COMPAT_FIXTURE_PORT } from "./sentinels.ts";
 
 /** One `[tool.<name>]` row, normalized into the preset it declares. */
 export interface ICatalogPreset {
@@ -70,6 +72,15 @@ const SentinelTolerantCatalogSchema = BindingCatalogSchema.extend({
     CatalogServiceSchema.extend({ endpoint: z.string().optional() }),
   ).optional(),
 });
+
+/** The matrix cell schema with the sentinel-tolerant catalog. It applies only while the fixture
+ *  port is unknown, because such a cell cannot run without that port. */
+const CellWithSentinelTolerantCatalogSchema = MatrixCellSchema.extend({
+  catalog: SentinelTolerantCatalogSchema.optional(),
+});
+
+/** The catalog shape a preset carries, as the scenario schema types it. */
+type PresetCatalog = NonNullable<IScenario["catalog"]>;
 
 /** The raw row shape, before the defaults are applied. */
 const PresetRowSchema = z.object({
@@ -131,6 +142,25 @@ export async function loadCellCatalog(catalogPath: string): Promise<ICellCatalog
   return { presets };
 }
 
+/** Replace the fixture-port sentinel in every service endpoint a preset catalog declares. */
+function substituteFixturePort(catalog: PresetCatalog, port: number): PresetCatalog {
+  if (catalog.services === undefined) return catalog;
+  const services: NonNullable<PresetCatalog["services"]> = {};
+  for (const [serviceId, service] of Object.entries(catalog.services)) {
+    services[serviceId] = service.endpoint === undefined
+      ? service
+      : { ...service, endpoint: service.endpoint.replaceAll(SENTINEL_COMPAT_FIXTURE_PORT, String(port)) };
+  }
+  return { ...catalog, services };
+}
+
+/** True when any service endpoint in the preset catalog still holds the fixture-port sentinel. */
+function hasFixturePortSentinel(catalog: PresetCatalog): boolean {
+  return Object.values(catalog.services ?? {}).some((service) =>
+    service.endpoint?.includes(SENTINEL_COMPAT_FIXTURE_PORT) ?? false
+  );
+}
+
 /**
  * Turn catalog preset names into concrete matrix cells, in the declared order.
  * An unknown name throws: a silent skip would drop a cell from the matrix unnoticed.
@@ -138,6 +168,7 @@ export async function loadCellCatalog(catalogPath: string): Promise<ICellCatalog
 export function resolveCatalogCells(
   catalog: ICellCatalog,
   presetNames: readonly string[],
+  compatFixturePort: Opt<number, Reason.OptionalInput> = undefined,
 ): IMatrixCell[] {
   return presetNames.map((name) => {
     const preset = catalog.presets[name];
@@ -147,8 +178,8 @@ export function resolveCatalogCells(
     if (!preset.requires_bin) {
       throw new Error(`cell preset '${name}' declares neither requires_bin nor requires_key`);
     }
-    // The cell schema is the contract every other reader relies on, so validate against it.
-    return MatrixCellSchema.parse({
+    const sentinelCatalog = preset.catalog !== undefined && hasFixturePortSentinel(preset.catalog);
+    const raw = {
       tool: preset.tool,
       provider: preset.provider,
       config: preset.config,
@@ -156,13 +187,32 @@ export function resolveCatalogCells(
       ...(preset.requires_key !== undefined ? { requires_key: preset.requires_key } : {}),
       ...(preset.requires_optin !== undefined ? { requires_optin: preset.requires_optin } : {}),
       ...(preset.bindings !== undefined ? { bindings: preset.bindings } : {}),
-      ...(preset.catalog !== undefined ? { catalog: preset.catalog } : {}),
-    });
+      ...(sentinelCatalog && compatFixturePort !== undefined
+        ? { catalog: substituteFixturePort(preset.catalog!, compatFixturePort) }
+        : preset.catalog !== undefined
+        ? { catalog: preset.catalog }
+        : {}),
+    };
+    // A preset catalog is loaded before the fixture port exists.
+    // Its endpoint may still hold the sentinel, which the strict URL schema rejects.
+    // Substituting before validation keeps the runnable case working.
+    // Without a port the cell cannot run, so the tolerant shape serves the skip decision.
+    if (sentinelCatalog && compatFixturePort === undefined) {
+      return CellWithSentinelTolerantCatalogSchema.parse(raw);
+    }
+    // The cell schema is the contract every other reader relies on, so validate against it.
+    return MatrixCellSchema.parse(raw);
   });
 }
 
 /** Resolve a scenario's matrix into concrete cells. An inline `cells` block passes through as
  *  declared. A `from_catalog` block resolves its preset names against the catalog. */
-export function resolveScenarioMatrixCells(matrix: IMatrixBlock, catalog: ICellCatalog): IMatrixCell[] {
-  return matrix.from_catalog ? resolveCatalogCells(catalog, matrix.from_catalog) : matrix.cells ?? [];
+export function resolveScenarioMatrixCells(
+  matrix: IMatrixBlock,
+  catalog: ICellCatalog,
+  compatFixturePort: Opt<number, Reason.OptionalInput> = undefined,
+): IMatrixCell[] {
+  return matrix.from_catalog
+    ? resolveCatalogCells(catalog, matrix.from_catalog, compatFixturePort)
+    : matrix.cells ?? [];
 }

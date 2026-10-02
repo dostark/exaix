@@ -63,6 +63,22 @@ const REF: IBindingStepRef = {
   nativeTools: true,
 };
 
+/** The ref a pin's selector can match. A flow-step selector names its own flow and step, while
+ *  `default` matches every agent ref. The inventory must resolve against a matching ref. */
+function refForSelector(selector: string): IBindingStepRef {
+  const FLOW_PREFIX = "flow:";
+  const STEP_SEPARATOR = "/step:";
+  if (!selector.startsWith(FLOW_PREFIX)) return REF;
+  const body = selector.slice(FLOW_PREFIX.length);
+  const stepIndex = body.indexOf(STEP_SEPARATOR);
+  if (stepIndex === -1) return { ...REF, flowId: body };
+  return {
+    ...REF,
+    flowId: body.slice(0, stepIndex),
+    stepId: body.slice(stepIndex + STEP_SEPARATOR.length),
+  };
+}
+
 Deno.test("[phase203.pins] every pin states a reason and a note, and its binding resolves", async () => {
   const pinned: string[] = [];
 
@@ -89,7 +105,7 @@ Deno.test("[phase203.pins] every pin states a reason and a note, and its binding
       overlaySha256: [],
       operatorLayersPresent: false,
     };
-    const outcome = resolveBinding(REF, {}, layers, PROBE);
+    const outcome = resolveBinding(refForSelector(pin.selector), {}, layers, PROBE);
     assertEquals(
       outcome.kind,
       "bound",
