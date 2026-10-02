@@ -53,7 +53,9 @@ async function writeEvidence(result: ILearningEffectivenessResult): Promise<stri
 
 Deno.test({
   name: "[live][phase-148] learning-effectiveness self-improvement proof via claude-cli",
-  ignore: Deno.env.get("CI") === "true",
+  // An operator runs this proof on demand, as the sibling live tests do.
+  // A developer whose CLI session is signed out must not fail the local suite.
+  ignore: Deno.env.get("CI") === "true" || Deno.env.get("EXA_RUN_LIVE_LEARNING_EFFECTIVENESS") !== "1",
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {

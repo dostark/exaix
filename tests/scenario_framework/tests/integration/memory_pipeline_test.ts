@@ -49,11 +49,13 @@ function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result:
     });
 }
 
-async function runScenario(scenarioId: string, dbPath: string): Promise<void> {
+/** The sandbox root the child runner mints under. The runner defaults to the repo's parent,
+ *  which is not writable everywhere, so the test supplies its own writable base. */
+async function runScenario(scenarioId: string, dbPath: string, sandboxBase: string): Promise<void> {
   const command = new Deno.Command("deno", {
     args: ["run", "-A", MAIN_TS, "-s", scenarioId, "--eval-mode"],
     cwd: REPO_ROOT,
-    env: { EXA_EVAL_DB_PATH: dbPath },
+    env: { EXA_EVAL_DB_PATH: dbPath, EXA_SANDBOX_BASE: sandboxBase },
     stdout: "piped",
     stderr: "piped",
   });
@@ -71,9 +73,10 @@ Deno.test({
   fn: async () => {
     const tempDir = await Deno.makeTempDir({ prefix: "memory-pipeline-" });
     const dbPath = join(tempDir, "eval.db");
+    const sandboxBase = join(tempDir, "sandboxes");
     try {
       for (const scenarioId of DETERMINISTIC_MEMORY_SCENARIO_IDS) {
-        await runScenario(scenarioId, dbPath);
+        await runScenario(scenarioId, dbPath, sandboxBase);
       }
 
       const store = new EvalSqliteStore(dbPath);
