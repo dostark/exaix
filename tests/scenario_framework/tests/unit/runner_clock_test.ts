@@ -35,3 +35,13 @@ Deno.test("[RunnerClock] the runner clock tracks elapsed monotonic time across m
   }
   assert(previous - start >= 150, `runner clock under-counted elapsed time: ${previous - start}ms`);
 });
+
+Deno.test("[RunnerClock] every runner clock reading is a whole millisecond", () => {
+  // The eval-history schema stores step durations as safe integers.
+  // A fractional reading makes the writer reject the whole entry.
+  // The run then loses its history row.
+  for (let index = 0; index < 50; index++) {
+    const now = monotonicNowMs();
+    assert(Number.isInteger(now), `runner clock returned a fractional reading: ${now}`);
+  }
+});

@@ -11,8 +11,9 @@
 const EPOCH_ANCHOR_MS = Date.now();
 const MONOTONIC_ORIGIN_MS = performance.now();
 
-/** Milliseconds since the epoch, advanced by a monotonic source so a host clock step cannot
- *  move a runner timestamp backwards. */
+/** Whole milliseconds since the epoch, advanced by a monotonic source.
+ *  A host clock step therefore cannot move a runner timestamp backwards.
+ *  Rounding keeps each reading integral, as the eval-history schema requires. */
 export function monotonicNowMs(): number {
-  return EPOCH_ANCHOR_MS + (performance.now() - MONOTONIC_ORIGIN_MS);
+  return Math.round(EPOCH_ANCHOR_MS + (performance.now() - MONOTONIC_ORIGIN_MS));
 }
