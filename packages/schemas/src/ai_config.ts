@@ -7,6 +7,7 @@
  * @related-files [packages/core/src/config/service.ts, packages/ai/src/provider_factory.ts]
  */
 import { z } from "zod";
+import { ENV_VAR_NAME_PATTERN } from "./model_binding.ts";
 import {
   BYTES_PER_KB,
   DEFAULT_AI_MODEL,
@@ -36,6 +37,8 @@ const CompatibleChatFieldsSchema = z.object({
   model: z.string().optional(),
   allow_insecure_loopback: z.boolean().optional(),
   supports_tool_choice: z.boolean().optional(),
+  /** A self-hosted service's own key variable. Absent means the shared self-hosted variable. */
+  key_env: z.string().regex(ENV_VAR_NAME_PATTERN).optional(),
   max_response_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
   max_tool_argument_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
   max_history_bytes: z.number().int().positive().max(COMPATIBLE_BYTE_LIMIT_CEILING).optional(),
@@ -62,6 +65,9 @@ export const CompatibleChatConfigSchema = CompatibleChatFieldsSchema.extend({
   }
   if (config.profile !== "self-hosted" && config.supports_tool_choice !== undefined) {
     ctx.addIssue({ code: "custom", message: "supports_tool_choice applies to the self-hosted profile only" });
+  }
+  if (config.profile !== "self-hosted" && config.key_env !== undefined) {
+    ctx.addIssue({ code: "custom", message: "key_env applies to the self-hosted profile only" });
   }
 });
 export type CompatibleChatConfig = z.infer<typeof CompatibleChatConfigSchema>;

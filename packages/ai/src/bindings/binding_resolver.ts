@@ -26,6 +26,7 @@ import {
   type IStepPin,
   ModelCapabilitySchema,
 } from "@exaix/schemas";
+import { OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE } from "@exaix/core";
 import type { IBindingEnvProbe } from "./binding_types.ts";
 import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND, STEP_KIND_GATE, STEP_KIND_JUDGE } from "./binding_types.ts";
 import { LAYER_FLOW } from "./binding_layers.ts";
@@ -627,6 +628,8 @@ export function resolveBinding(
     endpoint: service.endpoint,
     allow_insecure_loopback: service.allow_insecure_loopback,
     supports_tool_choice: service.supports_tool_choice,
+    // Only a self-hosted service reads its own key variable. Others stay unset, so their fingerprints are unchanged.
+    key_env: service.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE ? service.key_env : undefined,
     tool: service.tool,
     effort: spec.effort,
     thinking: spec.thinking,

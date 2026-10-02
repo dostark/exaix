@@ -646,3 +646,30 @@ Deno.test("[regression] openai and deepseek keep their pinned model, host and re
     }
   });
 });
+
+/** Self-hosted options whose compatible block declares the service's own key variable. */
+function keyedSelfHostedOptions(keyEnv: string): IResolvedProviderOptions {
+  const options = selfHostedOptions("https://gpu.internal/v1/chat/completions");
+  return { ...options, compatible: { ...options.compatible!, key_env: keyEnv } };
+}
+
+Deno.test("[security] a self-hosted service never sends another service's key", async () => {
+  await withEnv({ SVC_A_KEY: "key-a", SVC_B_KEY: "key-b", [SELF_HOSTED_KEY_ENV]: "shared-key" }, async () => {
+    const serviceA = await factory.create(keyedSelfHostedOptions("SVC_A_KEY"));
+    const serviceB = await factory.create(keyedSelfHostedOptions("SVC_B_KEY"));
+    assertEquals((await captureRequestHeaders(serviceA)).get("Authorization"), "Bearer key-a");
+    assertEquals((await captureRequestHeaders(serviceB)).get("Authorization"), "Bearer key-b");
+  });
+});
+
+Deno.test("[security] a catalog key_env is read for a self-hosted service", async () => {
+  await withEnv({ SVC_A_KEY: null, [SELF_HOSTED_KEY_ENV]: "shared-key" }, async () => {
+    // A declared variable is required: the shared fallback never stands in for it.
+    const error = await assertRejects(() => factory.create(keyedSelfHostedOptions("SVC_A_KEY")), ProviderFactoryError);
+    assertEquals(error.reasonCode, "credential_missing");
+  });
+  await withEnv({ SVC_A_KEY: "declared-key", [SELF_HOSTED_KEY_ENV]: null }, async () => {
+    const provider = await factory.create(keyedSelfHostedOptions("SVC_A_KEY"));
+    assertEquals((await captureRequestHeaders(provider)).get("Authorization"), "Bearer declared-key");
+  });
+});

@@ -243,10 +243,15 @@ export class OpenAICompatibleProviderFactory extends AbstractKeyBasedProviderFac
     });
   }
 
-  /** Reads the profile's credential. A self-hosted endpoint may accept anonymous calls. */
+  /** Reads the profile's credential. A self-hosted service reads its declared variable, which it then requires.
+   *  An undeclared self-hosted service may accept anonymous calls through the shared variable. */
   private async resolveKey(compatible: CompatibleChatConfig): Promise<string | undefined> {
     if (compatible.profile === OPENAI_COMPATIBLE_LOCAL_PROFILE) return await this.readKey(LOCAL_TEST_KEY_ENV, false);
-    if (compatible.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE) return await this.readEnvKey(SELF_HOSTED_KEY_ENV);
+    if (compatible.profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE) {
+      return compatible.key_env !== undefined
+        ? await this.readKey(compatible.key_env, true)
+        : await this.readEnvKey(SELF_HOSTED_KEY_ENV);
+    }
     return await this.readKey(REMOTE_PROFILE_KEY_ENV[compatible.profile], true);
   }
 

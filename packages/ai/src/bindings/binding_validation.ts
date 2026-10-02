@@ -12,7 +12,12 @@
  * @related-files [packages/ai/src/bindings/model_binding_service.ts, packages/ai/src/provider_registry.ts]
  */
 
-import { OPENAI_COMPATIBLE_LOCAL_PROFILE, OPENAI_COMPATIBLE_PROFILE_DEFAULTS, ProviderType } from "@exaix/core";
+import {
+  OPENAI_COMPATIBLE_LOCAL_PROFILE,
+  OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
+  ProviderType,
+} from "@exaix/core";
 import { EFFORT_AUTO } from "@exaix/schemas";
 import type { IBindingIssue, IBindingStepRef, IResolvedBinding } from "@exaix/schemas";
 import type { ICatalogModel, ICatalogService } from "@exaix/schemas";
@@ -176,6 +181,8 @@ function validateCredentials(ref: IBindingStepRef, deps: IBindingValidationDeps,
     if (!probe.hasKey(service.key_env)) {
       issues.push(issue(ISSUE_KEY_MISSING, ref, `Missing credential: ${service.key_env}`));
     } else if (
+      // A self-hosted service declares its own key variable. Qualified profiles keep their fixed one.
+      binding.profile !== OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE &&
       adapterKeyEnv?.[adapterKeyId(binding.adapter, binding.profile)] &&
       service.key_env !== adapterKeyEnv[adapterKeyId(binding.adapter, binding.profile)]
     ) {

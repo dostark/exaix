@@ -91,6 +91,8 @@ export interface IResolvedBinding {
   allow_insecure_loopback?: boolean;
   /** A self-hosted service states whether it honors an explicit tool_choice. */
   supports_tool_choice?: boolean;
+  /** A self-hosted service's own key variable. Other profiles read their fixed variable, so it stays unset. */
+  key_env?: string;
   tool?: SessionTool;
   effort?: EffortDeclaration;
   thinking?: ThinkingDeclaration;
@@ -289,6 +291,7 @@ export const ResolvedBindingSchema = z.object({
   endpoint: z.string().url().optional(),
   allow_insecure_loopback: z.boolean().optional(),
   supports_tool_choice: z.boolean().optional(),
+  key_env: z.string().regex(ENV_VAR_NAME_PATTERN).optional(),
   tool: SessionToolSchema.optional(),
   effort: EffortDeclarationSchema.optional(),
   thinking: ThinkingDeclarationSchema.optional(),

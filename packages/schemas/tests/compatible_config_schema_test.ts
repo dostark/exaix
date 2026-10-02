@@ -94,3 +94,11 @@ Deno.test("[phase203.config] openai, deepseek and local-test keep their prior be
     max_response_bytes: 2048,
   });
 });
+
+Deno.test("[phase203.config] key_env applies to the self-hosted profile only and must name an env variable", () => {
+  assertEquals(CompatibleChatConfigSchema.safeParse({ ...SELF_HOSTED, key_env: "LITELLM_KEY" }).success, true);
+  assertEquals(CompatibleChatConfigSchema.safeParse({ ...SELF_HOSTED, key_env: "not a name" }).success, false);
+  for (const profile of ["openai", "deepseek", "local-test"] as const) {
+    assertEquals(CompatibleChatConfigSchema.safeParse({ profile, key_env: "LITELLM_KEY" }).success, false, profile);
+  }
+});

@@ -380,3 +380,26 @@ Deno.test("[phase203.validation] a scenario judge may use a cli service but neve
   const delegate = await validateBinding(judgeRef, { binding: { ...cliBinding, adapter: "cli-delegate" }, probe });
   assertEquals(delegate.map((issue) => issue.code), ["interface_unsupported"]);
 });
+
+Deno.test("[phase203.validation][security] a self-hosted service may declare its own key variable, a qualified profile may not", async () => {
+  const fixedKeys = {
+    "openai-chat|self-hosted": "EXA_COMPAT_SELF_HOSTED_API_KEY",
+    "openai-chat|deepseek": "DEEPSEEK_API_KEY",
+  };
+  const selfHosted = { adapter: "openai-chat", profile: "self-hosted" };
+  assertEquals(
+    await codes(selfHosted, {
+      service: { ...selfHosted, transport: "local", interface: "api", key_env: "LITELLM_KEY", serves: {} },
+      adapterKeyEnv: fixedKeys,
+    }),
+    [],
+  );
+  const deepseek = { adapter: "openai-chat", profile: "deepseek" };
+  assertEquals(
+    await codes(deepseek, {
+      service: { ...deepseek, transport: "cloud", interface: "api", key_env: "LITELLM_KEY", serves: {} },
+      adapterKeyEnv: fixedKeys,
+    }),
+    ["key_missing"],
+  );
+});
