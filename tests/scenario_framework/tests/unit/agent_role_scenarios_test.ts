@@ -55,11 +55,8 @@ const MERGED_ROLES: Record<string, string> = {
 /** The one pair whose operation and asserted artifact differ, so it stays split in two. */
 const SPLIT_ROLE = "code-analyst";
 
-/**
- * The per-role merge verdict, recorded once here so a later role cannot be merged silently.
- * A merged role keeps both files' criteria in their assigned cells. The split role keeps both
- * scenarios, because one waits on a plan and the other waits on an analysis document.
- */
+/** The per-role merge verdict, recorded once so a later role cannot be merged silently.
+ *  The split role stays split because one scenario waits on a plan and the other on an analysis. */
 const MERGE_VERDICTS: Record<string, "merged" | "split"> = {
   ...Object.fromEntries(Object.keys(MERGED_ROLES).map((role) => [role, "merged" as const])),
   [SPLIT_ROLE]: "split",

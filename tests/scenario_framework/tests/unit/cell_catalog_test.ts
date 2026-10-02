@@ -19,9 +19,6 @@ import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.
 import { resolveCellConfig } from "../../runner/matrix_expander.ts";
 
 /** Presets whose bindings differ from their own config's provider and model on purpose.
- *  The ollama-chat preset binds the built-in Ollama service.
- *  The split-strong-local preset spans providers.
- *  The self-hosted-fixture preset binds the test fixture service.
  *  The self-hosted preset test asserts each of those bindings by name. */
 const MIXED_REALM_PRESETS = new Set(["ollama-chat", "split-strong-local", "self-hosted-fixture"]);
 

@@ -61,9 +61,7 @@ function endpointGrantEntry(endpoint: string): string {
 }
 
 /** Collect the canonical host:port of every catalog service endpoint.
- *  A service declared before its sentinels resolve holds an unparseable endpoint.
- *  Skipping that service leaves the host ungranted, which fails closed.
- *  The binding validator reports endpoint_invalid for such an endpoint. */
+ *  An endpoint that still holds a sentinel is skipped, which leaves its host ungranted and fails closed. */
 function catalogEndpointHosts(catalog: IBindingCatalog): string[] {
   const entries: string[] = [];
   for (const service of Object.values(catalog.services)) {

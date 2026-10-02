@@ -375,11 +375,8 @@ function overlayCellEnv(
   });
 }
 
-/** Append `--overlay` arguments to every `exactl request` step, in ascending layer order.
- *  That order is scenario, cell, the step's own overlay, then every operator file.
- *  The daemon gives each run overlay the same layer. This argument order is therefore what
- *  the loader's same-selector collapse turns into precedence.
- *  A step's own overlay reaches only that step. */
+/** Append `--overlay` arguments to every `exactl request` step: scenario, cell, the step's own, then operator.
+ *  Run overlays share one layer, so this argument order is the precedence the loader applies. */
 export function overlayRequestBindings(
   steps: readonly IScenarioStep[],
   plan: IScenarioBindingPlan,

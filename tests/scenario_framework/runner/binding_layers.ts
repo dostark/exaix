@@ -67,7 +67,7 @@ export interface IScenarioOverlayFile {
 /** The runner-side binding plan for one scenario run. */
 export interface IScenarioBindingPlan {
   overlays: IScenarioOverlayFile[];
-  /** One row per pinned field an operator entry tried to change and the pin kept out. */
+  /** One row per pinned field the pin rule removed from an operator entry. */
   pins: IPinKeptRecord[];
 }
 
@@ -87,7 +87,7 @@ interface IOperatorEntry {
   layer: BindingLayer;
 }
 
-/** One pinned field an operator entry tried to change and the pin kept out. */
+/** One pinned field the pin rule removed from an operator entry. */
 export interface IPinKeptRecord {
   /** The pin's own selector. */
   selector: string;
@@ -166,14 +166,8 @@ function isInside(candidate: string, root: string): boolean {
   return resolvedCandidate === resolvedRoot || resolvedCandidate.startsWith(`${resolvedRoot}/`);
 }
 
-/**
- * Replace the fixture-port sentinel in every catalog service endpoint.
- * The input is a RAW overlay object, before any schema validation.
- *
- * This runs before `BindingOverlaySchema.parse`. `CatalogServiceSchema.endpoint` is a
- * `z.string().url()`, so it rejects the sentinel. Substituting first keeps the sentinel
- * out of the strict schema and out of the daemon.
- */
+/** Replace the fixture-port sentinel in a raw overlay's service endpoints.
+ *  It runs before schema validation, because the strict endpoint URL schema rejects the sentinel. */
 function substituteFixturePortInRawOverlay(
   raw: JSONValue,
   port: Opt<number, Reason.OptionalInput>,
@@ -202,11 +196,8 @@ function isJsonObject(value: JSONValue): value is { [key: string]: JSONValue } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/**
- * Replace the fixture-port sentinel in every catalog service endpoint of the CELL layer.
- * A catalog preset is loaded before the port exists, so its endpoint may still hold the
- * sentinel. The strict endpoint schema rejects that, so substitute before validation.
- */
+/** Replace the fixture-port sentinel in the cell layer's service endpoints.
+ *  A preset is loaded before the port exists, so its endpoint may still hold the sentinel. */
 function substituteFixturePortInCellCatalog(
   catalog: CellCatalog,
   port: Opt<number, Reason.OptionalInput>,
@@ -251,10 +242,7 @@ async function writeOverlay(path: string, document: object): Promise<string> {
   return await hashText(text);
 }
 
-/**
- * Parse `--bind selector=field=value,field=value` specs into the shared bind schema.
- * This is the same grammar `exactl request --bind` accepts.
- */
+/** Parse `--bind selector=field=value[,field=value]` specs, the grammar `exactl request --bind` accepts. */
 export function parseScenarioBindSpecs(raw: readonly string[]): ReturnType<typeof BindOneOffSchema.parse> {
   const entries = raw.map((spec) => {
     const separatorIndex = spec.indexOf("=");
@@ -443,14 +431,8 @@ function enforcePin(
   return kept;
 }
 
-/**
- * Plan one scenario run's binding overlays.
- *
- * Writes the overlays in layer order. The scenario overlay comes first, then the selected
- * cell's overlay. Each operator overlay follows in the order given. One overlay then holds
- * the operator `--bind` entries.
- * Returns each file with its digest, so the evidence records what the daemon received.
- */
+/** Plan one scenario run's binding overlays: scenario, cell, step, operator overlays, then `--bind`.
+ *  Each file is returned with its digest, so the evidence records what the daemon received. */
 export async function planScenarioBindings(
   input: IPlanScenarioBindingsInput,
 ): Promise<IScenarioBindingPlan> {
@@ -534,14 +516,8 @@ export async function planScenarioBindings(
   return { overlays, pins };
 }
 
-/**
- * Read the overlay files a plan wrote back into the run-binding-file shape.
- * That is the shape the binding layer loader reads. The digests come from the plan, so the
- * loader sees the bytes this run wrote.
- *
- * Judge resolution needs this. It resolves against the same layer stack the daemon builds.
- * The daemon builds that stack from exactly these files.
- */
+/** Read a plan's overlay files back into the run-binding-file shape the layer loader reads.
+ *  Judge resolution uses it, so a judge resolves against the files the daemon receives. */
 export async function buildRunBindingsFile(
   overlays: readonly IScenarioOverlayFile[],
   identity: { traceId: string; requestPath: string },

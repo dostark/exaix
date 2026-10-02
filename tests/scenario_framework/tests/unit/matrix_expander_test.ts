@@ -719,9 +719,7 @@ function liveOnlyStep(): IScenarioStep {
 }
 
 Deno.test("[step8] a step only a skipped cell owns stays out of the suite-score penalty", () => {
-  // A two-cell matrix whose live cell is opt-in: the mock cell runs and the live cell is skipped.
-  // The live cell's own step never had a chance to run here.
-  // Scoring it 0 would report a mock-cell failure that never happened.
+  // The skipped live cell's own step never ran, so scoring it 0 would report a failure that never happened.
   // Shared and mock-scoped steps must stay scored.
   const steps = [startDaemonStep(), otherStep(), liveOnlyStep()];
   const matrix: IMatrixBlock = {

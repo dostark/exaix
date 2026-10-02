@@ -14,10 +14,5 @@ export const SENTINEL_DOGFOOD_ROOT = "__DOGFOOD_ROOT__";
 /** Replaced with the run's worktree path. Mirrors `scripts/dogfood_bootstrap.ts`. */
 export const SENTINEL_WORKTREE_PATH = "__WORKTREE_PATH__";
 
-/**
- * Replaced with the loopback fixture's port.
- *
- * Substitution must happen before any schema that validates a URL, because
- * `CatalogServiceSchema.endpoint` is a `z.string().url()`.
- */
+/** Replaced with the loopback fixture's port, before any schema that validates a URL sees it. */
 export const SENTINEL_COMPAT_FIXTURE_PORT = "__COMPAT_FIXTURE_PORT__";

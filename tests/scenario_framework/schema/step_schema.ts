@@ -521,6 +521,15 @@ export const ScenarioStepSchema = z.object({
     });
   }
 
+  // Bindings travel as an overlay of one `exactl request`, so on any other step they would be ignored.
+  if (step.bindings && (step.type !== ScenarioStepType.EXACTL || step.command !== "request")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "bindings apply to an exactl request step only",
+      path: ["bindings"],
+    });
+  }
+
   if (step.type === ScenarioStepType.EXACTL && !step.command) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

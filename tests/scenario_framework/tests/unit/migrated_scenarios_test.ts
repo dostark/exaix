@@ -31,7 +31,7 @@ function configProvider(configRelPath: string): string {
   return parsed.ai?.provider ?? "";
 }
 
-/** One Step 8 migration: the scenario, the presets it now names, and the cells it hand-listed. */
+/** One preset migration: the scenario, the presets it now names, and the cells it hand-listed. */
 interface IMigratedScenario {
   id: string;
   path: string;
@@ -39,7 +39,7 @@ interface IMigratedScenario {
   priorCells: PriorCellRow[];
 }
 
-/** A hand-listed cell as Step 8 found it: tool, provider, config, binary, key, opt-in. */
+/** A hand-listed cell before migration: tool, provider, config, binary, key, opt-in. */
 type PriorCellRow = [
   tool: string,
   provider: string,
@@ -86,7 +86,7 @@ const OPENAI_CHAT_CELL: PriorCellRow = [
 /** The claude-code, codex and opencode cells six of the seven scenarios declared by hand. */
 const COMMON_CLI_CELLS: PriorCellRow[] = [CLAUDE_CELL, CODEX_CELL, OPENCODE_CELL];
 
-/** The seven named scenarios Step 8 migrates, with the exact cells each one declared by hand. */
+/** The seven migrated scenarios, with the exact cells each one declared by hand. */
 const MIGRATED_SCENARIOS: IMigratedScenario[] = [
   {
     id: "swe-write-tests-uncovered",

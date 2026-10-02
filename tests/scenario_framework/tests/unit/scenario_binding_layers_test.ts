@@ -332,7 +332,7 @@ Deno.test("[security] planScenarioBindings refuses an output directory inside th
   }
 });
 
-// --- Phase 203 Step 4: scenario pins ---
+// --- Scenario pins ---
 
 /** A scenario that pins two fields of one flow step to the alpha service. */
 function pinnedScenario(): IScenario {
@@ -774,5 +774,23 @@ Deno.test("[security] a step id with path segments cannot place an overlay outsi
     assertEquals(escaped.map((entry) => entry.name).filter((name) => name.endsWith(".json")), []);
   } finally {
     await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[schema] a bindings block on a non-request step is rejected", () => {
+  const bindings = { default: { model: "mock/a" } };
+  assertEquals(
+    ScenarioStepSchema.safeParse({ id: "submit", type: "exactl", command: "request", bindings }).success,
+    true,
+  );
+  for (
+    const step of [
+      { id: "start", type: "exactl", command: "daemon", bindings },
+      { id: "write", type: "write-file", path: "a.txt", content: "a", bindings },
+    ]
+  ) {
+    const result = ScenarioStepSchema.safeParse(step);
+    assertEquals(result.success, false, step.id);
+    assertStringIncludes(JSON.stringify(result.error?.issues), "bindings");
   }
 });

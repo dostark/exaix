@@ -194,12 +194,9 @@ async function hashText(text: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * Merge entries that share one selector inside one layer. The later entry wins a field it
- * sets. Distinct selectors stay separate, so the resolver still reports a genuine
- * equal-specificity conflict as ambiguous_selector. This realizes the documented order of
- * run overlays. It matters because every run overlay carries the same layer rank.
- */
+/** Merge same-selector entries inside one layer, later entry winning per field.
+ *  Every run overlay shares one layer rank, so this realizes their argument order.
+ *  Distinct selectors stay separate, so ambiguous_selector still applies to them. */
 function collapseSameSelectorEntries(
   entries: readonly IBindingLayers["entries"][number][],
 ): Array<IBindingLayers["entries"][number]> {

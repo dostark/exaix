@@ -168,10 +168,7 @@ function agentSelectorsCanOverlap(left: string, right: string): boolean {
   return flowSelectorsCanOverlap(left, right);
 }
 
-/**
- * True when one step could be matched by both selectors, so a binding at one can defeat the other.
- * Exported so the runner's pin rule decides overlap with the resolver's own selector semantics.
- */
+/** True when one step could be matched by both selectors, so a binding at one can defeat the other. */
 export function selectorsCanOverlap(left: string, right: string): boolean {
   const leftJudge = isJudgeSelector(left);
   if (leftJudge !== isJudgeSelector(right)) return false;

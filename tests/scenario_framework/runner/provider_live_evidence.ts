@@ -56,7 +56,7 @@ export interface IProviderLiveEvidenceInput {
   bindings?: readonly IProviderLiveBindingEvidence[];
   /** Judge bindings the runner resolved. Absent when no step owns a judge criterion. */
   judges?: readonly IProviderLiveJudgeEvidence[];
-  /** One row per pinned field an operator entry tried to change and the pin kept out. */
+  /** One row per pinned field the pin rule removed from an operator entry. */
   pins?: readonly IProviderLivePinEvidence[];
 }
 
@@ -107,10 +107,7 @@ export function judgeEvidenceRows(
 /** Suffix of a binding lockfile the daemon writes, one per request trace. */
 const LOCKFILE_SUFFIX = ".lock.json";
 
-/**
- * Read the binding lockfile of every request trace a scenario submitted.
- * A bound run must have one lock per trace, so a missing lock throws. An unbound run skips a trace with no lock.
- */
+/** Read the lockfile of every request trace a scenario submitted. A bound run's missing lock throws. */
 export async function readRequestLockEntries(
   workspaceRoot: string,
   traceIds: readonly string[],
@@ -148,12 +145,7 @@ export async function readRunLockEntries(workspaceRoot: string): Promise<IProvid
   return rows;
 }
 
-/**
- * Reduce one run's binding lockfile to auditable rows.
- *
- * The lockfile records what each step actually bound to. A malformed or missing file
- * therefore throws. It never records an empty binding list silently.
- */
+/** Reduce one run's binding lockfile to auditable rows. A malformed or missing file throws. */
 export async function readLockEntryEvidence(
   lockfilePath: string,
   traceId: string,

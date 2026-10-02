@@ -407,9 +407,7 @@ export async function runSyntheticScenario(
   });
   stepsToRun = materialized.steps;
 
-  // Phase 203: the scenario, cell, step and operator binding layers travel with every
-  // `exactl request` step as `--overlay` arguments. The files are written outside the sandbox,
-  // so the agent under test cannot rewrite the bindings that govern it.
+  // The binding overlays are written outside the sandbox, so the agent under test cannot rewrite them.
   const bindingPlan = await planScenarioBindings({
     scenario: loadedScenario.scenario,
     // Only the first runnable cell runs, so only its bindings form the cell layer.

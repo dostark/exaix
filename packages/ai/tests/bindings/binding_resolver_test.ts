@@ -606,7 +606,7 @@ Deno.test("a broader override still changes the step's unpinned fields", () => {
   }
 });
 
-// --- Phase 203 Step 3: the scenario-judge ref kind ---
+// --- The scenario-judge ref kind ---
 
 /** A judge ref. The scenario id is the flowId and the judge step id is the stepId.
  *  A judge binding therefore carries the identity a flow step does. */

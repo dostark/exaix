@@ -123,12 +123,8 @@ function buildJudgeEnvProbe(
   };
 }
 
-/**
- * Resolve one binding per judge-bearing step from this run's layer stack.
- *
- * A step whose binding does not resolve yields an issue instead of a binding.
- * That step keeps the documented environment path, so the run is not failed.
- */
+/** Resolve and validate one binding per judge-bearing step from this run's layer stack.
+ *  A binding that fails yields an issue, which `assertJudgeBindingsResolved` turns into a refused run. */
 export async function resolveJudgeBindings(
   input: IResolveJudgeBindingsInput,
 ): Promise<IJudgeBindingPlan> {
@@ -168,10 +164,8 @@ export async function resolveJudgeBindings(
   return { bindings, issues };
 }
 
-/**
- * True when a judge grades with the same service and model as the system under test.
- * Bound steps are compared in catalog terms. With no bound step, the config's adapter and wire model are compared.
- */
+/** True when a judge grades with the same service and model as the system under test.
+ *  With no bound step, the config's adapter and wire model stand in for it. */
 export function judgeSharesSut(judge: IResolvedBinding, sut: IJudgeSutContext): boolean {
   if (sut.boundSteps.length > 0) {
     return sut.boundSteps.some((step) => step.service === judge.service && step.model === judge.model);

@@ -2087,14 +2087,8 @@ export function resolveEvalLlmJudgeConfigRoot(): string {
   return Deno.cwd();
 }
 
-/**
- * Build one judge provider from its resolved binding, then grade with it.
- *
- * The config is rooted at the judge's own root. A bound judge therefore keeps an
- * independent config root and never becomes the system under test. The binding supplies
- * the model, the adapter and the endpoint. No environment routing can override them.
- * The resolver refused a session-tool delegate, so a bound provider is never one.
- */
+/** Build one judge provider from its resolved binding, then grade with it.
+ *  The config is rooted at the judge's own root, so a bound judge never becomes the system under test. */
 async function callBoundJudgeEndpoint(
   prompt: string,
   binding: IResolvedBinding,

@@ -17,12 +17,8 @@ function refuse(path: string, reason: string): Error {
   return new Error(`${OVERLAY_INVALID}: ${path} ${reason}`);
 }
 
-/**
- * Read an operator overlay file as text.
- *
- * The path is checked with `lstat`, so a symlink is refused before it is followed. The file is then opened, and the
- * open handle must name the same file. The read stops one byte past the ceiling, so a file that grows is refused too.
- */
+/** Read an operator overlay file as text. A symlink is refused before it is followed.
+ *  The opened handle must be the checked file, and the read stops one byte past the ceiling. */
 export async function readRegularOverlayFile(path: string): Promise<string> {
   let linkInfo: Deno.FileInfo;
   try {

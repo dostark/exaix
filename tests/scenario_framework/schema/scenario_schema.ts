@@ -18,10 +18,7 @@ import {
 import { MatrixSchema } from "../runner/matrix_expander.ts";
 import { ScoringMode } from "../runner/scoring.ts";
 
-/** A scenario pin. The runner computes each field's value at `selector` from the
- *  scenario and cell layers. It then refuses or strips any operator entry that
- *  would change that value. The `note` field is required, because a pin without
- *  a stated reason is an unexplained frozen value. */
+/** A scenario pin. Its `note` is required, because a pin without a stated reason is an unexplained frozen value. */
 export const ScenarioPinSchema = z.object({
   /** The selector whose values the pin protects. An operator entry at least as specific as
    *  this fails the run. A broader entry has the pinned fields stripped instead. */

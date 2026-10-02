@@ -365,11 +365,11 @@ function bindingSelectorsOf(scenario: CatalogEntry): string[] {
   return tables.flatMap((table) => Object.keys(table ?? {}));
 }
 
-/** The one reviewed preset judge binding (Phase 203 Step 7, test-only fixture preset). */
+/** The one reviewed preset judge binding, on the test-only fixture preset. */
 const REVIEWED_JUDGE_BINDING_PRESETS = new Set(["self-hosted-fixture"]);
 
-/** The merged agent-role scenarios Phase 203 Step 8 reviewed. Each binds its live cell's judge
- *  to the claude-cli delegate, so a live judge needs no provider credential. */
+/** The reviewed merged agent-role scenarios. Each binds its live cell's judge to the claude-cli delegate,
+ *  so a live judge needs no provider credential. */
 const REVIEWED_JUDGE_BINDING_SCENARIOS = new Set([
   "performance-engineer-smoke",
   "product-manager-smoke",
@@ -397,10 +397,7 @@ Deno.test("[judge][regression] only the reviewed fixture preset declares a judge
     }
   }
 
-  // Phase 203 Step 7 reviewed exactly one preset judge binding.
-  // The test-only `self-hosted-fixture` preset binds its judge to the claude-cli delegate.
-  // That keeps the fixture cutover free of provider keys.
-  // Every other preset and scenario must keep the environment path.
+  // Only the test-only fixture preset binds a judge, so every other preset keeps the environment path.
   const reviewed = new Set<string>();
   const cellCatalog = await loadCellCatalog(CELL_CATALOG_PATH);
   for (const [name, preset] of Object.entries(cellCatalog.presets)) {

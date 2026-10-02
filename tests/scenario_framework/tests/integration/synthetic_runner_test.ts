@@ -500,10 +500,8 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] a bound judge grades the judge ste
       .flatMap((outcome) => outcome.criterionResults)
       .find((criterion) => criterion.kind === "llm-judge");
     assertEquals(judgeCriterion?.status === CriterionStatus.SKIPPED, false, JSON.stringify(judgeCriterion));
-    // The bound judge was built and called. Without it this call throws the documented
-    // EXA_LLM_PROVIDER guard, because no provider env is set. The mock's canned text is
-    // not judge JSON, so the call resolves and the parse fails. That failure names the
-    // parse and never the provider guard, which proves the bound provider answered.
+    // With no provider env, only the bound judge can answer. A parse failure, not the provider guard,
+    // therefore proves the bound provider was called.
     assertEquals(judgeCriterion?.status, CriterionStatus.ERROR, JSON.stringify(judgeCriterion));
     assertStringIncludes(judgeCriterion?.message ?? "", "failed to parse LLM response");
   });

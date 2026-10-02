@@ -59,13 +59,8 @@ export const DEFAULT_PRESET_TOOL = "exactl";
  *  It names a binary that is always present, so the key check alone decides runnability. */
 export const PRESET_ALWAYS_PRESENT_BIN = "true";
 
-/**
- * The catalog shape a preset may carry.
- *
- * A preset is loaded before the fixture port exists. Its service endpoint may still hold
- * the fixture-port sentinel, which the strict endpoint schema rejects. This shape keeps the
- * endpoint a plain string. The runner substitutes the port and re-validates the overlay.
- */
+/** The catalog shape a preset may carry. Its endpoint stays a plain string.
+ *  A preset loads before the fixture port exists, so it may still hold the sentinel. */
 const SentinelTolerantCatalogSchema = BindingCatalogSchema.extend({
   services: z.record(
     z.string().regex(BINDING_ID_PATTERN),
@@ -122,12 +117,7 @@ function toPreset(row: z.infer<typeof PresetRowSchema>): ICatalogPreset {
   };
 }
 
-/**
- * Read one eval cell catalog file.
- *
- * A malformed row fails here, at load, with the row name in the message. The fixture-port
- * sentinel is NOT substituted: the port is unknown until a fixture is bound.
- */
+/** Read one eval cell catalog file. A malformed row fails at load, and the fixture-port sentinel stays. */
 export async function loadCellCatalog(catalogPath: string): Promise<ICellCatalog> {
   const raw = await Deno.readTextFile(catalogPath);
   const parsed = CatalogFileSchema.safeParse(parseToml(raw));
@@ -161,10 +151,7 @@ function hasFixturePortSentinel(catalog: PresetCatalog): boolean {
   );
 }
 
-/**
- * Turn catalog preset names into concrete matrix cells, in the declared order.
- * An unknown name throws: a silent skip would drop a cell from the matrix unnoticed.
- */
+/** Turn preset names into matrix cells in declared order. An unknown name throws instead of dropping a cell. */
 export function resolveCatalogCells(
   catalog: ICellCatalog,
   presetNames: readonly string[],
@@ -193,10 +180,7 @@ export function resolveCatalogCells(
         ? { catalog: preset.catalog }
         : {}),
     };
-    // A preset catalog is loaded before the fixture port exists.
-    // Its endpoint may still hold the sentinel, which the strict URL schema rejects.
-    // Substituting before validation keeps the runnable case working.
-    // Without a port the cell cannot run, so the tolerant shape serves the skip decision.
+    // Without a port the cell cannot run, so the sentinel-tolerant shape only serves the skip decision.
     if (sentinelCatalog && compatFixturePort === undefined) {
       return CellWithSentinelTolerantCatalogSchema.parse(raw);
     }
