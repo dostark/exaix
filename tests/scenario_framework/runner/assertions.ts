@@ -2095,14 +2095,15 @@ async function callBoundJudgeEndpoint(
   jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   onResolved: Opt<(metadata: ILlmEndpointResolvedMetadata) => void | Promise<void>, Reason.OptionalDependency>,
 ): Promise<string> {
-  const cliDelegateTimeoutMs = resolveEvalLlmTimeoutMs(binding.model_provider);
+  // The transport adapter, not the canonical model owner, selects the timeout policy.
+  const cliDelegateTimeoutMs = resolveEvalLlmTimeoutMs(binding.adapter);
   const overrides: Partial<Config> = {
     ...(cliDelegateTimeoutMs
       ? {
         ai: { provider: binding.model_provider, model: binding.model, timeout_ms: cliDelegateTimeoutMs },
         ai_timeout: {
           default_ms: cliDelegateTimeoutMs,
-          providers: { [binding.model_provider]: cliDelegateTimeoutMs },
+          providers: { [binding.adapter]: cliDelegateTimeoutMs },
         },
       }
       : {}),

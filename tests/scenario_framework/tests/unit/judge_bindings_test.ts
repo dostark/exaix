@@ -11,7 +11,13 @@
  */
 
 import { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
-import { BindingIncompatibleError } from "@exaix/ai";
+import { stub } from "@std/testing/mock";
+import { BindingIncompatibleError, ProviderRegistry } from "@exaix/ai";
+import type { IResolvedProviderOptions } from "@exaix/ai/types.ts";
+import { MockLLMProvider } from "@exaix/ai/providers";
+import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
+import { DEFAULT_AI_TIMEOUT_MS, MockStrategy } from "@exaix/core";
+import { bootstrapProviderRegistry } from "../../../../apps/common/registry_bootstrap.ts";
 import { fromFileUrl, join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { type IResolvedBinding, type IRunBindingsFile, RunBindingsFileSchema } from "@exaix/schemas";
@@ -689,4 +695,76 @@ Deno.test("[judge.layers] two requests retain separate judge models and request 
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
+});
+
+/** A CLI judge whose canonical model owner differs from its transport adapter. */
+const CLI_JUDGE: IResolvedBinding = {
+  service: "claude-cli",
+  model_provider: "anthropic",
+  model: "anthropic/claude-sonnet-5",
+  service_model_id: "claude-sonnet-5",
+  transport: "local",
+  interface: "cli",
+  adapter: "claude-cli",
+  sources: {},
+  fingerprint: "e".repeat(64),
+};
+
+/** Drive a bound judge, capturing the provider options the real factory passes to the adapter. */
+async function captureBoundJudge(
+  binding: IResolvedBinding,
+): Promise<{ timeoutMs?: number; provider?: string; model?: string }> {
+  bootstrapProviderRegistry();
+  const factory = ProviderRegistry.getFactory(binding.adapter);
+  assert(factory, `no registered factory for adapter ${binding.adapter}`);
+  let captured: IResolvedProviderOptions | undefined;
+  const resolved: Array<{ provider: string; model: string }> = [];
+  const createStub = stub(factory, "create", (options: IResolvedProviderOptions) => {
+    captured = options;
+    return Promise.resolve(new MockLLMProvider(MockStrategy.SCRIPTED, { responses: ["{}"] }));
+  });
+  try {
+    await callLlmEndpoint("grade this", { EXA_EVAL_LLM_MOCK: "false" }, undefined, (metadata) => {
+      resolved.push({ provider: metadata.provider, model: metadata.model });
+    }, binding);
+  } finally {
+    createStub.restore();
+  }
+  assert(captured, "the adapter factory was not consulted");
+  return { timeoutMs: captured.timeoutMs, provider: resolved[0]?.provider, model: resolved[0]?.model };
+}
+
+Deno.test("[judge.timeout] a claude-cli adapter serving an anthropic model receives the CLI timeout", async () => {
+  const observed = await captureBoundJudge(CLI_JUDGE);
+  // The transport adapter, not the canonical model owner, selects the timeout policy.
+  assertEquals(observed.timeoutMs, DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
+  // Provenance still names the canonical model owner and model.
+  assertEquals(observed.provider, "anthropic");
+  assertEquals(observed.model, "anthropic/claude-sonnet-5");
+});
+
+Deno.test("[judge.timeout] a codex CLI adapter serving a vendor model receives the CLI timeout", async () => {
+  const binding: IResolvedBinding = {
+    ...CLI_JUDGE,
+    service: "codex-cli",
+    adapter: "codex-cli",
+    model_provider: "openai",
+    model: "openai/gpt-6-luna",
+    service_model_id: "gpt-6-luna",
+  };
+  const observed = await captureBoundJudge(binding);
+  assertEquals(observed.timeoutMs, DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
+  assertEquals(observed.provider, "openai");
+});
+
+Deno.test("[judge.timeout] an API judge keeps its existing timeout", async () => {
+  const binding: IResolvedBinding = {
+    ...CLI_JUDGE,
+    service: "anthropic",
+    adapter: "anthropic",
+    interface: "api",
+    transport: "cloud",
+  };
+  const observed = await captureBoundJudge(binding);
+  assertEquals(observed.timeoutMs, DEFAULT_AI_TIMEOUT_MS);
 });
