@@ -21,6 +21,7 @@ import { dirname, globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
 import { ConfigService } from "@exaix/core/config";
 import { PathResolver } from "@exaix/portal";
+import { monotonicNowMs } from "./clock.ts";
 import { capturePersonaRoleResponse } from "./persona_response_evidence.ts";
 import { z } from "zod";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -155,7 +156,7 @@ async function resolveNewestWorktree(
 export async function executeScenarioStep(
   options: IExecuteScenarioStepOptions,
 ): Promise<IScenarioStepExecutionResult> {
-  const startedAtEpochMs = Date.now();
+  const startedAtEpochMs = monotonicNowMs();
   const startedAt = new Date(startedAtEpochMs).toISOString();
 
   if (options.step.type === ScenarioStepType.CAPTURE_ROLE_RESPONSE) {
@@ -226,7 +227,7 @@ export async function executeScenarioStep(
     const allPassed = results.every((r) => r.status === "passed");
     const stdout = results.map((r) => r.message).join("\n");
 
-    const completedAtEpochMs = Date.now();
+    const completedAtEpochMs = monotonicNowMs();
     const completedAt = new Date(completedAtEpochMs).toISOString();
 
     return {
@@ -265,7 +266,7 @@ export async function executeScenarioStep(
     stderr: "piped",
   }).output();
 
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   const stdout = TEXT_DECODER.decode(output.stdout);
   const stderr = TEXT_DECODER.decode(output.stderr);
@@ -301,14 +302,14 @@ async function executeWaitForFileStep(
   const failurePattern = failureGlob ? globToRegExp(failureGlob) : undefined;
   const workspaceRoot = options.cwd || Deno.cwd();
   const traceId = resolveCurrentTrace(workspaceRoot, options.traceBaselineRowid);
-  const startTime = Date.now();
+  const startTime = monotonicNowMs();
 
-  while (Date.now() - startTime < timeoutMs) {
+  while (monotonicNowMs() - startTime < timeoutMs) {
     // Search for matching files
     const found = await findMatchingFiles(executionBase, pattern, options.artifactBaselineMs);
 
     if (found.length >= minMatches) {
-      const completedAtEpochMs = Date.now();
+      const completedAtEpochMs = monotonicNowMs();
       const completedAt = new Date(completedAtEpochMs).toISOString();
 
       if (options.verbose) {
@@ -337,7 +338,7 @@ async function executeWaitForFileStep(
     if (failurePattern) {
       const failureFound = await findMatchingFiles(executionBase, failurePattern);
       if (failureFound.length > 0) {
-        const completedAtEpochMs = Date.now();
+        const completedAtEpochMs = monotonicNowMs();
         const completedAt = new Date(completedAtEpochMs).toISOString();
         const failureContent = await Deno.readTextFile(failureFound[0]).catch(() => "");
         const message = `Failure file matched ${failureGlob}: ${failureFound[0]}\n${failureContent}`;
@@ -366,7 +367,7 @@ async function executeWaitForFileStep(
     if (traceId) {
       const failure = checkRequestDefinitivelyFailed(workspaceRoot, traceId);
       if (failure) {
-        const completedAtEpochMs = Date.now();
+        const completedAtEpochMs = monotonicNowMs();
         const completedAt = new Date(completedAtEpochMs).toISOString();
         const message = `Request ${traceId} ${failure.actionType} before this wait could succeed: ${failure.payload}`;
 
@@ -393,7 +394,7 @@ async function executeWaitForFileStep(
   }
 
   // Timeout reached
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
 
   if (options.verbose) {
@@ -467,7 +468,7 @@ async function executeFileContainsStep(
 ): Promise<IScenarioStepExecutionResult> {
   const timeoutSec = options.step.timeout_sec ?? 120;
   const timeoutMs = timeoutSec * 1000;
-  const startTime = Date.now();
+  const startTime = monotonicNowMs();
 
   const globs = [
     ...(options.step.file_pattern ? [options.step.file_pattern] : []),
@@ -480,7 +481,7 @@ async function executeFileContainsStep(
   // A negative assertion (file-not-exists) is evaluated immediately — the file must NEVER
   // appear, so there is nothing to wait for.
   if (negativeAssertion) {
-    const completedAtEpochMs = Date.now();
+    const completedAtEpochMs = monotonicNowMs();
     const completedAt = new Date(completedAtEpochMs).toISOString();
     return {
       stepId: options.step.id,
@@ -495,7 +496,7 @@ async function executeFileContainsStep(
     };
   }
 
-  while (Date.now() - startTime < timeoutMs) {
+  while (monotonicNowMs() - startTime < timeoutMs) {
     // Re-resolved every iteration: for cwd "$WORKTREE", the target worktree may not exist yet
     // on the first iteration (it appears only once its delegate launches), so a one-time
     // resolution before the loop can permanently lock onto the workspace-root fallback.
@@ -516,7 +517,7 @@ async function executeFileContainsStep(
     const contentReady = await fileSatisfiesExpectation(target, expectations);
 
     if (matches.length >= minMatches && (negativeAssertion || contentReady)) {
-      const completedAtEpochMs = Date.now();
+      const completedAtEpochMs = monotonicNowMs();
       const completedAt = new Date(completedAtEpochMs).toISOString();
       const message = `File(s) ready: ${matches.join(", ")}`;
       if (options.verbose) {
@@ -538,7 +539,7 @@ async function executeFileContainsStep(
     await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_FILE_POLL_INTERVAL_MS));
   }
 
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   const message = `Timeout after ${timeoutSec}s waiting for ${globs.join(" or ")} ` +
     `(${minMatches}+ files${
@@ -747,7 +748,7 @@ async function executePatchBlueprintStep(
   } catch (error) {
     message = error instanceof Error ? error.message : String(error);
   }
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   return {
     stepId: options.step.id,
@@ -813,7 +814,7 @@ async function executeCaptureRoleResponseStep(
     stepType: options.step.type,
     startedAt,
     completedAt: new Date().toISOString(),
-    durationMs: Date.now() - startedAtEpochMs,
+    durationMs: monotonicNowMs() - startedAtEpochMs,
     exitCode: ok ? 0 : 1,
     stdout: ok ? message : "",
     stderr: ok ? "" : message,
@@ -840,7 +841,7 @@ async function executePrepareEvidenceStep(
   } catch (error) {
     message = error instanceof Error ? error.message : String(error);
   }
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   return {
     stepId: options.step.id,
@@ -877,7 +878,7 @@ async function executeWriteFileStep(
   } catch (error) {
     message = error instanceof Error ? error.message : String(error);
   }
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   return {
     stepId: options.step.id,
@@ -913,7 +914,7 @@ async function executeRemoveFilesStep(
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : String(error);
   }
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   const message = `removed ${removed} file(s)${errorMessage ? `: ${errorMessage}` : ""}`;
   return {
@@ -1026,7 +1027,7 @@ function executeJournalAssertStep(
     db?.close();
   }
 
-  const completedAtEpochMs = Date.now();
+  const completedAtEpochMs = monotonicNowMs();
   const completedAt = new Date(completedAtEpochMs).toISOString();
   const message = matched
     ? "Journal assertion held"

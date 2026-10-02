@@ -13,6 +13,7 @@ import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { BindingLockSchema } from "@exaix/schemas";
 import { withEnv } from "@exaix/testing";
+import { monotonicNowMs } from "../../runner/clock.ts";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
 
@@ -58,7 +59,7 @@ function callCountInWindow(
 function startFixture(calls: IFixtureCall[]): Deno.HttpServer {
   return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request: Request) => {
     const body = await request.json() as IFixtureCall["body"];
-    calls.push({ at: Date.now(), body });
+    calls.push({ at: monotonicNowMs(), body });
     return Response.json({
       model: FIXTURE_MODEL,
       choices: [{ message: { role: "assistant", content: "Exploration complete." }, finish_reason: "stop" }],
