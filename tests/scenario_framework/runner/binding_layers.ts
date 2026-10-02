@@ -138,7 +138,7 @@ export interface IPlanScenarioBindingsInput {
   compatFixturePort?: number;
 }
 
-/** Subdirectory of the run's output directory that holds this run's overlay files. */
+/** Subdirectory of the run's output directory that holds one overlay directory per invocation. */
 export const SCENARIO_BINDINGS_SUBDIR = "bindings";
 
 /** Scenario-layer overlay file name. Sorts before every operator file. */
@@ -436,7 +436,8 @@ function enforcePin(
 export async function planScenarioBindings(
   input: IPlanScenarioBindingsInput,
 ): Promise<IScenarioBindingPlan> {
-  const bindingsDir = join(input.outputDir, SCENARIO_BINDINGS_SUBDIR);
+  // One directory per invocation. A repeated scenario then keeps its earlier overlay bytes.
+  const bindingsDir = join(input.outputDir, SCENARIO_BINDINGS_SUBDIR, crypto.randomUUID());
   if (isInside(bindingsDir, input.sandboxRoot)) {
     throw new Error(
       `overlay_invalid: the bindings directory resolves inside the sandbox (${input.sandboxRoot})`,

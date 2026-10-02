@@ -11,7 +11,7 @@
  * @related-files [tests/scenario_framework/runner/binding_layers.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
 import { BINDING_OVERLAY_MAX_BYTES } from "@exaix/core";
@@ -327,6 +327,85 @@ Deno.test("[security] planScenarioBindings refuses an output directory inside th
       Error,
       "overlay_invalid",
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// --- Per-invocation overlay directories ---
+
+/** One alpha-service binding plan, with a caller-chosen model, into a shared output root. */
+function alphaBindingPlan(outputDir: string, sandboxRoot: string, model: string) {
+  return planScenarioBindings({
+    scenario: scenarioWith({ bindings: { "flow:research/step:compose": { service: "alpha", model } } }),
+    operatorOverlays: [],
+    operatorBinds: [],
+    outputDir,
+    sandboxRoot,
+  });
+}
+
+Deno.test("[overlays] two scenarios sharing an output root retain different overlay paths and original bytes", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-unique-" });
+  try {
+    const outputDir = join(root, "output");
+    const sandboxRoot = join(root, "sandbox");
+    const first = await alphaBindingPlan(outputDir, sandboxRoot, "alpha/one");
+    const second = await alphaBindingPlan(outputDir, sandboxRoot, "alpha/two");
+
+    const firstOverlay = first.overlays[0]!;
+    const secondOverlay = second.overlays[0]!;
+    assertNotEquals(firstOverlay.path, secondOverlay.path);
+    // The later invocation did not replace the first scenario's bytes.
+    assertEquals(firstOverlay.sha256, await fileSha256(firstOverlay.path));
+    const firstWritten = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(firstOverlay.path)));
+    assertEquals(firstWritten.bindings?.["flow:research/step:compose"]?.model, "alpha/one");
+    assertEquals(secondOverlay.sha256, await fileSha256(secondOverlay.path));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[overlays] repeating one scenario preserves both invocations and verifies every recorded digest", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-repeat-" });
+  try {
+    const outputDir = join(root, "output");
+    const sandboxRoot = join(root, "sandbox");
+    // Every layer role: the scenario, the cell, the request step's own bindings and --bind.
+    const plan = () =>
+      planScenarioBindings({
+        scenario: ScenarioSchema.parse({
+          schema_version: SCHEMA_VERSION,
+          id: "bindings-repeat",
+          title: "Bindings repeat",
+          pack: "agent_flows",
+          tags: ["smoke"],
+          request_fixture: "fixtures/requests/agent_flows/openai_compatible_native.md",
+          mode_support: ["auto"],
+          portals: [],
+          bindings: { "flow:research/step:compose": { service: "alpha", model: "alpha/one" } },
+          steps: [{
+            id: "submit",
+            type: "exactl",
+            command: "request",
+            args: ["--file", "x"],
+            bindings: { "flow:research/step:compose": { model: "alpha/one" } },
+          }],
+        }),
+        cell: { bindings: { "flow:research/step:compose": { model: "alpha/one" } } },
+        operatorOverlays: [],
+        operatorBinds: ["flow:research/step:compose=model=alpha/one"],
+        outputDir,
+        sandboxRoot,
+      });
+
+    const first = await plan();
+    const second = await plan();
+    assertEquals(first.overlays.map((overlay) => overlay.role), ["scenario", "cell", "step", "operator"]);
+
+    const written = [...first.overlays, ...second.overlays];
+    assertEquals(new Set(written.map((overlay) => overlay.path)).size, written.length);
+    for (const overlay of written) assertEquals(overlay.sha256, await fileSha256(overlay.path));
   } finally {
     await Deno.remove(root, { recursive: true });
   }
