@@ -41,7 +41,7 @@ import type { IScenario } from "../schema/scenario_schema.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { SENTINEL_COMPAT_FIXTURE_PORT } from "./sentinels.ts";
-import { BindingIncompatibleError, LAYER_CLI, LAYER_RUN, selectorSpecificity } from "@exaix/ai";
+import { BindingIncompatibleError, isJudgeSelector, LAYER_CLI, LAYER_RUN, selectorSpecificity } from "@exaix/ai";
 import type { BindingLayer, PinnableBindingField, PinReason } from "@exaix/schemas";
 import type { IScenarioPin } from "../schema/scenario_schema.ts";
 
@@ -329,6 +329,12 @@ function pinnedRefusal(
   }]);
 }
 
+/** True when two selectors can bind the same step, so either can defeat the other.
+ *  A judge selector and an agent selector never overlap. */
+function selectorsShareTarget(left: string, right: string): boolean {
+  return isJudgeSelector(left) === isJudgeSelector(right);
+}
+
 /** Apply one scenario pin to every operator entry, before any overlay is written. */
 function enforcePins(
   input: IPlanScenarioBindingsInput,
@@ -352,6 +358,7 @@ function enforcePins(
 
   for (const entry of authoring) {
     if (entry.selector === pin.selector) continue;
+    if (!selectorsShareTarget(entry.selector, pin.selector)) continue;
     if (selectorSpecificity(entry.selector) <= selectorSpecificity(pin.selector)) continue;
     for (const field of pin.fields) {
       const value = entry.spec[field];
@@ -369,6 +376,7 @@ function enforcePins(
 
   const kept: IPinKeptRecord[] = [];
   for (const entry of operatorEntries) {
+    if (!selectorsShareTarget(entry.selector, pin.selector)) continue;
     for (const field of pin.fields) {
       const value = entry.spec[field];
       if (value === undefined || String(value) === values.get(field)) continue;

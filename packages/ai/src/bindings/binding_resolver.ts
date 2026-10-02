@@ -55,6 +55,12 @@ const STEP_SEPARATOR = "/step:";
 const SELECTOR_JUDGE = "judge";
 /** The judge selector prefix: `judge:<id>` names one judge. */
 const JUDGE_PREFIX = "judge:";
+
+/** True when a selector names a judge. A judge ref matches judge selectors only, so it
+ *  competes with no agent-step selector. */
+export function isJudgeSelector(selector: string): boolean {
+  return selector === SELECTOR_JUDGE || selector.startsWith(JUDGE_PREFIX);
+}
 /** Specificity of the bare `judge` selector. It outranks `default` and nothing else. */
 const JUDGE_SPECIFICITY = 5;
 /** Specificity of `judge:<id>`. It outranks `judge` and every flow-step selector.
@@ -108,8 +114,7 @@ function globMatch(pattern: string, value: string): boolean {
  *  Exported so the runner's pin rule and this resolver share one definition. */
 export function selectorSpecificity(selector: string): number {
   if (selector === SELECTOR_DEFAULT) return 0;
-  if (selector === SELECTOR_JUDGE) return JUDGE_SPECIFICITY;
-  if (selector.startsWith(JUDGE_PREFIX)) return JUDGE_ID_SPECIFICITY;
+  if (isJudgeSelector(selector)) return selector === SELECTOR_JUDGE ? JUDGE_SPECIFICITY : JUDGE_ID_SPECIFICITY;
   if (selector.startsWith(ROLE_PREFIX)) return 2;
   if (!selector.startsWith(FLOW_PREFIX)) return -1;
   const stepIndex = selector.indexOf(STEP_SEPARATOR);
@@ -137,7 +142,7 @@ function rankFor(layer: IBindingLayers["entries"][number]["layer"], selector: st
 function selectorMatches(ref: IBindingStepRef, selector: string): boolean {
   if (ref.kind === STEP_KIND_JUDGE) return judgeSelectorMatches(ref, selector);
   if (selector === SELECTOR_DEFAULT) return true;
-  if (selector === SELECTOR_JUDGE || selector.startsWith(JUDGE_PREFIX)) return false;
+  if (isJudgeSelector(selector)) return false;
   if (selector.startsWith(ROLE_PREFIX)) return ref.agentRole === selector.slice(ROLE_PREFIX.length);
   if (selector.startsWith(FLOW_PREFIX)) {
     const body = selector.slice(FLOW_PREFIX.length);

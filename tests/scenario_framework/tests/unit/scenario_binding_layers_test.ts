@@ -535,3 +535,60 @@ Deno.test("[pins] a scenario binding more specific than the pin that contradicts
     await Deno.remove(root, { recursive: true });
   }
 });
+
+Deno.test("[pins] a judge selector never contradicts a flow-step pin", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-judge-family-" });
+  try {
+    // A judge binding cannot change the value a flow-step pin protects.
+    // A judge ref matches judge selectors only, so the two never meet.
+    const cellLayer = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      cell: { bindings: { judge: { service: "claude-cli", model: "anthropic/claude-sonnet-5" } } },
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    assertEquals(cellLayer.pins, []);
+    assertEquals(cellLayer.overlays.map((overlay) => overlay.role).sort(), ["cell", "scenario"]);
+
+    // An operator judge entry survives untouched, because the pin does not speak for judges.
+    const operatorEntry = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      operatorBinds: ["judge=service=claude-cli"],
+      operatorOverlays: [],
+      outputDir: join(root, "output-2"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    assertEquals(operatorEntry.pins, []);
+    const document = BindingOverlaySchema.parse(
+      JSON.parse(await Deno.readTextFile(operatorOverlayOf(operatorEntry).path)),
+    );
+    assertEquals(document.bindings?.judge?.service, "claude-cli");
+
+    // A judge selector at least as specific as an agent pin is still refused to judges.
+    const judgePin = scenarioWith({
+      bindings: { judge: { service: "alpha", model: "alpha/one" } },
+      pin: {
+        selector: "judge",
+        fields: ["service"],
+        reason: "capability-gate",
+        note: "the graded judge stays on the reviewed service",
+      },
+    });
+    const judgeRefusal = await assertRejects(
+      () =>
+        planScenarioBindings({
+          scenario: judgePin,
+          operatorBinds: ["judge=service=beta"],
+          operatorOverlays: [],
+          outputDir: join(root, "output-3"),
+          sandboxRoot: join(root, "sandbox"),
+        }),
+      BindingIncompatibleError,
+    );
+    assertEquals(judgeRefusal.issues[0]?.code, "pinned");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
