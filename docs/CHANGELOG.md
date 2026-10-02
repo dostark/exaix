@@ -18,6 +18,28 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 203 (Scenario Model Bindings and Self-Hosted Providers)
+
+### Added
+
+- Scenario YAML accepts `bindings:`, `catalog:` and a `pin:` list, so a scenario sets the service, model, transport and interface for its flow steps and judges without editing a config file (see [Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps)).
+- Scenario matrices accept `from_catalog` preset names, so a model variant is a preset row rather than a copied config file, and a preset carries its own `bindings` and `catalog`.
+- The scenario runner accepts repeatable `--overlay <file>` and `--bind <selector>=<field>=<value>` flags that override any flow step or judge for one run, above the scenario and cell layers.
+- Scenario judges bind through `judge` and `judge:<step-id>` selectors, resolve against the same request stack as the step they grade, and appear in the run's evidence.
+- The `openai-chat` provider adds a `self-hosted` profile for an operator-declared endpoint and model, covering vLLM, LiteLLM and Ollama servers, with an optional service key and a per-service `supports_tool_choice` (see [OpenAI-compatible Chat Completions](Exaix_User_Guide.md#openai-compatible-chat-completions-openai-chat)).
+- The built-in catalog serves Ollama's OpenAI-compatible endpoint as the `ollama-chat` service, and documented vLLM and LiteLLM overlay examples ship with it.
+- Scenario runs write binding evidence with the overlay files and their digests, each request's lock entries, the resolved judges and their request scope, and the pin decisions.
+
+### Changed
+
+- A `self-hosted` call is unpriced: it records an unknown cost, skips the finite-budget guard, and sends `tools` without `tool_choice` when the service declares no support.
+- A pinned scenario refuses an exact operator override before the daemon starts and strips a pinned field from a broader override, so a qualification run cannot be re-pointed silently.
+- A bound CLI judge uses the CLI subprocess timeout even when the model's canonical owner is a cloud provider.
+
+### Removed
+
+- The scenario `matrix.axes` block is removed; a step's `transport` and `interface` now come from its bound service.
+
 ## Unreleased — Phase 204 (Flow-Step Model Bindings)
 
 ### Added
