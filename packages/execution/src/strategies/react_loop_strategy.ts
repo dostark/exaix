@@ -392,20 +392,23 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }, this.callOptions) as GeneratedOptions;
     if (nativeToolsUsed && nativeToolDefinitions) {
       base.tools = nativeToolDefinitions;
-      // PGAP-3: when a preferred tool is detected (targeted-edit task), force it
-      // via tool_choice: {type: "tool", name: "..."} instead of {type: "any"}.
-      if (nativePreferredTool && !nativeToolsPriorTurn) {
-        base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
-        base.nativeToolChoiceMode = "forced";
-      } else {
-        base.toolChoice = nativeToolsPriorTurn
-          ? { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true }
-          : { type: "any" as const, disable_parallel_tool_use: true };
-        base.nativeToolChoiceMode = nativeToolsPriorTurn ? TOOL_CHOICE_TYPE_AUTO : "any";
+      // A provider that cannot honor an explicit tool_choice still receives the tool list.
+      if (this.provider?.callCapabilities?.supportsToolChoice !== false) {
+        // PGAP-3: a detected preferred tool forces tool_choice: {type: "tool", name: "..."}.
+        // That entry replaces the unconstrained {type: "any"} for a targeted-edit task.
+        if (nativePreferredTool && !nativeToolsPriorTurn) {
+          base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
+          base.nativeToolChoiceMode = "forced";
+        } else {
+          base.toolChoice = nativeToolsPriorTurn
+            ? { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true }
+            : { type: "any" as const, disable_parallel_tool_use: true };
+          base.nativeToolChoiceMode = nativeToolsPriorTurn ? TOOL_CHOICE_TYPE_AUTO : "any";
+        }
       }
       // One-line diagnostic of the native toolChoice branch chosen.
       console.debug(
-        `[ReActLoopStrategy] native toolChoice=${base.nativeToolChoiceMode} ` +
+        `[ReActLoopStrategy] native toolChoice=${base.nativeToolChoiceMode ?? "<unset>"} ` +
           `preferredTool=${nativePreferredTool ?? "<unset>"} priorTurn=${nativeToolsPriorTurn ? "yes" : "no"}`,
       );
       if (nativeToolsPriorTurn) {

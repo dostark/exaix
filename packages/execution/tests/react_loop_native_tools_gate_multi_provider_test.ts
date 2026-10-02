@@ -24,6 +24,8 @@ import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from
 import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
+import { RateLimitedProvider } from "@exaix/ai/rate_limited_provider.ts";
+import { TracedProvider } from "@exaix/ai/traced_provider.ts";
 import {
   ExecutionStrategyName,
   PricingTier,
@@ -32,7 +34,7 @@ import {
   REACT_SUMMARY_PREFIX,
   SecurityMode,
 } from "@exaix/core";
-import { makeGenerateResult } from "@exaix/testing";
+import { createMockLogger, makeGenerateResult } from "@exaix/testing";
 import type { ITool } from "@exaix/core/types";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
@@ -382,5 +384,159 @@ Deno.test(
     // Without an id the metadata lookup is undefined; the gate must simply stay off,
     // not throw a TypeError reading `providerIdForGate.indexOf("-")`.
     assertEquals(getToolsCalls.count, 0);
+  },
+);
+
+const TOOL_CHOICE_PROVIDER_ID = "native-tool-choice-fixture";
+
+/** The capability a self-hosted service publishes when it cannot honor an explicit tool_choice. */
+const NO_TOOL_CHOICE_CAPABILITY: NonNullable<IModelProvider["callCapabilities"]> = {
+  profile: "self-hosted",
+  supportsThinking: false,
+  supportedEffortTiers: [],
+  supportsToolChoice: false,
+};
+
+const READ_FILE_TOOL: ITool = {
+  name: "read_file",
+  description: "Read one file",
+  parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+};
+
+const PATCH_FILE_TOOL: ITool = {
+  name: "patch_file",
+  description: "Patch one file",
+  parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+};
+
+function registerToolChoiceProvider(): void {
+  ProviderRegistry.clear();
+  ProviderRegistry.registerWithMetadata(TOOL_CHOICE_PROVIDER_ID, new MockProviderFactory(), {
+    name: TOOL_CHOICE_PROVIDER_ID,
+    description: "Native tool-choice gate fixture provider",
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.PAID,
+    pricingTier: PricingTier.MEDIUM,
+    strengths: [],
+    supportsNativeTools: true,
+  });
+}
+
+/** Provider that records every generate() call and completes the loop on the first one. */
+function makeRecordingProvider(callCapabilities?: IModelProvider["callCapabilities"]): {
+  provider: IModelProvider;
+  calls: Array<{ prompt: string; options?: IModelOptions }>;
+} {
+  const calls: Array<{ prompt: string; options?: IModelOptions }> = [];
+  return {
+    calls,
+    provider: {
+      id: TOOL_CHOICE_PROVIDER_ID,
+      callCapabilities,
+      generate(prompt, options) {
+        calls.push({ prompt, options });
+        return Promise.resolve(makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`));
+      },
+    },
+  };
+}
+
+/** A plan matching the targeted-edit pattern, so the loop derives the preferred tool patch_file. */
+function targetedEditContext(): IExecutionContext {
+  return { ...testContext, plan: "Fix the null guard" };
+}
+
+function nativeOptions(permittedTools: string[]): IAgentExecutionOptions {
+  return { ...makeOptions(true), permitted_tools: permittedTools };
+}
+
+/** nativeToolChoiceMode rides on the strategy's options object but is not wire IModelOptions. */
+function toolChoiceModeOf(options?: IModelOptions): string | undefined {
+  return (options as { nativeToolChoiceMode?: string } | undefined)?.nativeToolChoiceMode;
+}
+
+Deno.test(
+  "[phase203.react] a supportsToolChoice=false provider sends tools with no tool_choice",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_TOOL_CHOICE_CAPABILITY);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, READ_FILE_TOOL), provider);
+
+    await strategy.execute(testBlueprint, testContext, nativeOptions(["read_file"]));
+
+    assertEquals(calls.length, 1);
+    assertEquals(calls[0].options?.tools?.map((tool) => tool.name), ["read_file"]);
+    assertEquals("toolChoice" in (calls[0].options ?? {}), false);
+    assertEquals(toolChoiceModeOf(calls[0].options), undefined);
+  },
+);
+
+Deno.test(
+  "[phase203.react] a supportsToolChoice=false provider suppresses the forced-tool branch too",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_TOOL_CHOICE_CAPABILITY);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), provider);
+
+    await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
+
+    assertEquals(calls[0].options?.tools?.map((tool) => tool.name), ["patch_file"]);
+    assertEquals("toolChoice" in (calls[0].options ?? {}), false);
+    assertEquals(toolChoiceModeOf(calls[0].options), undefined);
+  },
+);
+
+Deno.test(
+  "[phase203.react] a default provider still forces any, and a preferred tool still forces that tool",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const plain = makeRecordingProvider();
+    await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, READ_FILE_TOOL), plain.provider).execute(
+      testBlueprint,
+      testContext,
+      nativeOptions(["read_file"]),
+    );
+    assertEquals(plain.calls[0].options?.toolChoice, { type: "any", disable_parallel_tool_use: true });
+    assertEquals(toolChoiceModeOf(plain.calls[0].options), "any");
+
+    const forced = makeRecordingProvider();
+    await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), forced.provider).execute(
+      testBlueprint,
+      targetedEditContext(),
+      nativeOptions(["patch_file"]),
+    );
+    assertEquals(forced.calls[0].options?.toolChoice, {
+      type: "tool",
+      name: "patch_file",
+      disable_parallel_tool_use: true,
+    });
+    assertEquals(toolChoiceModeOf(forced.calls[0].options), "forced");
+  },
+);
+
+Deno.test(
+  "[phase203.react] the gate reads the capability through TracedProvider and RateLimitedProvider",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_TOOL_CHOICE_CAPABILITY);
+    const decorated = new RateLimitedProvider(new TracedProvider(provider, createMockLogger()), {
+      maxCallsPerMinute: 10,
+      maxTokensPerHour: 100_000,
+      maxCostPerDay: 10,
+      costPer1kTokens: 0,
+    });
+
+    await new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, READ_FILE_TOOL), decorated).execute(
+      testBlueprint,
+      testContext,
+      nativeOptions(["read_file"]),
+    );
+
+    assertEquals(calls[0].options?.tools?.map((tool) => tool.name), ["read_file"]);
+    assertEquals("toolChoice" in (calls[0].options ?? {}), false);
   },
 );

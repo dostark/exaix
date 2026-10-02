@@ -316,7 +316,10 @@ export class LlmClient implements ILlmClient {
         description: tool.description,
         inputSchema: tool.inputSchema,
       })),
-      toolChoice: { type: "auto", disable_parallel_tool_use: true },
+      // A provider that cannot honor an explicit tool_choice receives the tool list only.
+      ...(provider.callCapabilities?.supportsToolChoice === false
+        ? {}
+        : { toolChoice: { type: "auto", disable_parallel_tool_use: true } }),
       nativeConversation,
     };
   }

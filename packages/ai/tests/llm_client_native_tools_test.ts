@@ -46,6 +46,16 @@ class NativeProvider implements IModelProvider {
   }
 }
 
+/** A self-hosted provider that declares it cannot honor an explicit tool_choice. */
+class NoToolChoiceProvider extends NativeProvider {
+  readonly callCapabilities = {
+    profile: "self-hosted",
+    supportsThinking: false,
+    supportedEffortTiers: [],
+    supportsToolChoice: false,
+  } as const;
+}
+
 ProviderRegistry.registerWithMetadata("openai-compatible-test", {} as never, {
   supportsNativeTools: true,
   supportsNativeConversation: true,
@@ -321,4 +331,38 @@ Deno.test("LlmClient reserves the requested output allowance and allocates when 
   await call(fallbackClient, 1400);
   assertEquals(provider.calls.length, 1);
   assertEquals(provider.calls[0].options?.nativeConversation?.measurement?.totalTokens !== undefined, true);
+});
+
+Deno.test("[phase203.dynamic] the dynamic native call omits toolChoice only when the provider declares no support", async () => {
+  const tools = [{ name: McpToolName.READ_FILE, description: "Read one file", inputSchema: { type: "object" } }];
+  const callOnce = async (provider: NativeProvider) => {
+    provider.toolCalls = [{ id: "call-dynamic-1", name: McpToolName.READ_FILE, input: { path: "src/a.ts" } }];
+    const client = new LlmClient(undefined, provider);
+    const nativeConversation = await client.createNativeConversation({
+      agentRole: role,
+      stepObjective: "Inspect the source",
+      originalInput: "Start with src/a.ts",
+      availableTools: tools,
+    });
+    return await client.reasonNextAction({
+      agent_role: role,
+      stepObjective: "Inspect the source",
+      accumulatedContext: "Start with src/a.ts",
+      availableTools: tools,
+      iteration: 1,
+      maxIterations: 2,
+      nativeToolsEnabled: true,
+      nativeConversation,
+    });
+  };
+
+  const declaring = new NoToolChoiceProvider();
+  const decision = await callOnce(declaring);
+  assertEquals(decision.done, false);
+  assertEquals(declaring.calls[0].options?.tools?.map((tool) => tool.name), [McpToolName.READ_FILE]);
+  assertEquals("toolChoice" in (declaring.calls[0].options ?? {}), false);
+
+  const plain = new NativeProvider();
+  await callOnce(plain);
+  assertEquals(plain.calls[0].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
 });
