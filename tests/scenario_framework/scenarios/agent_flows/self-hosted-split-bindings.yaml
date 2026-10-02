@@ -22,10 +22,10 @@ bindings:
     service: mock
     model: mock/mock-model
 pin:
-  selector: "flow:self-hosted-split/step:compose"
-  fields: [service, model]
-  reason: capability-gate
-  note: "The composer must stay on the pattern mock, because the plan validator reads its output."
+  - selector: "flow:self-hosted-split/step:compose"
+    fields: [service, model]
+    reason: capability-gate
+    note: "The composer must stay on the pattern mock, because the plan validator reads its output."
 matrix:
   from_catalog: ["self-hosted-fixture"]
 steps:

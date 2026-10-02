@@ -16,7 +16,7 @@ import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
 import { BindingIncompatibleError } from "@exaix/ai";
 import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
-import { type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
+import { type IScenarioStep, ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { planScenarioBindings } from "../../runner/binding_layers.ts";
 import { overlayRequestBindings } from "../../runner/matrix_expander.ts";
@@ -337,12 +337,12 @@ Deno.test("[security] planScenarioBindings refuses an output directory inside th
 function pinnedScenario(): IScenario {
   return scenarioWith({
     bindings: { "flow:research/step:compose": { service: "alpha", model: "alpha/one" } },
-    pin: {
+    pin: [{
       selector: "flow:research/step:compose",
       fields: ["service", "model"],
       reason: "provider-qualification",
       note: "qualifies the alpha provider against its signed contract",
-    },
+    }],
   });
 }
 
@@ -509,12 +509,12 @@ Deno.test("[pins] a scenario binding more specific than the pin that contradicts
         "flow:research": { model: "alpha/one" },
         "flow:research/step:compose": { model: "beta/two" },
       },
-      pin: {
+      pin: [{
         selector: "flow:research",
         fields: ["model"],
         reason: "wire-compat-regression",
         note: "the research flow speaks one wire format only",
-      },
+      }],
     });
 
     const error = await assertRejects(
@@ -569,12 +569,12 @@ Deno.test("[pins] a judge selector never contradicts a flow-step pin", async () 
     // A judge selector at least as specific as an agent pin is still refused to judges.
     const judgePin = scenarioWith({
       bindings: { judge: { service: "alpha", model: "alpha/one" } },
-      pin: {
+      pin: [{
         selector: "judge",
         fields: ["service"],
         reason: "capability-gate",
         note: "the graded judge stays on the reviewed service",
-      },
+      }],
     });
     const judgeRefusal = await assertRejects(
       () =>
@@ -588,6 +588,95 @@ Deno.test("[pins] a judge selector never contradicts a flow-step pin", async () 
       BindingIncompatibleError,
     );
     assertEquals(judgeRefusal.issues[0]?.code, "pinned");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+/** A pin protecting `service` at one selector, with the reason and note the schema requires. */
+function servicePin(selector: string) {
+  return { selector, fields: ["service" as const], reason: "capability-gate" as const, note: "frozen for the gate" };
+}
+
+Deno.test("[pins] a scenario with two pins enforces each one", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-two-" });
+  try {
+    const scenario = scenarioWith({
+      bindings: {
+        "flow:research/step:compose": { service: "alpha", model: "alpha/one" },
+        judge: { service: "alpha", model: "alpha/one" },
+      },
+      pin: [servicePin("flow:research/step:compose"), servicePin("judge")],
+    });
+    const base = {
+      scenario,
+      operatorOverlays: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    };
+
+    const composeError = await assertRejects(
+      () => planScenarioBindings({ ...base, operatorBinds: ["flow:research/step:compose=service=beta"] }),
+      BindingIncompatibleError,
+    );
+    assertEquals(composeError.issues[0].code, "pinned");
+    const judgeError = await assertRejects(
+      () => planScenarioBindings({ ...base, operatorBinds: ["judge=service=beta"] }),
+      BindingIncompatibleError,
+    );
+    assertEquals(judgeError.issues[0].code, "pinned");
+    assertStringIncludes(judgeError.issues[0].detail, 'selector "judge"');
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] an operator entry for a sibling step of a pinned step is not refused", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-sibling-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      operatorOverlays: [],
+      operatorBinds: ["flow:research/step:explore-1=service=beta"],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+
+    assertEquals(plan.pins, []);
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operatorOverlayOf(plan).path)));
+    assertEquals(written.bindings?.["flow:research/step:explore-1"], { service: "beta" });
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] a step binding that contradicts a pin is refused at load", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-step-" });
+  try {
+    const scenario = scenarioWith({
+      bindings: { default: { service: "alpha", model: "alpha/one" } },
+      pin: [servicePin("default")],
+      steps: [ScenarioStepSchema.parse({
+        id: "submit",
+        type: ScenarioStepType.EXACTL,
+        command: "request",
+        bindings: { "flow:research/step:compose": { service: "beta" } },
+      })],
+    });
+
+    const error = await assertRejects(
+      () =>
+        planScenarioBindings({
+          scenario,
+          operatorOverlays: [],
+          operatorBinds: [],
+          outputDir: join(root, "output"),
+          sandboxRoot: join(root, "sandbox"),
+        }),
+      BindingIncompatibleError,
+    );
+    assertEquals(error.issues[0].code, "pinned");
+    assertStringIncludes(error.issues[0].detail, "step submit");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

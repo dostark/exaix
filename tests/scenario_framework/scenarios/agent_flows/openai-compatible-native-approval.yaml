@@ -16,10 +16,10 @@ bindings:
     service: "compat-fixture"
     model: "openai-chat/compat-fixture-v1"
 pin:
-  selector: default
-  fields: [service, model]
-  reason: wire-compat-regression
-  note: "The wire format this fixture asserts is qualified for this model, so an operator override would change what the fixture measures."
+  - selector: default
+    fields: [service, model]
+    reason: wire-compat-regression
+    note: "The wire format this fixture asserts is qualified for this model, so an operator override would change what the fixture measures."
 matrix:
   cells:
     - tool: "compat-fixture"

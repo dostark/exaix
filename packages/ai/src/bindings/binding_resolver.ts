@@ -122,6 +122,62 @@ export function selectorSpecificity(selector: string): number {
   return selector.includes("*", stepIndex + STEP_SEPARATOR.length) ? 3 : 4;
 }
 
+/** True when some string can match both globs. Two globs overlap unless their literal
+ *  prefixes or suffixes conflict, so an uncertain case counts as overlapping. */
+function globsCanOverlap(left: string, right: string): boolean {
+  const leftGlob = left.includes("*");
+  const rightGlob = right.includes("*");
+  if (!leftGlob && !rightGlob) return left === right;
+  if (!leftGlob) return globMatch(right, left);
+  if (!rightGlob) return globMatch(left, right);
+  const leftPrefix = left.slice(0, left.indexOf("*"));
+  const rightPrefix = right.slice(0, right.indexOf("*"));
+  const leftSuffix = left.slice(left.lastIndexOf("*") + 1);
+  const rightSuffix = right.slice(right.lastIndexOf("*") + 1);
+  const prefixesAgree = leftPrefix.startsWith(rightPrefix) || rightPrefix.startsWith(leftPrefix);
+  const suffixesAgree = leftSuffix.endsWith(rightSuffix) || rightSuffix.endsWith(leftSuffix);
+  return prefixesAgree && suffixesAgree;
+}
+
+/** Splits a `flow:` selector into its flow glob and its optional step glob. */
+function flowSelectorParts(selector: string): { flow: string; step?: string } {
+  const body = selector.slice(FLOW_PREFIX.length);
+  const stepIndex = body.indexOf(STEP_SEPARATOR);
+  if (stepIndex === -1) return { flow: body };
+  return { flow: body.slice(0, stepIndex), step: body.slice(stepIndex + STEP_SEPARATOR.length) };
+}
+
+/** True when two `flow:` selectors can name one step. Their flows must overlap, and their steps when both name one. */
+function flowSelectorsCanOverlap(left: string, right: string): boolean {
+  const leftParts = flowSelectorParts(left);
+  const rightParts = flowSelectorParts(right);
+  if (!globsCanOverlap(leftParts.flow, rightParts.flow)) return false;
+  if (leftParts.step === undefined || rightParts.step === undefined) return true;
+  return globsCanOverlap(leftParts.step, rightParts.step);
+}
+
+/** True when two agent selectors can name one step. A `role:` selector may meet any `flow:` selector. */
+function agentSelectorsCanOverlap(left: string, right: string): boolean {
+  if (left === SELECTOR_DEFAULT || right === SELECTOR_DEFAULT) return true;
+  const leftRole = left.startsWith(ROLE_PREFIX);
+  const rightRole = right.startsWith(ROLE_PREFIX);
+  if (leftRole && rightRole) return left === right;
+  if (leftRole || rightRole) return true;
+  if (!left.startsWith(FLOW_PREFIX) || !right.startsWith(FLOW_PREFIX)) return true;
+  return flowSelectorsCanOverlap(left, right);
+}
+
+/**
+ * True when one step could be matched by both selectors, so a binding at one can defeat the other.
+ * Exported so the runner's pin rule decides overlap with the resolver's own selector semantics.
+ */
+export function selectorsCanOverlap(left: string, right: string): boolean {
+  const leftJudge = isJudgeSelector(left);
+  if (leftJudge !== isJudgeSelector(right)) return false;
+  if (leftJudge) return left === SELECTOR_JUDGE || right === SELECTOR_JUDGE || left === right;
+  return agentSelectorsCanOverlap(left, right);
+}
+
 /** Characters before the first glob, used as the ambiguity and ordering tie-break. */
 function literalPrefixLen(selector: string): number {
   const star = selector.indexOf("*");

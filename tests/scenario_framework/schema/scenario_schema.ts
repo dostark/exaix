@@ -39,6 +39,17 @@ export const ScenarioPinSchema = z.object({
 
 export type IScenarioPin = z.infer<typeof ScenarioPinSchema>;
 
+/** The scenario's pins. Two pins may not share a selector, because each selector has one value per field. */
+const ScenarioPinListSchema = z.array(ScenarioPinSchema).min(1).superRefine((pins, ctx) => {
+  const seen = new Set<string>();
+  for (const pin of pins) {
+    if (seen.has(pin.selector)) {
+      ctx.addIssue({ code: "custom", message: `two pins share the selector "${pin.selector}"` });
+    }
+    seen.add(pin.selector);
+  }
+});
+
 const NON_EMPTY_STRING = z.string().min(1);
 
 export const ScenarioSchema = z.object({
@@ -69,7 +80,7 @@ export const ScenarioSchema = z.object({
   catalog: BindingCatalogSchema.optional(),
   /** Bind the scenario's own values so an operator override fails loudly instead of
    *  silently changing what the scenario measures. Enforced by removal in the runner. */
-  pin: ScenarioPinSchema.optional(),
+  pin: ScenarioPinListSchema.optional(),
   /** Additive `tool × provider` matrix block. When present, the runner expands the scenario
    *  into one cell-run per cell (see runner/matrix_expander.ts). Absent → runs unchanged. */
   matrix: MatrixSchema.optional(),

@@ -12,7 +12,7 @@ import {
   type IBindingStepRef,
   type PinnableBindingField,
 } from "@exaix/schemas";
-import { resolveBinding } from "@exaix/ai";
+import { resolveBinding, selectorsCanOverlap } from "@exaix/ai";
 
 const catalog: IBindingCatalog = {
   models: {
@@ -823,4 +823,32 @@ Deno.test("[phase203.resolver] an explicit ollama-chat binding needs no preferen
   assertEquals(outcome.binding.profile, "self-hosted");
   assertEquals(outcome.binding.service_model_id, "llama3.1:8b");
   assertEquals(outcome.binding.supports_tool_choice, false);
+});
+
+Deno.test("[phase203.resolver] selectorsCanOverlap is true only when one step can match both selectors", () => {
+  const overlapping: Array<[string, string]> = [
+    ["default", "flow:f/step:compose"],
+    ["flow:f/step:compose", "flow:f/step:compose"],
+    ["flow:f", "flow:f/step:compose"],
+    ["flow:f/step:explore-*", "flow:f/step:explore-1"],
+    ["role:composer", "flow:f/step:compose"],
+    ["judge", "judge:j1"],
+  ];
+  const disjoint: Array<[string, string]> = [
+    ["flow:f/step:compose", "flow:f/step:explore-1"],
+    ["flow:f/step:explore-*", "flow:f/step:compose"],
+    ["flow:f/step:compose", "flow:g/step:compose"],
+    ["role:composer", "role:web-explorer"],
+    ["judge:j1", "judge:j2"],
+    ["judge", "default"],
+    ["judge:j1", "flow:f/step:compose"],
+  ];
+  for (const [left, right] of overlapping) {
+    assertEquals(selectorsCanOverlap(left, right), true, `${left} ~ ${right}`);
+    assertEquals(selectorsCanOverlap(right, left), true, `${right} ~ ${left}`);
+  }
+  for (const [left, right] of disjoint) {
+    assertEquals(selectorsCanOverlap(left, right), false, `${left} !~ ${right}`);
+    assertEquals(selectorsCanOverlap(right, left), false, `${right} !~ ${left}`);
+  }
 });

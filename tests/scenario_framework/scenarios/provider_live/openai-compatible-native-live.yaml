@@ -15,10 +15,10 @@ bindings:
     service: "openai-chat"
     model: "openai/gpt-6-luna"
 pin:
-  selector: default
-  fields: [service, model]
-  reason: provider-qualification
-  note: "The live leg exists to qualify this model on this service, so an operator override would invalidate the measured result."
+  - selector: default
+    fields: [service, model]
+    reason: provider-qualification
+    note: "The live leg exists to qualify this model on this service, so an operator override would invalidate the measured result."
 matrix:
   cells:
     - tool: "exactl"

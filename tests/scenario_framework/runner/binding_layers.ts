@@ -41,7 +41,7 @@ import type { IScenario } from "../schema/scenario_schema.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { SENTINEL_COMPAT_FIXTURE_PORT } from "./sentinels.ts";
-import { BindingIncompatibleError, isJudgeSelector, LAYER_CLI, LAYER_RUN, selectorSpecificity } from "@exaix/ai";
+import { BindingIncompatibleError, LAYER_CLI, LAYER_RUN, selectorsCanOverlap, selectorSpecificity } from "@exaix/ai";
 import type { BindingLayer, PinnableBindingField, PinReason } from "@exaix/schemas";
 import type { IScenarioPin } from "../schema/scenario_schema.ts";
 
@@ -99,6 +99,10 @@ export interface IPinKeptRecord {
 interface IAuthoringEntry {
   selector: string;
   spec: IBindingSpec;
+  /** Who wrote the entry, for the refusal message. */
+  source: string;
+  /** True for an `exactl request` step's own binding. It reaches one request, so it never sets the pinned value. */
+  stepLayer: boolean;
 }
 
 /** A cell catalog as the scenario schema types it: every table is optional. */
@@ -278,14 +282,19 @@ function buildCellOverlay(input: IPlanScenarioBindingsInput): object | undefined
   });
 }
 
-/** The authoring layers a pin reads its values from: the scenario layer, then the cell layer. */
+/** The authoring layers in order: the scenario layer, the cell layer, then each request step's own layer. */
 function authoringEntries(input: IPlanScenarioBindingsInput): IAuthoringEntry[] {
   const entries: IAuthoringEntry[] = [];
   for (const [selector, spec] of Object.entries(input.scenario.bindings ?? {})) {
-    entries.push({ selector, spec });
+    entries.push({ selector, spec, source: `the scenario binding at "${selector}"`, stepLayer: false });
   }
   for (const [selector, spec] of Object.entries(input.cell?.bindings ?? {})) {
-    entries.push({ selector, spec });
+    entries.push({ selector, spec, source: `the cell binding at "${selector}"`, stepLayer: false });
+  }
+  for (const step of input.scenario.steps) {
+    for (const [selector, spec] of Object.entries(step.bindings ?? {})) {
+      entries.push({ selector, spec, source: `the binding of step ${step.id} at "${selector}"`, stepLayer: true });
+    }
   }
   return entries;
 }
@@ -299,7 +308,7 @@ function pinnedAuthoringValue(
 ): IBindingSpec[PinnableBindingField] | undefined {
   let value: IBindingSpec[PinnableBindingField] | undefined;
   for (const entry of entries) {
-    if (entry.selector !== pinSelector) continue;
+    if (entry.stepLayer || entry.selector !== pinSelector) continue;
     const candidate = entry.spec[field];
     if (candidate !== undefined) value = candidate;
   }
@@ -310,6 +319,7 @@ function pinnedAuthoringValue(
  *  carries no field, reason, note or source parameter of its own. */
 function pinnedRefusal(
   input: IPlanScenarioBindingsInput,
+  pin: IScenarioPin,
   offending: {
     selector: string;
     field: PinnableBindingField;
@@ -324,29 +334,21 @@ function pinnedRefusal(
     selector: offending.selector,
     flowId: input.scenario.id,
     detail: `the scenario pins field "${offending.field}" to "${offending.value}" at ` +
-      `selector "${input.scenario.pin?.selector}" (${offending.reason}). Note: ${offending.note}. ` +
+      `selector "${pin.selector}" (${offending.reason}). Note: ${offending.note}. ` +
       `${offending.source} attempted to change it`,
   }]);
 }
 
-/** True when two selectors can bind the same step, so either can defeat the other.
- *  A judge selector and an agent selector never overlap. */
-function selectorsShareTarget(left: string, right: string): boolean {
-  return isJudgeSelector(left) === isJudgeSelector(right);
+/** Apply every scenario pin to the authoring and operator entries, before any overlay is written. */
+function enforcePins(input: IPlanScenarioBindingsInput, operatorEntries: IOperatorEntry[]): IPinKeptRecord[] {
+  return (input.scenario.pin ?? []).flatMap((pin) => enforcePin(input, pin, operatorEntries));
 }
 
-/** Apply one scenario pin to every operator entry, before any overlay is written. */
-function enforcePins(
-  input: IPlanScenarioBindingsInput,
-  operatorEntries: IOperatorEntry[],
-): IPinKeptRecord[] {
-  const pin: IScenarioPin | undefined = input.scenario.pin;
-  if (!pin) return [];
-
-  const authoring = authoringEntries(input);
+/** The value each pinned field holds at the pin's selector in the scenario and cell layers. */
+function pinnedValues(entries: readonly IAuthoringEntry[], pin: IScenarioPin): Map<PinnableBindingField, string> {
   const values = new Map<PinnableBindingField, string>();
   for (const field of pin.fields) {
-    const value = pinnedAuthoringValue(authoring, pin.selector, field);
+    const value = pinnedAuthoringValue(entries, pin.selector, field);
     if (value === undefined) {
       throw new Error(
         `pin_invalid: the pin at selector "${pin.selector}" names field "${field}", ` +
@@ -355,33 +357,52 @@ function enforcePins(
     }
     values.set(field, String(value));
   }
+  return values;
+}
+
+/** True when an authoring entry can override the pin's value for some step it protects.
+ *  A step entry at the pin's own selector counts, because it would replace the value for that request. */
+function authoringEntryCompetes(entry: IAuthoringEntry, pin: IScenarioPin): boolean {
+  if (!selectorsCanOverlap(entry.selector, pin.selector)) return false;
+  if (entry.selector === pin.selector) return entry.stepLayer;
+  return selectorSpecificity(entry.selector) > selectorSpecificity(pin.selector);
+}
+
+/** Apply one scenario pin. A contradicting authoring entry fails at load.
+ *  An overlapping operator entry fails when it is at least as specific.
+ *  A broader overlapping operator entry loses the pinned field instead. */
+function enforcePin(
+  input: IPlanScenarioBindingsInput,
+  pin: IScenarioPin,
+  operatorEntries: IOperatorEntry[],
+): IPinKeptRecord[] {
+  const authoring = authoringEntries(input);
+  const values = pinnedValues(authoring, pin);
 
   for (const entry of authoring) {
-    if (entry.selector === pin.selector) continue;
-    if (!selectorsShareTarget(entry.selector, pin.selector)) continue;
-    if (selectorSpecificity(entry.selector) <= selectorSpecificity(pin.selector)) continue;
+    if (!authoringEntryCompetes(entry, pin)) continue;
     for (const field of pin.fields) {
       const value = entry.spec[field];
       if (value === undefined || String(value) === values.get(field)) continue;
-      throw pinnedRefusal(input, {
+      throw pinnedRefusal(input, pin, {
         selector: entry.selector,
         field,
         reason: pin.reason,
         note: pin.note,
         value: values.get(field)!,
-        source: `the scenario or cell binding at "${entry.selector}"`,
+        source: entry.source,
       });
     }
   }
 
   const kept: IPinKeptRecord[] = [];
   for (const entry of operatorEntries) {
-    if (!selectorsShareTarget(entry.selector, pin.selector)) continue;
+    if (!selectorsCanOverlap(entry.selector, pin.selector)) continue;
     for (const field of pin.fields) {
       const value = entry.spec[field];
       if (value === undefined || String(value) === values.get(field)) continue;
       if (selectorSpecificity(entry.selector) >= selectorSpecificity(pin.selector)) {
-        throw pinnedRefusal(input, {
+        throw pinnedRefusal(input, pin, {
           selector: entry.selector,
           field,
           reason: pin.reason,

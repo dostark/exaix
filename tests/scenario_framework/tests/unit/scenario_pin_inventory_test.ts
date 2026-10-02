@@ -86,31 +86,33 @@ Deno.test("[phase203.pins] every pin states a reason and a note, and its binding
     const parsed = ScenarioSchema.safeParse(parseYaml(await Deno.readTextFile(path)));
     assert(parsed.success, `${path} does not parse as a scenario`);
     const scenario = parsed.data;
-    const pin = scenario.pin;
-    if (!pin) continue;
+    const pins = scenario.pin ?? [];
+    if (pins.length === 0) continue;
 
     const relative = path.slice(SCENARIOS_DIR.length + 1);
     pinned.push(relative);
 
-    assert(PinReasonSchema.options.includes(pin.reason), `${relative} has reason '${pin.reason}'`);
-    assertEquals(pin.note.trim().length > 0, true, `${relative} needs a non-empty note`);
-    assert(pin.fields.length > 0, `${relative} must pin at least one field`);
+    for (const pin of pins) {
+      assert(PinReasonSchema.options.includes(pin.reason), `${relative} has reason '${pin.reason}'`);
+      assertEquals(pin.note.trim().length > 0, true, `${relative} needs a non-empty note`);
+      assert(pin.fields.length > 0, `${relative} must pin at least one field`);
 
-    const spec = scenario.bindings?.[pin.selector];
-    assert(spec !== undefined, `${relative} pins selector '${pin.selector}' with no scenario binding`);
+      const spec = scenario.bindings?.[pin.selector];
+      assert(spec !== undefined, `${relative} pins selector '${pin.selector}' with no scenario binding`);
 
-    const layers: IBindingLayers = {
-      entries: [{ layer: "config", selector: pin.selector, spec }],
-      catalog: await catalogFor(scenario),
-      overlaySha256: [],
-      operatorLayersPresent: false,
-    };
-    const outcome = resolveBinding(refForSelector(pin.selector), {}, layers, PROBE);
-    assertEquals(
-      outcome.kind,
-      "bound",
-      `${relative} pin binding must resolve, got ${JSON.stringify(outcome).slice(0, 200)}`,
-    );
+      const layers: IBindingLayers = {
+        entries: [{ layer: "config", selector: pin.selector, spec }],
+        catalog: await catalogFor(scenario),
+        overlaySha256: [],
+        operatorLayersPresent: false,
+      };
+      const outcome = resolveBinding(refForSelector(pin.selector), {}, layers, PROBE);
+      assertEquals(
+        outcome.kind,
+        "bound",
+        `${relative} pin binding must resolve, got ${JSON.stringify(outcome).slice(0, 200)}`,
+      );
+    }
   }
 
   console.log(`[phase203.pins] ${pinned.length} pinned scenario(s): ${pinned.join(", ")}`);
