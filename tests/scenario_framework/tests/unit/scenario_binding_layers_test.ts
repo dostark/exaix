@@ -681,3 +681,30 @@ Deno.test("[pins] a step binding that contradicts a pin is refused at load", asy
     await Deno.remove(root, { recursive: true });
   }
 });
+
+/** The bindings the runner wrote for the operator's --bind entries. */
+async function writtenBindEntries(binds: string[]) {
+  const root = await Deno.makeTempDir({ prefix: "bind-merge-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith(),
+      operatorOverlays: [],
+      operatorBinds: binds,
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    return BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operatorOverlayOf(plan).path))).bindings;
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+}
+
+Deno.test("[bind] two --bind flags on one selector keep both fields", async () => {
+  const bindings = await writtenBindEntries(["default=model=mock/a", "default=service=mock"]);
+  assertEquals(bindings?.default, { model: "mock/a", service: "mock" });
+});
+
+Deno.test("[bind] a later --bind overrides an earlier one per field", async () => {
+  const bindings = await writtenBindEntries(["default=model=mock/a,service=alpha", "default=model=mock/b"]);
+  assertEquals(bindings?.default, { model: "mock/b", service: "alpha" });
+});

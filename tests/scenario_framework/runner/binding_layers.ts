@@ -469,7 +469,8 @@ export async function planScenarioBindings(
 
   const bindSpecs = parseScenarioBindSpecs(input.operatorBinds);
   const bindings: Record<string, IBindingSpec> = {};
-  for (const entry of bindSpecs) bindings[entry.selector] = entry.spec;
+  // Same-selector entries merge per field, later winning, as `exactl request --bind` does.
+  for (const entry of bindSpecs) bindings[entry.selector] = { ...bindings[entry.selector], ...entry.spec };
   // Parse first, then read the entries out of the parsed document. Parsing returns fresh
   // spec objects. A spec taken from the input would not be the one written.
   const bindDocument: IBindingOverlayDocument | undefined = input.operatorBinds.length > 0
