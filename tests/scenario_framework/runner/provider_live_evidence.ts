@@ -107,6 +107,28 @@ export function judgeEvidenceRows(
 /** Suffix of a binding lockfile the daemon writes, one per request trace. */
 const LOCKFILE_SUFFIX = ".lock.json";
 
+/**
+ * Read the binding lockfile of every request trace a scenario submitted.
+ * A bound run must have one lock per trace, so a missing lock throws. An unbound run skips a trace with no lock.
+ */
+export async function readRequestLockEntries(
+  workspaceRoot: string,
+  traceIds: readonly string[],
+  bound: boolean,
+): Promise<IProviderLiveBindingEvidence[]> {
+  const rows: IProviderLiveBindingEvidence[] = [];
+  for (const traceId of traceIds) {
+    const lockPath = join(workspaceRoot, ".exa", "bindings", `${traceId}${LOCKFILE_SUFFIX}`);
+    const present = await Deno.stat(lockPath).then(() => true, () => false);
+    if (!present) {
+      if (bound) throw new Error(`binding evidence: no lockfile for request trace ${traceId} of a bound run`);
+      continue;
+    }
+    rows.push(...await readLockEntryEvidence(lockPath, traceId));
+  }
+  return rows;
+}
+
 /** Read every binding lockfile in a run's sandbox. Each sandbox holds one scenario run, so every lock is this run's. */
 export async function readRunLockEntries(workspaceRoot: string): Promise<IProviderLiveBindingEvidence[]> {
   const dir = join(workspaceRoot, ".exa", "bindings");

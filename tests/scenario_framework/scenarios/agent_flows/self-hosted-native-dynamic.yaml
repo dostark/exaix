@@ -1,0 +1,122 @@
+schema_version: "1.0.0"
+id: "self-hosted-native-dynamic"
+title: "Phase 203 — a self-hosted bound dynamic step sends tools without tool_choice through a real daemon"
+pack: "agent_flows"
+tags: ["safety-gate", "manual-only", "subsystem:flows"]
+request_fixture: "fixtures/requests/agent_flows/openai_compatible_native_dynamic.md"
+mode_support: ["auto"]
+flow_fixture: "fixtures/flows/phase155/compat_dynamic.flow.yaml"
+portals:
+  - alias: "todo-app"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/todo-app"
+    git_init: true
+# The preset binds every step to the self-hosted fixture service, which declares no tool-choice support.
+matrix:
+  from_catalog: ["self-hosted-fixture"]
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXAIX_EDITION: "team"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    env:
+      EXAIX_EDITION: "team"
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-flow-terminal"
+    type: "exactl"
+    command: "journal"
+    args: [
+      "wait",
+      "--event",
+      "flow.completed",
+      "--event",
+      "flow.failed",
+      "--since-rowid",
+      "$JOURNAL_BASELINE",
+      "--timeout",
+      "120",
+    ]
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria: []
+
+  - id: "assert-flow-completed"
+    type: "journal-assert"
+    action_type: "flow.completed"
+    trace_scoped: true
+    output_criteria:
+      - id: "flow-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-dynamic-step-completed"
+    type: "journal-assert"
+    action_type: "flow.step.completed"
+    trace_scoped: true
+    payload_equals:
+      - path: "stepId"
+        value: "explore"
+    output_criteria:
+      - id: "dynamic-step-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-two-native-tool-rounds"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    expect_count: 2
+    output_criteria:
+      - id: "two-dynamic-tool-calls"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

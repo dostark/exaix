@@ -25,9 +25,8 @@ import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { loadTraceActivities } from "./failure_classifier.ts";
 import { writeProviderLiveEvidence } from "./provider_live_evidence.ts";
 import type { IProviderLiveJudgeEvidence, IProviderLivePinEvidence } from "./provider_live_evidence.ts";
-import { type IProviderLiveBindingEvidence, readLockEntryEvidence } from "./provider_live_evidence.ts";
+import { readRequestLockEntries } from "./provider_live_evidence.ts";
 import type { IScenarioOverlayFile } from "./binding_layers.ts";
-import { exists } from "@std/fs";
 import { computeRunCapacityExhaustion } from "./capacity_exhaustion.ts";
 import {
   accumulateRunVerdict,
@@ -482,14 +481,16 @@ await new Command()
         () => loadTraceActivities(journalPath),
         () => [],
       );
-      // The daemon writes one binding lock per run. Read it only when the run had bindings.
-      // An unbinding run then records no binding rows, instead of failing the evidence write.
-      const traceId = activities.find((activity) => activity.action_type === "request.created")?.trace_id;
-      let bindings: IProviderLiveBindingEvidence[] = [];
-      if (traceId) {
-        const lockPath = join(workspaceRoot, ".exa", "bindings", `${traceId}.lock.json`);
-        if (await exists(lockPath)) bindings = await readLockEntryEvidence(lockPath, traceId);
-      }
+      // A run that passed an overlay must have a lock for every request it submitted, or the write fails.
+      const requestTraces = [
+        ...new Set(
+          activities.filter((activity) => activity.action_type === "request.created").map((activity) =>
+            activity.trace_id
+          ).filter((traceId): traceId is string => !!traceId),
+        ),
+      ];
+      const bound = (bindingOverlays.get(scenarioId)?.length ?? 0) > 0;
+      const bindings = await readRequestLockEntries(workspaceRoot, requestTraces, bound);
       const evidencePath = await writeProviderLiveEvidence({
         scenarioId,
         outputDir: runtimeConfig.output_dir,

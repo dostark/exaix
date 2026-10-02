@@ -3,12 +3,13 @@
  * @path tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts
  * @description Phase 203 Step 9 — the non-deferrable cutover. One real daemon run through the
  *   real scenario runner exercises a catalog preset, per-step bindings, an operator overlay, a
- *   bound judge, a pinned refusal and the `self-hosted` profile. The loopback fixture enforces
- *   Ollama's contract: it answers HTTP 400 to any request carrying `tool_choice`, and it records
- *   whether an `Authorization` header arrived.
+ *   bound judge, a pinned refusal and the `self-hosted` profile. The loopback fixture is an
+ *   adversarial server that refuses `tool_choice` with HTTP 400, stricter than a real Ollama, and
+ *   it records whether an `Authorization` header arrived.
  *
  *   Four runs: as authored, with an operator overlay at the scenario's own selector, with a
- *   `--bind` aimed at the pinned field, and with a `--bind` broader than the pin.
+ *   `--bind` aimed at the pinned field, and with a `--bind` broader than the pin. A separate
+ *   dynamic run proves that a bound self-hosted step sends its tools without `tool_choice`.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/agent_flows/self-hosted-split-bindings.yaml, tests/scenario_framework/runner/binding_layers.ts]
  */
@@ -62,7 +63,7 @@ async function lockEntries(workspaceRoot: string) {
   return readLockEntryEvidence(lockPath, traceId);
 }
 
-/** Loopback fixture that enforces Ollama's contract and records what it received. */
+/** An adversarial loopback server that refuses tool_choice and records what it received. */
 function startFixture(observed: IObservedRequest[]): Deno.HttpServer {
   return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request) => {
     const body = await request.json().catch(() => ({})) as IFixtureRequestBody;
@@ -223,5 +224,94 @@ Deno.test({
       bindings?: Record<string, { service?: string }>;
     };
     assertEquals(overlay.bindings?.[EXPLORE_SELECTOR]?.service, MOCK_SERVICE);
+  },
+});
+
+const DYNAMIC_SCENARIO_PATH = "scenarios/agent_flows/self-hosted-native-dynamic.yaml";
+const DYNAMIC_READ_PATHS = ["src/utils.ts", "src/models.ts"];
+
+interface IDynamicRequestBody extends IFixtureRequestBody {
+  messages?: Array<{ role: string }>;
+}
+
+/** An adversarial server that refuses tool_choice. A round with tools gets one read_file call.
+ *  The dynamic step therefore completes only when no round carries tool_choice. */
+function startDynamicFixture(observed: Array<{ body: IDynamicRequestBody }>): Deno.HttpServer {
+  return Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, async (request) => {
+    const body = await request.json().catch(() => ({})) as IDynamicRequestBody;
+    observed.push({ body });
+    if (body.tool_choice !== undefined) {
+      return Response.json(
+        { error: { type: "invalid_request_error", message: "tool_choice is not supported" } },
+        { status: 400 },
+      );
+    }
+    const rounds = (body.messages ?? []).filter((message) => message.role === "tool").length;
+    const message = body.tools?.length && rounds < DYNAMIC_READ_PATHS.length
+      ? {
+        content: null,
+        tool_calls: [{
+          id: `self-hosted-read-${rounds + 1}`,
+          type: "function",
+          function: {
+            name: "read_file",
+            arguments: JSON.stringify({ portal: "todo-app", path: DYNAMIC_READ_PATHS[rounds] }),
+          },
+        }],
+      }
+      : { content: "Both modules were read." };
+    return Response.json({
+      model: FIXTURE_MODEL.split("/")[1],
+      choices: [{ message: { role: "assistant", ...message }, finish_reason: message.content ? "stop" : "tool_calls" }],
+      usage: { prompt_tokens: 30, completion_tokens: 8, total_tokens: 38 },
+    });
+  });
+}
+
+Deno.test({
+  name: "[phase203.cutover] a real daemon self-hosted bound step sends non-empty tools without tool_choice",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const observed: Array<{ body: IDynamicRequestBody }> = [];
+    const fixture = startDynamicFixture(observed);
+    const port = (fixture.addr as Deno.NetAddr).port;
+    const workspaceRoot = await Deno.makeTempDir({ prefix: "phase203-self-hosted-dyn-ws-" });
+    const outputDir = await Deno.makeTempDir({ prefix: "phase203-self-hosted-dyn-out-" });
+    try {
+      let run: Awaited<ReturnType<typeof runSyntheticScenario>> | undefined;
+      await withEnv({ [SELF_HOSTED_KEY_ENV]: null }, async () => {
+        run = await runSyntheticScenario({
+          frameworkHome: FRAMEWORK_HOME,
+          scenarioPath: DYNAMIC_SCENARIO_PATH,
+          workspaceRoot,
+          outputDir,
+          mode: ScenarioExecutionMode.AUTO,
+          env: { EXA_COMPAT_FIXTURE_PORT: String(port) },
+        });
+      });
+      assert(run);
+      const failed = run.manifest.steps.filter((step: { executionStatus: string }) =>
+        step.executionStatus !== "passed"
+      );
+      assertEquals(failed.length, 0, JSON.stringify(failed));
+
+      const toolRounds = observed.filter((entry) => (entry.body.tools?.length ?? 0) > 0);
+      assert(toolRounds.length >= DYNAMIC_READ_PATHS.length, `fixture saw ${toolRounds.length} tool-bearing rounds`);
+      assert(
+        toolRounds.every((entry) => entry.body.tools?.some((tool) => tool.function?.name === "read_file")),
+        "every tool-bearing round must offer read_file",
+      );
+      assertEquals(observed.filter((entry) => entry.body.tool_choice !== undefined).length, 0);
+
+      // The daemon bound the dynamic step to the self-hosted service, not to the config's provider.
+      const services = [...(await resolvedServiceByTrace(workspaceRoot)).values()][0];
+      assertEquals(services.get("explore"), FIXTURE_SERVICE);
+    } finally {
+      await fixture.shutdown();
+      await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+      await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+    }
   },
 });

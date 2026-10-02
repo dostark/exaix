@@ -5,11 +5,12 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/provider_live_evidence.ts]
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import {
   readLockEntryEvidence,
+  readRequestLockEntries,
   readRunLockEntries,
   writeProviderLiveEvidence,
 } from "../../runner/provider_live_evidence.ts";
@@ -258,6 +259,37 @@ Deno.test("[evidence] readRunLockEntries reads every lockfile in the run's sandb
       [second, "compose"],
       [second, "explore"],
     ]);
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[evidence] a bound run without a lockfile fails the evidence write", async () => {
+  const root = await Deno.makeTempDir({ prefix: "request-locks-missing-" });
+  try {
+    const trace = "10000000-0000-4000-8000-000000000005";
+    const error = await assertRejects(() => readRequestLockEntries(root, [trace], true));
+    assertStringIncludes(String(error), trace);
+    // An unbound run has no lock to read, so it records no binding rows.
+    assertEquals(await readRequestLockEntries(root, [trace], false), []);
+  } finally {
+    await Deno.remove(root, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("[evidence] every request trace of a scenario contributes its lock entries", async () => {
+  const root = await Deno.makeTempDir({ prefix: "request-locks-all-" });
+  try {
+    const dir = `${root}/.exa/bindings`;
+    await Deno.mkdir(dir, { recursive: true });
+    const first = "10000000-0000-4000-8000-000000000006";
+    const second = "10000000-0000-4000-8000-000000000007";
+    await writeLockfile(`${dir}/${first}.lock.json`, first);
+    await writeLockfile(`${dir}/${second}.lock.json`, second);
+
+    const rows = await readRequestLockEntries(root, [first, second], true);
+    assertEquals(new Set(rows.map((row) => row.traceId)), new Set([first, second]));
+    assertEquals(rows.length, 4);
   } finally {
     await Deno.remove(root, { recursive: true }).catch(() => {});
   }
