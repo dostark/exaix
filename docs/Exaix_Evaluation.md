@@ -1057,6 +1057,44 @@ cell system and from Mode-3 session delegation (`[session_delegate] tool = "code
 `tests/scenario_framework/README.md#codex-react-cell-vs-mode-3-session-delegation-vs-cli_delegate-vs-bare-phase-167`
 for the full comparison table.
 
+### Presets, bindings, judges and pins
+
+A scenario selects a provider setup with `matrix: { from_catalog: [<preset>] }` instead of
+hand-listing cells. A preset is a `[tool.<name>]` row in `configs/eval-cells.toml`: a base config
+plus optional `bindings` and `catalog` tables and the usual `requires_*` predicates. The scenario,
+the cell and an operator (`--overlay`, `--bind`) can each add bindings; later layers win, and a
+scenario `pin:` entry (with a reason) keeps the fields a qualification run depends on. A judge binds
+through `judge` or `judge:<step-id>`. See `tests/scenario_framework/SCENARIO_DSL.md` §2.3 for the
+layer order, the pin rule and the trust boundary.
+
+Each provider-live evidence file records what the run actually used:
+
+| Field      | Content                                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| `overlays` | Every overlay file the run passed, with role, path and sha256                                         |
+| `bindings` | One row per step binding, read from each run's `lock.entries`                                         |
+| `judges`   | Each resolved judge binding with its sources and a `judgeSharesSut` flag                              |
+| `pins`     | Each pinned field an operator entry tried to change, with the entry it was stripped from (`pin_kept`) |
+
+Ollama is selected explicitly. Bind the `ollama-chat` service by name and declare the canonical
+model in the preset's `catalog.models`:
+
+```toml
+[tool.ollama-chat.bindings.default]
+service = "ollama-chat"
+model = "meta/llama3.1:8b"
+
+[tool.ollama-chat.catalog.models."meta/llama3.1:8b"]
+model_provider = "meta"
+```
+
+The built-in preference map has no `meta` key, so a model-only entry never reaches Ollama. The
+`ollama-chat` row is skipped unless `EXA_MATRIX_OLLAMA` is set. A service a run-time `--overlay` or
+preset catalog introduces is not in the daemon's start-time `--allow-net` grant, so a fixture-backed
+service needs its host in the base config's explicit `allow_net`. An uncovered host fails as
+`needs_restart`. A judge that resolves to the system-under-test's own service and model is allowed
+and flagged `judgeSharesSut`.
+
 ### Extending
 
 Add a new task:

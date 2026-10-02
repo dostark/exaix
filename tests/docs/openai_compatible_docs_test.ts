@@ -10,6 +10,8 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { CompatibleChatConfigSchema } from "@exaix/schemas/ai_config.ts";
+import { BindingOverlaySchema } from "@exaix/schemas/model_binding.ts";
 import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS } from "@exaix/core";
 import { readUserGuide } from "./helpers.ts";
 
@@ -137,4 +139,33 @@ Deno.test("Phase 155 binding profile table and live scenario paths match shipped
     assertStringIncludes(step8, path);
     assert((await Deno.stat(path)).isFile);
   }
+});
+
+Deno.test("[docs] the self-hosted example parses and the profile list matches the schema enum", async () => {
+  const guide = await readUserGuide();
+  const profileRow = guide.split("\n").find((line) => line.startsWith("| `profile` "));
+  assert(profileRow, "User Guide has no profile key row");
+  const profiles = CompatibleChatConfigSchema.shape.profile.options;
+  for (const profile of profiles) assertStringIncludes(profileRow, `\`${profile}\``);
+  const subsection = section(guide, "#### OpenAI-compatible Chat Completions (`openai-chat`)");
+  assert(!subsection.includes("plus a loopback fixture profile"), "stale profile count");
+  for (const token of ["supports_tool_choice", "EXA_COMPAT_SELF_HOSTED_API_KEY", "unpriced"]) {
+    assertStringIncludes(subsection, token);
+  }
+  const blocks = [...subsection.matchAll(/```json\n([\s\S]*?)```/g)].map((match) => match[1]);
+  const example = blocks.find((block) => block.includes('"self-hosted"'));
+  assert(example, "User Guide has no self-hosted overlay example");
+  const overlay = BindingOverlaySchema.parse(JSON.parse(example));
+  const service = Object.values(overlay.catalog?.services ?? {})[0];
+  assertEquals(service.profile, "self-hosted");
+  assertEquals(service.supports_tool_choice, false);
+});
+
+Deno.test("[docs] Architecture names the self-hosted profile and supportsToolChoice", async () => {
+  const architecture = await readArchitecture();
+  const providers = section(architecture, "### 4. **Multi-Provider Support**");
+  assertStringIncludes(providers, "self-hosted");
+  const native = section(architecture, "#### 8. Native Tool-Calling");
+  assertStringIncludes(native, "supportsToolChoice");
+  assertStringIncludes(native.replace(/\s+/g, " "), "four profiles");
 });

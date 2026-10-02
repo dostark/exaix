@@ -4579,13 +4579,16 @@ The implementation contract is tracked in the [flow-step model bindings plan](..
 #### OpenAI-compatible Chat Completions (`openai-chat`)
 
 The `openai-chat` provider talks to a Chat Completions endpoint through one shared client. Two
-qualified remote profiles ship, plus a loopback fixture profile for tests. Exaix does **not**
-claim support for arbitrary compatible providers: only the profiles below are qualified.
+qualified remote profiles ship, a loopback fixture profile for tests, and a `self-hosted` profile for
+a server you run yourself. Exaix does **not** claim support for arbitrary compatible providers: only
+the `openai` and `deepseek` profiles are qualified, and `self-hosted` is a declared-endpoint profile
+you qualify against your own server.
 
-| Profile    | Preset                       | Model                      | Endpoint host      | Secret variable    |
-| ---------- | ---------------------------- | -------------------------- | ------------------ | ------------------ |
-| `openai`   | `configs/openai-chat.toml`   | `gpt-6-luna` (pinned)      | `api.openai.com`   | `OPENAI_API_KEY`   |
-| `deepseek` | `configs/deepseek-chat.toml` | `deepseek-v4-pro` (pinned) | `api.deepseek.com` | `DEEPSEEK_API_KEY` |
+| Profile       | Preset                               | Model                      | Endpoint host              | Secret variable                             |
+| ------------- | ------------------------------------ | -------------------------- | -------------------------- | ------------------------------------------- |
+| `openai`      | `configs/openai-chat.toml`           | `gpt-6-luna` (pinned)      | `api.openai.com`           | `OPENAI_API_KEY`                            |
+| `deepseek`    | `configs/deepseek-chat.toml`         | `deepseek-v4-pro` (pinned) | `api.deepseek.com`         | `DEEPSEEK_API_KEY`                          |
+| `self-hosted` | none (declared by a catalog service) | the service's own model    | the service's own endpoint | `EXA_COMPAT_SELF_HOSTED_API_KEY` (optional) |
 
 Copy a preset, or set the keys yourself:
 
@@ -4615,14 +4618,15 @@ native_tools_enabled = true
 `[ai.compatible]` keys (a named `[models.*]` entry may carry its own `compatible` block, and unset
 fields inherit from the global block only for the same profile):
 
-| Key                       | Default          | Meaning                                                        |
-| ------------------------- | ---------------- | -------------------------------------------------------------- |
-| `profile`                 | none, required   | `openai`, `deepseek` or `local-test`                           |
-| `endpoint`                | profile endpoint | Must match the profile host. Remote profiles accept HTTPS only |
-| `allow_insecure_loopback` | `false`          | Only the `local-test` profile may use a loopback HTTP endpoint |
-| `max_response_bytes`      | 8 MiB            | Largest accepted response body                                 |
-| `max_tool_argument_bytes` | 64 KiB           | Largest accepted tool-call argument object                     |
-| `max_history_bytes`       | 8 MiB            | Largest accepted replayed conversation                         |
+| Key                       | Default          | Meaning                                                         |
+| ------------------------- | ---------------- | --------------------------------------------------------------- |
+| `profile`                 | none, required   | `openai`, `deepseek`, `local-test` or `self-hosted`             |
+| `endpoint`                | profile endpoint | Must match the profile host. Remote profiles accept HTTPS only  |
+| `allow_insecure_loopback` | `false`          | `local-test` and `self-hosted` may use a loopback HTTP endpoint |
+| `supports_tool_choice`    | `false`          | `self-hosted` only: the server honors an explicit `tool_choice` |
+| `max_response_bytes`      | 8 MiB            | Largest accepted response body                                  |
+| `max_tool_argument_bytes` | 64 KiB           | Largest accepted tool-call argument object                      |
+| `max_history_bytes`       | 8 MiB            | Largest accepted replayed conversation                          |
 
 A limits-only global block is inherited by every `openai-chat` model that sets the same profile. A
 named model can override one field, including an explicit `false`, and a finite daily budget needs a
@@ -4652,6 +4656,55 @@ max_history_bytes = 2097152
 [rate_limiting]
 max_cost_per_day = 5.0
 ```
+
+**Self-hosted services (vLLM, LiteLLM, Ollama).** A `self-hosted` service declares its own endpoint
+and model, so it pins neither. `CompatibleChatFieldsSchema.profile` admits it, and the schema requires
+both `endpoint` and `model` for it and rejects `supports_tool_choice` on any other profile. Declare it
+as a catalog service in a per-run overlay, for example for a vLLM server:
+
+```json
+{
+  "schema": 1,
+  "catalog": {
+    "services": {
+      "vllm-local": {
+        "adapter": "openai-chat",
+        "profile": "self-hosted",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "allow_insecure_loopback": true,
+        "supports_tool_choice": false,
+        "transport": "local",
+        "interface": "api",
+        "serves": { "meta/llama3.1:8b": "llama3.1:8b" }
+      }
+    },
+    "models": { "meta/llama3.1:8b": { "model_provider": "meta", "capabilities": ["native_tools"] } }
+  },
+  "bindings": {
+    "flow:research/step:explore-*": { "service": "vllm-local", "model": "meta/llama3.1:8b" }
+  }
+}
+```
+
+Run it with `exactl request --flow research --overlay <overlay-file> "..."`. LiteLLM uses the same
+shape with its `model_name` alias in `serves` and an HTTPS endpoint. Ollama ships as the built-in
+`ollama-chat` service: select it by an explicit `service = "ollama-chat"` binding, because no
+`meta` or `qwen` preference route exists.
+
+- **Endpoint rule.** The endpoint must be HTTPS, or HTTP on `127.0.0.1` with `allow_insecure_loopback = true`.
+  The path must be `/v1/chat/completions` or `/chat/completions`, and the URL may carry no credentials,
+  query or fragment. A violation fails with `profile_mismatch`.
+- **Key.** `EXA_COMPAT_SELF_HOSTED_API_KEY` is optional. It is read from the daemon environment, then the
+  credential store. Without it the request carries no `Authorization` header. The daemon still needs
+  `--allow-env` for that variable when you use it.
+- **Tool choice.** `supports_tool_choice` defaults to false. The provider then sends `tools` but no
+  `tool_choice` (`IProviderCallCapabilities.supportsToolChoice` is false), which suits Ollama. Set it to
+  `true` for a vLLM server started with `--enable-auto-tool-choice` and `--tool-call-parser`, or a
+  LiteLLM upstream that supports it.
+- **Cost.** A `self-hosted` call is unpriced: it records a null cost with `cost_status: unknown` and passes
+  the default `[rate_limiting]` check without `pricing_unavailable`.
+- **Network.** A service introduced by a run-time overlay is not in the daemon's start-time `--allow-net`
+  grant. Put its host in `system.allow_net` of the base config, or the run fails with `needs_restart`.
 
 Switching `profile` resets the endpoint and loopback grant, so a local endpoint never carries over
 to a remote profile. A missing profile or a missing registration fails before the provider is built. It never

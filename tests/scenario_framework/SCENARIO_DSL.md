@@ -51,7 +51,10 @@ steps: [...] # required; the ordered step list (see §4)
 
 # --- optional header fields ---
 flow_fixture: "fixtures/flows/my_pack/my.flow.yaml" # staged into Blueprints/Flows/<id>.flow.yaml
-matrix: { cells: [...] } # expand into one run per cell (see §3)
+matrix: { cells: [...] } # expand into one run per cell, or { from_catalog: [...] } (see §2.2)
+bindings: { default: { ... } } # per-step provider bindings for the daemon (see §2.3)
+catalog: { services: { ... } } # services and models the bindings may name (see §2.3)
+pin: [{ selector: "...", fields: [...], reason: "..." }] # operator-proof fields (see §2.3)
 scoring: "gated" # opt-in: zero the suite when a class:security criterion fails
 edition: "team" # solo | team | enterprise — filters by EXAIX_EDITION
 description: "Why this scenario exists"
@@ -90,6 +93,9 @@ scenario's/cell's changes. `source_path` alone mounts the path directly.
 
 A `matrix` block expands a scenario into one run per cell. Each cell can pick a different
 tool, provider, config, and binary. Cells set `$CELL_PROVIDER` / `$CELL_MODEL` (see §3).
+A matrix carries exactly one of `cells` (hand-listed, below) or `from_catalog` (presets, §2.3);
+`MatrixSchema` rejects both and rejects neither. The retired `axes` map no longer exists:
+`MatrixSchema` rejects it, so list cells or name presets instead.
 
 ```yaml
 matrix:
@@ -103,6 +109,129 @@ matrix:
       config: "configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
 ```
+
+Each cell is identified as `${tool}-${provider}` (for example `exactl-anthropic`) in reports,
+evidence files and `--cell` filters. A preset keeps the same id form, so migrating a hand-listed
+matrix to `from_catalog` does not rename a cell. `MatrixCellSchema` also accepts optional `bindings`
+and `catalog` blocks, which land in the cell layer of the overlay order in §2.3.
+
+### 2.3 Bindings, Presets and Pins
+
+A scenario chooses which provider, model and service each flow step uses without editing a TOML
+file. The runner turns these blocks into overlay files and passes them to the daemon as
+`--overlay` arguments of every `exactl request` step. `ScenarioSchema` carries the three
+scenario-level blocks; the `exactl request` step schema accepts a `bindings:` block for that one
+request.
+
+```yaml
+bindings: # BindingsTable: selector -> binding fields
+  default: { service: deepseek, model: deepseek/deepseek-v4-pro }
+  "flow:research/step:explore-*": { service: self-hosted-fixture, model: fixture/compat-fixture-v1 }
+  judge: { service: claude-cli, model: anthropic/claude-sonnet-5 }
+catalog: # services and models the bindings above may name
+  models:
+    "fixture/compat-fixture-v1": { model_provider: fixture }
+pin:
+  - selector: default
+    fields: [service, model]
+    reason: provider-qualification
+    note: "Phase 155 DeepSeek live leg"
+matrix:
+  from_catalog: [self-hosted-fixture] # presets from configs/eval-cells.toml
+```
+
+**Binding fields.** An entry sets any of `service`, `model_provider`, `model`, `service_model_id`,
+`transport`, `interface`, `effort` and `thinking`. Selectors are `default`, `role:<agent-role>`,
+`flow:<flow-id>`, `flow:<flow-id>/step:<step-id-or-glob>`, and the judge selectors below.
+
+**Presets.** `matrix.from_catalog` names `[tool.<name>]` rows in `configs/eval-cells.toml`. A preset
+(`ICatalogPreset`) is a base `config` plus optional `bindings` and `catalog` tables and the same
+`requires_bin`, `requires_key` and `requires_optin` predicates a hand-listed cell carries. A model
+variant is therefore a new preset row, not a copied config file. A preset whose `requires_optin`
+variable is unset records a skipped cell instead of failing.
+
+**Pins.** A `pin` entry has a `selector`, a non-empty `fields` list (any binding field except
+`effort` and `thinking`), a `reason` and an optional `note` of at most 200 characters. The reason is one
+of `provider-qualification`, `wire-compat-regression`, `pricing-table`, `capability-gate` or
+`compliance`. A pinned field keeps the value it has at the pin's selector after the scenario, cell and
+step layers apply.
+
+**Layer order.** From lowest to highest, every layer reaches the daemon as an `--overlay` argument in
+this order:
+
+1. Flow YAML `binding:` and the cell config's `[bindings]` (the daemon's own `flow` and `config` layers).
+1. Scenario `bindings:` and `catalog:` (`10-scenario.json`).
+1. Matrix cell or preset `bindings` and `catalog` (`20-cell.json`).
+1. The `exactl request` step's own `bindings:`, passed to that request only (`25-step-<step-id>.json`).
+1. Operator `--overlay` files, in the order given (copied to `30-operator-<n>.<ext>`, with original path and sha256 recorded).
+1. Operator `--bind` entries (`40-operator-bind.json`).
+
+Two layers that set the same selector and field resolve to the later layer, so an operator
+`--overlay` that repeats a selector the scenario already used simply wins, and the run does not fail
+with `ambiguous_selector`. The rule is per selector. It does not weaken `ambiguous_selector` for two
+distinct equally-specific selectors: two different globs of equal specificity that set one field to
+different values are still rejected. `loadBindingLayers` applies the collapse in load order.
+
+**How a pin is enforced.** A pinned field is protected by removing it from operator entries before
+the runner writes them. Precedence alone cannot protect a pin, because `--bind` entries sit in the
+`cli` layer above every `--overlay`, so no overlay can override a `--bind`. For each operator entry
+that sets a pinned field to a different value:
+
+- A selector at least as specific as the pin's selector is refused before `start-daemon` with the
+  code `pinned`, and the pin's reason appears in the issue detail.
+- A broader selector is allowed with the pinned field stripped from that entry. The evidence records
+  `pin_kept` for every stripped field and names the entry it came from.
+
+This is why no `--bind` can change a pinned field. A scenario, cell or step binding more specific
+than a pin that sets a pinned field to a different value is an authoring error (`pinned`, at load).
+Flow pins (`pin:` inside a flow step) are enforced by the daemon.
+
+**Judge selectors.** A scenario judge binds through `judge` (every judge step) and
+`judge:<step-id>` (one `judge` step) only. `default`, `role:` and `flow:` do not apply to a scenario
+judge: they bind flow steps, and a broad `default` must not silently move a grader. A flow **gate**
+judge is a different mechanism. It runs inside the flow (`kind: "gate"`) and resolves through
+`default`, `role:` and `flow:`, so an author must not expect the two to behave alike. With no `judge`
+binding the judge uses `EXA_EVAL_LLM_*` as before, and `EXA_EVAL_LLM_MOCK` stays the only switch
+between a mock and a live judge. A judge that resolves to the system-under-test's own service and
+model is allowed and flagged `judgeSharesSut` in the evidence.
+
+**Operator controls.** The scenario runner accepts the same flags as `exactl request`:
+
+```bash
+deno run -A tests/scenario_framework/runner/main.ts --scenario research-split \
+  --overlay ~/overlays/local-explorers.json \
+  --bind 'judge=service=openrouter,model=deepseek/deepseek-v4-pro'
+```
+
+`--overlay` is repeatable and the file must be JSON within the operator overlay byte ceiling.
+`--bind` uses the `selector=field=value[,field=value]` grammar.
+
+**Selecting Ollama.** Select the built-in Ollama service by an explicit binding and declare the
+canonical model in `catalog.models`; the built-in preference map has no `meta` or `qwen` key, so
+a model-only entry cannot route there:
+
+```yaml
+bindings:
+  default: { service: ollama-chat, model: meta/llama3.1:8b }
+catalog:
+  models:
+    "meta/llama3.1:8b": { model_provider: meta }
+```
+
+In a TOML preset the same selection reads `service = "ollama-chat"` under
+`[tool.<name>.bindings.default]`.
+
+**Trust boundary.** The runner writes overlay files to a runner-owned directory under the run's
+output directory, outside the sandbox, so an agent cannot edit the layers that route its own
+steps. `exactl request --overlay` rejects a symlink, a non-regular file and a file above
+`BINDING_OVERLAY_MAX_BYTES` before parsing (`loadOverlays`). The residual risk is a
+CLI delegate started with `--no-sandbox`, which can still write outside the sandbox by absolute
+path and so can reach those files.
+
+**Fixture network rule.** A service introduced by a run-time `--overlay` or preset catalog is not in
+the daemon's start-time `--allow-net` grant. A fixture-backed service therefore needs its host in
+the base config's explicit `allow_net` (for example `127.0.0.1:__COMPAT_FIXTURE_PORT__`, the
+Phase 155 pattern), and a host outside that list fails as `needs_restart`.
 
 ---
 
@@ -131,7 +260,8 @@ Environment the runner injects into every step subprocess: `REQUEST_FIXTURE`,
 `EXA_SCENARIO_ID`, `EXA_STEP_ID`, plus the current process env (so `EXA_LLM_PROVIDER`,
 `EXA_EVAL_LLM_*`, API keys, … flow through).
 
-**Judge model** (never hardcoded in a scenario — run configuration):
+**Judge model.** A `judge` binding (§2.3) wins over everything below. Without one, the judge is
+run configuration, never hardcoded in a scenario:
 
 - `EXA_EVAL_LLM_PROVIDER` / `EXA_EVAL_LLM_MODEL` — dedicated judge model (can differ from the
   scenario's own model). Highest precedence.
@@ -337,8 +467,8 @@ Runs `deno test` (or the declared command) in the step's `cwd`.
 ### 5.11 `judge` — virtual step hosting `llm-judge` criteria
 
 The `judge` step runs no subprocess itself; it carries the `llm-judge` output criteria that
-are evaluated by the LLM-as-judge. The judge model comes from env (`EXA_EVAL_LLM_*`), never
-from the scenario.
+are evaluated by the LLM-as-judge. The judge model comes from a `judge` or `judge:<step-id>`
+binding (§2.3) when the scenario or a preset declares one, otherwise from env (`EXA_EVAL_LLM_*`).
 
 ```yaml
 - id: "judge-quality"
