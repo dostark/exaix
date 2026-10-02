@@ -7,7 +7,7 @@
  * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts, tests/scenario_framework/README.md]
  */
 
-import { dirname, join, resolve } from "@std/path";
+import { basename, dirname, join, resolve } from "@std/path";
 import { z } from "zod";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import type { JSONObject, Opt, Reason } from "@exaix/core/types";
@@ -143,10 +143,15 @@ export function resolveRuntimeConfigForExecution(
 
   assertNotRepoRoot(workspacePath, frameworkHome);
 
-  // Output precedence mirrors workspace: explicit wins, else default UNDER the sandbox so all
-  // run artifacts (evidence, manifest) live beside the workspace, never in the repo tree.
+  // Output precedence mirrors workspace: an explicit path wins.
+  // Otherwise the default sits BESIDE the workspace, never inside it.
+  // The runner writes its binding overlays under the output directory.
+  // The agent under test may rewrite anything under its own workspace root.
+  // An output inside the sandbox would let the agent rewrite its own bindings.
   const explicitOutput = options.cliFlags?.output ?? fileConfig.output_dir;
-  const outputDir = explicitOutput ? resolve(explicitOutput) : join(workspacePath, SANDBOX_OUTPUT_SUBDIR);
+  const outputDir = explicitOutput
+    ? resolve(explicitOutput)
+    : join(dirname(workspacePath), SANDBOX_OUTPUT_SUBDIR, basename(workspacePath));
 
   return RuntimeConfigSchema.parse({
     ...fileConfig,

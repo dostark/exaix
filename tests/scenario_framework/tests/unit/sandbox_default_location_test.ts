@@ -13,7 +13,7 @@
  */
 
 import { assert, assertEquals, assertNotEquals, assertStringIncludes, assertThrows } from "@std/assert";
-import { dirname, resolve } from "@std/path";
+import { basename, dirname, resolve } from "@std/path";
 import { resolveRuntimeConfigForExecution } from "../../runner/config.ts";
 import { WorkspaceProvenance } from "../../runner/sandbox_lifecycle.ts";
 
@@ -69,15 +69,28 @@ Deno.test("[SandboxDefault] EXA_SANDBOX_BASE overrides the default sibling base"
   assertNotEquals(runtimeConfig.workspace_path, REPO_ROOT);
 });
 
-Deno.test("[SandboxDefault] absent output_dir defaults under the resolved sandbox, never the repo root", () => {
+Deno.test("[SandboxDefault] absent output_dir defaults beside the sandbox, outside it and outside the repo root", () => {
   const runtimeConfig = withSandboxBase(undefined, () =>
     resolveRuntimeConfigForExecution({
       executionDirectory: EXECUTION_DIRECTORY,
       fileConfig: {},
     }));
 
-  assertStringIncludes(runtimeConfig.output_dir, `${runtimeConfig.workspace_path}/`);
+  // The agent under test may rewrite anything under its own workspace.
+  // The runner writes the binding overlays under the output directory.
+  // A default output inside the sandbox would let the agent rewrite its own bindings.
+  // The default therefore sits beside the sandbox.
+  const sandbox = runtimeConfig.workspace_path;
+  assert(
+    !runtimeConfig.output_dir.startsWith(`${sandbox}/`),
+    `the default output must stay outside the sandbox, got: ${runtimeConfig.output_dir}`,
+  );
+  assertEquals(runtimeConfig.output_dir, `${dirname(sandbox)}/output/${basename(sandbox)}`);
   assertNotEquals(runtimeConfig.output_dir, REPO_ROOT);
+  assert(
+    !runtimeConfig.output_dir.startsWith(`${REPO_ROOT}/`),
+    `the default output must stay outside the repo tree, got: ${runtimeConfig.output_dir}`,
+  );
 });
 
 Deno.test("[SandboxDefault] explicit absolute workspace_path always wins over the default", () => {

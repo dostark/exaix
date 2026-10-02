@@ -544,9 +544,11 @@ runner that fills the disk and presents as an unrelated build failure.
 
 The asymmetry is deliberate: the cost of keeping a failed run's state is disk, and the cost of
 discarding it is an undiagnosable failure. Evidence is preserved by _exclusion_ rather than by
-relocation — the default `output_dir` is `<sandbox>/output`, and eval-history entries reference
-those paths, so moving them would leave the history pointing at nothing. A reclaimed sandbox
-shrinks from ~4 MB to ~16 KB.
+relocation — the default `output_dir` sits beside the sandbox, and eval-history entries reference
+those paths, so moving them would leave the history pointing at nothing. The default is
+`<sandbox-parent>/output/<sandbox-name>` rather than `<sandbox>/output`, because the runner writes
+its binding overlays under the output directory and the agent under test may rewrite anything
+inside its own sandbox. A reclaimed sandbox shrinks from ~4 MB to ~16 KB.
 
 Provenance is recorded on the config (`workspace_provenance`), not inferred from the path. Guessing
 by shape would delete a real workspace the day someone points `--workspace` at a directory under
