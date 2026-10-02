@@ -9,10 +9,10 @@
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/runner/scenario_catalog.ts, tests/scenario_framework/runner/modes.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { withEnv } from "@exaix/testing";
-import { ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
+import { CriterionStatus, ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { selectScenariosForExecution } from "../../runner/modes.ts";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
@@ -451,6 +451,62 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] fix-bug-null-guard runs from from_
     await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
     await Deno.remove(outputDir, { recursive: true }).catch(() => {});
   }
+});
+
+Deno.test("[ScenarioFrameworkSyntheticRunner] a bound judge grades the judge step with no provider env", async () => {
+  await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
+    const scenarioPath = await writeSyntheticScenario({
+      frameworkHome,
+      scenarioId: "synthetic-bound-judge",
+      tags: ["synthetic"],
+      schemaVersion: SCHEMA_VERSION,
+      steps: [{
+        // Any step that owns an llm-judge criterion is judge-bearing, whatever its type.
+        id: "score-report",
+        type: ScenarioStepType.SHELL,
+        command: Deno.execPath(),
+        args: ["eval", 'console.log("report-ready");'],
+        outputCriteriaLines: [
+          '    - id: "report-quality"',
+          '      kind: "llm-judge"',
+          '      preset: "task_fulfillment"',
+          "      score_threshold: 0.5",
+        ],
+      }],
+    });
+
+    const run = await runSyntheticScenario({
+      frameworkHome,
+      scenarioPath,
+      workspaceRoot,
+      outputDir,
+      mode: ScenarioExecutionMode.AUTO,
+      // The operator names the judge. No EXA_EVAL_LLM_PROVIDER or EXA_LLM_PROVIDER is set.
+      operatorBinds: ["judge:score-report=service=mock,model=mock/mock-model"],
+      env: { EXA_EVAL_LLM_MOCK: "false" },
+    });
+
+    // The evidence records the judge that graded the step, and where each field came from.
+    assertEquals(run.judges?.length, 1);
+    const judgeRow = run.judges![0]!;
+    assertEquals(judgeRow.stepId, "score-report");
+    assertEquals(judgeRow.service, "mock");
+    assertEquals(judgeRow.model, "mock/mock-model");
+    assertEquals(judgeRow.sources.service?.selector, "judge:score-report");
+    assertEquals(judgeRow.judgeSharesSut, false);
+
+    // A skipped criterion would mean no judge was consulted at all.
+    const judgeCriterion = run.stepOutcomes
+      .flatMap((outcome) => outcome.criterionResults)
+      .find((criterion) => criterion.kind === "llm-judge");
+    assertEquals(judgeCriterion?.status === CriterionStatus.SKIPPED, false, JSON.stringify(judgeCriterion));
+    // The bound judge was built and called. Without it this call throws the documented
+    // EXA_LLM_PROVIDER guard, because no provider env is set. The mock's canned text is
+    // not judge JSON, so the call resolves and the parse fails. That failure names the
+    // parse and never the provider guard, which proves the bound provider answered.
+    assertEquals(judgeCriterion?.status, CriterionStatus.ERROR, JSON.stringify(judgeCriterion));
+    assertStringIncludes(judgeCriterion?.message ?? "", "failed to parse LLM response");
+  });
 });
 
 async function writeFakeExactl(workspaceRoot: string, invocationLog: string): Promise<string> {

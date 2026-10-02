@@ -32,7 +32,9 @@ import {
   resolveRunnableSteps,
 } from "./matrix_expander.ts";
 import { loadCellCatalog, resolveCatalogCells } from "./cell_catalog.ts";
-import { type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
+import { buildRunBindingsFile, type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
+import { resolveJudgeBindings } from "./judge_bindings.ts";
+import { type IProviderLiveJudgeEvidence, judgeEvidenceRows } from "./provider_live_evidence.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
 import {
@@ -42,6 +44,7 @@ import {
   REQUEST_FIXTURE_CONTENT_SENTINEL,
 } from "./matrix_expander.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
+import type { IResolvedBinding } from "@exaix/schemas";
 import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
   CriterionPhase,
@@ -98,6 +101,8 @@ export interface IRunSyntheticScenarioResult {
   executionLogPath?: string;
   /** Overlay files this run passed to `exactl request`, with their digests. */
   bindingOverlays?: IScenarioOverlayFile[];
+  /** The judge bindings this run resolved, one row per judge step, for the evidence file. */
+  judges?: IProviderLiveJudgeEvidence[];
 }
 
 export interface IMaterializedCellConfig {
@@ -400,6 +405,35 @@ export async function runSyntheticScenario(
   });
   stepsToRun = overlayRequestBindings(stepsToRun, bindingPlan);
 
+  // Phase 203 Step 3: a judge resolves through the same layers the daemon reads. Resolution
+  // runs in the runner's process, so it emits no daemon event. The evidence is the record.
+  const judgePlan = await resolveJudgeBindings({
+    scenarioId: loadedScenario.scenario.id,
+    steps: stepsToRun,
+    // The sandbox config carries the config layer and the built-ins.
+    // It is also the config the daemon boots with.
+    config: new ConfigService(join(options.workspaceRoot, WORKSPACE_CONFIG_FILE)).get(),
+    runFile: await buildRunBindingsFile(bindingPlan.overlays, {
+      traceId: crypto.randomUUID(),
+      // The request this scenario submits is the subject of every judge grade.
+      requestPath: loadedScenario.requestFixture.absolutePath,
+    }),
+    env: envForExpansion,
+    sut: {
+      service: materialized.aiProvider,
+      model: materialized.aiModel ? `${materialized.aiProvider}/${materialized.aiModel}` : undefined,
+    },
+  });
+  if (judgePlan.issues.length > 0) {
+    // A judge whose binding failed keeps the environment path, so this is a warning, not a stop.
+    console.error(
+      `\n%c ⚠ judge bindings unresolved:\n   ${
+        judgePlan.issues.map((issue) => `${issue.stepId}: ${issue.code} (${issue.detail})`).join("\n   ")
+      }`,
+      "color: yellow; font-weight: bold;",
+    );
+  }
+
   // Runs AFTER materializeCellConfig so the `[[portals]]` entry lands in the config the
   // daemon actually boots with — mounting before it risks the entry being silently
   // overwritten by the materialized cell config, failing with "Portal not found".
@@ -453,6 +487,8 @@ export async function runSyntheticScenario(
           journalBaselineRowid: previousStepStartRowid,
           traceBaselineRowid: scenarioJournalBaselineRowid,
           stepOutcomes,
+          // The judge that grades this step, when a binding layer named one.
+          ...(judgePlan.bindings.has(step.id) ? { judgeBinding: judgePlan.bindings.get(step.id)!.binding } : {}),
           maxStepTimeoutSec: options.maxStepTimeoutSec,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
@@ -542,6 +578,7 @@ export async function runSyntheticScenario(
     manifestPath,
     executionLogPath,
     bindingOverlays: bindingPlan.overlays,
+    judges: judgeEvidenceRows([...judgePlan.bindings.values()]),
   };
 }
 
@@ -783,6 +820,8 @@ interface IExecuteSyntheticStepOptions {
   referencePatchPath?: string;
   /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
   stepOutcomes?: IScenarioStepOutcome[];
+  /** The step's judge binding, when the runner resolved one for this step. */
+  judgeBinding?: IResolvedBinding;
   frameworkHome: string;
   env?: { [key: string]: string };
   portalAliases: string[];
@@ -920,6 +959,7 @@ async function executeSyntheticStep(
     exactlExecutable: options.exactlExecutable,
     journalBaselineRowid: options.journalBaselineRowid,
     traceBaselineRowid: options.traceBaselineRowid,
+    judgeBinding: options.judgeBinding,
   });
 
   return {
@@ -948,6 +988,7 @@ async function evaluateInputCriteria(
         exactlExecutable: options.exactlExecutable,
         journalBaselineRowid: options.journalBaselineRowid,
         traceBaselineRowid: options.traceBaselineRowid,
+        judgeBinding: options.judgeBinding,
       }),
     );
   }

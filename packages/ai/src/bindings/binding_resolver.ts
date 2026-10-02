@@ -27,7 +27,7 @@ import {
   ModelCapabilitySchema,
 } from "@exaix/schemas";
 import type { IBindingEnvProbe } from "./binding_types.ts";
-import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND } from "./binding_types.ts";
+import { BINDING_OUTCOME_INVALID, BINDING_OUTCOME_UNBOUND, STEP_KIND_GATE, STEP_KIND_JUDGE } from "./binding_types.ts";
 import { LAYER_FLOW } from "./binding_layers.ts";
 
 export interface IInvalidBindingOutcome {
@@ -51,6 +51,16 @@ export const ISSUE_LOCK_MISMATCH: IBindingIssue["code"] = "lock_mismatch";
 const FLOW_PREFIX = "flow:";
 const ROLE_PREFIX = "role:";
 const STEP_SEPARATOR = "/step:";
+/** The bare judge selector: any scenario judge. */
+const SELECTOR_JUDGE = "judge";
+/** The judge selector prefix: `judge:<id>` names one judge. */
+const JUDGE_PREFIX = "judge:";
+/** Specificity of the bare `judge` selector. It outranks `default` and nothing else. */
+const JUDGE_SPECIFICITY = 5;
+/** Specificity of `judge:<id>`. It outranks `judge` and every flow-step selector.
+ *  A judge selector only ever competes with another judge selector, so these two
+ *  ranks need only their documented order. */
+const JUDGE_ID_SPECIFICITY = 6;
 
 const LAYER_RANK: Record<IBindingLayers["entries"][number]["layer"], number> = {
   flow: 0,
@@ -93,9 +103,12 @@ function globMatch(pattern: string, value: string): boolean {
   return true;
 }
 
-/** Specificity classes: default(0) < flow:(1) < role:(2) < step-glob(3) < step-exact(4). */
+/** Specificity classes: default(0) < flow:(1) < role:(2) < step-glob(3) < step-exact(4)
+ *  < judge(5) < judge:<id>(6). The last two are reachable only for a judge ref. */
 function selectorSpecificity(selector: string): number {
   if (selector === SELECTOR_DEFAULT) return 0;
+  if (selector === SELECTOR_JUDGE) return JUDGE_SPECIFICITY;
+  if (selector.startsWith(JUDGE_PREFIX)) return JUDGE_ID_SPECIFICITY;
   if (selector.startsWith(ROLE_PREFIX)) return 2;
   if (!selector.startsWith(FLOW_PREFIX)) return -1;
   const stepIndex = selector.indexOf(STEP_SEPARATOR);
@@ -117,10 +130,13 @@ function rankFor(layer: IBindingLayers["entries"][number]["layer"], selector: st
   };
 }
 
-/** True when a selector binds this flow step. Judge selectors never match a flow step. */
+/** True when a selector binds this step. The branch follows the ref kind.
+ *  A scenario judge matches judge selectors only, so it never inherits `default`,
+ *  `role:` or `flow:`. Judge selectors never match a flow step, gate included. */
 function selectorMatches(ref: IBindingStepRef, selector: string): boolean {
+  if (ref.kind === STEP_KIND_JUDGE) return judgeSelectorMatches(ref, selector);
   if (selector === SELECTOR_DEFAULT) return true;
-  if (selector === "judge" || selector.startsWith("judge:")) return false;
+  if (selector === SELECTOR_JUDGE || selector.startsWith(JUDGE_PREFIX)) return false;
   if (selector.startsWith(ROLE_PREFIX)) return ref.agentRole === selector.slice(ROLE_PREFIX.length);
   if (selector.startsWith(FLOW_PREFIX)) {
     const body = selector.slice(FLOW_PREFIX.length);
@@ -133,6 +149,13 @@ function selectorMatches(ref: IBindingStepRef, selector: string): boolean {
   return false;
 }
 
+/** True when a judge selector names this judge: the bare `judge`, or its own `judge:<id>`. */
+function judgeSelectorMatches(ref: IBindingStepRef, selector: string): boolean {
+  if (selector === SELECTOR_JUDGE) return true;
+  if (!selector.startsWith(JUDGE_PREFIX)) return false;
+  return ref.judgeId !== undefined && selector.slice(JUDGE_PREFIX.length) === ref.judgeId;
+}
+
 function compareRanks(a: IMatchRank, b: IMatchRank): number {
   return a.layerRank - b.layerRank || a.specificity - b.specificity || a.prefixLen - b.prefixLen;
 }
@@ -141,8 +164,13 @@ function sameRank(a: IMatchRank, b: IMatchRank): boolean {
   return compareRanks(a, b) === 0;
 }
 
-/** Exact step selector for a flow step, used as the flow-layer entry's selector. */
+/** Exact selector for a step, used as the flow-layer entry's selector and to test pin
+ *  exactness. A flow step uses `flow:<flowId>/step:<stepId>`. A scenario judge uses
+ *  `judge:<judgeId>`, or the bare `judge` when it carries no id. */
 function exactStepSelector(ref: IBindingStepRef): string {
+  if (ref.kind === STEP_KIND_JUDGE) {
+    return ref.judgeId !== undefined ? `${JUDGE_PREFIX}${ref.judgeId}` : SELECTOR_JUDGE;
+  }
   return `flow:${ref.flowId}/step:${ref.stepId}`;
 }
 
@@ -475,11 +503,12 @@ function driverSource(sources: IResolvedBinding["sources"]): IBindingFieldSource
 /** Route compatibility between the step ref and the chosen service.
  *  A cli-delegate service is a session-tool target, never a provider.
  *  A generate-backed cli service stays a provider with a cli interface.
+ *  A gate judge and a scenario judge both call provider.generate, so both accept cli.
  *  Returns a reason when incompatible, else undefined. */
 function interfaceCompatibilityIssue(ref: IBindingStepRef, service: ICatalogService): string | undefined {
   const isDelegateService = service.adapter === "cli-delegate";
-  if (ref.kind === "gate") {
-    return isDelegateService ? "a gate judge uses provider.generate, not a session-tool delegate" : undefined;
+  if (ref.kind === STEP_KIND_GATE || ref.kind === STEP_KIND_JUDGE) {
+    return isDelegateService ? "a judge uses provider.generate, not a session-tool delegate" : undefined;
   }
   if (ref.strategy === "cli_delegate") {
     return isDelegateService ? undefined : "strategy cli_delegate requires a cli-delegate service";

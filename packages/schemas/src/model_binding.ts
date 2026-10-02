@@ -16,7 +16,7 @@ import type { EffortDeclaration, ThinkingDeclaration } from "./model_intent.ts";
 export type BindingTransport = "cloud" | "local";
 export type BindingInterface = "api" | "cli";
 export type BindingLayer = "flow" | "config" | "overlay" | "run" | "cli";
-export type BindingStepKind = "agent" | "gate";
+export type BindingStepKind = "agent" | "gate" | "judge";
 export type BindingField =
   | "service"
   | "model_provider"
@@ -58,6 +58,8 @@ export interface IBindingStepRef {
   stepId: string;
   agentRole: string;
   kind: BindingStepKind;
+  /** The judge this ref stands for, for `kind: "judge"`. It keys the `judge:<id>` selector. */
+  judgeId?: string;
   strategy?: string;
   nativeTools: boolean;
 }

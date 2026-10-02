@@ -42,7 +42,7 @@ import {
   EvaluationResultSchema,
   resolveCriterionPreset,
 } from "@exaix/core/evaluation";
-import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
+import { type Config, DEFAULT_MODEL_PRESETS, EFFORT_AUTO, type IResolvedBinding } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { getEvaluationResultJsonSchema, getJudgeScoreJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { ICostTracker } from "@exaix/core/types";
@@ -99,6 +99,9 @@ export interface IEvaluateCriterionOptions {
    *  resolves the current request's trace against this (the per-step barrier baseline rises
    *  above the request). */
   traceBaselineRowid?: number;
+  /** The step's judge binding, when the runner resolved one. A bound judge replaces the
+   *  `EXA_EVAL_LLM_*`/`EXA_LLM_*` provider path. The mock setting still decides first. */
+  judgeBinding?: IResolvedBinding;
   /** Fires after a real (non-mock) llm-judge call resolves, before scoring. Absent by
    *  default — ordinary history/scoring behavior is unaffected either way. */
   calibrationCapture?: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>;
@@ -120,6 +123,8 @@ export interface IEvaluateStepOutcomeOptions {
   journalBaselineRowid?: number;
   /** The SCENARIO's journal rowid baseline, forwarded to `trace_scope: current` criteria. */
   traceBaselineRowid?: number;
+  /** The step's judge binding, forwarded to its llm-judge criteria. */
+  judgeBinding?: IResolvedBinding;
 }
 
 export interface IScenarioStepOutcome {
@@ -296,6 +301,7 @@ export async function evaluateStepOutcome(
     stepOutcomes: options.stepOutcomes,
     journalBaselineRowid: options.journalBaselineRowid,
     traceBaselineRowid: options.traceBaselineRowid,
+    judgeBinding: options.judgeBinding,
   });
 
   if (hasFailedCriterion(inputResults)) {
@@ -336,6 +342,7 @@ export async function evaluateStepOutcome(
     stepOutcomes: options.stepOutcomes,
     journalBaselineRowid: options.journalBaselineRowid,
     traceBaselineRowid: options.traceBaselineRowid,
+    judgeBinding: options.judgeBinding,
   });
   const criterionResults = [...inputResults, ...outputResults];
 
@@ -361,6 +368,7 @@ interface IEvaluateCriteriaBatchOptions {
   stepOutcomes?: IScenarioStepOutcome[];
   journalBaselineRowid?: number;
   traceBaselineRowid?: number;
+  judgeBinding?: IResolvedBinding;
 }
 
 async function evaluateCriteriaBatch(
@@ -382,6 +390,7 @@ async function evaluateCriteriaBatch(
         stepOutcomes: options.stepOutcomes,
         journalBaselineRowid: options.journalBaselineRowid,
         traceBaselineRowid: options.traceBaselineRowid,
+        judgeBinding: options.judgeBinding,
       }),
     );
   }
@@ -1985,7 +1994,13 @@ export async function evaluateLlmJudgeCriterion(
         });
       }
     };
-    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema, captureObserver);
+    const rawLlmResponse = await callLlmEndpoint(
+      promptUsed,
+      options.env,
+      judgeJsonSchema,
+      captureObserver,
+      options.judgeBinding,
+    );
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 
     if (isMulti) {
@@ -2072,11 +2087,56 @@ export function resolveEvalLlmJudgeConfigRoot(): string {
   return Deno.cwd();
 }
 
+/**
+ * Build one judge provider from its resolved binding, then grade with it.
+ *
+ * The config is rooted at the judge's own root. A bound judge therefore keeps an
+ * independent config root and never becomes the system under test. The binding supplies
+ * the model, the adapter and the endpoint. No environment routing can override them.
+ * The resolver refused a session-tool delegate, so a bound provider is never one.
+ */
+async function callBoundJudgeEndpoint(
+  prompt: string,
+  binding: IResolvedBinding,
+  jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  onResolved: Opt<(metadata: ILlmEndpointResolvedMetadata) => void | Promise<void>, Reason.OptionalDependency>,
+): Promise<string> {
+  const cliDelegateTimeoutMs = resolveEvalLlmTimeoutMs(binding.model_provider);
+  const overrides: Partial<Config> = {
+    ...(cliDelegateTimeoutMs
+      ? {
+        ai: { provider: binding.model_provider, model: binding.model, timeout_ms: cliDelegateTimeoutMs },
+        ai_timeout: {
+          default_ms: cliDelegateTimeoutMs,
+          providers: { [binding.model_provider]: cliDelegateTimeoutMs },
+        },
+      }
+      : {}),
+  };
+  const finalConfig = createMockConfig(
+    resolveEvalLlmJudgeConfigRoot(),
+    overrides as Parameters<typeof createMockConfig>[1],
+  );
+  const provider = await ProviderFactory.createFromBinding(finalConfig, binding);
+  const result = await provider.generate(prompt, {
+    ...(binding.effort !== undefined && binding.effort !== EFFORT_AUTO ? { effort: binding.effort } : {}),
+    ...(binding.thinking !== undefined && binding.thinking !== EFFORT_AUTO
+      ? { thinking: binding.thinking === true }
+      : {}),
+    ...(jsonSchema !== undefined ? { jsonSchema } : {}),
+  });
+  if (onResolved) {
+    await onResolved({ provider: binding.model_provider, model: binding.model, result });
+  }
+  return result.content;
+}
+
 export async function callLlmEndpoint(
   prompt: string,
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
   jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   onResolved?: Opt<(metadata: ILlmEndpointResolvedMetadata) => void | Promise<void>, Reason.OptionalDependency>,
+  judgeBinding?: Opt<IResolvedBinding, Reason.OptionalDependency>,
 ): Promise<string> {
   // Step env (options.env) takes precedence over the runner's process env — reading only
   // Deno.env here silently ignored a step-declared EXA_EVAL_LLM_MOCK/EXA_LLM_PROVIDER and
@@ -2091,8 +2151,8 @@ export async function callLlmEndpoint(
   const envEvalCharacteristics = readEnv("EXA_EVAL_CHARACTERISTICS");
   const useRealLlm = readEnv("EXA_EVAL_LLM_MOCK") === "false";
 
-  // Real LLM calls require an explicit provider
-  if (useRealLlm && !envProvider) {
+  // Real LLM calls require an explicit provider, unless a binding layer named this judge.
+  if (useRealLlm && !envProvider && !judgeBinding) {
     throw new Error(
       "EXA_LLM_PROVIDER (or EXA_EVAL_LLM_PROVIDER) is required when EXA_EVAL_LLM_MOCK=false. " +
         "Set it to a supported provider (e.g. 'ollama', 'anthropic', 'opencode-cli').",
@@ -2101,6 +2161,12 @@ export async function callLlmEndpoint(
 
   // Ensure provider registry and defaults are initialized
   bootstrapProviderRegistry();
+
+  // A judge a binding layer named is graded by that judge. The operator, scenario or cell
+  // author chose it explicitly, so the environment path stays the fallback, not the reverse.
+  if (useRealLlm && judgeBinding) {
+    return await callBoundJudgeEndpoint(prompt, judgeBinding, jsonSchema, onResolved);
+  }
 
   // Build the resolution intent from environment variables
   const intent: IModelIntent = {};

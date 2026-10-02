@@ -22,7 +22,14 @@
 
 import { join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { BindingOverlaySchema, BindOneOffSchema, type IBindingSpec, type IResolvedBinding } from "@exaix/schemas";
+import {
+  BINDING_OVERLAY_SCHEMA_VERSION,
+  BindingOverlaySchema,
+  BindOneOffSchema,
+  type IBindingSpec,
+  type IRunBindingsFile,
+  RunBindingsFileSchema,
+} from "@exaix/schemas";
 import type { IScenario } from "../schema/scenario_schema.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -43,8 +50,6 @@ export interface IScenarioOverlayFile {
 /** The runner-side binding plan for one scenario run. */
 export interface IScenarioBindingPlan {
   overlays: IScenarioOverlayFile[];
-  /** Resolved judge bindings by judge step id. The Step-1 subset resolves none. */
-  judgeBindings: Map<string, IResolvedBinding>;
 }
 
 /** A cell catalog as the scenario schema types it: every table is optional. */
@@ -287,5 +292,37 @@ export async function planScenarioBindings(
     overlays.push({ role: "operator", path, sha256: await writeOverlay(path, document) });
   }
 
-  return { overlays, judgeBindings: new Map<string, IResolvedBinding>() };
+  return { overlays };
+}
+
+/**
+ * Read the overlay files a plan wrote back into the run-binding-file shape.
+ * That is the shape the binding layer loader reads. The digests come from the plan, so the
+ * loader sees the bytes this run wrote.
+ *
+ * Judge resolution needs this. It resolves against the same layer stack the daemon builds.
+ * The daemon builds that stack from exactly these files.
+ */
+export async function buildRunBindingsFile(
+  overlays: readonly IScenarioOverlayFile[],
+  identity: { traceId: string; requestPath: string },
+): Promise<IRunBindingsFile> {
+  const files: IRunBindingsFile["overlays"] = [];
+  for (const overlay of overlays) {
+    const raw = await Deno.readTextFile(overlay.path);
+    files.push({
+      source_path: overlay.path,
+      sha256: overlay.sha256,
+      overlay: BindingOverlaySchema.parse(JSON.parse(raw)),
+    });
+  }
+  return RunBindingsFileSchema.parse({
+    schema: BINDING_OVERLAY_SCHEMA_VERSION,
+    trace_id: identity.traceId,
+    request_path: identity.requestPath,
+    request_sha256: await hashText(await Deno.readTextFile(identity.requestPath)),
+    created_at: new Date().toISOString(),
+    overlays: files,
+    binds: [],
+  });
 }

@@ -24,6 +24,7 @@ import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./per
 import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { loadTraceActivities } from "./failure_classifier.ts";
 import { writeProviderLiveEvidence } from "./provider_live_evidence.ts";
+import type { IProviderLiveJudgeEvidence } from "./provider_live_evidence.ts";
 import { type IProviderLiveBindingEvidence, readLockEntryEvidence } from "./provider_live_evidence.ts";
 import type { IScenarioOverlayFile } from "./binding_layers.ts";
 import { exists } from "@std/fs";
@@ -201,6 +202,8 @@ await new Command()
     const providerLiveWorkspaces = new Map<string, string>();
     // Per-scenario overlay files the runner wrote, for the redacted evidence.
     const bindingOverlays = new Map<string, IScenarioOverlayFile[]>();
+    // Per-scenario judge bindings the runner resolved, for the redacted evidence.
+    const judgeRows = new Map<string, IProviderLiveJudgeEvidence[]>();
 
     for (const entry of selectedEntries) {
       // Checked between scenarios: once accumulated cost reached the cap, the remaining
@@ -303,6 +306,7 @@ await new Command()
             firstTrialWorkspaceRoot = trialWorkspaceRoot;
             if (entry.pack === "provider_live") providerLiveWorkspaces.set(entry.id, trialWorkspaceRoot);
             if (result.bindingOverlays) bindingOverlays.set(entry.id, result.bindingOverlays);
+            if (result.judges?.length) judgeRows.set(entry.id, result.judges);
           }
 
           console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
@@ -493,7 +497,7 @@ await new Command()
         exitCode,
         overlays: bindingOverlays.get(scenarioId) ?? [],
         bindings,
-        judges: [],
+        judges: judgeRows.get(scenarioId) ?? [],
       });
       console.log(`Redacted live evidence: ${evidencePath}`);
     }

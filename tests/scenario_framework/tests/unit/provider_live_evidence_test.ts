@@ -178,7 +178,13 @@ Deno.test("[evidence] provider live evidence records overlays, lock entries and 
           outcome: "unbound",
         },
       ],
-      judges: [{ stepId: "judge-1", service: "claude-cli", model: "anthropic/claude-sonnet-5", judgeSharesSut: false }],
+      judges: [{
+        stepId: "judge-1",
+        service: "claude-cli",
+        model: "anthropic/claude-sonnet-5",
+        sources: { service: { layer: "config", selector: "judge" } },
+        judgeSharesSut: false,
+      }],
     });
 
     const summary = JSON.parse(await Deno.readTextFile(path));
@@ -190,8 +196,15 @@ Deno.test("[evidence] provider live evidence records overlays, lock entries and 
     assertEquals(summary.bindings[0].stepId, "compose");
     assertEquals(summary.bindings[0].service, "alpha");
     assertEquals(summary.bindings[1].outcome, "unbound");
+    // The judge row carries the resolved service and model plus the source of each field.
     assertEquals(summary.judges, [
-      { stepId: "judge-1", service: "claude-cli", model: "anthropic/claude-sonnet-5", judgeSharesSut: false },
+      {
+        stepId: "judge-1",
+        service: "claude-cli",
+        model: "anthropic/claude-sonnet-5",
+        sources: { service: { layer: "config", selector: "judge" } },
+        judgeSharesSut: false,
+      },
     ]);
   } finally {
     await Deno.remove(outputDir, { recursive: true }).catch(() => {});

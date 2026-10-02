@@ -605,3 +605,185 @@ Deno.test("a broader override still changes the step's unpinned fields", () => {
     assertEquals(outcome.binding.transport, "local");
   }
 });
+
+// --- Phase 203 Step 3: the scenario-judge ref kind ---
+
+/** A judge ref. The scenario id is the flowId and the judge step id is the stepId.
+ *  A judge binding therefore carries the identity a flow step does. */
+const judgeRef: IBindingStepRef = {
+  flowId: "persona-eval",
+  stepId: "judge-response",
+  agentRole: "judge",
+  kind: "judge",
+  judgeId: "response",
+  nativeTools: false,
+};
+
+/** A gate ref, as the shipped flow gate judges carry it. */
+const gateRef: IBindingStepRef = {
+  flowId: "research",
+  stepId: "compose",
+  agentRole: "gate-judge",
+  kind: "gate",
+  nativeTools: false,
+};
+
+const judgeCatalog: IBindingCatalog = {
+  models: { "mock/alpha": { model_provider: "mock" }, "mock/beta": { model_provider: "mock" } },
+  services: {
+    alpha: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/alpha": "alpha" } },
+    beta: { adapter: "mock", transport: "local", interface: "api", serves: { "mock/beta": "beta" } },
+    "alpha-cli": { adapter: "mock", transport: "local", interface: "cli", serves: { "mock/alpha": "alpha" } },
+  },
+  preferences: {},
+};
+
+Deno.test("[resolver] a judge ref matches judge and judge:<id> only, and judge:<id> outranks judge", () => {
+  // A scenario judge must not inherit a binding written for the subject under test.
+  // So default, role: and flow: entries never reach it.
+  const broadOnly = layer([
+    { layer: "config", selector: "default", spec: { service: "alpha", model: "mock/alpha" } },
+    { layer: "config", selector: "role:judge", spec: { service: "alpha", model: "mock/alpha" } },
+    { layer: "config", selector: "flow:persona-eval", spec: { service: "alpha", model: "mock/alpha" } },
+    {
+      layer: "config",
+      selector: "flow:persona-eval/step:judge-response",
+      spec: { service: "alpha", model: "mock/alpha" },
+    },
+  ]);
+  assertEquals(
+    resolveBinding(judgeRef, {}, broadOnly, probe),
+    { kind: "unbound" },
+    "no judge selector is present, so the judge stays unbound",
+  );
+
+  const bareJudge = resolveBinding(
+    judgeRef,
+    {},
+    layer([{ layer: "config", selector: "judge", spec: { service: "alpha", model: "mock/alpha" } }]),
+    probe,
+  );
+  assertEquals(bareJudge.kind, "bound");
+  if (bareJudge.kind === "bound") {
+    assertEquals(bareJudge.binding.service, "alpha");
+    assertEquals(bareJudge.binding.sources.service?.selector, "judge");
+  }
+
+  const bothJudgeSelectors = layer([
+    { layer: "config", selector: "judge", spec: { service: "alpha", model: "mock/alpha" } },
+    { layer: "config", selector: "judge:response", spec: { service: "beta", model: "mock/beta" } },
+  ]);
+  const specific = resolveBinding(judgeRef, {}, bothJudgeSelectors, probe);
+  assertEquals(specific.kind, "bound");
+  if (specific.kind === "bound") {
+    assertEquals(specific.binding.service, "beta", "judge:<id> must outrank the bare judge selector");
+    assertEquals(specific.binding.sources.service?.selector, "judge:response");
+  }
+
+  // Another judge's selector is a different binding, not a broader one.
+  const otherJudge = resolveBinding(
+    judgeRef,
+    {},
+    layer([
+      { layer: "config", selector: "judge", spec: { service: "alpha", model: "mock/alpha" } },
+      { layer: "config", selector: "judge:other", spec: { service: "beta", model: "mock/beta" } },
+    ]),
+    probe,
+  );
+  assertEquals(otherJudge.kind, "bound");
+  if (otherJudge.kind === "bound") assertEquals(otherJudge.binding.service, "alpha");
+});
+
+Deno.test('[resolver][regression] a kind:"gate" ref still matches default, role: and flow: and never a judge selector', () => {
+  const byDefault = resolveBinding(
+    gateRef,
+    {},
+    layer([{ layer: "config", selector: "default", spec: { service: "alpha", model: "mock/alpha" } }]),
+    probe,
+  );
+  assertEquals(byDefault.kind, "bound");
+
+  const byRole = resolveBinding(
+    gateRef,
+    {},
+    layer([{ layer: "config", selector: "role:gate-judge", spec: { service: "beta", model: "mock/beta" } }]),
+    probe,
+  );
+  assertEquals(byRole.kind, "bound");
+  if (byRole.kind === "bound") assertEquals(byRole.binding.service, "beta");
+
+  const byFlow = resolveBinding(
+    gateRef,
+    {},
+    layer([{
+      layer: "config",
+      selector: "flow:research/step:compose",
+      spec: { service: "beta", model: "mock/beta" },
+    }]),
+    probe,
+  );
+  assertEquals(byFlow.kind, "bound");
+  if (byFlow.kind === "bound") assertEquals(byFlow.binding.service, "beta");
+
+  const judgeSelectorsOnly = layer([
+    { layer: "config", selector: "judge", spec: { service: "alpha", model: "mock/alpha" } },
+    { layer: "config", selector: "judge:response", spec: { service: "beta", model: "mock/beta" } },
+  ]);
+  assertEquals(resolveBinding(gateRef, {}, judgeSelectorsOnly, probe), { kind: "unbound" });
+});
+
+Deno.test("[resolver] a judge may bind a cli-interface service, which a plain flow step may not", () => {
+  const judgeOutcome = resolveBinding(
+    judgeRef,
+    {},
+    layer([{ layer: "config", selector: "judge", spec: { service: "alpha-cli", model: "mock/alpha" } }], judgeCatalog),
+    probe,
+  );
+  assertEquals(judgeOutcome.kind, "bound");
+  if (judgeOutcome.kind === "bound") assertEquals(judgeOutcome.binding.interface, "cli");
+
+  const agentOutcome = resolveBinding(
+    ref,
+    {},
+    layer([{
+      layer: "config",
+      selector: "flow:research/step:compose",
+      spec: { service: "alpha-cli", model: "mock/alpha" },
+    }], judgeCatalog),
+    probe,
+  );
+  assertEquals(agentOutcome.kind, "invalid");
+  if (agentOutcome.kind === "invalid") {
+    assertEquals(agentOutcome.issues[0].code, "interface_unsupported");
+  }
+});
+
+Deno.test("[resolver] a judge pin treats judge:<id> as the exact selector", () => {
+  const step = {
+    binding: { service: "alpha", model: "mock/alpha" },
+    pin: { fields: ["model" as PinnableBindingField], reason: "compliance" as const },
+  };
+
+  // judge:<id> is this judge's exact selector, so it is an exact override → pinned.
+  const exact = resolveBinding(
+    judgeRef,
+    step,
+    layer([{ layer: "config", selector: "judge:response", spec: { model: "mock/beta" } }]),
+    probe,
+  );
+  assertEquals(exact.kind, "invalid");
+  if (exact.kind === "invalid") assertEquals(exact.issues[0].code, "pinned");
+
+  // The bare judge selector is broader than this judge, so the pinned value is kept.
+  const broader = resolveBinding(
+    judgeRef,
+    step,
+    layer([{ layer: "config", selector: "judge", spec: { model: "mock/beta" } }]),
+    probe,
+  );
+  assertEquals(broader.kind, "bound");
+  if (broader.kind === "bound") {
+    assertEquals(broader.binding.model, "mock/alpha");
+    assertEquals(broader.binding.sources.model?.pin_kept?.skipped_selector, "judge");
+  }
+});

@@ -73,8 +73,6 @@ Deno.test("[bindings] planScenarioBindings writes the scenario overlay with its 
     const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(scenarioOverlay.path)));
     assertEquals(written.bindings?.["flow:research/step:compose"]?.service, "alpha");
     assertEquals(written.catalog?.services?.alpha?.serves["alpha/one"], "one");
-    // Step-1 subset resolves no judges.
-    assertEquals(plan.judgeBindings.size, 0);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

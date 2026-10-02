@@ -60,6 +60,8 @@ export const BOUND_TARGET_KIND_SESSION_TOOL = "session-tool" as const;
 /** Discriminant values of `IBindingStepRef.kind`. */
 export const STEP_KIND_AGENT = "agent" as const;
 export const STEP_KIND_GATE = "gate" as const;
+/** A scenario judge, resolved by the runner rather than by the daemon. */
+export const STEP_KIND_JUDGE = "judge" as const;
 
 /** Adapter name of the cli-delegate session-tool services. */
 export const ADAPTER_CLI_DELEGATE = "cli-delegate" as const;

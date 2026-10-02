@@ -6,8 +6,9 @@
  * @related-files [tests/scenario_framework/runner/main.ts]
  */
 import { join } from "@std/path";
-import { BindingLockSchema } from "@exaix/schemas";
+import { BindingLockSchema, type IResolvedBinding } from "@exaix/schemas";
 import type { IActivityRecord, Opt, Reason } from "@exaix/core/types";
+import type { IResolvedJudgeBinding } from "./judge_bindings.ts";
 
 /** One overlay file the run passed, as the evidence records it. */
 export interface IProviderLiveOverlayEvidence {
@@ -34,6 +35,8 @@ export interface IProviderLiveJudgeEvidence {
   stepId: string;
   service: string;
   model: string;
+  /** The layer and selector each resolved field came from. */
+  sources: IResolvedBinding["sources"];
   /** True when the judge resolved to the same service and model as the system under test. */
   judgeSharesSut: boolean;
 }
@@ -50,8 +53,21 @@ export interface IProviderLiveEvidenceInput {
   overlays?: readonly IProviderLiveOverlayEvidence[];
   /** One row per resolved step binding, read from each run's binding lockfile. */
   bindings?: readonly IProviderLiveBindingEvidence[];
-  /** Judge bindings the runner resolved. The Step-1 subset resolves none. */
+  /** Judge bindings the runner resolved. Absent when no step owns a judge criterion. */
   judges?: readonly IProviderLiveJudgeEvidence[];
+}
+
+/** Reduce the runner's resolved judge bindings to the auditable evidence rows. */
+export function judgeEvidenceRows(
+  bindings: readonly IResolvedJudgeBinding[],
+): IProviderLiveJudgeEvidence[] {
+  return bindings.map((entry) => ({
+    stepId: entry.stepId,
+    service: entry.binding.service,
+    model: entry.binding.model,
+    sources: entry.binding.sources,
+    judgeSharesSut: entry.judgeSharesSut,
+  }));
 }
 
 /**
