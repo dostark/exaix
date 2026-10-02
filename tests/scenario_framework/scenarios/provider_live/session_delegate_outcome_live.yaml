@@ -12,9 +12,6 @@ portals:
     git_init: true
 
 matrix:
-  axes:
-    tool: ["opencode", "claude-code"]
-    provider: ["direct"]
   cells:
     - tool: "opencode"
       provider: "direct"

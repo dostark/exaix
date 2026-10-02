@@ -144,13 +144,13 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] forced-ReAct scenario keeps OpenCod
   const scenario = catalog.find((candidate: IScenario) => candidate.id === "flow-strategy-react");
   assert(scenario, "flow-strategy-react scenario must exist");
 
-  assertEquals(scenario.matrix?.cells[0], {
+  assertEquals(scenario.matrix?.cells?.[0], {
     tool: "opencode",
     provider: "opencode-cli",
     config: "configs/opencode-no-delegate.toml",
     requires_bin: "opencode",
   });
-  assertEquals(scenario.matrix?.cells[1], {
+  assertEquals(scenario.matrix?.cells?.[1], {
     tool: "codex",
     provider: "codex-cli",
     config: "configs/codex-cli-react.toml",

@@ -10,6 +10,9 @@
  *   realm is chosen by the loaded config's [session_delegate.provider] block. A cell whose
  *   binary / key / opt-in is absent is recorded skipped (not failed) so the matrix never
  *   produces a false red. A scenario without a `matrix:` block does not use this module.
+ *   Phase 203 Step 2 adds `matrix.from_catalog`, which names catalog presets instead of
+ *   inline cells, and a per-cell `bindings`/`catalog` cell layer. `runSyntheticScenario`
+ *   resolves the preset names into cells with `cell_catalog.ts` before it expands them.
  * @architectural-layer Test
  * @dependencies [zod, @std/path]
  * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/runner/step_executor.ts, apps/daemon/main.ts]
@@ -17,6 +20,7 @@
 
 import { z } from "zod";
 import { dirname, isAbsolute, join } from "@std/path";
+import { BindingCatalogSchema, BindingsTableSchema } from "@exaix/schemas";
 import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { deriveClaudeToolFlags } from "@exaix/session";
@@ -293,12 +297,24 @@ export const MatrixCellSchema = z.object({
    *  cell runs the full loop with exactly that subsystem toggled off and records `cell_id:
    *  ablate-<subsystem>/<tool>/<provider>` + the `ablate:<subsystem>` tag. */
   ablate: NON_EMPTY.optional(),
+  /** The cell layer: bindings this cell sets above the scenario layer.
+   *  `planScenarioBindings` writes them as `20-cell.json`. */
+  bindings: BindingsTableSchema.optional(),
+  /** Catalog entries this cell adds. A cell catalog is validated strictly, so it cannot carry
+   *  the fixture-port sentinel. A catalog PRESET loaded from TOML may, and is substituted later. */
+  catalog: BindingCatalogSchema.optional(),
 }).strict();
 
+/** The matrix block. A scenario names its cells exactly once. It uses inline `cells`, or
+ *  catalog preset names in `from_catalog`. `axes` was documentary only and is gone. */
 export const MatrixSchema = z.object({
-  axes: z.record(z.string(), z.array(z.string().min(1))).optional(),
-  cells: z.array(MatrixCellSchema).min(1),
-}).strict();
+  cells: z.array(MatrixCellSchema).min(1).optional(),
+  /** Catalog preset names, resolved from `configs/eval-cells.toml` before expansion. */
+  from_catalog: z.array(NON_EMPTY).min(1).optional(),
+}).strict().refine(
+  (matrix) => (matrix.cells === undefined) !== (matrix.from_catalog === undefined),
+  { message: "a matrix must declare exactly one of cells or from_catalog" },
+);
 
 export type IMatrixCell = z.infer<typeof MatrixCellSchema>;
 export type IMatrixBlock = z.infer<typeof MatrixSchema>;
@@ -431,7 +447,12 @@ export function expandMatrix(
   matrix: IMatrixBlock,
   options: IExpandMatrixOptions,
 ): IMatrixCellRun[] {
-  return matrix.cells.map((cell) => {
+  const cells = matrix.cells;
+  // A `from_catalog` block must be resolved into cells before it reaches here (cell_catalog.ts).
+  if (!cells) {
+    throw new Error("matrix.from_catalog must be resolved into cells before expansion");
+  }
+  return cells.map((cell) => {
     const reason = cellSkipReason(cell, options);
     if (reason !== null) {
       return { cell, steps, status: MatrixCellStatus.SKIP, skipReason: reason };

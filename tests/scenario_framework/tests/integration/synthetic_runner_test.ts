@@ -10,7 +10,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 import { withEnv } from "@exaix/testing";
 import { ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
@@ -344,6 +344,113 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] stops a started daemon even when a
     const invocations = (await Deno.readTextFile(invocationLog)).trim().split("\n");
     assertEquals(invocations.includes("daemon stop"), true);
   });
+});
+
+Deno.test("[ScenarioFrameworkSyntheticRunner] a from_catalog matrix resolves its preset and carries the cell overlay to the request step", async () => {
+  await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
+    const invocationLog = join(workspaceRoot, "exactl-invocations.log");
+    const fakeExactl = await writeFakeExactl(workspaceRoot, invocationLog);
+
+    const scenarioPath = await writeSyntheticScenario({
+      frameworkHome,
+      scenarioId: "synthetic-from-catalog",
+      tags: ["synthetic"],
+      schemaVersion: SCHEMA_VERSION,
+      fromCatalog: ["exactl-native"],
+      steps: [
+        {
+          id: "start-daemon",
+          type: ScenarioStepType.EXACTL,
+          command: "daemon",
+          args: ["start"],
+          outputCriteriaLines: ['    - id: "started"', '      kind: "command-exit-code"', "      equals: 0"],
+        },
+        {
+          id: "submit-request",
+          type: ScenarioStepType.EXACTL,
+          command: "request",
+          args: ["--file", "$REQUEST_FIXTURE"],
+          outputCriteriaLines: ['    - id: "submitted"', '      kind: "command-exit-code"', "      equals: 0"],
+        },
+        {
+          id: "stop-daemon",
+          type: ScenarioStepType.EXACTL,
+          command: "daemon",
+          args: ["stop"],
+          outputCriteriaLines: ['    - id: "stopped"', '      kind: "command-exit-code"', "      equals: 0"],
+        },
+      ],
+    });
+
+    const run = await runSyntheticScenario({
+      frameworkHome,
+      scenarioPath,
+      workspaceRoot,
+      outputDir,
+      mode: ScenarioExecutionMode.AUTO,
+      exactlExecutable: fakeExactl,
+      // The preset gates on ANTHROPIC_API_KEY. No provider call happens here.
+      env: { ANTHROPIC_API_KEY: "synthetic-test-key" },
+    });
+
+    // The history cell id still comes from the preset's tool and the config's own provider.
+    assertEquals(run.manifest.cellId, "exactl-anthropic");
+    assertEquals(run.manifest.provider, "anthropic");
+
+    // The preset's default binding becomes the cell layer, written outside the sandbox.
+    const cellOverlay = run.bindingOverlays?.find((overlay) => overlay.role === "cell");
+    assertEquals(cellOverlay?.path.endsWith("20-cell.json"), true);
+    const written = JSON.parse(await Deno.readTextFile(cellOverlay!.path)) as {
+      bindings?: { default?: { model?: string } };
+    };
+    assertEquals(written.bindings?.default?.model, "anthropic/claude-sonnet-5");
+
+    // The cell overlay reaches the request step as an --overlay argument.
+    const invocations = (await Deno.readTextFile(invocationLog)).trim().split("\n");
+    const requestLine = invocations.find((line) => line.startsWith("request "));
+    assertEquals(requestLine?.includes("--overlay"), true, `request step must carry --overlay: ${requestLine}`);
+    assertEquals(requestLine?.includes("20-cell.json"), true);
+  });
+});
+
+Deno.test("[ScenarioFrameworkSyntheticRunner] fix-bug-null-guard runs from from_catalog with an unchanged cell id", async () => {
+  // The real shipped scenario, resolved against the real shipped eval cell catalog.
+  const frameworkHome = fromFileUrl(new URL("../../", import.meta.url));
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-swe-catalog-" });
+  const outputDir = await Deno.makeTempDir({ prefix: "scenario-swe-catalog-out-" });
+  try {
+    const invocationLog = join(workspaceRoot, "exactl-invocations.log");
+    const fakeExactl = await writeFakeExactl(workspaceRoot, invocationLog);
+
+    const run = await runSyntheticScenario({
+      frameworkHome,
+      scenarioPath: "scenarios/swe_tasks/fix-bug-null-guard.yaml",
+      workspaceRoot,
+      outputDir,
+      mode: ScenarioExecutionMode.AUTO,
+      // The direct-API cell is reachable anywhere: its binary gate is the always-present `true`.
+      selectedCell: "anthropic",
+      exactlExecutable: fakeExactl,
+      env: { ANTHROPIC_API_KEY: "synthetic-test-key" },
+      // Bounds every wait bar, so the run halts at the first file barrier. The judge step is
+      // never reached and no provider call is made.
+      maxStepTimeoutSec: 2,
+    });
+
+    // The cell id is the one the hand-listed form produced: tool + the config's own provider.
+    assertEquals(run.manifest.cellId, "exactl-anthropic");
+    assertEquals(run.manifest.provider, "anthropic");
+
+    // The preset's default binding forms the cell layer the request step receives.
+    const cellOverlay = run.bindingOverlays?.find((overlay) => overlay.role === "cell");
+    assertEquals(cellOverlay?.path.endsWith("20-cell.json"), true);
+    const invocations = (await Deno.readTextFile(invocationLog)).trim().split("\n");
+    const requestLine = invocations.find((line) => line.startsWith("request "));
+    assertEquals(requestLine?.includes("20-cell.json"), true, `request step must carry the cell layer: ${requestLine}`);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true }).catch(() => {});
+    await Deno.remove(outputDir, { recursive: true }).catch(() => {});
+  }
 });
 
 async function writeFakeExactl(workspaceRoot: string, invocationLog: string): Promise<string> {

@@ -30,7 +30,7 @@ Deno.test("[PersonaResponse] six live scenarios capture actual role response bef
     counts.set(role, (counts.get(role) ?? 0) + 1);
     const submit = scenario.steps.find((step) => step.id === "submit-request");
     assertEquals(submit?.args?.at(-1), role);
-    assertEquals(scenario.matrix?.cells.map((cell) => cell.tool), ["claude-code", "codex"]);
+    assertEquals(scenario.matrix?.cells?.map((cell) => cell.tool), ["claude-code", "codex"]);
     const judge = scenario.steps.find((step) => step.id === "judge-response");
     assert(judge);
     assert(scenario.steps.indexOf(capture) < scenario.steps.indexOf(judge));

@@ -5,7 +5,8 @@
  *   operator layers as real `BindingOverlaySchema` documents into a runner-owned directory
  *   outside the sandbox, normalizes each operator overlay to JSON (the only form
  *   `exactl request --overlay` parses), substitutes the fixture-port sentinel, and records a
- *   sha256 per file.
+ *   sha256 per file. Phase 203 Step 2 adds the cell layer, which sits between the scenario
+ *   and operator layers so a preset's bindings win over the scenario's.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/binding_layers.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
@@ -14,8 +15,10 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
 import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
+import { type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { planScenarioBindings } from "../../runner/binding_layers.ts";
+import { overlayRequestBindings } from "../../runner/matrix_expander.ts";
 
 /** A minimal valid scenario, so the schema (not a cast) proves the new fields exist. */
 function scenarioWith(extra: Partial<IScenario> = {}): IScenario {
@@ -198,6 +201,110 @@ Deno.test("[bindings] planScenarioBindings writes no scenario overlay when the s
       sandboxRoot: join(root, "sandbox"),
     });
     assertEquals(plan.overlays, []);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] planScenarioBindings writes the cell layer between the scenario and operator layers", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-cell-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith({ bindings: { default: { model: "alpha/one" } } }),
+      cell: {
+        bindings: { default: { model: "beta/two" } },
+        catalog: {
+          services: {
+            fixture: { adapter: "mock", transport: "local", interface: "api", serves: { "*": "{name}" } },
+          },
+        },
+      },
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+
+    assertEquals(plan.overlays.map((overlay) => overlay.role), ["scenario", "cell"]);
+    const cellOverlay = plan.overlays[1]!;
+    assertEquals(cellOverlay.path.endsWith("20-cell.json"), true);
+    assertEquals(cellOverlay.sha256, await fileSha256(cellOverlay.path));
+
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(cellOverlay.path)));
+    assertEquals(written.bindings?.default?.model, "beta/two");
+    assertEquals(written.catalog?.services?.fixture?.adapter, "mock");
+
+    // Argument order lets the cell win. The daemon collapses same-selector entries in load
+    // order, so the cell must arrive after the scenario.
+    const step = {
+      id: "submit",
+      type: ScenarioStepType.EXACTL,
+      command: "request",
+      args: ["--file", "x"],
+    } as IScenarioStep;
+    const args = overlayRequestBindings([step], plan)[0]!.args ?? [];
+    const overlays = args.flatMap((arg, index) => (arg === "--overlay" ? [args[index + 1]!] : []));
+    assertEquals(overlays, [plan.overlays[0]!.path, cellOverlay.path]);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] a cell that binds without a scenario layer still produces its own overlay", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-cell-only-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith(),
+      cell: { bindings: { default: { model: "beta/two" } } },
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+
+    assertEquals(plan.overlays.map((overlay) => overlay.role), ["cell"]);
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(plan.overlays[0]!.path)));
+    assertEquals(written.bindings?.default?.model, "beta/two");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[bindings] the cell layer substitutes the fixture-port sentinel a preset catalog carries", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-bindings-cell-sentinel-" });
+  try {
+    // A preset is loaded before the fixture port exists, so its endpoint keeps the sentinel
+    // until this point. The strict endpoint schema would reject it, so substitute first.
+    const plan = await planScenarioBindings({
+      scenario: scenarioWith(),
+      cell: {
+        catalog: {
+          services: {
+            fixture: {
+              adapter: "openai-chat",
+              profile: "self-hosted",
+              endpoint: "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions",
+              transport: "local",
+              interface: "api",
+              serves: { "*": "{name}" },
+            },
+          },
+        },
+      },
+      operatorOverlays: [],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+      compatFixturePort: 43117,
+    });
+
+    const raw = await Deno.readTextFile(plan.overlays[0]!.path);
+    assertEquals(raw.includes("__COMPAT_FIXTURE_PORT__"), false);
+    const written = BindingOverlaySchema.parse(JSON.parse(raw));
+    assertEquals(
+      written.catalog?.services?.fixture?.endpoint,
+      "http://127.0.0.1:43117/v1/chat/completions",
+    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }

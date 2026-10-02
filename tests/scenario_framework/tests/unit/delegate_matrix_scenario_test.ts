@@ -59,8 +59,9 @@ function journalEventTypes(
 
 Deno.test("[delegate_matrix] the matrix scenario parses and enumerates exactly 5 cells", async () => {
   const scenario = await parseMatrixScenario();
-  assert(scenario.matrix, "scenario must have a matrix block");
-  assertEquals(scenario.matrix.cells.length, 5, "matrix must have exactly 5 cells");
+  const cells = scenario.matrix?.cells;
+  assert(cells, "scenario must declare its matrix cells inline");
+  assertEquals(cells.length, 5, "matrix must have exactly 5 cells");
   const tags = new Set(scenario.tags);
   assert(tags.has("provider-live"), "must be tagged provider-live");
   assert(tags.has("session-delegation"), "must be tagged session-delegation");
@@ -69,7 +70,8 @@ Deno.test("[delegate_matrix] the matrix scenario parses and enumerates exactly 5
 
 Deno.test("[delegate_matrix] each cell's config preset + EXA_SESSION_DELEGATE_TOOL select the intended (tool, provider) pair", async () => {
   const scenario = await parseMatrixScenario();
-  assert(scenario.matrix, "scenario must have a matrix block");
+  const cells = scenario.matrix?.cells;
+  assert(cells, "scenario must declare its matrix cells inline");
   const expected: Record<string, { config: string; bin: string; hasKey?: string; hasOptin?: string }> = {
     "opencode/direct": {
       config: "configs/dogfood.toml",
@@ -99,7 +101,7 @@ Deno.test("[delegate_matrix] each cell's config preset + EXA_SESSION_DELEGATE_TO
     },
   };
 
-  for (const cell of scenario.matrix.cells) {
+  for (const cell of cells) {
     const key = `${cell.tool}/${cell.provider}`;
     const exp = expected[key];
     assert(exp, `unexpected cell: ${key}`);

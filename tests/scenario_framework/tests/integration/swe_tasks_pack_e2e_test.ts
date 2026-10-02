@@ -11,10 +11,13 @@ import { assertEquals } from "@std/assert";
 import { resolve } from "@std/path";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { loadScenarioFromYamlFile } from "../../runner/scenario_loader.ts";
-import { MATRIX_START_DAEMON_STEP_ID, resolveRunnableSteps } from "../../runner/matrix_expander.ts";
+import { type IMatrixBlock, MATRIX_START_DAEMON_STEP_ID, resolveRunnableSteps } from "../../runner/matrix_expander.ts";
+import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 import { materializeCellConfig } from "../../runner/synthetic_runner.ts";
 
 const FRAMEWORK_HOME = resolve(new URL(".", import.meta.url).pathname, "../..");
+const REPO_ROOT = resolve(FRAMEWORK_HOME, "..", "..");
+const CELL_CATALOG_PATH = resolve(REPO_ROOT, "configs", "eval-cells.toml");
 const MULTI_CELL_SCENARIO = "scenarios/swe_tasks/fix-bug-null-guard.yaml";
 
 const EXPECTED_SW_TASKS_IDS = [
@@ -58,13 +61,24 @@ Deno.test("[SweTasksPackE2e] all swe_tasks scenarios load from catalog with corr
   }
 });
 
+/** Loads a scenario and materializes its `matrix.from_catalog` presets into concrete cells. */
+async function loadResolvedScenario(scenarioPath: string) {
+  const loaded = await loadScenarioFromYamlFile({ frameworkHome: FRAMEWORK_HOME, scenarioPath });
+  const matrix = loaded.scenario.matrix;
+  if (!matrix?.from_catalog) return loaded;
+
+  const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
+  const resolvedMatrix: IMatrixBlock = { cells: resolveCatalogCells(catalog, matrix.from_catalog) };
+  return { ...loaded, scenario: { ...loaded.scenario, matrix: resolvedMatrix } };
+}
+
 /** Resolves every matrix-cell group for a scenario. */
 async function resolveGroups(scenarioPath: string, env: Record<string, string>, selectedCell?: string) {
-  const loaded = await loadScenarioFromYamlFile({ frameworkHome: FRAMEWORK_HOME, scenarioPath });
+  const loaded = await loadResolvedScenario(scenarioPath);
   return resolveRunnableSteps(loaded.scenario, {
     env,
     binOnPath: () => true,
-    configBaseDir: resolve(FRAMEWORK_HOME, "..", ".."),
+    configBaseDir: REPO_ROOT,
     selectedCell,
   });
 }
@@ -79,7 +93,8 @@ Deno.test("[SweTasksPackE2e] --cell claude-code selects only the claude-code cel
   const groups = await resolveGroups(MULTI_CELL_SCENARIO, {}, "claude-code");
   const selected = groups.find((g) => g.cell?.tool === "claude-code");
   assertEquals(selected?.status, "run");
-  assertEquals(selected?.cell?.provider, "$CELL_PROVIDER");
+  // The catalog preset names the concrete provider. The config still decides what runs.
+  assertEquals(selected?.cell?.provider, "claude-cli");
 
   const other = groups.find((g) => g.cell?.tool === "opencode");
   assertEquals(other?.status, "skip");
@@ -90,7 +105,7 @@ Deno.test("[SweTasksPackE2e] --cell opencode selects only the opencode cell", as
   const groups = await resolveGroups(MULTI_CELL_SCENARIO, {}, "opencode");
   const selected = groups.find((g) => g.cell?.tool === "opencode");
   assertEquals(selected?.status, "run");
-  assertEquals(selected?.cell?.provider, "$CELL_PROVIDER");
+  assertEquals(selected?.cell?.provider, "opencode-cli");
 
   const other = groups.find((g) => g.cell?.tool === "claude-code");
   assertEquals(other?.status, "skip");
@@ -121,18 +136,15 @@ const CONFIG_AGREEMENT_CASES: IConfigAgreementCase[] = [
 
 for (const { name, cellTool, expectedProvider, expectedModel } of CONFIG_AGREEMENT_CASES) {
   Deno.test(name, async () => {
-    const loaded = await loadScenarioFromYamlFile({
-      frameworkHome: FRAMEWORK_HOME,
-      scenarioPath: MULTI_CELL_SCENARIO,
-    });
-    const cellConfigPath = loaded.scenario.matrix?.cells.find((c) => c.tool === cellTool)?.config;
+    const loaded = await loadResolvedScenario(MULTI_CELL_SCENARIO);
+    const cellConfigPath = loaded.scenario.matrix?.cells?.find((c) => c.tool === cellTool)?.config;
     const daemonStep = loaded.steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
 
     const workspaceRoot = await Deno.makeTempDir({ prefix: "swe-tasks-config-agreement-" });
     try {
       const steps = [{
         ...daemonStep!,
-        env: { ...daemonStep!.env, EXA_CONFIG_PATH: resolve(FRAMEWORK_HOME, "..", "..", cellConfigPath!) },
+        env: { ...daemonStep!.env, EXA_CONFIG_PATH: resolve(REPO_ROOT, cellConfigPath!) },
       }];
       const materialized = await materializeCellConfig(steps, { workspaceRoot, worktreePath: "/repo-under-test" });
       assertEquals(materialized.aiProvider, expectedProvider);

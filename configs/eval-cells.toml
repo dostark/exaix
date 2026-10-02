@@ -1,83 +1,145 @@
-# Cell Catalog — maps short tool references to concrete evaluation cell definitions.
-# Scenarios reference tools by name (e.g. tool: "claude-code"); the catalog resolves
-# each name to its config path, provider identity, and required key/binary.
-# Adding a new provider or model tier requires only a new entry here — no YAML edits.
+# Cell Catalog — the named presets a scenario selects with `matrix.from_catalog`.
+# A scenario lists preset names instead of copying a config path, a provider label and the
+# prerequisite predicates into every cell. Adding a provider or model tier requires only a
+# new entry here — no YAML edits.
 #
-# Each entry:
-#   [tool.<name>]
+# Each `[tool.<name>]` row is one preset named `<name>`:
+#   tool         = the matrix cell's tool: the delegate binary, or `exactl` (the default)
 #   config       = path to the daemon config TOML (relative to repo root)
-#   provider     = provider label used in history attribution
-#   model        = model label used in history attribution
+#   provider     = provider label used in history attribution (must match the config)
+#   model        = model label used in history attribution (must match the config)
 #   requires_bin = (optional) binary that must be on PATH for this cell to be runnable
 #   requires_key = (optional) env var that must be set for this cell to be runnable
-#   native_tools = (optional, default false) whether ReActLoopStrategy uses native tool-calling
+#   native_tools = (optional) documentary only; the config's native_tools_enabled decides
+#   bindings     = (optional) the cell-layer bindings this preset sets
+#   catalog      = (optional) catalog entries this preset adds
+#
+# A row that gates on `requires_key` defaults `requires_bin` to `true`, a binary that is
+# always present. An API row therefore sets `bindings.default.model` to the canonical model
+# its own config already pins, so a run binds the model it would have used anyway.
+# A CLI-delegate row binds nothing: its delegate setup is config-driven.
+# A `catalog` endpoint may hold `__COMPAT_FIXTURE_PORT__`; the runner substitutes it before
+# any daemon reads the overlay.
 
 [tool.claude-code]
+tool = "claude-code"
 config = "configs/claude-cli-delegate-all.toml"
 provider = "claude-cli"
 model = "claude-sonnet-5"
 requires_bin = "claude"
 
 [tool.claude-haiku-4-5]
+tool = "claude-haiku-4-5"
 config = "configs/claude-haiku-4-5-delegate-all.toml"
 provider = "claude-cli"
 model = "claude-haiku-4-5"
 requires_bin = "claude"
 
 [tool.opencode]
+tool = "opencode"
 config = "configs/opencode-cli-delegate-all.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
 requires_bin = "opencode"
 
 [tool.opencode-north-mini-code]
+tool = "opencode-north-mini-code"
 config = "configs/opencode-north-mini-code-free.toml"
 provider = "opencode-cli"
 model = "opencode/north-mini-code-free"
 requires_bin = "opencode"
 
 [tool.opencode-go]
+tool = "opencode-go"
 config = "configs/opencode-go-delegate-all.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
 requires_bin = "opencode"
 
 [tool.exactl-native]
+tool = "exactl"
 config = "configs/anthropic-no-delegate.toml"
 provider = "anthropic"
 model = "claude-sonnet-5"
+requires_bin = "true"
 requires_key = "ANTHROPIC_API_KEY"
 native_tools = true
 
+[tool.exactl-native.bindings.default]
+model = "anthropic/claude-sonnet-5"
+
+# The same config as `exactl-native`, declared without native tools. `native_tools` is
+# documentary, so this row differs from `exactl-native` only by that label.
 [tool.exactl-generic]
+tool = "exactl"
 config = "configs/anthropic-no-delegate.toml"
 provider = "anthropic"
 model = "claude-sonnet-5"
+requires_bin = "true"
 requires_key = "ANTHROPIC_API_KEY"
 native_tools = false
 
+[tool.exactl-generic.bindings.default]
+model = "anthropic/claude-sonnet-5"
+
+[tool.exactl-openai]
+tool = "exactl"
+config = "configs/openai-no-delegate.toml"
+provider = "openai"
+model = "gpt-5.6-terra"
+requires_bin = "true"
+requires_key = "OPENAI_API_KEY"
+native_tools = true
+
+[tool.exactl-openai.bindings.default]
+model = "openai/gpt-5.6-terra"
+
+[tool.exactl-google]
+tool = "exactl"
+config = "configs/google-no-delegate.toml"
+provider = "google"
+model = "gemini-flash-latest"
+requires_bin = "true"
+requires_key = "GOOGLE_API_KEY"
+native_tools = true
+
+[tool.exactl-google.bindings.default]
+model = "google/gemini-flash-latest"
+
 [tool.opencode-laguna-free]
+tool = "opencode-laguna-free"
 config = "configs/opencode-laguna-free.toml"
 provider = "opencode-cli"
 model = "opencode/laguna-s-2.1-free"
 requires_bin = "opencode"
 
 [tool.codex]
+tool = "codex"
 config = "configs/codex-cli-react.toml"
 provider = "codex-cli"
 model = "gpt-5.6-terra"
 requires_bin = "codex"
 
 [tool.openai-chat]
+tool = "exactl"
 config = "configs/openai-chat.toml"
 provider = "openai-chat"
 model = "gpt-6-luna"
+requires_bin = "true"
 requires_key = "OPENAI_API_KEY"
 native_tools = true
 
+[tool.openai-chat.bindings.default]
+model = "openai-chat/gpt-6-luna"
+
 [tool.deepseek-chat]
+tool = "exactl"
 config = "configs/deepseek-chat.toml"
 provider = "openai-chat"
 model = "deepseek-v4-pro"
+requires_bin = "true"
 requires_key = "DEEPSEEK_API_KEY"
 native_tools = true
+
+[tool.deepseek-chat.bindings.default]
+model = "openai-chat/deepseek-v4-pro"

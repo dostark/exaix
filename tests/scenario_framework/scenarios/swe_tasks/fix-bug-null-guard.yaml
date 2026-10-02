@@ -13,38 +13,14 @@ portals:
     git_init: true
 mode_support: ["auto"]
 matrix:
-  cells:
-    - tool: "claude-code"
-      provider: "$CELL_PROVIDER"
-      config: "configs/claude-cli-delegate-all.toml"
-      requires_bin: "claude"
-    - tool: "codex"
-      provider: "$CELL_PROVIDER"
-      config: "configs/codex-cli-react.toml"
-      requires_bin: "codex"
-    - tool: "opencode"
-      provider: "$CELL_PROVIDER"
-      config: "configs/opencode-cli-delegate-all.toml"
-      requires_bin: "opencode"
-    - tool: "exactl"
-      provider: "anthropic"
-      config: "configs/anthropic-no-delegate.toml"
-      requires_bin: "true"
-      requires_key: "ANTHROPIC_API_KEY"
-    - tool: "exactl"
-      provider: "openai"
-      config: "configs/openai-no-delegate.toml"
-      requires_bin: "true"
-      requires_key: "OPENAI_API_KEY"
-    - tool: "exactl"
-      provider: "google"
-      config: "configs/google-no-delegate.toml"
-      requires_bin: "true"
-      requires_key: "GOOGLE_API_KEY"
-    # OpenRouter cell deliberately omitted (Phase 153 Step 5 Tier B, Pre-Gap-Analysis GAP-2):
-    # no OPENROUTER_API_KEY/persisted credential available in this environment. Add a
-    # `configs/openrouter-no-delegate.toml` + matching cell here once one is provisioned -
-    # tracked as an explicit follow-up, not silently folded into this scenario's coverage.
+  # Preset names from configs/eval-cells.toml. The six resolved cells are the same six this
+  # scenario used to hand-list: claude-code, codex, opencode, exactl-native, exactl-openai
+  # and exactl-google. Their cell ids are unchanged, so history attribution stays comparable.
+  # OpenRouter is deliberately absent (Phase 153 Step 5 Tier B, Pre-Gap-Analysis GAP-2):
+  # no OPENROUTER_API_KEY is provisioned in this environment. Add an `openrouter` preset to
+  # the catalog and name it here once a credential exists — tracked as an explicit
+  # follow-up, not silently folded into this scenario's coverage.
+  from_catalog: ["claude-code", "codex", "opencode", "exactl-native", "exactl-openai", "exactl-google"]
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"

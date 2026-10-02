@@ -39,6 +39,8 @@ export interface IWriteSyntheticScenarioOptions {
     harness?: "bare";
     ablate?: string;
   };
+  /** Catalog preset names: emits a `matrix.from_catalog` block instead of inline cells. */
+  fromCatalog?: string[];
 }
 
 const DEFAULT_REQUEST_FIXTURE_PATH = "fixtures/requests/shared/synthetic_request.md";
@@ -93,6 +95,12 @@ export async function writeSyntheticScenario(
           `      requires_bin: "${options.matrixCell.requiresBin}"`,
           ...(options.matrixCell.harness ? [`      harness: "${options.matrixCell.harness}"`] : []),
           ...(options.matrixCell.ablate ? [`      ablate: "${options.matrixCell.ablate}"`] : []),
+        ]
+        : []),
+      ...(options.fromCatalog
+        ? [
+          "matrix:",
+          `  from_catalog: [${options.fromCatalog.map((name) => `"${name}"`).join(", ")}]`,
         ]
         : []),
       "steps:",

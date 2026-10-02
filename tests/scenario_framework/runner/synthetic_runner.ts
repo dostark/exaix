@@ -24,12 +24,14 @@ import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loade
 import {
   binIsOnPath,
   type ICellConfigTargets,
+  type IMatrixBlock,
   type IRunnableStepGroup,
   MATRIX_START_DAEMON_STEP_ID,
   overlayRequestBindings,
   resolveCellConfig,
   resolveRunnableSteps,
 } from "./matrix_expander.ts";
+import { loadCellCatalog, resolveCatalogCells } from "./cell_catalog.ts";
 import { type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
@@ -124,6 +126,9 @@ export interface IStepBaseEnvOptions {
 /** Computed from this file's own known location rather than from frameworkHome, which
  *  may be a temp dir in tests. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
+
+/** The eval cell catalog a `matrix.from_catalog` block resolves its preset names against. */
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
 
 /** Catalogs the daemon resolves against the WORKSPACE root rather than the repo, and which a
  *  fresh sandbox therefore lacks entirely — without these a flow request is rejected as
@@ -341,14 +346,23 @@ export async function runSyntheticScenario(
   // Matrix-aware step resolution: for a `matrix:` scenario this expands to per-cell groups;
   // for a matrix-less scenario it returns a single pass-through group. The runner executes
   // the first runnable group; selectedCell narrows a multi-cell matrix to one cell explicitly.
-  const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(loadedScenario.scenario, {
-    env: envForExpansion,
-    binOnPath: (bin) => binIsOnPath(bin),
-    // The daemon resolves a relative EXA_CONFIG_PATH against its CWD (the workspace), not the
-    // repo, so the cell's preset must be made absolute against the repo root first.
-    configBaseDir: REPO_ROOT,
-    selectedCell: options.selectedCell,
-  });
+  // A `from_catalog` matrix names catalog presets instead of inline cells, so the catalog is
+  // loaded here (IResolvableScenario carries only { steps, matrix }) and resolved into cells.
+  const matrix = loadedScenario.scenario.matrix;
+  const resolvedMatrix: IMatrixBlock | undefined = matrix?.from_catalog
+    ? { cells: resolveCatalogCells(await loadCellCatalog(CELL_CATALOG_PATH), matrix.from_catalog) }
+    : matrix;
+  const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(
+    { steps: loadedScenario.scenario.steps, matrix: resolvedMatrix },
+    {
+      env: envForExpansion,
+      binOnPath: (bin) => binIsOnPath(bin),
+      // The daemon resolves a relative EXA_CONFIG_PATH against its CWD, not the repo.
+      // The cell's preset must therefore be absolute against the repo root.
+      configBaseDir: REPO_ROOT,
+      selectedCell: options.selectedCell,
+    },
+  );
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
   let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
 
@@ -369,11 +383,13 @@ export async function runSyntheticScenario(
   });
   stepsToRun = materialized.steps;
 
-  // Phase 203: the scenario, step and operator binding layers travel with every `exactl request`
-  // step as `--overlay` arguments. The files are written outside the sandbox, so the agent under
-  // test cannot rewrite the bindings that govern it.
+  // Phase 203: the scenario, cell, step and operator binding layers travel with every
+  // `exactl request` step as `--overlay` arguments. The files are written outside the sandbox,
+  // so the agent under test cannot rewrite the bindings that govern it.
   const bindingPlan = await planScenarioBindings({
     scenario: loadedScenario.scenario,
+    // Only the first runnable cell runs, so only its bindings form the cell layer.
+    ...(firstRunnable?.cell ? { cell: firstRunnable.cell } : {}),
     operatorOverlays: options.operatorOverlays ?? [],
     operatorBinds: options.operatorBinds ?? [],
     outputDir: options.outputDir,

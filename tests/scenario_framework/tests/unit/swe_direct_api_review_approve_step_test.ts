@@ -19,8 +19,10 @@ import { assert } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
+import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
 const SCENARIO_PATH = join(
   REPO_ROOT,
   "tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard.yaml",
@@ -85,7 +87,10 @@ Deno.test("[swe_direct_api_review_approve] approve-review's output_criteria requ
 
 Deno.test("[swe_direct_api_review_approve] the single matrix cell still resolves correctly with approve-review present (regression guard)", async () => {
   const scenario = await parseScenario();
-  const cellTools = scenario.matrix?.cells.map((c) => c.tool) ?? [];
+  // The scenario names its cells through `from_catalog`. Resolve those preset names first.
+  const presetNames = scenario.matrix?.from_catalog ?? [];
+  const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
+  const cellTools = resolveCatalogCells(catalog, presetNames).map((cell) => cell.tool);
   assert(cellTools.includes("exactl"), "the direct-API matrix cell must still resolve");
 
   const stepIds = scenario.steps.map((s) => s.id);

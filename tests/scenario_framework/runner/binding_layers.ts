@@ -2,8 +2,9 @@
  * @module ScenarioBindingLayers
  * @path tests/scenario_framework/runner/binding_layers.ts
  * @description Phase 203 — builds the binding overlay files one scenario run hands to every
- *   `exactl request` step. The runner writes a scenario-layer overlay, normalizes each operator
- *   `--overlay` to JSON, and writes the operator `--bind` entries as one final overlay. Every
+ *   `exactl request` step. The runner writes a scenario-layer overlay, then the selected
+ *   matrix cell's overlay, normalizes each operator `--overlay` to JSON, and writes the
+ *   operator `--bind` entries as one final overlay. Every
  *   file is a `BindingOverlaySchema` document, because `exactl request` parses each `--overlay`
  *   argument with `BindingOverlaySchema.parse` and reads JSON only.
  *
@@ -46,9 +47,20 @@ export interface IScenarioBindingPlan {
   judgeBindings: Map<string, IResolvedBinding>;
 }
 
+/** A cell catalog as the scenario schema types it: every table is optional. */
+type CellCatalog = NonNullable<IScenario["catalog"]>;
+
+/** The cell layer's contribution: the selected matrix cell's own binding data. */
+export interface ICellBindingLayer {
+  bindings?: IScenario["bindings"];
+  catalog?: CellCatalog;
+}
+
 /** Everything `planScenarioBindings` needs. No judge layer exists in the Step-1 subset. */
 export interface IPlanScenarioBindingsInput {
   scenario: IScenario;
+  /** The selected matrix cell, when the run resolved one. Sits above the scenario layer. */
+  cell?: ICellBindingLayer;
   /** Operator `--overlay` file paths, in the order given on the command line. */
   operatorOverlays: readonly string[];
   /** Operator `--bind` specs, in the order given on the command line. */
@@ -66,6 +78,9 @@ export const SCENARIO_BINDINGS_SUBDIR = "bindings";
 
 /** Scenario-layer overlay file name. Sorts before every operator file. */
 const SCENARIO_OVERLAY_NAME = "10-scenario.json";
+
+/** Cell-layer overlay file name. Sorts between the scenario and step layers. */
+const CELL_OVERLAY_NAME = "20-cell.json";
 
 /** Step-layer overlay file name prefix. One file per `exactl request` step that binds. */
 const STEP_OVERLAY_PREFIX = "25-step-";
@@ -120,6 +135,25 @@ function substituteFixturePortInRawOverlay(
 /** True when a parsed JSON value is a plain object, not an array or null. */
 function isJsonObject(value: JSONValue): value is { [key: string]: JSONValue } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Replace the fixture-port sentinel in every catalog service endpoint of the CELL layer.
+ * A catalog preset is loaded before the port exists, so its endpoint may still hold the
+ * sentinel. The strict endpoint schema rejects that, so substitute before validation.
+ */
+function substituteFixturePortInCellCatalog(
+  catalog: CellCatalog,
+  port: Opt<number, Reason.OptionalInput>,
+): CellCatalog {
+  if (port === undefined || catalog.services === undefined) return catalog;
+  const services: NonNullable<CellCatalog["services"]> = {};
+  for (const [serviceId, service] of Object.entries(catalog.services)) {
+    services[serviceId] = service.endpoint === undefined
+      ? service
+      : { ...service, endpoint: service.endpoint.replaceAll(SENTINEL_COMPAT_FIXTURE_PORT, String(port)) };
+  }
+  return { ...catalog, services };
 }
 
 /** Read one operator overlay file and reject anything `exactl` could not parse itself. */
@@ -179,11 +213,23 @@ function buildScenarioOverlay(input: IPlanScenarioBindingsInput): object | undef
   });
 }
 
+/** Build the cell-layer overlay, or undefined when the selected cell binds nothing. */
+function buildCellOverlay(input: IPlanScenarioBindingsInput): object | undefined {
+  const cell = input.cell;
+  if (!cell?.bindings && !cell?.catalog) return undefined;
+  return BindingOverlaySchema.parse({
+    schema: 1,
+    ...(cell.bindings ? { bindings: cell.bindings } : {}),
+    ...(cell.catalog ? { catalog: substituteFixturePortInCellCatalog(cell.catalog, input.compatFixturePort) } : {}),
+  });
+}
+
 /**
  * Plan one scenario run's binding overlays.
  *
- * Writes the overlays in layer order. The scenario overlay comes first. Each operator
- * overlay follows in the order given. One overlay then holds the operator `--bind` entries.
+ * Writes the overlays in layer order. The scenario overlay comes first, then the selected
+ * cell's overlay. Each operator overlay follows in the order given. One overlay then holds
+ * the operator `--bind` entries.
  * Returns each file with its digest, so the evidence records what the daemon received.
  */
 export async function planScenarioBindings(
@@ -202,6 +248,13 @@ export async function planScenarioBindings(
     await ensureDir(bindingsDir);
     const path = join(bindingsDir, SCENARIO_OVERLAY_NAME);
     overlays.push({ role: "scenario", path, sha256: await writeOverlay(path, scenarioOverlay) });
+  }
+
+  const cellOverlay = buildCellOverlay(input);
+  if (cellOverlay) {
+    await ensureDir(bindingsDir);
+    const path = join(bindingsDir, CELL_OVERLAY_NAME);
+    overlays.push({ role: "cell", path, sha256: await writeOverlay(path, cellOverlay) });
   }
 
   for (const [index, sourcePath] of input.operatorOverlays.entries()) {

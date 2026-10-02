@@ -1014,18 +1014,27 @@ check, and no parity gate runs automatically.)
 ### The `matrix:` block — one scenario, many cells (Phase 127)
 
 A scenario may declare an **additive, optional** `matrix:` block to run the same step list
-once per cell of a `tool × provider` (or any axis) cross-product. It is purely additive: a
-scenario without a `matrix:` block behaves exactly as before. Each cell selects its runtime by
-overlaying environment onto the `start-daemon` step — **the cell's `config` preset is the
-provider/realm selector** (its `[session_delegate.provider]` block), and `EXA_SESSION_DELEGATE_TOOL`
-selects the tool. There is **no** `EXA_SESSION_DELEGATE_PROVIDER` env var; the provider follows from
-the loaded config.
+once per cell. It is purely additive: a scenario without a `matrix:` block behaves exactly as
+before. Each cell selects its runtime by overlaying environment onto the `start-daemon` step —
+**the cell's `config` preset is the provider/realm selector** (its `[session_delegate.provider]`
+block), and `EXA_SESSION_DELEGATE_TOOL` selects the tool. There is **no**
+`EXA_SESSION_DELEGATE_PROVIDER` env var; the provider follows from the loaded config.
+
+A matrix names its cells in exactly one of two ways. `cells:` lists them inline, which a
+one-off or experimental cell needs. `from_catalog:` names presets from
+[`configs/eval-cells.toml`](../../configs/eval-cells.toml), which is the preferred form because
+the config path, the provider label and the prerequisite predicates live in one place:
 
 ```yaml
 matrix:
-  axes: # documentary only — the cross-product is the explicit `cells` list below
-    tool: ["opencode", "claude-code", "codex"]
-    provider: ["direct", "openrouter"]
+  from_catalog: ["claude-code", "opencode", "codex", "exactl-native"]
+```
+
+The two forms are mutually exclusive, and every preset name must exist in the catalog or the
+run stops with `unknown cell preset`. An inline cell carries the same fields:
+
+```yaml
+matrix:
   cells:
     - tool: "claude-code"
       provider: "direct"
@@ -1050,11 +1059,18 @@ Otherwise the cell is recorded **`skipped`** (never `failed`) with a named reaso
 matrix CI-safe and lets a developer run only the cells their environment supports. Tag a matrix
 scenario `provider-live` so it is omitted from CI auto-runs.
 
-**Reachability.** `runner/synthetic_runner.ts` resolves a matrix scenario through
-`resolveRunnableSteps()` → `expandMatrix()` (see `runner/matrix_expander.ts`) and runs the first
-runnable cell; the cell's config preset is resolved to an **absolute** path (the daemon's CWD is the
-workspace, not the repo). See `scenarios/provider_live/session_delegate_matrix_live.yaml` for the
-full five-cell example.
+**Explicit `cells:` only.** An earlier version of this block accepted an `axes:` map. It was
+documentary — nothing read it, and the `cells:` list already carried the real cell set — so it
+was removed in Phase 203. Nothing special marks the cross-product today; the cell list is the
+cross-product.
+
+**Reachability.** `runner/synthetic_runner.ts` loads the eval cell catalog with
+`loadCellCatalog()` and resolves any `from_catalog` names with `resolveCatalogCells()` before it
+calls `resolveRunnableSteps()` → `expandMatrix()` (see `runner/matrix_expander.ts`). It runs the
+first runnable cell, and the cell's config preset is resolved to an **absolute** path (the
+daemon's CWD is the workspace, not the repo). See
+`scenarios/provider_live/session_delegate_matrix_live.yaml` for the full five-cell example, and
+`scenarios/swe_tasks/fix-bug-null-guard.yaml` for the `from_catalog` form.
 
 ### Cell kinds: bare-delegate baseline and feature ablations
 

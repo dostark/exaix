@@ -79,15 +79,17 @@ Deno.test("[context_scenario] provider_live/dogfood_context_live.yaml embeds no 
 
 Deno.test("[context_scenario] the live scenario's matrix enumerates exactly the five required cells (stock-claude, stock-opencode, cycle-claude, cycle-opencode, cycle-codex)", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
-  assert(scenario.matrix, "scenario must have a matrix block");
-  assertEquals(scenario.matrix.cells.length, 5, "matrix must have exactly 5 cells");
-  const tools = scenario.matrix.cells.map((c) => c.tool).toSorted();
+  const cells = scenario.matrix?.cells;
+  assert(cells, "scenario must declare its matrix cells inline");
+  assertEquals(cells.length, 5, "matrix must have exactly 5 cells");
+  const tools = cells.map((c) => c.tool).toSorted();
   assertEquals(tools, [...REQUIRED_CELL_NAMES].toSorted());
 });
 
 Deno.test("[context_scenario] each live cell requires the correct binary and subscription/opt-in", async () => {
   const scenario = await parseScenario(LIVE_SCENARIO);
-  assert(scenario.matrix, "scenario must have a matrix block");
+  const cells = scenario.matrix?.cells;
+  assert(cells, "scenario must declare its matrix cells inline");
   const expected: Record<string, { bin: string; hasKey?: string; hasOptin?: string }> = {
     "stock-claude": { bin: "claude" },
     "stock-opencode": { bin: "opencode", hasOptin: "EXA_MATRIX_OPENCODE" },
@@ -95,7 +97,7 @@ Deno.test("[context_scenario] each live cell requires the correct binary and sub
     "cycle-opencode": { bin: "opencode", hasOptin: "EXA_MATRIX_OPENCODE" },
     "cycle-codex": { bin: "codex", hasOptin: "EXA_MATRIX_CODEX" },
   };
-  for (const cell of scenario.matrix.cells) {
+  for (const cell of cells) {
     const exp = expected[cell.tool];
     assert(exp, `unexpected cell: ${cell.tool}`);
     assertEquals(cell.requires_bin, exp.bin, `cell ${cell.tool} binary mismatch`);

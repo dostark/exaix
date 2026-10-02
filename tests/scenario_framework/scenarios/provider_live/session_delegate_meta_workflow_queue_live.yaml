@@ -38,9 +38,6 @@ portals:
 # emit `session.delegate.*` journal events.
 
 matrix:
-  axes:
-    tool: ["opencode", "claude-code"]
-    provider: ["direct"]
   cells:
     - tool: "opencode"
       provider: "direct"

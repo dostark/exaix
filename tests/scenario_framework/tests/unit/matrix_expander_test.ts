@@ -10,6 +10,8 @@
  *   matrix block is unaffected (backward-compat). The GAP-7 wiring (EXA_CONFIG_PATH is the
  *   daemon's real config source) is asserted by source-grepping apps/daemon/main.ts; the
  *   full live config-swap is proven in Step 5's provider-live cutover.
+ *   Phase 203 Step 2 adds the `from_catalog` preset selector, removes `axes`, and allows a
+ *   per-cell `bindings`/`catalog` layer.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
@@ -17,13 +19,18 @@
 import { assert, assertEquals, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import { parse as parseToml } from "@std/toml";
+import { walk } from "@std/fs";
 import {
   expandMatrix,
   type IMatrixBlock,
+  type IMatrixCell,
   MATRIX_START_DAEMON_STEP_ID,
   MatrixSchema,
   overlayRequestBindings,
 } from "../../runner/matrix_expander.ts";
+import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
+import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { planScenarioBindings } from "../../runner/binding_layers.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { ScenarioStepType } from "../../schema/step_schema.ts";
@@ -57,7 +64,6 @@ function otherStep(): IScenarioStep {
 }
 
 const FOUR_CELL_MATRIX: IMatrixBlock = {
-  axes: { tool: ["opencode", "claude-code"], provider: ["direct", "openrouter"] },
   cells: [
     {
       tool: "opencode",
@@ -93,7 +99,7 @@ const FOUR_CELL_MATRIX: IMatrixBlock = {
 
 Deno.test("[scenario_matrix] MatrixSchema accepts the four-cell block", () => {
   const parsed = MatrixSchema.parse(FOUR_CELL_MATRIX);
-  assertEquals(parsed.cells.length, 4);
+  assertEquals(parsed.cells?.length, 4);
 });
 
 const DEFAULT_MATRIX_ENV = {
@@ -490,4 +496,210 @@ Deno.test("[bindings] overlayRequestBindings gives every exactl request step its
   } finally {
     await Deno.remove(root, { recursive: true });
   }
+});
+
+const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
+const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
+const FIX_BUG_NULL_GUARD_PATH = join(FRAMEWORK_HOME, "scenarios", "swe_tasks", "fix-bug-null-guard.yaml");
+
+Deno.test("[matrix] cells and from_catalog are mutually exclusive, and axes is rejected", () => {
+  const oneCell = [{
+    tool: "exactl",
+    provider: "anthropic",
+    config: "configs/anthropic-no-delegate.toml",
+    requires_bin: "true",
+  }];
+
+  assertEquals(MatrixSchema.safeParse({ cells: oneCell }).success, true);
+  assertEquals(MatrixSchema.safeParse({ from_catalog: ["exactl-native"] }).success, true);
+
+  // A matrix must name its cells exactly once, so declaring both forms is an authoring error.
+  assertEquals(
+    MatrixSchema.safeParse({ cells: oneCell, from_catalog: ["exactl-native"] }).success,
+    false,
+    "cells and from_catalog together must be rejected",
+  );
+  assertEquals(MatrixSchema.safeParse({}).success, false, "a matrix must name cells somehow");
+  assertEquals(MatrixSchema.safeParse({ cells: [] }).success, false, "an empty cells list must be rejected");
+  assertEquals(
+    MatrixSchema.safeParse({ from_catalog: [] }).success,
+    false,
+    "an empty from_catalog list must be rejected",
+  );
+  assertEquals(
+    MatrixSchema.safeParse({ cells: oneCell, axes: { tool: ["exactl"] } }).success,
+    false,
+    "axes is no longer a matrix field",
+  );
+});
+
+Deno.test("[matrix] a cell may carry its own bindings and catalog for the cell layer", () => {
+  const parsed = MatrixSchema.parse({
+    cells: [{
+      tool: "exactl",
+      provider: "anthropic",
+      config: "configs/anthropic-no-delegate.toml",
+      requires_bin: "true",
+      bindings: { default: { model: "anthropic/claude-sonnet-5" } },
+      catalog: {
+        services: {
+          fixture: {
+            adapter: "openai-chat",
+            transport: "local",
+            interface: "api",
+            serves: { "*": "{name}" },
+          },
+        },
+      },
+    }],
+  });
+
+  assertEquals(parsed.cells?.[0]?.bindings?.default?.model, "anthropic/claude-sonnet-5");
+  assertEquals(parsed.cells?.[0]?.catalog?.services?.fixture?.adapter, "openai-chat");
+});
+
+Deno.test("[matrix] every shipped scenario parses, and no scenario, fixture or README declares axes", async () => {
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  assert(catalog.length >= 200, `the scenario corpus must still load, saw ${catalog.length} entries`);
+
+  const offenders: string[] = [];
+  for await (
+    const entry of walk(FRAMEWORK_HOME, { exts: [".yaml"], includeDirs: false })
+  ) {
+    const raw = await Deno.readTextFile(entry.path);
+    if (/^\s*axes:/m.test(raw)) offenders.push(entry.path);
+  }
+  assertEquals(offenders, [], "no scenario or fixture file may declare axes");
+
+  const readme = await Deno.readTextFile(join(FRAMEWORK_HOME, "README.md"));
+  assertEquals(/^\s*axes:/m.test(readme), false, "the README must not document a matrix.axes field");
+});
+
+/** The six cells fix-bug-null-guard declared by hand before the catalog migration. */
+const PRIOR_HAND_LISTED_CELLS: IMatrixCell[] = [
+  {
+    tool: "claude-code",
+    provider: "$CELL_PROVIDER",
+    config: "configs/claude-cli-delegate-all.toml",
+    requires_bin: "claude",
+  },
+  { tool: "codex", provider: "$CELL_PROVIDER", config: "configs/codex-cli-react.toml", requires_bin: "codex" },
+  {
+    tool: "opencode",
+    provider: "$CELL_PROVIDER",
+    config: "configs/opencode-cli-delegate-all.toml",
+    requires_bin: "opencode",
+  },
+  {
+    tool: "exactl",
+    provider: "anthropic",
+    config: "configs/anthropic-no-delegate.toml",
+    requires_bin: "true",
+    requires_key: "ANTHROPIC_API_KEY",
+  },
+  {
+    tool: "exactl",
+    provider: "openai",
+    config: "configs/openai-no-delegate.toml",
+    requires_bin: "true",
+    requires_key: "OPENAI_API_KEY",
+  },
+  {
+    tool: "exactl",
+    provider: "google",
+    config: "configs/google-no-delegate.toml",
+    requires_bin: "true",
+    requires_key: "GOOGLE_API_KEY",
+  },
+];
+
+/** The provider label the daemon reports for a preset's config: its own `[ai].provider`. */
+function configProvider(configRelPath: string): string {
+  const raw = Deno.readTextFileSync(join(REPO_ROOT, configRelPath));
+  const parsed = parseToml(raw) as { ai?: { provider?: string } };
+  return parsed.ai?.provider ?? "";
+}
+
+Deno.test(
+  "[regression] fix-bug-null-guard's from_catalog form selects the same six cell ids as its prior hand-listed form",
+  async () => {
+    const scenario = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(FIX_BUG_NULL_GUARD_PATH)));
+    const matrix = scenario.matrix;
+    assert(matrix, "fix-bug-null-guard must declare a matrix");
+    assertEquals(matrix.cells, undefined, "the migrated scenario must select cells through from_catalog");
+    assertEquals(matrix.from_catalog, [
+      "claude-code",
+      "codex",
+      "opencode",
+      "exactl-native",
+      "exactl-openai",
+      "exactl-google",
+    ]);
+
+    const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
+    const resolved = resolveCatalogCells(catalog, matrix.from_catalog!);
+
+    // The history cell id is `${tool}-${config provider}`. The regression is equal ids,
+    // not equal `provider:` text.
+    const idOf = (cell: IMatrixCell) => `${cell.tool}-${configProvider(cell.config)}`;
+    assertEquals(resolved.map(idOf), PRIOR_HAND_LISTED_CELLS.map(idOf));
+    assertEquals(resolved.map(idOf), [
+      "claude-code-claude-cli",
+      "codex-codex-cli",
+      "opencode-opencode-cli",
+      "exactl-anthropic",
+      "exactl-openai",
+      "exactl-google",
+    ]);
+
+    // The declared predicates and configs survive the migration unchanged.
+    assertEquals(resolved.map((cell) => cell.config), PRIOR_HAND_LISTED_CELLS.map((cell) => cell.config));
+    assertEquals(
+      resolved.map((cell) => cell.requires_bin),
+      PRIOR_HAND_LISTED_CELLS.map((cell) => cell.requires_bin),
+    );
+    assertEquals(
+      resolved.map((cell) => cell.requires_key),
+      PRIOR_HAND_LISTED_CELLS.map((cell) => cell.requires_key),
+    );
+  },
+);
+
+Deno.test("[matrix] the resolved catalog cells expand into runnable groups with the same predicates", async () => {
+  const scenario = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(FIX_BUG_NULL_GUARD_PATH)));
+  const catalog = await loadCellCatalog(CELL_CATALOG_PATH);
+  const resolved: IMatrixBlock = { cells: resolveCatalogCells(catalog, scenario.matrix!.from_catalog!) };
+
+  // Three API cells gate on a key. Three CLI cells gate on a binary. With every binary
+  // present, only the API cells are skipped.
+  const withoutKeys = expandMatrix(scenario.steps, resolved, { env: {}, binOnPath: () => true });
+  assertEquals(withoutKeys.length, 6);
+  assertEquals(
+    withoutKeys.filter((run) => run.status === "skip").map((run) => run.cell.provider),
+    ["anthropic", "openai", "google"],
+  );
+
+  // With every binary and key present all six resolved cells run.
+  const withKeys = expandMatrix(scenario.steps, resolved, {
+    env: { ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", GOOGLE_API_KEY: "k" },
+    binOnPath: () => true,
+    configBaseDir: REPO_ROOT,
+  });
+  assertEquals(withKeys.filter((run) => run.status === "run").length, 6);
+
+  // --cell narrows the matrix to one API cell, which keeps the tool its preset declares.
+  const selected = expandMatrix(scenario.steps, resolved, {
+    env: { ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", GOOGLE_API_KEY: "k" },
+    binOnPath: () => true,
+    configBaseDir: REPO_ROOT,
+    selectedCell: "anthropic",
+  });
+  const runnable = selected.filter((run) => run.status === "run");
+  assertEquals(runnable.map((run) => run.cell.tool), ["exactl"]);
+  assertEquals(runnable.map((run) => run.cell.provider), ["anthropic"]);
+
+  // The runnable cell overlays its own config and tool onto the single start-daemon step.
+  const daemon = runnable[0]!.steps.find((step) => step.id === MATRIX_START_DAEMON_STEP_ID);
+  assertEquals(daemon?.env?.EXA_CONFIG_PATH, join(REPO_ROOT, runnable[0]!.cell.config));
+  assertEquals(daemon?.env?.EXA_SESSION_DELEGATE_TOOL, "exactl");
 });
