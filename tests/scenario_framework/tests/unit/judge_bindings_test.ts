@@ -300,7 +300,10 @@ function bindingSelectorsOf(scenario: CatalogEntry): string[] {
   return tables.flatMap((table) => Object.keys(table ?? {}));
 }
 
-Deno.test("[judge][regression] no shipped scenario or preset declares a judge binding, so every judge keeps its env path", async () => {
+/** The one reviewed preset judge binding (Phase 203 Step 7, test-only fixture preset). */
+const REVIEWED_JUDGE_BINDING_PRESETS = new Set(["self-hosted-fixture"]);
+
+Deno.test("[judge][regression] only the reviewed fixture preset declares a judge binding, so every other judge keeps its env path", async () => {
   const scenarios = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const offenders: string[] = [];
   for (const scenario of scenarios) {
@@ -311,12 +314,20 @@ Deno.test("[judge][regression] no shipped scenario or preset declares a judge bi
     }
   }
 
+  // Phase 203 Step 7 reviewed exactly one preset judge binding.
+  // The test-only `self-hosted-fixture` preset binds its judge to the claude-cli delegate.
+  // That keeps the fixture cutover free of provider keys.
+  // Every other preset and scenario must keep the environment path.
+  const reviewed = new Set<string>();
   const cellCatalog = await loadCellCatalog(CELL_CATALOG_PATH);
   for (const [name, preset] of Object.entries(cellCatalog.presets)) {
     for (const selector of Object.keys(preset.bindings ?? {})) {
-      if (selector === "judge" || selector.startsWith("judge:")) {
-        offenders.push(`preset ${name}: ${selector}`);
+      if (selector !== "judge" && !selector.startsWith("judge:")) continue;
+      if (REVIEWED_JUDGE_BINDING_PRESETS.has(name)) {
+        reviewed.add(`${name}: ${selector}`);
+        continue;
       }
+      offenders.push(`preset ${name}: ${selector}`);
     }
   }
 
@@ -324,5 +335,6 @@ Deno.test("[judge][regression] no shipped scenario or preset declares a judge bi
   // It also changes how a run reports that grade. That is a deliberate act.
   // This guard fails until the change is made and reviewed on purpose.
   assertEquals(offenders, []);
+  assertEquals([...reviewed].sort(), ["self-hosted-fixture: judge"]);
   assert(scenarios.length >= 200, `the shipped scenario corpus must load, saw ${scenarios.length}`);
 });

@@ -1,0 +1,43 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+# The test-only fixture service is declared in this config's [catalog] block, which the runner
+# and the daemon merge into the binding layers. A run-time fixture introduces its own loopback
+# port, so the host must be granted here: computeStartNetGrant never reads a run's --overlay
+# files, so a service that only the per-run catalog declares is outside the start-time grant.
+allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Phase 203 Step 7: the base config for the `self-hosted-fixture` preset. The preset's binding
+# supplies the service, so this file carries no [ai.compatible] block; the provider block only
+# names the realm the daemon boots with.
+[ai]
+provider = "openai-chat"
+model = "compat-fixture-v1"
+timeout_ms = 10000
+
+[execution]
+native_tools_enabled = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# The fixture service the preset and the Phase 203 pins name. The sentinel is substituted before
+# this file is parsed, so the endpoint below is a real URL by the time the schema sees it.
+[catalog.services.compat-fixture]
+adapter = "openai-chat"
+profile = "local-test"
+endpoint = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions"
+allow_insecure_loopback = true
+transport = "local"
+interface = "api"
+serves = { "openai-chat/compat-fixture-v1" = "compat-fixture-v1" }
+
+[catalog.models."openai-chat/compat-fixture-v1"]
+model_provider = "openai-chat"

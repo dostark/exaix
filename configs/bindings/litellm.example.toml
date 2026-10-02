@@ -1,0 +1,24 @@
+schema = 1
+
+# Example: a LiteLLM proxy fronting one or more upstream providers. Copy this file into
+# `.exa/binding-overlays/` and adjust the host, port and model before use. LiteLLM forwards
+# `tool_choice` to the upstream it routes to, so this example declares that it honours one.
+# A LiteLLM proxy that requires a key reads it from `EXA_COMPAT_SELF_HOSTED_API_KEY`: set
+# `key_env = "EXA_COMPAT_SELF_HOSTED_API_KEY"` on the service, or leave the key unset.
+
+[catalog.services.litellm]
+adapter = "openai-chat"
+profile = "self-hosted"
+endpoint = "http://127.0.0.1:4000/v1/chat/completions"
+allow_insecure_loopback = true
+supports_tool_choice = true
+transport = "local"
+interface = "api"
+serves = { "meta/llama3.1:8b" = "llama3.1:8b" }
+
+[catalog.models."meta/llama3.1:8b"]
+model_provider = "meta"
+
+[bindings.default]
+service = "litellm"
+model = "meta/llama3.1:8b"

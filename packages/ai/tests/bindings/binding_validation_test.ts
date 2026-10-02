@@ -341,3 +341,32 @@ Deno.test("[validation] native tools: unknown model capabilities pass, a declare
   });
   assertEquals(supported.map((issue) => issue.code), []);
 });
+
+Deno.test("[phase203.binding] a fixture host inside the grant reports no restart or host issue", async () => {
+  const endpoint = "http://127.0.0.1:8123/v1/chat/completions";
+  const result = await codes(
+    binding({
+      service: "compat-fixture",
+      adapter: "openai-chat",
+      profile: "local-test",
+      endpoint,
+    }),
+    {
+      service: {
+        adapter: "openai-chat",
+        profile: "local-test",
+        endpoint,
+        allow_insecure_loopback: true,
+        transport: "local",
+        interface: "api",
+        serves: { "openai-chat/compat-fixture-v1": "compat-fixture-v1" },
+      },
+      allowNet: ["127.0.0.1:8123"],
+    },
+  );
+
+  assertEquals(result.includes("needs_restart"), false);
+  assertEquals(result.includes("host_not_allowed"), false);
+  assertEquals(result.includes("endpoint_invalid"), false);
+  assertEquals(result.includes("interface_unsupported"), false);
+});

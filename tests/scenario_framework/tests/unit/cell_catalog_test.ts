@@ -14,7 +14,16 @@ import { assert, assertEquals, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { fromFileUrl, join, resolve } from "@std/path";
 import type { IMatrixCell } from "../../runner/matrix_expander.ts";
+import { ConfigSchema } from "@exaix/schemas";
 import { loadCellCatalog, resolveCatalogCells } from "../../runner/cell_catalog.ts";
+import { resolveCellConfig } from "../../runner/matrix_expander.ts";
+
+/** Presets whose bindings differ from their own config's provider and model on purpose.
+ *  The ollama-chat preset binds the built-in Ollama service.
+ *  The split-strong-local preset spans providers.
+ *  The self-hosted-fixture preset binds the test fixture service.
+ *  The self-hosted preset test asserts each of those bindings by name. */
+const MIXED_REALM_PRESETS = new Set(["ollama-chat", "split-strong-local", "self-hosted-fixture"]);
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const CATALOG_PATH = resolve(REPO_ROOT, "configs", "eval-cells.toml");
@@ -23,6 +32,14 @@ const CATALOG_PATH = resolve(REPO_ROOT, "configs", "eval-cells.toml");
 interface IConfigAiBlock {
   provider?: string;
   model?: string;
+}
+
+/** The `[ai.compatible].profile` a config pins, if it declares one.
+ *  A compatible config's canonical model ids are profile-qualified. */
+async function configCompatibleProfile(configRelPath: string): Promise<string | undefined> {
+  const raw = await Deno.readTextFile(resolve(REPO_ROOT, configRelPath));
+  const parsed = parseToml(raw) as { ai?: { compatible?: { profile?: string } } };
+  return parsed.ai?.compatible?.profile;
 }
 
 async function configAiBlock(configRelPath: string): Promise<IConfigAiBlock> {
@@ -132,6 +149,7 @@ Deno.test("[CellCatalog] every preset agrees with the provider and model its con
   assert(names.length > 0, "the catalog must expose at least one preset");
 
   for (const [name, preset] of Object.entries(catalog.presets)) {
+    if (MIXED_REALM_PRESETS.has(name)) continue;
     const ai = await configAiBlock(preset.config);
     assertEquals(preset.provider, ai.provider, `preset '${name}' provider must match its config's [ai].provider`);
     if (preset.model !== undefined) {
@@ -147,10 +165,13 @@ Deno.test("[CellCatalog] a preset's default binding names the canonical model it
   assert(withBindings.length > 0, "at least one preset must declare a default binding");
 
   for (const [name, preset] of withBindings) {
+    if (MIXED_REALM_PRESETS.has(name)) continue;
     const ai = await configAiBlock(preset.config);
+    const profile = await configCompatibleProfile(preset.config);
+    const canonical = profile === undefined ? `${ai.provider}/${ai.model}` : `${profile}/${ai.model}`;
     assertEquals(
       preset.bindings?.default?.model,
-      `${ai.provider}/${ai.model}`,
+      canonical,
       `preset '${name}' must bind the canonical model its config pins`,
     );
   }
@@ -212,4 +233,59 @@ Deno.test("[CellCatalog] resolveCatalogCells keeps the declared order", async ()
 Deno.test("[CellCatalog] resolveCatalogCells throws on an unknown preset name", async () => {
   const catalog = await loadCellCatalog(CATALOG_PATH);
   assertThrows(() => resolveCatalogCells(catalog, ["no-such-preset"]), Error, "unknown cell preset");
+});
+
+Deno.test("[phase203.cell_catalog] the self-hosted presets declare their bindings, catalog and opt-in", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
+
+  const ollama = catalog.presets["ollama-chat"]!;
+  assertEquals(ollama.tool, "exactl");
+  assertEquals(ollama.config, "configs/ollama-chat.toml");
+  assertEquals(ollama.provider, "openai-chat");
+  assertEquals(ollama.model, "llama3.1:8b");
+  assertEquals(ollama.requires_optin, "EXA_MATRIX_OLLAMA");
+  assertEquals(ollama.bindings?.default, { service: "ollama-chat", model: "meta/llama3.1:8b" });
+  assertEquals(ollama.catalog?.models?.["meta/llama3.1:8b"]?.model_provider, "meta");
+
+  const split = catalog.presets["split-strong-local"]!;
+  assertEquals(split.requires_optin, "EXA_MATRIX_OLLAMA");
+  assertEquals(split.bindings?.default?.model, "anthropic/claude-sonnet-5");
+  assertEquals(split.bindings?.["role:web-explorer"], { service: "ollama-chat", model: "meta/llama3.1:8b" });
+  assertEquals(split.catalog?.models?.["meta/llama3.1:8b"]?.model_provider, "meta");
+
+  const fixture = catalog.presets["self-hosted-fixture"]!;
+  assertEquals(fixture.config, "configs/compat-fixture-base.toml");
+  assertEquals(fixture.bindings?.default, { service: "self-hosted-fixture", model: "fixture/compat-fixture-v1" });
+  assertEquals(fixture.bindings?.judge, { service: "claude-cli", model: "anthropic/claude-sonnet-5" });
+  const service = fixture.catalog?.services?.["self-hosted-fixture"];
+  assert(service !== undefined, "the fixture preset must declare its own service");
+  assertEquals(service.profile, "self-hosted");
+  assertEquals(service.supports_tool_choice, false);
+  assertEquals(service.endpoint, "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions");
+});
+
+Deno.test("[phase203.cell_catalog] a preset's opt-in travels onto the resolved cell", async () => {
+  const catalog = await loadCellCatalog(CATALOG_PATH);
+  const [cell] = resolveCatalogCells(catalog, ["ollama-chat"]);
+
+  assertEquals(cell.requires_optin, "EXA_MATRIX_OLLAMA");
+  assertEquals(cell.requires_bin, "true");
+  assertEquals(cell.bindings?.default?.service, "ollama-chat");
+});
+
+Deno.test("[phase203.cell_catalog] the fixture base config grants the fixture host and carries no compatible block", async () => {
+  const raw = await Deno.readTextFile(resolve(REPO_ROOT, "configs/compat-fixture-base.toml"));
+  assert(raw.includes('allow_net = ["127.0.0.1:__COMPAT_FIXTURE_PORT__"]'), "the host grant must hold the sentinel");
+
+  const materialized = resolveCellConfig(raw, {
+    workspaceRoot: "/tmp/workspace",
+    worktreePath: "/tmp/worktree",
+    compatFixturePort: 8123,
+  });
+  assert(materialized.includes("127.0.0.1:8123"), "the materialized config must carry the port");
+  assertEquals(materialized.includes("__COMPAT_FIXTURE_PORT__"), false);
+
+  // The binding supplies the service, so the base config declares no compatible profile.
+  const config = ConfigSchema.parse(parseToml(materialized));
+  assertEquals(config.ai?.compatible, undefined);
 });

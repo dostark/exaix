@@ -35,6 +35,8 @@ export interface ICatalogPreset {
   requires_bin?: string;
   /** The env var that must be set, when the provider needs an API key. */
   requires_key?: string;
+  /** The env var that gates this preset. An unset opt-in records the cell as skipped. */
+  requires_optin?: string;
   /** Documentary only: the config's own `native_tools_enabled` value decides at runtime. */
   native_tools?: boolean;
   /** The cell-layer bindings this preset contributes. Empty for a CLI-delegate preset. */
@@ -77,6 +79,7 @@ const PresetRowSchema = z.object({
   model: z.string().min(1).optional(),
   requires_bin: z.string().min(1).optional(),
   requires_key: z.string().min(1).optional(),
+  requires_optin: z.string().min(1).optional(),
   native_tools: z.boolean().optional(),
   bindings: BindingsTableSchema.optional(),
   catalog: SentinelTolerantCatalogSchema.optional(),
@@ -101,6 +104,7 @@ function toPreset(row: z.infer<typeof PresetRowSchema>): ICatalogPreset {
       ? { requires_bin: PRESET_ALWAYS_PRESENT_BIN }
       : {}),
     ...(row.requires_key !== undefined ? { requires_key: row.requires_key } : {}),
+    ...(row.requires_optin !== undefined ? { requires_optin: row.requires_optin } : {}),
     ...(row.native_tools !== undefined ? { native_tools: row.native_tools } : {}),
     ...(row.bindings !== undefined ? { bindings: row.bindings } : {}),
     ...(row.catalog !== undefined ? { catalog: row.catalog } : {}),
@@ -150,6 +154,7 @@ export function resolveCatalogCells(
       config: preset.config,
       requires_bin: preset.requires_bin,
       ...(preset.requires_key !== undefined ? { requires_key: preset.requires_key } : {}),
+      ...(preset.requires_optin !== undefined ? { requires_optin: preset.requires_optin } : {}),
       ...(preset.bindings !== undefined ? { bindings: preset.bindings } : {}),
       ...(preset.catalog !== undefined ? { catalog: preset.catalog } : {}),
     });

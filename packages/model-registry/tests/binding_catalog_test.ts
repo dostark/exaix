@@ -96,3 +96,20 @@ Deno.test("a config catalog service entry adds a service and overrides a built-i
   assertExists(merged.services["operator-lab"]);
   assertExists(merged.services.deepseek);
 });
+
+Deno.test("[phase203.catalog] ollama-chat is built in as a self-hosted compatible service", () => {
+  const catalog = buildBuiltInCatalog();
+  const service = catalog.services["ollama-chat"];
+  assertExists(service);
+  assertEquals(service.adapter, "openai-chat");
+  assertEquals(service.profile, "self-hosted");
+  assertEquals(service.endpoint, "http://127.0.0.1:11434/v1/chat/completions");
+  assertEquals(service.transport, "local");
+  assertEquals(service.interface, "api");
+  assertEquals(service.supports_tool_choice, false);
+  assertEquals(service.serves["*"], "{name}");
+  // Selection stays explicit, so no preference key appears for Ollama's model owners.
+  assertEquals(catalog.preferences["meta"], undefined);
+  assertEquals(catalog.preferences["qwen"], undefined);
+  assertEquals(catalog.preferences["ollama-chat"]?.at(-1), "openrouter");
+});

@@ -9,7 +9,15 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { BINDING_OVERLAYS_DIR, BINDINGS_DIR, RUN_BINDINGS_DIR } from "@exaix/core";
-import { ConfigSchema, PinReasonSchema } from "@exaix/schemas";
+import {
+  BindingOverlaySchema,
+  ConfigSchema,
+  type IBindingLayers,
+  type IBindingStepRef,
+  PinReasonSchema,
+} from "@exaix/schemas";
+import { buildBuiltInCatalog, mergeCatalogs } from "@exaix/model-registry";
+import { resolveBinding } from "@exaix/ai";
 import { readUserGuide } from "./helpers.ts";
 
 async function bindingGuide(): Promise<string> {
@@ -67,5 +75,42 @@ Deno.test("architecture describes pool holds, credential versions and replay com
   const architecture = (await Deno.readTextFile("ARCHITECTURE.md")).replace(/\s+/g, " ");
   for (const phrase of ["`releaseRun`", "credential version", "`compareLock`", "per pooled provider"]) {
     assertStringIncludes(architecture, phrase);
+  }
+});
+
+const BINDING_PROBE = { hasKey: (): boolean => true, hasOptIn: (): boolean => true };
+const BINDING_REF: IBindingStepRef = {
+  flowId: "example",
+  stepId: "step",
+  agentRole: "senior-coder",
+  kind: "agent",
+  nativeTools: true,
+};
+
+Deno.test("[phase203.docs] the vLLM and LiteLLM overlay examples parse and their bindings resolve", async () => {
+  for (const [name, supportsToolChoice] of [["vllm", false], ["litellm", true]] as const) {
+    const raw = await Deno.readTextFile(`configs/bindings/${name}.example.toml`);
+    const overlay = BindingOverlaySchema.parse(parseToml(raw));
+
+    assertEquals(overlay.schema, 1);
+    const service = overlay.catalog?.services?.[name];
+    assert(service !== undefined, `${name} example must declare its own service`);
+    assertEquals(service.adapter, "openai-chat");
+    assertEquals(service.profile, "self-hosted");
+    assertEquals(service.supports_tool_choice, supportsToolChoice);
+    assertEquals(service.transport, "local");
+
+    const spec = overlay.bindings?.default;
+    assert(spec !== undefined, `${name} example must declare a default binding`);
+    assertEquals(spec.service, name);
+
+    const layers: IBindingLayers = {
+      entries: [{ layer: "config", selector: "default", spec }],
+      catalog: mergeCatalogs(buildBuiltInCatalog(), overlay.catalog ?? {}),
+      overlaySha256: [],
+      operatorLayersPresent: false,
+    };
+    const outcome = resolveBinding(BINDING_REF, {}, layers, BINDING_PROBE);
+    assertEquals(outcome.kind, "bound", `${name} example binding must resolve`);
   }
 });

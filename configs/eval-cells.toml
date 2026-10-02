@@ -10,6 +10,7 @@
 #   model        = model label used in history attribution (must match the config)
 #   requires_bin = (optional) binary that must be on PATH for this cell to be runnable
 #   requires_key = (optional) env var that must be set for this cell to be runnable
+#   requires_optin = (optional) env var that must be set, or the cell is skipped
 #   native_tools = (optional) documentary only; the config's native_tools_enabled decides
 #   bindings     = (optional) the cell-layer bindings this preset sets
 #   catalog      = (optional) catalog entries this preset adds
@@ -130,7 +131,8 @@ requires_key = "OPENAI_API_KEY"
 native_tools = true
 
 [tool.openai-chat.bindings.default]
-model = "openai-chat/gpt-6-luna"
+service = "openai-chat"
+model = "openai/gpt-6-luna"
 
 [tool.deepseek-chat]
 tool = "exactl"
@@ -142,4 +144,75 @@ requires_key = "DEEPSEEK_API_KEY"
 native_tools = true
 
 [tool.deepseek-chat.bindings.default]
-model = "openai-chat/deepseek-v4-pro"
+service = "deepseek"
+model = "deepseek/deepseek-v4-pro"
+
+# Phase 203 Step 7: Ollama's own OpenAI-compatible endpoint, which the built-in catalog declares
+# as `ollama-chat`. Ollama is a background service CI cannot assume, so the cell is skipped unless
+# EXA_MATRIX_OLLAMA is set. The binding names the service explicitly: no `meta` preference key
+# exists, because the catalog derives preferences from registered providers and `meta` is not one.
+[tool.ollama-chat]
+tool = "exactl"
+config = "configs/ollama-chat.toml"
+provider = "openai-chat"
+model = "llama3.1:8b"
+requires_bin = "true"
+requires_optin = "EXA_MATRIX_OLLAMA"
+native_tools = true
+
+[tool.ollama-chat.bindings.default]
+service = "ollama-chat"
+model = "meta/llama3.1:8b"
+
+[tool.ollama-chat.catalog.models."meta/llama3.1:8b"]
+model_provider = "meta"
+
+# A strong cloud default with local explorers: `default` stays on Anthropic while
+# `role:web-explorer` runs on the local Ollama service. The opt-in gates the whole row.
+[tool.split-strong-local]
+tool = "exactl"
+provider = "mixed"
+config = "configs/anthropic-no-delegate.toml"
+requires_bin = "true"
+requires_key = "ANTHROPIC_API_KEY"
+requires_optin = "EXA_MATRIX_OLLAMA"
+
+[tool.split-strong-local.bindings.default]
+model = "anthropic/claude-sonnet-5"
+
+[tool.split-strong-local.bindings."role:web-explorer"]
+service = "ollama-chat"
+model = "meta/llama3.1:8b"
+
+[tool.split-strong-local.catalog.models."meta/llama3.1:8b"]
+model_provider = "meta"
+
+# Test-only: the fixture service the Phase 203 Step 9 cutover drives. The judge is bound to a CLI
+# delegate, which needs no provider credential, and the fixture config carries the host grant.
+[tool.self-hosted-fixture]
+tool = "exactl"
+config = "configs/compat-fixture-base.toml"
+provider = "openai-chat"
+requires_bin = "true"
+native_tools = true
+
+[tool.self-hosted-fixture.bindings.default]
+service = "self-hosted-fixture"
+model = "fixture/compat-fixture-v1"
+
+[tool.self-hosted-fixture.bindings.judge]
+service = "claude-cli"
+model = "anthropic/claude-sonnet-5"
+
+[tool.self-hosted-fixture.catalog.services.self-hosted-fixture]
+adapter = "openai-chat"
+profile = "self-hosted"
+endpoint = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions"
+allow_insecure_loopback = true
+supports_tool_choice = false
+transport = "local"
+interface = "api"
+serves = { "fixture/compat-fixture-v1" = "compat-fixture-v1" }
+
+[tool.self-hosted-fixture.catalog.models."fixture/compat-fixture-v1"]
+model_provider = "fixture"

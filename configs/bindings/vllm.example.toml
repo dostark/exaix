@@ -1,0 +1,24 @@
+schema = 1
+
+# Example: a local vLLM OpenAI-compatible server. Copy this file into `.exa/binding-overlays/`
+# and adjust the host, port and model before use. vLLM only serves tool calls when it is started
+# with `--enable-auto-tool-choice --tool-call-parser <parser>`, and whether it honours an explicit
+# `tool_choice` depends on that parser. This example therefore declares that it cannot, so the
+# native tool loops send `tools` without `tool_choice`.
+
+[catalog.services.vllm]
+adapter = "openai-chat"
+profile = "self-hosted"
+endpoint = "http://127.0.0.1:8000/v1/chat/completions"
+allow_insecure_loopback = true
+supports_tool_choice = false
+transport = "local"
+interface = "api"
+serves = { "meta/llama3.1:8b" = "meta-llama/Llama-3.1-8B-Instruct" }
+
+[catalog.models."meta/llama3.1:8b"]
+model_provider = "meta"
+
+[bindings.default]
+service = "vllm"
+model = "meta/llama3.1:8b"

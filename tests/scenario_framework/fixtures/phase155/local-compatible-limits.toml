@@ -43,3 +43,18 @@ baseUrl = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__"
 
 [models.compat-agent.compatible]
 max_response_bytes = 512
+
+# Phase 203 Step 7: the fixture service the scenario pins name. A config catalog is merged into
+# the binding layers, so a pin's binding can reference it. The sentinel is substituted before
+# this file is parsed, so the endpoint below is a real URL by the time the schema sees it.
+[catalog.services.compat-fixture]
+adapter = "openai-chat"
+profile = "local-test"
+endpoint = "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions"
+allow_insecure_loopback = true
+transport = "local"
+interface = "api"
+serves = { "openai-chat/compat-fixture-v1" = "compat-fixture-v1" }
+
+[catalog.models."openai-chat/compat-fixture-v1"]
+model_provider = "openai-chat"

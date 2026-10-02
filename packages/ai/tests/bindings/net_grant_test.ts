@@ -159,3 +159,33 @@ Deno.test("[net] daemon overlay catalog hosts are included in the grant", async 
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+Deno.test("[phase203.sentinel] an unsubstituted sentinel endpoint is skipped, never granted", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "net-grant-sentinel-" });
+  try {
+    // The endpoint schema is a URL, so a validated config never carries the sentinel. This
+    // asserts the defensive contract for a catalog that reaches the grant mid-substitution.
+    const config = {
+      ...configWith(tempDir),
+      catalog: {
+        models: {},
+        services: {
+          fixture: {
+            adapter: "openai-chat",
+            profile: "local-test",
+            transport: "local",
+            interface: "api",
+            serves: { "*": "{name}" },
+            endpoint: "http://127.0.0.1:__COMPAT_FIXTURE_PORT__/v1/chat/completions",
+          },
+        },
+      },
+    } as Config;
+
+    const grant = await computeStartNetGrant(config);
+
+    assertEquals(grant.some((entry) => entry.includes("__COMPAT_FIXTURE_PORT__")), false);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});

@@ -787,3 +787,40 @@ Deno.test("[resolver] a judge pin treats judge:<id> as the exact selector", () =
     assertEquals(broader.binding.sources.model?.pin_kept?.skipped_selector, "judge");
   }
 });
+
+Deno.test("[phase203.resolver] an explicit ollama-chat binding needs no preference key", () => {
+  const ollamaCatalog: IBindingCatalog = {
+    models: { "meta/llama3.1:8b": { model_provider: "meta" } },
+    services: {
+      "ollama-chat": {
+        adapter: "openai-chat",
+        profile: "self-hosted",
+        endpoint: "http://127.0.0.1:11434/v1/chat/completions",
+        transport: "local",
+        interface: "api",
+        supports_tool_choice: false,
+        serves: { "*": "{name}" },
+      },
+    },
+    preferences: {},
+  };
+  const layers: IBindingLayers = {
+    entries: [{
+      layer: "config",
+      selector: "default",
+      spec: { service: "ollama-chat", model: "meta/llama3.1:8b" },
+    }],
+    catalog: ollamaCatalog,
+    overlaySha256: [],
+    operatorLayersPresent: true,
+  };
+
+  const outcome = resolveBinding(ref, {}, layers, probe);
+
+  assertEquals(outcome.kind, "bound");
+  if (outcome.kind !== "bound") return;
+  assertEquals(outcome.binding.service, "ollama-chat");
+  assertEquals(outcome.binding.profile, "self-hosted");
+  assertEquals(outcome.binding.service_model_id, "llama3.1:8b");
+  assertEquals(outcome.binding.supports_tool_choice, false);
+});

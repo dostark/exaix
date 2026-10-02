@@ -60,14 +60,27 @@ function endpointGrantEntry(endpoint: string): string {
   return canonicalHostPort(parsed);
 }
 
-/** Collect the canonical host:port of every catalog service endpoint. */
+/** Collect the canonical host:port of every catalog service endpoint.
+ *  A service declared before its sentinels resolve holds an unparseable endpoint.
+ *  Skipping that service leaves the host ungranted, which fails closed.
+ *  The binding validator reports endpoint_invalid for such an endpoint. */
 function catalogEndpointHosts(catalog: IBindingCatalog): string[] {
   const entries: string[] = [];
   for (const service of Object.values(catalog.services)) {
     if (!service.endpoint) continue;
+    if (parseEndpointUrl(service.endpoint) === undefined) continue;
     entries.push(endpointGrantEntry(service.endpoint));
   }
   return entries;
+}
+
+/** Parses a catalog endpoint, or returns undefined when it is not yet a URL. */
+function parseEndpointUrl(endpoint: string): URL | undefined {
+  try {
+    return new URL(endpoint);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Merge catalog services from every operator overlay file beneath .exa/overlays/. */

@@ -7,7 +7,12 @@
  * @related-files [packages/model-registry/src/static_overlay.ts, packages/ai/src/bindings/binding_resolver.ts]
  */
 
-import { OPENAI_COMPATIBLE_PROFILE_DEFAULTS, ProviderDefaultsRegistry, ProviderType } from "@exaix/core";
+import {
+  OPENAI_COMPATIBLE_PROFILE_DEFAULTS,
+  OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
+  ProviderDefaultsRegistry,
+  ProviderType,
+} from "@exaix/core";
 import { getDefaultModels } from "@exaix/schemas";
 import type { IBindingCatalog, ModelCapability } from "@exaix/schemas";
 import { BindingTransportSchema, ModelCapabilitySchema } from "@exaix/schemas";
@@ -103,8 +108,26 @@ function projectCompatibleProfiles(catalog: IBindingCatalog): void {
   }
 }
 
-/** Project the open-router route and the local CLI provider and delegate tools. */
-function projectCliRoutes(catalog: IBindingCatalog): void {
+const OLLAMA_CHAT_SERVICE = "ollama-chat";
+const OLLAMA_CHAT_ENDPOINT = "http://127.0.0.1:11434/v1/chat/completions";
+
+/** Project Ollama's own OpenAI-compatible endpoint beside the native `ollama` service.
+ *  Selection is explicit, so no preference key is added for the `meta`/`qwen` model owners. */
+function projectSelfHostedChatRoute(catalog: IBindingCatalog): void {
+  catalog.services[OLLAMA_CHAT_SERVICE] = {
+    adapter: ProviderType.OPENAI_CHAT,
+    profile: OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE,
+    endpoint: OLLAMA_CHAT_ENDPOINT,
+    transport: BindingTransportSchema.enum.local,
+    interface: "api",
+    supports_tool_choice: false,
+    serves: { "*": "{name}" },
+  };
+}
+
+/** Project the open-router route and the local CLI provider and delegate tools. */ function projectCliRoutes(
+  catalog: IBindingCatalog,
+): void {
   catalog.services.openrouter = {
     adapter: ProviderType.OPENROUTER,
     transport: BindingTransportSchema.enum.cloud,
@@ -137,6 +160,7 @@ export function buildBuiltInCatalog(): IBindingCatalog {
   projectDefaultProviders(catalog);
   projectStaticOverlay(catalog);
   projectCompatibleProfiles(catalog);
+  projectSelfHostedChatRoute(catalog);
   projectCliRoutes(catalog);
   for (
     const provider of new Set<string>([

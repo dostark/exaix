@@ -10,6 +10,15 @@ portals:
     source_path: "$FRAMEWORK_HOME/fixtures/portals/planning_marker_repo"
     target_path: "$WORKSPACE_ROOT/live-portal"
     git_init: true
+bindings:
+  default:
+    service: "deepseek"
+    model: "deepseek/deepseek-v4-pro"
+pin:
+  selector: default
+  fields: [service, model]
+  reason: provider-qualification
+  note: "The live leg exists to qualify this model on this service, so an operator override would invalidate the measured result."
 matrix:
   cells:
     - tool: "exactl"
