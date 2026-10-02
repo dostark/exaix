@@ -22,9 +22,9 @@ operation is a typed step the framework understands.
 The DSL has three layers:
 
 1. **Scenario header** — who/what/when + how it runs (packs, modes, portals, matrix).
-2. **Steps** — the ordered actions (`exactl`, `wait-for-file`, `write-file`, `journal-assert`,
+1. **Steps** — the ordered actions (`exactl`, `wait-for-file`, `write-file`, `journal-assert`,
    `judge`, …).
-3. **Criteria** — the assertions (`input_criteria` before a step, `output_criteria` after)
+1. **Criteria** — the assertions (`input_criteria` before a step, `output_criteria` after)
    that decide pass/fail and produce the step score.
 
 This document is the **language reference**. For how to run scenarios, the scoring model, and
@@ -203,6 +203,12 @@ endpoint and network grant must hold, and a `cli` service is allowed while a `cl
 judge binding that fails to resolve or validate refuses the run before `start-daemon`, with each issue
 in the error. A named judge is never swapped silently for the environment's judge.
 
+**Request scope.** A judge resolves through the same ordered overlay list as the request it grades
+(the layer order above), never through a pool of every step's overlay. A judge that is itself an
+`exactl request` step uses that request's layer; a later grading step uses the nearest preceding
+executed request. A future or skipped request's own `bindings:` never enters the stack, and a judge
+with no preceding request sees only the scenario, cell and operator layers.
+
 A judge that grades with the system under test's own service and model is allowed and flagged
 `judgeSharesSut` in the evidence. The flag compares the judge's catalog service and model with every
 step the daemon bound in that run. With no bound step, it compares the judge's adapter and wire model
@@ -236,12 +242,13 @@ catalog:
 In a TOML preset the same selection reads `service = "ollama-chat"` under
 `[tool.<name>.bindings.default]`.
 
-**Trust boundary.** The runner writes overlay files to a runner-owned directory under the run's
-output directory, outside the sandbox, so an agent cannot edit the layers that route its own
-steps. `exactl request --overlay` rejects a symlink, a non-regular file and a file above
-`BINDING_OVERLAY_MAX_BYTES` before parsing (`loadOverlays`). The residual risk is a
-CLI delegate started with `--no-sandbox`, which can still write outside the sandbox by absolute
-path and so can reach those files.
+**Trust boundary.** The runner writes overlay files to a per-invocation directory under the run's
+output directory (`<output>/bindings/<run-id>/`), outside the sandbox, so an agent cannot edit the
+layers that route its own steps. The runner resolves that directory's physical location and refuses
+an output or `bindings` symlink that points into the sandbox before it writes. `exactl request
+--overlay` rejects a symlink, a non-regular file and a file above `BINDING_OVERLAY_MAX_BYTES` before
+parsing (`loadOverlays`). The residual risk is a CLI delegate started with `--no-sandbox`, which can
+still write outside the sandbox by absolute path and so can reach those files.
 
 **Fixture network rule.** A service introduced by a run-time `--overlay` or preset catalog is not in
 the daemon's start-time `--allow-net` grant. A fixture-backed service therefore needs its host in
@@ -760,12 +767,12 @@ EXA_EVAL_LLM_MOCK=false EXA_EVAL_LLM_PROVIDER=anthropic EXA_EVAL_LLM_MODEL=claud
 **Authoring checklist:**
 
 1. Put the file under the right `pack` directory with a unique `id`.
-2. Add `tags` (include `smoke` to make it a ci-core representative for its subsystem).
-3. Declare `portals` for any real code the scenario touches.
-4. Every step: `id` + `type` + the fields that type needs.
-5. Assert what matters with criteria — don't rely on step exit code alone.
-6. Run with `--dry-run` first to catch schema errors, then `--verbose` to watch.
-7. Check the scenario with `deno task check:scenario-declarative` (no `shell` steps, no raw
+1. Add `tags` (include `smoke` to make it a ci-core representative for its subsystem).
+1. Declare `portals` for any real code the scenario touches.
+1. Every step: `id` + `type` + the fields that type needs.
+1. Assert what matters with criteria — don't rely on step exit code alone.
+1. Run with `--dry-run` first to catch schema errors, then `--verbose` to watch.
+1. Check the scenario with `deno task check:scenario-declarative` (no `shell` steps, no raw
    SQL, no hardcoded worktree globs).
 
 ---

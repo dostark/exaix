@@ -7,11 +7,12 @@
  * @dependencies [@exaix/schemas]
  * @related-files [tests/scenario_framework/AUTHORING.md, tests/scenario_framework/SCENARIO_DSL.md, tests/docs/helpers.ts]
  */
-import { assert, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { BindingFieldSchema, PinReasonSchema } from "@exaix/schemas/model_binding.ts";
 import { parse as parseYaml } from "@std/yaml";
 import { ScenarioSchema } from "../scenario_framework/schema/scenario_schema.ts";
 import { SCHEMA_VERSION } from "../scenario_framework/schema/version.ts";
+import { type IScenarioBindingPlan, orderedRequestOverlays } from "../scenario_framework/runner/binding_layers.ts";
 import { readUserGuide } from "./helpers.ts";
 
 const AUTHORING = "tests/scenario_framework/AUTHORING.md";
@@ -112,6 +113,47 @@ Deno.test("[docs] no doc presents a meta/qwen preference route for Ollama", asyn
     assert(!/^\s*(meta|qwen)\s*=\s*\[/m.test(text), `${file} declares a meta/qwen preference list`);
     assert(!/preferences[^\n]*\b(meta|qwen)\b\s*[:=]/.test(text), `${file} routes Ollama by a meta/qwen preference`);
   }
+});
+
+Deno.test("[docs] evidence and judge examples name their scenario, trial and request scope", async () => {
+  const evaluation = flatten(await Deno.readTextFile(EVALUATION));
+  assertEvery(evaluation, [
+    "requestStepId",
+    'outcome: "refused"',
+    "qualified: false",
+    "trial",
+  ]);
+  const docs = flatten(await authoringDocs());
+  assertStringIncludes(docs, "the same ordered overlay list as the request it grades");
+  assertStringIncludes(docs, "per-invocation directory");
+});
+
+Deno.test("[docs] documented overlay order matches the shared request-and-judge ordering helper", async () => {
+  const docs = flatten(await authoringDocs());
+  const plan: IScenarioBindingPlan = {
+    overlays: [
+      { role: "scenario", path: "10-scenario.json", sha256: "a".repeat(64) },
+      { role: "cell", path: "20-cell.json", sha256: "b".repeat(64) },
+      { role: "step", stepId: "submit", path: "25-step-submit.json", sha256: "c".repeat(64) },
+      { role: "operator", path: "30-operator-0.json", sha256: "d".repeat(64) },
+      { role: "operator", path: "40-operator-bind.json", sha256: "e".repeat(64) },
+    ],
+    pins: [],
+  };
+  const ordered = orderedRequestOverlays(plan, "submit");
+  assertEquals(ordered.map((overlay) => overlay.role), ["scenario", "cell", "step", "operator", "operator"]);
+
+  // The docs name each layer file in the same order the helper returns it.
+  const tokens = [
+    "10-scenario.json",
+    "20-cell.json",
+    "25-step-<step-id>.json",
+    "30-operator-",
+    "40-operator-bind.json",
+  ];
+  const positions = tokens.map((token) => docs.indexOf(token));
+  assert(positions.every((position) => position >= 0), "the docs must name every overlay layer file");
+  assertEquals([...positions].sort((a, b) => a - b), positions);
 });
 
 /** The keys that mark a YAML example as a scenario fragment rather than a step list or a single step. */

@@ -795,6 +795,11 @@ flow ID and binding snapshot; `IGateConfig.bindingContext` and
 `DomainEventType` includes the three binding events above. `IRequestOptions` carries
 `exactl request`'s repeatable overlay and bind fields plus its replay lock path.
 
+The scenario runner resolves each judge through the same ordered overlay list as the request
+it grades, records that request's step in the judge evidence row, and writes binding evidence
+for every bound pack, keyed by scenario and trial. It writes overlay files to a per-invocation
+directory and refuses a symlinked output or `bindings` component that resolves into the sandbox.
+
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 
 ### Effort/Thinking Resolution (`EffortResolver`)

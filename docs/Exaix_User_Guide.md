@@ -4483,6 +4483,14 @@ high priority: flow YAML `binding:`, config `[bindings]`, daemon overlay, per-ru
 then `--bind`. A model-only entry can use catalog preferences to pick its service; a
 transport/interface-only entry can inherit a uniquely projected `[ai]` default model.
 
+In the scenario runner, a run that carries overlays, judges or pins writes a binding-evidence
+file for every pack, not only `provider_live`. The file is keyed by scenario and trial, and each
+judge row names the `requestStepId` it resolved against, so a judge uses the same ordered overlay
+list as the request it grades. A run refused before the daemon starts writes a refusal record with
+`outcome: "refused"` and `qualified: false` instead of nothing. A bound CLI judge's timeout follows
+its transport adapter, so a `claude-cli` service serving a cloud-owned model still gets the CLI
+subprocess timeout.
+
 Place a versioned JSON or TOML overlay in `.exa/overlays/` under `system.root` to affect
 later runs. Daemon overlays load in lexical filename order. A JSON overlay looks like this:
 

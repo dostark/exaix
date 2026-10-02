@@ -1073,7 +1073,7 @@ Each provider-live evidence file records what the run actually used:
 | ---------- | ----------------------------------------------------------------------------------------------------- |
 | `overlays` | Every overlay file the run passed, with role, path and sha256                                         |
 | `bindings` | One row per step binding, read from each run's `lock.entries`                                         |
-| `judges`   | Each resolved judge binding with its sources and a `judgeSharesSut` flag                              |
+| `judges`   | Each resolved judge binding with its sources, its `requestStepId` scope and a `judgeSharesSut` flag   |
 | `pins`     | Each pinned field an operator entry tried to change, with the entry it was stripped from (`pin_kept`) |
 
 Ollama is selected explicitly. Bind the `ollama-chat` service by name and declare the canonical
@@ -1098,8 +1098,19 @@ A judge that grades with the system under test's own service and model is allowe
 `judgeSharesSut`. The flag compares the judge's catalog service and model with every step the daemon
 bound in that run, read from the run's lockfiles. With no bound step, it compares the judge's adapter
 and wire model with the cell config's `[ai]` provider and model. A judge binding that fails to
-resolve or validate refuses the run before the daemon starts. Such a run writes no evidence file,
-and the error lists each issue with its code, judge step and detail.
+resolve or validate refuses the run before the daemon starts. Such a run writes a refusal record with
+`outcome: "refused"`, `qualified: false` and the issue list, instead of a qualified one.
+
+A bound judge resolves against the same ordered overlay list as the request it grades. Each judge row
+names the `requestStepId` it used, so a consumer can check the scope; a future or skipped request's
+step layer never enters the stack. A bound CLI judge's timeout follows its transport adapter, not the
+canonical model owner, so a `claude-cli` or `codex-cli` service serving a cloud-owned model still
+gets the CLI subprocess timeout while an API judge keeps the HTTP default.
+
+Binding evidence is written for every pack, not only `provider_live`: a run that carries overlays,
+judges or pins writes its own file when the trial ends. The file is keyed by scenario and trial, so
+each trial of a multi-trial run keeps a separate record, and a failed or cancelled run keeps the
+diagnostics it produced.
 
 ### Extending
 
