@@ -9,6 +9,7 @@ import { join } from "@std/path";
 import { BindingLockSchema, type IResolvedBinding } from "@exaix/schemas";
 import type { IActivityRecord, Opt, Reason } from "@exaix/core/types";
 import type { IResolvedJudgeBinding } from "./judge_bindings.ts";
+import type { IPinKeptRecord } from "./binding_layers.ts";
 
 /** One overlay file the run passed, as the evidence records it. */
 export interface IProviderLiveOverlayEvidence {
@@ -55,6 +56,37 @@ export interface IProviderLiveEvidenceInput {
   bindings?: readonly IProviderLiveBindingEvidence[];
   /** Judge bindings the runner resolved. Absent when no step owns a judge criterion. */
   judges?: readonly IProviderLiveJudgeEvidence[];
+  /** One row per pinned field an operator entry tried to change and the pin kept out. */
+  pins?: readonly IProviderLivePinEvidence[];
+}
+
+/** One pinned field the pin rule kept out of an operator entry. */
+export interface IProviderLivePinEvidence {
+  /** The pin's own selector. */
+  selector: string;
+  reason: string;
+  note: string;
+  field: string;
+  /** The value the pin held, from the authoring layers. */
+  value: string;
+  /** The operator entry the field was stripped from. */
+  source: string;
+  skippedSelector: string;
+  skippedLayer: string;
+}
+
+/** Reduce the runner's pin decisions to the auditable evidence rows. */
+export function pinEvidenceRows(pins: readonly IPinKeptRecord[]): IProviderLivePinEvidence[] {
+  return pins.map((pin) => ({
+    selector: pin.selector,
+    reason: pin.reason,
+    note: pin.note,
+    field: pin.field,
+    value: pin.value,
+    source: pin.source,
+    skippedSelector: pin.skipped_selector,
+    skippedLayer: pin.skipped_layer,
+  }));
 }
 
 /** Reduce the runner's resolved judge bindings to the auditable evidence rows. */
@@ -149,6 +181,7 @@ export async function writeProviderLiveEvidence(input: IProviderLiveEvidenceInpu
     overlays: [...(input.overlays ?? [])],
     bindings: [...(input.bindings ?? [])],
     judges: [...(input.judges ?? [])],
+    pins: [...(input.pins ?? [])],
     usage: {
       promptTokens: calls.reduce((sum, call) => sum + safeCount(call.prompt_tokens), 0),
       completionTokens: calls.reduce((sum, call) => sum + safeCount(call.completion_tokens), 0),

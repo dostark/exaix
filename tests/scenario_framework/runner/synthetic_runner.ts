@@ -34,7 +34,12 @@ import {
 import { loadCellCatalog, resolveCatalogCells } from "./cell_catalog.ts";
 import { buildRunBindingsFile, type IScenarioOverlayFile, planScenarioBindings } from "./binding_layers.ts";
 import { resolveJudgeBindings } from "./judge_bindings.ts";
-import { type IProviderLiveJudgeEvidence, judgeEvidenceRows } from "./provider_live_evidence.ts";
+import {
+  type IProviderLiveJudgeEvidence,
+  type IProviderLivePinEvidence,
+  judgeEvidenceRows,
+  pinEvidenceRows,
+} from "./provider_live_evidence.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
 import {
@@ -103,6 +108,8 @@ export interface IRunSyntheticScenarioResult {
   bindingOverlays?: IScenarioOverlayFile[];
   /** The judge bindings this run resolved, one row per judge step, for the evidence file. */
   judges?: IProviderLiveJudgeEvidence[];
+  /** The pinned fields the pin rule kept out of this run's operator entries. */
+  pins?: IProviderLivePinEvidence[];
 }
 
 export interface IMaterializedCellConfig {
@@ -579,6 +586,7 @@ export async function runSyntheticScenario(
     executionLogPath,
     bindingOverlays: bindingPlan.overlays,
     judges: judgeEvidenceRows([...judgePlan.bindings.values()]),
+    pins: pinEvidenceRows(bindingPlan.pins),
   };
 }
 

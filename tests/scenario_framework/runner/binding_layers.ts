@@ -15,6 +15,13 @@
  *   Layer order comes from the `--overlay` argument order the caller passes, because every run
  *   overlay carries the same daemon layer. See `packages/ai/src/bindings/binding_layers.ts` for
  *   the same-selector collapse that realizes that order.
+ *
+ *   The pin rule reads the pinned values from the authoring layers at the pin's selector.
+ *   A cell may therefore change what a scenario pinned. An authoring entry more specific
+ *   than the pin may not contradict it, which is an authoring error at load time. An
+ *   operator entry at least as specific as the pin is refused, because it aims straight at
+ *   the value the scenario froze. A broader entry has the pinned fields removed, so the
+ *   pinned value is the only value left and no layer order can defeat the pin.
  * @architectural-layer Test
  * @dependencies [@std/path, @std/fs, @exaix/schemas]
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, packages/ai/src/bindings/binding_layers.ts]
@@ -34,6 +41,9 @@ import type { IScenario } from "../schema/scenario_schema.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { SENTINEL_COMPAT_FIXTURE_PORT } from "./sentinels.ts";
+import { BindingIncompatibleError, LAYER_CLI, LAYER_RUN, selectorSpecificity } from "@exaix/ai";
+import type { BindingLayer, PinnableBindingField, PinReason } from "@exaix/schemas";
+import type { IScenarioPin } from "../schema/scenario_schema.ts";
 
 /** Which binding layer produced an overlay file. */
 export type ScenarioOverlayRole = "scenario" | "cell" | "step" | "operator";
@@ -50,6 +60,45 @@ export interface IScenarioOverlayFile {
 /** The runner-side binding plan for one scenario run. */
 export interface IScenarioBindingPlan {
   overlays: IScenarioOverlayFile[];
+  /** One row per pinned field an operator entry tried to change and the pin kept out. */
+  pins: IPinKeptRecord[];
+}
+
+/** One validated overlay document: the shape `exactl request --overlay` reads. */
+export interface IBindingOverlayDocument {
+  schema: 1;
+  bindings?: Record<string, IBindingSpec>;
+  catalog?: NonNullable<IScenario["catalog"]>;
+}
+
+/** One operator entry the pin rule inspects. `spec` is the live object its document holds.
+ *  Removing a field here therefore removes it from what the daemon receives. */
+interface IOperatorEntry {
+  selector: string;
+  spec: IBindingSpec;
+  source: string;
+  layer: BindingLayer;
+}
+
+/** One pinned field an operator entry tried to change and the pin kept out. */
+export interface IPinKeptRecord {
+  /** The pin's own selector. */
+  selector: string;
+  reason: PinReason;
+  note: string;
+  field: PinnableBindingField;
+  /** The value the authoring layers set for the pinned field. */
+  value: string;
+  /** The operator entry the field was stripped from. */
+  source: string;
+  skipped_selector: string;
+  skipped_layer: BindingLayer;
+}
+
+/** One authoring-layer entry, in scenario-then-cell order. */
+interface IAuthoringEntry {
+  selector: string;
+  spec: IBindingSpec;
 }
 
 /** A cell catalog as the scenario schema types it: every table is optional. */
@@ -229,6 +278,127 @@ function buildCellOverlay(input: IPlanScenarioBindingsInput): object | undefined
   });
 }
 
+/** The authoring layers a pin reads its values from: the scenario layer, then the cell layer. */
+function authoringEntries(input: IPlanScenarioBindingsInput): IAuthoringEntry[] {
+  const entries: IAuthoringEntry[] = [];
+  for (const [selector, spec] of Object.entries(input.scenario.bindings ?? {})) {
+    entries.push({ selector, spec });
+  }
+  for (const [selector, spec] of Object.entries(input.cell?.bindings ?? {})) {
+    entries.push({ selector, spec });
+  }
+  return entries;
+}
+
+/** The value an authoring layer sets for one pinned field at the pin's selector.
+ *  A later entry wins, so the cell layer may change what the scenario layer set. */
+function pinnedAuthoringValue(
+  entries: readonly IAuthoringEntry[],
+  pinSelector: string,
+  field: PinnableBindingField,
+): IBindingSpec[PinnableBindingField] | undefined {
+  let value: IBindingSpec[PinnableBindingField] | undefined;
+  for (const entry of entries) {
+    if (entry.selector !== pinSelector) continue;
+    const candidate = entry.spec[field];
+    if (candidate !== undefined) value = candidate;
+  }
+  return value;
+}
+
+/** The refusal a pin raises. Every pin fact goes in `detail`, because `IBindingIssue`
+ *  carries no field, reason, note or source parameter of its own. */
+function pinnedRefusal(
+  input: IPlanScenarioBindingsInput,
+  offending: {
+    selector: string;
+    field: PinnableBindingField;
+    reason: PinReason;
+    note: string;
+    value: string;
+    source: string;
+  },
+): BindingIncompatibleError {
+  return new BindingIncompatibleError([{
+    code: "pinned",
+    selector: offending.selector,
+    flowId: input.scenario.id,
+    detail: `the scenario pins field "${offending.field}" to "${offending.value}" at ` +
+      `selector "${input.scenario.pin?.selector}" (${offending.reason}). Note: ${offending.note}. ` +
+      `${offending.source} attempted to change it`,
+  }]);
+}
+
+/** Apply one scenario pin to every operator entry, before any overlay is written. */
+function enforcePins(
+  input: IPlanScenarioBindingsInput,
+  operatorEntries: IOperatorEntry[],
+): IPinKeptRecord[] {
+  const pin: IScenarioPin | undefined = input.scenario.pin;
+  if (!pin) return [];
+
+  const authoring = authoringEntries(input);
+  const values = new Map<PinnableBindingField, string>();
+  for (const field of pin.fields) {
+    const value = pinnedAuthoringValue(authoring, pin.selector, field);
+    if (value === undefined) {
+      throw new Error(
+        `pin_invalid: the pin at selector "${pin.selector}" names field "${field}", ` +
+          `but no scenario or cell binding sets that field at that selector`,
+      );
+    }
+    values.set(field, String(value));
+  }
+
+  for (const entry of authoring) {
+    if (entry.selector === pin.selector) continue;
+    if (selectorSpecificity(entry.selector) <= selectorSpecificity(pin.selector)) continue;
+    for (const field of pin.fields) {
+      const value = entry.spec[field];
+      if (value === undefined || String(value) === values.get(field)) continue;
+      throw pinnedRefusal(input, {
+        selector: entry.selector,
+        field,
+        reason: pin.reason,
+        note: pin.note,
+        value: values.get(field)!,
+        source: `the scenario or cell binding at "${entry.selector}"`,
+      });
+    }
+  }
+
+  const kept: IPinKeptRecord[] = [];
+  for (const entry of operatorEntries) {
+    for (const field of pin.fields) {
+      const value = entry.spec[field];
+      if (value === undefined || String(value) === values.get(field)) continue;
+      if (selectorSpecificity(entry.selector) >= selectorSpecificity(pin.selector)) {
+        throw pinnedRefusal(input, {
+          selector: entry.selector,
+          field,
+          reason: pin.reason,
+          note: pin.note,
+          value: values.get(field)!,
+          source: entry.source,
+        });
+      }
+      // Remove the field from the shared spec, so the written document cannot carry it.
+      delete entry.spec[field];
+      kept.push({
+        selector: pin.selector,
+        reason: pin.reason,
+        note: pin.note,
+        field,
+        value: values.get(field)!,
+        source: entry.source,
+        skipped_selector: entry.selector,
+        skipped_layer: entry.layer,
+      });
+    }
+  }
+  return kept;
+}
+
 /**
  * Plan one scenario run's binding overlays.
  *
@@ -249,28 +419,55 @@ export async function planScenarioBindings(
 
   const overlays: IScenarioOverlayFile[] = [];
   const scenarioOverlay = buildScenarioOverlay(input);
+  const cellOverlay = buildCellOverlay(input);
+
+  // The pin rule reads and writes every operator entry in memory first. A refused override
+  // must stop the run before any overlay reaches the disk, so nothing half-written is left.
+  const operatorEntries: IOperatorEntry[] = [];
+  const operatorOverlays: Array<{ sourcePath: string; document: IBindingOverlayDocument }> = [];
+  for (const [index, sourcePath] of input.operatorOverlays.entries()) {
+    const raw = await readOperatorOverlayJson(sourcePath);
+    // Substitute before validation: the strict endpoint schema rejects the sentinel.
+    const document = BindingOverlaySchema.parse(
+      substituteFixturePortInRawOverlay(raw, input.compatFixturePort),
+    );
+    operatorOverlays.push({ sourcePath, document });
+    for (const [selector, spec] of Object.entries(document.bindings ?? {})) {
+      operatorEntries.push({ selector, spec, source: `--overlay ${sourcePath}`, layer: LAYER_RUN });
+    }
+    void index;
+  }
+
+  const bindSpecs = parseScenarioBindSpecs(input.operatorBinds);
+  const bindings: Record<string, IBindingSpec> = {};
+  for (const entry of bindSpecs) bindings[entry.selector] = entry.spec;
+  // Parse first, then read the entries out of the parsed document. Parsing returns fresh
+  // spec objects. A spec taken from the input would not be the one written.
+  const bindDocument: IBindingOverlayDocument | undefined = input.operatorBinds.length > 0
+    ? BindingOverlaySchema.parse({ schema: 1, bindings })
+    : undefined;
+  for (const [selector, spec] of Object.entries(bindDocument?.bindings ?? {})) {
+    operatorEntries.push({ selector, spec, source: `--bind ${selector}`, layer: LAYER_CLI });
+  }
+
+  const pins = enforcePins(input, operatorEntries);
+
   if (scenarioOverlay) {
     await ensureDir(bindingsDir);
     const path = join(bindingsDir, SCENARIO_OVERLAY_NAME);
     overlays.push({ role: "scenario", path, sha256: await writeOverlay(path, scenarioOverlay) });
   }
 
-  const cellOverlay = buildCellOverlay(input);
   if (cellOverlay) {
     await ensureDir(bindingsDir);
     const path = join(bindingsDir, CELL_OVERLAY_NAME);
     overlays.push({ role: "cell", path, sha256: await writeOverlay(path, cellOverlay) });
   }
 
-  for (const [index, sourcePath] of input.operatorOverlays.entries()) {
+  for (const [index, operator] of operatorOverlays.entries()) {
     await ensureDir(bindingsDir);
-    const raw = await readOperatorOverlayJson(sourcePath);
-    // Substitute before validation: the strict endpoint schema rejects the sentinel.
-    const normalized = BindingOverlaySchema.parse(
-      substituteFixturePortInRawOverlay(raw, input.compatFixturePort),
-    );
     const path = join(bindingsDir, `30-operator-${index}.json`);
-    overlays.push({ role: "operator", path, sha256: await writeOverlay(path, normalized) });
+    overlays.push({ role: "operator", path, sha256: await writeOverlay(path, operator.document) });
   }
 
   for (const step of input.scenario.steps) {
@@ -281,18 +478,13 @@ export async function planScenarioBindings(
     overlays.push({ role: "step", stepId: step.id, path, sha256: await writeOverlay(path, document) });
   }
 
-  if (input.operatorBinds.length > 0) {
+  if (bindDocument) {
     await ensureDir(bindingsDir);
-    const bindings: Record<string, IBindingSpec> = {};
-    for (const entry of parseScenarioBindSpecs(input.operatorBinds)) {
-      bindings[entry.selector] = entry.spec;
-    }
-    const document = BindingOverlaySchema.parse({ schema: 1, bindings });
     const path = join(bindingsDir, OPERATOR_BIND_OVERLAY_NAME);
-    overlays.push({ role: "operator", path, sha256: await writeOverlay(path, document) });
+    overlays.push({ role: "operator", path, sha256: await writeOverlay(path, bindDocument) });
   }
 
-  return { overlays };
+  return { overlays, pins };
 }
 
 /**

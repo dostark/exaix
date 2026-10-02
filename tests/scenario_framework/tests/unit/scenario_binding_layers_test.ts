@@ -11,9 +11,10 @@
  * @related-files [tests/scenario_framework/runner/binding_layers.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { BindingOverlaySchema } from "@exaix/schemas";
+import { BindingIncompatibleError } from "@exaix/ai";
 import { type IScenario, ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
@@ -325,6 +326,211 @@ Deno.test("[security] planScenarioBindings refuses an output directory inside th
       Error,
       "overlay_invalid",
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+// --- Phase 203 Step 4: scenario pins ---
+
+/** A scenario that pins two fields of one flow step to the alpha service. */
+function pinnedScenario(): IScenario {
+  return scenarioWith({
+    bindings: { "flow:research/step:compose": { service: "alpha", model: "alpha/one" } },
+    pin: {
+      selector: "flow:research/step:compose",
+      fields: ["service", "model"],
+      reason: "provider-qualification",
+      note: "qualifies the alpha provider against its signed contract",
+    },
+  });
+}
+
+/** One operator overlay file, as an operator would hand it to the runner. */
+async function writeOperatorOverlay(root: string, bindings: Record<string, object>): Promise<string> {
+  const path = join(root, "operator.json");
+  await Deno.writeTextFile(path, JSON.stringify({ schema: 1, bindings }));
+  return path;
+}
+
+function operatorOverlayOf(plan: Awaited<ReturnType<typeof planScenarioBindings>>) {
+  return plan.overlays.find((overlay) => overlay.role === "operator")!;
+}
+
+Deno.test("[pins] an operator entry at least as specific as the pin that changes a pinned field fails with code pinned and the pin reason", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-exact-" });
+  try {
+    const base = {
+      scenario: pinnedScenario(),
+      operatorOverlays: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    };
+
+    // An equal value passes, and an unpinned field at the same selector stays overridable.
+    const equal = await planScenarioBindings({
+      ...base,
+      operatorBinds: ["flow:research/step:compose=service=alpha,service_model_id=alpha-one"],
+    });
+    assertEquals(equal.pins, []);
+    const kept = BindingOverlaySchema.parse(
+      JSON.parse(await Deno.readTextFile(operatorOverlayOf(equal).path)),
+    );
+    assertEquals(kept.bindings?.["flow:research/step:compose"]?.service_model_id, "alpha-one");
+
+    // A different value at the pin's own selector is an exact override, so the run stops.
+    const error = await assertRejects(
+      () => planScenarioBindings({ ...base, operatorBinds: ["flow:research/step:compose=model=alpha/two"] }),
+      BindingIncompatibleError,
+    );
+    assertEquals(error.issues[0]?.code, "pinned");
+    assertEquals(error.issues[0]?.selector, "flow:research/step:compose");
+    assertStringIncludes(error.issues[0]?.detail ?? "", "qualifies the alpha provider");
+    assertStringIncludes(error.issues[0]?.detail ?? "", "model");
+    assertStringIncludes(error.issues[0]?.detail ?? "", "--bind");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] a broader operator overlay has each pinned field stripped and recorded as pin_kept", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-broad-overlay-" });
+  try {
+    const overlayPath = await writeOperatorOverlay(root, {
+      default: { service: "beta", model: "beta/two", transport: "cloud" },
+    });
+
+    const plan = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      operatorOverlays: [overlayPath],
+      operatorBinds: [],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+
+    // The pinned fields never reach the written overlay, so no layer order can defeat the pin.
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operatorOverlayOf(plan).path)));
+    assertEquals(written.bindings?.default?.service, undefined);
+    assertEquals(written.bindings?.default?.model, undefined);
+    // The entry keeps the fields the pin does not name.
+    assertEquals(written.bindings?.default?.transport, "cloud");
+
+    assertEquals(plan.pins.map((pin) => [pin.field, pin.value, pin.skipped_selector, pin.reason]), [
+      ["service", "alpha", "default", "provider-qualification"],
+      ["model", "alpha/one", "default", "provider-qualification"],
+    ]);
+    assertStringIncludes(plan.pins[0]?.source ?? "", overlayPath);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] a broad operator --bind that changes a pinned field is stripped too", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-broad-bind-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      operatorOverlays: [],
+      operatorBinds: ["default=service=beta,model=beta/two,transport=cloud"],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+
+    const written = BindingOverlaySchema.parse(JSON.parse(await Deno.readTextFile(operatorOverlayOf(plan).path)));
+    assertEquals(written.bindings?.default?.service, undefined);
+    assertEquals(written.bindings?.default?.model, undefined);
+    assertEquals(written.bindings?.default?.transport, "cloud");
+    // The daemon would therefore resolve the pinned values from the scenario layer.
+    assertEquals(plan.pins.map((pin) => pin.value), ["alpha", "alpha/one"]);
+    assertStringIncludes(plan.pins[0]?.source ?? "", "--bind");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] no pins overlay is written for any scenario", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-no-overlay-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      operatorOverlays: [],
+      operatorBinds: ["default=service=beta"],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    for (const overlay of plan.overlays) {
+      assertEquals(overlay.path.includes("90-scenario-pins"), false, overlay.path);
+    }
+    // The broader entry is stripped rather than refused, so the pin still holds its value.
+    assertEquals(plan.pins.map((pin) => [pin.field, pin.value]), [["service", "alpha"]]);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] a cell preset may change a scenario-pinned field at the pin's selector", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-cell-" });
+  try {
+    const plan = await planScenarioBindings({
+      scenario: pinnedScenario(),
+      cell: { bindings: { "flow:research/step:compose": { model: "beta/two" } } },
+      operatorOverlays: [],
+      // The cell set the pinned model, so an operator must now match beta/two.
+      operatorBinds: ["flow:research/step:compose=model=beta/two"],
+      outputDir: join(root, "output"),
+      sandboxRoot: join(root, "sandbox"),
+    });
+    assertEquals(plan.pins, []);
+
+    const error = await assertRejects(
+      () =>
+        planScenarioBindings({
+          scenario: pinnedScenario(),
+          cell: { bindings: { "flow:research/step:compose": { model: "beta/two" } } },
+          operatorOverlays: [],
+          operatorBinds: ["flow:research/step:compose=model=alpha/one"],
+          outputDir: join(root, "output2"),
+          sandboxRoot: join(root, "sandbox"),
+        }),
+      BindingIncompatibleError,
+    );
+    assertStringIncludes(error.issues[0]?.detail ?? "", "beta/two");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[pins] a scenario binding more specific than the pin that contradicts it is rejected at load", async () => {
+  const root = await Deno.makeTempDir({ prefix: "pins-load-" });
+  try {
+    // The pin speaks for the whole flow. A step-exact binding contradicts it.
+    const scenario = scenarioWith({
+      bindings: {
+        "flow:research": { model: "alpha/one" },
+        "flow:research/step:compose": { model: "beta/two" },
+      },
+      pin: {
+        selector: "flow:research",
+        fields: ["model"],
+        reason: "wire-compat-regression",
+        note: "the research flow speaks one wire format only",
+      },
+    });
+
+    const error = await assertRejects(
+      () =>
+        planScenarioBindings({
+          scenario,
+          operatorOverlays: [],
+          operatorBinds: [],
+          outputDir: join(root, "output"),
+          sandboxRoot: join(root, "sandbox"),
+        }),
+      BindingIncompatibleError,
+    );
+    assertEquals(error.issues[0]?.code, "pinned");
+    assertEquals(error.issues[0]?.selector, "flow:research/step:compose");
+    assertStringIncludes(error.issues[0]?.detail ?? "", "wire-compat-regression");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

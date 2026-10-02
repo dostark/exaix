@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { BindingCatalogSchema, BindingsTableSchema } from "@exaix/schemas";
+import { BindingCatalogSchema, BindingFieldSchema, BindingsTableSchema, PinReasonSchema } from "@exaix/schemas";
 import {
   PortalMountSchema,
   ScenarioExecutionMode,
@@ -17,6 +17,27 @@ import {
 } from "./step_schema.ts";
 import { MatrixSchema } from "../runner/matrix_expander.ts";
 import { ScoringMode } from "../runner/scoring.ts";
+
+/** A scenario pin. The runner computes each field's value at `selector` from the
+ *  scenario and cell layers. It then refuses or strips any operator entry that
+ *  would change that value. The `note` field is required, because a pin without
+ *  a stated reason is an unexplained frozen value. */
+export const ScenarioPinSchema = z.object({
+  /** The selector whose values the pin protects. An operator entry at least as specific as
+   *  this fails the run. A broader entry has the pinned fields stripped instead. */
+  selector: z.string().min(1),
+  /** The binding fields the pin protects. `effort` and `thinking` are not pinnable. */
+  fields: z.array(
+    BindingFieldSchema.exclude([
+      BindingFieldSchema.enum.effort,
+      BindingFieldSchema.enum.thinking,
+    ]),
+  ).min(1),
+  reason: PinReasonSchema,
+  note: z.string().min(1).max(200),
+}).strict();
+
+export type IScenarioPin = z.infer<typeof ScenarioPinSchema>;
 
 const NON_EMPTY_STRING = z.string().min(1);
 
@@ -46,6 +67,9 @@ export const ScenarioSchema = z.object({
   bindings: BindingsTableSchema.optional(),
   /** Scenario-layer catalog entries (services, models, preferences) merged per run. */
   catalog: BindingCatalogSchema.optional(),
+  /** Bind the scenario's own values so an operator override fails loudly instead of
+   *  silently changing what the scenario measures. Enforced by removal in the runner. */
+  pin: ScenarioPinSchema.optional(),
   /** Additive `tool × provider` matrix block. When present, the runner expands the scenario
    *  into one cell-run per cell (see runner/matrix_expander.ts). Absent → runs unchanged. */
   matrix: MatrixSchema.optional(),

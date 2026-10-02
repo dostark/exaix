@@ -104,8 +104,9 @@ function globMatch(pattern: string, value: string): boolean {
 }
 
 /** Specificity classes: default(0) < flow:(1) < role:(2) < step-glob(3) < step-exact(4)
- *  < judge(5) < judge:<id>(6). The last two are reachable only for a judge ref. */
-function selectorSpecificity(selector: string): number {
+ *  < judge(5) < judge:<id>(6). The last two are reachable only for a judge ref.
+ *  Exported so the runner's pin rule and this resolver share one definition. */
+export function selectorSpecificity(selector: string): number {
   if (selector === SELECTOR_DEFAULT) return 0;
   if (selector === SELECTOR_JUDGE) return JUDGE_SPECIFICITY;
   if (selector.startsWith(JUDGE_PREFIX)) return JUDGE_ID_SPECIFICITY;

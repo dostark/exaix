@@ -24,7 +24,7 @@ import { readCachedPersonaTrialSnapshot, writePersonaResponseTrial } from "./per
 import { computeRunFailureClasses } from "./failure_classifier.ts";
 import { loadTraceActivities } from "./failure_classifier.ts";
 import { writeProviderLiveEvidence } from "./provider_live_evidence.ts";
-import type { IProviderLiveJudgeEvidence } from "./provider_live_evidence.ts";
+import type { IProviderLiveJudgeEvidence, IProviderLivePinEvidence } from "./provider_live_evidence.ts";
 import { type IProviderLiveBindingEvidence, readLockEntryEvidence } from "./provider_live_evidence.ts";
 import type { IScenarioOverlayFile } from "./binding_layers.ts";
 import { exists } from "@std/fs";
@@ -204,6 +204,8 @@ await new Command()
     const bindingOverlays = new Map<string, IScenarioOverlayFile[]>();
     // Per-scenario judge bindings the runner resolved, for the redacted evidence.
     const judgeRows = new Map<string, IProviderLiveJudgeEvidence[]>();
+    // Per-scenario pinned fields the pin rule stripped, for the redacted evidence.
+    const pinRows = new Map<string, IProviderLivePinEvidence[]>();
 
     for (const entry of selectedEntries) {
       // Checked between scenarios: once accumulated cost reached the cap, the remaining
@@ -307,6 +309,7 @@ await new Command()
             if (entry.pack === "provider_live") providerLiveWorkspaces.set(entry.id, trialWorkspaceRoot);
             if (result.bindingOverlays) bindingOverlays.set(entry.id, result.bindingOverlays);
             if (result.judges?.length) judgeRows.set(entry.id, result.judges);
+            if (result.pins?.length) pinRows.set(entry.id, result.pins);
           }
 
           console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
@@ -498,6 +501,7 @@ await new Command()
         overlays: bindingOverlays.get(scenarioId) ?? [],
         bindings,
         judges: judgeRows.get(scenarioId) ?? [],
+        pins: pinRows.get(scenarioId) ?? [],
       });
       console.log(`Redacted live evidence: ${evidencePath}`);
     }
