@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-step-timeout"
 title: "A flow carrying a dynamic step is accepted, executed and journalled"
 pack: "dynamic_execution"
+edition: "team"
 tags: ["timeout", "dynamic", "error-handling", "subsystem:mcp-client", "entity:read_file"]
 request_fixture: "fixtures/requests/dynamic_execution/timeout_test.md"
 mode_support: ["auto"]

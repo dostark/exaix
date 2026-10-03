@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "trajectory-explore-assert"
 title: "Trajectory eval checks tool order and tool arguments of a read-only exploration"
 pack: "dynamic_execution"
+edition: "team"
 # Replaces trajectory-tool-order-assert and trajectory-tool-args-assert, which expected tools Exaix
 # does not have (edit_file, bash, search_code) and so could never pass. Provider-live: the mock
 # provider makes no tool calls, so only a real model produces a trajectory to assert.

@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-exploration-smoke"
 title: "A dynamic-mode flow step executes end to end and is journalled"
 pack: "dynamic_execution"
+edition: "team"
 tags: ["smoke", "dynamic", "read-only", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 mode_support: ["auto", "manual-checkpoint"]

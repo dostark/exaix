@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-write-tool-boundary"
 title: "Dynamic steps are refused write-only tools at validation time"
 pack: "dynamic_execution"
+edition: "team"
 tags: ["security", "dynamic", "validation", "subsystem:mcp-client", "entity:write_file"]
 request_fixture: "fixtures/requests/dynamic_execution/write_attempt.md"
 mode_support: ["auto"]

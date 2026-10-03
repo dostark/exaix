@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "selection-search-vs-list"
 title: "Tool selection — search_files preferred over list_directory for finding files"
 pack: "dynamic_execution"
+edition: "team"
 # Phase 142 Step 15 — moved to the provider-live tier. Every step below the plan wait asserts a
 # TOOL TRAJECTORY, and the mock provider makes no tool calls: `dynamic_tool_call` rows are 0 under
 # every configuration tried (before approval, after `plan approve-all`, with and without a
