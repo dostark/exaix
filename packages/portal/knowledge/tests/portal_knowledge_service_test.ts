@@ -206,6 +206,59 @@ Deno.test("[PortalKnowledgeService] deep mode uses higher file read caps", async
   }
 });
 
+/** Portal with more source files than `quickScanLimit`, including one deep file. */
+async function makeLargeTempPortal(fileCount: number): Promise<{ dir: string; total: number }> {
+  const dir = await Deno.makeTempDir({ prefix: "pks_large_" });
+  let created = 0;
+  for (let i = 0; i < fileCount; i++) {
+    const sub = join(dir, "src", `group-${i}`);
+    await Deno.mkdir(sub, { recursive: true });
+    await Deno.writeTextFile(join(sub, `module_${i}.ts`), `export const v${i} = ${i};\n`);
+    created++;
+  }
+  // A deeply nested file a breadth-first walk can only reach after many directories.
+  const deepDir = join(dir, "src", "deep", "nested", "services");
+  await Deno.mkdir(deepDir, { recursive: true });
+  await Deno.writeTextFile(
+    join(deepDir, "deep_service_impl.ts"),
+    "export class DeepService {}\n",
+  );
+  created++;
+  return { dir, total: created };
+}
+
+Deno.test("[PortalKnowledgeService] standard mode scans the whole tree, ignoring quickScanLimit", async () => {
+  const { dir, total } = await makeLargeTempPortal(60);
+  try {
+    const { provider } = makeMockProvider();
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ quickScanLimit: 5, useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      provider: provider,
+      runner: makeMockDocRunner(),
+    });
+
+    const quick = await svc.analyze("quick-portal", dir, PortalAnalysisMode.QUICK);
+    assertEquals(
+      quick.metadata.filesScanned <= 5,
+      true,
+      `quick mode must honour quickScanLimit; scanned ${quick.metadata.filesScanned}`,
+    );
+
+    const standard = await svc.analyze("standard-portal", dir, PortalAnalysisMode.STANDARD);
+    assertEquals(
+      standard.metadata.filesScanned,
+      total,
+      "standard mode must scan every file, not quickScanLimit × 2",
+    );
+    const deepFound = standard.stats?.extensionDistribution[".ts"] !== undefined &&
+      standard.metadata.filesScanned === total;
+    assertEquals(deepFound, true, "the deeply nested file must appear in a standard scan");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("[PortalKnowledgeService] merges all strategy results correctly", async () => {
   const tempDir = await makeTempPortal();
   try {

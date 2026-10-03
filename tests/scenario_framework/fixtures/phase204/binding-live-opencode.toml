@@ -1,0 +1,23 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+allow_net = []
+
+[ai]
+provider = "mock"
+model = "mock-model"
+
+[ai.mock]
+strategy = "pattern"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+# Default the delegate step to the opencode tool. This enables the cli-delegate strategy at
+# boot; the scenario's run --bind re-selects the same tool at the cli layer. The model is the
+# raw `service_model_id` (opencode's own `provider/model` slug) because the canonical model id
+# pattern forbids the second slash opencode's slugs carry.
+[bindings]
+"flow:binding-live-cli/step:delegate-step" = { service = "opencode", service_model_id = "opencode/deepseek-v4.1-flash" }

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: scenario-bindings-split
 title: Scenario-layer bindings route two steps and a step binding overrides one
 pack: agent_flows
-tags: ["subsystem:flows", "safety-gate"]
+tags: ["safety-gate", "manual-only", "subsystem:flows"]
 request_fixture: fixtures/requests/agent_flows/scenario_bindings.md
 flow_fixture: fixtures/flows/scenario-binding-split.flow.yaml
 mode_support: ["auto"]

@@ -54,7 +54,7 @@ Deno.test("[codex_scope_violation_live] uses configs/dogfood.codex.toml, not an 
   const scenario = await parseScenario();
   const startDaemon = scenario.steps.find((s) => s.id === "start-daemon");
   assert(startDaemon, "start-daemon step must exist");
-  assertEquals(startDaemon!.env?.EXA_CONFIG_PATH, "$FRAMEWORK_HOME/../../configs/dogfood.codex.toml");
+  assertEquals(startDaemon!.env?.EXA_CONFIG_PATH, "$REPO_ROOT/configs/dogfood.codex.toml");
 });
 
 Deno.test("[codex_scope_violation_live][security] asserts the fail-closed reconciled return (changes_made, no write) trace-scoped — the delegate was briefed read-only", async () => {

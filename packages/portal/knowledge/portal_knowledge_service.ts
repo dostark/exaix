@@ -114,6 +114,11 @@ const CHUNK_SENTENCE_OVERLAP = 1;
  * than one alias — resolution rejects (returns undefined) instead of guessing. */
 const AMBIGUOUS_ALIAS = Symbol("ambiguous-portal-alias");
 
+/** Scan limit for the comprehensive modes (`standard` and `deep`). It has no cap.
+ * `quick_scan_limit` applies to `quick` mode only. So those modes walk the whole tree.
+ * A cap truncated large monorepos before reaching deep source files. */
+const UNBOUNDED_SCAN_LIMIT = Number.POSITIVE_INFINITY;
+
 // Service implementation
 
 // PortalKnowledgeService
@@ -203,10 +208,9 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     const startMs = Date.now();
     const currentHeadSha = await this._gitHeadResolver.resolve(portalPath);
 
-    // Strategy 1 & 2: walk directory
-    const scanLimit = resolvedMode === PortalAnalysisMode.QUICK
-      ? this._config.quickScanLimit
-      : this._config.quickScanLimit * 2;
+    // Strategy 1 and 2 walk the directory. `quick_scan_limit` bounds quick mode only.
+    // The comprehensive modes scan the whole tree. See UNBOUNDED_SCAN_LIMIT.
+    const scanLimit = resolvedMode === PortalAnalysisMode.QUICK ? this._config.quickScanLimit : UNBOUNDED_SCAN_LIMIT;
 
     const ignorePatterns = [
       ...DEFAULT_IGNORE_PATTERNS,

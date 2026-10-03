@@ -10,6 +10,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
+import { join } from "@std/path";
 import { MockStrategy } from "@exaix/core";
 import type { ICallSite } from "../../src/types.ts";
 import { MockLLMError, MockLLMProvider } from "../../src/providers/mock_llm_provider.ts";
@@ -53,4 +54,31 @@ Deno.test("[fixture_miss] a missing call site with no patterns throws, naming th
     MockLLMError,
     "flow_blueprints/missing-step#0",
   );
+});
+
+Deno.test("[fixture_miss] a miss outside strict mode falls back to a default pattern even when a fixture directory loaded recordings", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "fixture-miss-loaded-" });
+  try {
+    // This valid recording cannot match the prompt below. So recordings stay non-empty.
+    // The miss must still fall back to the built-in patterns. The shared scenario config
+    // relies on this contract.
+    await Deno.writeTextFile(
+      join(dir, "unrelated.json"),
+      JSON.stringify({
+        promptHash: "0".repeat(16),
+        promptPreview: "unrelated prompt",
+        response: "recorded response",
+        model: "mock-model",
+        recordedAt: new Date().toISOString(),
+        tokens: { input: 1, output: 1 },
+      }),
+    );
+    const provider = new MockLLMProvider(MockStrategy.RECORDED, { fixtureDir: dir });
+
+    const result = await provider.generate("Implement a feature");
+
+    assertEquals(typeof result.content, "string");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
 });

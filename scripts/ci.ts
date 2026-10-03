@@ -646,6 +646,12 @@ model = "test"
 
 [ai.mock]
 strategy = "pattern"
+
+# Matches the committed tests/scenario_framework/exa.config.toml. This config is pre-created,
+# so seedWorkspaceConfig leaves it alone; the skills budget must be duplicated here or the
+# engine-trigger-matching scenario fails on the production default (2000), not on matching.
+[skills]
+context_budget_chars = 4000
 `;
       await Deno.writeTextFile(join(workspaceDest, "exa.config.toml"), minimalConfig.trim());
       console.log("✅ Initialized minimal workspace config for CI");

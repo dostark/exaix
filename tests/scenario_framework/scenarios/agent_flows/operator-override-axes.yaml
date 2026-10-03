@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: operator-override-axes
 title: One operator override changes a flow step and a judge
 pack: agent_flows
-tags: ["subsystem:flows", "safety-gate"]
+tags: ["safety-gate", "manual-only", "subsystem:flows"]
 request_fixture: fixtures/requests/agent_flows/scenario_bindings.md
 flow_fixture: fixtures/flows/scenario-binding-split.flow.yaml
 mode_support: ["auto"]

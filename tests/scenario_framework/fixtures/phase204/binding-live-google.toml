@@ -1,0 +1,22 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+# The Google provider's default endpoint host. Set explicitly so the run fails loudly with
+# host_not_allowed rather than silently reaching an unintended host.
+allow_net = ["generativelanguage.googleapis.com"]
+
+[ai]
+provider = "mock"
+model = "mock-model"
+
+[ai.mock]
+strategy = "pattern"
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = false
+
+# Default the declared step to mock. The run overlay moves it to the real Google API.
+[bindings]
+"flow:binding-live-api/step:answer" = { service = "mock", model = "mock/mock-model" }

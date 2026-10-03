@@ -15,7 +15,8 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { copy } from "@std/fs";
 import { SkillsService } from "@exaix/core/skills";
-import { SKILL_EVENT_MATCH_COMPLETED } from "@exaix/core";
+import { MemoryBankSource, MemoryScope, SKILL_EVENT_MATCH_COMPLETED, SkillStatus } from "@exaix/core";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
@@ -99,4 +100,62 @@ Deno.test("[skills] matchSkills journals the event even when nothing matches", a
     const payload = events[0].payload as { matched_count?: number } | undefined;
     assertEquals(payload?.matched_count, 0);
   });
+});
+
+/** A block longer than the default skill context budget, so `formatSkillForPrompt` cannot
+ *  fit it. 2500 > DEFAULT_SKILL_CONTEXT_CHAR_BUDGET (2000). */
+const OVERSIZED_INSTRUCTIONS = "x".repeat(2_500);
+
+Deno.test("[skills] matchSkills keeps a fitting lower-confidence match when a higher-confidence match overflows the budget", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const captured: ICapturedEvent[] = [];
+  const memoryDir = await Deno.makeTempDir({ prefix: "skills-budget-" });
+  try {
+    const service = new SkillsService(
+      { memoryDir },
+      db,
+      undefined,
+      createCapturingLogger(captured),
+    );
+    await service.initialize();
+
+    // Confidence is score divided by max over declared dimensions. `oversized-first` declares
+    // only the tag, so it scores 1.0. `small-second` adds an unmatched file pattern, so its
+    // denominator grows and it ranks below the oversized block.
+    await service.createSkill({
+      skill_id: "oversized-first",
+      name: "Oversized First",
+      version: DEFAULT_GLOBAL_MEMORY_VERSION,
+      description: "Ranks first but cannot fit the budget",
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+      source: MemoryBankSource.USER,
+      triggers: { tags: ["budget-probe"] },
+      instructions: OVERSIZED_INSTRUCTIONS,
+    });
+    await service.createSkill({
+      skill_id: "small-second",
+      name: "Small Second",
+      version: DEFAULT_GLOBAL_MEMORY_VERSION,
+      description: "Ranks lower but fits the budget",
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+      source: MemoryBankSource.USER,
+      triggers: { tags: ["budget-probe"], file_patterns: ["*.no-such-extension"] },
+      instructions: "A short instruction block that fits comfortably.",
+    });
+
+    const { matches } = await service.matchSkills({
+      tags: ["budget-probe"],
+      requestText: "budgetprobe",
+      contextBudgetChars: 2_000,
+    });
+
+    const ids = matches.map((m) => m.skillId);
+    assertEquals(ids.includes("small-second"), true, `fitting match dropped: ${ids.join(",")}`);
+    assertEquals(ids.includes("oversized-first"), false, "an over-budget match must not be injected");
+  } finally {
+    await Deno.remove(memoryDir, { recursive: true }).catch(() => {});
+    await cleanup();
+  }
 });

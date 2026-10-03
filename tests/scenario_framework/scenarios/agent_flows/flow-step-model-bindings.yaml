@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: flow-step-model-bindings
 title: Flow-step model bindings cutover on one daemon
 pack: agent_flows
-tags: ["subsystem:flows", "safety-gate"]
+tags: ["safety-gate", "manual-only", "subsystem:flows"]
 request_fixture: fixtures/requests/agent_flows/flow_step_model_bindings.md
 flow_fixture: fixtures/flows/binding-split.flow.yaml
 mode_support: ["auto"]

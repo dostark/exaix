@@ -428,11 +428,11 @@ export class MockLLMProvider implements IModelProvider {
       this.loadRecordingsFromDir(options.fixtureDir);
     }
 
-    // For recorded or pattern strategy without recordings/patterns, add default patterns as fallback
-    // Only if patterns were not explicitly provided (even if empty)
+    // Add default patterns for recorded and pattern strategy. A miss then falls back to a
+    // pattern match. Only an explicit `patterns` option skips this step. A loaded fixture
+    // directory never suppresses the fallback.
     if (
       (strategy === MockStrategy.RECORDED || strategy === MockStrategy.PATTERN) &&
-      this.recordings.length === 0 &&
       this.patterns.length === 0 &&
       !("patterns" in options)
     ) {

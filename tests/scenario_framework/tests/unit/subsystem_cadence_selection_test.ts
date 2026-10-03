@@ -82,8 +82,8 @@ Deno.test("[cadence] a Solo build excludes the Team-gated subsystem, and only th
   const covered = subsystemsCovered(solo);
   assertEquals(
     SUBSYSTEM_TAGS.filter((tag) => !covered.has(tag)),
-    ["subsystem:mcp-server"],
-    "mcp-server is edition: team; every other subsystem must run on Solo",
+    ["subsystem:mcp-server", "subsystem:mcp-client"],
+    "mcp-server and mcp-client are edition: team; every other subsystem must run on Solo",
   );
 });
 

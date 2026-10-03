@@ -1,0 +1,88 @@
+schema_version: "1.0.0"
+id: flow-binding-google-override-live
+title: A run overlay overrides mock with a real Google Gemini API call
+pack: provider_live
+tags: ["provider-live", "subsystem:flows", "model-bindings"]
+request_fixture: fixtures/requests/provider_live/flow_binding_deepseek_live.md
+flow_fixture: fixtures/flows/binding-live-api.flow.yaml
+mode_support: ["auto"]
+portals: []
+matrix:
+  cells:
+    - tool: exactl
+      provider: google
+      config: tests/scenario_framework/fixtures/phase204/binding-live-google.toml
+      requires_bin: deno
+      requires_key: GOOGLE_API_KEY
+steps:
+  - id: start-daemon
+    type: exactl
+    command: daemon
+    args: [start]
+    output_criteria:
+      - id: daemon-started
+        kind: command-output-contains
+        contains: [daemon.started]
+        score_weight: 0.1
+  - id: write-google-overlay
+    type: write-file
+    path: .exa/run-input/google.json
+    content: '{"schema":1,"bindings":{"flow:binding-live-api/step:answer":{"service":"google","model":"google/gemini-flash-latest"}}}'
+    output_criteria:
+      - id: overlay-written
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.1
+  - id: submit-google-override
+    type: exactl
+    command: request
+    args: [--file, "$REQUEST_FIXTURE", --overlay, "$WORKSPACE_ROOT/.exa/run-input/google.json"]
+    output_criteria:
+      - id: request-created
+        kind: command-output-contains
+        contains: [request.created]
+        score_weight: 0.1
+  - id: await-flow
+    type: exactl
+    command: journal
+    args: [wait, --event, flow.completed, --since-rowid, "$STEP_BASELINE", --timeout, "180"]
+    timeout_sec: 180
+    output_criteria:
+      - id: flow-completed
+        kind: journal-event-exists
+        event_type: flow.completed
+        score_weight: 0.2
+  - id: assert-binding
+    type: journal-assert
+    action_type: binding.resolved
+    trace_scoped: true
+    payload_equals:
+      - path: step_id
+        value: answer
+      - path: service
+        value: google
+      - path: service_model_id
+        value: gemini-flash-latest
+      - path: sources.service.layer
+        value: run
+    output_criteria:
+      - id: google-overlay-binding-used
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.25
+  - id: assert-live-api-call
+    type: journal-assert
+    action_type: llm.call.completed
+    trace_scoped: true
+    payload_equals:
+      - path: model
+        value: gemini-flash-latest
+    output_criteria:
+      - id: google-api-returned
+        kind: command-exit-code
+        equals: 0
+        score_weight: 0.25
+  - id: stop-daemon
+    type: exactl
+    command: daemon
+    args: [stop]

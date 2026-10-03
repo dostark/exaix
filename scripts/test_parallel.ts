@@ -88,6 +88,11 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/openai_compatible_daemon_cutover_test.ts",
   // Runs real scenarios and sets process-wide capture and key environment. Parallel files would read it.
   "tests/scenario_framework/tests/integration/openai_compatible_native_test.ts",
+  // Boot a daemon and set the process-wide EXA_COMPAT_TEST_API_KEY a matrix cell needs to be
+  // selected. Under parallelism the key leaks away, the cell is skipped, and the flow never runs.
+  "tests/scenario_framework/tests/integration/scenario_bindings_test.ts",
+  "tests/scenario_framework/tests/integration/operator_override_axes_test.ts",
+  "tests/scenario_framework/tests/integration/flow_step_model_bindings_test.ts",
   // Dogfood e2e — boots a real daemon and waits for plan generation; daemon
   // subprocess crashes under parallel Deno cache contention.
   "tests/integration/dogfood_e2e_test.ts",
@@ -133,6 +138,14 @@ const SEQUENTIAL_FILES: string[] = [
   // running together under Batch 1 races two writers on the same output file.
   "tests/infra/build_test.ts",
   "tests/infra/exactl_edition_build_test.ts",
+  // Boot a real daemon with a tight startup or inject deadline. Under Batch 1 spawn
+  // pressure the daemon loses that race. This matches the daemon cutover tests above.
+  "apps/daemon/tests/agent_role_cutover_e2e_test.ts",
+  "tests/integration/model_registry_route_admit_live_test.ts",
+  "tests/integration/model_registry_team_cost_source_test.ts",
+  "tests/integration/model_registry_team_edition_sweep_test.ts",
+  "tests/integration/model_registry_team_cutover_test.ts",
+  "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
 ];
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */

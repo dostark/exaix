@@ -81,6 +81,15 @@ export const STATIC_OVERLAY: StaticOverlay = {
     verifiedAt: VERIFIED_AT_TIMESTAMP,
     sourceUrl: "https://cloud.google.com/vertex-ai/generative-ai/pricing/",
   },
+  // The provider's current model alias, so a live run never binds a pinned generation.
+  // Flash-tier rates: $0.50 per million input tokens and $3.00 per million output tokens.
+  "google:gemini-flash-latest": {
+    inputPerMtok: 0.50,
+    outputPerMtok: 3.00,
+    contextWindow: 1_000_000,
+    verifiedAt: Date.UTC(2026, 0, 19),
+    sourceUrl: "https://cloud.google.com/vertex-ai/generative-ai/pricing/",
+  },
 };
 
 /** Look up a "provider:model" overlay entry for curated defaults omitted by list endpoints. */

@@ -44,3 +44,11 @@ fixtures_dir = "$FRAMEWORK_HOME/fixtures/mock_recordings/flow_blueprints"
 # framework's live-provider runs only — the production default is untouched.
 [rate_limiting]
 max_cost_per_day = 300.0
+
+# engine-trigger-matching asserts that two tag-only-reachable skills (reflexive-critique and
+# architecture-review) both survive into matched_skill_ids. Their rendered blocks are 2045 and
+# 1748 chars; the production default budget (2000) cannot hold both, so the scenario would fail
+# on budget, not on trigger matching. 4000 is the value the user guide documents and holds both
+# with headroom. Framework-scoped only — the production default is untouched.
+[skills]
+context_budget_chars = 4000

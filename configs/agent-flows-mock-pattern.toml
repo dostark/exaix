@@ -36,3 +36,12 @@ strategy = "pattern"
 
 [rate_limiting]
 max_cost_per_day = 300.0
+
+# engine-trigger-matching asserts that two tag-only-reachable skills (reflexive-critique and
+# architecture-review) both survive into matched_skill_ids. Their rendered blocks are 2045 and
+# 1748 chars; the production default budget (2000) cannot hold both, so the scenario would fail
+# on the budget, not on trigger matching. The sandbox is shared across a run, so whichever
+# config a scenario writes first is the one every later scenario inherits — this shared mock
+# config is the one the smoke pack leaves in place. 4000 is the value the user guide documents.
+[skills]
+context_budget_chars = 4000

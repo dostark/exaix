@@ -307,7 +307,10 @@ export class SkillsService implements ISkillsService {
 
       const skillBlockLength = this.formatSkillForPrompt(skill).length;
       if (skillBlockLength > remainingBudget) {
-        break;
+        // Skip this match and try the next. Matches are confidence-sorted. A single
+        // over-budget top match must not discard smaller matches. Smaller matches can
+        // still fit the remaining budget.
+        continue;
       }
 
       budgetedMatches.push(match);
