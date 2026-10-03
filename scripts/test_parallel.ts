@@ -157,6 +157,9 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/scenario_framework/tests/unit/assertions_evidence_test.ts",
   // Boots a real daemon against a loopback fixture. Contention under Batch 1 fails the boot.
   "tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts",
+  // Spawns the scenario runner, which boots a daemon. Under Batch 1 the runner times out
+  // before it writes the evidence file the test then reads.
+  "tests/scenario_framework/tests/integration/binding_evidence_cli_test.ts",
 ];
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */

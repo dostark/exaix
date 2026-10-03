@@ -1155,13 +1155,15 @@ Deno.test("Slow: can simulate very slow responses", async () => {
     responses: ["Slow response"],
   });
 
-  const start = Date.now();
+  // performance.now() is monotonic. Date.now() can step backward on an NTP adjustment,
+  // which produced a negative elapsed under load.
+  const start = performance.now();
   const result = await provider.generate("test");
-  const elapsed = Date.now() - start;
+  const elapsed = performance.now() - start;
 
   assertEquals(result.content, "Slow response");
   // Use a slightly lower threshold for reliability across environments
-  assert(elapsed >= 900, `Expected at least 900ms, got ${elapsed}ms`);
+  assert(elapsed >= 900, `Expected at least 900ms, got ${elapsed.toFixed(2)}ms`);
 });
 
 Deno.test("Slow: reset clears response index but keeps delay", async () => {
