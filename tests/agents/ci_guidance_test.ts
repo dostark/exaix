@@ -40,6 +40,17 @@ Deno.test("Agent docs: completion evidence must survive session restarts", async
   assert(md.includes("durable, phase-named workspace/sandbox output directory"));
 });
 
+Deno.test("Agent docs: test-development skill documents the execution-time budget", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+
+  assert(md.includes("Execution-time budget"), "skill should have an execution-time budget section");
+  assert(md.includes("daemon.ready"), "skill should point at the daemon.ready readiness signal");
+  assert(md.includes("daemon_commands.ts"), "skill should note the daemon lifecycle commands block until ready");
+  assert(md.includes("prepareDeclaredPortals"), "skill should warn against re-doing the runner's portal mount");
+  assert(md.includes("Promise.allSettled"), "skill should recommend concurrent independent I/O");
+  assert(md.includes("SEQUENTIAL_FILES"), "skill should route process-sensitive tests to the sequential batch");
+});
+
 Deno.test("Agent docs: local completion validation is focused by default", async () => {
   const agentInstructions = await Deno.readTextFile("AGENTS.md");
   const nextSteps = await Deno.readTextFile(".copilot/skills/next-steps/SKILL.md");

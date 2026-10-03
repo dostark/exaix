@@ -24,6 +24,8 @@ Key points
   restore (§Assertion sensitivity).
 - Happy-path-only tests miss integration bypasses, partial-failure states, and
   malformed-input crashes — cover the 6 edge case dimensions (§Edge case coverage).
+- A test's wall time is a budget, not an accident. Never `sleep` for an effect that has a
+  readiness signal, and never re-do work a helper already did (§Execution-time budget).
 
 See also
   Test directory → [tests/README.md](../../tests/README.md)
@@ -162,6 +164,56 @@ Edge case coverage — mandatory test dimensions
   6. **Resource cleanup** — temp files, subprocesses, DB transactions cleaned on success
      AND failure via try/finally or `using`.
 
+Execution-time budget — avoid time bottlenecks
+
+  Slow tests are a real defect: they push the suite out of the local loop and hide the
+  next regression behind minutes of waiting. The two dominant costs in this repo are
+  blind `sleep` and re-doing work a helper already did. A slow test is usually one of
+  these, not real work.
+
+  FIND THE HOTSPOT BEFORE OPTIMIZING — never guess. Per-test durations are printed as
+  `... ok (12s)`; sort them:
+      deno test --allow-all <files> 2>&1 \
+        | sed -E 's/\x1b\[[0-9;]*m//g' \
+        | grep -E '\.\.\. (ok|FAILED) \(' \
+        | sed -E 's/(.*) \.\.\. (ok|FAILED) \(([0-9]+m)?([0-9]+)s?\).*/\3\4 \1/' | sort -rn
+  Then read the slowest test and ask: is it waiting on a signal it could observe, or
+  repeating a boot/migration/setup that is already done?
+
+  1. **Replace a blind `sleep` with a readiness poll.** A fixed `settleMs`/`afterInjectMs`
+     is a race traded for a tax: it is too short under load and pure waste when idle. Wait
+     on the authoritative event instead — `bootRealDaemon()` polls `daemon.ready`
+     (watchers listening, apps/daemon/main.ts), and `exactl daemon start`/`restart`/`stop`
+     already block until the daemon is ready/stopped (apps/exactl/src/commands/daemon_commands.ts).
+     So a `setTimeout` after any of those commands buys nothing — delete it. Poll the
+     condition with a bounded deadline and a short interval; never loop forever.
+  2. **Do not re-do what a helper already did.** The scenario runner mounts every declared
+     `portals:` entry before the steps run (prepareDeclaredPortals), so a scenario that
+     also runs `exactl portal add` + `daemon restart` boots the daemon twice for one mount.
+     Check the harness before adding a boot/portal/config step; a second daemon boot is
+     ~1–2s of pure duplication.
+  3. **Run independent I/O concurrently.** When a test (or the code under test) makes
+     several independent calls — a judge and a reference, N file reads — issue them with
+     `Promise.all`/`Promise.allSettled`, not one `await` per iteration. Preserve error
+     attribution: `allSettled` + re-throw with the failing operation named (see
+     calibration_runner.ts's target/reference scoring). Only serialize when order is a
+     contract the test actually asserts.
+  4. **Prefer the in-process path when the test does not need the real subprocess.** A
+     Deno CLI/daemon subprocess costs ~0.9s of startup each; 25 spawns is ~20s of pure
+     overhead. Where the assertion is about logic (not the process boundary), call the
+     handler in-process with the shared helpers instead of spawning `exactl`. Keep at
+     least one real-subprocess test per boundary, and put it in the sequential batch.
+  5. **Route process-sensitive tests to the sequential batch, not around it.** Tests that
+     boot a real daemon, mutate process env (`withEnv`, `Deno.env.set`), or order rows by
+     wall-clock `created_at` cannot run under `--parallel`: they race on the Deno module
+     cache, leak env into other workers, or flip order when timestamps collide. Add such a
+     file to `SEQUENTIAL_FILES` in scripts/test_parallel.ts with a one-line reason — do not
+     weaken the assertion or drop the parallelism only for it.
+
+  A time win is not done until the same tests still pass. Re-run the changed files (and
+  the pack that owns them), confirm identical pass/fail counts, then record before/after
+  in the commit body. Deleting a wait is safe only when a real signal replaced it.
+
 Live-daemon subprocess teardown — mandatory precautions
 
   Any test booting a real `apps/daemon/main.ts` subprocess (direct Deno.Command,
@@ -252,11 +304,16 @@ exaix:
     - "No raw SQL table creation in tests"
     - "Canary every new or edited test — break what it names, confirm red, restore"
     - "No tautologies: never restate a constant, derive the expectation from the input, assert the test's own scaffolding, or test the runtime instead of our code"
+    - "No blind sleep where a readiness signal exists — poll the event (daemon.ready) or rely on the verifying command"
+    - "Do not re-do work a helper already did (e.g. re-mount + restart after the runner already mounted portals)"
+    - "Run independent I/O concurrently with Promise.all/allSettled, preserving error attribution"
+    - "Route daemon-boot, env-mutating, and wall-clock-ordered tests to SEQUENTIAL_FILES in scripts/test_parallel.ts"
   output_requirements:
     - "Target test files created or modified"
     - "Helpers and patterns used"
     - "Test command and coverage check results"
     - "Canary evidence for each new assertion — what was broken and that it went red"
+    - "For a slow test fixed: before/after per-test duration and pass counts"
   quality_criteria:
     - name: placement_compliance
       description: Test placement follows boundaries
@@ -273,5 +330,8 @@ exaix:
     - name: assertion_sensitivity
       description: Each assertion discriminates — canaried against a break in the code it names
       weight: 25
+    - name: execution_time
+      description: No blind sleeps or duplicated setup; independent I/O runs concurrently; process-sensitive tests are in the sequential batch
+      weight: 10
 ---
 ```
