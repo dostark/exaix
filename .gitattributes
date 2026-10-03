@@ -1,0 +1,30 @@
+# Line-ending policy: every text file is stored and checked out with LF.
+#
+# Windows CI (GitHub Actions) defaults core.autocrlf=true, which rewrites LF to CRLF on
+# checkout. Every text-diff gate then fails there with "Text differed by line endings."
+# This policy forces LF on every platform, so Windows matches Linux and macOS.
+* text=auto eol=lf
+
+# Binary assets must never be normalized. `* text=auto` already detects most of these,
+# but an explicit rule is certain and keeps `git diff` from treating them as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.db binary
+*.db-shm binary
+*.db-wal binary
+
+# Vendored/upstream fixtures keep their exact bytes (patch/oracle inputs depend on them).
+tests/scenario_framework/fixtures/portals/external/** -text
+tests/scripts/fixtures/terminal_bench_upstream_release/** -text
+tests/scenario_framework/fixtures/portals/external/terminal_bench/** -text
