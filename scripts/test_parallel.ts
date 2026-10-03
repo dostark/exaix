@@ -118,6 +118,9 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/agents/build_agents_index_test.ts",
   // Its dense git subprocess use can exhaust parallel spawn capacity.
   "apps/exactl/tests/blueprint_commands_test.ts",
+  // Orders merged entries by wall-clock created_at (a git commit time with second granularity).
+  // Under Batch 1 load the timestamps collide and the newest-first order flips.
+  "apps/exactl/tests/review_commands_test.ts",
   // The hardened delegation test probes the real OpenCode binary. Under Batch 1 spawn
   // pressure, that probe can fail before writing its per-test permission config.
   "apps/daemon/tests/session_delegation_coordinator_test.ts",

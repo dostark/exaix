@@ -211,9 +211,6 @@ parallelSafeTest({
         `exactl daemon start failed: ${startResult.stderr}`,
       );
 
-      // Give daemon time to initialize
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Check status shows running
       const statusResult = await runExactl(workspace, ["daemon", "status"]);
       assert(
@@ -239,9 +236,6 @@ parallelSafeTest({
         `exactl daemon stop failed: ${stopResult.stderr}`,
       );
 
-      // Give daemon time to shut down
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Verify daemon is stopped
       const finalStatus = await runExactl(workspace, ["daemon", "status"]);
       assert(
@@ -251,7 +245,6 @@ parallelSafeTest({
     } finally {
       // Ensure daemon is stopped before cleanup
       await runExactl(workspace, ["daemon", "stop"]).catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 500));
       await Deno.remove(workspace, { recursive: true }).catch(() => {});
     }
   },
@@ -273,9 +266,6 @@ parallelSafeTest({
         `Initial start failed: ${startResult.stderr}`,
       );
 
-      // Give daemon time to initialize
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Get initial PID from status
       const initialStatus = await runExactl(workspace, ["daemon", "status"]);
       const initialPidMatch = initialStatus.stdout.match(/PID:\s*(\d+)/);
@@ -289,9 +279,6 @@ parallelSafeTest({
         restartResult.code === 0,
         `exactl daemon restart failed: ${restartResult.stderr}`,
       );
-
-      // Give daemon more time to restart (CI can be slow)
-      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // Check status after restart
       const finalStatus = await runExactl(workspace, ["daemon", "status"]);
@@ -313,7 +300,6 @@ parallelSafeTest({
     } finally {
       // Ensure daemon is stopped before cleanup
       await runExactl(workspace, ["daemon", "stop"]).catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 500));
       await Deno.remove(workspace, { recursive: true }).catch(() => {});
     }
   },
@@ -335,9 +321,6 @@ parallelSafeTest({
         `Initial start failed: ${startResult.stderr}`,
       );
 
-      // Give daemon time to initialize
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Check that daemon is running
       const statusResult = await runExactl(workspace, ["daemon", "status"]);
       assert(statusResult.code === 0);
@@ -356,7 +339,6 @@ parallelSafeTest({
     } finally {
       // Ensure daemon is stopped before cleanup
       await runExactl(workspace, ["daemon", "stop"]).catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 500));
       await Deno.remove(workspace, { recursive: true }).catch(() => {});
     }
   },

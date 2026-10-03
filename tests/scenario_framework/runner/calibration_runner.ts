@@ -170,11 +170,28 @@ export class CalibrationRunner {
 
       const items: ICalibrationRunItem[] = [];
       for (const sourceItem of selection.selected) {
-        operation = "judge";
-        const target = await this.adapters.judge.score(sourceItem, options.rubric, options.target);
-        operation = "reference";
-        const referenceStartedAt = Date.now();
-        const reference = await this.adapters.reference.score(sourceItem, options.rubric, options.reference);
+        // The target and reference scores are independent, so run them together. This
+        // halves the wall time when each is a slow live model call.
+        let referenceDurationMs = 0;
+        const [targetResult, referenceResult] = await Promise.allSettled([
+          this.adapters.judge.score(sourceItem, options.rubric, options.target),
+          (async () => {
+            const referenceStartedAt = Date.now();
+            const score = await this.adapters.reference.score(sourceItem, options.rubric, options.reference);
+            referenceDurationMs = Date.now() - referenceStartedAt;
+            return score;
+          })(),
+        ]);
+        if (targetResult.status === "rejected") {
+          operation = "judge";
+          throw targetResult.reason;
+        }
+        if (referenceResult.status === "rejected") {
+          operation = "reference";
+          throw referenceResult.reason;
+        }
+        const target = targetResult.value;
+        const reference = referenceResult.value;
         await this.adapters.logger?.info(
           DomainEventType.CalibrationReferenceCompleted,
           null,
@@ -182,7 +199,7 @@ export class CalibrationRunner {
             run_id: runId,
             item_id: sourceItem.id,
             reference_vendor: options.reference.provider,
-            duration_ms: Date.now() - referenceStartedAt,
+            duration_ms: referenceDurationMs,
           } satisfies ICalibrationReferenceCompletedPayload,
           runId,
         );

@@ -10,6 +10,7 @@
  */
 
 import { dirname, join } from "@std/path";
+import { Database } from "@db/sqlite";
 
 /** Repo root, from `tests/integration/helpers/` — the source of `migrations/` and `deno.json`. */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
@@ -105,11 +106,51 @@ export function assertDaemonPidIsDead(pid: number): void {
 }
 
 /** Polls `check` until true or `maxMs` elapses — a fixed sleep races real CPU contention. */
-async function pollUntil(check: () => Promise<boolean>, maxMs: number, intervalMs = 200): Promise<void> {
+async function pollUntil(
+  check: () => boolean | Promise<boolean>,
+  maxMs: number,
+  intervalMs = 200,
+): Promise<void> {
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     if (await check()) return;
     await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
+/** Max activity rowid in the workspace journal, or 0 when the DB or table is absent. Read
+ *  before a boot so a repeated boot in one workspace waits for a NEW daemon.ready row. */
+function journalMaxRowid(journalPath: string): number {
+  try {
+    const db = new Database(journalPath, { readonly: true });
+    try {
+      const row = db.prepare("SELECT COALESCE(MAX(rowid), 0) AS maxRowid FROM activity").get() as
+        | { maxRowid: number }
+        | undefined;
+      return row?.maxRowid ?? 0;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return 0;
+  }
+}
+
+/** True once a daemon.ready row newer than `afterRowid` exists. That event fires once every
+ *  watcher is listening, so it is the daemon's authoritative readiness signal. */
+function daemonReadySince(journalPath: string, afterRowid: number): boolean {
+  try {
+    const db = new Database(journalPath, { readonly: true });
+    try {
+      const row = db.prepare(
+        "SELECT rowid FROM activity WHERE action_type = 'daemon.ready' AND rowid > ? ORDER BY rowid LIMIT 1",
+      ).get(afterRowid);
+      return row !== undefined;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return false;
   }
 }
 
@@ -130,7 +171,10 @@ export async function bootRealDaemon(
     waitForAfterInject?: () => Promise<boolean>;
   } = {},
 ): Promise<void> {
-  await migrateDaemonWorkspace(dirname(configPath));
+  const workspaceRoot = dirname(configPath);
+  await migrateDaemonWorkspace(workspaceRoot);
+  const journalPath = join(workspaceRoot, ".exa", "journal.db");
+  const readyBaseline = journalMaxRowid(journalPath);
   const proc = new Deno.Command("deno", {
     args: ["run", ...(options.denoPermissions ?? ["--allow-all"]), "apps/daemon/main.ts"],
     stdin: "null",
@@ -142,7 +186,9 @@ export async function bootRealDaemon(
     if (options.waitFor) {
       await pollUntil(options.waitFor, settleMs);
     } else {
-      await new Promise((r) => setTimeout(r, settleMs));
+      // Poll the authoritative daemon.ready row instead of sleeping settleMs blind. The
+      // daemon is ready once its watchers listen, usually a fraction of the old sleep.
+      await pollUntil(() => daemonReadySince(journalPath, readyBaseline), settleMs);
     }
     if (options.midFlight) {
       await options.midFlight();

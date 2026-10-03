@@ -59,26 +59,6 @@ steps:
         kind: "command-output-contains"
         contains: ["daemon.started"]
 
-  - id: "add-portal"
-    type: "exactl"
-    command: "portal"
-    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
-    output_criteria:
-      - id: "portal-added"
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "restart-daemon"
-    type: "exactl"
-    command: "daemon"
-    args: ["restart"]
-    env:
-      EXAIX_EDITION: "team"
-    output_criteria:
-      - id: "daemon-restarted"
-        kind: "command-output-contains"
-        contains: ["daemon.restarted"]
-
   - id: "wait-for-daemon-ready"
     type: "exactl"
     command: "journal"
