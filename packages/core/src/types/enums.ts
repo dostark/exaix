@@ -1534,3 +1534,9 @@ export enum PlanningToolsSkipReason {
   /** The portal's `operations`/`agents_allowed` deny read access to this agent role. */
   PORTAL_READ_DENIED = "portal_read_denied",
 }
+
+/** Console stream for human-readable logger output. An MCP stdio server uses STDERR. */
+export enum ConsoleStream {
+  STDOUT = "stdout",
+  STDERR = "stderr",
+}

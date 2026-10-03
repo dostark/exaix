@@ -14,9 +14,10 @@
 
 import { dirname, fromFileUrl, resolve } from "@std/path";
 import { type IJsonRpcParams, type IJsonRpcRequest, sendJsonRpcRequests, spawnProcess } from "./mcp_stdio_driver.ts";
+import { scenarioRepoRoot } from "./scenario_repo_root.ts";
 
 const SCRIPTS_DIR = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = resolve(SCRIPTS_DIR, "..", "..", "..");
+const REPO_ROOT = scenarioRepoRoot(SCRIPTS_DIR);
 const SERVER_ENTRY = resolve(REPO_ROOT, "exaix-team", "apps", "mcp-server", "main.ts");
 const DENO_CONFIG = resolve(REPO_ROOT, "deno.json");
 const DEFAULT_TIMEOUT_MS = 30000;

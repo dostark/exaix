@@ -11,6 +11,7 @@ import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
+import { ConsoleStream } from "@exaix/core";
 import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "@exaix/core";
@@ -450,6 +451,51 @@ Deno.test("EventLogger: should persist token and cost metrics to native columns"
     assertEquals(activities[0].completion_tokens, 50);
     assertEquals(activities[0].cost_usd, 0.0015);
   } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("EventLogger: consoleStream stderr sends console output to stderr, never stdout", async () => {
+  // The MCP stdio server reserves stdout for JSON-RPC, so a console.log on stdout corrupts
+  // the protocol stream. This option lets such a server keep its console output on stderr.
+  const { db, cleanup } = await initTestDbService();
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...args: Array<unknown>) => stdout.push(args.join(" "));
+  console.error = (...args: Array<unknown>) => stderr.push(args.join(" "));
+  try {
+    const logger = new EventLogger({ db, consoleStream: ConsoleStream.STDERR });
+    await logger.info("mcp.tool.executed", "read_file");
+
+    assertEquals(stdout, [], "no console output may reach stdout");
+    assertEquals(stderr.length > 0, true, "console output must reach stderr");
+    assertStringIncludes(stderr[0], "mcp.tool.executed");
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+    await cleanup();
+  }
+});
+
+Deno.test("EventLogger: default consoleStream keeps console.log on stdout", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...args: Array<unknown>) => stdout.push(args.join(" "));
+  console.error = (...args: Array<unknown>) => stderr.push(args.join(" "));
+  try {
+    const logger = new EventLogger({ db });
+    await logger.info("some.event", "target");
+
+    assertEquals(stderr, [], "default output must not move to stderr");
+    assertEquals(stdout.length > 0, true, "default output stays on stdout");
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
     await cleanup();
   }
 });

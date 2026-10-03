@@ -11,7 +11,7 @@ import type { IDatabaseService } from "../types/i_database_service.ts";
 import type { JSONValue } from "../types/json.ts";
 import type { IActivityRepository } from "../repositories/activity_repository.ts";
 
-import { ActivityActor, LogLevel } from "../types/enums.ts";
+import { ActivityActor, ConsoleStream, LogLevel } from "../types/enums.ts";
 import type { Actor } from "../types/actor.ts";
 import type { ILogEvent } from "../types/i_log_event.ts";
 import { EventBusService } from "../observability/event_bus_service.ts";
@@ -57,6 +57,10 @@ export interface IEventLoggerConfig {
 
   /** Whether to include timestamps in console output */
   showTimestamp?: boolean;
+
+  /** Console stream for human-readable output. Defaults to ConsoleStream.STDOUT. An MCP stdio
+   *  server reserves stdout for JSON-RPC, so it sets ConsoleStream.STDERR. */
+  consoleStream?: ConsoleStream;
 
   /** For CLI commands, this should be the user identity from git config (user.email)
    *  or OS username. */
@@ -231,6 +235,7 @@ export class EventLogger implements IEventLogger {
   private readonly prefix: string;
   private readonly minLevel: LogLevel;
   private readonly showTimestamp: boolean;
+  private readonly consoleStream: ConsoleStream;
   private readonly defaultActor: Actor;
   private readonly defaults: Partial<ILogEvent>;
   private readonly outputs?: IEventLoggerOutput[];
@@ -244,6 +249,7 @@ export class EventLogger implements IEventLogger {
     this.prefix = config.prefix ?? "";
     this.minLevel = config.minLevel ?? LogLevel.INFO;
     this.showTimestamp = config.showTimestamp ?? false;
+    this.consoleStream = config.consoleStream ?? ConsoleStream.STDOUT;
     this.defaultActor = config.defaultActor ?? ActivityActor.SYSTEM;
     this.defaults = defaults;
   }
@@ -495,7 +501,13 @@ export class EventLogger implements IEventLogger {
     const mainLine = `${timestamp}${icon} ${event.action}: ${event.target}`;
 
     // Select appropriate console method
-    const consoleFn = level === LogLevel.ERROR ? console.error : level === LogLevel.WARN ? console.warn : console.log;
+    const consoleFn = level === LogLevel.ERROR
+      ? console.error
+      : level === LogLevel.WARN
+      ? console.warn
+      : this.consoleStream === ConsoleStream.STDERR
+      ? console.error
+      : console.log;
 
     consoleFn(prefix + mainLine);
 
