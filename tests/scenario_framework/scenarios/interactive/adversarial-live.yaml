@@ -81,7 +81,7 @@ steps:
       - "$WORKSPACE_ROOT/Workspace/WaitStates/$TRACE_ID"
       - "user-simulator:adversarial"
       - "adversarial"
-      - "$FRAMEWORK_HOME/../../.exa/eval.db"
+      - "$REPO_ROOT/.exa/eval.db"
     output_criteria:
       - id: "interactive-result-recorded"
         kind: "command-exit-code"

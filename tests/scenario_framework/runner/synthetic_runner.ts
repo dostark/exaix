@@ -394,6 +394,7 @@ export async function runSyntheticScenario(
     ...(options.env ?? {}),
     WORKSPACE_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
+    REPO_ROOT,
     EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
   };
 
@@ -913,6 +914,7 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   "WORKSPACE_ROOT",
   "EXA_SYSTEM_ROOT",
   "FRAMEWORK_HOME",
+  "REPO_ROOT",
   "EXA_CONFIG_PATH",
   "CELL_PROVIDER",
   "CELL_MODEL",
@@ -958,6 +960,8 @@ export function buildStepBaseEnv(options: IStepBaseEnvOptions): Record<string, s
     WORKSPACE_ROOT: options.workspaceRoot,
     EXA_SYSTEM_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
+    // The real repo root, so a deployed framework reaches deno.json, scripts/ and configs.
+    REPO_ROOT,
     EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
     EXA_SCENARIO_ID: options.scenarioId,
     EXA_STEP_ID: options.stepId,

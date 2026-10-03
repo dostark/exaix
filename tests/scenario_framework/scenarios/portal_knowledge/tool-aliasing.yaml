@@ -18,7 +18,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/setup_planning_tools.ts"
       - "$WORKSPACE_ROOT"
       - "tool-aliasing"

@@ -16,7 +16,7 @@ steps:
         "run",
         "-A",
         "--config",
-        "$FRAMEWORK_HOME/../../deno.json",
+        "$REPO_ROOT/deno.json",
         "$FRAMEWORK_HOME/scripts/seed_tool_confirmation.ts",
         "123e4567-e89b-42d3-a456-426614174000",
       ]

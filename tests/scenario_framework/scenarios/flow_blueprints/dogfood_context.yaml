@@ -59,7 +59,7 @@ steps:
     args:
       - "eval"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - |
           const planFiles = [...Deno.readDirSync("Workspace/Plans")]
             .filter((e) => e.isFile && e.name.endsWith("_plan.md"))
@@ -77,7 +77,7 @@ steps:
           const traceId = match[1];
 
           const cmd = new Deno.Command(Deno.execPath(), {
-            args: ["run", "-A", "$FRAMEWORK_HOME/../../apps/exactl/src/exactl.ts", "request", "inspect", traceId, "--json"],
+            args: ["run", "-A", "$REPO_ROOT/apps/exactl/src/exactl.ts", "request", "inspect", traceId, "--json"],
             stdout: "piped",
             stderr: "piped",
           });

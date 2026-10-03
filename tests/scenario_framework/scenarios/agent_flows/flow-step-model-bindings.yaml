@@ -45,7 +45,7 @@ steps:
       - --allow-read
       - --allow-write
       - --config
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
       - set-explore
       - mock
@@ -95,7 +95,7 @@ steps:
       - --allow-read
       - --allow-write
       - --config
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
       - set-explore
       - compat-fixture
@@ -125,7 +125,7 @@ steps:
       - --allow-read
       - --allow-write
       - --config
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
       - save-fifth-lock
     output_criteria:
@@ -150,7 +150,7 @@ steps:
       - --allow-read
       - --allow-write
       - --config
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/binding_cutover_ops.ts"
       - save-first-lock
     output_criteria:

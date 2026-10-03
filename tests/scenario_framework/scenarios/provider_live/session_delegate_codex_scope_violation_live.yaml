@@ -36,7 +36,7 @@ steps:
     command: "daemon"
     args: ["start"]
     env:
-      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.codex.toml"
+      EXA_CONFIG_PATH: "$REPO_ROOT/configs/dogfood.codex.toml"
     output_criteria:
       - id: "daemon-started"
         score_weight: 0.5

@@ -26,7 +26,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
       - "$WORKSPACE_ROOT"
       - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
@@ -44,7 +44,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_config_get"
       - '{"key":"ai.provider","agent_role":"tools-eval"}'
@@ -86,7 +86,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "exaix_config_set"
       - '{"key":"ai.provider","value":"mock","agent_role":"tools-eval"}'

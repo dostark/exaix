@@ -25,7 +25,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/run_learning_effectiveness.ts"
       - "$WORKSPACE_ROOT/cold"
       - "$WORKSPACE_ROOT/warm"

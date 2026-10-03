@@ -17,7 +17,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
       - "$WORKSPACE_ROOT"
       - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
@@ -35,7 +35,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "list_directory"
       - '{"portal":"tools","path":"src","agent_role":"tools-eval"}'

@@ -233,7 +233,7 @@ steps:
     args:
       - "eval"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - |
           // A plan moves out of Workspace/Plans/ once approved (to Active/, then Archive/
           // on completion) — this step runs after approval and full execution, so search
@@ -260,7 +260,7 @@ steps:
           const traceId = match[1];
 
           const cmd = new Deno.Command(Deno.execPath(), {
-            args: ["run", "-A", "$FRAMEWORK_HOME/../../apps/exactl/src/exactl.ts", "request", "inspect", traceId, "--json"],
+            args: ["run", "-A", "$REPO_ROOT/apps/exactl/src/exactl.ts", "request", "inspect", traceId, "--json"],
             stdout: "piped",
             stderr: "piped",
           });
@@ -277,7 +277,7 @@ steps:
               args: [
                 "run",
                 "-A",
-                "$FRAMEWORK_HOME/../../apps/exactl/src/exactl.ts",
+                "$REPO_ROOT/apps/exactl/src/exactl.ts",
                 "request",
                 "inspect",
                 traceId,

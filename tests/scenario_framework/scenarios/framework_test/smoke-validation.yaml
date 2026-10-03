@@ -11,7 +11,7 @@ portals:
   # "$HOME/git/Exaix" — a path that exists on no machine whose checkout is not named `Exaix`,
   # which put a guaranteed failure into the per-PR ci-smoke tier.
   - alias: portal-exaix
-    source_path: "$FRAMEWORK_HOME/../.."
+    source_path: "$REPO_ROOT"
 
 steps:
   - id: cleanup-workspace

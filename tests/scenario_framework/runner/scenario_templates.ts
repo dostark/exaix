@@ -268,9 +268,9 @@ function renderSweSetupSteps(
     `  - id: "setup-db"`,
     `    type: "shell"`,
     `    command: "deno"`,
-    `    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]`,
+    `    args: ["run", "-A", "--config", "$REPO_ROOT/deno.json", "$REPO_ROOT/scripts/setup_db.ts"]`,
     `    env:`,
-    `      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"`,
+    `      EXA_MIGRATIONS_DIR: "$REPO_ROOT/migrations"`,
     `    output_criteria:`,
     `      - id: "setup-done"`,
     `        kind: "command-exit-code"`,
@@ -288,7 +288,7 @@ function renderSweSetupSteps(
     `  - id: "setup-blueprints"`,
     `    type: "shell"`,
     `    command: "cp"`,
-    `    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]`,
+    `    args: ["-r", "$REPO_ROOT/Blueprints", "$WORKSPACE_ROOT/Blueprints"]`,
     `    output_criteria:`,
     `      - id: "blueprints-copied"`,
     `        kind: "command-exit-code"`,
@@ -310,7 +310,7 @@ function renderSweSetupSteps(
     `  - id: "setup-memory"`,
     `    type: "shell"`,
     `    command: "cp"`,
-    `    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]`,
+    `    args: ["-r", "$REPO_ROOT/Memory", "$WORKSPACE_ROOT/Memory"]`,
     `    output_criteria:`,
     `      - id: "memory-copied"`,
     `        kind: "command-exit-code"`,
@@ -634,7 +634,7 @@ function yamlArgsList(values: string[]): string {
 
 /** The shared `run_jailed.ts` invocation head (before its own `--flag value` pairs) every
  *  external_bench_task run-script step starts with. */
-const RUN_JAILED_HEAD = ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", RUN_JAILED_SCRIPT];
+const RUN_JAILED_HEAD = ["run", "-A", "--config", "$REPO_ROOT/deno.json", RUN_JAILED_SCRIPT];
 
 export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplateOptions): string {
   const scoreWeights = task.scoringWeights ?? {};

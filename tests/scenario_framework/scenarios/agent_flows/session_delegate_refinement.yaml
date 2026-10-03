@@ -17,8 +17,8 @@ steps:
     args: [
       "run",
       "-A",
-      "$FRAMEWORK_HOME/../../scripts/build_mock_session_tool.ts",
-      "$FRAMEWORK_HOME/../../.cache/mock_session_tool_bin",
+      "$REPO_ROOT/scripts/build_mock_session_tool.ts",
+      "$REPO_ROOT/.cache/mock_session_tool_bin",
     ]
     output_criteria:
       - id: "build-done"
@@ -44,7 +44,7 @@ steps:
       EXA_LLM_PROVIDER: "mock"
       EXA_CI_MODE: "1"
       EXA_SESSION_DELEGATE_ENABLED: "true"
-      EXA_SESSION_DELEGATE_BIN_OVERRIDES: "$FRAMEWORK_HOME/../../.cache/mock_session_tool_bin"
+      EXA_SESSION_DELEGATE_BIN_OVERRIDES: "$REPO_ROOT/.cache/mock_session_tool_bin"
     output_criteria:
       - id: "daemon-started"
         score_weight: 0.7

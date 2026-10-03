@@ -26,7 +26,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/run_memory_replay.ts"
       - "$WORKSPACE_ROOT"
       - "$FRAMEWORK_HOME/fixtures/memory/multi-session-reasoning-basic/task.json"

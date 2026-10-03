@@ -23,7 +23,7 @@ steps:
     command: "daemon"
     args: ["start"]
     env:
-      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.toml"
+      EXA_CONFIG_PATH: "$REPO_ROOT/configs/dogfood.claude.toml"
       EXA_SESSION_DELEGATE_ENABLED: "true"
       EXA_SESSION_DELEGATE_TOOL: "opencode"
       EXA_SESSION_DELEGATE_GATES: "code_changes"

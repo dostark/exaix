@@ -21,7 +21,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/probe_sse_liveness.ts"
     env:
       EXA_LLM_PROVIDER: "mock"
@@ -44,7 +44,7 @@ steps:
     # no `pgrep`/`sh` spawn. Self-match is impossible because the helper's own argv is
     # `deno run ...`, not the MCP server path.
     command: "deno"
-    args: ["run", "-A", "$FRAMEWORK_HOME/../../scripts/check_process_alive.ts", "apps/mcp-server/main.ts"]
+    args: ["run", "-A", "$REPO_ROOT/scripts/check_process_alive.ts", "apps/mcp-server/main.ts"]
     output_criteria:
       - id: "no-leak"
         kind: "command-output-contains"

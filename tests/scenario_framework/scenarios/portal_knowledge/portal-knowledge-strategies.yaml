@@ -7,13 +7,13 @@ request_fixture: "fixtures/requests/portal_knowledge/portal_knowledge_strategies
 mode_support: ["auto"]
 portals:
   - alias: "portal-exaix"
-    source_path: "$FRAMEWORK_HOME/../.."
+    source_path: "$REPO_ROOT"
 steps:
   # ── Step 1: register the portal ─────────────────────────────────────────
   - id: "register-portal"
     type: "exactl"
     command: "portal"
-    args: ["add", "$FRAMEWORK_HOME/../..", "portal-exaix"]
+    args: ["add", "$REPO_ROOT", "portal-exaix"]
     output_criteria:
       - id: "portal-add-exit-code"
         score_weight: 0.05
@@ -101,7 +101,7 @@ steps:
     args:
       - "eval"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - |
           import { queryRelationships, whoDependsOn } from "@exaix/portal/knowledge";
 
@@ -268,7 +268,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/run_solo_relationship_agent.ts"
       - "$WORKSPACE_ROOT"
       - "portal-exaix"

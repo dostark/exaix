@@ -20,7 +20,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
       - "$WORKSPACE_ROOT"
       - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
@@ -38,7 +38,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "search_files"
       - '{"portal":"tools","pattern":"**/*.ts","agent_role":"tools-eval"}'
@@ -62,7 +62,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "search_files"
       - '{"portal":"tools","pattern":"**/*.test.ts","agent_role":"tools-eval"}'
@@ -82,7 +82,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "search_files"
       - '{"portal":"tools","pattern":"**/*.nomatch","agent_role":"tools-eval"}'

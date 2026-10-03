@@ -30,7 +30,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/run_memory_staleness_check.ts"
       - "$WORKSPACE_ROOT"
     output_criteria:

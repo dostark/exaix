@@ -20,7 +20,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
       - "$WORKSPACE_ROOT"
       - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
@@ -38,7 +38,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/mcp_stdio_driver.ts"
       - "--timeout-ms"
       - "30000"
@@ -47,8 +47,8 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
-      - "$FRAMEWORK_HOME/../../apps/mcp-server/main.ts"
+      - "$REPO_ROOT/deno.json"
+      - "$REPO_ROOT/apps/mcp-server/main.ts"
       - "--"
       - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"scenario","version":"1.0"}}}'
       - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exaix_config_set","arguments":{"key":"ai.provider","value":"mock","agent_role":"tools-eval"}}}'

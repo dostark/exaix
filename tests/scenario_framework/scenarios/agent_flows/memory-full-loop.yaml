@@ -21,7 +21,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/run_memory_full_loop.ts"
       - "$WORKSPACE_ROOT"
     output_criteria:

@@ -18,7 +18,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
       - "$WORKSPACE_ROOT"
       - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
@@ -36,7 +36,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "read_file"
       - '{"portal":"tools","path":"../../../etc/passwd","agent_role":"tools-eval"}'
@@ -60,7 +60,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "write_file"
       - '{"portal":"tools","path":"/tmp/exaix-should-never-exist.txt","content":"escaped","agent_role":"tools-eval"}'
@@ -94,7 +94,7 @@ steps:
       - "run"
       - "-A"
       - "--config"
-      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$REPO_ROOT/deno.json"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
       - "read_file"
       - '{"portal":"tools","path":"src/greeting.txt","agent_role":"not-allowed-role"}'
