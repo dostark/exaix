@@ -4,7 +4,7 @@
  * @description GAP-6 reachability proof: constructs the real `initializeMemoryAutoApprovalMaintenance` maintenance loop with a real mock-provider `MemoryReflectionService` and asserts a synthesized learning is observable in Memory/Pending and a reflection cycle event is journalled after one interval tick — not a package-unit test.
  * @architectural-layer Tests
  */
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import type { IModelProvider } from "@exaix/ai";
 import type { IMemoryBankService, IMemoryEmbeddingService, INotificationService } from "@exaix/core/types";
 import type { ISkillsService } from "@exaix/core/types";
@@ -117,10 +117,15 @@ Deno.test("the real maintenance loop invokes reflection; a synthesized learning 
     );
     maintenance.stop();
 
-    // The synthesized learning is observable in Memory/Pending after one tick.
+    // The synthesized learning is observable in Memory/Pending after a tick. The loop ticks
+    // every 10ms, so a second cycle can land before `stop()`. Assert the learning is present,
+    // not an exact count a racing tick can push to two.
     const pending = await extractor.listPending();
-    assertEquals(pending.length, 1);
-    assertEquals(pending[0].learning.title, "Retry policy for flaky integrations");
+    assert(pending.length >= 1, `expected at least one pending learning, got ${pending.length}`);
+    assert(
+      pending.some((p) => p.learning.title === "Retry policy for flaky integrations"),
+      `expected the synthesized learning among pending: ${JSON.stringify(pending.map((p) => p.learning.title))}`,
+    );
 
     // The reflection cycle is journalled with its counts.
     const events = db.getActivitiesByActionType(DomainEventType.MemoryReflectionCycleCompleted);
