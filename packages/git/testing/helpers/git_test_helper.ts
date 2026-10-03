@@ -14,6 +14,7 @@ import { join } from "@std/path";
 import { GitService } from "@exaix/git";
 import { GIT_CMD_CONFIG } from "@exaix/git/constants.ts";
 import type { Config } from "@exaix/schemas";
+import type { Opt, Reason } from "@exaix/core/types";
 
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
@@ -116,12 +117,16 @@ export async function createGitTestContext(prefix = "git-test-"): Promise<IGitTe
 export class GitTestHelper {
   constructor(private repoPath: string) {}
 
-  async runGit(args: string[]): Promise<string> {
+  async runGit(
+    args: string[],
+    env?: Opt<Record<string, string>, Reason.OptionalInput>,
+  ): Promise<string> {
     const cmd = new Deno.Command(PortalOperation.GIT, {
       args,
       cwd: this.repoPath,
       stdout: "piped",
       stderr: "piped",
+      ...(env ? { env } : {}),
     });
     const { stdout, success, stderr } = await cmd.output();
     if (!success) {

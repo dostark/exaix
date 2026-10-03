@@ -95,11 +95,12 @@ describe("ReviewCommands", () => {
     });
 
     it("should sort by creation date descending", async () => {
-      // Create multiple branches with delays
-      await createFeatureBranch(tempDir, "request-001", "aaa-111-bbb");
-      // Git commit timestamps are second-precision, need real delay
-      await delay(1500);
-      await createFeatureBranch(tempDir, "request-002", "bbb-222-ccc");
+      // Pin author dates rather than sleeping. The review's created_at is git's
+      // second-precision author date, so an old/new pair is deterministic.
+      const older = new Date("2024-01-01T00:00:00Z");
+      const newer = new Date("2024-01-01T00:00:10Z");
+      await createFeatureBranch(tempDir, "request-001", "aaa-111-bbb", 1, older);
+      await createFeatureBranch(tempDir, "request-002", "bbb-222-ccc", 1, newer);
 
       const reviews = await reviewCommands.list();
       assertEquals(reviews.length, 2);
@@ -210,14 +211,14 @@ describe("ReviewCommands", () => {
       );
       await db.waitForFlush();
 
-      // Ensure git commit timestamp is later (git timestamps are second precision)
-      await delay(1500);
-      await createFeatureBranch(tempDir, "request-mixed002", "mixed-002");
+      // Pin a far-future author date. This makes the code review deterministically newer
+      // than the artifact's wall-clock created_at.
+      await createFeatureBranch(tempDir, "request-mixed002", "mixed-002", 1, new Date("2099-01-01T00:00:00Z"));
 
       const reviews = await reviewCommands.list();
       assertEquals(reviews.length, 2);
 
-      // Most recent entry first (the git review created after the delay)
+      // Most recent entry first (the git review)
       assertEquals(reviews[0].type, "code");
       assertEquals(reviews[0].request_id, "request-mixed002");
       assertEquals(reviews[1].type, "artifact");
@@ -256,11 +257,9 @@ describe("ReviewCommands", () => {
     });
 
     it("should sort merged list by created_at descending across types", async () => {
-      // Create a code review first
-      await createFeatureBranch(tempDir, "request-902", "sort-001");
+      // An old pinned author date makes the wall-clock artifact deterministically newer.
+      await createFeatureBranch(tempDir, "request-902", "sort-001", 1, new Date("2024-01-01T00:00:00Z"));
 
-      // Ensure artifact has a later timestamp
-      await delay(1100);
       const repo = new DatabaseArtifactRepository(db);
       const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       await artifactRegistry.createArtifact(
@@ -629,6 +628,7 @@ async function createFeatureBranch(
   requestId: string,
   traceId: string,
   fileCount: number = 1,
+  committedAt?: Date,
 ): Promise<void> {
   const branchName = `feat/${requestId}-${traceId}`;
 
@@ -642,15 +642,19 @@ async function createFeatureBranch(
     await runGitCommand(repoDir, [MemoryOperation.ADD, fileName]);
   }
 
-  // Commit
-  await runGitCommand(repoDir, ["commit", "-m", `Add feature for ${requestId}\n\nTrace-Id: ${traceId}`]);
+  // Pin the author/committer date when supplied. A sort test needs deterministic times,
+  // because the review's created_at is git's second-precision author date.
+  const commitEnv = committedAt
+    ? { GIT_AUTHOR_DATE: committedAt.toISOString(), GIT_COMMITTER_DATE: committedAt.toISOString() }
+    : undefined;
+  await runGitCommand(
+    repoDir,
+    ["commit", "-m", `Add feature for ${requestId}\n\nTrace-Id: ${traceId}`],
+    commitEnv,
+  );
 
   // Switch back to default branch
   await runGitCommand(repoDir, ["checkout", TEST_DEFAULT_BRANCH]);
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Additional edge case tests from tests/review_commands_test.ts

@@ -22,7 +22,7 @@ import { getMemoryProjectsDir } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMockKnowledgeService, DEFAULT_KNOWLEDGE_CONFIG } from "../../../../tests/helpers/portal_test_helper.ts";
-import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
+import type { IPortalKnowledgeConfig, IPortalKnowledgeService, Opt, Reason } from "@exaix/core/types";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 
 /**
@@ -238,8 +238,12 @@ export async function createCliTestContext(options?: { createDirs?: string[] }):
 /**
  * Helper to run git commands in tests
  */
-export async function runGitCommand(cwd: string, args: string[]): Promise<string> {
-  return await new GitTestHelper(cwd).runGit(args);
+export async function runGitCommand(
+  cwd: string,
+  args: string[],
+  env?: Opt<Record<string, string>, Reason.OptionalInput>,
+): Promise<string> {
+  return await new GitTestHelper(cwd).runGit(args, env);
 }
 
 /**
