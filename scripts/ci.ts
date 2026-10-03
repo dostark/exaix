@@ -787,7 +787,10 @@ const evalCommand = new Command()
       "run",
     ];
 
-    const packs = ["blueprint-eval", "eval-smoke", "eval-edge-cases"];
+    // Self-contained, mock-only packs that need no sandbox or provider credential.
+    // Each name must match a real tests/scenario_framework/scenarios/<pack>/ directory.
+    // A stale name selects zero scenarios and fails the job.
+    const packs = ["smoke", "adversarial"];
 
     if (options.anthropic) {
       packs.push(

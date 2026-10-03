@@ -51,5 +51,5 @@ Deno.test("Agent docs: local completion validation is focused by default", async
       "Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`",
     ),
   );
-  assert(nextSteps.includes("Use focused, file-scoped test commands by default"));
+  assert(nextSteps.includes("Use focused, file-scoped test commands during implementation"));
 });

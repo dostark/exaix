@@ -29,6 +29,16 @@ async function setupDeploymentFiles(tempRoot: string) {
     join(sourceFrameworkRoot, "fixtures/requests/shared/request.md"),
     "# Request\n",
   );
+  // The real repo deno.json lives at <repo>/deno.json, one level above the framework root.
+  // A prefix-style key ("@exaix/schemas/") must survive the absolute rewrite with its slash.
+  await Deno.writeTextFile(
+    join(tempRoot, "repo/deno.json"),
+    JSON.stringify(
+      { imports: { "@exaix/schemas/": "./packages/schemas/src/", "@exaix/core": "./packages/core/mod.ts" } },
+      null,
+      2,
+    ) + "\n",
+  );
   return { sourceFrameworkRoot, destinationRoot };
 }
 
@@ -127,6 +137,38 @@ Deno.test("[ScenarioFrameworkDeployment] deployment manifest records copied fram
     const runtimeConfigText = await Deno.readTextFile(deployment.runtimeConfigPath);
     assertStringIncludes(runtimeConfigText, '"framework_home":');
     assertStringIncludes(runtimeConfigText, '"workspace_path": "/tmp/external-workspace"');
+  } finally {
+    await Deno.remove(tempRoot, { recursive: true });
+  }
+});
+
+Deno.test("[ScenarioFrameworkDeployment] a prefix import-map entry keeps its trailing slash so Deno accepts the deployed deno.json", async () => {
+  const tempRoot = await Deno.makeTempDir({ prefix: "scenario-framework-deploy-" });
+
+  try {
+    const { sourceFrameworkRoot, destinationRoot } = await setupDeploymentFiles(tempRoot);
+
+    const deployment = await deployFrameworkToDirectory({
+      sourceFrameworkRoot,
+      destinationRoot,
+      workspacePath: "/tmp/external-workspace",
+      outputDir: "/tmp/external-output",
+    });
+
+    const denoConfig = JSON.parse(
+      await Deno.readTextFile(join(deployment.destinationFrameworkRoot, "deno.json")),
+    ) as { imports: Record<string, string> };
+
+    // A key ending in "/" is a package-prefix import. Deno rejects a target that
+    // does not also end in "/", which aborts the whole scenario run before any test.
+    for (const [key, value] of Object.entries(denoConfig.imports)) {
+      if (key.endsWith("/")) {
+        assertEquals(value.endsWith("/"), true, `prefix import ${key} target must end with "/" (got ${value})`);
+      }
+    }
+    // The schemas prefix is the concrete import the CI failure named.
+    assertEquals(denoConfig.imports["@exaix/schemas/"].endsWith("/"), true);
+    assertEquals(denoConfig.imports["@exaix/schemas/"].startsWith("/"), true, "rewritten to an absolute path");
   } finally {
     await Deno.remove(tempRoot, { recursive: true });
   }
