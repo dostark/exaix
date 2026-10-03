@@ -299,6 +299,83 @@ Deno.test("[wait_for_file] a PRIOR trace's request.failed (stale, shared sandbox
   );
 });
 
+Deno.test("[wait_for_file] does not resolve while a writer keeps growing the matched file, and resolves complete once it closes", async () => {
+  await withTempWorkspace(async (ws) => {
+    await Deno.mkdir(join(ws, "Plans"), { recursive: true });
+    const target = join(ws, "Plans", "request-slow_plan.md");
+    await Deno.writeTextFile(target, "## Plan\n");
+
+    // Start the wait, then grow the file every 150ms for ~1.2s. A wait that accepts on
+    // existence would resolve on an incomplete file.
+    const resultPtr: { value?: Awaited<ReturnType<typeof executeScenarioStep>>; at?: number } = {};
+    const run = executeScenarioStep({
+      step: {
+        id: "wait-for-plan",
+        type: ScenarioStepType.WAIT_FOR_FILE,
+        args: ["**/Plans/*_plan.md"],
+        timeout_sec: 15,
+        input_criteria: [],
+        output_criteria: [],
+        continue_on_failure: false,
+      },
+      cwd: ws,
+    }).then((r) => {
+      resultPtr.value = r;
+      resultPtr.at = Date.now();
+      return r;
+    });
+
+    let body = "## Plan\n";
+    let closedAt = 0;
+    for (let i = 0; i < 8; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      body += `- step ${i + 1}\n`;
+      await Deno.writeTextFile(target, body);
+    }
+    // Mark when the writer stopped growing the file, then write the final stable body.
+    body += "- final\n";
+    await Deno.writeTextFile(target, body);
+    closedAt = Date.now();
+
+    const result = await run;
+    assertEquals(result.exitCode, 0);
+    // The wait must not have resolved before the writer stopped growing the file.
+    assert(
+      resultPtr.at !== undefined && resultPtr.at >= closedAt,
+      `wait resolved at ${resultPtr.at} but the writer only stopped at ${closedAt} — it accepted a partial file`,
+    );
+    assertEquals(await Deno.readTextFile(target), body);
+  });
+});
+
+Deno.test("[wait_for_file] resolves quickly (well under the old 2s tick) once a file is written and settled", async () => {
+  await withTempWorkspace(async (ws) => {
+    await Deno.mkdir(join(ws, "Plans"), { recursive: true });
+    await Deno.writeTextFile(join(ws, "Plans", "request-abc_plan.md"), "plan body");
+
+    // The file is old enough that the settle window is already satisfied on the first tick.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const startedAt = Date.now();
+    const result = await executeScenarioStep({
+      step: {
+        id: "wait-for-plan",
+        type: ScenarioStepType.WAIT_FOR_FILE,
+        args: ["**/Plans/*_plan.md"],
+        timeout_sec: 10,
+        input_criteria: [],
+        output_criteria: [],
+        continue_on_failure: false,
+      },
+      cwd: ws,
+    });
+    const elapsedMs = Date.now() - startedAt;
+
+    assertEquals(result.exitCode, 0);
+    assert(elapsedMs < 1500, `expected a sub-second resolve, took ${elapsedMs}ms`);
+  });
+});
+
 Deno.test("[wait_for_file] succeeds normally when the request has neither failed nor produced its file yet, then the file lands", async () => {
   await withJournalWorkspace(
     [

@@ -76,7 +76,11 @@ export interface IScenarioStepExecutionResult {
 
 const TEXT_DECODER = new TextDecoder();
 const WHITESPACE_PATTERN = /\s+/;
-const WAIT_FOR_FILE_POLL_INTERVAL_MS = 2000; // Check every 2 seconds
+const WAIT_FOR_FILE_POLL_INTERVAL_MS = 250; // Check every 250ms
+/** A matched file must keep the same size and mtime across this window before a wait resolves.
+ *  This stops a still-open writer from passing as a finished one. It is above the poll interval,
+ *  so one poll observes the file unchanged. */
+const FILE_STABILITY_WINDOW_MS = 300;
 
 /** The cwd token that resolves to the scenario's newest execution worktree. */
 export const CWD_WORKTREE_TOKEN = "$WORKTREE";
@@ -309,6 +313,14 @@ async function executeWaitForFileStep(
     const found = await findMatchingFiles(executionBase, pattern, options.artifactBaselineMs);
 
     if (found.length >= minMatches) {
+      // Hold the match until its size and mtime settle, so a following read never sees a
+      // truncated file. The newest match is checked, since a downstream reader opens that one.
+      const candidate = await newestMatchingFile(found);
+      if (candidate && !(await isFileWriteSettled(candidate))) {
+        await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_FILE_POLL_INTERVAL_MS));
+        continue;
+      }
+
       const completedAtEpochMs = monotonicNowMs();
       const completedAt = new Date(completedAtEpochMs).toISOString();
 
@@ -458,6 +470,24 @@ async function fileSatisfiesExpectation(
     expectation.matches.every((regex) => regex.test(content));
 }
 
+/** The size+mtime fingerprint of a file, or undefined when it cannot be stat'd. */
+async function fileFingerprint(file: string): Promise<Opt<string, Reason.OptionalInput>> {
+  const stat = await Deno.stat(file).catch(() => null);
+  if (!stat) return undefined;
+  return `${stat.size}:${stat.mtime?.getTime() ?? 0}`;
+}
+
+/** True once `file`'s size and mtime hold steady across `FILE_STABILITY_WINDOW_MS`. A writer
+ *  that has not finished leaves a changing fingerprint, so the wait keeps polling. A file that
+ *  cannot be stat'd (removed mid-wait) is never stable. */
+async function isFileWriteSettled(file: string): Promise<boolean> {
+  const before = await fileFingerprint(file);
+  if (before === undefined) return false;
+  await new Promise((resolve) => setTimeout(resolve, FILE_STABILITY_WINDOW_MS));
+  const after = await fileFingerprint(file);
+  return before === after;
+}
+
 /** A `file-contains` step: wait until the glob(s) resolve to ≥ `min_matches` files whose
  *  content (when the output criteria demand it) satisfies the expected patterns. A criterion
  *  of `file-not-exists` is a negative assertion — no wait, evaluated immediately. */
@@ -517,6 +547,12 @@ async function executeFileContainsStep(
     const contentReady = await fileSatisfiesExpectation(target, expectations);
 
     if (matches.length >= minMatches && (negativeAssertion || contentReady)) {
+      // A content expectation rejects a truncated file. A step with no expectation can still
+      // match mid-write, so hold the target until it settles.
+      if (target && !negativeAssertion && !(await isFileWriteSettled(target))) {
+        await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_FILE_POLL_INTERVAL_MS));
+        continue;
+      }
       const completedAtEpochMs = monotonicNowMs();
       const completedAt = new Date(completedAtEpochMs).toISOString();
       const message = `File(s) ready: ${matches.join(", ")}`;
