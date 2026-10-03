@@ -733,6 +733,8 @@ strategy = "pattern"
       EXA_LLM_PROVIDER: "mock",
       EXA_LLM_STRATEGY: "pattern",
       EXA_CONFIG_PATH: configPath,
+      // The deployed framework is outside the repo, so name the real repo root it reads.
+      EXA_SCENARIO_REPO_ROOT: Deno.cwd(),
     };
 
     console.log(`🚀 Running scenarios with Mock AI Provider (Config: ${configPath})...`);

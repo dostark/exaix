@@ -154,9 +154,21 @@ export interface IStepBaseEnvOptions {
   env?: { [key: string]: string };
 }
 
+/** Env var a caller sets to name the real repo root for a framework deployed outside it. */
+export const SCENARIO_REPO_ROOT_ENV = "EXA_SCENARIO_REPO_ROOT";
+
+/** Resolve the repo root that holds deno.json, scripts/ and migrations.
+ *  EXA_SCENARIO_REPO_ROOT wins, so a deployed framework outside the repo finds them.
+ *  Without it, derive the root from the runner's own location (runner is three levels down). */
+export function resolveScenarioRepoRoot(runnerDirectory: string): string {
+  const override = Deno.env.get(SCENARIO_REPO_ROOT_ENV);
+  if (override && override.length > 0) return resolve(override);
+  return join(runnerDirectory, "..", "..", "..");
+}
+
 /** Computed from this file's own known location rather than from frameworkHome, which
  *  may be a temp dir in tests. */
-const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
+const REPO_ROOT = resolveScenarioRepoRoot(import.meta.dirname!);
 
 /** The eval cell catalog a `matrix.from_catalog` block resolves its preset names against. */
 const CELL_CATALOG_PATH = join(REPO_ROOT, "configs", "eval-cells.toml");
