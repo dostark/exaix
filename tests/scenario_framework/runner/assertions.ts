@@ -52,10 +52,10 @@ import { captureCalibrationEvidence } from "./calibration_sources.ts";
 import { CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR } from "./capture_calibration_evidence_flag.ts";
 import { ProviderType } from "@exaix/core";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
-import { ModelResolver } from "../../../packages/ai/src/model_resolver.ts";
-import { DefaultRoutingStrategy } from "../../../packages/ai/src/routing/default_routing_strategy.ts";
-import type { IProviderHealthChecker } from "../../../packages/ai/src/provider_selector.ts";
-import type { ModelSize } from "../../../packages/schemas/src/model_intent.ts";
+import { ModelResolver } from "@exaix/ai/model_resolver.ts";
+import { DefaultRoutingStrategy } from "@exaix/ai/routing/default_routing_strategy.ts";
+import type { IProviderHealthChecker } from "@exaix/ai/provider_selector.ts";
+import type { ModelSize } from "@exaix/schemas/model_intent.ts";
 import { createMockConfig, createMockEventLogger } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 
