@@ -102,7 +102,10 @@ export async function deployFrameworkToDirectory(
     if (config.imports) {
       for (const [key, value] of Object.entries(config.imports)) {
         if (typeof value === "string" && value.startsWith("./")) {
-          config.imports[key] = resolve(repoRoot, value);
+          // A key ending in "/" is a package-prefix import.
+          // Deno rejects a target without a trailing "/", so preserve the slash.
+          const absolute = resolve(repoRoot, value);
+          config.imports[key] = key.endsWith("/") && !absolute.endsWith("/") ? `${absolute}/` : absolute;
         }
       }
     }

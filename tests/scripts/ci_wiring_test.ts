@@ -10,7 +10,7 @@
  * @related-files [scripts/ci.ts, scripts/setup_hooks.ts]
  */
 
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 const CI_SOURCE = await Deno.readTextFile(new URL("../../scripts/ci.ts", import.meta.url));
 const HOOKS_SOURCE = await Deno.readTextFile(new URL("../../scripts/setup_hooks.ts", import.meta.url));
@@ -121,6 +121,33 @@ Deno.test("[ci_wiring] checkCommand and allCommand's static-check phases share t
     `allCommand's static-check phase is missing gate(s) present in checkCommand: ${onlyInCheck.join(", ")} — ` +
       `the two command bodies must share one task list (STATIC_CHECK_TASKS) so they cannot silently drift apart.`,
   );
+});
+
+Deno.test("[ci_wiring] the eval command names only packs that exist as scenario directories", async () => {
+  // ci.ts eval once named removed packs (blueprint-eval, eval-smoke, eval-edge-cases).
+  // The eval-quick CI job then selected zero scenarios and failed.
+  // Every named pack must exist on disk.
+  const evalStart = CI_SOURCE.indexOf("const evalCommand");
+  const evalEnd = CI_SOURCE.indexOf("await new Command()");
+  assert(evalStart >= 0 && evalEnd > evalStart, "could not locate evalCommand body");
+  const evalBody = CI_SOURCE.slice(evalStart, evalEnd);
+  const packsMatch = evalBody.match(/const packs = \[([^\]]*)\]/);
+  assert(packsMatch, "could not locate the `const packs` list in evalCommand");
+  const packs = [...packsMatch![1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  assert(packs.length > 0, "the eval command must name at least one pack");
+
+  const scenariosRoot = new URL("../../tests/scenario_framework/scenarios/", import.meta.url);
+  const existing = new Set<string>();
+  for await (const entry of Deno.readDir(scenariosRoot)) {
+    if (entry.isDirectory) existing.add(entry.name);
+  }
+  for (const pack of packs) {
+    assert(
+      existing.has(pack),
+      `ci.ts eval names pack "${pack}" with no tests/scenario_framework/scenarios/${pack}/ directory`,
+    );
+  }
+  assertEquals(packs.length, new Set(packs).size, "the eval pack list must not repeat a pack");
 });
 
 Deno.test("[ci_wiring] allCommand declares a --skip-tests flag to skip Testing and Coverage", () => {
