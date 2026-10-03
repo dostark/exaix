@@ -41,13 +41,14 @@ async function runDaemonDirect(
     env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1" },
   }).spawn();
 
-  // The daemon either exits fast (refused) or stays up. Give it a moment, then
-  // read the outcome; if still alive, it did NOT refuse — kill and report.
+  // The daemon either exits fast (refused) or stays up. A refused daemon throws during boot,
+  // which can take several seconds under Batch 1 load. Give a generous ceiling, so only a
+  // process still alive after it (meaning it did NOT refuse) is killed.
   const timer = setTimeout(() => {
     try {
       proc.kill("SIGTERM");
     } catch { /* already gone */ }
-  }, 4000);
+  }, 20_000);
   const out = await proc.output();
   clearTimeout(timer);
   return { code: out.code, stderr: new TextDecoder().decode(out.stderr) };

@@ -146,6 +146,17 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/model_registry_team_edition_sweep_test.ts",
   "tests/integration/model_registry_team_cutover_test.ts",
   "tests/integration/mcp_server_spec_compliance_cutover_test.ts",
+  // Runs `deno run scripts/setup_db.ts`. Under Batch 1 the shared Deno module cache can
+  // serve a partial @exaix/core, so the child reports a missing export.
+  "tests/scripts/db_cache_schema_upgrade_test.ts",
+  // Boots a daemon with open --allow-net and reads its refusal on stderr. The boot can
+  // exceed the kill ceiling under Batch 1 pressure, which yields empty stderr.
+  "tests/integration/daemon_net_policy_enforcement_test.ts",
+  // Mutates the process env through withEnv across 14 cases. A parallel worker that
+  // snapshots env for a spawn reads another test's EXA_LLM_PROVIDER.
+  "tests/scenario_framework/tests/unit/assertions_evidence_test.ts",
+  // Boots a real daemon against a loopback fixture. Contention under Batch 1 fails the boot.
+  "tests/scenario_framework/tests/integration/self_hosted_split_bindings_test.ts",
 ];
 
 /** An explicit `--ignore` on the CLI overrides deno.json's config `exclude` for the walk, so fixtures excluded there (e.g. broken-on-purpose portal sources) must be re-listed here or they leak back into type-checking. */
