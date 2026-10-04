@@ -9,11 +9,17 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { stub } from "@std/testing/mock";
-import { Database } from "@db/sqlite";
+import type { Database } from "@db/sqlite";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";
 import { upgradeActivityCacheColumns } from "../../scripts/activity_cache_schema.ts";
+import {
+  assertSingleInitMigration,
+  openUpgradedJournalDb,
+  runSchemaUpgradeDbScript,
+  SCHEMA_UPGRADE_REPO_ROOT,
+} from "./helpers/schema_upgrade_test_helper.ts";
 
 interface ICacheRow {
   cache_read_tokens: number | null;
@@ -59,8 +65,6 @@ Deno.test("[cache schema upgrade] missing activity table fails without silently 
   }
 });
 
-const REPO_ROOT: string = Deno.cwd();
-const SCRIPT_TIMEOUT_MS: number = 30_000;
 const CACHE_READ_TOKENS: number = 11136;
 const CACHE_CREATION_TOKENS: number = 19773;
 const SCHEMA_CASES: readonly (readonly string[])[] = [
@@ -70,34 +74,18 @@ const SCHEMA_CASES: readonly (readonly string[])[] = [
   [],
 ];
 
-async function runDbScript(root: string, script: string): Promise<void> {
-  const result: Deno.CommandOutput = await new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "--config",
-      join(REPO_ROOT, "deno.json"),
-      "-A",
-      join(REPO_ROOT, "scripts", script),
-      ...(script === "migrate_db.ts" ? ["up"] : []),
-    ],
-    cwd: root,
-    env: { EXA_MIGRATIONS_DIR: join(REPO_ROOT, "migrations") },
-    signal: AbortSignal.timeout(SCRIPT_TIMEOUT_MS),
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  assertEquals(result.code, 0, new TextDecoder().decode(result.stderr));
-}
-
 for (const script of ["setup_db.ts", "migrate_db.ts"]) {
   for (const missingColumns of SCHEMA_CASES) {
     Deno.test(`[cache schema upgrade] ${script} repairs ${missingColumns.join(",") || "no missing columns"} idempotently`, async () => {
       const { db, tempDir, cleanup } = await initTestDbService();
       try {
         await Deno.mkdir(join(tempDir, "migrations"));
-        await Deno.copyFile(join(REPO_ROOT, "migrations", "001_init.sql"), join(tempDir, "migrations", "001_init.sql"));
+        await Deno.copyFile(
+          join(SCHEMA_UPGRADE_REPO_ROOT, "migrations", "001_init.sql"),
+          join(tempDir, "migrations", "001_init.sql"),
+        );
         // Record the consolidated migration through the real script before simulating an older schema.
-        await runDbScript(tempDir, script);
+        await runSchemaUpgradeDbScript(tempDir, script);
         db.logActivity(
           "system",
           DomainEventType.LlmCallCompleted,
@@ -119,9 +107,9 @@ for (const script of ["setup_db.ts", "migrate_db.ts"]) {
         }
         await db.close();
 
-        await runDbScript(tempDir, script);
-        await runDbScript(tempDir, script);
-        const reopened: Database = new Database(join(tempDir, ".exa", "journal.db"));
+        await runSchemaUpgradeDbScript(tempDir, script);
+        await runSchemaUpgradeDbScript(tempDir, script);
+        const reopened: Database = openUpgradedJournalDb(tempDir);
         try {
           const rows: ICacheRow[] = reopened.prepare(
             "SELECT cache_read_tokens, cache_creation_tokens FROM activity WHERE trace_id = ?",
@@ -130,8 +118,7 @@ for (const script of ["setup_db.ts", "migrate_db.ts"]) {
             cache_read_tokens: missingColumns.includes("cache_read_tokens") ? null : CACHE_READ_TOKENS,
             cache_creation_tokens: missingColumns.includes("cache_creation_tokens") ? null : CACHE_CREATION_TOKENS,
           }]);
-          const history = reopened.prepare("SELECT version FROM schema_migrations ORDER BY id").all();
-          assertEquals(history, [{ version: "001_init.sql" }]);
+          assertSingleInitMigration(reopened);
         } finally {
           reopened.close();
         }
