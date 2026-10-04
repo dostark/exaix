@@ -54,6 +54,14 @@ Do / Don't
   remediation using only it shipped two regressions).
 - ✅ Mark the remediation step's criteria/tests done in the plan doc and commit via
   `scripts/commit_plan_step.ts` with a `plan:` field.
+- ✅ Verify each remediation step header is an integer `### Step N` that matches its
+  step-manifest `step:` field. Renumber a dotted `### Step 65.N` header first — the plan-step
+  gate resolves steps by integer and otherwise silently targets an earlier section.
+- ✅ Check whether a gap's test already exists in `HEAD` before adding a duplicate. If it does,
+  strengthen it to cover the gap's exact adversarial case instead.
+- ✅ Tag a sanctioned emitter at the module level (module-JSDoc `@visible`) when its events are
+  string constants such as `FLOW_EVENT_*` rather than registered `DomainEventType` members — a
+  class-level tag trips `check:event-coverage --fail-on-tagged`.
 - ❌ Add refactoring or polish beyond the named gaps.
 - ❌ Rewrite the remediation step's Actions/prose — flip only its criteria/tests.
 - ❌ Skip tests for any remediation.
