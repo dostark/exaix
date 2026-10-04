@@ -76,7 +76,7 @@ export class AgentRolePerformanceRepository implements IAgentRolePerformanceRepo
     portalName?: Opt<string, Reason.QueryFilter>,
     options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
   ): Promise<IAgentRolePerformanceSnapshot[]> {
-    const filter: IJournalFilterOptions = { payload: capability, limit: 1000 };
+    const filter: IJournalFilterOptions = { payload: `%${capability}%`, limit: 1000 };
     if (options?.maxAgeMs) {
       filter.since = new Date(Date.now() - options.maxAgeMs).toISOString();
     }
