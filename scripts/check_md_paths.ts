@@ -116,6 +116,76 @@ export const IGNORE_DIRS: Record<string, true> = {
   ".copilot/embeddings": true,
 };
 
+/**
+ * Frozen historical-documentation prefixes (repo-relative).
+ * These trees record the project state at a past date.
+ * They hold pre-monorepo paths, superseded designs and resolved reports.
+ * A stale path inside them is history, not drift to fix.
+ * Their references are never reported or auto-rewritten.
+ * Living docs (`docs/`, `.copilot/`, `planning/`) remain fully checked.
+ */
+export const FROZEN_DOC_PREFIXES: readonly string[] = [
+  "exaix-dev-docs/dev/",
+  "exaix-dev-docs/issues/",
+  "exaix-dev-docs/not_actual/",
+];
+
+/** True when a repo-relative markdown path lives under a frozen historical tree. */
+export function isFrozenDoc(relPath: string): boolean {
+  return FROZEN_DOC_PREFIXES.some((p) => relPath.startsWith(p));
+}
+
+/** Phase-plan frontmatter statuses that mark a doc as a historical record. */
+const HISTORICAL_PHASE_STATUSES: Record<string, true> = {
+  COMPLETED: true,
+  COMPLETE: true,
+  CANCELLED: true,
+  POSTPONED: true,
+};
+
+/** Cache of phase-doc to is-historical, keyed by absolute path. */
+const historicalPhaseCache = new Map<string, boolean>();
+
+/**
+ * True when a `planning/phase-NN-*.md` doc carries a historical frontmatter status.
+ * Such docs record what was built at a past date.
+ * Their old paths are frozen history, so their references are not drift.
+ * Open phases stay checked. Non-phase docs return false.
+ */
+export function isHistoricalPhaseDoc(absPath: string): boolean {
+  const base = basename(absPath);
+  if (!/^phase-\d+.*\.md$/.test(base)) return false;
+  const cached = historicalPhaseCache.get(absPath);
+  if (cached !== undefined) return cached;
+  let historical = false;
+  try {
+    // Read the frontmatter block only.
+    // It can be long, so scan generously or to the first closing fence.
+    const head = Deno.readTextFileSync(absPath).slice(0, 4000);
+    const m = /^---\s*\n([\s\S]*?)\n---/.exec(head);
+    if (m) {
+      const sm = /^status:\s*(.+)$/m.exec(m[1]);
+      if (sm && HISTORICAL_PHASE_STATUSES[sm[1].trim().toUpperCase()] === true) historical = true;
+    }
+  } catch {
+    // unreadable, so not treated as historical
+  }
+  historicalPhaseCache.set(absPath, historical);
+  return historical;
+}
+
+/**
+ * True when a repo-relative markdown path is a PHASE-PLAN doc.
+ * Phase plans are proposals.
+ * They legitimately reference files a step will create, plus doc-relative paths.
+ * Treating those as stale drift floods the repo-wide run with false positives.
+ * So the repo-wide scan skips them.
+ * The pre-commit `--staged` ratchet still checks a plan the author edits.
+ */
+export function isPlanDoc(relPath: string): boolean {
+  return /(^|\/)planning\/phase-[0-9][^/]*\.md$/.test(relPath);
+}
+
 /** Extensions we treat as "referable repo files" for backtick/bare-path detection. */
 const REFERABLE_EXTS: Record<string, true> = {
   ".ts": true,
@@ -273,10 +343,11 @@ function pathTokensFromSpan(span: string): string[] {
   return tokens;
 }
 
-/** Scenario-framework request fixtures are agent task PROMPTS that legitimately name files which may not exist in this repo. */
+/** Scenario-framework request fixtures are agent task PROMPTS that legitimately name files which may not exist in this repo. Generated run output is scratch, not docs. */
 function isNonDocMarkdown(relPath: string): boolean {
   return (
     relPath.includes("scenario_framework/fixtures/") ||
+    relPath.includes("scenario_framework/output/") ||
     relPath.includes("/fixtures/requests/") ||
     relPath.includes("Workspace/Requests/")
   );
@@ -298,10 +369,67 @@ interface IExtractedAnchorRef {
   line: number;
 }
 
+/**
+ * Blank out CommonMark inline-code spans across a whole document.
+ * Replaced chars become spaces and newlines stay.
+ * Inline code may wrap across lines, so span state MUST be tracked document-wide.
+ * A line-local regex leaves an unmatched opening backtick as content.
+ * A path in the still-open span is then misread as prose and re-backticked.
+ * Only single-backtick spans are masked, and the fence tracker skips fenced blocks.
+ */
+function maskInlineCode(text: string): string {
+  const chars = [...text];
+  const n = chars.length;
+  let i = 0;
+  while (i < n) {
+    if (chars[i] !== "`") {
+      i++;
+      continue;
+    }
+    // Count the run of backticks (CommonMark: the closing run must match length).
+    let openLen = 0;
+    while (i + openLen < n && chars[i + openLen] === "`") openLen++;
+    if (openLen >= 3) {
+      // Fence run. Leave it to the fence tracker.
+      i += openLen;
+      continue;
+    }
+    // Find the next run of exactly `openLen` backticks on the same logical span.
+    let j = i + openLen;
+    let found = -1;
+    while (j < n) {
+      if (chars[j] === "`") {
+        let closeLen = 0;
+        while (j + closeLen < n && chars[j + closeLen] === "`") closeLen++;
+        if (closeLen === openLen) {
+          found = j;
+          break;
+        }
+        j += closeLen;
+        continue;
+      }
+      j++;
+    }
+    if (found < 0) {
+      i += openLen; // unbalanced opener — leave the text untouched
+      continue;
+    }
+    // Blank the whole span (delimiters included), preserving newlines.
+    for (let k = i; k < found + openLen; k++) {
+      if (chars[k] !== "\n") chars[k] = " ";
+    }
+    i = found + openLen;
+  }
+  return chars.join("");
+}
+
 /** Extract candidate references (with line numbers) from one markdown file's text. */
 function extractReferences(text: string): { refs: IExtractedRef[]; anchorRefs: IExtractedAnchorRef[] } {
   const out: IExtractedRef[] = [];
   const anchorRefs: IExtractedAnchorRef[] = [];
+  // Mask inline-code spans document-wide.
+  // A multi-line span must not leak a path into the bare-prose pass.
+  const maskedLines = maskInlineCode(text).split("\n");
   const lines = text.split("\n");
   // Fence tracking, CommonMark-style: an OPENING fence may carry an info string
   // (language), e.g. ```bash; a CLOSING fence must be the marker alone (only the
@@ -390,8 +518,19 @@ function extractReferences(text: string): { refs: IExtractedRef[]; anchorRefs: I
     // navigational refs when they are `./`/`../` relative links. Lines that look like
     // an unfenced shell command are skipped: wrapping a path there would break the
     // command (backticks = command substitution).
-    const isShellLine = looksLikeShellCommandLine(commentStripped);
-    const stripped = commentStripped
+    // Derive the prose text from the inline-code-MASKED line: a path inside a code
+    // span (including a multi-line span) is already-formatted and must never be
+    // re-flagged as bare prose — otherwise --fix wraps it again and corrupts the span.
+    // Also strip HTML comments here so a comment mention is not treated as prose.
+    let proseSource = maskedLines[i];
+    if (inHtmlComment) {
+      const end = proseSource.indexOf("-->");
+      proseSource = end < 0 ? "" : proseSource.slice(end + 3);
+    }
+    proseSource = proseSource.replace(/<!--[\s\S]*?-->/g, " ");
+    if (/<!--/.test(proseSource)) proseSource = proseSource.replace(/<!--.*$/, " ");
+    const isShellLine = looksLikeShellCommandLine(proseSource);
+    const stripped = proseSource
       .replace(/`[^`]+`/g, " ")
       .replace(/\[[^\]]*\]\([^)]+\)/g, " ");
     for (const m of stripped.matchAll(/(?:^|[\s(])((?:\.\.?\/)?[A-Za-z0-9_.\-]+\/[A-Za-z0-9_./\-]+)/g)) {
@@ -508,9 +647,19 @@ function suggestFor(
   mdFileRel: string,
   index: Map<string, string[]>,
 ): string | undefined {
+  // A basename match is only a reliable rename target with shared path context.
+  // A repo-root `src/config/schema.ts` whose basename occurs once in the tree may
+  // be a coincidental collision with an unrelated same-named file.
+  // Rewriting it silently corrupts the doc.
+  if (!hasReliableRenameContext(ref)) return undefined;
   const matches = index.get(basename(stripAnchor(ref)));
   if (!matches || matches.length !== 1) return undefined;
   const onlyRepoRel = matches[0]; // repo-relative path of the real file
+  // Relative links are explicit moves and always trusted.
+  // A repo-root reference is trusted only when its top directory matches the target.
+  if (!isRelativeReference(ref) && firstSegment(ref) !== firstSegment(onlyRepoRel)) {
+    return undefined;
+  }
   // Do NOT suggest an edition-crossing rewrite: a Solo `packages/...` reference must
   // not be auto-rewritten to a Team `exaix-team/...` path (and vice-versa). Those
   // may be intentional edition-composed references; leave them for human review.
@@ -524,6 +673,19 @@ function suggestFor(
   let rel = relative(mdDir, onlyRepoRel).replaceAll("\\", "/");
   if (!rel.startsWith(".")) rel = `./${rel}`;
   return rel;
+}
+
+/** True when a repo-root reference has a directory segment, so a re-qualified suggestion is meaningful. */
+function hasReliableRenameContext(ref: string): boolean {
+  if (isRelativeReference(ref)) return true;
+  const stripped = stripAnchor(ref).replace(/^\.?\//, "");
+  // Require at least one directory segment before the basename ("dir/file.ts").
+  return stripped.includes("/");
+}
+
+/** First path segment of a reference (its top-level directory), anchors stripped. */
+function firstSegment(ref: string): string {
+  return stripAnchor(ref).replace(/^\.?\//, "").split("/")[0];
 }
 
 /** Repo-relative paths of markdown files currently staged for commit (added/modified). */
@@ -561,6 +723,12 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
   ) {
     const rel = relative(absRoot, entry.path).replaceAll("\\", "/");
     if (isNonDocMarkdown(rel)) continue;
+    if (isFrozenDoc(rel)) continue;
+    // Phase plans are proposals — skip them repo-wide, but still check a plan the
+    // author actually staged (the `--staged` ratchet).
+    const isStagedEdit = options.onlyFiles?.has(rel) ?? false;
+    if (isPlanDoc(rel) && !isStagedEdit) continue;
+    if (isHistoricalPhaseDoc(entry.path) && !isStagedEdit) continue;
     if (options.parentOnly && rel.startsWith("exaix-dev-docs/")) continue;
     if (options.onlyFiles && !options.onlyFiles.has(rel)) continue;
     const text = await Deno.readTextFile(entry.path);

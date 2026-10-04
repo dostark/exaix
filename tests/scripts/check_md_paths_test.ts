@@ -609,3 +609,69 @@ Deno.test("[md-anchors] backticked and bare-prose #anchor mentions remain unvali
     cleanup();
   }
 });
+
+// Inline-code span safety (multi-line command spans must never be re-backticked)
+
+Deno.test("[md-backtick] a path inside a MULTI-LINE backtick span is not flagged or re-wrapped", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "scripts"));
+    await Deno.writeTextFile(join(root, "scripts", "validate.ts"), "1");
+    const doc = join(root, "README.md");
+    // A single inline-code span whose content wraps onto the next line.
+    await Deno.writeTextFile(doc, "Run `deno run scripts/validate.ts\n--strict` to check.\n");
+    const r = await checkMdPaths(root);
+    assertEquals(r.styleViolations.length, 0, JSON.stringify(r.styleViolations));
+    await applyBacktickFix(root, r.styleViolations);
+    assertEquals(await Deno.readTextFile(doc), "Run `deno run scripts/validate.ts\n--strict` to check.\n");
+  } finally {
+    cleanup();
+  }
+});
+
+// Completed/cancelled phase docs are historical records (pre-monorepo paths are history)
+
+Deno.test("[md-paths] a COMPLETED phase doc's stale pre-monorepo paths are skipped", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "planning"));
+    await Deno.writeTextFile(
+      join(root, "planning", "phase-05-old.md"),
+      "---\nstatus: COMPLETED\n---\n\nSee `src/cli/base.ts` and `Knowledge/Dashboard.md`.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a PLANNING phase doc is skipped repo-wide (proposals are not drift)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "planning"));
+    await Deno.writeTextFile(
+      join(root, "planning", "phase-205-open.md"),
+      "---\nstatus: PLANNING\n---\n\nSee `src/cli/base.ts`.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a STAGED plan doc is still checked (ratchet override)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "planning"));
+    await Deno.writeTextFile(
+      join(root, "planning", "phase-205-open.md"),
+      "---\nstatus: PLANNING\n---\n\nSee `src/cli/base.ts`.\n",
+    );
+    const r = await checkMdPaths(root, { onlyFiles: new Set(["planning/phase-205-open.md"]) });
+    assert(r.violations.some((v) => v.reference === "src/cli/base.ts"), JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});

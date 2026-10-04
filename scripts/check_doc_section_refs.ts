@@ -43,7 +43,16 @@
 
 import { walk } from "@std/fs";
 import { dirname, isAbsolute, relative, resolve } from "@std/path";
-import { extractHeadings, FenceTracker, IGNORE_DIRS, type IHeading, stagedMarkdownFiles } from "./check_md_paths.ts";
+import {
+  extractHeadings,
+  FenceTracker,
+  IGNORE_DIRS,
+  type IHeading,
+  isFrozenDoc,
+  isHistoricalPhaseDoc,
+  isPlanDoc,
+  stagedMarkdownFiles,
+} from "./check_md_paths.ts";
 
 /** A quoted section-citation whose title does not match any heading in its target file. */
 export interface ISectionRefViolation {
@@ -76,6 +85,7 @@ export interface ICheckOptions {
 function isNonDocMarkdown(relPath: string): boolean {
   return (
     relPath.includes("scenario_framework/fixtures/") ||
+    relPath.includes("scenario_framework/output/") ||
     relPath.includes("/fixtures/requests/") ||
     relPath.includes("Workspace/Requests/")
   );
@@ -114,6 +124,10 @@ export async function checkDocSectionRefs(root: string, options: ICheckOptions =
   ) {
     const rel = relative(absRoot, entry.path).replaceAll("\\", "/");
     if (isNonDocMarkdown(rel)) continue;
+    if (isFrozenDoc(rel)) continue;
+    const isStagedEdit = options.onlyFiles?.has(rel) ?? false;
+    if (isPlanDoc(rel) && !isStagedEdit) continue;
+    if (isHistoricalPhaseDoc(entry.path) && !isStagedEdit) continue;
     if (options.onlyFiles && !options.onlyFiles.has(rel)) continue;
 
     const text = await Deno.readTextFile(entry.path);

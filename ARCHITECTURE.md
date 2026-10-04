@@ -703,6 +703,8 @@ Solo edition injects no evaluator, producing identical behaviour to pre-P118.
 
 ---
 
+## Voting & Consensus {#voting-consensus}
+
 The `voting_group` flow step type enables multi-agent consensus by fanning out N
 runner executions and resolving a winner via configurable strategy. It is a
 **Team/Enterprise** feature (Solo ❌ / Team ✅ / Enterprise ✅).
