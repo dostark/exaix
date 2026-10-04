@@ -149,6 +149,7 @@ export function buildTeamResolutionStrategy(
   const buildContext = createBuildContext(config);
   return new TeamResolutionStrategy(modelRegistry, logger, {
     getAdapter: (p) => adapters.get(p),
+    isRegisteredProvider: (p) => ProviderRegistry.getProviderMetadata(p) !== undefined,
     buildContext,
     isAggregator: (p) => ProviderRegistry.getProviderMetadata(p)?.isAggregator === true,
     // D7: cost-exempt by provider metadata (LOCAL/FREE tier).
