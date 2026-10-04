@@ -45,7 +45,7 @@ interface ICapturedWarn {
   payload?: LogMetadata;
 }
 
-function buildExecutor(warnSink: ICapturedWarn[]): ReActExecutor {
+function buildExecutor(warnSink: ICapturedWarn[], callsSink: string[] = []): ReActExecutor {
   const logger: IEventLogger = {
     log: () => Promise.resolve(),
     info: () => Promise.resolve(),
@@ -76,8 +76,9 @@ function buildExecutor(warnSink: ICapturedWarn[]): ReActExecutor {
     },
     budgetLogger: logger,
     toolRegistry: {
-      execute: async () => {
+      execute: async (tool: string) => {
         await Promise.resolve();
+        callsSink.push(tool);
         return { success: true, data: "ok" };
       },
       getTools: () => [],
@@ -131,4 +132,27 @@ path = "src/x.ts"
   const parseWarn = warns.find((w) => w.action === REACT_EVENT_ACTION_PARSE_FAILED);
   assertExists(parseWarn, "a dropped action must leave a journal trace, not vanish silently");
   assertEquals(parseWarn.payload?.trace_id, context.trace_id);
+});
+
+Deno.test("security: ReActLoopStrategy.parseResponse rejects a schema-invalid action and journals it", async () => {
+  const warns: ICapturedWarn[] = [];
+  const calls: string[] = [];
+  // Valid TOML, but the tool is outside EXECUTION_TOOL_NAMES, so PlanActionSchema rejects it.
+  const hostile = `${REACT_THOUGHT_PREFIX}Trying a retired tool.
+\`\`\`toml
+[[actions]]
+tool = "non_existent_tool"
+[actions.params]
+path = "src/x.ts"
+\`\`\`
+`;
+  const strategy = new ReActLoopStrategy(buildExecutor(warns, calls), new SingleResponseProvider(hostile));
+
+  await strategy.execute(blueprint, context, options).catch(() => {});
+
+  assertExists(
+    warns.find((w) => w.action === REACT_EVENT_ACTION_PARSE_FAILED),
+    "a schema-rejected action must be journaled as a parse failure",
+  );
+  assertEquals(calls, [], "a schema-invalid action must never reach the registry");
 });

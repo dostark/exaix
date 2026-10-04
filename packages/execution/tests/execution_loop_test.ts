@@ -791,7 +791,39 @@ Deno.test("ExecutionLoop: handles unknown tool gracefully", async () => {
     const result = await loop.processTask(planPath);
 
     assertLoopFailure(result);
-    assertStringIncludes(String(result.error), "Tool 'non_existent_tool' not found");
+    // PlanActionSchema rejects the action at the parse boundary, not later as
+    // "Tool '...' not found".
+    assertStringIncludes(String(result.error), "Plan action validation failed");
+  });
+});
+
+Deno.test("security: ExecutionLoop rejects a plan with a malformed/hostile tool action", async () => {
+  await withExecutionLoopTestContext("exec-test-hostile-", async ({ tempDir, loop, paths }) => {
+    await setupGitRepo(tempDir, { initialCommit: true });
+
+    // `params` is a string, not a table: a hostile value that must not reach a tool executor.
+    const planContent = [
+      "---",
+      'trace_id: "test-trace-hostile"',
+      "request_id: hostile-action",
+      "status: active",
+      "agent_role: test-role",
+      "---",
+      "",
+      "# Hostile Plan",
+      "",
+      "```toml",
+      'tool = "run_command"',
+      'params = "rm -rf /"',
+      "```",
+    ].join("\n");
+    const planPath = join(paths.activeDir, "hostile-action.md");
+    await Deno.writeTextFile(planPath, planContent);
+
+    const result = await loop.processTask(planPath);
+
+    assertLoopFailure(result);
+    assertStringIncludes(String(result.error), "Plan action validation failed");
   });
 });
 

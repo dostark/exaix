@@ -556,11 +556,13 @@ Deno.test("[naming][react_loop] native calls and rendered names honor the rename
       `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
     ]);
     const permitted = ["find_dependents", "run_deno_task"];
+    // A retired name is rejected at the parse boundary, so the loop may throw
+    // "No actions generated". The security property under test is that it never executes.
     await new ReActLoopStrategy(executor as ReActExecutor, provider).execute(
       testBlueprint,
       testContext,
       { ...createOptions("test"), permitted_tools: permitted },
-    );
+    ).catch(() => {});
     assertEquals(calls, permitted.includes(name) ? [name] : []);
     assertEquals(provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0], permitted.join(", "));
   }
@@ -584,11 +586,12 @@ Deno.test("[naming][react_loop] query_symbols renders and executes with {query} 
       `${REACT_THOUGHT_PREFIX}Symbols.\n\`\`\`toml\n[[actions]]\ntool = "${name}"\n[actions.params]\nquery = "greet"\n\`\`\``,
       `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
     ]);
+    // `exaix_portal_symbols` is rejected at the parse boundary and never executes.
     await new ReActLoopStrategy(executor as ReActExecutor, provider).execute(
       testBlueprint,
       testContext,
       { ...createOptions("test"), permitted_tools: ["query_symbols"] },
-    );
+    ).catch(() => {});
     assertEquals(provider.prompts[0].split("AVAILABLE TOOLS:\n")[1]?.split("\n")[0], "query_symbols");
     assertEquals(calls, name === "query_symbols" ? [{ tool: "query_symbols", params: { name: "greet" } }] : []);
   }

@@ -7,6 +7,7 @@
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/core/src/planning/plan_writer.ts"]
  */
 
+import { z } from "zod";
 import { DEFAULT_AGENT_ROLE } from "../types/constants.ts";
 
 export interface IStructuredPlanFrontmatter {
@@ -27,6 +28,21 @@ export interface IStructuredPlan {
   agent: string;
   steps: IStructuredPlanStep[];
 }
+
+/** Boundary schema for the regex-parsed body of a structured plan. A step number must be a
+ *  positive integer. A malformed body fails the whole parse and returns null. */
+const StructuredPlanStepSchema = z.object({
+  number: z.number().int().positive(),
+  title: z.string().min(1),
+  content: z.string(),
+});
+
+const StructuredPlanSchema = z.object({
+  trace_id: z.string().min(1),
+  request_id: z.string().min(1),
+  agent: z.string().min(1),
+  steps: z.array(StructuredPlanStepSchema),
+});
 
 /** Looks for an "## Execution Steps" header followed by one or more "## Step N: Title" headers. */
 export function parseStructuredPlanFromMarkdown(
@@ -62,10 +78,12 @@ export function parseStructuredPlanFromMarkdown(
     });
   }
 
-  return {
+  const validated = StructuredPlanSchema.safeParse({
     trace_id: frontmatter.trace_id,
     request_id: frontmatter.request_id,
     agent: frontmatter.agent_role || DEFAULT_AGENT_ROLE,
     steps,
-  };
+  });
+
+  return validated.success ? validated.data : null;
 }

@@ -24,7 +24,7 @@ import { DomainEventType, type IEventJournalReader, type TDomainEventType } from
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IGitService, IGitServiceFactory, IMemoryBankService, IToolRegistryFactory } from "@exaix/core/types";
-import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
+import { PlanActionSchema, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { ReviewRegistry } from "@exaix/core/artifact";
@@ -686,7 +686,9 @@ export class ExecutionLoop {
     );
   }
 
-  /** Parses action blocks from plan content: code blocks with tool invocations in TOML format. */
+  /** Parses TOML action blocks from plan content. Every tool-bearing block is validated
+   *  with PlanActionSchema before it can reach ToolRegistry.execute. An invalid action
+   *  fails the plan, and invalid TOML or non-action blocks are skipped. */
   private parsePlanActions(planContent: string): IPlanAction[] {
     const actions: IPlanAction[] = [];
 
@@ -696,26 +698,31 @@ export class ExecutionLoop {
     let match: RegExpExecArray | null;
 
     while ((match = codeBlockRegex.exec(planContent)) !== null) {
+      let parsed: unknown;
       try {
-        const block = match[1];
-        const parsed = parseToml(block);
-
-        // Check if this looks like an action (has tool field)
-        if (
-          parsed && typeof parsed === "object" && "tool" in parsed &&
-          typeof (parsed as { tool: JSONValue }).tool === "string"
-        ) {
-          const actionData = parsed as { tool: string; params?: Record<string, JSONValue>; description?: string };
-          actions.push({
-            tool: actionData.tool,
-            params: actionData.params ?? {},
-            description: actionData.description,
-          });
-        }
+        parsed = parseToml(match[1]);
       } catch {
-        // Skip blocks that aren't valid TOML or don't match action format
+        // Not valid TOML — cannot be an executable action.
         continue;
       }
+
+      // Only a block that declares a string `tool` is an action candidate. Blocks without
+      // one (prose, config snippets) are not actions and stay skipped.
+      if (parsed === null || typeof parsed !== "object" || !("tool" in parsed)) continue;
+      const candidate = parsed as { tool?: unknown; params?: unknown; description?: unknown };
+      if (typeof candidate.tool !== "string") continue;
+
+      const validated = PlanActionSchema.safeParse({
+        tool: candidate.tool,
+        params: candidate.params ?? {},
+        description: candidate.description,
+      });
+      if (!validated.success) {
+        const detail = validated.error.issues.map((issue) => issue.message).join("; ");
+        throw new Error(`Plan action validation failed: ${detail}`);
+      }
+
+      actions.push(validated.data);
     }
 
     return actions;

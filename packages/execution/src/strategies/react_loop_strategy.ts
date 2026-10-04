@@ -10,6 +10,7 @@
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_composer.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
+import { PlanActionSchema } from "@exaix/schemas/plan_schema.ts";
 import type {
   IModelProvider,
   INativeConversationSnapshot,
@@ -1210,26 +1211,31 @@ When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SU
     while ((match = codeBlockRegex.exec(response)) !== null) {
       try {
         const block = match[1].trim();
-        const parsed = parseToml(block) as {
-          actions?: Array<
-            {
-              tool: string;
-              params?: Record<string, JSONValue>;
-              description?: string;
-            }
-          >;
-        };
+        const parsed = parseToml(block) as { actions?: unknown };
 
-        if (parsed.actions && Array.isArray(parsed.actions)) {
-          for (const act of parsed.actions) {
-            if (act.tool) {
-              actions.push({
-                tool: act.tool,
-                params: act.params || {},
-                description: act.description,
-              });
-            }
+        if (parsed === null || typeof parsed !== "object" || !Array.isArray(parsed.actions)) {
+          continue;
+        }
+
+        // Every action is validated with PlanActionSchema at this boundary before the
+        // registry sees it. A malformed or hostile action is rejected here and journaled
+        // as a parse error, never executed.
+        for (const act of parsed.actions) {
+          if (act === null || typeof act !== "object") {
+            parseErrors.push("ReAct action is not an object");
+            continue;
           }
+          const candidate = act as { tool?: unknown; params?: unknown; description?: unknown };
+          const validated = PlanActionSchema.safeParse({
+            tool: candidate.tool,
+            params: candidate.params ?? {},
+            description: candidate.description,
+          });
+          if (!validated.success) {
+            parseErrors.push(validated.error.issues.map((issue) => issue.message).join("; "));
+            continue;
+          }
+          actions.push(validated.data);
         }
       } catch (error) {
         // A malformed action block must not vanish silently — a dropped action is how a

@@ -1776,22 +1776,26 @@ Deno.test({
       const failedTools = (rows: IPlanningCutoverRow[]) => [
         ...new Set(payloadsOf<{ tool: string }>(rows, "execution.action_failed").map((p) => p.tool)),
       ];
-      const failureErrors = (rows: IPlanningCutoverRow[]) =>
-        payloadsOf<{ error: string }>(rows, "execution.action_failed").map((p) => p.error).join(" | ");
-
       assertEquals(completedTools(canonical), ["run_deno_task"], actionTypes(canonical));
       assertEquals(
         await Deno.readTextFile(taskEffectPath),
         "const phase201TaskEffect = { value: 1 };\n",
         "the real daemon must run the requested fmt task against its validated path",
       );
+      // Retired tool names no longer reach the registry. PlanActionSchema rejects them
+      // at the parse boundary, so the plan fails before any action executes.
       assertEquals(completedTools(retiredTask), [], actionTypes(retiredTask));
-      assertEquals(failedTools(retiredTask), ["deno_task"], actionTypes(retiredTask));
+      assertEquals(failedTools(retiredTask), [], actionTypes(retiredTask));
       assertEquals(completedTools(retiredDependents), [], actionTypes(retiredDependents));
-      assertEquals(failedTools(retiredDependents), ["who_depends_on"], actionTypes(retiredDependents));
+      assertEquals(failedTools(retiredDependents), [], actionTypes(retiredDependents));
       for (const rows of [retiredTask, retiredDependents]) {
         assertEquals(payloadsOf(rows, "tool.alias.rewritten").length, 0, "retired native names never rewrite");
-        assert(failureErrors(rows).includes("not found"), failureErrors(rows));
+        assert(
+          payloadsOf<{ error: string }>(rows, "execution.failed").some((p) =>
+            String(p.error).includes("Plan action validation failed")
+          ),
+          `retired names must fail at the parse boundary: ${actionTypes(rows)}`,
+        );
       }
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});

@@ -210,11 +210,13 @@ Deno.test("PlanExecutor: handles tool execution failure", async () => {
     const fixture_3 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_3.md");
     await writeBlueprint(fixture_3);
 
-    const mockResponse = `THOUGHT: Try the unavailable tool.\n\`\`\`toml
+    // Unknown tool names are rejected at the parse boundary, so use a valid tool
+    // whose execution fails.
+    const mockResponse = `THOUGHT: Try a tool that fails at execution.\n\`\`\`toml
 [[actions]]
-tool = "non_existent_tool"
+tool = "read_file"
 [actions.params]
-foo = "bar"
+path = "does-not-exist.txt"
 \`\`\``;
     const mockProvider = createReactScriptProvider(mockResponse, REACT_COMPLETE_RESPONSE);
     const logger = createMockEventLogger();
@@ -232,7 +234,7 @@ foo = "bar"
     assertEquals(result.lastCommitSha, null);
     const toolCall = logger.events.find((event) => event.action === "dynamic_tool_call");
     assertExists(toolCall);
-    assertEquals(toolCall.payload?.tool, "non_existent_tool");
+    assertEquals(toolCall.payload?.tool, "read_file");
   });
 });
 
