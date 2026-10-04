@@ -71,6 +71,31 @@ async function main() {
       `| \`${tool.name}\` | ${tool.description} | \`${cat}\` | ${dynamicMark} | ${approvalMark} | [\`${sourcePath}\`](${sourcePath}) |\n`;
   }
 
+  // Per-tool schema blocks: input properties, side-effect scope (permissions), and flags.
+  let schemaBlocks = "";
+  for (const tool of docsVisibleTools) {
+    const props = tool.input_schema?.properties ?? {};
+    const required = new Set(tool.input_schema?.required ?? []);
+    let propLines = "";
+    for (const [name, desc] of Object.entries(props)) {
+      const type = desc.type ?? "string";
+      const req = required.has(name) ? "required" : "optional";
+      const summary = (desc.description ?? "").replace(/\s+/g, " ").trim();
+      propLines += `  ${name}: { type: ${type}, ${req}${summary ? `, description: ${JSON.stringify(summary)}` : ""} }\n`;
+    }
+    if (propLines === "") propLines = "  {}\n";
+    schemaBlocks += `\`\`\`yaml tool-schema: ${tool.name}
+side_effect_scope: ${tool.side_effect_scope}
+dynamic_mode_allowed: ${tool.dynamic_mode_allowed}
+requires_human_approval: ${tool.requires_human_approval}
+idempotent: ${tool.idempotent}
+parallel_safe: ${tool.parallel_safe}
+input:
+${propLines}\`\`\`
+
+`;
+  }
+
   const agentSection = `## 🤖 Agent Tool Index (MCP) {#agent-tools}
 
 These tools are available to AI agents via the MCP protocol. They are validated, permission-checked,
@@ -90,7 +115,14 @@ Run \`deno task docs-sync-schemas\` to regenerate after manifest changes.
 
 | Tool | Description | Category | Dynamic | Approval | Source |
 |------|-------------|----------|---------|----------|--------|
-${tableRows}`;
+${tableRows}
+
+### Tool schemas
+
+Each block below is generated from the canonical manifest: accepted input
+properties, side-effect scope (permissions), and execution flags.
+
+${schemaBlocks}`;
 
   const newSection = `${SYNC_START}\n${agentSection}${SYNC_END}`;
 

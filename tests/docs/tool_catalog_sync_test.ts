@@ -132,3 +132,35 @@ Deno.test("tool_catalog_sync: tool count in TOOLS.md matches manifest docs-visib
       `Expected: [${expectedTools.join(", ")}]`,
   );
 });
+
+// GAP-4: per-tool schema and permission blocks
+
+Deno.test("tool_catalog_sync: each docs-visible tool has a schema block with input_schema and permissions", async () => {
+  const section = await readAgentToolsSection();
+  const entries = TOOL_MANIFEST.filter(
+    (e) => e.docs_visible && (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN),
+  );
+  for (const tool of entries) {
+    assert(
+      section.includes(`\`\`\`yaml tool-schema: ${tool.name}`),
+      `TOOLS.md must contain a schema block for '${tool.name}'`,
+    );
+  }
+  assert(
+    section.includes("side_effect_scope:"),
+    "schema blocks must record the tool side-effect scope (permissions)",
+  );
+});
+
+Deno.test("tool_catalog_sync: schema block input properties match the manifest input_schema", async () => {
+  const section = await readAgentToolsSection();
+  const tool = TOOL_MANIFEST.find((e) => e.name === "read_file");
+  assertExists(tool, "read_file must be in the manifest");
+  assertExists(tool!.input_schema?.properties, "read_file must declare input_schema properties");
+  const start = section.indexOf("```yaml tool-schema: read_file");
+  assert(start !== -1, "read_file schema block must exist");
+  const block = section.slice(start, section.indexOf("```", start + 4));
+  for (const prop of Object.keys(tool!.input_schema!.properties!)) {
+    assert(block.includes(`${prop}:`), `read_file schema block must list property '${prop}'`);
+  }
+});

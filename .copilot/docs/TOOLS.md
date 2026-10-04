@@ -88,6 +88,297 @@ Run `deno task docs-sync-schemas` to regenerate after manifest changes.
 | `search_files`                | Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search, use run_command with the whitelisted grep command when your role has GIT permission; the command allowlist and portal boundary still apply. Returns an array of matching relative file paths.                                                                                                                                                                                                                                                                                                             | `read`   | ✓       |                           | [`exaix-team/packages/mcp-server/handlers/search_files_tool.ts`](exaix-team/packages/mcp-server/handlers/search_files_tool.ts)           |
 | `write_file`                  | Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.                                                                                                                                                                                                                                                                                                                                                                                                                                 | `write`  | —       |                           | [`exaix-team/packages/mcp-server/handlers/write_file_tool.ts`](exaix-team/packages/mcp-server/handlers/write_file_tool.ts)               |
 
+### Tool schemas
+
+Each block below is generated from the canonical manifest: accepted input
+properties, side-effect scope (permissions), and execution flags.
+
+```yaml tool-schema: create_directory
+side_effect_scope: portal
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: true
+parallel_safe: false
+input:
+  portal: { type: string, required, description: "Portal alias" }
+  path: { type: string, required, description: "Directory path relative to portal root" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: delete_file
+side_effect_scope: portal
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  portal: { type: string, required, description: "Portal alias" }
+  path: { type: string, required, description: "File path relative to portal root" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: exaix_approve_plan
+side_effect_scope: portal
+dynamic_mode_allowed: true
+requires_human_approval: true
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_config_apply
+side_effect_scope: none
+dynamic_mode_allowed: false
+requires_human_approval: true
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_config_diff
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_config_get
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_config_get_provenance
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_config_set
+side_effect_scope: none
+dynamic_mode_allowed: false
+requires_human_approval: true
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_config_validate
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_create_request
+side_effect_scope: portal
+dynamic_mode_allowed: true
+requires_human_approval: true
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_list_plans
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: exaix_query_journal
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: git_commit
+side_effect_scope: git
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: git_create_branch
+side_effect_scope: git
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: git_log
+side_effect_scope: none
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: git_status
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  {}
+```
+
+```yaml tool-schema: git_worktree
+side_effect_scope: git
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  {}
+```
+
+```yaml tool-schema: list_directory
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  portal: { type: string, required, description: "Portal name" }
+  path: { type: string, optional, description: "Relative path within portal (optional, defaults to root)" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: move_file
+side_effect_scope: portal
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  portal: { type: string, required, description: "Portal alias" }
+  from: { type: string, required, description: "Source file path relative to portal root" }
+  to: { type: string, required, description: "Destination file path relative to portal root" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: patch_file
+side_effect_scope: portal
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  portal: { type: string, required, description: "Portal alias to operate on" }
+  path: { type: string, required, description: "File path relative to portal root" }
+  search: {
+    type: string,
+    required,
+    description: "Exact string to find in the file (including whitespace/indentation). Must match exactly once.",
+  }
+  replace: {
+    type: string,
+    required,
+    description: "Replacement string. Use empty string to delete the matched section.",
+  }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: query_symbols
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  portal: { type: string, required, description: "Portal alias to query" }
+  name: { type: string, optional, description: "Case-insensitive substring filter on symbol name" }
+  kind: { type: string, optional, description: "Filter by symbol kind" }
+  limit: { type: number, optional, description: "Max symbols to return (default: 50)" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: read_file
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  portal: { type: string, required, description: "Portal name" }
+  path: { type: string, required, description: "Relative path within portal" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: run_command
+side_effect_scope: system
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  portal: { type: string, required, description: "Portal name" }
+  command: { type: string, required, description: "Command to execute (must be whitelisted)" }
+  args: { type: array, optional, description: "Command arguments" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: search_files
+side_effect_scope: none
+dynamic_mode_allowed: true
+requires_human_approval: false
+idempotent: true
+parallel_safe: true
+input:
+  portal: { type: string, required, description: "Portal name" }
+  pattern: { type: string, required, description: "Glob pattern to match" }
+  path: { type: string, optional, description: "Optional: subdirectory to search in" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
+```yaml tool-schema: write_file
+side_effect_scope: portal
+dynamic_mode_allowed: false
+requires_human_approval: false
+idempotent: false
+parallel_safe: false
+input:
+  portal: { type: string, required, description: "Portal name" }
+  path: { type: string, required, description: "Relative path within portal" }
+  content: { type: string, required, description: "File content to write" }
+  agent_role: { type: string, required, description: "Agent role identifier for permission checks" }
+```
+
 <!-- AGENT_TOOLS_END -->
 
 ## 🧰 Solo-Only ReAct Tools (`ToolRegistry`)
