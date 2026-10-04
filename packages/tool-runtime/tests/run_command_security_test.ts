@@ -5,7 +5,9 @@
  * run_command must not let a runtime command (deno/npm/node) execute arbitrary code. The
  * previous validator only checked args[0] and allowed the `test` subcommand, so
  * `deno test <file>` / `npm test` ran attacker code. All such invocations — and any
- * Deno permission flag anywhere in the argument vector — must be rejected.
+ * Deno permission flag anywhere in the argument vector — must be rejected. Step 4 goes
+ * further and removes deno/npm/node from the run_command allowlist. The deno_task tool
+ * stays the agent build/test path and keeps spawning the deno binary.
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -135,16 +137,37 @@ Deno.test("security: path-denied tool error does not leak the allowed-roots list
   }
 });
 
-Deno.test("security: run_command still allows inert runtime subcommands", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-security-ok-" });
+// Step 4: the general-purpose runtimes leave the run_command allowlist. Bare and inert
+// forms must be rejected at the allowlist before any subprocess spawns.
+const REMOVED_RUNTIME_COMMANDS: ReadonlyArray<string> = ["deno", "npm", "node"];
+
+Deno.test("security: run_command rejects deno/npm/node", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-runtimes-" });
   const registry = createToolRegistryForTests(tempDir);
   try {
-    // `--version` is inert and must remain allowed (validates, then runs deno --version).
-    const result = await registry.execute(ToolName.RUN_COMMAND, {
-      command: "deno",
-      args: ["--version"],
-    });
-    assert(result.success, `Expected 'deno --version' to be allowed: ${result.error}`);
+    for (const command of REMOVED_RUNTIME_COMMANDS) {
+      for (const args of [[], ["--version"], ["test"]]) {
+        const result = await registry.execute(ToolName.RUN_COMMAND, { command, args });
+        assert(!result.success, `'${command} ${args.join(" ")}' must be rejected, but it ran`);
+        assert(
+          result.error?.includes("is not allowed"),
+          `'${command} ${args.join(" ")}' must be rejected by the allowlist. Got: ${result.error}`,
+        );
+      }
+    }
+  } finally {
+    await cleanupTempDir(tempDir);
+  }
+});
+
+Deno.test("security: deno_task still runs test/lint/fmt/check", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-denotask-" });
+  const registry = createToolRegistryForTests(tempDir);
+  try {
+    await Deno.writeTextFile(join(tempDir, "ok.ts"), "export const ok = 1;\n");
+    // `lint` proves the retained deno_task path still spawns the deno binary.
+    const result = await registry.execute(ToolName.DENO_TASK, { task: "lint", path: tempDir });
+    assert(result.success, `deno_task lint must still run after runtime removal: ${result.error}`);
   } finally {
     await cleanupTempDir(tempDir);
   }

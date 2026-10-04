@@ -101,7 +101,10 @@ const DEFAULT_TOOL_REGISTRY_TRACE_ID = "tool-registry";
 
 // Command Whitelist
 
-// Combined whitelist for backward compatibility
+// Combined whitelist for backward compatibility.
+// Security (Step 4): the general-purpose runtimes (`deno`, `npm`, `node`) are NOT
+// run_command-reachable. The `deno_task` tool is the agent build/test path and spawns
+// `deno` directly, so the OS-level `--allow-run=deno` grant remains.
 const ALLOWED_COMMANDS = new Set([
   // Safe commands
   "echo",
@@ -119,9 +122,6 @@ const ALLOWED_COMMANDS = new Set([
   // Validated commands
   SystemCommand.LS,
   SystemCommand.GIT,
-  SystemCommand.NPM,
-  SystemCommand.NODE,
-  SystemCommand.DENO,
   SystemCommand.EXACTL,
   SystemCommand.GREP,
 ]);
@@ -160,9 +160,6 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
     case SystemCommand.GIT:
       // Git-specific validation is handled via the injected git service
       return { valid: true };
-    case SystemCommand.NPM:
-    case SystemCommand.NODE:
-    case SystemCommand.DENO:
     case SystemCommand.EXACTL:
       return validateRuntimeArguments(command, args);
     case SystemCommand.LS:
@@ -176,13 +173,14 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
 }
 
 /**
- * Validate runtime command arguments (npm, node, deno, exactl).
+ * Validate runtime command arguments for the run_command allowlist. After Step 4 this
+ * function is reached for `exactl` only, because `deno`, `npm` and `node` were removed
+ * from ALLOWED_COMMANDS.
  *
- * Security (Finding 4): only inert, non-code-executing subcommands are permitted,
- * and the WHOLE argument vector is checked. Code-executing subcommands
- * (`test`, `run`, `eval`, `repl`, `task`, `bench`, `exec`, `start`, a bare script
- * path for node, etc.) are rejected — they would run arbitrary code — as is any
- * Deno permission flag (`-A` / `--allow-*`) anywhere in the vector.
+ * Security (Finding 4): only inert, non-code-executing subcommands are permitted. The
+ * WHOLE argument vector is checked. Code-executing subcommands (`test`, `run`, `eval`,
+ * `repl`, `task`, `bench`, `exec`, `start`, etc.) are rejected because they would run
+ * arbitrary code. Any Deno permission flag (`-A` / `--allow-*`) is rejected too.
  */
 function validateRuntimeArguments(runtime: string, args: string[]): { valid: boolean; reason?: string } {
   // Inert subcommands that do not execute project code (static checks / metadata).

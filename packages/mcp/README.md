@@ -50,6 +50,7 @@ All tools enforce portal-scoped operations:
 2. **Permission validation** — Appropriate `PortalOperation` required
 3. **Path traversal prevention** — Path resolver blocks escape attempts
 4. **Activity Journal logging** — Every execution logged with trace ID
+5. **run_command runtime surface** — `deno`, `npm`, and `node` are not in the `run_command` allowlist. Agent build and test work flows through the `deno_task` tool, which spawns `deno` directly.
 
 ## ReAct Core Interfaces
 

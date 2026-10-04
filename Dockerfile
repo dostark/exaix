@@ -79,7 +79,7 @@ WORKDIR /exa
 ENTRYPOINT ["deno", "run", \
   "--config", "/app/deno.json", \
   "--allow-read", "--allow-write", "--allow-net", "--allow-env", "--allow-ffi", "--allow-import", \
-  "--allow-run=git,deno,npm,node,exoctl,opencode,claude,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias", \
+  "--allow-run=git,deno,exoctl,opencode,claude,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias", \
   "/app/apps/daemon/main.ts"]
 
 # ---------------------------------------------------------------------------
