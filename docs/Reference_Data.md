@@ -541,6 +541,16 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `RequestProcessingDuration`              | `request.processing.duration`                 | Request                         |
 | `RequestQualityGateFailed`               | `request.quality_gate.failed`                 | Request                         |
 | `RequestMemoryEnhanceFailed`             | `memory.enhance_failed`                       | Request                         |
+| `RequestFlowValidated`                   | `request.flow.validated`                      | Request / Routing               |
+| `RequestFlowValidationReportFailed`      | `request.flow.validation.failed`              | Request / Routing               |
+| `RequestRoutingFlow`                     | `request.routing.flow`                        | Request / Routing               |
+| `RequestRoutingAgentRole`                | `request.routing.agent_role`                  | Request / Routing               |
+| `RequestRoutingDefault`                  | `request.routing.default`                     | Request / Routing               |
+| `RequestRoutingError`                    | `request.routing.error`                       | Request / Routing               |
+| `RequestRoutingPolicyFailed`             | `request.routing.policy.failed`               | Request / Routing               |
+| `RoutingDecision`                        | `routing.decision`                            | Request / Routing               |
+| `RoutingFallbackUsed`                    | `routing.fallback_used`                       | Request / Routing               |
+| `RoutingExperimentApplied`               | `routing.experiment_applied`                  | Request / Routing               |
 | `FrontmatterNotFound`                    | `file.not_found`                              | Frontmatter                     |
 | `FrontmatterInvalid`                     | `frontmatter.invalid`                         | Frontmatter                     |
 | `FrontmatterMissingTraceId`              | `frontmatter.missing_trace_id`                | Frontmatter                     |

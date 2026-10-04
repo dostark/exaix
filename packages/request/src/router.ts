@@ -26,6 +26,7 @@ import {
   RequestKind,
   RunnerKind,
 } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "@exaix/core/request";
@@ -123,6 +124,7 @@ export class RoutingError extends Error {
 
 /**
  * RequestRouter handles routing decisions for incoming requests
+ * @visible
  */
 export class RequestRouter {
   private flowRunner: IFlowRunner;
@@ -192,7 +194,7 @@ export class RequestRouter {
     // Check for conflicting fields
     if (flowId && agentRole) {
       await this.eventLogger.log({
-        action: "request.routing.error",
+        action: DomainEventType.RequestRoutingError,
         target: requestId,
         payload: {
           error: "Request cannot specify both 'flow' and 'agent_role' fields",
@@ -226,7 +228,7 @@ export class RequestRouter {
 
     // Log routing decision
     await this.eventLogger.log({
-      action: "request.routing.flow",
+      action: DomainEventType.RequestRoutingFlow,
       target: requestId,
       payload: { flowId },
       traceId,
@@ -236,7 +238,7 @@ export class RequestRouter {
     const validation = await this.flowValidator.validateFlow(flowId);
     if (!validation.valid) {
       await this.eventLogger.log({
-        action: "request.flow.validation.failed",
+        action: DomainEventType.RequestFlowValidationReportFailed,
         target: flowId,
         payload: { error: validation.error ?? null },
         traceId,
@@ -246,7 +248,7 @@ export class RequestRouter {
 
     // Log successful validation
     await this.eventLogger.log({
-      action: "request.flow.validated",
+      action: DomainEventType.RequestFlowValidated,
       target: flowId,
       payload: {},
       traceId,
@@ -275,7 +277,7 @@ export class RequestRouter {
 
     // Log routing decision
     await this.eventLogger.log({
-      action: "request.routing.agent_role",
+      action: DomainEventType.RequestRoutingAgentRole,
       target: requestId,
       payload: { agentRole },
       traceId,
@@ -290,7 +292,7 @@ export class RequestRouter {
 
       if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
         await this.eventLogger.log({
-          action: "routing.fallback_used",
+          action: DomainEventType.RoutingFallbackUsed,
           target: requestId,
           payload: {
             fallback_agent_role: selectedAgentRole,
@@ -303,7 +305,7 @@ export class RequestRouter {
 
       if (policyDecision.experimentApplied) {
         await this.eventLogger.log({
-          action: "routing.experiment_applied",
+          action: DomainEventType.RoutingExperimentApplied,
           target: requestId,
           payload: {
             selected_agent_role: policyDecision.selectedAgentRole,
@@ -341,7 +343,7 @@ export class RequestRouter {
 
     // Log routing decision
     await this.eventLogger.log({
-      action: "request.routing.default",
+      action: DomainEventType.RequestRoutingDefault,
       target: requestId,
       payload: { defaultAgentRole: this.defaultAgentRole },
       traceId,
@@ -356,7 +358,7 @@ export class RequestRouter {
 
       if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
         await this.eventLogger.log({
-          action: "routing.fallback_used",
+          action: DomainEventType.RoutingFallbackUsed,
           target: requestId,
           payload: {
             fallback_agent_role: selectedAgentRole,
@@ -369,7 +371,7 @@ export class RequestRouter {
 
       if (policyDecision.experimentApplied) {
         await this.eventLogger.log({
-          action: "routing.experiment_applied",
+          action: DomainEventType.RoutingExperimentApplied,
           target: requestId,
           payload: {
             selected_agent_role: policyDecision.selectedAgentRole,
@@ -523,7 +525,7 @@ export class RequestRouter {
       return { selectedAgentRole: decision.selectedAgentRole, policyDecision: decision };
     } catch (error) {
       await this.eventLogger.log({
-        action: "request.routing.policy.failed",
+        action: DomainEventType.RequestRoutingPolicyFailed,
         target: request.requestId,
         payload: {
           error: error instanceof Error ? error.message : String(error),
@@ -532,7 +534,7 @@ export class RequestRouter {
         traceId: request.traceId,
       });
       await this.eventLogger.log({
-        action: "routing.fallback_used",
+        action: DomainEventType.RoutingFallbackUsed,
         target: request.requestId,
         payload: {
           fallback_agent_role: explicitAgentRole ?? this.defaultAgentRole,
@@ -552,7 +554,7 @@ export class RequestRouter {
     policyDecision: IRoutingPolicyDecision,
   ): Promise<void> {
     await this.eventLogger.log({
-      action: "routing.decision",
+      action: DomainEventType.RoutingDecision,
       target: requestId,
       payload: {
         ...basePayload,

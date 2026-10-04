@@ -500,6 +500,34 @@ export interface IOtelExportFailedPayload extends IOtelExportDestinationPayload 
   retry_count: number;
 }
 
+/** Payload of `routing.decision` — the selected agent role/version, strategy, matched rule
+ *  and candidate score breakdown. Never carries prompt text. */
+export interface IRoutingDecisionEventPayload {
+  selected_agent_role: string;
+  selected_version: string;
+  strategy: string;
+  matched_rule_id: string | null;
+  candidate_count: number;
+  top_candidates: Array<{ agent_role: string; version: string; score: number }>;
+  rationale: string;
+}
+
+/** Payload of `routing.fallback_used` — deterministic fallback selection. */
+export interface IRoutingFallbackUsedEventPayload {
+  fallback_agent_role: string;
+  strategy: string;
+  reason: string;
+}
+
+/** Payload of `routing.experiment_applied` — a bounded experiment picked a candidate. */
+export interface IRoutingExperimentAppliedEventPayload {
+  selected_agent_role: string;
+  selected_version: string;
+  strategy: string;
+  matched_rule_id: string | null;
+  experiment_bucket: number | null;
+}
+
 export const DomainEventType = {
   // Flow step events
   FlowStepExecuted: "flow.step.executed",
@@ -645,6 +673,19 @@ export const DomainEventType = {
   RequestProcessingDuration: "request.processing.duration",
   RequestQualityGateFailed: "request.quality_gate.failed",
   RequestMemoryEnhanceFailed: "memory.enhance_failed",
+
+  // Request routing events (Phase 74, request/router.ts). RequestRouter is @visible, so
+  // every action it logs must be a registered member (raw strings fail Gate 19).
+  RequestFlowValidated: "request.flow.validated",
+  RequestFlowValidationReportFailed: "request.flow.validation.failed",
+  RequestRoutingFlow: "request.routing.flow",
+  RequestRoutingAgentRole: "request.routing.agent_role",
+  RequestRoutingDefault: "request.routing.default",
+  RequestRoutingError: "request.routing.error",
+  RequestRoutingPolicyFailed: "request.routing.policy.failed",
+  RoutingDecision: "routing.decision",
+  RoutingFallbackUsed: "routing.fallback_used",
+  RoutingExperimentApplied: "routing.experiment_applied",
 
   // Frontmatter parse events (request/processing/parser.ts)
   FrontmatterNotFound: "file.not_found",
