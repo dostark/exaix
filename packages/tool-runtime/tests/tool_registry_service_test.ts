@@ -169,30 +169,24 @@ Deno.test("ToolRegistry: should block unsafe grep options", async () => {
 
 // Runtime Commands Tests
 
-Deno.test("ToolRegistry: should allow safe npm subcommands", async () => {
+Deno.test("ToolRegistry: run_command rejects npm (removed from the allowlist)", async () => {
   const registry = createRegistry();
   const result = await registry.execute(McpToolName.RUN_COMMAND, {
     command: "npm",
     args: ["--version"],
   });
-  assert(result.success, `Expected success but got error: ${result.error}`);
-  const cmdResult = result.data as { output: string; exitCode: number };
-  assertEquals(cmdResult.exitCode, 0, `Expected exit code 0 but got ${cmdResult.exitCode}`);
-  // Version output format: major.minor.patch (may have additional info)
-  assert(
-    cmdResult.output?.match(/\d+\.\d+/),
-    `Expected version output (X.Y.Z) but got: ${cmdResult.output}`,
-  );
+  assert(!result.success);
+  assert(result.error?.includes("is not allowed"), `Expected allowlist rejection but got: ${result.error}`);
 });
 
-Deno.test("ToolRegistry: should block dangerous npm subcommands", async () => {
+Deno.test("ToolRegistry: run_command rejects a dangerous npm subcommand", async () => {
   const registry = createRegistry();
   const result = await registry.execute(McpToolName.RUN_COMMAND, {
     command: "npm",
     args: ["install", "malicious-package"],
   });
   assert(!result.success);
-  assert(result.error?.includes("subcommand not allowed"));
+  assert(result.error?.includes("is not allowed"), `Expected allowlist rejection but got: ${result.error}`);
 });
 
 // Helper for file tests

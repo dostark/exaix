@@ -49,13 +49,26 @@ function registerObserver(): void {
   ProviderRegistry.register(ProviderType.OPENAI_CHAT, observerFactory);
 }
 
+/** Provider-selection env vars a concurrently-running Batch-1 test can leak into this
+ *  process. Scrub them so resolution follows each test's explicit config. */
+const PROVIDER_ENV_SCRUB: Record<string, null> = {
+  EXA_LLM_PROVIDER: null,
+  EXA_LLM_MODEL: null,
+  EXA_LLM_ENDPOINT: null,
+  EXA_LLM_TIMEOUT_MS: null,
+};
+
 async function withObserver<T>(fn: () => Promise<T>): Promise<T> {
   ProviderRegistry.clear();
   createdOptions = [];
   factoryCreates = 0;
   setProviderRegistryBootstrap(registerObserver);
+  let result!: T;
   try {
-    return await fn();
+    await withEnv(PROVIDER_ENV_SCRUB, async () => {
+      result = await fn();
+    });
+    return result;
   } finally {
     setProviderRegistryBootstrap(undefined);
     ProviderRegistry.clear();
@@ -118,19 +131,21 @@ Deno.test("[phase155.factory] explicit false and mixed providers retain their ow
 });
 
 Deno.test("[phase155.factory] absent compatible registration is terminal before a mock can be created", async () => {
-  ProviderRegistry.clear();
-  setProviderRegistryBootstrap(() => {});
-  try {
-    const config = ConfigSchema.parse({
-      ...baseConfig,
-      models: { selected: { provider: "openai-chat", model: "compat-fixture-v1" } },
-    });
-    const error = await assertRejects(() => ProviderFactory.createByName(config, "selected"), ProviderFactoryError);
-    assertEquals(error.reasonCode, "registration_missing");
-  } finally {
-    setProviderRegistryBootstrap(undefined);
+  await withEnv(PROVIDER_ENV_SCRUB, async () => {
     ProviderRegistry.clear();
-  }
+    setProviderRegistryBootstrap(() => {});
+    try {
+      const config = ConfigSchema.parse({
+        ...baseConfig,
+        models: { selected: { provider: "openai-chat", model: "compat-fixture-v1" } },
+      });
+      const error = await assertRejects(() => ProviderFactory.createByName(config, "selected"), ProviderFactoryError);
+      assertEquals(error.reasonCode, "registration_missing");
+    } finally {
+      setProviderRegistryBootstrap(undefined);
+      ProviderRegistry.clear();
+    }
+  });
 });
 
 Deno.test("[phase155.factory] same-profile defaults are added after partial overrides", async () => {

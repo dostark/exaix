@@ -28,7 +28,9 @@ const ACTIVITY_TABLE_SQL = `
     cost_usd REAL DEFAULT 0.0,
     cache_read_tokens INTEGER,
     cache_creation_tokens INTEGER,
-    timestamp DATETIME DEFAULT (datetime('now'))
+    timestamp DATETIME DEFAULT (datetime('now')),
+    prev_hash TEXT,
+    row_hash TEXT
   );
 `;
 

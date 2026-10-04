@@ -7,6 +7,8 @@
  *   before any paid call on an unsupported platform, and (real-subprocess/real-CLI
  *   tests, ignored under CI=true per this repo's convention for that class of test) a
  *   live claude/codex call inside the sandbox must still succeed and return real content.
+ *   The live claude legs additionally require an authenticated Claude subscription, so
+ *   they are opt-in via `EXA_CALIBRATION_SANDBOX_LIVE=1`.
  * @architectural-layer Tests
  * @related-files [tests/scenario_framework/runner/calibration_sandbox.ts]
  */
@@ -36,6 +38,11 @@ import type {
 
 const REPO_ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 const SCRATCH_ROOT = "/tmp";
+
+/** The live claude legs need an authenticated Claude subscription, so they are opt-in. */
+const CALIBRATION_LIVE_OPT_IN_ENV = "EXA_CALIBRATION_SANDBOX_LIVE";
+const LIVE_CLAUDE_IGNORED = Deno.env.get("CI") === "true" ||
+  Deno.env.get(CALIBRATION_LIVE_OPT_IN_ENV) !== "1";
 
 Deno.test({
   name: "[CalibrationSandbox] assertSandboxSupported succeeds on this Linux+bwrap environment",
@@ -107,7 +114,7 @@ Deno.test({
 
 Deno.test({
   name: "[CalibrationSandbox][live] a real sandboxed claude call succeeds and returns real content",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: LIVE_CLAUDE_IGNORED,
   fn: async () => {
     const result = await runSandboxedCliCall({
       cli: CalibrationSandboxCli.Claude,
@@ -156,7 +163,7 @@ class FixedClock implements ICalibrationClock {
 Deno.test({
   name:
     "[CalibrationSandbox][live] CalibrationRunner completes a real end-to-end run with the sandboxed reference adapter",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: LIVE_CLAUDE_IGNORED,
   fn: async () => {
     const item: ICalibrationSourceItem = {
       id: "sandbox-integration-item",
