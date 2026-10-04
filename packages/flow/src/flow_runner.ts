@@ -1,9 +1,11 @@
 /**
  * @module FlowRunner
  * @path packages/flow/src/flow_runner.ts
- * @description Core orchestrator for multi-agent flow execution.
+ * @description Core orchestrator for multi-agent flow execution. Delegates
+ *   parallel-group event emission to WaveOrchestrator and ParallelGroupMergeService.
  * @architectural-layer Flows
  * @related-files [packages/flow/mod.ts, packages/request/src/router.ts]
+ * @visible
  */
 
 import type {

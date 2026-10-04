@@ -6,6 +6,7 @@
  *   Extracted from FlowRunner.
  * @architectural-layer Flow
  * @related-files [packages/flow/src/flow_runner.ts]
+ * @visible
  */
 
 import type { IFlow, IFlowStep, IParallelMergeMode } from "@exaix/schemas/flow.ts";

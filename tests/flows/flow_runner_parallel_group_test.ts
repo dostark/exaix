@@ -170,3 +170,64 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
   assertEquals(completedEvent.payload.failed, false);
   assertEquals(result.stepResults.get("audit")?.success, true);
 });
+
+Deno.test("FlowRunner: group lifecycle events carry the request traceId", async () => {
+  const executor = new ControlledParallelExecutor(["reviewer-a", "reviewer-b"]);
+  const logger = new RecordingFlowLogger();
+  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: logger });
+
+  const flow: IFlowInput = {
+    id: "parallel-group-trace-flow",
+    name: "Parallel Group Trace Flow",
+    description: "Group lifecycle events must carry the request traceId",
+    version: DEFAULT_FLOW_VERSION,
+    steps: [
+      {
+        id: "start",
+        name: "Start",
+        agent_role: "starter",
+        dependsOn: [],
+        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      },
+      {
+        id: "review-a",
+        name: "Review A",
+        agent_role: "reviewer-a",
+        dependsOn: ["start"],
+        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+        parallel: { group: "reviewers" },
+      },
+      {
+        id: "review-b",
+        name: "Review B",
+        agent_role: "reviewer-b",
+        dependsOn: ["start"],
+        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+        parallel: { group: "reviewers" },
+      },
+    ],
+    output: { from: ["review-a", "review-b"], format: FlowOutputFormat.CONCAT },
+    settings: { maxParallelism: 4, failFast: true },
+  };
+
+  const execution = runner.execute(flow as IFlow, {
+    userPrompt: "run trace-correlated grouped wave",
+    traceId: "trace-65-6-trace",
+    requestId: "req-65-6-trace",
+  });
+
+  await executor.waitForStarts(["reviewer-a", "reviewer-b"]);
+  executor.release("reviewer-a");
+  executor.release("reviewer-b");
+  await execution;
+
+  const startedEvent = logger.events.find((entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_STARTED);
+  const completedEvent = logger.events.find((entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_COMPLETED);
+  assertExists(startedEvent);
+  assertExists(completedEvent);
+  assertEquals(startedEvent.payload.traceId, "trace-65-6-trace");
+  assertEquals(completedEvent.payload.traceId, "trace-65-6-trace");
+});

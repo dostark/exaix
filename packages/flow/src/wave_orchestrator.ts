@@ -7,6 +7,7 @@
  *   Extracted from FlowRunner.
  * @architectural-layer Flow
  * @related-files [packages/flow/src/flow_runner.ts]
+ * @visible
  */
 
 import type { IFlow } from "@exaix/schemas/flow.ts";

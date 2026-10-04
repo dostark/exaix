@@ -125,3 +125,58 @@ Deno.test("FlowRunner: rejects unknown step IDs in parallel.order", async () => 
   assertStringIncludes(error.message, "ghost-step");
   assertStringIncludes(error.message, "reviewers");
 });
+
+Deno.test("FlowRunner: rejects a parallel.order entry that is a real step outside the group", async () => {
+  const runner = createRunner();
+  const flow: IFlowInput = {
+    id: "order-non-member",
+    name: "Order Non Member",
+    description: "An order entry naming a real step outside the group must be refused",
+    version: DEFAULT_FLOW_VERSION,
+    steps: [
+      {
+        id: "review-a",
+        name: "Review A",
+        agent_role: "qa-engineer",
+        input: { source: FlowInputSource.REQUEST },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+        parallel: {
+          group: "reviewers",
+          mergeMode: "ordered",
+          order: ["review-a", "audit"],
+        },
+      },
+      {
+        id: "review-b",
+        name: "Review B",
+        agent_role: "security-expert",
+        input: { source: FlowInputSource.REQUEST },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+        parallel: {
+          group: "reviewers",
+          mergeMode: "ordered",
+          order: ["review-a", "audit"],
+        },
+      },
+      {
+        id: "audit",
+        name: "Audit",
+        agent_role: "auditor",
+        input: { source: FlowInputSource.REQUEST },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      },
+    ],
+    output: {
+      from: ["review-a", "review-b"],
+      format: FlowOutputFormat.MARKDOWN,
+    },
+  };
+
+  const error = await assertRejects(
+    () => runner.execute(flow as IFlow, { userPrompt: "parallel validate", requestId: "req-65-7" }),
+    FlowExecutionError,
+  );
+
+  assertStringIncludes(error.message, "audit");
+  assertStringIncludes(error.message, "reviewers");
+});

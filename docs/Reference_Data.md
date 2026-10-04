@@ -478,6 +478,9 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `FlowWaveResumeSkipped`                  | `flow.wave.resume.skipped`                    | Flow                            |
 | `FlowWaveCompleted`                      | `flow.wave.completed`                         | Flow                            |
 | `FlowWaveErrors`                         | `flow.wave.errors`                            | Flow                            |
+| `FLOW_EVENT_PARALLEL_GROUP_STARTED`      | `flow.parallel_group.started`                 | Flow / Parallel Groups          |
+| `FLOW_EVENT_PARALLEL_GROUP_COMPLETED`    | `flow.parallel_group.completed`               | Flow / Parallel Groups          |
+| `FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED` | `flow.parallel_group.merge_failed`            | Flow / Parallel Groups          |
 | `FlowStepProcessingError`                | `flow.step.processing_error`                  | Flow                            |
 | `FlowOutputAggregating`                  | `flow.output.aggregating`                     | Flow                            |
 | `FlowOutputAggregated`                   | `flow.output.aggregated`                      | Flow                            |
