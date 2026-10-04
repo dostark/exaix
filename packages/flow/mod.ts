@@ -46,7 +46,7 @@ export { FlowLoader, validateDynamicStepTools } from "./src/flow_loader.ts";
 export { DependencyResolver, FlowValidationError } from "./src/dependency_resolver.ts";
 export { ActivityJournal } from "./src/activity_journal.ts";
 export { ConditionEvaluationError, ConditionEvaluator } from "./src/condition_evaluator.ts";
-export { ExpressionError, parseCondition } from "./src/safe_expression.ts";
+export { evaluateExpression, ExpressionError, parseCondition } from "./src/safe_expression.ts";
 export type { IActivityJournal, JournalEntry } from "./src/dynamic_step_executor.ts";
 export { DynamicStepExecutor } from "./src/dynamic_step_executor.ts";
 export { FeedbackLoop, FeedbackLoopConfigSchema } from "./src/feedback_loop.ts";
