@@ -237,10 +237,22 @@ steps:
             errs.push("queryRelationships: missing top-level ai -> packages/ai/mod.ts layer edge");
           }
 
+          const targetFile = "packages/triggers/services/idempotency_ledger.ts";
           const serviceEdges = queryRelationships(k, "services", "layer_contains_file")
-            .filter((edge) => edge.to === "packages/triggers/services/idempotency_ledger.ts");
-          if (serviceEdges.length !== 2) {
-            errs.push(`queryRelationships: expected duplicate top-level + package-local services edge, got ${serviceEdges.length}`);
+            .filter((edge) => edge.to === targetFile);
+          // The `services` layer query must reach the target file. The count is not pinned:
+          // the top-level `services` layer keeps only the first five matches in walk order,
+          // so whether it also carries this package-local file is not deterministic.
+          if (serviceEdges.length < 1) {
+            errs.push(`queryRelationships: no services layer_contains_file edge to ${targetFile}`);
+          }
+          // The package-local `triggers` services layer always contains the file, so its edge
+          // is the deterministic proof that the relationship survives derivation.
+          const triggersLayer = (k.packages ?? [])
+            .find((pkg) => pkg.name === "triggers")?.layers
+            .find((layer) => layer.name === "services");
+          if (!triggersLayer?.keyFiles.includes(targetFile)) {
+            errs.push(`packages[triggers].layers[services].keyFiles: missing ${targetFile}`);
           }
 
           if (errs.length > 0) {

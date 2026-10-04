@@ -14,6 +14,35 @@ import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
 import { createScenarioContext, runScenario, skipSlowScenarioIntegration } from "./helpers/scenario_test_utils.ts";
 
+const SCENARIO_PATH = join(
+  import.meta.dirname!,
+  "..",
+  "scenarios",
+  "portal_knowledge",
+  "portal-knowledge-strategies.yaml",
+);
+
+Deno.test(
+  "Scenario: portal-knowledge-strategies deep-structure assertion does not pin a walk-order-dependent service edge count",
+  async () => {
+    // The top-level `services` layer keeps five matches in walk order. It may omit the
+    // package-local file. So require the edge, not a fixed count of two.
+    const yaml = await Deno.readTextFile(SCENARIO_PATH);
+    assert(
+      !yaml.includes("expected duplicate top-level + package-local services edge"),
+      "the deep-structure assertion must not expect a fixed duplicate edge count",
+    );
+    assert(
+      yaml.includes("no services layer_contains_file edge to"),
+      "the assertion must require at least one services edge to the target file",
+    );
+    assert(
+      yaml.includes('find((pkg) => pkg.name === "triggers")'),
+      "the assertion must pin the deterministic package-local triggers layer",
+    );
+  },
+);
+
 Deno.test({
   name: "Scenario: Portal Knowledge Strategies — all 11 strategies",
   ignore: skipSlowScenarioIntegration,
