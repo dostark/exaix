@@ -136,8 +136,10 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
 1. Stage the edited source + test files in the parent — every `→ path` must be among them.
    A criterion whose module IS the plan doc uses the gitlink arrow `→`exaix-dev-docs``;
    a doc-only (§3D) step often cites both: `→ `ARCHITECTURE.md`, `exaix-dev-docs``.
-1. Write the structured message (`fix`; what:, rationale:, tests:, who:, impact:; the gap
-   numbers e.g. `remediation: GAP-1, GAP-3`; mandatory
+1. Write the structured message (`fix`; what:, rationale:, tests:, who:, impact:; name the
+   covered GAPs inside `what:` — there is **no** `remediation:` field and
+   `check_commit_msg.ts`'s `KNOWN_COMMIT_FIELDS` omits it, so a `remediation:` line would be
+   swallowed into `impact:`; mandatory
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>`), then
    `deno run -A scripts/commit_plan_step.ts <msg-file> --commit`. Read #commit's validator
    traps first (Structural Bloom, impact-component-word-in-what, semicolon-in-impact).
@@ -147,9 +149,12 @@ Spans the submodule plan doc (the ✅/deferred marks) and the parent source → 
    far cheaper than hunk surgery.
 1. Preflight blocks with "roll back the submodule's last commit"? The submodule was
    committed separately: `git -C exaix-dev-docs reset --soft HEAD~1`, re-run.
-1. Submodule commit SUCCEEDED but the PARENT's `check_commit_msg.ts` rejects the message?
-   Do NOT roll back the submodule, it is already valid. Confirm `git -C exaix-dev-docs
-   log --oneline -1`, fix the message, commit the parent directly. Parent rejects the `→ path`
+1. Submodule commit SUCCEEDED but a PARENT pre-commit gate rejects — the message check
+   (`check_commit_msg.ts`) OR any staged-file gate (e.g. `check:ste100-comments:staged`,
+   `check:md-path:staged`)? Do NOT roll back the submodule, it is already valid. Confirm
+   `git -C exaix-dev-docs log --oneline -1`, fix the message or the offending comment, then
+   commit the parent directly (`git add <parent files> exaix-dev-docs && git commit -F <msg>`).
+   Parent rejects the `→ path`
    convention itself? AMEND the submodule commit (`git -C exaix-dev-docs add <planning-doc>
    && git -C exaix-dev-docs commit --amend --no-edit`) so every item line stays an added
    line of `HEAD~1..HEAD`, re-stage the pointer, commit the parent directly.

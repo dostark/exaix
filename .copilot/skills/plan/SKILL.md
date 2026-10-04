@@ -106,6 +106,10 @@ Do / Don't
   implementation timestamps come later. #next-steps rewrites each to
   `- ✅ <text> → `<path>`` or `- ⚠️ deferred <text> → `<LedgerSymbol>``. The gate blocks
   any `- [ ]` in a committed step — [ ] may remain only on unimplemented steps.
+- ✅ Relocating a step's deliverable into a later step (a folded/merged step): convert the
+  source step's criteria to `- ⚠️ deferred <text> → `<LedgerSymbol>`` + a ledger row, or to
+  `- ✅ <text> → `<absorbing step's path>``. Never leave `- [ ]` behind — the plan-step gate
+  blocks any commit whose plan-doc diff spans a step still carrying it.
 - ✅ Point every `→ `path`` at a real changed repo file — never a command/task/prose. The
   gate extracts the backticked text after `→` verbatim and requires it to match a changed
   file; `→ `deno task docs-agent-validate`` fails. Command-verified? Point `→` at the file
