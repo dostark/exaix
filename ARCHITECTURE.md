@@ -37,7 +37,7 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 ## Edition Model Overview
 
-> **Current Status (September 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `exaix-team/` (BSL) and `exaix-enterprise/` (Enterprise) are both private submodules, mounted at their existing in-repo paths (Phase 171 converted the Team submodule, then mounted at `packages-team/`, from a plain workspace member to a submodule backed by its own `exaix-team` repo; it was later renamed to mount at `exaix-team/` with an internal `packages/` + `apps/` split mirroring the parent monorepo). Edition-specific code is never loaded into Solo builds.
+> **Current Status (September 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `exaix-team/` (BSL) and `exaix-enterprise/` (Enterprise) are both private submodules, mounted at their existing in-repo paths (the Team submodule is backed by its own `exaix-team` repo, mounted at `exaix-team/` with an internal `packages/` + `apps/` split mirroring the parent monorepo). Edition-specific code is never loaded into Solo builds.
 
 Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
 
@@ -145,7 +145,7 @@ Per-tool env injection follows a translation table
 `ANTHROPIC_AUTH_TOKEN`, and `ANTHROPIC_API_KEY=""`.
 
 The OpenRouter in-process provider (`@exaix/ai-openrouter`) also exposes OpenRouter's
-control surface via a `routing` config block (Phase 123 R10): `provider` ordering
+control surface via a `routing` config block: `provider` ordering
 (`order`/`only`/`ignore`/`sort`), model fallbacks (`models`, ≤3), zero-data-retention
 (`zdr`), and data-collection consent (`data_collection`). These fields are serialised
 into the request body alongside `model` and `messages`.
@@ -204,8 +204,8 @@ text, review feedback, or paths, since those could carry prompt content or host 
 **Production usage:** `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:next-steps` is the
 shipped consumer — it replaced a `strategy: cli_delegate` step with `type:
 session_delegate_cycle`, so the dogfood loop's per-step implementation now runs through this
-governed mechanism instead of one unsupervised CLI session. Full design, durability model, and
-verification evidence: `exaix-dev-docs/planning/phase-174-dogfood-recursive-step-orchestration.md`;
+governed mechanism instead of one unsupervised CLI session. The full design, durability model, and
+verification evidence are maintained internally;
 package-level configuration and restart/failure semantics:
 `packages/flow/README.md#session-delegate-cycle`, `packages/session/README.md`.
 
@@ -401,7 +401,7 @@ daemon through the hot Config DB watcher; unsetting the override returns to TOML
 behavior. The alias audit and strict-parameter event payloads are described in
 `docs/Reference_Data.md#tool-runtime-audit-and-configuration`.
 
-The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. As of Phase 137, **180+ `configurable()` keys** are registered across all packages (core, AI providers, git, etc.).
+The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. **180+ `configurable()` keys** are registered across all packages (core, AI providers, git, etc.).
 
 **Schema:** Append-only `config_overrides` table (`id`, `key`, `value`, `source`, `swap_class`, `created_at`) with no UPDATE path — every override creates a new row. The latest row per key (by max id) is the effective value; a NULL value means "use registry default."
 
@@ -441,8 +441,6 @@ The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `Confi
 **Validation bounds:** Zod schemas use `resolveConfigurableBounds(key)` from `@exaix/core/config` (via `c()`/`cBounds()` helpers at `packages/schemas/src/config.ts`) to derive min/max/default from the registry — no separate MIN/MAX constants needed.
 
 **CI gate:** `deno task check:config-keys` ensures no duplicate keys.
-
-Design docs: `exaix-dev-docs/planning/phase-136-configuring.md`, `exaix-dev-docs/planning/phase-137-configuring-cutover.md`
 
 ---
 
@@ -618,9 +616,8 @@ provider; non-flow planning, execution and gate calls do not consult flow bindin
 `IAgentExecutor.runWithStrategy`, which builds a fresh, per-call `AgentComposer` (never a
 stored, long-lived instance, so one flow's writes can never leak into an unrelated flow's audit)
 and dispatches through the forced strategy; otherwise it falls through to the unchanged `run()`
-path, so a step with no `strategy` is byte-for-byte unaffected. See
-`exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md` for the full rollout
-rationale and the catalog-wide decision rubric, and `docs/Exaix_User_Guide.md` for the
+path, so a step with no `strategy` is byte-for-byte unaffected. The full rollout rationale and the catalog-wide decision rubric are maintained internally;
+see `docs/Exaix_User_Guide.md` for the
 field's user-facing documentation.
 
 `type: session_delegate_cycle` (see the `Session Delegate Cycle` subsection above) is
@@ -633,7 +630,7 @@ different granularity (one whole step vs. N reviewed sub-steps).
 
 ### Worktree Isolation for Delegated Code Changes {#worktree-isolation}
 
-_Phase 194._ Both delegated code-change paths above — a `strategy: cli_delegate`/`react`/`mcp`
+Both delegated code-change paths above — a `strategy: cli_delegate`/`react`/`mcp`
 flow step (`AgentComposerAdapter.runWithStrategy`) and a `type: session_delegate_cycle` step. Declared flow steps run through `AgentComposerAdapter.run`, which bridges via the blueprint loader so a flow-bound role's declared `effort`/`thinking`/`default_skills` reach the agent for the first time
 (`SessionDelegationCoordinator.prepareBrief`) — isolate a portal opted into
 `execution_strategy = "worktree"` through **`FlowWorktreeCoordinator`**
@@ -667,7 +664,7 @@ bounds disk usage as well as memory.
 
 ## Per-Action HITL Governance {#hitl-governance}
 
-_Phase 118, Team/Enterprise Edition — gated by `CAP_HITL_GOVERNANCE`._
+Team/Enterprise Edition — gated by `CAP_HITL_GOVERNANCE`.
 
 Exaix provides **three distinct human checkpoints**, each with a different scope:
 
@@ -984,7 +981,7 @@ otherwise                              → ReActLoopStrategy
 
 **Permissions:** `--permission-mode acceptEdits` plus a scoped `--allowedTools` (via `packages/session/src/claude_permission_flags.ts:deriveClaudeToolFlags`, shared with `session_delegate`'s hardened launch) let the headless session write files without an interactive approval prompt it can never answer.
 
-**Known limitation:** a plan executing under `PortalExecutionStrategy.WORKTREE` (forced whenever the plan's frontmatter carries a `portal`) commits real changes inside `.exa/worktrees/<portal>/<trace_id>/` — but nothing in the codebase currently merges that worktree branch back into the portal's own working tree. This affects any `WORKTREE`-strategy execution, not `CliDelegateStrategy` specifically; see `exaix-dev-docs/planning/phase-140-evaluation-framework-maturation.md` (`Ledger:CLI_DELEGATE_WORKTREE_MERGE`) for the current investigation.
+**Known limitation:** a plan executing under `PortalExecutionStrategy.WORKTREE` (forced whenever the plan's frontmatter carries a `portal`) commits real changes inside `.exa/worktrees/<portal>/<trace_id>/` — but nothing in the codebase currently merges that worktree branch back into the portal's own working tree. This affects any `WORKTREE`-strategy execution, not `CliDelegateStrategy` specifically; a merge-back strategy remains open work.
 
 #### 7. ModelResolver — Policy-driven Model Resolution
 
@@ -1073,11 +1070,9 @@ a model-driven tool path; external MCP callers without that identity remain unkn
 - **Reserved metadata:** `IModelOptions.chatFormat` and the registry `chatFormat` are descriptive scaffolding. They do not select an execution format. `OPENAI_CHAT` registration is what activates the provider.
 - **Test seam:** the `__COMPAT_FIXTURE_PORT__` sentinel in a scenario preset is replaced with the bound local fixture port by `materializeCellConfig`, so scenario presets never hard-code a port.
 
-Live qualification of the remote profiles is recorded in `exaix-dev-docs/planning/phase-155-openai-compatible-react.md`. Both remote profiles passed a live scenario. The `deepseek` profile pins `deepseek-v4-pro` and can still fail rarely on a multi-call, empty or schema-violating reply, which Exaix rejects without retry.
+Live qualification of the remote profiles is recorded internally. Both remote profiles passed a live scenario. The `deepseek` profile pins `deepseek-v4-pro` and can still fail rarely on a multi-call, empty or schema-violating reply, which Exaix rejects without retry.
 
 **Refinements (nativeDescription, prompt guidance, targeted-edit heuristic):** `ITool.nativeDescription` (`packages/core/src/types/i_tool_registry.ts`) provides behavioral-preference signals for the native tool UI (e.g., "PREFERRED for targeted edits"). `ReActLoopStrategy.buildPrompt()` always renders `AVAILABLE TOOLS:` and `TOOL SELECTION GUIDELINES:` (only the `FORMAT:` TOML block is gated). A targeted-edit keyword heuristic (`context.plan` matching fix/patch/null-guard/refactor/edit/bug/repair) sets `tool_choice: {type: "tool", name: "patch_file"}` on the first iteration.
-
-Details: `exaix-dev-docs/planning/phase-152-native-tool-calling.md` (Anthropic), `exaix-dev-docs/planning/phase-153-multi-provider-native-tool-calling.md` (OpenAI/Google/OpenRouter).
 
 ---
 
@@ -1278,7 +1273,7 @@ The container mounts only the workspace and portal directories needed for agent 
 
 **Relationship to the architecture:** The container sandbox is **orthogonal** to portal isolation (invariant 4). Portal isolation controls _which files_ an agent can read/write via Deno permissions and `PathResolver`. The container sandbox controls _what OS-level resources_ the process can access. Together they provide defense in depth: portal isolation handles path-level access control, the container handles process-level containment.
 
-For installation and usage instructions, see `exaix-dev-docs/dev/Exaix_Developer_Setup.md`. For the vulnerability analysis that motivated this design, see `exaix-dev-docs/dev/security/Exaix_Security_Vulnerability_Analysis.md` §Security Fix 2.
+Installation and usage instructions, and the vulnerability analysis that motivated this design, are maintained internally.
 
 ---
 
@@ -1306,7 +1301,7 @@ All tools enforce portal-scoped operations. Git tools obtain `IGitService` throu
 
 ### Inbound vs. Outbound MCP
 
-`packages/mcp` owns MCP in both directions. **Inbound** (existing, `exaix-team/packages/mcp-server`): Exaix acts as an MCP _server_, exposing the tool handlers above to external agents — built on the official `@modelcontextprotocol/server` SDK (Phase 163), serving the current spec protocol version over stdio and Streamable HTTP, with an opt-in bearer-token gate (`mcp.require_auth` + `MCP_AUTH_TOKEN` env indirection). **Outbound** (Phase 162, new): Exaix acts as an MCP _client_, via `ExternalMcpClient`/`IExternalMcpClient` (`packages/mcp/src/external_mcp_client.ts`), reaching a real external MCP server over the wire (Streamable HTTP primary, legacy SSE fallback, with optional bearer-token auth), through `exactl mcp connect`. Do not confuse this with `LocalToolDispatcher` (`packages/mcp/server/local_tool_dispatcher.ts`) — a local, in-process facade that dispatches to Exaix's own tool handlers and never opens a network connection; its `callTool` is keyed by the closed `McpToolName` enum, structurally incompatible with `IExternalMcpClient`'s string-keyed one. Since Phase 163 Step 6, `LocalToolDispatcher` is real-daemon-reachable: the Team-edition daemon (`apps/daemon/main.ts`) builds it from `buildDynamicHandlers(context, portalPermissions)` and passes it as `mcpClient` into the real `FlowRunner`, so `execution_mode: dynamic` flow steps execute for real on a Team/Enterprise daemon (previously the class existed only under test). Follow-up deferred from Step 5: the `IMcpClient`/`IToolManifestResolver` interface names still carry the pre-rename `McpClient` name and are candidates for a future rename phase — explicitly out of Phase 163's scope.
+`packages/mcp` owns MCP in both directions. **Inbound** (existing, `exaix-team/packages/mcp-server`): Exaix acts as an MCP _server_, exposing the tool handlers above to external agents — built on the official `@modelcontextprotocol/server` SDK, serving the current spec protocol version over stdio and Streamable HTTP, with an opt-in bearer-token gate (`mcp.require_auth` + `MCP_AUTH_TOKEN` env indirection). **Outbound** (new): Exaix acts as an MCP _client_, via `ExternalMcpClient`/`IExternalMcpClient` (`packages/mcp/src/external_mcp_client.ts`), reaching a real external MCP server over the wire (Streamable HTTP primary, legacy SSE fallback, with optional bearer-token auth), through `exactl mcp connect`. Do not confuse this with `LocalToolDispatcher` (`packages/mcp/server/local_tool_dispatcher.ts`) — a local, in-process facade that dispatches to Exaix's own tool handlers and never opens a network connection; its `callTool` is keyed by the closed `McpToolName` enum, structurally incompatible with `IExternalMcpClient`'s string-keyed one. `LocalToolDispatcher` is real-daemon-reachable: the Team-edition daemon (`apps/daemon/main.ts`) builds it from `buildDynamicHandlers(context, portalPermissions)` and passes it as `mcpClient` into the real `FlowRunner`, so `execution_mode: dynamic` flow steps execute for real on a Team/Enterprise daemon (previously the class existed only under test). Follow-up deferred from Step 5: the `IMcpClient`/`IToolManifestResolver` interface names still carry the pre-rename `McpClient` name and are candidates for a future rename.
 
 **Scope Note:** The external MCP client ships the outbound client and CLI subcommand only — no benchmark integration (e.g. Terminal-Bench) is included, and the Terminal-Bench harness-fidelity gap remains open and unrelated. `exactl mcp connect` reaches unauthenticated and bearer-token-authenticated servers only — any server requiring interactive OAuth or `client_credentials`/JWT-assertion grants is out of reach until a further follow-up.
 
@@ -1433,9 +1428,9 @@ was retired in favor of this consolidation.
 
 Skills exist in three distinct stores, each with a different origin and lifecycle:
 
-- **`.copilot/skills/` (dev skills)** — Markdown files with YAML frontmatter and an optional `exaix:` block. These are authored by Exaix developers and ship with the repo. During `dogfood_bootstrap.ts`, the `generate_skill_json.ts` transform converts them into runtime JSON in the **sandbox's** `Memory/Skills/` only (never the main repo). Each skill's `exaix:` block defines trigger conditions (keywords, tags, task types), constraints, output requirements, and quality criteria so the dogfood daemon can auto-select them for matching requests. All 23 skills in `.copilot/skills/` carry `exaix:` blocks as of Phase 125. To add a new dev skill, create a `SKILL.md` in `.copilot/skills/<name>/` with frontmatter + `exaix:` block (see existing skills for the pattern); the CI gate `check:skill-envelopes` validates the envelope.
+- **`.copilot/skills/` (dev skills)** — Markdown files with YAML frontmatter and an optional `exaix:` block. These are authored by Exaix developers and ship with the repo. During `dogfood_bootstrap.ts`, the `generate_skill_json.ts` transform converts them into runtime JSON in the **sandbox's** `Memory/Skills/` only (never the main repo). Each skill's `exaix:` block defines trigger conditions (keywords, tags, task types), constraints, output requirements, and quality criteria so the dogfood daemon can auto-select them for matching requests. All 23 skills in `.copilot/skills/` carry `exaix:` blocks. To add a new dev skill, create a `SKILL.md` in `.copilot/skills/<name>/` with frontmatter + `exaix:` block (see existing skills for the pattern); the CI gate `check:skill-envelopes` validates the envelope.
 
-- **`Blueprints/Skills/` (universal seed set)** — Skills bundled with `deploy_workspace.ts` for new portal setup. These are the canonical seeds shipped to every user portal. The `.copilot`→sandbox transform never writes to `Blueprints/` or `deploy_workspace.ts`. A known follow-up (Phase 126+) will sync dev skills from `.copilot/skills/` into `Blueprints/Skills/` to keep user portals current.
+- **`Blueprints/Skills/` (universal seed set)** — Skills bundled with `deploy_workspace.ts` for new portal setup. These are the canonical seeds shipped to every user portal. The `.copilot`→sandbox transform never writes to `Blueprints/` or `deploy_workspace.ts`. A known follow-up will sync dev skills from `.copilot/skills/` into `Blueprints/Skills/` to keep user portals current.
 
 - **`Memory/Skills/` (runtime store)** — JSON files loaded by `SkillsService` at daemon start via `loadIndex()`/`buildIndex()`. Contains self-improvement-learned skills (from learning extraction), product skills from `Blueprints/` seeding, and (in dogfood sandbox only) the transformed `.copilot/` dev skills. The `SkillEnvelopeSchema`/`SkillSchema` dual validation ensures every JSON skill matches the runtime shape.
 
@@ -1453,7 +1448,7 @@ Automated codebase analysis runs for every portal. `PortalKnowledgeService` runs
 
 The knowledge graph distinguishes persisted from on-demand relationships. `IPortalKnowledge.relationships` holds only `file_imports_file_internal` edges, built once at analysis time from `deno info`'s resolved module graph (`InternalImportGraphBuilder`) and persisted to `knowledge.json`. `layer_contains_file` edges (file-to-architectural-layer membership) are never persisted — they are derived on demand at query time by `deriveLayerContainsFileEdges` from the portal's `layers` config. Both are queryable via `queryRelationships`/`whoDependsOn` (`packages/portal/knowledge/relationship_query.ts`), exposed to Solo agents as the `query_relationships`/`find_dependents` ReAct tools (see `.copilot/docs/TOOLS.md`'s Solo-Only ReAct Tools section).
 
-The embedding-backed semantic retrieval path (`PortalKnowledgeService.getRelevantContext`, gated by the opt-in `relevanceSearchEmbeddingEnabled` config flag, default off) is a pre-existing capability built on the existing embedding-provider service, not new integration work — a prior maturation phase fixed a bug where `indexPortalKnowledge` ignored the opt-in flag and always attempted to build the HNSW index once an embedding provider was wired, and closed composition-root gaps that kept it dormant in both `apps/daemon/main.ts` and `apps/exactl/src/init.ts`. `knowledge.json`'s file representation was separately evaluated against Google's Open Knowledge Format (OKF); the decision was hybrid — JSON stays the canonical Solo-tier working format, with an optional future OKF export recommended for git-diffable human review — see `exaix-dev-docs/dev/Portal_Knowledge_OKF_Evaluation.md`.
+The embedding-backed semantic retrieval path (`PortalKnowledgeService.getRelevantContext`, gated by the opt-in `relevanceSearchEmbeddingEnabled` config flag, default off) is a pre-existing capability built on the existing embedding-provider service, not new integration work — a prior maturation phase fixed a bug where `indexPortalKnowledge` ignored the opt-in flag and always attempted to build the HNSW index once an embedding provider was wired, and closed composition-root gaps that kept it dormant in both `apps/daemon/main.ts` and `apps/exactl/src/init.ts`. `knowledge.json`'s file representation was separately evaluated against Google's Open Knowledge Format (OKF); the decision was hybrid — JSON stays the canonical Solo-tier working format, with an optional future OKF export recommended for git-diffable human review.
 
 **Advantages over ad-hoc per-request file reading:** knowledge is analyzed once and queried cheaply many times rather than re-read on every request; the relationship graph is built from `deno info`'s resolved module graph, not text pattern matching, so it captures import-map aliases and barrel re-exports and supports reverse-dependency queries (`find_dependents`) with no efficient grep equivalent; git-SHA-scoped invalidation keeps re-analysis cost proportional to actual change size instead of a blind rescan; `architectureOverview`/`keyFiles`/`conventions` reach the agent automatically via `PortalContextBuilder`'s context injection, at zero extra agent turns.
 
@@ -1473,7 +1468,7 @@ For full cleanup behavior details, see `packages/portal/README.md#review-cleanup
 
 ## Blueprint Management System
 
-Blueprints define agent roles, each stored as `Blueprints/Agents/{agent_role}.md` with YAML frontmatter specifying provider/model, behavioural capabilities, least-privilege `permitted_tools`, `default_skills`, and persona instructions. The catalog is a flat set of concrete agent roles — the former `examples/` and `templates/` subdirectories were retired in Phase 131 (examples merged into concrete agent roles, templates converted to skills). Shared "how to work" knowledge lives in `Blueprints/Skills/`, referenced via `default_skills`.
+Blueprints define agent roles, each stored as `Blueprints/Agents/{agent_role}.md` with YAML frontmatter specifying provider/model, behavioural capabilities, least-privilege `permitted_tools`, `default_skills`, and persona instructions. The catalog is a flat set of concrete agent roles — the former `examples/` and `templates/` subdirectories were retired (examples merged into concrete agent roles, templates converted to skills). Shared "how to work" knowledge lives in `Blueprints/Skills/`, referenced via `default_skills`.
 
 For the blueprint CLI commands (including `create --from <agent-role-id>` to clone a prototype) and the runtime usage flow diagram, see `docs/Reference_Data.md#blueprint-management`.
 
@@ -1645,7 +1640,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 - **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
-- **[Dogfood Agent Role, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` agent role (`Blueprints/Agents/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 4 rigor skills (tdd-methodology, portal-grounding, security-first, code-review) as `default_skills`; the retired `exaix-conventions` runtime skill was merged into `.copilot/skills/exaix-development` (Exaix dev guidance does not belong in the runtime catalog). Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so agent-role rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
-- **[Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/review-phase-code output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
+- **Dogfood Agent Role, Skills & Generator** — The `dogfood-developer` agent role (`Blueprints/Agents/dogfood-developer.md`, renamed from `dogfood-coder`) bundles 4 rigor skills (tdd-methodology, portal-grounding, security-first, code-review) as `default_skills`; the retired `exaix-conventions` runtime skill was merged into `.copilot/skills/exaix-development` (Exaix dev guidance does not belong in the runtime catalog). Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so agent-role rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
+- **Dogfood Meta-Workflow Skills** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/review-phase-code output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 
 ---

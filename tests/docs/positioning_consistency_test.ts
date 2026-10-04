@@ -234,3 +234,25 @@ Deno.test("[hallucination-bench] Manifest registration — .copilot/manifest.jso
       `run scripts/build_agents_index.ts to register it`,
   );
 });
+
+// Public docs must stay free of phase-numbered framing and private-submodule paths.
+// README.md, ARCHITECTURE.md and the root GLOSSARY.md are the public-facing set.
+// Docs inside exaix-dev-docs/ are intentionally exempt.
+const PUBLIC_DOC_PATHS = ["README.md", "ARCHITECTURE.md", "GLOSSARY.md"];
+
+Deno.test("[hallucination-bench] public docs cite no phase numbers or private-submodule paths", async () => {
+  const phaseNumberPattern = /Phase\s+\d+/;
+  for (const docPath of PUBLIC_DOC_PATHS) {
+    const content = await readDoc(docPath);
+    content.split("\n").forEach((line, index) => {
+      assert(
+        !phaseNumberPattern.test(line),
+        `${docPath}:${index + 1} carries a phase-numbered reference: "${line.trim()}"`,
+      );
+      assert(
+        !line.includes("exaix-dev-docs"),
+        `${docPath}:${index + 1} links into the private exaix-dev-docs submodule: "${line.trim()}"`,
+      );
+    });
+  }
+});
