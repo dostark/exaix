@@ -675,3 +675,60 @@ Deno.test("[md-paths] a STAGED plan doc is still checked (ratchet override)", as
     cleanup();
   }
 });
+
+// Symbol-level link validation (path/file.ts:Symbol) — ported from validate_doc_links.ts
+
+Deno.test("[md-paths] a resolvable :Symbol reference passes", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "core", "src"));
+    await Deno.writeTextFile(
+      join(root, "packages", "core", "src", "service.ts"),
+      "export class MyService {}\n",
+    );
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See `packages/core/src/service.ts:MyService` and [link](packages/core/src/service.ts:MyService).\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a :Symbol that does not exist in an existing file is flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "core", "src"));
+    await Deno.writeTextFile(
+      join(root, "packages", "core", "src", "service.ts"),
+      "export class MyService {}\n",
+    );
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See `packages/core/src/service.ts:MissingSymbol`.\n",
+    );
+    const r = await checkMdPaths(root);
+    assert(
+      r.violations.some((v) => v.reference.includes("service.ts:MissingSymbol")),
+      JSON.stringify(r.violations),
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a :Symbol reference to a missing FILE is flagged as a stale path", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See `packages/core/src/gone.ts:Whatever`.\n",
+    );
+    const r = await checkMdPaths(root);
+    assert(r.violations.some((v) => v.reference.includes("gone.ts")), JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});

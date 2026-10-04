@@ -81,10 +81,10 @@ graph TB
 | Component                  | Responsibility                        | Source                                                            |
 | -------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
 | `ProviderFactory`          | Registry and instance creation        | `src/provider_factory.ts:ProviderFactory`                         |
-| `BaseProvider`             | Common logic and error handling       | `src/providers/common/base_provider.ts:BaseProvider`              |
+| `BaseProvider`             | Common logic and error handling       | `src/providers/base_provider.ts:BaseProvider`                     |
 | `IProviderDefaults`        | Per-provider defaults interface       | `@exaix/core/types/provider_defaults.ts:IProviderDefaults`        |
 | `ProviderDefaultsRegistry` | Runtime registry of provider defaults | `@exaix/core/types/provider_defaults.ts:ProviderDefaultsRegistry` |
-| `MockLLMProvider`          | Deterministic testing                 | `src/providers/mock_provider.ts:MockLLMProvider`                  |
+| `createMockProvider`       | Deterministic testing                 | `@exaix/testing/src/helpers/mock_provider.ts:createMockProvider`  |
 | `EmbeddingProvider`        | Embedding model abstraction           | `src/embeddings/embedding_provider.ts`                            |
 | `EmbeddingProviderFactory` | Embedding provider instantiation      | `src/embeddings/embedding_provider_factory.ts`                    |
 | `CostTracker`              | Token and cost validation             | `@exaix/core/cost/cost_tracker.ts:CostTracker`                    |

@@ -12,8 +12,8 @@ Plan execution, agent runner, and orchestration for Exaix.
 
 | Step | Component          | Source                                                  |
 | ---- | ------------------ | ------------------------------------------------------- |
-| 1    | `PlanWatcher`      | `apps/daemon/src/watcher.ts:PlanWatcher`                |
-| 2    | `PlanExecutor`     | `src/plan_executor.ts:PlanExecutor.execute()`           |
+| 1    | `FileWatcher`      | `apps/daemon/src/watcher.ts:FileWatcher`                |
+| 2    | `PlanExecutor`     | `@exaix/core/planning/plan_executor.ts:PlanExecutor`    |
 | 3    | `AIProvider`       | `@exaix/ai/src/provider_factory.ts`                     |
 | 4    | `ToolRegistry`     | `@exaix/tool-runtime/src/tool_registry.ts:ToolRegistry` |
 | 5    | `GitService`       | `@exaix/git/src/git_service.ts`                         |

@@ -12,13 +12,13 @@ For CLI usage, see `docs/Exaix_User_Guide.md` §3.2 (Memory Banks). For schema d
 
 Schemas are defined in `@exaix/schemas`:
 
-| Schema                       | File                                                              | Purpose                            |
-| ---------------------------- | ----------------------------------------------------------------- | ---------------------------------- |
-| `ProjectMemorySchema`        | `packages/schemas/src/memory_bank.ts::ProjectMemorySchema`        | Portal-specific knowledge          |
-| `ExecutionMemorySchema`      | `packages/schemas/src/memory_bank.ts::ExecutionMemorySchema`      | Execution trace records            |
-| `GlobalMemorySchema`         | `packages/schemas/src/memory_bank.ts::GlobalMemorySchema`         | Cross-project learnings            |
-| `LearningSchema`             | `packages/schemas/src/memory_bank.ts::LearningSchema`             | Individual learned knowledge items |
-| `MemoryUpdateProposalSchema` | `packages/schemas/src/memory_bank.ts::MemoryUpdateProposalSchema` | Pending approval workflow          |
+| Schema                       | File                                                             | Purpose                            |
+| ---------------------------- | ---------------------------------------------------------------- | ---------------------------------- |
+| `ProjectMemorySchema`        | `packages/schemas/src/memory_bank.ts:ProjectMemorySchema`        | Portal-specific knowledge          |
+| `ExecutionMemorySchema`      | `packages/schemas/src/memory_bank.ts:ExecutionMemorySchema`      | Execution trace records            |
+| `GlobalMemorySchema`         | `packages/schemas/src/memory_bank.ts:GlobalMemorySchema`         | Cross-project learnings            |
+| `LearningSchema`             | `packages/schemas/src/memory_bank.ts:LearningSchema`             | Individual learned knowledge items |
+| `MemoryUpdateProposalSchema` | `packages/schemas/src/memory_bank.ts:MemoryUpdateProposalSchema` | Pending approval workflow          |
 
 ## Key Services
 

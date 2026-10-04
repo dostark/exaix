@@ -11,7 +11,7 @@
  *   deno run --allow-read --allow-write scripts/check_md_paths.ts [root] --fix
  * @architectural-layer Script
  * @dependencies [@std/fs, @std/path]
- * @related-files [scripts/validate_doc_links.ts, tests/scripts/check_md_paths_test.ts]
+ * @related-files [scripts/check_doc_section_refs.ts, tests/scripts/check_md_paths_test.ts]
  */
 
 /*
@@ -203,9 +203,27 @@ const REFERABLE_EXTS: Record<string, true> = {
 function hasReferableExt(p: string): boolean {
   const dot = p.lastIndexOf(".");
   if (dot < 0) return false;
-  // Strip a trailing #anchor before checking.
-  const ext = p.slice(dot).split("#")[0].toLowerCase();
+  // Strip a trailing `#anchor` and a `:Symbol` suffix before checking.
+  const ext = p.slice(dot).split("#")[0].split(":")[0].toLowerCase();
   return REFERABLE_EXTS[ext] === true;
+}
+
+/** Split a `path/file.ts:Symbol` reference into its file part and optional symbol. */
+export function splitSymbolRef(ref: string): { file: string; symbol?: string } {
+  const colon = ref.lastIndexOf(":");
+  if (colon < 0) return { file: ref };
+  const file = ref.slice(0, colon);
+  const symbol = ref.slice(colon + 1);
+  // Only a SINGLE colon in a `.ts` or `.tsx` path is a code symbol.
+  // Reject non-TS targets such as `.yaml:key` and `.md:heading`.
+  // Reject double colons such as `file.ts::Symbol`.
+  // Reject line ranges or line numbers such as `file.ts:366-369`.
+  // Reject empty or non-identifier symbols.
+  if (!/\.(ts|tsx)$/.test(file)) return { file: ref };
+  if (file.endsWith(":")) return { file: ref };
+  if (!/^[A-Za-z_@][A-Za-z0-9_.]*$/.test(symbol)) return { file: ref };
+  if (file.includes("/")) return { file, symbol };
+  return { file: ref };
 }
 
 function isExternalOrAnchor(ref: string): boolean {
@@ -554,16 +572,54 @@ function stripAnchor(ref: string): string {
 function referenceResolves(root: string, mdFileAbs: string, refWithAnchor: string): boolean {
   const ref = stripAnchor(refWithAnchor);
   if (ref === "") return true; // pure `#anchor` (same-file) — handled/skipped upstream
-  const candidates = isAbsolute(ref) ? [ref] : [resolve(dirname(mdFileAbs), ref), resolve(root, ref)];
-  for (const c of candidates) {
+  // A `path/file.ts:Symbol` reference resolves only when the FILE exists AND the file
+  // declares the symbol. A non-symbol `:suffix` (e.g. `x.yaml:key`, `file.ts:366-369`)
+  // is stripped before the file-existence check. Ported from the retired
+  // validate_doc_links.ts gate, which this script replaced.
+  const { file: fileOnly, symbol } = splitSymbolRef(ref);
+  // Strip any residual `:suffix` (line range, YAML key) the symbol splitter rejected.
+  const fileCandidate = symbol === undefined && fileOnly.includes(":")
+    ? fileOnly.slice(0, fileOnly.lastIndexOf(":"))
+    : fileOnly;
+  const candidates = (p: string) => isAbsolute(p) ? [p] : [resolve(dirname(mdFileAbs), p), resolve(root, p)];
+  for (const c of candidates(fileCandidate)) {
     try {
       Deno.statSync(c);
-      return true;
+      if (symbol === undefined) return true;
+      return fileDeclaresSymbol(Deno.readTextFileSync(c), symbol);
     } catch {
-      // try next
+      // try next candidate
     }
   }
   return false;
+}
+
+/** True when a source file declares the named class/function/interface/type/enum/const, a method, or the `@module`/`@region` marker. */
+function fileDeclaresSymbol(content: string, symbol: string): boolean {
+  if (symbol.startsWith("@region")) {
+    const name = symbol.split(/\s+/)[1];
+    return content.includes(`@region ${name}`);
+  }
+  if (symbol.startsWith("@module")) {
+    const name = symbol.split(/\s+/)[1];
+    return content.includes(`@module ${name}`);
+  }
+  if (symbol.includes(".")) {
+    // Dotted form `Class.method`. Require both parts to appear.
+    const [cls, member] = symbol.split(".");
+    return new RegExp(`\\b${cls}\\b`).test(content) && new RegExp(`\\b${member}\\b`).test(content);
+  }
+  // Declaration forms include `class X`, `function X` and a method `X(`.
+  // They also include a const `X =`, an enum member `X:` and the module marker.
+  const decl = new RegExp(
+    `\\b(?:class|interface|enum|type|function|const|let|var|abstract|async|static|get|set)\\s+${symbol}\\b`,
+  );
+  const method = new RegExp(`\\b${symbol}\\s*[(=]`);
+  const key = new RegExp(`\\b${symbol}\\s*:`);
+  return decl.test(content) || method.test(content) || key.test(content) ||
+    content.includes(`export class ${symbol}`) ||
+    content.includes(`export interface ${symbol}`) ||
+    content.includes(`* @module ${symbol}`);
 }
 
 /** Returns `null` when the anchor resolves, when the target file is already stale (reported separately, to avoid double-reporting), or when the target isn't markdown. */

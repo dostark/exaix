@@ -44,7 +44,7 @@ links:
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
-- [ ] When citing a code location in your response, name the file and the specific symbol (function, class, interface) it concerns — for example `packages/core/src/types.ts:MyServiceConfig` — not just the file
+- [ ] When citing a code location in your response, name the file and the specific symbol (function, class, interface) it concerns — for example `packages/core/src/types/i_config_service.ts:IConfigService` — not just the file
 - [ ] **Acknowledge** which `.copilot/` docs guided your approach in your implementation plan
 
 **Example acknowledgment format:**
