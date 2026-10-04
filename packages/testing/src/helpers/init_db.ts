@@ -32,10 +32,11 @@ export const ACTIVITY_TABLE_SQL = `
     cost_usd REAL DEFAULT 0.0,
     cache_read_tokens INTEGER,
     cache_creation_tokens INTEGER,
-    timestamp DATETIME DEFAULT (datetime('now'))
+    timestamp DATETIME DEFAULT (datetime('now')),
+    prev_hash TEXT,
+    row_hash TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
-  CREATE INDEX IF NOT EXISTS idx_activity_agent_role ON activity(agent_role);
   CREATE INDEX IF NOT EXISTS idx_activity_agent_role ON activity(agent_role);
   CREATE INDEX IF NOT EXISTS idx_activity_actor_type ON activity(actor_type);
   CREATE INDEX IF NOT EXISTS idx_activity_runner_kind ON activity(runner_kind);
@@ -58,7 +59,9 @@ export function initTestDb(): Database {
       prompt_tokens INTEGER DEFAULT 0,
       completion_tokens INTEGER DEFAULT 0,
       cost_usd REAL DEFAULT 0.0,
-      timestamp DATETIME DEFAULT (datetime('now'))
+      timestamp DATETIME DEFAULT (datetime('now')),
+      prev_hash TEXT,
+      row_hash TEXT
     );
   `);
   return db;

@@ -84,7 +84,7 @@ import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/co
 import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { ISkillMatchRequest } from "@exaix/core/types";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IDatabaseService, IJournalIntegrityResult } from "@exaix/core/types";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 
 /** Default agent role ID used across all mock service implementations */
@@ -270,6 +270,17 @@ export class MockLogService implements IDatabaseService, IJournalService {
 
   preparedRun(_query: string, _params?: Opt<SqliteParam[], Reason.TestStub>): Promise<unknown> {
     return Promise.resolve({});
+  }
+
+  verifyJournalIntegrity(): Promise<IJournalIntegrityResult> {
+    return Promise.resolve({
+      ok: true,
+      rows_checked: 0,
+      unhashed_prefix: 0,
+      first_broken_id: null,
+      expected_hash: null,
+      actual_hash: null,
+    });
   }
 
   getActivitiesByTrace(_traceId: string): IActivityRecord[] {

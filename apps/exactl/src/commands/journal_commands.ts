@@ -10,6 +10,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
+import { DomainEventType, type IJournalIntegrityPayload } from "@exaix/core/events";
 import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
 import type { UIOutputFormat } from "@exaix/tui";
 
@@ -37,6 +38,9 @@ export interface IJournalWaitOptions {
   payload?: string;
 }
 
+/** Actor recorded on journal-integrity events emitted by `exactl journal verify`. */
+const JOURNAL_VERIFY_ACTOR = "exactl-journal-verify";
+
 /** Default readiness-barrier timeout for `exactl journal wait` (seconds). */
 const JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC = 30;
 /** Poll cadence for the readiness barrier — an event appearing after the baseline is noticed
@@ -63,6 +67,37 @@ export class JournalCommands extends BaseCommand {
 
     // Format output
     JournalFormatter.render(results, filterOptions, options.format);
+  }
+
+  /** Verify the activity hash chain. Returns 0 when intact, 1 on the first broken link.
+   *  Rows written before the chain existed are reported as an unverifiable prefix. */
+  async verify(): Promise<number> {
+    const report = await this.db.verifyJournalIntegrity();
+    const traceId = crypto.randomUUID();
+    const payload: IJournalIntegrityPayload = {
+      rows_checked: report.rows_checked,
+      unhashed_prefix: report.unhashed_prefix,
+      first_broken_id: report.first_broken_id,
+      expected_hash: report.expected_hash,
+      actual_hash: report.actual_hash,
+    };
+
+    if (report.ok) {
+      const prefixNote = report.unhashed_prefix > 0
+        ? ` (${report.unhashed_prefix} legacy row(s) before the chain are unverifiable)`
+        : "";
+      console.log(colors.green(`Journal integrity verified: ${report.rows_checked} row(s) checked${prefixNote}`));
+      await this.logger.info(DomainEventType.JournalIntegrityVerified, JOURNAL_VERIFY_ACTOR, { ...payload }, traceId);
+      return 0;
+    }
+
+    console.error(
+      colors.red(
+        `Journal integrity FAILED at row ${report.first_broken_id}: expected ${report.expected_hash}, actual ${report.actual_hash}`,
+      ),
+    );
+    await this.logger.info(DomainEventType.JournalIntegrityFailed, JOURNAL_VERIFY_ACTOR, { ...payload }, traceId);
+    return 1;
   }
 
   /** Readiness barrier: blocks until `event` is journalled after `since` (default: the max

@@ -14,6 +14,7 @@ import { Database } from "@db/sqlite";
 import { MigrationDirection } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { upgradeActivityCacheColumns } from "./activity_cache_schema.ts";
+import { upgradeActivityChainColumns } from "./journal_integrity_schema.ts";
 import { upgradeProviderCostsIdentityColumns } from "./provider_costs_schema.ts";
 
 /** Env override letting a caller point migrations at the repo while CWD stays the workspace. */
@@ -84,6 +85,7 @@ async function runMigrations() {
       }
     }
     upgradeActivityCacheColumns(db);
+    upgradeActivityChainColumns(db);
     upgradeProviderCostsIdentityColumns(db);
     console.log("All migrations up to date.");
   } finally {

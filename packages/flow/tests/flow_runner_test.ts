@@ -2389,6 +2389,16 @@ class MockDatabaseService {
   listPendingToolConfirmations() {
     return Promise.resolve([]);
   }
+  verifyJournalIntegrity() {
+    return Promise.resolve({
+      ok: true,
+      rows_checked: 0,
+      unhashed_prefix: 0,
+      first_broken_id: null,
+      expected_hash: null,
+      actual_hash: null,
+    });
+  }
 }
 
 Deno.test("[regression] FlowRunner: aggregates token usage across flow execution", async () => {

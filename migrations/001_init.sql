@@ -30,7 +30,10 @@ CREATE TABLE IF NOT EXISTS activity (
   -- NULL means "not reported by this provider", never "reported as zero".
   cache_read_tokens INTEGER,
   cache_creation_tokens INTEGER,
-  timestamp DATETIME DEFAULT (datetime('now'))
+  timestamp DATETIME DEFAULT (datetime('now')),
+  -- Tamper-evidence hash chain (Solo). NULL on rows written before the chain existed.
+  prev_hash TEXT,
+  row_hash TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);

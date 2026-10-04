@@ -2701,6 +2701,16 @@ const journalCommand = new Command()
         const cmd = new JournalCommands(context);
         await cmd.wait(options as IJournalWaitOptions);
       }),
+  )
+  .command(
+    "verify",
+    new Command()
+      .description("Verify the activity hash chain (exit 1 when tampered)")
+      .action(async () => {
+        const cmd = new JournalCommands(context);
+        const code = await cmd.verify();
+        if (code !== 0) Deno.exit(code);
+      }),
   );
 
 const createCostCommand = () =>

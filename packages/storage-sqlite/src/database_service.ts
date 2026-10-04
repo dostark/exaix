@@ -17,8 +17,15 @@ import { isTestMode } from "@exaix/core/config";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService, IJournalFilterOptions } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IJournalIntegrityResult, Opt, Reason } from "@exaix/core/types";
 import type { IDatabaseConnection } from "./connection_pool.ts";
+import {
+  computePayloadDigest,
+  computeRowHash,
+  type IActivityChainRow,
+  JOURNAL_CHAIN_GENESIS,
+  verifyActivityChain,
+} from "./journal_integrity.ts";
 
 export type SqliteParam = string | number | boolean | null;
 
@@ -41,7 +48,9 @@ const ACTIVITY_TABLE_DDL = `
     cost_usd REAL DEFAULT 0.0,
     cache_read_tokens INTEGER,
     cache_creation_tokens INTEGER,
-    timestamp DATETIME DEFAULT (datetime('now'))
+    timestamp DATETIME DEFAULT (datetime('now')),
+    prev_hash TEXT,
+    row_hash TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
   CREATE INDEX IF NOT EXISTS idx_activity_time ON activity(timestamp);
@@ -139,6 +148,8 @@ export class DatabaseService implements IDatabaseService {
   private readonly FLUSH_INTERVAL_MS: number;
   private readonly MAX_BATCH_SIZE: number;
   private isClosing = false;
+  /** Serializes batch writes so hashing awaits never interleave two transactions. */
+  private writeQueue: Promise<void> = Promise.resolve();
   private readonly dbBreaker: CircuitBreaker;
 
   constructor(config: Config, poolConnection?: Opt<IDatabaseConnection, Reason.OptionalDependency>) {
@@ -296,14 +307,30 @@ export class DatabaseService implements IDatabaseService {
     throw new Error("Unreachable code");
   }
 
-  private async executeBatchInsert(batch: LogEntry[], context: string): Promise<void> {
+  private executeBatchInsert(batch: LogEntry[], context: string): Promise<void> {
+    const run = this.writeQueue.then(() => this.runBatchInsert(batch, context));
+    this.writeQueue = run.catch(() => {});
+    return run;
+  }
+
+  private async runBatchInsert(batch: LogEntry[], context: string): Promise<void> {
     try {
       await this.dbBreaker.execute(() =>
         this.retryTransaction(() => {
+          let prevHash = this.currentChainHead();
           for (const entry of batch) {
+            const payloadDigest = computePayloadDigest(entry.payload);
+            const rowHash = computeRowHash(prevHash, {
+              id: entry.activityId,
+              trace_id: entry.traceId,
+              actor: entry.actor,
+              action_type: entry.actionType,
+              timestamp: entry.timestamp,
+              payload_digest: payloadDigest,
+            });
             this.db.exec(
-              `INSERT INTO activity (id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+              `INSERT INTO activity (id, trace_id, actor, actor_type, agent_role, runner_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, cache_read_tokens, cache_creation_tokens, timestamp, prev_hash, row_hash)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
               [
                 entry.activityId ?? null,
                 entry.traceId ?? null,
@@ -320,8 +347,11 @@ export class DatabaseService implements IDatabaseService {
                 entry.cacheReadTokens ?? null,
                 entry.cacheCreationTokens ?? null,
                 entry.timestamp ?? null,
+                prevHash,
+                rowHash,
               ],
             );
+            prevHash = rowHash;
           }
           return Promise.resolve();
         })
@@ -329,6 +359,25 @@ export class DatabaseService implements IDatabaseService {
     } catch (error) {
       console.error(`Failed to flush ${batch.length} activity logs (${context}):`, error);
     }
+  }
+
+  /** Last non-null row_hash by rowid, or the genesis link. Read inside the write transaction. */
+  private currentChainHead(): string {
+    const stmt = this.db.prepare(
+      "SELECT row_hash FROM activity WHERE row_hash IS NOT NULL ORDER BY rowid DESC LIMIT 1",
+    );
+    const row = stmt.get() as { row_hash: string } | undefined;
+    return row?.row_hash ?? JOURNAL_CHAIN_GENESIS;
+  }
+
+  /** Verify the activity hash chain. Reports, never throws, on tampering. */
+  async verifyJournalIntegrity(): Promise<IJournalIntegrityResult> {
+    await this.flushPendingLogs("verifyJournalIntegrity");
+    const stmt = this.db.prepare(
+      "SELECT id, trace_id, actor, action_type, timestamp, payload, prev_hash, row_hash FROM activity ORDER BY rowid ASC",
+    );
+    const rows = stmt.all() as IActivityChainRow[];
+    return verifyActivityChain(rows);
   }
 
   private flush(): void {

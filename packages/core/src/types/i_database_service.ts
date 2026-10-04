@@ -10,6 +10,16 @@ import type { JSONValue } from "@exaix/core";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
+/** Verify result for the Solo journal hash chain. `unhashed_prefix` counts legacy rows. */
+export interface IJournalIntegrityResult {
+  ok: boolean;
+  rows_checked: number;
+  unhashed_prefix: number;
+  first_broken_id: string | null;
+  expected_hash: string | null;
+  actual_hash: string | null;
+}
+
 export interface IDatabaseService {
   /**
    * Log an activity to the journal (non-blocking, batched writes).
@@ -59,6 +69,11 @@ export interface IDatabaseService {
    * Execute a non-query statement (INSERT/UPDATE/DELETE).
    */
   preparedRun(query: string, params?: SqliteParam[]): Promise<unknown>;
+
+  /**
+   * Verify the Solo journal's activity hash chain. Reports, never throws, on tampering.
+   */
+  verifyJournalIntegrity(): Promise<IJournalIntegrityResult>;
 
   /**
    * Get activities by trace ID.

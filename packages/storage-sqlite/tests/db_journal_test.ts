@@ -109,3 +109,65 @@ describe("DatabaseService - Journal Queries", () => {
     assertEquals(results.length, 5);
   });
 });
+
+describe("DatabaseService - Journal Integrity", () => {
+  let db: Awaited<ReturnType<typeof initTestDbService>>["db"];
+  let cleanup: () => Promise<void>;
+
+  beforeEach(async () => {
+    const testDb = await initTestDbService();
+    db = testDb.db;
+    cleanup = testDb.cleanup;
+  });
+
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  async function seed(actor: string, actionType: string, traceId: string): Promise<void> {
+    await db.logActivity(actor, actionType, "target", { foo: "bar" }, traceId);
+  }
+
+  it("security: an intact hash chain verifies", async () => {
+    await seed("a", "request.created", "t1");
+    await seed("b", "plan.created", "t1");
+    await seed("c", "plan.approved", "t1");
+    await db.waitForFlush();
+
+    const report = await db.verifyJournalIntegrity();
+    assertEquals(report.ok, true);
+    assertEquals(report.rows_checked, 3);
+    assertEquals(report.unhashed_prefix, 0);
+  });
+
+  it("security: tampering with an activity row is detected by journal verify", async () => {
+    await seed("a", "request.created", "t1");
+    await seed("b", "plan.created", "t1");
+    await db.waitForFlush();
+
+    await db.preparedRun("UPDATE activity SET payload = ? WHERE action_type = ?", [
+      '{"foo":"tampered"}',
+      "plan.created",
+    ]);
+
+    const report = await db.verifyJournalIntegrity();
+    assertEquals(report.ok, false);
+    assert(report.first_broken_id !== null, "a broken link must name the row");
+    assert(report.expected_hash !== report.actual_hash, "recomputed hash must differ from stored");
+  });
+
+  it("security: journal verify reports an unhashed prefix without failing", async () => {
+    // A legacy row written before the chain existed carries NULL hashes and sorts first.
+    await db.preparedRun(
+      "INSERT INTO activity (id, trace_id, actor, action_type, payload, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+      ["legacy-1", "t-legacy", "user", "legacy.action", "{}", "2020-01-01T00:00:00.000Z"],
+    );
+    await seed("a", "request.created", "t1");
+    await db.waitForFlush();
+
+    const report = await db.verifyJournalIntegrity();
+    assertEquals(report.ok, true);
+    assertEquals(report.unhashed_prefix, 1);
+    assertEquals(report.rows_checked, 1);
+  });
+});

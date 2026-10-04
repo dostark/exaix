@@ -528,6 +528,16 @@ export interface IRoutingExperimentAppliedEventPayload {
   experiment_bucket: number | null;
 }
 
+/** Payload of the journal-integrity events. Carries counts and, on failure, the first
+ *  broken link's identity and hashes. Never carries raw activity payloads. */
+export interface IJournalIntegrityPayload {
+  rows_checked: number;
+  unhashed_prefix: number;
+  first_broken_id: string | null;
+  expected_hash: string | null;
+  actual_hash: string | null;
+}
+
 export const DomainEventType = {
   // Flow step events
   FlowStepExecuted: "flow.step.executed",
@@ -830,6 +840,8 @@ export const DomainEventType = {
   SecurityViolation: "security.violation",
   SecurityPathTraversalAttempted: "security.path_traversal_attempted",
   SecurityPathAccessDenied: "security.path_access_denied",
+  JournalIntegrityVerified: "journal.integrity.verified",
+  JournalIntegrityFailed: "journal.integrity.failed",
 
   // Portal / path events
   PathResolved: "path.resolved",

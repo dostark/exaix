@@ -84,6 +84,15 @@ export function createStubDb(
     writeToolConfirmationDecision: (_id: string, _decision: Omit<ToolConfirmationDecision, "id">) => Promise.resolve(),
     getToolConfirmationDecision: (_id: string) => Promise.resolve(null),
     listPendingToolConfirmations: () => Promise.resolve([]),
+    verifyJournalIntegrity: () =>
+      Promise.resolve({
+        ok: true,
+        rows_checked: 0,
+        unhashed_prefix: 0,
+        first_broken_id: null,
+        expected_hash: null,
+        actual_hash: null,
+      }),
     close: () => Promise.resolve(),
   };
 
