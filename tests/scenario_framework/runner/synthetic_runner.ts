@@ -17,7 +17,6 @@ import { parse as parseYaml } from "@std/yaml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import type { IResolvedJudgeProfile } from "@exaix/core/evaluation";
 import { gitServiceFor } from "./git_helpers.ts";
 import { composeGated, computeStepScore, computeSuiteScore, type IStepScoreInput, ScoringMode } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
@@ -93,7 +92,6 @@ export interface IBuildRunManifestOptions {
 }
 
 export interface IRunSyntheticScenarioOptions {
-  judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
   frameworkHome: string;
   scenarioPath: string;
   workspaceRoot: string;
@@ -555,7 +553,6 @@ export async function runSyntheticScenario(
           stepOutcomes,
           // The judge that grades this step, when a binding layer named one.
           ...(judgePlan.bindings.has(step.id) ? { judgeBinding: judgePlan.bindings.get(step.id)!.binding } : {}),
-          judgeProfile: options.judgeProfile,
           maxStepTimeoutSec: options.maxStepTimeoutSec,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
@@ -879,7 +876,6 @@ export function resolveTrajectorySourceStep(
 }
 
 interface IExecuteSyntheticStepOptions {
-  judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
   scenarioId: string;
   step: IScenarioStep;
   workspaceRoot: string;
@@ -1043,7 +1039,6 @@ async function executeSyntheticStep(
     journalBaselineRowid: options.journalBaselineRowid,
     traceBaselineRowid: options.traceBaselineRowid,
     judgeBinding: options.judgeBinding,
-    judgeProfile: options.judgeProfile,
   });
 
   return {
@@ -1073,7 +1068,6 @@ async function evaluateInputCriteria(
         journalBaselineRowid: options.journalBaselineRowid,
         traceBaselineRowid: options.traceBaselineRowid,
         judgeBinding: options.judgeBinding,
-        judgeProfile: options.judgeProfile,
       }),
     );
   }

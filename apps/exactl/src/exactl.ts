@@ -3029,7 +3029,6 @@ const evalCommand = new Command()
     "run",
     new Command()
       .description("Run evaluation scenarios")
-      .option("--judge-profile <file:string>", "Use an explicit frozen plan judge profile")
       .option("-P, --pack <pack:string>", "Run scenarios in a named pack (repeatable)", { collect: true })
       .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
       .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
@@ -3054,7 +3053,6 @@ const evalCommand = new Command()
             scoreThreshold: options.scoreThreshold,
             trials: options.trials,
             historyFormat: options.historyFormat,
-            judgeProfile: options.judgeProfile,
             cell: options.cell,
             maxCostUsd: options.maxCostUsd,
             verbose: options.verbose,
@@ -3148,7 +3146,6 @@ const evalCommand = new Command()
         "generate",
         new Command()
           .description("Run real scenarios, capturing real judge-call evidence for calibration")
-          .option("--judge-profile <file:string>", "Use an explicit frozen plan judge profile")
           .option("-P, --pack <pack:string>", "Run scenarios in a named pack (repeatable)", { collect: true })
           .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
           .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
@@ -3173,7 +3170,6 @@ const evalCommand = new Command()
                 maxCostUsd: options.maxCostUsd,
                 verbose: options.verbose,
                 captureCalibrationEvidence: options.captureCalibrationEvidence,
-                judgeProfile: options.judgeProfile,
               });
             } catch (error) {
               console.error(

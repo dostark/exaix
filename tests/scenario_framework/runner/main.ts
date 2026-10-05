@@ -15,8 +15,6 @@ import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_cata
 import { runSyntheticScenario } from "./synthetic_runner.ts";
 import { applyCaptureFixturesFlag, copyCapturedFixtures, reportCaptureFlakiness } from "./capture_fixtures_flag.ts";
 import { applyCaptureCalibrationEvidenceFlag } from "./capture_calibration_evidence_flag.ts";
-import { loadJudgeProfile } from "./judge_profile_loader.ts";
-import { JudgeProfileError } from "@exaix/core/evaluation";
 import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
@@ -70,7 +68,6 @@ await new Command()
   .option("-d, --dry-run", "Validate configuration and scenario definitions without executing any steps")
   .option("-v, --verbose", "Show full CLI commands executed in each step")
   .option("--eval-mode", "Enable eval history writing for evaluation runs")
-  .option("--judge-profile <file:string>", "Use an explicit frozen plan judge profile")
   .option("--score-threshold <threshold:number>", "Minimum suite score to pass (default: 0.5)")
   .option("--trials <n:number>", "Number of trials per scenario (default: 1)")
   .option("--history-format <format:string>", "History storage format: sqlite+jsonl or jsonl (default: sqlite+jsonl)")
@@ -115,10 +112,6 @@ await new Command()
       "only, never a CI gate; run against the real Phase 141 pack to build a calibration set.",
   )
   .action(async (options) => {
-    const judgeProfile = options.judgeProfile ? await loadJudgeProfile(options.judgeProfile) : undefined;
-    if (judgeProfile && options.captureCalibrationEvidence) {
-      throw new JudgeProfileError("judge-profile-frozen-capture-required");
-    }
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");
     applyCaptureFixturesFlag(options.captureFixtures);
@@ -268,7 +261,6 @@ await new Command()
             maxStepTimeoutSec: options.maxStepTimeout,
             operatorOverlays: options.overlay ?? [],
             operatorBinds: options.bind ?? [],
-            judgeProfile,
             ...(entry.pack === "persona_response_eval"
               ? {
                 env: {

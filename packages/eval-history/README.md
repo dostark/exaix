@@ -36,24 +36,14 @@ The identity builder validates an input map. It does not discover dependency
 closures or prove that an artifact producer used that map. AgentRunner/native
 context lineage and its propagation into frozen records remain pending.
 
-## Selected judge profile
+## Rubric source
 
-The scenario runner and `exactl eval run` accept `--judge-profile <profile-file>`;
-`eval calibration generate` forwards the same option. The pure renderer and
-validator are in `packages/core/src/evaluation/judge_profile.ts`.
-
-Selected mode loads bounded profile assets, uses one fenced instruction payload
-per asset, and renders JSON-encoded request/artifact evidence. It requires all
-five criterion scores and recomputes the weighted aggregate, threshold label,
-and criterion flags. Duplicate keys, unsupported fields, missing scores, and
-insufficient-evidence error responses reject. Ambient methodology and scored
-examples are not appended. Unselected judging retains its existing behavior.
-
-**Activation is incomplete.** Selected live judge calls reject with
-`judge-profile-isolated-provider-required`; selected capture into the legacy
-format rejects with `judge-profile-frozen-capture-required`. Mock handling has no
-numeric calibration score. Deterministic provider fixtures verify prompt/scoring
-contracts, not model quality or baseline eligibility.
+Judge calibration reuses the existing evaluation components. The plan-quality
+rubric is the `GOAL_ALIGNED_REVIEW` criterion set in
+`packages/core/src/evaluation/evaluation_criteria.ts`. The target judge and the
+reference evaluator share `buildEvaluationPrompt`, `calculateWeightedScore` and
+`EvaluationResultSchema`; there is no separate profile schema, renderer or
+parser.
 
 ## Commands and compatibility
 
@@ -63,17 +53,16 @@ scoring; it is not target-only frozen replay. Provider calls are sequential.
 
 Phase 146 Step 1 still must implement this migration:
 
-| Command               | Planned behavior                                                   |
-| --------------------- | ------------------------------------------------------------------ |
-| `generate`            | Capture real artifacts with verified assembly lineage              |
-| `reference`           | Stage the independent Codex CLI reference track                    |
-| `finalize`            | Validate and atomically publish an immutable version 2 set         |
-| `score --dataset`     | Replay only the Claude CLI target against frozen labels            |
-| `probe --capture-dir` | Explicit paired diagnostics, always baseline-ineligible            |
-| `drift`               | Target-only replay and comparison with compatible trusted identity |
+| Command               | Planned behavior                                           |
+| --------------------- | ---------------------------------------------------------- |
+| `generate`            | Capture real artifacts with verified assembly lineage      |
+| `reference`           | Stage the independent Codex CLI reference track            |
+| `finalize`            | Validate and atomically publish an immutable version 2 set |
+| `score --dataset`     | Replay only the Claude CLI target against frozen labels    |
+| `probe --capture-dir` | Explicit paired diagnostics, always baseline-ineligible    |
 
-Reference/finalize/probe registration, version 2 readers/writers, frozen score
-migration, and drift are pending. Do not treat their descriptions as available
+Reference/finalize/probe registration, version 2 readers/writers and frozen score
+migration are pending. Do not treat their descriptions as available
 commands. Legacy records remain inspectable; they cannot be promoted by assuming
 missing lineage. Synthetic fixtures, mocks, and probes do not count toward the
 20 unique real artifacts or a published baseline. CLI isolation, private atomic
