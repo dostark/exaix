@@ -488,6 +488,52 @@ Deno.test(
   },
 );
 
+/** The capability the DeepSeek profile publishes: thinking mode accepts tool_choice "auto" only. */
+const NO_FORCED_CHOICE_WITH_THINKING: NonNullable<IModelProvider["callCapabilities"]> = {
+  profile: "deepseek",
+  supportsThinking: true,
+  supportedEffortTiers: ["low", "medium", "high"],
+  effortRequiresThinking: true,
+  supportsForcedToolChoiceWithThinking: false,
+};
+
+Deno.test(
+  "[react] a thinking call relaxes the forced tool to auto when the provider refuses forced choice with thinking",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_FORCED_CHOICE_WITH_THINKING);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), provider);
+    strategy.callOptions = { thinking: true, effort: "high" };
+
+    await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
+
+    assertEquals(calls[0].options?.toolChoice, { type: "auto", disable_parallel_tool_use: true });
+    assertEquals(toolChoiceModeOf(calls[0].options), "auto");
+    assertEquals(calls[0].options?.thinking, true);
+  },
+);
+
+Deno.test(
+  "[react] the same provider keeps the forced tool when thinking is off",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    registerToolChoiceProvider();
+    const { provider, calls } = makeRecordingProvider(NO_FORCED_CHOICE_WITH_THINKING);
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor({ count: 0 }, PATCH_FILE_TOOL), provider);
+    strategy.callOptions = { thinking: false };
+
+    await strategy.execute(testBlueprint, targetedEditContext(), nativeOptions(["patch_file"]));
+
+    assertEquals(calls[0].options?.toolChoice, {
+      type: "tool",
+      name: "patch_file",
+      disable_parallel_tool_use: true,
+    });
+    assertEquals(toolChoiceModeOf(calls[0].options), "forced");
+  },
+);
+
 Deno.test(
   "[phase203.react] a default provider still forces any, and a preferred tool still forces that tool",
   { sanitizeOps: false, sanitizeResources: false },

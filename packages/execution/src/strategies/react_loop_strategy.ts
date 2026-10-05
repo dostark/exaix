@@ -394,10 +394,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     if (nativeToolsUsed && nativeToolDefinitions) {
       base.tools = nativeToolDefinitions;
       // A provider that cannot honor an explicit tool_choice still receives the tool list.
-      if (this.provider?.callCapabilities?.supportsToolChoice !== false) {
+      const capabilities = this.provider?.callCapabilities;
+      const forcedChoiceRefused = this.callOptions?.thinking === true &&
+        capabilities?.supportsForcedToolChoiceWithThinking === false;
+      if (capabilities?.supportsToolChoice !== false) {
         // PGAP-3: a detected preferred tool forces tool_choice: {type: "tool", name: "..."}.
         // That entry replaces the unconstrained {type: "any"} for a targeted-edit task.
-        if (nativePreferredTool && !nativeToolsPriorTurn) {
+        if (forcedChoiceRefused) {
+          base.toolChoice = { type: TOOL_CHOICE_TYPE_AUTO, disable_parallel_tool_use: true };
+          base.nativeToolChoiceMode = TOOL_CHOICE_TYPE_AUTO;
+        } else if (nativePreferredTool && !nativeToolsPriorTurn) {
           base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
           base.nativeToolChoiceMode = "forced";
         } else {

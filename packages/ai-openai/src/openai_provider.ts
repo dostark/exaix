@@ -99,7 +99,8 @@ export class OpenAIProvider extends BaseProvider {
         profile,
         supportsThinking: isLocal || isDeepSeek,
         supportedEffortTiers: Object.freeze(isLocal || isDeepSeek ? ["low", "medium", "high"] as const : []),
-        ...(isDeepSeek ? { effortRequiresThinking: true } : {}),
+        // DeepSeek thinking mode accepts tool_choice "auto" only.
+        ...(isDeepSeek ? { effortRequiresThinking: true, supportsForcedToolChoiceWithThinking: false } : {}),
         // A self-hosted service declares whether it honors an explicit tool_choice.
         ...(profile === OPENAI_COMPATIBLE_SELF_HOSTED_PROFILE &&
             this.compatibleConfig.supports_tool_choice !== true
