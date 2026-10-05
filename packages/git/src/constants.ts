@@ -72,6 +72,12 @@ export const GIT_CMD_CHECKOUT = "checkout";
 export const GIT_CMD_COMMIT = "commit";
 export const GIT_CMD_LOG = "log";
 export const GIT_CMD_INIT = "init";
+export const GIT_CMD_RESET = "reset";
+export const GIT_CMD_CLEAN = "clean";
+export const GIT_FLAG_HARD = "--hard";
+export const GIT_FLAG_FORCE = "--force";
+/** A short-flag cluster for `git clean` that forces deletion or includes directories (`-f`, `-d`, `-fdx`). */
+export const GIT_CLEAN_DESTRUCTIVE_SHORT_FLAGS = /^-[a-z]*[fd][a-z]*$/i;
 
 export const GIT_ERROR_NOTHING_TO_COMMIT = "nothing to commit";
 export const GIT_ERROR_NOT_A_REPO = "not a git repository";

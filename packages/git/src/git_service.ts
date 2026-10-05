@@ -25,15 +25,20 @@ import {
   DEFAULT_GIT_MAX_RETRIES,
   DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
+  GIT_CLEAN_DESTRUCTIVE_SHORT_FLAGS,
   GIT_CMD_ADD,
   GIT_CMD_BRANCH,
+  GIT_CMD_CLEAN,
   GIT_CMD_CONFIG,
   GIT_CMD_INIT,
   GIT_CMD_LIST,
   GIT_CMD_REMOVE,
+  GIT_CMD_RESET,
   GIT_CMD_REV_PARSE,
   GIT_CMD_STATUS,
   GIT_CMD_WORKTREE,
+  GIT_FLAG_FORCE,
+  GIT_FLAG_HARD,
   GIT_REQUEST_BRANCH_PREFIX,
 } from "./constants.ts";
 import { GitBranchName } from "./enums.ts";
@@ -52,6 +57,15 @@ import type { Opt, Reason } from "@exaix/core/types";
 type GitServiceError = Error | string | Record<string, JsonValue>;
 
 const DAEMON_AGENT_ROLE_ID = "daemon";
+
+/** True for `reset --hard` and for `clean` that forces or removes directories. Compares whole
+ *  argument tokens, so free text such as a commit message never matches. */
+function isDestructiveGitCommand(args: string[]): boolean {
+  const tokens = args.map((arg) => arg.toLowerCase());
+  if (tokens.includes(GIT_CMD_RESET) && tokens.includes(GIT_FLAG_HARD)) return true;
+  if (!tokens.includes(GIT_CMD_CLEAN)) return false;
+  return tokens.some((token) => token === GIT_FLAG_FORCE || GIT_CLEAN_DESTRUCTIVE_SHORT_FLAGS.test(token));
+}
 
 function getRandomString(length: number): string {
   const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -676,14 +690,7 @@ export class GitService implements IGitService {
 
   /** Validate git command for security violations @throws GitSecurityError if command violates security policies */
   private validateGitCommandSecurity(args: string[]): void {
-    const fullCommand = args.join(" ").toLowerCase();
-
-    // Prohibit destructive operations everywhere
-    // These are the commands that can cause data loss
-    const isDestructive = (fullCommand.includes("reset") && fullCommand.includes("--hard")) ||
-      (fullCommand.includes("clean") && (fullCommand.includes("-f") || fullCommand.includes("-d")));
-
-    if (isDestructive) {
+    if (isDestructiveGitCommand(args)) {
       throw new GitSecurityError(`Destructive git operation prohibited: git ${args.join(" ")}`);
     }
   }
@@ -701,13 +708,7 @@ export class GitService implements IGitService {
       "--html-path",
     ];
 
-    const fullCommand = args.join(" ").toLowerCase();
-
-    // Prohibit destructive operations
-    const isDestructive = (fullCommand.includes("reset") && fullCommand.includes("--hard")) ||
-      (fullCommand.includes("clean") && (fullCommand.includes("-f") || fullCommand.includes("-d")));
-
-    if (isDestructive) {
+    if (isDestructiveGitCommand(args)) {
       return {
         valid: false,
         reason: `Destructive git operation prohibited: git ${args.join(" ")}`,
