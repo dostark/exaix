@@ -239,26 +239,55 @@ Deno.test("[security] profile loader rejects oversized files before JSON parsing
   }
 });
 
-Deno.test("[security] selected profiles refuse CLI calls until the isolated provider seam is wired", async (): Promise<void> => {
+Deno.test("selected profile routes CLI adapters through the isolated launcher and never the ordinary provider factory", async (): Promise<void> => {
   const profile: IResolvedJudgeProfile = await loadJudgeProfile(PROFILE_PATH);
   const data: IExamples = JSON.parse(await Deno.readTextFile(join(PROFILE_DIRECTORY, "examples.json"))) as IExamples;
   bootstrapProviderRegistry();
-  for (const adapter of ["claude-cli", "codex-cli"]) {
+  for (const [adapter, provider] of [["claude-cli", "anthropic"], ["codex-cli", "openai"]] as const) {
     const factory = ProviderRegistry.getFactory(adapter);
     assert(factory);
-    const provider: MockLLMProvider = new MockLLMProvider(MockStrategy.SCRIPTED, {
-      responses: [JSON.stringify(data.examples[0].expected_response)],
+    const create = stub(factory, "create", (): Promise<MockLLMProvider> => {
+      throw new Error("the isolated launcher must replace the ordinary provider factory");
     });
-    const create = stub(factory, "create", (): Promise<MockLLMProvider> => Promise.resolve(provider));
     try {
+      const isolated: Array<{ adapter: string; provider: string; model: string; prompt: string }> = [];
       const input: IEvaluateCriterionOptions = options(PROFILE_DIRECTORY, profile);
-      input.judgeBinding = { ...BINDING, adapter, service: adapter };
+      input.judgeBinding = {
+        ...BINDING,
+        adapter,
+        service: adapter,
+        model_provider: provider,
+        model: `${adapter}:judge-model`,
+      };
+      input.judgeCliSubmit = (call): Promise<{ stdout: string; provider: string; model: string }> => {
+        isolated.push(call);
+        return Promise.resolve({
+          stdout: JSON.stringify(data.examples[0].expected_response),
+          provider: call.provider,
+          model: call.model,
+        });
+      };
       const result = await evaluateLlmJudgeCriterion(input);
-      assertEquals(result.status, CriterionStatus.ERROR);
-      assertEquals(result.message, "judge-profile-isolated-provider-required");
+      assertEquals(result.status, CriterionStatus.PASSED);
       assertEquals(create.calls.length, 0);
+      assertEquals(isolated.length, 1);
+      assertEquals(isolated[0].adapter, adapter);
+      assertEquals(isolated[0].provider, provider);
+      assertEquals(isolated[0].model, `${adapter}:judge-model`);
+      assertStringIncludes(isolated[0].prompt, profile.methodology);
+      assertEquals(result.judge?.provider, provider);
+      assertEquals(result.judge?.model, `${adapter}:judge-model`);
     } finally {
       create.restore();
     }
   }
+});
+
+Deno.test("[security] selected profile still rejects a non-CLI adapter without an isolated transport", async (): Promise<void> => {
+  const profile: IResolvedJudgeProfile = await loadJudgeProfile(PROFILE_PATH);
+  const input: IEvaluateCriterionOptions = options(PROFILE_DIRECTORY, profile);
+  input.judgeBinding = { ...BINDING, adapter: "anthropic", service: "anthropic", model_provider: "anthropic" };
+  const result = await evaluateLlmJudgeCriterion(input);
+  assertEquals(result.status, CriterionStatus.ERROR);
+  assertEquals(result.message, "judge-profile-isolated-provider-required");
 });

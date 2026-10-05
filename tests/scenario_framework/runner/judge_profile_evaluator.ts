@@ -16,14 +16,48 @@ import {
 } from "@exaix/core/evaluation";
 import { getJudgeProfileResponseJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { callLlmEndpoint, IEvaluateCriterionOptions, ILlmEndpointResolvedMetadata } from "./assertions.ts";
+import { resolveSandboxCli, runSandboxedCliCall, stripProviderPrefix } from "./calibration_sandbox.ts";
 import { readSelectedJudgeEvidence } from "./judge_profile_loader.ts";
 import { CriterionKind, CriterionStatus, type ICriterionResult } from "../schema/step_schema.ts";
 import { CAPTURE_CALIBRATION_EVIDENCE_ENV_VAR } from "./capture_calibration_evidence_flag.ts";
+
+export interface IIsolatedCliSubmission {
+  readonly adapter: string;
+  readonly provider: string;
+  readonly model: string;
+  readonly prompt: string;
+}
+
+export interface IIsolatedCliResult {
+  readonly stdout: string;
+  readonly provider: string;
+  readonly model: string;
+}
+
+/** The calibration-only isolated transport seam: a selected CLI profile call runs
+ *  through this instead of the ordinary provider factory. */
+export type JudgeIsolatedCliSubmit = (input: IIsolatedCliSubmission) => Promise<IIsolatedCliResult>;
 
 export interface ISelectedJudgeInput {
   options: IEvaluateCriterionOptions;
   profile: IResolvedJudgeProfile;
   submit: typeof callLlmEndpoint;
+}
+
+/** The transport adapters the isolated launcher can execute. */
+const ISOLATED_CLI_ADAPTERS: readonly string[] = ["claude-cli", "codex-cli"];
+
+const DEFAULT_ISOLATED_SCRATCH_ROOT = "/tmp";
+
+async function defaultIsolatedCliSubmit(input: IIsolatedCliSubmission): Promise<IIsolatedCliResult> {
+  const cli = resolveSandboxCli(input.adapter);
+  const result = await runSandboxedCliCall({
+    cli,
+    model: stripProviderPrefix(input.model),
+    prompt: input.prompt,
+    scratchRoot: Deno.env.get("TMPDIR") ?? DEFAULT_ISOLATED_SCRATCH_ROOT,
+  });
+  return { stdout: result.stdout, provider: input.provider, model: input.model };
 }
 
 /** Selected profile calls use trusted instructions only and never infer missing declared evidence. */
@@ -62,20 +96,39 @@ export async function evaluateSelectedProfileCriterion(input: ISelectedJudgeInpu
     }
     const adapter: string | undefined = options.judgeBinding?.adapter ?? options.env?.EXA_EVAL_LLM_PROVIDER ??
       options.env?.EXA_LLM_PROVIDER ?? Deno.env.get("EXA_EVAL_LLM_PROVIDER") ?? Deno.env.get("EXA_LLM_PROVIDER");
-    if (adapter !== "mock") throw new JudgeProfileError("judge-profile-isolated-provider-required");
-    let observed: ILlmEndpointResolvedMetadata | undefined;
-    const raw: string = await submit(prompt, options.env, schema, (metadata: ILlmEndpointResolvedMetadata): void => {
-      observed = metadata;
-    }, options.judgeBinding);
+    let provider: string;
+    let model: string;
+    let raw: string;
+    if (adapter === "mock") {
+      let observed: ILlmEndpointResolvedMetadata | undefined;
+      raw = await submit(prompt, options.env, schema, (metadata: ILlmEndpointResolvedMetadata): void => {
+        observed = metadata;
+      }, options.judgeBinding);
+      if (!observed) throw new JudgeProfileError("judge-profile-missing-provider-identity");
+      provider = observed.provider;
+      model = observed.model;
+    } else if (options.judgeBinding && adapter !== undefined && ISOLATED_CLI_ADAPTERS.includes(adapter)) {
+      const isolated = options.judgeCliSubmit ?? defaultIsolatedCliSubmit;
+      const isolatedResult: IIsolatedCliResult = await isolated({
+        adapter,
+        provider: options.judgeBinding.model_provider,
+        model: options.judgeBinding.model,
+        prompt,
+      });
+      raw = isolatedResult.stdout;
+      provider = isolatedResult.provider;
+      model = isolatedResult.model;
+    } else {
+      throw new JudgeProfileError("judge-profile-isolated-provider-required");
+    }
     const result: EvaluationResult = parseJudgeProfileResponse(raw, profile);
-    if (!observed) throw new JudgeProfileError("judge-profile-missing-provider-identity");
     if (options.calibrationCapture) {
       await options.calibrationCapture({
         requestContext: request,
         artifact,
         rubricMethodology: profile.methodology,
-        provider: observed.provider,
-        model: observed.model,
+        provider,
+        model,
         promptUsed: prompt,
         rawResponse: raw,
       });
@@ -90,7 +143,7 @@ export async function evaluateSelectedProfileCriterion(input: ISelectedJudgeInpu
       observed_value: result.overallScore,
       expected_value: profile.spec.label_threshold,
       message: `Selected judge profile ${profile.spec.id} (${profile.profileHash}): ${result.overallScore}`,
-      judge: { provider: observed.provider, model: observed.model, reasoning: rationale },
+      judge: { provider, model, reasoning: rationale },
     };
   } catch (error) {
     return {

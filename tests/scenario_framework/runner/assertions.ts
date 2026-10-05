@@ -59,7 +59,7 @@ import type { IProviderHealthChecker } from "@exaix/ai/provider_selector.ts";
 import type { ModelSize } from "@exaix/schemas/model_intent.ts";
 import { createMockConfig, createMockEventLogger } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
-import { evaluateSelectedProfileCriterion } from "./judge_profile_evaluator.ts";
+import { evaluateSelectedProfileCriterion, type JudgeIsolatedCliSubmit } from "./judge_profile_evaluator.ts";
 
 /** The actual resolved provider/model and full generation result for one `callLlmEndpoint`
  *  call — distinct from its string-only return so an observer sees what was really used. */
@@ -108,6 +108,9 @@ export interface IEvaluateCriterionOptions {
    *  default — ordinary history/scoring behavior is unaffected either way. */
   calibrationCapture?: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>;
   judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
+  /** The calibration-only isolated CLI transport. Production omits it so selected CLI
+   *  calls run through the bwrap launcher. A deterministic test supplies its own. */
+  judgeCliSubmit?: Opt<JudgeIsolatedCliSubmit, Reason.OptionalDependency>;
 }
 
 export interface IEvaluateStepOutcomeOptions {

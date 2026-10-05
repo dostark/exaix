@@ -37,7 +37,7 @@ import {
   RealCalibrationSourceReaderAdapter,
   SystemCalibrationClock,
 } from "../tests/scenario_framework/runner/calibration_runner.ts";
-import { SandboxedCalibrationReferenceAdapter } from "../tests/scenario_framework/runner/calibration_sandbox.ts";
+import { SandboxedCalibrationReferenceAdapter } from "../tests/scenario_framework/runner/calibration_reference.ts";
 import { loadJudgeMethodologyInstructions } from "../tests/scenario_framework/runner/assertions.ts";
 
 const RUBRIC_PRESET = "GOAL_ALIGNED_REVIEW";

@@ -21,8 +21,8 @@ import {
   CalibrationSandboxCli,
   runSandboxed,
   runSandboxedCliCall,
-  SandboxedCalibrationReferenceAdapter,
 } from "../scenario_framework/runner/calibration_sandbox.ts";
+import { SandboxedCalibrationReferenceAdapter } from "../scenario_framework/runner/calibration_reference.ts";
 import {
   CalibrationRunner,
   FileCalibrationStoreAdapter,
@@ -60,6 +60,17 @@ Deno.test({
     const result = await runSandboxed("cat", [claudeMdPath], SCRATCH_ROOT);
     assertEquals(result.code, 1, "cat of a real repo file must fail inside the sandbox");
     assertStringIncludes(result.stderr, "No such file or directory");
+  },
+});
+
+Deno.test({
+  name: "[CalibrationSandbox][security] the sandbox has an empty root: host paths outside the allowlist are unreadable",
+  ignore: Deno.env.get("CI") === "true",
+  fn: async () => {
+    for (const path of ["/etc/hostname", "/etc/passwd", "/var/log"]) {
+      const result = await runSandboxed("cat", [path], SCRATCH_ROOT);
+      assertEquals(result.code, 1, `cat of host path ${path} must fail inside the empty-root sandbox`);
+    }
   },
 });
 

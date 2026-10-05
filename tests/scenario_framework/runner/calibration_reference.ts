@@ -28,11 +28,18 @@ import {
   getJudgeProfileResponseJsonSchema,
 } from "@exaix/schemas/evaluation_json_schema.ts";
 import { deriveCalibrationLabel } from "@exaix/eval-history";
-import type { CalibrationLabel } from "@exaix/eval-history";
+import type { CalibrationLabel, ICalibrationRubric } from "@exaix/eval-history";
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IResolvedBinding } from "@exaix/schemas";
 import { callLlmEndpoint } from "./assertions.ts";
 import type { ILlmEndpointResolvedMetadata } from "./assertions.ts";
+import { resolveSandboxCli, runSandboxedCliCall, stripProviderPrefix } from "./calibration_sandbox.ts";
+import type {
+  ICalibrationReferenceAdapter,
+  ICalibrationVendorTarget,
+  IJudgeScoreResult,
+} from "./calibration_runner.ts";
+import type { ICalibrationSourceItem } from "./calibration_sources.ts";
 
 export interface IReferenceEvaluationInput {
   readonly requestContext: string;
@@ -202,4 +209,30 @@ export async function evaluateReference(
     input.judgeProfile,
   );
   return { score, label, rationale, provider: resolved.provider, model: resolved.model };
+}
+
+/** The isolated (bwrap-sandboxed) counterpart to LocalCalibrationReferenceAdapter.
+ *  It keeps the same prompt and scoring semantics. The live call runs inside the
+ *  empty-root allowlisted profile. `CalibrationRunner` cannot tell the adapters apart. */
+export class SandboxedCalibrationReferenceAdapter implements ICalibrationReferenceAdapter {
+  constructor(private readonly scratchRoot: string) {}
+
+  async score(
+    item: ICalibrationSourceItem,
+    rubric: ICalibrationRubric,
+    target: ICalibrationVendorTarget,
+  ): Promise<IJudgeScoreResult> {
+    const { prompt } = buildReferencePrompt(item.snapshot.request_context, item.snapshot.artifact, rubric.preset);
+    const cli = resolveSandboxCli(target.provider);
+
+    const result = await runSandboxedCliCall({
+      cli,
+      model: stripProviderPrefix(target.model),
+      prompt,
+      scratchRoot: this.scratchRoot,
+    });
+
+    const { score } = parseReferenceResponse(result.stdout, rubric.preset, rubric.label_threshold);
+    return { score, provider: target.provider, model: target.model };
+  }
 }
