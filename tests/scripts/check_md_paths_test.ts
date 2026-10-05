@@ -732,3 +732,49 @@ Deno.test("[md-paths] a :Symbol reference to a missing FILE is flagged as a stal
     cleanup();
   }
 });
+
+// Unpopulated submodules (private/optional trees absent from the checkout)
+
+Deno.test("[md-paths] a reference into an UNPOPULATED submodule is skipped, not flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, ".gitmodules"),
+      '[submodule "exaix-enterprise"]\n\tpath = exaix-enterprise\n\turl = git@github.com:dostark/exaix-enterprise.git\n',
+    );
+    // An uninitialized gitlink materializes as an empty directory.
+    await ensureDir(join(root, "exaix-enterprise"));
+    await Deno.writeTextFile(
+      join(root, "SKILL.md"),
+      "See `exaix-enterprise/apps/enterprise/main.ts` for the entry.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+    assertEquals(r.styleViolations.length, 0, JSON.stringify(r.styleViolations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a missing file inside a POPULATED submodule is still flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, ".gitmodules"),
+      '[submodule "exaix-enterprise"]\n\tpath = exaix-enterprise\n',
+    );
+    await ensureDir(join(root, "exaix-enterprise", "apps", "enterprise"));
+    await Deno.writeTextFile(join(root, "exaix-enterprise", "apps", "enterprise", "main.ts"), "1");
+    await Deno.writeTextFile(
+      join(root, "SKILL.md"),
+      "See `exaix-enterprise/apps/enterprise/gone.ts`.\n",
+    );
+    const r = await checkMdPaths(root);
+    assert(
+      r.violations.some((v) => v.reference.includes("gone.ts")),
+      JSON.stringify(r.violations),
+    );
+  } finally {
+    cleanup();
+  }
+});

@@ -568,6 +568,38 @@ function stripAnchor(ref: string): string {
   return hash < 0 ? ref : ref.slice(0, hash);
 }
 
+/** Read submodule paths from `.gitmodules`. Return no paths when the file is absent. */
+function declaredSubmodulePaths(root: string): string[] {
+  try {
+    const text = Deno.readTextFileSync(join(root, ".gitmodules"));
+    return [...text.matchAll(/^[ \t]*path[ \t]*=[ \t]*(.+?)[ \t]*$/gm)].map((m) => m[1]);
+  } catch {
+    return [];
+  }
+}
+
+/** Find submodules with absent or empty working trees. Their missing content cannot be validated. */
+function absentSubmodules(root: string): Set<string> {
+  const absent = new Set<string>();
+  for (const sub of declaredSubmodulePaths(root)) {
+    let populated = false;
+    try {
+      populated = Deno.readDirSync(join(root, sub)).next().done === false;
+    } catch {
+      populated = false;
+    }
+    if (!populated) absent.add(sub);
+  }
+  return absent;
+}
+
+/** Extract repository-root targets. Exclude absolute and explicitly relative references. */
+function repoRootTarget(refWithAnchor: string): string | undefined {
+  const ref = stripAnchor(refWithAnchor);
+  if (ref === "" || isAbsolute(ref) || isRelativeReference(ref)) return undefined;
+  return ref.replace(/^\.?\//, "");
+}
+
 /** Resolve a reference MD-relative first, then repo-root. Returns true if it exists. */
 function referenceResolves(root: string, mdFileAbs: string, refWithAnchor: string): boolean {
   const ref = stripAnchor(refWithAnchor);
@@ -764,6 +796,7 @@ export async function stagedMarkdownFiles(root: string): Promise<Set<string>> {
 export async function checkMdPaths(root: string, options: ICheckOptions = {}): Promise<IMdPathResult> {
   const absRoot = resolve(root);
   const index = await buildBasenameIndex(absRoot);
+  const absentSubs = absentSubmodules(absRoot);
   const violations: IMdPathViolation[] = [];
   const styleViolations: IMdStyleViolation[] = [];
   const anchorViolations: IMdAnchorViolation[] = [];
@@ -790,6 +823,9 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
     const text = await Deno.readTextFile(entry.path);
     const { refs, anchorRefs } = extractReferences(text);
     for (const { ref, line, isLink, isBareProse } of refs) {
+      // Skip references into declared submodules whose working trees are not populated.
+      const top = repoRootTarget(ref)?.split("/")[0];
+      if (top !== undefined && absentSubs.has(top)) continue;
       const resolves = referenceResolves(absRoot, entry.path, ref);
       if (!resolves) {
         violations.push({ file: rel, line, reference: ref, isLink, suggestion: suggestFor(ref, rel, index) });
