@@ -46,6 +46,8 @@ export interface IModelIntent {
   task_type?: TaskType;
   /** How task_type was derived; rides the intent to the trace. */
   task_type_source?: TaskTypeSource;
+  /** The request trace that the model.resolved event joins. Selection never reads it. */
+  trace_id?: string;
 }
 
 /** The precedence source that decided the derived task_type. */

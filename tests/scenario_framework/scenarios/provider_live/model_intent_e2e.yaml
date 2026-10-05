@@ -5,10 +5,19 @@ pack: "provider_live"
 tags: ["provider-live", "planning", "model-routing", "entity:senior-coder"]
 request_fixture: "fixtures/requests/provider_live/model_intent_e2e.md"
 mode_support: ["auto"]
+# A disposable copy: the approved plan executes and commits, so it must never touch the repository.
 portals:
-  - alias: "portal-exaix"
-    source_path: "$REPO_ROOT"
-
+  - alias: "live-portal"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/planning_marker_repo"
+    target_path: "$WORKSPACE_ROOT/live-portal"
+    git_init: true
+matrix:
+  cells:
+    - tool: "exactl"
+      provider: "openai-chat"
+      config: "configs/deepseek-chat-live.toml"
+      requires_bin: "true"
+      requires_key: "DEEPSEEK_API_KEY"
 steps:
   - id: "start-daemon"
     type: "exactl"
@@ -30,7 +39,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-exaix", "--agent-role", "senior-coder"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "live-portal", "--agent-role", "senior-coder"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"
@@ -47,6 +56,34 @@ steps:
         kind: "file-found"
         path_pattern: "**/*_plan.md"
         score_weight: 0.4
+
+  - id: "approve-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-output-contains"
+        contains: ["approved"]
+
+  # model.resolved is emitted when execution resolves the blueprint model, not during planning.
+  - id: "wait-for-execution"
+    type: "exactl"
+    command: "journal"
+    args: [
+      "wait",
+      "--event",
+      "execution.completed",
+      "--event",
+      "execution.failed",
+      "--since-rowid",
+      "$JOURNAL_BASELINE",
+      "--timeout",
+      "600",
+    ]
+    timeout_sec: 600
+    input_criteria: []
+    output_criteria: []
 
   # The distilled outcome: ModelResolver must have resolved the request's M-profile
   # thinking-capable intent during execution — the journaled model.resolved event must
@@ -66,5 +103,5 @@ steps:
       - id: "model-resolved-m-profile"
         score_weight: 0.6
         kind: "json-query"
-        query: "$[0].intent_model_size"
+        query: ".[0].intent_model_size"
         equals: "M"

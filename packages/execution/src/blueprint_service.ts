@@ -95,7 +95,10 @@ export class BlueprintService {
     private options?: Opt<IAgentComposerOptions, Reason.OptionalContext>,
   ) {}
 
-  async loadBlueprint(rawAgentName: string): Promise<IBlueprintLoadResult> {
+  async loadBlueprint(
+    rawAgentName: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<IBlueprintLoadResult> {
     const agentName = InputValidator.validateBlueprintName(rawAgentName);
     const blueprintPath = this.resolveBlueprintPath(agentName);
 
@@ -117,7 +120,10 @@ export class BlueprintService {
       const systemPrompt = content.slice(frontmatterMatch[0].length).trim();
       const sanitizedPrompt = BlueprintService.sanitizePrompt(systemPrompt);
 
-      const { model, provider, resolvedCallOptions } = await this.resolveModelFromBlueprint(validatedFrontmatter);
+      const { model, provider, resolvedCallOptions } = await this.resolveModelFromBlueprint(
+        validatedFrontmatter,
+        traceId,
+      );
 
       return {
         blueprint: {
@@ -157,6 +163,7 @@ export class BlueprintService {
   /** Resolve model and provider via ModelResolver or fall back to inline colon split. */
   private async resolveModelFromBlueprint(
     validatedFrontmatter: z.infer<typeof BlueprintSchema>,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<{ model: string; provider: string; resolvedCallOptions?: IModelCallOptions }> {
     let model = validatedFrontmatter.model;
     let provider = validatedFrontmatter.provider;
@@ -184,6 +191,7 @@ export class BlueprintService {
         effort: effortLike(requestIntent?.effort ?? extras.effort),
         task_type: derivedTaskType.taskType,
         task_type_source: derivedTaskType.source,
+        ...(traceId ? { trace_id: traceId } : {}),
       };
       const resolved = await this.modelResolver.resolve(intent);
       provider = resolved.provider;

@@ -512,8 +512,11 @@ export class AgentComposer {
   /**
    * Load agent blueprint from file with security validation.
    */
-  async loadBlueprint(rawAgentName: string): Promise<IAgentFileBlueprint> {
-    const result = await this.blueprintService.loadBlueprint(rawAgentName);
+  async loadBlueprint(
+    rawAgentName: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<IAgentFileBlueprint> {
+    const result = await this.blueprintService.loadBlueprint(rawAgentName, traceId);
     this._resolvedCallOptions = result.resolvedCallOptions;
     return result.blueprint;
   }
@@ -667,7 +670,7 @@ export class AgentComposer {
 
       // Load the blueprint. Keep MCP and CLI delegation as explicit routes.
       // Use ReAct for all other provider-backed plan steps.
-      const _blueprint = await this.loadBlueprint(options.agent_role ?? "");
+      const _blueprint = await this.loadBlueprint(options.agent_role ?? "", context.trace_id);
       await this.prepareStepBudget(_blueprint, options, context.trace_id);
 
       const strategyName = this.resolveStrategyName(_blueprint, options);

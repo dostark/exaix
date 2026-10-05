@@ -817,7 +817,8 @@ export class ModelResolver {
       ...(consideredRoutes.length > 0 ? { considered_routes: consideredRoutes } : {}),
       // Task-type derivation source, additive on the trace.
       ...(intent.task_type_source ? { task_type_source: intent.task_type_source } : {}),
-    });
+      ...(intent.trace_id ? { trace_id: intent.trace_id } : {}),
+    }, intent.trace_id);
   }
 
   /** The intent subset the typed IModelResolutionTraceEventPayload declares. */

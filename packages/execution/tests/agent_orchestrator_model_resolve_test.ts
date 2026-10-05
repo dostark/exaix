@@ -360,3 +360,26 @@ Deno.test("[step132.3][model-resolve] AgentComposer without ModelResolver splits
     await cleanup();
   }
 });
+
+Deno.test("[model-resolve][trace] loadBlueprint passes the request trace to ModelResolver", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+    const traceId = crypto.randomUUID();
+    const { resolver, captured } = createCapturingResolver({ provider: "p", model: "m", attempt: 1 });
+
+    await writeBlueprint(testDir, "test-agent", { model: "ignored", model_size: "M", capabilities: "[chat]" });
+
+    const executor = makeExecutor(config, db, resolver);
+    await executor.loadBlueprint("test-agent", traceId);
+    assertEquals(captured.length, 1);
+    assertEquals(captured[0].trace_id, traceId);
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});

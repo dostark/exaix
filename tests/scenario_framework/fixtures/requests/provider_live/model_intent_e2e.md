@@ -4,11 +4,12 @@ thinking: true
 agent_role: senior-coder
 ---
 
-Produce a design and implementation plan for adding a `/health` readiness endpoint to
-the portal-exaix Deno service, including a unit test. This is plan-only: no code changes
-should be executed in this run.
+In the `live-portal` portal, raise the constant `PLANNING_MARKER_LIMIT` in `src/limits.ts` by one
+and keep `src/main.ts` consistent with the new value. Change only these two files.
+
+Call exactly one tool per response and wait for its result before the next call.
 
 Acceptance criteria:
 
-- The plan covers the `/health` endpoint and its unit test.
-- The plan lists the files to create or modify.
+- `PLANNING_MARKER_LIMIT` in `src/limits.ts` is one higher than before.
+- `src/main.ts` still uses the constant and stays consistent with it.

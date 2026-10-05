@@ -124,3 +124,24 @@ Deno.test("[ModelResolver] model.resolved persists through a real EventLogger", 
     await cleanup();
   }
 });
+
+Deno.test("[trace] model_resolved event joins the intent's request trace", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("default-provider");
+    const traceId = crypto.randomUUID();
+
+    const logger = createMockEventLogger();
+    const resolver = makeResolver(logger);
+    await resolver.resolve({ trace_id: traceId });
+    await resolver.resolve({ model: "default-provider:pinned", trace_id: traceId });
+
+    const events = logger.events.filter((e) => e.action === "model.resolved");
+    assertEquals(events.length, 2);
+    assertEquals(events.map((e) => e.traceId), [traceId, traceId]);
+    assertEquals(events.map((e) => e.payload?.trace_id), [traceId, traceId]);
+  } finally {
+    await cleanup();
+  }
+});
