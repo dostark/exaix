@@ -9,7 +9,7 @@
  * @related-files [packages/eval-history/src/calibration/schema.ts, packages/eval-history/src/calibration/identity.ts]
  */
 
-import { assertEquals, assertNotEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects, assertThrows } from "@std/assert";
 import {
   CalibrationAssemblyIdentitySchema,
   CalibrationAssemblySurface,
@@ -23,13 +23,23 @@ import {
   CalibrationRubricSchema,
   CalibrationTransport,
   CalibrationVendor,
+  type ICalibrationAssemblyIdentity,
   type ICalibrationItem,
+  type ICalibrationItemV2,
+  type ICalibrationManifestV2,
+  type ICalibrationProvenanceV2,
+  type ICalibrationRubricV2,
   type IEvaluatorProvenance,
   isCalibrationItemLabelConsistent,
   isLegacyCalibrationRecord,
   readFrozenCalibrationItem,
   readLegacyCalibrationItem,
 } from "../src/calibration/schema.ts";
+import {
+  hashFrozenCalibrationDataset,
+  hashFrozenCalibrationItem,
+  validateFrozenCalibrationSet,
+} from "../src/calibration/frozen.ts";
 import { canonicalJsonStringify, hashCalibrationValue, sha256Hex } from "../src/calibration/identity.ts";
 import { CalibrationLabel, MetricUndefinedReason } from "../src/calibration/metrics.ts";
 import type { JSONValue } from "@exaix/core/types";
@@ -315,11 +325,11 @@ Deno.test("[CalibrationSetIntegrity] CalibrationDriftEntrySchema accepts an unde
 
 // Version-2 frozen lifecycle: assembly identity, frozen rubric/item and active track
 
-function assembly(surface: CalibrationAssemblySurface) {
+function assembly(surface: CalibrationAssemblySurface): ICalibrationAssemblyIdentity {
   return { surface, version: "1.0.0", policy_hash: SHA256_OF_EMPTY };
 }
 
-function rubricV2() {
+function rubricV2(): ICalibrationRubricV2 {
   return {
     schema_version: 2,
     id: "plan-quality",
@@ -336,7 +346,7 @@ function rubricV2() {
   };
 }
 
-function provenanceV2() {
+function provenanceV2(): ICalibrationProvenanceV2 {
   return {
     vendor: CalibrationVendor.Openai,
     transport: CalibrationTransport.CodexCli,
@@ -351,7 +361,7 @@ function provenanceV2() {
   };
 }
 
-function itemV2() {
+function itemV2(): ICalibrationItemV2 {
   return {
     schema_version: 2,
     semantic_id: hexId(1),
@@ -379,7 +389,7 @@ function toJson<T>(value: T): JSONValue {
   return JSON.parse(JSON.stringify(value));
 }
 
-function manifestV2(count: number) {
+function manifestV2(count: number): ICalibrationManifestV2 {
   const artifactIds = Array.from({ length: count }, (_, index) => hexId(index));
   return {
     schema_version: 2,
@@ -477,4 +487,105 @@ Deno.test("[CalibrationSetIntegrity] an unknown schema version is ineligible as 
 Deno.test("[CalibrationSetIntegrity] a complete v2 item is read as frozen and eligible", () => {
   const parsed = readFrozenCalibrationItem(toJson(itemV2()));
   assertEquals(parsed.schema_version, 2);
+});
+
+// Frozen-set validation: assembly propagation, track, label and content hashes
+
+async function buildFrozenSet(count = 20) {
+  const artifactIds: string[] = [];
+  const items: ICalibrationItemV2[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const id = hexId(index);
+    artifactIds.push(id);
+    items.push({ ...itemV2(), semantic_id: id });
+  }
+  const rubricHash = await hashCalibrationValue(toJson(rubricV2()));
+  const itemHashes = await Promise.all(items.map((item) => hashFrozenCalibrationItem(item)));
+  const base = {
+    ...manifestV2(count),
+    rubric_hash: rubricHash,
+    items: { item_hashes: itemHashes, count: items.length, label_distribution: { pass: items.length, fail: 0 } },
+  };
+  const datasetHash = await hashFrozenCalibrationDataset({ manifest: base as ICalibrationManifestV2, items });
+  return { manifest: { ...base, dataset_content_hash: datasetHash } as ICalibrationManifestV2, items };
+}
+
+Deno.test("[CalibrationSetIntegrity] a self-consistent frozen set validates", async () => {
+  const set = await buildFrozenSet();
+  await validateFrozenCalibrationSet(set);
+});
+
+Deno.test("[CalibrationSetIntegrity] a frozen set rejects an item count that differs from the manifest", async () => {
+  const set = await buildFrozenSet();
+  await assertRejects(
+    () => validateFrozenCalibrationSet({ manifest: set.manifest, items: set.items.slice(0, 19) }),
+    Error,
+    "calibration-frozen-item-count-mismatch",
+  );
+});
+
+Deno.test("[CalibrationSetIntegrity] a frozen set rejects an item with a different artifact assembly", async () => {
+  const set = await buildFrozenSet();
+  const items = [...set.items];
+  items[0] = {
+    ...items[0],
+    artifact_context_assembly: { ...items[0].artifact_context_assembly, policy_hash: hexId(99) },
+  };
+  await assertRejects(
+    () => validateFrozenCalibrationSet({ manifest: set.manifest, items }),
+    Error,
+    "calibration-frozen-assembly-mismatch",
+  );
+});
+
+Deno.test("[CalibrationSetIntegrity] a frozen set rejects an Anthropic reference vendor", async () => {
+  const set = await buildFrozenSet();
+  const items = [...set.items];
+  items[0] = {
+    ...items[0],
+    reference_provenance: { ...items[0].reference_provenance, vendor: CalibrationVendor.Anthropic },
+  };
+  await assertRejects(
+    () => validateFrozenCalibrationSet({ manifest: set.manifest, items }),
+    Error,
+    "calibration-frozen-reference-vendor-mismatch",
+  );
+});
+
+Deno.test("[CalibrationSetIntegrity] a frozen set rejects a stored label that conflicts with the score", async () => {
+  const set = await buildFrozenSet();
+  const items = [...set.items];
+  items[0] = { ...items[0], reference_score: 0.1, reference_label: CalibrationLabel.Pass };
+  await assertRejects(
+    () => validateFrozenCalibrationSet({ manifest: set.manifest, items }),
+    Error,
+    "calibration-frozen-label-mismatch",
+  );
+});
+
+Deno.test("[CalibrationSetIntegrity] a frozen set rejects a tampered item hash", async () => {
+  const set = await buildFrozenSet();
+  const manifest: ICalibrationManifestV2 = {
+    ...set.manifest,
+    items: { ...set.manifest.items, item_hashes: [...set.manifest.items.item_hashes] },
+  };
+  manifest.items.item_hashes[0] = hexId(123);
+  await assertRejects(
+    () => validateFrozenCalibrationSet({ manifest, items: set.items }),
+    Error,
+    "calibration-frozen-item-hash-mismatch",
+  );
+});
+
+Deno.test("[CalibrationSetIntegrity] a frozen set rejects a tampered dataset content hash", async () => {
+  const set = await buildFrozenSet();
+  await assertRejects(
+    () =>
+      validateFrozenCalibrationSet({
+        manifest: { ...set.manifest, dataset_content_hash: hexId(124) },
+        items: set.items,
+      }),
+    Error,
+    "calibration-frozen-dataset-hash-mismatch",
+  );
 });

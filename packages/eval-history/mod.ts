@@ -43,7 +43,10 @@ export { CalibrationLegacyRecordError, CalibrationProvenanceV2Schema } from "./s
 export { CalibrationRubricV2Schema, CalibrationSourceLineageV2Schema } from "./src/calibration/schema.ts";
 export { isLegacyCalibrationRecord, readLegacyCalibrationItem } from "./src/calibration/schema.ts";
 export { LEGACY_CALIBRATION_SCHEMA_VERSION, readFrozenCalibrationItem } from "./src/calibration/schema.ts";
+export { CalibrationFrozenSetError, validateFrozenCalibrationSet } from "./src/calibration/frozen.ts";
+export { hashFrozenCalibrationDataset, hashFrozenCalibrationItem } from "./src/calibration/frozen.ts";
 export type { ICalibrationAssemblyIdentity, ICalibrationCriterionDefinition } from "./src/calibration/schema.ts";
 export type { ICalibrationEvidenceSnapshotV2, ICalibrationItemV2 } from "./src/calibration/schema.ts";
 export type { ICalibrationManifestV2, ICalibrationProvenanceV2 } from "./src/calibration/schema.ts";
 export type { ICalibrationRubricV2, ICalibrationSourceLineageV2 } from "./src/calibration/schema.ts";
+export type { IFrozenCalibrationSet } from "./src/calibration/frozen.ts";
