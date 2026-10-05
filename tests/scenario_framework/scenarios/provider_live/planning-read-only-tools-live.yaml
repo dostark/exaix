@@ -30,6 +30,7 @@ matrix:
     "planning-live-openai",
     "planning-live-google",
     "planning-live-openrouter",
+    "planning-live-deepseek",
   ]
 steps:
   - id: "start-daemon"

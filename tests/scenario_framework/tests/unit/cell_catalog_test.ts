@@ -394,6 +394,14 @@ Deno.test("[phase203.cell_catalog] the planning-live presets keep their configs,
       model: "openrouter/auto",
       requires_bin: "true",
     },
+    {
+      name: "planning-live-deepseek",
+      tool: "exactl",
+      config: "configs/planning-live.deepseek.toml",
+      provider: "openai-chat",
+      model: "deepseek-v4-pro",
+      requires_bin: "true",
+    },
   ];
 
   for (const row of expected) {

@@ -290,3 +290,10 @@ config = "configs/planning-live.openrouter.toml"
 provider = "openrouter"
 model = "openrouter/auto"
 requires_key = "OPENROUTER_API_KEY"
+
+[tool.planning-live-deepseek]
+tool = "exactl"
+config = "configs/planning-live.deepseek.toml"
+provider = "openai-chat"
+model = "deepseek-v4-pro"
+requires_key = "DEEPSEEK_API_KEY"

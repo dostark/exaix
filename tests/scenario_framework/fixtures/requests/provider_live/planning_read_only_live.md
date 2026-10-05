@@ -6,6 +6,8 @@ Inspect the `live-portal` portal and produce a plan to change the constant
 Use the available read-only exploration tools to read `src/limits.ts` before planning. The
 first plan step must quote the constant's exact current value.
 
+Call exactly one tool per response and wait for its result before the next call.
+
 Acceptance criteria:
 
 - The first plan step quotes the exact current value of `PLANNING_MARKER_LIMIT`.

@@ -151,6 +151,7 @@ const MIGRATED_SCENARIOS: IMigratedScenario[] = [
       "planning-live-openai",
       "planning-live-google",
       "planning-live-openrouter",
+      "planning-live-deepseek",
     ],
     priorCells: [
       ["claude-code", "claude-cli", "configs/planning-live.claude.toml", "claude"],
@@ -160,6 +161,7 @@ const MIGRATED_SCENARIOS: IMigratedScenario[] = [
       ["exactl", "openai", "configs/planning-live.openai.toml", "true", "OPENAI_API_KEY"],
       ["exactl", "google", "configs/planning-live.google.toml", "true", "GOOGLE_API_KEY"],
       ["exactl", "openrouter", "configs/planning-live.openrouter.toml", "true", "OPENROUTER_API_KEY"],
+      ["exactl", "openai-chat", "configs/planning-live.deepseek.toml", "true", "DEEPSEEK_API_KEY"],
     ],
   },
 ];
