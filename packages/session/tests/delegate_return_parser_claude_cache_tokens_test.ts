@@ -46,3 +46,18 @@ Deno.test("[delegate_return_parser] claude-code result with no cache usage maps 
   assertEquals(result.tokenStats.cacheRead, undefined);
   assertEquals(result.tokenStats.cacheCreation, undefined);
 });
+
+// Captured from a real `claude -p --output-format json` run on 2026-10-05 (Claude Code CLI,
+// claude-haiku-4-5). The session and message ids are replaced with placeholders.
+Deno.test("[delegate_return_parser] claude-code live result fixture maps cache and thinking tokens", async () => {
+  const stdout = await Deno.readTextFile(new URL("./fixtures/claude_cli_result_live.json", import.meta.url));
+
+  const result = parseDelegateStdout(stdout, "claude-code");
+
+  assertEquals(result.tokenStats.input, 3);
+  assertEquals(result.tokenStats.output, 4);
+  assertEquals(result.tokenStats.cacheRead, 18599);
+  assertEquals(result.tokenStats.cacheCreation, 7860);
+  assertEquals(result.tokenStats.reasoning, 0);
+  assertEquals(result.costUsd, 0.0185469);
+});
