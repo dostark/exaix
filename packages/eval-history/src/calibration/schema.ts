@@ -7,12 +7,13 @@
  *   pinned to the literal 1; an unknown/future version fails parsing (exit-2
  *   handling belongs to the CLI layer, not this module).
  * @architectural-layer Shared
- * @dependencies [zod, @exaix/core/config]
+ * @dependencies [zod, @exaix/core/config, @exaix/core/types]
  * @related-files [packages/eval-history/src/calibration/metrics.ts, packages/eval-history/src/calibration/identity.ts, packages/eval-history/src/calibration/constants.ts]
  */
 
 import { z } from "zod";
 import { resolveConfigurableBounds } from "@exaix/core/config";
+import type { JSONValue } from "@exaix/core/types";
 import { SHA256_HEX_PATTERN } from "./identity.ts";
 import { CalibrationLabel, deriveCalibrationLabel, MetricUndefinedReason } from "./metrics.ts";
 import { CALIBRATION_SAMPLE_COUNT_MAX, DEFAULT_CALIBRATION_SAMPLE_COUNT } from "./constants.ts";
@@ -308,3 +309,242 @@ export const CalibrationScoreOptionsSchema = z.object({
 }).strict();
 
 export type ICalibrationScoreOptions = z.infer<typeof CalibrationScoreOptionsSchema>;
+
+// Version-2 frozen lifecycle records. Version 1 remains inspectable only, never upgraded.
+
+const CALIBRATION_SCHEMA_VERSION_V2 = 2;
+
+/** Stored version-1 records stay readable but cannot establish a new v2 baseline. */
+export const LEGACY_CALIBRATION_SCHEMA_VERSION = 1;
+
+export class CalibrationLegacyRecordError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CalibrationLegacyRecordError";
+  }
+}
+
+/** Surfaces that own a versioned, hashed assembly-policy identity. */
+export enum CalibrationAssemblySurface {
+  ArtifactGeneration = "artifact-generation",
+  JudgePrompt = "judge-prompt",
+}
+
+/** An assembly-policy identity is a surface, a version and a policy digest. */
+export const CalibrationAssemblyIdentitySchema = z.object({
+  surface: z.nativeEnum(CalibrationAssemblySurface),
+  version: z.string().min(1),
+  policy_hash: Sha256HexSchema,
+}).strict();
+
+export type ICalibrationAssemblyIdentity = z.infer<typeof CalibrationAssemblyIdentitySchema>;
+
+/** A frozen criterion definition, including the fields its prompt used. */
+export const CalibrationCriterionDefinitionSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  weight: z.number().min(0),
+  required: z.boolean(),
+  category: z.enum(["completeness", "correctness"]),
+  anchors: z.record(z.string(), z.string().min(1)).optional(),
+}).strict();
+
+export type ICalibrationCriterionDefinition = z.infer<typeof CalibrationCriterionDefinitionSchema>;
+
+/** Version-2 rubric freezes criteria, methodology, template and metric policy. */
+export const CalibrationRubricV2Schema = z.object({
+  schema_version: z.literal(CALIBRATION_SCHEMA_VERSION_V2),
+  id: z.literal(RUBRIC_PLAN_QUALITY_ID),
+  version: z.string().min(1),
+  preset: z.literal(RUBRIC_GOAL_ALIGNED_REVIEW_PRESET),
+  criteria: z.array(CalibrationCriterionDefinitionSchema).min(1),
+  label_threshold: z.number().min(0).max(1),
+  methodology_text: z.string().min(1),
+  methodology_hash: Sha256HexSchema,
+  template_text: z.string().min(1),
+  template_hash: Sha256HexSchema,
+  metric_policy: z.string().min(1),
+  judge_assembly: CalibrationAssemblyIdentitySchema,
+}).strict();
+
+export type ICalibrationRubricV2 = z.infer<typeof CalibrationRubricV2Schema>;
+
+/** Version-2 evidence snapshot keeps the true generation lineage and post-redaction bytes. */
+export const CalibrationEvidenceSnapshotV2Schema = z.object({
+  source_run_id: z.string().min(1),
+  source_step_id: z.string().min(1),
+  source_trace_id: z.string().uuid(),
+  execution_outcome: z.enum(["pass", "fail"]),
+  source_revision: z.string().min(1),
+  request_context: z.string().min(1),
+  artifact: z.string().min(1),
+  methodology: z.string().min(1),
+  redaction_version: z.string().min(1),
+  redaction_hash: Sha256HexSchema,
+  artifact_context_assembly: CalibrationAssemblyIdentitySchema,
+  capture_judge_context_assembly: CalibrationAssemblyIdentitySchema,
+  source_submission_hashes: z.record(z.string(), Sha256HexSchema),
+}).strict();
+
+export type ICalibrationEvidenceSnapshotV2 = z.infer<typeof CalibrationEvidenceSnapshotV2Schema>;
+
+/** Version-2 provenance names the canonical vendor, the CLI transport and the judge assembly. */
+export const CalibrationProvenanceV2Schema = z.object({
+  vendor: z.nativeEnum(CalibrationVendor),
+  transport: z.nativeEnum(CalibrationTransport),
+  requested_model: z.string().min(1),
+  resolved_model: z.string().min(1),
+  observed_model: z.string().min(1).nullable(),
+  identity_basis: z.nativeEnum(CalibrationIdentityBasis),
+  cli_version: z.string().min(1),
+  settings: z.record(z.string(), CalibrationScalarSettingSchema),
+  configuration_hash: Sha256HexSchema,
+  judge_context_assembly: CalibrationAssemblyIdentitySchema,
+}).strict();
+
+export type ICalibrationProvenanceV2 = z.infer<typeof CalibrationProvenanceV2Schema>;
+
+export const CalibrationSourceLineageV2Schema = z.object({
+  run_id: z.string().min(1),
+  step_id: z.string().min(1),
+  trace_id: z.string().uuid(),
+}).strict();
+
+export type ICalibrationSourceLineageV2 = z.infer<typeof CalibrationSourceLineageV2Schema>;
+
+/** Version-2 publication item binds one semantic artifact to one frozen reference label. */
+export const CalibrationItemV2Schema = z.object({
+  schema_version: z.literal(CALIBRATION_SCHEMA_VERSION_V2),
+  semantic_id: Sha256HexSchema,
+  snapshot_integrity_hash: Sha256HexSchema,
+  request_context: z.string().min(1),
+  artifact: z.string().min(1),
+  frozen_rubric: CalibrationRubricV2Schema,
+  artifact_context_assembly: CalibrationAssemblyIdentitySchema,
+  redaction_version: z.string().min(1),
+  redaction_hash: Sha256HexSchema,
+  source_lineage: CalibrationSourceLineageV2Schema,
+  reference_score: z.number().min(0).max(1),
+  reference_label: z.nativeEnum(CalibrationLabel),
+  reference_rationale: z.string().min(1),
+  reference_provenance: CalibrationProvenanceV2Schema,
+  full_prompt_hash: Sha256HexSchema,
+}).strict();
+
+export type ICalibrationItemV2 = z.infer<typeof CalibrationItemV2Schema>;
+
+const CalibrationActiveTrackV2Schema = z.object({
+  target_vendor: z.literal(CalibrationVendor.Anthropic),
+  reference_vendor: z.literal(CalibrationVendor.Openai),
+}).strict();
+
+const CalibrationItemCoverageV2Schema = z.object({
+  item_hashes: z.array(Sha256HexSchema).min(1),
+  count: z.number().int().min(1),
+  label_distribution: CalibrationLabelDistributionSchema,
+}).strict();
+
+/** Version-2 manifest pins one active target/reference track and every assembly identity. */
+export const CalibrationManifestV2Schema = z.object({
+  schema_version: z.literal(CALIBRATION_SCHEMA_VERSION_V2),
+  dataset_version: z.string().min(1),
+  rubric_hash: Sha256HexSchema,
+  selection_seed: z.string().min(1),
+  source_index_hash: Sha256HexSchema,
+  artifact_ids: z.array(Sha256HexSchema).min(1),
+  artifact_context_assembly: CalibrationAssemblyIdentitySchema,
+  redaction_version: z.string().min(1),
+  redaction_hash: Sha256HexSchema,
+  frozen_reference_judge_assembly: CalibrationAssemblyIdentitySchema,
+  active_tracks: z.array(CalibrationActiveTrackV2Schema).length(1),
+  items: CalibrationItemCoverageV2Schema,
+  dataset_content_hash: Sha256HexSchema,
+  generated_at: UtcDatetimeSchema,
+}).strict().superRefine((manifest, ctx) => {
+  const { min: sampleMin, max: sampleMax } = resolveConfigurableBounds("eval.calibration.sample_count");
+  const minArtifacts = sampleMin ?? DEFAULT_CALIBRATION_SAMPLE_COUNT;
+  const maxArtifacts: number = sampleMax ?? CALIBRATION_SAMPLE_COUNT_MAX;
+
+  const uniqueIds = new Set(manifest.artifact_ids);
+  if (uniqueIds.size !== manifest.artifact_ids.length) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [ARTIFACT_IDS_FIELD], message: "artifact_ids must be unique" });
+  }
+  const sortedIds = [...manifest.artifact_ids].sort();
+  if (manifest.artifact_ids.some((id, index) => id !== sortedIds[index])) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [ARTIFACT_IDS_FIELD],
+      message: "artifact_ids must be sorted ascending",
+    });
+  }
+  if (manifest.artifact_ids.length < minArtifacts) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [ARTIFACT_IDS_FIELD],
+      message: `artifact_ids must contain at least ${minArtifacts} unique artifacts`,
+    });
+  }
+  if (manifest.artifact_ids.length > maxArtifacts) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [ARTIFACT_IDS_FIELD],
+      message: `artifact_ids must contain at most ${maxArtifacts} unique artifacts`,
+    });
+  }
+  if (manifest.items.count !== manifest.artifact_ids.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["items", "count"],
+      message: "item coverage count must equal the artifact_ids length",
+    });
+  }
+  if (manifest.items.item_hashes.length !== manifest.artifact_ids.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["items", "item_hashes"],
+      message: "item coverage hashes must cover the identical artifact_ids set",
+    });
+  }
+}).describe("Version-2 publication pins one active track and a complete item coverage set");
+
+export type ICalibrationManifestV2 = z.infer<typeof CalibrationManifestV2Schema>;
+
+function asCalibrationRecord(value: JSONValue): Record<string, JSONValue> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, JSONValue>
+    : undefined;
+}
+
+/** True when a stored record is an inspect-only version-1 record. A version-1 item
+ *  carries no version field, so its shape is the legacy tell. */
+export function isLegacyCalibrationRecord(value: JSONValue): boolean {
+  const record = asCalibrationRecord(value);
+  if (!record) return false;
+  if (record.schema_version === LEGACY_CALIBRATION_SCHEMA_VERSION) return true;
+  return record.schema_version === undefined && typeof record.source_snapshot_hash === "string" &&
+    !Object.hasOwn(record, "semantic_id");
+}
+
+/** Reads a version-1 item for inspection only. It cannot be upgraded or republished. */
+export function readLegacyCalibrationItem(raw: JSONValue): ICalibrationItem {
+  if (!isLegacyCalibrationRecord(raw)) {
+    throw new CalibrationLegacyRecordError("calibration-legacy-not-a-v1-record");
+  }
+  return CalibrationItemSchema.parse(raw);
+}
+
+/** Reads a version-2 frozen item. A legacy or unknown version is ineligible. */
+export function readFrozenCalibrationItem(raw: JSONValue): ICalibrationItemV2 {
+  const record = asCalibrationRecord(raw);
+  if (!record) {
+    throw new CalibrationLegacyRecordError("calibration-frozen-not-an-object");
+  }
+  const version = record.schema_version;
+  if (version === LEGACY_CALIBRATION_SCHEMA_VERSION || (version === undefined && isLegacyCalibrationRecord(raw))) {
+    throw new CalibrationLegacyRecordError("calibration-frozen-legacy-ineligible");
+  }
+  if (version !== CALIBRATION_SCHEMA_VERSION_V2) {
+    throw new CalibrationLegacyRecordError("calibration-frozen-unknown-version");
+  }
+  return CalibrationItemV2Schema.parse(raw);
+}
