@@ -68,6 +68,16 @@ capability metadata (context window, thinking support, reference cost) is what p
 size/thinking eligibility checks, so a custom provider must be registered with those
 fields populated for preset-based selection to apply.
 
+**The daemon runs on a fixed client.** Plan execution and flow steps call one provider
+instance: the daemon's configured `default_model`, or a flow step's bound service. They
+cannot switch providers per step. In those paths the resolver does not choose. It reports
+that client as the selected `provider:model` with reason `fixed_client`, and your size,
+characteristics and preferred provider have no effect on the choice. Your `--thinking` and
+`--effort` still set the call options. To run a step on another model, change
+`agents.default_model` or bind the flow step (see [section 7](#7-flow-step-bindings-and-intent-resolution)).
+A `default_model` that names a fallback chain has no fixed client, so the resolver keeps
+choosing as described above.
+
 ## 3. Curating your preferred models
 
 You can tell Exaix which providers to prefer for each size tier, without editing config
@@ -196,13 +206,15 @@ considered and why it picked what it picked.
 ## 7. Flow step bindings and intent resolution
 
 A flow step binding fixes the service and model through the model binding catalog and binding
-resolver before the step calls a model. A bound step uses that resolved provider directly;
-it does not ask `ModelResolver` to choose a model from the step's intent. The run snapshot
+resolver before the step calls a model. A bound step uses that resolved provider directly.
+Its `model.resolved` event names the bound adapter and service model with reason
+`fixed_client`; the step's intent sets only thinking and effort. The run snapshot
 keeps the selected identity and field sources stable for that run. New runs resolve the
 current config and overlays again.
 
-An unbound flow step keeps the existing boot-provider and intent-resolution path. Plan
+An unbound flow step runs on the boot provider and reports it the same way. A
+`cli_delegate` step runs its session tool, so it carries no fixed client. Plan
 generation, plan execution and other non-flow requests do not use flow-step bindings;
-their `ModelResolver` behavior remains as described above. See
+plan execution reports the boot provider as its fixed client. See
 [Model bindings for flow steps](Exaix_User_Guide.md#model-bindings-for-flow-steps) for
 selectors, overlay precedence, pins, diagnostics and replay locks.

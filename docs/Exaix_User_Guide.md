@@ -1244,6 +1244,13 @@ exactl request "Audit dependencies" --model-size XL --preferred-provider anthrop
 tiebreak to step 3, and a multi-route pricing decision on top of any winner — see
 [`docs/Model_Resolution.md`](Model_Resolution.md) for the full picture.)
 
+**Daemon execution uses one client.** Plan execution and flow steps run on the daemon's
+`agents.default_model` client, or on a flow step's bound service. There the resolver reports
+that client with reason `fixed_client` instead of choosing: `--model-size`,
+`--characteristic` and `--preferred-provider` do not change the provider, while `--thinking`
+and `--effort` still apply. Change `agents.default_model`, or bind a flow step, to run on
+another model. A `default_model` that names a fallback chain keeps the choosing behavior above.
+
 The chosen provider, model, and the reason are journalled as `model.resolved`. Inspect them with:
 
 ```bash

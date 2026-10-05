@@ -29,7 +29,7 @@ import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { getProviderFailureReason } from "@exaix/ai/errors.ts";
 import type { ModelResolver } from "@exaix/ai";
-import type { IModelCallOptions } from "@exaix/schemas";
+import type { IFixedModelClient, IModelCallOptions } from "@exaix/schemas";
 import {
   AGENT_COMPOSER_ID,
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -141,6 +141,9 @@ export interface IAgentComposerOptions {
    *  entry per matched skill. A caller that already matched skills supplies this so
    *  executeStep can include skill floors in its resolution (floors only raise). */
   matchedSkillFloors?: Array<{ skillId: string; effort?: EffortTier; thinking?: boolean }>;
+  /** The provider type and model of the injected provider. Model resolution then reports this
+   *  client, because execution cannot switch to another one. */
+  fixedClient?: IFixedModelClient;
 }
 
 /** Dependencies for AgentComposer constructor. */

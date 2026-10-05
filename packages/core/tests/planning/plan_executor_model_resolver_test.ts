@@ -184,3 +184,56 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name: "PlanExecutor reports its fixed client as the resolved model during step execution",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    ProviderRegistry.clear();
+    registerLocalProvider("ollama");
+    try {
+      const root = await Deno.makeTempDir();
+      await Deno.mkdir(`${root}/Blueprints/Agents`, { recursive: true });
+      await Deno.writeTextFile(
+        `${root}/Blueprints/Agents/senior-coder.md`,
+        '---\nagent_role: senior-coder\nmodel: ""\nmodel_size: M\n---\n\nStub agent role for testing.\n',
+      );
+      const config = createMockConfig(root, {});
+      const logger = createMockEventLogger();
+      const resolver = new ModelResolver(
+        new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
+        config,
+        createStubHealthChecker(),
+        logger,
+      );
+      const fixedClient = { provider: "openai-chat", model: "deepseek-v4-pro" };
+
+      const executor = new PlanExecutor(
+        config,
+        stubProvider as never,
+        stubDb as never,
+        root,
+        logger,
+        { modelResolver: resolver, fixedClient, enableGit: false, generateReport: true },
+      );
+
+      await executor.execute(`${root}/plan.md`, {
+        trace_id: crypto.randomUUID(),
+        request_id: "test-req",
+        agent_role: "senior-coder",
+        frontmatter: {},
+        steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
+      });
+
+      const resolved = logger.events.filter((e) => e.action === "model.resolved");
+      assertEquals(resolved.length > 0, true);
+      for (const event of resolved) {
+        assertEquals(event.payload?.reason, "fixed_client");
+        assertEquals(event.payload?.selected, { ...fixedClient, attempt: 1 });
+      }
+    } finally {
+      ProviderRegistry.clear();
+    }
+  },
+});

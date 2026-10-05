@@ -26,6 +26,8 @@ import type { IFlowWorktreeCoordinator } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 import { PlanSchema } from "@exaix/schemas/plan_schema.ts";
+import { BOUND_TARGET_KIND_PROVIDER, type ModelBindingService, type ModelResolver } from "@exaix/ai";
+import type { IFixedModelClient, IModelIntent, IResolvedBinding } from "@exaix/schemas";
 
 async function writeBlueprint(root: string, agentRole: string): Promise<void> {
   const dir = join(root, "Blueprints", "Agents");
@@ -920,4 +922,89 @@ Deno.test("AgentComposerAdapter.run: no-strategy path still calls the wrapped ru
   } finally {
     await dbService.cleanup();
   }
+});
+
+const BOOT_CLIENT: IFixedModelClient = { provider: "anthropic", model: "claude-sonnet-4-6" };
+
+/** A resolver that records each intent and returns the fixed client the intent carries. */
+function makeFixedClientResolver(captured: IModelIntent[]): ModelResolver {
+  return {
+    resolve: (intent: IModelIntent) => {
+      captured.push(intent);
+      return Promise.resolve({ ...(intent.fixed_client ?? BOOT_CLIENT), attempt: 1 });
+    },
+  } as ModelResolver;
+}
+
+async function runReactStep(
+  deps: { fixedClient?: IFixedModelClient },
+  bindingService?: ModelBindingService,
+  request: Partial<IFlowStepRequest> = {},
+  strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.CLI_DELEGATE = ExecutionStrategyName.REACT,
+): Promise<IModelIntent[]> {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir);
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, strategy, []);
+    const captured: IModelIntent[] = [];
+    const adapter = new AgentComposerAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Agents"),
+      {
+        config,
+        db: dbService.db,
+        logger,
+        permissions,
+        strategyRegistry,
+        modelResolver: makeFixedClientResolver(captured),
+        ...deps,
+      },
+      bindingService,
+    );
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: config.portals![0].alias, ...request }),
+      strategy,
+    );
+    return captured;
+  } finally {
+    await dbService.cleanup();
+  }
+}
+
+Deno.test("AgentComposerAdapter.runWithStrategy: an unbound step resolves to the boot client", async () => {
+  const captured = await runReactStep({ fixedClient: BOOT_CLIENT });
+
+  assertEquals(captured.length > 0, true);
+  assertEquals(captured[0].fixed_client, BOOT_CLIENT);
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: a bound step resolves to the bound client", async () => {
+  const binding = { adapter: "openai-chat", service_model_id: "deepseek-v4-pro" } as IResolvedBinding;
+  const providerFor: ModelBindingService["providerFor"] = () =>
+    Promise.resolve({
+      kind: BOUND_TARGET_KIND_PROVIDER,
+      binding,
+      provider: { id: "bound", generate: () => Promise.reject(new Error("not called")) },
+    });
+  const bindingService = { providerFor } as ModelBindingService;
+
+  const captured = await runReactStep({ fixedClient: BOOT_CLIENT }, bindingService, {
+    bindingSnapshot: {} as IFlowStepRequest["bindingSnapshot"],
+    flowId: "flow-a",
+    flowStepId: "step-1",
+  });
+
+  assertEquals(captured[0].fixed_client, { provider: "openai-chat", model: "deepseek-v4-pro" });
+});
+
+Deno.test("AgentComposerAdapter.runWithStrategy: an unbound cli_delegate step carries no fixed client", async () => {
+  const captured = await runReactStep({ fixedClient: BOOT_CLIENT }, undefined, {}, ExecutionStrategyName.CLI_DELEGATE);
+
+  assertEquals(captured.length > 0, true);
+  assertEquals(captured[0].fixed_client, undefined);
 });

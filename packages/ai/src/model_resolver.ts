@@ -56,6 +56,7 @@ const CHARACTERISTIC_WEIGHT = 1;
 const CHARACTERISTIC_BEST = "best";
 const REASON_PRESET_DEFAULT: ModelResolutionReason = "preset_default";
 const REASON_CHARACTERISTICS_SCORED: ModelResolutionReason = "characteristics_scored";
+const REASON_FIXED_CLIENT: ModelResolutionReason = "fixed_client";
 
 /** Coerces YAML-failsafe-parsed boolean fields: `thinking: false` arrives as the string
  *  "false" (truthy in JS), which would wrongly demand a thinking-capable provider. */
@@ -108,6 +109,9 @@ export class ModelResolver {
 
     const overrideResult = this.tryResolveOverride(intent);
     if (overrideResult) return overrideResult;
+
+    const fixedResult = await this.tryResolveFixedClient(intent, startTime);
+    if (fixedResult) return fixedResult;
 
     const explicitResult = await this.tryResolveExplicit(intent, startTime);
     if (explicitResult) return explicitResult;
@@ -164,6 +168,23 @@ export class ModelResolver {
     const resolved = overrideMap[intent.model_size];
     if (!resolved) return null;
     return { ...resolved, options: this.buildCallOptions(intent), attempt: 1 };
+  }
+
+  /** A caller that cannot change its client gets that client back. The trace and the
+   *  budget then name the model that runs. The intent still sets the call options. */
+  private async tryResolveFixedClient(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {
+    const fixed = intent.fixed_client;
+    if (!fixed) return null;
+    const resolved: IResolvedModel = {
+      provider: fixed.provider,
+      model: fixed.model,
+      options: this.buildCallOptions(intent),
+      attempt: 1,
+    };
+    await this.emitTrace(intent, resolved, [fixed.provider], {}, REASON_FIXED_CLIENT, {
+      durationMs: Date.now() - startTime,
+    });
+    return resolved;
   }
 
   private async tryResolveExplicit(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {

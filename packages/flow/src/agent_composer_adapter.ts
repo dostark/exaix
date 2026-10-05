@@ -45,7 +45,7 @@ import {
   STEP_KIND_AGENT,
 } from "@exaix/ai";
 import { COMPLEXITY_SOURCE_ANALYSIS, COMPLEXITY_SOURCE_DEFAULT, taskComplexityFromAnalysis } from "@exaix/ai";
-import type { EffortDeclaration, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
+import type { EffortDeclaration, IFixedModelClient, SessionTool, ThinkingDeclaration } from "@exaix/schemas";
 import type { TaskComplexity } from "@exaix/core";
 import type { IAgentExecutionOptionsInput, IExecutionContext } from "@exaix/schemas/agent_composer.ts";
 
@@ -124,6 +124,9 @@ export interface IAgentComposerConstructionDeps {
   /** Test-only escape hatch, a fake subprocess runner for the cli-delegate strategy.
    *  Production never sets this flag. */
   cliDelegateRun?: IRunCliDelegateProcess;
+  /** The provider type and model of `provider`. An unbound step runs on it, so model
+   *  resolution reports it. */
+  fixedClient?: IFixedModelClient;
 }
 
 /** Bounds `planWrittenFiles` Map growth for this long-lived singleton (mirrors `apps/daemon/main.ts`'s `traceModelCache`). */
@@ -300,6 +303,7 @@ export class AgentComposerAdapter {
       effortResolver,
       ...(boundResolution.cliDelegateBinding ? { cliDelegateBinding: boundResolution.cliDelegateBinding } : {}),
       ...(this.orchestratorDeps.cliDelegateRun ? { cliDelegateRun: this.orchestratorDeps.cliDelegateRun } : {}),
+      ...(boundResolution.fixedClient ? { options: { fixedClient: boundResolution.fixedClient } } : {}),
     });
 
     try {
@@ -354,8 +358,11 @@ export class AgentComposerAdapter {
     cliDelegateBinding?: { tool: SessionTool; model: string };
     boundEffort?: EffortDeclaration;
     boundThinking?: ThinkingDeclaration;
+    fixedClient?: IFixedModelClient;
   }> {
-    const unbound = { effectiveProvider: provider };
+    // A cli_delegate step runs its session tool, not the boot provider.
+    const bootClient = strategy === ExecutionStrategyName.CLI_DELEGATE ? undefined : this.orchestratorDeps?.fixedClient;
+    const unbound = { effectiveProvider: provider, ...(bootClient ? { fixedClient: bootClient } : {}) };
     if (!this.bindingService || !request.bindingSnapshot || !request.flowId || !request.flowStepId) return unbound;
     const bound = await this.bindingService.providerFor(request.bindingSnapshot, {
       flowId: request.flowId,
@@ -388,6 +395,7 @@ export class AgentComposerAdapter {
       effectiveProvider: bound.provider,
       boundEffort: bound.binding.effort,
       boundThinking: bound.binding.thinking,
+      fixedClient: { provider: bound.binding.adapter, model: bound.binding.service_model_id },
     };
   }
 }

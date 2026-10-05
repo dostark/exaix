@@ -116,7 +116,7 @@ import { ensureDir } from "@std/fs";
 import { WaitStateSchema } from "@exaix/flow";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import type { EffortTier, ModelSize } from "@exaix/schemas";
+import type { EffortTier, IFixedModelClient, ModelSize } from "@exaix/schemas";
 import type { JSONValue } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import { HnswVectorIndex } from "@exaix/memory";
@@ -484,6 +484,13 @@ if (import.meta.main) {
       logger,
       costTracker,
     );
+
+    // Plan and flow steps run on this client, so model resolution must report it.
+    // A fallback chain can switch providers at call time, so it has no fixed client.
+    const bootClient: IFixedModelClient | undefined =
+      config.provider_strategy?.fallback_enabled && config.provider_strategy.fallback_chains?.[defaultModelName]
+        ? undefined
+        : { provider: providerInfo.type, model: providerInfo.model };
 
     await logger.info(DomainEventType.LlmProviderInitialized, providerInfo.id, {
       type: providerInfo.type,
@@ -1068,6 +1075,7 @@ if (import.meta.main) {
         permissions: portalPermissions,
         provider: llmProvider,
         modelResolver,
+        fixedClient: bootClient,
         applicationContext: context,
         contextPort: dogfoodContextPort,
         trustedAgentRoles: dogfoodTrustedAgentRoles,
@@ -1333,6 +1341,7 @@ if (import.meta.main) {
       logger,
       // Share the configured resolver so plan execution uses the same routing policy.
       modelResolver,
+      fixedClient: bootClient,
       // Share the edition registry so prompt budgeting uses resolved context windows.
       modelRegistry,
     });

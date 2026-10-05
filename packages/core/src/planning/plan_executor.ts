@@ -13,7 +13,7 @@ import { resolveMemoryExecutionRoot } from "../config/paths.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IEffortDeclarationPair } from "@exaix/ai";
-import type { EffortTier, IModelIntent } from "@exaix/schemas/model_intent.ts";
+import type { EffortTier, IFixedModelClient, IModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -96,6 +96,9 @@ export interface IPlanExecutorOptions {
    *  ModelResolver.resolve() branch is reachable during real execution — without it,
    *  best/route/auto-admit/task_type derivation never fires, regardless of blueprint content. */
   modelResolver?: ModelResolver;
+  /** The provider type and model of llmProvider. Every step runs on that client, so model
+   *  resolution reports it instead of choosing another provider. */
+  fixedClient?: IFixedModelClient;
   /** Edition-selected registry threaded into AgentComposer's PromptBudgetAllocator so
    *  context-window resolution reaches production instead of the hardcoded 128K fallback —
    *  without it every allocate() call ignores the resolved model's real context window. */
@@ -320,6 +323,9 @@ export class PlanExecutor {
     }
     if (this.options.requestDeclaration) {
       options.requestDeclaration = this.options.requestDeclaration;
+    }
+    if (this.options.fixedClient) {
+      options.fixedClient = this.options.fixedClient;
     }
     const topSkillTaskTypes = await this.deriveTopSkillTaskTypes(context);
     if (topSkillTaskTypes.length > 0) {

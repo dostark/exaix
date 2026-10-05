@@ -27,6 +27,12 @@ export interface IModelCallOptions {
   jsonSchema?: Record<string, JSONValue>;
 }
 
+/** The provider type and wire model of a client that a caller already holds. */
+export interface IFixedModelClient {
+  provider: string;
+  model: string;
+}
+
 /** Unified intent type for model resolution, merging IModelPreferences and ISelectionCriteria. All fields optional; explicit `model` bypasses the resolver entirely. */
 export interface IModelIntent {
   preferred_provider?: string;
@@ -48,6 +54,9 @@ export interface IModelIntent {
   task_type_source?: TaskTypeSource;
   /** The request trace that the model.resolved event joins. Selection never reads it. */
   trace_id?: string;
+  /** The client that serves the call when the caller cannot change it. Resolution then
+   *  reports this client and only derives the call options from the intent. */
+  fixed_client?: IFixedModelClient;
 }
 
 /** The precedence source that decided the derived task_type. */
@@ -90,7 +99,9 @@ export type ModelResolutionReason =
   /** `best` characteristic was decisive (benchmark_map ranking). */
   | "best_ranked"
   /** F8: the opt-in usage tiebreak decided a formerly-random pick. */
-  | "usage_ranked";
+  | "usage_ranked"
+  /** The caller's client is fixed, so the intent selected only the call options. */
+  | "fixed_client";
 
 /** Trace payload emitted on every ModelResolver.resolve() call: input intent, candidates considered, scores, selection, and duration. */
 export interface IModelResolutionTrace {

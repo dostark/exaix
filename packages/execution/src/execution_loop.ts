@@ -41,7 +41,7 @@ import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/co
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
-import type { IModelIntent } from "@exaix/schemas";
+import type { IFixedModelClient, IModelIntent } from "@exaix/schemas";
 import { EFFORT_AUTO, EffortTierSchema } from "@exaix/schemas";
 import {
   DECLARATION_FIELD_EFFORT,
@@ -87,6 +87,8 @@ export interface IExecutionLoopConfig {
    *  AgentComposer.resolveModelFromBlueprint's ModelResolver.resolve() branch is
    *  reachable during real plan execution. */
   modelResolver?: ModelResolver;
+  /** The provider type and model of llmProvider, threaded into IPlanExecutorOptions.fixedClient. */
+  fixedClient?: IFixedModelClient;
   /** Threaded into PlanExecutor's IPlanExecutorOptions so AgentComposer's internally-constructed
    *  PromptBudgetAllocator resolves a step's real context window instead of always falling back to the
    *  hardcoded 128K default. */
@@ -180,6 +182,7 @@ export class ExecutionLoop {
   private reviewRegistry?: ReviewRegistry;
   private llmProvider?: IModelProvider;
   private modelResolver?: ModelResolver;
+  private fixedClient?: IFixedModelClient;
   private modelRegistry?: IModelRegistry;
   private confidenceScorer?: ConfidenceScorer;
   private amendmentService?: IPlanAmendmentService;
@@ -213,6 +216,7 @@ export class ExecutionLoop {
     this.amendmentService = config.amendmentService;
     this.amendmentGate = config.amendmentGate;
     this.modelResolver = config.modelResolver;
+    this.fixedClient = config.fixedClient;
     this.modelRegistry = config.modelRegistry;
     this.reviewRegistry = config.reviewRegistry;
     this.context = ctx;
@@ -817,6 +821,7 @@ export class ExecutionLoop {
       onCodeChangesDelegate: this.onCodeChangesDelegate,
       modelResolver: this.modelResolver,
       modelRegistry: this.modelRegistry,
+      ...(this.fixedClient ? { fixedClient: this.fixedClient } : {}),
       // Phase 132 (GAP-4): request-level intent flags ride the plan frontmatter
       // (written by PlanWriter) so native execution overrides blueprint values.
       requestIntent: this.requestIntentFromPlanFrontmatter(frontmatter),

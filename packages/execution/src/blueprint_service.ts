@@ -192,6 +192,7 @@ export class BlueprintService {
         task_type: derivedTaskType.taskType,
         task_type_source: derivedTaskType.source,
         ...(traceId ? { trace_id: traceId } : {}),
+        ...(this.options?.fixedClient ? { fixed_client: this.options.fixedClient } : {}),
       };
       const resolved = await this.modelResolver.resolve(intent);
       provider = resolved.provider;

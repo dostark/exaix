@@ -383,3 +383,27 @@ Deno.test("[model-resolve][trace] loadBlueprint passes the request trace to Mode
     await cleanup();
   }
 });
+
+Deno.test("[model-resolve] loadBlueprint passes the composer's fixed client to ModelResolver", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+    const fixedClient = { provider: "openai-chat", model: "deepseek-v4-pro" };
+    const { resolver, captured } = createCapturingResolver({ ...fixedClient, attempt: 1 });
+
+    await writeBlueprint(testDir, "test-agent", { model: "ignored", model_size: "M", capabilities: "[chat]" });
+
+    const executor = makeExecutor(config, db, resolver, { fixedClient });
+    const blueprint = await executor.loadBlueprint("test-agent");
+    assertEquals(captured[0].fixed_client, fixedClient);
+    assertEquals(captured[0].model_size, "M");
+    assertEquals({ provider: blueprint.provider, model: blueprint.model }, fixedClient);
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
