@@ -219,6 +219,15 @@ Deno.test("[EvalCommands] buildRunArgs omits --capture-calibration-evidence when
   assertEquals(args.join(" ").includes("--capture-calibration-evidence"), false);
 });
 
+Deno.test("[EvalCommands] buildRunArgs forwards an explicit judge profile without shell interpretation", (): void => {
+  const path: string = "/tmp/judge profile/profile.json";
+  const args: string[] = buildRunArgs({ judgeProfile: path });
+  const index: number = args.indexOf("--judge-profile");
+  assertEquals(index >= 0, true);
+  assertEquals(args[index + 1], path);
+  assertEquals(buildRunArgs({}).includes("--judge-profile"), false);
+});
+
 Deno.test("[EvalCommands] history with no history file shows empty message", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
   Deno.chdir(tempDir);

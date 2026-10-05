@@ -7,3 +7,4 @@
  */
 
 export * from "./evaluation_criteria.ts";
+export * from "./judge_profile.ts";

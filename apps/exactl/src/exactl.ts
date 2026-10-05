@@ -48,7 +48,7 @@ import { AnalysisMode } from "@exaix/core/request";
 import { ReviewStatus } from "@exaix/core/status";
 import { CLI_DEFAULTS, CLI_OUTPUT_FORMATS } from "@exaix/cli/config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
-import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
+import { initializeServices, type IServiceContext, isTestMode as isTestModeImport } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { GitService } from "@exaix/git";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
@@ -102,6 +102,17 @@ export interface IExaCtlCommandOptions {
   registerEditionCommands?: (root: typeof baseCommand, context: ICliApplicationContext) => void;
 }
 
+type ExaCtlArgumentTypes = {
+  number: number;
+  integer: number;
+  string: string;
+  boolean: boolean;
+  file: string;
+  secret: string;
+};
+
+type ExaCtlBaseCommand = Command<void, ExaCtlArgumentTypes, void, [], void, ExaCtlArgumentTypes, void, Command>;
+
 // Allow tests to run the CLI entrypoint without initializing heavy services
 export function isTestMode(): boolean {
   return isTestModeImport();
@@ -129,29 +140,31 @@ const CLI_OPTION_WAIT_MESSAGE_DESC = "Resolution summary";
 const CLI_OPTION_WAIT_RESOLVED_BY = "--resolved-by <actor:string>";
 const CLI_OPTION_WAIT_RESOLVED_BY_DESC = "Actor identity resolving this wait state, recorded for audit";
 
-const services = await initializeServices();
+const services: IServiceContext = await initializeServices();
 const fullContext: ICliApplicationContext = services;
 const context = fullContext;
-const { db, provider, display } = services;
+const db: IServiceContext["db"] = services.db;
+const provider: IServiceContext["provider"] = services.provider;
+const display: IServiceContext["display"] = services.display;
 const gitService = services.git;
-const config = services.config.getAll();
+const config: ReturnType<IServiceContext["config"]["getAll"]> = services.config.getAll();
 
-const requestCommands = new RequestCommands(fullContext);
-const planCommands = new PlanCommands(fullContext);
-const reviewCommands = new ReviewCommands(fullContext);
-const gitCommands = new GitCommands(fullContext);
-const daemonCommands = new DaemonCommands(fullContext);
-const configCommands = new ConfigCommands(fullContext);
-const portalCommands = new PortalCommands(fullContext);
-const blueprintCommands = new BlueprintCommands(fullContext);
-const routingCommands = new RoutingCommands(fullContext);
-const toolCommands = new ToolCommands(fullContext);
-const flowCommands = new FlowCommands(fullContext);
-const dashboardCommands = new DashboardCommands(fullContext);
-const memoryCommands = new MemoryCommands(fullContext);
-const watchCommandInstance = new WatchCommand(fullContext);
-const waitStateCommands = new WaitStateCommands(fullContext);
-const evalCommands = new EvalCommands(fullContext);
+const requestCommands: RequestCommands = new RequestCommands(fullContext);
+const planCommands: PlanCommands = new PlanCommands(fullContext);
+const reviewCommands: ReviewCommands = new ReviewCommands(fullContext);
+const gitCommands: GitCommands = new GitCommands(fullContext);
+const daemonCommands: DaemonCommands = new DaemonCommands(fullContext);
+const configCommands: ConfigCommands = new ConfigCommands(fullContext);
+const portalCommands: PortalCommands = new PortalCommands(fullContext);
+const blueprintCommands: BlueprintCommands = new BlueprintCommands(fullContext);
+const routingCommands: RoutingCommands = new RoutingCommands(fullContext);
+const toolCommands: ToolCommands = new ToolCommands(fullContext);
+const flowCommands: FlowCommands = new FlowCommands(fullContext);
+const dashboardCommands: DashboardCommands = new DashboardCommands(fullContext);
+const memoryCommands: MemoryCommands = new MemoryCommands(fullContext);
+const watchCommandInstance: WatchCommand = new WatchCommand(fullContext);
+const waitStateCommands: WaitStateCommands = new WaitStateCommands(fullContext);
+const evalCommands: EvalCommands = new EvalCommands(fullContext);
 // Solo model curation CLI. Reads the model registry floor for display and writes
 // curated lists to exa.config.toml (the resolver's read surface).
 const modelCommands = new ModelCommands(
@@ -378,7 +391,7 @@ function renderReviewShowCommits(cs: IReviewDetails) {
   }
 }
 
-const baseCommand = new Command()
+const baseCommand: ExaCtlBaseCommand = new Command()
   .name("exactl")
   .version(BINARY_VERSION)
   .description("Exaix CLI - Human interface for agent orchestration")
@@ -3016,6 +3029,7 @@ const evalCommand = new Command()
     "run",
     new Command()
       .description("Run evaluation scenarios")
+      .option("--judge-profile <file:string>", "Use an explicit frozen plan judge profile")
       .option("-P, --pack <pack:string>", "Run scenarios in a named pack (repeatable)", { collect: true })
       .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
       .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
@@ -3040,6 +3054,7 @@ const evalCommand = new Command()
             scoreThreshold: options.scoreThreshold,
             trials: options.trials,
             historyFormat: options.historyFormat,
+            judgeProfile: options.judgeProfile,
             cell: options.cell,
             maxCostUsd: options.maxCostUsd,
             verbose: options.verbose,
@@ -3133,6 +3148,7 @@ const evalCommand = new Command()
         "generate",
         new Command()
           .description("Run real scenarios, capturing real judge-call evidence for calibration")
+          .option("--judge-profile <file:string>", "Use an explicit frozen plan judge profile")
           .option("-P, --pack <pack:string>", "Run scenarios in a named pack (repeatable)", { collect: true })
           .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
           .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
@@ -3157,6 +3173,7 @@ const evalCommand = new Command()
                 maxCostUsd: options.maxCostUsd,
                 verbose: options.verbose,
                 captureCalibrationEvidence: options.captureCalibrationEvidence,
+                judgeProfile: options.judgeProfile,
               });
             } catch (error) {
               console.error(
@@ -3221,7 +3238,7 @@ export function createExaCtlCommand(options: IExaCtlCommandOptions = {}): typeof
   return baseCommand;
 }
 
-export const __test_command = createExaCtlCommand();
+export const __test_command: typeof baseCommand = createExaCtlCommand();
 
 export async function run(command: typeof baseCommand = createExaCtlCommand()): Promise<void> {
   // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …)

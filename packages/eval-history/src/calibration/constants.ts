@@ -13,8 +13,11 @@
 import { configurable } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 
-const CALIBRATION_SAMPLE_COUNT_MIN = 50;
-const CALIBRATION_SAMPLE_COUNT_MAX = 100;
+export const ARTIFACT_CONTEXT_ASSEMBLY_VERSION: string = "artifact-context-v1";
+export const JUDGE_CONTEXT_ASSEMBLY_VERSION: string = "judge-context-v1";
+
+const CALIBRATION_SAMPLE_COUNT_MIN = 20;
+export const CALIBRATION_SAMPLE_COUNT_MAX: number = 100;
 const CALIBRATION_MAX_ITEM_BYTES_DEFAULT = 262144;
 const CALIBRATION_MAX_ITEM_BYTES_MIN = 1024;
 const CALIBRATION_MAX_ITEM_BYTES_MAX = 1048576;

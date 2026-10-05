@@ -1,0 +1,123 @@
+{
+  "artifact_kind": "candidate-judge-profile",
+  "format_version": 1,
+  "id": "exaix-plan-quality-v1",
+  "status": "candidate-not-active",
+  "task_kind": "plan",
+  "preset": "GOAL_ALIGNED_REVIEW",
+  "criteria": [
+    {
+      "name": "goal_alignment",
+      "weight": 2.5,
+      "required": true,
+      "category": "completeness",
+      "description": "The planned final outcome directly achieves the original objective with relevant, minimal sufficient scope.",
+      "anchors": {
+        "0": "Wrong outcome or unrelated scope.",
+        "1": "Outcome is explicit, achievable and fully aligned with the requested scope.",
+        "0.25": "Some relevant work, but the central outcome is not achievable as written.",
+        "0.5": "Outcome is addressed only in part or includes material scope drift.",
+        "0.75": "Outcome is achievable with only minor scope clarification needed."
+      }
+    },
+    {
+      "name": "task_fulfillment",
+      "weight": 2,
+      "required": true,
+      "category": "completeness",
+      "description": "The plan covers each explicit functional requirement and respects each stated constraint; identify concrete omissions here.",
+      "anchors": {
+        "0": "No requested functionality or constraints are addressed.",
+        "1": "Every explicit requirement and constraint maps to a concrete planned action.",
+        "0.25": "A critical requirement or constraint is absent or violated.",
+        "0.5": "Several requirements are addressed but a material requirement remains incomplete.",
+        "0.75": "All essential requirements and constraints are covered, with minor details open."
+      }
+    },
+    {
+      "name": "request_understanding",
+      "weight": 1.5,
+      "required": false,
+      "category": "correctness",
+      "description": "The plan interprets the original problem, terminology and assumptions correctly without substituting another task.",
+      "anchors": {
+        "0": "Interpretation contradicts the original request.",
+        "1": "Interpretation is precise and all necessary assumptions are stated and supported.",
+        "0.25": "A central concept or assumption is substantially misunderstood.",
+        "0.5": "Interpretation is partly right but contains a material ambiguity or unsupported assumption.",
+        "0.75": "Interpretation is correct with minor assumptions needing clarification."
+      }
+    },
+    {
+      "name": "code_correctness",
+      "weight": 2,
+      "required": true,
+      "category": "correctness",
+      "description": "The proposed technical approach is feasible given supplied APIs/context, with logically consistent dependencies and edge-case handling. Do not assert that code ran.",
+      "anchors": {
+        "0": "The supplied evidence contradicts the central technical approach.",
+        "1": "Approach, dependencies and necessary edge-case handling are fully supported and coherent.",
+        "0.25": "A blocking technical error or impossible dependency would prevent success.",
+        "0.5": "Approach is plausible but a material technical gap threatens execution.",
+        "0.75": "Approach is feasible and coherent with only minor technical details open."
+      }
+    },
+    {
+      "name": "code_completeness",
+      "weight": 1.5,
+      "required": true,
+      "category": "completeness",
+      "description": "The plan provides actionable, ordered implementation steps, necessary verification and a clear completion condition. Judge execution detail here, not requirement coverage again.",
+      "anchors": {
+        "0": "No actionable implementation or verification route exists.",
+        "1": "All necessary steps, dependencies, verification expectations and completion conditions are explicit.",
+        "0.25": "Steps are too vague or disordered to execute the main work.",
+        "0.5": "Work can start but material ordering, verification or completion details are missing.",
+        "0.75": "Work and necessary verification are actionable, with minor detail left open."
+      }
+    }
+  ],
+  "weight_origin": "Existing Exaix CRITERIA weights; no empirical optimization or universal SOTA claim.",
+  "label_threshold": 0.7,
+  "aggregation": "complete-criterion-weighted-mean",
+  "score_range": [
+    0,
+    1
+  ],
+  "anchor_policy": "continuous-with-evidence-based-interpolation",
+  "required_tag_semantics": "legacy metadata; no additional veto; all result keys must be present",
+  "samples_per_vendor_per_artifact": 1,
+  "retry_count": 0,
+  "methodology_assets": [
+    "plan-rubric.skill.md",
+    "evidence-and-bias.skill.md"
+  ],
+  "prompt_asset": "judge-prompt.md",
+  "asset_extraction": "exactly-one-fenced-text-payload",
+  "payload_separator": "\n\n",
+  "placeholders": [
+    "request_context_json",
+    "artifact_json",
+    "criteria_json",
+    "response_schema_json"
+  ],
+  "examples_submitted": false,
+  "ambient_methodology_appended": false,
+  "insufficient_evidence": {
+    "error": "insufficient_evidence",
+    "missingEvidence": "nonempty array of input names; exclusive union arm; no numeric score or label"
+  },
+  "provider_policy": {
+    "target": "claude-cli",
+    "reference": "codex-cli",
+    "model_identifiers": "explicit validated identifiers required at activation",
+    "settings": "record supported applied settings and CLI defaults; do not infer unsupported temperature or seed"
+  },
+  "activation": "Pending typed schema, explicit --judge-profile wiring, shared frozen input, complete result validation and Phase 146 security/identity tests",
+  "sources": [
+    "https://github.com/confident-ai/deepeval/blob/ec9b9837a3bf4a41b7fc01f2de0bfeba4997c159/deepeval/metrics/plan_quality/templates/evaluate_plan_quality.txt",
+    "https://arxiv.org/html/2603.21362v3",
+    "https://arxiv.org/html/2606.29920v2",
+    "https://arxiv.org/abs/2306.05685"
+  ]
+}

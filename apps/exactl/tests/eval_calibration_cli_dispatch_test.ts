@@ -15,9 +15,11 @@ import { withTestMod } from "./helpers/test_utils.ts";
 Deno.test("eval calibration generate dispatches through the real command tree with the capture flag", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    let receivedOptions: { pack?: string[]; cell?: string; captureCalibrationEvidence?: string } | undefined;
+    let receivedOptions:
+      | { pack?: string[]; cell?: string; captureCalibrationEvidence?: string; judgeProfile?: string }
+      | undefined;
     ctx.evalCommands.calibrationGenerate = (
-      options: { pack?: string[]; cell?: string; captureCalibrationEvidence?: string },
+      options: { pack?: string[]; cell?: string; captureCalibrationEvidence?: string; judgeProfile?: string },
     ) => {
       called = true;
       receivedOptions = options;
@@ -34,12 +36,27 @@ Deno.test("eval calibration generate dispatches through the real command tree wi
       "claude-code",
       "--capture-calibration-evidence",
       "/tmp/calib-capture",
+      "--judge-profile",
+      "/tmp/profile/profile.json",
     ]);
 
     assert(called, "evalCommands.calibrationGenerate should have been called via CLI dispatch");
     assertEquals(receivedOptions?.pack, ["swe_tasks"]);
     assertEquals(receivedOptions?.cell, "claude-code");
     assertEquals(receivedOptions?.captureCalibrationEvidence, "/tmp/calib-capture");
+    assertEquals(receivedOptions?.judgeProfile, "/tmp/profile/profile.json");
+  });
+});
+
+Deno.test("eval run forwards the explicit profile through the real command tree", async (): Promise<void> => {
+  await withTestMod(async (mod, ctx): Promise<void> => {
+    let selected: string | undefined;
+    ctx.evalCommands.run = (options: { judgeProfile?: string }): Promise<void> => {
+      selected = options.judgeProfile;
+      return Promise.resolve();
+    };
+    await mod.__test_command.parse(["eval", "run", "--judge-profile", "/tmp/profile/profile.json"]);
+    assertEquals(selected, "/tmp/profile/profile.json");
   });
 });
 

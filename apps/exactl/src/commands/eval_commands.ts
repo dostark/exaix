@@ -173,6 +173,7 @@ export class EvalCommands extends BaseCommand {
     maxCostUsd?: number;
     verbose?: boolean;
     captureCalibrationEvidence?: string;
+    judgeProfile?: Opt<string, Reason.OptionalInput>;
   }): Promise<void> {
     const args = buildRunArgs(options);
     await this.spawnAndPropagateExit(DENO_BIN, args);
@@ -188,6 +189,7 @@ export class EvalCommands extends BaseCommand {
     maxCostUsd?: number;
     verbose?: boolean;
     captureCalibrationEvidence: string;
+    judgeProfile?: Opt<string, Reason.OptionalInput>;
   }): Promise<void> {
     await this.run(options);
   }
@@ -777,6 +779,7 @@ export function buildRunArgs(options: {
   maxCostUsd?: number;
   verbose?: boolean;
   captureCalibrationEvidence?: string;
+  judgeProfile?: Opt<string, Reason.OptionalInput>;
 }): string[] {
   const frameworkPath = resolveFrameworkPath();
   const outputDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output");
@@ -800,13 +803,21 @@ export function buildRunArgs(options: {
   if (options.historyFormat !== undefined) args.push("--history-format", options.historyFormat);
   if (options.cell !== undefined) args.push("--cell", options.cell);
   if (options.maxCostUsd !== undefined) args.push("--max-cost-usd", String(options.maxCostUsd));
-  if (options.captureCalibrationEvidence !== undefined) {
-    args.push("--capture-calibration-evidence", options.captureCalibrationEvidence);
-  }
+  appendJudgeRunArgs(args, options.captureCalibrationEvidence, options.judgeProfile);
 
   args.push("--eval-mode");
 
   return args;
+}
+
+/** Forward each optional judge argument as one subprocess argument. */
+function appendJudgeRunArgs(
+  args: string[],
+  captureDirectory: Opt<string, Reason.OptionalInput>,
+  profilePath: Opt<string, Reason.OptionalInput>,
+): void {
+  if (captureDirectory !== undefined) args.push("--capture-calibration-evidence", captureDirectory);
+  if (profilePath !== undefined) args.push("--judge-profile", profilePath);
 }
 
 const COST_REPORT_UNKNOWN_CELL = "unknown-cell";

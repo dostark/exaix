@@ -1,0 +1,139 @@
+{
+  "artifact_kind": "synthetic-profile-examples",
+  "format_version": 1,
+  "profile_id": "exaix-plan-quality-v1",
+  "eligible_for_calibration": false,
+  "submitted_as_few_shot": false,
+  "examples": [
+    {
+      "id": "good-plan",
+      "request_context": {
+        "request": "Add an optional timeout_ms parameter to fetchJson. Preserve existing callers' default behavior. Test timeout rejection and timer cleanup.",
+        "context": "fetchJson(url, options) returns parsed JSON using an existing fetch transport. The current options object has no timeout field. No implementation or test execution is supplied."
+      },
+      "artifact": "1. Add optional timeout_ms to the existing options without changing defaults when omitted.\n2. Validate positive timeout values, start a timer that aborts the request, and clear it on success, rejection and timeout.\n3. Add regression checks for existing callers plus timeout rejection and cleanup on each termination path.\n4. Run the scoped tests and type check; finish when they pass and the optional parameter is documented.",
+      "expected_response": {
+        "overallScore": 0.75,
+        "criteriaScores": {
+          "goal_alignment": {
+            "reasoning": "Lines 1–4 reach the requested timeout outcome without unrelated scope.",
+            "score": 0.75,
+            "issues": [],
+            "passed": true
+          },
+          "task_fulfillment": {
+            "reasoning": "Lines 1–3 cover compatibility, timeout rejection and cleanup.",
+            "score": 0.75,
+            "issues": [],
+            "passed": true
+          },
+          "request_understanding": {
+            "reasoning": "Line 1 retains the existing options API described in the context.",
+            "score": 0.75,
+            "issues": [],
+            "passed": true
+          },
+          "code_correctness": {
+            "reasoning": "Line 2 provides a feasible abort/timer route; the exact rejection type remains unspecified.",
+            "score": 0.75,
+            "issues": [
+              "Specify the timeout rejection type."
+            ],
+            "passed": true
+          },
+          "code_completeness": {
+            "reasoning": "Lines 3–4 give ordered verification and completion checks; exact assertions remain open.",
+            "score": 0.75,
+            "issues": [
+              "Specify cleanup assertions for each termination path."
+            ],
+            "passed": true
+          }
+        },
+        "pass": true,
+        "feedback": "Plan covers the requested outcome; minor implementation details remain.",
+        "suggestions": [
+          "Specify the timeout error type."
+        ]
+      },
+      "expected_weighted_score": 0.75,
+      "expected_label": "pass"
+    },
+    {
+      "id": "flawed-plan",
+      "request_context": {
+        "request": "Add an optional timeout_ms parameter to fetchJson. Preserve existing callers' default behavior. Test timeout rejection and timer cleanup.",
+        "context": "fetchJson(url, options) returns parsed JSON using an existing fetch transport. The current options object has no timeout field. No implementation or test execution is supplied."
+      },
+      "artifact": "1. Rename fetchJson to loadJson.\n2. Run one happy-path test.\n3. Document the new name.",
+      "expected_response": {
+        "overallScore": 0.25,
+        "criteriaScores": {
+          "goal_alignment": {
+            "reasoning": "Lines 1–3 replace the requested timeout outcome with a rename.",
+            "score": 0.25,
+            "issues": [
+              "Wrong planned outcome."
+            ],
+            "passed": false
+          },
+          "task_fulfillment": {
+            "reasoning": "No line adds timeout behavior, preserves defaults or tests rejection/cleanup.",
+            "score": 0,
+            "issues": [
+              "All requested timeout work is absent."
+            ],
+            "passed": false
+          },
+          "request_understanding": {
+            "reasoning": "Line 1 changes the API rather than adding the requested optional parameter.",
+            "score": 0.25,
+            "issues": [
+              "The requested optional change is misunderstood."
+            ],
+            "passed": false
+          },
+          "code_correctness": {
+            "reasoning": "A rename is technically possible, but line 1 fails to address compatibility for existing callers.",
+            "score": 0.5,
+            "issues": [
+              "Existing callers may break after the rename."
+            ],
+            "passed": false
+          },
+          "code_completeness": {
+            "reasoning": "Line 2 names only a happy-path check; no rejection/cleanup verification or completion condition exists.",
+            "score": 0.25,
+            "issues": [
+              "Missing failure-path verification and completion condition."
+            ],
+            "passed": false
+          }
+        },
+        "pass": false,
+        "feedback": "Plan omits the required timeout behavior and rejection/cleanup tests.",
+        "suggestions": [
+          "Plan the timeout implementation, default compatibility, and rejection/cleanup tests."
+        ]
+      },
+      "expected_weighted_score": 0.25,
+      "expected_label": "fail"
+    },
+    {
+      "id": "missing-request",
+      "request_context": {
+        "request": null,
+        "context": "fetchJson(url, options) returns parsed JSON using an existing fetch transport. The current options object has no timeout field. No implementation or test execution is supplied."
+      },
+      "artifact": "1. Make the helper safer.",
+      "expected_response": {
+        "error": "insufficient_evidence",
+        "missingEvidence": [
+          "original_request"
+        ]
+      },
+      "expected_weighted_score": null,
+      "expected_label": null
+    }
+  ]
+}

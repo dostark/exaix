@@ -40,6 +40,7 @@ import {
   type EvaluationCriterion,
   type EvaluationResult,
   EvaluationResultSchema,
+  type IResolvedJudgeProfile,
   resolveCriterionPreset,
 } from "@exaix/core/evaluation";
 import { type Config, DEFAULT_MODEL_PRESETS, EFFORT_AUTO, type IResolvedBinding } from "@exaix/schemas";
@@ -58,6 +59,7 @@ import type { IProviderHealthChecker } from "@exaix/ai/provider_selector.ts";
 import type { ModelSize } from "@exaix/schemas/model_intent.ts";
 import { createMockConfig, createMockEventLogger } from "@exaix/testing";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
+import { evaluateSelectedProfileCriterion } from "./judge_profile_evaluator.ts";
 
 /** The actual resolved provider/model and full generation result for one `callLlmEndpoint`
  *  call — distinct from its string-only return so an observer sees what was really used. */
@@ -105,9 +107,11 @@ export interface IEvaluateCriterionOptions {
   /** Fires after a real (non-mock) llm-judge call resolves, before scoring. Absent by
    *  default — ordinary history/scoring behavior is unaffected either way. */
   calibrationCapture?: Opt<(metadata: ICalibrationCaptureMetadata) => void | Promise<void>, Reason.OptionalDependency>;
+  judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
 }
 
 export interface IEvaluateStepOutcomeOptions {
+  judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
   workspaceRoot: string;
   step: IScenarioStep;
   executionResult?: IScenarioStepExecutionResult;
@@ -302,6 +306,7 @@ export async function evaluateStepOutcome(
     journalBaselineRowid: options.journalBaselineRowid,
     traceBaselineRowid: options.traceBaselineRowid,
     judgeBinding: options.judgeBinding,
+    judgeProfile: options.judgeProfile,
   });
 
   if (hasFailedCriterion(inputResults)) {
@@ -343,6 +348,7 @@ export async function evaluateStepOutcome(
     journalBaselineRowid: options.journalBaselineRowid,
     traceBaselineRowid: options.traceBaselineRowid,
     judgeBinding: options.judgeBinding,
+    judgeProfile: options.judgeProfile,
   });
   const criterionResults = [...inputResults, ...outputResults];
 
@@ -356,6 +362,7 @@ export async function evaluateStepOutcome(
 }
 
 interface IEvaluateCriteriaBatchOptions {
+  judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
   workspaceRoot: string;
   executionBase?: string;
   phase: CriterionPhase;
@@ -391,6 +398,7 @@ async function evaluateCriteriaBatch(
         journalBaselineRowid: options.journalBaselineRowid,
         traceBaselineRowid: options.traceBaselineRowid,
         judgeBinding: options.judgeBinding,
+        judgeProfile: options.judgeProfile,
       }),
     );
   }
@@ -1844,6 +1852,9 @@ function resolveEffectiveCalibrationCapture(
 export async function evaluateLlmJudgeCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
+  if (options.judgeProfile) {
+    return await evaluateSelectedProfileCriterion({ options, profile: options.judgeProfile, submit: callLlmEndpoint });
+  }
   const criterion = options.criterion as ICriterion & {
     evidence_path?: string;
     evidence_diff_path?: string;

@@ -16,12 +16,21 @@ import {
   calculateWeightedScore,
   CriterionResultSchema as JudgeResponseSchema,
   EvaluationResultSchema,
+  type IResolvedJudgeProfile,
+  JudgeProfileError,
+  parseJudgeProfileResponse,
+  renderJudgeProfilePrompt,
   resolveCriterionPreset,
 } from "@exaix/core/evaluation";
-import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
+import {
+  getCriterionResultJsonSchema,
+  getEvaluationResultJsonSchema,
+  getJudgeProfileResponseJsonSchema,
+} from "@exaix/schemas/evaluation_json_schema.ts";
 import { deriveCalibrationLabel } from "@exaix/eval-history";
 import type { CalibrationLabel } from "@exaix/eval-history";
-import type { JSONValue } from "@exaix/core/types";
+import type { JSONValue, Opt, Reason } from "@exaix/core/types";
+import type { IResolvedBinding } from "@exaix/schemas";
 import { callLlmEndpoint } from "./assertions.ts";
 import type { ILlmEndpointResolvedMetadata } from "./assertions.ts";
 
@@ -32,6 +41,8 @@ export interface IReferenceEvaluationInput {
   readonly labelThreshold: number;
   readonly referenceProvider: string;
   readonly referenceModel: string;
+  readonly judgeProfile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>;
+  readonly judgeBinding?: Opt<IResolvedBinding, Reason.OptionalDependency>;
 }
 
 export interface IReferenceEvaluationResult {
@@ -62,7 +73,17 @@ export function buildReferencePrompt(
   requestContext: string,
   artifact: string,
   preset: string,
+  profile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>,
 ): { prompt: string; isMulti: boolean; jsonSchema: Record<string, JSONValue> } {
+  if (profile) {
+    if (preset !== profile.spec.preset) throw new JudgeProfileError("judge-profile-incompatible-criterion");
+    const jsonSchema = getJudgeProfileResponseJsonSchema(profile);
+    return {
+      prompt: renderJudgeProfilePrompt(profile, requestContext, artifact, jsonSchema),
+      isMulti: true,
+      jsonSchema,
+    };
+  }
   const criteria = resolveCriterionPreset(preset);
   if (criteria.length === 0) {
     throw new ReferenceEvaluationError(`Unknown or empty preset: "${preset}"`);
@@ -83,7 +104,21 @@ export function parseReferenceResponse(
   raw: string,
   preset: string,
   labelThreshold: number,
+  profile?: Opt<IResolvedJudgeProfile, Reason.OptionalInput>,
 ): { score: number; label: CalibrationLabel; rationale: string } {
+  if (profile) {
+    if (preset !== profile.spec.preset || labelThreshold !== profile.spec.label_threshold) {
+      throw new JudgeProfileError("judge-profile-incompatible-criterion");
+    }
+    const parsed = parseJudgeProfileResponse(raw, profile);
+    return {
+      score: parsed.overallScore,
+      label: deriveCalibrationLabel(parsed.overallScore, profile.spec.label_threshold),
+      rationale: profile.spec.criteria.map((entry): string =>
+        `${entry.name}: ${parsed.criteriaScores[entry.name].reasoning}`
+      ).join(" | "),
+    };
+  }
   const criteria = resolveCriterionPreset(preset);
   const isMulti = criteria.length > 1;
   const cleaned = stripCodeFence(raw);
@@ -115,7 +150,22 @@ export function parseReferenceResponse(
 export async function evaluateReference(
   input: IReferenceEvaluationInput,
 ): Promise<IReferenceEvaluationResult> {
-  const { prompt, jsonSchema } = buildReferencePrompt(input.requestContext, input.artifact, input.preset);
+  if (
+    input.judgeProfile && (!input.judgeBinding || input.judgeBinding.adapter !== input.referenceProvider ||
+      input.judgeBinding.model !== input.referenceModel ||
+      input.labelThreshold !== input.judgeProfile.spec.label_threshold)
+  ) {
+    throw new ReferenceEvaluationError("judge-profile-explicit-reference-binding-required");
+  }
+  if (input.judgeProfile && input.judgeBinding?.adapter !== "mock") {
+    throw new ReferenceEvaluationError("judge-profile-isolated-provider-required");
+  }
+  const { prompt, jsonSchema } = buildReferencePrompt(
+    input.requestContext,
+    input.artifact,
+    input.preset,
+    input.judgeProfile,
+  );
   const env = {
     EXA_EVAL_LLM_MOCK: "false",
     EXA_LLM_PROVIDER: input.referenceProvider,
@@ -125,21 +175,31 @@ export async function evaluateReference(
   let resolved: ILlmEndpointResolvedMetadata | undefined;
   let raw: string;
   try {
-    raw = await callLlmEndpoint(prompt, env, jsonSchema, (metadata) => {
+    raw = await callLlmEndpoint(prompt, env, jsonSchema, (metadata: ILlmEndpointResolvedMetadata): void => {
       resolved = metadata;
-    });
+    }, input.judgeBinding);
   } catch (error) {
+    if (input.judgeProfile) throw new ReferenceEvaluationError("judge-profile-reference-call-failed");
     throw new ReferenceEvaluationError(`reference call failed: ${(error as Error).message}`);
   }
   if (!resolved) {
     throw new ReferenceEvaluationError(`reference call resolved to no provider/model for "${input.referenceProvider}"`);
   }
-  if (resolved.provider !== input.referenceProvider) {
+  const expectedProvider: string = input.judgeProfile ? input.judgeBinding!.model_provider : input.referenceProvider;
+  if (input.judgeProfile && resolved.model !== input.referenceModel) {
+    throw new ReferenceEvaluationError("judge-profile-reference-model-substituted");
+  }
+  if (resolved.provider !== expectedProvider) {
     throw new ReferenceEvaluationError(
       `reference provider substituted: requested "${input.referenceProvider}", resolved "${resolved.provider}"`,
     );
   }
 
-  const { score, label, rationale } = parseReferenceResponse(raw, input.preset, input.labelThreshold);
+  const { score, label, rationale } = parseReferenceResponse(
+    raw,
+    input.preset,
+    input.labelThreshold,
+    input.judgeProfile,
+  );
   return { score, label, rationale, provider: resolved.provider, model: resolved.model };
 }

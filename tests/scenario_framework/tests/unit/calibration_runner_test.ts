@@ -103,6 +103,37 @@ class FixedClock implements ICalibrationClock {
   }
 }
 
+Deno.test("[CalibrationRunner] target and reference calls run sequentially without overlapping provider sessions", async (): Promise<void> => {
+  let activeCalls: number = 0;
+  let peakCalls: number = 0;
+  const adapter: ICalibrationJudgeAdapter = {
+    score: async (): Promise<{ score: number; provider: string; model: string }> => {
+      activeCalls += 1;
+      peakCalls = Math.max(peakCalls, activeCalls);
+      await Promise.resolve();
+      activeCalls -= 1;
+      return { score: 0.75, provider: "fixture", model: "fixture-model" };
+    },
+  };
+  const runner: CalibrationRunner = new CalibrationRunner({
+    judge: adapter,
+    reference: adapter,
+    sourceReader: new MockSourceReader([sourceItem("serial")]),
+    store: new RecordingStore(),
+    clock: new FixedClock(),
+  });
+  await runner.run({
+    sourceIndexPath: "unused",
+    snapshotRoot: "unused",
+    seed: "serial",
+    sampleCount: 1,
+    rubric: rubric(),
+    target: { provider: "claude-cli", model: "fixture-target" },
+    reference: { provider: "codex-cli", model: "fixture-reference" },
+  });
+  assertEquals(peakCalls, 1);
+});
+
 Deno.test("[CalibrationRunner] orchestrates read -> score target+reference -> agree -> store, with mock adapters", async () => {
   const items = [sourceItem("a"), sourceItem("b"), sourceItem("c"), sourceItem("d")];
   const judge = new ScriptedAdapter({ a: 0.9, b: 0.9, c: 0.1, d: 0.1 }, "target");

@@ -15,7 +15,9 @@ import { z } from "zod";
 import { resolveConfigurableBounds } from "@exaix/core/config";
 import { SHA256_HEX_PATTERN } from "./identity.ts";
 import { CalibrationLabel, deriveCalibrationLabel, MetricUndefinedReason } from "./metrics.ts";
-import { DEFAULT_CALIBRATION_SAMPLE_COUNT } from "./constants.ts";
+import { CALIBRATION_SAMPLE_COUNT_MAX, DEFAULT_CALIBRATION_SAMPLE_COUNT } from "./constants.ts";
+
+const ARTIFACT_IDS_FIELD: string = "artifact_ids";
 
 /** Underlying model vendor a judge/reference evaluator resolves to — checked on the
  *  vendor, never the transport name, so `claude-cli` and the Anthropic API are the
@@ -133,26 +135,34 @@ export const CalibrationManifestSchema = z.object({
   dataset_content_hash: Sha256HexSchema,
   generated_at: UtcDatetimeSchema,
 }).strict().superRefine((manifest, ctx) => {
-  const { min: sampleMin } = resolveConfigurableBounds("eval.calibration.sample_count");
+  const { min: sampleMin, max: sampleMax } = resolveConfigurableBounds("eval.calibration.sample_count");
   const minArtifacts = sampleMin ?? DEFAULT_CALIBRATION_SAMPLE_COUNT;
+  const maxArtifacts: number = sampleMax ?? CALIBRATION_SAMPLE_COUNT_MAX;
 
   const uniqueIds = new Set(manifest.artifact_ids);
   if (uniqueIds.size !== manifest.artifact_ids.length) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["artifact_ids"], message: "artifact_ids must be unique" });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [ARTIFACT_IDS_FIELD], message: "artifact_ids must be unique" });
   }
   const sortedIds = [...manifest.artifact_ids].sort();
   if (manifest.artifact_ids.some((id, index) => id !== sortedIds[index])) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["artifact_ids"],
+      path: [ARTIFACT_IDS_FIELD],
       message: "artifact_ids must be sorted ascending",
     });
   }
   if (manifest.artifact_ids.length < minArtifacts) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["artifact_ids"],
+      path: [ARTIFACT_IDS_FIELD],
       message: `artifact_ids must contain at least ${minArtifacts} unique artifacts`,
+    });
+  }
+  if (manifest.artifact_ids.length > maxArtifacts) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [ARTIFACT_IDS_FIELD],
+      message: `artifact_ids must contain at most ${maxArtifacts} unique artifacts`,
     });
   }
 

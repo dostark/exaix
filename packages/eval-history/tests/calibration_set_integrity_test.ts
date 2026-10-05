@@ -25,6 +25,7 @@ import {
 } from "../src/calibration/schema.ts";
 import { canonicalJsonStringify, hashCalibrationValue, sha256Hex } from "../src/calibration/identity.ts";
 import { CalibrationLabel, MetricUndefinedReason } from "../src/calibration/metrics.ts";
+import { DEFAULT_CALIBRATION_SAMPLE_COUNT } from "../src/calibration/constants.ts";
 
 const SHA256_OF_EMPTY = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
@@ -168,14 +169,21 @@ Deno.test("[CalibrationSetIntegrity] isCalibrationItemLabelConsistent — flags 
 
 // Manifest: identical tracks + sample-count config bound
 
-Deno.test("[CalibrationSetIntegrity] CalibrationManifestSchema accepts complete identical ≥50-artifact tracks", () => {
-  const result = CalibrationManifestSchema.safeParse(manifestWithArtifactCount(50));
-  assertEquals(result.success, true);
+Deno.test("[CalibrationSetIntegrity] calibration defaults to 20 and accepts 20 and 100 artifacts", () => {
+  assertEquals(DEFAULT_CALIBRATION_SAMPLE_COUNT, 20);
+  for (const count of [20, 100]) {
+    const result = CalibrationManifestSchema.safeParse(manifestWithArtifactCount(count));
+    assertEquals(result.success, true);
+  }
 });
 
-Deno.test("[CalibrationSetIntegrity] CalibrationManifestSchema rejects fewer than the configured minimum (49 < 50)", () => {
-  const result = CalibrationManifestSchema.safeParse(manifestWithArtifactCount(49));
+Deno.test("[CalibrationSetIntegrity] CalibrationManifestSchema rejects fewer than the configured minimum (19 < 20)", () => {
+  const result = CalibrationManifestSchema.safeParse(manifestWithArtifactCount(19));
   assertEquals(result.success, false);
+});
+
+Deno.test("[CalibrationSetIntegrity] CalibrationManifestSchema rejects more than the configured maximum (101 > 100)", (): void => {
+  assertEquals(CalibrationManifestSchema.safeParse(manifestWithArtifactCount(101)).success, false);
 });
 
 Deno.test("[CalibrationSetIntegrity] CalibrationManifestSchema rejects duplicate artifact ids", () => {
