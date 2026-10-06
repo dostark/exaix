@@ -944,6 +944,12 @@ if (import.meta.main) {
     // Dogfood bounded-context supplement: additive, disabled by default. Enabled-but-
     // unwired (trusted portal alias not uniquely configured) is a startup error, not a
     // silent no-op; every other caller sees contextPort: undefined and is unaffected.
+    // Daemon-wide known-secret values, derived once for every consumer that redacts
+    // secret text: the dogfood context supplement and post-execution verification.
+    const knownSecrets = Object.entries(Deno.env.toObject())
+      .filter(([key, value]) => SECRET_ENV_PATTERN.test(key) && value.length > 0)
+      .map(([, value]) => value);
+
     let dogfoodContextPort: DogfoodContextService | undefined;
     let dogfoodTrustedAgentRoles: ReadonlySet<string> | undefined;
     if (config.dogfood.context.enabled) {
@@ -956,9 +962,6 @@ if (import.meta.main) {
       }
       const dogfoodCfg = config.dogfood.context;
       dogfoodTrustedAgentRoles = new Set(dogfoodCfg.trusted_agent_roles);
-      const knownSecrets = Object.entries(Deno.env.toObject())
-        .filter(([key, value]) => SECRET_ENV_PATTERN.test(key) && value.length > 0)
-        .map(([, value]) => value);
       const contextRecordStore = new ContextRecordStore(new PathResolver(config));
       dogfoodContextPort = new DogfoodContextService({
         portalAlias: dogfoodPortalAlias,
@@ -1346,6 +1349,8 @@ if (import.meta.main) {
       fixedClient: bootClient,
       // Share the edition registry so prompt budgeting uses resolved context windows.
       modelRegistry,
+      // Redact daemon secrets from a failed verification check's output before the repair prompt.
+      knownSecrets,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)
