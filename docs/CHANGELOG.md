@@ -18,6 +18,22 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 110 (Security Hardening Follow-ups)
+
+### Added
+
+- `exactl journal verify` checks the journal's hash chain and exits 1 when a record was altered, and an existing journal database upgrades itself on first start.
+- `journal.integrity.verified` and `journal.integrity.failed` events record each check.
+
+### Changed
+
+- `run_command` no longer allows `deno`, `npm` or `node`; use `run_deno_task` to build and test.
+- A plan action or ReAct tool call with an unknown or retired tool name or malformed parameters is rejected when it is parsed, before any tool runs, and a malformed structured plan is rejected on read-back.
+
+### Fixed
+
+- The git safety guard no longer blocks a step commit whose message contains words such as "clean" or "N-day", and `reset --hard` and `clean -f`, `-d` or `--force` are still refused.
+
 ## Unreleased — Phase 203 (Scenario Model Bindings and Self-Hosted Providers)
 
 ### Added
@@ -89,6 +105,10 @@
 - A model with no registered rate records a null cost instead of a guessed price, and a finite daily
   budget rejects an unpriced remote call.
 - An `openai-chat` response that carries more than one tool call is rejected before any tool runs.
+
+### Fixed
+
+- A DeepSeek call with thinking on now sends `tool_choice` as `auto` where a forced tool choice returned HTTP 400.
 
 ## Unreleased — Phase 201 (Tool Aliasing and Tool-Name Unification)
 
@@ -536,6 +556,10 @@ cloud model is available, and automatic approval stays off until you enable it.
   negotiating the current protocol version (2025-11-25, up from the legacy 2024-11-05) over
   both stdio and, with `--sse --port <N>`, real Streamable HTTP (see `Exaix_User_Guide.md`
   §8.1).
+
+### Fixed
+
+- The Team MCP server writes its console log lines to stderr, so a stdio client reads only protocol messages on stdout.
 
 ## Unreleased — Phase 162 (Outbound MCP Client)
 
