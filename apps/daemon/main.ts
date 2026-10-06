@@ -487,10 +487,12 @@ if (import.meta.main) {
 
     // Plan and flow steps run on this client, so model resolution must report it.
     // A fallback chain can switch providers at call time, so it has no fixed client.
-    const bootClient: IFixedModelClient | undefined =
-      config.provider_strategy?.fallback_enabled && config.provider_strategy.fallback_chains?.[defaultModelName]
-        ? undefined
-        : { provider: providerInfo.type, model: providerInfo.model };
+    // The mock provider is a deterministic test seam, not a real execution client, so
+    // it keeps the resolver reachable instead of short-circuiting every plan step.
+    const bootClient: IFixedModelClient | undefined = providerInfo.type === "mock" ||
+        (config.provider_strategy?.fallback_enabled && config.provider_strategy.fallback_chains?.[defaultModelName])
+      ? undefined
+      : { provider: providerInfo.type, model: providerInfo.model };
 
     await logger.info(DomainEventType.LlmProviderInitialized, providerInfo.id, {
       type: providerInfo.type,
